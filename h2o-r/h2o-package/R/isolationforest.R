@@ -41,6 +41,9 @@
 #' @param contamination Contamination ratio - the proportion of anomalies in the input dataset. If undefined (-1) the predict function
 #'        will not mark observations as anomalies and only anomaly score will be returned. Defaults to -1 (undefined).
 #'        Defaults to -1.
+#' @param validation_frame Id of the validation data frame.
+#' @param validation_response_column (experimental) Name of the response column in the validation frame. Response column should be binary and
+#'        indicate not anomaly/anomaly.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -81,10 +84,13 @@ h2o.isolationForest <- function(training_frame,
                                 stopping_metric = c("AUTO", "anomaly_score"),
                                 stopping_tolerance = 0.01,
                                 export_checkpoints_dir = NULL,
-                                contamination = -1)
+                                contamination = -1,
+                                validation_frame = NULL,
+                                validation_response_column = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
 
   # Build parameter list to send to model builder
   parms <- list()
@@ -134,6 +140,10 @@ h2o.isolationForest <- function(training_frame,
     parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(contamination))
     parms$contamination <- contamination
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
+  if (!missing(validation_response_column))
+    parms$validation_response_column <- validation_response_column
 
   # Error check and build model
   model <- .h2o.modelJob('isolationforest', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -161,6 +171,8 @@ h2o.isolationForest <- function(training_frame,
                                                 stopping_tolerance = 0.01,
                                                 export_checkpoints_dir = NULL,
                                                 contamination = -1,
+                                                validation_frame = NULL,
+                                                validation_response_column = NULL,
                                                 segment_columns = NULL,
                                                 segment_models_id = NULL,
                                                 parallelism = 1)
@@ -171,6 +183,7 @@ h2o.isolationForest <- function(training_frame,
   destination_key <- NULL
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
 
   # Build parameter list to send to model builder
   parms <- list()
@@ -218,6 +231,10 @@ h2o.isolationForest <- function(training_frame,
     parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(contamination))
     parms$contamination <- contamination
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
+  if (!missing(validation_response_column))
+    parms$validation_response_column <- validation_response_column
 
   # Build segment-models specific parameters
   segment_parms <- list()

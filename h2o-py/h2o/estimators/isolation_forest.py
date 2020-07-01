@@ -28,7 +28,8 @@ class H2OIsolationForestEstimator(H2OEstimator):
                    "ignore_const_cols", "ntrees", "max_depth", "min_rows", "max_runtime_secs", "seed",
                    "build_tree_one_node", "mtries", "sample_size", "sample_rate", "col_sample_rate_change_per_level",
                    "col_sample_rate_per_tree", "categorical_encoding", "stopping_rounds", "stopping_metric",
-                   "stopping_tolerance", "export_checkpoints_dir", "contamination", "validation_response_column"}
+                   "stopping_tolerance", "export_checkpoints_dir", "contamination", "validation_frame",
+                   "validation_response_column"}
 
     def __init__(self, **kwargs):
         super(H2OIsolationForestEstimator, self).__init__()
@@ -608,6 +609,20 @@ class H2OIsolationForestEstimator(H2OEstimator):
     def contamination(self, contamination):
         assert_is_type(contamination, None, numeric)
         self._parms["contamination"] = contamination
+
+
+    @property
+    def validation_frame(self):
+        """
+        Id of the validation data frame.
+
+        Type: ``H2OFrame``.
+        """
+        return self._parms.get("validation_frame")
+
+    @validation_frame.setter
+    def validation_frame(self, validation_frame):
+        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
 
     @property
