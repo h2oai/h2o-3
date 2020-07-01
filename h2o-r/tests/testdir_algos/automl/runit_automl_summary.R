@@ -22,7 +22,7 @@ automl.print.test <- function() {
   get_aml_printout <- captureOutput({ print(get_aml1) })
 
   expect_equal(aml_printout, get_aml_printout)
-  expect_true(any(grepl("Project Name:  r_aml_get_automl", aml_printout, fixed = TRUE)))
+  expect_true(any(grepl("Project Name: r_aml_get_automl", aml_printout, fixed = TRUE)))
 
 }
 
@@ -53,7 +53,7 @@ automl.summary.test <- function() {
   # Summary should be more detailed than regular print
   expect_gte(length(aml_summary), length(aml_printout))
 
-  expect_true(any(grepl("Project Name:  r_aml_get_automl", aml_printout, fixed = TRUE)))
+  expect_true(any(grepl("Project Name: r_aml_get_automl", aml_printout, fixed = TRUE)))
 
   # Summary can be a bit more expensive so we show all columns in leaderboard
   expect_false(any(grepl("training_time_ms", aml_printout, fixed = TRUE)))
