@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.Assert.fail;
 
@@ -50,23 +51,23 @@ public class WebsocketClient extends Endpoint {
         return waitToReceiveMessage(message, 10_000);
     }
     
-    public Map<String, String> waitToReceiveMessage(String message, int timeout) {
-        return waitToReceiveMessage(message, timeout, true);
+    public Map<String, String> waitToReceiveMessage(String message, int timeoutMillis) {
+        return waitToReceiveMessage(message, timeoutMillis, true).get();
     }
 
-    public synchronized Map<String, String> waitToReceiveMessage(String message, int timeout, boolean failOnNone) {
+    public synchronized Optional<Map<String, String>> waitToReceiveMessage(String message, int timeoutMillis, boolean failOnNone) {
         try {
-            this.wait(timeout);
+            this.wait(timeoutMillis);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
         if (receivedMessage != null) {
             Map<String, String> res = receivedMessage;
             receivedMessage = null;
-            return res;
+            return Optional.of(res);
         } else if (failOnNone) {
             fail("Expected " + message + ", but no message received from H2O.");
         }
-        return null;
+        return Optional.empty();
     }
 }

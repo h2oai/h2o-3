@@ -16,6 +16,7 @@ import water.test.WebsocketClient;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static hex.steam.SteamMessenger.ID;
 import static hex.steam.SteamMessenger.TYPE;
@@ -93,7 +94,8 @@ public class SteamExecutorStarterTest {
             Scope.track_generic(model1.get());
 
             // second model should not go to steam
-            assertNull("Unexpected message to steam", steam.waitToReceiveMessage("none", 1_000, false));
+            Optional<Map<String, String>> startRequest2 = steam.waitToReceiveMessage("none", 1_000, false);
+            assertFalse("Unexpected message to steam", startRequest2.isPresent());
             Scope.track_generic(model2.get());
 
             // steam requests cluster stop
@@ -134,7 +136,8 @@ public class SteamExecutorStarterTest {
             }
 
             // should send no more messages
-            assertNull("Unexpected message to steam", steam.waitToReceiveMessage("none", 1_000, false));
+            Optional<Map<String, String>> finalMessage = steam.waitToReceiveMessage("none", 1_000, false);
+            assertFalse("Unexpected message to steam", finalMessage.isPresent());
         } finally {
             steam.close();
             Scope.exit();
