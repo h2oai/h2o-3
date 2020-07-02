@@ -20,7 +20,7 @@ public class SteamHelloMessenger implements SteamMessenger {
 
     @Override
     public void onMessage(Map<String, String> message) {
-        if (message.get(TYPE).equals("hello")) {
+        if ("hello".equals(message.get(TYPE))) {
             assert sender != null : "Received message but sender is null";
             Map<String, String> response = new HashMap<>();
             response.put(TYPE, "hello_response");
