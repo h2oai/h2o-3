@@ -29,7 +29,11 @@ Example
 			airlines <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
 
 			# build and train the model:
-			model <- h2o.gbm(x = c("Origin", "Distance"), y = "IsDepDelayed", training_frame = airlines, ntrees = 1, gainslift_bins = 500)
+			model <- h2o.gbm(x = c("Origin", "Distance"), 
+					 y = "IsDepDelayed", 
+					 training_frame = airlines, 
+					 ntrees = 1, 
+					 gainslift_bins = 500)
 
 			# print the Gains/Lift table for the model:
 			print(h2o.gainsLift(model))
