@@ -11,10 +11,7 @@ import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
-import water.DKV;
-import water.Key;
-import water.MemoryManager;
-import water.Scope;
+import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -153,6 +150,18 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
   @Override
   public void init(boolean expensive) {
     super.init(expensive);
+    if (_parms._family == GLMParameters.Family.AUTO) {
+      if (nclasses() == 1 & _parms._link != GLMParameters.Link.family_default && _parms._link != GLMParameters.Link.identity
+              && _parms._link != GLMParameters.Link.log && _parms._link != GLMParameters.Link.inverse && _parms._link != null) {
+        error("_family", H2O.technote(2, "AUTO for undelying response requires the link to be family_default, identity, log or inverse."));
+      } else if (nclasses() == 2 & _parms._link != GLMParameters.Link.family_default && _parms._link != GLMParameters.Link.logit 
+              && _parms._link != null) {
+        error("_family", H2O.technote(2, "AUTO for undelying response requires the link to be family_default or logit."));
+      } else if (nclasses() > 2 & _parms._link != GLMParameters.Link.family_default & _parms._link != GLMParameters.Link.multinomial 
+              && _parms._link != null) {
+        error("_family", H2O.technote(2, "AUTO for undelying response requires the link to be family_default or multinomial."));
+      }
+    }
     if (expensive) {  // add custom check here
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GAM.this);
@@ -214,6 +223,18 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
                 " Gam columns in gam_columns exceeds 2");
       if ((_parms._lambda_search || !_parms._intercept || _parms._lambda == null || _parms._lambda[0] > 0))
         _parms._use_all_factor_levels = true;
+      if (_parms._link == null) {
+        _parms._link = GLMParameters.Link.family_default;
+      }
+      if (_parms._family == GLMParameters.Family.AUTO) {
+        if (_nclass == 1) {
+          _parms._family = GLMParameters.Family.gaussian;
+        } else if (_nclass == 2) {
+          _parms._family = GLMParameters.Family.binomial;
+        } else {
+          _parms._family = GLMParameters.Family.multinomial;
+        }
+      }
       if (_parms._link == null || _parms._link.equals(GLMParameters.Link.family_default))
         _parms._link = _parms._family.defaultLink;
     }
