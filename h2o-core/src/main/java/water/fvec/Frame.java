@@ -1740,7 +1740,7 @@ public class Frame extends Lockable<Frame> {
 
       // Case 2:  There are no chunks to work with (eg. the whole Frame was empty).
       if (_curChks == null) {
-        return 0;
+        return -1;
       }
 
       _chkRow++;
@@ -1748,7 +1748,7 @@ public class Frame extends Lockable<Frame> {
 
       // Case 3:  Out of data.
       if (anyChunk._start + _chkRow == anyChunk._vec.length()) {
-        return 0;
+        return -1;
       }
 
       // Case 4:  Out of data in the current chunks => fast-forward to the next set of non-empty chunks.

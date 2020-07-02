@@ -1,11 +1,15 @@
 package water.fvec;
 
+import hex.genmodel.utils.IOUtils;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import water.*;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -402,6 +406,35 @@ public class FrameTest extends TestUtil {
       printOutFrameAsTable(fr, false, fr.numRows());
       assertCatVecEquals(cvec("d", "e", "f"), fr.vec(0));
       assertVecEquals(vec(3,1,2), fr.vec(1), 1e-5);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testWriteToCsv() throws IOException {
+    Scope.enter();
+    try {
+      long[] numericalCol = ar(1, 2, 3);
+      Frame input = new TestFrameBuilder()
+          .withName("testFrame")
+          .withColNames("Str", "Cat", "Num")
+          .withVecTypes(Vec.T_STR, Vec.T_CAT, Vec.T_NUM)
+          .withDataForCol(0, ar("a", "b", "c"))
+          .withDataForCol(1, ar("X", "X", "Y"))
+          .withDataForCol(2, numericalCol)
+          .withChunkLayout(numericalCol.length)
+          .build();
+      final Frame.CSVStreamParams csvStreamParams = new Frame.CSVStreamParams().setHeaders(true);
+      final InputStream inputStream = input.toCSV(csvStreamParams);
+      final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      IOUtils.copyStream(inputStream, bos);
+      String csv = new String(bos.toByteArray(), StandardCharsets.UTF_8);
+      String expected = "\"Str\",\"Cat\",\"Num\"\n" +
+          "\"a\",\"X\",1\n" +
+          "\"b\",\"X\",2\n" +
+          "\"c\",\"Y\",3\n";
+      assertEquals(expected, csv);
     } finally {
       Scope.exit();
     }
