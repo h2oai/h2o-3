@@ -794,6 +794,15 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning.
 
         Type: ``int``  (default: ``-1``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+        >>> model = H2ONaiveBayesEstimator(gainslift_bins=20)
+        >>> model.train(x=["Origin", "Distance"],
+        ...             y="IsDepDelayed",
+        ...             training_frame=airlines)
+        >>> model.gains_lift()
         """
         return self._parms.get("gainslift_bins")
 
