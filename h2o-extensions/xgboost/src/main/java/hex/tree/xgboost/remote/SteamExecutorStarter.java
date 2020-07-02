@@ -67,7 +67,7 @@ public class SteamExecutorStarter implements SteamMessenger {
         Map<String, String> startRequest = makeStartRequest();
         sendMessage(startRequest);
         Map<String, String> response = waitForResponse(startRequest, job);
-        if (response != null && response.get("status").equals("started")) {
+        if (response != null && "started".equals(response.get("status"))) {
             String remoteUri = response.get("uri");
             String userName = response.get("user");
             String password = response.get("password");
@@ -115,7 +115,7 @@ public class SteamExecutorStarter implements SteamMessenger {
 
     @Override
     public void onMessage(Map<String, String> message) {
-        if (message.get(TYPE).equals("stopXGBoostClusterNotification")) {
+        if ("stopXGBoostClusterNotification".equals(message.get(TYPE))) {
             handleStopRequest(message);
         } else {
             queueResponseMessage(message);
