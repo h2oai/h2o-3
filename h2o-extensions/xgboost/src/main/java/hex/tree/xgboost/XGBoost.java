@@ -349,7 +349,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     
     private XGBoostExecutor makeExecutor(XGBoostModel model) throws IOException {
       if (H2O.ARGS.use_external_xgboost) {
-        return SteamExecutorStarter.getInstance().getRemoteExecutor(model, _train);
+        return SteamExecutorStarter.getInstance().getRemoteExecutor(model, _train, _job);
       } else {
         String remoteUriFromProp = H2O.getSysProperty("xgboost.external.address", null);
         if (remoteUriFromProp == null) {
@@ -430,6 +430,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
     private void scoreAndBuildTrees(final XGBoostModel model, final XGBoostExecutor exec, XGBoostVariableImportance varImp) {
       for (int tid = 0; tid < _ntrees; tid++) {
+        if (_job.stop_requested() && tid > 0) break;
         // During first iteration model contains 0 trees, then 1-tree, ...
         boolean scored = doScoring(model, exec, varImp, false);
         if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {

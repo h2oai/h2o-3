@@ -51,11 +51,11 @@ public class SteamExecutorStarter implements SteamMessenger {
         instance = this;
     }
 
-    public RemoteXGBoostExecutor getRemoteExecutor(XGBoostModel model, Frame train) throws IOException {
+    public RemoteXGBoostExecutor getRemoteExecutor(XGBoostModel model, Frame train, Job<XGBoostModel> job) throws IOException {
         synchronized (clusterLock) {
             if (cluster == null) {
                 LOG.info("Starting external cluster for model " + model._key + ".");
-                startCluster();
+                startCluster(job);
             } else {
                 LOG.info("External cluster available, starting model " + model._key + " now.");
             }
@@ -63,11 +63,11 @@ public class SteamExecutorStarter implements SteamMessenger {
         }
     }
 
-    private void startCluster() throws IOException {
+    private void startCluster(Job<XGBoostModel> job) throws IOException {
         Map<String, String> startRequest = makeStartRequest();
         sendMessage(startRequest);
-        Map<String, String> response = waitForResponse(startRequest);
-        if (response.get("status").equals("started")) {
+        Map<String, String> response = waitForResponse(startRequest, job);
+        if (response != null && response.get("status").equals("started")) {
             String remoteUri = response.get("uri");
             String userName = response.get("user");
             String password = response.get("password");
@@ -82,10 +82,10 @@ public class SteamExecutorStarter implements SteamMessenger {
         return new RemoteXGBoostExecutor(model, train, cluster.uri, cluster.userName, cluster.password);
     }
     
-    private Map<String, String> waitForResponse(Map<String, String> startRequest) {
+    private Map<String, String> waitForResponse(Map<String, String> startRequest, Job<XGBoostModel> job) {
         String responseKey = startRequest.get(ID) + "_response";
         synchronized (receivedMessages) {
-            while (!receivedMessages.containsKey(responseKey)) {
+            while (!receivedMessages.containsKey(responseKey) && !job.stop_requested()) {
                 try {
                     receivedMessages.wait(10000);
                 } catch (InterruptedException e) {
