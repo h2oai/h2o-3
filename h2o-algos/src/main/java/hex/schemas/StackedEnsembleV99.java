@@ -152,9 +152,6 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
           case glm:
             paramsSchema = new GLMV3.GLMParametersV3();
             params = new GLMModel.GLMParameters();
-            // FIXME: This is here because there is no Family.AUTO. It enables us to know if the user specified family or not.
-            // FIXME: Family.AUTO will be implemented in https://0xdata.atlassian.net/projects/PUBDEV/issues/PUBDEV-7444
-            ((GLMModel.GLMParameters) params)._family = null;
             break;
           case gbm:
             paramsSchema = new GBMV3.GBMParametersV3();

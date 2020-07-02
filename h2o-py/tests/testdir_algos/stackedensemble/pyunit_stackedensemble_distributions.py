@@ -57,7 +57,7 @@ def infer_distribution_helper(dist, expected_dist, kwargs1={}, kwargs2={}):
         "Expected distribution {} but got {}".format(expected_dist, se.metalearner().actual_params.get("distribution"))
 
 def infer_distribution_test():
-    from h2o.utils import CustomDistributionGeneric, CustomDistributionGaussian
+    from h2o.utils.distributions import CustomDistributionGeneric, CustomDistributionGaussian
 
     class CustomDistributionGaussian2(CustomDistributionGeneric):
         def link(self):
