@@ -2710,7 +2710,7 @@ median.H2OFrame <- h2o.median
 #'                             is ignored.
 #' @param return_frame \code{logical}. Indicate whether to return an H2O frame or a list. Default is FALSE (returns a list).
 #' @param ... Further arguments to be passed from or to other methods.
-#' @seealso \code{\link[base]{mean}} , \code{\link[base]{colSums}}, or \code{\link[base]{colMeans}} for the base R implementation
+#' @seealso \code{\link[base]{mean}}, \code{\link[base]{colSums}} for the base R implementation
 #' @return Returns a list containing the mean for each column (NaN for non-numeric columns) if return_frame is set to FALSE.
 #'         If return_frame is set to TRUE, then it will return an H2O frame with means per column or row (depends on axis argument).
 #' @examples
