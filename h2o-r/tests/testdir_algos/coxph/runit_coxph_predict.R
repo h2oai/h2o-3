@@ -75,9 +75,10 @@ test.CoxPH.predict <- function() {
     tstdata.6$sex <- as.factor(tstdata.6$sex)
     tstdata.6$weights <- runif(nrow(tstdata.6), min=0.01, max=9.0)
     tstdata.hex.6 <- as.h2o(tstdata.6)
-    fit.6 <- coxph(Surv(time, status) ~ age + sex + meal.cal + age:meal.cal, data = tstdata.6, ties = "efron")
+    fit.6 <- coxph(Surv(time, status) ~ age + sex + meal.cal + age:meal.cal, data = tstdata.6, ties = "efron", weights = weights)
     hex.fit.6 <- h2o.coxph(x = c("age", "sex", "meal.cal"), interaction_pairs = list(c("age", "meal.cal")),
-                           event_column = "status", stop_column = "time", ties = "efron", training_frame = tstdata.hex.6)
+                           event_column = "status", stop_column = "time", ties = "efron", training_frame = tstdata.hex.6,
+                           weights_colum = "weights" )
     hex.lp.6 <- pred(hex.fit.6, tstdata.hex.6)
 
     expect_equal(fit.6$linear.predictors, hex.lp.6, scale = 1, tolerance = 1e-3)
@@ -87,9 +88,10 @@ test.CoxPH.predict <- function() {
     tstdata.7$sex <- as.factor(tstdata.7$sex)
     tstdata.7$weights <- runif(nrow(tstdata.7), min=0.01, max=9.0)
     tstdata.hex.7 <- as.h2o(tstdata.7)
-    fit.7 <- coxph(Surv(time, status) ~ age + sex + meal.cal + age:meal.cal, data = tstdata.7, ties = "breslow")
+    fit.7 <- coxph(Surv(time, status) ~ age + sex + meal.cal + age:meal.cal, data = tstdata.7, weights = weights, ties = "breslow")
     hex.fit.7 <- h2o.coxph(x = c("age", "sex", "meal.cal"), interaction_pairs = list(c("age", "meal.cal")),
-                           event_column = "status", stop_column = "time", ties = "breslow", training_frame = tstdata.hex.7)
+                           event_column = "status", stop_column = "time", ties = "breslow", weights_column = "weights",
+                           training_frame = tstdata.hex.7)
     hex.lp.7 <- pred(hex.fit.7, tstdata.hex.7)
 
     expect_equal(fit.7$linear.predictors, hex.lp.7, scale = 1, tolerance = 1e-3)
