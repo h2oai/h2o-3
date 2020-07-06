@@ -2,6 +2,7 @@
 ------------------
 
 - Available in: GBM, DRF, Naïve-Bayes, XGBoost
+- Hyperparameter: no
 
 Description
 ~~~~~~~~~~~
