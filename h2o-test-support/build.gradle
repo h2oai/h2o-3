@@ -10,4 +10,6 @@ dependencies {
   compile "org.mockito:mockito-core:2.18.0"
   compile "com.github.stefanbirkner:system-rules:1.18.0"
   compile "org.apache.derby:derby:10.14.2.0"
+  // using tyrus client since using jetty gets us into conflict because of jetty8/9 dichotomy
+  compile "org.glassfish.tyrus.bundles:tyrus-standalone-client:1.12"
 }

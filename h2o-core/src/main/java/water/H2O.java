@@ -263,7 +263,10 @@ final public class H2O {
     public boolean internal_security_enabled = false;
 
     /** -allow_insecure_xgboost is a boolean that allows xgboost to run in a secured cluster */
-    public boolean allow_insecure_xgboost;
+    public boolean allow_insecure_xgboost = false;
+
+    /** -use_external_xgboost; invoke XGBoost on external cluster stared by Steam */
+    public boolean use_external_xgboost = false;
 
     /** -decrypt_tool specifies the DKV key where a default decrypt tool will be installed*/
     public String decrypt_tool = null;
@@ -705,6 +708,9 @@ final public class H2O {
       }
       else if (s.matches("allow_insecure_xgboost")) {
         trgt.allow_insecure_xgboost = true;
+      }
+      else if (s.matches("use_external_xgboost")) {
+        trgt.use_external_xgboost = true;
       }
       else if (s.matches("decrypt_tool")) {
         i = s.incrementAndCheck(i, args);

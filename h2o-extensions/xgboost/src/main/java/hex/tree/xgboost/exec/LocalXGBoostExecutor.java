@@ -90,7 +90,7 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
             }
         };
     }
-    
+
     @Override
     public byte[] setup() {
         setupTask = new XGBoostSetupTask(

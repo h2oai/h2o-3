@@ -88,6 +88,7 @@ public class XGBoostPredictWithOffsetComparisonTest extends TestUtil {
 
             assertFrameEquals(predsNative, predsJava, 1e-10, getRelDelta(parms));
         } finally {
+            System.clearProperty("sys.ai.h2o.xgboost.predict.native.enable");
             Scope.exit();
         }
     }
