@@ -66,6 +66,11 @@ Defining a GAM Model
    -  If the family is **negativebinomial**, the response must be numeric and non-negative (**Int**).
    -  If the family is **gamma**, the response must be numeric and continuous and positive (**Real** or **Int**).
    -  If the family is **tweedie**, the response must be numeric and continuous (**Real**) and non-negative.
+   - If the family is **AUTO**,
+
+      - and the response is **Enum** with cardinality = 2, then the family is automatically determined as **binomial**.
+      - and the response is **Enum** with cardinality > 2, then the family is automatically determined as **multinomial**.
+      - and the response is numeric (**Real** or **Int**), then the family is automatically determined as **gaussian**.
 
 -  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if *Tweedie* is
    specified for **Family**) Specify the Tweedie variance power.
@@ -121,6 +126,15 @@ Defining a GAM Model
    -  If the family is **Quasibinomial**, then only **Logit** is supported.
    -  If the family is **Ordinal**, then only **Ologit** is supported
    -  If the family is **Negative Binomial**, then only **Log** and **Identity** are supported.
+   - If the family is **AUTO**,
+
+      - and a link is not specified, then the link is determined as **Family_Default** (defaults to the family to which AUTO is determined).
+      - and a link is specified, the link is used so long as the specified link is compatible with the family to which AUTO is determined. Otherwise, an error message is thrown stating that AUTO for underlying data requires a different link and gives a list of possible compatible links.
+      - The list of supported links for ``family = AUTO`` is:
+
+          1. If the response is **Enum** with cardinality = 2, then **Logit** is supported.
+          2. If the response is **Enum** with cardinality > 2, then only **Family_Default** is supported (this defaults to **multinomial**).
+          3. If the response is numeric (**Real** or **Int**), then **Identity**, **Log**, and **Inverse** are suported.
 
 -  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to -1 and must be a value in the range (0,1).
    

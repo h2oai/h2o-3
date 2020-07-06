@@ -44,6 +44,14 @@ The following table describes the allowed Family/Link combinations.
 +---------------------+----------------+----------+-------+-----+---------+---------+--------+
 | Negative Binomial   | X              | X        |       | X   |         |         |        |
 +---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| AUTO                | X***           | X*       | X**   | X*  | X*      |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+
+For **AUTO**:
+
+- X*: the data is numeric (``Real`` or ``Int``) (family determined as ``gaussian``)
+- X**: the data is ``Enum`` with cardinality = 2 (family determined as ``binomial``)
+- X***: the data is ``Enum`` with cardinality > 2 (family determined as ``multinomial``)
 
 Refer to the `Links <../glm.html#links>`__ section for more information. 
 
