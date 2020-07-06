@@ -796,6 +796,18 @@ Kolmogorov-Smirnov (KS) Metric
 
 The `Kolmogorov-Smirnov (KS) <https://en.wikipedia.org/wiki/Kolmogorov–Smirnov_test>`__ metric represents the degree of separation between the positive (1) and negative (0) cumulative distribution functions for a binomial model. It is a nonparametric test that compares the cumulative distributions of two unmatched data sets and does not assume that data are sampled from any defined distributions. The KS metric has more power to detect changes in the shape of the distribution and less to detect a shift in the median because it tests for more deviations from the null hypothesis. Detailed metrics per each group can be found in the gains-lift table. 
 
+Kolmogorov-Smirnov Equation:
+
+    .. math::
+      KS = \;\sup_{x}|\;F_1,_n(x) - F_2,_m(x)\;|
+
+Where:
+ 
+ - :math:`sup_{x}` is the supremum function.
+ - :math:`F_1,_n` is the sum of all events observed so far up to the bin *i* divided by the total number of events.
+ - :math:`F_2,_m` is the sum of all non-events observed so far up to the bin *i* divided by the total number of non-events.
+
+
 **Examples**
 
 Using the previously imported and split airlines dataset, run the following to retrieve the KS metric.

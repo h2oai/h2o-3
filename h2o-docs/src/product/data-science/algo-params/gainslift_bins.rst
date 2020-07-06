@@ -2,7 +2,6 @@
 ------------------
 
 - Available in: GBM, DRF, Naïve-Bayes, XGBoost
-- Hyperparameter: yes
 
 Description
 ~~~~~~~~~~~
@@ -33,7 +32,7 @@ Example
 					 y = "IsDepDelayed", 
 					 training_frame = airlines, 
 					 ntrees = 1, 
-					 gainslift_bins = 500)
+					 gainslift_bins = 20)
 
 			# print the Gains/Lift table for the model:
 			print(h2o.gainsLift(model))
