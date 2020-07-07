@@ -2135,6 +2135,32 @@ class H2OFrame(Keyed):
             frame.pop(0)
         return frame
 
+    def save_to_hive(self, jdbc_url, table_name, tmp_path=None):
+        """
+        Save contents of this data frame into a Hive table.
+        
+        :param jdbc_url: Hive JDBC connection URL, should contain database name.
+        :param table_name: Table name into which to store the data. The table must already exist or ``create_table``
+            must be set to ``true`` and the user must be allowed to create tables. If the table already exists the
+            column names must match the column names of this frame.
+        :param tmp_path: Path where to store temporary data.
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines.save_to_hive("jdbc:hive2://hive-server:10000/default", "airlines")
+        """
+        assert_is_type(jdbc_url, str)
+        assert_is_type(table_name, str)
+        assert_is_type(tmp_path, str, None)
+        p = {
+            "frame_id": self.frame_id,
+            "jdbc_url": jdbc_url,
+            "table_name": table_name,
+            "tmp_path": tmp_path
+        }
+        h2o.api("POST /3/SaveToHiveTable", data=p)
 
     def get_frame_data(self):
         """
