@@ -12,8 +12,9 @@ test.IsolationForest.smoke <- function() {
     )
     random_data.hex <- as.h2o(random_data)
 
-    isofor.model <- h2o.isolationForest(training_frame = random_data.hex)
+    isofor.model <- h2o.isolationForest(training_frame = random_data.hex, nbins_cats = 100)
     expect_equal(as.character(class(isofor.model)), "H2OAnomalyDetectionModel")
+    expect_equal(isofor.model@parameters$nbins_cats, 100)
 }
 
 doTest("IsolationForest: Smoke Test", test.IsolationForest.smoke)

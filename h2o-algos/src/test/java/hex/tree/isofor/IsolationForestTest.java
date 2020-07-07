@@ -30,10 +30,12 @@ public class IsolationForestTest extends TestUtil {
       p._ntrees = 7;
       p._min_rows = 1;
       p._sample_size = 5;
+      p._nbins_cats = 100;
 
       IsolationForestModel model = new IsolationForest(p).trainModel().get();
       assertNotNull(model);
       Scope.track_generic(model);
+      assertEquals(100, model._parms._nbins_cats);
 
       Frame preds = Scope.track(model.score(train));
       assertArrayEquals(new String[]{"predict", "mean_length"}, preds.names());

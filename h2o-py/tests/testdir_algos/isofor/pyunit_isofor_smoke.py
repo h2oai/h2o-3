@@ -12,8 +12,10 @@ def isolation_forest():
     train = h2o.import_file(pyunit_utils.locate("smalldata/anomaly/ecg_discord_train.csv"))
     test = h2o.import_file(pyunit_utils.locate("smalldata/anomaly/ecg_discord_test.csv"))
 
-    if_model = H2OIsolationForestEstimator(ntrees=7, seed=12, sample_size=5)
+    if_model = H2OIsolationForestEstimator(ntrees=7, seed=12, sample_size=5, nbins_cats = 100)
     if_model.train(training_frame=train)
+    assert if_model.params["nbins_cats"]["default"] == 2
+    assert if_model.params["nbins_cats"]["actual"] == 100
 
     print(if_model)
 
