@@ -95,7 +95,7 @@ stackedensemble.max_runtime_secs_is_obeyed.test <- function() {
                                  blending_frame = blending_frame
                                 ),
              error = function(e) e)
-    expect_equal(error$message, "Error when retrieving meta learner possibly due to time out. Try increasing max_runtime_secs or setting it to 0 (unlimited).")
+    expect_equal(error$message, "Meta learner didn't get to be trained in time. Try increasing max_runtime_secs or setting it to 0 (unlimited).")
 }
 
 doSuite("Stacked Ensemble max_runtime_secs Test", makeSuite(
