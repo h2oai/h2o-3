@@ -12,6 +12,7 @@ import warnings
 
 import h2o
 from h2o.base import Keyed
+from h2o.exceptions import H2OResponseError
 from h2o.grid import H2OGridSearch
 from h2o.job import H2OJob
 from h2o.utils.shared_utils import quoted
