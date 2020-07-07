@@ -219,6 +219,9 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       List<Frame> baseModelPredictions = new ArrayList<>();
 
       for (Key<Model> k : baseModelKeys) {
+        if (stop_requested())
+          throw new Job.JobCancelledException();
+
         if (_model._output._metalearner == null || _model.isUsefulBaseModel(k)) {
           Model aModel = DKV.getGet(k);
           if (null == aModel)
@@ -321,7 +324,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
                 metalearnerJob,
                 _parms,
                 hasMetaLearnerParams,
-                metalearnerSeed
+                metalearnerSeed,
+                _parms._max_runtime_secs == 0 ? 0 : Math.max(remainingTimeSecs(), 1)
         );
         metalearner.compute();
       } else {

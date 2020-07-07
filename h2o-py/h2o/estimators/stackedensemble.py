@@ -12,6 +12,7 @@ import warnings
 
 import h2o
 from h2o.base import Keyed
+from h2o.exceptions import H2OResponseError
 from h2o.grid import H2OGridSearch
 from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import is_type
@@ -63,8 +64,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     algo = "stackedensemble"
     param_names = {"model_id", "training_frame", "response_column", "validation_frame", "blending_frame", "base_models",
                    "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
-                   "metalearner_fold_column", "metalearner_params", "seed", "score_training_samples",
-                   "keep_levelone_frame", "export_checkpoints_dir"}
+                   "metalearner_fold_column", "metalearner_params", "max_runtime_secs", "seed",
+                   "score_training_samples", "keep_levelone_frame", "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2OStackedEnsembleEstimator, self).__init__()
@@ -551,6 +552,21 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
 
     @property
+    def max_runtime_secs(self):
+        """
+        Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+        Type: ``float``  (default: ``0``).
+        """
+        return self._parms.get("max_runtime_secs")
+
+    @max_runtime_secs.setter
+    def max_runtime_secs(self, max_runtime_secs):
+        assert_is_type(max_runtime_secs, None, numeric)
+        self._parms["max_runtime_secs"] = max_runtime_secs
+
+
+    @property
     def seed(self):
         """
         Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)
@@ -827,3 +843,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         parms = sup._make_parms(x, y, training_frame, extend_parms_fn=extend_parms, **kwargs)
 
         sup._train(parms, verbose=verbose)
+        if self.metalearner() is None:
+            raise H2OResponseError("Meta learner didn't get to be trained in time. "
+                                   "Try increasing max_runtime_secs or setting it to 0 (unlimited).")
