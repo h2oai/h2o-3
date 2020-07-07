@@ -18,7 +18,7 @@ test.hive.save.frame <- function() {
     password <- ""
 
     # read original
-    dataset_original <- h2o.importFile(locate("smalldata/prostate/prostate_cat_NA.csv"), "prostate", header=TRUE)
+    dataset_original <- h2o.importFile(locate("../../../smalldata/prostate/prostate_cat_NA.csv"), "prostate", header=TRUE)
 
     # save to Hive
     h2o.saveToHive(dataset_original, connection_url, "prostate_hex_r")

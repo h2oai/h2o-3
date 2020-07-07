@@ -27,8 +27,6 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
 
   private static final Logger LOG = Logger.getLogger(HiveTableImporterImpl.class);
 
-  private static final String NAME = "HiveTableImporter";
-
   @Override
   public String getExtensionName() {
     return NAME;

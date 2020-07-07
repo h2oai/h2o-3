@@ -30,7 +30,6 @@ public class HiveFrameSaverImpl extends AbstractH2OExtension implements SaveToHi
     private static final Logger LOG = Logger.getLogger(HiveTableImporterImpl.class);
 
     private static final String SQL_DESCRIBE_TABLE = "DESCRIBE %s";
-    private static final String NAME = "HiveTableImporter";
 
     @Override
     public String getExtensionName() {

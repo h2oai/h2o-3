@@ -1,29 +1,22 @@
 package water.api;
 
-import water.AbstractH2OExtension;
 import water.ExtensionManager;
 import water.Key;
 import water.api.schemas3.SaveToHiveTableV3;
 import water.fvec.Frame;
 
-import java.util.Collection;
-
 public class SaveToHiveTableHandler extends Handler {
 
     public interface HiveFrameSaver {
+
+        String NAME = "HiveFrameSaver";
 
         void saveFrameToHive(Key<Frame> frameKey, String jdbcUrl, String tableName, String tmpPath);
 
     }
 
     private HiveFrameSaver getSaver() {
-        Collection<AbstractH2OExtension> extensions = ExtensionManager.getInstance().getCoreExtensions();
-        for (AbstractH2OExtension e : extensions) {
-            if (e instanceof HiveFrameSaver) {
-                return (HiveFrameSaver) e;
-            }
-        }
-        return null;
+        return (HiveFrameSaver) ExtensionManager.getInstance().getCoreExtension(HiveFrameSaver.NAME);
     }
 
     @SuppressWarnings("unused") // called via reflection
