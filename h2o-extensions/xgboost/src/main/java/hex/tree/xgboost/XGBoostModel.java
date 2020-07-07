@@ -245,7 +245,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     // + we don't use external-memory data matrix feature in h2o 
     // + https://github.com/h2oai/h2o-3/blob/b68e544d8dac3c5c0ed16759e6bf7e8288573ab5/h2o-extensions/xgboost/src/main/java/hex/tree/xgboost/XGBoostModel.java#L348
     if ( p._tree_method == XGBoostModel.XGBoostParameters.TreeMethod.auto) {
-      if (H2O.getCloudSize() > 1) {
+      if (p._backend == XGBoostParameters.Backend.gpu) {
+        return XGBoostParameters.TreeMethod.hist;
+      } else if (H2O.getCloudSize() > 1) {
         if (p._monotone_constraints != null && p._booster != XGBoostParameters.Booster.gblinear && p._backend != XGBoostParameters.Backend.gpu) {
           return XGBoostParameters.TreeMethod.hist;
         } else {
