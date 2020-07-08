@@ -56,8 +56,14 @@ if (!missing(metalearner_params)) {
 .h2o.fill_stackedensemble <- function(model, parameters, allparams) {
   # Store base models for the Stacked Ensemble in user-readable form
   model$base_models <- unlist(lapply(parameters$base_models, function (base_model) base_model$name))
-  model$metalearner_model <- h2o.getModel(model$metalearner$name)
-
+  
+  if (!is.null(model$metalearner)) {
+    model$metalearner_model <- h2o.getModel(model$metalearner$name)
+  } else {
+    stop(paste("Meta learner didn't get to be trained in time.",
+               "Try increasing max_runtime_secs or setting it to 0 (unlimited)."))
+  }
+  
   # Get the actual models (that were potentially expanded from H2OGrid on the backend)
   baselearners <- lapply(model$base_models, function(base_model) {
     if (is.character(base_model))
