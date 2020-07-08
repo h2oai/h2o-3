@@ -134,6 +134,20 @@ h2o.downloadCSV <- function(data, filename) {
     cat("Bad return val", val, "\n")
 }
 
+h2o.saveToHive <- function(data, jdbc_url, table_name, tmp_path=NULL) {
+    if (!is.H2OFrame(data))
+        stop("`data` must be an H2OFrame object")
+    parms <- list()
+    parms$frame_id <- h2o.getId(data)
+    parms$jdbc_url <- jdbc_url
+    parms$table_name <- table_name
+    if (!is.null(tmp_path)) {
+        parms$tmp_path <- tmp_path
+
+    }
+    res <- .h2o.__remoteSend('SaveToHiveTable', method = "POST", .params = parms, h2oRestApiVersion = 3)
+}
+
 # ------------------- Save H2O Model to Disk ----------------------------------------------------
 #'
 #' Save an H2O Model Object to Disk
