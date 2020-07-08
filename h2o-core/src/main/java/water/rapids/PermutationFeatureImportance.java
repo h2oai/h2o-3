@@ -1,43 +1,32 @@
 package water.rapids;
 
 import hex.*;
-//import hex.VarImp;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
-import hex.ModelCategory;
-
-
 import java.util.*;
 
+/**
+ * Calculate permutation feature importance, by shuffling randomly each feature of the passed model
+ * then scoring the model with the newly created frame using One At a Time approach
+ * and Morris method; creating TwoDimTable with relative, scaled, and percentage value
+ *                             TwoDimTable with mean of the absolute value, and standard deviation of all features importance
+ * */
 
-public class PermutationFeatureImportance /* extends VarImp */ {
+public class PermutationFeatureImportance {
 
+    private double[] _p_var_imp; // permutation feature (variable) importance, relative value 
 
-    private boolean _data_in_holdOut_form; // do I have the data split in train and validation, if not spliting will happen
-    int m_maxCols;
-    int m_maxRows;
-    private String _responce_col;
+    private String _response_col; 
     
-    String[] _features;
-    String[] _features_wo_res; // features without response col
+    private String[] _features; 
+    private String[] _features_wo_res; // features without response col
     
-    double[] fi_var_imp;
-
-
     private Model _model;
     private Frame _train_fr; // original dataset used to train model
-            
 
-    TwoDimTable _OGmodel_reliance_scoring_history; // original model metrics
-    TwoDimTable _PFI_metrics_table; // contains feature importance 'score' of each feature
-    TwoDimTable _varImp_table; 
-    VarImp _varImp;
-            
-    public TwoDimTable getTable() {return _PFI_metrics_table;}
-    
     /**
      * When passing only the Model without Frame (will use models frame)
      * */
@@ -54,75 +43,31 @@ public class PermutationFeatureImportance /* extends VarImp */ {
     }
     
     void init(){
-        _data_in_holdOut_form = false;
-        _responce_col = _model._parms._response_column;
-        _OGmodel_reliance_scoring_history = _model._output._scoring_history;
+        _response_col = _model._parms._response_column;
         _features = _train_fr.names();
     }
 
     /**
-     * Creates a `TwoDimTable` having the feature names as columns
-     *                                    metrics       as rows     (based from `_model._output._training_metrics`)
-     *                                    values filled with NaN    (initially)
+     * Creates a new array of Strings without the response column
      * */
-    void initializeTwoDimTable(){
-        System.out.print("Creating 2D table...");
+    void removeResCol(){
         // remove response col from array of string to be added to TwoDimTable
-        String[] features = _train_fr.names();
-        if (features[0].equals(_responce_col)) {
-            features = Arrays.copyOfRange(features, 1, features.length);
+        String[] _features_wo_res = _train_fr.names();
+        if (_features_wo_res[0].equals(_response_col)) {
+            _features_wo_res = Arrays.copyOfRange(_features_wo_res, 1, _features_wo_res.length);
         } else { // scenario where the response_col isn't the first column 
-            List<String> list = new ArrayList<String>(Arrays.asList(features));
-            if (list.contains(_responce_col))   // paranoid if check
-                list.remove(_responce_col);
-            features = list.toArray(new String[0]);
+            List<String> list = new ArrayList<String>(Arrays.asList(_features_wo_res));
+            if (list.contains(_response_col))   // paranoid if check
+                list.remove(_response_col);
+            _features_wo_res = list.toArray(new String[0]);
         }
-        _features_wo_res = features;
-        fi_var_imp = new double[_features_wo_res.length];
-
-        // all values will be doubles
-        String [] metric_values = new String[_train_fr.numCols() - 1]; // minus response col
-        Arrays.fill(metric_values, "double");
-
-        // printed as "%lf"
-        String [] metric_values_f = new String[_train_fr.numCols() - 1]; // minus response col
-        Arrays.fill(metric_values_f, "%lf");
-        
-        // `_training_metrics` table has these metrics
-        String [] Rows = new String[]{"RMSE", "LogLoss", "AUC", "pr_auc", "Lift", "Classification Error"};
-        
-        // make sure lengths match
-        assert ((features.length == metric_values.length) && (metric_values.length == metric_values_f.length));
-        
-        // create table
-        _PFI_metrics_table = new TwoDimTable(
-                "Permutation Feature Importance", "Feature f was x.x important on m metric of model", // + model_id
-                Rows,
-                features,
-                metric_values,
-                metric_values_f,
-                "Metric");
-        
-        // set all to NaN
-        for( int i=0; i<Rows.length; i++ ) {
-            for (int j=0; j<features.length ; j++)
-            _PFI_metrics_table.set(i, j, Double.NaN);
-        }
-        // will need when adding to TwoDimTable
-        m_maxRows = Rows.length;
-        m_maxCols = features.length;
-        
-//        System.out.print(_PFI_metrics_table);
+        _p_var_imp = new double[_features_wo_res.length]; 
     }
-    
-    // store original metrics
-    private static class LocalMetric{
 
-        LocalMetric() {} //nothing to do
-        /**
-         * Original values of metrics 
-         * */
-        // for now only mse, logloss, auc (TODO decide if this is sufficent)
+    /**
+     * Stores original values and j-th feature's score metric (loss function) values  
+     * */
+    private static class LocalMetric{
         double og_mse;
         double og_logloss;
         double og_auc;
@@ -131,10 +76,10 @@ public class PermutationFeatureImportance /* extends VarImp */ {
         double m_f_auc;
         double m_f_logloss;
     }
-    /**
-     *  Set the values of trained metrics to LocalMetric class
-     * */
     
+    /**
+     *  Set the original values of trained metrics to LocalMetric class
+     * */
     private void setOriginalMetrics(LocalMetric m) {
         ModelMetrics og_mm = ModelMetrics.getFromDKV(_model, _model._parms.train());
 //        ModelMetricsBinomial og_mm = (ModelMetricsBinomial)_model._output._training_metrics;
@@ -159,62 +104,48 @@ public class PermutationFeatureImportance /* extends VarImp */ {
     }
      
     /**
-     * Calculate loss function of scored model with shuffled feature and add to to the TwoDimTable 
+     * Calculate loss function of scored model with shuffled feature and store it
      * */
-    private LocalMetric addToFeatureToTable(int col, boolean skipped, LocalMetric lm, int id){
+    private LocalMetric addToFeatureToTable(LocalMetric lm, int id){
         try{
-
             ModelMetrics sh_mm = ModelMetrics.getFromDKV(_model, _model._parms.train());
 //        ModelMetrics mm = hex.ModelMetrics.getFromDKV(_model, _model._parms.train());
             
             switch (_model._output.getModelCategory()){
                 case Regression:
                     lm.m_f_mse = sh_mm.mse() / lm.og_mse;
-                    _PFI_metrics_table.set(0, skipped ? col - 1 : col, lm.m_f_mse); // 0 is MSE
-                    fi_var_imp[id] = lm.m_f_mse;
+                    _p_var_imp[id] = lm.m_f_mse;
                     break;
                 case Binomial:
                     if (sh_mm.auc_obj() != null && !Double.isNaN(sh_mm.auc_obj()._auc)) { // FIXME: check properly if model has auc 
                         lm.m_f_auc = sh_mm.auc_obj()._auc / lm.og_auc;
-                        _PFI_metrics_table.set(2, skipped ? col - 1 : col, lm.m_f_auc); // 2 is AUC
-                        fi_var_imp[id] = lm.m_f_auc;
+                        _p_var_imp[id] = lm.m_f_auc;
                     } else throw new MetricNotFoundExeption("Binomial model doesnt have auc " + _model._key);
                     break;
                 case Multinomial:
                     if (!Double.isNaN(((ModelMetricsMultinomial) sh_mm)._logloss)) {
                         lm.m_f_logloss = ((ModelMetricsMultinomial) sh_mm).logloss() / lm.og_logloss;
-                        _PFI_metrics_table.set(1, skipped ? col - 1 : col, lm.m_f_logloss); // 1 is LOGLOSS
-                        fi_var_imp[id] = lm.m_f_logloss;
+                        _p_var_imp[id] = lm.m_f_logloss;
                     } else throw new MetricNotFoundExeption("Multinomial model doesnt have logloss " + _model._key);
                     break;
                 default:
                     throw new MetricNotFoundExeption("Model Categoryt not supported for model" + _model._key);
-                    
             }
-            
         } catch (MetricNotFoundExeption e) {
             System.err.println("ModelMetricCalculation threw an exception unchecked Classifier " + _model._key);
             e.printStackTrace();            
         } 
         return lm;
     }
-
+    
+    
     public TwoDimTable getFeatureImportance() {
-        
-        /*
-        if (!_data_in_holdOut_form) {
-            // split the data if needed
-        }
-       */ 
-        
-        // to avoid OutOfRange of TwoDimTable exceptions
-        boolean saw_response_col = false;
         
         // put all the metrics in a class for structure
         LocalMetric pfi_m = new LocalMetric();
         
         // create the TwoDimtable
-        initializeTwoDimTable(); 
+        removeResCol(); 
         
         setOriginalMetrics(pfi_m);
         
@@ -222,14 +153,9 @@ public class PermutationFeatureImportance /* extends VarImp */ {
         for (int f = 0; f < _train_fr.numCols(); f++) 
         {
             // skip for response column
-            if (_features[f].equals(_responce_col)) {
-                // when adding to TwoDimTable `f` is passed, since TwoDimTable has one column less I need to - 1 at some point
-                saw_response_col = true;
-                continue;
-            }
+            if (_features[f].equals(_response_col))  continue;
             
             //shuffle values of feature
-            
             Vec shuffled_feature = ShuffleVec.ShuffleTask.shuffle(_train_fr.vec(_features[f]));
             Vec og_feature = _train_fr.replace(f, shuffled_feature);
 
@@ -240,7 +166,7 @@ public class PermutationFeatureImportance /* extends VarImp */ {
             Frame new_score = _model.score(_train_fr);
 
             // set and add new metrics
-            pfi_m = addToFeatureToTable(f, saw_response_col, pfi_m, id++);
+            pfi_m = addToFeatureToTable(pfi_m, id++);
             
             //return the original data
             _train_fr.replace(f, og_feature); // TODO use .add .remove methods to fix leaks (I presume)
@@ -253,24 +179,24 @@ public class PermutationFeatureImportance /* extends VarImp */ {
             shuffled_feature.remove();
         }
 
-        _varImp_table =  ModelMetrics.calcVarImp(fi_var_imp, _features_wo_res);
-        
-        System.out.println(_varImp_table);
-
-        return _varImp_table; // THIS IS NOT NEEDED, but leaving it for now
+        return ModelMetrics.calcVarImp(_p_var_imp, _features_wo_res);
     }
-    public void oat (){ oat(1); } // default is scaled value of the TwoDimTable 
     
-    public void oat(int type) {
-        int r = 4;
+    public TwoDimTable oat (){ return oat(0); } // default is relative value of the TwoDimTable 
+    
+    public TwoDimTable oat(int type) {
+        int r = 4; // set 4 to 10 value
         TwoDimTable[] morris_FI_arr = new TwoDimTable[r];
+
+        // generate r tables of Feature importance differently shuffled
         for (int i = 0; i < r; i++) morris_FI_arr[i] = getFeatureImportance();
 
-        double[] mean_abs_FI = new double[_features_wo_res.length];
         double[] mean_FI = new double[_features_wo_res.length];
 
-        // generate r tables of Feature importance differently shuffled 
+        // contians mean of the absolute value and standard deviation of each features importance
+        double response[][] = new double [_features_wo_res.length][2]; 
 
+        // formula (add link to thesis or paper)
         for (int f = 0; f < _features_wo_res.length; f++) {
             double acc_abs = 0;
             double acc = 0;
@@ -278,21 +204,28 @@ public class PermutationFeatureImportance /* extends VarImp */ {
                 acc_abs += Math.abs((Double) morris_FI_arr[i].get(f, type));
                 acc += (Double) morris_FI_arr[i].get(f, type);
             }
-            mean_abs_FI[f] = (1.0 / r) * acc_abs;
-            mean_FI[f] = (1.0 / r) * acc;
+            response[f][0] = (1.0 / r) * acc_abs; // for 2dTable
+            mean_FI[f] = (1.0 / r) * acc; // for the upcoming calculation
         }
 
-        double[] _std_dev_FI = new double[_features_wo_res.length];
-
+        // another formula 
         for (int f = 0; f < _features_wo_res.length; f++) {
             double inner = 0;
             for (int i = 0 ; i < r ; i++){
                 inner += Math.pow((Double) morris_FI_arr[i].get(f, type) - mean_FI[f], 2);
             }
-            _std_dev_FI[f] = Math.sqrt(1.0 / r * inner);
+            response[f][1] = Math.sqrt(1.0 / r * inner); // for 2dTable
         }
-    }    
-    
-    
+
+        String [] col_types = new String[2];
+        String [] col_formats = new String[2];
+        Arrays.fill(col_types, "double");
+        Arrays.fill(col_formats, "%5f");
+        
+        
+        return new TwoDimTable("Morris method analysis", null, _features_wo_res, new String [] {"Mean of the absolute value", "standard deviation"},
+                    col_types, col_formats, "Feature Importance", new String[_features_wo_res.length][], response);
+
+    }
 }
 
