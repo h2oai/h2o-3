@@ -21,8 +21,13 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toList;
 import static water.fvec.Vec.*;
 
 public class HiveFrameSaverImpl extends AbstractH2OExtension implements SaveToHiveTableHandler.HiveFrameSaver {
@@ -128,34 +133,25 @@ public class HiveFrameSaverImpl extends AbstractH2OExtension implements SaveToHi
         }
     }
 
+    /*
+        OpenCSV serde will make all columns type string, so there is no reason to create the table
+        with different column types. User can then create a view or cast the columns to different
+        types when doing SELECT.
+     */
     private String makeCreateTableStatement(String table, Frame frame) {
         StringBuilder sb = new StringBuilder();
         sb.append("CREATE TABLE ").append(table).append(" (");
         for (int i = 0; i < frame.numCols(); i++) {
             if (i > 0) sb.append(",\n");
-            sb.append(frame.name(i)).append(" ").append(sqlType(frame.vec(i).get_type()));
+            sb.append(frame.name(i)).append(" string");
         }
-        sb.append(") ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'\n" +
-            "WITH SERDEPROPERTIES (\n" +
-            "   \"separatorChar\" = \",\",\n" +
-            "   \"quoteChar\"     = \"\\\"\",\n" +
-            "   \"escapeChar\"    = \"\\\\\") STORED AS TEXTFILE");
+        sb.append(") ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'\n")
+            .append("WITH SERDEPROPERTIES (\n")
+            .append("   \"separatorChar\" = \",\",\n")
+            .append("   \"quoteChar\"     = \"\\\"\",\n")
+            .append("   \"escapeChar\"    = \"\\\\\") STORED AS TEXTFILE");
         return sb.toString();
     }
-
-    private String sqlType(byte type) {
-        switch (type) {
-            case T_NUM:
-                return "double";
-            case T_TIME:
-                return "timestamp";
-            case T_UUID:
-            case T_STR:
-            case T_CAT:
-                return "string";
-            default:
-                throw new IllegalArgumentException("Unsupported column type: " + type);
-        }    }
 
     private void executeDataLoad(Connection conn, String table, String csvPath) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
