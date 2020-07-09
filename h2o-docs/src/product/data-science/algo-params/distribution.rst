@@ -24,7 +24,7 @@ Certain cases can exist, however, in which the median starting value for this lo
 - If the distribution is ``huber``, the response column must be numeric.
 - If the distribution is ``modified_huber``, the response column must be 2-class categorical.
 - If the distribution is ``tweedie``, the response column must be numeric.
-- If the distribution is ``ordinal``, the response column must be 3-class categorical.
+- If the distribution is ``ordinal``, the response column must be at least 3-class categorical.
 - If the distribution is ``custom``, the response column must be numeric/binary/categorical depends on type of custom distribution.
 
 **NOTE**: ``laplace``, ``quantile``, and ``huber`` are NOT available in XGBoost. ``custom`` is available ONLY in GBM.
