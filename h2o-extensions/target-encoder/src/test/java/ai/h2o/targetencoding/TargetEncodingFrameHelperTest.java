@@ -46,10 +46,10 @@ public class TargetEncodingFrameHelperTest extends TestUtil {
       assertVecEquals(vec, fr.vec("ColB"), 1e-5);
 
       // add constant vector
-      Frame tmp = addCon(fr,"ColC", 42);
+      addCon(fr,"ColC", 42);
       Vec expectedConstVec = vec(42, 42);
 
-      assertVecEquals(expectedConstVec, tmp.vec("ColC"), 1e-5);
+      assertVecEquals(expectedConstVec, fr.vec("ColC"), 1e-5);
     } finally {
       Scope.exit();
     }

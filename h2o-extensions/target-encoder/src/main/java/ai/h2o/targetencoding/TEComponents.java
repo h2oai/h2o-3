@@ -4,7 +4,7 @@ import water.Iced;
 
 public class TEComponents extends Iced<TEComponents> {
 
-  private int _numerator;
+  private int _numerator;  // FIXME: numerator is an int only for classification problems
   private int _denominator;
 
   public TEComponents(int numerator, int denominator) {

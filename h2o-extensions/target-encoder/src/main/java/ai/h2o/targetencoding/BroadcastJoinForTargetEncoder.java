@@ -18,18 +18,18 @@ class BroadcastJoinForTargetEncoder {
      *        
      *        where k is a current fold value (folds = {0,1,2,3...k}) or 0 when _foldColumnIdx == -1; 
      */
-    int[][] _encodingDataPerNode = null;
+    final int[][] _encodingDataPerNode;
     
-    int _categoricalColumnIdx, _foldColumnIdx, _numeratorIdx, _denominatorIdx, _cardinalityOfCatCol, _maxFoldValue;
+    final int _categoricalColumnIdx, _foldColumnIdx, _numeratorIdx, _denominatorIdx, _cardinalityOfCatCol;
 
-    FrameWithEncodingDataToArray(int categoricalColumnIdx, int foldColumnId, int numeratorIdx, int denominatorIdx, int cardinalityOfCatCol, int maxFoldValue) {
+    FrameWithEncodingDataToArray(int categoricalColumnIdx, int foldColumnIdx, int numeratorIdx, int denominatorIdx, int cardinalityOfCatCol, int maxFoldValue) {
       _categoricalColumnIdx = categoricalColumnIdx;
-      _foldColumnIdx = foldColumnId;
+      _foldColumnIdx = foldColumnIdx;
       _numeratorIdx = numeratorIdx;
       _denominatorIdx = denominatorIdx;
       _cardinalityOfCatCol = cardinalityOfCatCol;
 
-      if(foldColumnId == -1) {
+      if(foldColumnIdx == -1) {
         _encodingDataPerNode = MemoryManager.malloc4(1, _cardinalityOfCatCol * 2);
       } else {
         assert maxFoldValue >= 1 : "There should be at leas two folds in the fold column";
@@ -103,32 +103,50 @@ class BroadcastJoinForTargetEncoder {
   }
 
   /**
-   * 
-   * @param leftFrame frame that we want to keep rows order of
-   * @param leftCatColumnsIdxs indices of the categorical columns from `leftFrame` we want to use to calculate encodings
-   * @param leftFoldColumnIdx index of the fold column from `leftFrame` or `-1` if we don't use folds
-   * @param broadcastedFrame supposedly small frame that we will broadcast to all nodes and use it as lookup table for joining
-   * @param rightCatColumnsIdxs indices of the categorical columns from `broadcastedFrame` we want to use to calculate encodings 
-   * @param rightFoldColumnIdx index of the fold column from `broadcastedFrame` or `-1` if we don't use folds
-   * @return `leftFrame` with joined numerators and denominators
+   * @param leftFrame frame for which we want to keep the rows order.
+   * @param leftCatColumnsIdxs indices of the categorical columns from `leftFrame` for which we want to calculate encodings.
+   *        Only one categorical column is currently supported.
+   * @param leftFoldColumnIdx index of the fold column from `leftFrame` or `-1` if we don't use folds.
+   * @param rightFrame supposedly small frame that we will broadcast to all nodes and use as a lookup table for joining.
+   * @param rightCatColumnsIdxs indices of the categorical columns from `rightFrame`.
+   *        Only one categorical column is currently supported.
+   * @param rightFoldColumnIdx index of the fold column from `rightFrame` or `-1` if we don't use folds.
+   * @return the `leftFrame` with joined numerators and denominators.
    */
-  static Frame join(Frame leftFrame, int[] leftCatColumnsIdxs, int leftFoldColumnIdx, Frame broadcastedFrame, int[] rightCatColumnsIdxs, int rightFoldColumnIdx, int maxFoldValue) {
-    int numeratorIdx = broadcastedFrame.find(TargetEncoder.NUMERATOR_COL_NAME);
-    int denominatorIdx = broadcastedFrame.find(TargetEncoder.DENOMINATOR_COL_NAME);
+  static Frame join(Frame leftFrame, int[] leftCatColumnsIdxs, int leftFoldColumnIdx,
+                    Frame rightFrame, int[] rightCatColumnsIdxs, int rightFoldColumnIdx,
+                    int maxFoldValue) {
+    int rightNumeratorIdx = rightFrame.find(TargetEncoder.NUMERATOR_COL);
+    int rightDenominatorIdx = rightNumeratorIdx + 1; // enforced by 
+    
+    // currently supporting only one categorical column
+    assert leftCatColumnsIdxs.length == 1;
+    assert rightCatColumnsIdxs.length == 1;
+    int leftCatColumnIdx = leftCatColumnsIdxs[0];
+    int rightCatColumnIdx = rightCatColumnsIdxs[0];
+    int rightCatCardinality = rightFrame.vec(rightCatColumnIdx).cardinality();
 
-    int broadcastedFrameCatCardinality = broadcastedFrame.vec(rightCatColumnsIdxs[0]).cardinality();
-
-    if(rightFoldColumnIdx != -1 && broadcastedFrame.vec(rightFoldColumnIdx).max() > Integer.MAX_VALUE) 
+    if (rightFoldColumnIdx != -1 && rightFrame.vec(rightFoldColumnIdx).max() > Integer.MAX_VALUE)
       throw new IllegalArgumentException("Fold value should be a non-negative integer (i.e. should belong to [0, Integer.MAX_VALUE] range)");
       
-    int[][] levelMappings = {CategoricalWrappedVec.computeMap( leftFrame.vec(leftCatColumnsIdxs[0]).domain(), broadcastedFrame.vec(0).domain())};
+    int[][] levelMappings = {
+            CategoricalWrappedVec.computeMap(
+                    leftFrame.vec(leftCatColumnIdx).domain(), 
+                    rightFrame.vec(rightCatColumnIdx).domain()
+            )
+    };
 
-    int[][] encodingDataArray = new FrameWithEncodingDataToArray(rightCatColumnsIdxs[0], rightFoldColumnIdx, numeratorIdx, denominatorIdx, broadcastedFrameCatCardinality, maxFoldValue)
-            .doAll(broadcastedFrame)
+    int[][] encodingData = new FrameWithEncodingDataToArray(rightCatColumnIdx, rightFoldColumnIdx, rightNumeratorIdx, rightDenominatorIdx, rightCatCardinality, maxFoldValue)
+            .doAll(rightFrame)
             .getEncodingDataArray();
-    new BroadcastJoiner(leftCatColumnsIdxs, leftFoldColumnIdx, encodingDataArray, levelMappings, broadcastedFrameCatCardinality)
-            .doAll(leftFrame);
-    return leftFrame;
+
+    // BroadcastJoiner is currently modifying the frame in-place, so we need to provide the numerator and denominator columns.
+    Frame resultFrame = new Frame(leftFrame);
+    resultFrame.add(TargetEncoder.NUMERATOR_COL, resultFrame.anyVec().makeCon(0));
+    resultFrame.add(TargetEncoder.DENOMINATOR_COL, resultFrame.anyVec().makeCon(0));
+    new BroadcastJoiner(leftCatColumnsIdxs, leftFoldColumnIdx, encodingData, levelMappings, rightCatCardinality)
+            .doAll(resultFrame);
+    return resultFrame;
   }
 
   static class BroadcastJoiner extends MRTask<BroadcastJoiner> {
@@ -137,8 +155,9 @@ class BroadcastJoinForTargetEncoder {
     int[][] _levelMappings;
 
     BroadcastJoiner(int[] categoricalColumnsIdxs, int foldColumnIdx, int[][] encodingDataArray, int[][] levelMappings, int cardinalityOfCatCol) {
-      assert categoricalColumnsIdxs.length == 1 : "Only single column target encoding(i.e. one categorical column is used to produce its encodings) is supported for now";
-
+      assert categoricalColumnsIdxs.length == 1 : "Only single column target encoding (i.e. one categorical column is used to produce its encodings) is supported for now";
+      assert levelMappings.length == 1;
+      
       _categoricalColumnIdx = categoricalColumnsIdxs[0];
       _foldColumnIdx = foldColumnIdx;
       _encodingDataArray = encodingDataArray;
@@ -148,35 +167,24 @@ class BroadcastJoinForTargetEncoder {
 
     @Override
     public void map(Chunk[] cs) {
+      int[] levelMapping = _levelMappings[0]; //see constraint in constructor
+      
       Chunk categoricalChunk = cs[_categoricalColumnIdx];
       int numOfVecs = cs.length;
-      Chunk num = cs[numOfVecs - 2];
+      Chunk num = cs[numOfVecs - 2]; // numerator and denominator columns are appended in #join method.
       Chunk den = cs[numOfVecs - 1];
       for (int i = 0; i < num.len(); i++) {
         int levelValue = (int) categoricalChunk.at8(i);
-        int mappedLevelValue = -1;
-        int numberOfLevelValues = _levelMappings[0].length;
-        if(levelValue < numberOfLevelValues ) {
-          mappedLevelValue = _levelMappings[0][levelValue];
-        } else {
+        if (levelValue >= levelMapping.length) {
           setEncodingComponentsToNAs(num, den, i);
           continue;
         }
+        
+        int mappedLevelValue = levelMapping[levelValue];
+        int foldValue = _foldColumnIdx >= 0 ? (int)cs[_foldColumnIdx].at8(i) : 0;
+        int[] arrForNumeratorsAndDenominators = _encodingDataArray[foldValue];
 
-        int[] arrForNumeratorsAndDenominators = null;
-
-        int foldValue = -1;
-        if (_foldColumnIdx != -1) {
-          long foldValueFromVec = cs[_foldColumnIdx].at8(i);
-          foldValue = (int) foldValueFromVec;
-
-        } else {
-          foldValue = 0;
-        }
-
-        arrForNumeratorsAndDenominators = _encodingDataArray[foldValue];
-
-        if(mappedLevelValue >= _cardinalityOfCatCol) {
+        if (mappedLevelValue >= _cardinalityOfCatCol) {
           setEncodingComponentsToNAs(num, den, i);
         } else {
           int denominator = arrForNumeratorsAndDenominators[_cardinalityOfCatCol + mappedLevelValue];

@@ -80,7 +80,7 @@ public class TargetEncodingExceptionsHandlingTest extends TestUtil {
     TargetEncoder tecSpy = spy(tec);
 
     doThrow(new IllegalStateException("Fake exception")).when(tecSpy)
-            .groupThenAggregateForNumeratorAndDenominator(any(Frame.class), eq(teColumns[0]), eq(foldColumnName), eq(targetIndex));
+            .buildEncodingsFrame(any(Frame.class), eq(teColumns[0]), eq(foldColumnName), eq(targetIndex));
 
     Map<String, Frame> targetEncodingMap = null;
     try {
@@ -115,7 +115,7 @@ public class TargetEncodingExceptionsHandlingTest extends TestUtil {
 
     Frame resultWithEncoding = null;
 
-      doThrow(new IllegalStateException("Fake exception")).when(tecSpy).getOutOfFoldData(any(Frame.class), eq(foldColumnName), anyLong());
+      doThrow(new IllegalStateException("Fake exception")).when(tecSpy).getOutOfFoldEncodings(any(Frame.class), eq(foldColumnName), anyLong());
 
     try {
       resultWithEncoding = tecSpy.applyTargetEncoding(fr, targetColumnName, targetEncodingMap,

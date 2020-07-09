@@ -22,7 +22,8 @@ import org.junit.runners.Suite;
         TargetEncodingImmutabilityTest.class,
         TEMojoIntegrationTest.class,
         TargetEncoderBuilderTest.class,
-        TargetEncoderMojoWriterTest.class
+        TargetEncoderMojoWriterTest.class,
+        TargetEncoderRGSTest.class
 })
 
 public class TargetEncoderTestSuite {

@@ -6,6 +6,7 @@ import water.DKV;
 import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.IcedHashMap;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
@@ -19,14 +20,25 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
   }
 
   private TargetEncoderModel _targetEncoderModel;
+  private String[] _columnsToEncode;
   
   public TargetEncoderBuilder(TargetEncoderModel.TargetEncoderParameters parms) {
     super(parms);
-    super.init(false);
+    init(false);
   }
 
   public TargetEncoderBuilder(final boolean startupOnce) {
     super(new TargetEncoderModel.TargetEncoderParameters(), startupOnce);
+  }
+
+  @Override
+  public void init(boolean expensive) {
+    super.init(expensive);
+    
+    if (expensive) {
+      final int numColsToRemove = hasFoldCol() ? 2 : 1; // Response is always at the last index, fold column is on the index before. XXX really?
+      _columnsToEncode = Arrays.copyOf(train().names(), train().names().length - numColsToRemove);
+    }
   }
 
   private class TargetEncoderDriver extends Driver {
@@ -36,23 +48,20 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
       try {
         init(true);
 
-        final int numColsRemoved = hasFoldCol() ? 2 : 1; // Response is always at the last index, fold column is on the index before.
-        final String[] encodedColumns = Arrays.copyOf(train().names(), train().names().length - numColsRemoved);
-        TargetEncoder tec = new TargetEncoder(encodedColumns);
-
+        TargetEncoder tec = new TargetEncoder(_columnsToEncode);
         TargetEncoderModel.TargetEncoderOutput emptyOutput =
-                new TargetEncoderModel.TargetEncoderOutput(TargetEncoderBuilder.this, new IcedHashMapGeneric<>(), Double.NaN);
+                new TargetEncoderModel.TargetEncoderOutput(TargetEncoderBuilder.this, new IcedHashMap<>(), Double.NaN);
         TargetEncoderModel model = new TargetEncoderModel(dest(), _parms, emptyOutput, tec);
         _targetEncoderModel = model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
 
         Scope.untrack(train().keys());
 
-        IcedHashMapGeneric<String, Frame> _targetEncodingMap = tec.prepareEncodingMap(train(), _parms._response_column, _parms._fold_column);
+        IcedHashMap<String, Frame> _targetEncodingMap = tec.prepareEncodingMap(train(), _parms._response_column, _parms._fold_column);
 
         // Mean could be computed from any encoding map as response column is shared
         double priorMean = tec.calculatePriorMean(_targetEncodingMap.entrySet().iterator().next().getValue());
 
-        for(Map.Entry<String, Frame> entry: _targetEncodingMap.entrySet()) {
+        for (Map.Entry<String, Frame> entry: _targetEncodingMap.entrySet()) {
           Frame frameWithEncodingMap = entry.getValue();
           Scope.untrack(frameWithEncodingMap.keys());
         }

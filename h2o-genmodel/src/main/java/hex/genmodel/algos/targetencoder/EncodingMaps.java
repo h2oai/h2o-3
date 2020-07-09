@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+// XXX: what's the point of this class?
 public class EncodingMaps implements Serializable {
 
   /**

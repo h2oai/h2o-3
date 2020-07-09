@@ -1,5 +1,6 @@
 package ai.h2o.targetencoding;
 
+import ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -382,7 +383,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       // Check that specified in the test categorical columns have been encoded in accordance with encoding map
       // We reusing static helper methods from TargetEncoderMojoModel as it is not the point of current test to check them.
       // We want to check here that proper blending params were being used during `.transformWithTargetEncoding()` transformation
-      EncodingMaps encodingMapConvertedFromFrame = TargetEncoderFrameHelper.convertEncodingMapFromFrameToMap(testEncodingMap);
+      EncodingMaps encodingMapConvertedFromFrame = TargetEncoderFrameHelper.convertEncodingMapValues(testEncodingMap);
 
       String teColumn = "home.dest";
       EncodingMap homeDestEncodingMap = encodingMapConvertedFromFrame.get(teColumn);
@@ -459,7 +460,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       rowToPredictFor.put("home.dest", Double.NaN);
 
       double[] encodingsFromMojoModel = teModelWrapper.transformWithTargetEncoding(rowToPredictFor).transformations;
-      byte noneHoldoutStrategy = 2;
       
       // Unexpected level value - `null`
       Frame withNullFrame = new TestFrameBuilder()
@@ -472,7 +472,8 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       // Encoding should be coming from posterior probability of NAs in the training frame
       BlendingParams blendingParams = new BlendingParams(targetEncoderParameters._k, targetEncoderParameters._f);
-      Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(withNullFrame, noneHoldoutStrategy, 0.0, true, blendingParams, 1234);
+      Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(withNullFrame, DataLeakageHandlingStrategy.None,
+              0.0, true, blendingParams, 1234);
       Scope.track(encodingsFromTargetEncoderModel);
 
       assertEquals(encodingsFromMojoModel[0], encodingsFromTargetEncoderModel.vec("home.dest_te").at(0), 1e-5);
@@ -486,7 +487,8 @@ public class TEMojoIntegrationTest extends TestUtil {
               .build();
 
       // In case we predict for unseen level, encodings should be coming from prior probability of the response
-      Frame encodingsFromTEModelForUnseenLevel = targetEncoderModel.transform(withUnseenLevelFrame, noneHoldoutStrategy, 0.0,true, blendingParams, 1234);
+      Frame encodingsFromTEModelForUnseenLevel = targetEncoderModel.transform(withUnseenLevelFrame, DataLeakageHandlingStrategy.None, 
+              0.0,true, blendingParams, 1234);
       Scope.track(encodingsFromTEModelForUnseenLevel);
 
       // This prediction will essentially be a prior as inflection point is 600 vs only one value in the `withUnseenLevelFrame` frame
@@ -562,7 +564,8 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       // Encoding should be coming from posterior probability of NAs in the training frame
       BlendingParams blendingParams = new BlendingParams(targetEncoderParameters._k, targetEncoderParameters._f);
-      Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(withNullFrame, noneHoldoutStrategy, 0.0, true, blendingParams, 1234);
+      Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(withNullFrame, DataLeakageHandlingStrategy.None,
+              0.0, true, blendingParams, 1234);
       Scope.track(encodingsFromTargetEncoderModel);
 
       assertEquals(encodingsFromMojoModel[0], encodingsFromTargetEncoderModel.vec("home.dest_te").at(0), 1e-5);
@@ -575,7 +578,8 @@ public class TEMojoIntegrationTest extends TestUtil {
               .withDataForCol(0, ar("xxx"))
               .build();
 
-      Frame encodingsFromTEModelForUnseenLevel = targetEncoderModel.transform(withUnseenLevelFrame, noneHoldoutStrategy, 0.0,true, blendingParams, 1234);
+      Frame encodingsFromTEModelForUnseenLevel = targetEncoderModel.transform(withUnseenLevelFrame, DataLeakageHandlingStrategy.None, 
+              0.0,true, blendingParams, 1234);
       Scope.track(encodingsFromTEModelForUnseenLevel);
 
       assertEquals(encodingsFromMojoModel[0], encodingsFromTEModelForUnseenLevel.vec("home.dest_te").at(0), 1e-5);
@@ -586,7 +590,9 @@ public class TEMojoIntegrationTest extends TestUtil {
   }
 
   @Property(trials = 5)
-  public void check_that_encodings_with_blending_are_the_same_in_TargetEncoderModel_and_TargetEncoderMojoModel(@InRange(minInt = 1, maxInt = 1000)int randomInflectionPoint) throws IOException, PredictException {
+  public void check_that_encodings_with_blending_are_the_same_in_TargetEncoderModel_and_TargetEncoderMojoModel(
+          @InRange(minInt = 1, maxInt = 1000)int randomInflectionPoint
+  ) throws IOException, PredictException {
 
     String mojoFileName = "mojo_te.zip";
     File mojoFile = folder.newFile(mojoFileName);
@@ -646,7 +652,8 @@ public class TEMojoIntegrationTest extends TestUtil {
 
 
       BlendingParams blendingParams = new BlendingParams(targetEncoderParameters._k, targetEncoderParameters._f);
-      Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(withNullFrame, noneHoldoutStrategy, 0.0, true, blendingParams, 1234);
+      Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(withNullFrame, DataLeakageHandlingStrategy.None, 
+              0.0, true, blendingParams, 1234);
       Scope.track(encodingsFromTargetEncoderModel);
 
       double predictionFromTEModel = encodingsFromTargetEncoderModel.vec("home.dest_te").at(0);

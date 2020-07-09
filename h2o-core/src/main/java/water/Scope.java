@@ -25,6 +25,11 @@ public class Scope {
     @Override protected Scope initialValue() { return new Scope(); }
   };
   private final Stack<HashSet<Key>> _keys = new Stack<>();
+  
+  /** debugging purpose */
+  static public Scope current() {
+    return _scope.get();
+  }
 
   /** Enter a new Scope */
   static public void enter() { _scope.get()._keys.push(new HashSet<Key>()); }

@@ -63,8 +63,9 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       String[] teColumns = {teColumnName};
       TargetEncoder tec = new TargetEncoder(teColumns);
       targetEncodingMap = tec.prepareEncodingMap(reimportedFrame, targetColumnName, null);
-
-      result = tec.calculateAndAppendBlendedTEEncoding(reimportedFrame, targetEncodingMap.get(teColumnName), targetColumnName, TargetEncoder.DEFAULT_BLENDING_PARAMS);
+      double priorMean = tec.calculatePriorMean(targetEncodingMap.get(teColumnName));
+      
+      tec.calculateAndAppendEncodedColumn(reimportedFrame, targetColumnName, priorMean, TargetEncoder.DEFAULT_BLENDING_PARAMS);
 
       double globalMean = 2.0 / 3;
 
@@ -310,17 +311,17 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
     String[] teColumns = {""};
     TargetEncoder tec = new TargetEncoder(teColumns);
 
-    Frame res = tec.subtractTargetValueForLOO(fr, "target");
+    tec.subtractTargetValueForLOO(fr, "target");
 
     // We check here that for  `target column = NA` we do not subtract anything and for other cases we subtract current row's target value
     Vec vecNotSubtracted = vec(1, 0, 3, 6, 3, 2);
-    assertVecEquals(vecNotSubtracted, res.vec(1), 1e-5);
+    assertVecEquals(vecNotSubtracted, fr.vec(1), 1e-5);
     Vec vecSubtracted = vec(0, 0, 3, 6, 3, 6);
-    assertVecEquals(vecSubtracted, res.vec(2), 1e-5);
+    assertVecEquals(vecSubtracted, fr.vec(2), 1e-5);
 
     vecNotSubtracted.remove();
     vecSubtracted.remove();
-    res.delete();
+    fr.delete();
   }
 
   @Test

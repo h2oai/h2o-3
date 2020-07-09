@@ -90,7 +90,7 @@ public class TargetEncodingMultiClassTargetTest extends TestUtil {
       String[] teColumns = {"ColB"};
       TargetEncoder tec = new TargetEncoder(teColumns);
 
-      Frame res = tec.groupThenAggregateForNumeratorAndDenominator(parsedFrame, teColumns[0], null, 0);
+      Frame res = tec.buildEncodingsFrame(parsedFrame, teColumns[0], null, 0);
 
       Vec expectedSumColumn = vec(0, 1, 0);
       Vec expectedCountColumn = vec(1, 1, 1);

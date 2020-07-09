@@ -43,7 +43,6 @@ public class TargetEncodingTest extends TestUtil {
       TargetEncoder tec = new TargetEncoder(teColumns);
 
       tec.prepareEncodingMap(null, "2", null, true);
-
     }
 
     @Test
@@ -56,7 +55,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(0, ar("a", "b"))
                 .withDataForCol(1, ar("yes", "no"))
                 .build();
-        Scope.track(fr);
         String teColumnName = "ColThatNotExist";
         String[] teColumns = {teColumnName};
         TargetEncoder tec = new TargetEncoder(teColumns);
@@ -82,7 +80,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withVecTypes(Vec.T_NUM)
                 .withDataForCol(0, ard(1, 2))
                 .build();
-        Scope.track(fr);
         String tree = "( append testFrame 42 'appended' )";
         Val val = Rapids.exec(tree);
         final Frame res = val.getFrame();
@@ -106,7 +103,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withRandomBinaryDataForCol(0, 1000, seed)
                 .withChunkLayout(500, 500) // that way our task could be executed with 2 threads
                 .build();
-        Scope.track(fr);
 
         String nullStr = null;
         fr.vec(0).set(2, nullStr);
@@ -118,9 +114,9 @@ public class TargetEncodingTest extends TestUtil {
         assertTrue(fr.vec("ColA").isCategorical());
         assertEquals(2, fr.vec("ColA").cardinality());
 
-        Frame res = tec.imputeNAsForColumn(fr, "ColA", "ColA_NA");
+        tec.imputeCategoricalColumn(fr, "ColA", "ColA_NA");
 
-        Vec colA = res.vec("ColA");
+        Vec colA = fr.vec("ColA");
 
         assertTrue(colA.isCategorical());
         assertEquals(3, colA.cardinality());
@@ -128,8 +124,6 @@ public class TargetEncodingTest extends TestUtil {
         //Checking here that we have replaced NA with index of the new category
         assertEquals(2, colA.at(2), 1e-5);
         assertEquals("ColA_NA", colA.domain()[2]);
-
-        res.delete();
       } finally {
         Scope.exit();
       }
@@ -145,7 +139,6 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(0, ar("a", "b", "c", "d", null, null, null))
               .withChunkLayout(2, 2, 2, 1)
               .build();
-      Scope.track(fr);
 
       String[] teColumns = {""};
       TargetEncoder tec = new TargetEncoder(teColumns);
@@ -153,9 +146,9 @@ public class TargetEncodingTest extends TestUtil {
       assertTrue(fr.vec("ColA").isCategorical());
       assertEquals(4, fr.vec("ColA").cardinality());
 
-      Frame res = tec.imputeNAsForColumn(fr, "ColA", "ColA_NA");
+      tec.imputeCategoricalColumn(fr, "ColA", "ColA_NA");
 
-      Vec colA = res.vec("ColA");
+      Vec colA = fr.vec("ColA");
 
       assertTrue(colA.isCategorical());
       assertEquals(5, colA.cardinality());
@@ -163,8 +156,6 @@ public class TargetEncodingTest extends TestUtil {
       //Checking here that we have replaced NA with index of the new category
       assertEquals(4, colA.at(4), 1e-5);
       assertEquals("ColA_NA", colA.domain()[4]);
-
-      res.delete();
     } finally {
       Scope.exit();
     }
@@ -188,7 +179,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(1, ar(0, 1))
                 .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
                 .build();
-        Scope.track(fr);
         try {
           tec.prepareEncodingMap(fr, targetColumnName, null);
           fail();
@@ -200,7 +190,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(1, ar("a", "b"))
                 .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT)
                 .build();
-        Scope.track(fr2);
 
         try {
           encodingMap = tec.prepareEncodingMap(fr2, targetColumnName, null);
@@ -223,7 +212,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(0, ar("1", "0"))
                 .withVecTypes(Vec.T_CAT)
                 .build();
-        Scope.track(fr);
 
         String[] teColumns = {"ColA", "ColNonExist"};
         String targetColumnName = "ColC";
@@ -253,7 +241,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(1, ard(1, 1, 4, 7))
                 .withDataForCol(2, ar("2", "6", "6", "6"))
                 .build();
-        Scope.track(fr);
 
         String[] teColumns = {"ColA"};
         String targetColumnName = "ColC";
@@ -282,7 +269,6 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(0, ar("a", "b"))
               .withDataForCol(1, ar("yes", "no"))
               .build();
-      Scope.track(fr);
 
       final boolean flag = false;
       String[] teColumns = {""};
@@ -314,7 +300,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withVecTypes(Vec.T_STR)
                 .withDataForCol(0, ar("1", "2", null))
                 .build();
-        Scope.track(fr);
 
         String[] teColumns = {""};
         TargetEncoder tec = new TargetEncoder(teColumns);
@@ -324,16 +309,14 @@ public class TargetEncodingTest extends TestUtil {
         Vec numericVec = strVec.toNumericVec();
         fr.replace(0, numericVec);
 
-        final Frame withImputed = tec.imputeWithMean(fr, 0, 1.5);
-        Scope.track(withImputed);
+        tec.imputeMissingValues(fr, 0, 1.5);
         Vec expected = dvec(1, 2, 1.5);
-        Vec resultVec = withImputed.vec(0);
+        Vec resultVec = fr.vec(0);
         assertVecEquals(expected, resultVec, 1e-5);
 
         expected.remove();
         strVec.remove();
         resultVec.remove();
-        withImputed.delete();
         numericVec.remove();
       } finally {
         Scope.exit();
@@ -362,7 +345,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withVecTypes(Vec.T_NUM)
                 .withDataForCol(0, ar(42))
                 .build();
-        Scope.track(fr2);
 
         Frame result2 = tec.rBind(fr, fr2);
         Scope.track(result2);
@@ -384,7 +366,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withVecTypes(Vec.T_NUM)
                 .withDataForCol(0, ard(1, 2, 3))
                 .build();
-        Scope.track(fr);
         String tree = "(sum (cols testFrame [0.0] ))";
         Val val = Rapids.exec(tree);
         assertEquals(val.getNum(), 6.0, 1e-5);
@@ -403,7 +384,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(0, ard(1, 2, 3))
                 .withDataForCol(1, ard(3, 4, 5))
                 .build();
-        Scope.track(fr);
         String[] teColumns = {""};
         TargetEncoder tec = new TargetEncoder(teColumns);
         double result = tec.calculatePriorMean(fr);
@@ -425,10 +405,9 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(1, ard(1, 2, 3))
                 .withDataForCol(2, ard(3, 4, 5))
                 .build();
-        Scope.track(fr);
         String[] teColumns = {""};
         TargetEncoder tec = new TargetEncoder(teColumns);
-        Frame result = TargetEncoder.groupByTEColumnAndAggregate(fr, 0);
+        Frame result = TargetEncoder.groupEncodingsByCategory(fr, 0);
         Scope.track(result);
 //      printOutFrameAsTable(result, false, result.numRows());
 
@@ -457,7 +436,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(1, ar(1, 2, 3))
                 .withDataForCol(2, ar(4, 5, 6))
                 .build();
-        Scope.track(fr);
 
         Frame oneColumnMultipliedOnly = new CalculatedColumnTask(1).doAll(Vec.T_NUM, fr).outputFrame();
         Scope.track(oneColumnMultipliedOnly);
@@ -509,7 +487,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(1, ar(1, 2, 3))
                 .withDataForCol(2, ar(4, 5, 6))
                 .build();
-        Scope.track(fr);
 
         new TestMutableTask(1).doAll(fr);
 
@@ -559,7 +536,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(1, ar("yes", "no", "yes"))
                 .withChunkLayout(1, 1, 1)
                 .build();
-        Scope.track(fr);
 
         Job export = Frame.export(fr, tmpFile.getAbsolutePath(), fr._key.toString(), true, 1);
         export.get();
@@ -567,16 +543,17 @@ public class TargetEncodingTest extends TestUtil {
         final Frame reimportedFrame = parse_test_file(Key.make("parsed"), tmpFile.getAbsolutePath(), true);
         Scope.track(reimportedFrame);
 
-        String[] teColumns = {"ColA"};
-        String targetColumnName = "ColB";
-        TargetEncoder tec = new TargetEncoder(teColumns);
-        targetEncodingMap = tec.prepareEncodingMap(reimportedFrame, targetColumnName, null);
+        String columnToEncode = "ColA";
+        String targetColumn = "ColB";
+        TargetEncoder tec = new TargetEncoder(new String[]{columnToEncode});
+        targetEncodingMap = tec.prepareEncodingMap(reimportedFrame, targetColumn, null);
 
-        final Frame merged = tec.mergeByTEColumn(reimportedFrame, targetEncodingMap.get("ColA"), 0, 0);
-        Scope.track(merged);
+        Frame encodings = targetEncodingMap.get(columnToEncode); 
+        final Frame encoded = tec.mergeEncodings(reimportedFrame, encodings, 0, 0);
+        Scope.track(encoded);
 
-        final Frame resultWithEncoding = tec.calculateAndAppendBlendedTEEncoding(merged, targetEncodingMap.get("ColA"), "ColB_te", TargetEncoder.DEFAULT_BLENDING_PARAMS);
-        Scope.track(resultWithEncoding);
+        double priorMean = tec.calculatePriorMean(targetEncodingMap.get(columnToEncode));
+        tec.calculateAndAppendEncodedColumn(encoded, targetColumn+"_te", priorMean, TargetEncoder.DEFAULT_BLENDING_PARAMS);
 
 //      String[] dom = resultWithEncoding.vec(1).domain();
         // k <- 10
@@ -597,9 +574,9 @@ public class TargetEncodingTest extends TestUtil {
         double lambda3 = 1.0 / (1.0 + (Math.exp((k - 2) / f)));
         double te3 = (1.0 - lambda3) * globalMean + (lambda3 * 2 / 2);
 
-        assertEquals(te1, resultWithEncoding.vec(4).at(0), 1e-5);
-        assertEquals(te2, resultWithEncoding.vec(4).at(1), 1e-5);
-        assertEquals(te3, resultWithEncoding.vec(4).at(2), 1e-5);
+        assertEquals(te1, encoded.vec(4).at(0), 1e-5);
+        assertEquals(te2, encoded.vec(4).at(1), 1e-5);
+        assertEquals(te3, encoded.vec(4).at(2), 1e-5);
 
       } finally {
         Scope.exit();
@@ -625,7 +602,6 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(3, arr) // vec that is used for comparing with encodings
               .withChunkLayout(100, 200, 300, sizeOfDataset - 600)
               .build();
-      Scope.track(fr);
       Vec zeroVec = Vec.makeZero(sizeOfDataset);
       fr.add("placeholder_for_encodings", zeroVec); // should get 4th index
 
@@ -634,7 +610,7 @@ public class TargetEncodingTest extends TestUtil {
       fr.vec(3).set(changedIndex, 0);
 
 
-      new TargetEncoder.CalcEncodings(0, 1, 42, 4).doAll(fr);
+      new TargetEncoder.ApplyEncodings(4, 0, 1, 42, null).doAll(fr);
 
       zeroVec.remove();
       assertEquals(0, fr.vec("placeholder_for_encodings").at(changedIndex), 1e-5);
@@ -661,15 +637,14 @@ public class TargetEncodingTest extends TestUtil {
                   .withRandomDoubleDataForCol(1, dataframeSize, 1, 100, seed + 1)
                   .withRandomBinaryDataForCol(2, dataframeSize, seed + 2)
                   .build();
-          Scope.track(fr);
 
           BlendingParams blendingParams = new BlendingParams(20, 10);
 
           Vec zeroVec = Vec.makeZero(dataframeSize);
           fr.add("placeholder_for_encodings", zeroVec);
-          int indexOfEncodingsColumn = 3;
+          int encodedColumnIdx = 3;
 
-          new TargetEncoder.CalcEncodingsWithBlending(0, 1, 42, blendingParams, indexOfEncodingsColumn).doAll(fr);
+          new TargetEncoder.ApplyEncodings(encodedColumnIdx, 0, 1, 42, blendingParams).doAll(fr);
           zeroVec.remove();
         } finally {
           Scope.exit();
@@ -699,12 +674,11 @@ public class TargetEncodingTest extends TestUtil {
                 .withRandomDoubleDataForCol(1, dataframeSize, 1, 100, seed + 1)
                 .withRandomBinaryDataForCol(2, dataframeSize, seed + 2)
                 .build();
-        Scope.track(fr);
 
         Vec zeroVec = Vec.makeZero(dataframeSize);
         fr.add("placeholder_for_encodings", zeroVec);
 
-        new TargetEncoder.CalcEncodings(0, 1, 42, 3).doAll(fr);
+        new TargetEncoder.ApplyEncodings(3, 0, 1, 42, null).doAll(fr);
         zeroVec.remove();
       } finally {
         Scope.exit();
@@ -742,10 +716,9 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(0, ar("a", "b", "a"))
               .withDataForCol(1, ar(1,1,2))
               .build();
-        Scope.track(fr);
 
-        Frame holdoutEncodingMap = new TestFrameBuilder()
-              .withName("holdoutEncodingMap")
+        Frame encodingsFrame = new TestFrameBuilder()
+              .withName("encodingsFrame")
               .withColNames("ColA", "foldValueForMerge", "numerator", "denominator")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "a"))
@@ -753,12 +726,11 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(2, ar(22, 55, 88))
               .withDataForCol(3, ar(33, 66, 99))
               .build();
-        Scope.track(holdoutEncodingMap);
 
         String[] teColumns = {""};
         TargetEncoder tec = new TargetEncoder(teColumns);
 
-        Frame merged = tec.mergeByTEAndFoldColumns(fr, holdoutEncodingMap, 0, 1, 0, 2);
+        Frame merged = tec.mergeEncodings(fr, encodingsFrame, 0, 1, 0, 1, 2);
         Scope.track(merged);
           
         Vec expectedStr = svec("22", null, "88");
@@ -783,7 +755,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(1, ard(1, 2, 3))
                 .withDataForCol(2, ard(1, 2, 3))
                 .build();
-        Scope.track(fr);
 
         double noiseLevel = 1e-2;
         String[] teColumns = {""};
@@ -820,7 +791,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(1, ard(1, 1))
                 .withDataForCol(2, ar("2", "6"))
                 .build();
-        Scope.track(fr);
         String[] teColumns = {""};
         TargetEncoder tec = new TargetEncoder(teColumns);
         int[] columns = ari(0, 2);
@@ -844,7 +814,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(2, ar("2", "6", "6", "6"))
                 .withDataForCol(3, ar("2", "6", "6", null))
                 .build();
-        Scope.track(fr);
 
         String[] teColumns = {""};
         TargetEncoder tec = new TargetEncoder(teColumns);
@@ -892,7 +861,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withVecTypes(Vec.T_CAT)
                 .withDataForCol(0, ar("2", "6", "6", null))
                 .build();
-        Scope.track(fr);
 
         String[] teColumns = {""};
         TargetEncoder tec = new TargetEncoder(teColumns);
@@ -921,7 +889,6 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(0, ar("NO", "YES", "NO"))
               .withDataForCol(1, ard(0, 0.5, 1))
               .build();
-      Scope.track(fr);
 
       assertTrue(fr.vec(0).isBinary());
       assertFalse(fr.vec(1).isBinary());
@@ -940,7 +907,6 @@ public class TargetEncodingTest extends TestUtil {
                 .withVecTypes(Vec.T_NUM)
                 .withDataForCol(0, ar(1, 2))
                 .build();
-        Scope.track(fr);
 
         Frame accFrame = fr.deepCopy(Key.make().toString());
         DKV.put(accFrame);
@@ -976,14 +942,12 @@ public class TargetEncodingTest extends TestUtil {
               .withVecTypes(Vec.T_NUM)
               .withDataForCol(0, ar(1, 2))
               .build();
-      Scope.track(fr);
 
       final Frame fr2 = new TestFrameBuilder()
               .withColNames("ColA")
               .withVecTypes(Vec.T_NUM)
               .withDataForCol(0, ar(3, 4))
               .build();
-      Scope.track(fr2);
 
       Frame newReferenceFrame = fr;
       assertEquals(1, newReferenceFrame.vec(0).at(0), 1e-5);
@@ -1011,14 +975,12 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(0, ar("a", "b", "b", "b"))
               .withDataForCol(1, ar("2", "6", "6", "2"))
               .build();
-      Scope.track(fr);
 
       final Frame frameWithoutResponse = new TestFrameBuilder()
               .withColNames(teColumnName)
               .withVecTypes(Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b"))
               .build();
-      Scope.track(frameWithoutResponse);
 
       String[] teColumns = {teColumnName};
       TargetEncoder tec = new TargetEncoder(teColumns);
@@ -1068,15 +1030,14 @@ public class TargetEncodingTest extends TestUtil {
       assertTrue(fr.vec("ColA").isCategorical());
       assertEquals(2, fr.vec("ColA").cardinality());
 
-      Frame res = tec.imputeNAsForColumn(fr, "ColA", "ColA_NA");
-      Scope.track(res);
+      tec.imputeCategoricalColumn(fr, "ColA", "ColA_NA");
 
-      new ImputeNATestMRTask().doAll(res);
+      new ImputeNATestMRTask().doAll(fr);
 
       // assumption is that domain is being properly distributed over nodes 
       // and there will be no exception while attempting to access new domain's value in `cs[0].vec().factor(2);`
 
-      assertEquals(3, res.vec("ColA").cardinality());
+      assertEquals(3, fr.vec("ColA").cardinality());
 
     } finally {
       Scope.exit();

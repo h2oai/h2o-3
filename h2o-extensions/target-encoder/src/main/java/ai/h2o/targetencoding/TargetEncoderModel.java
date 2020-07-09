@@ -1,5 +1,6 @@
 package ai.h2o.targetencoding;
 
+import ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy;
 import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
@@ -10,7 +11,7 @@ import water.Key;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
 import water.util.ArrayUtils;
-import water.util.IcedHashMapGeneric;
+import water.util.IcedHashMap;
 import water.util.TwoDimTable;
 
 import java.util.Map;
@@ -35,7 +36,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     public boolean _blending = false;
     public double _k = TargetEncoder.DEFAULT_BLENDING_PARAMS.getK();
     public double _f = TargetEncoder.DEFAULT_BLENDING_PARAMS.getF();
-    public TargetEncoder.DataLeakageHandlingStrategy _data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None;
+    public DataLeakageHandlingStrategy _data_leakage_handling = DataLeakageHandlingStrategy.None;
     public double _noise_level = 0.01;
     
     @Override
@@ -65,12 +66,12 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   public static class TargetEncoderOutput extends Model.Output {
     
-    public IcedHashMapGeneric<String, Frame> _target_encoding_map;
+    public IcedHashMap<String, Frame> _target_encoding_map;
     public TargetEncoderParameters _parms;
-    public IcedHashMapGeneric<String, Integer> _column_name_to_missing_val_presence;
+    public IcedHashMap<String, Integer> _column_name_to_missing_val_presence;
     public double _prior_mean;
     
-    public TargetEncoderOutput(TargetEncoderBuilder b, IcedHashMapGeneric<String, Frame> teMap, double priorMean) {
+    public TargetEncoderOutput(TargetEncoderBuilder b, IcedHashMap<String, Frame> teMap, double priorMean) {
       super(b);
       _target_encoding_map = teMap;
       _parms = b._parms;
@@ -80,23 +81,29 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       _prior_mean = priorMean;
     }
 
-    private IcedHashMapGeneric<String, Integer> createMissingValuesPresenceMap() {
-
-      IcedHashMapGeneric<String, Integer> presenceOfNAMap = new IcedHashMapGeneric<>();
-      for(Map.Entry<String, Frame> entry : _target_encoding_map.entrySet()) {
+    private IcedHashMap<String, Integer> createMissingValuesPresenceMap() {
+      final IcedHashMap<String, Integer> presenceOfNAMap = new IcedHashMap<>();
+      for (Map.Entry<String, Frame> entry : _target_encoding_map.entrySet()) {
         String teColumn = entry.getKey();
-        Frame frameWithEncodings = entry.getValue();
-        presenceOfNAMap.put(teColumn, _parms.train().vec(teColumn).cardinality() < frameWithEncodings.vec(teColumn).cardinality() ? 1 : 0);
+        Frame encodingsFrame = entry.getValue();
+        int hasNAs = _parms.train().vec(teColumn).cardinality() < encodingsFrame.vec(teColumn).cardinality() ? 1 : 0;
+        presenceOfNAMap.put(teColumn, hasNAs);
       }
-      
       return presenceOfNAMap;
     }
     
     private TwoDimTable constructSummary(){
 
       String[] columnsForSummary = ArrayUtils.difference(_names, new String[]{responseName(), foldName()});
-      TwoDimTable summary = new TwoDimTable("Target Encoder model summary.", "Summary for target encoder model", new String[columnsForSummary.length],
-              new String[]{"Original name", "Encoded column name"}, new String[]{"string", "string"}, null, null);
+      TwoDimTable summary = new TwoDimTable(
+              "Target Encoder model summary.",
+              "Summary for target encoder model",
+              new String[columnsForSummary.length],
+              new String[]{"Original name", "Encoded column name"},
+              new String[]{"string", "string"},
+              null,
+              null
+      );
 
       for (int i = 0; i < columnsForSummary.length; i++) {
         final String originalColName = columnsForSummary[i];
@@ -116,7 +123,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   /**
    * Transform with noise
    * @param data Data to transform
-   * @param strategy A byte value corresponding to {@link ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy}
+   * @param strategy The strategy specifying how to prevent data leakage {@link DataLeakageHandlingStrategy}
    * @param noiseLevel Level of noise applied
    * @param useBlending If false, blending is not used when the TE map is applied.If true, blending with corresponding blending parameters are used.
    * @param blendingParams Parameters for blending. If null, blending parameters from models parameters are loaded. 
@@ -124,31 +131,45 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    * @param seed
    * @return An instance of {@link Frame} with transformed data, registered in DKV.
    */
-  public Frame transform(Frame data, byte strategy, double noiseLevel, final boolean useBlending, BlendingParams blendingParams,
-                         long seed) {
-    if(blendingParams == null) blendingParams = _parms.getBlendingParameters();
-    
-    final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.fromVal(strategy);
-    return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
-            _parms._fold_column, useBlending, noiseLevel, false, blendingParams, seed);
+  public Frame transform(Frame data, DataLeakageHandlingStrategy strategy, double noiseLevel, final boolean useBlending, BlendingParams blendingParams, long seed) {
+    if (blendingParams == null) blendingParams = _parms.getBlendingParameters();
+    return _targetEncoder.applyTargetEncoding(
+            data, 
+            _parms._response_column, 
+            _output._target_encoding_map, 
+            strategy,
+            _parms._fold_column, 
+            useBlending, 
+            noiseLevel, 
+            false,
+            blendingParams, 
+            seed
+    );
   }
 
   /**
    * Transform with default noise of 0.01 
    * @param data Data to transform
-   * @param strategy A byte value corresponding to {@link ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy}
+   * @param strategy The strategy specifying how to prevent data leakage {@link DataLeakageHandlingStrategy}
    * @param useBlending If false, blending is not used when the TE map is applied.If true, blending with corresponding blending parameters are used.
    * @param blendingParams Parameters for blending. If null, blending parameters from models parameters are loaded. 
    *                       If those are not set, DEFAULT_BLENDING_PARAMS from TargetEncoder class are used.
    * @param seed
    * @return An instance of {@link Frame} with transformed data, registered in DKV.
    */
-  public Frame transform(Frame data, byte strategy, final boolean useBlending, BlendingParams blendingParams, long seed) {
-    if(blendingParams == null) blendingParams = _parms.getBlendingParameters();
-    
-    final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.fromVal(strategy);
-    return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
-            _parms._fold_column, useBlending, false, blendingParams, seed);
+  public Frame transform(Frame data, DataLeakageHandlingStrategy strategy, final boolean useBlending, BlendingParams blendingParams, long seed) {
+    if (blendingParams == null) blendingParams = _parms.getBlendingParameters();
+    return _targetEncoder.applyTargetEncoding(
+            data, 
+            _parms._response_column, 
+            _output._target_encoding_map, 
+            strategy,
+            _parms._fold_column, 
+            useBlending, 
+            false, 
+            blendingParams, 
+            seed
+    );
   }
   
   @Override
@@ -159,11 +180,21 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   @Override
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
     final BlendingParams blendingParams = _parms.getBlendingParameters();
-    final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = 
-            _parms._data_leakage_handling != null ? _parms._data_leakage_handling : TargetEncoder.DataLeakageHandlingStrategy.None;
+    final DataLeakageHandlingStrategy leakageHandlingStrategy = 
+            _parms._data_leakage_handling != null ? _parms._data_leakage_handling : DataLeakageHandlingStrategy.None;
     
-    return _targetEncoder.applyTargetEncoding(fr, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
-            _parms._fold_column, _parms._blending, _parms._noise_level, _parms._seed, Key.<Frame>make(destination_key), blendingParams );
+    return _targetEncoder.applyTargetEncoding(
+            fr, 
+            _parms._response_column, 
+            _output._target_encoding_map, 
+            leakageHandlingStrategy,
+            _parms._fold_column, 
+            _parms._blending, 
+            _parms._noise_level, 
+            _parms._seed, 
+            Key.<Frame>make(destination_key),
+            blendingParams 
+    );
   }
   
 

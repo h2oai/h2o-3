@@ -104,7 +104,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     String[] teColumns = {""};
     TargetEncoder tec = new TargetEncoder(teColumns);
 
-    long[] result = tec.getUniqueValuesOfTheFoldColumn(fr, 0);
+    long[] result = tec.getUniqueColumnValues(fr, 0);
     Arrays.sort(result);
     assertArrayEquals(ar(1L, 2L, 3L), result);
   }
@@ -427,14 +427,14 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     String[] teColumns = {""};
     TargetEncoder tec = new TargetEncoder(teColumns);
 
-    Frame outOfFoldData = tec.getOutOfFoldData(fr, "ColB", 1);
+    Frame outOfFoldData = tec.getOutOfFoldEncodings(fr, "ColB", 1);
     TwoDimTable twoDimTable = outOfFoldData.toTwoDimTable();
     assertEquals(outOfFoldData.numRows(), 2);
 
     assertEquals(6L, twoDimTable.get(5, 0));
     assertEquals(7L, twoDimTable.get(6, 0));
 
-    Frame outOfFoldData2 = tec.getOutOfFoldData(fr, "ColB", 2);
+    Frame outOfFoldData2 = tec.getOutOfFoldEncodings(fr, "ColB", 2);
     TwoDimTable twoDimTable2 = outOfFoldData2.toTwoDimTable();
 
     assertEquals(5L, twoDimTable2.get(5, 0));

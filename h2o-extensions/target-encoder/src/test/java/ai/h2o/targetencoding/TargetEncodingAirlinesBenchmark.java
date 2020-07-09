@@ -294,7 +294,8 @@ public class TargetEncodingAirlinesBenchmark extends TestUtil {
   }
 
   private void encodingMapCleanUp(Map<String, Frame> encodingMap) {
-    for( Map.Entry<String, Frame> map : encodingMap.entrySet()) {
+    if (encodingMap == null) return;
+    for (Map.Entry<String, Frame> map : encodingMap.entrySet()) {
       map.getValue().delete();
     }
   }

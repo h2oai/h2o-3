@@ -1,5 +1,6 @@
 package ai.h2o.targetencoding;
 
+import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderOutput;
 import hex.Model;
 import hex.ModelMojoWriter;
 import hex.genmodel.algos.targetencoder.EncodingMap;
@@ -39,7 +40,7 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
    * Writes target encoding's extra info
    */
   private void writeTargetEncodingInfo() throws IOException {
-    TargetEncoderModel.TargetEncoderOutput output = ((TargetEncoderModel) model)._output;
+    TargetEncoderOutput output = ((TargetEncoderModel) model)._output;
     TargetEncoderModel.TargetEncoderParameters teParams = output._parms;
     writekv("with_blending", teParams._blending);
     if(teParams._blending) {
@@ -60,19 +61,19 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
    * Writes encoding map into the file line by line
    */
   private void writeTargetEncodingMap() throws IOException {
-    TargetEncoderModel.TargetEncoderOutput targetEncoderOutput = ((TargetEncoderModel) model)._output;
-    Map<String, Frame> targetEncodingMapOnFrames = targetEncoderOutput._target_encoding_map;
+    TargetEncoderOutput targetEncoderOutput = ((TargetEncoderModel) model)._output;
+    Map<String, Frame> targetEncodingMap = targetEncoderOutput._target_encoding_map;
 
-    ifNeededRegroupEncodingMapsByFoldColumn(targetEncoderOutput, targetEncodingMapOnFrames);
+    groupEncodingsByFoldColumnIfNeeded(targetEncoderOutput, targetEncodingMap);
 
     // We need to convert map only here - before writing to MOJO. Everywhere else having encoding maps based on Frames is fine.
-    EncodingMaps convertedEncodingMap = TargetEncoderFrameHelper.convertEncodingMapFromFrameToMap(targetEncodingMapOnFrames);
+    EncodingMaps convertedEncodingMap = TargetEncoderFrameHelper.convertEncodingMapValues(targetEncodingMap);
     startWritingTextFile("feature_engineering/target_encoding/encoding_map.ini");
     for (Map.Entry<String, EncodingMap> columnEncodingsMap : convertedEncodingMap.entrySet()) {
       writeln("[" + columnEncodingsMap.getKey() + "]");
       EncodingMap encodings = columnEncodingsMap.getValue();
       for (Map.Entry<Integer, int[]> catLevelInfo : encodings.entrySet()) {
-        int[] numAndDenom = catLevelInfo.getValue();
+        int[] numAndDenom = catLevelInfo.getValue(); // FIXME: for regression, num is not an int...
         writelnkv(catLevelInfo.getKey().toString(), numAndDenom[0] + " " + numAndDenom[1]);
       }
     }
@@ -82,15 +83,16 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
   /**
    * For transforming (making predictions) non-training data we don't need `te folds` in our encoding maps 
    */
-  private void ifNeededRegroupEncodingMapsByFoldColumn(TargetEncoderModel.TargetEncoderOutput targetEncoderOutput, Map<String, Frame> targetEncodingMapOnFrames) {
-    String teFoldColumnName = targetEncoderOutput._parms._fold_column;
-    if(teFoldColumnName != null) {
+  private void groupEncodingsByFoldColumnIfNeeded(TargetEncoderOutput targetEncoderOutput, Map<String, Frame> targetEncodingMap) {
+    String foldColumn = targetEncoderOutput._parms._fold_column;
+    if (foldColumn != null) {
       try {
-        for (Map.Entry<String, Frame> encodingMapEntry : targetEncodingMapOnFrames.entrySet()) {
-          String key = encodingMapEntry.getKey();
-          Frame originalFrameWithFolds = encodingMapEntry.getValue();
-          targetEncodingMapOnFrames.put(key, TargetEncoder.groupingIgnoringFoldColumn(teFoldColumnName, originalFrameWithFolds, key));
-          originalFrameWithFolds.delete();
+        for (Map.Entry<String, Frame> encodingMapEntry : targetEncodingMap.entrySet()) {
+          String teColumn = encodingMapEntry.getKey();
+          Frame encodingsWithFolds = encodingMapEntry.getValue();
+          Frame encodingsWithoutFolds = TargetEncoder.groupEncodingsByCategory(encodingsWithFolds, encodingsWithFolds.find(teColumn) , true);
+          targetEncodingMap.put(teColumn, encodingsWithoutFolds);
+          encodingsWithFolds.delete();
         }
       } catch (Exception ex) {
         throw new IllegalStateException("Failed to group encoding maps by fold column", ex);

@@ -1,11 +1,12 @@
-package ai.h2o.targetencoding.strategy;
+package ai.h2o.targetencoding;
 
-import ai.h2o.targetencoding.TargetEncoderModel;
+import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
-import hex.grid.HyperSpaceSearchCriteria;
-import hex.grid.HyperSpaceWalker;
-import hex.schemas.TargetEncoderV3;
+import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
+import hex.grid.HyperSpaceWalker.HyperSpaceIterator;
+import hex.grid.HyperSpaceWalker.RandomDiscreteValueWalker;
+import hex.schemas.TargetEncoderV3.TargetEncoderParametersV3;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -15,7 +16,7 @@ import water.Job;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
-import water.api.GridSearchHandler;
+import water.api.GridSearchHandler.DefaultModelParametersBuilderFactory;
 import water.fvec.Frame;
 
 import java.util.Arrays;
@@ -46,17 +47,17 @@ public class TargetEncoderRGSTest{
         hpGrid.put("k", new Double[]{1.0, 2.0, 3.0});
         hpGrid.put("f", new Double[]{5.0, 10.0, 20.0});
 
-        TargetEncoderModel.TargetEncoderParameters parameters = new TargetEncoderModel.TargetEncoderParameters();
+        TargetEncoderParameters parameters = new TargetEncoderParameters();
 
-        GridSearchHandler.DefaultModelParametersBuilderFactory<TargetEncoderModel.TargetEncoderParameters, TargetEncoderV3.TargetEncoderParametersV3> modelParametersBuilderFactory = new GridSearchHandler.DefaultModelParametersBuilderFactory<>();
+        DefaultModelParametersBuilderFactory<TargetEncoderParameters, TargetEncoderParametersV3> modelParametersBuilderFactory = new DefaultModelParametersBuilderFactory<>();
 
-        HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
-        HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker = new HyperSpaceWalker.RandomDiscreteValueWalker<>(parameters, hpGrid, modelParametersBuilderFactory, hyperSpaceSearchCriteria);
+        RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new RandomDiscreteValueSearchCriteria();
+        RandomDiscreteValueWalker<TargetEncoderParameters> walker = new RandomDiscreteValueWalker<>(parameters, hpGrid, modelParametersBuilderFactory, hyperSpaceSearchCriteria);
 
-        HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = walker.iterator();
+        HyperSpaceIterator<TargetEncoderParameters> iterator = walker.iterator();
         int count = 0;
         while (iterator.hasNext(null)) {
-          TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters(null);
+          TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters(null);
           System.out.println(targetEncoderParameters._blending + ":" + targetEncoderParameters._noise_level + ":" + targetEncoderParameters._k + ":" + targetEncoderParameters._f);
           count++;
         }
@@ -99,15 +100,15 @@ public class TargetEncoderRGSTest{
         hpGrid.put("k", new Double[]{1.0, 2.0, 3.0});
         hpGrid.put("f", new Double[]{5.0, 10.0, 20.0});
 
-        TargetEncoderModel.TargetEncoderParameters parameters = new TargetEncoderModel.TargetEncoderParameters();
+        TargetEncoderParameters parameters = new TargetEncoderParameters();
         parameters._train = trainingFrame._key;
         parameters._response_column = responseColumn;
         parameters._ignored_columns = ignoredColumns(trainingFrame, "home.dest", "embarked", parameters._response_column);
 
-        GridSearchHandler.DefaultModelParametersBuilderFactory<TargetEncoderModel.TargetEncoderParameters, TargetEncoderV3.TargetEncoderParametersV3> modelParametersBuilderFactory = new GridSearchHandler.DefaultModelParametersBuilderFactory<>();
+        DefaultModelParametersBuilderFactory<TargetEncoderParameters, TargetEncoderParametersV3> modelParametersBuilderFactory = new DefaultModelParametersBuilderFactory<>();
 
-        HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
-        HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker = new HyperSpaceWalker.RandomDiscreteValueWalker<>(parameters, hpGrid, modelParametersBuilderFactory, hyperSpaceSearchCriteria);
+        RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new RandomDiscreteValueSearchCriteria();
+        RandomDiscreteValueWalker<TargetEncoderParameters> walker = new RandomDiscreteValueWalker<>(parameters, hpGrid, modelParametersBuilderFactory, hyperSpaceSearchCriteria);
 
         Job<Grid> gs = GridSearch.startGridSearch(Key.make(), walker, parallelism);
 
@@ -115,7 +116,7 @@ public class TargetEncoderRGSTest{
         final Grid grid = gs.get();
         Scope.track_generic(grid);
 
-        assertEquals(54, grid.getModelCount());
+        assertEquals(54 /* 2*3*3*3 */, grid.getModelCount());
         assertTrue(Arrays.stream(grid.getModels()).allMatch(Objects::nonNull));
       } finally {
         Scope.exit();

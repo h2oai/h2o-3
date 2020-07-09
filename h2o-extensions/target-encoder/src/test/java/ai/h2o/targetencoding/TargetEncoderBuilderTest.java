@@ -1,63 +1,61 @@
 package ai.h2o.targetencoding;
 
-import org.junit.BeforeClass;
+import ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
 import water.rapids.Merge;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
+import water.util.ArrayUtils;
 
 import java.util.Map;
 
+import static ai.h2o.targetencoding.TargetEncoderFrameHelper.encodingMapCleanUp;
 import static org.junit.Assert.assertTrue;
 import static ai.h2o.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
+import static water.TestUtil.*;
 
-public class TargetEncoderBuilderTest extends TestUtil {
-
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class TargetEncoderBuilderTest {
 
   @Test
   public void getTargetEncodingMapByTrainingTEBuilder() {
 
     TargetEncoderModel targetEncoderModel = null;
-    Map<String, Frame> encodingMapFromTargetEncoder = null;
-    Map<String, Frame> targetEncodingMapFromBuilder = null;
+    Map<String, Frame> teEncodingMap = null;
     Scope.enter();
     try {
       Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
+      
       String responseColumnName = "survived";
-
       asFactor(fr, responseColumnName);
-
-      BlendingParams params = new BlendingParams(3, 1);
-      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(fr._key, "home.dest"), 
-      new Frame.VecSpecifier(fr._key, "embarked")};
+      String[] teColumns = new String[]{ "home.dest", "embarked" };
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._blending = false;
       targetEncoderParameters._response_column = responseColumnName;
-      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", targetEncoderParameters._response_column);
+      targetEncoderParameters._ignored_columns = ignoredColumns(fr, ArrayUtils.append(teColumns, targetEncoderParameters._response_column));
       targetEncoderParameters.setTrain(fr._key);
 
       TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
       targetEncoderModel = builder.trainModel().get();
        
       // Let's create encoding map by TargetEncoder directly
-      TargetEncoder tec = new TargetEncoder(Frame.VecSpecifier.vecNames(teColumns));
+      TargetEncoder tec = new TargetEncoder(teColumns);
 
       Frame fr2 = parse_test_file("./smalldata/gbm_test/titanic.csv");
       asFactor(fr2, responseColumnName);
       Scope.track(fr2);
 
-      encodingMapFromTargetEncoder = tec.prepareEncodingMap(fr2, responseColumnName, null);
-      targetEncodingMapFromBuilder = targetEncoderModel._output._target_encoding_map;
-      areEncodingMapsIdentical(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
+      teEncodingMap = tec.prepareEncodingMap(fr2, responseColumnName, null);
+      areEncodingMapsIdentical(teEncodingMap, targetEncoderModel._output._target_encoding_map);
 
     } finally {
-      removeEncodingMaps(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
+      encodingMapCleanUp(teEncodingMap);
       targetEncoderModel.remove();
       Scope.exit();
     }
@@ -67,8 +65,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
   public void teColumnNameToMissingValuesPresenceMapIsComputedCorrectly() {
 
     TargetEncoderModel targetEncoderModel = null;
-    Map<String, Frame> encodingMapFromTargetEncoder = null;
-    Map<String, Frame> targetEncodingMapFromBuilder = null;
+    Map<String, Frame> teEncodingMap = null;
     Scope.enter();
     try {
       String responseColumnName = "ColB";
@@ -80,9 +77,6 @@ public class TargetEncoderBuilderTest extends TestUtil {
               .withDataForCol(1, ar("s", null))
               .withDataForCol(2, ar("yes", "no"))
               .build();
-
-      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(fr._key, "home.dest"),
-              new Frame.VecSpecifier(fr._key, "embarked")};
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._blending = false;
@@ -98,7 +92,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
       assertTrue(teColumnNameToMissingValuesPresence.get("home.dest") == 0);
       assertTrue(teColumnNameToMissingValuesPresence.get("embarked") == 1);
     } finally {
-      removeEncodingMaps(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
+      encodingMapCleanUp(teEncodingMap);
       if (targetEncoderModel != null) targetEncoderModel.remove();
       Scope.exit();
     }
@@ -107,55 +101,44 @@ public class TargetEncoderBuilderTest extends TestUtil {
   @Test
   public void getTargetEncodingMapByTrainingTEBuilder_KFold_scenario(){
 
-    Map<String, Frame> encodingMapFromTargetEncoder = null;
-    Map<String, Frame> targetEncodingMapFromBuilder = null;
-
-    TargetEncoderModel targetEncoderModel = null;
-    Scope.enter();
+    Map<String, Frame> teEncodingMap = null;
     try {
+      Scope.enter();
       Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      String foldColumnName = "fold_column";
-
-      addKFoldColumn(fr, foldColumnName, 5, 1234L);
-      
       Scope.track(fr);
+      
+      String foldColumnName = "fold_column";
+      addKFoldColumn(fr, foldColumnName, 5, 1234L);
       String responseColumnName = "survived";
-
       asFactor(fr, responseColumnName);
-
-      BlendingParams params = new BlendingParams(3, 1);
-      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(fr._key, "home.dest"),
-              new Frame.VecSpecifier(fr._key, "embarked")};
+      String[] teColumns = new String[]{ "home.dest", "embarked" };
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._blending = false;
       targetEncoderParameters._response_column = responseColumnName;
       targetEncoderParameters._fold_column = foldColumnName;
-      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", targetEncoderParameters._response_column,
-              targetEncoderParameters._fold_column);
+      targetEncoderParameters._ignored_columns = ignoredColumns(fr, 
+              ArrayUtils.append(teColumns, targetEncoderParameters._response_column, targetEncoderParameters._fold_column));
       targetEncoderParameters.setTrain(fr._key);
 
       TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
-      targetEncoderModel = builder.trainModel().get();
+      TargetEncoderModel targetEncoderModel = builder.trainModel().get();
+      Scope.track_generic(targetEncoderModel);
 
       //Stage 2: 
       // Let's create encoding map by TargetEncoder directly
-      TargetEncoder tec = new TargetEncoder(Frame.VecSpecifier.vecNames(teColumns));
+      TargetEncoder tec = new TargetEncoder(teColumns);
 
       Frame fr2 = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Scope.track(fr2);
       addKFoldColumn(fr2, foldColumnName, 5, 1234L);
       asFactor(fr2, responseColumnName);
-      Scope.track(fr2);
 
-      encodingMapFromTargetEncoder = tec.prepareEncodingMap(fr2, responseColumnName, foldColumnName);
-
-      targetEncodingMapFromBuilder = targetEncoderModel._output._target_encoding_map;
-
-      areEncodingMapsIdentical(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
+      teEncodingMap = tec.prepareEncodingMap(fr2, responseColumnName, foldColumnName);
+      areEncodingMapsIdentical(teEncodingMap, targetEncoderModel._output._target_encoding_map);
 
     } finally {
-      removeEncodingMaps(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
-      targetEncoderModel.remove();
+      encodingMapCleanUp(teEncodingMap);
       Scope.exit();
     }
   }
@@ -163,53 +146,47 @@ public class TargetEncoderBuilderTest extends TestUtil {
   @Test
   public void transform_KFold_scenario(){
 
-    Map<String, Frame> encodingMapFromTargetEncoder = null;
-    Map<String, Frame> targetEncodingMapFromBuilder = null;
-    TargetEncoderModel targetEncoderModel = null;
-    Scope.enter();
+    Map<String, Frame> teEncodingMap = null;
     try {
+      Scope.enter();
       Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      String foldColumnName = "fold_column";
-
-      addKFoldColumn(fr, foldColumnName, 5, 1234L);
-
       Scope.track(fr);
-      String responseColumnName = "survived";
 
+      String foldColumnName = "fold_column";
+      addKFoldColumn(fr, foldColumnName, 5, 1234L);
+      String responseColumnName = "survived";
       asFactor(fr, responseColumnName);
+      String[] teColumns = new String[]{ "home.dest", "embarked" };
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._blending = false;
       targetEncoderParameters._response_column = responseColumnName;
       targetEncoderParameters._fold_column = foldColumnName;
       targetEncoderParameters._seed = 1234;
-      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", targetEncoderParameters._response_column,
-              targetEncoderParameters._fold_column);
+      targetEncoderParameters._ignored_columns = ignoredColumns(fr,
+              ArrayUtils.append(teColumns, targetEncoderParameters._response_column, targetEncoderParameters._fold_column));
       targetEncoderParameters._train = fr._key;
 
       TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
-      targetEncoderModel = builder.trainModel().get();
+      TargetEncoderModel targetEncoderModel = builder.trainModel().get();
       Scope.track_generic(targetEncoderModel);
 
-      TargetEncoder.DataLeakageHandlingStrategy strategy = TargetEncoder.DataLeakageHandlingStrategy.KFold;
-      Frame transformedTrainWithModelFromBuilder = targetEncoderModel.transform(fr, TargetEncoder.DataLeakageHandlingStrategy.KFold.getVal(),
+      Frame transformedTrainWithModelFromBuilder = targetEncoderModel.transform(fr, DataLeakageHandlingStrategy.KFold,
               false, null, targetEncoderParameters._seed);
       Scope.track(transformedTrainWithModelFromBuilder);
-      targetEncodingMapFromBuilder = targetEncoderModel._output._target_encoding_map;
       
       //Stage 2: 
       // Let's create encoding map by TargetEncoder directly and transform with it
       TargetEncoder tec = new TargetEncoder(new String[]{ "embarked", "home.dest"});
 
-      encodingMapFromTargetEncoder = tec.prepareEncodingMap(fr, responseColumnName, foldColumnName, false);
-      Frame transformedTrainWithTargetEncoder = tec.applyTargetEncoding(fr, responseColumnName, encodingMapFromTargetEncoder,
-              strategy, foldColumnName, targetEncoderParameters._blending, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, targetEncoderParameters._seed);
-
+      teEncodingMap = tec.prepareEncodingMap(fr, responseColumnName, foldColumnName, false);
+      Frame transformedTrainWithTargetEncoder = tec.applyTargetEncoding(fr, responseColumnName, teEncodingMap,
+              DataLeakageHandlingStrategy.KFold, foldColumnName, targetEncoderParameters._blending, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, targetEncoderParameters._seed);
       Scope.track(transformedTrainWithTargetEncoder);
 
       assertBitIdentical(transformedTrainWithModelFromBuilder, transformedTrainWithTargetEncoder);
     } finally {
-      removeEncodingMaps(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
+      encodingMapCleanUp(teEncodingMap);
       Scope.exit();
     }
   }
@@ -228,25 +205,26 @@ public class TargetEncoderBuilderTest extends TestUtil {
       final TargetEncoder te1 = new TargetEncoder(new String[]{"home.dest", "embarked"});
       final Map<String, Frame> encodingMap1 = te1.prepareEncodingMap(frame, "survived", "fold_column", false);
 
-      final TargetEncoder te2 = new TargetEncoder(new String[]{"embarked","home.dest"});
+      final TargetEncoder te2 = new TargetEncoder(new String[]{"embarked", "home.dest"});
       final Map<String, Frame> encodingMap2 = te2.prepareEncodingMap(frame, "survived", "fold_column", false);
 
       // check the encodings are actually the same
       areEncodingMapsIdentical(encodingMap1, encodingMap2);
 
       final Frame te1Result = te1.applyTargetEncoding(frame, "survived", encodingMap1,
-              TargetEncoder.DataLeakageHandlingStrategy.KFold, "fold_column", false, 0, false,
+              DataLeakageHandlingStrategy.KFold, "fold_column", false, 0, false,
               TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
       Scope.track(te1Result);
       Frame te1ResultSorted = Scope.track(Merge.sort(te1Result, te1Result.find(RowIndexTask.ROW_INDEX_COL)));
 
       final Frame te2Result = te2.applyTargetEncoding(frame, "survived", encodingMap2,
-              TargetEncoder.DataLeakageHandlingStrategy.KFold, "fold_column", false, 0, false,
+              DataLeakageHandlingStrategy.KFold, "fold_column", false, 0, false,
               TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
       Scope.track(te2Result);
       Frame te2ResultSorted = Scope.track(Merge.sort(te2Result, te2Result.find(RowIndexTask.ROW_INDEX_COL)));
 
-      removeEncodingMaps(encodingMap1, encodingMap2);
+      encodingMapCleanUp(encodingMap1);
+      encodingMapCleanUp(encodingMap2);
 
       Frame te2ResultSortedReordered = new Frame(te1ResultSorted.names(), te2ResultSorted.vecs(te1ResultSorted.names()));
       assertBitIdentical(te1ResultSorted, te2ResultSortedReordered);
@@ -271,13 +249,6 @@ public class TargetEncoderBuilderTest extends TestUtil {
               .outputFrame().anyVec();
       f.insertVec(0, ROW_INDEX_COL, indexVec);
     }
-  }
-
-  private void removeEncodingMaps(Map<String, Frame> encodingMapFromTargetEncoder, Map<String, Frame> targetEncodingMapFromBuilder) {
-    if (encodingMapFromTargetEncoder != null)
-      TargetEncoderFrameHelper.encodingMapCleanUp(encodingMapFromTargetEncoder);
-    if (targetEncodingMapFromBuilder != null)
-      TargetEncoderFrameHelper.encodingMapCleanUp(targetEncodingMapFromBuilder);
   }
 
   private void areEncodingMapsIdentical(Map<String, Frame> encodingMapFromTargetEncoder, Map<String, Frame> targetEncodingMapFromBuilder) {

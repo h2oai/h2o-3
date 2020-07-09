@@ -110,7 +110,7 @@ public class TargetEncodingTargetColumnTest extends TestUtil {
       String[] teColumns = {"ColA"};
       TargetEncoder tec = new TargetEncoder(teColumns);
 
-      Frame res = tec.groupThenAggregateForNumeratorAndDenominator(parsedFrame, teColumns[0], null, 1);
+      Frame res = tec.buildEncodingsFrame(parsedFrame, teColumns[0], null, 1);
 
       Vec expectedSumColumn = vec( 1, 0);
       Vec expectedCountColumn = vec(2, 1);

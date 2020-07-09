@@ -4,6 +4,10 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.util.IcedHashMap;
 
+/**
+ * This task extracts the estimates from a TE frame, and stores them into a Map keyed by the categorical value.
+ * A TE frame is just a frame with 3 or 4 columns: [categorical, fold (optional), numerator, denominator], each value from the category column being unique .
+ */
 public class FrameToTETableTask extends MRTask<FrameToTETableTask> {
   
   // IcedHashMap does not support integer keys so we will store indices as strings.
@@ -20,11 +24,10 @@ public class FrameToTETableTask extends MRTask<FrameToTETableTask> {
     // We need folds only for the case when we applying TE to the frame which we are going to train our model on. 
     // But this is done once and then we don't need them anymore.
     for (int i = 0; i < numRowsInChunk; i++) {
-      int[] numeratorAndDenominator = new int[2];
-      numeratorAndDenominator[0] = (int) cs[1].at8(i);
-      numeratorAndDenominator[1] = (int) cs[2].at8(i);
+      int num = (int) cs[1].at8(i);
+      int den = (int) cs[2].at8(i);
       int factor = (int) categoricalChunk.at8(i);
-      _table.put(Integer.toString(factor), new TEComponents(numeratorAndDenominator[0], numeratorAndDenominator[1]));
+      _table.put(Integer.toString(factor), new TEComponents(num, den));
     }
   }
 
