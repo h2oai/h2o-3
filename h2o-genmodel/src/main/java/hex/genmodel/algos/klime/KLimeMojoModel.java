@@ -12,10 +12,9 @@ public class KLimeMojoModel extends MojoModel {
   MojoModel _globalRegressionModel;
   MojoModel[] _clusterRegressionModels;
   int[] _rowSubsetMap;
-
-  private static EnumSet<ModelCategory> CATEGORIES = EnumSet.of(ModelCategory.Regression, ModelCategory.KLime);
+  
   @Override public EnumSet<ModelCategory> getModelCategories() {
-    return CATEGORIES;
+    return EnumSet.of(ModelCategory.Regression, ModelCategory.KLime);
   }
   
   KLimeMojoModel(String[] columns, String[][] domains, String responseColumn) {
