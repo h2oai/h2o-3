@@ -117,6 +117,8 @@ Defining an Isolation Forest Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
+- **contamination**: The contamination ratio is the proportion of anomalies in the input dataset. If undefined (``-1``), the predict function will not mark observations as anomalies and only anomaly score will be returned. Defaults to ``-1``.
+
 Examples
 ~~~~~~~~
 
