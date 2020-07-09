@@ -13,7 +13,9 @@ dependencies {
         // Pull all dependencies to allow run directly from IDE or command line
         transitive = true
     }
-    compile("org.apache.hadoop:hadoop-aws:$defaultHadoopVersion")
+    compile("org.apache.hadoop:hadoop-aws:$defaultHadoopVersion"){
+        exclude group: "com.fasterxml.jackson.core"
+    }
 
     testCompile project(":h2o-test-support")
     testRuntimeOnly project(":${defaultWebserverModule}")
