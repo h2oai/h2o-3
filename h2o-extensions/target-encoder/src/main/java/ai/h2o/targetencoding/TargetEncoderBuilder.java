@@ -56,7 +56,12 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
 
         Scope.untrack(train().keys());
 
-        IcedHashMap<String, Frame> _targetEncodingMap = tec.prepareEncodingMap(train(), _parms._response_column, _parms._fold_column);
+        IcedHashMap<String, Frame> _targetEncodingMap = tec.prepareEncodingMap(
+                train(),
+                _parms._response_column,
+//                _parms._data_leakage_handling, 
+                _parms._fold_column
+        );
 
         // Mean could be computed from any encoding map as response column is shared
         double priorMean = tec.calculatePriorMean(_targetEncodingMap.entrySet().iterator().next().getValue());

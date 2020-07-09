@@ -81,8 +81,15 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     TargetEncoder tec = new TargetEncoder(teColumns);
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumnName);
 
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap,
-            TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+    Frame resultWithEncoding = tec.applyTargetEncoding(
+            fr,
+            targetColumnName,
+            targetEncodingMap,
+            TargetEncoder.DataLeakageHandlingStrategy.KFold,
+            foldColumnName,
+            null,
+            0,
+            1234);
 
     Vec expected = vec(1, 1, 1, 1, 0);
     assertVecEquals(expected, resultWithEncoding.vec(4), 1e-5);
@@ -130,8 +137,15 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumnName);
 
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap,
-            TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+    Frame resultWithEncoding = tec.applyTargetEncoding(
+            fr,
+            targetColumnName,
+            targetEncodingMap,
+            TargetEncoder.DataLeakageHandlingStrategy.KFold,
+            foldColumnName,
+            null,
+            0,
+            1234);
 
     Vec expected = vec(1, 1, 1, 1, 0);
     assertVecEquals(expected, resultWithEncoding.vec(5), 1e-5);
@@ -182,8 +196,14 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumnName);
 
     //If we do not pass noise_level as parameter then it will be calculated according to the type of target column. For categorical target column it defaults to 1e-2
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr2, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold,
-            foldColumnName, false, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+    Frame resultWithEncoding = tec.applyTargetEncoding(
+            fr2,
+            targetColumnName,
+            targetEncodingMap,
+            TargetEncoder.DataLeakageHandlingStrategy.KFold,
+            foldColumnName,
+            null,
+            1234);
 
     printOutFrameAsTable(resultWithEncoding, false, resultWithEncoding.numRows());
     // We expect that for `c` level we will get mean of encoded column i.e. 0.8 +- noise . 0.8 came from four `6` values that are treated as 1 and one `2` value.
@@ -216,8 +236,15 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumnName);
 
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold,
-            foldColumnName, false, 0.02, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+    Frame resultWithEncoding = tec.applyTargetEncoding(
+            fr,
+            targetColumnName,
+            targetEncodingMap,
+            TargetEncoder.DataLeakageHandlingStrategy.KFold,
+            foldColumnName,
+            null,
+            0.02,
+            1234);
 
     TwoDimTable resultTable = resultWithEncoding.toTwoDimTable();
     System.out.println("Result table" + resultTable.toString());
@@ -250,8 +277,15 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumnName);
 
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold,
-            foldColumnName, true, 0.0, true, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+    Frame resultWithEncoding = tec.applyTargetEncoding(
+            fr,
+            targetColumnName,
+            targetEncodingMap,
+            TargetEncoder.DataLeakageHandlingStrategy.KFold,
+            foldColumnName,
+            TargetEncoder.DEFAULT_BLENDING_PARAMS,
+            0.0,
+            1234);
 
     Vec encodedVec = resultWithEncoding.vec(4);
 
@@ -287,8 +321,15 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumn);
 
     //If we do not pass noise_level as parameter then it will be calculated according to the type of target column. For categorical target column it defaults to 1e-2
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold,
-            foldColumn, false, 0.0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+    Frame resultWithEncoding = tec.applyTargetEncoding(
+            fr,
+            targetColumnName,
+            targetEncodingMap,
+            TargetEncoder.DataLeakageHandlingStrategy.KFold,
+            foldColumn,
+            null,
+            0.0,
+            1234);
 
     printOutFrameAsTable(resultWithEncoding, false, 100);
     double expectedDifferenceDueToNoise = 1e-5;
@@ -330,8 +371,15 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(training, targetColumnName, foldColumn);
 
     //In reality we do not use KFold for validation set since we are not usin it for creation of the encoding map
-    Frame resultWithEncoding = tec.applyTargetEncoding(valid, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumn, false, 0, false,
-            TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+    Frame resultWithEncoding = tec.applyTargetEncoding(
+            valid,
+            targetColumnName,
+            targetEncodingMap,
+            TargetEncoder.DataLeakageHandlingStrategy.KFold,
+            foldColumn,
+            null,
+            0,
+            1234);
 
     printOutFrameAsTable(resultWithEncoding, false, 100);
 
@@ -368,8 +416,15 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumn);
 
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold,
-            foldColumn, false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+    Frame resultWithEncoding = tec.applyTargetEncoding(
+            fr,
+            targetColumnName,
+            targetEncodingMap,
+            TargetEncoder.DataLeakageHandlingStrategy.KFold,
+            foldColumn,
+            null,
+            0,
+            1234);
     Frame sortedBy2 = resultWithEncoding.sort(new int[]{2});
     Vec encodingForColumnA_Multiple = sortedBy2.vec(4);
     Frame sortedBy0 = resultWithEncoding.sort(new int[]{0});
@@ -382,8 +437,15 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     String[] indexForColumnA = {"ColA"};
     TargetEncoder tecA = new TargetEncoder(indexForColumnA);
     Map<String, Frame> targetEncodingMapForColumnA = tecA.prepareEncodingMap(frA, targetColumnName, foldColumn);
-    Frame resultWithEncodingForColumnA = tecA.applyTargetEncoding(frA, targetColumnName, targetEncodingMapForColumnA, TargetEncoder.DataLeakageHandlingStrategy.KFold,
-            foldColumn, false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+    Frame resultWithEncodingForColumnA = tecA.applyTargetEncoding(
+            frA,
+            targetColumnName,
+            targetEncodingMapForColumnA,
+            TargetEncoder.DataLeakageHandlingStrategy.KFold,
+            foldColumn,
+            null,
+            0,
+            1234);
     Vec encodingForColumnA_Single = resultWithEncodingForColumnA.vec(4);
 
     assertVecEquals(encodingForColumnA_Single, encodingForColumnA_Multiple, 1e-5);
@@ -394,8 +456,15 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     String[] indexForColumnB = {"ColB"};
     TargetEncoder tecB = new TargetEncoder(indexForColumnB);
     Map<String, Frame> targetEncodingMapForColumnB = tecB.prepareEncodingMap(frB, targetColumnName, foldColumn);
-    Frame resultWithEncodingForColumnB = tecB.applyTargetEncoding(frB, targetColumnName, targetEncodingMapForColumnB, TargetEncoder.DataLeakageHandlingStrategy.KFold,
-            foldColumn, false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+    Frame resultWithEncodingForColumnB = tecB.applyTargetEncoding(
+            frB,
+            targetColumnName,
+            targetEncodingMapForColumnB,
+            TargetEncoder.DataLeakageHandlingStrategy.KFold,
+            foldColumn,
+            null,
+            0,
+            1234);
     Frame sortedByColA = resultWithEncodingForColumnB.sort(new int[]{0});
     Vec encodingForColumnB_Single = sortedByColA.vec("ColB_te");
     assertVecEquals(encodingForColumnB_Single, encodingForColumnB_Multiple, 1e-5);

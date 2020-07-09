@@ -42,11 +42,10 @@ public class AstTargetEncoderFit extends AstBuiltin<AstTargetEncoderFit> {
     String[] teColumnsToEncode = getTEColumns(env, stk, asts);
     String targetColumnName = getTargetColumnName(env, stk, asts);
     String foldColumnName = getFoldColumnName(env, stk, asts);
-    boolean withImputationForOriginalColumns = true; // Default fo now
 
     TargetEncoder tec = new TargetEncoder(teColumnsToEncode);
 
-    Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, targetColumnName, foldColumnName, withImputationForOriginalColumns);
+    Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, targetColumnName, foldColumnName);
 
     return new ValMapFrame(encodingMap);
   }

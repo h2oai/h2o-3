@@ -26,23 +26,23 @@ public class TargetEncodingTest extends TestUtil {
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void targetEncoderPrepareEncodingFrameValidationDataIsNotNullTest() {
 
       String[] teColumns = {"ColA"};
       TargetEncoder tec = new TargetEncoder(teColumns);
 
-      tec.prepareEncodingMap(null, "ColB", null, true);
+      tec.prepareEncodingMap(null, "ColB", null);
     }
 
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void targetEncoderPrepareEncodingFrameValidationTEColumnsIsNotEmptyTest() {
 
       String[] teColumns = {};
       TargetEncoder tec = new TargetEncoder(teColumns);
 
-      tec.prepareEncodingMap(null, "2", null, true);
+      tec.prepareEncodingMap(null, "2", null);
     }
 
     @Test
@@ -60,7 +60,7 @@ public class TargetEncodingTest extends TestUtil {
         TargetEncoder tec = new TargetEncoder(teColumns);
 
         try {
-          tec.prepareEncodingMap(fr, "ColB", null, true);
+          tec.prepareEncodingMap(fr, "ColB", null);
           fail();
         } catch (AssertionError ex) {
           assertEquals("Column name `" + teColumnName + "` was not found in the provided data frame", ex.getMessage());
@@ -182,7 +182,7 @@ public class TargetEncodingTest extends TestUtil {
         try {
           tec.prepareEncodingMap(fr, targetColumnName, null);
           fail();
-        } catch (IllegalStateException ex) {
+        } catch (IllegalArgumentException ex) {
           assertEquals("Argument 'columnsToEncode' should contain only names of categorical columns", ex.getMessage());
         }
 
@@ -193,7 +193,7 @@ public class TargetEncodingTest extends TestUtil {
 
         try {
           encodingMap = tec.prepareEncodingMap(fr2, targetColumnName, null);
-        } catch (IllegalStateException ex) {
+        } catch (IllegalArgumentException ex) {
           fail(String.format("All columns were categorical but something else went wrong: %s", ex.getMessage()));
         }
 
@@ -395,7 +395,7 @@ public class TargetEncodingTest extends TestUtil {
     }
 
     @Test
-    public void groupByTEColumnAndAggregateTest() {
+    public void groupEncodingsByCategoryTest() {
       try {
         Scope.enter();
         final Frame fr = new TestFrameBuilder()
@@ -405,16 +405,13 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(1, ard(1, 2, 3))
                 .withDataForCol(2, ard(3, 4, 5))
                 .build();
-        String[] teColumns = {""};
-        TargetEncoder tec = new TargetEncoder(teColumns);
         Frame result = TargetEncoder.groupEncodingsByCategory(fr, 0);
         Scope.track(result);
-//      printOutFrameAsTable(result, false, result.numRows());
 
         Vec expectedNum = vec(3, 3);
-        assertVecEquals(expectedNum, result.vec("sum_numerator"), 1e-5);
+        assertVecEquals(expectedNum, result.vec("numerator"), 1e-5);
         Vec expectedDen = vec(7, 5);
-        assertVecEquals(expectedDen, result.vec("sum_denominator"), 1e-5);
+        assertVecEquals(expectedDen, result.vec("denominator"), 1e-5);
 
         result.delete();
         expectedNum.remove();
@@ -822,7 +819,7 @@ public class TargetEncodingTest extends TestUtil {
           tec.ensureTargetColumnIsBinaryCategorical(fr, "ColA");
           fail();
         } catch (Exception ex) {
-          assertEquals("`target` must be a binary vector. We do not support multi-class target case for now", ex.getMessage());
+          assertTrue(ex.getMessage().startsWith("`target` must be a binary vector"));
         }
 
         // Check that string column will be rejected.
@@ -830,7 +827,7 @@ public class TargetEncodingTest extends TestUtil {
           tec.ensureTargetColumnIsBinaryCategorical(fr, "ColC");
           fail();
         } catch (Exception ex) {
-          assertEquals("`target` must be a binary categorical vector. We do not support multi-class and continuos target case for now", ex.getMessage());
+          assertTrue(ex.getMessage().startsWith("`target` must be a categorical vector"));
         }
 
         // Check that numerical column is not supported for now
@@ -838,7 +835,7 @@ public class TargetEncodingTest extends TestUtil {
           tec.ensureTargetColumnIsBinaryCategorical(fr, "ColB");
           fail();
         } catch (Exception ex) {
-          assertEquals("`target` must be a binary categorical vector. We do not support multi-class and continuos target case for now", ex.getMessage());
+          assertTrue(ex.getMessage().startsWith("`target` must be a categorical vector"));
         }
 
         // Check that binary categorical is ok (transformation is checked in another test)
@@ -988,8 +985,15 @@ public class TargetEncodingTest extends TestUtil {
       Map<String, Frame> encodingMap = tec.prepareEncodingMap(fr, "y", null);
       Scope.track(encodingMap.get(teColumnName));
 
-      Frame encoded = tec.applyTargetEncoding(frameWithoutResponse, "y", encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None,
-              false,true,TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+      Frame encoded = tec.applyTargetEncoding(
+              frameWithoutResponse, 
+              "y",
+              encodingMap,
+              TargetEncoder.DataLeakageHandlingStrategy.None,
+              null,
+              null,
+              1234
+      );
       Scope.track(encoded);
     } finally {
       Scope.exit();
@@ -1064,7 +1068,15 @@ public class TargetEncodingTest extends TestUtil {
       TargetEncoder tec = new TargetEncoder(teColumns);
 
       targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
-      Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false, 0.0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+      Frame resultWithEncoding = tec.applyTargetEncoding(
+              fr,
+              targetColumnName,
+              targetEncodingMap,
+              TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,
+              null,
+              null,
+              0.0,
+              1234);
       Scope.track(resultWithEncoding);
 
       assertEquals(4, resultWithEncoding.vec("ColA").cardinality());

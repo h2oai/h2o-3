@@ -49,19 +49,20 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
 
     double noise = getNoise(env, stk, asts);
     double seed = getSeed(env, stk, asts);
-    boolean withImputationForOriginalColumns = true;
 
-    TargetEncoder tec = blendingParams == null ? new TargetEncoder(teColumnsToEncode) : new TargetEncoder(teColumnsToEncode);
+    TargetEncoder tec = new TargetEncoder(teColumnsToEncode);
 
     Map<String, Frame> encodingMap = reconstructEncodingMap(encodingMapKeys, encodingMapFrames);
 
-    if(noise == -1) {
-      return new ValFrame(tec.applyTargetEncoding(frame, targetColumnName, encodingMap, dataLeakageHandlingStrategy,
-              foldColumnName, withImputationForOriginalColumns, withImputationForOriginalColumns, blendingParams, (long) seed));
-    } else {
-      return new ValFrame(tec.applyTargetEncoding(frame, targetColumnName, encodingMap, dataLeakageHandlingStrategy,
-              foldColumnName, withBlending, noise, withImputationForOriginalColumns, blendingParams, (long) seed));
-    }
+    return new ValFrame(tec.applyTargetEncoding(
+            frame,
+            targetColumnName,
+            encodingMap,
+            dataLeakageHandlingStrategy,
+            foldColumnName,
+            blendingParams,
+            noise,
+            (long) seed));
   }
 
   private BlendingParams getBlendingParams(Env env, Env.StackHelp stk, AstRoot[] asts) {

@@ -9,8 +9,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import warnings
 
+from h2o.estimators.targetencoder import H2OTargetEncoderEstimator
 from h2o.expr import ExprNode
 from h2o.frame import H2OFrame
+from h2o.utils.metaclass import Deprecated
 from h2o.utils.typechecks import (assert_is_type)
 from h2o import get_frame
 
@@ -56,6 +58,7 @@ class TargetEncoder(object):
     # Construction
     #-------------------------------------------------------------------------------------------------------------------
 
+    @Deprecated(replaced_by=H2OTargetEncoderEstimator)
     def __init__(self, x=None, y=None, fold_column='', blended_avg=True, inflection_point=10, smoothing=20, **kwargs):
 
         """

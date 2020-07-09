@@ -124,54 +124,25 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    * Transform with noise
    * @param data Data to transform
    * @param strategy The strategy specifying how to prevent data leakage {@link DataLeakageHandlingStrategy}
-   * @param noiseLevel Level of noise applied
-   * @param useBlending If false, blending is not used when the TE map is applied.If true, blending with corresponding blending parameters are used.
    * @param blendingParams Parameters for blending. If null, blending parameters from models parameters are loaded. 
    *                       If those are not set, DEFAULT_BLENDING_PARAMS from TargetEncoder class are used.
+   * @param noiseLevel Level of noise applied (use -1 for default noise level, 0 to disable noise).
    * @param seed
    * @return An instance of {@link Frame} with transformed data, registered in DKV.
    */
-  public Frame transform(Frame data, DataLeakageHandlingStrategy strategy, double noiseLevel, final boolean useBlending, BlendingParams blendingParams, long seed) {
-    if (blendingParams == null) blendingParams = _parms.getBlendingParameters();
+  public Frame transform(Frame data, DataLeakageHandlingStrategy strategy, BlendingParams blendingParams, double noiseLevel, long seed) {
     return _targetEncoder.applyTargetEncoding(
             data, 
             _parms._response_column, 
             _output._target_encoding_map, 
             strategy,
             _parms._fold_column, 
-            useBlending, 
-            noiseLevel, 
-            false,
             blendingParams, 
+            noiseLevel,
             seed
     );
   }
 
-  /**
-   * Transform with default noise of 0.01 
-   * @param data Data to transform
-   * @param strategy The strategy specifying how to prevent data leakage {@link DataLeakageHandlingStrategy}
-   * @param useBlending If false, blending is not used when the TE map is applied.If true, blending with corresponding blending parameters are used.
-   * @param blendingParams Parameters for blending. If null, blending parameters from models parameters are loaded. 
-   *                       If those are not set, DEFAULT_BLENDING_PARAMS from TargetEncoder class are used.
-   * @param seed
-   * @return An instance of {@link Frame} with transformed data, registered in DKV.
-   */
-  public Frame transform(Frame data, DataLeakageHandlingStrategy strategy, final boolean useBlending, BlendingParams blendingParams, long seed) {
-    if (blendingParams == null) blendingParams = _parms.getBlendingParameters();
-    return _targetEncoder.applyTargetEncoding(
-            data, 
-            _parms._response_column, 
-            _output._target_encoding_map, 
-            strategy,
-            _parms._fold_column, 
-            useBlending, 
-            false, 
-            blendingParams, 
-            seed
-    );
-  }
-  
   @Override
   protected double[] score0(double data[], double preds[]){
     throw new UnsupportedOperationException("TargetEncoderModel doesn't support scoring on raw data. Use transform() or score() instead.");
@@ -179,7 +150,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   @Override
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-    final BlendingParams blendingParams = _parms.getBlendingParameters();
+    final BlendingParams blendingParams = _parms._blending ? _parms.getBlendingParameters() : null;
     final DataLeakageHandlingStrategy leakageHandlingStrategy = 
             _parms._data_leakage_handling != null ? _parms._data_leakage_handling : DataLeakageHandlingStrategy.None;
     
@@ -189,11 +160,10 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
             _output._target_encoding_map, 
             leakageHandlingStrategy,
             _parms._fold_column, 
-            _parms._blending, 
+            blendingParams,
             _parms._noise_level, 
             _parms._seed, 
-            Key.<Frame>make(destination_key),
-            blendingParams 
+            Key.<Frame>make(destination_key)
     );
   }
   

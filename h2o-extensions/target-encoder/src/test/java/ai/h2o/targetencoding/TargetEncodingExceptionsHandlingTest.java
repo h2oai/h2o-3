@@ -118,9 +118,15 @@ public class TargetEncodingExceptionsHandlingTest extends TestUtil {
       doThrow(new IllegalStateException("Fake exception")).when(tecSpy).getOutOfFoldEncodings(any(Frame.class), eq(foldColumnName), anyLong());
 
     try {
-      resultWithEncoding = tecSpy.applyTargetEncoding(fr, targetColumnName, targetEncodingMap,
-              TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, false, 0, false,
-              TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+      resultWithEncoding = tecSpy.applyTargetEncoding(
+              fr,
+              targetColumnName,
+              targetEncodingMap,
+              TargetEncoder.DataLeakageHandlingStrategy.KFold,
+              foldColumnName,
+              null,
+              0,
+              1234);
       fail();
     } catch (IllegalStateException ex) {
       assertEquals("Fake exception", ex.getMessage());
@@ -155,9 +161,15 @@ public class TargetEncodingExceptionsHandlingTest extends TestUtil {
     doThrow(new IllegalStateException("Fake exception")).when(tecSpy).removeNumeratorAndDenominatorColumns(any(Frame.class));
 
     try {
-      resultWithEncoding = tecSpy.applyTargetEncoding(fr, targetColumnName, targetEncodingMap,
-              TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, false, 0, false,
-              TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+      resultWithEncoding = tecSpy.applyTargetEncoding(
+              fr,
+              targetColumnName,
+              targetEncodingMap,
+              TargetEncoder.DataLeakageHandlingStrategy.KFold,
+              foldColumnName,
+              null,
+              0,
+              1234);
       fail();
     } catch (IllegalStateException ex) {
       assertEquals("Fake exception", ex.getMessage());
@@ -192,9 +204,15 @@ public class TargetEncodingExceptionsHandlingTest extends TestUtil {
     doThrow(new IllegalStateException("Fake exception")).when(tecSpy).removeNumeratorAndDenominatorColumns(any(Frame.class));
 
     try {
-      resultWithEncoding = tecSpy.applyTargetEncoding(fr, targetColumnName, targetEncodingMap,
-              TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false,
-              0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+      resultWithEncoding = tecSpy.applyTargetEncoding(
+              fr,
+              targetColumnName,
+              targetEncodingMap,
+              TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,
+              null,
+              null,
+              0.0,
+              1234);
       fail();
     } catch (IllegalStateException ex) {
       assertEquals("Fake exception", ex.getMessage());
@@ -230,9 +248,15 @@ public class TargetEncodingExceptionsHandlingTest extends TestUtil {
 //    doThrow(new IllegalStateException("Fake exception")).when(tecSpy).foldColumnIsInEncodingMapCheck(nullable(String.class), any(Frame.class));
 
     try {
-      resultWithEncoding = tecSpy.applyTargetEncoding(fr, targetColumnName, targetEncodingMap,
-              TargetEncoder.DataLeakageHandlingStrategy.None, false,
-              0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+      resultWithEncoding = tecSpy.applyTargetEncoding(
+              fr,
+              targetColumnName,
+              targetEncodingMap,
+              TargetEncoder.DataLeakageHandlingStrategy.None,
+              null,
+              null,
+              0.0,
+              1234);
       fail();
     } catch (IllegalStateException ex) {
       assertEquals("Fake exception", ex.getMessage());

@@ -45,8 +45,15 @@ public class TargetEncodingMultiClassTargetTest extends TestUtil {
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumnName);
 
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold,
-            foldColumnName, false, 0, false,TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+    Frame resultWithEncoding = tec.applyTargetEncoding(
+            fr,
+            targetColumnName,
+            targetEncodingMap,
+            TargetEncoder.DataLeakageHandlingStrategy.KFold,
+            foldColumnName,
+            null,
+            0,
+            1234);
 
     Vec expected = dvec(5.0, 1.0, 4.0, 4.0, 2.5);
     assertVecEquals(expected, resultWithEncoding.vec("ColA_te"), 1e-5);

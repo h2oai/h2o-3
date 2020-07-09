@@ -88,9 +88,9 @@ public class Scope {
    * frames will be removed from DKV when {@link Scope#exit(Key[])} is called.
    */
   public static Frame track(Frame... frames) {
+    Scope scope = _scope.get();
+    assert scope != null;
     for (Frame fr : frames) {
-      Scope scope = _scope.get();
-      assert scope != null;
       track_impl(scope, fr._key);
       for (Vec vec : fr.vecs())
         track_impl(scope, vec._key);
@@ -104,20 +104,31 @@ public class Scope {
     if (scope._keys.size() > 0 && !scope._keys.peek().contains(key))
       scope._keys.peek().add(key);            // Track key
   }
-
-  static public void untrack(Key<Vec>... keys) {
+  
+  static public <K extends Keyed> void untrack(Key<K>... keys) {
     Scope scope = _scope.get();           // Pay the price of T.L.S. lookup
     if (scope == null) return;           // Not tracking this thread
     if (scope._keys.size() == 0) return; // Tracked in the past, but no scope now
     HashSet<Key> xkeys = scope._keys.peek();
-    for (Key<Vec> key : keys) xkeys.remove(key); // Untrack key
+    for (Key key : keys) xkeys.remove(key); // Untrack key
   }
 
-  static public void untrack(Iterable<Key<Vec>> keys) {
+  static public <K extends Keyed> void untrack(Iterable<Key<K>> keys) {
     Scope scope = _scope.get();           // Pay the price of T.L.S. lookup
     if (scope == null) return;           // Not tracking this thread
     if (scope._keys.size() == 0) return; // Tracked in the past, but no scope now
     HashSet<Key> xkeys = scope._keys.peek();
-    for (Key<Vec> key : keys) xkeys.remove(key); // Untrack key
+    for (Key key : keys) xkeys.remove(key); // Untrack key
   }
+  
+  static public void untrack(Frame... frames) {
+    Scope scope = _scope.get();
+    if (scope == null || scope._keys.empty()) return;
+    Set<Key> xkeys = scope._keys.peek();
+    for (Frame fr : frames) {
+      xkeys.remove(fr._key);
+      xkeys.removeAll(Arrays.asList(fr.keys()));
+    }
+  }
+
 }

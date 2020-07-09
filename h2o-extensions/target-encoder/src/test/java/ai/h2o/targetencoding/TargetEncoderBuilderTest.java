@@ -171,17 +171,27 @@ public class TargetEncoderBuilderTest {
       TargetEncoderModel targetEncoderModel = builder.trainModel().get();
       Scope.track_generic(targetEncoderModel);
 
-      Frame transformedTrainWithModelFromBuilder = targetEncoderModel.transform(fr, DataLeakageHandlingStrategy.KFold,
-              false, null, targetEncoderParameters._seed);
+      Frame transformedTrainWithModelFromBuilder = targetEncoderModel.transform(
+              fr,
+              DataLeakageHandlingStrategy.KFold,
+              null, 
+              -1,
+              targetEncoderParameters._seed);
       Scope.track(transformedTrainWithModelFromBuilder);
       
       //Stage 2: 
       // Let's create encoding map by TargetEncoder directly and transform with it
       TargetEncoder tec = new TargetEncoder(new String[]{ "embarked", "home.dest"});
 
-      teEncodingMap = tec.prepareEncodingMap(fr, responseColumnName, foldColumnName, false);
-      Frame transformedTrainWithTargetEncoder = tec.applyTargetEncoding(fr, responseColumnName, teEncodingMap,
-              DataLeakageHandlingStrategy.KFold, foldColumnName, targetEncoderParameters._blending, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, targetEncoderParameters._seed);
+      teEncodingMap = tec.prepareEncodingMap(fr, responseColumnName, foldColumnName);
+      Frame transformedTrainWithTargetEncoder = tec.applyTargetEncoding(
+              fr,
+              responseColumnName,
+              teEncodingMap,
+              DataLeakageHandlingStrategy.KFold,
+              foldColumnName,
+              null,
+              targetEncoderParameters._seed);
       Scope.track(transformedTrainWithTargetEncoder);
 
       assertBitIdentical(transformedTrainWithModelFromBuilder, transformedTrainWithTargetEncoder);
@@ -203,23 +213,35 @@ public class TargetEncoderBuilderTest {
       DKV.put(frame);
 
       final TargetEncoder te1 = new TargetEncoder(new String[]{"home.dest", "embarked"});
-      final Map<String, Frame> encodingMap1 = te1.prepareEncodingMap(frame, "survived", "fold_column", false);
+      final Map<String, Frame> encodingMap1 = te1.prepareEncodingMap(frame, "survived", "fold_column");
 
       final TargetEncoder te2 = new TargetEncoder(new String[]{"embarked", "home.dest"});
-      final Map<String, Frame> encodingMap2 = te2.prepareEncodingMap(frame, "survived", "fold_column", false);
+      final Map<String, Frame> encodingMap2 = te2.prepareEncodingMap(frame, "survived", "fold_column");
 
       // check the encodings are actually the same
       areEncodingMapsIdentical(encodingMap1, encodingMap2);
 
-      final Frame te1Result = te1.applyTargetEncoding(frame, "survived", encodingMap1,
-              DataLeakageHandlingStrategy.KFold, "fold_column", false, 0, false,
-              TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+      final Frame te1Result = te1.applyTargetEncoding(
+              frame,
+              "survived",
+              encodingMap1,
+              DataLeakageHandlingStrategy.KFold,
+              "fold_column",
+              null,
+              0,
+              1234);
       Scope.track(te1Result);
       Frame te1ResultSorted = Scope.track(Merge.sort(te1Result, te1Result.find(RowIndexTask.ROW_INDEX_COL)));
 
-      final Frame te2Result = te2.applyTargetEncoding(frame, "survived", encodingMap2,
-              DataLeakageHandlingStrategy.KFold, "fold_column", false, 0, false,
-              TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+      final Frame te2Result = te2.applyTargetEncoding(
+              frame,
+              "survived",
+              encodingMap2,
+              DataLeakageHandlingStrategy.KFold,
+              "fold_column",
+              null,
+              0,
+              1234);
       Scope.track(te2Result);
       Frame te2ResultSorted = Scope.track(Merge.sort(te2Result, te2Result.find(RowIndexTask.ROW_INDEX_COL)));
 

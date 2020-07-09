@@ -99,23 +99,15 @@ public class TargetEncoder extends Iced<TargetEncoder>{
     }
   }
 
-  public IcedHashMap<String, Frame> prepareEncodingMap(Frame data, String targetColumn, String foldColumn) {
-    // Making imputation to be our only strategy since otherwise current implementation of merge will return unexpected results.
-    boolean imputeNAsWithNewCategory = true;
-    return prepareEncodingMap( data, targetColumn, foldColumn, imputeNAsWithNewCategory);
-  }
-
   /**
-   * @param targetColumn name of the target column
-   * @param foldColumn name of the column that contains fold number the row is belong to
-   * @param imputeNAsWithNewCategory set to `true` to impute NAs with new category.     // TODO probably we need to always set it to true bc we do not support null values on the right side of merge operation.
+   * @param data the training data.
+   * @param targetColumn name of the target column.
+   * @param foldColumn name of the column used for folding.
    */
-  //TODO do we need to do this preparation before as a separate phase? because we are grouping twice.
-  //TODO At least it seems that way in the case of KFold. But even if we need to preprocess for other types of TE calculations... we should not affect KFOLD case anyway.
   public IcedHashMap<String, Frame> prepareEncodingMap(Frame data,
                                                        String targetColumn,
-                                                       String foldColumn,
-                                                       boolean imputeNAsWithNewCategory) {
+//                                                       DataLeakageHandlingStrategy leakageHandlingStrategy,
+                                                       String foldColumn) {
     if (data == null)
       throw new IllegalArgumentException("Argument 'data' is missing, with no default");
     if (targetColumn == null || targetColumn.equals(""))
@@ -138,6 +130,12 @@ public class TargetEncoder extends Iced<TargetEncoder>{
       for (String columnToEncode : _columnNamesToEncode) { // TODO maybe we can do it in parallel
         imputeCategoricalColumn(dataWithEncodedTarget, columnToEncode, columnToEncode + NA_POSTFIX);
         Frame encodingsFrame = buildEncodingsFrame(dataWithEncodedTarget, columnToEncode, foldColumn, targetIdx);
+        
+        // FIXME encodings grouping should be applied here if current API didn't expose the leakageHandlingStrategy in the `TargetEncoderModel#transform` method (same with blending params, seed..).
+//      Frame finalEncodingsFrame = applyLeakageStrategyToEncodings(encodingsFrame, columnToEncode, leakageHandlingStrategy, foldColumn);
+//        DKV.remove(encodingsFrame._key);
+//        encodingsFrame = finalEncodingsFrame;
+        
         columnToEncodings.put(columnToEncode, encodingsFrame);
       }
 
@@ -148,6 +146,48 @@ public class TargetEncoder extends Iced<TargetEncoder>{
     }
   }
   
+  private Frame applyLeakageStrategyToEncodings(Frame encodings, String columnToEncode, DataLeakageHandlingStrategy leakageHandlingStrategy, String foldColumn) {
+    Frame groupedEncodings = null;
+    int encodingsTEColIdx = encodings.find(columnToEncode);
+    
+    try {
+      Scope.enter();
+      switch (leakageHandlingStrategy) {
+        case KFold:
+          long[] foldValues = getUniqueColumnValues(encodings, encodings.find(foldColumn));
+          for (long foldValue : foldValues) {
+            Frame outOfFoldEncodings = getOutOfFoldEncodings(encodings, foldColumn, foldValue);
+            Scope.track(outOfFoldEncodings);
+            Frame tmpEncodings = groupEncodingsByCategory(outOfFoldEncodings, encodingsTEColIdx);
+            Scope.track(tmpEncodings);
+            addCon(tmpEncodings, foldColumn, foldValue); //groupingEncodingsByCategory always remove the foldColumn, so we can reuse the same name immediately
+
+            if (groupedEncodings == null) {
+              groupedEncodings = tmpEncodings;
+            } else {
+              Frame newHoldoutEncodings = rBind(groupedEncodings, tmpEncodings);
+              groupedEncodings.delete();
+              groupedEncodings = newHoldoutEncodings;
+            }
+            Scope.track(groupedEncodings);
+          }
+          break;
+
+        case LeaveOneOut:
+        case None:
+          groupedEncodings = groupEncodingsByCategory(encodings, encodingsTEColIdx, foldColumn != null);
+          break;
+          
+        default:
+          throw new IllegalStateException("null or unsupported leakageHandlingStrategy");
+      }
+      Scope.untrack(groupedEncodings);
+    } finally {
+      Scope.exit();
+    }
+    
+    return groupedEncodings;
+  }
 
   private void validateColumnsToEncode(Frame data, String[] columnsToEncode)  {
     for (String columnName : columnsToEncode) {
@@ -236,7 +276,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
   Frame ensureTargetColumnIsBinaryCategorical(Frame data, String targetColumnName) {
     Vec targetVec = data.vec(targetColumnName);
     if (!targetVec.isCategorical())
-      throw new IllegalStateException("`target` must be a binary categorical vector. We do not support multi-class and continuous target case for now");
+      throw new IllegalStateException("`target` must be a categorical vector. We do not support continuous target case for now");
     if (targetVec.cardinality() != 2)
       throw new IllegalStateException("`target` must be a binary vector. We do not support multi-class target case for now");
     return data;
@@ -449,6 +489,17 @@ public class TargetEncoder extends Iced<TargetEncoder>{
     }
   }
 
+  private double defaultNoiseLevel(Frame fr, int targetIndex) {
+    double defaultNoiseLevel = 0.01;
+    double noiseLevel = 0.0;
+    // When noise is not provided and there is no response column in the `data` frame -> no noise will be added to transformations
+    if (targetIndex >= 0) {
+      Vec targetVec = fr.vec(targetIndex);
+      noiseLevel = targetVec.isNumeric() ? defaultNoiseLevel * (targetVec.max() - targetVec.min()) : defaultNoiseLevel;
+    }
+    return noiseLevel;
+  }
+
   /** FIXME: this method is modifying the original fr column in-place, one of the reasons why we currently need a complete deep-copy of the training frame... */
   void addNoise(Frame fr, String columnName, double noiseLevel, long seed) {
     int columnIndex = fr.find(columnName);
@@ -536,32 +587,30 @@ public class TargetEncoder extends Iced<TargetEncoder>{
    * @param columnToEncodings map of the prepared encodings with the keys being the names of the columns.
    * @param dataLeakageHandlingStrategy see TargetEncoder.DataLeakageHandlingStrategy //TODO use common interface for stronger type safety.
    * @param foldColumn name of the column used for folding.
-   * @param useBlending whether to apply blending or not.
+   * @param blendingParams this provides parameters allowing to mitigate the effect 
+   *                       caused by small observations of some categories when computing their encoded value.
+   *                       Use null to disable blending.
    * @param noiseLevel amount of noise to add to the final encodings.
+   *                   Use 0 to disable noise.
+   *                   Use -1 to use the default noise level computed from the target.
    * @param seed we might want to specify particular values for reproducibility in tests.
    * @param resultKey key of the result frame
-   * @param blendingParams if `useBlending` is enabled, this provides parameters allowing to mitigate the effect 
-   *                       caused by small observations of some categories when computing their encoded value.
-   * @return copy of the `data` frame with encodings
+   * @return a new frame with the encoded columns.
    */
   public Frame applyTargetEncoding(Frame data,
                                    String targetColumn,
                                    Map<String, Frame> columnToEncodings,
                                    DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
                                    String foldColumn,
-                                   boolean useBlending,
+                                   BlendingParams blendingParams, 
                                    double noiseLevel,
                                    long seed,
-                                   Key<Frame> resultKey,
-                                   BlendingParams blendingParams) {
-    // get rid of the `useBlending` flag immediately to avoid having to carry it all along.
-    if (!useBlending) 
-      blendingParams = null;
-    else if (blendingParams == null)
-      blendingParams = DEFAULT_BLENDING_PARAMS;
-
-    if (noiseLevel < 0 )
-      throw new IllegalStateException("`_noiseLevel` must be non-negative");
+                                   Key<Frame> resultKey) {
+    
+    if (noiseLevel < 0 ) {
+      noiseLevel = defaultNoiseLevel(data, data.find(targetColumn));
+      Log.warn("No noise level specified, using default noise level: "+noiseLevel);
+    }
 
     Frame encodedFrame = null;
     try {
@@ -596,38 +645,21 @@ public class TargetEncoder extends Iced<TargetEncoder>{
               if (foldColumn == null)
                 throw new IllegalStateException("`foldColumn` must be provided for dataLeakageHandlingStrategy = KFold");
               checkFoldColumnInEncodings(foldColumn, encodings);
-
-              int encodingsFoldColIdx = -1;
-              int foldColumnIdx = encodedFrame.find(foldColumn);
-              long[] foldValues = getUniqueColumnValues(encodings, 1);
-
-              //XXX: Following part is actually a preparation phase for KFold case. Maybe we should move it to prepareEncodingMap method.
-              Frame holdoutEncodings = null;
-              for (long foldValue : foldValues) {
-                Frame outOfFoldEncodings = getOutOfFoldEncodings(encodings, foldColumn, foldValue);
-                Scope.track(outOfFoldEncodings);
-                Frame groupedEncodings = groupEncodingsByCategory(outOfFoldEncodings, encodingsTEColIdx);
-                Scope.track(groupedEncodings);
-                encodingsFoldColIdx = addCon(groupedEncodings, "kFoldColumn", foldValue);
-
-                if (holdoutEncodings == null) {
-                  holdoutEncodings = groupedEncodings;
-                } else {
-                  Frame newHoldoutEncodings = rBind(holdoutEncodings, groupedEncodings);
-                  holdoutEncodings.delete();
-                  holdoutEncodings = newHoldoutEncodings;
-                }
-              }
+              Frame holdoutEncodings = applyLeakageStrategyToEncodings(encodings, columnToEncode, dataLeakageHandlingStrategy, foldColumn);
               Scope.track(holdoutEncodings);
-              // End of the preparation phase
 
+              int foldColIdx = encodedFrame.find(foldColumn);
+              int encodingsFoldColIdx = holdoutEncodings.find(foldColumn);
+              long[] foldValues = getUniqueColumnValues(encodings, encodings.find(foldColumn));
               int maxFoldValue = (int) ArrayUtils.maxValue(foldValues);
+              
               joinedFrame = mergeEncodings(
                       encodedFrame, holdoutEncodings, 
-                      teColumnIdx, foldColumnIdx, 
+                      teColumnIdx, foldColIdx, 
                       encodingsTEColIdx, encodingsFoldColIdx,
                       maxFoldValue
               );
+              Scope.track(joinedFrame);
               DKV.remove(encodedFrame._key); // don't need previous version of encoded frame anymore 
               
               calculateAndAppendEncodedColumn(joinedFrame, encodedColumn, priorMean, blendingParams);
@@ -642,11 +674,8 @@ public class TargetEncoder extends Iced<TargetEncoder>{
               // there is zero probability that we haven't seen some category.
               imputeMissingValues(joinedFrame, joinedFrame.find(encodedColumn), priorMean);
               encodedFrame = joinedFrame;
-              Scope.untrack(encodedFrame.keys());
-            } catch (Exception ex ) {
-              if (joinedFrame != null) joinedFrame.delete();
-              throw ex;
-            } finally{
+              Scope.untrack(encodedFrame);
+            } finally {
               Scope.exit();
             }
             break;
@@ -655,9 +684,11 @@ public class TargetEncoder extends Iced<TargetEncoder>{
             try {
               Scope.enter();
               checkFoldColumnInEncodings(foldColumn, encodings);
-              Frame groupedEncodings = groupEncodingsByCategory(encodings, encodingsTEColIdx, foldColumn != null);
+              Frame groupedEncodings = applyLeakageStrategyToEncodings(encodings, columnToEncode, dataLeakageHandlingStrategy, foldColumn);
               Scope.track(groupedEncodings);
+              
               joinedFrame = mergeEncodings(encodedFrame, groupedEncodings, teColumnIdx, encodingsTEColIdx);
+              Scope.track(joinedFrame);
               DKV.remove(encodedFrame._key); // don't need previous version of encoded frame anymore 
               
               subtractTargetValueForLOO(joinedFrame, targetColumn);
@@ -671,9 +702,6 @@ public class TargetEncoder extends Iced<TargetEncoder>{
               imputeMissingValues(joinedFrame, joinedFrame.find(encodedColumn), priorMean);
               encodedFrame = joinedFrame;
               Scope.untrack(encodedFrame.keys());
-            } catch (Exception ex) {
-              if (joinedFrame != null) joinedFrame.delete();
-              throw ex;
             } finally {
                Scope.exit();
             }
@@ -683,9 +711,11 @@ public class TargetEncoder extends Iced<TargetEncoder>{
             try {
               Scope.enter();
               checkFoldColumnInEncodings(foldColumn, encodings);
-              Frame groupedEncodings = groupEncodingsByCategory(encodings, encodingsTEColIdx, foldColumn != null);
+              Frame groupedEncodings = applyLeakageStrategyToEncodings(encodings, columnToEncode, dataLeakageHandlingStrategy, foldColumn);
               Scope.track(groupedEncodings);
+              
               joinedFrame = mergeEncodings(encodedFrame, groupedEncodings, teColumnIdx, encodingsTEColIdx);
+              Scope.track(joinedFrame);
               DKV.remove(encodedFrame._key); // don't need previous version of encoded frame anymore 
 
               calculateAndAppendEncodedColumn(joinedFrame, encodedColumn, priorMean, blendingParams);
@@ -700,9 +730,6 @@ public class TargetEncoder extends Iced<TargetEncoder>{
               imputeMissingValues(joinedFrame, joinedFrame.find(encodedColumn), valueForImputation);
               encodedFrame = joinedFrame;
               Scope.untrack(encodedFrame.keys());
-            } catch (Exception ex) {
-              if (joinedFrame != null) joinedFrame.delete();
-              throw ex;
             } finally {
                Scope.exit();
             }
@@ -731,85 +758,48 @@ public class TargetEncoder extends Iced<TargetEncoder>{
   }
 
   //**** applyTargetEncoding overloads ****//
-  // so many of them! probably not all necessary.
-  // with/out noise level
-  // with/out result key
-  // with/out fold column
+  // without noise level
+  // without result key
   
   public Frame applyTargetEncoding(Frame data,
                                    String targetColumn,
-                                   Map<String, Frame> targetEncodingMap,
+                                   Map<String, Frame> columnsToEncodings,
                                    DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
                                    String foldColumn,
-                                   boolean withBlendedAvg,
+                                   final BlendingParams blendingParams, 
                                    double noiseLevel,
-                                   boolean imputeNAsWithNewCategory,
-                                   final BlendingParams blendingParams,
                                    long seed) {
-    return applyTargetEncoding(data, targetColumn, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn, withBlendedAvg,
-            noiseLevel, seed, null, blendingParams);
+    return applyTargetEncoding(
+            data,
+            targetColumn,
+            columnsToEncodings,
+            dataLeakageHandlingStrategy,
+            foldColumn,
+            blendingParams,
+            noiseLevel,
+            seed,
+            null
+    );
   }
 
   public Frame applyTargetEncoding(Frame data,
                                    String targetColumn,
-                                   Map<String, Frame> targetEncodingMap,
+                                   Map<String, Frame> columnsToEncodings,
                                    DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
                                    String foldColumn,
-                                   boolean withBlendedAvg,
-                                   boolean imputeNAsWithNewCategory,
                                    final BlendingParams blendingParams,
                                    long seed) {
-    return applyTargetEncoding(data, targetColumn, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn,
-            withBlendedAvg, seed, imputeNAsWithNewCategory, null, blendingParams);
+    return applyTargetEncoding(
+            data,
+            targetColumn,
+            columnsToEncodings,
+            dataLeakageHandlingStrategy,
+            foldColumn,
+            blendingParams,
+            -1,
+            seed,
+            null
+    );
   }
   
-  // Overloaded for the case when user had not specified the noise parameter
-  public Frame applyTargetEncoding(Frame data,
-                                   String targetColumn,
-                                   Map<String, Frame> targetEncodingMap,
-                                   DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
-                                   String foldColumn,
-                                   boolean withBlendedAvg,
-                                   long seed,
-                                   boolean imputeNAsWithNewCategory,
-                                   final Key<Frame> resultKey,
-                                   final BlendingParams blendingParams) {
-    double defaultNoiseLevel = 0.01;
-    int targetIndex = data.find(targetColumn);
-    double noiseLevel = 0.0;
-    // When noise is not provided and there is no response column in the `data` frame -> no noise will be added to transformations
-    if (targetIndex >= 0) {
-      Vec targetVec = data.vec(targetIndex);
-      noiseLevel = targetVec.isNumeric() ? defaultNoiseLevel * (targetVec.max() - targetVec.min()) : defaultNoiseLevel;
-    }
-    return applyTargetEncoding(data, targetColumn, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn,
-            withBlendedAvg, noiseLevel, seed, resultKey, blendingParams);
-  }
-
-  public Frame applyTargetEncoding(Frame data,
-                                   String targetColumn,
-                                   Map<String, Frame> targetEncodingMap,
-                                   DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
-                                   boolean withBlendedAvg,
-                                   boolean imputeNAsWithNewCategory,
-                                   final BlendingParams blendingParams,
-                                   long seed) {
-    return applyTargetEncoding(data, targetColumn, targetEncodingMap, dataLeakageHandlingStrategy, null,
-            withBlendedAvg, imputeNAsWithNewCategory, blendingParams, seed);
-  }
-
-  public Frame applyTargetEncoding(Frame data,
-                                   String targetColumn,
-                                   Map<String, Frame> targetEncodingMap,
-                                   DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
-                                   boolean withBlendedAvg,
-                                   double noiseLevel,
-                                   boolean imputeNAsWithNewCategory,
-                                   final BlendingParams blendingParams,
-                                   long seed) {
-    assert !DataLeakageHandlingStrategy.KFold.equals(dataLeakageHandlingStrategy) : "Use another overloaded method for KFold dataLeakageHandlingStrategy.";
-    return applyTargetEncoding(data, targetColumn, targetEncodingMap, dataLeakageHandlingStrategy, null,
-            withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, blendingParams, seed);
-  }
-
 }
