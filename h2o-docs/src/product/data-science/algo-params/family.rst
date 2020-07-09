@@ -26,6 +26,7 @@ You can specify one of the following ``family`` options based on the response co
 - ``poisson``: The data must be numeric and non-negative (Int).
 - ``gamma``: The data must be numeric and continuous and positive (Real or Int).
 - ``tweedie``: The data must be numeric and continuous (Real) and non-negative.
+- ``negativebinomial``: The data must be numeric and non-negative (Int).
 - ``AUTO``: The family can fall into three cases based on the response:
 		
 		- If the data is **Enum** with cardinality = 2, then the family is automatically determined as **binomial**.
