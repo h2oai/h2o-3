@@ -422,12 +422,12 @@ class H2OFrame(Keyed):
 
 
     def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings,
-                      skipped_columns=None, custom_non_data_line_markers = None):
+                      skipped_columns=None, custom_non_data_line_markers = None, partition_by = None):
         if H2OFrame.__LOCAL_EXPANSION_ON_SINGLE_IMPORT__ and is_type(path, str) and "://" not in path:  # fixme: delete those 2 lines, cf. PUBDEV-5717
             path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path, pattern)
         self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                    skipped_columns, custom_non_data_line_markers)
+                    skipped_columns, custom_non_data_line_markers, partition_by)
         return self
 
 
@@ -439,9 +439,9 @@ class H2OFrame(Keyed):
 
 
     def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None,
-               na_strings=None, skipped_columns=None, custom_non_data_line_markers = None):
+               na_strings=None, skipped_columns=None, custom_non_data_line_markers = None, partition_by = None):
         setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                                skipped_columns, custom_non_data_line_markers)
+                                skipped_columns, custom_non_data_line_markers, partition_by)
         return self._parse_raw(setup)
 
 
@@ -458,7 +458,8 @@ class H2OFrame(Keyed):
              "blocking": False,
              "column_types": None,
              "skipped_columns":None,
-             "custom_non_data_line_markers": setup["custom_non_data_line_markers"]
+             "custom_non_data_line_markers": setup["custom_non_data_line_markers"],
+             "partition_by": setup["partition_by"]
              }
 
         if setup["column_names"]: p["column_names"] = None

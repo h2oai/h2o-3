@@ -59,6 +59,9 @@ public class ParseV3 extends RequestSchemaV3<Iced, ParseV3> {
   @API(help="Custom characters to be treated as non-data line markers", direction=API.Direction.INPUT)
   public String custom_non_data_line_markers;
 
+  @API(help = "Name of the column the persisted dataset has been partitioned by.")
+  public String[] partition_by;
+
   // Output fields
   @API(help="Parse job", direction=API.Direction.OUTPUT)
   public JobV3 job;

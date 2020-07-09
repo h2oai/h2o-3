@@ -109,6 +109,7 @@ public class Example {
                                                                   0,
                                                                   null,
                                                                   null,
+                                                                  null,
                                                                   null).execute().body();
             System.out.println("parseSetupBody: " + parseSetupBody);
 
@@ -133,7 +134,9 @@ public class Example {
                                                    true,
                                                    true,
                                                    null,
-                                                   null, null).execute().body();
+                                                   null,
+                                                   null,
+                                                 null).execute().body();
             System.out.println("parseBody: " + parseBody);
 
             // STEP 5: Train the model (NOTE: step 4 is polling, which we don't require because we specified blocking for the parse above)
