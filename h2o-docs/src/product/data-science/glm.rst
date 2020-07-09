@@ -86,6 +86,11 @@ Defining a GLM Model
    -  If the family is **negativebinomial**, the response must be numeric and non-negative (**Int**).
    -  If the family is **gamma**, the response must be numeric and continuous and positive (**Real** or **Int**).
    -  If the family is **tweedie**, the response must be numeric and continuous (**Real**) and non-negative.
+   - If the family is **AUTO**,
+
+      - and the response is **Enum** with cardinality = 2, then the family is automatically determined as **binomial**.
+      - and the response is **Enum** with cardinality > 2, then the family is automatically determined as **multinomial**.
+      - and the response is numeric (**Real** or **Int**), then the family is automatically determined as **gaussian**.
 
 -  `rand_family <algo-params/rand_family.html>`__: The Random Component Family specified as an array. You must include one family for each random component. Currently only ``rand_family={"[gaussisan]"}`` is supported.
 
@@ -143,6 +148,15 @@ Defining a GLM Model
    -  If the family is **Quasibinomial**, then only **Logit** is supported.
    -  If the family is **Ordinal**, then only **Ologit** is supported
    -  If the family is **Negative Binomial**, then only **Log** and **Identity** are supported.
+   - If the family is **AUTO**,
+
+      - and a link is not specified, then the link is determined as **Family_Default** (defaults to the family to which AUTO is determined).
+      - and a link is specified, the link is used so long as the specified link is compatible with the family to which AUTO is determined. Otherwise, an error message is thrown stating that AUTO for underlying data requires a different link and gives a list of possible compatible links.
+      - The list of supported links for ``family = AUTO`` is:
+
+          1. If the response is **Enum** with cardinality = 2, then **Logit** is supported.
+          2. If the response is **Enum** with cardinality > 2, then only **Family_Default** is supported (this defaults to **multinomial**).
+          3. If the response is numeric (**Real** or **Int**), then **Identity**, **Log**, and **Inverse** are suported.
 
 -  **rand_link**: The link function for random component in HGLM specified as an array. Available options include ``identity`` and ``family_default``. 
 
@@ -235,6 +249,7 @@ The ``family`` option specifies a probability distribution from an exponential f
 - ``gamma``: (See `Gamma Models`_). The response must be numeric and continuous and positive (Real or Int).
 - ``tweedie``: (See `Tweedie Models`_). The response must be numeric and continuous (Real) and non-negative.
 - ``negativebinomial``: (See `Negative Binomial Models`_). The response must be numeric and non-negative (Int).
+- ``AUTO``: Determines the family automatically for the user.
 
 **Note**: If your response column is binomial, then you must convert that column to a categorical (``.asfactor()`` in Python and ``as.factor()`` in R) and set ``family = binomial``. The following configurations can lead to unexpected results. 
 
@@ -533,6 +548,14 @@ The following table describes the allowed Family/Link combinations.
 +---------------------+----------------+----------+-------+-----+---------+---------+--------+
 | Negative Binomial   | X              | X        |       | X   |         |         |        |
 +---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| AUTO                | X***           | X*       | X**   | X*  | X*      |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+
+For **AUTO**:
+
+- X*: the data is numeric (``Real`` or ``Int``) (family determined as ``gaussian``)
+- X**: the data is ``Enum`` with cardinality = 2 (family determined as ``binomial``)
+- X***: the data is ``Enum`` with cardinality > 2 (family determined as ``multinomial``)
 
 Hierarchical GLM
 ~~~~~~~~~~~~~~~~
