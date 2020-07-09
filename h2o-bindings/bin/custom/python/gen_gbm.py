@@ -904,5 +904,13 @@ examples = dict(
 >>> my_gbm.train(x=list(range(1,5)),
 ...              y="constantCol",
 ...              training_frame=train)
+""",
+    gainslift_bins="""
+>>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+>>> model = H2OGradientBoostingEstimator(ntrees=1, gainslift_bins=20)
+>>> model.train(x=["Origin", "Distance"],
+...             y="IsDepDelayed",
+...             training_frame=airlines)
+>>> model.gains_lift()
 """
 )
