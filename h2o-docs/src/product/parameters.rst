@@ -46,6 +46,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/family
    data-science/algo-params/fold_assignment
    data-science/algo-params/fold_column
+   data-science/algo-params/gainslift_bins
    data-science/algo-params/gradient_epsilon
    data-science/algo-params/hglm
    data-science/algo-params/histogram_type

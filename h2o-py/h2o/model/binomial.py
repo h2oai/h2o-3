@@ -876,6 +876,17 @@ class H2OBinomialModel(ModelBase):
         functions. Detailed metrics per each group are to be found in the gains-lift table.
 
         :return: Kolmogorov-Smirnov metric, a number between 0 and 1
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+        >>> model = H2OGradientBoostingEstimator(ntrees=1,
+        ...                                      gainslift_bins=20)
+        >>> model.train(x=["Origin", "Distance"],
+        ...             y="IsDepDelayed",
+        ...             training_frame=airlines)
+        >>> model.kolmogorov_smirnov()
         """
         return max(self.gains_lift()["kolmogorov_smirnov"])
 
