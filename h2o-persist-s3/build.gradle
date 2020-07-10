@@ -10,13 +10,13 @@ description = "H2O Persist S3"
 
 dependencies {
   compile project(":h2o-core")
-  compile ('com.amazonaws:aws-java-sdk-s3:1.11.818'){
+  compile ('com.amazonaws:aws-java-sdk-s3:1.11.820'){
     exclude group: "com.fasterxml.jackson.core"
   }
-  runtime 'com.fasterxml.jackson.core:jackson-core:2.11.1'
-  runtime 'com.fasterxml.jackson.core:jackson-annotations:2.11.1'
-  runtime 'com.fasterxml.jackson.core:jackson-databind:2.11.1'
-  runtime 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.11.1'
+  compile 'com.fasterxml.jackson.core:jackson-core:2.11.1'
+  compile 'com.fasterxml.jackson.core:jackson-annotations:2.11.1'
+  compile 'com.fasterxml.jackson.core:jackson-databind:2.11.1'
+  compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.11.1'
   compile "org.apache.httpcomponents:httpclient:${httpClientVersion}"
   compile 'javax.xml.bind:jaxb-api:2.3.0'
 
