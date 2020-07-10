@@ -83,7 +83,7 @@ class Jetty9Helper {
         final String proto = isSecured ? "https" : "http";
 
         final HttpConfiguration httpConfiguration = new HttpConfiguration();
-        httpConfiguration.setSendServerVersion(true);
+        httpConfiguration.setSendServerVersion(false);
         httpConfiguration.setRequestHeaderSize(getSysPropInt(proto + ".requestHeaderSize", 32 * 1024));
         httpConfiguration.setResponseHeaderSize(getSysPropInt(proto + ".responseHeaderSize", 32 * 1024));
         httpConfiguration.setOutputBufferSize(getSysPropInt(proto + ".responseBufferSize", httpConfiguration.getOutputBufferSize()));
