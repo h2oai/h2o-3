@@ -10,8 +10,17 @@ public class SaveToHiveTableHandler extends Handler {
     public interface HiveFrameSaver {
 
         String NAME = "HiveFrameSaver";
+        
+        enum Format { CSV, PARQUET }
 
-        void saveFrameToHive(Key<Frame> frameKey, String jdbcUrl, String tableName, String tmpPath);
+        void saveFrameToHive(
+            Key<Frame> frameKey,
+            String jdbcUrl,
+            String tableName,
+            Format format,
+            String tablePath,
+            String tmpPath
+        );
 
     }
 
@@ -23,7 +32,14 @@ public class SaveToHiveTableHandler extends Handler {
     public SaveToHiveTableV3 saveToHiveTable(int version, SaveToHiveTableV3 request) {
         HiveFrameSaver saver = getSaver();
         if (saver != null) {
-            saver.saveFrameToHive(request.frame_id.key(), request.jdbc_url, request.table_name, request.tmp_path);
+            saver.saveFrameToHive(
+                request.frame_id.key(),
+                request.jdbc_url,
+                request.table_name,
+                request.format,
+                request.table_path,
+                request.tmp_path
+            );
             return request;
         } else {
             throw new IllegalStateException("HiveTableSaver extension not enabled.");

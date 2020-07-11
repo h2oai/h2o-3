@@ -21,7 +21,13 @@ test.hive.save.frame <- function() {
     dataset_original <- h2o.importFile(locate("smalldata/prostate/prostate_cat_NA.csv"), "prostate", header=TRUE)
 
     # save to Hive
-    h2o.saveToHive(dataset_original, connection_url, "prostate_hex_r")
+    h2o.saveToHive(
+        dataset_original, connection_url, 
+        table_name = "prostate_hex_r",
+        table_path = "/user/hive/ext/prostate_hex_r",
+        format = "csv",
+        tmp_path = "/tmp"
+    )
     
     # read from Hive
     dataset_hive <- h2o.import_sql_table(connection_url, "prostate_hex_r", username, password, fetch_mode="SINGLE")

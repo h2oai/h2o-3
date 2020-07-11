@@ -32,6 +32,7 @@ dependencies {
     compile(project(':h2o-hive')) {
         transitive = false
     }
+    compile("org.apache.parquet:parquet-avro:${defaultParquetVersion}") // required by h2o-hive
 
     // For standalone mode to work with MapR, this extra library needs to be
     // included, and it's not pulled in by the dependency stuff;  this must

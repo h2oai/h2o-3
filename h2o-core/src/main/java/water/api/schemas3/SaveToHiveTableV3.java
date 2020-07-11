@@ -2,6 +2,7 @@ package water.api.schemas3;
 
 import water.Iced;
 import water.api.API;
+import water.api.SaveToHiveTableHandler;
 
 public class SaveToHiveTableV3 extends RequestSchemaV3<Iced, SaveToHiveTableV3> {
 
@@ -15,7 +16,13 @@ public class SaveToHiveTableV3 extends RequestSchemaV3<Iced, SaveToHiveTableV3> 
   @API(help = "Name of table to save data to.", required = true)
   public String table_name;
 
-  @API(help = "Path where to store temporary data.")
+  @API(help = "HDFS Path to where the table should be stored.")
+  public String table_path;
+
+  @API(help = "Storage format of the created table.", values = {"CSV", "PARQUET"})
+  public SaveToHiveTableHandler.HiveFrameSaver.Format format;
+
+  @API(help = "HDFS Path where to store temporary data.")
   public String tmp_path;
 
 }

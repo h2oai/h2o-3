@@ -22,6 +22,7 @@ dependencies {
   compile(project(':h2o-persist-hdfs')) {
     transitive = false
   }
+  compile("org.apache.parquet:parquet-avro:${defaultParquetVersion}")
   compile project(":h2o-core")
   testCompile "junit:junit:${junitVersion}"
 }
