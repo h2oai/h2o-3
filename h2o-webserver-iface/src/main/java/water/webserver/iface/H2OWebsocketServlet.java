@@ -1,6 +1,6 @@
 package water.webserver.iface;
 
-public interface WebsocketServlet {
+public interface H2OWebsocketServlet {
     
     WebsocketHandler onConnect(WebsocketConnection conn);
 

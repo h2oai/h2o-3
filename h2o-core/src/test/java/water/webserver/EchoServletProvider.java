@@ -7,7 +7,7 @@ import water.server.ServletUtils;
 import water.server.WebsocketMeta;
 import water.webserver.iface.WebsocketConnection;
 import water.webserver.iface.WebsocketHandler;
-import water.webserver.iface.WebsocketServlet;
+import water.webserver.iface.H2OWebsocketServlet;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -49,7 +49,7 @@ public class EchoServletProvider implements ServletProvider {
     }
   }
   
-  public static class EchoWebsocket implements WebsocketServlet {
+  public static class EchoWebsocket implements H2OWebsocketServlet {
 
     @Override
     public WebsocketHandler onConnect(WebsocketConnection conn) {

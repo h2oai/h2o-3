@@ -4,16 +4,16 @@ import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketServlet;
 import water.webserver.iface.WebsocketConnection;
 import water.webserver.iface.WebsocketHandler;
-import water.webserver.iface.WebsocketServlet;
+import water.webserver.iface.H2OWebsocketServlet;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 
 public class Jetty8WebsocketServlet extends WebSocketServlet {
     
-    private final WebsocketServlet impl;
+    private final H2OWebsocketServlet impl;
 
-    public Jetty8WebsocketServlet(WebsocketServlet impl) {
+    public Jetty8WebsocketServlet(H2OWebsocketServlet impl) {
         this.impl = impl;
     }
     

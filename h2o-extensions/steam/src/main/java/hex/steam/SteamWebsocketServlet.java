@@ -2,11 +2,11 @@ package hex.steam;
 
 import water.webserver.iface.WebsocketConnection;
 import water.webserver.iface.WebsocketHandler;
-import water.webserver.iface.WebsocketServlet;
+import water.webserver.iface.H2OWebsocketServlet;
 
 import java.io.IOException;
 
-public class SteamWebsocketServlet implements WebsocketServlet {
+public class SteamWebsocketServlet implements H2OWebsocketServlet {
     
     private static final Object CONNECTION_LOCK = new Object();
 
