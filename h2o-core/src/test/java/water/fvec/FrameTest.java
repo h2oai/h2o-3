@@ -23,7 +23,7 @@ import static water.TestUtil.*;
  * Tests for Frame.java
  */
 @RunWith(H2ORunner.class)
-@CloudSize(1)
+@CloudSize(2)
 public class FrameTest {
   
   @Rule
@@ -206,6 +206,14 @@ public class FrameTest {
       Scope.exit();
     }
   }
+  
+  private static class DoubleColTask extends MRTask {
+    @Override
+    public void map(Chunk c, NewChunk nc) {
+      for (int i = 0; i < c._len; i++)
+        nc.addNum(c.atd(i));
+    }
+  }
 
   @Test
   public void testFinalizePartialFrameRemovesTrailingChunks() {
@@ -230,13 +238,7 @@ public class FrameTest {
       final long[] expectedESPC = new long[]{0, 0, 1, 1, 4, 6};
       assertArrayEquals(expectedESPC, f.anyVec().espc());
 
-      Frame f2 = Scope.track(new MRTask(){
-        @Override
-        public void map(Chunk c, NewChunk nc) {
-          for (int i = 0; i < c._len; i++)
-            nc.addNum(c.atd(i));
-        }
-      }.doAll(Vec.T_NUM, f).outputFrame());
+      Frame f2 = Scope.track(new DoubleColTask().doAll(Vec.T_NUM, f).outputFrame());
 
       // the ESPC is the same
       assertArrayEquals(expectedESPC, f2.anyVec().espc());
