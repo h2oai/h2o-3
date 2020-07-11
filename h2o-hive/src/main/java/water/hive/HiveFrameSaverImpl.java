@@ -96,10 +96,14 @@ public class HiveFrameSaverImpl extends AbstractH2OExtension implements SaveToHi
 
     private void writeFrameToHdfs(Frame f, String csvPath) throws IOException {
         Persist p = H2O.getPM().getPersistForURI(URI.create(csvPath));
-        OutputStream os = p.create(csvPath, false);
-        InputStream is = f.toCSV(new Frame.CSVStreamParams().setHeaders(false));
-        IOUtils.copyStream(is, os);
-        os.close();
+        try (OutputStream os = p.create(csvPath, false)) {
+            Frame.CSVStreamParams parms = new Frame.CSVStreamParams()
+                .setHeaders(false)
+                .setEscapeQuotes(true)
+                .setEscapeChar('\\');
+            InputStream is = f.toCSV(parms);
+            IOUtils.copyStream(is, os);
+        }
     }
     
     private void loadCsvIntoTable(String url, String table, Frame frame, String csvPath) throws IOException {

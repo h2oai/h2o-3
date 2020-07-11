@@ -1544,17 +1544,6 @@ public class Frame extends Lockable<Frame> {
     return job.start(t, fr.anyVec().nChunks());
   }
 
-  /**
-   * @deprecated As of release 3.24.0.5, replaced by {@link #toCSV(CSVStreamParams)}}
-   */
-  @Deprecated
-  public InputStream toCSV(boolean headers, boolean hex_string) {
-    CSVStreamParams params = new CSVStreamParams()
-            .setHeaders(headers)
-            .setHexString(hex_string);
-    return toCSV(params);
-  }
-
   /** Convert this Frame to a CSV (in an {@link InputStream}), that optionally
    *  is compatible with R 3.1's recent change to read.csv()'s behavior.
    *
@@ -1567,12 +1556,14 @@ public class Frame extends Lockable<Frame> {
   }
 
   public static class CSVStreamParams extends Iced<CSVStreamParams> {
-    public static final char DEFAULT_SEPARATOR = ','; 
+    public static final char DEFAULT_SEPARATOR = ',';
+    public static final char DEFAULT_ESCAPE = '"';
 
     boolean _headers = true;
-    boolean _hex_string = false;
-    boolean _escape_quotes = false;
+    boolean _hexString = false;
+    boolean _escapeQuotes = false;
     char _separator = DEFAULT_SEPARATOR;
+    char _escapeCharacter = DEFAULT_ESCAPE;
 
     public CSVStreamParams setHeaders(boolean headers) {
       _headers = headers;
@@ -1580,7 +1571,7 @@ public class Frame extends Lockable<Frame> {
     }
 
     public CSVStreamParams setHexString(boolean hex_string) {
-      _hex_string = hex_string;
+      _hexString = hex_string;
       return this;
     }
 
@@ -1590,13 +1581,27 @@ public class Frame extends Lockable<Frame> {
     }
 
     public CSVStreamParams setEscapeQuotes(boolean backslash_escape) {
-      _escape_quotes = backslash_escape;
+      _escapeQuotes = backslash_escape;
+      return this;
+    }
+
+    public CSVStreamParams setEscapeChar(char escapeChar) {
+      _escapeCharacter = escapeChar;
       return this;
     }
   }
 
   public static class CSVStream extends InputStream {
+
+    private static final Pattern DOUBLE_QUOTE_PATTERN = Pattern.compile("\"");
+    private static final Set<Character> SPECIAL_CHARS = Collections.unmodifiableSet(new HashSet<>(
+        Arrays.asList('\\', '|', '(', ')')
+    ));
+
     private final CSVStreamParams _parms;
+    private final Pattern escapingPattern;
+    private final String escapeReplacement;
+
     byte[] _line;
     int _position;
     int _chkRow;
@@ -1609,22 +1614,19 @@ public class Frame extends Lockable<Frame> {
       this(firstChunks(fr), parms._headers ? fr.names() : null, fr.anyVec().nChunks(), parms);
     }
 
-    private static Chunk[] firstChunks(Frame fr) {
-      Vec anyvec = fr.anyVec();
-      if (anyvec == null || anyvec.nChunks() == 0 || anyvec.length() == 0) {
-        return null;
-      }
-      Chunk[] chks = new Chunk[fr.vecs().length];
-      for (int i = 0; i < fr.vecs().length; i++) {
-        chks[i] = fr.vec(i).chunkForRow(0);
-      }
-      return chks;
-    }
-
     public CSVStream(Chunk[] chks, String[] names, int nChunks, CSVStreamParams parms) {
       if (chks == null) nChunks = 0;
       _lastChkIdx = (chks != null) ? chks[0].cidx() + nChunks - 1 : -1;
-      _parms = parms;
+      _parms = Objects.requireNonNull(parms);
+      if (_parms._escapeCharacter != CSVStreamParams.DEFAULT_ESCAPE) {
+        String escapeCharacterEscaped =
+            (SPECIAL_CHARS.contains(_parms._escapeCharacter) ? "\\" : "") + _parms._escapeCharacter;
+        escapingPattern = Pattern.compile("(\"|" + escapeCharacterEscaped + ")");
+        escapeReplacement = escapeCharacterEscaped + "$1";
+      } else {
+        escapingPattern = DOUBLE_QUOTE_PATTERN;
+        escapeReplacement = "\"\"";
+      }
       StringBuilder sb = new StringBuilder();
       if (names != null) {
         sb.append('"').append(names[0]).append('"');
@@ -1636,6 +1638,18 @@ public class Frame extends Lockable<Frame> {
       _chkRow = -1; // first process the header line
       _curChks = chks;
       _escapedCategoricalVecDomains = escapeCategoricalVecDomains(_curChks);
+    }
+
+    private static Chunk[] firstChunks(Frame fr) {
+      Vec anyvec = fr.anyVec();
+      if (anyvec == null || anyvec.nChunks() == 0 || anyvec.length() == 0) {
+        return null;
+      }
+      Chunk[] chks = new Chunk[fr.vecs().length];
+      for (int i = 0; i < fr.vecs().length; i++) {
+        chks[i] = fr.vec(i).chunkForRow(0);
+      }
+      return chks;
     }
 
     /**
@@ -1675,7 +1689,7 @@ public class Frame extends Lockable<Frame> {
       return localEscapedCategoricalVecDomains;
     }
 
-    public int getCurrentRowSize() throws IOException {
+    public int getCurrentRowSize() {
       int av = available();
       assert av > 0;
       return _line.length;
@@ -1708,7 +1722,7 @@ public class Frame extends Lockable<Frame> {
             //   https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15751
             //   https://stat.ethz.ch/pipermail/r-devel/2014-April/068778.html
             //   http://stackoverflow.com/questions/23072988/preserve-old-pre-3-1-0-type-convert-behavior
-            String s = _parms._hex_string ? Double.toHexString(d) : Double.toString(d);
+            String s = _parms._hexString ? Double.toHexString(d) : Double.toString(d);
             sb.append(s);
           }
         }
@@ -1717,8 +1731,6 @@ public class Frame extends Lockable<Frame> {
       return StringUtils.bytesOf(sb);
     }
 
-    private static final Pattern DOUBLE_QUOTE_PATTERN = Pattern.compile("\"");
-
     /**
      * Escapes  double-quotes (ASCII 34) in a String.
      *
@@ -1726,9 +1738,8 @@ public class Frame extends Lockable<Frame> {
      * @return String with escaped double-quotes, if found.
      */
     private String escapeQuotesForCsv(final String unescapedString) {
-      if (!_parms._escape_quotes) return unescapedString;
-      final Matcher matcher = DOUBLE_QUOTE_PATTERN.matcher(unescapedString);
-      return matcher.replaceAll("\"\"");
+      if (!_parms._escapeQuotes) return unescapedString;
+      return escapingPattern.matcher(unescapedString).replaceAll(escapeReplacement);
     }
 
     @Override
@@ -1756,7 +1767,7 @@ public class Frame extends Lockable<Frame> {
         _curChkIdx = anyChunk._vec.elem2ChunkIdx(anyChunk._start + _chkRow); // skips empty chunks
         // Case 4:  Processed all requested chunks.
         if (_curChkIdx > _lastChkIdx) {
-          return 0;
+          return -1;
         }
         // fetch the next non-empty chunks
         Chunk[] newChks = new Chunk[_curChks.length];
