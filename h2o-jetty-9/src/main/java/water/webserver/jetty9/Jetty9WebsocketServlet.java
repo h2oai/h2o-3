@@ -3,8 +3,7 @@ package water.webserver.jetty9;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.servlet.*;
 import water.webserver.iface.WebsocketConnection;
 import water.webserver.iface.WebsocketHandler;
 import water.webserver.iface.WebsocketServlet;
@@ -68,9 +67,30 @@ public class Jetty9WebsocketServlet extends WebSocketServlet {
         }
 
     }
-    
+
+    /**
+     * Please note, each Servlet has it's own instance of WebSocketServletFactory.
+     *
+     * @param factory Factory object to register socket creator with.
+     */
     @Override
     public void configure(WebSocketServletFactory factory) {
-        factory.register(Jetty9WebsocketHandler.class);
+        factory.setCreator(new H2OWebSocketCreator());
+    }
+
+    /**
+     * Custom in-place socket creator, returning new instance of {@link Jetty9WebsocketHandler}m
+     * which already contains the proper {@link WebsocketServlet} implementation the request is being delegated to.
+     * <p>
+     * This is required, as default {@link WebSocketServletFactory} uses {@link org.eclipse.jetty.util.DecoratedObjectFactory}
+     * to instantiate {@link WebSocketListener} classes. This class is only able to instantiate static classes with 0-arg constructor,
+     * which inner non-static class {@link Jetty9WebsocketHandler} is NOT.
+     */
+    public class H2OWebSocketCreator implements WebSocketCreator {
+
+        @Override
+        public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp) {
+            return new Jetty9WebsocketHandler();
+        }
     }
 }
