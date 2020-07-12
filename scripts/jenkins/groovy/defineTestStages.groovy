@@ -415,7 +415,7 @@ def call(final pipelineContext) {
         version: distribution.version,
         commandFactory: 'h2o-3/scripts/jenkins/groovy/hadoopCommands.groovy',
         ldapConfigPath: ldapConfigPath,
-        ldapConfigPathStandalone: 'scripts/jenkins/config/ldap-jetty-8.txt'
+        ldapConfigPathStandalone: 'scripts/jenkins/config/ldap-jetty-9.txt'
       ], pythonVersion: '2.7',
       customDockerArgs: [ '--privileged' ],
       executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy',
