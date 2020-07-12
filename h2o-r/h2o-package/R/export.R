@@ -137,6 +137,10 @@ h2o.downloadCSV <- function(data, filename) {
 
 #' Save contents of this data frame into a Hive table
 #'
+#' For example,
+#'     h2o.save_to_hive(data_frame, "jdbc:hive2://host:10000/database", "table_name")
+#'     h2o.save_to_hive(data_frame, "jdbc:hive2://host:10000/", "database.table_name", format = "parquet")
+#'
 #' @param data A H2O Frame object to be saved.
 #' @param jdbc_url Hive JDBC connection URL.
 #' @param table_name Table name into which to store the data. The table must not exist as it will be created
