@@ -145,13 +145,6 @@ h2o.downloadCSV <- function(data, filename) {
 #' @param table_path If specified, the table will be created as an external table and this is where the data 
 #                    will be stored.
 #' @param tmp_path Path where to store temporary data.
-#' @examples
-#' \dontrun{
-#' library(h2o)
-#' h2o.init()
-#' iris_hf <- as.h2o(iris)
-#' h2o.save_to_hive(iris, "jdbc:hive2://hive-server:10000/default", "iris")
-#' }
 #' @export
 h2o.save_to_hive <- function(data, jdbc_url, table_name, format="csv", table_path=NULL, tmp_path=NULL) {
     if (!is.H2OFrame(data))
