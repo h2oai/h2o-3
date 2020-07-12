@@ -8,7 +8,7 @@ import h2o
 
 def hive_save_frame():
     connection_url = "jdbc:hive2://localhost:10000/default"
-    connection_url_nodb = "jdbc:hive2://localhost:10000"
+    connection_url_nodb = "jdbc:hive2://localhost:10000/"
     krb_enabled = os.getenv('KRB_ENABLED', 'false').lower() == 'true'
     use_token = os.getenv('KRB_USE_TOKEN', 'false').lower() == 'true'
     if krb_enabled:
