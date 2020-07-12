@@ -150,10 +150,10 @@ h2o.downloadCSV <- function(data, filename) {
 #' library(h2o)
 #' h2o.init()
 #' iris_hf <- as.h2o(iris)
-#' h2o.saveToHive(iris, "jdbc:hive2://hive-server:10000/default", "iris")
+#' h2o.save_to_hive(iris, "jdbc:hive2://hive-server:10000/default", "iris")
 #' }
 #' @export
-h2o.saveToHive <- function(data, jdbc_url, table_name, format="csv", table_path=NULL, tmp_path=NULL) {
+h2o.save_to_hive <- function(data, jdbc_url, table_name, format="csv", table_path=NULL, tmp_path=NULL) {
     if (!is.H2OFrame(data))
         stop("`data` must be an H2OFrame object")
     if(!is.character(jdbc_url) || length(jdbc_url) != 1L || is.na(jdbc_url) || !nzchar(jdbc_url))
