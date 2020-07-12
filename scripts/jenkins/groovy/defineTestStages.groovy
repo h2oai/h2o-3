@@ -394,16 +394,13 @@ def call(final pipelineContext) {
   for (distribution in supportedHadoopDists) {
     def target
     def ldapConfigPath
-    def ldapConfigPathStandalone
     if ((distribution.name == 'cdh' && distribution.version.startsWith('6.')) ||
             (distribution.name == 'hdp' && distribution.version.startsWith('3.'))){
       target = 'test-hadoop-3-smoke'
       ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-9.txt'
-      ldapConfigPathStandalone = 'scripts/jenkins/config/ldap-jetty-9.txt'
     } else {
       target = 'test-hadoop-2-smoke'
       ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-8.txt'
-      ldapConfigPathStandalone = 'scripts/jenkins/config/ldap-jetty-8.txt'
     }
 
     def stageTemplate = [
@@ -418,7 +415,7 @@ def call(final pipelineContext) {
         version: distribution.version,
         commandFactory: 'h2o-3/scripts/jenkins/groovy/hadoopCommands.groovy',
         ldapConfigPath: ldapConfigPath,
-        ldapConfigPathStandalone: ldapConfigPathStandalone
+        ldapConfigPathStandalone: 'scripts/jenkins/config/ldap-jetty-8.txt'
       ], pythonVersion: '2.7',
       customDockerArgs: [ '--privileged' ],
       executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy',
