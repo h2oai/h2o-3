@@ -6,6 +6,8 @@ import org.apache.avro.generic.GenericRecordBuilder;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetWriter;
 import org.apache.parquet.hadoop.ParquetWriter;
+import water.H2O;
+import water.Key;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -35,6 +37,12 @@ public class FrameParquetWriter {
                         builder.set(frame.name(col), getValue(chunks[col], crow, tmpStr));
                     }
                     writer.write(builder.build());
+                }
+                for (int col = 0; col < frame.numCols(); col++) {
+                    Key chunkKey = chunks[col].vec().chunkKey(cidx);
+                    if (!chunkKey.home()) {
+                        H2O.raw_remove(chunkKey);
+                    }
                 }
             }
         }
