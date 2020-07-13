@@ -134,18 +134,48 @@ h2o.downloadCSV <- function(data, filename) {
     cat("Bad return val", val, "\n")
 }
 
-h2o.saveToHive <- function(data, jdbc_url, table_name, tmp_path=NULL) {
+
+#' Save contents of this data frame into a Hive table
+#'
+#' For example,
+#'     h2o.save_to_hive(data_frame, "jdbc:hive2://host:10000/database", "table_name")
+#'     h2o.save_to_hive(data_frame, "jdbc:hive2://host:10000/", "database.table_name", format = "parquet")
+#'
+#' @param data A H2O Frame object to be saved.
+#' @param jdbc_url Hive JDBC connection URL.
+#' @param table_name Table name into which to store the data. The table must not exist as it will be created
+#                    to match the structure of the the frame. The user must be allowed to create tables.
+#' @param format Storage format of created Hive table. (default csv, can be csv or parquet)
+#' @param table_path If specified, the table will be created as an external table and this is where the data 
+#                    will be stored.
+#' @param tmp_path Path where to store temporary data.
+#' @export
+h2o.save_to_hive <- function(data, jdbc_url, table_name, format="csv", table_path=NULL, tmp_path=NULL) {
     if (!is.H2OFrame(data))
         stop("`data` must be an H2OFrame object")
+    if(!is.character(jdbc_url) || length(jdbc_url) != 1L || is.na(jdbc_url) || !nzchar(jdbc_url))
+        stop("`jdbc_url` must be a non-empty character string")
+    if(!is.character(table_name) || length(table_name) != 1L || is.na(table_name) || !nzchar(table_name))
+        stop("`table_name` must be a non-empty character string")
+    if(!is.character(format) || length(format) != 1L || is.na(format) || !nzchar(format) || !format %in% c("csv", "parquet"))
+        stop("`format` must be a non-empty character string")
+    if (!is.null(table_path))
+        if(!is.character(table_path) || length(table_path) != 1L || is.na(table_path) || !nzchar(table_path))
+            stop("`table_name` if specified,  must be a non-empty character string")
+    if (!is.null(tmp_path))
+        if(!is.character(tmp_path) || length(tmp_path) != 1L || is.na(tmp_path) || !nzchar(tmp_path))
+            stop("`tmp_path` if specified,  must be a non-empty character string")
+
     parms <- list()
     parms$frame_id <- h2o.getId(data)
     parms$jdbc_url <- jdbc_url
     parms$table_name <- table_name
-    if (!is.null(tmp_path)) {
+    parms$format <- format
+    if (!is.null(table_path))
+        parms$table_path <- table_path
+    if (!is.null(tmp_path))
         parms$tmp_path <- tmp_path
-
-    }
-    res <- .h2o.__remoteSend('SaveToHiveTable', method = "POST", .params = parms, h2oRestApiVersion = 3)
+    .h2o.__remoteSend('SaveToHiveTable', method = "POST", .params = parms, h2oRestApiVersion = 3)
 }
 
 # ------------------- Save H2O Model to Disk ----------------------------------------------------

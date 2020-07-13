@@ -9,6 +9,7 @@ import water.H2O;
 import water.Key;
 import water.api.SaveToHiveTableHandler;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.jdbc.SQLManager;
 import water.persist.Persist;
 import water.persist.PersistHdfs;
@@ -21,14 +22,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toList;
-import static water.fvec.Vec.*;
 
 public class HiveFrameSaverImpl extends AbstractH2OExtension implements SaveToHiveTableHandler.HiveFrameSaver {
 
@@ -42,61 +36,94 @@ public class HiveFrameSaverImpl extends AbstractH2OExtension implements SaveToHi
     }
 
     @Override
-    public void saveFrameToHive(Key<Frame> frameKey, String jdbcUrl, String tableName, String configuredTmpPath) {
-        String csvPath = null;
+    public void saveFrameToHive(
+        Key<Frame> frameKey,
+        String jdbcUrl,
+        String tableName,
+        Format format,
+        String configuredTablePath,
+        String configuredTmpPath
+    ) {
+        String filePath = null;
         try {
             String tmpPath = determineTmpPath(configuredTmpPath);
-            csvPath = new Path(tmpPath, getRandomFileName()).toString();
+            String storagePath = addHdfsPrefixToPath(configuredTablePath);
+            filePath = new Path(tmpPath, getRandomFileName(format)).toString();
             LOG.info("Save frame " + frameKey + " to table " + tableName + " in " + jdbcUrl);
             Frame frame = frameKey.get();
             if (frame == null) {
                 throw new IllegalArgumentException("Frame with key " + frameKey + " not found.");
             }
-            writeFrameToHdfs(frame, csvPath);
-            loadCsvIntoTable(jdbcUrl, tableName, frame, csvPath);
+            writeFrameToHdfs(frame, filePath, format);
+            loadDataIntoTable(jdbcUrl, tableName, storagePath, frame, filePath, format);
         } catch (IOException e) {
             throw new RuntimeException("Writing to Hive failed.", e);
         } finally {
-            if (csvPath != null) safelyRemoveCsv(csvPath);
+            if (filePath != null) safelyRemoveDataFile(filePath);
         }
     }
-    
+
     private String determineTmpPath(String configuredTmpPath) throws IOException {
         if (configuredTmpPath == null) {
             FileSystem fs = FileSystem.get(PersistHdfs.CONF);
             String res = fs.getUri().toString() + "/tmp";
             LOG.info("Using default temporary directory " + res);
             return res;
-        } else if (!configuredTmpPath.startsWith("hdfs://")) {
-            FileSystem fs = FileSystem.get(PersistHdfs.CONF);
-            String res = fs.getUri().toString() + "/" + configuredTmpPath;
-            LOG.info("Adding file system prefix to relative tmp_path " + res);
-            return res;
         } else {
-            return configuredTmpPath;
+            return addHdfsPrefixToPath(configuredTmpPath);
         }
     }
     
-    private String getRandomFileName() {
-        return "h2o_save_to_hive_" + UUID.randomUUID().toString() + ".csv";
-    }
-
-    private void safelyRemoveCsv(String csvPath) {
-        try {
-            Persist p = H2O.getPM().getPersistForURI(URI.create(csvPath));
-            if (p.exists(csvPath)) {
-                p.delete(csvPath);
-            } else {
-                LOG.debug("CSV file moved by Hive, doing nothing.");
-            }
-        } catch (Exception e) {
-            LOG.error("Failed cleaning up CSV file.", e);
+    private String addHdfsPrefixToPath(String path) throws IOException {
+        if (path == null) {
+            return null;
+        } else if (!path.startsWith("hdfs://")) {
+            FileSystem fs = FileSystem.get(PersistHdfs.CONF);
+            String res = fs.getUri().toString() + "/" + path;
+            LOG.info("Adding file system prefix to relative tmp_path " + res);
+            return res;
+        } else {
+            return path;
         }
     }
 
-    private void writeFrameToHdfs(Frame f, String csvPath) throws IOException {
-        Persist p = H2O.getPM().getPersistForURI(URI.create(csvPath));
-        try (OutputStream os = p.create(csvPath, false)) {
+    private String getRandomFileName(Format format) {
+        return "h2o_save_to_hive_" + UUID.randomUUID().toString() + "." + format.toString().toLowerCase();
+    }
+
+    private void safelyRemoveDataFile(String filePath) {
+        try {
+            Persist p = H2O.getPM().getPersistForURI(URI.create(filePath));
+            if (p.exists(filePath)) {
+                p.delete(filePath);
+            } else {
+                LOG.debug("Data file moved by Hive, doing nothing.");
+            }
+        } catch (Exception e) {
+            LOG.error("Failed cleaning up data file.", e);
+        }
+    }
+
+    private void writeFrameToHdfs(Frame frame, String filePath, Format format) throws IOException {
+        switch (format) {
+            case CSV:
+                writeFrameAsCsv(frame, filePath);
+                break;
+            case PARQUET:
+                writeFrameAsParquet(frame, filePath);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported table format " + format);
+        }
+    }
+
+    private void writeFrameAsParquet(Frame frame, String filePath) throws IOException {
+        new FrameParquetWriter().write(frame, filePath);
+    }
+
+    private void writeFrameAsCsv(Frame f, String filePath) throws IOException {
+        Persist p = H2O.getPM().getPersistForURI(URI.create(filePath));
+        try (OutputStream os = p.create(filePath, false)) {
             Frame.CSVStreamParams parms = new Frame.CSVStreamParams()
                 .setHeaders(false)
                 .setEscapeQuotes(true)
@@ -105,15 +132,22 @@ public class HiveFrameSaverImpl extends AbstractH2OExtension implements SaveToHi
             IOUtils.copyStream(is, os);
         }
     }
-    
-    private void loadCsvIntoTable(String url, String table, Frame frame, String csvPath) throws IOException {
+
+    private void loadDataIntoTable(
+        String url,
+        String table,
+        String tablePath,
+        Frame frame,
+        String filePath,
+        Format format
+    ) throws IOException {
         try (Connection conn = SQLManager.getConnectionSafe(url, null, null)) {
             if (!doesTableExist(conn, table)) {
-                createTable(conn, table, frame);
+                createTable(conn, table, tablePath, frame, format);
             } else {
                 throw new IllegalArgumentException("Table " + table + " already exists.");
             }
-            executeDataLoad(conn, table, csvPath);
+            executeDataLoad(conn, table, filePath);
         } catch (SQLException e) {
             throw new IOException("Failed to load data into Hive table.", e);
         }
@@ -129,22 +163,38 @@ public class HiveFrameSaverImpl extends AbstractH2OExtension implements SaveToHi
         }
     }
 
-    private void createTable(Connection conn, String table, Frame frame) throws SQLException {
+    private void createTable(Connection conn, String table, String tablePath, Frame frame, Format format) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
-            String createQuery = makeCreateTableStatement(table, frame);
+            String createQuery = makeCreateTableStatement(table, tablePath, frame, format);
             LOG.info("Creating Hive table " + table + " with SQL: " + createQuery);
             stmt.execute(createQuery);
         }
     }
 
-    /*
-        OpenCSV serde will make all columns type string, so there is no reason to create the table
-        with different column types. User can then create a view or cast the columns to different
-        types when doing SELECT.
-     */
-    private String makeCreateTableStatement(String table, Frame frame) {
+    private String makeCreateTableStatement(String table, String tablePath, Frame frame, Format format) {
         StringBuilder sb = new StringBuilder();
-        sb.append("CREATE TABLE ").append(table).append(" (");
+        sb.append("CREATE ");
+        if (tablePath != null) {
+            sb.append("EXTERNAL ");
+        }
+        sb.append("TABLE ").append(table).append(" (");
+        switch (format) {
+            case CSV:
+                makeCreateCSVTableStatement(sb, frame);
+                break;
+            case PARQUET:
+                makeCreateParquetTableStatement(sb, frame);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported table format " + format);
+        }
+        if (tablePath != null) {
+            sb.append("\nLOCATION '").append(tablePath).append("'");
+        }
+        return sb.toString();
+    }
+
+    private void makeCreateCSVTableStatement(StringBuilder sb, Frame frame) {
         for (int i = 0; i < frame.numCols(); i++) {
             if (i > 0) sb.append(",\n");
             sb.append(frame.name(i)).append(" string");
@@ -154,13 +204,30 @@ public class HiveFrameSaverImpl extends AbstractH2OExtension implements SaveToHi
             .append("   \"separatorChar\" = \",\",\n")
             .append("   \"quoteChar\"     = \"\\\"\",\n")
             .append("   \"escapeChar\"    = \"\\\\\") STORED AS TEXTFILE");
-        return sb.toString();
     }
 
-    private void executeDataLoad(Connection conn, String table, String csvPath) throws SQLException {
+    private void makeCreateParquetTableStatement(StringBuilder sb, Frame frame) {
+        for (int i = 0; i < frame.numCols(); i++) {
+            if (i > 0) sb.append(",\n");
+            sb.append(frame.name(i)).append(" ").append(sqlDataType(frame.vec(i)));
+        }
+        sb.append(") STORED AS parquet");
+    }
+
+    private String sqlDataType(Vec v) {
+        if (v.isCategorical() || v.isUUID() || v.isString()) {
+            return "STRING";
+        } else if (v.isInt()) {
+            return "BIGINT";
+        } else {
+            return "DOUBLE";
+        }
+    }
+
+    private void executeDataLoad(Connection conn, String table, String filePath) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
-            LOG.info("Loading CSV file " + csvPath + " into table " + table);
-            stmt.execute("LOAD DATA INPATH '" + csvPath + "' OVERWRITE INTO TABLE " + table);
+            LOG.info("Loading data file " + filePath + " into table " + table);
+            stmt.execute("LOAD DATA INPATH '" + filePath + "' OVERWRITE INTO TABLE " + table);
         }
     }
 
