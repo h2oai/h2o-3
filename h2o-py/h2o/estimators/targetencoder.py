@@ -316,7 +316,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         ...                                    data_leakage_handling="leave_one_out",
         ...                                    seed=1234)
         """
-        output = h2o.api("GET /3/TargetEncoderTransform", data={'model': self.model_id, 'frame': frame.key,
+        output = h2o.api("GET /3/TargetEncoderTransform", data={'model': self.model_id, 
+                                                                'frame': frame.key,
                                                                 'data_leakage_handling': data_leakage_handling,
                                                                 'noise': noise,
                                                                 'seed': seed})

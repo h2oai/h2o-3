@@ -40,6 +40,12 @@ import static ai.h2o.targetencoding.TargetEncoderFrameHelper.*;
  */
 public class TargetEncoder extends Iced<TargetEncoder>{
 
+  public enum DataLeakageHandlingStrategy {
+    LeaveOneOut,
+    KFold,
+    None,
+  }
+
   public static final String ENCODED_COLUMN_POSTFIX = "_te";
   public static final BlendingParams DEFAULT_BLENDING_PARAMS = new BlendingParams(10, 20);
 
@@ -59,44 +65,6 @@ public class TargetEncoder extends Iced<TargetEncoder>{
       throw new IllegalArgumentException("Argument 'columnsToEncode' is required.");
 
     _columnNamesToEncode = columnsToEncode;
-  }
-
-  public enum DataLeakageHandlingStrategy {
-    LeaveOneOut((byte) 0),
-    KFold((byte) 1),
-    None((byte) 2);
-
-    /***
-     * The handling strategies of data leakage used to be represented as a simple byte. Transition to enum representation
-     * while keeping the old API requires introduction of a mapping method of the old values into values found in {@link DataLeakageHandlingStrategy}
-     * enum. This method does such mapping.
-     *
-     * @param val Older byte representation of values in this enum
-     * @return Value from the {@link DataLeakageHandlingStrategy} enum corresponding to the older byte value.
-     * @throws IllegalArgumentException When no value from the {@link DataLeakageHandlingStrategy} is mapped to given number.
-     */
-    public static DataLeakageHandlingStrategy fromVal(byte val) throws IllegalArgumentException {
-      switch (val) {
-        case 0:
-          return LeaveOneOut;
-        case 1:
-          return KFold;
-        case 2:
-          return None;
-        default:
-          throw new IllegalArgumentException(String.format("Unknown DataLeakageHandlingStrategy corresponding to value: '%s'", val));
-      }
-    }
-
-    DataLeakageHandlingStrategy(byte val) {
-      this.val = val;
-    }
-
-    private final byte val;
-
-    public byte getVal() {
-      return val;
-    }
   }
 
   /**
@@ -351,8 +319,8 @@ public class TargetEncoder extends Iced<TargetEncoder>{
     }
   }
 
-  private Frame execRapidsAndGetFrame(String astTree) {
-    Val val = Rapids.exec(astTree);
+  private Frame execRapidsAndGetFrame(String ast) {
+    Val val = Rapids.exec(ast);
     return register(val.getFrame());
   }
 
@@ -637,7 +605,6 @@ public class TargetEncoder extends Iced<TargetEncoder>{
         int teColumnIdx = encodedFrame.find(columnToEncode);
         int encodingsTEColIdx = encodings.find(columnToEncode);
 
-        Frame joinedFrame = null;
         switch (dataLeakageHandlingStrategy) {
           case KFold:
             try {
@@ -653,7 +620,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
               long[] foldValues = getUniqueColumnValues(encodings, encodings.find(foldColumn));
               int maxFoldValue = (int) ArrayUtils.maxValue(foldValues);
               
-              joinedFrame = mergeEncodings(
+              Frame joinedFrame = mergeEncodings(
                       encodedFrame, holdoutEncodings, 
                       teColumnIdx, foldColIdx, 
                       encodingsTEColIdx, encodingsFoldColIdx,
@@ -687,7 +654,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
               Frame groupedEncodings = applyLeakageStrategyToEncodings(encodings, columnToEncode, dataLeakageHandlingStrategy, foldColumn);
               Scope.track(groupedEncodings);
               
-              joinedFrame = mergeEncodings(encodedFrame, groupedEncodings, teColumnIdx, encodingsTEColIdx);
+              Frame joinedFrame = mergeEncodings(encodedFrame, groupedEncodings, teColumnIdx, encodingsTEColIdx);
               Scope.track(joinedFrame);
               DKV.remove(encodedFrame._key); // don't need previous version of encoded frame anymore 
               
@@ -698,7 +665,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
               applyNoise(joinedFrame, encodedColumn, noiseLevel, seed);
 
               // Cases when we can introduce NA's:
-              // 1) Only in case when our encoding map has not seen some category. //TODO move second parameter into the function
+              // 1) Only in case when our encoding map has not seen some category.
               imputeMissingValues(joinedFrame, joinedFrame.find(encodedColumn), priorMean);
               encodedFrame = joinedFrame;
               Scope.untrack(encodedFrame.keys());
@@ -714,7 +681,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
               Frame groupedEncodings = applyLeakageStrategyToEncodings(encodings, columnToEncode, dataLeakageHandlingStrategy, foldColumn);
               Scope.track(groupedEncodings);
               
-              joinedFrame = mergeEncodings(encodedFrame, groupedEncodings, teColumnIdx, encodingsTEColIdx);
+              Frame joinedFrame = mergeEncodings(encodedFrame, groupedEncodings, teColumnIdx, encodingsTEColIdx);
               Scope.track(joinedFrame);
               DKV.remove(encodedFrame._key); // don't need previous version of encoded frame anymore 
 
@@ -757,10 +724,9 @@ public class TargetEncoder extends Iced<TargetEncoder>{
     removedDenominatorNone.remove();
   }
 
-  //**** applyTargetEncoding overloads ****//
-  // without noise level
-  // without result key
-  
+  /** 
+   * @see #applyTargetEncoding(Frame, String, Map, DataLeakageHandlingStrategy, String, BlendingParams, double, long, Key) 
+   **/
   public Frame applyTargetEncoding(Frame data,
                                    String targetColumn,
                                    Map<String, Frame> columnsToEncodings,
@@ -782,6 +748,9 @@ public class TargetEncoder extends Iced<TargetEncoder>{
     );
   }
 
+  /**
+   * @see #applyTargetEncoding(Frame, String, Map, DataLeakageHandlingStrategy, String, BlendingParams, double, long, Key)
+   **/
   public Frame applyTargetEncoding(Frame data,
                                    String targetColumn,
                                    Map<String, Frame> columnsToEncodings,

@@ -55,7 +55,7 @@ public class TargetEncoderMojoWriterTest extends TestUtil {
         assertTrue(mojoFile.length() > 0);
       }
     } finally {
-      if(targetEncoderModel != null) TargetEncoderFrameHelper.encodingMapCleanUp(targetEncoderModel._output._target_encoding_map);
+      if (targetEncoderModel != null) TargetEncoderFrameHelper.encodingMapCleanUp(targetEncoderModel._output._target_encoding_map);
       Scope.exit();
     }
   }

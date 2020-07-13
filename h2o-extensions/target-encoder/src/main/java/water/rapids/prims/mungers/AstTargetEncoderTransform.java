@@ -121,15 +121,14 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
 
   private TargetEncoder.DataLeakageHandlingStrategy getDataLeakageHandlingStrategy(Env env, Env.StackHelp stk, AstRoot asts[]) {
     String strategy = stk.track(asts[5].exec(env)).getStr();
-    if(strategy.equals("kfold")){
-      return TargetEncoder.DataLeakageHandlingStrategy.KFold;
-    } else if (strategy.equals("loo")) {
-      return TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut;
-    } else if(strategy.equals("loo")) {
-      return TargetEncoder.DataLeakageHandlingStrategy.None;
-    }
-    else {
-      return TargetEncoder.DataLeakageHandlingStrategy.None;
+    switch (strategy) {
+      case "kfold":
+        return TargetEncoder.DataLeakageHandlingStrategy.KFold;
+      case "loo":
+        return TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut;
+      case "none":
+      default:
+        return TargetEncoder.DataLeakageHandlingStrategy.None;
     }
   }
 

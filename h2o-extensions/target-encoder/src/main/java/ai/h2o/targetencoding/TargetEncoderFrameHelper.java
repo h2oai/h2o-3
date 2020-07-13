@@ -26,7 +26,7 @@ import java.util.Random;
 public class TargetEncoderFrameHelper {
 
   static public Frame rBind(Frame a, Frame b) {
-    if(a == null) {
+    if (a == null) {
       assert b != null;
       return b;
     } else {
@@ -166,7 +166,7 @@ public class TargetEncoderFrameHelper {
    */
   private static void convertEncodingMapToGenModelFormat(EncodingMaps convertedEncodingMap, String teColumn, IcedHashMap<String, TEComponents> encodingMap) {
     Map<Integer, int[]> tableGenModelFormat = new HashMap<>();
-    for(Map.Entry<String, TEComponents> entry : encodingMap.entrySet()) {
+    for (Map.Entry<String, TEComponents> entry : encodingMap.entrySet()) {
       TEComponents value = entry.getValue();
       tableGenModelFormat.put(Integer.parseInt(entry.getKey()), new int[] {value.getNumerator(), value.getDenominator()});
     }
