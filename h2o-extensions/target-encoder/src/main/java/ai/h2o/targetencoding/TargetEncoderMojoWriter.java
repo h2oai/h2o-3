@@ -43,16 +43,16 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
     TargetEncoderOutput output = ((TargetEncoderModel) model)._output;
     TargetEncoderModel.TargetEncoderParameters teParams = output._parms;
     writekv("with_blending", teParams._blending);
-    if(teParams._blending) {
+    if (teParams._blending) {
       writekv("inflection_point", teParams._k);
       writekv("smoothing", teParams._f);
     }
     writekv("priorMean", output._prior_mean);
     
-    Map<String, Integer> _teColumnNameToMissingValuesPresence = output._column_name_to_missing_val_presence;
+    Map<String, Boolean> col2HasNAs = output._te_column_to_hasNAs;
     startWritingTextFile("feature_engineering/target_encoding/te_column_name_to_missing_values_presence.ini");
-    for(Map.Entry<String, Integer> entry: _teColumnNameToMissingValuesPresence.entrySet()) {
-      writelnkv(entry.getKey(), entry.getValue().toString());
+    for(Map.Entry<String, Boolean> entry: col2HasNAs.entrySet()) {
+      writelnkv(entry.getKey(), entry.getValue() ? "1" : "0");
     }
     finishWritingTextFile();
   }
@@ -72,16 +72,18 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
     for (Map.Entry<String, EncodingMap> columnEncodingsMap : convertedEncodingMap.entrySet()) {
       writeln("[" + columnEncodingsMap.getKey() + "]");
       EncodingMap encodings = columnEncodingsMap.getValue();
-      for (Map.Entry<Integer, int[]> catLevelInfo : encodings.entrySet()) {
-        int[] numAndDenom = catLevelInfo.getValue(); // FIXME: for regression, num is not an int...
-        writelnkv(catLevelInfo.getKey().toString(), numAndDenom[0] + " " + numAndDenom[1]);
+      for (Map.Entry<Integer, double[]> catLevelInfo : encodings.entrySet()) {
+        double[] numDen = catLevelInfo.getValue();
+        writelnkv(catLevelInfo.getKey().toString(), numDen[0] + " " + numDen[1]);
       }
     }
     finishWritingTextFile();
   }
 
   /**
-   * For transforming (making predictions) non-training data we don't need `te folds` in our encoding maps 
+   * For transforming (making predictions) non-training data we don't need `te folds` in our encoding maps.
+   * FIXME: can be removed as soon as grouping is already done in the training part when applying TE.
+   *        Btw, this is in total contradiction with the idea of exposing leakage strategy in `transform` method.
    */
   private void groupEncodingsByFoldColumnIfNeeded(TargetEncoderOutput targetEncoderOutput, Map<String, Frame> targetEncodingMap) {
     String foldColumn = targetEncoderOutput._parms._fold_column;

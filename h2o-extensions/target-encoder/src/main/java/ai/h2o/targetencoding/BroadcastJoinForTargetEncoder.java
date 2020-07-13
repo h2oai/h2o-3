@@ -13,12 +13,13 @@ class BroadcastJoinForTargetEncoder {
     /**
      * Numerators and denominators are being stored in the same row-array of the 2D array.
      * 
-     *        _encodingDataPerNode[k][0 .. numOfCatLevels -1] will be storing numerators
-     *        _encodingDataPerNode[k][numOfCatLevels .. (2*numOfCatLevels -1)] will be storing denominators,
+     *        _encodingDataPerNode[k][2*i] will be storing numerators
+     *        _encodingDataPerNode[k][2*i+1] will be storing denominators
+     *        (easier to inspect when debugging).
      *        
      *        where k is a current fold value (folds = {0,1,2,3...k}) or 0 when _foldColumnIdx == -1; 
      */
-    final int[][] _encodingDataPerNode;
+    final double[][] _encodingDataPerNode;
     
     final int _categoricalColumnIdx, _foldColumnIdx, _numeratorIdx, _denominatorIdx, _cardinalityOfCatCol;
 
@@ -29,12 +30,12 @@ class BroadcastJoinForTargetEncoder {
       _denominatorIdx = denominatorIdx;
       _cardinalityOfCatCol = cardinalityOfCatCol;
 
-      if(foldColumnIdx == -1) {
-        _encodingDataPerNode = MemoryManager.malloc4(1, _cardinalityOfCatCol * 2);
+      if (foldColumnIdx == -1) {
+        _encodingDataPerNode = MemoryManager.malloc8d(1, _cardinalityOfCatCol * 2);
       } else {
-        assert maxFoldValue >= 1 : "There should be at leas two folds in the fold column";
+        assert maxFoldValue >= 1 : "There should be at least two folds in the fold column";
         assert _cardinalityOfCatCol > 0 && _cardinalityOfCatCol < (Integer.MAX_VALUE / 2)  : "Cardinality of categ. column should be within range (0, Integer.MAX_VALUE / 2 )";
-        _encodingDataPerNode = MemoryManager.malloc4(maxFoldValue + 1,_cardinalityOfCatCol * 2);
+        _encodingDataPerNode = MemoryManager.malloc8d(maxFoldValue + 1,_cardinalityOfCatCol * 2);
       }
     }
 
@@ -48,17 +49,16 @@ class BroadcastJoinForTargetEncoder {
 
         // We are allowed to do casting to `int` as we have validation before submitting this MRTask
         int foldValue = _foldColumnIdx != -1 ? (int) cs[_foldColumnIdx].at8(i) : 0;
-        int[] arrForNumeratorsAndDenominators = _encodingDataPerNode[foldValue];
-
-        arrForNumeratorsAndDenominators[levelValue] = (int) numeratorChunk.at8(i);
-        arrForNumeratorsAndDenominators[_cardinalityOfCatCol + levelValue] = (int) denominatorChunk.at8(i);
+        double[] numDenArray = _encodingDataPerNode[foldValue];
+        numDenArray[2*levelValue] = numeratorChunk.at8(i);
+        numDenArray[2*levelValue+1] = denominatorChunk.at8(i);
       }
     }
 
     @Override
     public void reduce(FrameWithEncodingDataToArray mrt) {
-      int[][] leftArr = getEncodingDataArray();
-      int[][] rightArr = mrt.getEncodingDataArray();
+      double[][] leftArr = getEncodingDataArray();
+      double[][] rightArr = mrt.getEncodingDataArray();
       
       // Note: we need to add `leftArr != rightArr` check due to the following circumstances: 
       //       1. MRTasks are being only shallow cloned i.e. all internal fields are references to the same objects in memory
@@ -89,15 +89,15 @@ class BroadcastJoinForTargetEncoder {
       if (leftArr != rightArr) {
         for (int rowIdx = 0; rowIdx < leftArr.length; rowIdx++) {
           for (int colIdx = 0; colIdx < leftArr[rowIdx].length; colIdx++) {
-            int valueFromLeftArr = leftArr[rowIdx][colIdx];
-            int valueFromRIghtArr = rightArr[rowIdx][colIdx];
+            double valueFromLeftArr = leftArr[rowIdx][colIdx];
+            double valueFromRIghtArr = rightArr[rowIdx][colIdx];
             leftArr[rowIdx][colIdx] = Math.max(valueFromLeftArr, valueFromRIghtArr);
           }
         }
       }
     }
     
-    int[][] getEncodingDataArray() {
+    double[][] getEncodingDataArray() {
       return _encodingDataPerNode;
     }
   }
@@ -136,7 +136,7 @@ class BroadcastJoinForTargetEncoder {
             )
     };
 
-    int[][] encodingData = new FrameWithEncodingDataToArray(rightCatColumnIdx, rightFoldColumnIdx, rightNumeratorIdx, rightDenominatorIdx, rightCatCardinality, maxFoldValue)
+    double[][] encodingData = new FrameWithEncodingDataToArray(rightCatColumnIdx, rightFoldColumnIdx, rightNumeratorIdx, rightDenominatorIdx, rightCatCardinality, maxFoldValue)
             .doAll(rightFrame)
             .getEncodingDataArray();
 
@@ -151,10 +151,10 @@ class BroadcastJoinForTargetEncoder {
 
   static class BroadcastJoiner extends MRTask<BroadcastJoiner> {
     int _categoricalColumnIdx, _foldColumnIdx, _cardinalityOfCatCol;
-    int[][] _encodingDataArray;
+    double[][] _encodingDataArray;
     int[][] _levelMappings;
 
-    BroadcastJoiner(int[] categoricalColumnsIdxs, int foldColumnIdx, int[][] encodingDataArray, int[][] levelMappings, int cardinalityOfCatCol) {
+    BroadcastJoiner(int[] categoricalColumnsIdxs, int foldColumnIdx, double[][] encodingDataArray, int[][] levelMappings, int cardinalityOfCatCol) {
       assert categoricalColumnsIdxs.length == 1 : "Only single column target encoding (i.e. one categorical column is used to produce its encodings) is supported for now";
       assert levelMappings.length == 1;
       
@@ -170,9 +170,8 @@ class BroadcastJoinForTargetEncoder {
       int[] levelMapping = _levelMappings[0]; //see constraint in constructor
       
       Chunk categoricalChunk = cs[_categoricalColumnIdx];
-      int numOfVecs = cs.length;
-      Chunk num = cs[numOfVecs - 2]; // numerator and denominator columns are appended in #join method.
-      Chunk den = cs[numOfVecs - 1];
+      Chunk num = cs[cs.length - 2]; // numerator and denominator columns are appended in #join method.
+      Chunk den = cs[cs.length - 1];
       for (int i = 0; i < num.len(); i++) {
         int levelValue = (int) categoricalChunk.at8(i);
         if (levelValue >= levelMapping.length) {
@@ -182,16 +181,16 @@ class BroadcastJoinForTargetEncoder {
         
         int mappedLevelValue = levelMapping[levelValue];
         int foldValue = _foldColumnIdx >= 0 ? (int)cs[_foldColumnIdx].at8(i) : 0;
-        int[] arrForNumeratorsAndDenominators = _encodingDataArray[foldValue];
+        double[] numDenArray = _encodingDataArray[foldValue];
 
-        if (mappedLevelValue >= _cardinalityOfCatCol) {
+        if (mappedLevelValue >= _cardinalityOfCatCol) {  // value not in encodings (unseen in training data).
           setEncodingComponentsToNAs(num, den, i);
         } else {
-          int denominator = arrForNumeratorsAndDenominators[_cardinalityOfCatCol + mappedLevelValue];
+          double denominator = numDenArray[2*mappedLevelValue+1];
           if (denominator == 0) {
             setEncodingComponentsToNAs(num, den, i);
           } else {
-            int numerator = arrForNumeratorsAndDenominators[mappedLevelValue];
+            double numerator = numDenArray[2*mappedLevelValue];
             num.set(i, numerator);
             den.set(i, denominator);
           }

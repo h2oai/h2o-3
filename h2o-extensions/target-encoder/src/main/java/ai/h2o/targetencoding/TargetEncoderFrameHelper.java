@@ -165,10 +165,10 @@ public class TargetEncoderFrameHelper {
    * @param encodingMap encoding map for `teColumn`
    */
   private static void convertEncodingMapToGenModelFormat(EncodingMaps convertedEncodingMap, String teColumn, IcedHashMap<String, TEComponents> encodingMap) {
-    Map<Integer, int[]> tableGenModelFormat = new HashMap<>();
+    Map<Integer, double[]> tableGenModelFormat = new HashMap<>();
     for (Map.Entry<String, TEComponents> entry : encodingMap.entrySet()) {
       TEComponents value = entry.getValue();
-      tableGenModelFormat.put(Integer.parseInt(entry.getKey()), new int[] {value.getNumerator(), value.getDenominator()});
+      tableGenModelFormat.put(Integer.parseInt(entry.getKey()), new double[] {value.getNumerator(), value.getDenominator()});
     }
     convertedEncodingMap.put(teColumn, new EncodingMap(tableGenModelFormat));
   }

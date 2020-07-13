@@ -24,8 +24,8 @@ public class FrameToTETableTask extends MRTask<FrameToTETableTask> {
     // We need folds only for the case when we applying TE to the frame which we are going to train our model on. 
     // But this is done once and then we don't need them anymore.
     for (int i = 0; i < numRowsInChunk; i++) {
-      int num = (int) cs[1].at8(i);
-      int den = (int) cs[2].at8(i);
+      double num = cs[1].atd(i);
+      long den = cs[2].at8(i);
       int factor = (int) categoricalChunk.at8(i);
       _table.put(Integer.toString(factor), new TEComponents(num, den));
     }

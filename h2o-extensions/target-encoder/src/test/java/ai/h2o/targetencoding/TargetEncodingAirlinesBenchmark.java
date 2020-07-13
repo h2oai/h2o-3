@@ -107,7 +107,7 @@ public class TargetEncodingAirlinesBenchmark extends TestUtil {
               0,
               seed);
       printOutColumnsMetadata(testEncoded);
-      testEncoded = tec.ensureTargetColumnIsBinaryCategorical(testEncoded, targetColumnName);
+      testEncoded = tec.ensureTargetColumnIsSupported(testEncoded, targetColumnName);
 
       Scope.track(trainEncoded, validEncoded, testEncoded);
       //Frame.export(trainEncoded, "airlines_train_kfold_dest_noise_noblend.csv", trainEncoded._key.toString(), true, 1);
@@ -219,7 +219,7 @@ public class TargetEncodingAirlinesBenchmark extends TestUtil {
               0.0,
               1234);
       //We do it manually just to be able to measure metrics in the end. TargetEncoder should not be aware of target column for test dataset.
-      testEncoded = tec.ensureTargetColumnIsBinaryCategorical(testEncoded, targetColumnName);
+      testEncoded = tec.ensureTargetColumnIsSupported(testEncoded, targetColumnName);
       Scope.track(trainEncoded, validEncoded, testEncoded);
 
 
@@ -290,9 +290,9 @@ public class TargetEncodingAirlinesBenchmark extends TestUtil {
 
       Scope.track(airlinesTrainWithTEHDefault, airlinesValidDefault, airlinesTestFrameDefault);
 
-      airlinesTrainWithTEHDefault = tec.ensureTargetColumnIsBinaryCategorical(airlinesTrainWithTEHDefault, targetColumnName);
-      airlinesValidDefault = tec.ensureTargetColumnIsBinaryCategorical(airlinesValidDefault, targetColumnName);
-      airlinesTestFrameDefault = tec.ensureTargetColumnIsBinaryCategorical(airlinesTestFrameDefault, targetColumnName);
+      airlinesTrainWithTEHDefault = tec.ensureTargetColumnIsSupported(airlinesTrainWithTEHDefault, targetColumnName);
+      airlinesValidDefault = tec.ensureTargetColumnIsSupported(airlinesValidDefault, targetColumnName);
+      airlinesTestFrameDefault = tec.ensureTargetColumnIsSupported(airlinesTestFrameDefault, targetColumnName);
 
       GBMModel.GBMParameters parms2 = new GBMModel.GBMParameters();
       parms2._train = airlinesTrainWithTEHDefault._key;

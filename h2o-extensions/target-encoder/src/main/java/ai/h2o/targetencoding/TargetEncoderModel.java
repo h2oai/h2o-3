@@ -68,7 +68,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     
     public IcedHashMap<String, Frame> _target_encoding_map;
     public TargetEncoderParameters _parms;
-    public IcedHashMap<String, Integer> _column_name_to_missing_val_presence;
+    public IcedHashMap<String, Boolean> _te_column_to_hasNAs;
     public double _prior_mean;
     
     public TargetEncoderOutput(TargetEncoderBuilder b, IcedHashMap<String, Frame> teMap, double priorMean) {
@@ -77,19 +77,19 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       _parms = b._parms;
       _model_summary = constructSummary();
 
-      _column_name_to_missing_val_presence = createMissingValuesPresenceMap();
+      _te_column_to_hasNAs = buildCol2HasNAsMap();
       _prior_mean = priorMean;
     }
 
-    private IcedHashMap<String, Integer> createMissingValuesPresenceMap() {
-      final IcedHashMap<String, Integer> presenceOfNAMap = new IcedHashMap<>();
+    private IcedHashMap<String, Boolean> buildCol2HasNAsMap() {
+      final IcedHashMap<String, Boolean> col2HasNAs = new IcedHashMap<>();
       for (Map.Entry<String, Frame> entry : _target_encoding_map.entrySet()) {
         String teColumn = entry.getKey();
         Frame encodingsFrame = entry.getValue();
-        int hasNAs = _parms.train().vec(teColumn).cardinality() < encodingsFrame.vec(teColumn).cardinality() ? 1 : 0;
-        presenceOfNAMap.put(teColumn, hasNAs);
+        boolean hasNAs = _parms.train().vec(teColumn).cardinality() < encodingsFrame.vec(teColumn).cardinality();
+        col2HasNAs.put(teColumn, hasNAs);
       }
-      return presenceOfNAMap;
+      return col2HasNAs;
     }
     
     private TwoDimTable constructSummary(){

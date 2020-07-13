@@ -20,9 +20,9 @@ public class EncodingMap implements Serializable {
    *        3 which represents "COL_NAME_NA" -> [ 5, 6 ],                         
    *      )                        
    */                                       
-  Map<Integer, int[]> _encodingMap;  // FIXME: can be represented as int[] only for classification problems (ideally long[]...). Regression requires double[] or double+long.
+  Map<Integer, double[]> _encodingMap;
 
-  public EncodingMap(Map<Integer, int[]> encodingMap) {
+  public EncodingMap(Map<Integer, double[]> encodingMap) {
     _encodingMap = encodingMap;
   }
 
@@ -30,15 +30,15 @@ public class EncodingMap implements Serializable {
     _encodingMap = new HashMap<>();
   }
 
-  public Set<Map.Entry<Integer, int[]>> entrySet() {
+  public Set<Map.Entry<Integer, double[]>> entrySet() {
     return _encodingMap.entrySet();
   }
 
-  public int[] get(int categoricalFactorIdx) {
-    return _encodingMap.get(categoricalFactorIdx);
+  public double[] get(int categoricalFactor) {
+    return _encodingMap.get(categoricalFactor);
   }
   
-  public int[] put(int categoricalFactor, int[] encodingComponents) {
+  public double[] put(int categoricalFactor, double[] encodingComponents) {
     return _encodingMap.put(categoricalFactor, encodingComponents);
   }
 }

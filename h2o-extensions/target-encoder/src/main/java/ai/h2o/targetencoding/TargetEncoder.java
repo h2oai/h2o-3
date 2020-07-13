@@ -6,8 +6,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.fvec.task.FillNAWithDoubleValueTask;
 import water.fvec.task.FillNAWithLongValueTask;
-import water.rapids.Rapids;
-import water.rapids.Val;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.rapids.ast.prims.mungers.AstGroup.NAHandling;
 import water.util.IcedHashMap;
@@ -89,13 +87,13 @@ public class TargetEncoder extends Iced<TargetEncoder>{
     Frame dataWithEncodedTarget = null;
     try {
       int targetIdx = data.find(targetColumn);
-      //TODO Losing data here, we should use clustering to assign instances with some reasonable target values.
+      //TODO Loosing data here, we should use clustering to assign instances with some reasonable target values.
       dataWithoutTargetNAs = filterOutNAsFromTargetColumn(data, targetIdx);
-      dataWithEncodedTarget = ensureTargetColumnIsBinaryCategorical(dataWithoutTargetNAs, targetColumn); // FIXME: this needs to work for non-binary problems
+      dataWithEncodedTarget = ensureTargetColumnIsSupported(dataWithoutTargetNAs, targetColumn);
 
       IcedHashMap<String, Frame> columnToEncodings = new IcedHashMap<>();
 
-      for (String columnToEncode : _columnNamesToEncode) { // TODO maybe we can do it in parallel
+      for (String columnToEncode : _columnNamesToEncode) { // TODO: parallelize
         imputeCategoricalColumn(dataWithEncodedTarget, columnToEncode, columnToEncode + NA_POSTFIX);
         Frame encodingsFrame = buildEncodingsFrame(dataWithEncodedTarget, columnToEncode, foldColumn, targetIdx);
         
@@ -241,23 +239,13 @@ public class TargetEncoder extends Iced<TargetEncoder>{
     }
   }
 
-  Frame ensureTargetColumnIsBinaryCategorical(Frame data, String targetColumnName) {
+  Frame ensureTargetColumnIsSupported(Frame data, String targetColumnName) {
     Vec targetVec = data.vec(targetColumnName);
     if (!targetVec.isCategorical())
       throw new IllegalStateException("`target` must be a categorical vector. We do not support continuous target case for now");
     if (targetVec.cardinality() != 2)
       throw new IllegalStateException("`target` must be a binary vector. We do not support multi-class target case for now");
     return data;
-  }
-
-  String[] getColumnNamesBy(Frame data, int[] columnIndexes) {
-    String [] allColumnNames = data._names.clone();
-    ArrayList<String> columnNames = new ArrayList<String>();
-
-    for(int idx : columnIndexes) {
-      columnNames.add(allColumnNames[idx]);
-    }
-    return columnNames.toArray(new String[columnIndexes.length]);
   }
 
   //TODO We might want to introduce parameter that will change this behaviour. We can treat NA's as extra class.
@@ -301,27 +289,12 @@ public class TargetEncoder extends Iced<TargetEncoder>{
     assert numberOfUniqueValues <= Integer.MAX_VALUE : "Number of unique values exceeded Integer.MAX_VALUE";
 
     int length = (int) numberOfUniqueValues; // We assume that the column should not have that many different values and will fit into node's memory.
-    long[] uniqueValuesArr = new long[length];
-    for(int i = 0; i < uniqueValues.length(); i++) {
+    long[] uniqueValuesArr = MemoryManager.malloc8(length);
+    for (int i = 0; i < uniqueValues.length(); i++) {
       uniqueValuesArr[i] = uniqueValues.at8(i);
     }
     uniqueValues.remove();
     return uniqueValuesArr;
-  }
-
-  Frame rBind(Frame a, Frame b) {
-    if (a == null) {
-      assert b != null;
-      return b;
-    } else {
-      String tree = String.format("(rbind %s %s)", a._key, b._key);
-      return execRapidsAndGetFrame(tree);
-    }
-  }
-
-  private Frame execRapidsAndGetFrame(String ast) {
-    Val val = Rapids.exec(ast);
-    return register(val.getFrame());
   }
 
   /** merge the encodings by TE column */
@@ -359,7 +332,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
     boolean hadMissingValues = lastDomain.equals(columnToEncode + NA_POSTFIX);
 
     double numeratorForNALevel = encodingsFrame.vec(NUMERATOR_COL).at(encodingsFrameRows - 1);
-    double denominatorForNALevel = encodingsFrame.vec(DENOMINATOR_COL).at(encodingsFrameRows - 1);
+    long denominatorForNALevel = encodingsFrame.vec(DENOMINATOR_COL).at8(encodingsFrameRows - 1);
     double posteriorForNALevel = numeratorForNALevel / denominatorForNALevel;
     long countNACategory = (long)numeratorForNALevel; //FIXME: this is true only for binary problems
     boolean useBlending = blendingParams != null;
@@ -392,22 +365,22 @@ public class TargetEncoder extends Iced<TargetEncoder>{
   /**
    * 
    * @param fr the frame
-   * @param encodedColumn the new encoded column to compute and append to the original frame.
+   * @param newEncodedColumnName the new encoded column to compute and append to the original frame.
    * @param priorMean the global mean on .
    * @param blendingParams if provided, those params are used to blend the prior and posterior values when calculating the encoded value.
    * @return the index of the new encoded column
    */
-  int calculateAndAppendEncodedColumn(Frame fr, String encodedColumn, double priorMean, final BlendingParams blendingParams) {
+  int applyEncodings(Frame fr, String newEncodedColumnName, double priorMean, final BlendingParams blendingParams) {
     int numeratorIdx = fr.find(NUMERATOR_COL);
     int denominatorIdx = numeratorIdx + 1; // enforced by the Broadcast join
 
     Vec zeroVec = fr.anyVec().makeCon(0);
-    fr.add(encodedColumn, zeroVec);
+    fr.add(newEncodedColumnName, zeroVec);
     int encodedColumnIdx = fr.numCols() - 1;
     new ApplyEncodings(encodedColumnIdx, numeratorIdx, denominatorIdx, priorMean, blendingParams).doAll(fr);
     return encodedColumnIdx;
   }
-
+  
   /**
    * Distributed task setting the encoded value on a specific column, 
    * given 2 numerator and denominator columns already present on the frame 
@@ -415,7 +388,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
    * 
    * Note that the encoded value will use blending iff `blendingParams` are provided.
    */
-  static class ApplyEncodings extends MRTask<ApplyEncodings> {
+  private static class ApplyEncodings extends MRTask<ApplyEncodings> {
     private int _encodedColIdx;
     private int _numeratorIdx;
     private int _denominatorIdx;
@@ -488,7 +461,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
     }
   }
 
-  public static class AddNoiseTask extends MRTask<AddNoiseTask> {
+  private static class AddNoiseTask extends MRTask<AddNoiseTask> {
     private int _columnIdx;
     private int _runifIdx;
     private double _noiseLevel;
@@ -520,7 +493,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
     new SubtractCurrentRowForLeaveOneOutTask(numeratorIndex, denominatorIndex, targetIndex).doAll(data);
   }
 
-  public static class SubtractCurrentRowForLeaveOneOutTask extends MRTask<SubtractCurrentRowForLeaveOneOutTask> {
+  private static class SubtractCurrentRowForLeaveOneOutTask extends MRTask<SubtractCurrentRowForLeaveOneOutTask> {
     private int _numeratorIdx;
     private int _denominatorIdx;
     private int _targetIdx;
@@ -593,9 +566,9 @@ public class TargetEncoder extends Iced<TargetEncoder>{
       // This is not the case with LeaveOneOut when we need to subtract current row's value and for that
       // we need to make sure that response column is provided and is a binary categorical column.
       if (dataLeakageHandlingStrategy == DataLeakageHandlingStrategy.LeaveOneOut)
-        ensureTargetColumnIsBinaryCategorical(encodedFrame, targetColumn);
+        ensureTargetColumnIsSupported(encodedFrame, targetColumn);
 
-      for (String columnToEncode : _columnNamesToEncode) {
+      for (String columnToEncode : _columnNamesToEncode) { // TODO: parallelize this, should mainly require change in naming of num/den columns
 
         imputeCategoricalColumn(encodedFrame, columnToEncode, columnToEncode + NA_POSTFIX);
 
@@ -629,14 +602,14 @@ public class TargetEncoder extends Iced<TargetEncoder>{
               Scope.track(joinedFrame);
               DKV.remove(encodedFrame._key); // don't need previous version of encoded frame anymore 
               
-              calculateAndAppendEncodedColumn(joinedFrame, encodedColumn, priorMean, blendingParams);
+              applyEncodings(joinedFrame, encodedColumn, priorMean, blendingParams);
               removeNumeratorAndDenominatorColumns(joinedFrame);
               
               applyNoise(joinedFrame, encodedColumn, noiseLevel, seed);
 
               // Cases when we can introduce NA's:
-              // 1) if column is represented only in one fold then during computation of out-of-fold subsets we will get empty aggregations.
-              //   When merging with the original dataset we will get NA'a on the right side
+              // 1) if category is present only in one fold then when applying the leakage strategy, this category will be missing in the result frame.
+              //    When merging with the original dataset we will therefore get NA's for numerator and denominator, and then to encoded column.
               // Note: since we create encoding based on training dataset and use KFold mainly when we apply encoding to the training set,
               // there is zero probability that we haven't seen some category.
               imputeMissingValues(joinedFrame, joinedFrame.find(encodedColumn), priorMean);
@@ -659,13 +632,13 @@ public class TargetEncoder extends Iced<TargetEncoder>{
               DKV.remove(encodedFrame._key); // don't need previous version of encoded frame anymore 
               
               subtractTargetValueForLOO(joinedFrame, targetColumn);
-              calculateAndAppendEncodedColumn(joinedFrame, encodedColumn, priorMean, blendingParams); // do we really need to pass groupedEncodings again?
+              applyEncodings(joinedFrame, encodedColumn, priorMean, blendingParams); // do we really need to pass groupedEncodings again?
               removeNumeratorAndDenominatorColumns(joinedFrame);
               
               applyNoise(joinedFrame, encodedColumn, noiseLevel, seed);
 
               // Cases when we can introduce NA's:
-              // 1) Only in case when our encoding map has not seen some category.
+              // 1) Only when our encoding map has not seen some category.
               imputeMissingValues(joinedFrame, joinedFrame.find(encodedColumn), priorMean);
               encodedFrame = joinedFrame;
               Scope.untrack(encodedFrame.keys());
@@ -685,7 +658,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
               Scope.track(joinedFrame);
               DKV.remove(encodedFrame._key); // don't need previous version of encoded frame anymore 
 
-              calculateAndAppendEncodedColumn(joinedFrame, encodedColumn, priorMean, blendingParams);
+              applyEncodings(joinedFrame, encodedColumn, priorMean, blendingParams);
               removeNumeratorAndDenominatorColumns(joinedFrame);
               
               applyNoise(joinedFrame, encodedColumn, noiseLevel, seed);

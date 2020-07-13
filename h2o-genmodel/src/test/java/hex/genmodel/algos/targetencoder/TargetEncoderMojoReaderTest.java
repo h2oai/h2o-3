@@ -54,8 +54,8 @@ public class TargetEncoderMojoReaderTest {
     TestMojoReader testMojoReader = new TestMojoReader(mojoReaderBackendMock);
 
     EncodingMaps parsedEncodings = testMojoReader.parseEncodingMap();
-    assertArrayEquals(parsedEncodings.get("embarked").get(0), new int[]{2, 4});
-    assertArrayEquals(parsedEncodings.get("sex").get(0), new int[]{3, 42});
+    assertArrayEquals(parsedEncodings.get("embarked").get(0), new double[]{2, 4}, 1e-8);
+    assertArrayEquals(parsedEncodings.get("sex").get(0), new double[]{3, 42}, 1e-8);
 
   }
 }

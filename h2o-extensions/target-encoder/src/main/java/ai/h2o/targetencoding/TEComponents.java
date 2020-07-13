@@ -4,19 +4,19 @@ import water.Iced;
 
 public class TEComponents extends Iced<TEComponents> {
 
-  private int _numerator;  // FIXME: numerator is an int only for classification problems
-  private int _denominator;
+  private double _numerator;
+  private long _denominator;
 
-  public TEComponents(int numerator, int denominator) {
+  public TEComponents(double numerator, long denominator) {
     _numerator = numerator;
     _denominator = denominator;
   }
 
-  public int getNumerator() {
+  public double getNumerator() {
     return _numerator;
   }
 
-  public int getDenominator() {
+  public long getDenominator() {
     return _denominator;
   }
 }

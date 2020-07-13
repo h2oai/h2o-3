@@ -610,7 +610,7 @@ public class EasyPredictModelWrapper implements Serializable {
       throw new PredictException("Model is not of the expected type, class = " + m.getClass().getSimpleName());
 
     TargetEncoderMojoModel tem = (TargetEncoderMojoModel) this.m;
-    Set<String> teColumnNames = tem._teColumnNameToIdx.keySet();
+    Set<String> teColumnNames = tem._columnNameToIdx.keySet();
 
     double[] preds = new double[teColumnNames.size()];
 

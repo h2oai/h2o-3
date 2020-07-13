@@ -28,7 +28,7 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
       _model._smoothing = readkv("smoothing");
     }
     _model._targetEncodingMap = parseEncodingMap();
-    _model._teColumnNameToMissingValuesPresence = parseTEColumnNameToMissingValuesPresenceMap();
+    _model._teColumn2HasNAs = parseTEColumnsToHasNAs();
     _model._priorMean = readkv("priorMean");
   }
 
@@ -37,26 +37,26 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
     return new TargetEncoderMojoModel(columns, domains, responseColumn);
   }
   
-  private Map<String, Integer> parseTEColumnNameToMissingValuesPresenceMap() throws IOException {
-    Map<String, Integer> teColumnNameToMissingValuesPresenceMap = new HashMap<>();
-    if(exists(MISSING_VALUES_PRESENCE_MAP_PATH)) {
+  private Map<String, Boolean> parseTEColumnsToHasNAs() throws IOException {
+    Map<String, Boolean> cols2HasNAs = new HashMap<>();
+    if (exists(MISSING_VALUES_PRESENCE_MAP_PATH)) {
       Iterable<String> parsedFile = readtext(MISSING_VALUES_PRESENCE_MAP_PATH);
-      for(String line : parsedFile) {
+      for (String line : parsedFile) {
         String[] indexAndPresence = line.split("\\s*=\\s*", 2);
-        teColumnNameToMissingValuesPresenceMap.put(indexAndPresence[0], Integer.parseInt(indexAndPresence[1]));
+        cols2HasNAs.put(indexAndPresence[0], Integer.parseInt(indexAndPresence[1]) == 1);
       }
     }
-    return teColumnNameToMissingValuesPresenceMap;
+    return cols2HasNAs;
   }
   
   public EncodingMaps parseEncodingMap() throws IOException {
-    if(!exists(ENCODING_MAP_PATH)) {
+    if (!exists(ENCODING_MAP_PATH)) {
       return null;
     }
     Map<String, EncodingMap> encodingMaps;
     try (BufferedReader source = getMojoReaderBackend().getTextFile(ENCODING_MAP_PATH)) {
       encodingMaps = new HashMap<>();
-      Map<Integer, int[]> encodingsForColumn = null;
+      Map<Integer, double[]> encodingsForColumn = null;
       String sectionName = null;
       String line;
 
@@ -80,8 +80,8 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
           }
 
           String[] res = line.split("\\s*=\\s*", 2);
-          int[] numAndDenom = processNumeratorAndDenominator(res[1].split(" "));
-          encodingsForColumn.put(Integer.parseInt(res[0]), numAndDenom);
+          double[] numDen = processNumeratorAndDenominator(res[1].split(" "));
+          encodingsForColumn.put(Integer.parseInt(res[0]), numDen);
         }
       }
     }
@@ -96,18 +96,18 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
     } else return null;
   }
 
-  private int[] processNumeratorAndDenominator(String[] strings) {
-    int[] intArray = new int[strings.length];
+  private double[] processNumeratorAndDenominator(String[] numDenStr) {
+    double[] numDen = new double[numDenStr.length];
     int i = 0;
-    for (String str : strings) {
-      intArray[i] = Integer.parseInt(str);
+    for (String str : numDenStr) {
+      numDen[i] = Double.parseDouble(str);
       i++;
     }
-    return intArray;
+    return numDen;
   }
 
   @Override public String mojoVersion() {
-    return "1.00";
+    return "1.10";
   }
 
 }

@@ -224,8 +224,8 @@ public class TEMojoIntegrationTest extends TestUtil {
 
   private double checkEncodingsByFactorValue(Frame fr, String homeDestFactorValue, EncodingMaps targetEncodingMap, String teColumn) {
     int factorIndex = ArrayUtils.find(fr.vec(teColumn).domain(), homeDestFactorValue);
-    int[] encodingComponents = targetEncodingMap.get(teColumn).get(factorIndex);
-    return (double) encodingComponents[0] / encodingComponents[1];
+    double[] encodingComponents = targetEncodingMap.get(teColumn).get(factorIndex);
+    return encodingComponents[0] / encodingComponents[1];
   }
 
   @Test
@@ -394,9 +394,9 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       // Checking that encodings from Mojo model and manually computed ones are equal
       int homeDestIndex = ArrayUtils.find(fr.vec(teColumn).domain(), homeDestFactorValue);
-      int[] encodingComponentsForHomeDest = homeDestEncodingMap.get(homeDestIndex);
-      double posteriorMean = (double) encodingComponentsForHomeDest[0] / encodingComponentsForHomeDest[1];
-      double expectedLambda = TargetEncoderMojoModel.computeLambda(encodingComponentsForHomeDest[1], targetEncoderParameters._k, targetEncoderParameters._f);
+      double[] encodingComponentsForHomeDest = homeDestEncodingMap.get(homeDestIndex);
+      double posteriorMean = encodingComponentsForHomeDest[0] / encodingComponentsForHomeDest[1];
+      double expectedLambda = TargetEncoderMojoModel.computeLambda((long)encodingComponentsForHomeDest[1], targetEncoderParameters._k, targetEncoderParameters._f);
 
       double expectedBlendedEncodingForHomeDest = TargetEncoderMojoModel.computeBlendedEncoding(expectedLambda, posteriorMean, expectedPriorMean);
 

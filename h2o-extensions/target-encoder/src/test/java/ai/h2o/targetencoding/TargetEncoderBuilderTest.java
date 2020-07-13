@@ -13,6 +13,7 @@ import water.util.ArrayUtils;
 import java.util.Map;
 
 import static ai.h2o.targetencoding.TargetEncoderFrameHelper.encodingMapCleanUp;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static ai.h2o.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 import static water.TestUtil.*;
@@ -88,9 +89,9 @@ public class TargetEncoderBuilderTest {
       TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
       targetEncoderModel = builder.trainModel().get();
 
-      Map<String, Integer> teColumnNameToMissingValuesPresence = targetEncoderModel._output._column_name_to_missing_val_presence;
-      assertTrue(teColumnNameToMissingValuesPresence.get("home.dest") == 0);
-      assertTrue(teColumnNameToMissingValuesPresence.get("embarked") == 1);
+      Map<String, Boolean> teColumnNameToMissingValuesPresence = targetEncoderModel._output._te_column_to_hasNAs;
+      assertTrue(teColumnNameToMissingValuesPresence.get("home.dest"));
+      assertFalse(teColumnNameToMissingValuesPresence.get("embarked"));
     } finally {
       encodingMapCleanUp(teEncodingMap);
       if (targetEncoderModel != null) targetEncoderModel.remove();

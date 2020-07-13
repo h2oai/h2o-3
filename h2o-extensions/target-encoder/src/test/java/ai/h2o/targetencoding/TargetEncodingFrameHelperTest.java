@@ -292,4 +292,35 @@ public class TargetEncodingFrameHelperTest extends TestUtil {
 
     assertTrue(totalTimeDFork < totalTimeDoAll);
   }
+  
+  @Test
+  public void rbindTest() {
+    try {
+      Scope.enter();
+      final Frame fr = new TestFrameBuilder()
+              .withColNames("ColA")
+              .withVecTypes(Vec.T_NUM)
+              .withDataForCol(0, ar(1))
+              .build();
+
+      final Frame result = TargetEncoderFrameHelper.rBind(null, fr);
+      Scope.track(result);
+      assertEquals(fr._key, result._key);
+
+      final Frame fr2 = new TestFrameBuilder()
+              .withColNames("ColA")
+              .withVecTypes(Vec.T_NUM)
+              .withDataForCol(0, ar(42))
+              .build();
+
+      Frame result2 = TargetEncoderFrameHelper.rBind(fr, fr2);
+      Scope.track(result2);
+
+      assertEquals(1, result2.vec("ColA").at(0), 1e-5);
+      assertEquals(42, result2.vec("ColA").at(1), 1e-5);
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

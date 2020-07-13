@@ -191,7 +191,7 @@ public class BroadcastJoinTest extends TestUtil {
 
       int cardinality = fr.vec("ColA").cardinality();
 
-      int[][] encodingDataArray = new BroadcastJoinForTargetEncoder.FrameWithEncodingDataToArray(0, 1, 2, 3, cardinality, (int) biggerThanIntMax)
+      new BroadcastJoinForTargetEncoder.FrameWithEncodingDataToArray(0, 1, 2, 3, cardinality, (int) biggerThanIntMax)
               .doAll(fr)
               .getEncodingDataArray();
     } finally {
