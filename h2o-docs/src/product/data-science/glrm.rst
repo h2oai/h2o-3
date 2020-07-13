@@ -35,7 +35,7 @@ Defining a GLRM Model
 
 -  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training.
 
--  **loading_name**: Specify the frame key to save the resulting X.
+-  **representation_name**: Specify the frame key to save the resulting X.
 
 -  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data: None, Standardize, Normalize, Demean, or Descale. The default is None.
 
@@ -69,7 +69,7 @@ Defining a GLRM Model
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
 
--  `init <algo-params/init.html>`__: Specify the initialization mode: Random, SVD, PlusPlus, or User.
+-  `init <algo-params/init1.html>`__: Specify the initialization mode: Random, Furthest (Default), PlusPlus, or User.
 
 -  **svd_method**: Specify the method for computing SVD during initialization: GramSVD, Power, Randomized.
 
