@@ -2,10 +2,10 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 
-pred.r <- function(fit.8, tstdata.8) {
-    fit.8.pred <- predict(fit.8, tstdata.8, type = "lp")
-    names(fit.8.pred) <- NULL
-    return(fit.8.pred)
+pred.r <- function(fit, tstdata) {
+    fit.pred <- predict(fit, tstdata, type = "lp")
+    names(fit.pred) <- NULL
+    return(fit.pred)
 }
 
 pred.h2o <- function(model, data) {
@@ -13,10 +13,10 @@ pred.h2o <- function(model, data) {
     as.data.frame(hex.lp)$lp
 }
 
-compare.results <- function(fit.8, hex.fit.8, tstdata.8, tstdata.hex.8) {
-    fit.8.pred <- pred.r(fit.8, tstdata.8)
-    hex.lp.8 <- pred.h2o(hex.fit.8, tstdata.hex.8)
-    expect_equal(fit.8.pred, hex.lp.8, tolerance = 1e-7, scale = 1)
+compare.results <- function(fit, hex.fit, tstdata, tstdata.hex) {
+    fit.pred <- pred.r(fit, tstdata)
+    hex.lp <- pred.h2o(hex.fit, tstdata.hex)
+    expect_equal(fit.pred, hex.lp, tolerance = 1e-7, scale = 1)
 }
 
 cancer.with.sex <- function () {
