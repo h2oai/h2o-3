@@ -153,7 +153,6 @@ def test_stacked_ensemble_accepts_mixed_definition_of_base_models():
         try:
             se.train(data.x, data.y, data.train)
         except H2OResponseError as e:
-            print(e)
             assert "Unsupported type \"class water.fvec.Frame\" as a base model." in str(e), \
                 "StackedEnsembles' base models validation exception probably changed."
         else:
