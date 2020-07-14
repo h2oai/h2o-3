@@ -38,7 +38,7 @@ def connect_invalid():
     print(msg)
     print("</Error Message>")
 
-    assert msg.startswith("HTTP 401") # Unauthorized
+    assert msg.startswith("HTTP 401")  # Unauthorized
     
     # Test without any auth
     err = None
