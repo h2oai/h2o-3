@@ -421,14 +421,11 @@ public class FrameUtils {
       @Override
       public void map(Chunk[] cs) {
         if (cs[0]._len == 0) return;
-        Frame.CSVStream is = new Frame.CSVStream(cs, null, 1, _parms);
-        try {
+        try (Frame.CSVStream is = new Frame.CSVStream(cs, null, 1, _parms)) {
           _nNonEmpty++;
           _size += is.getCurrentRowSize() * cs[0]._len;
         } catch (IOException e) {
           throw new RuntimeException(e);
-        } finally {
-          try { is.close(); } catch (Exception e) { Log.err(e); }
         }
       }
 

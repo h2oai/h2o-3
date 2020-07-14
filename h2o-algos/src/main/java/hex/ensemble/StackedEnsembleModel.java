@@ -567,10 +567,12 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
               inferredDistributionFromFirstModel = false;
             }
           } else {
-            // Distribution of base models differ
-            Log.warn("Base models are inconsistent; they use different distributions: "
-                    + distributionFamily(this) + " and: " + distributionFamily(aModel) +
-                    ". Reverting to default distribution.");
+            if (distributionFamily(aModel) != distributionFamily(this)) {
+              // Distribution of base models differ
+              Log.warn("Base models are inconsistent; they use different distributions: "
+                      + distributionFamily(this) + " and: " + distributionFamily(aModel) +
+                      ". Reverting to default distribution.");
+            } // else the first model was DRF/XRT so we don't want to warn
             inferBasicDistribution();
             inferredDistributionFromFirstModel = false;
           }

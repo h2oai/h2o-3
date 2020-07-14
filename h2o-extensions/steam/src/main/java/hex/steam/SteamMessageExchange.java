@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.*;
 
+import static hex.steam.SteamMessenger.TYPE;
+
 public class SteamMessageExchange implements SteamMessageSender {
 
     private static final Logger LOG = Logger.getLogger(SteamMessageExchange.class);
@@ -50,10 +52,14 @@ public class SteamMessageExchange implements SteamMessageSender {
     public void distributeMessage(String message) {
         Map<String, String> parsedMessage = Collections.unmodifiableMap(gson.fromJson(message, MAP_TYPE));
         for (SteamMessenger listener : messengers) {
-            try {
-                listener.onMessage(parsedMessage);
-            } catch (Exception e) {
-                LOG.error("Error while processing steam message.", e);
+            if (parsedMessage.get(TYPE) != null) {
+                try {
+                    listener.onMessage(parsedMessage);
+                } catch (Exception e) {
+                    LOG.error("Error while processing steam message.", e);
+                }
+            } else {
+                LOG.error("Received message from steam without type: " + message);
             }
         }
     }

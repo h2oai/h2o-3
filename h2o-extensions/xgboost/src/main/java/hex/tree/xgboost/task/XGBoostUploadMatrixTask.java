@@ -2,11 +2,10 @@ package hex.tree.xgboost.task;
 
 import hex.tree.xgboost.exec.XGBoostHttpClient;
 import hex.tree.xgboost.matrix.FrameMatrixLoader;
+import hex.tree.xgboost.matrix.MatrixLoader;
 import org.apache.log4j.Logger;
 import water.H2O;
 import water.Key;
-
-import java.io.*;
 
 public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMatrixTask> {
 
@@ -32,7 +31,9 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
     @Override
     protected void execute() {
         XGBoostHttpClient client = new XGBoostHttpClient(remoteNodes[H2O.SELF.index()], https, userName, password);
-        client.uploadObject(_modelKey, "matrix", matrixLoader.makeLocalMatrix());
+        LOG.info("Preparing matrix part to upload.");
+        MatrixLoader.DMatrixProvider data = matrixLoader.makeLocalMatrix();
+        client.uploadObject(_modelKey, "matrix", data);
     }
 
 }

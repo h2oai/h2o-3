@@ -26,8 +26,6 @@ import static water.parser.ParseSetup.NO_HEADER;
 public class HiveTableImporterImpl extends AbstractH2OExtension implements ImportHiveTableHandler.HiveTableImporter {
 
   private static final Logger LOG = Logger.getLogger(HiveTableImporterImpl.class);
-  
-  private static String NAME = "HiveTableImporter";
 
   @Override
   public String getExtensionName() {
