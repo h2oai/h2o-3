@@ -67,14 +67,18 @@ public class SteamExecutorStarter implements SteamMessenger {
         Map<String, String> startRequest = makeStartRequest();
         sendMessage(startRequest);
         Map<String, String> response = waitForResponse(startRequest, job);
-        if (response != null && "started".equals(response.get("status"))) {
-            String remoteUri = response.get("uri");
-            String userName = response.get("user");
-            String password = response.get("password");
-            cluster = new ClusterInfo(remoteUri, userName, password);
-            LOG.info("External cluster started at " + remoteUri + ".");
+        if (response != null) {
+            if ("started".equals(response.get("status"))) {
+                String remoteUri = response.get("uri");
+                String userName = response.get("user");
+                String password = response.get("password");
+                cluster = new ClusterInfo(remoteUri, userName, password);
+                LOG.info("External cluster started at " + remoteUri + ".");
+            } else {
+                throw new IllegalStateException("Failed to start external cluster: " + response.get("reason"));
+            }
         } else {
-            throw new IllegalStateException("Failed to start external cluster: " + response.get("reason"));
+            throw new IllegalStateException("Stop requested.");
         }
     }
 
@@ -85,7 +89,8 @@ public class SteamExecutorStarter implements SteamMessenger {
     private Map<String, String> waitForResponse(Map<String, String> startRequest, Job<XGBoostModel> job) {
         String responseKey = startRequest.get(ID) + "_response";
         synchronized (receivedMessages) {
-            while (!receivedMessages.containsKey(responseKey) && !job.stop_requested()) {
+            receivedMessages.put(responseKey, null);
+            while (receivedMessages.get(responseKey) == null && !job.stop_requested()) {
                 try {
                     receivedMessages.wait(10000);
                 } catch (InterruptedException e) {
@@ -103,7 +108,7 @@ public class SteamExecutorStarter implements SteamMessenger {
         }
     }
 
-    private synchronized void sendMessage(Map<String, String> message) throws IOException {
+    private void sendMessage(Map<String, String> message) throws IOException {
         synchronized (sendingLock) {
             if (this.sender != null) {
                 sender.sendMessage(message);
@@ -112,37 +117,48 @@ public class SteamExecutorStarter implements SteamMessenger {
             }
         }
     }
-
+    
     @Override
     public void onMessage(Map<String, String> message) {
         if ("stopXGBoostClusterNotification".equals(message.get(TYPE))) {
             handleStopRequest(message);
         } else {
-            queueResponseMessage(message);
+            queueMessageIfResponse(message);
         }
     }
 
-    private void queueResponseMessage(Map<String, String> message) {
-        LOG.info("Received message response " + message.get(ID));
+    private void queueMessageIfResponse(Map<String, String> message) {
         synchronized (receivedMessages) {
-            receivedMessages.put(message.get(ID), message);
-            receivedMessages.notifyAll();
+            if (receivedMessages.containsKey(message.get(ID))) {
+                LOG.info("Received message response " + message.get(ID));
+                receivedMessages.put(message.get(ID), message);
+                receivedMessages.notifyAll();
+            } else {
+                LOG.debug("Ignoring message " + message.get(ID));
+            }
         }
     }
 
     private void handleStopRequest(Map<String, String> message) {
         LOG.info("Received stop request " + message.get(ID));
-        synchronized (clusterLock) {
-            boolean xgBoostInProgress = isXGBoostInProgress();
-            try {
-                LOG.info("Responding to stop request with allowed=" + !xgBoostInProgress);
-                sendMessage(makeStopConfirmation(message, !xgBoostInProgress));
-                if (!xgBoostInProgress) {
-                    cluster = null;
-                }
-            } catch (IOException e) {
-                LOG.error("Failed to send stop cluster response.", e);
+        boolean xgBoostInProgress = isXGBoostInProgress();
+        if (xgBoostInProgress) {
+            LOG.info("Responding to stop request with allowed=false");
+            sendStopResponse(message, false);
+        } else {
+            synchronized (clusterLock) {
+                LOG.info("Responding to stop request with allowed=true");
+                sendStopResponse(message, true);
+                cluster = null;
             }
+        }
+    }
+
+    private void sendStopResponse(Map<String, String> request, boolean allow) {
+        try {
+            sendMessage(makeStopConfirmation(request, allow));
+        } catch (IOException e) {
+            LOG.error("Failed to send stop cluster response.", e);
         }
     }
 

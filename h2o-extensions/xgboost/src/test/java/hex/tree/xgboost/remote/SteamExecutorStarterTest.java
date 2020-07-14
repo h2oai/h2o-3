@@ -129,7 +129,7 @@ public class SteamExecutorStarterTest {
             steam.sendMessage(makeStartResponse(startReq, "failed", "Testing in progress"));
             try {
                 Scope.track_generic(model1.get());
-                fail("model1 expected exception to be thrown.");
+                fail("Expected exception to be thrown");
             } catch (Exception e) {
                 Scope.track_generic(model1._result.get()); // even though the training failed we need to remove the model
                 assertEquals("Failed to start external cluster: Testing in progress", e.getCause().getMessage());
@@ -192,6 +192,58 @@ public class SteamExecutorStarterTest {
             // steam requests cluster stop
             steam.sendMessage(makeStopReq("stop_req_03"));
             expectAndCheckStopResponse(steam, "stop_req_03", true);
+        } finally {
+            steam.close();
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testSteamClusterTerminateNoCluster() throws Exception {
+        Scope.enter();
+        final WebsocketClient steam = new WebsocketClient();
+        try {
+            // steam requests cluster stop
+            steam.sendMessage(makeStopReq("stop_req_01"));
+            expectAndCheckStopResponse(steam, "stop_req_01", true);
+        } finally {
+            steam.close();
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testSteamClusterTerminateDuringStart() throws Exception {
+        Scope.enter();
+        final WebsocketClient steam = new WebsocketClient();
+        try {
+            Frame train = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+            XGBoostModel.XGBoostParameters params = new XGBoostModel.XGBoostParameters();
+            params._train = train._key;
+            params._ntrees = 200;
+            params._response_column = "AGE";
+            params._ignored_columns = new String[]{"ID"};
+
+            Job<XGBoostModel> model = new XGBoost(params).trainModel();
+
+            // first request will request external cluster start
+            Map<String, String> startReq = steam.waitToReceiveMessage("start request");
+            assertNotNull(startReq.get("_id"));
+            assertEquals("startXGBoostCluster", startReq.get("_type"));
+
+            // steam requests cluster stop
+            steam.sendMessage(makeStopReq("stop_req_01"));
+            expectAndCheckStopResponse(steam, "stop_req_01", false);
+
+            // steam fails cluster start
+            steam.sendMessage(makeStartResponse(startReq, "failed", "testing"));
+            try {
+                Scope.track_generic(model.get());
+                fail("Expected exception to be thrown");
+            } catch (Exception e) {
+                Scope.track_generic(model._result.get()); // even though the training failed we need to remove the model
+                assertEquals("Failed to start external cluster: testing", e.getCause().getMessage());
+            }
         } finally {
             steam.close();
             Scope.exit();
