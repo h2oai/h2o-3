@@ -4593,6 +4593,8 @@ print.H2ONode <- function(node){
 #' @slot levels A \code{character} representing categorical levels on split from parent's node belonging into this node. NULL for root node or non-categorical splits.
 #' @slot nas A \code{character} representing if NA values go to the left node or right node. May be NA if node is a leaf.
 #' @slot predictions A \code{numeric} representing predictions for each node in the graph.
+#' @slot tree_decision_path A \code{character}, plain language rules representation of a trained decision tree    
+#' @slot decision_paths A \code{character} representing plain language rules that were used in a particular prediction.    
 #' @aliases H2OTree
 #' @export
 setClass(
@@ -4610,7 +4612,9 @@ setClass(
     features = "character",
     levels = "list",
     nas = "character",
-    predictions = "numeric"
+    predictions = "numeric",
+    tree_decision_path = "character",
+    decision_paths = "character"
   )
 )
 
@@ -4747,7 +4751,9 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
     thresholds = res$thresholds,
     features = res$features,
     nas = res$nas,
-    predictions = res$predictions
+    predictions = res$predictions,
+    tree_decision_path = res$tree_decision_path,
+    decision_paths = res$decision_paths
   )
 
   node_index <- 0

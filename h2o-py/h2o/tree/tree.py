@@ -2,6 +2,7 @@ import math
 
 import h2o
 from h2o.estimators import H2OXGBoostEstimator
+from h2o.utils.metaclass import Deprecated as deprecated
 
 
 class H2OTree(object):
@@ -87,6 +88,8 @@ class H2OTree(object):
         self._nas = response['nas']
         self._predictions = response['predictions']
         self._root_node = self.__assemble_tree(0)
+        self._tree_decision_path = response['tree_decision_path']
+        self._decision_paths = response['decision_paths']
 
     @property
     def left_children(self):
@@ -154,6 +157,7 @@ class H2OTree(object):
     @property
     def descriptions(self):
         """
+        Deprecated, please use decision_paths and tree_decision_path instead.
         Descriptions for each node to be found in the tree, in human-readable format. Provides a human-readable summary of each node.
         Contains split threshold if the split is based on numerical column.
         For categorical splits, it contains a list of categorical levels for transition from the parent node.
@@ -362,6 +366,15 @@ class H2OTree(object):
         >>> tree.predictions
         """
         return self._predictions
+
+    @property
+    def tree_decision_path(self):
+        return self._tree_decision_path
+
+    @property
+    def decision_paths(self):
+        return self._decision_paths
+
 
     def __convert_threshold_nans(self, thresholds):
         for i in range(0, len(thresholds)):

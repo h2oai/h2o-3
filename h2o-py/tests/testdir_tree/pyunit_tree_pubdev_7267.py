@@ -16,6 +16,7 @@ def test_terminal_xgboost_nodes():
     tree = H2OTree(xgboost, 0)
     assert len(tree.node_ids) == 3
 
+    # tree.descriptions is deprecated
     # Depth is 1 - last two nodes should be described as terminal
     assert "terminal node" in tree.descriptions[1]
     assert "terminal node" in tree.descriptions[2]

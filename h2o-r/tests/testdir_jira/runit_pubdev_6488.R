@@ -19,8 +19,10 @@ test.tree.fetch <- function() {
   tree <- h2o.getModelTree(model, 1)
   expect_false(is.null(tree))
   expect_equal(3, grep("Prediction is 0", capture.output(print(tree@root_node))))
-  
-  # Random Tree API test with a randomly generated matrix
+  expect_false(is.null(tree@tree_decision_path))  
+  expect_false(is.null(tree@decision_paths[1]))
+
+    # Random Tree API test with a randomly generated matrix
   nrows <- 1000
   ntrees <- 50
   response <- sample(0:1,nrows,replace = TRUE)
@@ -37,7 +39,8 @@ test.tree.fetch <- function() {
   for (i in seq(1,ntrees)) {
     tree <- h2o.getModelTree(model, i)
     expect_false(is.null(tree))
-  
+    expect_false(is.null(tree@tree_decision_path))
+    expect_false(is.null(tree@decision_paths[1]))
   }
   
   
@@ -58,6 +61,8 @@ test.tree.fetch <- function() {
   for (i in seq(1,ntrees)) {
     tree <- h2o.getModelTree(model, i)
     expect_false(is.null(tree))
+    expect_false(is.null(tree@tree_decision_path))
+    expect_false(is.null(tree@decision_paths[1]))
   }
   
   
@@ -79,6 +84,8 @@ test.tree.fetch <- function() {
     for(clazz in domain){
     tree <- h2o.getModelTree(model, i,as.character(clazz))
     expect_false(is.null(tree))
+    expect_false(is.null(tree@tree_decision_path))
+    expect_false(is.null(tree@decision_paths[1]))
     }
   }
   
@@ -104,6 +111,8 @@ test.tree.fetch <- function() {
     for(clazz in states){
       tree <- h2o.getModelTree(model, i,as.character(clazz))
       expect_false(is.null(tree))
+      expect_false(is.null(tree@tree_decision_path))
+      expect_false(is.null(tree@decision_paths[1]))
     }
   }
   
@@ -128,7 +137,8 @@ test.tree.fetch <- function() {
   for (i in seq(1,ntrees)) {
     tree <- h2o.getModelTree(model, i)
     expect_false(is.null(tree))
-    
+    expect_false(is.null(tree@tree_decision_path))
+    expect_false(is.null(tree@decision_paths[1]))
   }
 
 }
