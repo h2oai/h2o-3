@@ -376,6 +376,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.6.2-jdk-$*$(GPU_SUFFIX):$(VERSION)
 endif
 
+ifneq ($(CI), 1)
 dev-r-4.0.2-openjdk-7: dev-r-4.0.2
 endif
 dev-r-4.0.2-openjdk-7:
