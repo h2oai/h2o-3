@@ -1,6 +1,7 @@
 package hex.tree.xgboost;
 
 import hex.*;
+import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
@@ -10,6 +11,7 @@ import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
+import hex.genmodel.tools.PredictCsv;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.xgboost.predict.XGBoostNativeVariableImportance;
 import hex.tree.xgboost.util.BoosterDump;
@@ -28,8 +30,10 @@ import org.junit.runners.Parameterized;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
+import water.parser.ParseSetup;
 import water.rapids.Rapids;
 import water.util.ArrayUtils;
+import water.util.JCodeGen;
 import water.util.TwoDimTable;
 
 import java.io.*;
@@ -1998,5 +2002,106 @@ public class XGBoostTest extends TestUtil {
     }
   }
 
+  
+  
+  @Test
+  public void testMOJOandPOJOSupportedCategoricalEncodings() throws Exception {
+    Scope.enter();
+    try {
+      // Parse frame into H2O
+      String response = "AGE";
+      final String test_file = "./smalldata/prostate/prostate.csv";
+      Frame tfr = parse_test_file(test_file)
+              .toCategoricalCol("RACE")
+              .toCategoricalCol("GLEASON")
+              .toCategoricalCol(response);
+      tfr.remove("ID").remove();
+      tfr.vec("RACE").setDomain(ArrayUtils.append(tfr.vec("RACE").domain(), "3"));
+      Scope.track(tfr);
+      DKV.put(tfr);
+      
+      Model.Parameters.CategoricalEncodingScheme[] supportedSchemes = {
+              Model.Parameters.CategoricalEncodingScheme.AUTO,
+//              Model.Parameters.CategoricalEncodingScheme.OneHotExplicit,
+//              Model.Parameters.CategoricalEncodingScheme.SortByResponse,
+//              Model.Parameters.CategoricalEncodingScheme.EnumLimited,
+//              Model.Parameters.CategoricalEncodingScheme.Enum,
+//              Model.Parameters.CategoricalEncodingScheme.Binary,
+//              Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
+//              Model.Parameters.CategoricalEncodingScheme.Eigen
+      };
+
+      for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
+        
+        XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+        parms._train = tfr._key;
+        parms._response_column = response;
+        parms._ignored_columns = new String[]{"ID"};
+        parms._categorical_encoding = scheme;
+        if (scheme == Model.Parameters.CategoricalEncodingScheme.EnumLimited) {
+          parms._max_categorical_levels = 3;
+        }
+
+        XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+        Scope.track_generic(model);
+
+        Frame preds = Scope.track(model.score(tfr));
+        
+        assertTrue(model.testJavaScoring(tfr, preds, 1e-6));
+        
+        //TODO: MOJO and POJO checks should currently work at least for default case?
+        
+        // POJO check //
+
+        File pojoScoringOutput = tmp.newFile(model._key + "_scored.csv");
+
+
+        String modelName = JCodeGen.toJavaId(model._key.toString());
+        String pojoSource = model.toJava(false, true);
+        Class pojoClass = JCodeGen.compile(modelName, pojoSource);
+
+        PredictCsv predictor = PredictCsv.make(
+                new String[]{
+                        "--embedded",
+                        "--input", TestUtil.makeNfsFileVec(test_file).getPath(),
+                        "--output", pojoScoringOutput.getAbsolutePath(),
+                        "--decimal"}, (GenModel) pojoClass.newInstance());
+        predictor.run();
+        Frame scoredWithPojo = Scope.track(parse_test_file(pojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+          @Override
+          public ParseSetup transformSetup(ParseSetup guessedSetup) {
+            return guessedSetup.setCheckHeader(1);
+          }
+        }));
+
+        scoredWithPojo.setNames(preds.names());
+        assertFrameEquals(preds, scoredWithPojo, 1e-7);
+
+      // MOJO check //  
+        
+      File mojoScoringOutput = tmp.newFile(model._key + "_scored2.csv");
+      MojoModel mojoModel = model.toMojo();
+
+      predictor = PredictCsv.make(
+              new String[]{
+                      "--embedded",
+                      "--input", TestUtil.makeNfsFileVec(test_file).getPath(),
+                      "--output", mojoScoringOutput.getAbsolutePath(),
+                      "--decimal"}, (GenModel) mojoModel);
+      predictor.run();
+      Frame scoredWithMojo = Scope.track(parse_test_file(mojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+        @Override
+        public ParseSetup transformSetup(ParseSetup guessedSetup) {
+          return guessedSetup.setCheckHeader(1);
+        }
+      }));
+
+      scoredWithMojo.setNames(preds.names());
+      assertFrameEquals(preds, scoredWithMojo, 1e-7);
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
 
 }
