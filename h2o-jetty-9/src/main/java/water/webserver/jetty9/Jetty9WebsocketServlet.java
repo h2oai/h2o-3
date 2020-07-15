@@ -7,15 +7,15 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import water.webserver.iface.WebsocketConnection;
 import water.webserver.iface.WebsocketHandler;
-import water.webserver.iface.WebsocketServlet;
+import water.webserver.iface.H2OWebsocketServlet;
 
 import java.io.IOException;
 
 public class Jetty9WebsocketServlet extends WebSocketServlet {
 
-    private final WebsocketServlet impl;
+    private final H2OWebsocketServlet impl;
 
-    public Jetty9WebsocketServlet(WebsocketServlet impl) {
+    public Jetty9WebsocketServlet(H2OWebsocketServlet impl) {
         this.impl = impl;
     }
 

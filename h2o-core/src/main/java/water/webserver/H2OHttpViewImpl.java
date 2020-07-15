@@ -47,7 +47,7 @@ public class H2OHttpViewImpl implements H2OHttpView {
   }
 
   @Override
-  public LinkedHashMap<String, Class<? extends WebsocketServlet>> getWebsockets() {
+  public LinkedHashMap<String, Class<? extends H2OWebsocketServlet>> getWebsockets() {
     return ServletService.INSTANCE.getAllWebsockets();
   }
 

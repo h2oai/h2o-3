@@ -1,6 +1,6 @@
 package water.server;
 
-import water.webserver.iface.WebsocketServlet;
+import water.webserver.iface.H2OWebsocketServlet;
 
 import javax.servlet.http.HttpServlet;
 import java.util.*;
@@ -27,7 +27,7 @@ public final class ServletService {
                     LinkedHashMap::new));
   }
 
-  public synchronized LinkedHashMap<String, Class<? extends WebsocketServlet>> getAllWebsockets() {
+  public synchronized LinkedHashMap<String, Class<? extends H2OWebsocketServlet>> getAllWebsockets() {
     return StreamSupport
         .stream(_loader.spliterator(), false)
         .sorted(Comparator.comparing(ServletProvider::priority).reversed())

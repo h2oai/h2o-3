@@ -23,7 +23,7 @@ public interface H2OHttpView {
    */
   LinkedHashMap<String, Class<? extends HttpServlet>> getServlets();
 
-  LinkedHashMap<String, Class<? extends WebsocketServlet>> getWebsockets();
+  LinkedHashMap<String, Class<? extends H2OWebsocketServlet>> getWebsockets();
 
   /**
    * @return custom authentication extensions if any

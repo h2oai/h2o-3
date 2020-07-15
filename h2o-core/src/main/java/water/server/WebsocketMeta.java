@@ -1,6 +1,6 @@
 package water.server;
 
-import water.webserver.iface.WebsocketServlet;
+import water.webserver.iface.H2OWebsocketServlet;
 
 /**
  * Describes how to register a Websocket in H2O Server
@@ -8,9 +8,9 @@ import water.webserver.iface.WebsocketServlet;
 public class WebsocketMeta {
 
     private final String _contextPath;
-    private final Class<? extends WebsocketServlet> _servletClass;
+    private final Class<? extends H2OWebsocketServlet> _servletClass;
 
-    public WebsocketMeta(String contextPath, Class<? extends WebsocketServlet> servletClass) {
+    public WebsocketMeta(String contextPath, Class<? extends H2OWebsocketServlet> servletClass) {
         _contextPath = contextPath;
         _servletClass = servletClass;
     }
@@ -19,7 +19,7 @@ public class WebsocketMeta {
         return _contextPath;
     }
 
-    public Class<? extends WebsocketServlet> getHandlerClass() {
+    public Class<? extends H2OWebsocketServlet> getHandlerClass() {
         return _servletClass;
     }
     

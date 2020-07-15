@@ -11,7 +11,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import water.webserver.iface.H2OHttpView;
 import water.webserver.iface.RequestAuthExtension;
 import water.webserver.iface.WebServer;
-import water.webserver.iface.WebsocketServlet;
+import water.webserver.iface.H2OWebsocketServlet;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
@@ -77,7 +77,7 @@ class Jetty8ServerAdapter implements WebServer {
     for (Map.Entry<String, Class<? extends HttpServlet>> entry : h2oHttpView.getServlets().entrySet()) {
       context.addServlet(entry.getValue(), entry.getKey());
     }
-    for (Map.Entry<String, Class<? extends WebsocketServlet>> entry : h2oHttpView.getWebsockets().entrySet()) {
+    for (Map.Entry<String, Class<? extends H2OWebsocketServlet>> entry : h2oHttpView.getWebsockets().entrySet()) {
       try {
         Servlet servlet = new Jetty8WebsocketServlet(entry.getValue().newInstance());
         context.addServlet(new ServletHolder(entry.getValue().getName(), servlet), entry.getKey());
