@@ -41,6 +41,10 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
+      stageName: 'R4.0 Smoke', target: 'test-r-smoke', rVersion: '4.0.2',timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
       stageName: 'Flow Headless Smoke', target: 'test-flow-headless-smoke',timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
@@ -105,6 +109,14 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.5 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.5.3',
+      timeoutValue: 20, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
+      stageName: 'R4.0 Small', target: 'test-r-small', rVersion: '4.0.2',
+      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
+      stageName: 'R4.0 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '4.0.2',
       timeoutValue: 20, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [

@@ -20,8 +20,9 @@ mkdir -p $HOME/R_tmp
 cd $HOME/R_tmp
 
 # Download and extract R source
-echo Downloading R source
-wget -q https://cran.r-project.org/src/base/R-3/R-${R_VERSION}.tar.gz
+echo Downloading R source for ${R_VERSION}
+R_MAJOR=$(echo $R_VERSION | head -c 1)
+wget -q https://cran.r-project.org/src/base/R-${R_MAJOR}/R-${R_VERSION}.tar.gz
 tar xzf R-${R_VERSION}.tar.gz
 rm R-${R_VERSION}.tar.gz
 
