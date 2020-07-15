@@ -57,16 +57,16 @@ When running on Hadoop, H2O can also export data into Hive tables. In order to d
 		library(h2o)
 		h2o.init()
 		iris.hex <- h2o.importFile("iris/iris_wheader.csv")
-        h2o.save_to_hive(iris.hex, jdbc_url = "jdbc:hive2://hive-server:10000/default", table_name = "airlines")	
+		h2o.save_to_hive(iris.hex, jdbc_url = "jdbc:hive2://hive-server:10000/default", table_name = "airlines")	
 
    .. code-tab:: python
    
 		import h2o
 		h2o.init()
-        iris_hex = h2o.import_file("iris/iris_wheader.csv")
-        iris_hex.save_to_hive(
-            jdbc_url = "jdbc:hive2://hive-server:10000/default", 
-            table_name = "airlines",
-            format = "parquet",
-            table_path = "/user/bob/tables/iris"
+		iris_hex = h2o.import_file("iris/iris_wheader.csv")
+		iris_hex.save_to_hive(
+			jdbc_url = "jdbc:hive2://hive-server:10000/default", 
+			table_name = "airlines",
+			format = "parquet",
+			table_path = "/user/bob/tables/iris"
         )
