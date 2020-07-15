@@ -398,8 +398,8 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
 
 
 def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None, pattern=None, skipped_columns=None, custom_non_data_line_markers = None,
-                partition_by = None):
+                na_strings=None, pattern=None, skipped_columns=None, custom_non_data_line_markers=None,
+                partition_by=None):
     """
     Import a dataset that is already on the cluster.
 

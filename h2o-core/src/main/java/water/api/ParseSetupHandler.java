@@ -10,9 +10,7 @@ import water.parser.ParseSetup;
 import water.util.DistributedException;
 import water.util.PojoUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -112,16 +110,6 @@ public class ParseSetupHandler extends Handler {
     return p;
   }
 
-  private class MissingPartitionByPath {
-    private final String path;
-    private final String partitionColumn;
-
-    private MissingPartitionByPath(String path, String partitionColumn) {
-      this.path = path;
-      this.partitionColumn = partitionColumn;
-    }
-  }
-
   /**
    * @param sourceFrames       Source frames provided by the user to parse
    * @param partitionByColumns partitionByColumn specified by the user
@@ -129,15 +117,14 @@ public class ParseSetupHandler extends Handler {
   private void checkPartitionByColumnPresence(final KeyV3.FrameKeyV3[] sourceFrames, final String[] partitionByColumns) {
     if (partitionByColumns == null || partitionByColumns.length == 0) return;
     
-    final List<MissingPartitionByPath> nonMatchingKeys = new ArrayList<>();
+    final Map<String, String> nonMatchingKeys = new HashMap<>();
     for (final String partitionColumn : partitionByColumns) {
       final Pattern pattern = Pattern.compile(".*" + partitionColumn + "=([^\\/\\\\]+).*");
       for (int i = 0; i < sourceFrames.length; i++) {
         final String framePath = sourceFrames[i].key().toString();
         final Matcher matcher = pattern.matcher(framePath);
         if (!matcher.matches()) {
-          final MissingPartitionByPath missingPartitionByPath = new MissingPartitionByPath(framePath, partitionColumn);
-          nonMatchingKeys.add(missingPartitionByPath);
+          nonMatchingKeys.put(framePath, partitionColumn);
         }
       }
     }
@@ -145,12 +132,12 @@ public class ParseSetupHandler extends Handler {
     if (nonMatchingKeys.size() == 0) return;
 
     final StringBuilder errMsgBuilder = new StringBuilder("The following files do not contain required partitionBy columns on their path: ");
-    nonMatchingKeys.forEach(nonMatching -> {
+    nonMatchingKeys.entrySet().forEach(nonMatching -> {
       errMsgBuilder.append('\n');
       errMsgBuilder.append("File: ");
-      errMsgBuilder.append(nonMatching.path);
+      errMsgBuilder.append(nonMatching.getKey());
       errMsgBuilder.append(" | Missing column: ");
-      errMsgBuilder.append(nonMatching.partitionColumn);
+      errMsgBuilder.append(nonMatching.getValue());
     });
 
     throw new IllegalArgumentException(errMsgBuilder.toString());

@@ -38,8 +38,7 @@ class ParseHandler extends Handler {
 
     if (parse.partition_by != null) {
       final String[][] partitionValues = syntheticColumValuesFromPartitions(parse.partition_by, srcs);
-      setup.setSyntheticColumns(parse.partition_by, partitionValues);
-      setup.setSyntheticColumnType(Vec.T_CAT);
+      setup.setSyntheticColumns(parse.partition_by, partitionValues, Vec.T_CAT);
     }
 
     if ((setup.getParseType().name().toLowerCase().equals("svmlight") ||

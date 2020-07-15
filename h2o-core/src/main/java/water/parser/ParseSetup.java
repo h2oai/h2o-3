@@ -128,13 +128,10 @@ public class ParseSetup extends Iced {
     }
   }
   
-  public void setSyntheticColumns(String[] names, String[][] valueMapping) {
+  public void setSyntheticColumns(String[] names, String[][] valueMapping, byte synthetic_column_type) {
     _synthetic_column_names = names;
     _synthetic_column_values = valueMapping;
-  }
-
-  public void setSyntheticColumnType(byte _synthetic_column_type) {
-    this._synthetic_column_type = _synthetic_column_type;
+    _synthetic_column_type = synthetic_column_type;
   }
 
   /**
