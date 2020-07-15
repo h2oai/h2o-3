@@ -26,7 +26,7 @@ public class TransparentProxyServlet extends ProxyServlet.Transparent {
 
   @Override
   protected HttpClient newHttpClient() {
-    final SslContextFactory sslContextFactory = new SslContextFactory(true);
+    final SslContextFactory sslContextFactory = new SslContextFactory.Client(true);
     return new HttpClient(sslContextFactory);
   }
 
