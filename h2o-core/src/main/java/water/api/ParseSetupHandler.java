@@ -43,9 +43,6 @@ public class ParseSetupHandler extends Handler {
     ParseSetup ps;
     try{
       ps = new ParseSetup(p);
-      if (p.partition_by != null) {
-        ps.setSyntheticColumns(p.partition_by, null);
-      }
       ps = ParseSetup.guessSetup(fkeys, ps);
     } catch(Throwable ex) {
       Throwable ex2 = ex;
