@@ -15,6 +15,7 @@ import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.BoosterHelper;
 import hex.tree.xgboost.util.PredictConfiguration;
 import hex.util.EffectiveParametersUtils;
+import hex.util.LinearAlgebraUtils;
 import ml.dmlc.xgboost4j.java.Booster;
 import hex.tree.xgboost.predict.PredictorFactory;
 import org.apache.log4j.Logger;
@@ -765,6 +766,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return featureIdx != -1 && _output._varimp._varimp[featureIdx] != 0d;
   }
 
+  @Override
+  public ToEigenVec getToEigenVec() {
+    return LinearAlgebraUtils.toEigen;
+  }
+  
   //--------------------------------------------------------------------------------------------------------------------
   // Serialization into a POJO
   //--------------------------------------------------------------------------------------------------------------------

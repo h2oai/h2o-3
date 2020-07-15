@@ -17,6 +17,7 @@ import hex.tree.xgboost.predict.XGBoostVariableImportance;
 import hex.tree.xgboost.remote.SteamExecutorStarter;
 import hex.tree.xgboost.util.FeatureScore;
 import hex.util.CheckpointUtils;
+import hex.util.LinearAlgebraUtils;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.Rabit;
 import ml.dmlc.xgboost4j.java.XGBoostError;
@@ -715,6 +716,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     warn("_ntrees", "Setting optimal _ntrees to " + _parms._ntrees + " for cross-validation main model based on early stopping of cross-validation models.");
     warn("_stopping_rounds", "Disabling convergence-based early stopping for cross-validation main model.");
     warn("_max_runtime_secs", "Disabling maximum allowed runtime for cross-validation main model.");
+  }
+
+  @Override
+  public ToEigenVec getToEigenVec() {
+    return LinearAlgebraUtils.toEigen;
   }
 
 }
