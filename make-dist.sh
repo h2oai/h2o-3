@@ -95,8 +95,6 @@ mkdir target/docs-website/h2o-py
 mkdir target/docs-website/h2o-core
 mkdir target/docs-website/h2o-algos
 mkdir target/docs-website/h2o-genmodel
-mkdir target/docs-website/h2o-scala_2.10
-mkdir target/docs-website/h2o-scala_2.11
 cp -rp h2o-docs/src/front/* target/docs-website
 cp -rp h2o-docs/src/product/_build/html/* target/docs-website/h2o-docs
 cp -rp h2o-docs/web/* target/docs-website/h2o-docs

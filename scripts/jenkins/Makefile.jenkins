@@ -239,8 +239,6 @@ test-package-java:
 		h2o-genmodel-extensions/jgrapht/src/ \
 		h2o-genmodel-extensions/jgrapht/build/libs/jgrapht*.jar \
 		h2o-jaas-pam/build/libs/h2o-jaas-pam-*.jar \
-		h2o-scala/src/ \
-		h2o-scala/build/h2o-scala_2.*/libs/h2o-scala_2.*.jar \
 		h2o-webserver-iface/src/ \
 		h2o-webserver-iface/build/libs/h2o-webserver-iface-*.jar \
 		h2o-jetty-8/src/ \
@@ -296,42 +294,42 @@ test-junit-10-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-junit-10
 
 test-junit-10:
-	./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-11-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-11
 
 test-junit-11:
-	./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-12-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-12
 
 test-junit-12:
-	./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-13-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-13
 
 test-junit-13:
-	./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-smoke-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-smoke
 
 test-junit-smoke:
-	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test h2o-scala_2.10:test h2o-scala_2.11:test $$ADDITIONAL_GRADLE_OPTS
+	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-10-smoke-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-10-smoke
 
 test-junit-7-smoke:
-	ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=7" DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test h2o-scala_2.10:test h2o-scala_2.11:test -x h2o-algos:testMultiNode $$ADDITIONAL_GRADLE_OPTS
+	ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=7" DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test -x h2o-algos:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-7-smoke-jenkins:
 	$(call sed_test_scripts)

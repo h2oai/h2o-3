@@ -131,11 +131,6 @@ ext {
       project(':h2o-genmodel-ext-deepwater')
     ]
 
-    scalaProjects = [
-      project(':h2o-scala_2.10'),
-      project(':h2o-scala_2.11'),
-    ]
-
     rProjects = [
       project(':h2o-r')
     ]
@@ -278,15 +273,6 @@ subprojects {
         // Analyze dependencies 
         //apply plugin: 'ca.cutterslade.analyze'
         
-    }
-
-    // Configure Scala projects
-    if (project in scalaProjects) {
-        apply from: "$rootDir/gradle/scala.gradle"
-        if (testNeedsCiProject.contains(project)) {
-            logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
-            project.testMultiNode.enabled = isCi
-        }
     }
 
     if (project in rProjects) {

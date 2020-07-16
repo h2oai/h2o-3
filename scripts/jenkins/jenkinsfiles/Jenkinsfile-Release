@@ -328,9 +328,6 @@ latest_stable_SparklingWater_booklet:docs-website/h2o-docs/booklets/SparklingWat
 latest_stable_javadoc_genmodel:docs-website/h2o-genmodel/javadoc/index.html
 latest_stable_javadoc_core:docs-website/h2o-core/javadoc/index.html
 latest_stable_javadoc_algos:docs-website/h2o-algos/javadoc/index.html
-latest_stable_javadoc_scala:docs-website/h2o-scala/scaladoc/index.html
-latest_stable_javadoc_scala_2_10:docs-website/h2o-scala_2.10/scaladoc/index.html
-latest_stable_javadoc_scala_2_11:docs-website/h2o-scala_2.11/scaladoc/index.html
 latest_stable_restdoc_route_reference:docs-website/h2o-docs/index.html#route-reference
 latest_stable_restdoc_schema_reference:docs-website/h2o-docs/index.html#schema-reference"
 
