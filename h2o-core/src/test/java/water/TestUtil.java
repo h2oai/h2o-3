@@ -483,7 +483,7 @@ public class TestUtil extends Iced {
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
-        check_header,0,null,null,null,null,null, null));
+        check_header,0,null,null,null,null,null, null, null));
     if (skippedColumns != null) {
       p.setSkippedColumns(skippedColumns);
       p.setParseColumnIndices(p.getNumberColumns(), skippedColumns);
@@ -569,7 +569,7 @@ public class TestUtil extends Iced {
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
-            check_header,0,null,null,null,null,null, null));
+            check_header,0,null,null,null,null,null, null, null));
     if (skipped_columns != null) {
       p.setSkippedColumns(skipped_columns);
       p.setParseColumnIndices(p.getNumberColumns(), skipped_columns);
