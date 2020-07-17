@@ -31,6 +31,7 @@
 #' @param chunk_size size of chunk of (input) data in bytes
 #' @param skipped_columns a list of column indices to be excluded from parsing
 #' @param custom_non_data_line_markers (Optional) If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, NULL means that default behaviour for given format will be used
+#' @param partition_by (Optional) Names of the columns the persisted dataset has been partitioned by.
 #' @seealso \link{h2o.importFile}, \link{h2o.parseSetup}
 #' @export
 h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, sep = "", col.names=NULL,
