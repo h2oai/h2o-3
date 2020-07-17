@@ -1991,5 +1991,27 @@ public class XGBoostTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testXGBoostMaximumDepth() {
+    Scope.enter();
+    try {
+      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = tfr._key;
+      parms._response_column = "AGE";
+      parms._ignored_columns = new String[]{"ID"};
+      parms._seed = 0xDECAF;
+      parms._max_depth = 0;
+
+      XGBoostModel model = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      Scope.track_generic(model);
+      assertEquals(Integer.MAX_VALUE, model._parms._max_depth);
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
 
 }

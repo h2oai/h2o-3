@@ -184,6 +184,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
   }
 
+  @Override
+  protected void validateMaxDepth() {
+    if (_parms._max_depth < 0) error ("_max_depth", "_max_depth must be >= 0.");
+    if(_parms._max_depth == 0) _parms._max_depth = Integer.MAX_VALUE;
+  }
+
   // ----------------------
   private class GBMDriver extends Driver {
     private transient FrameMap frameMap;

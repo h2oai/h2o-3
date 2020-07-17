@@ -28,6 +28,7 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
   public static class DRFOutput extends SharedTreeModelWithContributions.SharedTreeOutput {
     public DRFOutput( DRF b) { super(b); }
   }
+  
 
   public DRFModel(Key<DRFModel> selfKey, DRFParameters parms, DRFOutput output ) {
     super(selfKey, parms, output);

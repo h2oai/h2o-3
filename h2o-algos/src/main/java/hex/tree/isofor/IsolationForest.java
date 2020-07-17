@@ -104,6 +104,12 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
   }
 
   @Override
+  protected void validateMaxDepth() {
+    if (_parms._max_depth < 0) error ("_max_depth", "_max_depth must be >= 0.");
+    if(_parms._max_depth == 0) _parms._max_depth = Integer.MAX_VALUE;
+  }
+
+  @Override
   protected void validateRowSampleRate() {
     if (_parms._sample_rate == -1) {
       if (_parms._sample_size <= 0) {
