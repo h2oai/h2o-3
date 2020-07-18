@@ -42,7 +42,6 @@ test.GBM.ecology <- function() {
   #import csv data for R to use
   ecology.data <- read.csv(locate("smalldata/gbm_test/ecology_model.csv"), header = TRUE)
   ecology.data <- na.omit(ecology.data) #this omits NAs... does GBM do this? Perhaps better to model w/o doing this?
-  ecology.data$Method <- as.factor(ecology.data$Method)
   
   Log.info("H2O GBM with parameters:\nntrees = 100, max_depth = 5, min_rows = 10, learn_rate = 0.1\n")
   #Train H2O GBM Model:

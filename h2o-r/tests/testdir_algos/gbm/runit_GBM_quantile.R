@@ -64,8 +64,7 @@ gbm.quantile.test = function(){
   #a test to look at h2o.quantile() - init_F is equal to POJO splits for one node.
   left_q = h2o.quantile(data.hex.test.left[,resp],Q) 
   left_q_test = left_q - m@model$init_f
-  left_q_test
-  LEFT_POJO
+  print(paste("Quantile GBM left split", left_q_test, LEFT_POJO))
   expect_true(round(left_q_test,7) == round(LEFT_POJO,7), "Quantile GBM left split from POJO does not agree with h2o.quantile()! Please check previous POJO output.")
   
   right_q = h2o.quantile(data.hex.test.right[,resp],Q) 
