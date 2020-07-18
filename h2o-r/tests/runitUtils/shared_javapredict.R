@@ -83,7 +83,6 @@ doJavapredictTest <- function(model,test_file,test_frame,params, separator=",", 
   }
 
   if (! match) {
-    
     for (i in 1:nrow(prediction1)) {
       rowmatch <- all.equal(prediction1[i,], prediction2[i,], tolerance = tolerance, check.names = FALSE)
       if (class(rowmatch) != "logical") {

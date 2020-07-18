@@ -77,7 +77,7 @@ test <- function() {
     left_hf <- as.h2o(data.frame(fruit = c(2,3,0,257,256,518,1028), color <- c('red', 'orange', 'yellow', 'red', 'blue', 'purple', 'cyan')))
     right_hf <- as.h2o(data.frame(fruit = c(258,518,517,1030,1028,1030,1035), citrus <- c(TRUE, TRUE, FALSE, FALSE, TRUE, FALSE, TRUE)))
     merged <- h2o.merge(left_hf, right_hf, all.x = FALSE, all.y=FALSE)
-    resultF <- as.h2o(data.frame(fruit=c(518, 1028), color=as.factor(c('purple', 'cyan')), citrus=c(TRUE, TRUE)))
+    resultF <- as.h2o(data.frame(fruit=c(518, 1028), color=c('purple', 'cyan'), citrus=c(TRUE, TRUE)))
     assertMergeCorrect(h2o.arrange(merged,"fruit"), h2o.arrange(resultF,"fruit"))
     
     # left frame starts higher and no overlap
