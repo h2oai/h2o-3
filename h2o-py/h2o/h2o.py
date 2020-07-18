@@ -398,7 +398,8 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
 
 
 def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None, pattern=None, skipped_columns=None, custom_non_data_line_markers = None):
+                na_strings=None, pattern=None, skipped_columns=None, custom_non_data_line_markers=None,
+                partition_by=None):
     """
     Import a dataset that is already on the cluster.
 
@@ -419,6 +420,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :param col_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
         one will be guessed. The possible types a column may have are:
+    :param partition_by Names of the column the persisted dataset has been partitioned by.
 
         - "unknown" - this will force the column to be parsed as all NA
         - "uuid"    - the values in the column must be true UUID or will be parsed as NA
@@ -456,6 +458,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    assert_is_type(partition_by, None, [str], str)
     assert isinstance(skipped_columns, (type(None), list)), "The skipped_columns should be an list of column names!"
     check_frame_id(destination_frame)
     patharr = path if isinstance(path, list) else [path]
@@ -466,7 +469,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         return lazy_import(path, pattern)
     else:
         return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings,
-                                        skipped_columns, custom_non_data_line_markers)
+                                        skipped_columns, custom_non_data_line_markers, partition_by)
 
 
 def load_grid(grid_file_path):
@@ -688,7 +691,8 @@ def import_sql_select(connection_url, select_query, username, password, optimize
 
 
 def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, column_names=None,
-                column_types=None, na_strings=None, skipped_columns=None, custom_non_data_line_markers=None):
+                column_types=None, na_strings=None, skipped_columns=None, custom_non_data_line_markers=None,
+                partition_by=None):
     """
     Retrieve H2O's best guess as to what the structure of the data file is.
 
@@ -756,6 +760,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     assert_is_type(column_names, [str], None)
     assert_is_type(column_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    assert_is_type(partition_by, None, [str], str)
     check_frame_id(destination_frame)
 
     # The H2O backend only accepts things that are quoted
@@ -768,6 +773,8 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
 
     if custom_non_data_line_markers is not None:
         kwargs["custom_non_data_line_markers"] = custom_non_data_line_markers;
+    if partition_by is not None:
+        kwargs["partition_by"] = partition_by;
 
     j = api("POST /3/ParseSetup", data=kwargs)
     if "warnings" in j and j["warnings"]:
