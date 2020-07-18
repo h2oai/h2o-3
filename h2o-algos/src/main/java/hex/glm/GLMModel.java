@@ -1742,9 +1742,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return sb;
   }
 
-
-
-
   private GLMScore makeScoringTask(Frame adaptFrm, boolean generatePredictions, Job j, boolean computeMetrics){
     int responseId = adaptFrm.find(_output.responseName());
     if(responseId > -1 && adaptFrm.vec(responseId).isBad()) { // remove inserted invalid response
@@ -1793,6 +1790,18 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScore gs = makeScoringTask(adaptFrm,false,null, true);// doAll(names.length,Vec.T_NUM,adaptFrm);
     assert gs._dinfo._valid:"_valid flag should be set on data info when doing scoring";
     return gs.doAll(gs._dinfo._adaptedFrame)._mb;
+  }
+
+  @Override
+  public boolean haveMojo() {
+    if (_parms.interactionSpec() == null) return super.haveMojo();
+    else return false;
+  }
+
+  @Override
+  public boolean havePojo() {
+    if (_parms.interactionSpec() == null) return super.havePojo();
+    else return false;
   }
 
   @Override

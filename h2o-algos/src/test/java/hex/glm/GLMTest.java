@@ -2,6 +2,7 @@ package hex.glm;
 
 import hex.*;
 import hex.DataInfo.TransformType;
+import hex.genmodel.algos.glm.GlmMojoModel;
 import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
@@ -811,6 +812,32 @@ public class GLMTest  extends TestUtil {
     }
   }
 
+  @Ignore // remove when PUBDEV-7693 is fixed
+  @Test
+  public void testInteractionPairs_airlines() {
+    Scope.enter();
+    try {
+      Frame train = Scope.track(parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip"));
+      Frame test = Scope.track(parse_test_file("smalldata/airlines/AirlinesTest.csv.zip"));
+      GLMParameters params = new GLMParameters();
+      params._family = Family.binomial;
+      params._response_column = "IsDepDelayed";
+      params._ignored_columns = new String[]{"IsDepDelayed_REC"};
+      params._train = train._key;
+      params._interaction_pairs = new StringPair[] {
+          new StringPair("DepTime", "UniqueCarrier"),
+          new StringPair("DepTime", "Origin"),
+          new StringPair("UniqueCarrier", "Origin")
+      };
+      GLM glm = new GLM(params);
+      GLMModel model = (GLMModel) Scope.track_generic(glm.trainModel().get());
+      Frame scored = Scope.track(model.score(test));
+      model.testJavaScoring(train, scored, 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
   @Test
   public void testCoordinateDescent_airlines() {
     GLMModel model = null;
