@@ -75,6 +75,10 @@ doJavapredictTest <- function(model,test_file,test_frame,params, separator=",", 
     print(paste("Rows from Java POJO", nrow(prediction2)))
     stop("Number of rows mismatch")
   }
+  
+  if (is.factor(prediction1[,1])) {
+    prediction2[,1] <- as.factor(prediction2[,1])
+  }
 
   tolerance = 1e-8
   match <- all.equal(prediction1, prediction2, tolerance = tolerance, check.names = FALSE)
@@ -83,12 +87,15 @@ doJavapredictTest <- function(model,test_file,test_frame,params, separator=",", 
   }
 
   if (! match) {
+      print(cbind(prediction1, prediction2)[0:20,])
+    
     for (i in 1:nrow(prediction1)) {
       rowmatch <- all.equal(prediction1[i,], prediction2[i,], tolerance = tolerance, check.names = FALSE)
       if (class(rowmatch) != "logical") {
         rowmatch <- FALSE
       }
       if (! rowmatch) {
+
         print("----------------------------------------------------------------------")
         print("")
         print(paste("Prediction mismatch on data row", i, "of test file", test_file))
@@ -113,6 +120,21 @@ doJavapredictTest <- function(model,test_file,test_frame,params, separator=",", 
         print("Prediction from Java POJO")
         print("")
         print(prediction2[i,])
+        print("")
+        print("----------------------------------------------------------------------")
+        print("")
+        print("")
+        print("Differences for each column")
+        print("")
+        r1<- prediction1[i,]
+        r2 <-prediction2[i,]
+        for (col in 1:ncol(prediction1)) {
+          colmatch <- all.equal(r1[,col], r2[,col], tolerance = tolerance, check.names = FALSE)
+          if (class(colmatch) != "logical" || !colmatch) {
+            if (class(colmatch) == "logical") colmatch <- "not equal"
+            print(paste("Column", col, r1[,col], r2[,col], "are", colmatch))
+          }
+        }
         print("")
         print("----------------------------------------------------------------------")
         print("")
