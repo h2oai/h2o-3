@@ -23,4 +23,4 @@ Sklearn Support
 
 Most H2O estimators available in the Python client can be used in the standard ``sklearn`` API. The ``h2o.sklearn`` module provides a collection of wrappers auto-generated on top of the original estimators and transformers, as well as on top of ``H2OAutoML``.
 
-For examples on sklearn integration, click `here <../h2o-tutorials/tutorials/sklearn-integration>`__.
+For examples on sklearn integration, click `here <https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/sklearn-integration>`__.
