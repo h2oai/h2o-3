@@ -48,6 +48,11 @@ Additional Resources:
    starting-h2o
 
 .. toctree::
+   :maxdepth: 2
+
+   h2o-client
+
+.. toctree::
    :maxdepth: 4
 
    getting-data-into-h2o
