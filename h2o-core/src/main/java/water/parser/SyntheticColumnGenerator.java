@@ -1,7 +1,6 @@
 package water.parser;
 
 import water.Job;
-import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -17,6 +16,14 @@ public class SyntheticColumnGenerator extends ParseFinalizer {
       withSynth[parsedVecs.length + synthIdx] = parsedVecs[0].makeCon(Vec.T_STR);
     }
     new SyntheticColumnGeneratorTask(setup, fileChunkOffsets).doAll(withSynth);
+
+    if (Vec.T_CAT == setup._synthetic_column_type) {
+      for (int synthIdx = 0; synthIdx < setup._synthetic_column_names.length; synthIdx++) {
+        Vec originalSyntheticVec = withSynth[parsedVecs.length + synthIdx];
+        withSynth[parsedVecs.length + synthIdx] = withSynth[parsedVecs.length + synthIdx].toCategoricalVec();
+        originalSyntheticVec.remove();
+      }
+    }
     return new Frame(job._result, mergeColumnNames(setup), withSynth);
   }
 
