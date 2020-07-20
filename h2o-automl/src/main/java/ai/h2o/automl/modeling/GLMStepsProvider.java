@@ -5,9 +5,6 @@ import hex.Model;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
 import water.Job;
-import water.util.ArrayUtils;
-
-import java.util.Arrays;
 
 import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
