@@ -148,7 +148,7 @@ public class GBMStepsProvider
                         searchParams.put("_min_split_improvement", new Double[]{1e-4, 1e-5});
                         searchParams.put("_categorical_encoding", new Model.Parameters.CategoricalEncodingScheme[] {
                                 Model.Parameters.CategoricalEncodingScheme.Enum,
-                                Model.Parameters.CategoricalEncodingScheme.SortByResponse,
+                                Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
                                 Model.Parameters.CategoricalEncodingScheme.OneHotExplicit,
                         });
 

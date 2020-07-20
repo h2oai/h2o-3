@@ -188,8 +188,8 @@ public class XGBoostSteps extends ModelingSteps {
                     searchParams.put("_reg_lambda", new Float[]{0.001f, 0.01f, 0.1f, 1f, 10f, 100f});
                     searchParams.put("_reg_alpha", new Float[]{0.001f, 0.01f, 0.1f, 0.5f, 1f});
                     searchParams.put("_categorical_encoding", new Model.Parameters.CategoricalEncodingScheme[] {
-                            Model.Parameters.CategoricalEncodingScheme.Enum,
-                            Model.Parameters.CategoricalEncodingScheme.SortByResponse,
+                            Model.Parameters.CategoricalEncodingScheme.EnumLimited,
+                            Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
                             Model.Parameters.CategoricalEncodingScheme.OneHotInternal,
                     });
 
