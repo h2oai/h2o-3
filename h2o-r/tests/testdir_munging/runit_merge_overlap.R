@@ -28,7 +28,7 @@ test.many = function() {
   M = 1e4
   L = list()
   i = 1
-  setSeedPriorR36(1)
+  set.seed(1)
   for (r in ranges) {
     x = sort(sample(r, min(r,N), replace=FALSE))
     for (j in seq_along(low)) {

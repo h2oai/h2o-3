@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 gbm.quantile.test <- function() {
-    setSeedPriorR36(1)
+    set.seed(1)
 
     # create some data
     N <- 1000

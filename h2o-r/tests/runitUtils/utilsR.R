@@ -410,15 +410,16 @@ function(..., envir=parent.frame()) {
     list(tests=tests, envir=envir)
 }
 
-setSeedPriorR36<-
+set.seed.R <- set.seed
+set.seed<-
 function(seed) {
-    if (as.numeric(R.Version()$major) >= 4 || 
-        (as.numeric(R.Version()$major) == 3 && as.numeric(substr(R.Version()$minor, 1, 1)) >= 6)
-    ) {
-        # revert sample to the old behavior before 3.6
-        set.seed(seed, sample.kind = "Rounding")
+    major <- as.numeric(R.Version()$major)
+    minor <- as.numeric(strsplit(R.Version()$minor, '.', fixed=TRUE)[[1]][1])
+    if (major >= 4 || (major == 3 && minor >= 6)) {
+        # revert sample to the old behavior before 3.6 for R >= 3.6
+        set.seed.R(seed, sample.kind = "Rounding")
     } else {
-        set.seed(seed)
+        set.seed.R(seed)
     }
 }
 

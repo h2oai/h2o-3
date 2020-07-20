@@ -6,7 +6,7 @@ library(testthat)
 # and that returned columns have parity with base R order of columns.
 
 test.by = function() {
-  setSeedPriorR36(1)
+  set.seed(1)
   X = as.h2o(Xdf <- data.frame( A=sample(10,100,replace=TRUE),
                          B=sample(10,100,replace=TRUE),
                          C=sample(10,100,replace=TRUE),
