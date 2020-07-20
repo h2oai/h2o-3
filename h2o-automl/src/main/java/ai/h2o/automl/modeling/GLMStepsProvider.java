@@ -1,9 +1,13 @@
 package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
+import hex.Model;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
 import water.Job;
+import water.util.ArrayUtils;
+
+import java.util.Arrays;
 
 import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
@@ -18,6 +22,11 @@ public class GLMStepsProvider
 
             GLMModelStep(String id, int weight, AutoML autoML) {
                 super(Algo.GLM, id, weight, autoML);
+            }
+
+            @Override
+            protected void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults, SeedPolicy seedPolicy) {
+                // disabled as we're using lambda search
             }
 
             GLMParameters prepareModelParameters() {

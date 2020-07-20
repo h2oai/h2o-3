@@ -158,32 +158,41 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         params._response_column = buildSpec.input_spec.response_column;
         params._ignored_columns = buildSpec.input_spec.ignored_columns;
 
-        // currently required, for the base_models, for stacking:
-        if (! (params instanceof StackedEnsembleModel.StackedEnsembleParameters)) {  // TODO: now that we have an object hierarchy, we can think about refactoring this logic
-            params._keep_cross_validation_predictions = aml().getBlendingFrame() == null ? true : buildSpec.build_control.keep_cross_validation_predictions;
-
-            // TODO: StackedEnsemble doesn't support weights yet in score0
-            params._fold_column = buildSpec.input_spec.fold_column;
-            params._weights_column = buildSpec.input_spec.weights_column;
-
-            if (buildSpec.input_spec.fold_column == null) {
-                params._nfolds = buildSpec.build_control.nfolds;
-                if (buildSpec.build_control.nfolds > 1) {
-                    // TODO: below allow the user to specify this (vs Modulo)
-                    params._fold_assignment = FoldAssignmentScheme.Modulo;
-                }
-            }
-            if (buildSpec.build_control.balance_classes) {
-                params._balance_classes = buildSpec.build_control.balance_classes;
-                params._class_sampling_factors = buildSpec.build_control.class_sampling_factors;
-                params._max_after_balance_size = buildSpec.build_control.max_after_balance_size;
-            }
-            //TODO: add a check that gives an error when class_sampling_factors, max_after_balance_size is set and balance_classes = false
-        }
-
+        setCrossValidationParams(params);
+        setWeightingParams(params);
+        setClassBalancingParams(params);
+        
         params._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
         params._keep_cross_validation_fold_assignment = buildSpec.build_control.nfolds != 0 && buildSpec.build_control.keep_cross_validation_fold_assignment;
         params._export_checkpoints_dir = buildSpec.build_control.export_checkpoints_dir;
+    }
+    
+    protected void setCrossValidationParams(Model.Parameters params) {
+        AutoMLBuildSpec buildSpec = aml().getBuildSpec();
+        params._keep_cross_validation_predictions = aml().getBlendingFrame() == null ? true : buildSpec.build_control.keep_cross_validation_predictions;
+        params._fold_column = buildSpec.input_spec.fold_column;
+
+        if (buildSpec.input_spec.fold_column == null) {
+            params._nfolds = buildSpec.build_control.nfolds;
+            if (buildSpec.build_control.nfolds > 1) {
+                // TODO: below allow the user to specify this (vs Modulo)
+                params._fold_assignment = FoldAssignmentScheme.Modulo;
+            }
+        }
+    }
+    
+    protected void setWeightingParams(Model.Parameters params) {
+        AutoMLBuildSpec buildSpec = aml().getBuildSpec();
+        params._weights_column = buildSpec.input_spec.weights_column;
+    }
+    
+    protected void setClassBalancingParams(Model.Parameters params) {
+        AutoMLBuildSpec buildSpec = aml().getBuildSpec();
+        if (buildSpec.build_control.balance_classes) {
+            params._balance_classes = buildSpec.build_control.balance_classes;
+            params._class_sampling_factors = buildSpec.build_control.class_sampling_factors;
+            params._max_after_balance_size = buildSpec.build_control.max_after_balance_size;
+        }
     }
 
     protected void setCustomParams(Model.Parameters params) {
