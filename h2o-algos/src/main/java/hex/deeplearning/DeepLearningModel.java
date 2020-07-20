@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 import hex.*;
+import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.utils.DistributionFamily;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
@@ -231,8 +232,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     DKV.put(dinfo);
     _output.setNames(dinfo._adaptedFrame.names(), dinfo._adaptedFrame.typesStr());
     _output._domains = dinfo._adaptedFrame.domains();
-    _output._origNames = parms._train.get().names();
-    _output._origDomains = parms._train.get().domains();
     Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
     model_info = new DeepLearningModelInfo(parms, destKey, dinfo, nClasses, train, valid);
     model_info_key = Key.make(H2O.SELF);
@@ -955,15 +954,21 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info());
     final DeepLearningParameters p = model_info.get_params();
-    if (p._categorical_encoding != Parameters.CategoricalEncodingScheme.AUTO &&
-        p._categorical_encoding != Parameters.CategoricalEncodingScheme.OneHotInternal) {
-      throw new IllegalArgumentException("Only default categorical_encoding scheme is supported for POJO/MOJO");
+    CategoricalEncoding encoding = getGenModelEncoding();
+    if (encoding == null) {
+      throw new IllegalArgumentException("Only default, OneHotInternal, Binary, Eigen, LabelEncoder and SortByResponse categorical_encoding scheme is supported for POJO/MOJO");
     }
 
     sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();
     sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();
     sb.ip("public int nclasses() { return "+ (p._autoencoder ? neurons[neurons.length-1].units : _output.nclasses()) + "; }").nl();
-
+    if (encoding != CategoricalEncoding.AUTO) {
+      sb.ip("public hex.genmodel.CategoricalEncoding getCategoricalEncoding() { return hex.genmodel.CategoricalEncoding." +
+              encoding.name() + "; }").nl();
+    }
+    if (encoding == CategoricalEncoding.Eigen) {
+      sb.ip("public double[] getOrigProjectionArray() { return " + toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
+    }
     if (model_info().data_info()._nums > 0) {
       sb.i(0).p("// Thread-local storage for input neuron activation values.").nl();
       sb.i(0).p("final double[] NUMS = new double[" + model_info().data_info()._nums +"];").nl();
@@ -2289,6 +2294,40 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   @Override
   public boolean isDistributionHuber() {
     return super.isDistributionHuber() || get_params()._distribution == DistributionFamily.huber;
+  }
+
+  @Override protected CategoricalEncoding getGenModelEncoding() {
+    switch (_parms._categorical_encoding) {
+      case AUTO:
+      case SortByResponse:
+      case OneHotInternal:
+        return CategoricalEncoding.AUTO;
+      case Binary:
+        return CategoricalEncoding.Binary;
+      case Eigen:
+        return CategoricalEncoding.Eigen;
+      case LabelEncoder:
+        return CategoricalEncoding.LabelEncoder;
+      default:
+        return null;
+    }
+  }
+
+  String toJavaDoubleArray(double[] array) {
+    if (array == null) {
+      return "null";
+    }
+
+    SB sb = new SB();
+    sb.p("new double[] {");
+    for (int i = 0; i < array.length; i++) {
+      sb.p(" ");
+      sb.p(array[i]);
+      if (i < array.length - 1)
+        sb.p(",");
+    }
+    sb.p("}");
+    return sb.getContent();
   }
 }
 

@@ -2,10 +2,13 @@ package hex.deeplearning;
 
 
 import hex.*;
+import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.tools.PredictCsv;
 import hex.genmodel.utils.DistributionFamily;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.junit.*;
+import org.junit.rules.TemporaryFolder;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -14,6 +17,7 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
+import water.parser.ParseSetup;
 import water.util.*;
 
 import java.io.File;
@@ -26,10 +30,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static hex.genmodel.utils.DistributionFamily.*;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
 
 public class DeepLearningTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+
+    @Rule
+    public transient TemporaryFolder tmp = new TemporaryFolder();
 
   abstract static class PrepData { abstract int prep(Frame fr); }
 
@@ -2746,6 +2754,95 @@ public class DeepLearningTest extends TestUtil {
       zeros.remove();
       Scope.exit();
     }
+  }
+
+
+  @Test public void testMOJOandPOJOSupportedCategoricalEncodings() throws Exception {
+      try {
+          Scope.enter();
+          final String response = "CAPSULE";
+          final String testFile = "./smalldata/logreg/prostate.csv";
+          Frame fr = parse_test_file(testFile)
+                  .toCategoricalCol("RACE")
+                  .toCategoricalCol("GLEASON")
+                  .toCategoricalCol(response);
+          fr.remove("ID").remove();
+          fr.vec("RACE").setDomain(ArrayUtils.append(fr.vec("RACE").domain(), "3"));
+          Scope.track(fr);
+          DKV.put(fr);
+    
+          Model.Parameters.CategoricalEncodingScheme[] supportedSchemes = {
+                  Model.Parameters.CategoricalEncodingScheme.AUTO,
+                  Model.Parameters.CategoricalEncodingScheme.OneHotInternal,
+                  Model.Parameters.CategoricalEncodingScheme.SortByResponse,
+                  Model.Parameters.CategoricalEncodingScheme.Binary,
+                  Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
+                 // Model.Parameters.CategoricalEncodingScheme.Eigen // todo: Eigen case fails non-deterministically
+          };
+    
+          for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
+    
+              DeepLearningModel.DeepLearningParameters parms = new DeepLearningModel.DeepLearningParameters();
+              parms._train = fr._key;
+              parms._response_column = response;
+              parms._categorical_encoding = scheme;
+    
+              DeepLearning job = new DeepLearning(parms);
+              DeepLearningModel dl = job.trainModel().get();
+              Scope.track_generic(dl);
+    
+              // Done building model; produce a score column with predictions
+              Frame scored = Scope.track(dl.score(fr));
+    
+              // Build a POJO & MOJO, validate same results
+              Assert.assertTrue(dl.testJavaScoring(fr, scored, 1e-15));
+    
+              File pojoScoringOutput = tmp.newFile(dl._key + "_scored.csv");
+    
+              String modelName = JCodeGen.toJavaId(dl._key.toString());
+              String pojoSource = dl.toJava(false, true);
+              Class pojoClass = JCodeGen.compile(modelName, pojoSource);
+    
+              PredictCsv predictor = PredictCsv.make(
+                      new String[]{
+                              "--embedded",
+                              "--input", TestUtil.makeNfsFileVec(testFile).getPath(),
+                              "--output", pojoScoringOutput.getAbsolutePath(),
+                              "--decimal"}, (GenModel) pojoClass.newInstance());
+              predictor.run();
+              Frame scoredWithPojo = Scope.track(parse_test_file(pojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+                  @Override
+                  public ParseSetup transformSetup(ParseSetup guessedSetup) {
+                      return guessedSetup.setCheckHeader(1);
+                  }
+              }));
+    
+              scoredWithPojo.setNames(scored.names());
+              assertFrameEquals(scored, scoredWithPojo, 1e-7);
+
+              File mojoScoringOutput = tmp.newFile(dl._key + "_scored2.csv");
+              MojoModel mojoModel = dl.toMojo();
+
+              predictor = PredictCsv.make(
+                      new String[]{
+                              "--embedded",
+                              "--input", TestUtil.makeNfsFileVec(testFile).getPath(),
+                              "--output", mojoScoringOutput.getAbsolutePath(),
+                              "--decimal"}, (GenModel) mojoModel);
+              predictor.run();
+              Frame scoredWithMojo = Scope.track(parse_test_file(mojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+                  @Override
+                  public ParseSetup transformSetup(ParseSetup guessedSetup) {
+                      return guessedSetup.setCheckHeader(1);
+                  }
+              }));
+
+              scoredWithMojo.setNames(scored.names());
+              assertFrameEquals(scored, scoredWithMojo, 1e-8);
+          }
+      } finally {
+          Scope.exit();
+      }
   }
 }
 
