@@ -2,6 +2,7 @@
 .origEchoValue <- getOption("echo")
 options(echo=FALSE)
 options(scipen=999)
+options(stringsAsFactors=T)
 
 #'
 #'

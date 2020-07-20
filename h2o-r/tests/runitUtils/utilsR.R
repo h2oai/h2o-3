@@ -361,9 +361,10 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
     df.clone[,is_num] <- scale(df.clone[,is_num], center = center, scale = scale)
     df.clone <- df.clone[, c(which(!is_num), which(is_num))]   # Move categorical column to front
   }
-
   if(ignore_const_cols) {
-    is_const <- sapply(df.clone, function(z) { var(z, na.rm = TRUE) == 0 })
+    is_const <- sapply(df.clone, function(z) {
+        ifelse(is.factor(z) || is.character(z), length(unique(z)) <= 1, var(z, na.rm = TRUE) == 0)
+    })
     if(any(is_const))
       df.clone <- df.clone[,!is_const]
   }
@@ -407,6 +408,19 @@ makeSuite<-
 function(..., envir=parent.frame()) {
     tests <- all.vars(substitute(c(...)))
     list(tests=tests, envir=envir)
+}
+
+set.seed.R <- set.seed
+set.seed<-
+function(seed) {
+    major <- as.numeric(R.Version()$major)
+    minor <- as.numeric(strsplit(R.Version()$minor, '.', fixed=TRUE)[[1]][1])
+    if (major >= 4 || (major == 3 && minor >= 6)) {
+        # revert sample to the old behavior before 3.6 for R >= 3.6
+        set.seed.R(seed, sample.kind = "Rounding")
+    } else {
+        set.seed.R(seed)
+    }
 }
 
 setupSeed<-
