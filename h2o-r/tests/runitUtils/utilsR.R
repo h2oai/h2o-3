@@ -363,7 +363,7 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
   }
   if(ignore_const_cols) {
     is_const <- sapply(df.clone, function(z) {
-        ifelse(is.factor(z) || is.character(z), length(unique(z)) > 1, var(z, na.rm = TRUE) == 0)
+        ifelse(is.factor(z) || is.character(z), length(unique(z)) <= 1, var(z, na.rm = TRUE) == 0)
     })
     if(any(is_const))
       df.clone <- df.clone[,!is_const]
