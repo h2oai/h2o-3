@@ -62,8 +62,8 @@ def random_grid_model_seeds_PUBDEV_4090():
                               search_criteria=search_criteria_tune1)
     air_grid2 = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_params_tune,
                               search_criteria=search_criteria_tune2)
-    air_grid1.train(x=myX, y="IsDepDelayed", training_frame=air_hex, distribution="bernoulli")
-    air_grid2.train(x=myX, y="IsDepDelayed", training_frame=air_hex, distribution="bernoulli")
+    air_grid1.train(x=myX, y="IsDepDelayed", training_frame=air_hex, distribution="bernoulli", score_tree_interval=1)
+    air_grid2.train(x=myX, y="IsDepDelayed", training_frame=air_hex, distribution="bernoulli", score_tree_interval=1)
 
     # expect both models to render the same metrics as they use the same model seed, search criteria seed
     model_seeds1 = pyunit_utils.model_seed_sorted(air_grid1)
