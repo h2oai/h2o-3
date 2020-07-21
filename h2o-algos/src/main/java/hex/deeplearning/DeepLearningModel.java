@@ -967,7 +967,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
               encoding.name() + "; }").nl();
     }
     if (encoding == CategoricalEncoding.Eigen) {
-      sb.ip("public double[] getOrigProjectionArray() { return " + toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
+      sb.ip("public double[] getOrigProjectionArray() { return " + ArrayUtils.toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
     }
     if (model_info().data_info()._nums > 0) {
       sb.i(0).p("// Thread-local storage for input neuron activation values.").nl();
@@ -2313,21 +2313,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
   }
 
-  String toJavaDoubleArray(double[] array) {
-    if (array == null) {
-      return "null";
-    }
 
-    SB sb = new SB();
-    sb.p("new double[] {");
-    for (int i = 0; i < array.length; i++) {
-      sb.p(" ");
-      sb.p(array[i]);
-      if (i < array.length - 1)
-        sb.p(",");
-    }
-    sb.p("}");
-    return sb.getContent();
-  }
 }
 
