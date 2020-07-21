@@ -315,7 +315,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                         testCaseKey = 'solver'
                         testCaseValue = line.solver
                     } else if (line.numRows) {
-                        interval = datasetValues[[line.numRows, line.numCols]]
+                        interval = datasetValues[[Integer.parseInt(line.numRows), Integer.parseInt(line.numCols)]]
                         testCaseKey = 'dataset-size'
                         testCaseValue = "${line.numRows}x${line.numCols}"
                     } else {
