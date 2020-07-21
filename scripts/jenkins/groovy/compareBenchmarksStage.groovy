@@ -244,40 +244,40 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         'merge': [
             'fileSize100millionRows2ColsallxyTF': [
                 [100000000, 2]: [
-                    'train_time_min': 0,
-                    'train_time_max': 10000
+                    'train_time_min': 33,
+                    'train_time_max': 37
                 ]
             ],
             'fileSize10millionRows2ColsallxyTF': [
                 [10000000, 2]: [
-                    'train_time_min': 0,
-                    'train_time_max': 10000
+                    'train_time_min': 7,
+                    'train_time_max': 9
                 ]
             ],
             'fileSize100millionRows2ColsallxyFF': [
                 [100000000, 2]: [
-                    'train_time_min': 0,
-                    'train_time_max': 10000
+                    'train_time_min': 33,
+                    'train_time_max': 35
                 ]
             ],
             'fileSize10millionRows2ColsallxyFF': [
                 [10000000, 2]: [
-                    'train_time_min': 0,
-                    'train_time_max': 10000
+                    'train_time_min': 7,
+                    'train_time_max': 9
                 ]
             ]
         ],
         'sort': [
             'fileSize100millionRows2Cols': [
                 [100000000, 2]: [
-                    'train_time_min': 0,
-                    'train_time_max': 10000
+                    'train_time_min': 9,
+                    'train_time_max': 14
                 ]
             ],
             'fileSize10millionRows2Cols': [
                 [10000000, 2]: [
-                    'train_time_min': 0,
-                    'train_time_max': 10000
+                    'train_time_min': 2,
+                    'train_time_max': 5
                 ]
             ]
         ]

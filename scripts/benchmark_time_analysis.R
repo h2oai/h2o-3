@@ -40,8 +40,11 @@ getData <- function(algo, begin.date) {
       result[["ntrees"]] <- tests$ntrees
     } else if ("solver" %in% names(tests)) {
       result[["solver"]] <- tests$solver
+    } else if ("numRows" %in% names(tests)) {
+      result[["numRows"]] <- tests$numRows
+      result[["numCols"]] <- tests$numCols
     } else {
-      stop("neitehr tree nor solver")
+      stop("neither tree, solver or size")
     }
     if ("backend" %in% names(tests)) {
       result[["backend"]] <- tests$backend
