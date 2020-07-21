@@ -6,10 +6,11 @@ from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 
-def random_grid_model_seeds_failing_case():
+def random_grid_model_seeds_early_stopping_case():
     air_hex = h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/allyears2k_headers.zip"),
                               destination_frame="air.hex")
-    features = ["Year","Month","CRSDepTime","UniqueCarrier","Origin","Dest"]
+    
+    features = ["Year", "Month", "CRSDepTime", "UniqueCarrier", "Origin", "Dest"]
 
     gbm1 = H2OGradientBoostingEstimator(
         nfolds=0,
@@ -17,7 +18,7 @@ def random_grid_model_seeds_failing_case():
         keep_cross_validation_predictions=False,
         keep_cross_validation_fold_assignment=False,
         score_each_iteration=False,
-        score_tree_interval=1,
+        score_tree_interval=1,  # has to be set to reproduce early stopping
         ignore_const_cols=True,
         balance_classes=False,
         max_after_balance_size=5.0,
@@ -60,7 +61,7 @@ def random_grid_model_seeds_failing_case():
         keep_cross_validation_predictions=False,
         keep_cross_validation_fold_assignment=False,
         score_each_iteration=False,
-        score_tree_interval=1,
+        score_tree_interval=1,  # has to be set to reproduce early stopping
         ignore_const_cols=True,
         balance_classes=False,
         max_after_balance_size=5.0,
@@ -108,6 +109,6 @@ def random_grid_model_seeds_failing_case():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(random_grid_model_seeds_failing_case)
+    pyunit_utils.standalone_test(random_grid_model_seeds_early_stopping_case)
 else:
-    random_grid_model_seeds_failing_case()
+    random_grid_model_seeds_early_stopping_case()
