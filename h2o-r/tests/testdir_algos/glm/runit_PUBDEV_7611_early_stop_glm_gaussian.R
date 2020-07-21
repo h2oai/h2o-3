@@ -20,10 +20,7 @@ test.model.glm.early.stop <- function() {
     valid = splits[[2]]
     glm_early_stop <- h2o.glm(y = "C21", x = c(1:20), training_frame = train, validation_frame = valid,
     family = "gaussian", stopping_rounds=3, stopping_metric="rmse", stopping_tolerance=0.1, score_each_iteration=TRUE)
-    expect_true(length(glm_early_stop@model$scoring_history_early_stop) > 0, "Early stop is not working")
-    glm_lambda_search <- h2o.glm(y = "C21", x = c(1:20), training_frame = train, validation_frame = valid,
-            family = "gaussian", stopping_rounds=3, stopping_metric="rmse", stopping_tolerance=0.1, lambda_search=TRUE, nlambdas=3)
-    expect_true(is.null(glm_lambda_search@model$scoring_history_early_stop), "Early stop should have been disabled for lambda_search=TRUE but is not")
+    expect_true(length(glm_early_stop@model$scoring_history) > 0, "Early stop is not working")
 }
 
 doTest("GLM early stop test with Gaussian family", test.model.glm.early.stop)
