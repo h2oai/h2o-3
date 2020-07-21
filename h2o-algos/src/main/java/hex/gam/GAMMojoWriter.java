@@ -14,6 +14,9 @@ public class GAMMojoWriter extends ModelMojoWriter<GAMModel, GAMModel.GAMParamet
     return "1.00";
   }
   
+  @SuppressWarnings("unused")
+  public GAMMojoWriter(){}
+  
   public GAMMojoWriter(GAMModel model) {
     super(model);
   }
