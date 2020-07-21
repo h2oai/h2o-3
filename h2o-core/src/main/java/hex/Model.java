@@ -764,7 +764,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *
    *
    * @return*/
-  public HashMap<String, Double> permutationFeatureImportance(Model model){
+  public TwoDimTable permutationFeatureImportance(Model model){
 
     PermutationFeatureImportance Fi = new PermutationFeatureImportance(model);
     return Fi.getFeatureImportance();
@@ -1644,10 +1644,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, destination_key, j, true);
   }
   
-  public TwoDimTable getTable(Frame fr, Frame scored){
+  public TwoDimTable getPermVarImpTable(Frame fr, Frame scored){
     PermutationFeatureImportance fi = new PermutationFeatureImportance(this, fr, scored);
-    fi.getFeatureImportance();
-    return fi.getTable();
+    return fi.getFeatureImportance();
+  }
+  public TwoDimTable getPermVarImpTable_oat(Frame fr, Frame scored){
+    PermutationFeatureImportance fi = new PermutationFeatureImportance(this, fr, scored);
+    return fi.oat();
   }
   
   /**

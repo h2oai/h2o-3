@@ -3,6 +3,7 @@ package water.rapids.ast.prims.models;
 
 import hex.Model;
 import water.Key;
+import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
@@ -12,13 +13,7 @@ import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.util.TwoDimTable;
 
-
-import java.util.Map;
-import java.util.Map.Entry;
-
-import java.util.HashMap;
-
-public class AstPermutationFeatureImportance extends AstPrimitive {
+public class AstPermutationFeatureImportance extends AstPrimitive{
 
     @Override
     public int nargs() {return 1 + 2;} // Perm_feature_importance + Frame + Model
@@ -31,26 +26,37 @@ public class AstPermutationFeatureImportance extends AstPrimitive {
     
     @Override
     public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]){
-        Frame fr = stk.track(asts[1].exec(env)).getFrame();
+        Frame in_fr = stk.track(asts[1].exec(env)).getFrame();
         Model model = stk.track(asts[2].exec(env)).getModel();
 
-        Frame fr2 = model.score(fr); // prediction on original dataset
-        
-//      model._train.get(); TODO find a way to avoid passing the frame and get it from the model instead
+        Scope.enter();
+        Frame pred_fr = null;
+        Frame FiFrame = null;
+        try {
+            pred_fr = model.score(in_fr); // prediction on original dataset
+            Scope.track(pred_fr);
 
-        PermutationFeatureImportance fi = new PermutationFeatureImportance(model, fr, fr2);
-        HashMap<String, Double> FI = fi.getFeatureImportance(); // might be able to use AstPerfectAuc for calculation of AUC 
+            PermutationFeatureImportance fi = new PermutationFeatureImportance(model, in_fr, pred_fr);
+//            HashMap<String, Double> FI = fi.getFeatureImportance(); // might be able to use AstPerfectAuc for calculation of AUC 
 
-        TwoDimTable fi_table = model.getTable(fr, fr2);
-        
-        // Frame contains one row and n features 
-        Frame outfr = new Frame(Key.make("feature_imp")); 
-        
-        for (Map.Entry<String, Double> entry : FI.entrySet()) {
-            outfr.add( entry.getKey(),Vec.makeVec(new double [] {entry.getValue()}, Vec.newKey()));
-            System.out.println(entry.getKey() + "/" + entry.getValue());
+            TwoDimTable varImp_t = model.getPermVarImpTable_oat(in_fr, pred_fr);
+            
+            // Frame contains one row and n features 
+            FiFrame = new Frame(Key.make(model._key + "_feature_imp"));
+
+            PermutationFeatureImportanceAstHelper filler = new PermutationFeatureImportanceAstHelper();
+            Vec [] vecs = filler.do_Vecs(varImp_t);
+            String [] names = filler.do_Names(varImp_t.getRowHeaders());
+
+            FiFrame.add(names, vecs);
+            Scope.track(FiFrame);
+        } finally {
+            Key[] keysToKeep = FiFrame != null ? FiFrame.keys() : new Key[]{};
+            Key[] keysToKeep_ = pred_fr != null ? pred_fr.keys() : new Key[]{};
+            Scope.exit(keysToKeep);
+            Scope.exit(keysToKeep_);              
         }
-        
-        return new ValFrame(outfr);            
+        return new ValFrame(FiFrame);
     }
+    
 }
