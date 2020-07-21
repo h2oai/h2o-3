@@ -1,9 +1,7 @@
 package water.rapids.ast.prims;
 import hex.Model;
-import hex.ModelMetrics;
-import hex.ScoringInfo;
-import hex.createframe.CreateFramePostprocessStep;
-import hex.createframe.postprocess.ShuffleOneColumnCfps;
+import hex.glm.GLM;
+import hex.glm.GLMModel;
 import hex.tree.gbm.GBMModel;
 import hex.tree.gbm.GBM;
 import org.junit.Assert;
@@ -13,15 +11,16 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.NFSFileVec;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.parser.ParseDataset;
 import water.rapids.*;
 import water.rapids.vals.ValFrame;
 import water.util.*;
 import org.junit.BeforeClass;
 
-import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
+import java.util.Arrays;
 
 import static hex.genmodel.utils.DistributionFamily.gaussian;
 import static org.junit.Assert.assertEquals;
@@ -172,8 +171,64 @@ public class PermutationFeatureImportanceTest extends TestUtil {
         }
 
     }
-   
+
     
+
+    @Test
+    public void removalOfResponseCol(){
+        Frame _canCarTrain = null;
+        Vec _merit, _class;
+        GLMModel model = null;
+        try{
+            Scope.enter();
+
+            Key outputKey = Key.make("prostate_cat_train.hex");
+            NFSFileVec nfs = makeNfsFileVec("smalldata/glm_test/cancar_logIn.csv");
+
+            _canCarTrain = ParseDataset.parse(outputKey, nfs._key);
+            _canCarTrain.add("Merit", (_merit = _canCarTrain.remove("Merit")).toCategoricalVec());
+            _canCarTrain.add("Class", (_class = _canCarTrain.remove("Class")).toCategoricalVec());
+
+            DKV.put(_canCarTrain._key, _canCarTrain);
+            
+//            fr = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
+//            Scope.track(fr);
+//            DKV.put(fr);
+            GLMModel.GLMParameters parms = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.poisson);
+            parms._train = _canCarTrain._key;
+            parms._ignored_columns = new String[]{"Insured", "Premium", "Cost"};
+            // "response_column":"Claims","offset_column":"logInsured"
+            parms._response_column = "Claims";
+            parms._offset_column = "logInsured";
+            parms._standardize = false;
+            parms._lambda = new double[]{0};
+            parms._alpha = new double[]{0};
+            parms._objective_epsilon = 0;
+            parms._beta_epsilon = 1e-6;
+            parms._gradient_epsilon = 1e-10;
+            parms._max_iterations = 1000;
+            
+            model = new GLM(parms).trainModel().get();
+            Frame scoreTrain = model.score(_canCarTrain);
+            
+            
+            PermutationFeatureImportance pfi = new PermutationFeatureImportance(model, scoreTrain, null);
+//            pfi.removeResCol();
+            String [] features_without_res = pfi.get_features_wo_res_test();
+//            Assert.assertFalse(Arrays.asList(features_without_res).contains("Claims"));
+            
+            TwoDimTable res = pfi.oat();
+            
+            System.out.println(res);
+            
+        } finally {
+            if( _canCarTrain  != null ) _canCarTrain.delete();
+            if( model != null ) model.delete();
+            Scope.exit();
+        }
+    }
+
+
     @Test
     public void Regression() {
         GBMModel gbm = null;
@@ -205,7 +260,7 @@ public class PermutationFeatureImportanceTest extends TestUtil {
             //job.response() can be used in place of fr.vecs()[1] but it has been rebalanced
 
             PermutationFeatureImportance Fi = new PermutationFeatureImportance(gbm, fr, fr2);
-            Fi.getFeatureImportance();
+            System.out.println(Fi.oat());
             
             
         } finally {
@@ -235,24 +290,24 @@ public class PermutationFeatureImportanceTest extends TestUtil {
 
             Model.Parameters.CategoricalEncodingScheme[] supportedSchemes = {
                     Model.Parameters.CategoricalEncodingScheme.OneHotExplicit,
-                    Model.Parameters.CategoricalEncodingScheme.SortByResponse,
-                    Model.Parameters.CategoricalEncodingScheme.EnumLimited,
-                    Model.Parameters.CategoricalEncodingScheme.Enum,
-                    Model.Parameters.CategoricalEncodingScheme.Binary,
-                    Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
-                    Model.Parameters.CategoricalEncodingScheme.Eigen
+//                    Model.Parameters.CategoricalEncodingScheme.SortByResponse,
+//                    Model.Parameters.CategoricalEncodingScheme.EnumLimited,
+//                    Model.Parameters.CategoricalEncodingScheme.Enum,
+//                    Model.Parameters.CategoricalEncodingScheme.Binary,
+//                    Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
+//                    Model.Parameters.CategoricalEncodingScheme.Eigen
             };
 
-            for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
+//            for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
 
                 GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
                 parms._train = fr._key;
                 parms._response_column = response;
                 parms._ntrees = 5;
-                parms._categorical_encoding = scheme;
-                if (scheme == Model.Parameters.CategoricalEncodingScheme.EnumLimited) {
-                    parms._max_categorical_levels = 3;
-                }
+//                parms._categorical_encoding = scheme;
+//                if (scheme == Model.Parameters.CategoricalEncodingScheme.EnumLimited) {
+//                    parms._max_categorical_levels = 3;
+//                }
 
                 GBM job = new GBM(parms);
                 GBMModel gbm = job.trainModel().get();
@@ -267,11 +322,9 @@ public class PermutationFeatureImportanceTest extends TestUtil {
 
                 PermutationFeatureImportance Fi = new PermutationFeatureImportance(gbm, fr, scored);
                 Fi.getFeatureImportance();
-                System.out.print(Fi.getTable());
                 
-                Fi.OneAtaTime();
             
-            }
+//            }
         } finally {
             Scope.exit();
         }
