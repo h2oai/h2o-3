@@ -25,7 +25,7 @@ public class EigenEncoder implements CategoricalEncoder {
     Integer levelIndex = domainMap.get(levelName);
     if (levelIndex == null)
       return false;
-    rawData[targetIndex] = this.projectionEigenVec[levelIndex];
+    rawData[targetIndex] = (float) this.projectionEigenVec[levelIndex]; //make it more reproducible by casting to float
     return true;
   }
 

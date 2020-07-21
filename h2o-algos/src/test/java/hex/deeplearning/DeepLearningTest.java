@@ -2777,7 +2777,7 @@ public class DeepLearningTest extends TestUtil {
                   Model.Parameters.CategoricalEncodingScheme.SortByResponse,
                   Model.Parameters.CategoricalEncodingScheme.Binary,
                   Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
-                 // Model.Parameters.CategoricalEncodingScheme.Eigen // todo: Eigen case fails non-deterministically
+                  Model.Parameters.CategoricalEncodingScheme.Eigen
           };
     
           for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
