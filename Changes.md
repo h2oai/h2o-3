@@ -8,7 +8,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/7/in
 
 <h4>New Feature</h4>
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7430'>PUBDEV-7430</a>] -         Added support for partitionBy in partitioned parquet or CSV files. 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7430'>PUBDEV-7430</a>] -         Added support for partitionBy column in partitioned parquet or CSV files. 
 </li>
 </ul>
     
