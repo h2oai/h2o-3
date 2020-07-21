@@ -101,10 +101,10 @@ RUN chmod 700 /usr/sbin/startup.sh && \
 COPY ${PATH_PREFIX}/../common/conf-hive/ /etc/${HIVE_PACKAGE}/conf/
 
 # Copy hive data
-COPY ${PATH_PREFIX}/../../../smalldata/airlines/AirlinesTest.csv.zip \
-     ${PATH_PREFIX}/../../../smalldata/chicago/chicagoCensus.csv \
-     /home/jenkins/
-RUN chown jenkins:jenkins /home/jenkins/*
+RUN cd /home/jenkins/ && \
+    wget https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTest.csv.zip && \
+    wget https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv && \
+    chown jenkins:jenkins /home/jenkins/*
 
 RUN /usr/sbin/install_ldap.sh
 
