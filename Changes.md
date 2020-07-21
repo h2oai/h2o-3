@@ -22,12 +22,12 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/7/in
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5808'>PUBDEV-5808</a>] - Added `max_runtime_secs` parameter to Stacked Ensemble.
 </li>
-<li>[<a href=‘https://0xdata.atlassian.net/browse/HEXDEV-758'>HEXDEV-758</a>] - Upgraded server to Jetty 9.
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-758'>HEXDEV-758</a>] - Upgraded Jetty 9 and switched default webserver to Jetty 9.
 </li>
 </ul>
 
 
-<h3> Zahradnik (3.30.0.6) - 6/30/2020 </h3>
+### Zahradnik (3.30.0.6) - 6/30/2020 
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/6/index.html</a>
             
