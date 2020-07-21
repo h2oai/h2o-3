@@ -4,12 +4,10 @@ source /usr/sbin/get_hive_home.sh
 
 cd /home/jenkins
 # Download dataset and upload it to HDFS
-wget https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTest.csv.zip
 unzip AirlinesTest.csv.zip
 rm AirlinesTest.csv.zip
 sed -i 's/\"//g' AirlinesTest.csv
 sudo -E -u hive hadoop fs -put -f ./AirlinesTest.csv /tmp/AirlinesTest.csv
-wget https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv
 sudo -E -u hive hadoop fs -put -f ./chicagoCensus.csv /tmp/chicagoCensus.csv
 rm *.csv
 

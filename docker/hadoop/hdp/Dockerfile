@@ -104,6 +104,12 @@ RUN chmod 700 /usr/sbin/startup.sh && \
 COPY ${PATH_PREFIX}/../common/conf-hive/ /etc/${HIVE_PACKAGE}/conf/
 COPY ${PATH_PREFIX}/conf-tez/ /etc/tez/conf/
 
+# Copy hive data
+COPY ${PATH_PREFIX}/../../../smalldata/airlines/AirlinesTest.csv.zip \
+     ${PATH_PREFIX}/../../../smalldata/chicago/chicagoCensus.csv \
+     /home/jenkins/
+RUN chown jenkins:jenkins /home/jenkins/*
+
 RUN /usr/sbin/install_ldap.sh
 
 # Expose ports
