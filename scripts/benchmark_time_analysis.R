@@ -99,7 +99,9 @@ tests <- c(
     "xgb_gpu",
     "xgb-vanilla",
     "xgb-dmlc",
-    "gbm"
+    "gbm",
+    "sort",
+    "merge"
 )
 
 for (t in tests) {

@@ -240,6 +240,46 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_max': 132
                 ]
             ]
+        ],
+        'merge': [
+            'fileSize100millionRows2ColsallxyTF': [
+                [100000000, 2]: [
+                    'train_time_min': 0,
+                    'train_time_max': 10000
+                ]
+            ],
+            'fileSize10millionRows2ColsallxyTF': [
+                [10000000, 2]: [
+                    'train_time_min': 0,
+                    'train_time_max': 10000
+                ]
+            ],
+            'fileSize100millionRows2ColsallxyFF': [
+                [100000000, 2]: [
+                    'train_time_min': 0,
+                    'train_time_max': 10000
+                ]
+            ],
+            'fileSize10millionRows2ColsallxyFF': [
+                [10000000, 2]: [
+                    'train_time_min': 0,
+                    'train_time_max': 10000
+                ]
+            ]
+        ],
+        'sort': [
+            'fileSize100millionRows2Cols': [
+                [100000000, 2]: [
+                    'train_time_min': 0,
+                    'train_time_max': 10000
+                ]
+            ],
+            'fileSize10millionRows2Cols': [
+                [10000000, 2]: [
+                    'train_time_min': 0,
+                    'train_time_max': 10000
+                ]
+            ]
         ]
     ]
 
@@ -274,6 +314,10 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                         interval = datasetValues[line.solver]
                         testCaseKey = 'solver'
                         testCaseValue = line.solver
+                    } else if (line.numRows) {
+                        interval = datasetValues[[line.numRows, line.numCols]]
+                        testCaseKey = 'dataset-size'
+                        testCaseValue = "${line.numRows}x${line.numCols}"
                     } else {
                         error "Cannot find usable key to get expected interval. Supported keys are ntrees and solver"
                     }
