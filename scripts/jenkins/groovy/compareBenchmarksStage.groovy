@@ -319,7 +319,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                         testCaseKey = 'dataset-size'
                         testCaseValue = "${line.numRows}x${line.numCols}"
                     } else {
-                        error "Cannot find usable key to get expected interval. Supported keys are ntrees and solver"
+                        error "Cannot find usable key to get expected interval. Supported keys are backend, ntrees, solver, numRows. Line: ${line}"
                     }
                     if (interval) {
                         def minValue = interval["${column}_min"]
