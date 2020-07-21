@@ -2,7 +2,32 @@
 
 ## H2O
 
-### Zahradnik (3.30.0.6) - 6/30/2020
+### Zahradnik (3.30.0.7) - 7/21/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/7/index.html</a>
+
+<h4>New Feature</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7430'>PUBDEV-7430</a>] -         Added support for partitionBy column in partitioned parquet or CSV files. 
+</li>
+</ul>
+    
+<h4>Task</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7645'>PUBDEV-7645</a>] -         Warning added for user if both a lamba value and lambda search are provided in GLM.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5808'>PUBDEV-5808</a>] - Added `max_runtime_secs` parameter to Stacked Ensemble.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-758'>HEXDEV-758</a>] - Upgraded Jetty 9 and switched default webserver to Jetty 9.
+</li>
+</ul>
+
+
+### Zahradnik (3.30.0.6) - 6/30/2020 
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/6/index.html</a>
             
