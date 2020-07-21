@@ -34,7 +34,7 @@ def test_gam_model_predict():
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C21"
     h2o_data["C21"] = h2o_data["C21"].asfactor()
-    model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictBinomialGAM.csv"))
+    model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictBinomialGAM2.csv"))
     buildModelCheckPredict(h2o_data, h2o_data, model_test_data, myY, ["C11", "C12", "C13"], 'binomial')
     print("gam coeff/varimp test completed successfully")
     
