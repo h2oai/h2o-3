@@ -284,7 +284,9 @@ def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_a
     o, e = p.communicate()
     files = os.listdir(tmpdir)
     print("listing files {1} in directory {0}".format(tmpdir, files))
-    pred_mojo = h2o.import_file(os.path.join(tmpdir, 'out_mojo.csv'), header=1)  # load mojo prediction in 
+    outfile = os.path.join(tmpdir, 'out_mojo.csv')
+    print("***** importing file {0}".format(outfile))
+    pred_mojo = h2o.import_file(outfile, header=1)  # load mojo prediction in 
     # to a frame and compare
     if glrmReconstruct or ('glrm' not in model.algo):
         return predict_h2o, pred_mojo
