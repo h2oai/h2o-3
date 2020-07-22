@@ -111,16 +111,25 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       }
 
       if( _train != null ) {
-        int nonFeatureColCount = (_parms._start_column!=null?1:0) + (_parms._stop_column!=null?1:0); 
+        int nonFeatureColCount = (_parms._start_column!=null?1:0) + (_parms._stop_column!=null?1:0);
         if (_train.numCols() < (2 + nonFeatureColCount))
           error("_train", "Training data must have at least 2 features (incl. response).");
+        if (null != _parms._stratify_by) {
+          int stratifyColCount = _parms._stratify_by.length;
+          if (_train.numCols() < (2 + nonFeatureColCount + stratifyColCount))
+            error("_train", "Training data must have at least 1 feature that is not response and is not stratified."); 
+          }
       }
 
       if (_parms.isStratified()) {
         for (String col : _parms._stratify_by) {
           Vec v = _parms.train().vec(col);
-          if (v == null || v.get_type() != Vec.T_CAT)
-            error("stratify_by", "non-categorical column '" + col + "' cannot be used for stratification");
+          if (v == null) {
+            error("stratify_by", "column '" + col + "' not found");
+          } else {
+            if (v.get_type() != Vec.T_CAT)
+              error("stratify_by", "non-categorical column '" + col + "' cannot be used for stratification");
+          }
           if (_parms._interactions != null) {
             for (String inter : _parms._interactions) {
               if (col.equals(inter)) {
@@ -132,6 +141,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
             }
           }
         }
+       
       }
     }
 
