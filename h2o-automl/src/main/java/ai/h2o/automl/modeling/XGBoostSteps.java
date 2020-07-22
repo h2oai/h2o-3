@@ -212,9 +212,10 @@ public class XGBoostSteps extends ModelingSteps {
                     aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Retraining best XGBoost with learning rate annealing: "+bestXGB._key);
                     XGBoostParameters xgBoostParameters = (XGBoostParameters) bestXGB._parms.clone();
                     xgBoostParameters._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
+                    xgBoostParameters._max_runtime_secs = 0; // reset max runtime
                     xgBoostParameters._learn_rate_annealing = 0.99;
-                    xgBoostParameters._max_runtime_secs = maxRuntimeSecs;
-                    setStoppingCriteria(xgBoostParameters, new XGBoostParameters(), SeedPolicy.None);
+                    initTimeConstraints(xgBoostParameters, maxRuntimeSecs);
+                    setStoppingCriteria(xgBoostParameters, new XGBoostParameters());
                     return asModelsJob(startModel(Key.make(result+"_model"), xgBoostParameters), result);
                 }
 
@@ -245,7 +246,9 @@ public class XGBoostSteps extends ModelingSteps {
                     XGBoostParameters xgBoostParameters = (XGBoostParameters) bestXGB._parms.clone();
                     XGBoostParameters defaults = new XGBoostParameters();
                     xgBoostParameters._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
-                    setStoppingCriteria(xgBoostParameters, defaults, SeedPolicy.None); // keep the same seed as the bestXGB
+                    xgBoostParameters._max_runtime_secs = 0; // reset max runtime
+                    initTimeConstraints(xgBoostParameters, 0); // ensure we have a max runtime per model in the grid
+                    setStoppingCriteria(xgBoostParameters, defaults); // keep the same seed as the bestXGB
                     // reset _eta to defaults, otherwise it ignores the _learn_rate hyperparam: this is very annoying!
                     xgBoostParameters._eta = defaults._eta;
 //                    xgBoostParameters._learn_rate = defaults._learn_rate;

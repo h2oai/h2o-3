@@ -22,7 +22,7 @@ public class GLMStepsProvider
             }
 
             @Override
-            protected void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults, SeedPolicy seedPolicy) {
+            protected void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults) {
                 // disabled as we're using lambda search
             }
 
