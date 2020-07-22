@@ -7,6 +7,7 @@ from functools import reduce
 from scipy.sparse import csr_matrix
 import sys, os, gc
 import pandas as pd
+import tempfile
 
 try:        # works with python 2.7 not 3
     from StringIO import StringIO
@@ -261,7 +262,7 @@ def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_a
     mojoZip = os.path.join(tmpdir, mojoname) + ".zip"
     if not(zipFilePath==None):
         mojoZip = zipFilePath
-    genJarDir = str.split(str(tmpdir),'/')
+    genJarDir = str.split(os.path.realpath("__file__"),'/')
     genJarDir = '/'.join(genJarDir[0:genJarDir.index('h2o-py')])    # locate directory of genmodel.jar
 
     java_cmd = ["java", "-ea", "-cp", os.path.join(genJarDir, "h2o-assemblies/genmodel/build/libs/genmodel.jar"),
@@ -281,7 +282,12 @@ def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_a
 
     p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
     o, e = p.communicate()
-    pred_mojo = h2o.import_file(os.path.join(tmpdir, 'out_mojo.csv'), header=1)  # load mojo prediction into a frame and compare
+    files = os.listdir(tmpdir)
+    print("listing files {1} in directory {0}".format(tmpdir, files))
+    outfile = os.path.join(tmpdir, 'out_mojo.csv')
+    print("***** importing file {0}".format(outfile))
+    pred_mojo = h2o.import_file(outfile, header=1)  # load mojo prediction in 
+    # to a frame and compare
     if glrmReconstruct or ('glrm' not in model.algo):
         return predict_h2o, pred_mojo
     else:
@@ -3468,8 +3474,8 @@ def compare_frames_local(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
     :param returnResult:
     :return:
     '''
-    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "Frame 1 row {0}, col {1}.  Frame 2 row {2}, col {3}.  " \
-                                                      "They are different.".format(f1.nrow, f1.ncol, f2.nrow, f2.ncol)
+    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "Frame 1 row {0}, col {1}.  Frame 2 row {2}, col {3}.  They are " \
+                                                      "different.".format(f1.nrow, f1.ncol, f2.nrow, f2.ncol)
     typeDict = f1.types
     frameNames = f1.names
 
@@ -3629,48 +3635,20 @@ def compare_frames_local_onecolumn_NA_string(f1, f2, prob=0.5, returnResult=Fals
     if returnResult:
         return True
 
-def build_save_model_GLM(params, x, train, respName):
-    # build a model
-    model = H2OGeneralizedLinearEstimator(**params)
+def build_save_model_generic(params, x, train, respName, algoName, tmpdir):
+    if algoName.lower() == "gam":
+        model = H2OGeneralizedAdditiveEstimator(**params)
+    elif algoName.lower() == "glm":
+        model = H2OGeneralizedLinearEstimator(**params)
+    elif algoName.lower() == "gbm":
+        model = H2OGradientBoostingEstimator(**params)
+    elif algoName.lower() == "drf":
+        model = H2ORandomForestEstimator(**params)
+    else:
+        raise Exception("build_save_model does not support algo "+algoName+".  Please add this to build_save_model.")
     model.train(x=x, y=respName, training_frame=train)
-    # save model
-    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
-    MOJONAME = regex.sub("_", model._id)
-
-    print("Downloading Java prediction model code from H2O")
-    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
-    os.makedirs(TMPDIR)
-    model.download_mojo(path=TMPDIR)    # save mojo
+    model.download_mojo(path=tmpdir)
     return model
-
-def build_save_model_GBM(params, x, train, respName):
-    # build a model
-    model = H2OGradientBoostingEstimator(**params)
-    model.train(x=x, y=respName, training_frame=train)
-    # save model
-    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
-    MOJONAME = regex.sub("_", model._id)
-
-    print("Downloading Java prediction model code from H2O")
-    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
-    os.makedirs(TMPDIR)
-    model.download_mojo(path=TMPDIR)    # save mojo
-    return model
-
-def build_save_model_DRF(params, x, train, respName):
-    # build a model
-    model = H2ORandomForestEstimator(**params)
-    model.train(x=x, y=respName, training_frame=train)
-    # save model
-    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
-    MOJONAME = regex.sub("_", model._id)
-
-    print("Downloading Java prediction model code from H2O")
-    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
-    os.makedirs(TMPDIR)
-    model.download_mojo(path=TMPDIR)    # save mojo
-    return model
-
 
 # generate random dataset, copied from Pasha
 def random_dataset(response_type, verbose=True, ncol_upper=25000, ncol_lower=15000, NTESTROWS=200, missing_fraction=0.0, seed=None):
@@ -3686,6 +3664,8 @@ def random_dataset(response_type, verbose=True, ncol_upper=25000, ncol_lower=150
         fractions[k] /= sum_fractions
     if response_type == 'binomial':
         response_factors = 2
+    elif response_type == 'gaussian':
+        response_factors = 1
     else:
         response_factors = random.randint(3, 10)
     df = h2o.create_frame(rows=random.randint(ncol_lower, ncol_upper) + NTESTROWS, cols=random.randint(3, 20),

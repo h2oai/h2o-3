@@ -12,5 +12,6 @@ public enum LinkFunctionType {
     ologit,
     ologlog,
     oprobit,
-    inverse
+    inverse,
+    tweedie
 }

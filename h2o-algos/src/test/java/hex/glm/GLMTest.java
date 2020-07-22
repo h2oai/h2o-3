@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
+import static hex.genmodel.utils.ArrayUtils.flat;
 import static org.junit.Assert.*;
 
 public class GLMTest  extends TestUtil {
@@ -1907,7 +1908,7 @@ public class GLMTest  extends TestUtil {
               parms2._objective_epsilon = 1e-8;
               GLMModel model2 = new GLM(parms2).trainModel().get();
               double[] beta_ls = rp._coefficients_std[i];
-              double [] beta = fam == Family.multinomial?ArrayUtils.flat(model2._output.getNormBetaMultinomial()):model2._output.getNormBeta();
+              double [] beta = fam == Family.multinomial?flat(model2._output.getNormBetaMultinomial()):model2._output.getNormBeta();
               System.out.println(ArrayUtils.pprint(new double[][]{beta,beta_ls}));
               // Can't compare beta here, have to compare objective value
               double null_dev = ((GLMMetrics) model2._output._training_metrics).null_deviance();

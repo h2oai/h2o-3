@@ -31,6 +31,7 @@ import java.util.List;
 import static hex.gam.GAMModel.cleanUpInputFrame;
 import static hex.gam.MatrixFrameUtils.GamUtils.AllocateType.*;
 import static hex.gam.MatrixFrameUtils.GamUtils.*;
+import static hex.genmodel.utils.ArrayUtils.flat;
 import static hex.glm.GLMModel.GLMParameters.Family.multinomial;
 import static hex.glm.GLMModel.GLMParameters.Family.ordinal;
 
@@ -59,7 +60,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
 
   @Override
   public boolean haveMojo() {
-    return false;
+    return true;
   }
 
   public GAM(boolean startup_once) {
@@ -221,7 +222,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         _parms._link = _parms._family.defaultLink;
     }
     
-    if ((_parms._family == GLMParameters.Family.multinomial || _parms._family == GLMParameters.Family.binomial)
+    if ((_parms._family == GLMParameters.Family.multinomial || _parms._family == GLMParameters.Family.ordinal ||
+            _parms._family == GLMParameters.Family.binomial)
             && response().get_type() != Vec.T_CAT){
       error("_response_column", String.format("For given response family '%s', please provide a categorical" +
               " response column. Current response column type is '%s'.", _parms._family, response().get_type_str()));
@@ -253,6 +255,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     String[][] _gamColNamesCenter;  // gamColNames after de-centering is performed.
     Key<Frame>[] _gamFrameKeys;
     Key<Frame>[] _gamFrameKeysCenter;
+    double[][] _gamColMeans; // store gam column means without centering.
 
     /***
      * This method will take the _train that contains the predictor columns and response columns only and add to it
@@ -274,6 +277,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       _gamColNamesCenter = new String[numGamFrame][];
       _gamFrameKeys = new Key[numGamFrame];
       _gamFrameKeysCenter = new Key[numGamFrame];
+      _gamColMeans = new double[numGamFrame][];
 
       addGAM2Train();  // add GAM columns to training frame
       return buildGamFrame(numGamFrame, _gamFrameKeysCenter, _train, _parms._response_column); // add gam cols to _train
@@ -294,6 +298,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         }
         _gamColNames[frameIndex] = new String[numKnots];
         _gamColNamesCenter[frameIndex] = new String[numKnotsM1];
+        _gamColMeans[frameIndex] = new double[numKnots];
         System.arraycopy(newColNames, 0, _gamColNames[frameIndex], 0, numKnots);
         generateGamColumn[frameIndex] = new RecursiveAction() {
           @Override
@@ -306,6 +311,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
             // calculate z transpose
               Frame oneAugmentedColumnCenter = genOneGamCol.outputFrame(Key.make(), newColNames,
                       null);
+              for (int cind=0; cind < numKnots; cind++) 
+                _gamColMeans[frameIndex][cind] = oneAugmentedColumnCenter.vec(cind).mean();
               oneAugmentedColumnCenter = genOneGamCol.centralizeFrame(oneAugmentedColumnCenter,
                       predictVec.name(0) + "_" + splineType + "_center_", _parms);
               GamUtils.copy2DArray(genOneGamCol._ZTransp, _zTranspose[frameIndex]); // copy transpose(Z)
@@ -374,7 +381,6 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         model.delete_and_lock(_job);
         if (_parms._keep_gam_cols) {  // save gam column keys
           model._output._gamTransformedTrainCenter = newTFrame._key;
-
         }
         _job.update(1, "calling GLM to build GAM model...");
         GLMModel glmModel = buildGLMModel(_parms, newTFrame); // obtained GLM model
@@ -393,6 +399,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         if (model != null) {
           if (_parms._keep_gam_cols) {
             addFrameKeys2Keep(keep, newTFrame._key);
+          } else {
+            DKV.remove(newTFrame._key);
           }
           model.unlock(_job);
           Scope.untrack(keep);  // leave the vectors alone.
@@ -442,12 +450,14 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     void fillOutGAMModel(GLMModel glm, GAMModel model, DataInfo dinfo) {
       model._gamColNamesNoCentering = _gamColNames;  // copy over gam column names
       model._gamColNames = _gamColNamesCenter;
+      model._output._gamColNames = _gamColNamesCenter;
       model._output._zTranspose = _zTranspose;
       model._gamFrameKeysCenter = _gamFrameKeysCenter;
       model._nclass = _nclass;
       model._output._binvD = _binvD;
       model._output._knots = _knots;
       model._output._numKnots = _numKnots;
+      model._gamColMeans = flat(_gamColMeans);
       if (_parms._keep_gam_cols)
         model._output._gam_transformed_center_key = model._output._gamTransformedTrainCenter.toString();
       if (_parms._savePenaltyMat) {

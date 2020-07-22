@@ -15,7 +15,7 @@ def test_gam_model_predict():
     h2o_data["C1"] = h2o_data["C1"].asfactor()
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C21"
-    model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictGaussianGAM1.csv"))
+    model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictGaussianGAM2.csv"))
     buildModelCheckPredict(h2o_data, h2o_data,  model_test_data, myY, ["C11", "C12", "C13"], 'gaussian')
 
     print("Checking model scoring for multinomial")
@@ -24,7 +24,7 @@ def test_gam_model_predict():
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C11"
     h2o_data["C11"] = h2o_data["C11"].asfactor()
-    model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictMultinomialGAM1.csv"))
+    model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictMultinomialGAM2.csv"))
     buildModelCheckPredict(h2o_data, h2o_data, model_test_data, myY, ["C6", "C7", "C8"], 'multinomial')
 
 
@@ -34,7 +34,7 @@ def test_gam_model_predict():
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C21"
     h2o_data["C21"] = h2o_data["C21"].asfactor()
-    model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictBinomialGAMRPython.csv"))
+    model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictBinomialGAM2.csv"))
     buildModelCheckPredict(h2o_data, h2o_data, model_test_data, myY, ["C11", "C12", "C13"], 'binomial')
     print("gam coeff/varimp test completed successfully")
     
