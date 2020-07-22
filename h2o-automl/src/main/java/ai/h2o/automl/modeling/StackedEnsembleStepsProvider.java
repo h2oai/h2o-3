@@ -31,6 +31,21 @@ public class StackedEnsembleStepsProvider
             }
 
             @Override
+            protected void setCrossValidationParams(Model.Parameters params) {
+                //added in the stack: we could probably move this here.
+            }
+
+            @Override
+            protected void setWeightingParams(Model.Parameters params) {
+                //Disabled: StackedEnsemble doesn't support weights in score0? 
+            }
+
+            @Override
+            protected void setClassBalancingParams(Model.Parameters params) {
+                //Disabled
+            }
+
+            @Override
             protected boolean canRun() {
                 Key<Model>[] keys = getBaseModels();
                 Work seWork = getAllocatedWork();

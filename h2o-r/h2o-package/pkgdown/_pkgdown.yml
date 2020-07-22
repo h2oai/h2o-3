@@ -255,6 +255,7 @@ reference:
       - h2o.saveMojo
       - h2o.scale
       - h2o.scoreHistory
+      - h2o.scoreHistoryGAM
       - h2o.sd 
       - h2o.sdev
       - h2o.set_s3_credentials

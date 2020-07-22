@@ -2852,11 +2852,16 @@ def evaluate_early_stopping(metric_list, stop_round, tolerance, bigger_is_better
 
     :return:    bool indicating if we should stop early and sorted metric_list
     """
-    metric_len = len(metric_list)
-    metric_list.sort(reverse=bigger_is_better)
-    shortest_len = 2*stop_round
+    if (bigger_is_better):
+        metric_list.reverse()
 
-    bestInLastK = 1.0*sum(metric_list[0:stop_round])/stop_round
+    shortest_len = 2*stop_round
+    if (isinstance(metric_list[0], float)):
+        startIdx = 0
+    else:
+        startIdx = 1
+        
+    bestInLastK = 1.0*sum(metric_list[startIdx:stop_round])/stop_round
     lastBeforeK = 1.0*sum(metric_list[stop_round:shortest_len])/stop_round
 
     if not(np.sign(bestInLastK) == np.sign(lastBeforeK)):
@@ -2894,7 +2899,6 @@ def check_and_count_models(hyper_params, params_zero_one, params_more_than_zero,
     """
 
     total_model = 1
-    param_len = 0
     hyper_keys = list(hyper_params)
     shuffle(hyper_keys)    # get all hyper_parameter names in random order
     final_hyper_params = dict()
@@ -3163,7 +3167,6 @@ def extract_scoring_history_field(aModel, fieldOfInterest, takeFirst=False):
     return extract_from_twoDimTable(aModel._model_json["output"]["scoring_history"], fieldOfInterest, takeFirst)
 
 
-
 def extract_from_twoDimTable(metricOfInterest, fieldOfInterest, takeFirst=False):
     """
     Given a fieldOfInterest that are found in the model scoring history, this function will extract the list
@@ -3175,12 +3178,16 @@ def extract_from_twoDimTable(metricOfInterest, fieldOfInterest, takeFirst=False)
     """
 
     allFields = metricOfInterest._col_header
+    return extract_field_from_twoDimTable(allFields, metricOfInterest.cell_values, fieldOfInterest, takeFirst=False)
+
+
+def extract_field_from_twoDimTable(allFields, cell_values, fieldOfInterest, takeFirst=False):
     if fieldOfInterest in allFields:
         cellValues = []
         fieldIndex = allFields.index(fieldOfInterest)
-        for eachCell in metricOfInterest.cell_values:
+        for eachCell in cell_values:
             cellValues.append(eachCell[fieldIndex])
-            if takeFirst:   # only grab the result from the first iteration.
+            if takeFirst:  # only grab the result from the first iteration.
                 break
         return cellValues
     else:

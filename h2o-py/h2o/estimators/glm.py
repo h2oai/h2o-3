@@ -32,15 +32,16 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     param_names = {"model_id", "training_frame", "validation_frame", "nfolds", "seed", "keep_cross_validation_models",
                    "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
                    "fold_column", "response_column", "ignored_columns", "random_columns", "ignore_const_cols",
-                   "score_each_iteration", "offset_column", "weights_column", "family", "rand_family",
-                   "tweedie_variance_power", "tweedie_link_power", "theta", "solver", "alpha", "lambda_",
+                   "score_each_iteration", "score_iteration_interval", "offset_column", "weights_column", "family",
+                   "rand_family", "tweedie_variance_power", "tweedie_link_power", "theta", "solver", "alpha", "lambda_",
                    "lambda_search", "early_stopping", "nlambdas", "standardize", "missing_values_handling",
                    "plug_values", "compute_p_values", "remove_collinear_columns", "intercept", "non_negative",
                    "max_iterations", "objective_epsilon", "beta_epsilon", "gradient_epsilon", "link", "rand_link",
                    "startval", "calc_like", "HGLM", "prior", "lambda_min_ratio", "beta_constraints",
                    "max_active_predictors", "interactions", "interaction_pairs", "obj_reg", "export_checkpoints_dir",
-                   "balance_classes", "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size",
-                   "max_hit_ratio_k", "max_runtime_secs", "custom_metric_func"}
+                   "stopping_rounds", "stopping_metric", "stopping_tolerance", "balance_classes",
+                   "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k",
+                   "max_runtime_secs", "custom_metric_func"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedLinearEstimator, self).__init__()
@@ -446,6 +447,21 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def score_each_iteration(self, score_each_iteration):
         assert_is_type(score_each_iteration, None, bool)
         self._parms["score_each_iteration"] = score_each_iteration
+
+
+    @property
+    def score_iteration_interval(self):
+        """
+        Perform scoring for every score_iteration_interval iterations
+
+        Type: ``int``  (default: ``-1``).
+        """
+        return self._parms.get("score_iteration_interval")
+
+    @score_iteration_interval.setter
+    def score_iteration_interval(self, score_iteration_interval):
+        assert_is_type(score_iteration_interval, None, int)
+        self._parms["score_iteration_interval"] = score_iteration_interval
 
 
     @property
@@ -1535,6 +1551,56 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+    @property
+    def stopping_rounds(self):
+        """
+        Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
+        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
+
+        Type: ``int``  (default: ``0``).
+        """
+        return self._parms.get("stopping_rounds")
+
+    @stopping_rounds.setter
+    def stopping_rounds(self, stopping_rounds):
+        assert_is_type(stopping_rounds, None, int)
+        self._parms["stopping_rounds"] = stopping_rounds
+
+
+    @property
+    def stopping_metric(self):
+        """
+        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score
+        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+        client.
+
+        One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
+        ``"aucpr"``, ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``,
+        ``"custom_increasing"``  (default: ``"auto"``).
+        """
+        return self._parms.get("stopping_metric")
+
+    @stopping_metric.setter
+    def stopping_metric(self, stopping_metric):
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"))
+        self._parms["stopping_metric"] = stopping_metric
+
+
+    @property
+    def stopping_tolerance(self):
+        """
+        Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
+
+        Type: ``float``  (default: ``0.001``).
+        """
+        return self._parms.get("stopping_tolerance")
+
+    @stopping_tolerance.setter
+    def stopping_tolerance(self, stopping_tolerance):
+        assert_is_type(stopping_tolerance, None, numeric)
+        self._parms["stopping_tolerance"] = stopping_tolerance
 
 
     @property

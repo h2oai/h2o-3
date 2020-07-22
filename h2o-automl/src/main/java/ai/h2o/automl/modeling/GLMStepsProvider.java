@@ -1,6 +1,7 @@
 package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
+import hex.Model;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
 import water.Job;
@@ -18,6 +19,11 @@ public class GLMStepsProvider
 
             GLMModelStep(String id, int weight, AutoML autoML) {
                 super(Algo.GLM, id, weight, autoML);
+            }
+
+            @Override
+            protected void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults) {
+                // disabled as we're using lambda search
             }
 
             GLMParameters prepareModelParameters() {
