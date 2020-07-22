@@ -56,6 +56,15 @@ public class SteamExecutorStarterTest {
         return startResp;
     }
 
+    private Map<String, String> makeStartingResponse(Map<String, String> startReq) {
+        Map<String, String> startResp = new HashMap<>();
+        startResp.put(ID, startReq.get(ID) + "_response");
+        startResp.put(TYPE, "xgboostClusterStartNotification");
+        startResp.put("uri", H2O.getIpPortString());
+        startResp.put("status", "starting");
+        return startResp;
+    }
+
     private Map<String, String> makeStopReq(String id) {
         Map<String, String> stopReq = new HashMap<>();
         stopReq.put(ID, id);
@@ -90,6 +99,7 @@ public class SteamExecutorStarterTest {
             Map<String, String> startReq = steam.waitToReceiveMessage("start request");
             assertNotNull(startReq.get("_id"));
             assertEquals("startXGBoostCluster", startReq.get("_type"));
+            steam.sendMessage(makeStartingResponse(startReq));
             steam.sendMessage(makeStartResponse(startReq));
             Scope.track_generic(model1.get());
 

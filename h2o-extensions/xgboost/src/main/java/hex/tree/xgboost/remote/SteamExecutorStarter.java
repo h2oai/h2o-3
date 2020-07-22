@@ -66,19 +66,24 @@ public class SteamExecutorStarter implements SteamMessenger {
     private void startCluster(Job<XGBoostModel> job) throws IOException {
         Map<String, String> startRequest = makeStartRequest();
         sendMessage(startRequest);
-        Map<String, String> response = waitForResponse(startRequest, job);
-        if (response != null) {
-            if ("started".equals(response.get("status"))) {
-                String remoteUri = response.get("uri");
-                String userName = response.get("user");
-                String password = response.get("password");
-                cluster = new ClusterInfo(remoteUri, userName, password);
-                LOG.info("External cluster started at " + remoteUri + ".");
+        while (true) {
+            Map<String, String> response = waitForResponse(startRequest, job);
+            if (response != null) {
+                if ("started".equals(response.get("status"))) {
+                    String remoteUri = response.get("uri");
+                    String userName = response.get("user");
+                    String password = response.get("password");
+                    cluster = new ClusterInfo(remoteUri, userName, password);
+                    LOG.info("External cluster started at " + remoteUri + ".");
+                    break;
+                } else if ("starting".equals(response.get("status"))) {
+                    LOG.info("Continuing to wait for external cluster to start.");                    
+                } else if ("failed".equals(response.get("status"))) {
+                    throw new IllegalStateException("Failed to start external cluster: " + response.get("reason"));
+                }
             } else {
-                throw new IllegalStateException("Failed to start external cluster: " + response.get("reason"));
+                throw new IllegalStateException("Stop requested.");
             }
-        } else {
-            throw new IllegalStateException("Stop requested.");
         }
     }
 
