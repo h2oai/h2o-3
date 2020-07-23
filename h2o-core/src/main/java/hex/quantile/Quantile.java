@@ -131,7 +131,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
                                    double prob,
                                    Vec response, // response
                                    Vec weights,  // obs weights
-                                   Vec strata,   // stratification (can be null)
+                                   Vec strata,   // stratification
                                    QuantileModel.CombineMethod combine_method) {
       super(cc); _response = response; _prob=prob; _combine_method=combine_method; _weights=weights; _strata=strata;
     }
@@ -161,6 +161,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         if (sumRows>0) {
           Histo h = new Histo(_response.min(), _response.max(), 0, sumRows, _response.isInt());
           h.doAll(_response, newWeights);
+          //h = h.refinePass(_prob).doAll(_response, newWeights);
           while (Double.isNaN(_quantiles[i] = h.findQuantile(_prob, _combine_method)))
             h = h.refinePass(_prob).doAll(_response, newWeights);
           newWeights.remove();

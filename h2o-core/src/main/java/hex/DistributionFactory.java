@@ -420,6 +420,7 @@ class LaplaceDistribution extends Distribution {
     }
 }
 
+
 class QuantileDistribution extends Distribution {
 
     public QuantileDistribution(Model.Parameters params){
@@ -431,7 +432,46 @@ class QuantileDistribution extends Distribution {
 
     @Override
     public double negHalfGradient(double y, double f) { return y > f ? 0.5 * _quantileAlpha : 0.5 * (_quantileAlpha - 1); }
+
+    @Override
+    public double initFNum(double w, double o, double y) {
+        return w * _quantileAlpha * (y - o);
+    }
+
+    @Override
+    public double initFDenom(double w, double o, double y) {
+        return w * _quantileAlpha;
+    }
 }
+
+class QuantileDistribution2 extends Distribution {
+
+    public QuantileDistribution2(Model.Parameters params){
+        super(params);
+    }
+
+    @Override
+    public double deviance(double w, double y, double f) {
+        double delta = y - f;
+        return delta < 0 ? w * delta * (_quantileAlpha-1) : w * delta * _quantileAlpha; 
+    }
+
+    @Override
+    public double negHalfGradient(double y, double f) {
+        double delta = y - f;
+        return delta < 0 ? _quantileAlpha-1 :  _quantileAlpha; }
+
+    @Override
+    public double initFNum(double w, double o, double y) {
+        return w * _quantileAlpha * (y - o);
+    }
+
+    @Override
+    public double initFDenom(double w, double o, double y) {
+        return w * _quantileAlpha;
+    }
+}
+
 
 /**
  * Custom distribution class to customized loss and prediction calculation.
