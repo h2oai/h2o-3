@@ -126,8 +126,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           Vec v = _parms.train().vec(col);
           if (v == null) {
             error("stratify_by", "column '" + col + "' not found");
-          } else {
-            if (v.get_type() != Vec.T_CAT)
+          } else if (v.get_type() != Vec.T_CAT) {
               error("stratify_by", "non-categorical column '" + col + "' cannot be used for stratification");
           }
           if (_parms._interactions != null) {
