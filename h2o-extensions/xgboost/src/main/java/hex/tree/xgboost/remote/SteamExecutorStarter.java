@@ -10,9 +10,7 @@ import water.Job;
 import water.fvec.Frame;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class SteamExecutorStarter implements SteamMessenger {
 
@@ -45,7 +43,7 @@ public class SteamExecutorStarter implements SteamMessenger {
     private SteamMessageSender sender;
     private ClusterInfo cluster;
 
-    private final Map<String, Map<String, String>> receivedMessages = new HashMap<>();
+    private final Deque<Map<String, String>> receivedMessages = new LinkedList<>();
     
     public SteamExecutorStarter() {
         instance = this;
@@ -64,10 +62,11 @@ public class SteamExecutorStarter implements SteamMessenger {
     }
 
     private void startCluster(Job<XGBoostModel> job) throws IOException {
+        clearMessages();
         Map<String, String> startRequest = makeStartRequest();
         sendMessage(startRequest);
-        while (true) {
-            Map<String, String> response = waitForResponse(startRequest, job);
+        while (!job.stop_requested()) {
+            Map<String, String> response = waitForMessage();
             if (response != null) {
                 if ("started".equals(response.get("status"))) {
                     String remoteUri = response.get("uri");
@@ -80,9 +79,13 @@ public class SteamExecutorStarter implements SteamMessenger {
                     LOG.info("Continuing to wait for external cluster to start.");                    
                 } else if ("failed".equals(response.get("status"))) {
                     throw new IllegalStateException("Failed to start external cluster: " + response.get("reason"));
+                } else {
+                    throw new IllegalStateException(
+                        "Unknown status received from steam: " + response.get("status") + ", reason:" + response.get("reason")
+                    );
                 }
             } else {
-                throw new IllegalStateException("Stop requested.");
+                throw new IllegalStateException("No response received from Steam.");
             }
         }
     }
@@ -91,18 +94,28 @@ public class SteamExecutorStarter implements SteamMessenger {
         return new RemoteXGBoostExecutor(model, train, cluster.uri, cluster.userName, cluster.password);
     }
     
-    private Map<String, String> waitForResponse(Map<String, String> startRequest, Job<XGBoostModel> job) {
-        String responseKey = startRequest.get(ID) + "_response";
+    private void clearMessages() {
         synchronized (receivedMessages) {
-            receivedMessages.put(responseKey, null);
-            while (receivedMessages.get(responseKey) == null && !job.stop_requested()) {
-                try {
-                    receivedMessages.wait(10000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+            receivedMessages.clear();
+        }
+    }
+    
+    private Map<String, String> waitForMessage() {
+        int timeout = Integer.parseInt(H2O.getSysProperty("steam.notification.timeout", "20000"));
+        synchronized (receivedMessages) {
+            if (!receivedMessages.isEmpty()) {
+                return receivedMessages.pop();
             }
-            return receivedMessages.remove(responseKey);
+            try {
+                receivedMessages.wait(timeout);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            if (!receivedMessages.isEmpty()) {
+                return receivedMessages.pop();
+            } else {
+                return null;
+            }
         }
     }
 
@@ -127,20 +140,18 @@ public class SteamExecutorStarter implements SteamMessenger {
     public void onMessage(Map<String, String> message) {
         if ("stopXGBoostClusterNotification".equals(message.get(TYPE))) {
             handleStopRequest(message);
+        } else if ("xgboostClusterStartNotification".equals(message.get(TYPE))) {
+            queueResponse(message);
         } else {
-            queueMessageIfResponse(message);
+            LOG.debug("Ignoring message " + message.get(ID) + " " + message.get(TYPE));
         }
     }
 
-    private void queueMessageIfResponse(Map<String, String> message) {
+    private void queueResponse(Map<String, String> message) {
         synchronized (receivedMessages) {
-            if (receivedMessages.containsKey(message.get(ID))) {
-                LOG.info("Received message response " + message.get(ID));
-                receivedMessages.put(message.get(ID), message);
-                receivedMessages.notifyAll();
-            } else {
-                LOG.debug("Ignoring message " + message.get(ID));
-            }
+            LOG.info("Received message response " + message.get(ID));
+            receivedMessages.add(message);
+            receivedMessages.notifyAll();
         }
     }
 

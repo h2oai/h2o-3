@@ -70,7 +70,9 @@ public class XGBoostHttpClient {
     public XGBoostHttpClient(String baseUri, boolean https, String contextPath, String userName, String password) {
         if (contextPath == null) contextPath = "";
         else if (contextPath.length() > 0 && !contextPath.startsWith("/")) contextPath = "/" + contextPath;
-        this.baseUri = (https ? "https" : "http") + "://" + baseUri + "/" + contextPath + "/3/XGBoostExecutor.";
+        String suffix = "3/XGBoostExecutor.";
+        if (!contextPath.endsWith("/")) suffix = "/" + suffix;
+        this.baseUri = (https ? "https" : "http") + "://" + baseUri + contextPath + suffix;
         if (userName != null) {
             credentials = new UsernamePasswordCredentials(userName, password);
         } else {
@@ -93,7 +95,6 @@ public class XGBoostHttpClient {
                 builder.setSSLSocketFactory(sslFactory);
             }
             if (credentials != null) {
-                // only works for get requests
                 CredentialsProvider provider = new BasicCredentialsProvider();
                 provider.setCredentials(AuthScope.ANY, credentials);
                 builder.setDefaultCredentialsProvider(provider);
@@ -187,11 +188,16 @@ public class XGBoostHttpClient {
         assert resp.key.key().equals(key);
     }
 
+    /*
+    For binary POST requests its necessary to add auth this way 
+     */
     private void addAuthentication(HttpPost httpReq) {
-        try {
-            httpReq.addHeader(new BasicScheme().authenticate(credentials, httpReq, null));
-        } catch (AuthenticationException e) {
-            throw new IllegalStateException("Unable to authenticate request.", e);
+        if (credentials != null) {
+            try {
+                httpReq.addHeader(new BasicScheme().authenticate(credentials, httpReq, null));
+            } catch (AuthenticationException e) {
+                throw new IllegalStateException("Unable to authenticate request.", e);
+            }
         }
     }
 
