@@ -313,9 +313,4 @@ public class SteamExecutorStarterTest {
         }
     }
     
-    // request start
-    // cancel job
-    // send confirm
-    // request start again
-    
 }
