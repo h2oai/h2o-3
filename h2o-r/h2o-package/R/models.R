@@ -2043,6 +2043,7 @@ h2o.scoreHistory <- function(object) {
 
 #'
 #' Retrieve GLM Model Score History buried in GAM model
+#' @param object An \linkS4class{H2OModel} object.
 #' @export
 h2o.scoreHistoryGAM <- function(object) {
     return(object@model$glm_scoring_history)
