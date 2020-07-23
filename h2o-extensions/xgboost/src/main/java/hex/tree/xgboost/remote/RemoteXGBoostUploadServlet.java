@@ -48,10 +48,7 @@ public class RemoteXGBoostUploadServlet extends HttpServlet {
                 destFile = getCheckpointFile(model_key);
             }
             LOG.debug("Saving contents into " + destFile);
-            InputStream is = ServletUtils.extractPartInputStream(request, response);
-            if (is == null) {
-                throw new IllegalArgumentException("Request missing file upload.");
-            }
+            InputStream is = request.getInputStream();
             try (FileOutputStream fos = new FileOutputStream(destFile)) {
                 IOUtils.copyStream(is, fos);
             }
