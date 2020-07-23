@@ -44,7 +44,7 @@ def coxph_validations():
         coxph.train(x=["transplant"], y="event", training_frame=heart)
         assert False, "Expected an error to be thrown"
     except H2OResponseError as ex:
-        assert "Training data must have at least 1 feature that is not response and is not stratified" \
+        assert "Training data must have at least 1 feature that is not a response and is not used for stratification" \
                in ex.args[0].exception_msg, \
                "There should be an error message warning that there is no feature that is not used for stratification"
         
