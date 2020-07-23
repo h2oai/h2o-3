@@ -49,9 +49,6 @@ public class RemoteXGBoostUploadServlet extends HttpServlet {
             }
             LOG.debug("Saving contents into " + destFile);
             InputStream is = request.getInputStream();
-            if (is == null) {
-                throw new IllegalArgumentException("Request missing file upload.");
-            }
             try (FileOutputStream fos = new FileOutputStream(destFile)) {
                 IOUtils.copyStream(is, fos);
             }
