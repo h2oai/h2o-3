@@ -3,6 +3,7 @@ import sys
 sys.path.insert(1, "../../../")
 from tests import pyunit_utils
 from random import randint
+import tempfile
 
 def drf_mojo_reproducibility_info():
     problems = ['binomial', 'multinomial', 'regression']
@@ -12,8 +13,7 @@ def drf_mojo_reproducibility_info():
     train = df[TESTROWS:, :]
     x = list(set(df.names) - {"respose"})
     params = {'ntrees': 50, 'max_depth': 4}
-
-    drfModel = pyunit_utils.build_save_model_DRF(params, x, train, "response")
+    drfModel = pyunit_utils.build_save_model_generic(params, x, train, "response", "drf", tempfile.mkdtemp())
 
     isinstance(drfModel._model_json['output']['reproducibility_information_table'][1]['h2o_cluster_uptime'][0], float)
     isinstance(drfModel._model_json['output']['reproducibility_information_table'][0]['java_version'][0], str)

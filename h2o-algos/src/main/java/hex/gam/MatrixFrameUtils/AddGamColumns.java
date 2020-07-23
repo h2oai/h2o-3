@@ -8,9 +8,7 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.util.ArrayUtils;
 
-import static hex.gam.MatrixFrameUtils.GamUtils.locateBin;
-import static hex.gam.MatrixFrameUtils.GenerateGamMatrixOneColumn.updateAFunc;
-import static hex.gam.MatrixFrameUtils.GenerateGamMatrixOneColumn.updateFMatrixCFunc;
+import static hex.genmodel.algos.gam.GamUtilsCubicRegression.*;
 
 /**
  * Given a Frame, the class will add all the gam columns to the end of the Frame right before
@@ -75,9 +73,9 @@ public class AddGamColumns extends MRTask<AddGamColumns> {
     if (!Double.isNaN(xval)) {
       int binIndex = locateBin(xval, splines._knots); // location to update
       // update from F matrix F matrix = [0;invB*D;0] and c functions
-      updateFMatrixCFunc(basisVals, xval, binIndex, splines, bInvD);
+      updateFMatrixCFunc(basisVals, xval, binIndex, splines._knots, splines._hj, bInvD);
       // update from a+ and a- functions
-      updateAFunc(basisVals, xval, binIndex, splines);
+      updateAFunc(basisVals, xval, binIndex, splines._knots, splines._hj);
       // add centering
       basisValCenter = ArrayUtils.multArrVec(_ztransp[colInd], basisVals, basisValCenter);
       // copy updates to the newChunk row

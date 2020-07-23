@@ -15,7 +15,7 @@ from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     """
-    General Additive Model
+    Generalized Additive Model
 
     Fits a generalized additive model, specified by a response variable, a set of predictors, and a
     description of the error distribution.
@@ -37,10 +37,10 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                    "missing_values_handling", "plug_values", "compute_p_values", "remove_collinear_columns",
                    "intercept", "non_negative", "max_iterations", "objective_epsilon", "beta_epsilon",
                    "gradient_epsilon", "link", "prior", "lambda_min_ratio", "beta_constraints", "max_active_predictors",
-                   "interactions", "interaction_pairs", "obj_reg", "export_checkpoints_dir", "balance_classes",
-                   "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k",
-                   "max_runtime_secs", "custom_metric_func", "num_knots", "knot_ids", "gam_columns", "bs", "scale",
-                   "keep_gam_cols"}
+                   "interactions", "interaction_pairs", "obj_reg", "export_checkpoints_dir", "stopping_rounds",
+                   "stopping_metric", "stopping_tolerance", "balance_classes", "class_sampling_factors",
+                   "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k", "max_runtime_secs",
+                   "custom_metric_func", "num_knots", "knot_ids", "gam_columns", "bs", "scale", "keep_gam_cols"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedAdditiveEstimator, self).__init__()
@@ -416,7 +416,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         Stop early when there is no more relative improvement on train or validation (if provided)
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("early_stopping")
 
@@ -432,7 +432,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         Number of lambdas to be used in a search. Default indicates: If alpha is zero, with lambda search set to True,
         the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression) otherwise it is set to 100.
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``  (default: ``0``).
         """
         return self._parms.get("nlambdas")
 
@@ -603,7 +603,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
         values above are 1E-8 and 1E-6 respectively.
 
-        Type: ``float``  (default: ``-1``).
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("gradient_epsilon")
 
@@ -635,7 +635,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
         of response does not reflect reality.
 
-        Type: ``float``  (default: ``-1``).
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("prior")
 
@@ -653,7 +653,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of variables, then
         lambda_min_ratio is set to 0.01.
 
-        Type: ``float``  (default: ``-1``).
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("lambda_min_ratio")
 
@@ -752,6 +752,56 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+    @property
+    def stopping_rounds(self):
+        """
+        Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
+        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
+
+        Type: ``int``  (default: ``0``).
+        """
+        return self._parms.get("stopping_rounds")
+
+    @stopping_rounds.setter
+    def stopping_rounds(self, stopping_rounds):
+        assert_is_type(stopping_rounds, None, int)
+        self._parms["stopping_rounds"] = stopping_rounds
+
+
+    @property
+    def stopping_metric(self):
+        """
+        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score
+        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+        client.
+
+        One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
+        ``"aucpr"``, ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``,
+        ``"custom_increasing"``  (default: ``"auto"``).
+        """
+        return self._parms.get("stopping_metric")
+
+    @stopping_metric.setter
+    def stopping_metric(self, stopping_metric):
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"))
+        self._parms["stopping_metric"] = stopping_metric
+
+
+    @property
+    def stopping_tolerance(self):
+        """
+        Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
+
+        Type: ``float``  (default: ``0.001``).
+        """
+        return self._parms.get("stopping_tolerance")
+
+    @stopping_tolerance.setter
+    def stopping_tolerance(self, stopping_tolerance):
+        assert_is_type(stopping_tolerance, None, numeric)
+        self._parms["stopping_tolerance"] = stopping_tolerance
 
 
     @property

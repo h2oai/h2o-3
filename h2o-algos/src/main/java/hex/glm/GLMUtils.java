@@ -3,8 +3,11 @@ package hex.glm;
 import water.MemoryManager;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.TwoDimTable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class GLMUtils {
 
@@ -16,7 +19,7 @@ public class GLMUtils {
    */
   public static int[][] extractAdaptedFrameIndices(Frame adaptFrame, String[][] gamColnames, int numOffset) {
     String[] frameNames = adaptFrame.names();
-    ArrayList<String> allColNames = new ArrayList<>();
+    List<String> allColNames = new ArrayList<>();
     for (String name:frameNames)
       allColNames.add(name);
     int[][] gamColIndices = new int[gamColnames.length][];
@@ -31,6 +34,71 @@ public class GLMUtils {
     return gamColIndices;
   }
 
+  public static TwoDimTable combineScoringHistory(TwoDimTable glmSc1, TwoDimTable earlyStopSc2, 
+                                                  List<Integer> scoreIterationList) {
+    String[] esColTypes = earlyStopSc2.getColTypes();
+    String[] esColFormats = earlyStopSc2.getColFormats();
+    List<String> finalColHeaders = new ArrayList<>(Arrays.asList(glmSc1.getColHeaders()));
+    int indexOfIter = finalColHeaders.indexOf("iteration");
+    if (indexOfIter < 0)
+      indexOfIter = finalColHeaders.indexOf("iterations");
+    List<String> finalColTypes = new ArrayList<>(Arrays.asList(glmSc1.getColTypes()));
+    List<String> finalColFormats = new ArrayList<>(Arrays.asList(glmSc1.getColFormats()));
+    List<Integer> earlyStopColIndices = new ArrayList<Integer>();
+
+    int colCounter = 0;
+    for (String colName : earlyStopSc2.getColHeaders()) { // collect final table colHeaders, RowHeaders, ColFormats, ColTypes
+      if (!finalColHeaders.contains(colName.toLowerCase())) {
+        finalColHeaders.add(colName);
+        finalColTypes.add(esColTypes[colCounter]);
+        finalColFormats.add(esColFormats[colCounter]);
+        earlyStopColIndices.add(colCounter);
+      }
+      colCounter++;
+    }
+    final int tableSize = finalColHeaders.size();
+    TwoDimTable res = new TwoDimTable("Scoring History", "",
+            glmSc1.getRowHeaders(), finalColHeaders.toArray(new String[tableSize]),
+            finalColTypes.toArray(new String[tableSize]), finalColFormats.toArray(new String[tableSize]),
+            "");
+    res = combineTableContents(glmSc1, earlyStopSc2, res, earlyStopColIndices, scoreIterationList, indexOfIter);
+    return res;
+  }
+  
+  // glmSc1 is updated for every iteration while earlyStopSc2 is updated per scoring interval.  Hence, glmSc1 is
+  // very likely to be longer than earlyStopSc2.  We only add earlyStopSc2 to the table when the iteration 
+  // indices align with each other.
+  public static TwoDimTable combineTableContents(final TwoDimTable glmSc1, final TwoDimTable earlyStopSc2,
+                                                 TwoDimTable combined, final List<Integer> earlyStopColIndices,
+                                                 List<Integer> scoreIterationList, final int indexOfIter) {
+    final int rowSize = glmSc1.getRowDim();
+    final int rowSize2 = earlyStopSc2.getRowDim();
+    final int glmColSize = glmSc1.getColDim();
+    final int earlyStopColSize = earlyStopColIndices.size();
+    int sc2RowIndex = 0;
+    for (int rowIndex = 0; rowIndex < rowSize; rowIndex++) {
+      for (int colIndex = 0; colIndex < glmColSize; colIndex++) { // add contents of glm Scoring history first
+        combined.set(rowIndex, colIndex, glmSc1.get(rowIndex, colIndex));
+      }
+      if (sc2RowIndex < rowSize2) {
+        final int glmSc1Iteration = (int) glmSc1.get(rowIndex, indexOfIter);
+        if (scoreIterationList.contains(glmSc1Iteration)) {
+          int sc2Index = scoreIterationList.indexOf(glmSc1Iteration);
+          final int earlyStopIteration = scoreIterationList.get(sc2Index);
+          scoreIterationList.remove(sc2Index);
+          if (glmSc1Iteration == earlyStopIteration) { // combine scoring histories when iteration number match
+            for (int colIndex = 0; colIndex < earlyStopColSize; colIndex++) { // add early stop scoring history content
+              int trueColIndex = colIndex + glmColSize;
+              combined.set(rowIndex, trueColIndex, earlyStopSc2.get(sc2RowIndex, earlyStopColIndices.get(colIndex)));
+            }
+            sc2RowIndex++;
+          }
+        }
+      }
+    }
+    return combined;
+  }
+  
   public static void updateGradGam(double[] gradient, double[][][] penalty_mat, int[][] gamBetaIndices, double[] beta,
                                    int[] activeCols) { // update gradient due to gam smoothness constraint
     int numGamCol = gamBetaIndices.length; // number of predictors used for gam

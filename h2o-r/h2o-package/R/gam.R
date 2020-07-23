@@ -53,10 +53,10 @@
 #' @param lambda_search \code{Logical}. Use lambda search starting at lambda max, given lambda is then interpreted as lambda min
 #'        Defaults to FALSE.
 #' @param early_stopping \code{Logical}. Stop early when there is no more relative improvement on train or validation (if provided)
-#'        Defaults to TRUE.
+#'        Defaults to FALSE.
 #' @param nlambdas Number of lambdas to be used in a search. Default indicates: If alpha is zero, with lambda search set to True,
 #'        the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression) otherwise it is set to 100.
-#'        Defaults to -1.
+#'        Defaults to 0.
 #' @param standardize \code{Logical}. Standardize numeric columns to have zero mean and unit variance Defaults to FALSE.
 #' @param missing_values_handling Handling of missing values. Either MeanImputation, Skip or PlugValues. Must be one of: "MeanImputation",
 #'        "Skip", "PlugValues". Defaults to MeanImputation.
@@ -77,15 +77,15 @@
 #' @param gradient_epsilon Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver. Default
 #'        indicates: If lambda_search is set to False and lambda is equal to zero, the default value of gradient_epsilon
 #'        is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
-#'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.
+#'        values above are 1E-8 and 1E-6 respectively. Defaults to 0.
 #' @param link Link function. Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit".
 #'        Defaults to family_default.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
-#'        of response does not reflect reality. Defaults to -1.
+#'        of response does not reflect reality. Defaults to 0.
 #' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
 #'        coefficients to zero). Default indicates: if the number of observations is greater than the number of
 #'        variables, then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of
-#'        variables, then lambda_min_ratio is set to 0.01. Defaults to -1.
+#'        variables, then lambda_min_ratio is set to 0.01. Defaults to 0.
 #' @param beta_constraints Beta constraints
 #' @param max_active_predictors Maximum number of active predictors during computation. Use as a stopping criterion to prevent expensive model
 #'        building with many predictors. Default indicates: If the IRLSM solver is used, the value of
@@ -94,6 +94,15 @@
 #' @param interaction_pairs A list of pairwise (first order) column interactions.
 #' @param obj_reg Likelihood divider in objective value computation, default is 1/nobs Defaults to -1.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
+#'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
+#'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
+#'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
+#'        "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing".
+#'        Defaults to AUTO.
+#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
+#'        much) Defaults to 0.001.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
@@ -147,8 +156,8 @@ h2o.gam <- function(x,
                     alpha = NULL,
                     lambda = NULL,
                     lambda_search = FALSE,
-                    early_stopping = TRUE,
-                    nlambdas = -1,
+                    early_stopping = FALSE,
+                    nlambdas = 0,
                     standardize = FALSE,
                     missing_values_handling = c("MeanImputation", "Skip", "PlugValues"),
                     plug_values = NULL,
@@ -159,16 +168,19 @@ h2o.gam <- function(x,
                     max_iterations = -1,
                     objective_epsilon = -1,
                     beta_epsilon = 0.0001,
-                    gradient_epsilon = -1,
+                    gradient_epsilon = 0,
                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
-                    prior = -1,
-                    lambda_min_ratio = -1,
+                    prior = 0,
+                    lambda_min_ratio = 0,
                     beta_constraints = NULL,
                     max_active_predictors = -1,
                     interactions = NULL,
                     interaction_pairs = NULL,
                     obj_reg = -1,
                     export_checkpoints_dir = NULL,
+                    stopping_rounds = 0,
+                    stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
+                    stopping_tolerance = 0.001,
                     balance_classes = FALSE,
                     class_sampling_factors = NULL,
                     max_after_balance_size = 5.0,
@@ -301,6 +313,12 @@ h2o.gam <- function(x,
     parms$obj_reg <- obj_reg
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(stopping_rounds))
+    parms$stopping_rounds <- stopping_rounds
+  if (!missing(stopping_metric))
+    parms$stopping_metric <- stopping_metric
+  if (!missing(stopping_tolerance))
+    parms$stopping_tolerance <- stopping_tolerance
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))
@@ -377,8 +395,8 @@ h2o.gam <- function(x,
                                     alpha = NULL,
                                     lambda = NULL,
                                     lambda_search = FALSE,
-                                    early_stopping = TRUE,
-                                    nlambdas = -1,
+                                    early_stopping = FALSE,
+                                    nlambdas = 0,
                                     standardize = FALSE,
                                     missing_values_handling = c("MeanImputation", "Skip", "PlugValues"),
                                     plug_values = NULL,
@@ -389,16 +407,19 @@ h2o.gam <- function(x,
                                     max_iterations = -1,
                                     objective_epsilon = -1,
                                     beta_epsilon = 0.0001,
-                                    gradient_epsilon = -1,
+                                    gradient_epsilon = 0,
                                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
-                                    prior = -1,
-                                    lambda_min_ratio = -1,
+                                    prior = 0,
+                                    lambda_min_ratio = 0,
                                     beta_constraints = NULL,
                                     max_active_predictors = -1,
                                     interactions = NULL,
                                     interaction_pairs = NULL,
                                     obj_reg = -1,
                                     export_checkpoints_dir = NULL,
+                                    stopping_rounds = 0,
+                                    stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
+                                    stopping_tolerance = 0.001,
                                     balance_classes = FALSE,
                                     class_sampling_factors = NULL,
                                     max_after_balance_size = 5.0,
@@ -536,6 +557,12 @@ h2o.gam <- function(x,
     parms$obj_reg <- obj_reg
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(stopping_rounds))
+    parms$stopping_rounds <- stopping_rounds
+  if (!missing(stopping_metric))
+    parms$stopping_metric <- stopping_metric
+  if (!missing(stopping_tolerance))
+    parms$stopping_tolerance <- stopping_tolerance
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))

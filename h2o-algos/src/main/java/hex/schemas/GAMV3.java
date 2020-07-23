@@ -60,6 +60,9 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "interaction_pairs",
             "obj_reg",
             "export_checkpoints_dir",
+            "stopping_rounds",
+            "stopping_metric",
+            "stopping_tolerance",
             // dead unused args forced here by backwards compatibility, remove in V4
             "balance_classes",
             "class_sampling_factors",

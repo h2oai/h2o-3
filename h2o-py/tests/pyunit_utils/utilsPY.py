@@ -7,6 +7,7 @@ from functools import reduce
 from scipy.sparse import csr_matrix
 import sys, os, gc
 import pandas as pd
+import tempfile
 
 try:        # works with python 2.7 not 3
     from StringIO import StringIO
@@ -261,7 +262,7 @@ def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_a
     mojoZip = os.path.join(tmpdir, mojoname) + ".zip"
     if not(zipFilePath==None):
         mojoZip = zipFilePath
-    genJarDir = str.split(str(tmpdir),'/')
+    genJarDir = str.split(os.path.realpath("__file__"),'/')
     genJarDir = '/'.join(genJarDir[0:genJarDir.index('h2o-py')])    # locate directory of genmodel.jar
 
     java_cmd = ["java", "-ea", "-cp", os.path.join(genJarDir, "h2o-assemblies/genmodel/build/libs/genmodel.jar"),
@@ -281,7 +282,12 @@ def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_a
 
     p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
     o, e = p.communicate()
-    pred_mojo = h2o.import_file(os.path.join(tmpdir, 'out_mojo.csv'), header=1)  # load mojo prediction into a frame and compare
+    files = os.listdir(tmpdir)
+    print("listing files {1} in directory {0}".format(tmpdir, files))
+    outfile = os.path.join(tmpdir, 'out_mojo.csv')
+    print("***** importing file {0}".format(outfile))
+    pred_mojo = h2o.import_file(outfile, header=1)  # load mojo prediction in 
+    # to a frame and compare
     if glrmReconstruct or ('glrm' not in model.algo):
         return predict_h2o, pred_mojo
     else:
@@ -2846,11 +2852,16 @@ def evaluate_early_stopping(metric_list, stop_round, tolerance, bigger_is_better
 
     :return:    bool indicating if we should stop early and sorted metric_list
     """
-    metric_len = len(metric_list)
-    metric_list.sort(reverse=bigger_is_better)
-    shortest_len = 2*stop_round
+    if (bigger_is_better):
+        metric_list.reverse()
 
-    bestInLastK = 1.0*sum(metric_list[0:stop_round])/stop_round
+    shortest_len = 2*stop_round
+    if (isinstance(metric_list[0], float)):
+        startIdx = 0
+    else:
+        startIdx = 1
+        
+    bestInLastK = 1.0*sum(metric_list[startIdx:stop_round])/stop_round
     lastBeforeK = 1.0*sum(metric_list[stop_round:shortest_len])/stop_round
 
     if not(np.sign(bestInLastK) == np.sign(lastBeforeK)):
@@ -2888,7 +2899,6 @@ def check_and_count_models(hyper_params, params_zero_one, params_more_than_zero,
     """
 
     total_model = 1
-    param_len = 0
     hyper_keys = list(hyper_params)
     shuffle(hyper_keys)    # get all hyper_parameter names in random order
     final_hyper_params = dict()
@@ -3157,7 +3167,6 @@ def extract_scoring_history_field(aModel, fieldOfInterest, takeFirst=False):
     return extract_from_twoDimTable(aModel._model_json["output"]["scoring_history"], fieldOfInterest, takeFirst)
 
 
-
 def extract_from_twoDimTable(metricOfInterest, fieldOfInterest, takeFirst=False):
     """
     Given a fieldOfInterest that are found in the model scoring history, this function will extract the list
@@ -3169,12 +3178,16 @@ def extract_from_twoDimTable(metricOfInterest, fieldOfInterest, takeFirst=False)
     """
 
     allFields = metricOfInterest._col_header
+    return extract_field_from_twoDimTable(allFields, metricOfInterest.cell_values, fieldOfInterest, takeFirst=False)
+
+
+def extract_field_from_twoDimTable(allFields, cell_values, fieldOfInterest, takeFirst=False):
     if fieldOfInterest in allFields:
         cellValues = []
         fieldIndex = allFields.index(fieldOfInterest)
-        for eachCell in metricOfInterest.cell_values:
+        for eachCell in cell_values:
             cellValues.append(eachCell[fieldIndex])
-            if takeFirst:   # only grab the result from the first iteration.
+            if takeFirst:  # only grab the result from the first iteration.
                 break
         return cellValues
     else:
@@ -3468,8 +3481,8 @@ def compare_frames_local(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
     :param returnResult:
     :return:
     '''
-    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "Frame 1 row {0}, col {1}.  Frame 2 row {2}, col {3}.  " \
-                                                      "They are different.".format(f1.nrow, f1.ncol, f2.nrow, f2.ncol)
+    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "Frame 1 row {0}, col {1}.  Frame 2 row {2}, col {3}.  They are " \
+                                                      "different.".format(f1.nrow, f1.ncol, f2.nrow, f2.ncol)
     typeDict = f1.types
     frameNames = f1.names
 
@@ -3629,48 +3642,20 @@ def compare_frames_local_onecolumn_NA_string(f1, f2, prob=0.5, returnResult=Fals
     if returnResult:
         return True
 
-def build_save_model_GLM(params, x, train, respName):
-    # build a model
-    model = H2OGeneralizedLinearEstimator(**params)
+def build_save_model_generic(params, x, train, respName, algoName, tmpdir):
+    if algoName.lower() == "gam":
+        model = H2OGeneralizedAdditiveEstimator(**params)
+    elif algoName.lower() == "glm":
+        model = H2OGeneralizedLinearEstimator(**params)
+    elif algoName.lower() == "gbm":
+        model = H2OGradientBoostingEstimator(**params)
+    elif algoName.lower() == "drf":
+        model = H2ORandomForestEstimator(**params)
+    else:
+        raise Exception("build_save_model does not support algo "+algoName+".  Please add this to build_save_model.")
     model.train(x=x, y=respName, training_frame=train)
-    # save model
-    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
-    MOJONAME = regex.sub("_", model._id)
-
-    print("Downloading Java prediction model code from H2O")
-    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
-    os.makedirs(TMPDIR)
-    model.download_mojo(path=TMPDIR)    # save mojo
+    model.download_mojo(path=tmpdir)
     return model
-
-def build_save_model_GBM(params, x, train, respName):
-    # build a model
-    model = H2OGradientBoostingEstimator(**params)
-    model.train(x=x, y=respName, training_frame=train)
-    # save model
-    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
-    MOJONAME = regex.sub("_", model._id)
-
-    print("Downloading Java prediction model code from H2O")
-    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
-    os.makedirs(TMPDIR)
-    model.download_mojo(path=TMPDIR)    # save mojo
-    return model
-
-def build_save_model_DRF(params, x, train, respName):
-    # build a model
-    model = H2ORandomForestEstimator(**params)
-    model.train(x=x, y=respName, training_frame=train)
-    # save model
-    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
-    MOJONAME = regex.sub("_", model._id)
-
-    print("Downloading Java prediction model code from H2O")
-    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
-    os.makedirs(TMPDIR)
-    model.download_mojo(path=TMPDIR)    # save mojo
-    return model
-
 
 # generate random dataset, copied from Pasha
 def random_dataset(response_type, verbose=True, ncol_upper=25000, ncol_lower=15000, NTESTROWS=200, missing_fraction=0.0, seed=None):
@@ -3686,6 +3671,8 @@ def random_dataset(response_type, verbose=True, ncol_upper=25000, ncol_lower=150
         fractions[k] /= sum_fractions
     if response_type == 'binomial':
         response_factors = 2
+    elif response_type == 'gaussian':
+        response_factors = 1
     else:
         response_factors = random.randint(3, 10)
     df = h2o.create_frame(rows=random.randint(ncol_lower, ncol_upper) + NTESTROWS, cols=random.randint(3, 20),

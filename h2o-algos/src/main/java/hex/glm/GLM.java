@@ -38,13 +38,9 @@ import water.util.*;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Random;
+import java.util.*;
 
-import static hex.glm.GLMUtils.calSmoothNess;
-import static hex.glm.GLMUtils.extractAdaptedFrameIndices;
+import static hex.glm.GLMUtils.*;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -64,6 +60,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public String[][] _gamColnames = null;
   public int[][] _gamColIndices = null; // corresponding column indices in dataInfo
   public static int _totalBetaLen;
+  private boolean _earlyStopEnabled = false;
+
   public GLM(boolean startup_once){super(new GLMParameters(),startup_once);}
   public GLM(GLMModel.GLMParameters parms) {
     super(parms);
@@ -154,7 +152,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           GLM g = (GLM) cvModelBuilders[i];
           double x = _parms._lambda[lidx];
           if (g._model._output.getSubmodel(x) == null)
-            g._driver.computeSubmodel(lidx, x);
+            g._driver.computeSubmodel(lidx, x, Double.NaN, Double.NaN);
           testDev += g._model._output.getSubmodel(x).devianceTest;
         }
         double testDevAvg = testDev / cvModelBuilders.length;
@@ -164,7 +162,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           GLM g = (GLM) cvModelBuilders[i];
           double x = _parms._lambda[lidx];
           if (g._model._output.getSubmodel(x) == null)
-            g._driver.computeSubmodel(lidx, x); // stopped too early, need to FIT extra model
+            g._driver.computeSubmodel(lidx, x, Double.NaN, Double.NaN); // stopped too early, need to FIT extra model
           double diff = testDevAvg - (g._model._output.getSubmodel(x).devianceTest);
           testDevSE += diff*diff;
         }
@@ -379,6 +377,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private double _lmax;
   private transient long _nobs;
   private transient GLMModel _model;
+  private boolean _earlyStop = false;  // set by earlyStopping
+
   @Override
   public int nclasses() {
     if (_parms._family == Family.multinomial || _parms._family == Family.ordinal || _parms._family == Family.AUTO)
@@ -520,6 +520,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     if (expensive) {
       if (error_count() > 0) return;
+      if (_parms._lambda_search && (_parms._stopping_rounds > 0)) {
+        error("early stop", " cannot run when lambda_search=True.  Lambda_search has its own " +
+                "early-stopping mechanism");
+      }
+      if (!_parms._lambda_search && (_parms._stopping_rounds > 0))  // early stop is on!
+        _earlyStopEnabled = true;
       if (_parms._alpha == null)
         _parms._alpha = new double[]{_parms._solver == Solver.L_BFGS ? 0 : .5};
       if (_parms._lambda_search  &&_parms._nlambdas == -1)
@@ -869,6 +875,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public final class GLMDriver extends Driver implements ProgressMonitor {
     private long _workPerIteration;
     private transient double[][] _vcov;
+    List<Integer> _scoreIterationList = new ArrayList<Integer>(); // keep track of iteration where scoring occurs
 
 
     private void doCleanup() {
@@ -1787,7 +1794,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _state.set_likelihoodInfo(mmHGLMBd._hlik, mmHGLMBd._pvh, mmHGLMBd._pbvh, mmHGLMBd._caic);
       }
       mb.makeModelMetrics(_model, train, _dinfo._adaptedFrame, null);  // add generated metric to DKV
-      scoreEnd(train, t1);
+      scorePostProcessing(train, t1);
     }
     
     private void calHlikStuff(ModelMetricsHGLM.MetricBuilderHGLM mmHGLMBd, Frame glmmmeReturns, Frame augXZ) {
@@ -1999,39 +2006,24 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       long t1 = System.currentTimeMillis();
       Frame train = DKV.<Frame>getGet(_parms._train); // need to keep this frame to get scoring metrics back
       _model.score(train).delete();
-      scoreEnd(train, t1);
-/*
-        ModelMetrics mtrain = ModelMetrics.getFromDKV(_model, train); // updated by model.scoreAndUpdateModel
-        long t2 = System.currentTimeMillis();
-        if (!(mtrain == null)) {
-          _model._output._training_metrics = mtrain;
-          Log.info(LogMsg(mtrain.toString()));
-        } else {
-          Log.info(LogMsg("ModelMetrics mtrain is null"));
-        }
-        Log.info(LogMsg("Training metrics computed in " + (t2 - t1) + "ms"));
-        if (_valid != null) {
-          Frame valid = DKV.<Frame>getGet(_parms._valid);
-          _model.score(valid).delete();
-          _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
-        }
-      _model._output._scoring_history = _parms._lambda_search?_lsc.to2dTable():(_parms._HGLM?_sc.to2dTableHGLM():_sc.to2dTable());
-      _model.update(_job._key);
-      if (_parms._HGLM)
-        _model.generateSummary(_state._iter, _parms._train);
-      else
-        _model.generateSummary(_parms._train,_state._iter);
-      _lastScore = System.currentTimeMillis();
-      long scoringTime = System.currentTimeMillis() - t1;
-      _scoringInterval = Math.max(_scoringInterval,20*scoringTime); // at most 5% overhead for scoring
-*/
+      scorePostProcessing(train, t1);
     }
     
-    private void scoreEnd(Frame train, long t1) {
+    private void scorePostProcessing(Frame train, long t1) {
+      _scoreIterationList.add(_state._iter);
       ModelMetrics mtrain = ModelMetrics.getFromDKV(_model, train); // updated by model.scoreAndUpdateModel
       long t2 = System.currentTimeMillis();
+      if (_parms._lambda_search)
+        _model._output._scoring_history = _lsc.to2dTable();
+      else if (_parms._HGLM)
+        _model._output._scoring_history = _sc.to2dTableHGLM();
+      else
+        _model._output._scoring_history = _sc.to2dTable();
       if (!(mtrain == null)) {
         _model._output._training_metrics = mtrain;
+        _model._output._training_time_ms = t2-_model._output._start_time; // remember training time
+        ScoreKeeper trainScore = new ScoreKeeper(Double.NaN);
+        trainScore.fillFrom(mtrain);
         Log.info(LogMsg(mtrain.toString()));
       } else {
         Log.info(LogMsg("ModelMetrics mtrain is null"));
@@ -2041,8 +2033,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Frame valid = DKV.<Frame>getGet(_parms._valid);
         _model.score(valid).delete();
         _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
+        ScoreKeeper validScore = new ScoreKeeper(Double.NaN);
+        validScore.fillFrom(_model._output._validation_metrics);
       }
-      _model._output._scoring_history = _parms._lambda_search?_lsc.to2dTable():(_parms._HGLM?_sc.to2dTableHGLM():_sc.to2dTable());
+      
+      _model.addScoringInfo(_parms, nclasses(), t2);  // add to scoringInfo for early stopping
       _model.update(_job._key);
       if (_parms._HGLM)
         _model.generateSummaryHGLM(_parms._train,_state._iter);
@@ -2053,10 +2048,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _scoringInterval = Math.max(_scoringInterval,20*scoringTime); // at most 5% overhead for scoring
     }
 
-    protected Submodel computeSubmodel(int i,double lambda) {
+    protected Submodel computeSubmodel(int i,double lambda, double nullDevTrain, double nullDevTest) {
       Submodel sm;
       if(lambda >= _lmax && _state.l1pen() > 0)
-        _model.addSubmodel(sm = new Submodel(lambda,getNullBeta(),_state._iter,_nullDevTrain,_nullDevTest));
+        _model.addSubmodel(sm = new Submodel(lambda,getNullBeta(),_state._iter, nullDevTrain, nullDevTest));
       else {  // this is also the path for HGLM model
         sm = new Submodel(lambda, _state.beta(),_state._iter,-1,-1);
         if (_parms._HGLM) // add random coefficients for random effects/columns
@@ -2101,29 +2096,28 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       return sm;
     }
-
-    private transient double _nullDevTrain = Double.NaN;
-    private transient double _nullDevTest = Double.NaN;
+    
     @Override
     public void computeImpl() {
+      double nullDevTrain = Double.NaN;
+      double nullDevTest = Double.NaN;
       if(_doInit)
         init(true);
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
-//      buildModel();
       _model._output._start_time = System.currentTimeMillis(); //quickfix to align output duration with other models
       if(_parms._lambda_search) {
         if (_parms._family == Family.ordinal)
-          _nullDevTrain = new GLMResDevTaskOrdinal(_job._key,_state._dinfo,getNullBeta(), _nclass).doAll(_state._dinfo._adaptedFrame).avgDev();
+          nullDevTrain = new GLMResDevTaskOrdinal(_job._key,_state._dinfo,getNullBeta(), _nclass).doAll(_state._dinfo._adaptedFrame).avgDev();
         else
-        _nullDevTrain =  _parms._family == Family.multinomial
+        nullDevTrain =  _parms._family == Family.multinomial
           ?new GLMResDevTaskMultinomial(_job._key,_state._dinfo,getNullBeta(), _nclass).doAll(_state._dinfo._adaptedFrame).avgDev()
           :new GLMResDevTask(_job._key, _state._dinfo, _parms, getNullBeta()).doAll(_state._dinfo._adaptedFrame).avgDev();
         if(_validDinfo != null) {
           if (_parms._family == Family.ordinal)
-            _nullDevTest = new GLMResDevTaskOrdinal(_job._key, _validDinfo, getNullBeta(), _nclass).doAll(_validDinfo._adaptedFrame).avgDev();
+            nullDevTest = new GLMResDevTaskOrdinal(_job._key, _validDinfo, getNullBeta(), _nclass).doAll(_validDinfo._adaptedFrame).avgDev();
           else
-          _nullDevTest = _parms._family == Family.multinomial
+          nullDevTest = _parms._family == Family.multinomial
                   ? new GLMResDevTaskMultinomial(_job._key, _validDinfo, getNullBeta(), _nclass).doAll(_validDinfo._adaptedFrame).avgDev()
                   : new GLMResDevTask(_job._key, _validDinfo, _parms, getNullBeta()).doAll(_validDinfo._adaptedFrame).avgDev();
         }
@@ -2157,8 +2151,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         addWdataZiEtaOld2Response();
       }
       
-      double oldDevTrain = _nullDevTrain;
-      double oldDevTest = _nullDevTest;
+      double oldDevTrain = nullDevTrain;
+      double oldDevTest = nullDevTest;
       double [] devHistoryTrain = new double[5];
       double [] devHistoryTest = new double[5];
 
@@ -2166,16 +2160,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         updateProgress(false);
       // lambda search loop
       for (int i = 0; i < _parms._lambda.length; ++i) {  // lambda search
-        if (_job.stop_requested() || (timeout() && _model._output._submodels.length > 0)) break;  //need at least one submodel on timeout to avoid issues.
+        if (_job.stop_requested() || (timeout() && _model._output._submodels.length > 0) || _earlyStop) break;  //need at least one submodel on timeout to avoid issues.
         if(_parms._max_iterations != -1 && _state._iter >= _parms._max_iterations) break;
-        Submodel sm = computeSubmodel(i,_parms._lambda[i]);
+        Submodel sm = computeSubmodel(i,_parms._lambda[i], nullDevTrain, nullDevTest);
         double trainDev = sm.devianceTrain;
         double testDev = sm.devianceTest;
         devHistoryTest[i % devHistoryTest.length] = (oldDevTest - testDev)/oldDevTest;
         oldDevTest = testDev;
         devHistoryTrain[i % devHistoryTrain.length] = (oldDevTrain - trainDev)/oldDevTrain;
         oldDevTrain = trainDev;
-        if(_parms._lambda[i] < _lmax && Double.isNaN(_lambdaCVEstimate) /** if we have cv lambda estimate we should use it, can not stop before reaching it */) {
+        if(_parms._lambda[i] < _lmax && Double.isNaN(_lambdaCVEstimate) && !_earlyStopEnabled /** if we have cv lambda estimate we should use it, can not stop before reaching it */) {
           if (_parms._early_stopping && _state._iter >= devHistoryTrain.length) {
             double s = ArrayUtils.maxValue(devHistoryTrain);
             if (s < 1e-4) {
@@ -2197,9 +2191,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
         _job.update(_workPerIteration,"iter=" + _state._iter + " lmb=" + lambdaFormatter.format(_state.lambda()) + "deviance trn/tst= " + devFormatter.format(trainDev) + "/" + devFormatter.format(testDev) + " P=" + ArrayUtils.countNonzeros(_state.beta()));
       }
-      if (stop_requested()) {
+      if (stop_requested() || _earlyStop) {
         if (timeout()) {
           Log.info("Stopping GLM training because of timeout");
+        } else if (_earlyStop) {
+          Log.info("Stopping GLM training due to hitting earlyStopping criteria.");
         } else {
           throw new Job.JobCancelledException();
         }
@@ -2216,6 +2212,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       if (!_parms._HGLM)  // no need to do for HGLM
         scoreAndUpdateModel();
+      TwoDimTable scoring_history_early_stop = ScoringInfo.createScoringHistoryTable(_model.getScoringInfo(),
+              (null != _parms._valid), false, _model._output.getModelCategory(), false);
+      _model._output._scoring_history = combineScoringHistory(_model._output._scoring_history,
+              scoring_history_early_stop, _scoreIterationList);
       _model.update(_job._key);
 /*      if (_vcov != null) {
         _model.setVcov(_vcov);
@@ -2281,7 +2281,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _state.updateState(beta, gginfo);
         if (!_parms._lambda_search)
           updateProgress(false);
-        return !stop_requested() && _state._iter < _parms._max_iterations;
+        return !stop_requested() && _state._iter < _parms._max_iterations && !_earlyStop;
       } else {
         GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
         if(gginfo._gradient == null)
@@ -2290,16 +2290,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _state.updateState(beta, gginfo);
         if (!_parms._lambda_search)
           updateProgress(true);
-        boolean converged = _state.converged();
+        boolean converged = !_earlyStopEnabled && _state.converged(); // GLM specific early stop.  Disabled if early stop is enabled
         if (converged) Log.info(LogMsg(_state.convergenceMsg));
-        return !stop_requested() && !converged && _state._iter < _parms._max_iterations;
+        return !stop_requested() && !converged && _state._iter < _parms._max_iterations && !_earlyStop;
       }
     }
 
     public boolean progressHGLMGLMMME(double sumDiff2, double sumeta2, int iteration, boolean atGLMMME, GLMModel 
             fixedModel, GLMModel[] randModels, Frame glmmmeReturns, Frame hvDataOnly, double[] VC1, double[][] VC2,
                                       double[][] cholR, Frame augZ) {
-      boolean converged = (sumDiff2 < (_parms._objective_epsilon*sumeta2));
+      boolean converged = !_earlyStopEnabled && (sumDiff2 < (_parms._objective_epsilon*sumeta2));
       if (atGLMMME) {
         _state._iterHGLM_GLMMME++;
       } else {
@@ -2307,7 +2307,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           updateProgress(fixedModel, randModels, glmmmeReturns, hvDataOnly, VC1, VC2, sumDiff2,
                   sumDiff2 / sumeta2, true, cholR, augZ);
       }
-      return !stop_requested() && !converged && (iteration < _parms._max_iterations);
+      return !stop_requested() && !converged && (iteration < _parms._max_iterations) && !_earlyStop;
     }
     
     public boolean progress(double [] beta, double likelihood) {
@@ -2315,9 +2315,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _state.updateState(beta,likelihood);
       if(!_parms._lambda_search)
         updateProgress(true);
-      boolean converged = _state.converged();
+      boolean converged = !_earlyStopEnabled && _state.converged();
       if(converged) Log.info(LogMsg(_state.convergenceMsg));
-      return !stop_requested() && !converged && _state._iter < _parms._max_iterations ;
+      return !stop_requested() && !converged && _state._iter < _parms._max_iterations && !_earlyStop;
     }
 
     private transient long _scoringInterval = SCORING_INTERVAL_MSEC;
@@ -2326,10 +2326,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                                   double[] VC1, double[][] VC2, double sumDiff2, double convergence, boolean canScore,
                                   double[][] cholR, Frame augXZ) {
       _sc.addIterationScore(_state._iter, _state._sumEtaSquareConvergence);
-      if(canScore && (_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval)) {
+      if(canScore && (_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval || 
+              ((_parms._score_iteration_interval > 0) && ((_state._iter % _parms._score_iteration_interval) == 0)))) {
         _model.update(_state.expandBeta(_state.beta()), _state.ubeta(),-1, -1, _state._iter);
         scoreAndUpdateModelHGLM(fixedModel, randModels, glmmmeReturns, hvDataOnly, VC1, VC2, sumDiff2, convergence, 
                 cholR, augXZ, false);
+        _earlyStop = updateEarlyStop();
       }
     }
     // update user visible progress
@@ -2340,10 +2342,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if(canScore && (_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval)) {
         _model.update(_state.expandBeta(_state.beta()), -1, -1, _state._iter);
         scoreAndUpdateModel();
+        _earlyStop = updateEarlyStop();
       }
     }
   }
 
+  private boolean updateEarlyStop() {
+    return _earlyStop || ScoreKeeper.stopEarly(_model.scoreKeepers(),
+            _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric,
+            _parms._stopping_tolerance, "model's last", true);
+  }
+  
   private Solver defaultSolver() {
     Solver s = Solver.IRLSM;
     int max_active = 0;
