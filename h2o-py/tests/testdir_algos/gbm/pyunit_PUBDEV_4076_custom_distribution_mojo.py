@@ -1,10 +1,10 @@
 from __future__ import print_function
 import sys, os
-
+import tempfile
 sys.path.insert(1, "../../../")
 import h2o
 from tests.pyunit_utils import standalone_test
-from tests.pyunit_utils import random_dataset, build_save_model_GBM, getMojoName, mojo_predict
+from tests.pyunit_utils import random_dataset, build_save_model_generic, getMojoName, mojo_predict
 from tests.pyunit_utils import compare_frames_local
 from h2o.utils.distributions import CustomDistributionBernoulli
 
@@ -28,10 +28,9 @@ def custom_distribution_mojo_test():
               'distribution': "custom",
               'custom_distribution_func': custom_distribution_bernoulli()
               }
-
-    my_gbm = build_save_model_GBM(params, x, train, "response")
+    tmp_dir = tempfile.mkdtemp()
+    my_gbm = build_save_model_generic(params, x, train, "response", "gbm", tmp_dir)
     mojo_name = getMojoName(my_gbm._id)
-    tmp_dir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", mojo_name))
 
     h2o.download_csv(test[x], os.path.join(tmp_dir, 'in.csv'))  # save test file, h2o predict/mojo use same file
     pred_h2o, pred_mojo = mojo_predict(my_gbm, tmp_dir, mojo_name)  # load model and perform predict

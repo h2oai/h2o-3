@@ -4,6 +4,7 @@ import h2o
 from tests import pyunit_utils
 from random import randint
 from random import uniform
+import tempfile
 
 def glm_ordinal_mojo_pojo():
     params = set_params()   # set deeplearning model parameters
@@ -14,10 +15,9 @@ def glm_ordinal_mojo_pojo():
     test = df[:NTESTROWS, :]
     x = list(set(df.names) - {"response"})
 
-    glmOrdinalModel = pyunit_utils.build_save_model_GLM(params, x, train, "response") # build and save mojo model
-
+    TMPDIR = tempfile.mkdtemp()
+    glmOrdinalModel = pyunit_utils.build_save_model_generic(params, x, train, "response", "glm", TMPDIR) # build and save mojo model
     MOJONAME = pyunit_utils.getMojoName(glmOrdinalModel._id)
-    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
 
     h2o.download_csv(test[x], os.path.join(TMPDIR, 'in.csv'))  # save test file, h2o predict/mojo use same file
     pred_h2o, pred_mojo = pyunit_utils.mojo_predict(glmOrdinalModel, TMPDIR, MOJONAME)  # load model and perform predict

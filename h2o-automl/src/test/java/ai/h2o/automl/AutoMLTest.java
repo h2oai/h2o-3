@@ -710,7 +710,7 @@ public class AutoMLTest extends water.TestUtil {
           assertTrue(key+":"+parameters._seed, Math.abs(parameters._seed - seed) < maxModels);
           collectedSeeds.add(parameters._seed);
           assertTrue(key+" has `stopping_rounds` param set to "+parameters._stopping_rounds,
-                  parameters._stopping_rounds == 3 || algo == Algo.XGBoost);  // currently only enforced to different value for XGB (AutoML hardcoded)
+                  parameters._stopping_rounds == 3 || algo == Algo.GLM);  // stopping criteria only disabled for GLM (using lambda search)
         }
         assertTrue(collectedSeeds.size() > 1 || keys.size() < 2);  // we should have built enough models to guarantee this
       }

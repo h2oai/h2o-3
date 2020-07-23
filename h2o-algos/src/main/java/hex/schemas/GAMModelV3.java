@@ -1,10 +1,10 @@
 package hex.schemas;
 
 import hex.gam.GAMModel;
+import water.api.API;
+import water.api.schemas3.ModelOutputSchemaV3;
 import water.api.schemas3.ModelSchemaV3;
 import water.api.schemas3.TwoDimTableV3;
-import water.api.schemas3.ModelOutputSchemaV3;
-import water.api.API;
 
 public class GAMModelV3 extends ModelSchemaV3<GAMModel, GAMModelV3, GAMModel.GAMParameters, GAMV3.GAMParametersV3,
         GAMModel.GAMModelOutput, GAMModelV3.GAMModelOutputV3> {

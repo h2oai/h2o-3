@@ -118,32 +118,6 @@ public class GamUtils {
     }
   }
 
-  public static int locateBin(double xval, double[] knots) {
-    if (xval <= knots[0])  //small short cut
-      return 0;
-    int highIndex = knots.length-1;
-    if (xval >= knots[highIndex]) // small short cut
-      return (highIndex-1);
-
-    int tryBin = -1;
-    int count = 0;
-    int numBins = knots.length;
-    int lowIndex = 0;
-
-    while (count < numBins) {
-      tryBin = (int) Math.floor((highIndex+lowIndex)*0.5);
-      if ((xval >= knots[tryBin]) && (xval < knots[tryBin+1]))
-        return tryBin;
-      else if (xval > knots[tryBin])
-        lowIndex = tryBin;
-      else if (xval < knots[tryBin])
-        highIndex = tryBin;
-
-      count++;
-    }
-    return tryBin;
-  }
-
   public static int colIndexFromColNames(String[] colnames, String oneName) {
     int len = colnames.length;
     for (int index = 0; index < len; index++)

@@ -945,7 +945,7 @@ random_NN <- function(actFunc, max_layers, max_node_number) {
 # Parameters:  frame1, frame2: H2O frames to be compared.
 #              tolerance: tolerance of comparison
 #----------------------------------------------------------------------
-compareFrames <- function(frame1, frame2, prob=0.5, tolerance=1e-6, enum2String=FALSE) {
+compareFrames <- function(frame1, frame2, prob=0.5, tolerance=1e-6, enum2String=FALSE, col.types=NULL) {
   expect_true(nrow(frame1) == nrow(frame2) && ncol(frame1) == ncol(frame2), info="frame1 and frame2 are different in size.")
   rframe1 <- as.data.frame(frame1)
   rframe2 <- as.data.frame(frame2)
@@ -953,11 +953,11 @@ compareFrames <- function(frame1, frame2, prob=0.5, tolerance=1e-6, enum2String=
     notNumericCols = !(h2o.isnumeric(frame1[,colInd]) && h2o.isnumeric(frame2[,colInd]))
     if (notNumericCols) {
       if (enum2String) {
-        temp1 <- as.character(rframe1[,colInd])
-        temp2 <- as.character(rframe2[,colInd])
+        temp1 <- as.character(rframe1[, colInd])
+        temp2 <- as.character(rframe2[, colInd])
       } else {
-        temp1 <- as.factor(rframe1[,colInd])
-        temp2 <- as.factor(rframe2[,colInd])
+        temp1 <- as.factor(rframe1[, colInd])
+        temp2 <- as.factor(rframe2[, colInd])
       }
     } else { 
       temp1 <- as.numeric(rframe1[,colInd])
@@ -1171,6 +1171,23 @@ buildModelSaveMojoGLM <- function(params) {
   return(list("model"=model, "dirName"=tmpdir_name))
 }
 
+buildModelSaveMojoGAM <- function(params) {
+  model <- do.call("h2o.gam", params)
+  model_key <- model@model_id
+  tmpdir_name <- sprintf("%s/tmp_model_%s", sandbox(), as.character(Sys.getpid()))
+  if (.Platform$OS.type == "windows") {
+    shell(sprintf("C:\\cygwin64\\bin\\rm.exe -fr %s", normalizePath(tmpdir_name)))
+    shell(sprintf("C:\\cygwin64\\bin\\mkdir.exe -p %s", normalizePath(tmpdir_name)))
+  } else {
+    safeSystem(sprintf("rm -fr %s", tmpdir_name))
+    safeSystem(sprintf("mkdir -p %s", tmpdir_name))
+  }
+  h2o.save_mojo(model, path = tmpdir_name, force = TRUE) # save mojo
+  h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
+  
+  return(list("model"=model, "dirName"=tmpdir_name))
+}
+
 buildModelSaveMojoPCA <- function(params) {
 model <- do.call("h2o.prcomp", params)
 model_key <- model@model_id
@@ -1205,7 +1222,7 @@ buildModelSaveMojoGLRM <- function(params) {
   return(list("model"=model, "dirName"=tmpdir_name))
 }
 
-mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=FALSE, glrmReconstruct=FALSE, glrmIterNumber=-1) {
+mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=FALSE, glrmReconstruct=FALSE, glrmIterNumber=-1, col.types=NULL) {
   newTest <- h2o.importFile(filename)
   predictions1 <- h2o.predict(model, newTest)
 
@@ -1251,7 +1268,7 @@ mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=
 
   safeSystem(cmd)  # perform mojo prediction
   predictions2 = h2o.importFile(paste(tmpdir_name, "out_mojo.csv", sep =
-  '/'), header=T)
+  '/'), header=T, col.types = col.types)
 
   if (glrmReconstruct || !(model@algorithm=="glrm")) {
     return(list("h2oPredict"=predictions1, "mojoPredict"=predictions2))

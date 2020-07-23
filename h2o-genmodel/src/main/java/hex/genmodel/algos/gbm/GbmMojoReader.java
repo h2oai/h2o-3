@@ -2,7 +2,6 @@ package hex.genmodel.algos.gbm;
 
 import hex.genmodel.algos.tree.SharedTreeMojoReader;
 import hex.genmodel.utils.DistributionFamily;
-import hex.genmodel.utils.LinkFunctionType;
 
 import java.io.IOException;
 
@@ -20,31 +19,7 @@ public class GbmMojoReader extends SharedTreeMojoReader<GbmMojoModel> {
     super.readModelData();
     _model._family = DistributionFamily.valueOf((String)readkv("distribution"));
     _model._init_f = readkv("init_f");
-    _model._link_function = readLinkFunction();
-  }
-
-  private LinkFunctionType readLinkFunction() {
-    String linkFunctionTypeName = readkv("link_function");
-    if (linkFunctionTypeName != null)
-      return LinkFunctionType.valueOf(linkFunctionTypeName);
-    return defaultLinkFunction(_model._family);
-  }
-  
-  private LinkFunctionType defaultLinkFunction(DistributionFamily family){
-    switch (family) {
-      case bernoulli:
-      case quasibinomial:
-      case modified_huber:
-      case ordinal:
-        return LinkFunctionType.logit;
-      case multinomial:
-      case poisson:
-      case gamma:
-      case tweedie:
-        return LinkFunctionType.log;
-      default:
-        return LinkFunctionType.identity;
-    }
+    _model._link_function = readLinkFunction((String) readkv("link_function"), _model._family);
   }
 
   @Override

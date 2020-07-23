@@ -22,6 +22,8 @@ import water.util.*;
 import java.io.Serializable;
 import java.util.*;
 
+import static hex.genmodel.utils.ArrayUtils.flat;
+
 /**
  * Created by tomasnykodym on 8/27/14.
  */
@@ -43,6 +45,40 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public void initActualParamValues() {
     super.initActualParamValues();
     EffectiveParametersUtils.initFoldAssignment(_parms);
+  }
+  
+  public ScoreKeeper[] scoreKeepers() {
+    int size = scoringInfo==null?0:scoringInfo.length;
+    ScoreKeeper[] sk = new ScoreKeeper[size];
+    for (int i=0;i<size;++i) {
+      if (scoringInfo[i].cross_validation) // preference is to use xval first, then valid and last train.
+        sk[i] = scoringInfo[i].scored_xval;
+      else if (scoringInfo[i].validation)
+        sk[i] = scoringInfo[i].scored_valid;
+      else
+        sk[i] = scoringInfo[i].scored_train;
+    }
+    return sk;
+  }
+  
+  public ScoringInfo[] getScoringInfo() { return scoringInfo;}
+  
+  public void addScoringInfo(GLMParameters parms, int nclasses, long currTime) {
+    ScoringInfo currInfo = new ScoringInfo();
+    currInfo.is_classification = nclasses > 1;
+    currInfo.validation = parms.valid() != null;
+    currInfo.cross_validation = parms._nfolds > 1;
+    currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
+    currInfo.total_training_time_ms = _output._training_time_ms;
+    if (_output._training_metrics != null) {
+      currInfo.scored_train = new ScoreKeeper(Double.NaN);
+      currInfo.scored_train.fillFrom(_output._training_metrics);
+    }
+    if (_output._validation_metrics != null) {
+      currInfo.scored_valid = new ScoreKeeper(Double.NaN);
+      currInfo.scored_valid.fillFrom(_output._validation_metrics);
+    }
+    scoringInfo = ScoringInfo.prependScoringInfo(currInfo, scoringInfo);
   }
   
   public void setVcov(double[][] inv) {_output._vcov = inv;}
@@ -127,7 +163,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   protected double [] beta_internal(){
     if(_parms._family == Family.multinomial || _parms._family == Family.ordinal)
-      return ArrayUtils.flat(_output._global_beta_multinomial);
+      return flat(_output._global_beta_multinomial);
     return _output._global_beta;
   }
   public double [] beta() { return beta_internal();}
@@ -224,6 +260,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double[] _startval;  // for HGLM, initialize fixed and random coefficients (init_u), init_sig_u, init_sig_e
     public boolean _calc_like;
     public int[] _random_columns;
+    public int _score_iteration_interval = -1;
     // Has to be Serializable for backwards compatibility (used to be DeepLearningModel.MissingValuesHandling)
     public Serializable _missing_values_handling = MissingValuesHandling.MeanImputation;
     public double _prior = -1;
@@ -413,9 +450,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMParameters() {
       this(Family.AUTO, Link.family_default);
       assert _link == Link.family_default;
-      _stopping_rounds = 3;
-      _stopping_metric = ScoreKeeper.StoppingMetric.deviance;
-      _stopping_tolerance = 1e-4;
+      _stopping_rounds = 0; // early-stopping is disabled by default
     }
 
     public GLMParameters(Family f){this(f,f.defaultLink);}
@@ -1034,7 +1069,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return idxs != null?idxs.length:(ArrayUtils.countNonzeros(beta));
     }
 
-    public Submodel(double lambda , double [] beta, int iteration, double devTrain, double devTest){
+    public Submodel(double lambda , double [] beta, int iteration, double devTrain, double devTest) {
       this.lambda_value = lambda;
       this.iteration = iteration;
       this.devianceTrain = devTrain;
@@ -1091,6 +1126,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public String[] _coefficient_names;
     String[] _random_coefficient_names; // for HGLM
     String[] _random_column_names;
+    public long _training_time_ms;
     public int _best_lambda_idx; // lambda which minimizes deviance on validation (if provided) or train (if not)
     public int _lambda_1se = -1; // lambda_best + sd(lambda); only applicable if running lambda search with nfold
     public int _selected_lambda_idx; // lambda which minimizes deviance on validation (if provided) or train (if not)
@@ -1104,7 +1140,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     double [][] _vcov;
     private double _dispersion;
     private boolean _dispersionEstimated;
-    
     public boolean hasPValues(){return _zvalues != null;}
     public double [] stdErr(){
       double [] res = _zvalues.clone();
@@ -1251,7 +1286,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _nclasses = glm.nclasses();
       _multinomial = glm._parms._family == Family.multinomial;
       _ordinal = (glm._parms._family == Family.ordinal);
-
     }
 
     /**
@@ -1401,7 +1435,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     HashMap<String, Double> res = new HashMap<>();
     double [] b = beta();
     if(_parms._family == Family.multinomial || _parms._family == Family.ordinal){
-      if (standardized) b = ArrayUtils.flat(this._output.getNormBetaMultinomial());
+      if (standardized) b = flat(this._output.getNormBetaMultinomial());
       if(b == null) return res;
       String [] responseDomain = _output._domains[_output._domains.length-1];
       int len = b.length/_output.nclasses();
@@ -1418,7 +1452,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     return res;
   }
-  
   
   // TODO: Shouldn't this be in schema? have it here for now to be consistent with others...
   /**

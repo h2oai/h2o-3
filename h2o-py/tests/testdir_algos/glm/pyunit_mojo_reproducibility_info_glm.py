@@ -3,6 +3,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o
 from tests import pyunit_utils
+import tempfile
 
 def glm_mojo_reproducibility_info():
     params = {'family':"fractionalbinomial", 'alpha':[0], 'lambda_':[0],
@@ -11,7 +12,7 @@ def glm_mojo_reproducibility_info():
     x = ["log10conc"]
     y = "y"
 
-    glmModel = pyunit_utils.build_save_model_GLM(params, x, train, y) # build and save mojo model
+    glmModel = pyunit_utils.build_save_model_generic(params, x, train, y, "glm", tempfile.mkdtemp()) # build and save mojo model
 
     isinstance(glmModel._model_json['output']['reproducibility_information_table'][1]['h2o_cluster_uptime'][0], float)
     isinstance(glmModel._model_json['output']['reproducibility_information_table'][0]['java_version'][0], str)

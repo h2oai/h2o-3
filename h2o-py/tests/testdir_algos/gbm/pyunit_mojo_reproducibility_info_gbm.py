@@ -6,6 +6,7 @@ import h2o
 from tests import pyunit_utils
 from random import randint
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
+import tempfile
 
 def gbm_mojo_reproducibility_info():
     problems = ['binomial', 'multinomial', 'regression']
@@ -15,7 +16,7 @@ def gbm_mojo_reproducibility_info():
     train = df[TESTROWS:, :]
     x = list(set(df.names) - {"respose"})
     params = {'ntrees': 50, 'learn_rate': 0.1, 'max_depth': 4}
-    gbmModel = pyunit_utils.build_save_model_GBM(params, x, train, "response")
+    gbmModel = pyunit_utils.build_save_model_generic(params, x, train, "response", "gbm", tempfile.mkdtemp())
 
     isinstance(gbmModel._model_json['output']['reproducibility_information_table'][1]['h2o_cluster_uptime'][0], float)
     isinstance(gbmModel._model_json['output']['reproducibility_information_table'][0]['java_version'][0], str)
