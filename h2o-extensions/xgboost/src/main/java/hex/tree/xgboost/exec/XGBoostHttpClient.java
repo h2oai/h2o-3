@@ -5,6 +5,7 @@ import hex.schemas.XGBoostExecReqV3;
 import hex.schemas.XGBoostExecRespV3;
 import org.apache.http.HttpEntity;
 import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.AuthenticationException;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -13,13 +14,13 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
+import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ContentType;
+import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
-import org.apache.http.entity.mime.MIME;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.apache.http.entity.mime.content.AbstractContentBody;
-import org.apache.http.entity.mime.content.InputStreamBody;
+import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -29,10 +30,7 @@ import org.apache.log4j.Logger;
 import water.Key;
 
 import javax.net.ssl.SSLContext;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
 
@@ -46,6 +44,7 @@ public class XGBoostHttpClient {
 
     private final String baseUri;
     private final HttpClientBuilder clientBuilder;
+    private final UsernamePasswordCredentials credentials;
 
     interface ResponseTransformer<T> {
         T transform(HttpEntity e) throws IOException;
@@ -69,10 +68,15 @@ public class XGBoostHttpClient {
 
     public XGBoostHttpClient(String baseUri, boolean https, String userName, String password) {
         this.baseUri = (https ? "https" : "http") + "://" + baseUri + "/3/XGBoostExecutor.";
-        this.clientBuilder = createClientBuilder(https, userName, password);
+        if (userName != null) {
+            credentials = new UsernamePasswordCredentials(userName, password);
+        } else {
+            credentials = null;
+        }
+        this.clientBuilder = createClientBuilder(https);
     }
 
-    private HttpClientBuilder createClientBuilder(boolean https, String userName, String password) {
+    private HttpClientBuilder createClientBuilder(boolean https) {
         try {
             HttpClientBuilder builder = HttpClientBuilder.create();
             if (https) {
@@ -85,9 +89,9 @@ public class XGBoostHttpClient {
                 );
                 builder.setSSLSocketFactory(sslFactory);
             }
-            if (userName != null) {
+            if (credentials != null) {
+                // only works for get requests
                 CredentialsProvider provider = new BasicCredentialsProvider();
-                UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(userName, password);
                 provider.setCredentials(AuthScope.ANY, credentials);
                 builder.setDefaultCredentialsProvider(provider);
             }
@@ -128,27 +132,18 @@ public class XGBoostHttpClient {
     public void uploadBytes(Key key, String dataType, byte[] data) {
         LOG.info("Request upload " + key + " " + dataType + " " + data.length + " bytes");
         HttpPost httpReq = makeUploadRequest(key, dataType);
-        HttpEntity entity = MultipartEntityBuilder.create()
-            .setMode(HttpMultipartMode.BROWSER_COMPATIBLE)
-            .addBinaryBody("file", data, ContentType.DEFAULT_BINARY, "upload")
-            .build();
-        httpReq.setEntity(entity);
+        httpReq.setEntity(new InputStreamEntity(new ByteArrayInputStream(data)));
+        addAuthentication(httpReq);
         XGBoostExecRespV3 resp = executeRequestAndReturnResponse(httpReq, JsonResponseTransformer);
         assert resp.key.key().equals(key);
     }
     
-    private static class ObjectBody extends AbstractContentBody {
+    private static class ObjectEntity extends AbstractHttpEntity {
         
         private final Object object;
 
-        private ObjectBody(Object object) {
-            super(ContentType.DEFAULT_BINARY);
+        private ObjectEntity(Object object) {
             this.object = object;
-        }
-
-        @Override
-        public String getFilename() {
-            return "upload";
         }
 
         @Override
@@ -160,26 +155,41 @@ public class XGBoostHttpClient {
         }
 
         @Override
-        public String getTransferEncoding() {
-            return MIME.ENC_BINARY;
+        public boolean isStreaming() {
+            return true;
+        }
+
+        @Override
+        public boolean isRepeatable() {
+            return false;
         }
 
         @Override
         public long getContentLength() {
             return -1;
         }
+
+        @Override
+        public InputStream getContent() throws UnsupportedOperationException {
+            throw new UnsupportedOperationException();
+        }
     }
 
     public void uploadObject(Key key, String dataType, Object data) {
         LOG.info("Request upload " + key + " " + dataType + " " + data.getClass().getSimpleName());
         HttpPost httpReq = makeUploadRequest(key, dataType);
-        HttpEntity entity = MultipartEntityBuilder.create()
-            .setMode(HttpMultipartMode.BROWSER_COMPATIBLE)
-            .addPart("file", new ObjectBody(data))
-            .build();
-        httpReq.setEntity(entity);
+        httpReq.setEntity(new ObjectEntity(data));
+        addAuthentication(httpReq);
         XGBoostExecRespV3 resp = executeRequestAndReturnResponse(httpReq, JsonResponseTransformer);
         assert resp.key.key().equals(key);
+    }
+
+    private void addAuthentication(HttpPost httpReq) {
+        try {
+            httpReq.addHeader(new BasicScheme().authenticate(credentials, httpReq, null));
+        } catch (AuthenticationException e) {
+            throw new IllegalStateException("Unable to authenticate request.", e);
+        }
     }
 
     private <T> T executeRequestAndReturnResponse(HttpPost req, ResponseTransformer<T> transformer) {
