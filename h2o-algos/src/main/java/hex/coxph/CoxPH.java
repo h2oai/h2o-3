@@ -117,7 +117,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         if (null != _parms._stratify_by) {
           int stratifyColCount = _parms._stratify_by.length;
           if (_train.numCols() < (2 + nonFeatureColCount + stratifyColCount))
-            error("_train", "Training data must have at least 1 feature that is not response and is not stratified."); 
+            error("_train", "Training data must have at least 1 feature that is not a response and is not used for stratification."); 
           }
       }
 
