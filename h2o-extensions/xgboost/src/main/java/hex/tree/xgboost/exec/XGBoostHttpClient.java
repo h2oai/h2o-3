@@ -18,6 +18,7 @@ import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.mime.FormBodyPart;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.auth.BasicScheme;
@@ -66,8 +67,10 @@ public class XGBoostHttpClient {
         return resp;
     };
 
-    public XGBoostHttpClient(String baseUri, boolean https, String userName, String password) {
-        this.baseUri = (https ? "https" : "http") + "://" + baseUri + "/3/XGBoostExecutor.";
+    public XGBoostHttpClient(String baseUri, boolean https, String contextPath, String userName, String password) {
+        if (contextPath == null) contextPath = "";
+        else if (contextPath.length() > 0 && !contextPath.startsWith("/")) contextPath = "/" + contextPath;
+        this.baseUri = (https ? "https" : "http") + "://" + baseUri + "/" + contextPath + "/3/XGBoostExecutor.";
         if (userName != null) {
             credentials = new UsernamePasswordCredentials(userName, password);
         } else {

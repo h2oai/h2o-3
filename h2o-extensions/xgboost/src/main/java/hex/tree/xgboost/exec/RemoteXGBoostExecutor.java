@@ -20,8 +20,9 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
     public final Key modelKey;
     
     public RemoteXGBoostExecutor(XGBoostModel model, Frame train, String remoteUri, String userName, String password) {
-        boolean https = H2O.ARGS.jks != null;
-        http = new XGBoostHttpClient(remoteUri, https, userName, password);
+        final boolean https = H2O.ARGS.jks != null;
+        final String contextPath = H2O.ARGS.context_path;
+        http = new XGBoostHttpClient(remoteUri, https, contextPath, userName, password);
         modelKey = model._key;
         XGBoostExecReq.Init req = new XGBoostExecReq.Init();
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(train);
@@ -36,18 +37,20 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
         String[] remoteNodes = resp.readData();
         assert modelKey.equals(resp.key.key());
         uploadCheckpointBooster(model);
-        uploadMatrices(model, train, trainFrameNodes, remoteNodes, https, userName, password);
+        uploadMatrices(model, train, trainFrameNodes, remoteNodes, https, contextPath, userName, password);
         LOG.info("Remote executor init complete.");
     }
 
     private void uploadMatrices(
         XGBoostModel model, Frame train,
         XGBoostSetupTask.FrameNodes trainFrameNodes, String[] remoteNodes,
-        boolean https, String userName, String password
+        boolean https, String contextPath, String userName, String password
     ) {
         FrameMatrixLoader loader = new FrameMatrixLoader(model, train);
         LOG.info("Starting matrix data upload.");
-        new XGBoostUploadMatrixTask(modelKey, trainFrameNodes._nodes, loader, remoteNodes, https, userName, password).run();
+        new XGBoostUploadMatrixTask(
+            modelKey, trainFrameNodes._nodes, loader, remoteNodes, https, contextPath, userName, password
+        ).run();
     }
 
     private void uploadCheckpointBooster(XGBoostModel model) {
