@@ -404,7 +404,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if (_parms._distribution == DistributionFamily.laplace) {
         fitBestConstantsQuantile(ktrees, leaves[0], 0.5); //special case for Laplace: compute the median for each leaf node and store that as prediction
       } else if (_parms._distribution == DistributionFamily.quantile) {
-        fitBestConstantsQuantile(ktrees, leaves[0], _parms._quantile_alpha); //compute the alpha-quantile for each leaf node and store that as prediction
+        if(cs == null) {
+          fitBestConstantsQuantile(ktrees, leaves[0], _parms._quantile_alpha); //compute the alpha-quantile for each leaf node and store that as prediction
+        } else {
+          fitBestConstants(ktrees, leaves, gp, cs); // compute quantile monotone constraints using precomputed parent prediction
+        }
       } else if (_parms._distribution == DistributionFamily.huber) {
         fitBestConstantsHuber(ktrees, leaves[0], huberDelta); //compute the alpha-quantile for each leaf node and store that as prediction
       } else {
@@ -592,7 +596,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       Vec strata = vec_nids(_train,0);
 
       // compute quantile for all leaf nodes
-      Quantile.StratifiedQuantilesTask sqt = new Quantile.StratifiedQuantilesTask(null, quantile, diff, weights, strata, QuantileModel.CombineMethod.INTERPOLATE);
+      QuantileModel.CombineMethod combine_method = QuantileModel.CombineMethod.INTERPOLATE;
+      Quantile.StratifiedQuantilesTask sqt = new Quantile.StratifiedQuantilesTask(null, quantile, diff, weights, strata, combine_method);
       H2O.submitTask(sqt);
       sqt.join();
 
@@ -606,7 +611,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (DEV_DEBUG) { Log.info("Leaf " + sqt._nids[i] + " has quantile: " + sqt._quantiles[i]); }
       }
     }
-
+    
     private void fitBestConstants(DTree[] ktrees, int[] leafs, GammaPass gp, Constraints cs) {
       final boolean useSplitPredictions = cs != null && cs.useBounds();
       double m1class = (_nclass > 1 && _parms._distribution == DistributionFamily.multinomial) || 
@@ -667,19 +672,21 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           }
           if (constraint > 0) {
             if (maxs[dn._nids[0]] > mins[dn._nids[1]]) {
-              throw new IllegalStateException("Monotonicity constraint " + constraint + " violated on column '" + _train.name(dn._split._col) + "' (max(left) > min(right)): " + 
-                      maxs[dn._nids[0]] + " > " + mins[dn._nids[1]] + 
-                      "\nNode: " + node + 
-                      "\nLeft Node (max): " + tree.node(max_ids[dn._nids[0]]) + 
-                      "\nRight Node (min): " + tree.node(min_ids[dn._nids[1]]));
+              String message = "Monotonicity constraint " + constraint + " violated on column '" + _train.name(dn._split._col) + "' (max(left) > min(right)): " +
+                      maxs[dn._nids[0]] + " > " + mins[dn._nids[1]] +
+                      "\nNode: " + node +
+                      "\nLeft Node (max): " + tree.node(max_ids[dn._nids[0]]) +
+                      "\nRight Node (min): " + tree.node(min_ids[dn._nids[1]]);
+              throw new IllegalStateException(message);
             }
           } else if (constraint < 0) {
             if (mins[dn._nids[0]] < maxs[dn._nids[1]]) {
-              throw new IllegalStateException("Monotonicity constraint " + constraint + " violated on column '" + _train.name(dn._split._col) + "' (min(left) < max(right)): " +
-                      mins[dn._nids[0]] + " < " + maxs[dn._nids[1]] + 
+              String message = "Monotonicity constraint " + constraint + " violated on column '" + _train.name(dn._split._col) + "' (min(left) < max(right)): " +
+                      mins[dn._nids[0]] + " < " + maxs[dn._nids[1]] +
                       "\nNode: " + node +
                       "\nLeft Node (min): " + tree.node(min_ids[dn._nids[0]]) +
-                      "\nRight Node (max): " + tree.node(max_ids[dn._nids[1]]));
+                      "\nRight Node (max): " + tree.node(max_ids[dn._nids[1]]);
+              throw new IllegalStateException(message);
             }
           }
         }

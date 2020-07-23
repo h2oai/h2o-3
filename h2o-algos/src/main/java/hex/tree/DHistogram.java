@@ -1,6 +1,7 @@
 package hex.tree;
 
 import hex.Distribution;
+import hex.genmodel.utils.DistributionFamily;
 import sun.misc.Unsafe;
 import water.*;
 import water.fvec.Frame;
@@ -61,7 +62,7 @@ public final class DHistogram extends Iced {
   protected final int _vals_dim; // _vals.length == _vals_dim * _nbin; How many values per bin are encoded in _vals.
                                  // Current possible values are
                                  // - 3:_pred1 nor _pred2 provided and gamma denominator is not needed 
-                                 // - 5 or 6: if either _pred1 or _pred2 is provided (or both)
+                                 // - 5: if either _pred1 or _pred2 is provided (or both)
                                  //      - 5 if gamma denominator and nominator are not needed
                                  //      - 6 if gamma denominator is needed
                                  //      - 7 if gamma nominator is needed (tweedie constraints)
@@ -196,7 +197,7 @@ public final class DHistogram extends Iced {
       _pred2 = cs._max;
       if (!cs.needsGammaDenom() && !cs.needsGammaNom()) {
         _vals_dim = Double.isNaN(_pred1) && Double.isNaN(_pred2) ? 3 : 5;
-        _dist = null; // intentionally cause NPE if used incorrectly
+        _dist = cs._dist; // intentionally cause NPE if used incorrectly
       } else if (!cs.needsGammaNom()) {
         _vals_dim = 6;
         _dist = cs._dist;
@@ -493,8 +494,10 @@ public final class DHistogram extends Iced {
       _vals[_vals_dim*b + 1] += wy;
       _vals[_vals_dim*b + 2] += wyy;
       if (_vals_dim >= 5 && !Double.isNaN(resp[k])) { // FIXME (PUBDEV-7553): This needs to be applied even with monotone constraints disabled
-        _vals[_vals_dim * b + 3] += weight * (_pred1 - y) * (_pred1 - y);
-        _vals[_vals_dim * b + 4] += weight * (_pred2 - y) * (_pred2 - y);
+          _vals[_vals_dim * b + 3] += _dist.deviance(weight, y, _pred1);
+          _vals[_vals_dim * b + 4] += _dist.deviance(weight, y, _pred2);
+          //_vals[_vals_dim * b + 3] += weight * (_pred1 - y) * (_pred1 - y);
+          //_vals[_vals_dim * b + 4] += weight * (_pred2 - y) * (_pred2 - y);
         if (_vals_dim >= 6) {
           _vals[_vals_dim * b + 5] += _dist.gammaDenom(weight, resp[k], y, preds[k]);
           if (_vals_dim == 7) {

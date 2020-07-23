@@ -62,7 +62,8 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
               _distribution == DistributionFamily.bernoulli ||
               _distribution == DistributionFamily.tweedie ||
               _distribution == DistributionFamily.quasibinomial ||
-              _distribution == DistributionFamily.multinomial;
+              _distribution == DistributionFamily.multinomial ||
+              _distribution == DistributionFamily.quantile;
       return new Constraints(cs, DistributionFactory.getDistribution(this), useBounds);
     }
 

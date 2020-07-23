@@ -20,9 +20,6 @@ import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.*;
 
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -610,7 +607,7 @@ public abstract class SharedTree<
         // Replace the Undecided with the Split decision
         DTree.DecidedNode dn = _st.makeDecided(udn, sbh._hcs[leaf - leafOffset], udn._cs);
 //        System.out.println(dn + "\n" + dn._split);
-        if (dn._split == null) udn.do_not_split();
+        if (dn._split == null) udn.doNotSplit();
         else {
           _did_split = true;
           DTree.Split s = dn._split; // Accumulate squared error improvements per variable
