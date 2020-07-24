@@ -66,6 +66,7 @@ public class GamMojoReader extends ModelMojoReader<GamMojoModelBase> {
       _model._gamColNames[gInd] = readStringArrays(num_knots,"gamColNames_"+_model._gam_columns[gInd]);
       _model._gamColNamesCenter[gInd] = readStringArrays(num_knots-1,"gamColNamesCenter_"+_model._gam_columns[gInd]);
     }
+    _model.extractInputDataNames(_model._names);
     _model.init();
   }
   
