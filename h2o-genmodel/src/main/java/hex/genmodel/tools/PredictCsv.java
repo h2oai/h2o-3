@@ -243,7 +243,7 @@ public class PredictCsv {
       }
       else  // file empty, throw an error
         throw new Exception("Input dataset file is empty!");
-      
+
       while ((splitLine = reader.readNext()) != null) {
         // Parse the CSV line.  Don't handle quoted commas.  This isn't a parser test.
         RowData row = formatDataRow(splitLine, inputColumnNames);
