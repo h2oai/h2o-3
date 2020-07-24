@@ -62,7 +62,6 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
     super(columns, domains, responseColumn);
   }
 
-  @Override
   public void extractInputDataNames(String[] cNames) {
     final List<String> colHeaders = new ArrayList<>(Arrays.asList(cNames));
     for (String gCol : _gam_columns) {
