@@ -35,6 +35,8 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     _responseColumn = responseColumn;
   }
 
+  public void extractInputDataNames(String[] colNames) {;}
+
   /**
    * @deprecated This constructor is deprecated and will be removed in a future version.
    *             use {@link #GenModel(String[] names, String[][] domains, String responseColumn)()} instead.
