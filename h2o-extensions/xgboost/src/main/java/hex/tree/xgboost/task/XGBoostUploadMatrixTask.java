@@ -33,7 +33,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
 
     @Override
     protected void execute() {
-        XGBoostHttpClient client = new XGBoostHttpClient(remoteNodes[H2O.SELF.index()], https, contextPath, userName, password);
+        XGBoostHttpClient client = new XGBoostHttpClient(remoteNodes[H2O.SELF.index()] + contextPath, https, userName, password);
         LOG.info("Preparing matrix part to upload.");
         MatrixLoader.DMatrixProvider data = matrixLoader.makeLocalMatrix();
         client.uploadObject(_modelKey, "matrix", data);
