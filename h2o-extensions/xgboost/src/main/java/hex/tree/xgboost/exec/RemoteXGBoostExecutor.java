@@ -21,8 +21,7 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
     
     public RemoteXGBoostExecutor(XGBoostModel model, Frame train, String remoteUri, String userName, String password) {
         final boolean https = H2O.ARGS.jks != null;
-        final String contextPath = H2O.ARGS.context_path;
-        http = new XGBoostHttpClient(remoteUri, https, contextPath, userName, password);
+        http = new XGBoostHttpClient(remoteUri, https, userName, password);
         modelKey = model._key;
         XGBoostExecReq.Init req = new XGBoostExecReq.Init();
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(train);
@@ -37,20 +36,30 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
         String[] remoteNodes = resp.readData();
         assert modelKey.equals(resp.key.key());
         uploadCheckpointBooster(model);
-        uploadMatrices(model, train, trainFrameNodes, remoteNodes, https, contextPath, userName, password);
+        uploadMatrices(model, train, trainFrameNodes, remoteNodes, https, remoteUri, userName, password);
         LOG.info("Remote executor init complete.");
     }
 
     private void uploadMatrices(
         XGBoostModel model, Frame train,
         XGBoostSetupTask.FrameNodes trainFrameNodes, String[] remoteNodes,
-        boolean https, String contextPath, String userName, String password
+        boolean https, String leaderUri, String userName, String password
     ) {
         FrameMatrixLoader loader = new FrameMatrixLoader(model, train);
         LOG.info("Starting matrix data upload.");
         new XGBoostUploadMatrixTask(
-            modelKey, trainFrameNodes._nodes, loader, remoteNodes, https, contextPath, userName, password
+                modelKey, trainFrameNodes._nodes, loader, remoteNodes, 
+                https, parseContextPath(leaderUri), userName, password
         ).run();
+    }
+
+    private String parseContextPath(String leaderUri) {
+        int slashIndex = leaderUri.indexOf("/");
+        if (slashIndex > 0) {
+            return leaderUri.substring(slashIndex);
+        } else {
+            return "";
+        }
     }
 
     private void uploadCheckpointBooster(XGBoostModel model) {
