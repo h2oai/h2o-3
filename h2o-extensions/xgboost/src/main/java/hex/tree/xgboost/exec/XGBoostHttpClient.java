@@ -67,12 +67,10 @@ public class XGBoostHttpClient {
         return resp;
     };
 
-    public XGBoostHttpClient(String baseUri, boolean https, String contextPath, String userName, String password) {
-        if (contextPath == null) contextPath = "";
-        else if (contextPath.length() > 0 && !contextPath.startsWith("/")) contextPath = "/" + contextPath;
+    public XGBoostHttpClient(String baseUri, boolean https, String userName, String password) {
         String suffix = "3/XGBoostExecutor.";
-        if (!contextPath.endsWith("/")) suffix = "/" + suffix;
-        this.baseUri = (https ? "https" : "http") + "://" + baseUri + contextPath + suffix;
+        if (!baseUri.endsWith("/")) suffix = "/" + suffix;
+        this.baseUri = (https ? "https" : "http") + "://" + baseUri + suffix;
         if (userName != null) {
             credentials = new UsernamePasswordCredentials(userName, password);
         } else {
