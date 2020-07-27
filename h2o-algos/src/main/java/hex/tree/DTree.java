@@ -1013,61 +1013,39 @@ public class DTree extends Iced {
                 // Or tied MSE, then pick split towards middle bins
                 (selo + sehi == best_seL + best_seR &&
                         Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
-           { 
-             double tmpPredLeft;
-             double tmpPredRight;
-             // special predictions calculated based on current histogram to satisfy monotone constraint
-             // very expensice to calculate this for every bin -> could be precalculated for every possible bin?
-             if(constraint != 0 && dist._family.equals(DistributionFamily.quantile)) {
-               int quantileBinLeft = 0;
-               int quantileBinRight = 0;
-               double ratio = 1;
-               double delta = 1;
-               for (int bin = 1; bin <= nbins; bin++) {
-                 // left tree prediction quantile
-                 if (bin <= b) {
-                   if (bin == 1) {
-                     ratio = 100 / wlo[b];
-                   }
-                   double tmpQuantile = (wlo[bin] * ratio) / 100;
-                   assert tmpQuantile <= 1 + 10e-5: "Calculated temporary quantile "+tmpQuantile+" cannot be higher than 1.";
-                   double tmpDelta = Math.abs(dist._quantileAlpha - tmpQuantile);
-                   if (tmpDelta < delta) {
-                     delta = tmpDelta;
-                     quantileBinLeft = bin;
-                   }
-                   // right tree prediction quantile
-                 } else {
-                   if (bin == b+1) {
-                     delta = 1;
-                     ratio = 100 / (wlo[nbins] - wlo[b]);
-                   }
-                   double tmpQuantile = ((wlo[bin] - wlo[b]) * ratio) / 100;
-                   assert tmpQuantile <= 1 + 10e-5: "Calculated temporary quantile "+tmpQuantile+" cannot be higher than 1.";
-                   double tmpDelta = Math.abs(dist._quantileAlpha - tmpQuantile);
-                   if (tmpDelta < delta) {
-                     delta = tmpDelta;
-                     quantileBinRight = bin;
-                   }
-                 }
-               }
-               tmpPredLeft = wYlo[quantileBinLeft];
-               tmpPredRight = wYhi[quantileBinRight];
-             } else {
-               tmpPredLeft = hasDenom ? nomlo[b] / denlo[b] : wYlo[b] / wlo[b];
-               tmpPredRight = hasDenom ? nomhi[b] / denhi[b] : wYhi[b] / whi[b];
-             }
-             if (constraint == 0 || (constraint * tmpPredLeft <= constraint * tmpPredRight)) {
-               best_seL = selo;
-               best_seR = sehi;
-               best = b;
-               nLeft = wlo[best];
-               nRight = whi[best];
-               predLeft = wYlo[best];
-               predRight = wYhi[best];
-               tree_p0 = tmpPredLeft;
-               tree_p1 = tmpPredRight;
-             }
+          double tmpPredLeft;
+          double tmpPredRight;
+          if(constraint != 0 && dist._family.equals(DistributionFamily.quantile)) {
+            int quantileBinLeft = 0;
+            int quantileBinRight = 0;
+            double delta = 1;
+            double ratio = 100 / wlo[b];
+            for (int bin = 1; bin <= b; bin++) {
+              // left tree prediction quantile
+              double tmpQuantile = (wlo[bin] * ratio) / 100;
+              assert tmpQuantile <= 1 + 10e-5: "Calculated temporary quantile "+tmpQuantile+" cannot be higher than 1.";
+              double tmpDelta = Math.abs(dist._quantileAlpha - tmpQuantile);
+              if (tmpDelta < delta) {
+                delta = tmpDelta;
+                quantileBinLeft = bin;
+              }
+            }
+            tmpPredLeft = wYlo[quantileBinLeft];
+            tmpPredRight = wYhi[quantileBinRight];
+          } else {
+            tmpPredLeft = hasDenom ? nomlo[b] / denlo[b] : wYlo[b] / wlo[b];
+            tmpPredRight = hasDenom ? nomhi[b] / denhi[b] : wYhi[b] / whi[b];
+          }
+          if (constraint == 0 || (constraint * tmpPredLeft <= constraint * tmpPredRight)) {
+            best_seL = selo;
+            best_seR = sehi;
+            best = b;
+            nLeft = wlo[best];
+            nRight = whi[best];
+            predLeft = wYlo[best];
+            predRight = wYhi[best];
+            tree_p0 = tmpPredLeft;
+            tree_p1 = tmpPredRight;
           }
         }
       } else {
@@ -1081,42 +1059,22 @@ public class DTree extends Iced {
                   // Or tied SE, then pick split towards middle bins
                   (selo + sehi == best_seL + best_seR &&
                           Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
-            if( (wlo[b] + wNA) >= min_rows && whi[b] >= min_rows) {
+            if((wlo[b] + wNA) >= min_rows && whi[b] >= min_rows) {
               double tmpPredLeft;
               double tmpPredRight;
-              // special predictions calculated based on current histogram to satisfy monotone constraint
-              // very expensice to calculate this for every bin -> could be precalculated for every possible bin?
               if(constraint != 0 && dist._family.equals(DistributionFamily.quantile)) {
                 int quantileBinLeft = 0;
                 int quantileBinRight = 0;
-                double ratio = 1;
                 double delta = 1;
-                for (int bin = 1; bin <= nbins; bin++) {
+                double ratio = 100 / wlo[b];
+                for (int bin = 1; bin <= b; bin++) {
                   // left tree prediction quantile
-                  if (bin <= b) {
-                    if (bin == 1) {
-                      ratio = 100 / wlo[b];
-                    }
-                    double tmpQuantile = (wlo[bin] * ratio) / 100;
-                    assert tmpQuantile <= 1 + 10e-5 : "Calculated temporary quantile "+tmpQuantile+" cannot be higher than 1.";
-                    double tmpDelta = Math.abs(dist._quantileAlpha - tmpQuantile);
-                    if (tmpDelta < delta) {
-                      delta = tmpDelta;
-                      quantileBinLeft = bin;
-                    }
-                    // right tree prediction quantile
-                  } else {
-                    if (bin == b + 1) {
-                      delta = 1;
-                      ratio = 100 / (wlo[nbins] - wlo[b]);
-                    }
-                    double tmpQuantile = ((wlo[bin] - wlo[b]) * ratio) / 100;
-                    assert tmpQuantile <= 1 + 10e-5 : "Calculated temporary quantile "+tmpQuantile+" cannot be higher than 1.";
-                    double tmpDelta = Math.abs(dist._quantileAlpha - tmpQuantile);
-                    if (tmpDelta < delta) {
-                      delta = tmpDelta;
-                      quantileBinRight = bin;
-                    }
+                  double tmpQuantile = (wlo[bin] * ratio) / 100;
+                  assert tmpQuantile <= 1 + 10e-5: "Calculated temporary quantile "+tmpQuantile+" cannot be higher than 1.";
+                  double tmpDelta = Math.abs(dist._quantileAlpha - tmpQuantile);
+                  if (tmpDelta < delta) {
+                    delta = tmpDelta;
+                    quantileBinLeft = bin;
                   }
                 }
                 tmpPredLeft = wYlo[quantileBinLeft];
@@ -1154,45 +1112,25 @@ public class DTree extends Iced {
             if( wlo[b] >= min_rows && (whi[b] + wNA) >= min_rows ) {
               double tmpPredLeft;
               double tmpPredRight;
-              // special predictions calculated based on current histogram to satisfy monotone constraint
-              // very expensice to calculate this for every bin -> could be precalculated for every possible bin?
               if(constraint != 0 && dist._family.equals(DistributionFamily.quantile)) {
                 int quantileBinLeft = 0;
                 int quantileBinRight = 0;
-                double ratio = 1;
                 double delta = 1;
-                for (int bin = 1; bin <= nbins; bin++) {
+                double ratio = 100 / wlo[b];
+                for (int bin = 1; bin <= b; bin++) {
                   // left tree prediction quantile
-                  if (bin <= b) {
-                    if (bin == 1) {
-                      ratio = 100 / wlo[b];
-                    }
-                    double tmpQuantile = (wlo[bin] * ratio) / 100;
-                    assert tmpQuantile <= 1 + 10e-5: "Calculated temporary quantile "+tmpQuantile+" cannot be higher than 1.";
-                    double tmpDelta = Math.abs(dist._quantileAlpha - tmpQuantile);
-                    if (tmpDelta < delta) {
-                      delta = tmpDelta;
-                      quantileBinLeft = bin;
-                    }
-                    // right tree prediction quantile
-                  } else {
-                    if (bin == b+1) {
-                      delta = 1;
-                      ratio = 100 / (wlo[nbins] - wlo[b]);
-                    }
-                    double tmpQuantile = ((wlo[bin] - wlo[b]) * ratio) / 100;
-                    assert tmpQuantile <= 1 + 10e-5: "Calculated temporary quantile "+tmpQuantile+" cannot be higher than 1.";
-                    double tmpDelta = Math.abs(dist._quantileAlpha - tmpQuantile);
-                    if (tmpDelta < delta) {
-                      delta = tmpDelta;
-                      quantileBinRight = bin;
-                    }
+                  double tmpQuantile = (wlo[bin] * ratio) / 100;
+                  assert tmpQuantile <= 1 + 10e-5: "Calculated temporary quantile "+tmpQuantile+" cannot be higher than 1.";
+                  double tmpDelta = Math.abs(dist._quantileAlpha - tmpQuantile);
+                  if (tmpDelta < delta) {
+                    delta = tmpDelta;
+                    quantileBinLeft = bin;
                   }
                 }
                 tmpPredLeft = wYlo[quantileBinLeft];
                 tmpPredRight = wYhi[quantileBinRight];
               } else {
-                tmpPredLeft = hasDenom? nomlo[b] / denlo[b] : wYlo[b] / wlo[b];
+                tmpPredLeft = hasDenom ? nomlo[b] / denlo[b] : wYlo[b] / wlo[b];
                 tmpPredRight = hasDenom ? (nomhi[b] + nomNA) / (denhi[b] + denNA) : (wYhi[b] + wYNA) / (whi[b] + wNA);
               }
               if (constraint == 0 || (constraint * tmpPredLeft <= constraint * tmpPredRight)) {
