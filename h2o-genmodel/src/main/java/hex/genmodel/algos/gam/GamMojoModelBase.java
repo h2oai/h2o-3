@@ -60,8 +60,7 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
 
   @Override
   public double[] score0(double[] row, double[] preds) {
-    if (_meanImputation)
-      imputeMissingWithMeans(row);  // perform imputation for each row
+    imputeMissingWithMeans(row);  // perform imputation for each row
     
     return gamScore0(row, preds);
   }

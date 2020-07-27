@@ -10,7 +10,7 @@ def gam_gaussian_mojo():
     NTESTROWS = 200    # number of test dataset rows
     PROBLEM="gaussian"
     params = set_params()   # set deeplearning model parameters
-    df = pyunit_utils.random_dataset(PROBLEM, missing_fraction=0.1)   # generate random dataset
+    df = pyunit_utils.random_dataset(PROBLEM, missing_fraction=0.5)   # generate random dataset
     dfnames = df.names
     # add GAM specific parameters
     params["gam_columns"] = []
@@ -27,7 +27,9 @@ def gam_gaussian_mojo():
     
     train = df[NTESTROWS:, :]
     test = df[:NTESTROWS, :]
-    x = list(set(df.names) - {"response"})
+    exclude = {"response"}
+    exclude.add(params["gam_columns"][0])
+    x = list(set(df.names) - exclude)
 
     TMPDIR = tempfile.mkdtemp()
     gamGaussianModel = pyunit_utils.build_save_model_generic(params, x, train, "response", "gam", TMPDIR) # build and save mojo model
