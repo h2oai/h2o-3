@@ -896,7 +896,7 @@ class H2OXGBoostEstimator(H2OEstimator):
     @property
     def max_depth(self):
         """
-        Maximum tree depth.
+        Maximum tree depth (0 for unlimited).
 
         Type: ``int``  (default: ``6``).
 
