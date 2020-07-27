@@ -102,6 +102,29 @@ public class DRFTest extends TestUtil {
             s("3", "4", "5", "6", "8"));
   }
 
+    @Test public void testClassCars1UnlimitedDepth() throws Throwable {
+        // cars ntree=1
+        basicDRFTestOOBE_Classification(
+                "./smalldata/junit/cars.csv", "cars.hex",
+                new PrepData() {
+                    @Override
+                    int prep(Frame fr) {
+                        fr.remove("name").remove();
+                        return fr.find("cylinders");
+                    }
+                },
+                1,
+                20,
+                1,
+                0,
+                ard(ard(0, 2, 0, 0, 0),
+                        ard(0, 58, 6, 4, 0),
+                        ard(0, 1, 0, 0, 0),
+                        ard(1, 3, 4, 25, 1),
+                        ard(0, 0, 0, 2, 37)),
+                s("3", "4", "5", "6", "8"));
+    }
+
   @Test public void testClassCars5() throws Throwable {
     basicDRFTestOOBE_Classification(
             "./smalldata/junit/cars.csv", "cars5.hex",
@@ -439,7 +462,7 @@ public class DRFTest extends TestUtil {
     basicDRF(fnametrain, hexnametrain, null, prep, ntree, max_depth, nbins, false, min_rows, null, expMSE, null);
   }
 
-  public void basicDRF(String fnametrain, String hexnametrain, String fnametest, PrepData prep, int ntree, int max_depth, int nbins, boolean classification, int min_rows, double[][] expCM, double expMSE, String[] expRespDom) throws Throwable {
+  public void basicDRF(String fnametrain, String hexnametrain, String fnametest, PrepData prep, int ntree, int max_depth, int nbins, boolean classification, int min_rows, double[][] expCM, double expMSE, String[] expRespDom) {
     Scope.enter();
     DRFModel.DRFParameters drf = new DRFModel.DRFParameters();
     Frame frTest = null, pred = null;

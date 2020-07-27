@@ -52,7 +52,7 @@
 #' @param checkpoint Model checkpoint to resume training with.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param ntrees (same as n_estimators) Number of trees. Defaults to 50.
-#' @param max_depth Maximum tree depth. Defaults to 6.
+#' @param max_depth Maximum tree depth (0 for unlimited). Defaults to 6.
 #' @param min_rows (same as min_child_weight) Fewest allowed (weighted) observations in a leaf. Defaults to 1.
 #' @param min_child_weight (same as min_rows) Fewest allowed (weighted) observations in a leaf. Defaults to 1.
 #' @param learn_rate (same as eta) Learning rate (from 0.0 to 1.0) Defaults to 0.3.

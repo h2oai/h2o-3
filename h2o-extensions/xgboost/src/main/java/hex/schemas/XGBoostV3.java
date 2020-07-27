@@ -92,7 +92,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     @API(help="(same as n_estimators) Number of trees.", gridable = true)
     public int ntrees;
 
-    @API(help="Maximum tree depth.", gridable = true)
+    @API(help="Maximum tree depth (0 for unlimited).", gridable = true)
     public int max_depth;
 
     @API(help="(same as min_child_weight) Fewest allowed (weighted) observations in a leaf.", gridable = true)
