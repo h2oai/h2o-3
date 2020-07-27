@@ -3,7 +3,9 @@ package hex.gam;
 import hex.CreateFrame;
 import hex.glm.GLMModel;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import water.DKV;
 import water.Scope;
@@ -11,17 +13,22 @@ import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
+import java.io.*;
 import java.util.ArrayList;
 
 import static hex.gam.GamTestPiping.getModel;
 import static hex.gam.GamTestPiping.massageFrame;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
+import static org.junit.Assert.*;
 import static water.TestUtil.parse_test_file;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
 public class GamMojoModelTest {
   public static final double _tol = 1e-6;
+
+  @Rule
+  public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   // test and make sure that tweedie mojo works.
   @Test
@@ -42,7 +49,35 @@ public class GamMojoModelTest {
       final GAMModel model = new GAM(params).trainModel().get();
       Scope.track_generic(model);
       Frame predictFrame = Scope.track(model.score(fr));
-      Assert.assertTrue(model.testJavaScoring(fr, predictFrame, _tol));
+      assertTrue(model.testJavaScoring(fr, predictFrame, _tol));
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testMojo() throws Exception {
+    Scope.enter();
+    try {
+      final Frame fr = Scope.track(parse_test_file("smalldata/glm_test/auto.csv"));
+      final GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+      params._response_column = "y";
+      params._family = tweedie;
+      params._link = GLMModel.GLMParameters.Link.tweedie;
+      params._tweedie_variance_power = 1.5;
+      params._tweedie_link_power = 0.5;
+      params._ignored_columns = new String[]{"ID"};
+      params._gam_columns = new String[]{"x.TRAVTIME"};
+      params._num_knots = new int[]{5};
+      params._train = fr._key;
+      final GAMModel model = new GAM(params).trainModel().get();
+      Scope.track_generic(model);
+
+      final File originalModelMojoFile = temporaryFolder.newFile();
+      originalModelMojoFile.deleteOnExit();
+      assertEquals(0, originalModelMojoFile.length()); // Make sure the file is empty before starting to write the MOJO into it.
+      model.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
+      assertNotEquals(0, originalModelMojoFile.length()); // Something got actually written into the file
     } finally {
       Scope.exit();
     }
@@ -66,7 +101,7 @@ public class GamMojoModelTest {
       final GAMModel model = new GAM(params).trainModel().get();      
       Frame predictFrame = Scope.track(model.score(fr));
       Scope.track_generic(model);
-      Assert.assertTrue(model.testJavaScoring(fr, predictFrame, _tol));
+      assertTrue(model.testJavaScoring(fr, predictFrame, _tol));
     } finally {
       Scope.exit();
     }
@@ -93,7 +128,7 @@ public class GamMojoModelTest {
       Scope.track_generic(binomialModel);
       binomialModel._output._training_metrics = null; // force prediction threshold of 0.5
       Frame predictBinomial = Scope.track(binomialModel.score(trainBinomial));
-      Assert.assertTrue(binomialModel.testJavaScoring(trainBinomial, predictBinomial, _tol));
+      assertTrue(binomialModel.testJavaScoring(trainBinomial, predictBinomial, _tol));
     } finally {
       Scope.exit();
     }
@@ -119,7 +154,7 @@ public class GamMojoModelTest {
       Frame predictG = new Frame(predictGaussian.vec(0));
       Scope.track(predictG);
 
-      Assert.assertTrue(gaussianmodel.testJavaScoring(trainGaussian, predictG, _tol)); // compare scoring result with mojo
+      assertTrue(gaussianmodel.testJavaScoring(trainGaussian, predictG, _tol)); // compare scoring result with mojo
     } finally {
       Scope.exit();
     }
@@ -143,7 +178,7 @@ public class GamMojoModelTest {
               true, null,null, false);
       Scope.track_generic(multinomialModel);
       Frame predictMult = Scope.track(multinomialModel.score(trainMultinomial));
-      Assert.assertTrue(multinomialModel.testJavaScoring(trainMultinomial, predictMult, _tol)); // compare scoring result with mojo
+      assertTrue(multinomialModel.testJavaScoring(trainMultinomial, predictMult, _tol)); // compare scoring result with mojo
     } finally {
       Scope.exit();
     }

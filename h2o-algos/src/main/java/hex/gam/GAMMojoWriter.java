@@ -27,7 +27,6 @@ public class GAMMojoWriter extends ModelMojoWriter<GAMModel, GAMModel.GAMParamet
     writekv("use_all_factor_levels", model._parms._use_all_factor_levels);
     writekv("cats", model._output._dinfo._cats);
     writekv("cat_offsets", model._output._dinfo._catOffsets);
-    writekv("numsCenter", model._output._dinfo._nums);
     writekv("num", model._output._dinfo._nums+numGamCols);
 
     boolean imputeMeans = model._parms.missingValuesHandling().equals(GLMModel.GLMParameters.MissingValuesHandling.MeanImputation);

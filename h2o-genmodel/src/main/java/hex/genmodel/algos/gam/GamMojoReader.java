@@ -22,7 +22,6 @@ public class GamMojoReader extends ModelMojoReader<GamMojoModelBase> {
     _model._family = DistributionFamily.valueOf((String)readkv("family"));
     _model._cats = readkv("cats", -1);
     _model._nums = readkv("num");
-    _model._numsCenter = readkv("numsCenter");
     _model._catNAFills = readkv("catNAFills", new int[0]);
     _model._numNAFills = readkv("numNAFills", new double[0]);
     _model._numNAFillsCenter = readkv("numNAFillsCenter", new double[0]);;

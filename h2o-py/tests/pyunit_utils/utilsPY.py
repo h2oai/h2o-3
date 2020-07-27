@@ -282,6 +282,7 @@ def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_a
 
     p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
     o, e = p.communicate()
+    print(o)
     files = os.listdir(tmpdir)
     print("listing files {1} in directory {0}".format(tmpdir, files))
     outfile = os.path.join(tmpdir, 'out_mojo.csv')

@@ -384,6 +384,11 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public double dispersion(){ return _dispersion;}
 
     @Override
+    public int nfeatures() {
+      return _names.length;
+    }
+
+    @Override
     public int nclasses() {
       if (_family == Family.multinomial || _family == Family.ordinal)
         return super.nclasses();
@@ -631,6 +636,12 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     }
 
     public double[] scoreRow(DataInfo.Row r, double offset, double[] preds) {
+      for (int i = 0; i < r.numVals.length; i++) {
+        if(Double.isNaN(r.numVals[i])){
+          throw new IllegalArgumentException("NaN found.");
+        }
+      }
+      
       double mu = _m._parms.linkInv(r.innerProduct(_coeffs) + offset, _m._parms._link,
               _m._parms._tweedie_link_power);
       if (_classifier2class) { // threshold for prediction
