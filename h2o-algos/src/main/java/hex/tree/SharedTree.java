@@ -165,10 +165,10 @@ public abstract class SharedTree<
 
     PlattScalingHelper.initCalibration(this, _parms, expensive);
   }
-  
-  
-  protected void validateMaxDepth(){
-    if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
+
+  protected void validateMaxDepth() {
+    if (_parms._max_depth < 0) error("_max_depth", "_max_depth must be >= 0.");
+    if (_parms._max_depth == 0) _parms._max_depth = Integer.MAX_VALUE;
   }
 
   protected void validateRowSampleRate() {

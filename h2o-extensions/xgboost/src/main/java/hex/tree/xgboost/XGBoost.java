@@ -143,8 +143,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       _ntrees = _parms._ntrees;
     }
 
-    if (_parms._max_depth < 0) error ("_max_depth", "_max_depth must be >= 0.");
-    if(_parms._max_depth == 0) _parms._max_depth = Integer.MAX_VALUE;
+    if (_parms._max_depth < 0) error("_max_depth", "_max_depth must be >= 0.");
+    if (_parms._max_depth == 0) _parms._max_depth = Integer.MAX_VALUE;
 
     // Initialize response based on given distribution family.
     // Regression: initially predict the response mean
