@@ -9,34 +9,16 @@ def gbm_monotone_quantile_test():
     train, test = data.split_frame([0.8], seed=123)
     response = "CLM_AMT5"
 
-    monotone_constraints = {
-        "MVR_PTS": 1,
-    }
-
     gbm_regular = H2OGradientBoostingEstimator(seed=42, distribution="quantile")
     gbm_regular.train(y=response, training_frame=train, validation_frame=test)
-    print(gbm_regular.varimp(use_pandas=True))
-    top_3_vars_regular = gbm_regular.varimp(use_pandas=True).loc[:, 'variable'].head(3).tolist()
-    assert "MVR_PTS" in top_3_vars_regular
 
-    gbm_mono = H2OGradientBoostingEstimator(monotone_constraints=monotone_constraints, seed=42, distribution="quantile")
+    # train a model with 1 constraint on MVR_PTS
+    gbm_mono = H2OGradientBoostingEstimator(seed=42, distribution="quantile", monotone_constraints={"MVR_PTS": 1})
     gbm_mono.train(y=response, training_frame=train, validation_frame=test)
-    print(gbm_mono.varimp(use_pandas=True))
-    top_3_vars_mono = gbm_mono.varimp(use_pandas=True).loc[:, 'variable'].head(3).tolist()
 
-    print(top_3_vars_mono)
-    print(top_3_vars_regular)
-    # monotone constraints didn't affect the variable importance - Not sure this is true
-    # assert top_3_vars_mono == top_3_vars_regular 
-
-    # train a model with opposite constraint on MVR_PTS
-    gbm_adverse = H2OGradientBoostingEstimator(seed=42, distribution="quantile",
-                                               monotone_constraints={"MVR_PTS": -1})
+    # train a model with -1 constraint on MVR_PTS
+    gbm_adverse = H2OGradientBoostingEstimator(seed=42, distribution="quantile", monotone_constraints={"MVR_PTS": -1})
     gbm_adverse.train(y=response, training_frame=train, validation_frame=test)
-
-    # variable becomes least important to the model - Not sure this is true
-    print(gbm_adverse.varimp(use_pandas=True).loc[:, 'variable'].tail(1).tolist()) 
-    # assert ["MVR_PTS"] == gbm_adverse.varimp(use_pandas=True).loc[:, 'variable'].tail(1).tolist()
 
 
 if __name__ == "__main__":
