@@ -44,7 +44,7 @@ class MockSteam:
             self.connected_lock.acquire()
             self.connected_lock.wait(10)
             if not self.connected:
-                raise Exception("Failed to connect to websocket.")
+                raise Exception("Timeout connecting to H2O.")
             else:
                 print("Connected")
         finally:
@@ -65,6 +65,7 @@ class MockSteam:
     def on_open(self, ws):
         try:
             self.connected_lock.acquire()
+            self.connected = True
             self.connected_lock.notify_all()
         finally:
             self.connected_lock.release()
