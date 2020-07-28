@@ -29,6 +29,7 @@ def make_stop_req(id):
 
 def test():
     host_port = os.environ["cloud_ip_port_main"]
+    main_uri = "%s/main" % host_port
     username = "jenkins"
     password = "main"
     
@@ -36,10 +37,10 @@ def test():
     xgb_username = "jenkins"
     xgb_password = "xgb"
     
-    h2o.connect(url="http://%s/main" % host_port, auth=(username, password))
+    h2o.connect(url="http://%s" % main_uri, auth=(username, password))
     
     # hello test
-    steam = MockSteam(host_port, username, password)
+    steam = MockSteam(main_uri, username, password)
     steam.send({"_type": "hello", "_id": "hi_1"})
     hello_response = steam.wait_for_message()
     assert hello_response is not None, "No hello response sent."
