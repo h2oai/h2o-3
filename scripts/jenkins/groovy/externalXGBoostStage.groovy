@@ -11,6 +11,7 @@ def call(final pipelineContext, final stageConfig) {
     
             echo "Activating Python ${stageConfig.pythonVersion}"
             . /envs/h2o_env_python${stageConfig.pythonVersion}/bin/activate
+            pip install websocket_client
     
             echo 'Generating SSL Certificate'
             rm -f mykeystore.jks

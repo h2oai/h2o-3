@@ -574,7 +574,7 @@ def call(final pipelineContext) {
           additionalTestPackages: [
                   pipelineContext.getBuildConfig().COMPONENT_PY
           ],
-          customData: MULTINODE_CLUSTERS_CONFIGS[0], pythonVersion: '2.7',
+          customData: MULTINODE_CLUSTERS_CONFIGS[0], pythonVersion: '3.7',
           executionScript: 'h2o-3/scripts/jenkins/groovy/externalXGBoostStage.groovy',
           image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(
                   MULTINODE_CLUSTERS_CONFIGS[0].distribution, MULTINODE_CLUSTERS_CONFIGS[0].version, MULTINODE_CLUSTERS_CONFIGS[0].krb
