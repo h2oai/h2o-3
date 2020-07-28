@@ -3,6 +3,9 @@ import h2o
 from h2o.estimators import H2OXGBoostEstimator
 from mock_steam import MockSteam
 
+sys.path.insert(1, os.path.join("../../../../h2o-py"))
+from tests import pyunit_utils
+
 def make_starting_response(req):
     return {
         "_id": "%s_response" % req["_id"],
@@ -48,7 +51,7 @@ def test():
     assert "hi_1_response" == hello_response["_id"]
     
     # load data
-    train = h2o.import_file(path="/Users/honza/Code/h2o-3/smalldata/gbm_test/ecology_model.csv")
+    train = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/ecology_model.csv"))
     train["Angaus"] = train["Angaus"].asfactor()
     x = list(range(2, train.ncol))
     y = "Angaus"
