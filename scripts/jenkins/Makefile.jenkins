@@ -477,7 +477,7 @@ test-hadoop-multinode:
 	cd h2o-hadoop-common/tests_multinode/R && ../../../scripts/run.py --wipeall --nointernal --usecloud "$$CLOUD_IP:$$CLOUD_PORT"
 
 test-steam-websocket:
-	cd h2o-extensions/steam/tests/python && mkdir -p results && python test.py | tee results/test_result.txt 
+	cd h2o-extensions/steam/tests/python && mkdir -p results && python test.py
 
 test-h2o-k8s:
 	bash h2o-k8s/tests/clustering/docker-init-script.sh
