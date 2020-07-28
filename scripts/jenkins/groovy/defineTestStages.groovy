@@ -534,21 +534,21 @@ def call(final pipelineContext) {
     KERBEROS_STAGES += [ standaloneStage, onHadoopStage, onHadoopWithSpnegoStage, steamDriverStage, steamMapperStage, sparklingStage, steamSparklingStage ]
   }
 
-  def HADOOP_MULTINODE_STAGES = []
   final MULTINODE_CLUSTERS_CONFIGS = [
-          [ distribution: "hdp", version: "2.2",
-            nameNode: "mr-0xd6", hdpName: "hdp2_2_d", krb: false,
-            hiveHost: "mr-0xd9.0xdata.loc",
-            nodes: 4, xmx: "16G", extramem: "100",
-            cloudingDir: "/user/jenkins/hadoop_multinode_tests"
-          ],
-          [ distribution: "hdp", version: "2.4",
-            nameNode: "mr-0xg5", hdpName: "steam2", krb: true,
-            hiveHost: "mr-0xg6.0xdata.loc", hivePrincipal: "hive/mr-0xg6.0xdata.loc@0XDATA.LOC",
-            nodes: 4, xmx: "10G", extramem: "100",
-            cloudingDir: "/user/jenkins/hadoop_multinode_tests"
-          ]
+      [ distribution: "hdp", version: "2.2",
+        nameNode: "mr-0xd6", hdpName: "hdp2_2_d", krb: false,
+        hiveHost: "mr-0xd9.0xdata.loc",
+        nodes: 4, xmx: "16G", extramem: "100",
+        cloudingDir: "/user/jenkins/hadoop_multinode_tests"
+      ],
+      [ distribution: "hdp", version: "2.4",
+        nameNode: "mr-0xg5", hdpName: "steam2", krb: true,
+        hiveHost: "mr-0xg6.0xdata.loc", hivePrincipal: "hive/mr-0xg6.0xdata.loc@0XDATA.LOC",
+        nodes: 4, xmx: "10G", extramem: "100",
+        cloudingDir: "/user/jenkins/hadoop_multinode_tests"
+      ]
   ]
+  def HADOOP_MULTINODE_STAGES = []
   for (config in MULTINODE_CLUSTERS_CONFIGS) {
     def image = pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(config.distribution, config.version, config.krb)
     def stage = [
@@ -565,6 +565,22 @@ def call(final pipelineContext) {
     ]
     HADOOP_MULTINODE_STAGES += [ stage ]
   }
+  // todo make additive
+  HADOOP_MULTINODE_STAGES = [
+      [
+          stageName: "TEST External XGBoost on ${MULTINODE_CLUSTERS_CONFIGS[0].nameNode}",
+          target: "test-steam-websocket", timeoutValue: 30,
+          component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+          additionalTestPackages: [
+                  pipelineContext.getBuildConfig().COMPONENT_PY
+          ],
+          customData: MULTINODE_CLUSTERS_CONFIGS[0], pythonVersion: '2.7',
+          executionScript: 'h2o-3/scripts/jenkins/groovy/externalXGBoostStage.groovy',
+          image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(
+                  MULTINODE_CLUSTERS_CONFIGS[0].distribution, MULTINODE_CLUSTERS_CONFIGS[0].version, MULTINODE_CLUSTERS_CONFIGS[0].krb
+          )
+      ]
+  ]
 
   def XGB_STAGES = []
   for (String osName: pipelineContext.getBuildConfig().getSupportedXGBEnvironments().keySet()) {
@@ -642,6 +658,8 @@ def call(final pipelineContext) {
     executeInParallel(HADOOP_MULTINODE_STAGES, pipelineContext)
   } else if (modeCode == MODE_XGB_CODE) {
     executeInParallel(XGB_STAGES, pipelineContext)
+  } else if (modeCode == MODE_EXTERNAL_XGB_CODE) {
+    executeInParallel(EXTERBAL_XGB_STAGES, pipelineContext)
   } else if (modeCode == MODE_COVERAGE_CODE) {
     executeInParallel(COVERAGE_STAGES, pipelineContext)
   } else if (modeCode == MODE_SINGLE_TEST_CODE) {
