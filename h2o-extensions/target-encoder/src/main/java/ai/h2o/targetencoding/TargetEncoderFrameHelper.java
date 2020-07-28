@@ -25,6 +25,8 @@ import java.util.Random;
 
 public class TargetEncoderFrameHelper {
 
+  private TargetEncoderFrameHelper() {}
+
   static public Frame rBind(Frame a, Frame b) {
     if (a == null) {
       assert b != null;

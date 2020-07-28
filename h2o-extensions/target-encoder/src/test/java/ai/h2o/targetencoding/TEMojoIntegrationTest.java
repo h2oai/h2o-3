@@ -1,6 +1,5 @@
 package ai.h2o.targetencoding;
 
-import ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -64,7 +63,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._response_column = responseColumnName;
       targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", targetEncoderParameters._response_column);
-      targetEncoderParameters._ignore_const_cols = false; // Why ignore_const_column ignores `name` column? bad naming
       targetEncoderParameters.setTrain(fr._key);
 
       TargetEncoderBuilder targetEncoderBuilder = new TargetEncoderBuilder(targetEncoderParameters);
@@ -396,7 +394,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       int homeDestIndex = ArrayUtils.find(fr.vec(teColumn).domain(), homeDestFactorValue);
       double[] encodingComponentsForHomeDest = homeDestEncodingMap.get(homeDestIndex);
       double posteriorMean = encodingComponentsForHomeDest[0] / encodingComponentsForHomeDest[1];
-      double expectedLambda = TargetEncoderMojoModel.computeLambda((long)encodingComponentsForHomeDest[1], targetEncoderParameters._k, targetEncoderParameters._f);
+      double expectedLambda = TargetEncoderMojoModel.computeLambda((long)encodingComponentsForHomeDest[1], targetEncoderParameters._inflection_point, targetEncoderParameters._smoothing);
 
       double expectedBlendedEncodingForHomeDest = TargetEncoderMojoModel.computeBlendedEncoding(expectedLambda, posteriorMean, expectedPriorMean);
 
@@ -431,9 +429,9 @@ public class TEMojoIntegrationTest extends TestUtil {
       
       // We want to test case when inflection point is higher than number of missing values in the training frame, i.e. blending would favor prior probability
       int inflectionPoint = 600;
-      targetEncoderParameters._k = inflectionPoint;
-      targetEncoderParameters._f = 1;
-      targetEncoderParameters._ignore_const_cols = false;
+      targetEncoderParameters._inflection_point = inflectionPoint;
+      targetEncoderParameters._smoothing = 1;
+      targetEncoderParameters._seed = 1234;
       targetEncoderParameters.setTrain(fr._key);
 
       TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
@@ -471,13 +469,11 @@ public class TEMojoIntegrationTest extends TestUtil {
 
 
       // Encoding should be coming from posterior probability of NAs in the training frame
-      BlendingParams blendingParams = new BlendingParams(targetEncoderParameters._k, targetEncoderParameters._f);
+      BlendingParams blendingParams = new BlendingParams(targetEncoderParameters._inflection_point, targetEncoderParameters._smoothing);
       Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(
               withNullFrame,
-              DataLeakageHandlingStrategy.None,
               blendingParams,
-              0.0,
-              1234);
+              0.0);
       Scope.track(encodingsFromTargetEncoderModel);
 
       assertEquals(encodingsFromMojoModel[0], encodingsFromTargetEncoderModel.vec("home.dest_te").at(0), 1e-5);
@@ -493,10 +489,8 @@ public class TEMojoIntegrationTest extends TestUtil {
       // In case we predict for unseen level, encodings should be coming from prior probability of the response
       Frame encodingsFromTEModelForUnseenLevel = targetEncoderModel.transform(
               withUnseenLevelFrame,
-              DataLeakageHandlingStrategy.None,
               blendingParams,
-              0.0,
-              1234);
+              0.0);
       Scope.track(encodingsFromTEModelForUnseenLevel);
 
       // This prediction will essentially be a prior as inflection point is 600 vs only one value in the `withUnseenLevelFrame` frame
@@ -527,12 +521,12 @@ public class TEMojoIntegrationTest extends TestUtil {
       targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", targetEncoderParameters._response_column);
       // Enable blending
       targetEncoderParameters._blending = true;
+      targetEncoderParameters._seed = 1234;
 
       // We want to test case when inflection point is lower than number of missing values in the training frame, i.e. blending would favor posterior probability
       int inflectionPoint = 5;
-      targetEncoderParameters._k = inflectionPoint;
-      targetEncoderParameters._f = 1;
-      targetEncoderParameters._ignore_const_cols = false;
+      targetEncoderParameters._inflection_point = inflectionPoint;
+      targetEncoderParameters._smoothing = 1;
       targetEncoderParameters.setTrain(fr._key);
 
       TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
@@ -571,13 +565,11 @@ public class TEMojoIntegrationTest extends TestUtil {
 
 
       // Encoding should be coming from posterior probability of NAs in the training frame
-      BlendingParams blendingParams = new BlendingParams(targetEncoderParameters._k, targetEncoderParameters._f);
+      BlendingParams blendingParams = new BlendingParams(targetEncoderParameters._inflection_point, targetEncoderParameters._smoothing);
       Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(
               withNullFrame,
-              DataLeakageHandlingStrategy.None,
               blendingParams,
-              0.0,
-              1234);
+              0.0);
       Scope.track(encodingsFromTargetEncoderModel);
 
       assertEquals(encodingsFromMojoModel[0], encodingsFromTargetEncoderModel.vec("home.dest_te").at(0), 1e-5);
@@ -592,10 +584,8 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       Frame encodingsFromTEModelForUnseenLevel = targetEncoderModel.transform(
               withUnseenLevelFrame,
-              DataLeakageHandlingStrategy.None,
               blendingParams,
-              0.0,
-              1234);
+              0.0);
       Scope.track(encodingsFromTEModelForUnseenLevel);
 
       assertEquals(encodingsFromMojoModel[0], encodingsFromTEModelForUnseenLevel.vec("home.dest_te").at(0), 1e-5);
@@ -627,9 +617,9 @@ public class TEMojoIntegrationTest extends TestUtil {
       targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", targetEncoderParameters._response_column);
       // Enable blending
       targetEncoderParameters._blending = true;
-      targetEncoderParameters._k = randomInflectionPoint;
-      targetEncoderParameters._f = 1;
-      targetEncoderParameters._ignore_const_cols = false;
+      targetEncoderParameters._seed = 1234;
+      targetEncoderParameters._inflection_point = randomInflectionPoint;
+      targetEncoderParameters._smoothing = 1;
       targetEncoderParameters.setTrain(fr._key);
 
       TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
@@ -667,13 +657,11 @@ public class TEMojoIntegrationTest extends TestUtil {
               .build();
 
 
-      BlendingParams blendingParams = new BlendingParams(targetEncoderParameters._k, targetEncoderParameters._f);
+      BlendingParams blendingParams = new BlendingParams(targetEncoderParameters._inflection_point, targetEncoderParameters._smoothing);
       Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(
               withNullFrame,
-              DataLeakageHandlingStrategy.None,
               blendingParams,
-              0.0,
-              1234);
+              0.0);
       Scope.track(encodingsFromTargetEncoderModel);
 
       double predictionFromTEModel = encodingsFromTargetEncoderModel.vec("home.dest_te").at(0);
@@ -702,10 +690,9 @@ public class TEMojoIntegrationTest extends TestUtil {
       targetEncoderParameters._response_column = responseColumnName;
       targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", targetEncoderParameters._response_column);
       targetEncoderParameters._blending = true;
-      targetEncoderParameters._k = 5;
-      targetEncoderParameters._f = 1;
+      targetEncoderParameters._inflection_point = 5;
+      targetEncoderParameters._smoothing = 1;
 
-      targetEncoderParameters._ignore_const_cols = false;
       targetEncoderParameters.setTrain(fr._key);
 
       TargetEncoderBuilder targetEncoderBuilder = new TargetEncoderBuilder(targetEncoderParameters);
@@ -748,7 +735,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       targetEncoderParameters._blending = false;
       targetEncoderParameters._response_column = responseColumnName;
       targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", responseColumnName);
-      targetEncoderParameters._ignore_const_cols = false; // Why ignore_const_column ignores `name` column? bad naming
       targetEncoderParameters.setTrain(fr._key);
 
       TargetEncoderBuilder targetEncoderBuilder = new TargetEncoderBuilder(targetEncoderParameters);

@@ -21,7 +21,7 @@ from .backend import H2OLocalServer
 from .base import Keyed
 from .estimators import create_estimator
 from .estimators.generic import H2OGenericEstimator
-from .exceptions import H2OConnectionError, H2OValueError, H2OError
+from .exceptions import H2OConnectionError, H2OValueError, H2OError, H2ODeprecationWarning
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
@@ -34,9 +34,10 @@ from .utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundN
 
 logging.basicConfig()
 
+# enable h2o deprecation warnings by default to ensure that users get notified in interactive mode, without being too annoying
+warnings.filterwarnings("once", category=H2ODeprecationWarning)
 # An IPython deprecation warning is triggered after h2o.init(). Remove this once the deprecation has been resolved
-warnings.filterwarnings('ignore', category=DeprecationWarning, module='.*/IPython/.*')
-
+# warnings.filterwarnings('ignore', category=DeprecationWarning, module='.*/IPython/.*')
 
 h2oconn = None  # type: H2OConnection
 

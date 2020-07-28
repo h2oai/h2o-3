@@ -58,7 +58,7 @@ public class TargetEncoderRGSTest{
         int count = 0;
         while (iterator.hasNext(null)) {
           TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters(null);
-          System.out.println(targetEncoderParameters._blending + ":" + targetEncoderParameters._noise_level + ":" + targetEncoderParameters._k + ":" + targetEncoderParameters._f);
+          System.out.println(targetEncoderParameters._blending + ":" + targetEncoderParameters._noise + ":" + targetEncoderParameters._inflection_point + ":" + targetEncoderParameters._smoothing);
           count++;
         }
         assertEquals("Unexpected number of grid items", 54, count);

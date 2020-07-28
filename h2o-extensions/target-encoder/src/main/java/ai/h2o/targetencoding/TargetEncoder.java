@@ -12,7 +12,6 @@ import water.util.IcedHashMap;
 import water.util.ArrayUtils;
 import water.util.Log;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
@@ -352,7 +351,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
    * @return
    */
   private static double getBlendedValue(double posteriorMean, double priorMean, long numberOfRowsForCategory, BlendingParams blendingParams) {
-    double lambda = 1.0 / (1 + Math.exp((blendingParams.getK() - numberOfRowsForCategory) / blendingParams.getF()));
+    double lambda = 1.0 / (1 + Math.exp((blendingParams.getInflectionPoint() - numberOfRowsForCategory) / blendingParams.getSmoothing()));
     return lambda * posteriorMean + (1 - lambda) * priorMean;
   }
 

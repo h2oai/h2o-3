@@ -1,5 +1,7 @@
-package ai.h2o.targetencoding;
+package hex.api.targetencoding;
 
+import ai.h2o.targetencoding.TargetEncoderBuilder;
+import ai.h2o.targetencoding.TargetEncoderModel;
 import hex.ModelBuilder;
 import water.api.AlgoAbstractRegister;
 import water.api.RestApiContext;

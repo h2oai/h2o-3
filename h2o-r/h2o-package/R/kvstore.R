@@ -252,8 +252,8 @@ h2o.getModel <- function(model_id) {
   }
     
   # get name, value pairs
-  allparams_key_val = lapply(json$parameters, fill_pairs, all=TRUE)
-  parameters_key_val = lapply(json$parameters, fill_pairs, all=FALSE)
+  allparams_key_val <- lapply(json$parameters, fill_pairs, all=TRUE)
+  parameters_key_val <- lapply(json$parameters, fill_pairs, all=FALSE)
     
   # remove NULLs
   allparams_key_val[sapply(allparams_key_val, is.null)] <- NULL

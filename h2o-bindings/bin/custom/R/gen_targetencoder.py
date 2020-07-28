@@ -5,7 +5,24 @@ if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_igno
 parms$ignored_columns <- args$x_ignore
 parms$response_column <- args$y
 parms$training_frame <- training_frame
-    """
+    """,
+    ellipsis_param="""
+varargs <- list(...)
+for (arg in names(varargs)) {
+   if (arg == 'k') {
+      warning("argument 'k' is deprecated; please use 'inflection_point' instead.")
+      if (missing(inflection_point)) inflection_point <- varargs$k else warning("ignoring 'k' as 'inflection_point' was also provided.")
+   } else if (arg == 'f') {
+      warning("argument 'f' is deprecated; please use 'smoothing' instead.")
+      if (missing(smoothing)) smoothing <- varargs$f else warning("ignoring 'f' as 'smoothing' was also provided.")
+   } else if (arg == 'noise_level') {
+      warning("argument 'noise_level' is deprecated; please use 'noise' instead.")
+      if (missing(noise)) noise <- varargs$noise_level else warning("ignoring 'noise_level' as 'noise' was also provided.")
+   } else {
+      stop(paste("unused argument", arg, "=", varargs[[arg]]))
+   }
+}
+"""
 )
 
 

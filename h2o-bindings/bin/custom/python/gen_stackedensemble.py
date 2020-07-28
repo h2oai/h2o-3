@@ -50,7 +50,7 @@ def class_extensions():
                 "The usage of stacked_ensemble.metalearner()['name'] will be deprecated. "
                 "Metalearner now returns the metalearner object. If you need to get the "
                 "'name' please use stacked_ensemble.metalearner().model_id",
-                DeprecationWarning
+                H2ODeprecationWarning
             )
             if key == "name":
                 return self.model_id
@@ -141,7 +141,7 @@ import warnings
 
 import h2o
 from h2o.base import Keyed
-from h2o.exceptions import H2OResponseError
+from h2o.exceptions import H2OResponseError, H2ODeprecationWarning
 from h2o.grid import H2OGridSearch
 from h2o.job import H2OJob
 from h2o.utils.shared_utils import quoted

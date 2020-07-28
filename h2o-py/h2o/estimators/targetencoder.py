@@ -7,6 +7,9 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import h2o
+import warnings
+from h2o.exceptions import H2ODeprecationWarning
+from h2o.utils.metaclass import deprecated_property
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
@@ -20,8 +23,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     """
 
     algo = "targetencoder"
-    param_names = {"model_id", "training_frame", "fold_column", "response_column", "ignored_columns", "blending", "k",
-                   "f", "data_leakage_handling", "noise_level", "seed"}
+    param_names = {"model_id", "training_frame", "fold_column", "response_column", "ignored_columns", "blending",
+                   "inflection_point", "smoothing", "data_leakage_handling", "noise", "seed"}
 
     def __init__(self, **kwargs):
         super(H2OTargetEncoderEstimator, self).__init__()
@@ -30,6 +33,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
             if pname == 'model_id':
                 self._id = pvalue
                 self._parms["model_id"] = pvalue
+            elif pname in self._deprecated_params_:
+                setattr(self, pname, pvalue)  # property handles the redefinition
             elif pname in self.param_names:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
@@ -51,8 +56,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         >>> titanic["survived"] = titanic["survived"].asfactor()
         >>> fold_col = "kfold_column"
         >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
-        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
-        ...                                        f=25,
+        >>> titanic_te = H2OTargetEncoderEstimator(inflection_point=35,
+        ...                                        smoothing=25,
         ...                                        blending=True)
         >>> titanic_te.train(x=predictors,
         ...                  y=response,
@@ -81,8 +86,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         >>> titanic["survived"] = titanic["survived"].asfactor()
         >>> fold_col = "kfold_column"
         >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
-        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
-        ...                                        f=25,
+        >>> titanic_te = H2OTargetEncoderEstimator(inflection_point=35,
+        ...                                        smoothing=25,
         ...                                        blending=True)
         >>> titanic_te.train(x=predictors,
         ...                  y=response,
@@ -130,7 +135,9 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     @property
     def blending(self):
         """
-        Blending enabled/disabled
+        If true, enables blending of posterior probabilities (computed for a given categorical value) with prior
+        probabilities (computed on the entire set). This allows to mitigate the effect of categorical values with small
+        cardinality. The blending effect can be tuned using the `inflection_point` and `smoothing` parameters.
 
         Type: ``bool``  (default: ``False``).
 
@@ -142,8 +149,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         >>> titanic["survived"] = titanic["survived"].asfactor()
         >>> fold_col = "kfold_column"
         >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
-        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
-        ...                                        f=25,
+        >>> titanic_te = H2OTargetEncoderEstimator(inflection_point=35,
+        ...                                        smoothing=25,
         ...                                        blending=True)
         >>> titanic_te.train(x=predictors,
         ...                  y=response,
@@ -159,10 +166,11 @@ class H2OTargetEncoderEstimator(H2OEstimator):
 
 
     @property
-    def k(self):
+    def inflection_point(self):
         """
-        Inflection point. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
-        parameter.
+        Inflection point of the sigmoid used to blend probabilities (see `blending` parameter). For a given categorical
+        value, if it appears less that `inflection_point` in a data sample, then the influence of the posterior
+        probability will be smaller than the prior.
 
         Type: ``float``  (default: ``10``).
 
@@ -174,26 +182,28 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         >>> titanic["survived"] = titanic["survived"].asfactor()
         >>> fold_col = "kfold_column"
         >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
-        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
-        ...                                        f=25,
+        >>> titanic_te = H2OTargetEncoderEstimator(inflection_point=35,
+        ...                                        smoothing=25,
         ...                                        blending=True)
         >>> titanic_te.train(x=predictors,
         ...                  y=response,
         ...                  training_frame=titanic)
         >>> titanic_te
         """
-        return self._parms.get("k")
+        return self._parms.get("inflection_point")
 
-    @k.setter
-    def k(self, k):
-        assert_is_type(k, None, numeric)
-        self._parms["k"] = k
+    @inflection_point.setter
+    def inflection_point(self, inflection_point):
+        assert_is_type(inflection_point, None, numeric)
+        self._parms["inflection_point"] = inflection_point
 
 
     @property
-    def f(self):
+    def smoothing(self):
         """
-        Smoothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.
+        Smoothing factor corresponds to the inverse of the slope at the inflection point on the sigmoid used to blend
+        probabilities (see `blending` parameter). If smoothing tends towards 0, then the sigmoid used for blending turns
+        into a Heaviside step function.
 
         Type: ``float``  (default: ``20``).
 
@@ -205,28 +215,31 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         >>> titanic["survived"] = titanic["survived"].asfactor()
         >>> fold_col = "kfold_column"
         >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
-        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
-        ...                                        f=25,
+        >>> titanic_te = H2OTargetEncoderEstimator(inflection_point=35,
+        ...                                        smoothing=25,
         ...                                        blending=True)
         >>> titanic_te.train(x=predictors,
         ...                  y=response,
         ...                  training_frame=titanic)
         >>> titanic_te
         """
-        return self._parms.get("f")
+        return self._parms.get("smoothing")
 
-    @f.setter
-    def f(self, f):
-        assert_is_type(f, None, numeric)
-        self._parms["f"] = f
+    @smoothing.setter
+    def smoothing(self, smoothing):
+        assert_is_type(smoothing, None, numeric)
+        self._parms["smoothing"] = smoothing
 
 
     @property
     def data_leakage_handling(self):
         """
-        Data leakage handling strategy.
+        Data leakage handling strategy used to generate the encoding. Supported options are: 1) "none" (default) - no
+        holdout, using the entire training frame. 2) "leave_one_out" - current row's response value is subtracted from
+        the per-level frequencies pre-calculated on the entire training frame. 3) "k_fold" - encodings for a fold are
+        generated based on out-of-fold data.
 
-        One of: ``"none"``, ``"k_fold"``, ``"leave_one_out"``  (default: ``"none"``).
+        One of: ``"leave_one_out"``, ``"k_fold"``, ``"none"``  (default: ``"none"``).
 
         :examples:
 
@@ -236,8 +249,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         >>> titanic["survived"] = titanic["survived"].asfactor()
         >>> fold_col = "kfold_column"
         >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
-        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
-        ...                                        f=25,
+        >>> titanic_te = H2OTargetEncoderEstimator(inflection_point=35,
+        ...                                        smoothing=25,
         ...                                        data_leakage_handling="k_fold",
         ...                                        blending=True)
         >>> titanic_te.train(x=predictors,
@@ -249,29 +262,30 @@ class H2OTargetEncoderEstimator(H2OEstimator):
 
     @data_leakage_handling.setter
     def data_leakage_handling(self, data_leakage_handling):
-        assert_is_type(data_leakage_handling, None, Enum("none", "k_fold", "leave_one_out"))
+        assert_is_type(data_leakage_handling, None, Enum("leave_one_out", "k_fold", "none"))
         self._parms["data_leakage_handling"] = data_leakage_handling
 
 
     @property
-    def noise_level(self):
+    def noise(self):
         """
-        Noise level
+        The amount of noise to add to the encoded column. Use 0 to disable noise, and -1 (=AUTO) to let the algorithm
+        determine a reasonable amount of noise.
 
         Type: ``float``  (default: ``0.01``).
         """
-        return self._parms.get("noise_level")
+        return self._parms.get("noise")
 
-    @noise_level.setter
-    def noise_level(self, noise_level):
-        assert_is_type(noise_level, None, numeric)
-        self._parms["noise_level"] = noise_level
+    @noise.setter
+    def noise(self, noise):
+        assert_is_type(noise, None, numeric)
+        self._parms["noise"] = noise
 
 
     @property
     def seed(self):
         """
-        Seed for the specified noise level
+        Seed used to generate the noise. By default, the seed is chosen randomly.
 
         Type: ``int``  (default: ``-1``).
         """
@@ -283,20 +297,20 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         self._parms["seed"] = seed
 
 
-    def transform(self, frame, data_leakage_handling="None", noise=-1, seed=-1):
-        """
+    _deprecated_params_ = ['k', 'f', 'noise_level']
+    k = deprecated_property('k', inflection_point)
+    f = deprecated_property('f', smoothing)
+    noise_level = deprecated_property('noise_level', noise)
 
+    def transform(self, frame, blending=None, inflection_point=None, smoothing=None, noise=None, **kwargs):
+        """
         Apply transformation to `te_columns` based on the encoding maps generated during `train()` method call.
 
-        :param H2OFrame frame: to which frame we are applying target encoding transformations.
-        :param str data_leakage_handling: Supported options:
-
-                1) "k_fold" - encodings for a fold are generated based on out-of-fold data.
-                2) "leave_one_out" - leave one out. Current row's response value is subtracted from the pre-calculated per-level frequencies.
-                3) "none" - we do not holdout anything. Using whole frame for training
-
-        :param float noise: the amount of random noise added to the target encoding.  This helps prevent overfitting. Defaults to 0.01 * range of y.
-        :param int seed: a random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
+        :param H2OFrame frame: the frame on which to apply the target encoding transformations.
+        :param boolean blending: If provided, this overrides the `blending` parameter on the model.
+        :param float inflection_point: If provided, this overrides the `inflection_point` parameter on the model.
+        :param float smoothing: If provided, this overrides the `smoothing` parameter on the model.
+        :param float noise: If provided, this overrides the amount of random noise added to the target encoding defined on the model, this helps prevent overfitting.
 
         :example:
         >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
@@ -305,20 +319,31 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         >>> titanic[response] = titanic[response].asfactor()
         >>> fold_col = "kfold_column"
         >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
-        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
-        ...                                        f=25,
-        ...                                        data_leakage_handling="leave_one_out",
-        ...                                        blending=True)
+        >>> titanic_te = H2OTargetEncoderEstimator(data_leakage_handling="leave_one_out",
+        ...                                        inflection_point=35,
+        ...                                        smoothing=25,
+        ...                                        blending=True,
+        ...                                        seed=1234)
         >>> titanic_te.train(x=predictors,
         ...                  y=response,
         ...                  training_frame=titanic)
-        >>> transformed = titanic_te.transform(frame=titanic,
-        ...                                    data_leakage_handling="leave_one_out",
-        ...                                    seed=1234)
+        >>> transformed = titanic_te.transform(frame=titanic)
         """
-        output = h2o.api("GET /3/TargetEncoderTransform", data={'model': self.model_id, 
-                                                                'frame': frame.key,
-                                                                'data_leakage_handling': data_leakage_handling,
-                                                                'noise': noise,
-                                                                'seed': seed})
+        for k in kwargs:
+            if k in ['seed', 'data_leakage_handling']:
+                warnings.warn("%s is deprecated in `transform` method and will be ignored. "
+                              "Instead, please ensure that it was set before training on the H2OTargetEncoderEstimator model." % k, H2ODeprecationWarning)
+            else:
+                raise TypeError("transform() got an unexpected keyword argument '%s'" % k)
+
+        params = dict(
+            model=self.model_id,
+            frame=frame.key,
+            blending=blending if blending is not None else self.blending,  # always need to provide blending here as we can't represent unset value 
+            inflection_point=inflection_point,
+            smoothing=smoothing,
+            noise=noise,
+        )
+
+        output = h2o.api("GET /3/TargetEncoderTransform", data=params)
         return h2o.get_frame(output["name"])

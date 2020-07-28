@@ -12,6 +12,8 @@ from h2o.utils.compatibility import *  # NOQA
 from functools import wraps
 import warnings
 
+from h2o.exceptions import H2ODeprecationWarning
+
 
 def h2o_meta(*args):
     return with_metaclass(H2OMeta, *args)
@@ -31,6 +33,28 @@ def extend_and_replace(cls, **attrs):
     return new_cls
 
 
+def deprecated_property(name, replaced_by):
+    """
+    Creates a deprecated property that forwards logic to `replaced_by` property.
+    :param name: name of the deprecated property.
+    :param replaced_by: the new property object.
+    :return: the deprecated property.
+    """
+    new_name = replaced_by.fget.__name__
+    doc = "[Deprecated] Use ``{}`` instead".format(new_name)
+    msg = "``{}`` is deprecated, please use ``{}`` instead.".format(name, new_name)
+    
+    def wrap(accessor):
+        if accessor is None: return 
+        
+        def wrapper(*args):
+            warnings.warn(msg, H2ODeprecationWarning, 2)
+            return accessor(*args)
+        return wrapper
+        
+    return property(wrap(replaced_by.fget), wrap(replaced_by.fset), wrap(replaced_by.fdel), doc)
+    
+    
 class Deprecated(object):
     """
     Decorator for deprecated methods.
@@ -59,14 +83,14 @@ class Deprecated(object):
 
     def __call__(self, fn):
         msg = self._msg if self._msg is not None \
-            else "{} is deprecated, please use ``{}`` instead.".format(fullname(fn), fullname(self._replaced_by)) if self._replaced_by is not None \
-            else "{} is deprecated.".format(fullname(fn))
+            else "``{}`` is deprecated, please use ``{}`` instead.".format(fullname(fn), fullname(self._replaced_by)) if self._replaced_by is not None \
+            else "``{}`` is deprecated.".format(fullname(fn))
         fn.__doc__ = "{msg}\n\n{doc}".format(msg=msg, doc=fn.__doc__) if fn.__doc__ is not None else msg
         call_fn = self._replaced_by or fn
 
         @wraps(fn)
         def wrapper(*args, **kwargs):
-            warnings.warn(msg, DeprecationWarning, 2)
+            warnings.warn(msg, H2ODeprecationWarning, 2)
             return call_fn(*args, **kwargs)
 
         return wrapper

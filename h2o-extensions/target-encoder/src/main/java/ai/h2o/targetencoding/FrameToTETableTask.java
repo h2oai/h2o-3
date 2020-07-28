@@ -8,7 +8,7 @@ import water.util.IcedHashMap;
  * This task extracts the estimates from a TE frame, and stores them into a Map keyed by the categorical value.
  * A TE frame is just a frame with 3 or 4 columns: [categorical, fold (optional), numerator, denominator], each value from the category column being unique .
  */
-public class FrameToTETableTask extends MRTask<FrameToTETableTask> {
+class FrameToTETableTask extends MRTask<FrameToTETableTask> {
   
   // IcedHashMap does not support integer keys so we will store indices as strings.
   public IcedHashMap<String, TEComponents> _table = new IcedHashMap<>();

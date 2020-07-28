@@ -27,8 +27,8 @@ public class TargetEncoderModelTest extends TestUtil{
 
       TargetEncoderModel.TargetEncoderParameters parameters = new TargetEncoderModel.TargetEncoderParameters();
       parameters._data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None;
-      parameters._k = 0.3;
-      parameters._f = 0.7;
+      parameters._inflection_point = 0.3;
+      parameters._smoothing = 0.7;
       parameters._blending = true;
       parameters._response_column = "IsDepDelayed";
       parameters._ignored_columns = ignoredColumns(trainingFrame, "Origin", parameters._response_column);

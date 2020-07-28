@@ -34,6 +34,7 @@ def gen_module(schema, algo, module):
 
     required_params = get_customizations_or_defaults_for(algo, 'extensions.required_params', [])
     extra_params = get_customizations_or_defaults_for(algo, 'extensions.extra_params', [])
+    ellipsis_param = get_customizations_for(algo, 'extensions.ellipsis_param')
     model_name = algo_to_modelname(algo)
 
     update_param_defaults = get_customizations_for('defaults', 'update_param')
@@ -120,13 +121,15 @@ def gen_module(schema, algo, module):
     for k, v in extra_params.items():
         sig_pnames.append(k)
         sig_params.append("%s = %s" % (k, v))
+    if ellipsis_param is not None:
+        sig_params.append("...")
 
     param_indent = len("h2o.%s <- function(" % module)
     yield reformat_block("h2o.%s <- function(%s)" % (module, ',\n'.join(sig_params)), indent=param_indent, indent_first=False)
 
     # start function body
     yield "{"
-    yield '\n'.join(gen_set_params(algo, sig_pnames, schema_params, required_params))
+    yield '\n'.join(gen_set_params(algo, sig_pnames, schema_params, required_params, ellipsis_param=ellipsis_param))
 
     yield ""
     yield "  # Error check and build model"
@@ -158,7 +161,7 @@ def gen_module(schema, algo, module):
     
         # start train_segments-function body
         yield "{"
-        yield '\n'.join(gen_set_params(algo, bulk_pnames, schema_params, required_params, bulk_pnames_skip))
+        yield '\n'.join(gen_set_params(algo, bulk_pnames, schema_params, required_params, skip_params=bulk_pnames_skip, ellipsis_param=ellipsis_param))
         yield ""
         yield "  # Build segment-models specific parameters"
         yield "  segment_parms <- list()"
@@ -182,7 +185,9 @@ def gen_module(schema, algo, module):
         yield module_extensions
 
 
-def gen_set_params(algo, pnames, schema_params, required_params, skip_params=None):
+def gen_set_params(algo, pnames, schema_params, required_params, skip_params=None, ellipsis_param=None):
+    if ellipsis_param:
+        yield reformat_block(ellipsis_param, indent=2)
     if skip_params:
         yield "  # formally define variables that were excluded from function parameters"
         for pname in skip_params:

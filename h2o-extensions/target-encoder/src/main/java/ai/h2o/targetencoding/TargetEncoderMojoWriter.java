@@ -44,8 +44,8 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
     TargetEncoderModel.TargetEncoderParameters teParams = output._parms;
     writekv("with_blending", teParams._blending);
     if (teParams._blending) {
-      writekv("inflection_point", teParams._k);
-      writekv("smoothing", teParams._f);
+      writekv("inflection_point", teParams._inflection_point);
+      writekv("smoothing", teParams._smoothing);
     }
     writekv("priorMean", output._prior_mean);
     

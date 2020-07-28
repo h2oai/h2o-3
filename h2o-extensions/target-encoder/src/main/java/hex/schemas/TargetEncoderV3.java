@@ -1,8 +1,10 @@
 package hex.schemas;
 import ai.h2o.targetencoding.TargetEncoder;
+import ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderBuilder;
 import ai.h2o.targetencoding.TargetEncoderModel;
 import water.api.API;
+import water.api.EnumValuesProvider;
 import water.api.schemas3.ModelParametersSchemaV3;
 
 import java.util.ArrayList;
@@ -11,22 +13,39 @@ import java.util.List;
 public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, TargetEncoderV3, TargetEncoderV3.TargetEncoderParametersV3> {
   public static class TargetEncoderParametersV3 extends ModelParametersSchemaV3<TargetEncoderModel.TargetEncoderParameters, TargetEncoderParametersV3> {
     
-    @API(help = "Blending enabled/disabled", level = API.Level.secondary)
+    @API(help = "If true, enables blending of posterior probabilities (computed for a given categorical value) " +
+            "with prior probabilities (computed on the entire set). " +
+            "This allows to mitigate the effect of categorical values with small cardinality. " +
+            "The blending effect can be tuned using the `inflection_point` and `smoothing` parameters.",
+            level = API.Level.secondary)
     public boolean blending;
 
-    @API(help = "Inflection point. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.", level = API.Level.secondary)
-    public double k;
+    @API(help = "Inflection point of the sigmoid used to blend probabilities (see `blending` parameter). " +
+            "For a given categorical value, if it appears less that `inflection_point` in a data sample, " +
+            "then the influence of the posterior probability will be smaller than the prior.",
+            level = API.Level.secondary)
+    public double inflection_point;
 
-    @API(help = "Smoothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.", level = API.Level.secondary)
-    public double f;
+    @API(help = "Smoothing factor corresponds to the inverse of the slope at the inflection point " +
+            "on the sigmoid used to blend probabilities (see `blending` parameter). " +
+            "If smoothing tends towards 0, then the sigmoid used for blending turns into a Heaviside step function.",
+            level = API.Level.secondary)
+    public double smoothing;
 
-    @API(help = "Data leakage handling strategy.", values = {"None", "KFold", "LeaveOneOut"}, level = API.Level.secondary)
-    public TargetEncoder.DataLeakageHandlingStrategy data_leakage_handling;
+    @API(help = "Data leakage handling strategy used to generate the encoding. Supported options are:\n" +
+            "1) \"none\" (default) - no holdout, using the entire training frame.\n" +
+            "2) \"leave_one_out\" - current row's response value is subtracted from the per-level frequencies pre-calculated on the entire training frame.\n" +
+            "3) \"k_fold\" - encodings for a fold are generated based on out-of-fold data.\n",
+            valuesProvider = DataLeakageHandlingStrategyProvider.class, 
+            level = API.Level.secondary)
+    public DataLeakageHandlingStrategy data_leakage_handling;
 
-    @API(help = "Noise level", required = false, direction = API.Direction.INPUT, gridable = true, level = API.Level.expert)
-    public double noise_level;
+    @API(help = "The amount of noise to add to the encoded column. " +
+            "Use 0 to disable noise, and -1 (=AUTO) to let the algorithm determine a reasonable amount of noise.",
+            required = false, direction = API.Direction.INPUT, gridable = true, level = API.Level.expert)
+    public double noise;
     
-    @API(help = "Seed for the specified noise level", required = false, direction = API.Direction.INPUT)
+    @API(help = "Seed used to generate the noise. By default, the seed is chosen randomly.", required = false, direction = API.Direction.INPUT)
     public long seed;
   
     @Override
@@ -41,18 +60,9 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
 
       return params.toArray(new String[0]);
     }
-
-    @Override
-    public TargetEncoderParametersV3 fillFromImpl(TargetEncoderModel.TargetEncoderParameters impl) {
-      return fillFromImpl(impl, new String[0]);
-    }
-
-    @Override
-    protected TargetEncoderParametersV3 fillFromImpl(TargetEncoderModel.TargetEncoderParameters impl, String[] fieldsToSkip) {
-      final TargetEncoderParametersV3 teParamsV3 = super.fillFromImpl(impl, fieldsToSkip);
-      teParamsV3.k = impl._k;
-      teParamsV3.f = impl._f;
-      return teParamsV3;
-    }
+  }
+  
+  public static final class DataLeakageHandlingStrategyProvider extends EnumValuesProvider<DataLeakageHandlingStrategy> {
+    public DataLeakageHandlingStrategyProvider() { super(TargetEncoder.DataLeakageHandlingStrategy.class); }
   }
 }

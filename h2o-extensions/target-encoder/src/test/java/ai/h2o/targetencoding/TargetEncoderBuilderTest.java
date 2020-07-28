@@ -84,7 +84,6 @@ public class TargetEncoderBuilderTest {
       targetEncoderParameters._response_column = responseColumnName;
       targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", targetEncoderParameters._response_column);
       targetEncoderParameters.setTrain(fr._key);
-      targetEncoderParameters._ignore_const_cols = false;
 
       TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
       targetEncoderModel = builder.trainModel().get();
@@ -167,6 +166,7 @@ public class TargetEncoderBuilderTest {
       targetEncoderParameters._ignored_columns = ignoredColumns(fr,
               ArrayUtils.append(teColumns, targetEncoderParameters._response_column, targetEncoderParameters._fold_column));
       targetEncoderParameters._train = fr._key;
+      targetEncoderParameters._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
 
       TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
       TargetEncoderModel targetEncoderModel = builder.trainModel().get();
@@ -174,10 +174,9 @@ public class TargetEncoderBuilderTest {
 
       Frame transformedTrainWithModelFromBuilder = targetEncoderModel.transform(
               fr,
-              DataLeakageHandlingStrategy.KFold,
               null, 
-              -1,
-              targetEncoderParameters._seed);
+              -1
+      );
       Scope.track(transformedTrainWithModelFromBuilder);
       
       //Stage 2: 

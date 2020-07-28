@@ -22,7 +22,7 @@ import warnings
 import h2o
 from h2o.base import Keyed
 from h2o.display import H2ODisplay
-from h2o.exceptions import H2OTypeError, H2OValueError
+from h2o.exceptions import H2OTypeError, H2OValueError, H2ODeprecationWarning
 from h2o.expr import ExprNode
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
@@ -3104,7 +3104,7 @@ class H2OFrame(Keyed):
         assert_is_type(axis, 0, 1)
         # Deprecated since 2016-10-14,
         if "na_rm" in kwargs:
-            warnings.warn("Parameter na_rm is deprecated; use skipna instead", category=DeprecationWarning)
+            warnings.warn("Parameter na_rm is deprecated; use skipna instead", category=H2ODeprecationWarning)
             na_rm = kwargs.pop("na_rm")
             assert_is_type(na_rm, bool)
             skipna = na_rm  # don't assign to skipna directly, to help with error reporting
@@ -3146,7 +3146,7 @@ class H2OFrame(Keyed):
         assert_is_type(axis, 0, 1)
         # Deprecated since 2016-10-14,
         if "na_rm" in kwargs:
-            warnings.warn("Parameter na_rm is deprecated; use skipna instead", category=DeprecationWarning)
+            warnings.warn("Parameter na_rm is deprecated; use skipna instead", category=H2ODeprecationWarning)
             na_rm = kwargs.pop("na_rm")
             assert_is_type(na_rm, bool)
             skipna = na_rm  # don't assign to skipna directly, to help with error reporting

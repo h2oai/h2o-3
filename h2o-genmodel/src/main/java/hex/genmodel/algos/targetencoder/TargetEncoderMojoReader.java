@@ -107,7 +107,7 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
   }
 
   @Override public String mojoVersion() {
-    return "1.10";
+    return "1.00";
   }
 
 }

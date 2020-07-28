@@ -18,7 +18,7 @@ import java.util.Map;
 
 public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> {
 
-  protected static final String ALGO_NAME = "TargetEncoder";
+  public static final String ALGO_NAME = "TargetEncoder";
 
   private final TargetEncoder _targetEncoder;
 
@@ -34,10 +34,10 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   public static class TargetEncoderParameters extends Model.Parameters {
     public boolean _blending = false;
-    public double _k = TargetEncoder.DEFAULT_BLENDING_PARAMS.getK();
-    public double _f = TargetEncoder.DEFAULT_BLENDING_PARAMS.getF();
+    public double _inflection_point = TargetEncoder.DEFAULT_BLENDING_PARAMS.getInflectionPoint();
+    public double _smoothing = TargetEncoder.DEFAULT_BLENDING_PARAMS.getSmoothing();
     public DataLeakageHandlingStrategy _data_leakage_handling = DataLeakageHandlingStrategy.None;
-    public double _noise_level = 0.01;
+    public double _noise = 0.01;
     
     @Override
     public String algoName() {
@@ -60,7 +60,12 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     }
 
     public BlendingParams getBlendingParameters() {
-      return _k!=0 && _f!=0 ? new BlendingParams(_k, _f) : TargetEncoder.DEFAULT_BLENDING_PARAMS;
+      return _inflection_point!=0 && _smoothing!=0 ? new BlendingParams(_inflection_point, _smoothing) : TargetEncoder.DEFAULT_BLENDING_PARAMS;
+    }
+
+    @Override
+    protected boolean defaultDropConsCols() {
+      return false;
     }
   }
 
@@ -123,23 +128,21 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   /**
    * Transform with noise
    * @param data Data to transform
-   * @param strategy The strategy specifying how to prevent data leakage {@link DataLeakageHandlingStrategy}
    * @param blendingParams Parameters for blending. If null, blending parameters from models parameters are loaded. 
    *                       If those are not set, DEFAULT_BLENDING_PARAMS from TargetEncoder class are used.
    * @param noiseLevel Level of noise applied (use -1 for default noise level, 0 to disable noise).
-   * @param seed
    * @return An instance of {@link Frame} with transformed data, registered in DKV.
    */
-  public Frame transform(Frame data, DataLeakageHandlingStrategy strategy, BlendingParams blendingParams, double noiseLevel, long seed) {
+  public Frame transform(Frame data, BlendingParams blendingParams, double noiseLevel) {
     return _targetEncoder.applyTargetEncoding(
             data, 
             _parms._response_column, 
             _output._target_encoding_map, 
-            strategy,
+            _parms._data_leakage_handling,
             _parms._fold_column, 
             blendingParams, 
             noiseLevel,
-            seed
+            _parms._seed
     );
   }
 
@@ -161,7 +164,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
             leakageHandlingStrategy,
             _parms._fold_column, 
             blendingParams,
-            _parms._noise_level, 
+            _parms._noise, 
             _parms._seed, 
             Key.<Frame>make(destination_key)
     );

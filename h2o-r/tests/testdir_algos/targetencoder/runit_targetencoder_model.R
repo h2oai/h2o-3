@@ -38,27 +38,17 @@ test.model.targetencoder <- function() {
     }
 
     test.that.noise.could.be.specified.during.transformation <- function() {
-
-        # With deprecated API
-        data <- h2o.importFile(path = locate('smalldata/gbm_test/titanic.csv'), col.types=list(by.col.name=c("survived"),types=c("factor")))
-        te_cols <- list("embarked")
-
+        data <- h2o.importFile(path = locate('smalldata/gbm_test/titanic.csv'), col.types=list(by.col.name=c("survived"), types=c("factor")))
         data$fold <- h2o.kfold_column(data, nfolds = 5, seed = 1234)
 
-        encoding_map <- h2o.target_encode_fit(data, te_cols, "survived", fold_column = "fold")
-
-        # transform training data with `kfold` and `noise`
-        encoded_train_with_target_encode_transform <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE, holdout_type = "kfold", fold_column = "fold", noise = 0.01, seed = 1234)
-
-        # With current API
-        data2 <- h2o.importFile(path = locate('smalldata/gbm_test/titanic.csv'), col.types=list(by.col.name=c("survived"),types=c("factor")))
-        data2$fold <- h2o.kfold_column(data2, nfolds = 5, seed = 1234)
-
         encoded_columns <- c('embarked')
-        target_encoder <- h2o.targetencoder(training_frame = data2, x = encoded_columns, y = "survived", fold_column = "fold", data_leakage_handling = "KFold")
-        encoded_train_with_transform <- h2o.transform(target_encoder, data2, noise=0.01, seed = 1234) # default value for seed in new API was 0 (ie default value for on backend for variable of type long)
+        target_encoder <- h2o.targetencoder(training_frame = data, x = encoded_columns, y = "survived", fold_column = "fold", data_leakage_handling = "KFold")
+        encoded_train_with_transform_1 <- h2o.transform(target_encoder, data, noise=0.01, seed = 1234) # default value for seed in new API was 0 (ie default value for on backend for variable of type long)
+        encoded_train_with_transform_2 <- h2o.transform(target_encoder, data, noise=0.01, seed = 1234) # default value for seed in new API was 0 (ie default value for on backend for variable of type long)
+        encoded_train_with_transform_3 <- h2o.transform(target_encoder, data, noise=0.01, seed = 1) # default value for seed in new API was 0 (ie default value for on backend for variable of type long)
 
-        compareFrames(encoded_train_with_target_encode_transform, encoded_train_with_transform)
+        compareFrames(encoded_train_with_transform_1, encoded_train_with_transform_2)
+        expect_failure(compareFrames(encoded_train_with_transform_1, encoded_train_with_transform_3))
     }
 
     makeSuite(
