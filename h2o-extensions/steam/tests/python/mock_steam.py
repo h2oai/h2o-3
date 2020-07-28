@@ -1,5 +1,6 @@
 import websocket
 import json
+import traceback
 from threading import Thread, Condition
 from base64 import b64encode
 
@@ -13,7 +14,8 @@ class MockSteam:
         else:
             headers = None
         self.messages = []
-        self.connected = Condition()
+        self.connected = False
+        self.connected_lock = Condition()
         self.have_message = Condition()
 
         def on_msg(ws, msg):
@@ -30,6 +32,8 @@ class MockSteam:
             print("run(%s, %s)" % (uri, headers))
             try:
                 self.ws.run_forever()
+            except:
+                traceback.print_exc()
             finally:
                 print("run(-)")
 
@@ -37,11 +41,14 @@ class MockSteam:
         client.start()
 
         try:
-            self.connected.acquire()
-            self.connected.wait()
-            print("Connected")
+            self.connected_lock.acquire()
+            self.connected_lock.wait(10)
+            if not self.connected:
+                raise Exception("Failed to connect to websocket.")
+            else:
+                print("Connected")
         finally:
-            self.connected.release()
+            self.connected_lock.release()
 
     def close(self):
         self.ws.close()
@@ -57,10 +64,10 @@ class MockSteam:
 
     def on_open(self, ws):
         try:
-            self.connected.acquire()
-            self.connected.notify_all()
+            self.connected_lock.acquire()
+            self.connected_lock.notify_all()
         finally:
-            self.connected.release()
+            self.connected_lock.release()
 
     def wait_for_message(self, timeout=5):
         try:
