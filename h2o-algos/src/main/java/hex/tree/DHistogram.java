@@ -494,8 +494,13 @@ public final class DHistogram extends Iced {
       _vals[_vals_dim*b + 1] += wy;
       _vals[_vals_dim*b + 2] += wyy;
       if (_vals_dim >= 5 && !Double.isNaN(resp[k])) { // FIXME (PUBDEV-7553): This needs to be applied even with monotone constraints disabled
+        if (_dist._family.equals(DistributionFamily.quantile)) {
+          _vals[_vals_dim * b + 3] += _dist.deviance(weight, y, _pred1);
+          _vals[_vals_dim * b + 4] += _dist.deviance(weight, y, _pred2);
+        } else {
           _vals[_vals_dim * b + 3] += weight * (_pred1 - y) * (_pred1 - y);
           _vals[_vals_dim * b + 4] += weight * (_pred2 - y) * (_pred2 - y);
+        }
         if (_vals_dim >= 6) {
           _vals[_vals_dim * b + 5] += _dist.gammaDenom(weight, resp[k], y, preds[k]);
           if (_vals_dim == 7) {
