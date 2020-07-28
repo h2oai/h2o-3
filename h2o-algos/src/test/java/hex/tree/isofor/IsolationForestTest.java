@@ -59,6 +59,28 @@ public class IsolationForestTest extends TestUtil {
   }
 
   @Test
+  public void testIFMaximumDepth() {
+    try {
+      Scope.enter();
+      Frame train = Scope.track(parse_test_file("smalldata/anomaly/ecg_discord_train.csv"));
+
+      IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
+      p._train = train._key;
+      p._seed = 0xDECAF;
+      p._ntrees = 7;
+      p._min_rows = 1;
+      p._max_depth = 0;
+      p._sample_size = 5;
+
+      IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      Scope.track_generic(model);
+      assertEquals(Integer.MAX_VALUE, model._parms._max_depth);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
   public void testEarlyStopping() {
     try {
       Scope.enter();

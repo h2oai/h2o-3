@@ -122,6 +122,7 @@ def grabRuntimeInfo(err_bound, reduction_factor, model, training_data, x_indices
     global actual_model_runtime
     global model_runtime_overrun
     global model_within_max_runtime
+    global system_overloaded
 
     unsupervised = ("glrm" in model.algo) or ("pca" in model.algo) or ("kmeans" in model.algo)
     if unsupervised:

@@ -48,7 +48,7 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help="Number of trees.", gridable = true)
     public int ntrees;
 
-    @API(help="Maximum tree depth.", gridable = true)
+    @API(help="Maximum tree depth (0 for unlimited).", gridable = true)
     public int max_depth;
 
     @API(help="Fewest allowed (weighted) observations in a leaf.", gridable = true)
