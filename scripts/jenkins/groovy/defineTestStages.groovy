@@ -565,8 +565,7 @@ def call(final pipelineContext) {
     ]
     HADOOP_MULTINODE_STAGES += [ stage ]
   }
-  // todo make additive
-  HADOOP_MULTINODE_STAGES = [
+  HADOOP_MULTINODE_STAGES = +[
       [
           stageName: "TEST External XGBoost on ${MULTINODE_CLUSTERS_CONFIGS[0].nameNode}",
           target: "test-steam-websocket", timeoutValue: 30,
