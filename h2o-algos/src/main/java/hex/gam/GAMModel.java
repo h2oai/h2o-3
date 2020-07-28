@@ -19,6 +19,8 @@ import water.util.*;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import static hex.gam.MatrixFrameUtils.GamUtils.equalColNames;
 import static hex.gam.MatrixFrameUtils.GamUtils.sortCoeffMags;
@@ -380,13 +382,9 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public String[] _responseDomains;
     public String _gam_transformed_center_key;
     final Family _family;
+    String[] _featureNames;
     
     public double dispersion(){ return _dispersion;}
-
-    @Override
-    public int nfeatures() {
-      return _names.length;
-    }
 
     @Override
     public int nclasses() {
@@ -412,6 +410,28 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public GAMModelOutput(GAM b, Frame adaptr, DataInfo dinfo) {
       super(b, adaptr);
       _dinfo = dinfo;
+      final int numColumns = b._parms._gam_columns.length + (b._parms.train().numCols() - b._parms._ignored_columns.length - 1);
+
+      final Set<String> names = new HashSet(b._parms.train().names().length);
+      for (String name: b._parms.train().names()){
+        names.add(name);
+      }
+      for(String ignored : b._parms._ignored_columns){
+        names.remove(ignored);
+      }
+      names.remove(b._parms._response_column);
+
+      _featureNames = new String[numColumns];
+      
+      int i = 0;
+      for (String name : names){
+        _featureNames[i++] = name;
+      }
+      
+      for (int j = 0; j < b._parms._gam_columns.length; j++) {
+        _featureNames[i++] = b._parms._gam_columns[j];
+      }
+      
       _domains = dinfo._adaptedFrame.domains(); // get domain of dataset predictors
       _family = b._parms._family;
       if (_family.equals(Family.quasibinomial)) {

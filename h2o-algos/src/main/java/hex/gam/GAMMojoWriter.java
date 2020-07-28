@@ -83,7 +83,15 @@ public class GAMMojoWriter extends ModelMojoWriter<GAMModel, GAMModel.GAMParamet
     }
     // store variable importance information
   }
-  
+
+  @Override
+  protected void writeNames() {
+    writeln("\n[columns]");
+    for (String name : model._output._featureNames) {
+      writeln(name);
+    }
+  }
+
   public String[] genTrainColGamCols(int gamColLength, int gamCColLength) {
     int colLength = model._output._names.length-gamCColLength+gamColLength-1;// to exclude response
     int normalColLength = model._output._names.length-gamCColLength-1;
