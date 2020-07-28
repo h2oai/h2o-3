@@ -51,10 +51,11 @@ def test():
     assert "hi_1_response" == hello_response["_id"]
     
     # load data
-    train = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/ecology_model.csv"))
-    train["Angaus"] = train["Angaus"].asfactor()
-    x = list(range(2, train.ncol))
-    y = "Angaus"
+    name_node = pyunit_utils.hadoop_namenode()
+    train = h2o.import_file("hdfs://" + name_node + "/datasets/chicagoCensus.csv")
+    x = list(range(0, train.ncol-1))
+    y = train.ncol-1
+    train = train[~train[y].isna(), :]
     model1 = H2OXGBoostEstimator(ntrees=5)
     model2 = H2OXGBoostEstimator(ntrees=5)
     
