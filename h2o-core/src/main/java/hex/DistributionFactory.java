@@ -444,35 +444,6 @@ class QuantileDistribution extends Distribution {
     }
 }
 
-class QuantileDistribution2 extends Distribution {
-
-    public QuantileDistribution2(Model.Parameters params){
-        super(params);
-    }
-
-    @Override
-    public double deviance(double w, double y, double f) {
-        double delta = y - f;
-        return delta < 0 ? w * delta * (_quantileAlpha-1) : w * delta * _quantileAlpha; 
-    }
-
-    @Override
-    public double negHalfGradient(double y, double f) {
-        double delta = y - f;
-        return delta < 0 ? _quantileAlpha-1 :  _quantileAlpha; }
-
-    @Override
-    public double initFNum(double w, double o, double y) {
-        return w * _quantileAlpha * (y - o);
-    }
-
-    @Override
-    public double initFDenom(double w, double o, double y) {
-        return w * _quantileAlpha;
-    }
-}
-
-
 /**
  * Custom distribution class to customized loss and prediction calculation.
  * Currently supported only for GBM algorithm.
