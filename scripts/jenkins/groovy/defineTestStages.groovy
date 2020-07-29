@@ -657,8 +657,6 @@ def call(final pipelineContext) {
     executeInParallel(HADOOP_MULTINODE_STAGES, pipelineContext)
   } else if (modeCode == MODE_XGB_CODE) {
     executeInParallel(XGB_STAGES, pipelineContext)
-  } else if (modeCode == MODE_EXTERNAL_XGB_CODE) {
-    executeInParallel(EXTERBAL_XGB_STAGES, pipelineContext)
   } else if (modeCode == MODE_COVERAGE_CODE) {
     executeInParallel(COVERAGE_STAGES, pipelineContext)
   } else if (modeCode == MODE_SINGLE_TEST_CODE) {
