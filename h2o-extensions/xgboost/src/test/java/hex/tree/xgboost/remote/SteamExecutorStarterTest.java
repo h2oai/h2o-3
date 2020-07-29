@@ -62,7 +62,6 @@ public class SteamExecutorStarterTest {
         Map<String, String> startResp = new HashMap<>();
         startResp.put(ID, startReq.get(ID) + "_response");
         startResp.put(TYPE, "xgboostClusterStartNotification");
-        startResp.put("uri", H2O.getIpPortString());
         startResp.put("status", "starting");
         return startResp;
     }
