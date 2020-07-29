@@ -1,15 +1,18 @@
 package hex.tree.isoforextended;
 
+import hex.FrameSplitter;
 import hex.ModelCategory;
 import hex.ScoreKeeper;
 import hex.psvm.psvm.MatrixUtils;
 import hex.tree.SharedTree;
+import jsr166y.CountedCompleter;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
+import water.util.RandomUtils;
 import water.util.VecUtils;
 
 import java.util.Arrays;
@@ -125,6 +128,19 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         @Override
         protected boolean doOOBScoring() {
             return true;
+        }
+
+        @Override
+        protected void scoreAndBuildTrees(boolean oob) {
+            IsolationTreeForkJoinTask [] iTreeTasks = new IsolationTreeForkJoinTask[_parms._ntrees];
+            for (int t = 0; t < _parms._ntrees; t++) {
+                iTreeTasks[t] = new IsolationTreeForkJoinTask(_train, _parms._seed);
+                H2O.submitTask(iTreeTasks[t]);
+            }
+            for (int t = 0; t < _parms._ntrees; t++) {
+                _iTrees[t] = iTreeTasks[t].getResult();
+            }
+            addCustomInfo(_model._output);
         }
 
         @Override
@@ -325,6 +341,52 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             if (n == 2)
                 return 1;
             return 2 * MathUtils.harmonicNumberEstimation(n - 1) - (2.0 * (n - 1.0)) / n;
+        }
+    }
+
+    private class IsolationTreeForkJoinTask extends H2O.H2OCountedCompleter<IsolationTreeForkJoinTask> {
+
+        private ExtendedIsolationForest.IsolationTree iTree;
+
+        public IsolationTreeForkJoinTask(Frame frame, Long seed) {
+
+        }
+
+        @Override
+        public void compute2() {
+            int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
+            int randomUnit = _rand.nextInt();
+
+            // remove auto generated features
+            byte[] subTypes = ArrayUtils.subarray(_train.types(), 0, _train.numCols() - 4);
+            Vec[] subFrame = ArrayUtils.subarray(_train.vecs(), 0, _train.numCols() - 4);
+            String[] subNames = ArrayUtils.subarray(_train.names(), 0, _train.numCols() - 4);
+            String[][] subDomains = ArrayUtils.subarray2DLazy(_train.domains(), 0, _train.numCols() - 4);
+
+            Frame subSample = new SubSampleTask(_parms._sample_size, _parms._seed + randomUnit)
+                    .doAll(subTypes, subFrame).outputFrame(Key.make(), subNames, subDomains);
+
+            this.iTree = new IsolationTree(subSample._key, heightLimit, _parms._seed + randomUnit, _parms.extension_level);
+            this.iTree.buildTree();
+//            this.iTree.print();
+//            iTree.printHeight();
+            tryComplete();
+        }
+
+        /** Blocking call to obtain a result of computation. */
+        public ExtendedIsolationForest.IsolationTree getResult() {
+            join();
+            return this.iTree;
+        }
+
+        @Override
+        public void onCompletion(CountedCompleter caller) {
+            System.out.println("onCompletion");
+        }
+        @Override
+        public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+            ex.printStackTrace();
+            return true;
         }
     }
 
