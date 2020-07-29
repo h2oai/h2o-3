@@ -1275,7 +1275,7 @@ class ModelBase(h2o_meta(Keyed)):
         ax.set_ylim(min(y), max(y))
         ax.set_zlabel('Partial dependence')
         title = '2D partial dependence plot for '+col_pairs[0] + ' and '+col_pairs[1]
-        if row_index > -1:
+        if row_index >= 0:
             title += ' and row index {}'.format(row_index)
         ax.set_title(title)
         return True
@@ -1370,7 +1370,7 @@ class ModelBase(h2o_meta(Keyed)):
         title = "Partial Dependence Plot for {}".format(col)
         if target:
             title += " and class {}".format(target)
-        if row_index > -1:
+        if row_index >= 0:
             title += " and row index {}".format(row_index)
         axs.set_title(title)
         axs.set_xlabel(pp.col_header[pp_start_index])
@@ -1426,7 +1426,7 @@ class ModelBase(h2o_meta(Keyed)):
             axs.set_ylim(min_y - 0.2 * abs(min_y), max_y + 0.2 * abs(max_y))
         axs.legend()
         title = "Partial Dependence Plot for {} and classes \n {}".format(col, ', '.join(targets))
-        if row_index > -1:
+        if row_index >= 0:
             title += " and row index {}".format(row_index)
         axs.set_title(title)
         axs.xaxis.grid()
