@@ -106,9 +106,22 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         throw new H2OIllegalArgumentException("training_frame", "grid", "Cannot append new models to a grid with different training input");
       grid.write_lock(_job);
     } else {
+      String[] hyperNames = _hyperSpaceWalker.getHyperParamNames();
+      String[] allHyperNames = hyperNames;
+      String[] hyperParamNamesConstraint = _hyperSpaceWalker.getHyperParamNamesConstraint();
+      if (hyperParamNamesConstraint.length > 0) {
+        allHyperNames = new String[hyperParamNamesConstraint.length+hyperNames.length-1];
+        System.arraycopy(hyperParamNamesConstraint, 0, allHyperNames, 0, hyperParamNamesConstraint.length);
+        int countIndex = hyperParamNamesConstraint.length;
+        for (int index=0; index < hyperNames.length; index++) {
+          if (!hyperNames[index].equals("constraints")) {
+            allHyperNames[countIndex++] = hyperNames[index];
+          }
+        }
+      }
       grid = new Grid<>(_result,
                       _hyperSpaceWalker.getParams(),
-                      _hyperSpaceWalker.getHyperParamNames(),
+                      allHyperNames,
                       _hyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy());
       grid.delete_and_lock(_job);
     }

@@ -21,8 +21,9 @@ class test_gam_gridsearch_specific:
     myX = []
     myY = []
     search_criteria = {'strategy': 'Cartesian'}
-    hyper_parameters = {'lambda': [0, 0.01],
-                        'constraints': [{'scale': [[1, 1, 1], [2, 2, 2]], 
+    hyper_parameters = {'alpha': [0.9, 0.01],
+                        'constraints': [{'lambda_search':True, 'nlambdas':[5,10,15], 'gam_columns': [["C11", "C12", "C13"]]},
+                                        {'scale': [[1, 1, 1], [2, 2, 2]], 
                                          'num_knots': [[5, 5, 5], [5, 6, 7]],
                                          'gam_columns': [["C11", "C12", "C13"]]},
                                         {'scale': [[1, 1], [2, 2]],
@@ -31,7 +32,7 @@ class test_gam_gridsearch_specific:
     manual_gam_models = []
     h2o_model = []
     num_grid_models = 0
-    num_expected_models = 24
+    num_expected_models = 30
 
     def __init__(self):
         self.setup_data()
@@ -52,8 +53,8 @@ class test_gam_gridsearch_specific:
         self.h2o_model = H2OGridSearch(H2OGeneralizedAdditiveEstimator(
             family = "gaussian", keep_gam_cols = True), self.hyper_parameters, search_criteria=self.search_criteria)
         self.h2o_model.train(x = self.myX, y = self.myY, training_frame = self.h2o_data)
-        for model in self.manual_gam_models:
-            model.train(x = self.myX, y = self.myY, training_frame = self.h2o_data)
+        # for model in self.manual_gam_models:
+        #     model.train(x = self.myX, y = self.myY, training_frame = self.h2o_data)
 
     def match_models(self):
         for model in self.manual_gam_models:
