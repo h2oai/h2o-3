@@ -1745,7 +1745,8 @@ def equal_two_dicts(dict1, dict2, tolerance=1e-6, throwError=True):
                 else:
                     return False
                 
-def equal_two_arrays(array1, array2, eps, tolerance, throwError=True):
+                
+def equal_two_arrays(array1, array2, eps=1e-6, tolerance=1e-6, throw_error=True):
     """
     This function will compare the values of two python tuples.  First, if the values are below
     eps which denotes the significance level that we care, no comparison is performed.  Next,
@@ -1755,6 +1756,7 @@ def equal_two_arrays(array1, array2, eps, tolerance, throwError=True):
     :param array2: numpy array containing some values of interest that we would like to compare it with array1
     :param eps: significance level that we care about in order to perform the comparison
     :param tolerance: threshold for which we allow the two array elements to be different by
+    :param throw_error: throws error when two arrays are not equal
 
     :return: True if elements in array1 and array2 are close and False otherwise
     """
@@ -1767,30 +1769,29 @@ def equal_two_arrays(array1, array2, eps, tolerance, throwError=True):
                 # values to be compared are not too small, perform comparison
 
                 # look at differences between elements of array1 and array2
-                compare_val_h2o_Py = abs(array1[ind] - array2[ind])
+                compare_val_h2o_py = abs(array1[ind] - array2[ind])
 
-                if compare_val_h2o_Py > tolerance:    # difference is too high, return false
-                    if throwError:
+                if compare_val_h2o_py > tolerance:    # difference is too high, return false
+                    if throw_error:
                         assert False, "Array 1 value {0} and array 2 value {1} do not agree.".format(array1[ind], array2[ind])
                     else:
                         return False
 
         return True                                     # return True, elements of two arrays are close enough
     else:
-        if throwError:
+        if throw_error:
             assert False, "The two arrays are of different size!"
         else:
             return False
+        
 
-def equal_2D_tables(table1, table2, tolerance=1e-6):
+def equal_2d_tables(table1, table2, tolerance=1e-6):
     """
-    This function will compare the values of two python tuples.  First, if the values are below
-    eps which denotes the significance level that we care, no comparison is performed.  Next,
+    This function will compare the values of two python tuples. 
     False is returned if the different between any elements of the two array exceeds some tolerance.
 
-    :param array1: numpy array containing some values of interest
-    :param array2: numpy array containing some values of interest that we would like to compare it with array1
-    :param eps: significance level that we care about in order to perform the comparison
+    :param table1: numpy array containing some values of interest
+    :param table2: numpy array containing some values of interest that we would like to compare it with array1
     :param tolerance: threshold for which we allow the two array elements to be different by
 
     :return: True if elements in array1 and array2 are close and False otherwise
@@ -4035,9 +4036,9 @@ def compare_weightedStats(model, dataframe, xlist, xname, weightV, pdpTDTable, t
     wMean = extract_col_value_H2OTwoDimTable(pdpTDTable, "mean_response") # stats for age predictor
     wStd = extract_col_value_H2OTwoDimTable(pdpTDTable, "stddev_response")
     wStdErr = extract_col_value_H2OTwoDimTable(pdpTDTable, "std_error_mean_response")
-    equal_two_arrays(weightStat[0], wMean, tol, tol, throwError=True)
-    equal_two_arrays(weightStat[1], wStd, tol, tol, throwError=True)
-    equal_two_arrays(weightStat[2], wStdErr, tol, tol, throwError=True)
+    equal_two_arrays(weightStat[0], wMean, tol, tol, throw_error=True)
+    equal_two_arrays(weightStat[1], wStd, tol, tol, throw_error=True)
+    equal_two_arrays(weightStat[2], wStdErr, tol, tol, throw_error=True)
 
 
 def manual_partial_dependence(model, dataframe, xlist, xname, weightV):
