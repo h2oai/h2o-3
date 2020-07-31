@@ -416,7 +416,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         Stop early when there is no more relative improvement on train or validation (if provided)
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("early_stopping")
 
@@ -432,7 +432,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         Number of lambdas to be used in a search. Default indicates: If alpha is zero, with lambda search set to True,
         the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression) otherwise it is set to 100.
 
-        Type: ``int``  (default: ``0``).
+        Type: ``int``  (default: ``-1``).
         """
         return self._parms.get("nlambdas")
 
@@ -603,7 +603,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
         values above are 1E-8 and 1E-6 respectively.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``-1``).
         """
         return self._parms.get("gradient_epsilon")
 
@@ -635,7 +635,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
         of response does not reflect reality.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``-1``).
         """
         return self._parms.get("prior")
 
