@@ -1120,7 +1120,7 @@ class ModelBase(h2o_meta(Keyed)):
                 raise H2OValueError("Column %s does not exist in the data frame" % weight_column)
             weight_column = data.names.index(weight_column)
         
-        if row_index:
+        if row_index is not None:
             if not isinstance(row_index, int):
                 raise H2OValueError("Row index should be of type int.")
         else:
@@ -1155,7 +1155,7 @@ class ModelBase(h2o_meta(Keyed)):
 
         # Plot partial dependence plots using matplotlib
         self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
-                                      kwargs["user_cols"], kwargs["num_user_splits"], plot_stddev, cols, save_to_file, targets)
+                                      kwargs["user_cols"], kwargs["num_user_splits"], plot_stddev, cols, save_to_file, row_index, targets)
         return pps
 
     def __generate_user_splits(self, user_splits, data, kwargs):
@@ -1209,7 +1209,7 @@ class ModelBase(h2o_meta(Keyed)):
             kwargs["num_user_splits"] = None
 
     def __generate_partial_plots(self, num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
-                                 user_cols, user_num_splits, plot_stddev, cols, save_to_file, targets):
+                                 user_cols, user_num_splits, plot_stddev, cols, save_to_file, row_index, targets):
         # Plot partial dependence plots using matplotlib
         to_fig = num_1dpdp + num_2dpdp
         if plot and to_fig > 0:     # plot 1d pdp for now
@@ -1232,14 +1232,14 @@ class ModelBase(h2o_meta(Keyed)):
                     if axes_3d is None or cm is None or plt is None:    # quit if cannot find toolbox
                         break
                     fig_plotted = self.__plot_2d_pdp(fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pps[i], nbins,
-                                                     user_cols, user_num_splits, plot_stddev, cm, i)                  
+                                                     user_cols, user_num_splits, plot_stddev, cm, i, row_index)                  
                 else:  # plot 1D pdp
                     col = cols[i]
                     if targets is None or target:
-                        fig_plotted = self.__plot_1d_pdp(col, i, data, pps[i], fig, gxs, plot_stddev, target)
+                        fig_plotted = self.__plot_1d_pdp(col, i, data, pps[i], fig, gxs, plot_stddev, row_index, target)
                     else:
                         fig_plotted = self.__plot_1d_pdp_multinomial(col, i, data, pps, data_index, fig, gxs, cm, 
-                                                                     plot_stddev, targets)
+                                                                     plot_stddev, row_index, targets)
                         data_index = data_index + len(targets)
             if fig_plotted:
                 fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
@@ -1250,7 +1250,7 @@ class ModelBase(h2o_meta(Keyed)):
                 plt.savefig(save_to_file)
 
     def __plot_2d_pdp(self, fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pp, nbins, user_cols, user_num_splits, 
-                      plot_stddev, cm, i):
+                      plot_stddev, cm, i, row_index):
         ax = fig.add_subplot(gxs[i], projection='3d')
         col_pairs = col_pairs_2dpdp[i-num_1dpdp]
         x = self.__grab_values(pp, 0, data, col_pairs[0], ax) # change to numpy 2d_array
@@ -1275,19 +1275,22 @@ class ModelBase(h2o_meta(Keyed)):
         ax.set_ylim(min(y), max(y))
         ax.set_zlabel('Partial dependence')
         title = '2D partial dependence plot for '+col_pairs[0] + ' and '+col_pairs[1]
+        if row_index >= 0:
+            title += ' and row index {}'.format(row_index)
         ax.set_title(title)
         return True
     
-    def __plot_1d_pdp(self, col, i, data, pp, fig, gxs, plot_stddev, target=None):
+    def __plot_1d_pdp(self, col, i, data, pp, fig, gxs, plot_stddev, row_index, target=None):
         cat = data[col].isfactor()[0]
         axs = fig.add_subplot(gxs[i])
-        self.__set_axs_1d(axs, plot_stddev, cat, pp, col, target) 
+        self.__set_axs_1d(axs, plot_stddev, cat, pp, col, row_index, target) 
         return True
     
-    def __plot_1d_pdp_multinomial(self, col, i, data, pps, data_start_index, fig, gxs, cm, plot_stddev, targets):
+    def __plot_1d_pdp_multinomial(self, col, i, data, pps, data_start_index, fig, gxs, cm, plot_stddev, row_index, 
+                                    targets):
         cat = data[col].isfactor()[0]
         axs = fig.add_subplot(gxs[i])
-        self.__set_axs_1d_multinomial(axs, cm, plot_stddev, cat, pps, data_start_index, col, targets)
+        self.__set_axs_1d_multinomial(axs, cm, plot_stddev, cat, pps, data_start_index, col, row_index, targets)
         return True
         
     # change x, y, z to be 2-D numpy arrays in order to plot it.
@@ -1335,7 +1338,7 @@ class ModelBase(h2o_meta(Keyed)):
         else:
             return pp[index]
         
-    def __set_axs_1d(self, axs, plot_stddev, cat, pp, col, target):
+    def __set_axs_1d(self, axs, plot_stddev, cat, pp, col, row_index, target):
         pp_start_index = 0
         x = pp[pp_start_index]
         y = pp[pp_start_index+1]
@@ -1349,7 +1352,7 @@ class ModelBase(h2o_meta(Keyed)):
             x = range(len(labels))
             fmt = "o"
             axs.set_xticks(x)
-            axs.set_xticklabels(labels)
+            axs.set_xticklabels(labels, rotation=45)
             axs.set_xlim(min(x) - 0.2, max(x) + 0.2)
         if plot_stddev:
             std = pp[pp_start_index+2]
@@ -1364,17 +1367,18 @@ class ModelBase(h2o_meta(Keyed)):
         else:
             axs.plot(x, y, fmt, label=target)
             axs.set_ylim(min(y) - 0.2 * abs(min(y)), max(y) + 0.2 * abs(max(y)))
+        title = "Partial Dependence Plot for {}".format(col)
         if target:
-            axs.set_title("Partial Dependence Plot for {} and class {}".format(col, target))
-            axs.legend()
-        else:
-            axs.set_title("Partial Dependence Plot for {}".format(col))
+            title += " and class {}".format(target)
+        if row_index >= 0:
+            title += " and row index {}".format(row_index)
+        axs.set_title(title)
         axs.set_xlabel(pp.col_header[pp_start_index])
         axs.set_ylabel(pp.col_header[pp_start_index+1])
         axs.xaxis.grid()
         axs.yaxis.grid()
         
-    def __set_axs_1d_multinomial(self, axs, cm, plot_stddev, cat, pps, data_start_index, col, targets):
+    def __set_axs_1d_multinomial(self, axs, cm, plot_stddev, cat, pps, data_start_index, col, row_index, targets):
         pp_start_index = 0
         pp = pps[data_start_index]
         x = pp[pp_start_index]
@@ -1390,7 +1394,7 @@ class ModelBase(h2o_meta(Keyed)):
             labels = pp[pp_start_index]
             x = range(len(labels))
             axs.set_xticks(x)
-            axs.set_xticklabels(labels)
+            axs.set_xticklabels(labels, rotation=45)
             fmt = "o"
             axs.set_xlim(min(x) - 0.2, max(x) + 0.2)
         else:
@@ -1421,7 +1425,10 @@ class ModelBase(h2o_meta(Keyed)):
         else:
             axs.set_ylim(min_y - 0.2 * abs(min_y), max_y + 0.2 * abs(max_y))
         axs.legend()
-        axs.set_title("Partial Dependence Plot for {} and classes \n {}".format(col, ', '.join(targets)))
+        title = "Partial Dependence Plot for {} and classes \n {}".format(col, ', '.join(targets))
+        if row_index >= 0:
+            title += " and row index {}".format(row_index)
+        axs.set_title(title)
         axs.xaxis.grid()
         axs.yaxis.grid()
         

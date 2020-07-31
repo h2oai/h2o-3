@@ -772,9 +772,9 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
         kwargs["separator"] = ord(separator)
 
     if custom_non_data_line_markers is not None:
-        kwargs["custom_non_data_line_markers"] = custom_non_data_line_markers;
+        kwargs["custom_non_data_line_markers"] = custom_non_data_line_markers
     if partition_by is not None:
-        kwargs["partition_by"] = partition_by;
+        kwargs["partition_by"] = partition_by
 
     j = api("POST /3/ParseSetup", data=kwargs)
     if "warnings" in j and j["warnings"]:
