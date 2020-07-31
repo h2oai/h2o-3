@@ -191,20 +191,6 @@ public class GamUtils {
       return gamNumColStart;
   }
 
-  public static Frame buildGamFrame(int numGamFrame, Key<Frame>[] gamFramesKey, Frame _train, String response_column) {
-    Vec responseVec=null;
-    if (response_column != null)
-      responseVec = _train.remove(response_column);
-    for (int frameInd = 0; frameInd < numGamFrame; frameInd++) {  // append the augmented columns to _train
-      Frame gamFrame = gamFramesKey[frameInd].get();
-      _train.add(gamFrame.names(), gamFrame.removeAll());
-      Scope.track(gamFrame);
-    }
-    if (response_column!=null)
-      _train.add(response_column, responseVec);
-    return _train;
-  }
-
   public static void addFrameKeys2Keep(List<Key<Vec>> keep, Key<Frame> ... keyNames) {
     for (Key<Frame> keyName:keyNames) {
       Frame loadingFrm = DKV.getGet(keyName);

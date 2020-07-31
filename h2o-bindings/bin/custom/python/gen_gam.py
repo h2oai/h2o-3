@@ -15,6 +15,12 @@ def class_extensions():
     def Lambda(self, value):
         self._parms["lambda"] = value
 
+    def _additional_used_columns(self, parms):
+        """
+        :return: Gam columns if specified.
+        """
+        return parms["gam_columns"]
+
 extensions = dict(
     __imports__="""import h2o""",
     __class__=class_extensions,
