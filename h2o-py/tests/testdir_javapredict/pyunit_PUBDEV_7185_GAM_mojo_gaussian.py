@@ -11,8 +11,9 @@ def gam_gaussian_mojo():
     NTESTROWS = 200    # number of test dataset rows
     PROBLEM="gaussian"
     params = set_params() 
-    df = pyunit_utils.random_dataset(PROBLEM, seed=1, missing_fraction=0.5) 
+    df = pyunit_utils.random_dataset(PROBLEM, seed=2, missing_fraction=0.5) 
     dfnames = df.names
+
     # add GAM specific parameters
     params["gam_columns"] = []
     params["scale"] = []
@@ -28,7 +29,8 @@ def gam_gaussian_mojo():
     
     train = df[NTESTROWS:, :]
     test = df[:NTESTROWS, :]
-    x = list(set(df.names) - {"response"})
+    exclude_list = ["response"] + params["gam_columns"]
+    x = list(set(df.names) - set(exclude_list))
 
     TMPDIR = tempfile.mkdtemp()
     gamGaussianModel = pyunit_utils.build_save_model_generic(params, x, train, "response", "gam", TMPDIR) # build and save mojo model

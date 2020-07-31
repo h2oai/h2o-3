@@ -285,7 +285,11 @@ def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_a
     files = os.listdir(tmpdir)
     print("listing files {1} in directory {0}".format(tmpdir, files))
     outfile = os.path.join(tmpdir, 'out_mojo.csv')
-    print("***** importing file {0}".format(outfile))
+    if not os.path.exists(outfile) or os.stat(outfile).st_size == 0:
+        print("MOJO SCORING FAILED:")
+        print("--------------------")
+        print(o.decode("utf-8"))
+    print("***** importing file {0}".format(outfile))        
     pred_mojo = h2o.import_file(outfile, header=1)  # load mojo prediction in 
     # to a frame and compare
     if glrmReconstruct or ('glrm' not in model.algo):
