@@ -1,6 +1,7 @@
 package water.api.schemas3;
 
 import hex.Model;
+import org.apache.log4j.Logger;
 import water.AutoBuffer;
 import water.H2O;
 import water.api.API;
@@ -27,6 +28,8 @@ public class ModelSchemaV3<
     OS extends ModelOutputSchemaV3<O, OS>
   > extends ModelSchemaBaseV3<M, S> {
 
+  private static final Logger LOG = Logger.getLogger(ModelSchemaV3.class);
+  
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // CAREFUL: This class has its own JSON serializer.  If you add a field here you probably also want to add it to the serializer!
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -105,6 +108,7 @@ public class ModelSchemaV3<
       ab.put1(',');
     }
     catch (Exception e) {
+      LOG.error("Error creating an instance of ModelParameters for algo: " + algo, e);
       String msg = "Error creating an instance of ModelParameters for algo: " + algo;
       String dev_msg = "Error creating an instance of ModelParameters for algo: " + algo + ": " + this.getImplClass();
       throw new H2OIllegalArgumentException(msg, dev_msg);
