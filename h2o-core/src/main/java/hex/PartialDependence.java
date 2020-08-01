@@ -265,7 +265,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
         if (workingOn1D) {
           _partial_dependence_data[i] = new TwoDimTable("PartialDependence",
                   _row_index < 0 ? ("Partial Dependence Plot of model " + _model_id + " on column '" + col + "'" + (_targets == null ? "." : " and class "+ _targets[whichPredictorColumn])) :
-                          ("Partial Dependence Plot of model " + _model_id + " on column '" + col + "'" + (_targets == null ? "'" : " and class "+_targets[whichPredictorColumn]) +" for row " + _row_index),
+                          ("Partial Dependence Plot of model " + _model_id + " on column '" + col + "'" + (_targets == null ? "'" : " and class "+_targets[whichPredictorColumn]) +" for row index" + _row_index),
                   new String[colVals.length],
                   new String[]{col, "mean_response", "stddev_response", "std_error_mean_response"},
                   new String[]{cat ? "string" : "double", "double", "double", "double"},
@@ -377,7 +377,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
       
       public void compute2() {
         Frame fr;
-        if (_row_index > 0) {
+        if (_row_index >= 0) {
           fr = Rapids.exec("(rows " + _frame_id + "  " + _row_index + ")").getFrame();
         } else {
           fr = _frame_id.get();
@@ -416,7 +416,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
         }
         cons.remove();
         if (cons2!=null) cons2.remove();
-        if (_row_index > 0) {
+        if (_row_index >= 0) {
           fr.remove();
         }
         tryComplete();

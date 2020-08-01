@@ -257,6 +257,13 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public String algoName() { return "GAM"; }
     public String fullName() { return "Generalized Additive Model"; }
     public String javaName() { return GAMModel.class.getName(); }
+    public double _prior = -1;
+    public int _nlambdas = -1;
+    public boolean _non_negative = false;
+    public boolean _remove_collinear_columns = false;
+    public double _gradient_epsilon = -1;
+    public boolean _early_stopping = true;  // internal GLM early stopping.
+    public Key<Frame> _beta_constraints = null;
 
     @Override
     public long progressUnits() {
