@@ -1420,14 +1420,14 @@ class H2OGridSearch(h2o_meta(Keyed)):
 
         model_params = dict()
 
-        # if cross-validation is turned on, parameters in one of the fold model actual contains the max_runtime_secs
-        # parameter and not the main model that is returned.
-        if model._is_xvalidated:
-            model = h2o.get_model(model._xval_keys[0])
-
         for param_name in self.hyper_names:
-            model_params[param_name] = model.params[param_name]['actual'][0] if \
-                isinstance(model.params[param_name]['actual'], list) else model.params[param_name]['actual']
+            # if cross-validation is turned on, parameters in one of the fold model actual contains the max_runtime_secs
+            # parameter and not the main model that is returned.
+            if 'max_runtime_secs' == param_name and model._is_xvalidated:
+                xvalidated_model = h2o.get_model(model._xval_keys[0])
+                model_params[param_name] = xvalidated_model.params[param_name]['actual']
+            else:    
+                model_params[param_name] = model.params[param_name]['actual']
 
         if display: print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']')
         return model_params
