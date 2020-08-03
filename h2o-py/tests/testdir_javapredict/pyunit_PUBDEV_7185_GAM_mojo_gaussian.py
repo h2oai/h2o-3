@@ -5,13 +5,15 @@ from tests import pyunit_utils
 from random import randint
 import tempfile
 
+
 def gam_gaussian_mojo():
     h2o.remove_all()
     NTESTROWS = 200    # number of test dataset rows
     PROBLEM="gaussian"
-    params = set_params()   # set deeplearning model parameters
-    df = pyunit_utils.random_dataset(PROBLEM, missing_fraction=0.001)   # generate random dataset
+    params = set_params() 
+    df = pyunit_utils.random_dataset(PROBLEM, seed=2, missing_fraction=0.5) 
     dfnames = df.names
+
     # add GAM specific parameters
     params["gam_columns"] = []
     params["scale"] = []
@@ -27,16 +29,18 @@ def gam_gaussian_mojo():
     
     train = df[NTESTROWS:, :]
     test = df[:NTESTROWS, :]
-    x = list(set(df.names) - {"response"})
+    exclude_list = ["response"] + params["gam_columns"]
+    x = list(set(df.names) - set(exclude_list))
 
     TMPDIR = tempfile.mkdtemp()
     gamGaussianModel = pyunit_utils.build_save_model_generic(params, x, train, "response", "gam", TMPDIR) # build and save mojo model
     MOJONAME = pyunit_utils.getMojoName(gamGaussianModel._id)
-    h2o.download_csv(test[x], os.path.join(TMPDIR, 'in.csv'))  # save test file, h2o predict/mojo use same file
+    h2o.download_csv(test, os.path.join(TMPDIR, 'in.csv'))  # save test file, h2o predict/mojo use same file
     pred_h2o, pred_mojo = pyunit_utils.mojo_predict(gamGaussianModel, TMPDIR, MOJONAME)  # load model and perform predict
     h2o.download_csv(pred_h2o, os.path.join(TMPDIR, "h2oPred.csv"))
     print("Comparing mojo predict and h2o predict...")
-    pyunit_utils.compare_frames_local(pred_h2o, pred_mojo, 0.1, tol=1e-10)    # make sure operation sequence is preserved from Tomk        h2o.save_model(glmOrdinalModel, path=TMPDIR, force=True)  # save model for debugging
+    pyunit_utils.compare_frames_local(pred_h2o, pred_mojo, 0.1, tol=1e-10)  
+
 
 def set_params():
     missingValues = ['MeanImputation']
