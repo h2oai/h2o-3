@@ -29,10 +29,8 @@ def gam_gaussian_mojo():
     
     train = df[NTESTROWS:, :]
     test = df[:NTESTROWS, :]
-    exclude_list = {"response"}
-    exclude_list.add(params["gam_columns"][0])
-    x = list(set(df.names) - exclude_list)
-
+    exclude_list = ["response"] + params["gam_columns"]
+    x = list(set(df.names) - set(exclude_list))
 
     TMPDIR = tempfile.mkdtemp()
     gamGaussianModel = pyunit_utils.build_save_model_generic(params, x, train, "response", "gam", TMPDIR) # build and save mojo model
@@ -41,7 +39,8 @@ def gam_gaussian_mojo():
     pred_h2o, pred_mojo = pyunit_utils.mojo_predict(gamGaussianModel, TMPDIR, MOJONAME)  # load model and perform predict
     h2o.download_csv(pred_h2o, os.path.join(TMPDIR, "h2oPred.csv"))
     print("Comparing mojo predict and h2o predict...")
-    pyunit_utils.compare_frames_local(pred_h2o, pred_mojo, 1, tol=1e-10)    # make sure operation sequence is preserved from Tomk        h2o.save_model(glmOrdinalModel, path=TMPDIR, force=True)  # save model for debugging
+    pyunit_utils.compare_frames_local(pred_h2o, pred_mojo, 0.1, tol=1e-10)  
+
 
 def set_params():
     missingValues = ['MeanImputation']
