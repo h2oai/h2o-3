@@ -84,7 +84,7 @@ bookletList.eachWithIndex {
 //   phase 2 pdflatex
 //   phase 3 pdflatex
 //
-task compileBooklets(dependsOn: ["compile_0_3", "compile_1_3", "compile_2_3", "compile_3_3", "compile_4_3", "compile_5_3"])
+task compileBooklets(dependsOn: ["compile_0_3", "compile_1_3", "compile_2_3", "compile_3_3", "compile_4_3"])
 
 task cleanBooklets(type: Delete) {
     delete bookletOutputPath,
