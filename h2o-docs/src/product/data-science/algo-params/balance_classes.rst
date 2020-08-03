@@ -11,7 +11,10 @@ During model training, you might find that the majority of your data belongs in 
 
 The ``balance_classes`` option can be used to balance the class distribution. When enabled, H2O will either undersample the majority classes or oversample the minority classes. Note that the resulting model will also correct the final probabilities ("undo the sampling") using a monotonic transform, so the predicted probabilities of the first model will differ from a second model. However, because AUC only cares about ordering, it won't be affected.
 
-If this option is enabled, then you can also specify a value for the ``class_sampling_factors`` and ``max_after_balance_size`` options.  
+If this option is enabled, then you can also specify a value for the ``class_sampling_factors`` and ``max_after_balance_size`` options to control the sampling. 
+
+- ``class_sampling_factors`` takes a list of numbers which would be the sampling rate for each class. A value of ``1`` would not change the sample rate for a class, but setting it to ``0.5`` would reduce its sampling by half, and ``2`` would double its sample rate. 
+- Alternatively, you can utilize ``max_after_balance_size`` which is the max relative size your training data can be grown. By default, it is ``5``: this will oversample the data to rebalance the training data. The max it can grow to is 5x larger than your original data, hence, the value of 5. If you have many rows and prefer to under-sample the majority class, you can set ``max_after_balance_size`` to a value of less than ``1``.  
 
 **Notes**:
 
