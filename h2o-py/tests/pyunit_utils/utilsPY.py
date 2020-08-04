@@ -3665,7 +3665,9 @@ def build_save_model_generic(params, x, train, respName, algoName, tmpdir):
 # generate random dataset, copied from Pasha
 def random_dataset(response_type, verbose=True, ncol_upper=25000, ncol_lower=15000, NTESTROWS=200, missing_fraction=0.0, seed=None):
     """Create and return a random dataset."""
-    if verbose: print("\nCreating a dataset for a %s problem:" % response_type)
+    if verbose:
+        print("\nCreating a dataset for a %s problem:" % response_type)
+    random.seed(seed)
     fractions = {k + "_fraction": random.random() for k in "real categorical integer time string binary".split()}
     fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
     fractions["binary_fraction"] /= 3
