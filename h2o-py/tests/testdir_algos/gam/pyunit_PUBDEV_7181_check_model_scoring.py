@@ -1,22 +1,21 @@
 from __future__ import division
 from __future__ import print_function
-from past.utils import old_div
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
 
+
 # In this test, we check and make sure that we can do scoring
 def test_gam_model_predict():
     print("Checking model scoring for gaussian")
-    h2o_data = h2o.import_file(
-    path=pyunit_utils.locate("smalldata/glm_test/gaussian_20cols_10000Rows.csv"))
+    h2o_data = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/gaussian_20cols_10000Rows.csv"))
     h2o_data["C1"] = h2o_data["C1"].asfactor()
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C21"
     model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictGaussianGAM2.csv"))
-    buildModelCheckPredict(h2o_data, h2o_data,  model_test_data, myY, ["C11", "C12", "C13"], 'gaussian','gaussian')
+    buildModelCheckPredict(h2o_data, h2o_data,  model_test_data, myY, ["C11", "C12", "C13"], 'gaussian', 'gaussian')
     pred_gauss = buildModelCheckPredict(h2o_data, h2o_data,  model_test_data, myY, ["C11", "C12", "C13"], 'gaussian', 'gaussian')
     pred_auto_gauss = buildModelCheckPredict(h2o_data, h2o_data,  model_test_data, myY, ["C11", "C12", "C13"], 'AUTO', 'gaussian')
     pyunit_utils.compare_frames_local(pred_gauss, pred_auto_gauss, prob=1)
@@ -55,6 +54,7 @@ def test_gam_model_predict():
     predictTest = h2o_model.predict(h2o_data)
     # okay not to have assert/compare here
 
+
 def buildModelCheckPredict(train_data, test_data, model_test_data, myy, gamX, family, actual_family):
     numKnots = [5,5,5]
     x=["C1","C2"]
@@ -74,7 +74,8 @@ def buildModelCheckPredict(train_data, test_data, model_test_data, myy, gamX, fa
         model_test_data = model_test_data.drop('predict')
         pyunit_utils.compare_frames_local(pred, model_test_data, prob=1)
     return pred
-    
+
+
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_gam_model_predict)
 else:

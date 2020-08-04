@@ -298,7 +298,19 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       _gamColMeans = new double[numGamFrame][];
 
       addGAM2Train();  // add GAM columns to training frame
-      return buildGamFrame(numGamFrame, _gamFrameKeysCenter, _train, _parms._response_column); // add gam cols to _train
+      return buildGamFrame(); // add gam cols to _train
+    }
+
+    public Frame buildGamFrame() {
+      Vec responseVec = _train.remove(_parms._response_column);
+      for (int colIdx = 0; colIdx < _parms._gam_columns.length; colIdx++) {  // append the augmented columns to _train
+        Frame gamFrame = Scope.track(_gamFrameKeysCenter[colIdx].get());
+        _train.add(gamFrame.names(), gamFrame.removeAll());
+        _train.remove(_parms._gam_columns[colIdx]);
+      }
+      if (responseVec != null)
+        _train.add(_parms._response_column, responseVec);
+      return _train;
     }
 
     void addGAM2Train() {

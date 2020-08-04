@@ -242,8 +242,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public StringPair[] _interaction_pairs=null;
     public Key<Frame> _plug_values = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
-    public int _max_active_predictors = -1;
-    public boolean _stdOverride; // standardization override by beta constraints
+    public int _max_active_predictors = -1; // not used in GAM, copied over to GLM params
 
     // the following parameters are for GAM
     public int[] _num_knots; // array storing number of knots per basis function
