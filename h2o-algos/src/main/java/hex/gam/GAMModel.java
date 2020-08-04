@@ -263,6 +263,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public double _gradient_epsilon = -1;
     public boolean _early_stopping = true;  // internal GLM early stopping.
     public Key<Frame> _beta_constraints = null;
+    public double _lambda_min_ratio = -1;
 
     @Override
     public long progressUnits() {
