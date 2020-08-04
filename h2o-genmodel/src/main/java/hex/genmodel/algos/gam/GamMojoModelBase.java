@@ -11,7 +11,10 @@ import hex.genmodel.utils.ArrayUtils;
 import hex.genmodel.utils.DistributionFamily;
 import hex.genmodel.utils.LinkFunctionType;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static hex.genmodel.utils.ArrayUtils.nanArray;
 
@@ -34,7 +37,6 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
   double[][] _beta_multinomial_center; // coefficients not centered for multinomial/ordinal
   DistributionFamily _family;
   String[] _gam_columns;
-  int _num_gam_columns;
   int[] _bs;
   int[] _num_knots;
   double[][] _knots;
@@ -42,8 +44,6 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
   double[][][] _zTranspose;
   String[][] _gamColNames;  // expanded gam column names
   String[][] _gamColNamesCenter;
-  String[] _names_no_centering; // column names of features with no centering
-  int _totFeatureSize; // Gam Algo predictors numbers that include: predictors, expanded gam columns no centered
   int _betaSizePerClass;
   int _betaCenterSizePerClass;
   double _tweedieLinkPower;
@@ -52,7 +52,7 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
   int _numExpandedGamCols; // number of expanded gam columns
   int _lastClass;
   
-  private int getTotFeatureSize() { return _totFeatureSize;}
+  Set<String> gamColumNamesSet;
   
   GamMojoModelBase(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
@@ -60,20 +60,21 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
 
   @Override
   public double[] score0(double[] row, double[] preds) {
-    if (_meanImputation)
+    if (_meanImputation) {
       imputeMissingWithMeans(row);  // perform imputation for each row
-    
+    }
     return gamScore0(row, preds);
   }
   
   void init() {
     _basisVals = new double[_gam_columns.length][];
     _hj = new double[_gam_columns.length][];
-    for (int ind=0; ind < _num_gam_columns; ind++) {
+    for (int ind=0; ind < _gam_columns.length; ind++) {
       _basisVals[ind] = new double[_num_knots[ind]];
       _hj[ind] = ArrayUtils.eleDiff(_knots[ind]);
     }
     _lastClass = _nclasses - 1;
+    gamColumNamesSet = new HashSet<>(Arrays.asList(_gam_columns));
   }
   
   abstract double[] gamScore0(double[] row, double[] preds);
@@ -107,9 +108,10 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
 
   // This method will read in categorical value and adjust for when useAllFactorLevels = true or false
   int readCatVal(double data, int dataIndex) {
-    int ival = _useAllFactorLevels?((int) data):((int) data-1);
-    double targetVal = _useAllFactorLevels?(data):(data-1);
-    if (ival != targetVal) throw new IllegalArgumentException("categorical value out of range");
+    int ival = _useAllFactorLevels ? ((int) data) : ((int) data - 1);
+    double targetVal = _useAllFactorLevels ? (data) : (data - 1);
+    if (ival != targetVal) 
+      throw new IllegalArgumentException("categorical value out of range");
     if (ival < 0)
       return -1;
     ival += _catOffsets[dataIndex];
@@ -132,40 +134,34 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
     return eta;
   }
   
-  // check if gamificationis needed.  If all gamified column values are NaN, we need to add gamification.  Otherwise,
-  // gamification is already done.
-  private boolean gamificationNeeded(double[] rawData, int gamColStart) {
-      for (int cind = gamColStart; cind < rawData.length; cind++)
-        if (!Double.isNaN(rawData[cind])) {
-          return false;
-        }
-    return true;  
-  }
-  
   // this method will add to each data row the expanded gam columns
   double[] addExpandGamCols(double[] rawData, final RowData rowData) { // add all expanded gam columns here
-    int dataIndEnd = _totFeatureSize - _numExpandedGamCols; // starting index to fill out the rawData
-    if (!gamificationNeeded(rawData, dataIndEnd)) {
-       return rawData;     // already contain gamified columns.  Nothing needs to be done.
-    }
     // add expanded gam columns to rowData
-    double[] dataWithGamifiedColumns = nanArray(getTotFeatureSize());
-    System.arraycopy(rawData, 0, dataWithGamifiedColumns, 0, dataIndEnd);
-    for (int cind = 0; cind < _num_gam_columns; cind++) {
+    int gamDataStart = rawData.length - _gam_columns.length;
+    double[] dataWithGamifiedColumns = nanArray(gamDataStart + _numExpandedGamCols);
+    //System.arraycopy(rawData, 0, dataWithGamifiedColumns, 0, dataIndStart);
+    int dataIndex = 0;
+    for (int cind = 0; cind < rawData.length; cind++) {
+      if (!gamColumNamesSet.contains(_names[cind])) {
+        dataWithGamifiedColumns[dataIndex] = rawData[cind];
+        dataIndex++;
+      }
+    }
+    assert dataIndex == gamDataStart;
+    for (int cind = 0; cind < _gam_columns.length; cind++) {
       if (_bs[cind] == 0) { // to generate basis function values for cubic regression spline
         Object dataObject = rowData.get(_gam_columns[cind]);
-        double gam_col_data = Double.NaN;
-        if (dataObject == null) {  // NaN, skip column gami
-          dataIndEnd += _num_knots[cind];
+        if (dataObject == null) {  // NaN, skip column gamification
           continue;
-        } else
-          gam_col_data = (dataObject instanceof String) ? Double.parseDouble((String) dataObject) : (double) dataObject;
-        GamUtilsCubicRegression.expandOneGamCol(gam_col_data, _binvD[cind], _basisVals[cind], _hj[cind], _knots[cind]);
+        } else {
+          double gam_col_data = (dataObject instanceof String) ? Double.parseDouble((String) dataObject) : (double) dataObject;
+          GamUtilsCubicRegression.expandOneGamCol(gam_col_data, _binvD[cind], _basisVals[cind], _hj[cind], _knots[cind]);
+          System.arraycopy(_basisVals[cind], 0, dataWithGamifiedColumns, gamDataStart, _num_knots[cind]); // copy expanded gam to rawData
+          gamDataStart += _num_knots[cind];
+        }
       } else {
         throw new IllegalArgumentException("spline type not implemented!");
       }
-      System.arraycopy(_basisVals[cind], 0, dataWithGamifiedColumns, dataIndEnd, _num_knots[cind]); // copy expanded gam to rawData
-      dataIndEnd += _num_knots[cind]; 
     }
     return dataWithGamifiedColumns;
   }

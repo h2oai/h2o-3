@@ -15,12 +15,14 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.udf.CFuncRef;
-import water.util.*;
+import water.util.ArrayUtils;
+import water.util.Log;
+import water.util.TwoDimTable;
+import water.util.VecUtils;
 
 import java.io.Serializable;
 import java.util.Arrays;
 
-import static hex.gam.MatrixFrameUtils.GamUtils.equalColNames;
 import static hex.gam.MatrixFrameUtils.GamUtils.sortCoeffMags;
 import static hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 
@@ -271,10 +273,6 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
 
     public long _seed = -1;
 
-    public enum BSType {
-      cr  // will support more in the future
-    }
-
     public InteractionSpec interactionSpec() {
       return InteractionSpec.create(_interactions, _interaction_pairs);
     }
@@ -304,8 +302,8 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
       }
     }
 
-    public final static double linkInv(double x, Link link, double tweedie_link_power) {
-      switch(link) {
+    public double linkInv(double x) {
+      switch(_link) {
         case identity:
           return x;
         case ologlog:
@@ -319,26 +317,27 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return 1.0 / xx;
         case tweedie:
-          return tweedie_link_power == 0
+          return _tweedie_link_power == 0
                   ?Math.max(2e-16,Math.exp(x))
-                  :Math.pow(x, 1/ tweedie_link_power);
+                  :Math.pow(x, 1/ _tweedie_link_power);
         default:
-          throw new RuntimeException("unexpected link function  " + link.toString());
+          throw new RuntimeException("unexpected link function  " + _link.toString());
       }
     }
   }
 
   @Override
   protected String[][] scoringDomains(){
+    int responseColIdx = _output._domains.length - 1;
     String [][] domains = _output._domains;
     if ((_parms._family == Family.binomial || _parms._family == Family.quasibinomial ||
             _parms._family == Family.fractionalbinomial)
-            && _output._domains[_output._dinfo.responseChunkId(0)] == null) {
+            && _output._domains[responseColIdx] == null) {
       domains = domains.clone();
       if (_parms._family == Family.fractionalbinomial)
-        domains[_output._dinfo.responseChunkId(0)] = BINOMIAL_CLASS_NAMES;
+        domains[responseColIdx] = BINOMIAL_CLASS_NAMES;
       else
-        domains[_output._dinfo.responseChunkId(0)] = _output._responseDomains;
+        domains[responseColIdx] = _output._responseDomains;
     }
     return domains;
   }
@@ -349,7 +348,6 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public TwoDimTable _glm_model_summary;
     public ModelMetrics _glm_training_metrics;
     public ModelMetrics _glm_validation_metrics;
-    public ModelMetrics _glm_cross_validation_metrics;
     public double _glm_dispersion;
     public double[] _glm_zvalues;
     public double[] _glm_pvalues;
@@ -360,9 +358,6 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public TwoDimTable _coefficients_table;
     public TwoDimTable _coefficients_table_no_centering;
     public TwoDimTable _standardized_coefficient_magnitudes;
-    public int _best_lambda_idx; // lambda which minimizes deviance on validation (if provided) or train (if not)
-    public int _lambda_1se = -1; // lambda_best + sd(lambda); only applicable if running lambda search with nfold
-    public int _selected_lambda_idx; // lambda which minimizes deviance on validation (if provided) or train (if not)
     public double[] _model_beta_no_centering; // coefficients generated during model training
     public double[] _standardized_model_beta_no_centering; // standardized coefficients generated during model training
     public double[] _model_beta; // coefficients generated during model training
@@ -371,9 +366,6 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public double[][] _standardized_model_beta_multinomial_no_centering;  // store standardized multinomial coefficients during model training
     public double[][] _model_beta_multinomial;  // store multinomial coefficients during model training
     public double[][] _standardized_model_beta_multinomial;  // store standardized multinomial coefficients during model training
-    private double[] _zvalues;
-    private double _dispersion;
-    private boolean _dispersionEstimated;
     public String[][] _gamColNames; // store gam column names after transformation and decentering
     public double[][][] _zTranspose; // Z matrix for de-centralization, can be null
     public double[][][] _penaltyMatrices_center; // stores t(Z)*t(D)*Binv*D*Z and can be null
@@ -387,16 +379,16 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public String _gam_transformed_center_key;
     final Family _family;
     
-    public double dispersion(){ return _dispersion;}
-
     @Override
     public int nclasses() {
-      if (_family == Family.multinomial || _family == Family.ordinal)
+      if (_family == Family.multinomial || _family == Family.ordinal) {
         return super.nclasses();
-      if (Family.binomial == _family || Family.quasibinomial == _family
-              || Family.fractionalbinomial == _family)
+      } else if (Family.binomial == _family || Family.quasibinomial == _family
+              || Family.fractionalbinomial == _family) {
         return 2;
-      return 1;
+      } else {
+        return 1;
+      }
     }
 
     /** Names of levels for a categorical response column. */
@@ -410,15 +402,15 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
         return super.classNames();
     }
 
-    public GAMModelOutput(GAM b, Frame adaptr, DataInfo dinfo) {
-      super(b, adaptr);
+    public GAMModelOutput(GAM b, DataInfo dinfo) {
+      super(b);
       _dinfo = dinfo;
-      _domains = dinfo._adaptedFrame.domains(); // get domain of dataset predictors
       _family = b._parms._family;
       if (_family.equals(Family.quasibinomial)) {
         _responseDomains = new VecUtils.CollectDoubleDomain(null, 2).doAll(dinfo._adaptedFrame.vec(b._parms._response_column)).stringDomain(dinfo._adaptedFrame.vec(b._parms._response_column).isInt());
-      } else
+      } else {
         _responseDomains = dinfo._adaptedFrame.lastVec().domain();
+      }
     }
 
     @Override public ModelCategory getModelCategory() {
@@ -433,100 +425,67 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     }
   }
 
-  /**
-   * This method will massage the input training frame such that it can be used for scoring for a GAM model.
-   *
-   * @param test Testing Frame, updated in-place
-   * @param expensive Try hard to adapt; this might involve the creation of
-   *  whole Vecs and thus get expensive.  If {@code false}, then only adapt if
-   *  no warnings and errors; otherwise just the messages are produced.
-   *  Created Vecs have to be deleted by the caller (e.g. Scope.enter/exit).
-   * @param computeMetrics
-   * @return
-   */
-  @Override
-  public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics) {
-    // compare column names with test frame.  If equal, call adaptTestForTrain.  Otherwise, need to adapt it first
-    String[] testNames = test.names();
-    if (!equalColNames(testNames, _output._dinfo._adaptedFrame.names(), _parms._response_column)) {  // shallow check: column number, column names only
-      Frame adptedF = cleanUpInputFrame(test); // column names here need to be in same sequence of dinfo._adaptedFrame
-      int testNumCols = test.numCols();
-      for (int index = 0; index < testNumCols; index++)
-        test.remove(0);
-      int adaptNumCols = adptedF.numCols();
-      for (int index = 0; index < adaptNumCols; index++)
-        test.add(adptedF.name(index), adptedF.vec(index));
-      return super.adaptTestForTrain(test, expensive, computeMetrics);
-    }
-    return super.adaptTestForTrain(test, expensive, computeMetrics);
-  }
-
-  public Frame cleanUpInputFrame(Frame test) {
-    Frame adptedF = new Frame(Key.make(), test.names(), test.vecs().clone()); // clone test dataset
-    return cleanUpInputFrame(adptedF, _parms, _gamColNames, _output._binvD, _output._zTranspose, 
-            _output._knots, _output._numKnots);
-  }
-
-  public static Frame cleanUpInputFrame(Frame adptedF, GAMParameters parms, String[][] gamColNames, 
-                                 double[][][] binvD, double[][][] zTranspose, double[][] knots, int[] numKnots) {
-    int numGamCols = parms._gam_columns.length;
-    String[] testNames = adptedF.names();
+  public Frame generateGamColumns(Frame test) {
+    int numGamCols = _parms._gam_columns.length;
     Vec[] gamCols = new Vec[numGamCols];
-    for (int vind=0; vind<numGamCols; vind++)
-      gamCols[vind] = adptedF.vec(parms._gam_columns[vind]).clone();
-    Frame onlyGamCols = new Frame(parms._gam_columns, gamCols);
-    AddGamColumns genGamCols = new AddGamColumns(binvD, zTranspose, knots, numKnots, onlyGamCols);
+    for (int vind = 0; vind < numGamCols; vind++) {
+      gamCols[vind] = test.vec(_parms._gam_columns[vind]);
+    }
+    Frame onlyGamCols = new Frame(_parms._gam_columns, gamCols);
+    AddGamColumns genGamCols = new AddGamColumns(_output._binvD, _output._zTranspose, _output._knots, _output._numKnots, onlyGamCols);
     genGamCols.doAll(genGamCols._gamCols2Add, Vec.T_NUM, onlyGamCols);
     String[] gamColsNames = new String[genGamCols._gamCols2Add];
     int offset = 0;
-    for (int ind=0; ind<genGamCols._numGAMcols; ind++) {
-      System.arraycopy(gamColNames[ind], 0, gamColsNames, offset, gamColNames[ind].length);
-      offset+= gamColNames[ind].length;
+    for (int ind = 0; ind < genGamCols._numGAMcols; ind++) {
+      System.arraycopy(_gamColNames[ind], 0, gamColsNames, offset, _gamColNames[ind].length);
+      offset += _gamColNames[ind].length;
     }
-    Frame oneAugmentedColumn = genGamCols.outputFrame(Key.make(), gamColsNames, null);
-    if (parms._ignored_columns != null) {  // remove ignored columns
-      for (String iname:parms._ignored_columns) {
-        if (ArrayUtils.contains(testNames, iname)) {
-          adptedF.remove(iname);
-        }
-      }
+    Frame computedGamCols = Scope.track(genGamCols.outputFrame(Key.make(), gamColsNames, null));
+    Vec responseVec = test.remove(_parms._response_column); // remove to keep the last col
+    for (int i = 0; i < _parms._gam_columns.length; i++) {
+      test.remove(_parms._gam_columns[i]);
     }
-
-    Vec respV = null;
-    if (ArrayUtils.contains(testNames, parms._response_column))
-      respV = adptedF.remove(parms._response_column);
-    adptedF.add(oneAugmentedColumn.names(), oneAugmentedColumn.removeAll());
-    Scope.track(oneAugmentedColumn);
-
-    if (respV != null)
-      adptedF.add(parms._response_column, respV);
-    return adptedF;
+    test.add(computedGamCols.names(), computedGamCols.vecs());
+    if (responseVec != null)
+      test.add(_parms._response_column, responseVec);
+    // reorder to match training frame
+    String[] names = new String[test.numCols()];
+    Vec[] vecs = new Vec[test.numCols()];
+    for (int i = 0; i < test.numCols(); i++) {
+      int targetIndex = ArrayUtils.find(_output._dinfo._adaptedFrame.names(), test.name(i));
+      names[targetIndex] = test.name(i);
+      vecs[targetIndex] = test.vec(i);
+    }
+    test.restructure(names, vecs);
+    return test;
   }
 
   @Override
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics,
-                                   CFuncRef customMetricFunc) {
+  protected Frame predictScoreImpl(
+      Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc
+  ) {
     String[] predictNames = makeScoringNames();
     String[][] domains = new String[predictNames.length][];
-    GAMScore gs = makeScoringTask(adaptFrm, j, computeMetrics);
-    gs.doAll(predictNames.length, Vec.T_NUM, gs._dinfo._adaptedFrame);
+    Frame gamFrame = generateGamColumns(adaptFrm);
+    GAMScore gs = makeScoringTask(gamFrame, j, computeMetrics);
+    gs.doAll(predictNames.length, Vec.T_NUM, gamFrame);
     if (gs._computeMetrics)
       gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
     domains[0] = gs._predDomains;
     return gs.outputFrame(Key.make(destination_key), predictNames, domains);  // place holder
   }
   
-  private GAMScore makeScoringTask(Frame adaptFrm, Job j, boolean computeMetrics) {
-    int responseId = adaptFrm.find(_output.responseName());
-    if(responseId > -1 && adaptFrm.vec(responseId).isBad()) { // remove inserted invalid response
-      adaptFrm = new Frame(adaptFrm.names(),adaptFrm.vecs());
-      adaptFrm.remove(responseId);
+  private GAMScore makeScoringTask(Frame frame, Job j, boolean computeMetrics) {
+    int responseId = frame.find(_output.responseName());
+    if (responseId > -1 && frame.vec(responseId).isBad()) { // remove inserted invalid response
+      frame.remove(responseId);
     }
-    final boolean detectedComputeMetrics = computeMetrics && (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad());
-    String [] domain = _output.nclasses()<=1 ? null : (!detectedComputeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain());
+    final boolean detectedComputeMetrics = computeMetrics && (frame.vec(_output.responseName()) != null && !frame.vec(_output.responseName()).isBad());
+    String[] domain = _output.nclasses() <= 1 ? null : (!detectedComputeMetrics ? _output._domains[_output._domains.length - 1] : frame.lastVec().domain());
     if (_parms._family.equals(Family.quasibinomial))
       domain = _output._responseDomains;
-    return new GAMScore(j, this, _output._dinfo.scoringInfo(_output._names,adaptFrm),domain,detectedComputeMetrics);
+    DataInfo scoringDataInfo = _output._dinfo.scoringInfo(_output._dinfo._adaptedFrame.names(), frame);
+    return new GAMScore(j, this, scoringDataInfo, domain, detectedComputeMetrics);
   }
 
   private class GAMScore extends MRTask<GAMScore> {
@@ -535,15 +494,14 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     private double[][] _coeffs_multinomial;
     private int _nclass;
     private boolean _computeMetrics;
-    final Job _j;
-    Family _family;
+    private final Job _j;
+    private Family _family;
     private transient double[] _eta;  // store eta calculation
     private String[] _predDomains;
-    final GAMModel _m;
+    private final GAMModel _m;
     private final double _defaultThreshold;
     private int _lastClass;
-    ModelMetrics.MetricBuilder _mb;
-    final boolean _sparse;
+    private ModelMetrics.MetricBuilder _mb;
     private transient double[][] _vcov;
     private transient double[] _tmp;
     private boolean _classifier2class;
@@ -553,9 +511,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
       _j = j;
       _m = m;
       _computeMetrics = computeMetrics;
-      _sparse = FrameUtils.sparseRatio(dinfo._adaptedFrame) < .5;
       _predDomains = domain;
-      _m._parms = m._parms;
       _nclass = m._output.nclasses();
       _classifier2class = _m._parms._family == GLMModel.GLMParameters.Family.binomial || 
               _m._parms._family == Family.quasibinomial || _m._parms._family == Family.fractionalbinomial;
@@ -637,8 +593,13 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     }
 
     public double[] scoreRow(DataInfo.Row r, double offset, double[] preds) {
-      double mu = _m._parms.linkInv(r.innerProduct(_coeffs) + offset, _m._parms._link,
-              _m._parms._tweedie_link_power);
+      for (int i = 0; i < r.numVals.length; i++) {
+        if (Double.isNaN(r.numVals[i])) {
+          throw new IllegalArgumentException("NaN found.");
+        }
+      }
+      
+      double mu = _m._parms.linkInv(r.innerProduct(_coeffs) + offset);
       if (_classifier2class) { // threshold for prediction
         preds[0] = mu >= _defaultThreshold ? 1 : 0;
         preds[1] = 1.0 - mu; // class 0

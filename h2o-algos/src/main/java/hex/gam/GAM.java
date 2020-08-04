@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static hex.gam.GAMModel.cleanUpInputFrame;
 import static hex.gam.MatrixFrameUtils.GamUtils.AllocateType.*;
 import static hex.gam.MatrixFrameUtils.GamUtils.*;
 import static hex.genmodel.utils.ArrayUtils.flat;
@@ -302,15 +301,16 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     }
 
     public Frame buildGamFrame() {
-      Vec responseVec = _train.remove(_parms._response_column);
+      Frame gamifiedTrain = new Frame(_train);
+      Vec responseVec = gamifiedTrain.remove(_parms._response_column);
       for (int colIdx = 0; colIdx < _parms._gam_columns.length; colIdx++) {  // append the augmented columns to _train
         Frame gamFrame = Scope.track(_gamFrameKeysCenter[colIdx].get());
-        _train.add(gamFrame.names(), gamFrame.removeAll());
-        _train.remove(_parms._gam_columns[colIdx]);
+        gamifiedTrain.add(gamFrame.names(), gamFrame.removeAll());
+        gamifiedTrain.remove(_parms._gam_columns[colIdx]);
       }
       if (responseVec != null)
-        _train.add(_parms._response_column, responseVec);
-      return _train;
+        gamifiedTrain.add(_parms._response_column, responseVec);
+      return gamifiedTrain;
     }
 
     void addGAM2Train() {
@@ -334,11 +334,10 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           @Override
           protected void compute() {
             GenerateGamMatrixOneColumn genOneGamCol = new GenerateGamMatrixOneColumn(splineType, numKnots, 
-                    _knots[frameIndex], predictVec,
-                    _parms._standardize).doAll(numKnots, Vec.T_NUM, predictVec);
+                    _knots[frameIndex], predictVec).doAll(numKnots, Vec.T_NUM, predictVec);
             if (_parms._savePenaltyMat)  // only save this for debugging
               GamUtils.copy2DArray(genOneGamCol._penaltyMat, _penalty_mat[frameIndex]); // copy penalty matrix
-            // calculate z transpose
+              // calculate z transpose
               Frame oneAugmentedColumnCenter = genOneGamCol.outputFrame(Key.make(), newColNames,
                       null);
               for (int cind=0; cind < numKnots; cind++) 
@@ -360,7 +359,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       }
       ForkJoinTask.invokeAll(generateGamColumn);
     }
-    
+
     void verifyGamTransformedFrame(Frame gamTransformed) {
       int numGamCols = _gamColNamesCenter.length;
       int numGamFrame = _parms._gam_columns.length;
@@ -385,37 +384,35 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       if (error_count() > 0)   // if something goes wrong during gam transformation, let's throw a fit again!
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GAM.this);
       
-      if (valid() != null) {  // transform the validation frame if present
-        _valid = rebalance(cleanUpInputFrame(_parms.valid().clone(), _parms, _gamColNamesCenter, _binvD, _zTranspose, _knots,
-                _numKnots), false, _result+".temporary.valid");
-      }
-      Frame newValidFrame = _valid==null?null:new Frame(_valid);
-      
       DKV.put(newTFrame); // This one will cause deleted vectors if add to Scope.track
-      if (newValidFrame != null)
-        DKV.put(newValidFrame);
       _job.update(0, "Initializing model training");
-      buildModel(newTFrame, newValidFrame); // build gam model 
+      buildModel(newTFrame); // build gam model 
     }
 
-    public final void buildModel(Frame newTFrame, Frame newValidFrame) {
+    public final void buildModel(Frame newTFrame) {
       GAMModel model = null;
       DataInfo dinfo = null;
       try {
         _job.update(0, "Adding GAM columns to training dataset...");
-        dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels 
-                || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE,
-                _parms.missingValuesHandling() == GLMParameters.MissingValuesHandling.Skip,
-                _parms.missingValuesHandling() == GLMParameters.MissingValuesHandling.MeanImputation || _parms.missingValuesHandling() == GLMParameters.MissingValuesHandling.PlugValues,
-                _parms.makeImputer(),
-                false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms.interactionSpec());
+        Frame newValidFrame = null;
+        if (_valid != null) {
+          newValidFrame = model.generateGamColumns(_valid);
+        }
+        dinfo = new DataInfo(
+            newTFrame, newValidFrame, 1, _parms._use_all_factor_levels || _parms._lambda_search, 
+            _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE,
+            _parms.missingValuesHandling() == GLMParameters.MissingValuesHandling.Skip,
+            _parms.missingValuesHandling() == GLMParameters.MissingValuesHandling.MeanImputation || _parms.missingValuesHandling() == GLMParameters.MissingValuesHandling.PlugValues,
+            _parms.makeImputer(), false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms.interactionSpec()
+        );
         DKV.put(dinfo._key, dinfo);
-        model = new GAMModel(dest(), _parms, new GAMModel.GAMModelOutput(GAM.this, dinfo._adaptedFrame, dinfo));
+        model = new GAMModel(dest(), _parms, new GAMModel.GAMModelOutput(GAM.this, dinfo));
         model.delete_and_lock(_job);
         if (_parms._keep_gam_cols) {  // save gam column keys
           model._output._gamTransformedTrainCenter = newTFrame._key;
         }
         _job.update(1, "calling GLM to build GAM model...");
+        
         GLMModel glmModel = buildGLMModel(_parms, newTFrame, newValidFrame); // obtained GLM model
         if (model.evalAutoParamsEnabled) {
           model.initActualParamValuesAfterGlmCreation();
@@ -441,11 +438,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           model.unlock(_job);
           Scope.untrack(keep);  // leave the vectors alone.
         }
-        if (dinfo!=null)
+        if (dinfo != null)
           dinfo.remove();
-        if (newValidFrame != null) {
-          DKV.remove(newValidFrame._key);
-        }
       }
     }
     
@@ -455,14 +449,12 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
      *      
      * @param model
      * @param scoreFrame
-     * @param forTraining: true for training dataset and false for validation dataset
+     * @param forTraining true for training dataset and false for validation dataset
      */
     private void scoreGenModelMetrics(GAMModel model, Frame scoreFrame, boolean forTraining) {
-      Frame scoringTrain = new Frame(scoreFrame);
-      model.adaptTestForTrain(scoringTrain, true, true);
-      Frame scoredResult = model.score(scoringTrain);
+      Frame scoredResult = model.score(scoreFrame);
       scoredResult.delete();
-      ModelMetrics mtrain = ModelMetrics.getFromDKV(model, scoringTrain);
+      ModelMetrics mtrain = ModelMetrics.getFromDKV(model, scoreFrame);
       if (mtrain!=null) {
         if (forTraining)
           model._output._training_metrics = mtrain;
@@ -481,9 +473,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         if ((_parms._scale != null) && (_parms._scale[find] != 1.0))
           _penalty_mat_center[find] = ArrayUtils.mult(_penalty_mat_center[find], _parms._scale[find]);
       }
-
-      GLMModel model = new GLM(glmParam, _penalty_mat_center,  _gamColNamesCenter).trainModel().get();
-      return model;
+      return new GLM(glmParam, _penalty_mat_center,  _gamColNamesCenter).trainModel().get();
     }
     
     void fillOutGAMModel(GLMModel glm, GAMModel model, DataInfo dinfo) {
@@ -558,8 +548,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     void copyGLMCoeffs(GLMModel glm, GAMModel model, DataInfo dinfo) {
       int totCoefNumsNoCenter = dinfo.fullN()+1+_parms._gam_columns.length;
       model._output._coefficient_names_no_centering = new String[totCoefNumsNoCenter]; // copy coefficient names from GLM to GAM
-      int gamNumStart = copyGLMCoeffNames2GAMCoeffNames(model, glm, dinfo);
-      copyGLMCoeffs2GAMCoeffs(model, glm, dinfo, _parms._family, gamNumStart, _parms._standardize, _nclass); // obtain beta without centering
+      int gamNumStart = copyGLMCoeffNames2GAMCoeffNames(model, glm);
+      copyGLMCoeffs2GAMCoeffs(model, glm, _parms._family, gamNumStart, _nclass); // obtain beta without centering
       // copy over GLM coefficients
       int glmCoeffLen = glm._output._coefficient_names.length;
       model._output._coefficient_names = new String[glmCoeffLen];

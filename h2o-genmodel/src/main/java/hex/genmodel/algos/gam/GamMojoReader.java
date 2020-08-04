@@ -22,7 +22,6 @@ public class GamMojoReader extends ModelMojoReader<GamMojoModelBase> {
     _model._family = DistributionFamily.valueOf((String)readkv("family"));
     _model._cats = readkv("cats", -1);
     _model._nums = readkv("num");
-    _model._numsCenter = readkv("numsCenter");
     _model._catNAFills = readkv("catNAFills", new int[0]);
     _model._numNAFills = readkv("numNAFills", new double[0]);
     _model._numNAFillsCenter = readkv("numNAFillsCenter", new double[0]);;
@@ -45,9 +44,6 @@ public class GamMojoReader extends ModelMojoReader<GamMojoModelBase> {
     _model._num_knots = readkv("num_knots");
     int num_gam_columns = _model._num_knots.length;
     _model._gam_columns = readStringArrays(num_gam_columns,"gam_columns");
-    _model._num_gam_columns = _model._gam_columns.length;
-    _model._totFeatureSize = readkv("total feature size");
-    _model._names_no_centering = readStringArrays(_model._totFeatureSize, "_names_no_centering");
     _model._bs = readkv("bs");
     _model._knots = new double[num_gam_columns][];
     _model._binvD = new double[num_gam_columns][][];

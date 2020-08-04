@@ -27,7 +27,6 @@ public class GAMMojoWriter extends ModelMojoWriter<GAMModel, GAMModel.GAMParamet
     writekv("use_all_factor_levels", model._parms._use_all_factor_levels);
     writekv("cats", model._output._dinfo._cats);
     writekv("cat_offsets", model._output._dinfo._catOffsets);
-    writekv("numsCenter", model._output._dinfo._nums);
     writekv("num", model._output._dinfo._nums+numGamCols);
 
     boolean imputeMeans = model._parms.missingValuesHandling().equals(GLMModel.GLMParameters.MissingValuesHandling.MeanImputation);
@@ -53,17 +52,12 @@ public class GAMMojoWriter extends ModelMojoWriter<GAMModel, GAMModel.GAMParamet
     writekv("num_knots", model._parms._num_knots); // an array
     writeStringArrays(model._parms._gam_columns, "gam_columns"); // gam_columns specified by users
     int numGamLength = 0;
-    int numGamCLength = 0;
     for (int cInd=0; cInd < numGamCols; cInd++)  { // only contains expanded gam column names not centered
       writeStringArrays(model._gamColNames[cInd], "gamColNamesCenter_"+model._parms._gam_columns[cInd]);
       writeStringArrays(model._gamColNamesNoCentering[cInd], "gamColNames_"+model._parms._gam_columns[cInd]);
       numGamLength += model._gamColNamesNoCentering[cInd].length;
-      numGamCLength += model._gamColNames[cInd].length;
     }
-    String[] trainColGamColNoCenter = genTrainColGamCols(numGamLength, numGamCLength);
     writekv("num_expanded_gam_columns", numGamLength);
-    writeStringArrays(trainColGamColNoCenter, "_names_no_centering"); // column names without centering
-    writekv("total feature size", trainColGamColNoCenter.length);
     if (model._parms._family==multinomial || model._parms._family==ordinal) {
       writeDoubleArray(model._output._model_beta_multinomial_no_centering, "beta_multinomial");
       writekv("beta length per class", model._output._model_beta_multinomial_no_centering[0].length);
@@ -82,20 +76,6 @@ public class GAMMojoWriter extends ModelMojoWriter<GAMModel, GAMModel.GAMParamet
       writeDoubleArray(model._output._zTranspose[countGamCols], gamCol+"_zTranspose");      // write zTranspose
       writeDoubleArray(model._output._binvD[countGamCols++], gamCol+"_binvD");      // write binvD
     }
-    // store variable importance information
   }
-  
-  public String[] genTrainColGamCols(int gamColLength, int gamCColLength) {
-    int colLength = model._output._names.length-gamCColLength+gamColLength-1;// to exclude response
-    int normalColLength = model._output._names.length-gamCColLength-1;
-    String[] trainNamesNGamNames = new String[colLength];
-    System.arraycopy(model._output._names, 0, trainNamesNGamNames, 0, normalColLength);
-    int startInd = normalColLength;
-    for (int gind = 0; gind < model._gamColNamesNoCentering.length; gind++) {
-      int copyLen = model._gamColNamesNoCentering[gind].length;
-      System.arraycopy(model._gamColNamesNoCentering[gind], 0, trainNamesNGamNames, startInd, copyLen);
-      startInd += copyLen;
-    }
-    return trainNamesNGamNames;
-  }
+
 }

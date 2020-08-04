@@ -18,7 +18,6 @@ import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
-import static hex.gam.MatrixFrameUtils.GamUtils.equalColNames;
 import static hex.genmodel.algos.gam.GamUtilsCubicRegression.locateBin;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
 import static hex.glm.GLMModel.GLMParameters.GLMType.gam;
@@ -454,30 +453,6 @@ public class GamTestPiping extends TestUtil {
             "comparison failed.";
   }
   
-  @Test
-  public void testEqualColNames() {
-    try {
-      Scope.enter();
-      Frame train = Scope.track(parse_test_file("smalldata/glm_test/binomial_20_cols_10KRows.csv"));
-      String[] fnames = train.names();
-      String[] types = train.typesStr();
-      assert !(equalColNames(types, fnames, fnames[fnames.length-1])):"Equal length but different strings!";
-      assert equalColNames(fnames, fnames, fnames[fnames.length-1]); // should be the same
-      String[] fnames2 = new String[fnames.length-1];
-      System.arraycopy(fnames, 0, fnames2, 0, fnames2.length); // copy everything except response
-      assert equalColNames(fnames, fnames2, fnames[fnames.length-1]);
-      String[] fnames3 = new String[fnames2.length-1];
-      System.arraycopy(fnames, 0, fnames3, 0, fnames3.length); // copy everything except response
-      assert !equalColNames(fnames, fnames3, fnames[fnames.length-1]);  // one element less.  Should not be equal
-      String temp = fnames2[0];
-      fnames2[0] = fnames2[fnames2.length-1];
-      fnames2[fnames2.length-1] = temp;
-      assert equalColNames(fnames2, fnames, fnames[fnames.length-1]); // should equal, switch an element order
-    } finally {
-      Scope.exit();
-    }
-  }
-
   /***
    * Given the same coefficients, GAM and GLM scoring should produce the same results for Gaussian, Binomial and
    * multinomial.  This test will compare the predict results from GLM and GAM scoring.

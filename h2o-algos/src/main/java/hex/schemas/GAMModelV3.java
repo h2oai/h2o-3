@@ -24,9 +24,6 @@ public class GAMModelV3 extends ModelSchemaV3<GAMModel, GAMModelV3, GAMModel.GAM
     @API(help="Table of Standardized Coefficients Magnitudes")
     TwoDimTableV3 standardized_coefficient_magnitudes;
 
-    @API(help="Dispersion parameter, only applicable to Tweedie family")
-    double dispersion;
-    
     @API(help="key storing gam columns and predictor columns.  For debugging purposes only")
     String gam_transformed_center_key;
     
