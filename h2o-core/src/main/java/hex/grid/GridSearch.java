@@ -111,6 +111,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       String[] hyperParamNamesConstraint = _hyperSpaceWalker.getHyperParamNamesConstraint();
       if (hyperParamNamesConstraint.length > 0) {
         allHyperNames = new String[hyperParamNamesConstraint.length+hyperNames.length-1];
+        // gather all hyperparameter names into allHyperNames for TwoDimTable summary
         System.arraycopy(hyperParamNamesConstraint, 0, allHyperNames, 0, hyperParamNamesConstraint.length);
         int countIndex = hyperParamNamesConstraint.length;
         for (int index=0; index < hyperNames.length; index++) {
