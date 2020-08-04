@@ -18,18 +18,20 @@ def test_gam_model_predict():
     numKnots = [8,8,8]
     x = list(set(h2o_data.names) - {"response", "C11", "C12", "C13"})
 
-    h2o_model_3Lambdas = H2OGeneralizedAdditiveEstimator(family="gaussian", gam_columns=["C11", "C12", "C13"],  
+    h2o_model_lambdaMinRatio10 = H2OGeneralizedAdditiveEstimator(family="gaussian", gam_columns=["C11", "C12", "C13"],  
                                                 scale = [0.01, 0.01, 0.01], num_knots=numKnots, standardize=True, 
-                                                lambda_search=True, nlambdas = 3, solver="irlsm")
-    h2o_model_3Lambdas.train(x=x, y=myY, training_frame=h2o_data)
+                                                lambda_search=True, lambda_min_ratio = 10, solver="irlsm")
+    h2o_model_lambdaMinRatio10.train(x=x, y=myY, training_frame=h2o_data)
 
-    h2o_model_100Lambdas = H2OGeneralizedAdditiveEstimator(family="gaussian", gam_columns=["C11", "C12", "C13"],
-                                                          scale = [0.01, 0.01, 0.01], num_knots=numKnots, standardize=True,
-                                                          lambda_search=True, nlambdas = 100, solver="irlsm")
-    h2o_model_100Lambdas.train(x=x, y=myY, training_frame=h2o_data)
+    h2o_model_lambdaMinRatio01 = H2OGeneralizedAdditiveEstimator(family="gaussian", gam_columns=["C11", "C12", "C13"],
+                                                           scale = [0.01, 0.01, 0.01], num_knots=numKnots, 
+                                                           standardize=True, lambda_search=True, 
+                                                           lambda_min_ratio = 0.1, solver="irlsm")
+    h2o_model_lambdaMinRatio01.train(x=x, y=myY, training_frame=h2o_data)
     
-    assert h2o_model_3Lambdas.mse() >= h2o_model_100Lambdas.mse(), "Gam model with nlambdas=3 performs better than" \
-                                                                    " nlambdas=100.  Shame!"
+    assert h2o_model_lambdaMinRatio10.mse() >= h2o_model_lambdaMinRatio01.mse(), "Gam model with lambda_min_ratio=0.1 performs " \
+                                                                   "better than lambda_min_ratio=10.  Shame!"
+    
     
 
     
