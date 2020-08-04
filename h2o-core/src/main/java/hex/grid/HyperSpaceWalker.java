@@ -259,19 +259,14 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       long work = 0;
       long free_param_combos = 1;
       
-      if(_hyperParams.get("constraints") == null) {
-        for (Map.Entry<String, Object[]> p : _hyperParams.entrySet()) {
-          if (p.getValue() != null) {
-            work *= p.getValue().length;
-          }
-        }
-        return work;
-      }
-
       for (Map.Entry<String, Object[]> p : _hyperParams.entrySet()) {
         if (p.getValue() != null && !p.getKey().equals("constraints")) {
           free_param_combos *= p.getValue().length;
         }
+      }
+      
+      if(_hyperParams.get("constraints") == null) {
+        return free_param_combos;
       }
       
       for (int i = 0; i < _hyperParams.get("constraints").length; i++) {
@@ -452,8 +447,10 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           if (_currentHyperparamIndices != null) {
             int[] hyperParamIndicesCopy = new int[_currentHyperparamIndices.length];
             System.arraycopy(_currentHyperparamIndices, 0, hyperParamIndicesCopy, 0, _currentHyperparamIndices.length);
-            if (nextModelIndices(hyperParamIndicesCopy) == null && _currentConstraint == _hyperParams.get("constraints").length - 1) {
-              return false;
+            if (nextModelIndices(hyperParamIndicesCopy) == null) {
+              if(_hyperParams.get("constraints") == null || _currentConstraint == _hyperParams.get("constraints").length - 1) {
+                return false;  
+              }
             }
           }
           
@@ -605,13 +602,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
          * criteria.
          */
         private int[] nextModelIndices() {
-/*          if(_hyperParams.get("constraints") != null) { // randomly choose constraints, nice
-            _currentConstraint = _random.nextInt(_hyperParams.get("constraints").length);
-            _currentHyperParams = mergeHashMaps(_hyperParams, (Map<String, Object[]>) _hyperParams.get("constraints")[_currentConstraint]);
-            _currentHyperParamNames = _currentHyperParams.keySet().toArray(new String[0]);
-          }*/
           
-          int[] hyperparamIndices;
+          int[] hyperparamIndices = new int[_currentHyperParamNames.length];
           
           do {
             if(_hyperParams.get("constraints") != null) {
