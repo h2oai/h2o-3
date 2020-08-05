@@ -1,5 +1,5 @@
 import sys, os
-sys.path.insert(1, "../../../")
+sys.path.insert(1, "../../")
 import h2o
 from tests import pyunit_utils
 from random import randint
@@ -10,38 +10,37 @@ def gam_gaussian_mojo():
     h2o.remove_all()
     NTESTROWS = 200    # number of test dataset rows
     PROBLEM="gaussian"
-    params = set_params() 
-    df = pyunit_utils.random_dataset(PROBLEM, seed=2, missing_fraction=0.5) 
+    params = set_params()
+    df = pyunit_utils.random_dataset(PROBLEM, seed=2, missing_fraction=0.5)
     dfnames = df.names
 
     # add GAM specific parameters
     params["gam_columns"] = []
     params["scale"] = []
     count = 0
-    num_gam_cols = 3    # maximum number of gam columns
+    num_gam_cols = 3  # maximum number of gam columns
     for cname in dfnames:
         if not(cname == 'response') and (str(df.type(cname)) == "real"):
             params["gam_columns"].append(cname)
             params["scale"].append(0.001)
             count = count+1
-            if (count >= num_gam_cols):
+            if count >= num_gam_cols:
                 break
-    
+
     train = df[NTESTROWS:, :]
     test = df[:NTESTROWS, :]
-    exclude_list = {"response"}
-    exclude_list.add(params["gam_columns"][0])
+    exclude_list = {"response", params["gam_columns"][0]}
     x = list(set(df.names) - exclude_list)
 
-
     TMPDIR = tempfile.mkdtemp()
-    gamGaussianModel = pyunit_utils.build_save_model_generic(params, x, train, "response", "gam", TMPDIR) # build and save mojo model
+    gamGaussianModel = pyunit_utils.build_save_model_generic(params, x, train, "response", "gam", TMPDIR)  # build and save mojo model
     MOJONAME = pyunit_utils.getMojoName(gamGaussianModel._id)
     h2o.download_csv(test, os.path.join(TMPDIR, 'in.csv'))  # save test file, h2o predict/mojo use same file
     pred_h2o, pred_mojo = pyunit_utils.mojo_predict(gamGaussianModel, TMPDIR, MOJONAME)  # load model and perform predict
     h2o.download_csv(pred_h2o, os.path.join(TMPDIR, "h2oPred.csv"))
     print("Comparing mojo predict and h2o predict...")
-    pyunit_utils.compare_frames_local(pred_h2o, pred_mojo, 1, tol=1e-10)    # make sure operation sequence is preserved from Tomk        h2o.save_model(glmOrdinalModel, path=TMPDIR, force=True)  # save model for debugging
+    pyunit_utils.compare_frames_local(pred_h2o, pred_mojo, 1, tol=1e-10)
+
 
 def set_params():
     missingValues = ['MeanImputation']
