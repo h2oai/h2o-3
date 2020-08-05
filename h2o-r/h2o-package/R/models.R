@@ -4602,7 +4602,9 @@ print.H2ONode <- function(node){
 #' @slot nas A \code{character} representing if NA values go to the left node or right node. May be NA if node is a leaf.
 #' @slot predictions A \code{numeric} representing predictions for each node in the graph.
 #' @slot tree_decision_path A \code{character}, plain language rules representation of a trained decision tree    
-#' @slot decision_paths A \code{character} representing plain language rules that were used in a particular prediction.    
+#' @slot decision_paths A \code{character} representing plain language rules that were used in a particular prediction.
+#' @slot left_cat_split A \code{character} list of categorical levels leading to the left child node. Only present when split is categorical, otherwise none.
+#' @slot right_cat_split A \code{character} list of categorical levels leading to the right child node. Only present when split is categorical, otherwise none.
 #' @aliases H2OTree
 #' @export
 setClass(
@@ -4622,7 +4624,9 @@ setClass(
     nas = "character",
     predictions = "numeric",
     tree_decision_path = "character",
-    decision_paths = "character"
+    decision_paths = "character",
+    left_cat_split = "list",
+    right_cat_split = "list"
   )
 )
 
@@ -4747,6 +4751,14 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
     res$predictions <- as.numeric(res$predictions)
   }
   
+  if(is.logical(res$left_cat_split)){
+    res$left_cat_split <- as.list(res$left_cat_split)
+  }
+  
+  if(is.logical(res$right_cat_split)){
+    res$right_cat_split <- as.list(res$right_cat_split)
+  }
+  
   
   # Start of the tree-building process
   tree <- new(
@@ -4761,7 +4773,9 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
     nas = res$nas,
     predictions = res$predictions,
     tree_decision_path = res$tree_decision_path,
-    decision_paths = res$decision_paths
+    decision_paths = res$decision_paths,
+    left_cat_split = res$left_cat_split,
+    right_cat_split = res$right_cat_split
   )
 
   node_index <- 0

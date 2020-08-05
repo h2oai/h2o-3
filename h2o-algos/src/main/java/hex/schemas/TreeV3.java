@@ -47,4 +47,11 @@ public class TreeV3 extends SchemaV3<Iced, TreeV3> {
 
     @API(direction = API.Direction.OUTPUT, help = "Plain language rules that were used in a particular prediction")
     public String[] decision_paths;
+
+    @API(direction = API.Direction.OUTPUT, help = "Categorical levels leading to the left child node (if split is categorical)")
+    public String[][] left_cat_split;
+    
+    @API(direction = API.Direction.OUTPUT, help = "Categorical levels leading to the right child node (if split is categorical)")
+    public String[][] right_cat_split;
+
 }

@@ -26,6 +26,9 @@ test.gbm.trees <- function() {
   expect_true(is.null(gbm.tree@levels[[1]])) # Root node has no categorical splits
   expect_equal(length(gbm.tree@left_children), length(gbm.tree@levels))
   expect_true(!is.null(gbm.tree@model_id))
+  expect_false(is.null(gbm.tree@left_cat_split))
+  expect_false(is.null(gbm.tree@right_cat_split))
+  expect_equal(length(gbm.tree@right_cat_split), length(gbm.tree@left_cat_split))
   
   totalLength <- length(gbm.tree@left_children)
   expect_equal(totalLength, length(gbm.tree@descriptions))

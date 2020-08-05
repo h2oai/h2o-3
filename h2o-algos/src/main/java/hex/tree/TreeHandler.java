@@ -65,6 +65,8 @@ public class TreeHandler extends Handler {
         args.predictions = treeProperties._predictions;
         args.tree_decision_path = treeProperties._treeDecisionPath;
         args.decision_paths = treeProperties._decisionPaths;
+        args.left_cat_split = treeProperties.left_cat_split;
+        args.right_cat_split = treeProperties.right_cat_split;
         return args;
     }
 
@@ -205,19 +207,20 @@ public class TreeHandler extends Handler {
     static TreeProperties convertSharedTreeSubgraph(final SharedTreeSubgraph sharedTreeSubgraph) {
         Objects.requireNonNull(sharedTreeSubgraph);
 
+        final int numNodesInGraph = sharedTreeSubgraph.nodesArray.size();
         final TreeProperties treeprops = new TreeProperties();
 
-        treeprops._leftChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
-        treeprops._rightChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
-        treeprops._descriptions = new String[sharedTreeSubgraph.nodesArray.size()];
-        treeprops._thresholds = MemoryManager.malloc4f(sharedTreeSubgraph.nodesArray.size());
-        treeprops._features = new String[sharedTreeSubgraph.nodesArray.size()];
-        treeprops._nas = new String[sharedTreeSubgraph.nodesArray.size()];
-        treeprops._predictions = MemoryManager.malloc4f(sharedTreeSubgraph.nodesArray.size());
-        treeprops._leafNodeAssignments = new String[sharedTreeSubgraph.nodesArray.size()];
-        treeprops._decisionPaths = new String[sharedTreeSubgraph.nodesArray.size()];
-        treeprops._leftChildrenNormalized = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
-        treeprops._rightChildrenNormalized = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
+        treeprops._leftChildren = MemoryManager.malloc4(numNodesInGraph);
+        treeprops._rightChildren = MemoryManager.malloc4(numNodesInGraph);
+        treeprops._descriptions = new String[numNodesInGraph];
+        treeprops._thresholds = MemoryManager.malloc4f(numNodesInGraph);
+        treeprops._features = new String[numNodesInGraph];
+        treeprops._nas = new String[numNodesInGraph];
+        treeprops._predictions = MemoryManager.malloc4f(numNodesInGraph);
+        treeprops._leafNodeAssignments = new String[numNodesInGraph];
+        treeprops._decisionPaths = new String[numNodesInGraph];
+        treeprops._leftChildrenNormalized = MemoryManager.malloc4(numNodesInGraph);
+        treeprops._rightChildrenNormalized = MemoryManager.malloc4(numNodesInGraph);
 
         // Set root node's children, there is no guarantee the root node will be number 0
         treeprops._rightChildren[0] = sharedTreeSubgraph.rootNode.getRightChild() != null ? sharedTreeSubgraph.rootNode.getRightChild().getNodeNumber() : -1;
@@ -225,40 +228,59 @@ public class TreeHandler extends Handler {
         treeprops._thresholds[0] = sharedTreeSubgraph.rootNode.getSplitValue();
         treeprops._features[0] = sharedTreeSubgraph.rootNode.getColName();
         treeprops._nas[0] = getNaDirection(sharedTreeSubgraph.rootNode);
-        treeprops.levels = new int[sharedTreeSubgraph.nodesArray.size()][];
+        treeprops.levels = new int[numNodesInGraph][];
         treeprops._treeDecisionPath = getLanguageRepresentation(sharedTreeSubgraph);
         treeprops._decisionPaths[0] = "Predicted value: " + sharedTreeSubgraph.rootNode.getPredValue();
         treeprops._leftChildrenNormalized[0] = sharedTreeSubgraph.rootNode.getLeftChild() != null ? sharedTreeSubgraph.rootNode.getLeftChild().getNodeNumber() : -1;
         treeprops._rightChildrenNormalized[0] = sharedTreeSubgraph.rootNode.getRightChild() != null ? sharedTreeSubgraph.rootNode.getRightChild().getNodeNumber() : -1;
-        treeprops._domainValues = new String[sharedTreeSubgraph.nodesArray.size()][];
+        treeprops._domainValues = new String[numNodesInGraph][];
         treeprops._domainValues[0] = sharedTreeSubgraph.rootNode.getDomainValues();
+        treeprops.left_cat_split = new String[numNodesInGraph][];
+        treeprops.right_cat_split = new String[numNodesInGraph][];
 
         List<SharedTreeNode> nodesToTraverse = new ArrayList<>();
         nodesToTraverse.add(sharedTreeSubgraph.rootNode);
         append(treeprops._rightChildren, treeprops._leftChildren,
                 treeprops._descriptions, treeprops._thresholds, treeprops._features, treeprops._nas,
-                treeprops.levels, treeprops._predictions, nodesToTraverse, -1, false, treeprops._domainValues);
+                treeprops.levels, treeprops._predictions, nodesToTraverse, -1, false, treeprops._domainValues,
+                treeprops.left_cat_split, treeprops.right_cat_split);
         fillLanguagePathRepresentation(treeprops);
 
         return treeprops;
     }
 
+    /**
+     * Recursively appends a new node and all its subsequent nodes, traversing the tree depth-first.
+     *
+     * @param rightChildren
+     * @param leftChildren
+     * @param nodesDescriptions
+     * @param thresholds
+     * @param splitColumns
+     * @param naHandlings
+     * @param levels
+     * @param predictions
+     * @param nodesToTraverse
+     * @param pointer
+     * @param visitedRoot
+     * @param domainValues
+     */
     private static void append(final int[] rightChildren, final int[] leftChildren, final String[] nodesDescriptions,
                                final float[] thresholds, final String[] splitColumns, final String[] naHandlings,
                                final int[][] levels, final float[] predictions,
-                               final List<SharedTreeNode> nodesToTraverse, int pointer, boolean visitedRoot, 
-                               String[][] domainValues) {
-        if(nodesToTraverse.isEmpty()) return;
+                               final List<SharedTreeNode> nodesToTraverse, int pointer, boolean visitedRoot,
+                               String[][] domainValues, final String[][] leftCatSplits, final String[][] rightCatSplits) {
+        if (nodesToTraverse.isEmpty()) return;
 
-        List<SharedTreeNode> discoveredNodes = new ArrayList<>();
+        final List<SharedTreeNode> discoveredNodes = new ArrayList<>();
 
-        for (SharedTreeNode node : nodesToTraverse) {
+        for (final SharedTreeNode node : nodesToTraverse) {
             pointer++;
             final SharedTreeNode leftChild = node.getLeftChild();
             final SharedTreeNode rightChild = node.getRightChild();
-            if(visitedRoot){
+            if (visitedRoot) {
                 fillnodeDescriptions(node, nodesDescriptions, thresholds, splitColumns, levels, predictions,
-                        naHandlings, pointer, domainValues);
+                        naHandlings, pointer, domainValues, leftCatSplits, rightCatSplits);
             } else {
                 StringBuilder rootDescriptionBuilder = new StringBuilder();
                 rootDescriptionBuilder.append("*** WARNING: This property is deprecated! *** ");
@@ -267,7 +289,7 @@ public class TreeHandler extends Handler {
                 rootDescriptionBuilder.append(" and splits on column '");
                 rootDescriptionBuilder.append(node.getColName());
                 rootDescriptionBuilder.append("'. ");
-                fillNodeSplitTowardsChildren(rootDescriptionBuilder, node);
+                fillNodeSplitTowardsChildren(rootDescriptionBuilder, node, leftCatSplits, rightCatSplits, pointer);
                 nodesDescriptions[pointer] = rootDescriptionBuilder.toString();
                 visitedRoot = true;
             }
@@ -288,7 +310,7 @@ public class TreeHandler extends Handler {
         }
 
         append(rightChildren, leftChildren, nodesDescriptions, thresholds, splitColumns, naHandlings, levels, predictions,
-                discoveredNodes, pointer, true, domainValues);
+                discoveredNodes, pointer, true, domainValues, leftCatSplits, rightCatSplits);
     }
 
     private static List<Integer> extractInternalIds(TreeProperties properties) {
@@ -413,12 +435,13 @@ public class TreeHandler extends Handler {
         }
         return conditionLine;
     }
-    
+
     private static void fillnodeDescriptions(final SharedTreeNode node, final String[] nodeDescriptions,
                                              final float[] thresholds, final String[] splitColumns, final int[][] levels,
-                                             final float[] predictions, final String[] naHandlings, final int pointer, final String[][] domainValues) {
+                                             final float[] predictions, final String[] naHandlings, final int pointer, final String[][] domainValues,
+                                             final String[][] leftCatSplits, final String[][] rightCatSplits) {
         final StringBuilder nodeDescriptionBuilder = new StringBuilder();
-        int[] nodeLevels = node.getParent().isBitset() ? extractNodeLevels(node) : null;
+        int[] nodeLevels = null;
         nodeDescriptionBuilder.append("*** WARNING: This property is deprecated! *** ");
         nodeDescriptionBuilder.append("Node has id ");
         nodeDescriptionBuilder.append(node.getNodeNumber());
@@ -430,7 +453,7 @@ public class TreeHandler extends Handler {
             nodeDescriptionBuilder.append(" and is a terminal node. ");
         }
 
-        fillNodeSplitTowardsChildren(nodeDescriptionBuilder, node);
+        fillNodeSplitTowardsChildren(nodeDescriptionBuilder, node, leftCatSplits, rightCatSplits, pointer);
 
         if (!Float.isNaN(node.getParent().getSplitValue())) {
             nodeDescriptionBuilder.append(" Parent node split threshold is ");
@@ -464,7 +487,8 @@ public class TreeHandler extends Handler {
         domainValues[pointer] = node.getDomainValues();
     }
 
-    private static void fillNodeSplitTowardsChildren(final StringBuilder nodeDescriptionBuilder, final SharedTreeNode node){
+    private static void fillNodeSplitTowardsChildren(final StringBuilder nodeDescriptionBuilder, final SharedTreeNode node,
+                                                     final String[][] leftCatSplits, final String[][] rightCatSplits, final int pointer){
         if (!Float.isNaN(node.getSplitValue())) {
             nodeDescriptionBuilder.append("Split threshold is ");
             if (node.getLeftChild() != null) {
@@ -485,7 +509,7 @@ public class TreeHandler extends Handler {
             }
             nodeDescriptionBuilder.append(".");
         } else if (node.isBitset()) {
-            fillNodeCategoricalSplitDescription(nodeDescriptionBuilder, node);
+            fillNodeCategoricalSplitDescription(nodeDescriptionBuilder, node, leftCatSplits, rightCatSplits, pointer);
         }
     }
 
@@ -504,11 +528,23 @@ public class TreeHandler extends Handler {
         return null;
     }
 
-    private static void fillNodeCategoricalSplitDescription(final StringBuilder nodeDescriptionBuilder, final SharedTreeNode node) {
+    private static String[] namesForNodelevels(final int[] indices, final String[] domainValues) {
+        final String[] names = new String[indices.length];
+        for (int i = 0; i < indices.length; i++) {
+            names[i] = domainValues[indices[i]];
+        }
+
+        return names;
+    }
+
+    private static void fillNodeCategoricalSplitDescription(final StringBuilder nodeDescriptionBuilder, final SharedTreeNode node,
+                                                            String[][] leftCatSplits, final String[][] rightCatSplits, final int pointer) {
         final SharedTreeNode leftChild = node.getLeftChild();
         final SharedTreeNode rightChild = node.getRightChild();
         final int[] leftChildLevels = extractNodeLevels(leftChild);
         final int[] rightChildLevels = extractNodeLevels(rightChild);
+        leftCatSplits[pointer] = namesForNodelevels(leftChildLevels, node.getDomainValues());
+        rightCatSplits[pointer] = namesForNodelevels(rightChildLevels, node.getDomainValues());
 
         if (leftChild != null) {
             nodeDescriptionBuilder.append(" Left child node (");
@@ -517,7 +553,7 @@ public class TreeHandler extends Handler {
 
             if (leftChildLevels != null) {
                 for (int nodeLevelsindex = 0; nodeLevelsindex < leftChildLevels.length; nodeLevelsindex++) {
-                    nodeDescriptionBuilder.append(node.getDomainValues()[leftChildLevels[nodeLevelsindex]]);
+                    nodeDescriptionBuilder.append(leftCatSplits[pointer][nodeLevelsindex]);
                     if (nodeLevelsindex != leftChildLevels.length - 1) nodeDescriptionBuilder.append(",");
                 }
             }
@@ -530,14 +566,12 @@ public class TreeHandler extends Handler {
 
             if (rightChildLevels != null) {
                 for (int nodeLevelsindex = 0; nodeLevelsindex < rightChildLevels.length; nodeLevelsindex++) {
-                    nodeDescriptionBuilder.append(node.getDomainValues()[rightChildLevels[nodeLevelsindex]]);
+                    nodeDescriptionBuilder.append(rightCatSplits[pointer][nodeLevelsindex]);
                     if (nodeLevelsindex != rightChildLevels.length - 1) nodeDescriptionBuilder.append(",");
                 }
             }
         }
         nodeDescriptionBuilder.append(". ");
-
-
     }
 
     private static String getNaDirection(final SharedTreeNode node) {
@@ -569,6 +603,8 @@ public class TreeHandler extends Handler {
         private int[] _leftChildrenNormalized;
         private int[] _rightChildrenNormalized;
         private String[][] _domainValues;
+        private String[][] left_cat_split; // Categorical levels leading to the left child node, only present for give node if the split is categorical
+        private String[][] right_cat_split; // Categorical levels leading to the right child node, only present for given node if the split is categorical.
 
     }
 }
