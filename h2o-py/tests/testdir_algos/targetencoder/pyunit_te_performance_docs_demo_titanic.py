@@ -20,7 +20,7 @@ def test_that_te_is_helpful_for_titanic_gbm_xval():
     response='survived'
 
     # Split the dataset into train and test
-    train, test = titanic.split_frame(ratios = [.8], seed = 1234)
+    train, test = titanic.split_frame(ratios=[.8], seed=1234)
 
     # Choose which columns to encode
     encoded_columns = ["home.dest", "cabin", "embarked"]

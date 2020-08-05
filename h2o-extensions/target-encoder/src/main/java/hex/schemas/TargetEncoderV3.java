@@ -1,7 +1,6 @@
 package hex.schemas;
+import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoder;
-import ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy;
-import ai.h2o.targetencoding.TargetEncoderBuilder;
 import ai.h2o.targetencoding.TargetEncoderModel;
 import water.api.API;
 import water.api.EnumValuesProvider;
@@ -10,7 +9,7 @@ import water.api.schemas3.ModelParametersSchemaV3;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, TargetEncoderV3, TargetEncoderV3.TargetEncoderParametersV3> {
+public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoder, TargetEncoderV3, TargetEncoderV3.TargetEncoderParametersV3> {
   public static class TargetEncoderParametersV3 extends ModelParametersSchemaV3<TargetEncoderModel.TargetEncoderParameters, TargetEncoderParametersV3> {
     
     @API(help = "If true, enables blending of posterior probabilities (computed for a given categorical value) " +
@@ -63,6 +62,6 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
   }
   
   public static final class DataLeakageHandlingStrategyProvider extends EnumValuesProvider<DataLeakageHandlingStrategy> {
-    public DataLeakageHandlingStrategyProvider() { super(TargetEncoder.DataLeakageHandlingStrategy.class); }
+    public DataLeakageHandlingStrategyProvider() { super(DataLeakageHandlingStrategy.class); }
   }
 }

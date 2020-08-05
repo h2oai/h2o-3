@@ -43,9 +43,9 @@ public class TargetEncoderRGSTest{
       try {
         HashMap<String, Object[]> hpGrid = new HashMap<>();
         hpGrid.put("blending", new Boolean[]{true, false});
-        hpGrid.put("noise_level", new Double[]{0.0, 0.01, 0.1});
-        hpGrid.put("k", new Double[]{1.0, 2.0, 3.0});
-        hpGrid.put("f", new Double[]{5.0, 10.0, 20.0});
+        hpGrid.put("noise", new Double[]{0.0, 0.01, 0.1});
+        hpGrid.put("inflection_point", new Double[]{1.0, 2.0, 3.0});
+        hpGrid.put("smoothing", new Double[]{5.0, 10.0, 20.0});
 
         TargetEncoderParameters parameters = new TargetEncoderParameters();
 
@@ -96,19 +96,25 @@ public class TargetEncoderRGSTest{
 
         HashMap<String, Object[]> hpGrid = new HashMap<>();
         hpGrid.put("blending", new Boolean[]{true, false});
-        hpGrid.put("noise_level", new Double[]{0.0, 0.01,  0.1});
-        hpGrid.put("k", new Double[]{1.0, 2.0, 3.0});
-        hpGrid.put("f", new Double[]{5.0, 10.0, 20.0});
+        hpGrid.put("noise", new Double[]{0.0, 0.01,  0.1});
+        hpGrid.put("inflection_point", new Double[]{1.0, 2.0, 3.0});
+        hpGrid.put("smoothing", new Double[]{5.0, 10.0, 20.0});
 
         TargetEncoderParameters parameters = new TargetEncoderParameters();
         parameters._train = trainingFrame._key;
         parameters._response_column = responseColumn;
         parameters._ignored_columns = ignoredColumns(trainingFrame, "home.dest", "embarked", parameters._response_column);
 
-        DefaultModelParametersBuilderFactory<TargetEncoderParameters, TargetEncoderParametersV3> modelParametersBuilderFactory = new DefaultModelParametersBuilderFactory<>();
+        DefaultModelParametersBuilderFactory<TargetEncoderParameters, TargetEncoderParametersV3> modelParametersBuilderFactory = 
+                new DefaultModelParametersBuilderFactory<>();
 
         RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new RandomDiscreteValueSearchCriteria();
-        RandomDiscreteValueWalker<TargetEncoderParameters> walker = new RandomDiscreteValueWalker<>(parameters, hpGrid, modelParametersBuilderFactory, hyperSpaceSearchCriteria);
+        RandomDiscreteValueWalker<TargetEncoderParameters> walker = new RandomDiscreteValueWalker<>(
+                parameters, 
+                hpGrid, 
+                modelParametersBuilderFactory, 
+                hyperSpaceSearchCriteria
+        );
 
         Job<Grid> gs = GridSearch.startGridSearch(Key.make(), walker, parallelism);
 

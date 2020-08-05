@@ -2,7 +2,7 @@ package ai.h2o.targetencoding;
 
 import water.Iced;
 
-public class TEComponents extends Iced<TEComponents> {
+class TEComponents extends Iced<TEComponents> {
 
   private double _numerator;
   private long _denominator;

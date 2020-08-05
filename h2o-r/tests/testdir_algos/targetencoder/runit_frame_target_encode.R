@@ -1,7 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 ##
-# Testing target encoding map (h2o.target_encode_create) and target encoding frame (h2o.target_encode_apply)
+# Testing target encoding map (h2o.target_encode_create) and target encoding frame (h2o.target_encode_apply).
+# Thoses tests are only for the legacy pure client-based implementation of target encoding in R: 
+# this is NOT related with the backend implementation of target encoding.
 ##
 
 
