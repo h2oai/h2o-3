@@ -2435,7 +2435,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
           if (! Arrays.equals(model_predictions.names(), genmodel.getOutputNames())) {
             if (_parms._distribution == DistributionFamily.quasibinomial) {
-              Log.warn("Quasibinomial doesn't correctly return output names in MOJO");
+              Log.warn("Quasibinomial doesn't correctly return output names in MOJO"); 
+            } else if (genmodel.getModelCategory() == ModelCategory.Clustering && Arrays.equals(genmodel.getOutputNames(), new String[]{"cluster"})) {
+              Log.warn("Known inconsistency between MOJO output naming and H2O predict - cluster vs predict");
             } else
               throw new IllegalStateException("GenModel output naming doesn't match provided scored frame. " +
                       "Expected: " + Arrays.toString(model_predictions.names()) +
