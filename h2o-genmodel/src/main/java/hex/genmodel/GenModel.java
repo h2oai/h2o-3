@@ -85,6 +85,64 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   /** Returns this model category. */
   @Override public abstract ModelCategory getModelCategory();
 
+  public String[] getOutputNames() {
+    final ModelCategory category = getModelCategory();
+    final String[] outputNames;
+    // Emit outputCSV column names.
+    switch (category) {
+      case AutoEncoder:
+        List<String> onames = new LinkedList<>(); 
+        final String[] cnames = getNames();
+        final int numCats = nCatFeatures();
+        final String[][] domainValues = getDomainValues();
+
+        for (int index = 0; index <= numCats - 1; index++) { // add names for categorical columns
+          String[] tdomains = domainValues[index];
+          int tdomainLen = tdomains.length-1;
+          for (int index2 = 0; index2 <= tdomainLen; index2++) {
+            onames.add("reconstr_" + tdomains[index2]);
+          }
+          onames.add("reconstr_" + cnames[index] + ".missing(NA)");
+        }
+        for (int index = numCats; index < cnames.length; index++) {  // add the numerical column names
+          onames.add("reconstr_" + cnames[index]);
+        }
+        outputNames = onames.toArray(new String[0]);
+        break;
+      case Binomial:
+      case Multinomial:
+      case Ordinal:
+        final String[] responseDomainValues = getDomainValues(getResponseIdx());
+        outputNames = new String[1 + responseDomainValues.length];
+        outputNames[0] = "predict";
+        System.arraycopy(responseDomainValues, 0, outputNames, 1, outputNames.length - 1);
+        // turn integer class labels such as 0, 1, etc. into p0, p1, etc.
+        for (int i = 1; i < outputNames.length; i++) {
+          try {
+            Integer.valueOf(outputNames[i]);
+            outputNames[i] = "p" + outputNames[i];
+          } catch (Exception e) {
+            // do nothing, non-integer names are fine already
+          }
+        }
+        break;
+
+      case Clustering:
+        outputNames = new String[]{"cluster"};
+        break;
+
+      case Regression:
+        outputNames = new String[]{"predict"};
+        break;
+
+      default:
+        throw new UnsupportedOperationException("Getting output column names for model category '" + 
+                category + "' is not supported.");
+    }
+
+    return outputNames;
+  }
+  
   /** Override this for models that may produce results in different categories. */
   @Override public EnumSet<ModelCategory> getModelCategories() {
     return EnumSet.of(getModelCategory());

@@ -5,7 +5,6 @@ import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
-import hex.genmodel.algos.pca.PCAMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
@@ -122,107 +121,39 @@ public class PredictCsv {
 
     // Emit outputCSV column names.
     switch (category) {
-      case AutoEncoder:
-        String[] cnames =  this.model.m.getNames();
-        int numCats = this.model.m.nCatFeatures();
-        int numNums = this.model.m.nfeatures()-numCats;
-        String[][] domainValues = this.model.m.getDomainValues();
-        int lastCatIdx = numCats-1;
-
-        for (int index = 0; index <= lastCatIdx  ; index++) { // add names for categorical columns
-          String[] tdomains = domainValues[index]; //this.model.m.getDomainValues(index)
-          int tdomainLen = tdomains.length-1;
-          for (int index2 = 0; index2 <= tdomainLen; index2++ ) {
-            lastCommaAutoEn++;
-            String temp = "reconstr_"+tdomains[index2];
-            output.write(temp);
-            output.write(',');
-          }
-
-          lastCommaAutoEn++;
-          String temp = "reconstr_" + cnames[index] + ".missing(NA)"; // add missing(NA) column as last column name
-          output.write(temp);
-          if (numNums > 0 || index < lastCatIdx)
-            output.write(',');
-        }
-
-        int lastComma = cnames.length-1;
-        for (int index = numCats; index < cnames.length; index++) {  // add the numerical column names
-          lastCommaAutoEn++;
-          String temp = "reconstr_"+cnames[index];
-          output.write(temp);
-
-          if (index < lastComma )
-            output.write(',');
-        }
-        break;
       case Binomial:
       case Multinomial:
-        if (getTreePath) {
-          writeTreePathNames(output);
-        } else if (predictContributions) {
-          writeContributionNames(output);
-        } else {
-          output.write("predict");
-          String[] responseDomainValues = model.getResponseDomainValues();
-          for (String s : responseDomainValues) {
-            output.write(",");
-            output.write(s);
-          }
-        }
-        break;
-      case Ordinal:
-        output.write("predict");
-        String[] responseDomainValues = model.getResponseDomainValues();
-        for (String s : responseDomainValues) {
-          output.write(",");
-          output.write(s);
-        }
-        break;
-
-      case Clustering:
-        output.write("cluster");
-        break;
-
       case Regression:
         if (getTreePath) {
           writeTreePathNames(output);
         } else if (predictContributions) {
           writeContributionNames(output);
         } else
-          output.write("predict");
-
+          writeHeader(model.m.getOutputNames(), output);
         break;
 
-      case DimReduction:  // will write factor or the precdicted value depending on what the user wants
-        int datawidth;
-        String head;
-        String[] colnames =  this.model.m.getNames();
+      case DimReduction:  // will write factor or the predicted value depending on what the user wants
         if (returnGLRMReconstruct) {
+          int datawidth;
+          String head;
+          String[] colnames = this.model.m.getNames();
+
           datawidth = ((GlrmMojoModel) model.m)._permutation.length;
           head = "reconstr_";
-        } else {
-          if (model.m instanceof GlrmMojoModel) {
-            datawidth = ((GlrmMojoModel) model.m)._ncolX;
-            head = "Arch";
-          } else {  // PCA here
-            datawidth = ((PCAMojoModel) model.m)._k;
-            head = "PC";
+          int lastData = datawidth - 1;
+          for (int index = 0; index < datawidth; index++) {  // add the numerical column names
+            String temp = returnGLRMReconstruct ? head + colnames[index]:head + (index + 1);
+            output.write(temp);
+
+            if (index < lastData)
+              output.write(',');
           }
-        }
-
-        int lastData = datawidth-1;
-        for (int index = 0; index < datawidth; index++) {  // add the numerical column names
-          String temp = returnGLRMReconstruct ? head+colnames[index] : head+(index+1);
-          output.write(temp);
-
-          if (index < lastData )
-            output.write(',');
-        }
+        } else
+          writeHeader(model.m.getOutputNames(), output);
         break;
 
       default:
-        throw new Exception("Unknown model category " + category);
+        writeHeader(model.m.getOutputNames(), output);
     }
     output.write("\n");
 
@@ -361,6 +292,14 @@ public class PredictCsv {
       // Clean up.
       output.close();
       reader.close();
+    }
+  }
+
+  private void writeHeader(String[] colNames, BufferedWriter output) throws Exception {
+    output.write(colNames[0]);
+    for (int i = 1; i < colNames.length; i++) {
+      output.write(",");
+      output.write(colNames[i]);
     }
   }
 

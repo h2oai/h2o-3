@@ -119,4 +119,12 @@ public final class GbmMojoModel extends SharedTreeMojoModelWithContributions imp
         return getDecisionPath(row);
     }
 
+    @Override
+    public String[] getOutputNames() {
+        if (_family == quasibinomial && getDomainValues(getResponseIdx()) == null) {
+            return new String[]{"predict", "pVal0", "pVal1"};
+        }
+        return super.getOutputNames();
+    }
+
 }

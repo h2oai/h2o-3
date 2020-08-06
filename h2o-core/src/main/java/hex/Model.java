@@ -2432,8 +2432,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             boolean deleted = new File(filename).delete();
             if (!deleted) Log.warn("Failed to delete the file");
           }
-        }
 
+          if (! Arrays.equals(model_predictions.names(), genmodel.getOutputNames())) {
+            if (_parms._distribution == DistributionFamily.quasibinomial) {
+              Log.warn("Quasibinomial doesn't correctly return output names in MOJO");
+            } else
+              throw new IllegalStateException("GenModel output naming doesn't match provided scored frame. " +
+                      "Expected: " + Arrays.toString(model_predictions.names()) +
+                      ", Actual: " + Arrays.toString(genmodel.getOutputNames()));
+          }
+        }
+        
         if (genmodel instanceof GlrmMojoModel) {
           try {
             config.setModel(genmodel).setEnableGLRMReconstrut(true);
