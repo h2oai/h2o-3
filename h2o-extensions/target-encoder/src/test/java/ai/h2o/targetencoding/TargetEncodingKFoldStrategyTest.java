@@ -329,7 +329,6 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
       }
   }
 
-//  @Ignore
   @Test
   public void apply_TE_with_KFold_strategy_and_blending() {
     try {
@@ -372,13 +371,6 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
       assertEquals(0.407, getBlendedValue(0, priorMean, 1, bp), 1e-3); // for (val, fold) = ('a', 2)
       Vec expectedEnc = dvec(0.796, 0.796, 0.796, 0.800, 0.407, 0.666);
       assertVecEquals(expectedEnc, catEnc, 1e-3);
-
-      //from previous test: why did the values change???
-      assertEquals(0.855, catEnc.at(0), 1e-3);
-      assertEquals(0.724, catEnc.at(1), 1e-3);
-      assertEquals(0.855, catEnc.at(2), 1e-3);
-      assertEquals(0.856, catEnc.at(4), 1e-3);
-
     } finally {
       Scope.exit();
     }
