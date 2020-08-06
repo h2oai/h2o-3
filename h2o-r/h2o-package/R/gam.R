@@ -85,7 +85,7 @@
 #' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
 #'        coefficients to zero). Default indicates: if the number of observations is greater than the number of
 #'        variables, then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of
-#'        variables, then lambda_min_ratio is set to 0.01. Defaults to 0.
+#'        variables, then lambda_min_ratio is set to 0.01. Defaults to -1.
 #' @param beta_constraints Beta constraints
 #' @param max_active_predictors Maximum number of active predictors during computation. Use as a stopping criterion to prevent expensive model
 #'        building with many predictors. Default indicates: If the IRLSM solver is used, the value of
@@ -171,7 +171,7 @@ h2o.gam <- function(x,
                     gradient_epsilon = -1,
                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
                     prior = -1,
-                    lambda_min_ratio = 0,
+                    lambda_min_ratio = -1,
                     beta_constraints = NULL,
                     max_active_predictors = -1,
                     interactions = NULL,
@@ -411,7 +411,7 @@ h2o.gam <- function(x,
                                     gradient_epsilon = -1,
                                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
                                     prior = -1,
-                                    lambda_min_ratio = 0,
+                                    lambda_min_ratio = -1,
                                     beta_constraints = NULL,
                                     max_active_predictors = -1,
                                     interactions = NULL,
