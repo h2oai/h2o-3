@@ -17,6 +17,7 @@ class TEBroadcastJoin {
    * @param rightCatColumnsIdxs indices of the categorical columns from `rightFrame`.
    *        Only one categorical column is currently supported.
    * @param rightFoldColumnIdx index of the fold column from `rightFrame` or `-1` if we don't use folds.
+   * @param maxFoldValue the highest fold value (e.g. 4 if 5 folds).
    * @return the `leftFrame` with joined numerators and denominators.
    */
   static Frame join(Frame leftFrame, int[] leftCatColumnsIdxs, int leftFoldColumnIdx,
@@ -52,7 +53,7 @@ class TEBroadcastJoin {
     Frame resultFrame = new Frame(leftFrame);
     resultFrame.add(TargetEncoderHelper.NUMERATOR_COL, resultFrame.anyVec().makeCon(0));
     resultFrame.add(TargetEncoderHelper.DENOMINATOR_COL, resultFrame.anyVec().makeCon(0));
-    new BroadcastJoiner(leftCatColumnsIdxs, leftFoldColumnIdx, encodingData, levelMappings, rightCatCardinality)
+    new BroadcastJoiner(leftCatColumnsIdxs, leftFoldColumnIdx, encodingData, levelMappings, rightCatCardinality-1)
             .doAll(resultFrame);
     return resultFrame;
   }
@@ -102,13 +103,13 @@ class TEBroadcastJoin {
       Chunk numeratorChunk = cs[_numeratorIdx];
       Chunk denominatorChunk = cs[_denominatorIdx];
       for (int i = 0; i < categoricalChunk.len(); i++) {
-        int levelValue = (int) categoricalChunk.at8(i);
+        int level = (int) categoricalChunk.at8(i);
 
         // We are allowed to do casting to `int` as we have validation before submitting this MRTask
         int foldValue = _foldColumnIdx != -1 ? (int) cs[_foldColumnIdx].at8(i) : 0;
         double[] numDenArray = _encodingDataPerNode[foldValue];
-        numDenArray[2*levelValue] = numeratorChunk.at8(i);
-        numDenArray[2*levelValue+1] = denominatorChunk.at8(i);
+        numDenArray[2*level] = numeratorChunk.at8(i);
+        numDenArray[2*level+1] = denominatorChunk.at8(i);
       }
     }
 
@@ -160,11 +161,11 @@ class TEBroadcastJoin {
   }
 
   private static class BroadcastJoiner extends MRTask<BroadcastJoiner> {
-    int _categoricalColumnIdx, _foldColumnIdx, _cardinalityOfCatCol;
+    int _categoricalColumnIdx, _foldColumnIdx, _maxKnownCatLevel;
     double[][] _encodingDataArray;
     int[][] _levelMappings;
 
-    BroadcastJoiner(int[] categoricalColumnsIdxs, int foldColumnIdx, double[][] encodingDataArray, int[][] levelMappings, int cardinalityOfCatCol) {
+    BroadcastJoiner(int[] categoricalColumnsIdxs, int foldColumnIdx, double[][] encodingDataArray, int[][] levelMappings, int maxKnownCatLevel) {
       assert categoricalColumnsIdxs.length == 1 : "Only single column target encoding (i.e. one categorical column is used to produce its encodings) is supported for now";
       assert levelMappings.length == 1;
       
@@ -172,7 +173,7 @@ class TEBroadcastJoin {
       _foldColumnIdx = foldColumnIdx;
       _encodingDataArray = encodingDataArray;
       _levelMappings = levelMappings;
-      _cardinalityOfCatCol = cardinalityOfCatCol;
+      _maxKnownCatLevel = maxKnownCatLevel;
     }
 
     @Override
@@ -183,24 +184,24 @@ class TEBroadcastJoin {
       Chunk num = cs[cs.length - 2]; // numerator and denominator columns are appended in #join method.
       Chunk den = cs[cs.length - 1];
       for (int i = 0; i < num.len(); i++) {
-        int levelValue = (int) categoricalChunk.at8(i);
-        if (levelValue >= levelMapping.length) {
+        int level = (int) categoricalChunk.at8(i);
+        if (level >= levelMapping.length) { // should never happen: when joining, level is a category in the left frame, and levelMapping.length == size of the domain on that frame
           setEncodingComponentsToNAs(num, den, i);
           continue;
         }
         
-        int mappedLevelValue = levelMapping[levelValue];
+        int mappedLevel = levelMapping[level];
         int foldValue = _foldColumnIdx >= 0 ? (int)cs[_foldColumnIdx].at8(i) : 0;
         double[] numDenArray = _encodingDataArray[foldValue];
 
-        if (mappedLevelValue >= _cardinalityOfCatCol) {  // value not in encodings (unseen in training data).
+        if (mappedLevel > _maxKnownCatLevel) {  // level not in encodings (unseen in training data) -> NA
           setEncodingComponentsToNAs(num, den, i);
         } else {
-          double denominator = numDenArray[2*mappedLevelValue+1];
-          if (denominator == 0) {
+          double denominator = numDenArray[2*mappedLevel+1];
+          if (denominator == 0) { // no occurrence of current level for this fold -> NA
             setEncodingComponentsToNAs(num, den, i);
           } else {
-            double numerator = numDenArray[2*mappedLevelValue];
+            double numerator = numDenArray[2*mappedLevel];
             num.set(i, numerator);
             den.set(i, denominator);
           }

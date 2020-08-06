@@ -1,6 +1,7 @@
 package ai.h2o.targetencoding;
 
 import water.*;
+import water.fvec.CategoricalWrappedVec;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -140,6 +141,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
   private static void updateColumnDomain(Frame fr, int columnIdx, String[] domain) {
     fr.write_lock();
     Vec updatedVec = fr.vec(columnIdx);
+//    CategoricalWrappedVec.updateDomain(updatedVec, domain); // safer? remapping should be unnecessary in our use-case though
     updatedVec.setDomain(domain);
     DKV.put(updatedVec);
     fr.update();
@@ -241,9 +243,9 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
       Chunk encoded = cs[_encodedColIdx];
       boolean useBlending = _blendingParams != null;
       for (int i = 0; i < num._len; i++) {
-        if (num.isNA(i) || den.isNA(i)) {
+        if (num.isNA(i) || den.isNA(i)) { // 2 cases: category unseen during training, or not present in a given fold, shouldn't we make the distinction?
           encoded.setNA(i);
-        } else if (den.at8(i) == 0) {
+        } else if (den.at8(i) == 0) { //should never happen according to BroadcastJoiner, except after substracting target in LOO strategy.
           if (logger.isDebugEnabled())
             logger.debug("Denominator is zero for column index = " + _encodedColIdx + ". Imputing with _priorMean = " + _priorMean);
           encoded.set(i, _priorMean);
@@ -409,7 +411,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
     Vec vec0 = fr.vec(columnIndex);
     Vec v;
     if (vec0.isCategorical()) {
-      v = Vec.makeSeq(0, (long) vec0.domain().length, true);
+      v = Vec.makeSeq(0, vec0.domain().length, true);
       v.setDomain(vec0.domain());
       DKV.put(v);
     } else {

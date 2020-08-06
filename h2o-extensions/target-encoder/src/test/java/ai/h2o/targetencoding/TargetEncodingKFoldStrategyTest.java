@@ -374,10 +374,10 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
       assertVecEquals(expectedEnc, catEnc, 1e-3);
 
       //from previous test: why did the values change???
-//      assertEquals(0.855, catEnc.at(0), 1e-3);
-//      assertEquals(0.724, catEnc.at(1), 1e-3);
-//      assertEquals(0.855, catEnc.at(2), 1e-3);
-//      assertEquals(0.856, catEnc.at(4), 1e-3);
+      assertEquals(0.855, catEnc.at(0), 1e-3);
+      assertEquals(0.724, catEnc.at(1), 1e-3);
+      assertEquals(0.855, catEnc.at(2), 1e-3);
+      assertEquals(0.856, catEnc.at(4), 1e-3);
 
     } finally {
       Scope.exit();
