@@ -173,8 +173,9 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
         
         final boolean isConfiguredAsIgnored = this.ignoreTestsNames.contains(testName);
         final boolean isConfiguredAsDoOnly = this.doOnlyTestNames.contains(testName);
-        
-        return isAnnotatedAsIgnored || (isConfiguredAsIgnored && !isConfiguredAsDoOnly);
+
+        return isAnnotatedAsIgnored || (isConfiguredAsIgnored && !isConfiguredAsDoOnly) 
+                || (!this.doOnlyTestNames.isEmpty() && !isConfiguredAsDoOnly);
     }
 
     private void createTestFilters() {
