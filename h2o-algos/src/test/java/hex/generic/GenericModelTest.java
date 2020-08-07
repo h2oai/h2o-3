@@ -896,6 +896,7 @@ public class GenericModelTest extends TestUtil {
         GenericModel model = builder.trainModel().get();
         assertNotNull(model);
         assertFalse(model.needsPostProcess());
+        assertNotNull(model.toString()); // make sure model can be printed
         return model;
     }
 
