@@ -100,7 +100,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
           String[] tdomains = domainValues[index];
           int tdomainLen = tdomains.length-1;
           for (int index2 = 0; index2 <= tdomainLen; index2++) {
-            onames.add("reconstr_" + tdomains[index2]);
+            onames.add("reconstr_" + cnames[index] + "." + tdomains[index2]);
           }
           onames.add("reconstr_" + cnames[index] + ".missing(NA)");
         }

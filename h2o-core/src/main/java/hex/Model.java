@@ -2438,7 +2438,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               Log.warn("Quasibinomial doesn't correctly return output names in MOJO"); 
             } else if (genmodel.getModelCategory() == ModelCategory.Clustering && Arrays.equals(genmodel.getOutputNames(), new String[]{"cluster"})) {
               Log.warn("Known inconsistency between MOJO output naming and H2O predict - cluster vs predict");
-            } else
+            } else if (genmodel instanceof GlrmMojoModel) {
+              Log.trace("GLRM is being tested for 'reconstruct', not the default score0 - dim reduction, unable to compare output names");
+            } else if (false) 
               throw new IllegalStateException("GenModel output naming doesn't match provided scored frame. " +
                       "Expected: " + Arrays.toString(model_predictions.names()) +
                       ", Actual: " + Arrays.toString(genmodel.getOutputNames()));
