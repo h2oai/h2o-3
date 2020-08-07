@@ -5,14 +5,17 @@ import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.*;
-import water.fvec.*;
+import water.Scope;
+import water.TestUtil;
+import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
 
 import static ai.h2o.targetencoding.TargetEncoderHelper.DENOMINATOR_COL;
 import static ai.h2o.targetencoding.TargetEncoderHelper.NUMERATOR_COL;
 import static org.junit.Assert.assertEquals;
 
-public class TargetEncodingOnBinaryTest extends TestUtil {
+public class TargetEncodingOnRegressionTest extends TestUtil {
   
   @BeforeClass
   public static void setup() {
@@ -20,14 +23,14 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
   }
 
   @Test
-  public void test_encodings_with_binary_target() {
+  public void test_encodings_with_continuous_target() {
     try {
       Scope.enter();
       final Frame fr = new TestFrameBuilder()
               .withColNames("categorical", "target")
-              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "a", "a", "a", "b", "b"))
-              .withDataForCol(1, ar("NO", "YES", "YES", "YES", "NO", "YES"))
+              .withDataForCol(1, ard(1.,  2.,  3.,  4.,  5.,  6.))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -41,8 +44,8 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       Frame encodings = teModel._output._target_encoding_map.get("categorical");
         
       Vec expectedCatColumn = vec(ar("a", "b"), 0, 1);
-      Vec expectedNumColumn = vec(3, 1);  // for binomial, numerator should correspond to the sum of positive occurrences (here "YES" ) for each category
-      Vec expectedDenColumn = vec(4, 2);  // for binomial, denominator should correspond to the sum of all occurrences for each category
+      Vec expectedNumColumn = dvec(10., 11.);  // for regression, numerator should correspond to the sum of targets for each category
+      Vec expectedDenColumn = vec(   4,   2);  // for regression, denominator should correspond to the count of occurrences for each category
 
       assertVecEquals(expectedCatColumn, encodings.vec("categorical"), 0);
       assertVecEquals(expectedNumColumn, encodings.vec(NUMERATOR_COL), 0);
@@ -52,7 +55,7 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       Scope.track(predictions);
       Vec encoded = predictions.vec("categorical_te");
       Assert.assertNotNull(encoded);
-      Vec expectedEncodedCol = dvec(.75, .75, .75, .75, .5, .5);
+      Vec expectedEncodedCol = dvec(2.5, 2.5, 2.5, 2.5, 5.5, 5.5);
       assertVecEquals(expectedEncodedCol, encoded, 1e-6);
     } finally {
       Scope.exit();
@@ -65,9 +68,9 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       Scope.enter();
       final Frame fr = new TestFrameBuilder()
               .withColNames("categorical", "target")
-              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-              .withDataForCol(0, ar( "a",   "a",  null,   "b",   "a",  null,  "b",   "a", null))
-              .withDataForCol(1, ar("NO", "YES",  "NO", "YES", "YES", "YES", "NO", "YES", "NO"))
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "a", null, "b", "a", null, "b", "a", null))
+              .withDataForCol(1, ard(1.,  2.,   3.,  4.,  5.,   6.,  7.,  8.,   9.))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -82,11 +85,11 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       Frame encodings = teModel._output._target_encoding_map.get("categorical");
       printOutFrameAsTable(encodings);
       double priorMean = teModel._output._prior_mean;
-      assertEquals(0.556, priorMean, 1e-3); // == 5/9
+      assertEquals(5., priorMean, 1e-3); // == 45/9
 
       Vec expectedCatColumn = vec(ar("a", "b", "categorical_NA"), 0, 1, 2); //  we should have an entry per category
-      Vec expectedNumColumn = vec(3, 1, 1); // for binomial, numerator should correspond to the sum of positive occurrences (here "YES" ) for each category
-      Vec expectedDenColumn = vec(4, 2, 3); // for binomial, denominator should correspond to the sum of all occurrences for each category
+      Vec expectedNumColumn = dvec(16., 11., 18.);  // for regression, numerator should correspond to the sum of targets for each category
+      Vec expectedDenColumn = vec(   4,   2,   3);  // for regression, denominator should correspond to the count of occurrences for each category
 
       assertCatVecEquals(expectedCatColumn, encodings.vec("categorical"));
       assertVecEquals(expectedNumColumn, encodings.vec(NUMERATOR_COL), 0);
@@ -96,7 +99,7 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       Scope.track(predictions);
       Vec encoded = predictions.vec("categorical_te");
       Assert.assertNotNull(encoded);
-      Vec expectedEncodedCol = dvec(0.75, 0.75, 0.333, 0.5, 0.75, 0.333, 0.5, 0.75, 0.333); // == (3/4, 3/4, 1/3, 1/2, 3/4, 1/3, 1/2, 3/4, 1/3)
+      Vec expectedEncodedCol = dvec(4., 4., 6., 5.5, 4., 6., 5.5, 4., 6.); // == (16/4, 16/4, 18/3, 11/2, 16/4, 18/3, 11/2, 16/4, 18/3)
       assertVecEquals(expectedEncodedCol, encoded, 1e-3);
       
       final Frame test = new TestFrameBuilder()
@@ -108,7 +111,7 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       Scope.track(testPredictions);
       Vec testEncoded = testPredictions.vec("categorical_te");
       Assert.assertNotNull(testEncoded);
-      Vec expectedTestEnc = dvec(0.333, 0.5, 0.75, 0.333); // == (1/3, 1/2, 3/4, 1/3), unseen "c' currently encoded like null (would rather use prior...)
+      Vec expectedTestEnc = dvec(6., 5.5, 4., 6.); // == (18/3, 11/2, 16/4, 18/3), unseen "c' currently encoded like null (would rather use prior...)
       assertVecEquals(expectedTestEnc, testEncoded, 1e-3);
 
       Frame testTransform = teModel.transform(test, null, 0);
@@ -125,9 +128,9 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       Scope.enter();
       final Frame fr = new TestFrameBuilder()
               .withColNames("categorical", "target")
-              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-              .withDataForCol(0, ar( "a",   "a",  null,   "b",   "a",  null,  "b",   "a", null,   "c"))
-              .withDataForCol(1, ar("NO", "YES",  "NO", "YES", "YES", "YES", "NO", "YES", "NO", "YES"))
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "a", null, "b", "a", null, "b", "a", null, "c"))
+              .withDataForCol(1, ard(1.,  2.,   3.,  4.,  5.,   6.,  7.,  8.,   9., 10.))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -142,11 +145,11 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       Frame encodings = teModel._output._target_encoding_map.get("categorical");
       printOutFrameAsTable(encodings);
       double priorMean = teModel._output._prior_mean;
-      assertEquals(0.6, priorMean, 1e-3); // == 6/10
+      assertEquals(5.5, priorMean, 1e-3); // == 55/10
 
       Vec expectedCatColumn = vec(ar("a", "b", "c", "categorical_NA"), 0, 1, 2, 3); //  we should have an entry per category
-      Vec expectedNumColumn = vec(3, 1, 1, 1); // for binomial, numerator should correspond to the sum of positive occurrences (here "YES" ) for each category
-      Vec expectedDenColumn = vec(4, 2, 1, 3); // for binomial, denominator should correspond to the sum of all occurrences for each category
+      Vec expectedNumColumn = dvec(16., 11., 10., 18.);  // for regression, numerator should correspond to the sum of targets for each category
+      Vec expectedDenColumn = vec(   4,   2,   1,   3);  // for regression, denominator should correspond to the count of occurrences for each category
 
       assertCatVecEquals(expectedCatColumn, encodings.vec("categorical"));
       assertVecEquals(expectedNumColumn, encodings.vec(NUMERATOR_COL), 0);
@@ -156,20 +159,22 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       Scope.track(predictions);
       Vec encoded = predictions.vec("categorical_te");
       Assert.assertNotNull(encoded);
-      Vec expectedEncodedCol = dvec(1., 0.667, 0.5, 0., 0.667, 0., 1., 0.667, 0.5, 0.6); // == (3/3, 2/3, 1/2, 0/1, 2/3, 0/2, 1/1, 2/3, 1/2, 0/0=prior)
+      Vec expectedEncodedCol = dvec(5., 4.667, 7.5, 7., 3.667, 6., 4., 2.667, 4.5, 5.5); // == (15/3, 14/3, 15/2, 7/1, 11/3, 12/2, 4/1, 8/3, 9/2, 0/0=prior)
       assertVecEquals(expectedEncodedCol, encoded, 1e-3);
       
       final Frame test = new TestFrameBuilder()
               .withColNames("categorical", "target")
-              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-              .withDataForCol(0, ar(  "d",   "c",   "b",   "a",  null))
-              .withDataForCol(1, ar("YES",  "NO", "YES", "YES", "YES"))
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar(  "d", "c", "b", "a", null))
+              .withDataForCol(1, ard( 15., 10., 12.,  5.,   3.))
               .build();
       Frame testPredictions = teModel.score(test);
       Scope.track(testPredictions);
       Vec testEncoded = testPredictions.vec("categorical_te");
       Assert.assertNotNull(testEncoded);
-      Vec expectedTestEnc = dvec(0.6, 0.6, 0., 0.667, 0.); // == (prior, 1/0=prior, 0/1, 2/3, 0/2), unseen "d' encoded using prior (inconsistent with None strategy)
+      Vec expectedTestEnc = dvec(5.5, 5.5, -1., 3.667, 7.5); // == (prior, 0/0=prior, -1/1, 11/3, 15/2), unseen "d' encoded using prior (inconsistent with None strategy)
+      //XXX: note that 'b' was encoded to a negative value although all target values seen until then were positive.
+      // instead we could decide to encode such case with prior iff training target column doesn't contain any negative value, otherwise we have to accept negative values.
       assertVecEquals(expectedTestEnc, testEncoded, 1e-3);
       
       Frame testTransform = teModel.transform(test, null, 0);
@@ -186,10 +191,10 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       Scope.enter();
       final Frame fr = new TestFrameBuilder()
               .withColNames("categorical", "target", "foldc")
-              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
-              .withDataForCol(0, ar( "a",   "a",  null,   "b",   "a",  null,  "b",   "a", null,   "c"))
-              .withDataForCol(1, ar("NO", "YES",  "NO", "YES", "YES", "YES", "NO", "YES", "NO", "YES"))
-              .withDataForCol(2, ar(   0,     1,     0,     1,     0,     1,    0,     1,    0,     1))
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "a", null, "b", "a", null, "b", "a", null, "c"))
+              .withDataForCol(1, ard(1.,  2.,   3.,  4.,  5.,   6.,  7.,  8.,   9., 10.))
+              .withDataForCol(2, ar(  0,   1,    0,   1,   0,    1,   0,   1,    0,   1))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -205,14 +210,14 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       Frame encodings = teModel._output._target_encoding_map.get("categorical");
       printOutFrameAsTable(encodings);
       double priorMean = teModel._output._prior_mean;
-      assertEquals(0.6, priorMean, 1e-3); // == 6/10
+      assertEquals(5.5, priorMean, 1e-3); // == 55/10
 
       Vec expectedCatColumn = vec(ar("a", "b", "c", "categorical_NA"), 0, 1, 2, 3, 0, 1, 3); // for each fold value, we should have an entry per category (except for 'c', only in fold 0)
-      Vec expectedNumColumn = vec( // for binomial, numerator should correspond to the sum of positive occurrences (here "YES" ) for each category
-              2, 1, 1, 1,    // out of fold 0 encodings
-              1, 0, 0      // out of fold 1 encodings
+      Vec expectedNumColumn = dvec( // for regression, numerator should correspond to the sum of targets for each category
+              10., 4., 10., 6.,  // out of fold 0 encodings
+              6., 7., 12.      // out of fold 1 encodings
       ); 
-      Vec expectedDenColumn = vec(   // for binomial, denominator should correspond to the sum of all occurrences for each category
+      Vec expectedDenColumn = vec( // for regression, denominator should correspond to the count of occurrences for each category
               2, 1, 1, 1,    // out of fold 0 encodings
               2, 1, 2    // out of fold 1 encodings
       );
@@ -227,21 +232,21 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       Scope.track(predictions);
       Vec encoded = predictions.vec("categorical_te");
       Assert.assertNotNull(encoded);
-      Vec expectedEncodedCol = dvec(1., 0.5, 1., 0., 1., 0., 1., 0.5, 1., 0.6); // == (2/2, 1/2, 1/1, 0/1, 2/2, 0/2, 1/1, 1/2, 1/1, unseen_in_fold1=prior)
-      //XXX: unseen in fold1 is encoded as global prior. Wouldn't it be better to encode it using out-of-fold1 prior (here 1/5=0.2) to avoid leakage? 
+      Vec expectedEncodedCol = dvec(5., 3., 6., 7., 5., 6., 4., 3., 6., 5.5); // == (10/2, 6/2, 6/1, 7/1, 10/2, 12/2, 4/1, 6/2, 6/1, unseen_in_fold1=prior)
+      //XXX: unseen in fold1 is encoded as global prior. Wouldn't it be better to encode it using out-of-fold1 prior (here 25/5=5.) to avoid leakage? 
       assertVecEquals(expectedEncodedCol, encoded, 1e-3);
       
       final Frame test = new TestFrameBuilder()
               .withColNames("categorical", "foldc")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM)
-              .withDataForCol(0, ar("d", "c", "b", "a", null))
-              .withDataForCol(1, ar(  0,   0,   0,   0,    0))
+              .withDataForCol(0, ar("d", "c", "b", "a",  null))
+              .withDataForCol(1, ar(  1,   1,   1,   1,     1))
               .build();
       Frame testPredictions = teModel.score(test);
       Scope.track(testPredictions);
       Vec testEncoded = testPredictions.vec("categorical_te");
       Assert.assertNotNull(testEncoded);
-      Vec expectedTestEnc = dvec(0.6, 1., 1., 1., 1.); // == (prior, 1/1, 1/1, 2/2, 1/1), unseen "d' encoded using prior (inconsistent with None strategy)
+      Vec expectedTestEnc = dvec(5.5, 5.5, 7., 3., 6.); // == (prior, prior, 7/1, 6/2, 12/2), unseen "d' encoded using prior (inconsistent with None strategy)
       assertVecEquals(expectedTestEnc, testEncoded, 1e-3);
 
       Frame testTransform = teModel.transform(test, null, 0);

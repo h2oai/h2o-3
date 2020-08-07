@@ -43,8 +43,6 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
         error("_fold_column", "Fold column is required when using KFold leakage handling strategy.");
 
       Vec targetVec = train().vec(_parms._response_column);
-      if (!targetVec.isCategorical())
-        error("_response_column", "`target` must be a categorical. Target encoding does not support continuous target yet.");
       if (targetVec.cardinality() > 2)
         error("_response_column", "`target` must be binary. Target encoding does not support multi-class target yet.");
       

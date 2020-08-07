@@ -364,7 +364,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       Vec catEnc = encoded.vec("categorical_te");
 
       Vec expected = vec(1, 1, 1, 1, 0);
-      assertVecEquals(expected, catEnc, 1e-2); // TODO is it ok that encoding contains negative values?
+      assertVecEquals(expected, catEnc, 1e-2);
       try {
         assertVecEquals(expected, catEnc, 1e-5);
         fail("no noise detected");
