@@ -21,18 +21,16 @@ class test_gam_gridsearch_specific:
     search_criteria = {'strategy': 'Cartesian'}
     hyper_parameters = {'alpha': [0.9, 0.01],
                         'constraints': [
-                            {'lambda_search': True, 'nlambdas': [5, 10, 15], 'gam_columns': [["C11", "C12", "C13"]]},
                             {'scale': [[1, 1, 1], [2, 2, 2]],
                              'num_knots': [[5, 5, 5], [5, 6, 7]],
                              'gam_columns': [["C11", "C12", "C13"]]},
                             {'scale': [[1, 1], [2, 2]],
                              'num_knots': [[5, 5], [6, 6]],
-                             'gam_columns': [["C11", "C12"], ["C12", "C13"]]},
-                            {'lambda_search': True, 'nlambdas': [5, 10, 15], 'gam_columns': [["C11", "C12", "C13"]]}]}
+                             'gam_columns': [["C11", "C12"], ["C12", "C13"]]}]}
     manual_gam_models = []
     h2o_model = []
     num_grid_models = 0
-    num_expected_models = 36
+    num_expected_models = 24
 
     def __init__(self):
         self.setup_data()
@@ -49,7 +47,7 @@ class test_gam_gridsearch_specific:
         self.myX = ["C1", "C2"]
         self.myY = "C21"
         for alpha in self.hyper_parameters["alpha"]:
-            for constraint in self.hyper_parameters["constraints"][1:3]:
+            for constraint in self.hyper_parameters["constraints"]:
                 for scale in constraint['scale']:
                     for gam_columns in constraint['gam_columns']:
                         for num_knots in constraint['num_knots']:
@@ -60,15 +58,6 @@ class test_gam_gridsearch_specific:
                                                                                           num_knots=num_knots,
                                                                                           alpha=alpha
                                                                                           ))
-        for alpha in self.hyper_parameters["alpha"]:
-            for nlambda in self.hyper_parameters["constraints"][0]["nlambdas"]:
-                self.manual_gam_models.append(H2OGeneralizedAdditiveEstimator(family="gaussian", keep_gam_cols=True, alpha=alpha,
-                                                                              lambda_search=True, nlambdas=nlambda,
-                                                                              gam_columns=["C11", "C12", "C13"]))
-            for nlambda in self.hyper_parameters["constraints"][3]["nlambdas"]:
-                self.manual_gam_models.append(H2OGeneralizedAdditiveEstimator(family="gaussian", keep_gam_cols=True, alpha=alpha,
-                                                                              lambda_search=True, nlambdas=nlambda,
-                                                                              gam_columns=["C11", "C12", "C13"]))
 
     def train_models(self):
         self.h2o_model = H2OGridSearch(H2OGeneralizedAdditiveEstimator(
@@ -83,15 +72,11 @@ class test_gam_gridsearch_specific:
             scale = model.actual_params['scale']
             num_knots = model.actual_params['num_knots']
             alpha = model.actual_params['alpha']
-            lambda_search = model.actual_params['lambda_search']
-            nlambdas = model.actual_params['nlambdas']
             for grid_search_model in self.h2o_model.models:
                 if grid_search_model.actual_params['gam_columns'] == gam_columns \
                     and grid_search_model.actual_params['scale'] == scale \
                     and grid_search_model.actual_params['num_knots'] == num_knots \
-                    and grid_search_model.actual_params['alpha'] == alpha \
-                    and grid_search_model.actual_params['lambda_search'] == lambda_search \
-                    and grid_search_model.actual_params['nlambdas'] == nlambdas:
+                    and grid_search_model.actual_params['alpha'] == alpha:
                     self.num_grid_models += 1
                     assert grid_search_model.coef() == model.coef(), "coefficients should be equal"
                     break

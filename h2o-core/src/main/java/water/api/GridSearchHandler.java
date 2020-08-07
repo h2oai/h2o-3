@@ -6,6 +6,7 @@ import hex.ModelParametersBuilderFactory;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
+import static hex.grid.HyperSpaceWalker.BaseWalker.CONSTRAINTS;
 import hex.schemas.*;
 import water.H2O;
 import water.Job;
@@ -37,7 +38,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     S extends GridSearchSchema<G, S, MP, P>,
     MP extends Model.Parameters,
     P extends ModelParametersSchemaV3> extends Handler {
-
+    
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   // TODO: why does this do its own params filling?
   // TODO: why does this do its own sub-dispatch?
@@ -131,24 +132,29 @@ public class GridSearchHandler<G extends Grid<MP>,
    */
   protected void validateHyperParams(P params, Map<String, Object[]> hyperParams) {
     List<SchemaMetadata.FieldMetadata> fsMeta = SchemaMetadata.getFieldMetadata(params);
-    for (Map.Entry<String, Object[]> hparam : hyperParams.entrySet()) {
+    Set<String> allKeys = new HashSet<>(hyperParams.keySet());
+    allKeys.remove(CONSTRAINTS);
+    for (String hparam : allKeys) {
       SchemaMetadata.FieldMetadata fieldMetadata = null;
       // Found corresponding metadata about the field
       for (SchemaMetadata.FieldMetadata fm : fsMeta) {
-        if (fm.name.equals(hparam.getKey())) {
+        if (fm.name.equals(hparam)) {
           fieldMetadata = fm;
           break;
         }
       }
-      if (fieldMetadata == null && !hparam.getKey().equals("constraints")) {
-        throw new H2OIllegalArgumentException(hparam.getKey(), "grid",
+      if (fieldMetadata == null) {
+        throw new H2OIllegalArgumentException(hparam, "grid",
                                               "Unknown hyper parameter for grid search!");
       }
-      if (!hparam.getKey().equals("constraints") && !fieldMetadata.is_gridable) {
-        throw new H2OIllegalArgumentException(hparam.getKey(), "grid",
+      if (!fieldMetadata.is_gridable) {
+        throw new H2OIllegalArgumentException(hparam, "grid",
                                               "Illegal hyper parameter for grid search! The parameter '"
                                               + fieldMetadata.name + " is not gridable!");
       }
+    }
+    if(hyperParams.get(CONSTRAINTS) != null) {
+      Arrays.stream(hyperParams.get(CONSTRAINTS)).forEach(constraint -> validateHyperParams(params, (Map<String, Object[]>) constraint));
     }
   }
 
