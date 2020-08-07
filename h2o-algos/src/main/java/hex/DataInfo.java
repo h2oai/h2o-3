@@ -588,9 +588,12 @@ public class DataInfo extends Keyed<DataInfo> {
     dinfo._nums=f.numCols()-dinfo._cats - dinfo._responses - (dinfo._offset?1:0) - (dinfo._weights?1:0) - (dinfo._fold?1:0);
     dinfo._numMeans=new double[nnums];
     dinfo._numNAFill=new double[nnums];
-    for(int k=id; k < (id+nnums);++k ) {
-      dinfo._numMeans[k - id] = _numMeans[cols[k] - off];
-      dinfo._numNAFill[k - id] = _numNAFill[cols[k] - off];
+    int colsSize = id+nnums;  // small optimization
+    for(int k=id; k < colsSize;++k ) {
+      int index1 = k - id;
+      int index2 = cols[k] - off;
+      dinfo._numMeans[index1] = _numMeans[index2];
+      dinfo._numNAFill[index1] = _numNAFill[index2];
     }
     return dinfo;
   }

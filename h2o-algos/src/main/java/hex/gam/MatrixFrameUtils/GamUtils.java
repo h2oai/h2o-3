@@ -92,7 +92,13 @@ public class GamUtils {
     Field[] field2 = Model.Parameters.class.getDeclaredFields();
     setParamField(parms, glmParam, true, field2);
     glmParam._train = trainData._key;
-    glmParam._valid = valid == null ? null : valid._key;
+    glmParam._valid = valid==null?null:valid._key;
+    glmParam._nfolds = 0; // always set nfolds to 0 to disable cv in GLM.  It is done in GAM
+    glmParam._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
+    glmParam._keep_cross_validation_fold_assignment = false;
+    glmParam._keep_cross_validation_models = false;
+    glmParam._keep_cross_validation_predictions = false;
+    glmParam._is_cv_model = false; // disable cv in GLM.
     return glmParam;
   }
 
@@ -117,7 +123,7 @@ public class GamUtils {
       }
     }
   }
-
+  
   public static void copyGLMCoeffs2GAMCoeffs(GAMModel model, GLMModel glm, GLMParameters.Family family,
                                              int gamNumStart, int nclass) {
     int numCoeffPerClass = model._output._coefficient_names_no_centering.length;
@@ -139,7 +145,7 @@ public class GamUtils {
               glm._output.getNormBeta(), numCoeffPerClass);
     }
   }
-
+  
   // This method carries out the evaluation of beta = Z betaCenter as explained in documentation 7.2
   public static double[] convertCenterBeta2Beta(double[][][] ztranspose, int gamNumStart, double[] centerBeta,
                                                 int betaSize) {

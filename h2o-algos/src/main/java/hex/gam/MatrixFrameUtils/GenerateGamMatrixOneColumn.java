@@ -48,19 +48,29 @@ public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColum
     for (int rowIndex = 0; rowIndex < chunkRows; rowIndex++) {
       double gamRowSum = 0.0;
       // find index of knot bin where row value belongs to
-      double xval = chk[0].atd(rowIndex);
-      int binIndex = locateBin(xval,_knots); // location to update
-      // update from F matrix F matrix = [0;invB*D;0] and c functions
-      GamUtilsCubicRegression.updateFMatrixCFunc(basisVals, xval, binIndex, _knots, crSplines._hj, _bInvD);
-      // update from a+ and a- functions
-      GamUtilsCubicRegression.updateAFunc(basisVals, xval, binIndex, _knots, crSplines._hj);
-      // copy updates to the newChunk row
-      for (int colIndex = 0; colIndex < _numKnots; colIndex++) {
-        newGamCols[colIndex].addNum(basisVals[colIndex]);
-        gamRowSum += Math.abs(basisVals[colIndex]);
+      if (chk[1].atd(rowIndex) != 0) {  // consider weight column value during gamification.  If 0, insert rows of zeros.
+        double xval = chk[0].atd(rowIndex);
+        if (Double.isNaN(xval)) { // fill with NaN
+          for (int colIndex = 0; colIndex < _numKnots; colIndex++)
+            newGamCols[colIndex].addNum(Double.NaN);
+        } else {
+          int binIndex = locateBin(xval, _knots); // location to update
+          // update from F matrix F matrix = [0;invB*D;0] and c functions
+          GamUtilsCubicRegression.updateFMatrixCFunc(basisVals, xval, binIndex, _knots, crSplines._hj, _bInvD);
+          // update from a+ and a- functions
+          GamUtilsCubicRegression.updateAFunc(basisVals, xval, binIndex, _knots, crSplines._hj);
+          // copy updates to the newChunk row
+          for (int colIndex = 0; colIndex < _numKnots; colIndex++) {
+            newGamCols[colIndex].addNum(basisVals[colIndex]);
+            gamRowSum += Math.abs(basisVals[colIndex]);
+          }
+          if (gamRowSum > _maxAbsRowSum[cIndex])
+            _maxAbsRowSum[cIndex] = gamRowSum;
+        }
+      } else {  // zero weight, fill entries with zeros and skip all that processing
+        for (int colIndex = 0; colIndex < _numKnots; colIndex++)
+          newGamCols[colIndex].addNum(0.0);
       }
-      if (gamRowSum > _maxAbsRowSum[cIndex])
-        _maxAbsRowSum[cIndex] = gamRowSum;
     }
   }
 
