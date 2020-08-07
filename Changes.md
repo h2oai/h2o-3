@@ -2,6 +2,114 @@
 
 ## H2O
 
+### Zeno (3.30.1.1.) - 8/5/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/1/index.html</a>
+
+<h4>Bug</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7119'>PUBDEV-7119</a>] -         H2OFrames with fields containing double quotes/line breaks can now be converted to Pandas dataframe. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7489'>PUBDEV-7489</a>] -         Impossible to set Max_depth to unlimited on DRF classifer
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7635'>PUBDEV-7635</a>] -         Model generation for MOJO/POJO are disabled when interaction columns are used in GLM.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7646'>PUBDEV-7646</a>] -         Reproducibility Information Table now hidden in H2O-Flow.
+</li>
+</ul>
+    
+<h4>New Feature</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4915'>PUBDEV-4915</a>] -         Added support for `offset_column` in the Stacked Ensemble metalearner.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4916'>PUBDEV-4916</a>] -         Added support for `weights_column` in the Stacked Ensemble metalearner.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6807'>PUBDEV-6807</a>] -         Added continued support to Generalized Additive Models for H2O.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7237'>PUBDEV-7237</a>] -         The value of model parameters can be retrieved at the end of training, allowing users to retrieve an automatically chosen value when a parameter is set to AUTO.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7283'>PUBDEV-7283</a>] -         H2O Frame is now able to be saved into a Hive table.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7467'>PUBDEV-7467</a>] -         XGBoost can now be executed on an external Hadoop cluster.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7640'>PUBDEV-7640</a>] -         Added the `contamination` parameter to Isolation Forest which is used to mark anomalous observations.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7641'>PUBDEV-7641</a>] -         Introduced the `validation_response_column` parameter for Isolation Forest which allows users to name the response column in the validation frame.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7647'>PUBDEV-7647</a>] -         Added official support for Java 14 in H2O.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7697'>PUBDEV-7697</a>] -         Added external cluster startup timeout for XGBoost.
+</li>
+</ul>
+    
+<h4>Task</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7649'>PUBDEV-7649</a>] -         Hadoop Docker image run independent of S3.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7673'>PUBDEV-7673</a>] -         Upgraded the build/test environment to support R 4.0 and Roxygen2.7.1.1.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6938'>PUBDEV-6938</a>] -         Implemented TF-IDF algorithm to reflect how important a word is to a document or collection of documents.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6946'>PUBDEV-6946</a>] -         GridSearch R API test added for Isolation Forest.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7444'>PUBDEV-7444</a>] -         ‘AUTO’ option added for GLM & GAM family parameter.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7496'>PUBDEV-7496</a>] -         XGBoost Variable Importances now computed using a Java predictor.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7547'>PUBDEV-7547</a>] -         StackedEnsemble can now be created using only monotone models if user specifies `monotone_constraints` in AutoML.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7567'>PUBDEV-7567</a>] -         Enabled using imported models as base models in Stacked Ensembles.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7651'>PUBDEV-7651</a>] -         Removed deprecated H2O-Scala module.
+</li>
+</ul>
+    
+<h4>Technical Task</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7185'>PUBDEV-7185</a>] -          Added Java backend to support MOJO in GAM.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7611'>PUBDEV-7611</a>] -         Added support for `early_stopping` parameter in GAM and GLM.
+</li>
+</ul>
+    
+<h4>        Engineering Story
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7701'>PUBDEV-7701</a>] -          Sparkling Water Booklet removed from the H2O-3 repository.
+</li>
+</ul>
+    
+<h4>Docs</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7556'>PUBDEV-7556</a>] -         Added H2O Client chapter to the User Guide which includes section on Sklearn integration.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7639'>PUBDEV-7639</a>] -         Added documentation in the Isolation Forest section for the `contamination` parameter.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7648'>PUBDEV-7648</a>] -          Added documentation in GLM & GAM, and the `family` & `link` algorithm parameters to include how `family` can now be set equal to AUTO.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7655'>PUBDEV-7655</a>] -         Added `gains lift_bins` to the parameter appendix and added and example to the parameter in the Python documentation. Added an example for the Kolmogorov-Smirnov metric to the Python documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7656'>PUBDEV-7656</a>] -         Updated GAM and GLM documentation to include support for `early_stopping`.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7661'>PUBDEV-7661</a>] -         Added the Kolmogorov-Smirnov metric formula to the Performance and Prediction chapter.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7679'>PUBDEV-7679</a>] -         Added the `negativebinomial` value to the `family` parameter page.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7680'>PUBDEV-7680</a>] -         Added the `ordinal` and `modified_huber` values to the `distribution` parameter page.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7682'>PUBDEV-7682</a>] -         Updated deprecated parameter `loading_name` to `representation_name` and fixed the broken init link in the GLRM section of the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7684'>PUBDEV-7684</a>] -         Added a note in the User Guide Stacked Ensemble section about building a monotonic Stacked Ensemble.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7699'>PUBDEV-7699</a>] -         Added documentation for how `balance_classes` is triggered.
+</li>
+</ul>
+
+
 ### Zahradnik (3.30.0.7) - 7/21/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/7/index.html</a>
