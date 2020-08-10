@@ -15,7 +15,6 @@ def test_gam_model_predict():
     h2o_data["C1"] = h2o_data["C1"].asfactor()
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C21"
-    model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictGaussianGAM2.csv"))
     numKnots = [8,8,8]
     x = list(set(h2o_data.names) - {"response", "C11", "C12", "C13"})
 
