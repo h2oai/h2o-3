@@ -9,8 +9,5 @@ ext {
 apply from: '../assemblyjar.gradle'
 
 dependencies {
-  compile(project(":h2o-jetty-8")) {
-    exclude module: "servlet-api"
-    exclude group: "javax.servlet", module: "javax.servlet-api"
-  }
+  compile project(":${defaultWebserverModule}")
 }

@@ -241,8 +241,6 @@ test-package-java:
 		h2o-jaas-pam/build/libs/h2o-jaas-pam-*.jar \
 		h2o-webserver-iface/src/ \
 		h2o-webserver-iface/build/libs/h2o-webserver-iface-*.jar \
-		h2o-jetty-8/src/ \
-		h2o-jetty-8/build/libs/h2o-jetty-8-*.jar \
 		h2o-jetty-9/src/ \
 		h2o-jetty-9/build/libs/h2o-jetty-9-*.jar \
 		h2o-extensions/target-encoder/src/ \

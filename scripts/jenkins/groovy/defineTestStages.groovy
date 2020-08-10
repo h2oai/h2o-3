@@ -414,14 +414,9 @@ def call(final pipelineContext) {
   for (distribution in supportedHadoopDists) {
     def target
     def ldapConfigPath
-    if ((distribution.name == 'cdh' && distribution.version.startsWith('6.')) ||
-            (distribution.name == 'hdp' && distribution.version.startsWith('3.'))){
-      target = 'test-hadoop-3-smoke'
-      ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-9.txt'
-    } else {
-      target = 'test-hadoop-2-smoke'
-      ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-8.txt'
-    }
+    target = 'test-hadoop-3-smoke'
+    ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-9.txt'
+
 
     def stageTemplate = [
       target: target, timeoutValue: 60,
@@ -472,14 +467,8 @@ def call(final pipelineContext) {
     }
     def target
     def ldapConfigPath
-    if ((distribution.name == 'cdh' && distribution.version.startsWith('6.')) ||
-            (distribution.name == 'hdp' && distribution.version.startsWith('3.'))){
-      target = 'test-kerberos-hadoop-3'
-      ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-9.txt'
-    } else {
-      target = 'test-kerberos-hadoop-2'
-      ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-8.txt'
-    }
+    target = 'test-kerberos-hadoop-3'
+    ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-9.txt'
 
     def stageTemplate = [
             target: target, timeoutValue: 60,
