@@ -45,7 +45,8 @@
         margin: 20px 0 10px 0;
       }
       #container {
-        width: 768px;
+        width: 80%;
+        max-width: 1024px;
         background: #fff;
         margin: 0px auto;
         -webkit-box-shadow: 0px 1px 5px 0px rgba(0,0,0,0.25);
@@ -174,7 +175,9 @@
         var hadoopTab = document.getElementById('quickstart-hadoop-tab');
         var hadoopPanel = document.getElementById('quickstart-hadoop');
         var mavenTab = document.getElementById('quickstart-maven-tab');
+        var kubernetesTab = document.getElementById('quickstart-kubernetes-tab');
         var mavenPanel = document.getElementById('quickstart-maven');
+        var kubernetesPanel = document.getElementById('quickstart-kubernetes');
         var showZipTab = function() {
           zipPanel.style.display = 'block';
           zipTab.className = 'active';
@@ -186,6 +189,8 @@
           hadoopTab.className = '';
           mavenPanel.style.display = 'none';
           mavenTab.className = '';
+          kubernetesPanel.style.display = 'none';
+          kubernetesTab.className = '';
         };
         var showRTab = function() {
           zipPanel.style.display = 'none';
@@ -198,6 +203,8 @@
           hadoopTab.className = '';
           mavenPanel.style.display = 'none';
           mavenTab.className = '';
+          kubernetesPanel.style.display = 'none';
+          kubernetesTab.className = '';
         };
         var showPyTab = function() {
           zipPanel.style.display = 'none';
@@ -210,6 +217,8 @@
           hadoopTab.className = '';
           mavenPanel.style.display = 'none';
           mavenTab.className = '';
+          kubernetesPanel.style.display = 'none';
+          kubernetesTab.className = '';
         };
         var showHadoopTab = function(){
           zipPanel.style.display = 'none';
@@ -222,6 +231,8 @@
           hadoopTab.className = 'active';
           mavenPanel.style.display = 'none';
           mavenTab.className = '';
+          kubernetesPanel.style.display = 'none';
+          kubernetesTab.className = '';
         };
         var showMavenTab = function(){
           zipPanel.style.display = 'none';
@@ -234,12 +245,29 @@
           hadoopTab.className = '';
           mavenPanel.style.display = 'block';
           mavenTab.className = 'active';
+          kubernetesPanel.style.display = 'none';
+          kubernetesTab.className = '';
         };
+      var showKubernetesTab = function(){
+          zipPanel.style.display = 'none';
+          zipTab.className = '';
+          rPanel.style.display = 'none';
+          rTab.className = '';
+          pyPanel.style.display = 'none';
+          pyTab.className = '';
+          hadoopPanel.style.display = 'none';
+          hadoopTab.className = '';
+          mavenPanel.style.display = 'none';
+          mavenTab.className = '';
+          kubernetesPanel.style.display = 'block';
+          kubernetesTab.className = 'active';
+      };
         zipTab.onclick = showZipTab;
         rTab.onclick = showRTab;
         pyTab.onclick= showPyTab;
         hadoopTab.onclick = showHadoopTab;
         mavenTab.onclick = showMavenTab;
+        kubernetesTab.onclick = showKubernetesTab;
         var hash = window.location.hash;
         if(hash && hash.indexOf('#R') == 0) {
           showRTab();
@@ -391,6 +419,7 @@
           <span id = "quickstart-py-tab">Install in Python</span>
           <span id = "quickstart-hadoop-tab">Install on Hadoop</span>
           <span id = "quickstart-maven-tab">Use from Maven</span>
+          <span id = "quickstart-kubernetes-tab">Kubernetes</span>
         </div>
         <!-- Clipboard Icon !-->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/octicons/2.4.1/octicons.min.css">
@@ -636,6 +665,89 @@ dependencies {</br>
 &nbsp;compile "ai.h2o:h2o-web:${h2oProjectVersion}"</br>
 }</br>
           </div>
+            <div id="quickstart-kubernetes" style="display:none">
+                <h2>Get started with H<sub>2</sub>O on Kubernetes</h2>
+                <p>1. Set-up kubernetes cluster and kubectl.</p>
+                <p>2. Replace the placehorders in the YAML file above with desired values</p>
+    
+                <button class="btn copy_button" id="btnCopy7" data-copied-hint="Copied!" data-clipboard-target='to_copy7'>
+                    <span class="octicon octicon-clippy"></span>
+                </button>
+                <p class="terminal" id="to_copy7">
+apiVersion: apps/v1<br/>
+kind: StatefulSet<br/>
+metadata:<br/>
+  name: <name>-stateful-set<br/>
+  namespace: <namespace><br/>
+spec:<br/>
+  serviceName: h2o-service<br/>
+  podManagementPolicy: "Parallel"<br/>
+  replicas: <nodes><br/>
+  selector:<br/>
+    matchLabels:<br/>
+      app: <name><br/>
+  template:<br/>
+    metadata:<br/>
+      labels:<br/>
+        app: <name><br/>
+    spec:<br/>
+      containers:<br/>
+        - name: <name><br/>
+          image: '<docker-img-name>:<docker-img-tag>'<br/>
+          command: ["/bin/bash", "-c", "java -XX:+UseContainerSupport -XX:MaxRAMPercentage=<memory-percentage> -jar /opt/h2oai/h2o-3/h2o.jar"]<br/>
+          ports:<br/>
+            - containerPort: 54321<br/>
+              protocol: TCP<br/>
+          readinessProbe:<br/>
+            httpGet:<br/>
+              path: /kubernetes/isLeaderNode<br/>
+              port: 8081<br/>
+            initialDelaySeconds: 5<br/>
+            periodSeconds: 5<br/>
+            failureThreshold: 1<br/>
+          resources:<br/>
+            limits:<br/>
+              cpu: '<num-cpu>'<br/>
+              memory: <memory><br/>
+            requests:<br/>
+              cpu: '<num-cpu>'<br/>
+              memory: <memory><br/>
+          env:<br/>
+          - name: H2O_KUBERNETES_SERVICE_DNS<br/>
+            value: <name>-service.<namespace>.svc.cluster.local<br/>
+          - name: H2O_NODE_LOOKUP_TIMEOUT<br/>
+            value: '180'<br/>
+          - name: H2O_NODE_EXPECTED_COUNT<br/>
+            value: '<nodes>'<br/>
+          - name: H2O_KUBERNETES_API_PORT<br/>
+            value: '8081'<br/>
+---<br/>
+apiVersion: v1<br/>
+kind: Service<br/>
+metadata:<br/>
+  name: <name>-service<br/>
+  namespace: <namespace><br/>
+spec:<br/>
+  type: ClusterIP<br/>
+  clusterIP: None<br/>
+  selector:<br/>
+    app: <name><br/>
+  ports:<br/>
+  - protocol: TCP<br/>
+    port: 80<br/>
+    targetPort: 54321
+                </p>
+                
+                <p>
+                    Environment variables:<br/><br/>
+                    H2O_KUBERNETES_SERVICE_DNS - [MANDATORY] Crucial for the clustering to work. The format usually follows the <service-name>.<project-name>.svc.cluster.local pattern. This setting enables H2O node discovery via DNS. It must be modified to match the name of the headless service created. Also, pay attention to the rest of the address to match the specifics of your Kubernetes implementation.<br/><br/>
+                    H2O_NODE_LOOKUP_TIMEOUT - [OPTIONAL] Node lookup constraint. Time before the node lookup is ended.<br/><br/>
+                    H2O_NODE_EXPECTED_COUNT - [OPTIONAL] Node lookup constraint. Expected number of H2O pods to be discovered.<br/><br/>
+                    H2O_KUBERNETES_API_PORT - [OPTIONAL] Port for Kubernetes API checks and probes to listen on. Defaults to 8080.<br/><br/>
+                </p>
+                
+                <p>2. Issue "kubectl apply -f filename.yaml" to deploy H2O into Kubernetes.</a>
+            </div>
 
         </div>
         <div id="documentation">
