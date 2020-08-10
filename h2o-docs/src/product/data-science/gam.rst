@@ -193,13 +193,18 @@ These parameters can be specified as follows:
 
   .. code-block:: bash
     
-    hyper_parameters = {'alpha':[0.9, 0.1],
-                        ‘constraints’: [{‘scale’:[[1,1,1],[0.1, 0.1, 0.1]], 
-                        ‘num_knots’:[[4,4,4],[5,5,5]], 
-                        ‘gam_columns’:[[“C1”,“C2",“C3”]]}, 
-                        {‘scale’:[[1,1],[0.1, 0.1,]], 
-                        ‘num_knots’:[[4,4],[5,5]], 
-                        ‘gam_columns’:[[“C2",“C3”]]}]}
+    hyper_parameters = {
+        'alpha':[0.9, 0.1],
+        ‘constraints’: [{
+            ‘scale’:[[1,1,1],[0.1, 0.1, 0.1]], 
+            ‘num_knots’:[[4,4,4],[5,5,5]], 
+            ‘gam_columns’:[[“C1”,“C2",“C3”]]
+        }, {
+            ‘scale’:[[1,1],[0.1, 0.1,]], 
+            ‘num_knots’:[[4,4],[5,5]], 
+            ‘gam_columns’:[[“C2",“C3”]]
+        }]
+   }
 
 With this hyperparameter specification, there will be 16 GAM models built.
 
