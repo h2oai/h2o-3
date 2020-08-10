@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Zeno (3.30.1.1.) - 8/5/2020
+### Zeno (3.30.1.1) - 8/10/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/1/index.html</a>
 
