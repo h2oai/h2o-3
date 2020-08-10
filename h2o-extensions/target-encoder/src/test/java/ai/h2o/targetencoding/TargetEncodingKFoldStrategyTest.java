@@ -222,6 +222,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
 
       Frame colAEncodings = teModel._output._target_encoding_map.get("categorical");
       colAEncodings = colAEncodings.sort(new int[] {3, 0}); //sort encodings by fold first + categorical level
+      Scope.track(colAEncodings);
       printOutFrameAsTable(colAEncodings);
 
       Vec vec1 = vec(3, 0, 1, 0, 2); //fold 1 has only one entry (for 'b'), others have 2 ('a', 'b').
