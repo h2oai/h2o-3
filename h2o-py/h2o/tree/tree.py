@@ -90,6 +90,9 @@ class H2OTree(object):
         self._root_node = self.__assemble_tree(0)
         self._tree_decision_path = response['tree_decision_path']
         self._decision_paths = response['decision_paths']
+        (left, right) = self.__per_node_cat_splits()
+        self._left_cat_split = left
+        self._right_cat_split = right
 
     @property
     def left_children(self):
@@ -451,6 +454,41 @@ class H2OTree(object):
                 self._right_children[i] = -1
 
         return node_ids
+
+    def __per_node_cat_splits(self):
+
+        num_records = len(self.left_children)
+        per_node_levels_left = [None] * num_records
+        per_node_levels_right = [None] * num_records
+        for i in range(0, (len(self.left_children))):
+
+            # -1 means leaf - if a node is leaf node, there is not child and thus no split
+            left_idx = self._left_children[i]
+            right_idx = self._right_children[i]
+
+            if (left_idx != -1):
+                per_node_levels_left[i] = (self.levels[left_idx])
+
+            if (right_idx != -1):
+                per_node_levels_right[i] = (self.levels[right_idx])
+
+        return (per_node_levels_left, per_node_levels_right)
+
+    @property
+    def left_cat_split(self):
+        """
+        :return: Categorical levels leading to the left child node. Only present when split is categorical, otherwise none.
+        """
+        return self._left_cat_split
+
+    @property
+    def right_cat_split(self):
+        """
+        
+        :return: Categorical levels leading to the right child node. Only present when split is categorical, otherwise none.
+ 
+        """
+        return self._right_cat_split
 
     def __len__(self):
         """
