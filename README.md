@@ -284,6 +284,8 @@ for (pkg in pkgs) {
 ```
 Note that [libcurl](http://curl.haxx.se) is required for installation of the **RCurl** R package.
 
+Note that this packages don't cover running tests, they for building H2O only.
+
 Finally, install [Rtools](http://cran.r-project.org/bin/windows/Rtools/), which is a collection of command line tools to facilitate R development on Windows.
 >**NOTE**: During Rtools installation, do **not** install Cygwin.dll.
 
@@ -352,6 +354,8 @@ for (pkg in pkgs) {
 }
 ```
 Note that [libcurl](http://curl.haxx.se) is required for installation of the **RCurl** R package.
+
+Note that this packages don't cover running tests, they for building H2O only.
 
 ##### Step 4. Install python and the required packages:
 
