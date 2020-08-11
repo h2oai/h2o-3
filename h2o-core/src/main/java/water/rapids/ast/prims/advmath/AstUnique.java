@@ -39,7 +39,12 @@ public class AstUnique extends AstPrimitive {
     Vec vec0 = fr.vec(columnIndex);
     Vec v;
     if (vec0.isCategorical()) {
-      v = Vec.makeSeq(0, (long) vec0.domain().length, true);
+      final boolean hasNAs = vec0.naCnt() > 0;
+      final long uniqueVecLength = hasNAs ? vec0.domain().length + 1 : vec0.domain().length;
+      v = Vec.makeSeq(0, uniqueVecLength, true);
+      if(hasNAs) {
+        v.setNA(uniqueVecLength - 1);
+      }
       v.setDomain(vec0.domain());
       DKV.put(v);
     } else {

@@ -23,9 +23,13 @@ def pyunit_unique():
     uf.refresh()
     assert uf.type(0) == "time"
 
-
-
-
+    prostate = h2o.import_file(pyunit_utils.locate("smalldata/parser/csv2orc/prostate_NA.csv"))
+    prostate["GLEASON"] = prostate["GLEASON"].asfactor()
+    uniques = prostate["GLEASON"].unique()
+    rows, cols = uniques.dim
+    prostate_pandas = prostate.as_data_frame()
+    uniques_pandas = prostate_pandas["GLEASON"].unique()
+    assert rows == len(uniques_pandas)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pyunit_unique)
