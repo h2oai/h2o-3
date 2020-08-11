@@ -653,7 +653,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of variables, then
         lambda_min_ratio is set to 0.01.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``-1``).
         """
         return self._parms.get("lambda_min_ratio")
 
