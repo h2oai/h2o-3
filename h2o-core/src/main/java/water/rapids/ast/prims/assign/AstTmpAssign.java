@@ -9,6 +9,7 @@ import water.rapids.Val;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
+import water.util.FrameUtils;
 
 /**
  * Assign a temp.  All such assignments are final (cannot change), but the temp can be deleted.  Temp is returned for
@@ -56,6 +57,7 @@ public class AstTmpAssign extends AstPrimitive {
         throw new IllegalArgumentException("Temp ID " + id + " already exists");
     }
     Frame dst = new Frame(id, srcFrame._names, srcFrame.vecs());
+    FrameUtils.shrinkDomainsToObservedSubset(dst);
     return new ValFrame(env._ses.track_tmp(dst)); // Track new session-wide ID
   }
 }
