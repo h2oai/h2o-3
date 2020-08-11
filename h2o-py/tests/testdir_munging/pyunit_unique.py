@@ -31,16 +31,6 @@ def pyunit_unique():
     uniques_pandas = prostate_pandas["GLEASON"].unique()
     assert rows == len(uniques_pandas)
 
-    # make sure domains are recalculated with each temp assign
-    df_example = h2o.H2OFrame({'time': ['M','M','M','D','D','M','M','D'],
-                               'amount': [1,4,5,0,0,1,3,0]})
-
-    df_example['amount'] = df_example['amount'].asfactor()
-    filtered = df_example[df_example['time']=='D', 'amount']
-    uniques = filtered['amount'].unique()
-    assert len(uniques) == 1
-    assert uniques.as_data_frame().iat[0,0] == 0
-
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pyunit_unique)
 else:
