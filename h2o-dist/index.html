@@ -668,7 +668,7 @@ dependencies {</br>
             <div id="quickstart-kubernetes" style="display:none">
                 <h2>Get started with H<sub>2</sub>O on Kubernetes</h2>
                 <p>1. Set-up kubernetes cluster and kubectl.</p>
-                <p>2. Replace the placehorders in the YAML file above with desired values</p>
+                <p>2. (Optional) Adjust the 'default' namespace in the following YAML, if required.</p>
     
                 <button class="btn copy_button" id="btnCopy7" data-copied-hint="Copied!" data-clipboard-target='to_copy7'>
                     <span class="octicon octicon-clippy"></span>
@@ -677,24 +677,24 @@ dependencies {</br>
 apiVersion: apps/v1<br/>
 kind: StatefulSet<br/>
 metadata:<br/>
-  name: <name>-stateful-set<br/>
-  namespace: <namespace><br/>
+  name: h2o-cluster-stateful-set<br/>
+  namespace: default<br/>
 spec:<br/>
   serviceName: h2o-service<br/>
   podManagementPolicy: "Parallel"<br/>
-  replicas: <nodes><br/>
+  replicas: 1<br/>
   selector:<br/>
     matchLabels:<br/>
-      app: <name><br/>
+      app: h2o-cluster<br/>
   template:<br/>
     metadata:<br/>
       labels:<br/>
-        app: <name><br/>
+        app: h2o-cluster<br/>
     spec:<br/>
       containers:<br/>
-        - name: <name><br/>
-          image: '<docker-img-name>:<docker-img-tag>'<br/>
-          command: ["/bin/bash", "-c", "java -XX:+UseContainerSupport -XX:MaxRAMPercentage=<memory-percentage> -jar /opt/h2oai/h2o-3/h2o.jar"]<br/>
+        - name: h2o-cluster<br/>
+          image: 'h2oai/h2o-open-source-k8s:latest'<br/>
+          command: ["/bin/bash", "-c", "java -XX:+UseContainerSupport -XX:MaxRAMPercentage=50 -jar /opt/h2oai/h2o-3/h2o.jar"]<br/>
           ports:<br/>
             - containerPort: 54321<br/>
               protocol: TCP<br/>
@@ -707,31 +707,31 @@ spec:<br/>
             failureThreshold: 1<br/>
           resources:<br/>
             limits:<br/>
-              cpu: '<num-cpu>'<br/>
-              memory: <memory><br/>
+              cpu: '1'<br/>
+              memory: 1Gi<br/>
             requests:<br/>
-              cpu: '<num-cpu>'<br/>
-              memory: <memory><br/>
+              cpu: '1'<br/>
+              memory: 1Gi<br/>
           env:<br/>
           - name: H2O_KUBERNETES_SERVICE_DNS<br/>
-            value: <name>-service.<namespace>.svc.cluster.local<br/>
+            value: h2o-cluster-service.default.svc.cluster.local<br/>
           - name: H2O_NODE_LOOKUP_TIMEOUT<br/>
             value: '180'<br/>
           - name: H2O_NODE_EXPECTED_COUNT<br/>
-            value: '<nodes>'<br/>
+            value: '1'<br/>
           - name: H2O_KUBERNETES_API_PORT<br/>
             value: '8081'<br/>
 ---<br/>
 apiVersion: v1<br/>
 kind: Service<br/>
 metadata:<br/>
-  name: <name>-service<br/>
-  namespace: <namespace><br/>
+  name: h2o-cluster-service<br/>
+  namespace: default<br/>
 spec:<br/>
   type: ClusterIP<br/>
   clusterIP: None<br/>
   selector:<br/>
-    app: <name><br/>
+    app: h2o-cluster<br/>
   ports:<br/>
   - protocol: TCP<br/>
     port: 80<br/>
@@ -746,7 +746,9 @@ spec:<br/>
                     H2O_KUBERNETES_API_PORT - [OPTIONAL] Port for Kubernetes API checks and probes to listen on. Defaults to 8080.<br/><br/>
                 </p>
                 
-                <p>2. Issue "kubectl apply -f filename.yaml" to deploy H2O into Kubernetes.</a>
+                <p>3. Issue "kubectl apply -f filename.yaml" to deploy H2O into Kubernetes.</p>
+                <p>4. (Optional) Adjust the YAML file to spawn more nodes or allocate more resources for the H2O cluster.</p>
+                
             </div>
 
         </div>
