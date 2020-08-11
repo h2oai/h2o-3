@@ -21,6 +21,7 @@ H2O currently supports the following file types:
 
 **Notes**: 
  
+ - H2O does not support UTF-16 encoding for csv files. Please convert to UTF-8 encoding.
  - ORC is available only if H2O is running as a Hadoop job. 
  - Users can also import Hive files that are saved in ORC format (experimental).
  - If you encounter issues importing XLS or XLSX files, you may be using an unsupported version. In this case, re-save the file in BIFF 8 format. Also note that XLS and XLSX support will eventually be deprecated. 
