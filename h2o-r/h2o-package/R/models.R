@@ -4602,7 +4602,9 @@ print.H2ONode <- function(node){
 #' @slot nas A \code{character} representing if NA values go to the left node or right node. May be NA if node is a leaf.
 #' @slot predictions A \code{numeric} representing predictions for each node in the graph.
 #' @slot tree_decision_path A \code{character}, plain language rules representation of a trained decision tree    
-#' @slot decision_paths A \code{character} representing plain language rules that were used in a particular prediction.    
+#' @slot decision_paths A \code{character} representing plain language rules that were used in a particular prediction.
+#' @slot left_cat_split A \code{character} list of categorical levels leading to the left child node. Only present when split is categorical, otherwise none.
+#' @slot right_cat_split A \code{character} list of categorical levels leading to the right child node. Only present when split is categorical, otherwise none.
 #' @aliases H2OTree
 #' @export
 setClass(
@@ -4622,7 +4624,9 @@ setClass(
     nas = "character",
     predictions = "numeric",
     tree_decision_path = "character",
-    decision_paths = "character"
+    decision_paths = "character",
+    left_cat_split = "list",
+    right_cat_split = "list"
   )
 )
 
@@ -4847,6 +4851,24 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
       }
     }
   }
+  
+  for (i in 1: length(tree@left_children)){
+    left_idx = tree@left_children[i]
+    right_idx = tree@right_children[i]
+    
+    if(left_idx != -1){
+      tree@left_cat_split[i] <- tree@levels[left_idx + 1]
+    } else {
+      tree@left_cat_split[i] <- NULL
+    }
+    
+    if(right_idx != -1){
+      tree@right_cat_split[i] <- tree@levels[right_idx + 1]
+    } else {
+      tree@right_cat_split[i] <- NULL
+    }
+  }
+  
   tree@root_node <- .h2o.walk_tree(0, tree)
   tree
 }
