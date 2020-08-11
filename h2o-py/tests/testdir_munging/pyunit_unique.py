@@ -40,7 +40,6 @@ def pyunit_unique():
     uniques = filtered['amount'].unique()
     assert len(uniques) == 1
     assert uniques.as_data_frame().iat[0,0] == 0
-    assert len(h2o.get_frame(df_example.key)['amount'].unique()) == 5 # Original domain is kept
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pyunit_unique)

@@ -11,7 +11,6 @@ import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.params.AstId;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
-import water.util.FrameUtils;
 
 import java.util.*;
 
@@ -108,7 +107,6 @@ public class AstRowSlice extends AstPrimitive {
       returningFrame = fr.deepSlice(predVec, null);
     } else
       throw new IllegalArgumentException("Row slicing requires a number-list as the last argument, but found a " + asts[2].getClass());
-    FrameUtils.shrinkDomainsToObservedSubset(returningFrame);
     return new ValFrame(returningFrame);
   }
 }
