@@ -28,7 +28,7 @@ def test_target_encoding_full_scenario():
              x=teColumns, 
              y=targetColumnName)
     print(te)
-    transformed = te.predict(trainingFrame)
+    transformed = te.transform(trainingFrame, as_training=True)
     
     assert transformed is not None
     print(transformed.names)
@@ -47,7 +47,7 @@ def test_target_encoding_full_scenario():
              x=teColumns,
              y=targetColumnName,
              fold_column="pclass")
-    transformed = te.predict(trainingFrame)
+    transformed = te.transform(trainingFrame, as_training=True)
 
     assert transformed is not None
     assert transformed.nrows == 1309
@@ -63,7 +63,7 @@ def test_target_encoding_full_scenario():
 
     # Drop all non-categorical columns
     te.train(x=None, y=targetColumnName, training_frame=trainingFrame, fold_column="pclass")
-    transformed = te.predict(trainingFrame)
+    transformed = te.transform(trainingFrame, as_training=True)
     expected_columns = ['home.dest', 'pclass', 'embarked', 'cabin', 'sex', 'survived', 'name', 'age',
            'sibsp', 'parch', 'ticket', 'fare', 'boat', 'body', 'kfold_column',
            'sex_te', 'cabin_te', 'embarked_te', 'home.dest_te']
@@ -114,7 +114,7 @@ def test_target_encoded_frame_does_not_contain_fold_column():
     encoded_columns_with_te_suffix = model_summary[encoded_column_names.str.contains('_te')]
     assert len(encoded_columns_with_te_suffix) == 2
 
-    transformed = te.predict(trainingFrame)
+    transformed = te.transform(trainingFrame, as_training=True)
 
     # Checking that fold column is not being encoded.
     assert foldColumnName+"_te" not in transformed.col_names

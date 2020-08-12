@@ -557,18 +557,26 @@ setGeneric("h2o.transform", function(model, ...) {
 #'  By default, model settings are respected, if not overridden by this setting.
 #' @param noise An amount of random noise added to the encoding, this helps prevent overfitting.
 #'  By default, model settings are respected, if not overridden by this setting.
+#' @param as_training. Must be set to True when encoding the training frame. Defaults to False.
 #' @return Returns an H2OFrame object with data transformed.
 #' @export
 setMethod("h2o.transform", signature("H2OTargetEncoderModel"), function(model, data,
                                                                         blending = NULL,
                                                                         inflection_point = -1,
-                                                                        smoothing = -1, 
+                                                                        smoothing = -1,
                                                                         noise = NULL,
+                                                                        as_training = FALSE,
                                                                         ...) {
     varargs <- list(...)
     for (arg in names(varargs)) {
         if (arg %in% c('data_leakage_handling', 'seed')) {
             warning(paste0("argument '", arg, "' is deprecated and will be ignored; please define it instead on model creation using `h2o.targetencoder`."))
+            argval <- varargs[[arg]]
+            if (arg == 'data_leakage_handling' && argval != "None") {
+                warning(paste0("Deprecated `data_leakage_handling=",argval,"` is replaced by `as_training=True`. ",
+                        "Please update your code."))
+                as_training <- TRUE
+            }
         } else if (arg == 'use_blending') {
             warning("argument 'use_blending' is deprecated; please use 'blending' instead.")
             if (missing(blending)) blending <- varargs$use_blending else warning("ignoring 'use_blending' as 'blending' was also provided.")
@@ -592,6 +600,7 @@ setMethod("h2o.transform", signature("H2OTargetEncoderModel"), function(model, d
     if (!is.null(noise)){
         params$noise <- noise
     }
+    params$as_training <- as_training
     
     res <- .h2o.__remoteSend(
         "TargetEncoderTransform",

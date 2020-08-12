@@ -302,7 +302,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     f = deprecated_property('f', smoothing)
     noise_level = deprecated_property('noise_level', noise)
 
-    def transform(self, frame, blending=None, inflection_point=None, smoothing=None, noise=None, **kwargs):
+    def transform(self, frame, blending=None, inflection_point=None, smoothing=None, noise=None, as_training=False, **kwargs):
         """
         Apply transformation to `te_columns` based on the encoding maps generated during `train()` method call.
 
@@ -311,6 +311,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         :param float inflection_point: If provided, this overrides the `inflection_point` parameter on the model.
         :param float smoothing: If provided, this overrides the `smoothing` parameter on the model.
         :param float noise: If provided, this overrides the amount of random noise added to the target encoding defined on the model, this helps prevent overfitting.
+        :param boolean as_training: Must be set to True when encoding the training frame. Defaults to False.
 
         :example:
         >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
@@ -331,10 +332,18 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         """
         for k in kwargs:
             if k in ['seed', 'data_leakage_handling']:
-                warnings.warn("%s is deprecated in `transform` method and will be ignored. "
+                warnings.warn("`%s` is deprecated in `transform` method and will be ignored. "
                               "Instead, please ensure that it was set before training on the H2OTargetEncoderEstimator model." % k, H2ODeprecationWarning)
             else:
                 raise TypeError("transform() got an unexpected keyword argument '%s'" % k)
+
+        if 'data_leakage_handling' in kwargs:
+            dlh = kwargs['data_leakage_handling']
+            assert_is_type(dlh, None, Enum("leave_one_out", "k_fold", "none"))
+            if dlh is not None and dlh.lower() != "none":
+                warnings.warn("Deprecated `data_leakage_handling=%s` is replaced by `as_training=True`. "
+                              "Please update your code." % dlh, H2ODeprecationWarning)
+                as_training = True
 
         params = dict(
             model=self.model_id,
@@ -343,6 +352,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
             inflection_point=inflection_point,
             smoothing=smoothing,
             noise=noise,
+            as_training=as_training,
         )
 
         output = h2o.api("GET /3/TargetEncoderTransform", data=params)

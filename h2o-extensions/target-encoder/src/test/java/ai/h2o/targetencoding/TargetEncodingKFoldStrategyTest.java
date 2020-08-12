@@ -107,7 +107,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
               .withDataForCol(1, ard(1, 1, 4, 7, 4))
-              .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
               .withDataForCol(3, ar(1, 2, 2, 3, 2))
               .build();
 
@@ -136,7 +136,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
               .withDataForCol(1, ard(1, 1, 4, 7, 4))
-              .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -165,7 +165,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
               .withDataForCol(1, ard(1, 1, 4, 7, 4))
-              .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
               .withDataForCol(3, ar(1, 2, 2, 3, 2))
               .build();
 
@@ -175,7 +175,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "c", "b", "a"))
               .withDataForCol(1, ard(1, 1, 4, 7, 4))
-              .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
               .build();
       
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -189,7 +189,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
       TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
       
-      teModel.score(test);
+      teModel.transformTraining(test);
     } finally {
       Scope.exit();
     }
@@ -205,7 +205,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b"))
               .withDataForCol(1, ard(1, 1, 4, 7))
-              .withDataForCol(2, ar("2", "6", "6", "6"))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y"))
               .withDataForCol(3, ar(1, 2, 2, 3))
               .build();
 
@@ -245,7 +245,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
                 .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
                 .withDataForCol(0, ar("a", "b", "b", "b", "a"))
                 .withDataForCol(1, ard(1, 1, 4, 7, 4))
-                .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+                .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
                 .withDataForCol(3, ar(1, 2, 2, 3, 2))
                 .build();
 
@@ -255,7 +255,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
                 .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
                 .withDataForCol(0, ar("a", "b", "c", "b", "a"))
                 .withDataForCol(1, ard(1, 1, 4, 7, 4))
-                .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+                .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
                 .withDataForCol(3, ar(1, 2, 2, 3, 2))
                 .build();
 
@@ -271,7 +271,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
         TargetEncoderModel teModel = te.trainModel().get();
         Scope.track_generic(teModel);
 
-        Frame encoded = teModel.score(test);
+        Frame encoded = teModel.transformTraining(test);
         Scope.track(encoded);
         Vec catEnc = encoded.vec("categorical_te");
         
@@ -297,7 +297,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
                 .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
                 .withDataForCol(0, ar("a", "b", "b", "b", "a"))
                 .withDataForCol(1, ard(1, 1, 4, 7, 4))
-                .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+                .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
                 .withDataForCol(3, ar(1, 2, 2, 3, 2))
                 .build();
 
@@ -313,7 +313,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
         TargetEncoderModel teModel = te.trainModel().get();
         Scope.track_generic(teModel);
 
-        Frame encoded = teModel.score(fr);
+        Frame encoded = teModel.transformTraining(fr);
         Scope.track(encoded);
         Vec catEnc = encoded.vec("categorical_te");
 
@@ -340,7 +340,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b", "a", "c"))
               .withDataForCol(1, ard(1, 1, 4, 7, 4, 9))
-              .withDataForCol(2, ar("2", "6", "6", "6", "6", "2"))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y", "N"))
               .withDataForCol(3, ar(1, 2, 2, 3, 2, 2))
               .build();
 
@@ -357,7 +357,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
       TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
 
-      Frame encoded = teModel.score(fr);
+      Frame encoded = teModel.transformTraining(fr);
       Scope.track(encoded);
       Vec catEnc = encoded.vec("categorical_te");
       printOutFrameAsTable(encoded);
@@ -387,7 +387,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
                 .withColNames("categorical", "target", "foldc")
                 .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
                 .withDataForCol(0, ar("a", "b", "b", "c", "c", "a", "d", "d", "d", "d", "e", "e", "a", "f", "f"))
-                .withDataForCol(1, ar("2", "6", "6", "6", "6", "6", "2", "6", "6", "6", "6", "2", "2", "2", "2"))
+                .withDataForCol(1, ar("N", "Y", "Y", "Y", "Y", "Y", "N", "Y", "Y", "Y", "Y", "N", "N", "N", "N"))
                 .withDataForCol(2, ar(1, 2, 1, 2, 1, 3, 2, 2, 1, 3, 1, 2, 3, 3, 2))
                 .build();
 
@@ -403,7 +403,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
         TargetEncoderModel teModel = te.trainModel().get();
         Scope.track_generic(teModel);
 
-        Frame encoded = teModel.score(fr);
+        Frame encoded = teModel.transformTraining(fr);
         Scope.track(encoded);
         printOutFrameAsTable(encoded, false, 100);
 
@@ -424,7 +424,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
                 .withColNames("categorical", "target", "foldc")
                 .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
                 .withDataForCol(0, ar("a", "b", "c", "d", "e", "b", "b"))
-                .withDataForCol(1, ar("2", "6", "6", "6", "6", "2", "2"))
+                .withDataForCol(1, ar("N", "Y", "Y", "Y", "Y", "N", "N"))
                 .withDataForCol(2, ar(1, 2, 2, 3, 1, 2, 1))
                 .build();
 
@@ -433,7 +433,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
                 .withColNames("categorical", "target", "foldc")
                 .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
                 .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-                .withDataForCol(1, ar("2", "6", "6", "6", "6"))
+                .withDataForCol(1, ar("N", "Y", "Y", "Y", "Y"))
                 .withDataForCol(2, ar(1, 2, 1, 2, 1))
                 .build();
 
@@ -449,7 +449,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
         TargetEncoderModel teModel = te.trainModel().get();
         Scope.track_generic(teModel);
         
-        Frame encoded = teModel.score(test);
+        Frame encoded = teModel.transformTraining(test);
         Scope.track(encoded);
         printOutFrameAsTable(encoded, false, 100);
         
@@ -458,7 +458,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
         assertEquals(.571429, priorMean, 1e-6);
 
         Vec catEnc = encoded.vec("categorical_te");
-        Vec expected = dvec(0.5714285, 0.0, 0.5, 0.0, 0.5714285);
+        Vec expected = dvec(0.57143, 0.0, 0.5, 0.0, 0.57143);
         assertVecEquals(expected,catEnc , 1e-5);
       } finally {
         Scope.exit();
@@ -475,7 +475,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
               .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
               .withDataForCol(1, ar("d", "e", "d", "e", "e"))
-              .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
               .withDataForCol(3, ar(1, 2, 2, 3, 2))
               .build();
 
@@ -491,7 +491,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
       TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
 
-      Frame encoded = teModel.score(fr);
+      Frame encoded = teModel.transformTraining(fr);
       Scope.track(encoded);
       Vec cat1Enc = encoded.vec("cat1_te");
       Vec cat2Enc = encoded.vec("cat2_te");
@@ -505,7 +505,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
       TargetEncoderModel teModelCat1only = te_cat1only.trainModel().get();
       Scope.track_generic(teModelCat1only);
 
-      Frame encodedCat1only = teModelCat1only.score(fr);
+      Frame encodedCat1only = teModelCat1only.transformTraining(fr);
       Scope.track(encodedCat1only);
       Vec cat1EncCat1only = encodedCat1only.vec("cat1_te");
       Vec cat2EncCat1only = encodedCat1only.vec("cat2_te");
@@ -519,7 +519,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
       TargetEncoderModel teModelCat2only = te_cat2only.trainModel().get();
       Scope.track_generic(teModelCat2only);
 
-      Frame encodedCat2only = teModelCat2only.score(fr);
+      Frame encodedCat2only = teModelCat2only.transformTraining(fr);
       Scope.track(encodedCat2only);
       Vec cat1EncCat2only = encodedCat2only.vec("cat1_te");
       Vec cat2EncCat2only = encodedCat2only.vec("cat2_te");
@@ -531,4 +531,145 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     }
   }
   
+  
+  @Test
+  public void test_KFold_strategy_does_not_produce_the_same_result_on_transform_and_transformTraining() {
+    try {
+      Scope.enter();
+      Frame fr = new TestFrameBuilder()
+              .withName("trainFrame")
+              .withColNames("categorical", "numerical", "target", "foldc")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(2, ar("N", "N", "Y", "Y", "Y"))
+              .withDataForCol(3, ar(1, 2, 2, 1, 2))
+              .build();
+
+      TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
+      teParams._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
+      teParams._response_column = "target";
+      teParams._fold_column = "foldc";
+      teParams._train = fr._key;
+      teParams._seed = 42;
+      teParams._noise = 0;
+
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      Frame encodedAsTrain = teModel.transformTraining(fr);
+      Scope.track(encodedAsTrain);
+      assertVecEquals(dvec(1, 1, 1, 0.5, 0), encodedAsTrain.vec("categorical_te"), 1e-5);
+
+      Frame encodedAsNew = teModel.transform(fr);
+      Scope.track(encodedAsNew);
+      assertVecEquals(dvec(0.5, 0.667, 0.667, 0.667, 0.5), encodedAsNew.vec("categorical_te"), 1e-3);
+
+      try {
+        compareFrames(encodedAsTrain, encodedAsNew, 1e-5);
+        fail("should have thrown");
+      } catch (AssertionError ae) {
+        assertFalse(ae.getMessage().contains("should have thrown"));
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
+  @Test
+  public void test_KFold_strategy_does_produce_the_same_result_on_transform_and_score() {
+    try {
+      Scope.enter();
+      Frame fr = new TestFrameBuilder()
+              .withName("trainFrame")
+              .withColNames("categorical", "numerical", "target", "foldc")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
+              .withDataForCol(3, ar(1, 2, 2, 3, 2))
+              .build();
+
+      TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
+      teParams._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
+      teParams._response_column = "target";
+      teParams._fold_column = "foldc";
+      teParams._train = fr._key;
+      teParams._seed = 42;
+      teParams._noise = 0;
+
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      Frame encoded = teModel.transform(fr);
+      Scope.track(encoded);
+
+      Frame predictions = teModel.score(fr);
+      Scope.track(predictions);
+
+      compareFrames(encoded, predictions, 1e-5);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void test_encoder_trained_with_KFold_strategy_can_be_used_to_transform_a_frame_without_target_nor_fold_column() {
+    try {
+      Scope.enter();
+      Frame train = new TestFrameBuilder()
+              .withName("trainFrame")
+              .withColNames("cat1", "cat2", "target", "foldc")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ar("d", "e", "d", "e", "e"))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
+              .withDataForCol(3, ar(1, 2, 2, 3, 2))
+              .build();
+
+      Frame test = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("cat1", "cat2")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("c", "b", "a"))
+              .withDataForCol(1, ar("d", "e", "f"))
+              .build();
+
+      TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
+      teParams._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
+      teParams._response_column = "target";
+      teParams._fold_column = "foldc";
+      teParams._train = train._key;
+      teParams._seed = 42;
+      teParams._noise = 0;
+
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+      assertEquals(0.8, teModel._output._prior_mean, 1e-6);
+
+      Frame encoded = teModel.transform(test);
+      Scope.track(encoded);
+
+      Frame predictions = teModel.score(test);
+      Scope.track(predictions);
+
+      Vec expectCat1Enc = dvec(0.8, 1., 0.5);
+      assertVecEquals(expectCat1Enc, encoded.vec("cat1_te"), 1e-5);
+      assertVecEquals(expectCat1Enc, predictions.vec("cat1_te"), 1e-5);
+
+      Vec expectCat2Enc = dvec(0.5, 1., 0.8);
+      assertVecEquals(expectCat2Enc, encoded.vec("cat2_te"), 1e-5);
+      assertVecEquals(expectCat2Enc, predictions.vec("cat2_te"), 1e-5);
+
+      assert compareFrames(encoded, predictions, 1e-5);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
 }

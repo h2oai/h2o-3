@@ -50,7 +50,7 @@ public class TargetEncodingImmutabilityTest extends TestUtil {
               .withColNames("categorical", "target", "foldc")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "c", "d", "e", "b", "b"))
-              .withDataForCol(1, ar("2", "6", "6", "6", "6", "2", "2"))
+              .withDataForCol(1, ar("N", "Y", "Y", "Y", "Y", "N", "N"))
               .withDataForCol(2, ar(1, 2, 2, 3, 1, 2, 1))
               .build();
 
@@ -67,7 +67,7 @@ public class TargetEncodingImmutabilityTest extends TestUtil {
       TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
       
-      Frame encoded = teModel.score(training);
+      Frame encoded = teModel.transformTraining(training);
       Scope.track(encoded);
 
       assertBitIdentical(training, trainCopy);

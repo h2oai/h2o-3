@@ -20,6 +20,7 @@ public class TargetEncoderHandler extends Handler {
 //    final double noise = parameters._noise == null ? model._parms._noise : parameters._noise;
 //    final double inflectionPoint = parameters._inflection_point == null ? model._parms._inflection_point : parameters._inflection_point;
 //    final double smoothing = parameters._smoothing == null ? model._parms._smoothing : parameters._smoothing;
+    final boolean asTraining = parameters._as_training;
     final boolean useBlending = parameters._blending;
     final double noise = parameters._noise < -1  ? model._parms._noise : parameters._noise;
     final double inflectionPoint = parameters._inflection_point < 0 ? model._parms._inflection_point : parameters._inflection_point;
@@ -32,7 +33,8 @@ public class TargetEncoderHandler extends Handler {
     final Frame transformedFrame = model.transform(
             parameters._frame.get(),
             blendingParams,
-            noise
+            noise,
+            asTraining
     );
 
     return new KeyV3.FrameKeyV3(transformedFrame._key);
@@ -41,6 +43,7 @@ public class TargetEncoderHandler extends Handler {
   public static class TargetEncoderTransformParameters extends Iced<TargetEncoderTransformParameters> {
     public Key<TargetEncoderModel> _model;
     public Key<Frame> _frame;
+    public boolean _as_training;
     public boolean _blending;
     public double _inflection_point = -1;
     public double _smoothing = -1;

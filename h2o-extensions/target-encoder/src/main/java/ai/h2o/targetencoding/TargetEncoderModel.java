@@ -58,7 +58,9 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     }
 
     public BlendingParams getBlendingParameters() {
-      return _inflection_point!=0 && _smoothing!=0 ? new BlendingParams(_inflection_point, _smoothing) : TargetEncoderHelper.DEFAULT_BLENDING_PARAMS;
+      return _blending 
+              ? _inflection_point!=0 && _smoothing!=0 ? new BlendingParams(_inflection_point, _smoothing) : TargetEncoderHelper.DEFAULT_BLENDING_PARAMS
+              : null;
     }
 
     @Override
@@ -136,15 +138,33 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     throw H2O.unimpl("No Model Metrics for TargetEncoder.");
   }
 
+  public Frame transformTraining(Frame fr) {
+    return transform(fr, _parms.getBlendingParameters(), _parms._noise, true);
+  }
+  
+  public Frame transform(Frame fr) {
+    return transform(fr, _parms.getBlendingParameters(), _parms._noise);
+  }
+  
+  public Frame transform(Frame fr, BlendingParams blendingParams, double noiseLevel) {
+    return transform(fr, blendingParams, noiseLevel, false);  
+  }
+  
   /**
-   * Transform with noise
+   * Applies target encoding to unseen data during training.
+   * This means that DataLeakageHandlingStrategy is enforced to None.
+   * 
+   *  In the context of Target Encoding, {@link #transform(Frame, BlendingParams, double, boolean)} should be used to encode new data.
+   *  Whereas {@link #score(Frame)} should be mainly used to encode training data.
+   * 
    * @param fr Data to transform
    * @param blendingParams Parameters for blending. If null, blending parameters from models parameters are loaded. 
    *                       If those are not set, DEFAULT_BLENDING_PARAMS from TargetEncoder class are used.
    * @param noiseLevel Level of noise applied (use -1 for default noise level, 0 to disable noise).
+   * @param asTraining true iff transforming training data.
    * @return An instance of {@link Frame} with transformed fr, registered in DKV.
    */
-  public Frame transform(Frame fr, BlendingParams blendingParams, double noiseLevel) {
+  public Frame transform(Frame fr, BlendingParams blendingParams, double noiseLevel, boolean asTraining) {
     //XXX: commented out logic for PUBDEV-7714: need to properly test separately
     Frame adaptFr = fr;
 //    Frame adaptFr = new Frame(fr);
@@ -155,6 +175,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 //    }
     Frame transformed = applyTargetEncoding(
             adaptFr, 
+            asTraining,
             blendingParams, 
             noiseLevel,
             null
@@ -168,12 +189,15 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     throw new UnsupportedOperationException("TargetEncoderModel doesn't support scoring on raw data. Use transform() or score() instead.");
   }
 
+  /**
+   * {@link #score(Frame)} always encodes as if the data were new (ie. not training data).
+   */
   @Override
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-    final BlendingParams blendingParams = _parms._blending ? _parms.getBlendingParameters() : null;
     return applyTargetEncoding(
             fr, 
-            blendingParams,
+            false,
+            _parms.getBlendingParameters(),
             _parms._noise, 
             Key.make(destination_key)
     );
@@ -184,6 +208,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    * Core method for applying pre-calculated encodings to the dataset. 
    *
    * @param data dataset that will be used as a base for creation of encodings .
+   * @param asTraining is true, the original dataLeakageStrategy is applied, otherwise this is forced to {@link DataLeakageHandlingStrategy#None}.
    * @param blendingParams this provides parameters allowing to mitigate the effect 
    *                       caused by small observations of some categories when computing their encoded value.
    *                       Use null to disable blending.
@@ -194,13 +219,14 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    * @return a new frame with the encoded columns.
    */
   Frame applyTargetEncoding(Frame data,
+                            boolean asTraining,
                             BlendingParams blendingParams,
                             double noiseLevel,
                             Key<Frame> resultKey) {
     
     final String targetColumn = _parms._response_column;
     final String foldColumn = _parms._fold_column;
-    final DataLeakageHandlingStrategy dataLeakageHandlingStrategy = _parms._data_leakage_handling;
+    final DataLeakageHandlingStrategy dataLeakageHandlingStrategy = asTraining ? _parms._data_leakage_handling : DataLeakageHandlingStrategy.None;
     final long seed = _parms._seed;
 
     // check requirements on frame
@@ -311,6 +337,10 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
           case None:
             try {
               Scope.enter();
+              if (!asTraining && encodings.find(foldColumn) >= 0) { // applying TE trained with KFold strategy
+                encodings = groupEncodingsByCategory(encodings, encodingsTEColIdx);
+                Scope.track(encodings);
+              }
               Frame joinedFrame = mergeEncodings(encodedFrame, encodings, teColumnIdx, encodingsTEColIdx);
               Scope.track(joinedFrame);
               DKV.remove(encodedFrame._key); // don't need previous version of encoded frame anymore 

@@ -58,7 +58,7 @@ public class TargetEncodingHelperTest extends TestUtil {
               .withColNames("ColA", "ColB")
               .withVecTypes(Vec.T_NUM, Vec.T_STR)
               .withDataForCol(0, ard(1, 42, 33))
-              .withDataForCol(1, ar(null, "6", null))
+              .withDataForCol(1, ar(null, "Y", null))
               .build();
 
       Frame result = filterOutNAsInColumn(fr,1);
@@ -81,14 +81,14 @@ public class TargetEncodingHelperTest extends TestUtil {
               .withColNames("ColA", "ColB")
               .withVecTypes(Vec.T_NUM, Vec.T_STR)
               .withDataForCol(0, ard(1, 42, 33))
-              .withDataForCol(1, ar(null, "6", null))
+              .withDataForCol(1, ar(null, "Y", null))
               .build();
 
       Frame result = filterByValue(fr, 0, 42);
       Scope.track(result);
 
       assertEquals(1L, result.numRows());
-      assertEquals("6", result.vec(1).stringAt(0));
+      assertEquals("Y", result.vec(1).stringAt(0));
     } finally {
       Scope.exit();
     }
@@ -103,7 +103,7 @@ public class TargetEncodingHelperTest extends TestUtil {
               .withColNames("ColA", "ColB")
               .withVecTypes(Vec.T_NUM, Vec.T_STR)
               .withDataForCol(0, ard(1, 42, 33))
-              .withDataForCol(1, ar(null, "6", null))
+              .withDataForCol(1, ar(null, "Y", null))
               .build();
       Frame result = filterNotByValue(fr,0, 42);
       Scope.track(result);
@@ -125,7 +125,7 @@ public class TargetEncodingHelperTest extends TestUtil {
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b"))
               .withDataForCol(1, ard(1, 1))
-              .withDataForCol(2, ar("2", "6"))
+              .withDataForCol(2, ar("N", "Y"))
               .withDataForCol(3, ar(1, 2))
               .build();
 
@@ -521,7 +521,7 @@ public class TargetEncodingHelperTest extends TestUtil {
       final Frame fr = new TestFrameBuilder()
               .withColNames("target")
               .withVecTypes(Vec.T_CAT)
-              .withDataForCol(0, ar("2", "6", "6", null))
+              .withDataForCol(0, ar("N", "Y", "Y", null))
               .build();
 
       Frame filtered = filterOutNAsInColumn(fr, 0);
@@ -545,13 +545,13 @@ public class TargetEncodingHelperTest extends TestUtil {
               .withDataForCol(0, ar("a", "b", "b", "b", "a", "b"))
               .withDataForCol(1, ard(1, 1, 4, 7, 4, 2))
               .withDataForCol(2, ard(1, 1, 4, 7, 4, 6))
-              .withDataForCol(3, ar("2", "6", "6", "6", "6", null))
+              .withDataForCol(3, ar("N", "Y", "Y", "Y", "Y", null))
               .build();
 
       subtractTargetValueForLOO(fr, "target");
 
       // We check here that for  `target column = NA` we do not subtract anything and for other cases we subtract current row's target value
-      Vec expectedNum = vec(1, 0, 3, 6, 3, 2); // num is decremented by 1 iff target==1 (here "6" is 1)
+      Vec expectedNum = vec(1, 0, 3, 6, 3, 2); // num is decremented by 1 iff target==1 (here "Y" is 1)
       assertVecEquals(expectedNum, fr.vec("numerator"), 1e-5);
       Vec expectedDen = vec(0, 0, 3, 6, 3, 6); // den is decremented by 1 iff target is not NA
       assertVecEquals(expectedDen, fr.vec("denominator"), 1e-5);

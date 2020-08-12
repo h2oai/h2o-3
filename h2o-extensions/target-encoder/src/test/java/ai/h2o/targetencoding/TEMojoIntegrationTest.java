@@ -91,10 +91,10 @@ public class TEMojoIntegrationTest extends TestUtil {
       row.put("cabin", "C22 C26");
       row.put("embarked", embarkedCat);
       row.put("sibsp", "1");
-      row.put("parch", "2");
+      row.put("parch", "N");
       row.put("name", "1111"); // somehow encoded name
       row.put("ticket", "12345");
-      row.put("boat", "2");
+      row.put("boat", "N");
       row.put("body", "123");
       row.put("pclass", "1");
 
@@ -172,10 +172,10 @@ public class TEMojoIntegrationTest extends TestUtil {
         row.put("cabin", "C22 C26");
         row.put("embarked", embarkedCat);
         row.put("sibsp", "1");
-        row.put("parch", "2");
+        row.put("parch", "N");
         row.put("name", "1111"); // somehow encoded name
         row.put("ticket", "12345");
-        row.put("boat", "2");
+        row.put("boat", "N");
         row.put("body", "123");
         row.put("pclass", "1");
 
@@ -249,10 +249,10 @@ public class TEMojoIntegrationTest extends TestUtil {
       row.put("cabin", "C22 C26");
       row.put("embarked", embarkedCat);
       row.put("sibsp", "1");
-      row.put("parch", "2");
+      row.put("parch", "N");
       row.put("name", "1111"); // somehow encoded name
       row.put("ticket", "12345");
-      row.put("boat", "2");
+      row.put("boat", "N");
       row.put("body", "123");
       row.put("pclass", "1");
 
@@ -313,10 +313,10 @@ public class TEMojoIntegrationTest extends TestUtil {
       row.put("cabin", "C22 C26");
       row.put("embarked", embarkedCat);
       row.put("sibsp", "1");
-      row.put("parch", "2");
+      row.put("parch", "N");
       row.put("name", "1111"); // somehow encoded name
       row.put("ticket", "12345");
-      row.put("boat", "2");
+      row.put("boat", "N");
       row.put("body", "123");
       row.put("pclass", "1");
 

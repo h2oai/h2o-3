@@ -35,7 +35,7 @@ public class TargetEncodingExceptionsHandlingTest extends TestUtil {
               .withColNames("categorical", "target", "foldc")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b"))
-              .withDataForCol(1, ar("2", "6", "6", "6"))
+              .withDataForCol(1, ar("N", "Y", "Y", "Y"))
               .withDataForCol(2, ar(1, 2, 2, 3))
               .build(); //auto-track
 
@@ -70,7 +70,7 @@ public class TargetEncodingExceptionsHandlingTest extends TestUtil {
                 .withColNames("categorical", "target", "foldc")
                 .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
                 .withDataForCol(0, ar("a", "b", "b", "b"))
-                .withDataForCol(1, ar("2", "6", "6", "6"))
+                .withDataForCol(1, ar("N", "Y", "Y", "Y"))
                 .withDataForCol(2, ar(1, 2, 2, 3))
                 .build(); //auto-track
 
@@ -109,7 +109,7 @@ public class TargetEncodingExceptionsHandlingTest extends TestUtil {
               .withColNames("categorical", "target", "foldc")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b"))
-              .withDataForCol(1, ar("2", "6", "6", "6"))
+              .withDataForCol(1, ar("N", "Y", "Y", "Y"))
               .withDataForCol(2, ar(1, 2, 2, 3))
               .build(); //auto-track
 
@@ -147,7 +147,7 @@ public class TargetEncodingExceptionsHandlingTest extends TestUtil {
               .withColNames("categorical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b"))
-              .withDataForCol(1, ar("2", "6", "6", "6"))
+              .withDataForCol(1, ar("N", "Y", "Y", "Y"))
               .build(); //auto-track
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -183,7 +183,7 @@ public class TargetEncodingExceptionsHandlingTest extends TestUtil {
               .withColNames("categorical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b"))
-              .withDataForCol(1, ar("2", "6", "6", "6"))
+              .withDataForCol(1, ar("N", "Y", "Y", "Y"))
               .build(); //auto-track
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();

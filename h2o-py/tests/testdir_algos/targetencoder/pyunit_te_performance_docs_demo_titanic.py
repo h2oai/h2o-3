@@ -39,14 +39,16 @@ def test_that_te_is_helpful_for_titanic_gbm_xval():
 
     # Train a TE model
     titanic_te = H2OTargetEncoderEstimator(fold_column=fold_column,
-                                           data_leakage_handling=data_leakage_handling, blending=blended_avg, k=inflection_point, f=smoothing)
+                                           data_leakage_handling=data_leakage_handling, 
+                                           blending=blended_avg, 
+                                           inflection_point=inflection_point, 
+                                           smoothing=smoothing,
+                                           seed=1234)
 
-    titanic_te.train(x=encoded_columns,
-                                y=response,
-                                training_frame=train)
+    titanic_te.train(x=encoded_columns, y=response, training_frame=train)
 
     # New target encoded train and test sets
-    train_te = titanic_te.transform(frame=train, data_leakage_handling="k_fold", seed=1234, noise=noise)
+    train_te = titanic_te.transform(frame=train, as_training=True)
     test_te = titanic_te.transform(frame=test, noise=0.0)
 
     gbm_with_te=H2OGradientBoostingEstimator(max_depth=6,

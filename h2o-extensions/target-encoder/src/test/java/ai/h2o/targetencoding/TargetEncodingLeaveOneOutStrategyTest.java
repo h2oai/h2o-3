@@ -53,7 +53,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       double priorMean = calculatePriorMean(encodings);
       assertEquals(2./3, priorMean, 1e-6);
       
-      Frame encoded = teModel.score(fr);
+      Frame encoded = teModel.transformTraining(fr);
       Scope.track(encoded);
       Vec catEnc = encoded.vec("categorical_te");
       assertEquals(priorMean, catEnc.at(1), 1e-5);
@@ -96,7 +96,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "c", "d", "b", "a"))
               .withDataForCol(1, ard(1, 1, 4, 7, 5, 4))
-              .withDataForCol(2, ar("2", "6", "6", "2", "6", "6"))
+              .withDataForCol(2, ar("N", "Y", "Y", "N", "Y", "Y"))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -110,7 +110,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
 
-      Frame encoded = teModel.score(fr);
+      Frame encoded = teModel.transformTraining(fr);
       Scope.track(encoded);
       Vec catEnc = encoded.vec("categorical_te");
 
@@ -135,7 +135,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withColNames("categorical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", null, null, null))
-              .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+              .withDataForCol(1, ar("N", "Y", "Y", "N", "Y"))
               .withChunkLayout(3, 2)
               .build();
 
@@ -154,7 +154,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       double priorMean = calculatePriorMean(encodings);
       assertEquals(.6, priorMean, 1e-6);
 
-      Frame encoded = teModel.score(fr);
+      Frame encoded = teModel.transformTraining(fr);
       Scope.track(encoded);
       Vec catEnc = encoded.vec("categorical_te");
       
@@ -175,7 +175,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withColNames("categorical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "", "", null)) // null and "" are different categories even though they look the same in printout
-              .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+              .withDataForCol(1, ar("N", "Y", "Y", "N", "Y"))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -193,7 +193,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       double priorMean = calculatePriorMean(encodings);
       assertEquals(.6, priorMean, 1e-6);
 
-      Frame encoded = teModel.score(fr);
+      Frame encoded = teModel.transformTraining(fr);
       Scope.track(encoded);
       Vec catEnc = encoded.vec("categorical_te");
 
@@ -214,7 +214,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withColNames("categorical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", null, null, null))
-              .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+              .withDataForCol(1, ar("N", "Y", "Y", "N", "Y"))
               .build();
 
       Frame fr2 = new TestFrameBuilder()
@@ -222,7 +222,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withColNames("categorical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "na", "na", "na"))
-              .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+              .withDataForCol(1, ar("N", "Y", "Y", "N", "Y"))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -240,7 +240,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       double priorMean = calculatePriorMean(encodings);
       assertEquals(.6, priorMean, 1e-6);
 
-      Frame encoded1 = teModel1.score(fr1);
+      Frame encoded1 = teModel1.transformTraining(fr1);
       Scope.track(encoded1);
       Vec catEnc1 = encoded1.vec("categorical_te");
 
@@ -250,7 +250,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       TargetEncoderModel teModel2 = te2.trainModel().get();
       Scope.track_generic(teModel2);
 
-      Frame encoded2 = teModel2.score(fr2);
+      Frame encoded2 = teModel2.transformTraining(fr2);
       Scope.track(encoded2);
       Vec catEnc2 = encoded2.vec("categorical_te");
 
@@ -273,7 +273,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
               .withDataForCol(1, ard(1, 1, 4, 7, 4))
-              .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -287,7 +287,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
 
-      Frame encoded = teModel.score(fr);
+      Frame encoded = teModel.transformTraining(fr);
       Scope.track(encoded);
       Vec catEnc = encoded.vec("categorical_te");
 
@@ -308,7 +308,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
               .withDataForCol(1, ard(1, 1, 4, 7, 4))
-              .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
               .withDataForCol(3, ar(1, 2, 2, 3, 2))
               .build();
 
@@ -324,7 +324,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
 
-      Frame encoded = teModel.score(fr);
+      Frame encoded = teModel.transformTraining(fr);
       Scope.track(encoded);
       Vec catEnc = encoded.vec("categorical_te");
 
@@ -345,7 +345,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
               .withDataForCol(1, ard(1, 1, 4, 7, 4))
-              .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -359,7 +359,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
 
-      Frame encoded = teModel.score(fr);
+      Frame encoded = teModel.transformTraining(fr);
       Scope.track(encoded);
       Vec catEnc = encoded.vec("categorical_te");
 
@@ -387,7 +387,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
               .withDataForCol(1, ar("d", "e", "d", "e", "e"))
-              .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -401,7 +401,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
         
-      Frame encoded = teModel.score(fr);
+      Frame encoded = teModel.transformTraining(fr);
       Scope.track(encoded);
       Vec cat1Enc = encoded.vec("cat1_te");
       Vec cat2Enc = encoded.vec("cat2_te");
@@ -415,7 +415,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       TargetEncoderModel teModelCat1only = te_cat1only.trainModel().get();
       Scope.track_generic(teModelCat1only);
         
-      Frame encodedCat1only = teModelCat1only.score(fr);
+      Frame encodedCat1only = teModelCat1only.transformTraining(fr);
       Scope.track(encodedCat1only);
       Vec cat1EncCat1only = encodedCat1only.vec("cat1_te");
       Vec cat2EncCat1only = encodedCat1only.vec("cat2_te");
@@ -429,13 +429,146 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       TargetEncoderModel teModelCat2only = te_cat2only.trainModel().get();
       Scope.track_generic(teModelCat2only);
 
-      Frame encodedCat2only = teModelCat2only.score(fr);
+      Frame encodedCat2only = teModelCat2only.transformTraining(fr);
       Scope.track(encodedCat2only);
       Vec cat1EncCat2only = encodedCat2only.vec("cat1_te");
       Vec cat2EncCat2only = encodedCat2only.vec("cat2_te");
       assertNull(cat1EncCat2only);
       assertNotNull(cat2EncCat2only);
       assertVecEquals(cat2Enc, cat2EncCat2only, 1e-6);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void test_LOO_strategy_does_not_produce_the_same_result_on_transform_and_transformTraining() {
+    try {
+      Scope.enter();
+      Frame fr = new TestFrameBuilder()
+              .withName("trainFrame")
+              .withColNames("categorical", "numerical", "target")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(2, ar("N", "N", "Y", "Y", "Y"))
+              .build();
+
+      TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
+      teParams._data_leakage_handling = DataLeakageHandlingStrategy.LeaveOneOut;
+      teParams._response_column = "target";
+      teParams._train = fr._key;
+      teParams._seed = 42;
+      teParams._noise = 0;
+
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      Frame encodedAsTrain = teModel.transformTraining(fr);
+      Scope.track(encodedAsTrain);
+      assertVecEquals(dvec(1, 1, 0.5, 0.5, 0), encodedAsTrain.vec("categorical_te"), 1e-5);
+
+      Frame encodedAsNew = teModel.transform(fr);
+      Scope.track(encodedAsNew);
+      assertVecEquals(dvec(0.5, 0.667, 0.667, 0.667, 0.5), encodedAsNew.vec("categorical_te"), 1e-3);
+
+      try {
+        compareFrames(encodedAsTrain, encodedAsNew, 1e-5);
+        fail("should have thrown");
+      } catch (AssertionError ae) {
+        assertFalse(ae.getMessage().contains("should have thrown"));
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
+  @Test
+  public void test_LOO_strategy_does_produce_the_same_result_on_transform_and_score() {
+    try {
+      Scope.enter();
+      Frame fr = new TestFrameBuilder()
+              .withName("trainFrame")
+              .withColNames("categorical", "numerical", "target")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
+              .build();
+
+      TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
+      teParams._data_leakage_handling = DataLeakageHandlingStrategy.LeaveOneOut;
+      teParams._response_column = "target";
+      teParams._train = fr._key;
+      teParams._seed = 42;
+      teParams._noise = 0;
+
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      Frame encoded = teModel.transform(fr);
+      Scope.track(encoded);
+
+      Frame predictions = teModel.score(fr);
+      Scope.track(predictions);
+
+      compareFrames(encoded, predictions, 1e-5);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void test_encoder_trained_with_LOO_strategy_can_be_used_to_transform_a_frame_without_target() {
+    try {
+      Scope.enter();
+      Frame train = new TestFrameBuilder()
+              .withName("trainFrame")
+              .withColNames("cat1", "cat2", "target")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ar("d", "e", "d", "e", "e"))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
+              .build();
+
+      Frame test = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("cat1", "cat2")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("c", "b", "a"))
+              .withDataForCol(1, ar("d", "e", "f"))
+              .build();
+
+      TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
+      teParams._data_leakage_handling = DataLeakageHandlingStrategy.LeaveOneOut;
+      teParams._response_column = "target";
+      teParams._train = train._key;
+      teParams._seed = 42;
+      teParams._noise = 0;
+
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+      assertEquals(0.8, teModel._output._prior_mean, 1e-6);
+
+      Frame encoded = teModel.transform(test);
+      Scope.track(encoded);
+
+      Frame predictions = teModel.score(test);
+      Scope.track(predictions);
+
+      Vec expectCat1Enc = dvec(0.8, 1., 0.5);
+      assertVecEquals(expectCat1Enc, encoded.vec("cat1_te"), 1e-5);
+      assertVecEquals(expectCat1Enc, predictions.vec("cat1_te"), 1e-5);
+
+      Vec expectCat2Enc = dvec(0.5, 1., 0.8);
+      assertVecEquals(expectCat2Enc, encoded.vec("cat2_te"), 1e-5);
+      assertVecEquals(expectCat2Enc, predictions.vec("cat2_te"), 1e-5);
+
+      assert compareFrames(encoded, predictions, 1e-5);
     } finally {
       Scope.exit();
     }

@@ -10,7 +10,7 @@ import water.fvec.*;
 
 import static ai.h2o.targetencoding.TargetEncoderHelper.DENOMINATOR_COL;
 import static ai.h2o.targetencoding.TargetEncoderHelper.NUMERATOR_COL;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class TargetEncodingOnBinaryTest extends TestUtil {
   
@@ -48,12 +48,12 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       assertVecEquals(expectedNumColumn, encodings.vec(NUMERATOR_COL), 0);
       assertVecEquals(expectedDenColumn, encodings.vec(DENOMINATOR_COL), 0);
       
-      Frame predictions = teModel.score(fr);
-      Scope.track(predictions);
-      Vec encoded = predictions.vec("categorical_te");
-      Assert.assertNotNull(encoded);
+      Frame trainEncoded = teModel.transformTraining(fr);
+      Scope.track(trainEncoded);
+      Vec trainEncodedCol = trainEncoded.vec("categorical_te");
+      Assert.assertNotNull(trainEncodedCol);
       Vec expectedEncodedCol = dvec(.75, .75, .75, .75, .5, .5);
-      assertVecEquals(expectedEncodedCol, encoded, 1e-6);
+      assertVecEquals(expectedEncodedCol, trainEncodedCol, 1e-6);
     } finally {
       Scope.exit();
     }
@@ -92,28 +92,33 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       assertVecEquals(expectedNumColumn, encodings.vec(NUMERATOR_COL), 0);
       assertVecEquals(expectedDenColumn, encodings.vec(DENOMINATOR_COL), 0);
 
-      Frame predictions = teModel.score(fr);
-      Scope.track(predictions);
-      Vec encoded = predictions.vec("categorical_te");
-      Assert.assertNotNull(encoded);
+      Frame trainEncoded = teModel.transformTraining(fr);
+      Scope.track(trainEncoded);
+      Vec trainEncodedCol = trainEncoded.vec("categorical_te");
+      Assert.assertNotNull(trainEncodedCol);
       Vec expectedEncodedCol = dvec(0.75, 0.75, 0.333, 0.5, 0.75, 0.333, 0.5, 0.75, 0.333); // == (3/4, 3/4, 1/3, 1/2, 3/4, 1/3, 1/2, 3/4, 1/3)
-      assertVecEquals(expectedEncodedCol, encoded, 1e-3);
+      assertVecEquals(expectedEncodedCol, trainEncodedCol, 1e-3);
       
       final Frame test = new TestFrameBuilder()
               .withColNames("categorical")
               .withVecTypes(Vec.T_CAT)
               .withDataForCol(0, ar("c", "b", "a", null))
               .build();
+      Frame testEncoded = teModel.transform(test);
+      Scope.track(testEncoded);
+      Vec testEncodedCol = testEncoded.vec("categorical_te");
+      Assert.assertNotNull(testEncodedCol);
+      Vec expectedTestEnc = dvec(0.333, 0.5, 0.75, 0.333); // == (1/3, 1/2, 3/4, 1/3), unseen "c' currently trainEncodedCol like null (would rather use prior...)
+      assertVecEquals(expectedTestEnc, testEncodedCol, 1e-3);
+
       Frame testPredictions = teModel.score(test);
       Scope.track(testPredictions);
-      Vec testEncoded = testPredictions.vec("categorical_te");
-      Assert.assertNotNull(testEncoded);
-      Vec expectedTestEnc = dvec(0.333, 0.5, 0.75, 0.333); // == (1/3, 1/2, 3/4, 1/3), unseen "c' currently encoded like null (would rather use prior...)
-      assertVecEquals(expectedTestEnc, testEncoded, 1e-3);
-
-      Frame testTransform = teModel.transform(test, null, 0);
-      Scope.track(testTransform);
-      assertVecEquals(expectedTestEnc, testTransform.vec("categorical_te"), 1e-3);
+      assertVecEquals(expectedTestEnc, testPredictions.vec("categorical_te"), 1e-3);
+      
+      // with None strategy, transformTraining behaves the same as default transform
+      Frame testEncodedAsTrain = teModel.transformTraining(test);
+      Scope.track(testEncodedAsTrain);
+      assertVecEquals(expectedTestEnc, testEncodedAsTrain.vec("categorical_te"), 1e-3);
     } finally {
       Scope.exit();
     }
@@ -152,12 +157,12 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       assertVecEquals(expectedNumColumn, encodings.vec(NUMERATOR_COL), 0);
       assertVecEquals(expectedDenColumn, encodings.vec(DENOMINATOR_COL), 0);
 
-      Frame predictions = teModel.score(fr);
-      Scope.track(predictions);
-      Vec encoded = predictions.vec("categorical_te");
-      Assert.assertNotNull(encoded);
+      Frame trainEncoded = teModel.transformTraining(fr);
+      Scope.track(trainEncoded);
+      Vec encodedCol = trainEncoded.vec("categorical_te");
+      Assert.assertNotNull(encodedCol);
       Vec expectedEncodedCol = dvec(1., 0.667, 0.5, 0., 0.667, 0., 1., 0.667, 0.5, 0.6); // == (3/3, 2/3, 1/2, 0/1, 2/3, 0/2, 1/1, 2/3, 1/2, 0/0=prior)
-      assertVecEquals(expectedEncodedCol, encoded, 1e-3);
+      assertVecEquals(expectedEncodedCol, encodedCol, 1e-3);
       
       final Frame test = new TestFrameBuilder()
               .withColNames("categorical", "target")
@@ -165,16 +170,24 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
               .withDataForCol(0, ar(  "d",   "c",   "b",   "a",  null))
               .withDataForCol(1, ar("YES",  "NO", "YES", "YES", "YES"))
               .build();
+      Frame testEncoded = teModel.transform(test); // LOO should not be applied this time (target ignored).
+      Scope.track(testEncoded);
+      Vec testEncodedCol = testEncoded.vec("categorical_te");
+      Assert.assertNotNull(testEncodedCol);
+      Vec expectedTestEnc = dvec(0.333, 1., 0.5, 0.75, 0.333); // == (1.3, 1/1, 1/2, 3/4, 1/3), unseen "d' encoded like a NA this time (None strategy)
+      assertVecEquals(expectedTestEnc, testEncodedCol, 1.e-3);
+
       Frame testPredictions = teModel.score(test);
       Scope.track(testPredictions);
-      Vec testEncoded = testPredictions.vec("categorical_te");
-      Assert.assertNotNull(testEncoded);
-      Vec expectedTestEnc = dvec(0.6, 0.6, 0., 0.667, 0.); // == (prior, 1/0=prior, 0/1, 2/3, 0/2), unseen "d' encoded using prior (inconsistent with None strategy)
-      assertVecEquals(expectedTestEnc, testEncoded, 1e-3);
+      assertVecEquals(expectedTestEnc, testPredictions.vec("categorical_te"), 1e-3);
       
-      Frame testTransform = teModel.transform(test, null, 0);
-      Scope.track(testTransform);
-      assertVecEquals(expectedTestEnc, testTransform.vec("categorical_te"), 1e-3);
+      // with LOO strategy, transformTraining applies to test as if it were a training frame, requiring and taking target into account
+      Frame testEncodedAsTrain = teModel.transformTraining(test);
+      Scope.track(testEncodedAsTrain);
+      Vec testEncodedAsTrainCol = testEncodedAsTrain.vec("categorical_te");
+      Assert.assertNotNull(testEncodedAsTrainCol);
+      Vec expectedTestEncAsTrain = dvec(0.6, 0.6, 0., 0.667, 0.); // == (prior, 1/0=prior, 0/1, 2/3, 0/2), unseen "d' encodedCol using prior (inconsistent with None strategy)
+      assertVecEquals(expectedTestEncAsTrain, testEncodedAsTrainCol, 1e-3);
     } finally {
       Scope.exit();
     }
@@ -223,7 +236,7 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       assertVecEquals(expectedDenColumn, encodings.vec(DENOMINATOR_COL), 0);
       assertVecEquals(expectedFoldColumn, encodings.vec("foldc"), 0);
       
-      Frame predictions = teModel.score(fr);
+      Frame predictions = teModel.transformTraining(fr);
       Scope.track(predictions);
       Vec encoded = predictions.vec("categorical_te");
       Assert.assertNotNull(encoded);
@@ -237,16 +250,24 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
               .withDataForCol(0, ar("d", "c", "b", "a", null))
               .withDataForCol(1, ar(  0,   0,   0,   0,    0))
               .build();
+      Frame testEncoded = teModel.transform(test); //KFold should not be applied (fold column ignored, all folds being merged/summed)
+      Scope.track(testEncoded);
+      Vec testEncodedCol = testEncoded.vec("categorical_te");
+      Assert.assertNotNull(testEncodedCol);
+      Vec expectedTestEnc = dvec(0.333, 1., 0.5, 0.75, 0.333); // == (1.3, 1/1, 1/2, 3/4, 1/3), unseen "d' encoded like a NA this time (None strategy)
+      assertVecEquals(expectedTestEnc, testEncodedCol, 1.e-3);
+
       Frame testPredictions = teModel.score(test);
       Scope.track(testPredictions);
-      Vec testEncoded = testPredictions.vec("categorical_te");
-      Assert.assertNotNull(testEncoded);
-      Vec expectedTestEnc = dvec(0.6, 1., 1., 1., 1.); // == (prior, 1/1, 1/1, 2/2, 1/1), unseen "d' encoded using prior (inconsistent with None strategy)
-      assertVecEquals(expectedTestEnc, testEncoded, 1e-3);
+      assertVecEquals(expectedTestEnc, testPredictions.vec("categorical_te"), 1e-3);
 
-      Frame testTransform = teModel.transform(test, null, 0);
-      Scope.track(testTransform);
-      assertVecEquals(expectedTestEnc, testTransform.vec("categorical_te"), 1e-3);
+      // with Kfold strategy, transformTraining applies to test as if it were a training frame, requiring and taking fold column into account
+      Frame testEncodedAsTrain = teModel.transformTraining(test);
+      Scope.track(testEncodedAsTrain);
+      Vec testEncodedAsTrainCol = testEncodedAsTrain.vec("categorical_te");
+      Assert.assertNotNull(testEncodedAsTrainCol);
+      Vec expectedTestEncAsTrain = dvec(0.6, 1., 1., 1., 1.); // == (prior, 1/1, 1/1, 2/2, 1/1), unseen "d' encoded using prior (inconsistent with None strategy)
+      assertVecEquals(expectedTestEncAsTrain, testEncodedAsTrainCol, 1e-3);
     } finally {
       Scope.exit();
     }

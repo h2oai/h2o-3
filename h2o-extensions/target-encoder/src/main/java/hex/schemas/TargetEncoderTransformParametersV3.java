@@ -12,6 +12,9 @@ public class TargetEncoderTransformParametersV3 extends SchemaV3<TargetEncoderTr
   public KeyV3.ModelKeyV3<TargetEncoderModel> model;
   @API(help = "Frame to transform.")
   public KeyV3.FrameKeyV3 frame;
+  @API(help = "Force encoding mode for training data: when using a leakage handling strategy different from None, " +
+          "training data should be transformed with this flag set to true (Defaults to false).")
+  public boolean as_training;
   @API(help = "Enables or disables blending. Defaults to the value assigned at model creation.")
   public boolean blending;
   @API(help = "Inflection point. Defaults to the value assigned at model creation.")

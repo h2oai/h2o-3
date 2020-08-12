@@ -183,7 +183,7 @@ public class TargetEncoderModelTest extends TestUtil{
               .withColNames("categorical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b"))
-              .withDataForCol(1, ar("2", "6", "6", "2"))
+              .withDataForCol(1, ar("N", "Y", "Y", "N"))
               .build();
 
       final Frame frNoTarget = new TestFrameBuilder()
@@ -224,7 +224,7 @@ public class TargetEncoderModelTest extends TestUtil{
               .withColNames("categorical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "", "", null)) // null and "" are different categories even though they look the same in printout
-              .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+              .withDataForCol(1, ar("N", "Y", "Y", "N", "Y"))
               .withChunkLayout(3, 2)
               .build();
 
@@ -276,7 +276,7 @@ public class TargetEncoderModelTest extends TestUtil{
       TargetEncoder te1 = new TargetEncoder(teParams1);
       TargetEncoderModel teModel1 = te1.trainModel().get();
       Scope.track_generic(teModel1);
-      Frame encoded1 = teModel1.score(fr);
+      Frame encoded1 = teModel1.transformTraining(fr);
       Frame sortedEncoded1 = Scope.track(Merge.sort(encoded1, encoded1.find(RowIndexTask.ROW_INDEX_COL)));
 
       TargetEncoderParameters teParams2 = (TargetEncoderParameters) teParameters.clone();
@@ -286,7 +286,7 @@ public class TargetEncoderModelTest extends TestUtil{
       TargetEncoder te2 = new TargetEncoder(teParams2);
       TargetEncoderModel teModel2 = te2.trainModel().get();
       Scope.track_generic(teModel2);
-      Frame encoded2 = teModel2.score(fr);
+      Frame encoded2 = teModel2.transformTraining(fr);
       Frame sortedEncoded2 = Scope.track(Merge.sort(encoded2, encoded2.find(RowIndexTask.ROW_INDEX_COL)));
 
       assertThat(sortedEncoded1.names(), not(equalTo(sortedEncoded2.names())));
