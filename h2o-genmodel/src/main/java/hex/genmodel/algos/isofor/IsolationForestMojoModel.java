@@ -52,4 +52,13 @@ public final class IsolationForestMojoModel extends SharedTreeMojoModel {
     return _outputAnomalyFlag ? 3 : 2;
   }
 
+  @Override
+  public String[] getOutputNames() {
+    if (_outputAnomalyFlag) {
+      return new String[]{"predict", "score", "mean_length"};
+    } else {
+      return new String[]{"predict", "mean_length"};
+    }
+  }
+
 }

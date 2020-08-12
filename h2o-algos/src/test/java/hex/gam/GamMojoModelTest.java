@@ -116,7 +116,7 @@ public class GamMojoModelTest {
               new double[]{1, 1, 1}, new double[]{0, 0, 0}, new double[]{0, 0, 0}, true, null,null, true);
       Scope.track_generic(gaussianmodel);
       Frame predictGaussian = Scope.track(gaussianmodel.score(trainGaussian));
-      Frame predictG = new Frame(predictGaussian.vec(0));
+      Frame predictG = predictGaussian.subframe(new String[]{"predict"});
       Scope.track(predictG);
 
       Assert.assertTrue(gaussianmodel.testJavaScoring(trainGaussian, predictG, _tol)); // compare scoring result with mojo

@@ -174,7 +174,7 @@ public class GenericModelTest extends TestUtil {
 
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track_generic(originalModelPredictions);
-            assertTrue(TestUtil.compareFrames(genericModelPredictions, new Frame(originalModelPredictions.vec("predict"))));
+            assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
         } finally {
             Scope.exit();
         }
@@ -312,7 +312,7 @@ public class GenericModelTest extends TestUtil {
 
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
-            assertTrue(TestUtil.compareFrames(genericModelPredictions, new Frame(originalModelPredictions.vec("predict"))));
+            assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
         } finally {
             Scope.exit();
         }
@@ -497,7 +497,7 @@ public class GenericModelTest extends TestUtil {
 
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
-            assertTrue(TestUtil.compareFrames(genericModelPredictions, new Frame(originalModelPredictions.vec("predict"))));
+            assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
         } finally {
             Scope.exit();
         }
@@ -896,6 +896,7 @@ public class GenericModelTest extends TestUtil {
         GenericModel model = builder.trainModel().get();
         assertNotNull(model);
         assertFalse(model.needsPostProcess());
+        assertNotNull(model.toString()); // make sure model can be printed
         return model;
     }
 
