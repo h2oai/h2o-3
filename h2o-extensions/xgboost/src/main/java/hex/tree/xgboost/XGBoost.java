@@ -79,15 +79,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
   // Number of trees requested, including prior trees from a checkpoint
   private int _ntrees;
-  
-  // Back-end used for the build
-  private XGBoostModel.XGBoostParameters.Backend _backend;
 
   // Calibration frame for Platt scaling
   private transient Frame _calib;
 
   @Override protected int nModelsInParallel(int folds) {
-    if (_backend == XGBoostModel.XGBoostParameters.Backend.gpu) {
+    if (XGBoostModel.getActualBackend(_parms, false) == XGBoostModel.XGBoostParameters.Backend.gpu) {
       return 1;
     } else {
       return nModelsInParallel(folds, 2);
@@ -124,12 +121,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       if(!new XGBoostExtensionCheck().doAllNodes().enabled) {
         error("XGBoost", "XGBoost is not available on all nodes!");
       }
-    }
-    if (!Paxos._cloudLocked) {
-      // during rest-api registration we do not care about the actual back-end
-      _backend = XGBoostModel.XGBoostParameters.Backend.cpu;
-    } else {
-      _backend = XGBoostModel.getActualBackend(_parms);
     }
 
     if (_parms.hasCheckpoint()) {  // Asking to continue from checkpoint?
