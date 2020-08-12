@@ -79,15 +79,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
   // Number of trees requested, including prior trees from a checkpoint
   private int _ntrees;
-  
-  // Back-end used for the build
-  private XGBoostModel.XGBoostParameters.Backend _backend;
 
   // Calibration frame for Platt scaling
   private transient Frame _calib;
 
   @Override protected int nModelsInParallel(int folds) {
-    if (_backend == XGBoostModel.XGBoostParameters.Backend.gpu) {
+    if (XGBoostModel.getActualBackend(_parms, false) == XGBoostModel.XGBoostParameters.Backend.gpu) {
       return 1;
     } else {
       return nModelsInParallel(folds, 2);
@@ -108,11 +105,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
    *  Validate the learning rate and distribution family. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    if (H2O.CLOUD.size() > 1) {
-      if (H2O.SELF.getSecurityManager().securityEnabled && !H2O.ARGS.allow_insecure_xgboost) {
-        throw new H2OIllegalArgumentException("Cannot run XGBoost on an SSL enabled cluster larger than 1 node. XGBoost does not support SSL encryption.");
-      } else {
+    if (H2O.CLOUD.size() > 1 && H2O.SELF.getSecurityManager().securityEnabled) {
+      if (H2O.ARGS.allow_insecure_xgboost) {
         LOG.info("Executing XGBoost on an secured cluster might compromise security.");
+      } else {
+        throw new H2OIllegalArgumentException("Cannot run XGBoost on an SSL enabled cluster larger than 1 node. XGBoost does not support SSL encryption.");
       }
     }
     if (H2O.ARGS.client && _parms._build_tree_one_node)
@@ -124,12 +121,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       if(!new XGBoostExtensionCheck().doAllNodes().enabled) {
         error("XGBoost", "XGBoost is not available on all nodes!");
       }
-    }
-    if (!Paxos._cloudLocked) {
-      // during rest-api registration we do not care about the actual back-end
-      _backend = XGBoostModel.XGBoostParameters.Backend.cpu;
-    } else {
-      _backend = XGBoostModel.getActualBackend(_parms);
     }
 
     if (_parms.hasCheckpoint()) {  // Asking to continue from checkpoint?
