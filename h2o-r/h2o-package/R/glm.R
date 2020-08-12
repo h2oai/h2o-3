@@ -83,12 +83,15 @@
 #' @param link Link function. Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit".
 #'        Defaults to family_default.
 #' @param rand_link Link function array for random component in HGLM. Must be one of: "[identity]", "[family_default]".
-#' @param startval double array to initialize fixed and random coefficients for HGLM.
+#' @param startval double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
 #' @param calc_like \code{Logical}. if true, will return likelihood function value for HGLM. Defaults to FALSE.
 #' @param HGLM \code{Logical}. If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned Defaults
 #'        to FALSE.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
+#' @param cold_start \code{Logical}. Only applicable to multiple alpha/lambda values.  If false, build the next model for next set
+#'        of alpha/lambda values starting from the values provided by current model.  If true will start GLM model from
+#'        scratch. Defaults to FALSE.
 #' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
 #'        coefficients to zero). Default indicates: if the number of observations is greater than the number of
 #'        variables, then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of
@@ -211,6 +214,7 @@ h2o.glm <- function(x,
                     calc_like = FALSE,
                     HGLM = FALSE,
                     prior = -1,
+                    cold_start = FALSE,
                     lambda_min_ratio = -1,
                     beta_constraints = NULL,
                     max_active_predictors = -1,
@@ -351,6 +355,8 @@ h2o.glm <- function(x,
     parms$HGLM <- HGLM
   if (!missing(prior))
     parms$prior <- prior
+  if (!missing(cold_start))
+    parms$cold_start <- cold_start
   if (!missing(lambda_min_ratio))
     parms$lambda_min_ratio <- lambda_min_ratio
   if (!missing(max_active_predictors))
@@ -452,6 +458,7 @@ h2o.glm <- function(x,
                                     calc_like = FALSE,
                                     HGLM = FALSE,
                                     prior = -1,
+                                    cold_start = FALSE,
                                     lambda_min_ratio = -1,
                                     beta_constraints = NULL,
                                     max_active_predictors = -1,
@@ -597,6 +604,8 @@ h2o.glm <- function(x,
     parms$HGLM <- HGLM
   if (!missing(prior))
     parms$prior <- prior
+  if (!missing(cold_start))
+    parms$cold_start <- cold_start
   if (!missing(lambda_min_ratio))
     parms$lambda_min_ratio <- lambda_min_ratio
   if (!missing(max_active_predictors))

@@ -12,6 +12,8 @@ public class GLMRegularizationPathV3  extends SchemaV3<GLMModel.RegularizationPa
   public KeyV3.ModelKeyV3 model;
   @API(help="Computed lambda values")
   public double [] lambdas;
+  @API(help="alpha values used in building submodels")
+  public double [] alphas;
   @API(help="explained deviance on the training set")
   public double [] explained_deviance_train;
   @API(help="explained deviance on the validation set")
