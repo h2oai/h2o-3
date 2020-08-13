@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -264,7 +266,7 @@ public class TestFrameBuilder {
   }
 
   // Utility method to convert domain into categories
-  private Integer[] getCategories(Map<String, Integer> mapping, String[] original){
+  private Integer[] applyDomainMapping(Map<String, Integer> mapping, String[] original){
     Integer[] categoricals = new Integer[original.length];
     for(int i = 0; i < original.length; i++) {
       categoricals[i] = original[i] == null ? null : mapping.get(original[i]);
@@ -272,32 +274,39 @@ public class TestFrameBuilder {
     return categoricals;
   }
 
+  private Map<String, Integer> getMapping(String[] array) {
+    return getMapping(array, false);
+  }
+  
   // Utility method to get mapping from domain member to its level
-  private Map<String, Integer> getMapping(String[] array){
-    Map<String, Integer> mapping = new TreeMap<>(); //replace by TreeMap if we want to have domains always sorted alphabetically
+  private Map<String, Integer> getMapping(String[] array, boolean useOrderInArray){
+    Map<String, Integer> mapping = new TreeMap<>();
+    int level = 0;
     for (String item : array) {
       if ((item != null) && (! mapping.containsKey(item))) {
-        mapping.put(item, 0);
+        mapping.put(item, useOrderInArray ? level++ : 0);
       }
     }
-    int level = 0;
-    for (Map.Entry<String, Integer> entry : mapping.entrySet()) {
-      entry.setValue(level++);
+    if (!useOrderInArray) { // use lexicographic order instead (default behaviour of H2O parser)
+      for (Map.Entry<String, Integer> entry : mapping.entrySet()) {
+        entry.setValue(level++);
+      }
     }
     return mapping;
   }
-
+  
   private void prepareCategoricals(){
     // domains is not null if there is any T_CAT
     for (int colIdx = 0; colIdx < vecTypes.length; colIdx++) {
-      if (givenDomains.containsKey(colIdx)) {
+      if (givenDomains.containsKey(colIdx)) { // domain set explicitly
         String[] doms = givenDomains.get(colIdx);
         domains[colIdx] = doms;
-        Integer[] categories = IntStream.range(0, doms.length).boxed().toArray(Integer[]::new);
+        Map<String, Integer> mapping = getMapping(doms, true);
+        Integer[] categories = applyDomainMapping(mapping, stringData.get(colIdx));
         categoriesPerCol.put(colIdx, categories);
-      } else if (vecTypes[colIdx]==Vec.T_CAT) {
+      } else if (vecTypes[colIdx]==Vec.T_CAT) { // default domain extraction (use lexicographical order)
         Map<String, Integer> mapping = getMapping(stringData.get(colIdx));
-        Integer[] categories = getCategories(mapping, stringData.get(colIdx));
+        Integer[] categories = applyDomainMapping(mapping, stringData.get(colIdx));
         domains[colIdx] = getUniqueValues(mapping);
         categoriesPerCol.put(colIdx, categories);
       } else {
