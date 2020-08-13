@@ -43,6 +43,7 @@ def class_extensions():
         ns = x.pop("coefficient_names")
         res = {
             "lambdas": x["lambdas"],
+            "alphas": x["alphas"],
             "explained_deviance_train": x["explained_deviance_train"],
             "explained_deviance_valid": x["explained_deviance_valid"],
             "coefficients": [dict(zip(ns, y)) for y in x["coefficients"]],

@@ -31,8 +31,15 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     @API(help="Standardized Coefficient Magnitudes")
     TwoDimTableV3 standardized_coefficient_magnitudes;
 
-    @API(help="Lambda minimizing the objective value, only applicable with lambd search")
+    @API(help="Lambda minimizing the objective value, only applicable with lambda search or when arrays of alpha and " +
+            "lambdas are provided")
     double lambda_best;
+
+    @API(help="Alpha minimizing the objective value, only applicable when arrays of alphas are given ")
+    double alpha_best;
+
+    @API(help="submodel index minimizing the objective value, only applicable for arrays of alphas/lambda ")
+    int best_submodel_index; // denote the submodel index that yields the best result
 
     @API(help="Lambda best + 1 standard error. Only applicable with lambda search and cross-validation")
     double lambda_1se;
@@ -154,6 +161,8 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       super.fillFromImpl(impl);
       lambda_1se = impl.lambda_1se();
       lambda_best = impl.lambda_best();
+      alpha_best = impl.alpha_best();
+      best_submodel_index = impl.bestSubmodelIndex();
       dispersion = impl.dispersion();
       if(impl._multinomial || impl._ordinal)
         return fillMultinomial(impl);

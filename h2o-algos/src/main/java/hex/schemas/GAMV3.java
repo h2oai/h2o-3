@@ -53,6 +53,7 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "gradient_epsilon",
             "link",
             "prior",
+            "cold_start", // if true, will start GLM model from initial values and conditions
             "lambda_min_ratio",
             "beta_constraints",
             "max_active_predictors",
@@ -159,6 +160,11 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
 
     @API(help = "Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean of response does not reflect reality.", level = Level.expert)
     public double prior;
+
+    @API(help = "Only applicable to multiple alpha/lambda values when calling GLM from GAM.  If false, build the next" +
+            " model for next set of alpha/lambda values starting from the values provided by current model.  If true" +
+            " will start GLM model from scratch.", level = Level.critical)
+    public boolean cold_start;
 
     @API(help = "Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all coefficients to zero)." +
             " Default indicates: if the number of observations is greater than the number of variables, then lambda_min_ratio" +
