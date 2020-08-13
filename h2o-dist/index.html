@@ -374,6 +374,16 @@
         tmp.innerHTML = out;
       }
 
+      replaceDockerImageTag = function () {
+          const versionRegexp = /(\d+\.\d+\.\d+\.\d{4,})/g; // Nightly builds have at least 4 digits at the end
+          var dockerTag = "SUBST_PROJECT_VERSION";
+          if (dockerTag.match(versionRegexp) != null) {
+              dockerTag = "nightly" // If the last number is not 4 or more digits, substitute the version for "nightly"
+          }
+          docker_sample = document.getElementById("to_copy10");
+          docker_sample.innerHTML = docker_sample.innerHTML.replace("docker-image-version", dockerTag);
+      }
+
       readBuildInfoJsonFile = function() {
         var xmlhttp = new XMLHttpRequest();
         var url = "buildinfo.json";
@@ -382,6 +392,7 @@
           if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
             var myObj = JSON.parse(xmlhttp.responseText);
             populatePageWithBuildInfoJson(myObj);
+            replaceDockerImageTag();
 
             // Must be after populating the page or id's won't be found.
             initializeTabs();
@@ -647,7 +658,7 @@
               <button class="btn copy_button" id="btnCopy6" data-copied-hint="Copied!" data-clipboard-target='to_copy6'>
               <span class="octicon octicon-clippy"></span>
             </button>
-              <p class="terminal" id="to_copy6">
+              <p class="terminal" id="to_copy6"/>
 def h2oProjectVersion = "SUBST_PROJECT_VERSION"</br>
 </br>
 repositories {</br>
@@ -670,10 +681,10 @@ dependencies {</br>
                 <p>1. Set-up kubernetes cluster and kubectl.</p>
                 <p>2. (Optional) Adjust the 'default' namespace in the following YAML, if required.</p>
     
-                <button class="btn copy_button" id="btnCopy7" data-copied-hint="Copied!" data-clipboard-target='to_copy7'>
+                <button class="btn copy_button" id="btnCopy10" data-copied-hint="Copied!" data-clipboard-target='btnCopy10'>
                     <span class="octicon octicon-clippy"></span>
                 </button>
-                <p class="terminal" id="to_copy7">
+                <p class="terminal" id="to_copy10">
 apiVersion: apps/v1<br/>
 kind: StatefulSet<br/>
 metadata:<br/>
@@ -693,7 +704,7 @@ spec:<br/>
     spec:<br/>
       containers:<br/>
         - name: h2o-cluster<br/>
-          image: 'h2oai/h2o-open-source-k8s:latest'<br/>
+          image: 'h2oai/h2o-open-source-k8s:docker-image-version'<br/>
           command: ["/bin/bash", "-c", "java -XX:+UseContainerSupport -XX:MaxRAMPercentage=50 -jar /opt/h2oai/h2o-3/h2o.jar"]<br/>
           ports:<br/>
             - containerPort: 54321<br/>
