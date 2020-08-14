@@ -10,7 +10,7 @@ Supported File Formats
 
 H2O currently supports the following file types:
 
-- CSV (delimited) files (including GZipped CSV)
+- CSV (delimited, UTF-8 only) files (including GZipped CSV)
 - ORC
 - SVMLight
 - ARFF
@@ -21,7 +21,7 @@ H2O currently supports the following file types:
 
 **Notes**: 
  
- - H2O supports UTF-8 encodings for CSV files. Please convert UTF-16 encodings to UTF-8 encoding before parsing CSV files into H2O
+ - H2O supports UTF-8 encodings for CSV files. Please convert UTF-16 encodings to UTF-8 encoding before parsing CSV files into H2O.
  - ORC is available only if H2O is running as a Hadoop job. 
  - Users can also import Hive files that are saved in ORC format (experimental).
  - If you encounter issues importing XLS or XLSX files, you may be using an unsupported version. In this case, re-save the file in BIFF 8 format. Also note that XLS and XLSX support will eventually be deprecated. 
