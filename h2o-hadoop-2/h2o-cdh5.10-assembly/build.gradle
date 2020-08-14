@@ -8,8 +8,5 @@ ext {
 apply from: '../assemblyjar.gradle'
 
 dependencies {
-  compile(project(":${defaultWebserverModule}")) {
-    exclude module: "servlet-api"
-    exclude group: "javax.servlet", module: "javax.servlet-api"
-  }
+  compile project(":${defaultWebserverModule}")
 }
