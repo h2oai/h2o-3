@@ -31,7 +31,7 @@ public class AstUniqueTest extends TestUtil {
               .withDataForCol(1, ard(1, 1))
               .withDataForCol(2, ar("3", "6"))
               .build();
-      final String expression = "(unique (cols testFrame [2]))";
+      final String expression = "(unique (cols testFrame [2]) false)";
       final Val val = Rapids.exec(expression);
       final Frame res = Scope.track(val.getFrame());
 
@@ -56,7 +56,7 @@ public class AstUniqueTest extends TestUtil {
               .withDataForCol(1, ard(1, 1))
               .withDataForCol(2, ar(3, 6))
               .build();
-      final String expression = "(unique (cols testFrame [2]))";
+      final String expression = "(unique (cols testFrame [2]) false)";
       final Val val = Rapids.exec(expression);
       final Frame res = Scope.track(val.getFrame());
 
@@ -80,7 +80,7 @@ public class AstUniqueTest extends TestUtil {
               .withDataForCol(1, ard(1, 1))
               .withDataForCol(2, ar("3", "6"))
               .build();
-      final String expression = "(unique (cols testFrame [0]))";
+      final String expression = "(unique (cols testFrame [0]) true)";
       final Val val = Rapids.exec(expression);
       final Frame res = Scope.track(val.getFrame());
 
@@ -107,7 +107,7 @@ public class AstUniqueTest extends TestUtil {
               .withDataForCol(1, ard(1, 1))
               .withDataForCol(2, ar("LEVEL1", null))
               .build();
-      final String expression = "(unique (cols testFrame [2]))";
+      final String expression = "(unique (cols testFrame [2]) true)";
       final Val val = Rapids.exec(expression);
       final Frame res = Scope.track(val.getFrame());
 
