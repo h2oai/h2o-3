@@ -104,7 +104,6 @@ public class Scope {
     if (scope._keys.size() > 0 && !scope._keys.peek().contains(key))
       scope._keys.peek().add(key);            // Track key
   }
-  
   static public <K extends Keyed> void untrack(Key<K>... keys) {
     Scope scope = _scope.get();           // Pay the price of T.L.S. lookup
     if (scope == null) return;           // Not tracking this thread
