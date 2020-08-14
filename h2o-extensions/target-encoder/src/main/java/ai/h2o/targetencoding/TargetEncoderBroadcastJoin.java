@@ -209,7 +209,7 @@ class TargetEncoderBroadcastJoin {
       }
     }
 
-    // Note: Later - in `CalcEncodings` task - NAs will be imputed by prior
+    // Note: Later - in `TargetEncodingHelper.ApplyEncodings` task - NAs will be imputed by prior
     private void setEncodingComponentsToNAs(Chunk num, Chunk den, int i) {
       num.setNA(i);
       den.setNA(i);

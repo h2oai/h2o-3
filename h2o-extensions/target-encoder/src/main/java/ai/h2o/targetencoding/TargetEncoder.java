@@ -89,8 +89,6 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
         TargetEncoderModel model = new TargetEncoderModel(dest(), _parms, emptyOutput);
         _targetEncoderModel = model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
 
-//        Scope.untrack(train().keys()); //XXX ???
-
         IcedHashMap<String, Frame> _targetEncodingMap = prepareEncodingMap();
         // Mean could be computed from any encoding map as response column is shared
         double priorMean = calculatePriorMean(_targetEncodingMap.entrySet().iterator().next().getValue());

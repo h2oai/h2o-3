@@ -16,10 +16,6 @@ public class TargetEncoderHandler extends Handler {
     parametersV3.fillImpl(parameters);
     final TargetEncoderModel model = parameters._model.get();
 
-//    final boolean useBlending = parameters._blending == null ? model._parms._blending : parameters._blending;
-//    final double noise = parameters._noise == null ? model._parms._noise : parameters._noise;
-//    final double inflectionPoint = parameters._inflection_point == null ? model._parms._inflection_point : parameters._inflection_point;
-//    final double smoothing = parameters._smoothing == null ? model._parms._smoothing : parameters._smoothing;
     final boolean asTraining = parameters._as_training;
     final boolean useBlending = parameters._blending;
     final double noise = parameters._noise < -1  ? model._parms._noise : parameters._noise;
