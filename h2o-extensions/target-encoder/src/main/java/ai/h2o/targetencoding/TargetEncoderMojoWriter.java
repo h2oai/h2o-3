@@ -119,7 +119,7 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
 
     for (Map.Entry<String, FrameToTETableTask> taskEntry : tasks.entrySet()) {
       FrameToTETableTask taskEntryValue = taskEntry.getValue();
-      IcedHashMap<String, TEComponents> table = taskEntryValue.getResult()._table;
+      IcedHashMap<String, EncodingsComponents> table = taskEntryValue.getResult()._table;
       convertEncodingMapToGenModelFormat(convertedEncodingMap, taskEntry.getKey(), table);
       Scope.track(taskEntryValue._fr);
     }
@@ -135,10 +135,10 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
    * @param convertedEncodingMap the Map we will put our converted encodings into
    * @param encodingMap encoding map for `teColumn`
    */
-  private static void convertEncodingMapToGenModelFormat(EncodingMaps convertedEncodingMap, String teColumn, IcedHashMap<String, TEComponents> encodingMap) {
+  private static void convertEncodingMapToGenModelFormat(EncodingMaps convertedEncodingMap, String teColumn, IcedHashMap<String, EncodingsComponents> encodingMap) {
     Map<Integer, double[]> tableGenModelFormat = new HashMap<>();
-    for (Map.Entry<String, TEComponents> entry : encodingMap.entrySet()) {
-      TEComponents value = entry.getValue();
+    for (Map.Entry<String, EncodingsComponents> entry : encodingMap.entrySet()) {
+      EncodingsComponents value = entry.getValue();
       tableGenModelFormat.put(Integer.parseInt(entry.getKey()), new double[] {value.getNumerator(), value.getDenominator()});
     }
     convertedEncodingMap.put(teColumn, new EncodingMap(tableGenModelFormat));
@@ -152,7 +152,7 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
   private static class FrameToTETableTask extends MRTask<FrameToTETableTask> {
 
     // IcedHashMap does not support integer keys so we will store indices as strings.
-    public IcedHashMap<String, TEComponents> _table = new IcedHashMap<>();
+    public IcedHashMap<String, EncodingsComponents> _table = new IcedHashMap<>();
 
 
     public FrameToTETableTask() { }
@@ -168,7 +168,7 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
         double num = cs[1].atd(i);
         long den = cs[2].at8(i);
         int factor = (int) categoricalChunk.at8(i);
-        _table.put(Integer.toString(factor), new TEComponents(num, den));
+        _table.put(Integer.toString(factor), new EncodingsComponents(num, den));
       }
     }
 

@@ -16,9 +16,9 @@ import org.junit.runners.Suite;
         TargetEncodingExceptionsHandlingTest.class,
         TargetEncodingHelperTest.class,
         TargetEncodingImmutabilityTest.class,
-        TEBroadcastJoinTest.class,
+        TargetEncoderBroadcastJoinTest.class,
         TargetEncodingImmutabilityTest.class,
-        TEMojoIntegrationTest.class,
+        TargetEncoderMojoIntegrationTest.class,
         TargetEncoderTest.class,
         TargetEncoderMojoWriterTest.class,
         TargetEncoderRGSTest.class

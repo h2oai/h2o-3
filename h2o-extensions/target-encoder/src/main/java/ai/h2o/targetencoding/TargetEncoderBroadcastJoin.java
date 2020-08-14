@@ -6,7 +6,7 @@ import water.fvec.CategoricalWrappedVec;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 
-class TEBroadcastJoin {
+class TargetEncoderBroadcastJoin {
 
   /**
    * @param leftFrame frame for which we want to keep the rows order.

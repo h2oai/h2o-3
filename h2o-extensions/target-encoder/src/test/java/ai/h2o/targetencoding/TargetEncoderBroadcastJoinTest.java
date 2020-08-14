@@ -18,13 +18,13 @@ import water.rapids.Merge;
 
 import java.util.Random;
 
-import static ai.h2o.targetencoding.TEBroadcastJoin.encodingsToArray;
+import static ai.h2o.targetencoding.TargetEncoderBroadcastJoin.encodingsToArray;
 import static ai.h2o.targetencoding.TargetEncoderHelper.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(JUnitQuickcheck.class)
-public class TEBroadcastJoinTest extends TestUtil {
+public class TargetEncoderBroadcastJoinTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
@@ -55,7 +55,7 @@ public class TEBroadcastJoinTest extends TestUtil {
               .withChunkLayout(1,1,1)
               .build();
 
-      Frame joined = TEBroadcastJoin.join(fr, new int[]{0}, 1, rightFr, new int[]{0}, 1, 2);
+      Frame joined = TargetEncoderBroadcastJoin.join(fr, new int[]{0}, 1, rightFr, new int[]{0}, 1, 2);
       Scope.track(joined);
 
       assertStringVecEquals(cvec("a", "c", "b"), joined.vec("ColA"));
@@ -98,7 +98,7 @@ public class TEBroadcastJoinTest extends TestUtil {
       Frame colAEncodings = buildEncodingsFrame(leftFr, 0, 1, 2);
       Scope.track(colAEncodings);
       
-      Frame joined = TEBroadcastJoin.join(
+      Frame joined = TargetEncoderBroadcastJoin.join(
               leftFr, new int[]{0}, leftFr.find(foldColumnName), 
               colAEncodings, new int[]{0}, colAEncodings.find(foldColumnName), 
               numberOfFolds
@@ -231,7 +231,7 @@ public class TEBroadcastJoinTest extends TestUtil {
               .withChunkLayout(1,1,1)
               .build();
 
-      Frame joined = TEBroadcastJoin.join(fr, new int[]{0}, -1, rightFr, new int[]{0}, -1, 0);
+      Frame joined = TargetEncoderBroadcastJoin.join(fr, new int[]{0}, -1, rightFr, new int[]{0}, -1, 0);
       Scope.track(joined);
 
       assertStringVecEquals(cvec("a", "c", "b"), joined.vec("ColA"));

@@ -38,7 +38,7 @@ import static hex.genmodel.algos.targetencoder.TargetEncoderMojoModel.computeLam
 import static org.junit.Assert.assertEquals;
 
 @RunWith(JUnitQuickcheck.class)
-public class TEMojoIntegrationTest extends TestUtil {
+public class TargetEncoderMojoIntegrationTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {

@@ -1,7 +1,6 @@
 package ai.h2o.targetencoding;
 
 import water.*;
-import water.fvec.CategoricalWrappedVec;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -188,7 +187,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
                                int leftTEColumnIdx, int leftFoldColumnIdx,
                                int encodingsTEColumnIdx, int encodingsFoldColumnIdx,
                                int maxFoldValue) {
-    return TEBroadcastJoin.join(
+    return TargetEncoderBroadcastJoin.join(
             leftFrame, new int[]{leftTEColumnIdx}, leftFoldColumnIdx,
             encodingsFrame, new int[]{encodingsTEColumnIdx}, encodingsFoldColumnIdx,
             maxFoldValue);
