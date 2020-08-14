@@ -1087,6 +1087,8 @@ The proximal operator interface allows you to run the GLM with a proximal penalt
 given solution. There are many potential uses: for example, it can be used as part of an ADMM consensus algorithm
 to obtain a unified solution over separate H2O clouds or in Bayesian regression approximation.
 
+\subsubsection{Cold Start}
+\texttt{cold\_start} allows you to specify whether the GLM model should be built from scratch. This parameter is only applicable when building a GLM model with multiple alpha/lambda values. If false and for a fixed alpha value, the next model with the next lambda value out of the lambda array will be built using the coefficients and the GLM state values of the current model. If true, the next GLM model will be built from scratch. The default value is false.
 
 
 %----------------------------------------------------------------------
