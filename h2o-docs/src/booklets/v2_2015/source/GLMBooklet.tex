@@ -1090,6 +1090,8 @@ to obtain a unified solution over separate H2O clouds or in Bayesian regression 
 \subsubsection{Cold Start}
 \texttt{cold\_start} allows you to specify whether the GLM model should be built from scratch. This parameter is only applicable when building a GLM model with multiple alpha/lambda values. If false and for a fixed alpha value, the next model with the next lambda value out of the lambda array will be built using the coefficients and the GLM state values of the current model. If true, the next GLM model will be built from scratch. The default value is false.
 
+\textbf{Note:} If an alpha array is specified and for a branch new alpha, the model will be built from scratch regardless of the value of \texttt{cold\_start}.
+
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
