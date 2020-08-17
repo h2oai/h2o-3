@@ -171,9 +171,12 @@ public class XGBoostSteps extends ModelingSteps {
                         searchParams.put("_max_depth", new Integer[]{10, 20, 50});
                     } else {
                         searchParams.put("_max_depth", new Integer[]{5, 10, 15, 20});
-                        searchParams.put("_min_rows", new Double[]{0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0});  // = _min_child_weight
+                        if (aml().getWeightsColumn() == null || aml().getWeightsColumn().isInt()) {
+                            searchParams.put("_min_rows", new Double[]{1.0, 3.0, 5.0, 10.0, 15.0, 20.0});  // = _min_child_weight
+                        } else {
+                            searchParams.put("_min_rows", new Double[]{0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0});  // = _min_child_weight
+                        }
                     }
-
                     searchParams.put("_sample_rate", new Double[]{0.6, 0.8, 1.0}); // = _subsample
                     searchParams.put("_col_sample_rate" , new Double[]{ 0.6, 0.8, 1.0}); // = _colsample_bylevel"
                     searchParams.put("_col_sample_rate_per_tree", new Double[]{ 0.7, 0.8, 0.9, 1.0}); // = _colsample_bytree: start higher to always use at least about 40% of columns
