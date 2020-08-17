@@ -11,7 +11,8 @@ rf_early_stopping_suite <- function() {
     ref_model <- h2o.randomForest(x=x, y=y, training_frame=train, seed=1)
     ref_trees <- ref_model@model$model_summary$number_of_trees
     stop_model <- h2o.randomForest(x=x, y=y, training_frame=train, seed=1,
-                                   stopping_metric="AUC", stopping_rounds=3, stopping_tolerance=0.1)
+                                   stopping_metric="AUC", stopping_rounds=3, stopping_tolerance=0.1,
+                                   score_each_iteration=TRUE)
     stop_trees <- stop_model@model$model_summary$number_of_trees
     # print(stop_trees - ref_trees)
     expect_lt(stop_trees, ref_trees)
@@ -23,10 +24,12 @@ rf_early_stopping_suite <- function() {
     y <- "economy_20mpg"
     train[y] <- as.factor(train[y])
     uc_model <- h2o.randomForest(x=x, y=y, training_frame=train, seed=1,
-                                 stopping_metric="AUC", stopping_rounds=3, stopping_tolerance=0.1)
+                                 stopping_metric="AUC", stopping_rounds=3, stopping_tolerance=0.1,
+                                 score_tree_interval=5)
     uc_trees <- uc_model@model$model_summary$number_of_trees
     lc_model <- h2o.randomForest(x=x, y=y, training_frame=train, seed=1,
-                                 stopping_metric="auc", stopping_rounds=3, stopping_tolerance=0.1)
+                                 stopping_metric="auc", stopping_rounds=3, stopping_tolerance=0.1,
+                                 score_tree_interval=5)
     lc_trees <- lc_model@model$model_summary$number_of_trees
     expect_equal(uc_trees, lc_trees)
   }
