@@ -598,12 +598,14 @@ The following options can be specified with PrintMojo:
 - ``--output`` (or ``-o``): Optionally specify the output file name. This is taken as a directory name in the case of .png format and multiple trees to visualize. This defaults to stdout.
 - ``--format``: Optionally specify the output format. Available formats include dot (default), json, raw, and png. Note that for .png output, Java 8 is the minimum Java requirement.
 - ``--tree``: Optionally specify the tree number to print. This defaults to "all".
-- ``--levels``: Optionaly specify the number of levels per edge to print. This defaults to 10.
+- ``--levels``: Optionaly specify the number of categorical levels per edge to print. This defaults to 10.
 - ``--title``: Optionally force the title of the tree graph.
 - ``--detail``: Specifies to print additional information such as node numbers.
 - ``--decimalplaces`` (or ``-d``): Allows you to control the  number of decimal points shown for numbers. 
 - ``--fontsize`` (or ``-f``): Controls the font size.  The default font size is 14. When using this option, be careful not to choose a font size that  is so large that you cannot see your whole tree. We recommend using a font size no larger than 20.
 - ``--internal``:  Optional. Internal H2O representation of the decision tree (splits etc.). This is used for generating the Graphviz format.
+
+Note: For categorical responses, a forest of all available classes is displayed. For binomial, only one tree for one is built by default. Some algorithms (DRF) offer the option to build both trees. In case of binomial response, if it is required to display the other class, changing the domain order of response variable during training phase is an option.
 
 The following code snippet shows how to download a MOJO and run the PrintMojo tool from the command line to make a .png file. Note that this requires that Graphviz is installed.
 
