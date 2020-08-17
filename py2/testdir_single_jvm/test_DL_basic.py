@@ -94,7 +94,6 @@ class Basic(unittest.TestCase):
                 'regression_stop': None, # double 1.0E-6
                 'quiet_mode': None, # boolean false
                 'max_confusion_matrix_size': None, # int 20
-                'max_hit_ratio_k': None, # int 10
                 'balance_classes': None, # boolean false
                 'class_sampling_factors': None, # float[] None
                 'max_after_balance_size': None, # float Infinity

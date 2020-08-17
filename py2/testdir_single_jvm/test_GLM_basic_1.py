@@ -64,7 +64,6 @@ class Basic(unittest.TestCase):
             # class_sampling_factors float[] False None []
             # max_after_balance_size float False 5.0 []
             # max_confusion_matrix_size int False 20 []
-            # max_hit_ratio_k int False 10 []
             # family enum False gaussian [u'gaussian', u'binomial', u'poisson', u'gamma']
             # solver enum False IRLSM [u'AUTO', u'IRLSM', u'L_BFGS']
 

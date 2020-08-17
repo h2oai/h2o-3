@@ -497,6 +497,7 @@ The following parameters have been removed:
 - `classification`: Classification is now inferred from the data type.
 - `holdout_fraction`: Fraction of the training data to hold out for validation.
 - `dlmodel@model$best_cutoff`: This output parameter has been removed. 
+- `max_hit_ratio_k`: This parameter has been removed.
 
 ### New DL Parameters
 
@@ -562,7 +563,7 @@ H2O Classic  | H2O 3.0
 &nbsp; | `stopping_tolerance = 0,`
 `quiet_mode,` | `quiet_mode = false,`
 `max_confusion_matrix_size,` | `max_confusion_matrix_size,`
-`max_hit_ratio_k,` | `max_hit_ratio_k,`
+`max_hit_ratio_k,` | 
 `balance_classes,` | `balance_classes = false,`
 `class_sampling_factors,` | `class_sampling_factors,`
 `max_after_balance_size,` | `max_after_balance_size,` 

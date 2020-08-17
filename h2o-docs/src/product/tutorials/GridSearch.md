@@ -59,7 +59,6 @@ The following hyperparameters are supported by grid search.
 - `balance_classes`
 - `class_sampling_factors`
 - `max_after_balance_size`
-- `max_hit_ratio_k`
 - `ntrees`
 - `max_depth`
 - `min_rows`
@@ -141,7 +140,6 @@ The following hyperparameters are supported by grid search.
 - `class_sampling_factors`
 - `max_after_balance_size`
 - `max_confusion_matrix_size`
-- `max_hit_ratio_k`
 - `overwrite_with_best_model`
 - `use_all_factor_levels`
 - `standardize`

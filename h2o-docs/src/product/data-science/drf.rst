@@ -105,10 +105,6 @@ Defining a DRF Model
    the training data after balancing class counts (**balance\_classes**
    must be enabled). The value can be less than 1.0.
 
--  `max_hit_ratio_k <algo-params/max_hit_ratio_k.html>`__: Specify the maximum number (top K) of
-   predictions to use for hit ratio computation. Applicable to
-   multi-class only. To disable, enter 0.
-
 -  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees.
 
 -  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth. Higher values will make the model more complex and can lead to overfitting. Setting this value to 0 specifies no limit. This value defaults to 20. 
