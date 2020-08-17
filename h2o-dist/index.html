@@ -45,7 +45,8 @@
         margin: 20px 0 10px 0;
       }
       #container {
-        width: 768px;
+        width: 80%;
+        max-width: 1024px;
         background: #fff;
         margin: 0px auto;
         -webkit-box-shadow: 0px 1px 5px 0px rgba(0,0,0,0.25);
@@ -174,7 +175,9 @@
         var hadoopTab = document.getElementById('quickstart-hadoop-tab');
         var hadoopPanel = document.getElementById('quickstart-hadoop');
         var mavenTab = document.getElementById('quickstart-maven-tab');
+        var kubernetesTab = document.getElementById('quickstart-kubernetes-tab');
         var mavenPanel = document.getElementById('quickstart-maven');
+        var kubernetesPanel = document.getElementById('quickstart-kubernetes');
         var showZipTab = function() {
           zipPanel.style.display = 'block';
           zipTab.className = 'active';
@@ -186,6 +189,8 @@
           hadoopTab.className = '';
           mavenPanel.style.display = 'none';
           mavenTab.className = '';
+          kubernetesPanel.style.display = 'none';
+          kubernetesTab.className = '';
         };
         var showRTab = function() {
           zipPanel.style.display = 'none';
@@ -198,6 +203,8 @@
           hadoopTab.className = '';
           mavenPanel.style.display = 'none';
           mavenTab.className = '';
+          kubernetesPanel.style.display = 'none';
+          kubernetesTab.className = '';
         };
         var showPyTab = function() {
           zipPanel.style.display = 'none';
@@ -210,6 +217,8 @@
           hadoopTab.className = '';
           mavenPanel.style.display = 'none';
           mavenTab.className = '';
+          kubernetesPanel.style.display = 'none';
+          kubernetesTab.className = '';
         };
         var showHadoopTab = function(){
           zipPanel.style.display = 'none';
@@ -222,6 +231,8 @@
           hadoopTab.className = 'active';
           mavenPanel.style.display = 'none';
           mavenTab.className = '';
+          kubernetesPanel.style.display = 'none';
+          kubernetesTab.className = '';
         };
         var showMavenTab = function(){
           zipPanel.style.display = 'none';
@@ -234,12 +245,29 @@
           hadoopTab.className = '';
           mavenPanel.style.display = 'block';
           mavenTab.className = 'active';
+          kubernetesPanel.style.display = 'none';
+          kubernetesTab.className = '';
         };
+      var showKubernetesTab = function(){
+          zipPanel.style.display = 'none';
+          zipTab.className = '';
+          rPanel.style.display = 'none';
+          rTab.className = '';
+          pyPanel.style.display = 'none';
+          pyTab.className = '';
+          hadoopPanel.style.display = 'none';
+          hadoopTab.className = '';
+          mavenPanel.style.display = 'none';
+          mavenTab.className = '';
+          kubernetesPanel.style.display = 'block';
+          kubernetesTab.className = 'active';
+      };
         zipTab.onclick = showZipTab;
         rTab.onclick = showRTab;
         pyTab.onclick= showPyTab;
         hadoopTab.onclick = showHadoopTab;
         mavenTab.onclick = showMavenTab;
+        kubernetesTab.onclick = showKubernetesTab;
         var hash = window.location.hash;
         if(hash && hash.indexOf('#R') == 0) {
           showRTab();
@@ -346,14 +374,25 @@
         tmp.innerHTML = out;
       }
 
+      replaceDockerImageTag = function () {
+          const versionRegexp = /(\d+\.\d+\.\d+\.\d{4,})/g; // Nightly builds have at least 4 digits at the end
+          var dockerTag = "3.30.1.1";
+          if (dockerTag.match(versionRegexp) != null) {
+              dockerTag = "nightly" // If the last number is not 4 or more digits, substitute the version for "nightly"
+          }
+          docker_sample = document.getElementById("to_copy10");
+          docker_sample.innerHTML = docker_sample.innerHTML.replace("docker-image-version", dockerTag);
+      }
+
       readBuildInfoJsonFile = function() {
         var xmlhttp = new XMLHttpRequest();
         var url = "buildinfo.json";
 
         xmlhttp.onreadystatechange = function() {
           if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-            var myObj = JSON.parse(xmlhttp.responseText);
+            var myObj = JSON.parse("{\n    \"version_major\" : 1,\n    \"version_minor\" : 0,\n\n    \"build_time_millis\" : \"SUBST_BUILD_TIME_MILLIS\",\n    \"build_time_iso8601\" : \"SUBST_BUILD_TIME_ISO8601\",\n    \"build_time_local\" : \"SUBST_BUILD_TIME_LOCAL\",\n\n    \"project_version\" : \"SUBST_PROJECT_VERSION\",\n    \"branch_name\" : \"SUBST_BRANCH_NAME\",\n    \"build_number\" : 1,\n    \"last_commit_hash\" : \"SUBST_LAST_COMMIT_HASH\",\n\n    \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION.zip\",\n    \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION.zip\",\n    \"wheel_file_name\" : \"SUBST_WHEEL_FILE_NAME\",\n    \"wheel_file_path\" : \"Python/SUBST_WHEEL_FILE_NAME\",\n    \"r_repo_path\" : \"R\",\n\n    \"hadoop_distributions\" : [\n        {\n            \"distribution\" : \"cdh5.4\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.4.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.4.zip\"\n        },\n        {\n            \"distribution\" : \"cdh5.5\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.5.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.5.zip\"\n        },\n        {\n            \"distribution\" : \"cdh5.6\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.6.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.6.zip\"\n        },\n        {\n            \"distribution\" : \"cdh5.7\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.7.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.7.zip\"\n        },\n        {\n            \"distribution\" : \"cdh5.8\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.8.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.8.zip\"\n        },\n        {\n            \"distribution\" : \"cdh5.9\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.9.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.9.zip\"\n        },\n        {\n            \"distribution\" : \"cdh5.10\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.10.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.10.zip\"\n        },\n        {\n            \"distribution\" : \"cdh5.13\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.13.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.13.zip\"\n        },\n        {\n            \"distribution\" : \"cdh5.14\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.14.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.14.zip\"\n        },\n        {\n            \"distribution\" : \"cdh5.15\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.15.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.15.zip\"\n        },\n        {\n            \"distribution\" : \"cdh5.16\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.16.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-cdh5.16.zip\"\n        },\n        {\n            \"distribution\" : \"cdh6.0\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-cdh6.0.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-cdh6.0.zip\"\n        },\n        {\n            \"distribution\" : \"cdh6.1\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-cdh6.1.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-cdh6.1.zip\"\n        },\n        {\n            \"distribution\" : \"cdh6.2\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-cdh6.2.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-cdh6.2.zip\"\n        },\n        {\n            \"distribution\" : \"cdh6.3\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-cdh6.3.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-cdh6.3.zip\"\n        },\n        {\n            \"distribution\" : \"cdp7.0\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-cdp7.0.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-cdp7.0.zip\"\n        },\n        {\n            \"distribution\" : \"hdp2.2\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-hdp2.2.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-hdp2.2.zip\"\n        },\n        {\n            \"distribution\" : \"hdp2.3\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-hdp2.3.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-hdp2.3.zip\"\n        },\n        {\n            \"distribution\" : \"hdp2.4\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-hdp2.4.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-hdp2.4.zip\"\n        },\n        {\n            \"distribution\" : \"hdp2.5\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-hdp2.5.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-hdp2.5.zip\"\n        },\n        {\n            \"distribution\" : \"hdp2.6\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-hdp2.6.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-hdp2.6.zip\"\n        },\n        {\n            \"distribution\" : \"hdp3.0\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-hdp3.0.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-hdp3.0.zip\"\n        },\n        {\n            \"distribution\" : \"hdp3.1\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-hdp3.1.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-hdp3.1.zip\"\n        },\n        {\n            \"distribution\" : \"mapr4.0\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-mapr4.0.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-mapr4.0.zip\"\n        },\n        {\n            \"distribution\" : \"mapr5.0\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-mapr5.0.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-mapr5.0.zip\"\n        },\n        {\n            \"distribution\" : \"mapr5.1\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-mapr5.1.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-mapr5.1.zip\"\n        },\n        {\n            \"distribution\" : \"mapr5.2\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-mapr5.2.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-mapr5.2.zip\"\n        },\n        {\n            \"distribution\" : \"mapr6.0\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-mapr6.0.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-mapr6.0.zip\"\n        },\n        {\n            \"distribution\" : \"mapr6.1\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-mapr6.1.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-mapr6.1.zip\"\n        },\n        {\n            \"distribution\" : \"iop4.2\",\n            \"zip_file_name\" : \"h2o-SUBST_PROJECT_VERSION-iop4.2.zip\",\n            \"zip_file_path\" : \"h2o-SUBST_PROJECT_VERSION-iop4.2.zip\"\n        }\n    ],\n\n    \"user_documents\" : [\n        {\n            \"name\" : \"H2O Documentation\",\n            \"id\"   : \"doc-front\",\n            \"path\" : \"https://docs.h2o.ai\"\n        },\n        {\n            \"name\" : \"H2O User Guide\",\n            \"id\"   : \"doc-flow\",\n            \"path\" : \"docs-website/h2o-docs/index.html\"\n        },\n        {\n            \"name\" : \"Recent Changes\",\n            \"id\"   : \"doc-recent-changes\",\n            \"path\" : \"https://github.com/h2oai/h2o-3/blob/SUBST_LAST_COMMIT_HASH/Changes.md\"\n        },\n        {\n            \"name\" : \"R User Documentation (PDF)\",\n            \"id\"   : \"doc-r-pdf\",\n            \"path\" : \"docs-website/h2o-r/h2o_package.pdf\"\n        },\n        {\n            \"name\" : \"R User Documentation (HTML)\",\n            \"id\"   : \"doc-r-pdf\",\n            \"path\" : \"docs-website/h2o-r/docs/index.html\"\n        },\n        {\n            \"name\" : \"Python User Documentation\",\n            \"id\"   : \"doc-py\",\n            \"path\" : \"docs-website/h2o-py/docs/index.html\"\n        },\n        {\n            \"name\" : \"Sparkling Water Readme\",\n            \"id\"   : \"doc-sparkling-water\",\n            \"path\" : \"https://github.com/h2oai/sparkling-water/blob/master/README.rst\"\n        }\n    ],\n\n    \"developer_documents\" : [\n        {\n            \"name\" : \"Github README\",\n            \"id\"   : \"doc-readme\",\n            \"path\" : \"https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/README.md\"\n        },\n        {\n            \"name\" : \"REST API Documentation\",\n            \"id\"   : \"doc-rest\",\n            \"path\" : \"docs-website/h2o-docs/rest-api-reference.html\"\n        },\n        {\n            \"name\" : \"H2O Core Java Developer Documentation (Javadoc)\",\n            \"id\"   : \"doc-h2o-core-javadoc\",\n            \"path\" : \"docs-website/h2o-core/javadoc/index.html\"\n        },\n        {\n            \"name\" : \"H2O Algos Java Developer Documentation (Javadoc)\",\n            \"id\"   : \"doc-h2o-algos-javadoc\",\n            \"path\" : \"docs-website/h2o-algos/javadoc/index.html\"\n        },\n        {\n            \"name\" : \"H2O Generated POJO Model API Developer Documentation (Javadoc)\",\n            \"id\"   : \"doc-h2o-genmodel-javadoc\",\n            \"path\" : \"docs-website/h2o-genmodel/javadoc/index.html\"\n        }\n    ],\n\n    \"booklets\" : [\n        {\n            \"name\" : \"GLM\",\n            \"id\"   : \"booklet-glm\",\n            \"path\" : \"docs-website/h2o-docs/booklets/GLMBooklet.pdf\"\n        },\n        {\n            \"name\" : \"Deep Learning\",\n            \"id\"   : \"booklet-deeplearning\",\n            \"path\" : \"docs-website/h2o-docs/booklets/DeepLearningBooklet.pdf\"\n        },\n        {\n            \"name\" : \"GBM\",\n            \"id\"   : \"booklet-gbm\",\n            \"path\" : \"docs-website/h2o-docs/booklets/GBMBooklet.pdf\"\n        },\n        {\n            \"name\" : \"R\",\n            \"id\"   : \"booklet-r\",\n            \"path\" : \"docs-website/h2o-docs/booklets/RBooklet.pdf\"\n        },\n        {\n            \"name\" : \"Python\",\n            \"id\"   : \"booklet-python\",\n            \"path\" : \"docs-website/h2o-docs/booklets/PythonBooklet.pdf\"\n        },\n        {\n            \"name\" : \"Sparkling Water\",\n            \"id\"   : \"booklet-sparklingwater\",\n            \"path\" : \"docs-website/h2o-docs/booklets/SparklingWaterBooklet.pdf\"\n        }\n    ]\n}\n");
             populatePageWithBuildInfoJson(myObj);
+            replaceDockerImageTag();
 
             // Must be after populating the page or id's won't be found.
             initializeTabs();
@@ -391,6 +430,7 @@
           <span id = "quickstart-py-tab">Install in Python</span>
           <span id = "quickstart-hadoop-tab">Install on Hadoop</span>
           <span id = "quickstart-maven-tab">Use from Maven</span>
+          <span id = "quickstart-kubernetes-tab">Kubernetes</span>
         </div>
         <!-- Clipboard Icon !-->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/octicons/2.4.1/octicons.min.css">
@@ -618,7 +658,7 @@
               <button class="btn copy_button" id="btnCopy6" data-copied-hint="Copied!" data-clipboard-target='to_copy6'>
               <span class="octicon octicon-clippy"></span>
             </button>
-              <p class="terminal" id="to_copy6">
+              <p class="terminal" id="to_copy6"/>
 def h2oProjectVersion = "SUBST_PROJECT_VERSION"</br>
 </br>
 repositories {</br>
@@ -636,6 +676,93 @@ dependencies {</br>
 &nbsp;compile "ai.h2o:h2o-web:${h2oProjectVersion}"</br>
 }</br>
           </div>
+            <div id="quickstart-kubernetes" style="display:none">
+                <h2>Get started with H<sub>2</sub>O on Kubernetes</h2>
+                <p>1. Set-up kubernetes cluster and kubectl.</p>
+                <p>2. (Optional) Adjust the 'default' namespace in the following YAML, if required.</p>
+    
+                <button class="btn copy_button" id="btnCopy10" data-copied-hint="Copied!" data-clipboard-target='btnCopy10'>
+                    <span class="octicon octicon-clippy"></span>
+                </button>
+            <pre>
+                <p class="terminal" id="to_copy10">
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: h2o-cluster-stateful-set
+  namespace: default
+spec:
+  serviceName: h2o-service
+  podManagementPolicy: "Parallel"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: h2o-cluster
+  template:
+    metadata:
+      labels:
+        app: h2o-cluster
+    spec:
+      containers:
+        - name: h2o-cluster
+          image: 'h2oai/h2o-open-source-k8s:docker-image-version'
+          command: ["/bin/bash", "-c", "java -XX:+UseContainerSupport -XX:MaxRAMPercentage=50 -jar /opt/h2oai/h2o-3/h2o.jar"]
+          ports:
+            - containerPort: 54321
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /kubernetes/isLeaderNode
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 1
+          resources:
+            limits:
+              cpu: '1'
+              memory: 1Gi
+            requests:
+              cpu: '1'
+              memory: 1Gi
+          env:
+          - name: H2O_KUBERNETES_SERVICE_DNS
+            value: h2o-cluster-service.default.svc.cluster.local
+          - name: H2O_NODE_LOOKUP_TIMEOUT
+            value: '180'
+          - name: H2O_NODE_EXPECTED_COUNT
+            value: '1'
+          - name: H2O_KUBERNETES_API_PORT
+            value: '8081'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: h2o-cluster-service
+  namespace: default
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: h2o-cluster
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 54321
+                </p>
+            </pre>
+                
+                <p>
+                    Environment variables:<br/><br/>
+                    H2O_KUBERNETES_SERVICE_DNS - [MANDATORY] Crucial for the clustering to work. The format usually follows the {service-name}.{project-name}.svc.cluster.local pattern. This setting enables H2O node discovery via DNS. It must be modified to match the name of the headless service created. Also, pay attention to the rest of the address to match the specifics of your Kubernetes implementation.<br/><br/>
+                    H2O_NODE_LOOKUP_TIMEOUT - [OPTIONAL] Node lookup constraint. Time before the node lookup is ended.<br/><br/>
+                    H2O_NODE_EXPECTED_COUNT - [OPTIONAL] Node lookup constraint. Expected number of H2O pods to be discovered.<br/><br/>
+                    H2O_KUBERNETES_API_PORT - [OPTIONAL] Port for Kubernetes API checks and probes to listen on. Defaults to 8080.<br/><br/>
+                </p>
+                
+                <p>3. Issue "kubectl apply -f filename.yaml" to deploy H2O into Kubernetes.</p>
+                <p>4. (Optional) Adjust the YAML file to spawn more nodes or allocate more resources for the H2O cluster.</p>
+                
+            </div>
 
         </div>
         <div id="documentation">
