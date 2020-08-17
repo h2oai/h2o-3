@@ -1,3 +1,5 @@
+deprecated = ['max_hit_ratio_k']
+
 def update_param(name, param):
     if name == 'distribution':
         param['values'].remove('ordinal')

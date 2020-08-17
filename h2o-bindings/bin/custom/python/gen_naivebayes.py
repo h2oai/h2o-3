@@ -1,3 +1,5 @@
+deprecated = ['max_hit_ratio_k']
+
 doc = dict(
     __class__="""
 The naive Bayes classifier assumes independence between predictor variables

@@ -575,7 +575,8 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def max_hit_ratio_k(self):
         """
-        Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
+        [Deprecated] Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to
+        disable)
 
         Type: ``int``  (default: ``0``).
 

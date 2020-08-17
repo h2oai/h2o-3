@@ -1731,7 +1731,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def max_hit_ratio_k(self):
         """
-        Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
+        [Deprecated] Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to
+        disable)
 
         Type: ``int``  (default: ``0``).
 
