@@ -77,7 +77,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
    * @return names of used hyper parameters
    */
   String[] getHyperParamNames();
-  String[] getHyperParamNamesConstraint();
+  String[] getHyperParamNamesSubspace();
 
   /**
    * Return estimated maximum size of hyperspace, not subject to any early stopping criteria.
@@ -110,14 +110,14 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      */
     final protected C _search_criteria;
 
-    public static final String CONSTRAINTS = "constraints";
+    public static final String SUBSPACES = "subspaces";
     
     /**
      * Search criteria for the hyperparameter search including directives for how to search and
      * when to stop the search.
      */
     public C search_criteria() { return _search_criteria; }
-    
+
     /** Based on the last model, the given array of ScoringInfo, and our stopping criteria should we stop early? */
     @Override
     public boolean stopEarly(Model model, ScoringInfo[] sk) {
@@ -149,9 +149,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      */
     final protected String[] _hyperParamNames;
     
-    final protected String[] _hyperParamNamesConstraint;  // model parameters specified in constraints of hyper parameters
+    final protected String[] _hyperParamNamesSubspace;  // model parameters specified in subspaces of hyper parameters
 
-    protected Map<String, Object[]>[] _hyperParamConstraints;
+    protected Map<String, Object[]>[] _hyperParamSubspaces;
     /**
      * Compute max size of hyper space to walk. May include duplicates if points in space are specified multiple
      * times.
@@ -195,9 +195,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       _hyperParams = hyperParams;
       _paramsBuilderFactory = paramsBuilderFactory;
       _hyperParamNames = hyperParams.keySet().toArray(new String[0]);
-      _hyperParamConstraints = extractConstraints();
-      _hyperParamNamesConstraint = extractConstraintNames();
-      if(_hyperParams.get(CONSTRAINTS) != null) { _hyperParams.remove(CONSTRAINTS); }
+      _hyperParamSubspaces = extractSubspaces();
+      _hyperParamNamesSubspace = extractSubspaceNames();
+      if(_hyperParams.get(SUBSPACES) != null) { _hyperParams.remove(SUBSPACES); }
       _search_criteria = search_criteria;
       _maxHyperSpaceSize = computeMaxSizeOfHyperSpace();
       
@@ -208,7 +208,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         throw new H2OIllegalArgumentException("Failed to instantiate a new Model.Parameters object to get the default values.");
       }
       validateParams(_hyperParams, false);
-      Arrays.stream(_hyperParamConstraints).forEach(constraint -> validateParams(constraint, true));
+      Arrays.stream(_hyperParamSubspaces).forEach(subspace -> validateParams(subspace, true));
     } // BaseWalker()
 
     @Override
@@ -216,8 +216,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       return _hyperParamNames;
     }
     
-    public String[] getHyperParamNamesConstraint() {
-      return _hyperParamNamesConstraint;
+    public String[] getHyperParamNamesSubspace() {
+      return _hyperParamNamesSubspace;
     }
 
     @Override
@@ -235,17 +235,17 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       return _paramsBuilderFactory;
     }
     
-    private Map<String, Object[]>[] extractConstraints() {
-      if(_hyperParams.get(CONSTRAINTS) == null) { return new Map[0]; }
-      Map<String, Object[]>[] constraints = new Map[_hyperParams.get(CONSTRAINTS).length];
-      for (int i = 0; i < _hyperParams.get(CONSTRAINTS).length; i++) {
-        constraints[i] = (Map<String, Object[]>)_hyperParams.get(CONSTRAINTS)[i];
+    private Map<String, Object[]>[] extractSubspaces() {
+      if(_hyperParams.get(SUBSPACES) == null) { return new Map[0]; }
+      Map<String, Object[]>[] subspaces = new Map[_hyperParams.get(SUBSPACES).length];
+      for (int i = 0; i < _hyperParams.get(SUBSPACES).length; i++) {
+        subspaces[i] = (Map<String, Object[]>)_hyperParams.get(SUBSPACES)[i];
       }
-      return constraints;
+      return subspaces;
     }
     
-    private String[] extractConstraintNames() {
-      return Stream.of(_hyperParamConstraints)
+    private String[] extractSubspaceNames() {
+      return Stream.of(_hyperParamSubspaces)
               .flatMap(m -> m.keySet().stream())
               .toArray(String[]::new);
     }
@@ -269,13 +269,13 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       long work = 0;
       long free_param_combos = 1;
 
-      for (Map<String, Object[]> constraint : _hyperParamConstraints) {
-        long constrained_param_combos = 1;
-        for (Object[] o : constraint.values()) {
-          constrained_param_combos *= o.length;
+      for (Map<String, Object[]> subspace : _hyperParamSubspaces) {
+        long subspace_param_combos = 1;
+        for (Object[] o : subspace.values()) {
+          subspace_param_combos *= o.length;
         }
-        work += constrained_param_combos;
-      } // work will be zero if there is no constraints in hyper parameters
+        work += subspace_param_combos;
+      } // work will be zero if there is no subspaces in hyper parameters
 
       for (Object[] p : _hyperParams.values()) {
         free_param_combos *= p.length;
@@ -286,11 +286,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       return work;
     }
 
-    protected Map<String, Object[]> mergeHashMaps(Map<String, Object[]> hyperparams, Map<String, Object[]> constraints) {
-      if(constraints == null) { return hyperparams; }
+    protected Map<String, Object[]> mergeHashMaps(Map<String, Object[]> hyperparams, Map<String, Object[]> subspaces) {
+      if(subspaces == null) { return hyperparams; }
       Map<String, Object[]> m = new HashMap<>();
       m.putAll(hyperparams);
-      m.putAll(constraints);
+      m.putAll(subspaces);
       return m;
     }
     
@@ -303,15 +303,15 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       return hypers;
     }
 
-    protected int integerHash(Map<String, Object[]> hyperParams, String[] hyperParamNames, int[] ar, int constraintNum) {
+    protected int integerHash(Map<String, Object[]> hyperParams, String[] hyperParamNames, int[] ar, int subspaceNum) {
       Integer[] hashMe = new Integer[ar.length + 1];
       for (int i = 0; i < ar.length; i++)
         hashMe[i] = ar[i] * hyperParams.get(hyperParamNames[i]).length;
-      hashMe[ar.length] = constraintNum;
+      hashMe[ar.length] = subspaceNum;
       return Arrays.deepHashCode(hashMe);
     }
 
-    private void validateParams(Map<String, Object[]> params, boolean isConstraint) {
+    private void validateParams(Map<String, Object[]> params, boolean isSubspace) {
       // if a parameter is specified in both model parameter and hyper-parameter, this is only allowed if the
       // parameter value is set to be default.  Otherwise, an exception will be thrown.
       for (String key : params.keySet()) {
@@ -322,9 +322,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
         if ("seed".equals(key) || "_seed".equals(key)) continue;  // initialized to the wall clock
 
-        if (isConstraint && _hyperParams.get(key) != null) {
+        if (isSubspace && _hyperParams.get(key) != null) {
           throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in " +
-                  "both the constraints and in the hyperparameters map.  This is ambiguous; set it in one place" +
+                  "both the subspaces and in the hyperparameters map.  This is ambiguous; set it in one place" +
                   " or the other, not both.");
         }
         
@@ -382,9 +382,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         /** Hyper params permutation.
          */
         private int[] _currentHyperparamIndices = null;
-        private int _currentConstraint = _hyperParamConstraints.length == 0 ? -1 : 0;
-        private Map<String, Object[]> _currentHyperParams = _hyperParamConstraints.length == 0 ? 
-                _hyperParams : mergeHashMaps(_hyperParams, _hyperParamConstraints[0]);
+        private int _currentSubspace = _hyperParamSubspaces.length == 0 ? -1 : 0;
+        private Map<String, Object[]> _currentHyperParams = _hyperParamSubspaces.length == 0 ? 
+                _hyperParams : mergeHashMaps(_hyperParams, _hyperParamSubspaces[0]);
         private String[] _currentHyperParamNames = _currentHyperParams.keySet().toArray(new String[0]);
 
         @Override
@@ -392,8 +392,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           _currentHyperparamIndices = _currentHyperparamIndices == null ?
                   new int[_currentHyperParamNames.length] : nextModelIndices(_currentHyperparamIndices);
           
-          if(_currentConstraint < _hyperParamConstraints.length - 1 && _currentHyperparamIndices == null) { // getting to next constraints here
-            _currentHyperParams = mergeHashMaps(_hyperParams, _hyperParamConstraints[++_currentConstraint]);
+          if(_currentSubspace < _hyperParamSubspaces.length - 1 && _currentHyperparamIndices == null) { // getting to next subspaces here
+            _currentHyperParams = mergeHashMaps(_hyperParams, _hyperParamSubspaces[++_currentSubspace]);
             _currentHyperParamNames = _currentHyperParams.keySet().toArray(new String[0]);
             _currentHyperparamIndices = new int[_currentHyperParamNames.length];
           }
@@ -419,7 +419,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
             int[] hyperParamIndicesCopy = new int[_currentHyperparamIndices.length];
             System.arraycopy(_currentHyperparamIndices, 0, hyperParamIndicesCopy, 0, _currentHyperparamIndices.length);
             if (nextModelIndices(hyperParamIndicesCopy) == null) {
-              if(_currentConstraint == _hyperParamConstraints.length - 1) {
+              if(_currentSubspace == _hyperParamSubspaces.length - 1) {
                 return false;  
               }
             }
@@ -510,7 +510,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         /** One-based count of the permutations we've visited, primarily used as an index into _visitedHyperparamIndices. */
         private int _currentPermutationNum = 0;
 
-        private int _currentConstraint = -1;
+        private int _currentSubspace = -1;
         private Map<String, Object[]> _currentHyperParams = _hyperParams;
         private String[] _currentHyperParamNames = _hyperParamNames;
 
@@ -524,7 +524,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
           if (_currentHyperparamIndices != null) {
             _visitedPermutations.add(_currentHyperparamIndices);
-            _visitedPermutationHashes.add(integerHash(_currentHyperParams, _currentHyperParamNames, _currentHyperparamIndices, _currentConstraint));
+            _visitedPermutationHashes.add(integerHash(_currentHyperParams, _currentHyperParamNames, _currentHyperparamIndices, _currentSubspace));
             _currentPermutationNum++; // NOTE: 1-based counting
 
             // Fill array of hyper-values
@@ -577,9 +577,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           int[] hyperparamIndices = new int[_currentHyperParamNames.length];
           
           do {
-            if(_hyperParamConstraints.length != 0) {
-              _currentConstraint = _random.nextInt(_hyperParamConstraints.length);
-              _currentHyperParams = mergeHashMaps(_hyperParams, _hyperParamConstraints[_currentConstraint]);
+            if(_hyperParamSubspaces.length != 0) {
+              _currentSubspace = _random.nextInt(_hyperParamSubspaces.length);
+              _currentHyperParams = mergeHashMaps(_hyperParams, _hyperParamSubspaces[_currentSubspace]);
               _currentHyperParamNames = _currentHyperParams.keySet().toArray(new String[0]);
               hyperparamIndices = new int[_currentHyperParamNames.length];
             }
@@ -587,7 +587,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
               hyperparamIndices[i] = _random.nextInt(_currentHyperParams.get(_currentHyperParamNames[i]).length);
             }
             // check for aliases and loop if we've visited this combo before
-          } while (_visitedPermutationHashes.contains(integerHash(_currentHyperParams, _currentHyperParamNames, hyperparamIndices, _currentConstraint)));
+          } while (_visitedPermutationHashes.contains(integerHash(_currentHyperParams, _currentHyperParamNames, hyperparamIndices, _currentSubspace)));
           
           return hyperparamIndices;
         } // nextModel

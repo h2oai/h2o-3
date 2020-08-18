@@ -15,7 +15,7 @@ import water.util.IcedHashMap;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static hex.grid.HyperSpaceWalker.BaseWalker.CONSTRAINTS;
+import static hex.grid.HyperSpaceWalker.BaseWalker.SUBSPACES;
 
 /**
  * This is a common grid search schema composed of two parameters: default parameters for a builder
@@ -68,7 +68,7 @@ public class GridSearchSchema<G extends Grid<MP>,
     for (Map.Entry<String, Object> e : params.entrySet()) {
       String k = e.getKey();
       Object v = e.getValue();
-      Object[] arr = CONSTRAINTS.equals(k) ? Stream.of(((List) v).toArray()).map(x -> paramValuesToArray((Map<String, Object>) x)).toArray()
+      Object[] arr = SUBSPACES.equals(k) ? Stream.of(((List) v).toArray()).map(x -> paramValuesToArray((Map<String, Object>) x)).toArray()
               : v instanceof List ? ((List) v).toArray()
               : new Object[]{v};
       result.put(k, arr);

@@ -6,7 +6,7 @@ import hex.ModelParametersBuilderFactory;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
-import static hex.grid.HyperSpaceWalker.BaseWalker.CONSTRAINTS;
+import static hex.grid.HyperSpaceWalker.BaseWalker.SUBSPACES;
 import hex.schemas.*;
 import water.H2O;
 import water.Job;
@@ -133,7 +133,7 @@ public class GridSearchHandler<G extends Grid<MP>,
   protected void validateHyperParams(P params, Map<String, Object[]> hyperParams) {
     List<SchemaMetadata.FieldMetadata> fsMeta = SchemaMetadata.getFieldMetadata(params);
     Set<String> allKeys = new HashSet<>(hyperParams.keySet());
-    allKeys.remove(CONSTRAINTS);
+    allKeys.remove(SUBSPACES);
     for (String hparam : allKeys) {
       SchemaMetadata.FieldMetadata fieldMetadata = null;
       // Found corresponding metadata about the field
@@ -153,8 +153,8 @@ public class GridSearchHandler<G extends Grid<MP>,
                                               + fieldMetadata.name + " is not gridable!");
       }
     }
-    if(hyperParams.get(CONSTRAINTS) != null) {
-      Arrays.stream(hyperParams.get(CONSTRAINTS)).forEach(constraint -> validateHyperParams(params, (Map<String, Object[]>) constraint));
+    if(hyperParams.get(SUBSPACES) != null) {
+      Arrays.stream(hyperParams.get(SUBSPACES)).forEach(constraint -> validateHyperParams(params, (Map<String, Object[]>) constraint));
     }
   }
 
