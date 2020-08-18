@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static hex.grid.HyperSpaceWalker.BaseWalker.CONSTRAINTS;
+import static hex.grid.HyperSpaceWalker.BaseWalker.SUBSPACES;
 
 /**
  * Grid search job.
@@ -111,9 +111,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     } else {
       String[] hyperNames = _hyperSpaceWalker.getHyperParamNames();
       String[] allHyperNames = hyperNames;
-      String[] hyperParamNamesConstraint = _hyperSpaceWalker.getHyperParamNamesConstraint();
-      if (hyperParamNamesConstraint.length > 0) {
-        allHyperNames = ArrayUtils.append(ArrayUtils.remove(hyperNames, CONSTRAINTS), hyperParamNamesConstraint);
+      String[] hyperParamNamesSubspace = _hyperSpaceWalker.getHyperParamNamesSubspace();
+      if (hyperParamNamesSubspace.length > 0) {
+        allHyperNames = ArrayUtils.append(ArrayUtils.remove(hyperNames, SUBSPACES), hyperParamNamesSubspace);
       }
       grid = new Grid<>(_result,
                       _hyperSpaceWalker.getParams(),
