@@ -112,7 +112,24 @@ def test_strategies_produce_same_results_when_applied_on_new_data():
         assert pu.compare_frames(l, r, 0, tol_numeric=1e-2)
             
             
-def test_ccv_with_kfold_strategy():
+def test_use_kfold_strategy_to_train_a_model_with_cv():
+    #XXX: TE KFold strategy allows TE to be trained only once in a context of model building with CV,
+    # but it can't be applied just once on the training data, 
+    # otherwise this is what's happening when training CV1 for example (fold1 = cv_holdout, f2-n = cv_train):
+    #     column `cat_te` for cv_holdout is obtained using fold_1 so, only with information collected from folds_2-n, which is what we want.
+    #     column `cat_te` for cv_train however is obtained using fold_i, and each of those contains information about fold_1: this is a data leakage from cv_holdout into cv_train.
+    #     on top of this, current version of transform is using a global priorMean for NAs, creating an additional data leakage in CV context.
+    # The priorMean issue can be fixed internally in the implementation of KFold strategy.
+    # However, for proper CCV, we need a deep integration with CV logic in ModelBuilder (translate to Java of course..):
+    #   train TE using KFold strategy on the entire train set.
+    #   then during CV, for each fold:
+    #     train_cv_i = te.transform(train_cv, fold=fold_i)  # so that train_cv_i is not encoded at all with encodings from other folds (they include info about current fold)
+    #     test_cv_i = te.transform(test_cv, fold=fold_i)    # same
+    #   finally, the final model is trained with TE applied on the whole training frame:
+    #     train = te.transform(train, as_training=True)     # still using the fold column, this ensures that the final feature is equivalent to the one used in all the test_cv_i
+    #     or
+    #     train = te.transform(train)                       # ignoring the fold column, this way the final te feature uses the entire train set.
+    
     ds = load_dataset(incl_test=True, incl_foldc=True)
     te = H2OTargetEncoderEstimator(noise=0, data_leakage_handling="kfold")
     te.train(y=ds.target, training_frame=ds.train, fold_column="foldc")
@@ -148,5 +165,5 @@ pu.run_tests([
     test_kfold_requires_fold_column,
     test_loo_requires_target_to_encode_training_frame,
     test_strategies_produce_different_results_for_training,
-    test_ccv_with_kfold_strategy
+    test_use_kfold_strategy_to_train_a_model_with_cv
 ])

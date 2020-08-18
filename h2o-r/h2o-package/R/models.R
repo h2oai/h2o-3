@@ -584,12 +584,12 @@ setMethod("h2o.transform", signature("H2OTargetEncoderModel"), function(model, d
             stop(paste("unused argument", arg, "=", varargs[[arg]]))
         }
     }
-    
+
     params <- list()
     params$model <- model@model_id
     params$frame <- h2o.getId(data)
     if (is.null(blending)){
-        params$blending <- model@parameters$blending
+        params$blending <- model@allparameters$blending
     } else {
         params$blending <- blending
     }
