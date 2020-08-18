@@ -21,11 +21,11 @@ def glm_alpha_arrays_null_lambda_cv():
     test_data = data_frames[1]
     
     # build model with CV but no validation dataset
-    cv_model = glm(family='binomial',alpha=[0.1,0.5,0.9], nfolds = 3)
+    cv_model = glm(family='binomial',alpha=[0.1,0.5,0.9], nfolds = 3, fold_assignment="modulo")
     cv_model.train(training_frame=training_data,x=myX,y=myY)
     cv_r = glm.getGLMRegularizationPath(cv_model)
     # build model with CV and with validation dataset
-    cv_model_valid = glm(family='binomial',alpha=[0.1,0.5,0.9], nfolds = 3)
+    cv_model_valid = glm(family='binomial',alpha=[0.1,0.5,0.9], nfolds = 3, fold_assignment="modulo")
     cv_model_valid.train(training_frame=training_data, validation_frame = test_data, x=myX,y=myY)
     cv_r_valid = glm.getGLMRegularizationPath(cv_model_valid)
 

@@ -21,10 +21,12 @@ def glm_alpha_lambda_arrays_cv():
     test_data = data_frames[1]
     
     # choices made in model_all and model_xval should be the same since they should be using xval metrics
-    model_all = glm(family="gaussian", Lambda=[0.1,0.5,0.9], alpha=[0.1,0.5,0.9], nfolds=3, cold_start=True)
+    model_all = glm(family="gaussian", Lambda=[0.1,0.5,0.9], alpha=[0.1,0.5,0.9], nfolds=3, cold_start=True, 
+                    fold_assignment="modulo")
     model_all.train(x=myX, y=myY, training_frame = training_data, validation_frame = test_data)
     model_all_rpath = glm.getGLMRegularizationPath(model_all)
-    model_xval =  glm(family="gaussian", Lambda=[0.1,0.5,0.9], alpha=[0.1,0.5,0.9], nfolds=3, cold_start=True)
+    model_xval =  glm(family="gaussian", Lambda=[0.1,0.5,0.9], alpha=[0.1,0.5,0.9], nfolds=3, cold_start=True, 
+                      fold_assignment="modulo")
     model_xval.train(x=myX, y=myY, training_frame = training_data)
     model_xval_rpath = glm.getGLMRegularizationPath(model_xval)
 
