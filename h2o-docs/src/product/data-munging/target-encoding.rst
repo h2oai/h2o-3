@@ -11,10 +11,15 @@ Target encoding is the process of replacing a categorical value with the mean of
 Target Encoding Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``blending``
-''''''''''''
+``training_frame``
+''''''''''''''''''
 
-The ``blending`` parameter defines whether the target average should be weighted based on the count of the group. It is often the case, that some groups may have a small number of records and the target average will be unreliable. To prevent this, the blended average takes a weighted average of the group’s target value and the global target value.
+Specify the dataset that you want to use when you are ready to build a Target Encoding model.
+
+``response_column``
+'''''''''''''''''''
+
+Use ``response_column`` to specify the response column is the column that you are attempting to predict (y-axis). 
 
 ``data_leakage_handling``
 '''''''''''''''''''''''''
@@ -25,45 +30,39 @@ To control data leakage, specify one of the following data leakage handling stra
 - ``k_fold`` (Python)/``KFold`` (R): Encodings for a fold are generated based on out-of-fold data.
 - ``leave_one_out`` (Python)/``LeaveOneOut`` (R): The current row's response value is subtracted from the pre-calculated per-level frequencies.
 
-``f``
-'''''
-
-The smoothing value is used for blending when ``blending=True`` and to calculate lambda. Smoothing controls the rate of transition between the particular level’s posterior probability and the prior probability. For smoothing values approaching infinity, it becomes a hard threshold between the posterior and the prior probability. This value defaults to 20.
-
 ``fold_column``
 '''''''''''''''
 
 Specify the name or column index of the fold column in the data. This defaults to NULL (no fold_column).
 
-``ignored_columns``
-'''''''''''''''''''
+``blending``
+''''''''''''
 
-Specify the column or columns to ignore. Note that this command is only available in the Python client and in Flow. It is not available in R.
+The ``blending`` parameter defines whether the target average should be weighted based on the count of the group. It is often the case, that some groups may have a small number of records and the target average will be unreliable. To prevent this, the blended average takes a weighted average of the group’s target value and the global target value.
 
-``k``
-'''''
+``inflection_point``
+''''''''''''''''''''
 
-Use ``k`` to specify the inflection point value. This value is used for blending when ``blending=True`` and to calculate lambda. This determines half of the minimal sample size for which we completely trust the estimate based on the sample in the particular level of the categorical variable. This value defaults value to 10.
+Use ``inflection_point`` to specify the inflection point value. This value is used for blending when ``blending=True`` and to calculate lambda. This determines half of the minimal sample size for which we completely trust the estimate based on the sample in the particular level of the categorical variable. This value defaults value to 10.
 
-``noise_level``
+``smoothing``
+'''''''''''''
+
+The smoothing value is used for blending when ``blending=True`` and to calculate lambda. Smoothing controls the rate of transition between the particular level’s posterior probability and the prior probability. For smoothing values approaching infinity, it becomes a hard threshold between the posterior and the prior probability. This value defaults to 20.
+
+
+``noise``
 '''''''''''''''
 
-If random noise should be added to the target average, the ``noise_level`` parameter can be used to specify the amount of noise to be added. This value defaults to 0.01 times the range of :math:`y` of random noise.
-
-``response_column``
-'''''''''''''''''''
-
-Use ``response_column`` to specify the response column is the column that you are attempting to predict (y-axis). 
+Use the ``noise`` parameter to specify the amount of random noise that should be added to the target average in order to prevent overfitting. This value defaults to 0.01 times the range of :math:`y`.
 
 ``seed``
 '''''''''
 
 A random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
 
-``training_frame``
-''''''''''''''''''
-
-Specify the dataset that you want to use when you are ready to build a Target Encoding model.
+Target Encoding Model Methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``transform``
 ''''''''''''''
@@ -71,15 +70,11 @@ Specify the dataset that you want to use when you are ready to build a Target En
 Apply transformation to target encoded columns based on the encoding maps generated during training. Available parameters include:
 
 - ``frame``: The H2O frame to which you are applying target encoding transformations.
-- ``data_leakage_handling``: To control data leakage, specify one of the following data leakage handling strategies:
-
-  - ``none`` (Python)/``None`` (R): Do not holdout anything. Using whole frame for training
-  - ``k_fold`` (Python)/``KFold`` (R): Encodings for a fold are generated based on out-of-fold data.
-  - ``leave_one_out`` (Python)/``LeaveOneOut`` (R): The current row's response value is subtracted from the pre-calculated per-level frequencies.
-
-- ``noise``: A float value specifying the amount of random noise added to the target encoding. This helps prevent overfitting. Defaults to 0.01 * range of y.
-
-- ``seed``: A random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
+- ``blending``: User can override the ``blending`` value defined on the model.
+- ``inflection_point``: User can override the ``inflection_point`` value defined on the model.
+- ``smoothing``: User can override the ``smoothing`` value defined on the model.
+- ``noise``: User can override the ``noise`` value defined on the model.
+- ``as_training``: User should set this parameter to True/TRUE when transforming the training dataset. Defaults to False/FALSE.
 
 
 Example
@@ -110,17 +105,10 @@ In this example, we will be trying to predict ``survived`` using the popular tit
     test <- splits[[2]]
 
     # For k_fold strategy we need to provide fold column
-    train$fold <- h2o.kfold_column(train, nfolds = 5, seed = 3456)
+    train$fold <- h2o.kfold_column(train, nfolds = 5, seed = seed)
 
     # Choose which columns to encode
     encoded_columns <- c('home.dest', 'cabin', 'embarked')
-
-    # Set target encoding parameters
-    blended_avg = TRUE
-    inflection_point = 3
-    smoothing = 10
-    # In general, the less data you have the more regularisation you need
-    noise = 0.15
 
     # Train a TE model
     target_encoder <- h2o.targetencoder(training_frame = train, 
@@ -128,14 +116,15 @@ In this example, we will be trying to predict ``survived`` using the popular tit
                                         y = "survived", 
                                         fold_column = "fold", 
                                         data_leakage_handling = "KFold", 
-                                        blending = blended_avg, 
-                                        k = inflection_point, 
-                                        f = smoothing, 
-                                        noise = noise)
+                                        blending = TRUE, 
+                                        inflection_point = 3, 
+                                        smoothing = 10, 
+                                        noise = 0.15,     # In general, the less data you have the more regularisation you need
+                                        seed = seed)
 
     # New target encoded train and test sets
-    transformed_train <- h2o.transform(target_encoder, train, data_leakage_handling = "KFold", noise = noise)
-    transformed_test <- h2o.transform(target_encoder, test, noise=0.0)
+    transformed_train <- h2o.transform(target_encoder, train, as_training=TRUE)
+    transformed_test <- h2o.transform(target_encoder, test, noise=0)
 
     # Train a GBM (with TE) model
     ignored_columns <- c("boat", "ticket", "name", "body")
@@ -145,16 +134,6 @@ In this example, we will be trying to predict ``survived`` using the popular tit
                            y = response,
                            training_frame = transformed_train,
                            fold_column = "fold",
-                           score_tree_interval = 5,
-                           ntrees = 10000,
-                           max_depth = 6,
-                           min_rows = 1,
-                           sample_rate = 0.8,
-                           col_sample_rate = 0.8,
-                           seed = 1234,
-                           stopping_rounds = 5,
-                           stopping_metric = "auto",
-                           stopping_tolerance = 0.001,
                            model_id = "gbm_with_te")
 
     # Measuring performance on a transformed_test split
@@ -171,16 +150,6 @@ In this example, we will be trying to predict ``survived`` using the popular tit
                             y = response,
                             training_frame = train,
                             fold_column = "fold",
-                            score_tree_interval = 5,
-                            ntrees = 10000,
-                            max_depth = 6,
-                            min_rows = 1,
-                            sample_rate = 0.8,
-                            col_sample_rate = 0.8,
-                            seed = 1234,
-                            stopping_rounds = 5,
-                            stopping_metric = "auto",
-                            stopping_tolerance = 0.001,
                             model_id = "gbm_baseline")
 
     # Measuring performance on a test split
@@ -190,7 +159,7 @@ In this example, we will be trying to predict ``survived`` using the popular tit
     print(paste0("GBM AUC TEST: ", round(auc_baseline, 5)))
 
     # Performance is better with target encoding being applied:
-    # auc_with_te = 0.89493   >    auc_baseline = 0.84174
+    # auc_with_te = 0.8805   >    auc_baseline = 0.84105
 
    .. code-tab:: python
 
@@ -212,44 +181,28 @@ In this example, we will be trying to predict ``survived`` using the popular tit
     # Choose which columns to encode
     encoded_columns = ["home.dest", "cabin", "embarked"]
 
-    # Set target encoding parameters
-    blended_avg= True
-    inflection_point = 3
-    smoothing = 10
-    # In general, the less data you have the more regularization you need
-    noise = 0.15
-
     # For k_fold strategy we need to provide fold column
-    data_leakage_handling = "k_fold"
     fold_column = "kfold_column"
-    train[fold_column] = train.kfold_column(n_folds=5, seed=3456)
+    train[fold_column] = train.kfold_column(n_folds=5, seed=seed)
 
     # Train a TE model
     titanic_te = H2OTargetEncoderEstimator(fold_column=fold_column,
-                                           data_leakage_handling=data_leakage_handling, 
-                                           blending=blended_avg, 
-                                           k=inflection_point, 
-                                           f=smoothing)
+                                           data_leakage_handling="k_fold", 
+                                           blending=True, 
+                                           inflection_point=3, 
+                                           smoothing=10,
+                                           noise=0.15,     # In general, the less data you have the more regularization you need
+                                           seed=seed)
 
     titanic_te.train(x=encoded_columns,
                      y=response,
                      training_frame=train)
 
     # New target encoded train and test sets
-    train_te = titanic_te.transform(frame=train, data_leakage_handling="k_fold", seed=1234, noise=noise)
-    test_te = titanic_te.transform(frame=test, noise=0.0)
+    train_te = titanic_te.transform(frame=train, as_training=True)
+    test_te = titanic_te.transform(frame=test, noise=0)
 
-    gbm_with_te=H2OGradientBoostingEstimator(max_depth=6,
-                                             min_rows=1,
-                                             fold_column=fold_column,
-                                             score_tree_interval=5,
-                                             ntrees=10000,
-                                             sample_rate=0.8,
-                                             col_sample_rate=0.8,
-                                             seed=1234,
-                                             stopping_rounds=5,
-                                             stopping_metric="auto",
-                                             stopping_tolerance=0.001,
+    gbm_with_te=H2OGradientBoostingEstimator(fold_column=fold_column,
                                              model_id="gbm_with_te")
 
     # Training is based on training data with early stopping based on xval performance
@@ -260,20 +213,8 @@ In this example, we will be trying to predict ``survived`` using the popular tit
     my_gbm_metrics = gbm_with_te.model_performance(test_te)
     auc_with_te = my_gbm_metrics.auc()
 
-    # auc_with_te = 0.89493
-
     # Train a GBM estimator
-    gbm_baseline=H2OGradientBoostingEstimator(max_depth=6,
-                                              min_rows=1,
-                                              fold_column=fold_column,
-                                              score_tree_interval=5,
-                                              ntrees=10000,
-                                              sample_rate=0.8,
-                                              col_sample_rate=0.8,
-                                              seed=1234,
-                                              stopping_rounds=5,
-                                              stopping_metric="auto",
-                                              stopping_tolerance=0.001,
+    gbm_baseline=H2OGradientBoostingEstimator(fold_column=fold_column,
                                               model_id="gbm_baseline")
 
     x_baseline = ["pclass", "sex", "age", "sibsp", "parch", "fare", "cabin", "embarked", "home.dest"]
@@ -283,10 +224,8 @@ In this example, we will be trying to predict ``survived`` using the popular tit
     gbm_baseline_metrics = gbm_baseline.model_performance(test)
     auc_baseline = gbm_baseline_metrics.auc()
 
-    # auc_baseline = 0.84174
-
     # Performance is better with target encoding being applied:
-    # auc_with_te = 0.89493   >    auc_baseline = 0.84174
+    # auc_with_te = 0.8805   >    auc_baseline = 0.0.84105
 
 References
 ~~~~~~~~~~
