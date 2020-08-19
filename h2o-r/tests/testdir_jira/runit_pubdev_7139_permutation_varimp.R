@@ -1,7 +1,6 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 
-
 test.permutation.varimp <- function(){
     Log.info("Making glm without validation_frame...")
     pros.train <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv.zip"))
@@ -15,3 +14,4 @@ test.permutation.varimp <- function(){
 }
 
 doTest("Testing Permutation Feature Importance", test.permutation.varimp)
+
