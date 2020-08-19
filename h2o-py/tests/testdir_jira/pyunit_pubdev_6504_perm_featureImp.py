@@ -11,7 +11,7 @@ from sklearn.metrics import roc_auc_score
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from tests import pyunit_utils
 
-from h2o.model.PermutationFeatureImportance import permutation_featue_importance
+from h2o.model.PermutationFeatureImportance import permutation_varimp
 
 
 def model_rel_bernoulli_gbm():
@@ -69,8 +69,8 @@ def model_rel_bernoulli_gbm():
     auc_h2o = gbm_perf.auc()
     
     gbm_h2o.model_performance()
-    pm_fr = permutation_featue_importance(prostate_test, gbm_h2o)
-
+    pm_fr = permutation_varimp(prostate_test, gbm_h2o)
+    
     #Log.info(paste("scikit AUC:", auc_sci, "\tH2O AUC:", auc_h2o))
     print(auc_h2o, auc_sci)
     assert auc_h2o >= auc_sci, "h2o (auc) performance degradation, with respect to scikit"
