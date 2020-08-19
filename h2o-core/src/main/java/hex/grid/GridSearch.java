@@ -7,7 +7,6 @@ import water.*;
 import water.exceptions.H2OConcurrentModificationException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PojoUtils;
 
@@ -15,8 +14,6 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import static hex.grid.HyperSpaceWalker.BaseWalker.SUBSPACES;
 
 /**
  * Grid search job.
@@ -109,15 +106,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         throw new H2OIllegalArgumentException("training_frame", "grid", "Cannot append new models to a grid with different training input");
       grid.write_lock(_job);
     } else {
-      String[] hyperNames = _hyperSpaceWalker.getHyperParamNames();
-      String[] allHyperNames = hyperNames;
-      String[] hyperParamNamesSubspace = _hyperSpaceWalker.getAllHyperParamNamesInSubspaces();
-      if (hyperParamNamesSubspace.length > 0) {
-        allHyperNames = ArrayUtils.append(ArrayUtils.remove(hyperNames, SUBSPACES), hyperParamNamesSubspace);
-      }
       grid = new Grid<>(_result,
                       _hyperSpaceWalker.getParams(),
-                      allHyperNames,
+                      _hyperSpaceWalker.getHyperParamNames(),
                       _hyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy());
       grid.delete_and_lock(_job);
     }
