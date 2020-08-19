@@ -106,8 +106,8 @@ class Test_gbm_grid_search:
 
     # these are supposed to be gridable but are not really
     exclude_parameter_lists.extend(['class_sampling_factors', 'fold_column', 'weights_column', 'offset_column',
-                                    'build_tree_one_node', 'score_each_iteration', 'max_hit_ratio_k',
-                                    'score_tree_interval', 'nbins_top_level'])
+                                    'build_tree_one_node', 'score_each_iteration', 'score_tree_interval',
+                                    'nbins_top_level'])
 
     params_zero_one = ['col_sample_rate', 'learn_rate_annealing', 'learn_rate', 'col_sample_rate_per_tree',
                        'sample_rate']

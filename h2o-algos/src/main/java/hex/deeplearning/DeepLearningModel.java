@@ -1735,7 +1735,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           dl.hide("_regression_stop", "regression_stop is used only with regression.");
         } else {
           dl.hide("_classification_stop", "classification_stop is used only with classification.");
-  //          dl.hide("_max_hit_ratio_k", "max_hit_ratio_k is used only with classification.");
   //          dl.hide("_balance_classes", "balance_classes is used only with classification.");
         }
   //        if( !classification || !_balance_classes )
@@ -1963,7 +1962,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
               "_stopping_tolerance",
               "_quiet_mode",
               "_max_confusion_matrix_size",
-              "_max_hit_ratio_k",
               "_diagnostics",
               "_variable_importances",
               "_initial_weight_distribution", //will be ignored anyway

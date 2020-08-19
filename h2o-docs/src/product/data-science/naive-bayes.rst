@@ -55,8 +55,6 @@ Defining a Naïve Bayes Model
 
 -  `max_after_balance_size <algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of the training data after balancing class counts (**balance_classes** must be enabled). The value can be less than 1.0.
 
--  `max_hit_ratio_k <algo-params/max_hit_ratio_k.html>`__: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0.
-
 -  `laplace <algo-params/laplace.html>`__: Specify the Laplace smoothing parameter. The value must be an integer >= 0.
 
 -  `min_sdev <algo-params/min_sdev.html>`__: Specify the minimum standard deviation to use for observations without enough data. The value must be at least 1e-10.
