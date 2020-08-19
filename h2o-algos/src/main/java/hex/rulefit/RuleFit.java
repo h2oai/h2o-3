@@ -98,11 +98,11 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
     private void initGLMParameters() {
         if (_parms._glm_params == null) {
-            if (_nclass < 2) { // classification
+            if (_nclass < 2) { // regression
                 _parms._glm_params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.gaussian);
-            } else if (_nclass == 2) { // binomial
+            } else if (_nclass == 2) { // binomial classification
                 _parms._glm_params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.binomial);
-            } else { // multinomial
+            } else { // multinomial classification
                 // TODO: multinomial cases not supported yet
                 throw new UnsupportedOperationException("Multinomial cases are not supported yet for RuleFit.");
             }
@@ -124,7 +124,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         @Override
         public void computeImpl() {
             RuleFitModel model = null;
-            GLMModel glmModel = null;
+            GLMModel glmModel;
             init(true);
             if (error_count() > 0)
                 throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(RuleFit.this);

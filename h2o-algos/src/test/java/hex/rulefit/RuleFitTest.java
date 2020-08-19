@@ -1,9 +1,12 @@
 package hex.rulefit;
 
 import hex.ConfusionMatrix;
+import hex.glm.GLM;
+import hex.glm.GLMModel;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -17,9 +20,12 @@ public class RuleFitTest extends TestUtil {
     public void testBestPracticeExample() {
         // https://github.com/h2oai/h2o-tutorials/blob/8df6b492afa172095e2595922f0b67f8d715d1e0/best-practices/explainable-models/rulefit_analysis.ipynb
         RuleFitModel rfModel = null;
-        Frame fr = null, fr2 = null;
+        GLMModel glmModel = null;
+        Frame fr = null, fr2 = null, fr3 = null;
         try {
+            Scope.enter();
             fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+            Scope.track(fr);
 
             String responseColumnName = "survived";
             asFactor(fr, responseColumnName);
@@ -47,20 +53,45 @@ public class RuleFitTest extends TestUtil {
             Vec predictions = fr2.vec("predict");
             Vec data = fr.vec("survived");
             
-            ConfusionMatrix confusionMatrix = ConfusionMatrixUtils.buildCM(data, predictions);
+            ConfusionMatrix ruleFitConfusionMatrix = ConfusionMatrixUtils.buildCM(data, predictions);
             
-            System.out.println("ACC: \n" + confusionMatrix.accuracy());
-            System.out.println("specificity: \n" + confusionMatrix.specificity());
-            System.out.println("sensitivity: \n" + confusionMatrix.recall());
+            // GLM to compare:
+
+            GLMModel.GLMParameters glmParameters = rfModel._parms._glm_params;
+            glmParameters._train = fr._key;
+            glmModel = new GLM(glmParameters).trainModel().get();
+
+            fr3 = glmModel.score(fr);
+            predictions = fr3.vec("predict");
+
+            ConfusionMatrix glmConfusionMatrixGlm = ConfusionMatrixUtils.buildCM(data, predictions);
+
+            System.out.println("RuleFit ACC: \n" + ruleFitConfusionMatrix.accuracy());
+            System.out.println("RuleFit specificity: \n" + ruleFitConfusionMatrix.specificity());
+            System.out.println("RuleFit sensitivity: \n" + ruleFitConfusionMatrix.recall());
+            
+            System.out.println("GLM ACC: \n" + glmConfusionMatrixGlm.accuracy());
+            System.out.println("GLM specificity: \n" + glmConfusionMatrixGlm.specificity());
+            System.out.println("GLM sensitivity: \n" + glmConfusionMatrixGlm.recall());
+            
             
         } finally {
             if (fr != null) fr.remove();
             if (fr2 != null) fr2.remove();
-            if (rfModel.glmModel != null) rfModel.glmModel.remove();
-            for (int i = 0; i < rfModel.treeModels.length; i++) {
-                rfModel.treeModels[i].remove();
+            if (fr3 != null) fr3.remove();
+            if (rfModel != null) {
+                if (rfModel.glmModel != null) rfModel.glmModel.remove();
+                if (rfModel.treeModels != null) {
+                    for (int i = 0; i < rfModel.treeModels.length; i++) {
+                        rfModel.treeModels[i].remove();
+                    }
+                }
+                rfModel.remove();
             }
-            if (rfModel != null) rfModel.remove();
+            if (glmModel != null) {
+                glmModel.remove();
+            }
+            Scope.exit();
         }
     }
     
