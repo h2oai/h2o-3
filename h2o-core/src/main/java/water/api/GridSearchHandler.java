@@ -154,7 +154,7 @@ public class GridSearchHandler<G extends Grid<MP>,
       }
     }
     if(hyperParams.get(SUBSPACES) != null) {
-      Arrays.stream(hyperParams.get(SUBSPACES)).forEach(constraint -> validateHyperParams(params, (Map<String, Object[]>) constraint));
+      Arrays.stream(hyperParams.get(SUBSPACES)).forEach(subspace -> validateHyperParams(params, (Map<String, Object[]>) subspace));
     }
   }
 

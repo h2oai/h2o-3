@@ -10,7 +10,7 @@ from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
 from h2o.grid.grid_search import H2OGridSearch
 
 
-# In this test, we check to make sure that a grid search on a GAM with constrained hyperparameters fails.
+# In this test, we check to make sure that a grid search on a GAM with hyperparameters and subspaces fails.
 # The grid search should fail because gam_columns is specified in both the hyper parameters and the constrained hyper parameters.
 class test_gam_gridsearch_specific:
     h2o_data = []
@@ -18,7 +18,7 @@ class test_gam_gridsearch_specific:
     myY = []
     search_criteria = {'strategy': 'Cartesian'}
     hyper_parameters = {'gam_columns': [["C11", "C12", "C13"]],
-                        'constraints': [{'lambda_search': True, 'nlambdas': [5, 10, 15], 'gam_columns': [["C11", "C12", "C13"]]}]}
+                        'subspaces': [{'scale': [[1, 1, 1], [2, 2, 2]], 'gam_columns': [["C11", "C12", "C13"]]}]}
     h2o_model = []
 
     def __init__(self):
