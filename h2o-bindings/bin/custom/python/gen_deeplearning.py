@@ -1,3 +1,5 @@
+deprecated = ['max_hit_ratio_k']
+
 def module_extensions():
     class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
         """

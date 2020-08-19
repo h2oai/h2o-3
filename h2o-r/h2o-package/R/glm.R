@@ -119,6 +119,7 @@
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
+#' @param max_hit_ratio_k This argument is deprecated and has no use. Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable).
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
@@ -226,6 +227,7 @@ h2o.glm <- function(x,
                     balance_classes = FALSE,
                     class_sampling_factors = NULL,
                     max_after_balance_size = 5.0,
+                    max_hit_ratio_k = 0,
                     max_runtime_secs = 0,
                     custom_metric_func = NULL)
 {
@@ -376,6 +378,8 @@ h2o.glm <- function(x,
     parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
+  if (!missing(max_hit_ratio_k))
+    parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(custom_metric_func))
@@ -396,6 +400,10 @@ h2o.glm <- function(x,
     parms$beta_constraints <- beta_constraints
     if(!missing(missing_values_handling))
       parms$missing_values_handling <- missing_values_handling
+  if (!missing(max_hit_ratio_k)) {
+    warning("Argument max_hit_ratio_k is deprecated and has no use.")
+    parms$offset_column <- NULL
+  }    
 
   # Error check and build model
   model <- .h2o.modelJob('glm', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -467,6 +475,7 @@ h2o.glm <- function(x,
                                     balance_classes = FALSE,
                                     class_sampling_factors = NULL,
                                     max_after_balance_size = 5.0,
+                                    max_hit_ratio_k = 0,
                                     max_runtime_secs = 0,
                                     custom_metric_func = NULL,
                                     segment_columns = NULL,
@@ -622,6 +631,8 @@ h2o.glm <- function(x,
     parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
+  if (!missing(max_hit_ratio_k))
+    parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(custom_metric_func))
@@ -642,6 +653,10 @@ h2o.glm <- function(x,
     parms$beta_constraints <- beta_constraints
     if(!missing(missing_values_handling))
       parms$missing_values_handling <- missing_values_handling
+  if (!missing(max_hit_ratio_k)) {
+    warning("Argument max_hit_ratio_k is deprecated and has no use.")
+    parms$offset_column <- NULL
+  }    
 
   # Build segment-models specific parameters
   segment_parms <- list()

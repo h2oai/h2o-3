@@ -1,4 +1,4 @@
-deprecated = ['offset_column', 'distribution']
+deprecated = ['offset_column', 'distribution', 'max_hit_ratio_k']
 
 doc = dict(
     __class__="""
