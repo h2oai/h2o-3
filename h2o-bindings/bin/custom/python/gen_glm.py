@@ -687,6 +687,19 @@ examples = dict(
 ...                validation_frame=valid)
 >>> cars_glm.mse()
 """,
+    max_hit_ratio_k="""
+>>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+>>> predictors = ["displacement","power","weight","year"]
+>>> response = "acceleration"
+>>> train, valid = cars.split_frame(ratios=[.8])
+>>> cars_glm = H2OGeneralizedLinearEstimator(max_hit_ratio_k=3,
+...                                          seed=1234)
+>>> cars_glm.train(x=predictors,
+...                y=response,
+...                training_frame=train,
+...                validation_frame=valid)
+>>> cars_glm.mse()
+""",
     max_iterations="""
 >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
