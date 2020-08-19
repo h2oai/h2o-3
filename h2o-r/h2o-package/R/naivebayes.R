@@ -176,6 +176,10 @@ h2o.naiveBayes <- function(x,
     warning("argument 'eps' is deprecated; use 'eps_sdev' instead.")
     parms$eps_sdev <- eps
   }
+  if (!missing(max_hit_ratio_k)) {
+    warning("argument max_hit_ratio_k is deprecated and has no use.")
+    parms$offset_column <- NULL
+  }
 
   # Error check and build model
   model <- .h2o.modelJob('naivebayes', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -297,6 +301,10 @@ h2o.naiveBayes <- function(x,
   if (!missing(eps) && missing(eps_sdev)) {
     warning("argument 'eps' is deprecated; use 'eps_sdev' instead.")
     parms$eps_sdev <- eps
+  }
+  if (!missing(max_hit_ratio_k)) {
+    warning("argument max_hit_ratio_k is deprecated and has no use.")
+    parms$offset_column <- NULL
   }
 
   # Build segment-models specific parameters
