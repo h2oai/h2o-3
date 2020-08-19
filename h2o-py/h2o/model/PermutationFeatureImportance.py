@@ -8,24 +8,17 @@ H2O Permutation Feature Importance.
 
 from h2o.frame import H2OFrame
 from h2o.expr import ExprNode
-from h2o.utils.shared_utils import can_use_pandas
-
-def permutation_featue_importance(frame, model, use_pandas=True):
 
 
-    # j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (model.model_id, frame.frame_id),
-    #             data={"reconstruct_train": True, "reverse_transform": reverse_transform})
-    # return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])
+def permutation_varimp(validation_frame, model, use_pandas=True):
 
-    model_ = model._model_json["output"]
-
-    m_frame = H2OFrame._expr(ExprNode("Perm_Feature_importance", frame, model))
+    m_frame = H2OFrame._expr(ExprNode("Perm_Feature_importance", validation_frame, model))
 
     if type(m_frame) is not H2OFrame:
         raise ValueError("Frame is not H2OFrame")
 
-    m_frame_oat = H2OFrame._expr(ExprNode("Perm_Feature_importance_OAT", frame, model))
-
+    m_frame_oat = H2OFrame._expr(ExprNode("Perm_Feature_importance_OAT", validation_frame, model))
+    
     if type(m_frame_oat) is not H2OFrame:
         raise ValueError("Frame is not H2OFrame")
 
