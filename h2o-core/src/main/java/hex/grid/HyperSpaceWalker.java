@@ -77,7 +77,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
    * @return names of used hyper parameters
    */
   String[] getHyperParamNames();
-  String[] getHyperParamNamesSubspace();
+  String[] getAllHyperParamNamesInSubspaces();
 
   /**
    * Return estimated maximum size of hyperspace, not subject to any early stopping criteria.
@@ -197,7 +197,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       _hyperParamNames = hyperParams.keySet().toArray(new String[0]);
       _hyperParamSubspaces = extractSubspaces();
       _hyperParamNamesSubspace = extractSubspaceNames();
-      if(_hyperParams.get(SUBSPACES) != null) { _hyperParams.remove(SUBSPACES); }
+      _hyperParams.remove(SUBSPACES);
       _search_criteria = search_criteria;
       _maxHyperSpaceSize = computeMaxSizeOfHyperSpace();
       
@@ -216,7 +216,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       return _hyperParamNames;
     }
     
-    public String[] getHyperParamNamesSubspace() {
+    public String[] getAllHyperParamNamesInSubspaces() {
       return _hyperParamNamesSubspace;
     }
 
@@ -236,12 +236,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     }
     
     private Map<String, Object[]>[] extractSubspaces() {
-      if(_hyperParams.get(SUBSPACES) == null) { return new Map[0]; }
-      Map<String, Object[]>[] subspaces = new Map[_hyperParams.get(SUBSPACES).length];
-      for (int i = 0; i < _hyperParams.get(SUBSPACES).length; i++) {
-        subspaces[i] = (Map<String, Object[]>)_hyperParams.get(SUBSPACES)[i];
-      }
-      return subspaces;
+      if(!_hyperParams.containsKey(SUBSPACES)) { return new Map[0]; }
+      return Stream.of(_hyperParams.get(SUBSPACES)).toArray(Map[]::new);
     }
     
     private String[] extractSubspaceNames() {
@@ -286,11 +282,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       return work;
     }
 
-    protected Map<String, Object[]> mergeHashMaps(Map<String, Object[]> hyperparams, Map<String, Object[]> subspaces) {
-      if(subspaces == null) { return hyperparams; }
+    protected Map<String, Object[]> mergeHashMaps(Map<String, Object[]> hyperparams, Map<String, Object[]> subspace) {
+      if(subspace == null) { return hyperparams; }
       Map<String, Object[]> m = new HashMap<>();
       m.putAll(hyperparams);
-      m.putAll(subspaces);
+      m.putAll(subspace);
       return m;
     }
     
@@ -322,7 +318,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
         if ("seed".equals(key) || "_seed".equals(key)) continue;  // initialized to the wall clock
 
-        if (isSubspace && _hyperParams.get(key) != null) {
+        if (isSubspace && _hyperParams.containsKey(key)) {
           throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in " +
                   "both the subspaces and in the hyperparameters map.  This is ambiguous; set it in one place" +
                   " or the other, not both.");

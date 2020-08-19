@@ -68,7 +68,7 @@ public class GridSearchSchema<G extends Grid<MP>,
     for (Map.Entry<String, Object> e : params.entrySet()) {
       String k = e.getKey();
       Object v = e.getValue();
-      Object[] arr = SUBSPACES.equals(k) ? Stream.of(((List) v).toArray()).map(x -> paramValuesToArray((Map<String, Object>) x)).toArray()
+      Object[] arr = SUBSPACES.equals(k) ? ((List) v).stream().map(x -> paramValuesToArray((Map<String, Object>) x)).toArray()
               : v instanceof List ? ((List) v).toArray()
               : new Object[]{v};
       result.put(k, arr);
