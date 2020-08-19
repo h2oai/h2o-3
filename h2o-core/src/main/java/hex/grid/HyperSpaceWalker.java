@@ -237,7 +237,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     
     private Map<String, Object[]>[] extractSubspaces() {
       if(!_hyperParams.containsKey(SUBSPACES)) { return new Map[0]; }
-      return Stream.of(_hyperParams.get(SUBSPACES)).toArray(Map[]::new);
+      return (Map<String, Object[]>[])_hyperParams.get(SUBSPACES);
     }
     
     private String[] extractSubspaceNames() {
