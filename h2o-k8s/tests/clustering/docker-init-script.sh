@@ -2,6 +2,10 @@
 
 pwd
 export H2O_BASE=$(pwd)
+if [[ $string == *"@"* ]]; then
+  echo "H2O base path contains at sign. Unable to create K3S cluster."
+  exit 1
+fi
 cd $H2O_BASE/h2o-k8s/tests/clustering/
 k3d --version
 k3d delete
