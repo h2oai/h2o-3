@@ -6,7 +6,6 @@ import hex.ModelParametersBuilderFactory;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
-import static hex.grid.HyperSpaceWalker.BaseWalker.SUBSPACES;
 import hex.schemas.*;
 import water.H2O;
 import water.Job;
@@ -38,7 +37,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     S extends GridSearchSchema<G, S, MP, P>,
     MP extends Model.Parameters,
     P extends ModelParametersSchemaV3> extends Handler {
-    
+
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   // TODO: why does this do its own params filling?
   // TODO: why does this do its own sub-dispatch?
@@ -132,29 +131,24 @@ public class GridSearchHandler<G extends Grid<MP>,
    */
   protected void validateHyperParams(P params, Map<String, Object[]> hyperParams) {
     List<SchemaMetadata.FieldMetadata> fsMeta = SchemaMetadata.getFieldMetadata(params);
-    Set<String> allKeys = new HashSet<>(hyperParams.keySet());
-    allKeys.remove(SUBSPACES);
-    for (String hparam : allKeys) {
+    for (Map.Entry<String, Object[]> hparam : hyperParams.entrySet()) {
       SchemaMetadata.FieldMetadata fieldMetadata = null;
       // Found corresponding metadata about the field
       for (SchemaMetadata.FieldMetadata fm : fsMeta) {
-        if (fm.name.equals(hparam)) {
+        if (fm.name.equals(hparam.getKey())) {
           fieldMetadata = fm;
           break;
         }
       }
       if (fieldMetadata == null) {
-        throw new H2OIllegalArgumentException(hparam, "grid",
+        throw new H2OIllegalArgumentException(hparam.getKey(), "grid",
                                               "Unknown hyper parameter for grid search!");
       }
       if (!fieldMetadata.is_gridable) {
-        throw new H2OIllegalArgumentException(hparam, "grid",
+        throw new H2OIllegalArgumentException(hparam.getKey(), "grid",
                                               "Illegal hyper parameter for grid search! The parameter '"
                                               + fieldMetadata.name + " is not gridable!");
       }
-    }
-    if(hyperParams.get(SUBSPACES) != null) {
-      Arrays.stream(hyperParams.get(SUBSPACES)).forEach(subspace -> validateHyperParams(params, (Map<String, Object[]>) subspace));
     }
   }
 

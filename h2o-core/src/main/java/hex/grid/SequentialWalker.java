@@ -45,11 +45,6 @@ public class SequentialWalker<MP extends Model.Parameters> implements HyperSpace
     }
 
     @Override
-    public String[] getAllHyperParamNamesInSubspaces() {
-        return null;
-    }
-
-    @Override
     public long getMaxHyperSpaceSize() {
         return _hyperParams.length;
     }
