@@ -409,14 +409,21 @@ def test_max_runtime_secs_can_be_set_in_combination_with_max_models_and_max_mode
 
 def test_max_runtime_secs_can_be_set_in_combination_with_max_models_and_max_runtime_wins():
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_all_stopping_constraints", seed=1, max_models=20, max_runtime_secs=12)
+    aml_probe = H2OAutoML(project_name="py_all_stopping_constraints_probe",
+                          max_models=5,
+                          seed=1, exclude_algos=["XGBoost", "StackedEnsemble"])
+    aml_probe.train(y=ds['target'], training_frame=ds['train'])
+    probe_duration = int(aml_probe.training_info['duration_secs'])
+
+    aml = H2OAutoML(project_name="py_all_stopping_constraints",
+                    max_models=20, max_runtime_secs=probe_duration,
+                    seed=1, exclude_algos=["XGBoost", "StackedEnsemble"])
     aml.train(y=ds['target'], training_frame=ds['train'])
-    max_runtime = aml._build_resp['build_control']['stopping_criteria']['max_runtime_secs']
-    max_models = aml._build_resp['build_control']['stopping_criteria']['max_models']
-    assert max_runtime == 12
-    assert max_models == 20
+
+    assert aml._build_resp['build_control']['stopping_criteria']['max_runtime_secs'] == probe_duration
+    assert aml._build_resp['build_control']['stopping_criteria']['max_models'] == 20
     assert aml.leaderboard.nrows < 20
-    assert int(aml.training_info['duration_secs']) < 2*max_runtime  # being generous to avoid errors on slow Jenkins
+    assert int(aml.training_info['duration_secs']) < 2*probe_duration  # being generous to avoid errors on slow Jenkins
 
 
 def test_default_max_runtime_if_no_max_models_provided():
