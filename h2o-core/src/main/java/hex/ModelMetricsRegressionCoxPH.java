@@ -12,15 +12,24 @@ import java.util.stream.Collectors;
 public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
 
   private double _concordance;
+  private long _concordant;
+  private long _discordant;
+  private long _tied_y;
 
   public double concordance() { return _concordance; }
+  public long concordant() { return _concordant; }
+  public long discordant() { return _discordant; }
+  public long tiedY() { return _tied_y; }
 
   public ModelMetricsRegressionCoxPH(Model model, Frame frame, long nobs, double mse, double sigma, double mae,
                                      double rmsle, double meanResidualDeviance, CustomMetric customMetric,
-                                     double concordance) {
+                                     double concordance, long concordant, long discordant, long tied_y) {
     super(model, frame, nobs, mse, sigma, mae, rmsle, meanResidualDeviance, customMetric);
     
     this._concordance = concordance;
+    this._concordant = concordant;
+    this._discordant = discordant;
+    this._tied_y = tied_y;
   }
 
   public static ModelMetricsRegressionCoxPH getFromDKV(Model model, Frame frame) {
@@ -44,6 +53,10 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
       sb.append(" concordance: N/A\n");
     }
     
+    sb.append(" concordant: " + _concordant + "\n");
+    sb.append(" discordant: " + _discordant + "\n");
+    sb.append(" tied.y: " + _tied_y + "\n");
+
     return sb.toString();
   }
 
@@ -64,18 +77,18 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
     public ModelMetricsRegressionCoxPH makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
       final ModelMetricsRegression modelMetricsRegression = super.computeModelMetrics(m, f, adaptedFrame, preds);
-      final double concordance = concordance(m, f, adaptedFrame, preds);
+      final Stats stats = concordance(m, f, adaptedFrame, preds);
       
       ModelMetricsRegressionCoxPH mm = new ModelMetricsRegressionCoxPH(m, f, _count, modelMetricsRegression.mse(),
               weightedSigma(), modelMetricsRegression.mae() , modelMetricsRegression.rmsle(), modelMetricsRegression.mean_residual_deviance(),
-              _customMetric, concordance);
+              _customMetric, stats.c(), stats.nconcordant, stats.discordant(), stats.nties);
 
 
       if (m!=null) m.addModelMetrics(mm);
       return mm;
     }
 
-    private double concordance(Model m, Frame fr, Frame adaptFrm, Frame scored) {
+    private Stats concordance(Model m, Frame fr, Frame adaptFrm, Frame scored) {
       final Vec startVec = adaptFrm.vec(startVecName);
       final Vec stopVec = adaptFrm.vec(stopVecName);
       final Vec statusVec = adaptFrm.lastVec();
@@ -124,9 +137,13 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
       double c() {
         return (nconcordant + 0.5d * nties) / ntotals;
       }
+      
+      long discordant() {
+        return ntotals - nconcordant - nties;
+      }
     }
     
-    static double concordance(final Vec startVec, final Vec stopVec, final Vec eventVec, List<Vec> strataVecs, final Vec estimateVec) {
+    static Stats concordance(final Vec startVec, final Vec stopVec, final Vec eventVec, List<Vec> strataVecs, final Vec estimateVec) {
       final long length = estimateVec.length();
 
       final Stats stats = concordanceStats(null == startVec ? null : startVec.new Reader(), 
@@ -134,7 +151,7 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
               strataVecs.stream().map(it -> it.new Reader()).collect(Collectors.toList()),
               estimateVec.new Reader(), length);
 
-      return stats.c();
+      return stats;
     }
 
     private static Stats concordanceStats(Vec.Reader startVec, Vec.Reader stopVec, Vec.Reader eventVec, List<Vec.Reader> strataVecs, Vec.Reader estimateVec, long length) {

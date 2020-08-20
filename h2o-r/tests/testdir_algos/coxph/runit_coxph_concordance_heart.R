@@ -21,10 +21,17 @@ test.CoxPH.predict <- function() {
     }
     
     check.concordance <- function (rModel, hexModel, data) {
-        rConcordance <- unname(summary(rModel)$concordance)[1]
         perf <- h2o.performance(hexModel, data=heart.hex)
+        
+    	rConcordance <- unname(summary(rModel)$concordance)[1]
         hexConcordance <- perf@metrics$concordance
         expect_equal(rConcordance, hexConcordance, tolerance = 1e-5)
+        
+        hexConcordantCount <- perf@metrics$concordant
+        hexDiscordantCount <- perf@metrics$discordant
+        hexTiedCount <- perf@metrics$tiedY
+        
+        expect_equal(hexConcordance, (hexConcordantCount + 0.5 * hexTiedCount) / (hexConcordantCount + hexDiscordantCount + hexTiedCount))
     }
 
     #heart.hex <- h2o.importFile(locate("smalldata/coxph_test/heart.csv"))
