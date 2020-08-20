@@ -22,16 +22,17 @@ public class ShuffleVec {
     public static class ShuffleTask extends MRTask<ShuffleTask> {
 
         @Override
-        public void map(Chunk ic, Chunk oc) {
-            if (ic._len == 0) return;
-
+        public void map(Chunk[] cs, NewChunk [] ncs) { //consider NewChunk oc
             Random rand = new Random();
             long rseed = rand.nextLong();
             Random rng = getRNG(rseed);
-            for (int row = 1; row < ic._len; row++) {
-                int j = rng.nextInt(row + 1); // inclusive upper bound <0,row>
-                if (j != row) oc.set(row, oc.atd(j));
-                oc.set(j, ic.atd(row));
+            for (int col = 0; col < cs.length; ++col) {
+                Chunk curr_col = cs[col];
+                for (int row = 0; row < curr_col._len - 2; row++) {
+                    int j = row + rng.nextInt(curr_col._len - row);
+                    if (j != row) ncs[col].set(row, ncs[col].atd(j));
+                    cs[col].set(j, ncs[col].atd(row));
+                }
             }
         }
 
