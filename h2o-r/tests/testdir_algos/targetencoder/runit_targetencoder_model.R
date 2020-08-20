@@ -60,8 +60,13 @@ test.model.targetencoder <- function() {
         encoded_train_with_transform_2 <- h2o.transform(target_encoder, data, as_training=TRUE, noise=0.01)
         encoded_train_with_transform_3 <- h2o.transform(target_encoder, data, as_training=TRUE, noise=0.02)
 
-        compareFrames(encoded_train_with_transform_1, encoded_train_with_transform_2)
-        expect_failure(compareFrames(encoded_train_with_transform_1, encoded_train_with_transform_3))
+        compareFrames(encoded_train_with_transform_1["embarked_te"], encoded_train_with_transform_2["embarked_te"])
+        tryCatch({
+            compareFrames(encoded_train_with_transform_1["embarked_te"], encoded_train_with_transform_3["embarked_te"])
+            stop("should have failed")
+        }, error=function(e) { 
+            expect(grepl("Error at row", e$message, fixed=TRUE), paste("unexpected error message", e$message))
+        })
     }
 
     makeSuite(

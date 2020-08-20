@@ -231,18 +231,6 @@ public final class SchemaMetadata extends Iced {
               || clz.equals(Double.TYPE))
         return clz.toString();
 
-      // use the same representation for wrapper classes as for their primitive.
-      // The only benefit of wrapper classes is that they allow null value (i.e not provided by user).
-      if (clz.equals(Boolean.class)
-              || clz.equals(Byte.class)
-              || clz.equals(Short.class)
-              || clz.equals(Integer.class)
-              || clz.equals(Long.class)
-              || clz.equals(Float.class)
-              || clz.equals(Double.class)) {
-        return clz.getSimpleName();
-      }
-
       if (is_array)
         return consType(schema, clz.getComponentType(), field_name, annotation) + "[]";
 
