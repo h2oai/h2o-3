@@ -63,9 +63,28 @@ public class CoxPHModelTest extends TestUtil {
             final Vec status = Scope.track(Vec.makeVec(new double[] {1d, 1d, 1d, 1d, 1d, 1d, 1d}, Vec.newKey()));
             final Vec estimates = Scope.track(Vec.makeVec(new double[] {6d, 5d, 4d, 3d, 2d, 0d, 1d}, Vec.newKey()));
             
-            final double c = concordance(starts, stops, status, Collections.emptyList(), estimates);
+            final double c = concordance(starts, stops, status, Collections.emptyList(), estimates).c();
             
             final double pairCount = starts.length() * (starts.length() - 1) / 2d;
+            assertEquals((pairCount - 1) / pairCount, c, 0.01);
+        } finally {
+            Scope.exit();
+        }
+    }
+    
+    @Test
+    public void concordanceExampleOneBadEstimateWithStrata() throws Exception {
+        try {
+            Scope.enter();
+            final Vec starts = Scope.track(Vec.makeVec(new double[] {0d, 0d, 0d, 0d, 0d, 0d, 0d}, Vec.newKey()));
+            final Vec stops = Scope.track(Vec.makeVec(new double[] {0d, 1d, 2d, 3d, 4d, 5d, 6d}, Vec.newKey()));
+            final Vec status = Scope.track(Vec.makeVec(new double[] {1d, 1d, 1d, 1d, 1d, 1d, 1d}, Vec.newKey()));
+            final Vec estimates = Scope.track(Vec.makeVec(new double[] {6d, 5d, 4d, 3d, 2d, 0d, 1d}, Vec.newKey()));
+            final Vec strata = Scope.track(Vec.makeVec(new long[] {1L, 1L, 1L, 1L, 0L, 0L, 0L}, new String[] {"00", "11"}, Vec.newKey()));
+            
+            final double c = concordance(starts, stops, status, Collections.singletonList(strata), estimates).c();
+            
+            final double pairCount = 4 * (4 - 1) / 2 + 3 * (3 - 1) / 2;
             assertEquals((pairCount - 1) / pairCount, c, 0.01);
         } finally {
             Scope.exit();
@@ -81,7 +100,7 @@ public class CoxPHModelTest extends TestUtil {
             final Vec status = Scope.track(Vec.makeVec(new double[] {1d, 1d, 1d, 1d, 1d, 1d, 1d}, Vec.newKey()));
             final Vec estimates = Scope.track(Vec.makeVec(new double[] {6d, 5d, 4d, 3d, 0d, 1d, 2d}, Vec.newKey()));
 
-            final double c = concordance(starts, stops, status, Collections.emptyList(), estimates);
+            final double c = concordance(starts, stops, status, Collections.emptyList(), estimates).c();
 
             final double pairCount = stops.length() * (stops.length() - 1) / 2d;
             assertEquals((pairCount - 3) / pairCount, c, 0.01);
@@ -99,7 +118,7 @@ public class CoxPHModelTest extends TestUtil {
             final Vec status = Scope.track(Vec.makeVec(new double[] {1d, 1d, 1d, 1d, 1d, 1d, 1d}, Vec.newKey()));
             final Vec estimates = Scope.track(Vec.makeVec(new double[] {6d, 5d, 4d, 3d, 2d, 2d, 0d}, Vec.newKey()));
 
-            final double c = concordance(starts, stops, status, Collections.emptyList(), estimates);
+            final double c = concordance(starts, stops, status, Collections.emptyList(), estimates).c();
 
             final double pairCount = stops.length() * (stops.length() - 1) / 2d;
             assertEquals((pairCount - 0.5) / pairCount, c, 0.01);
@@ -117,7 +136,7 @@ public class CoxPHModelTest extends TestUtil {
             final Vec status = Scope.track(Vec.makeVec(new double[] {1d, 1d, 1d, 1d, 1d, 1d, 1d}, Vec.newKey()));
             final Vec estimates = Scope.track(Vec.makeVec(new double[] {6d, 5d, 4d, 3d, 2d, 2d, 0d}, Vec.newKey()));
 
-            final double c = concordance(starts, stops, status, Collections.emptyList(), estimates);
+            final double c = concordance(starts, stops, status, Collections.emptyList(), estimates).c();
 
             final double pairCount = stops.length() * (stops.length() - 1) / 2d;
             assertEquals((pairCount - 0.5) / pairCount, c, 0.01);
@@ -146,7 +165,7 @@ public class CoxPHModelTest extends TestUtil {
 
             final Vec estimates = prepareEstimates(estimateTask, times);
 
-            final double c = concordance(starts, times, status, Collections.emptyList(), estimates);
+            final double c = concordance(starts, times, status, Collections.emptyList(), estimates).c();
 
             assertEquals(expected, c, delta);
         } finally {

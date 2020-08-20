@@ -7,7 +7,11 @@ import water.fvec.Vec;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.*;
 
 public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
 
@@ -96,7 +100,7 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
 
       final List<Vec> strataVecs =
               isStratified ?
-                      Arrays.asList(stratifyBy).stream().map(s -> fr.vec(s) ).collect(Collectors.toList()) :
+                      Arrays.asList(stratifyBy).stream().map(s -> fr.vec(s) ).collect(toList()) :
                       Collections.emptyList();
      
       return concordance(startVec, stopVec, statusVec, strataVecs, estimateVec);
@@ -118,20 +122,21 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
       return false;
     }
 
-    static private class Stats {
+    static class Stats {
       final long ntotals;
       final long nNotNaN;
       final long nconcordant;
       final long nties;
 
-      final long totals;
+      Stats() {
+        this(0, 0, 0, 0);
+      }
 
-      public Stats(long ntotals, long nNotNaN, long nconcordant, long nties, long totals) {
+      Stats(long ntotals, long nNotNaN, long nconcordant, long nties) {
         this.ntotals = ntotals;
         this.nNotNaN = nNotNaN;
         this.nconcordant = nconcordant;
         this.nties = nties;
-        this.totals = totals;
       }
 
       double c() {
@@ -141,6 +146,10 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
       long discordant() {
         return ntotals - nconcordant - nties;
       }
+
+      Stats plus(Stats s2) {
+        return new Stats(ntotals + s2.ntotals, nNotNaN + s2.nNotNaN, nconcordant + s2.nconcordant, nties + s2.nties);
+      }
     }
     
     static Stats concordance(final Vec startVec, final Vec stopVec, final Vec eventVec, List<Vec> strataVecs, final Vec estimateVec) {
@@ -148,22 +157,35 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
 
       final Stats stats = concordanceStats(null == startVec ? null : startVec.new Reader(), 
               stopVec.new Reader(), eventVec.new Reader(),
-              strataVecs.stream().map(it -> it.new Reader()).collect(Collectors.toList()),
+              strataVecs.stream().map(it -> it.new Reader()).collect(toList()),
               estimateVec.new Reader(), length);
 
       return stats;
     }
 
     private static Stats concordanceStats(Vec.Reader startVec, Vec.Reader stopVec, Vec.Reader eventVec, List<Vec.Reader> strataVecs, Vec.Reader estimateVec, long length) {
+      Stream<Integer> allIndexes = IntStream.range(0, (int) length).boxed();
+
+      Map<List<Long>, List<Integer>> byStrata = allIndexes.collect(groupingBy(
+              i -> strataVecs.stream()
+                      .map(v -> v.at8(i))
+                      .collect(toList())
+      ));
+
+      return byStrata.values().stream().map(
+        indexes -> statsForAStrata(startVec, stopVec, eventVec, strataVecs, estimateVec, length, indexes)
+      ).reduce(new Stats(), Stats::plus);
+    }
+
+    private static Stats statsForAStrata(Vec.Reader startVec, Vec.Reader stopVec, Vec.Reader eventVec, List<Vec.Reader> strataVecs, Vec.Reader estimateVec, long length, List<Integer> indexes) {
       long ntotals = 0;
       long nNotNaN = 0;
       long nconcordant = 0;
       long nties = 0;
-      
-      long totals = 0;
-      
-      for (long i = 0; i < length; i++) {
-        for (long j = i+1; j < length; j++) {
+
+      for (final int i : indexes) {
+        for (final int j : indexes) {
+          if (j <= i) { continue; }
 
           final double t1 = stopVec.at(i) - ((startVec != null) ? startVec.at(i) : 0d);
           final double t2 = stopVec.at(j) - ((startVec != null) ? startVec.at(j) : 0d);
@@ -173,17 +195,12 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
           final double estimate1 = estimateVec.at(i);
           final double estimate2 = estimateVec.at(j);
 
-          final long fi = i;
-          final long fj = j;
-
-          boolean sameStrata = strataVecs.stream().allMatch(
-                  v -> v.at8(fi) == v.at(fj)
+          strataVecs.stream().forEach(
+             v -> { assert v.at8(i) == v.at(j); }
           );
 
           boolean censored1 = 0 == event1;
           boolean censored2 = 0 == event2;
-
-          totals++;
 
           if (!Double.isNaN(t1) && !Double.isNaN(t2) && !Double.isNaN(estimate1) && !Double.isNaN(estimate2)) {
             nNotNaN++;
@@ -191,7 +208,7 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
             continue;
           }
 
-          if (sameStrata && isValidComparison(t1, t2, !censored1, !censored2)) {
+          if (isValidComparison(t1, t2, !censored1, !censored2)) {
             ntotals++;
             if (estimate1 == estimate2) {
               nties++;
@@ -208,11 +225,7 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
         }
       }
 
-      assert nNotNaN <= totals;
-      assert ntotals <= totals;
-      assert nconcordant <= totals;
-      
-      return new Stats(ntotals, nNotNaN, nconcordant, nties, totals);
+      return new Stats(ntotals, nNotNaN, nconcordant, nties);
     }
   }
 }
