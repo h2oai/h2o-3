@@ -46,8 +46,10 @@ public class PredictCsv {
     try {
       main.run();
     } catch (Exception e) {
+      System.out.println("Predict error: " + e.getMessage());
+      System.out.println();
       e.printStackTrace();
-      System.exit(2);
+      System.exit(1);
     }
     // Predictions were successfully generated.
     System.exit(0);
@@ -275,6 +277,17 @@ public class PredictCsv {
             break;
           }
 
+          case AnomalyDetection: {
+            AnomalyDetectionPrediction p = model.predictAnomalyDetection(row);
+            double[] rawPreds = p.toPreds();
+            for (int i = 0; i < rawPreds.length - 1; i++) {
+              output.write(myDoubleToString(rawPreds[i]));
+              output.write(',');
+            }
+            output.write(myDoubleToString(rawPreds[rawPreds.length - 1]));
+            break;
+          }
+
           default:
             throw new Exception("Unknown model category " + category);
         }
@@ -284,10 +297,7 @@ public class PredictCsv {
       }
     }
     catch (Exception e) {
-      System.out.println("Caught exception on line " + lineNum);
-      System.out.println();
-      e.printStackTrace();
-      System.exit(1);
+      throw new Exception("Prediction failed on line " + lineNum, e);
     } finally {
       // Clean up.
       output.close();
