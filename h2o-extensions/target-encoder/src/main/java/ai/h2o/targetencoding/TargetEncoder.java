@@ -42,10 +42,6 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
       if (_parms._data_leakage_handling == DataLeakageHandlingStrategy.KFold && _parms._fold_column == null)
         error("_fold_column", "Fold column is required when using KFold leakage handling strategy.");
 
-      Vec targetVec = train().vec(_parms._response_column);
-      if (targetVec.cardinality() > 2)
-        error("_response_column", "`target` must be binary. Target encoding does not support multi-class target yet.");
-      
       final List<String> colsToIgnore = Arrays.asList(
               _parms._response_column, 
               _parms._fold_column,
@@ -124,6 +120,7 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
       try {
         int targetIdx = train().find(_parms._response_column);
         int foldColIdx = _parms._fold_column == null ? -1 : train().find(_parms._fold_column);
+        
         //TODO Loosing data here, we should use clustering to assign instances with some reasonable target values.
         workingFrame = filterOutNAsFromTargetColumn(train(), targetIdx);
 
@@ -132,7 +129,7 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
         for (String columnToEncode : _columnsToEncode) { // TODO: parallelize
           int colIdx = workingFrame.find(columnToEncode);
           imputeCategoricalColumn(workingFrame, colIdx, columnToEncode + NA_POSTFIX);
-          Frame encodingsFrame = buildEncodingsFrame(workingFrame, colIdx, targetIdx, foldColIdx);
+          Frame encodingsFrame = buildEncodingsFrame(workingFrame, colIdx, targetIdx, foldColIdx, nclasses());
 
           Frame finalEncodingsFrame = applyLeakageStrategyToEncodings(
                   encodingsFrame, 
