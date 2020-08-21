@@ -114,7 +114,7 @@ public class AstTfIdf extends AstPrimitive<AstTfIdf> {
             } else {
                 String[] columnsNames = ArrayUtils.select(inputFrame.names(), new int[]{ docIdIdx, contentIdx });
                 wordFrame = inputFrame.subframe(columnsNames);
-                String countDocumentsRapid = "(unique (cols " + asts[1].toString() + " [" + docIdIdx + "]))";
+                String countDocumentsRapid = "(unique (cols " + asts[1].toString() + " [" + docIdIdx + "]) false)";
                 documentsCnt = Rapids.exec(countDocumentsRapid).getFrame().anyVec().length();
             }
             Scope.track(wordFrame);

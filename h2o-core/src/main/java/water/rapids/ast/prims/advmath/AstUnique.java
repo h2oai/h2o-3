@@ -11,6 +11,7 @@ import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.rapids.vals.ValFrame;
+import water.util.VecUtils;
 
 public class AstUnique extends AstPrimitive {
   @Override
@@ -20,7 +21,7 @@ public class AstUnique extends AstPrimitive {
 
   @Override
   public int nargs() {
-    return 1 + 1;
+    return 2 + 1;
   }  // (unique col)
 
   @Override
@@ -30,17 +31,25 @@ public class AstUnique extends AstPrimitive {
 
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    return new ValFrame(uniqueValuesBy(fr,0));
+    final Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    final boolean includeNAs = asts[2].exec(env).getBool();
+    return new ValFrame(uniqueValuesBy(fr,0, includeNAs));
   }
 
   /** return a frame with unique values from the specified column */
-  public static Frame uniqueValuesBy(Frame fr, int columnIndex) {
+  public static Frame uniqueValuesBy(final Frame fr, final int columnIndex, final boolean includeNAs) {
     Vec vec0 = fr.vec(columnIndex);
     Vec v;
     if (vec0.isCategorical()) {
-      v = Vec.makeSeq(0, (long) vec0.domain().length, true);
-      v.setDomain(vec0.domain());
+      // Vector domain might contain levels not actually present in the vector - collection of actual values is required.
+      final String[] actualVecDomain = VecUtils.collectDomainFast(vec0);
+      final boolean contributeNAs = vec0.naCnt() > 0 && includeNAs;
+      final long uniqueVecLength = contributeNAs ? actualVecDomain.length + 1 : actualVecDomain.length;
+      v = Vec.makeSeq(0, uniqueVecLength, true);
+      if(contributeNAs) {
+        v.setNA(uniqueVecLength - 1);
+      }
+      v.setDomain(actualVecDomain);
       DKV.put(v);
     } else {
       UniqTask t = new UniqTask().doAll(vec0);

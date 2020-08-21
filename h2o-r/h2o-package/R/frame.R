@@ -789,6 +789,7 @@ table.H2OFrame <- h2o.table
 #' Extract unique values in the column.
 #'
 #' @param x An H2OFrame object.
+#' @param include_nas If set to TRUE, NAs are included. FALSE (turned off) by default.
 #' @return Returns an H2OFrame object.
 #' @examples 
 #' \dontrun{
@@ -800,7 +801,9 @@ table.H2OFrame <- h2o.table
 #' h2o.unique(iris["class"])
 #' }
 #' @export
-h2o.unique <- function(x) .newExpr("unique", x)
+h2o.unique <- function(x, include_nas=FALSE){
+  .newExpr("unique", x, include_nas)
+}
 
 #' Cut H2O Numeric Data to Factor
 #'
