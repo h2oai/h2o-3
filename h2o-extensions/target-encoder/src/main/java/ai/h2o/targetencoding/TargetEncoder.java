@@ -137,7 +137,7 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
                   _parms._data_leakage_handling, 
                   _parms._fold_column
           );
-          DKV.remove(encodingsFrame._key);
+          encodingsFrame.delete();
           encodingsFrame = finalEncodingsFrame;
 
           columnToEncodings.put(columnToEncode, encodingsFrame);
