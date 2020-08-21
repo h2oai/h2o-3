@@ -15,6 +15,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static ai.h2o.targetencoding.TargetEncoderHelper.*;
+
 public class TargetEncoderMojoWriter extends ModelMojoWriter {
 
   @SuppressWarnings("unused")  // Called through reflection in ModelBuildersHandler
@@ -79,7 +81,10 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
       EncodingMap encodings = columnEncodingsMap.getValue();
       for (Map.Entry<Integer, double[]> catLevelInfo : encodings.entrySet()) {
         double[] numDen = catLevelInfo.getValue();
-        writelnkv(catLevelInfo.getKey().toString(), numDen[0] + " " + numDen[1]);
+        if (numDen.length == 2)  //binary+regression
+          writelnkv(catLevelInfo.getKey().toString(), numDen[0] + " " + numDen[1]);
+        else //multinomial
+          writelnkv(catLevelInfo.getKey().toString(), numDen[0] + " " + numDen[1] + " " + numDen[2]);
       }
     }
     finishWritingTextFile();
@@ -139,7 +144,11 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
     Map<Integer, double[]> tableGenModelFormat = new HashMap<>();
     for (Map.Entry<String, EncodingsComponents> entry : encodingMap.entrySet()) {
       EncodingsComponents value = entry.getValue();
-      tableGenModelFormat.put(Integer.parseInt(entry.getKey()), new double[] {value.getNumerator(), value.getDenominator()});
+      
+      double[] components = value.hasTargetClass()
+              ? new double[] {value.getNumerator(), value.getDenominator(), value.getTargetClass()}
+              : new double[] {value.getNumerator(), value.getDenominator()};
+      tableGenModelFormat.put(Integer.parseInt(entry.getKey()), components);
     }
     convertedEncodingMap.put(teColumn, new EncodingMap(tableGenModelFormat));
   }
@@ -161,14 +170,18 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
     public void map(Chunk[] cs) {
       Chunk categoricalChunk = cs[0];
       int numRowsInChunk = categoricalChunk._len;
+      int numIdx = _fr.find(NUMERATOR_COL);
+      int denIdx = _fr.find(DENOMINATOR_COL);
+      int classIdx = _fr.find(CLASS_COL);
       // Note: we don't store fold column as we need only to be able to give predictions for data which is not encoded yet. 
       // We need folds only for the case when we applying TE to the frame which we are going to train our model on. 
       // But this is done once and then we don't need them anymore.
       for (int i = 0; i < numRowsInChunk; i++) {
-        double num = cs[1].atd(i);
-        long den = cs[2].at8(i);
+        double num = cs[numIdx].atd(i);
+        long den = cs[denIdx].at8(i);
+        int cls = classIdx < 0 ? -1 : (int)cs[classIdx].at8(i);
         int factor = (int) categoricalChunk.at8(i);
-        _table.put(Integer.toString(factor), new EncodingsComponents(num, den));
+        _table.put(Integer.toString(factor), cls < 0 ? new EncodingsComponents(num, den) : new EncodingsComponents(cls, num, den));
       }
     }
 

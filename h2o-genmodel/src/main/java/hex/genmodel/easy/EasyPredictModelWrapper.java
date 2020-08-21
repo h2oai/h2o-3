@@ -661,7 +661,9 @@ public class EasyPredictModelWrapper implements Serializable {
     TargetEncoderMojoModel tem = (TargetEncoderMojoModel) this.m;
     Set<String> teColumnNames = tem._columnNameToIdx.keySet();
 
-    double[] preds = new double[teColumnNames.size()];
+    double[] preds = tem.nclasses() > 2
+            ? new double[teColumnNames.size()*tem.nclasses()] 
+            : new double[teColumnNames.size()];
 
     TargetEncoderPrediction prediction = new TargetEncoderPrediction();
     prediction.transformations = predict(data, 0, preds);
