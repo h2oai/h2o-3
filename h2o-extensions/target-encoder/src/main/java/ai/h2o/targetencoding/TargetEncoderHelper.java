@@ -139,7 +139,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
       }
 
       Scope.untrack(result);
-      return register(result);
+      return result;
     } finally {
       Scope.exit();
     }
