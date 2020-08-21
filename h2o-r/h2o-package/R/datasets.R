@@ -1,7 +1,7 @@
 #' Australia Coastal Data
 #' 
 #' Temperature, soil moisture, runoff, and other environmental measurements from
-#' the Australia coast. The data is available from \url{http://cs.colby.edu/courses/S11/cs251/labs/lab07/AustraliaSubset.csv}.
+#' the Australia coast. The data is available from \url{https://cs.colby.edu/courses/S11/cs251/labs/lab07/AustraliaSubset.csv}.
 #' 
 #' @docType data
 #' @keywords datasets
