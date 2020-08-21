@@ -3,6 +3,7 @@ package hex.grid;
 import hex.*;
 import water.*;
 import water.api.schemas3.KeyV3;
+import water.exceptions.H2OConcurrentModificationException;
 import water.fvec.Frame;
 import water.persist.Persist;
 import water.util.*;
@@ -23,7 +24,7 @@ import java.util.Objects;
  *
  * @param <MP> type of model build parameters
  */
-public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
+public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implements ModelContainer<Model> {
 
   /**
    * Publicly available Grid prototype - used by REST API.
@@ -104,7 +105,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
       String[] nm = Arrays.copyOf(m, m.length + 1);
       nm[m.length] = failureDetails;
       _failure_details = nm;
-      // Append raw parames
+      // Append raw params
       String[][] rp = _failed_raw_params;
       String[][] nrp = Arrays.copyOf(rp, rp.length + 1);
       nrp[rp.length] = rawParams;
@@ -265,8 +266,9 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * @params stackTrace  stringify stacktrace
    */
   private void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final String[] rawParams,
-                                           final String failureDetails, final String stackTrace) {
-      
+                                           final Throwable t) {
+      final String failureDetails = isJobCanceled(t) ? "Job Canceled" : t.getMessage();
+      final String stackTrace = StringUtils.toString(t);
       final Key<Model> searchedKey = modelKey != null ? modelKey : NO_MODEL_FAILURES_KEY;
       SearchFailure searchFailure = _failures.get(searchedKey);
       if ((searchFailure == null)) {
@@ -274,6 +276,15 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
           _failures.put(searchedKey, searchFailure);
       }
       searchFailure.appendFailedModelParameters(params, rawParams, failureDetails, stackTrace);
+  }
+
+  private static boolean isJobCanceled(final Throwable t) {
+    for (Throwable ex = t; ex != null; ex = ex.getCause()) {
+      if (ex instanceof Job.JobCancelledException) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -287,10 +298,10 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * @param params model parameters which caused model builder failure
    * @params e  exception causing a failure
    */
-  void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final Exception e) {
+  void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final Throwable t) {
     assert params != null : "Model parameters should be always != null !";
     String[] rawParams = ArrayUtils.toString(getHyperValues(params));
-      appendFailedModelParameters(modelKey, params, rawParams, e.getMessage(), StringUtils.toString(e));
+    appendFailedModelParameters(modelKey, params, rawParams, t);
   }
 
   /**
@@ -304,20 +315,21 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * @param rawParams list of "raw" hyper values which caused a failure to prepare model parameters
    * @params e exception causing a failure
    */
-  /* package */ void appendFailedModelParameters(final Key<Model> modelKey, final Object[] rawParams,
-                                                 final Exception e) {
+  void appendFailedModelParameters(final Key<Model> modelKey, final Object[] rawParams, final Exception e) {
     assert rawParams != null : "Raw parameters should be always != null !";
-      appendFailedModelParameters(modelKey, null, ArrayUtils.toString(rawParams), e.getMessage(),
-              StringUtils.toString(e));
+    appendFailedModelParameters(modelKey, null, ArrayUtils.toString(rawParams), e);
   }
 
   /**
    * Returns keys of all models included in this object.
    *
-   * @return list of model keys
+   * @return list of model keys sorted lexically
    */
+  @Override
   public Key<Model>[] getModelKeys() {
-    return _models.values().toArray(new Key[_models.size()]);
+    Key<Model>[] keys = _models.values().toArray(new Key[_models.size()]);
+    Arrays.sort(keys);
+    return keys;
   }
 
   /**
@@ -325,6 +337,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    *
    * @return all models in this grid
    */
+  @Override
   public Model[] getModels() {
     Collection<Key<Model>> modelKeys = _models.values();
     Model[] models = new Model[modelKeys.size()];
@@ -339,6 +352,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
   /**
    * Returns number of models in this grid.
    */
+  @Override
   public int getModelCount() {
     return _models.size();
   }

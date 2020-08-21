@@ -118,6 +118,8 @@ public class DataInfo extends Keyed<DataInfo> {
   public int [] _permutation; // permutation matrix mapping input col indices to adaptedFrame
   public double [] _normMul;  // scale the predictor column by this value
   public double [] _normSub;  // subtract from the predictor this value
+  public double [] _normSigmaStandardizationOff;
+  public double [] _normSubStandardizationOff;
   public double [] _normRespMul;  // scale the response column by this value
   public double [] _normRespSub;  // subtract from the response column this value
   public double [] _numMeans;
@@ -298,7 +300,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     _numMeans = new double[numNums()];
     _numNAFill = new double[numNums()];
-    int numIdx=0;
+    int numIdx=0; // index into the _numMeans
     for(int i=0;i<nnums;++i) {
       String name = train.name(nums[i]);
       Vec v = train.vec(nums[i]);
@@ -377,6 +379,28 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     return beta;
   }
+  
+  public double[] normalizeBeta(double [] beta, boolean standardize){
+    int N = fullN()+1;
+    assert (beta.length % N) == 0:"beta len = " + beta.length + " expected multiple of" + N;
+    int nclasses = beta.length/N;
+    beta = MemoryManager.arrayCopyOf(beta,beta.length);
+    if (standardize == false && _predictor_transform == DataInfo.TransformType.NONE && _normSubStandardizationOff != null && _normSigmaStandardizationOff != null) {
+      for(int c = 0; c < nclasses; ++c) {
+        int off = N*c;
+        double norm = 0.0;        // Reverse any normalization on the intercept
+        // denormalize only the numeric coefs (categoricals are not normalized)
+        final int numoff = numStart();
+        for (int i = numoff; i < N-1; i++) {
+          double b = beta[off + i] * _normSigmaStandardizationOff[i - numoff];
+          norm += beta[off + i] * _normSubStandardizationOff[i - numoff]; // Also accumulate the intercept adjustment
+          beta[off + i] = b;
+        }
+        beta[off + N - 1] += norm;
+      }
+    }
+    return beta;
+  }
 
   private int [] _fullCatOffsets;
   private int [][] _catMap;
@@ -446,7 +470,7 @@ public class DataInfo extends Keyed<DataInfo> {
     if(v.isCategorical()) {
       if (useAllFactorLevels) return v.mode();
       long[] bins = v.bins();
-      return ArrayUtils.maxIndex(bins,1);
+      return ArrayUtils.maxIndex(bins,0);
     }
     return (int)Math.round(v.mean());
   }
@@ -454,7 +478,9 @@ public class DataInfo extends Keyed<DataInfo> {
 
   /**
    * Filter the _adaptedFrame so that it contains only the Vecs referenced by the cols
-   * parameter.
+   * parameter.  This is done by recording the ignored columns in array ignoredCols.  The enum columns are 
+   * not expanded and considered as one column.  However, it is possible that a level inside the enum column
+   * can be ignored.  In this case, the enum levels are adjusted accordingly.
    *
    * @param cols Array of the expanded column indices to keep.
    * @return A DataInfo with _activeCols specifying the active columns
@@ -469,7 +495,7 @@ public class DataInfo extends Keyed<DataInfo> {
     //public DataInfo(Frame fr, int hasResponses, boolean useAllFactorLvls, double [] normSub, double [] normMul, double [] normRespSub, double [] normRespMul){
     int [][] catLvls = new int[_cats][];  // categorical levels to keep (used in getCategoricalOffsetId binary search)
     int [][] intLvls = new int[_interactionVecs==null?0:_interactionVecs.length][]; // interactions levels to keep (used in getInteractionOffsetId binary search)
-    int [] ignoredCols = MemoryManager.malloc4(_nums + _cats);  // capital 'v' Vec indices to be frame.remove'd
+    int [] ignoredCols = MemoryManager.malloc4(_nums + _cats);  // capital 'v' Vec indices to be frame.remove'd, one per column not expanded
     // first do categoricals...
     if(_catOffsets != null) {
       int coff = _useAllFactorLevels?0:1;
@@ -502,7 +528,7 @@ public class DataInfo extends Keyed<DataInfo> {
     // now do the interaction vecs -- these happen to always sit first in the "nums" section of _adaptedFrame
     // also, these have the exact same filtering logic as the categoricals above
     int prev=j=0; // reset j for _numOffsets
-    if( _interactionVecs!=null ) {
+    if( _interactionVecs!=null && (_numOffsets.length > intLvls.length) ) { // second condition happens when there are no num columns
       while( i < cols.length && cols[i] < _numOffsets[intLvls.length]) {
         int[] lvls = MemoryManager.malloc4(_numOffsets[j+1] - _numOffsets[j]);
         int k=0; // same as above
@@ -528,6 +554,8 @@ public class DataInfo extends Keyed<DataInfo> {
     // now numerics
     prev=j=_interactionVecs==null?0:_interactionVecs.length;
     for(;i<cols.length;++i){
+      if (j>=_numOffsets.length)  // happens when there are no num, enumxnum, numxnum columns
+        break;
       int numsToIgnore = (cols[i]-_numOffsets[j]);
       for(int k=0;k<numsToIgnore;++k){
         ignoredCols[ignoredCnt++] = _cats+prev++;
@@ -614,6 +642,18 @@ public class DataInfo extends Keyed<DataInfo> {
             normSub[idx] = v.mean();
           }
           break;
+        case NONE:
+          if( isIWV ) {
+            InteractionWrappedVec iwv = (InteractionWrappedVec)v;
+            for(int offset=0;offset<iwv.expandedLength();++offset) {
+                normMul[idx+offset] = iwv.getSigma(offset+(iwv._useAllFactorLevels?0:1));
+                normSub[idx+offset] = iwv.getSub(offset+(iwv._useAllFactorLevels?0:1));
+            }
+          } else {
+            normMul[idx] = v.sigma();
+            normSub[idx] = v.mean();
+          }
+          break;
         case NORMALIZE:
           if( isIWV ) throw H2O.unimpl();
           normMul[idx] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
@@ -649,6 +689,11 @@ public class DataInfo extends Keyed<DataInfo> {
     if(t == TransformType.NONE) {
       _normMul = null;
       _normSub = null;
+      if (_adaptedFrame != null) { 
+        _normSigmaStandardizationOff = MemoryManager.malloc8d(numNums());
+        _normSubStandardizationOff = MemoryManager.malloc8d(numNums());
+        setTransform(t, _normSigmaStandardizationOff, _normSubStandardizationOff, _cats, _nums);
+      }
     } else {
       _normMul = MemoryManager.malloc8d(numNums());
       _normSub = MemoryManager.malloc8d(numNums());
@@ -929,6 +974,25 @@ public class DataInfo extends Keyed<DataInfo> {
 
       return res;
     }
+
+    /***
+     * For HGLM, will perform multiplication of w*data part and not the random columns.
+     * @param w
+     * @param rowContent
+     * @param catOffsets
+     * @return
+     */
+    public double[] scalarProduct(double w, double[] rowContent, int catOffsets) { // multiple a row with scaler w
+      rowContent[0] = w;  // intercept term
+      for (int i = 0; i < nBins; ++i) {
+        rowContent[binIds[i]+1] = w;  // value is absolute
+      }
+
+      for (int i = 0; i < numVals.length; ++i)
+        rowContent[i+catOffsets+1] += numVals[i]*w;
+
+      return rowContent;
+    }
     public final double twoNormSq() {
       assert !_intercept;
       assert numIds == null;
@@ -1017,7 +1081,10 @@ public class DataInfo extends Keyed<DataInfo> {
   public final int getCategoricalId(int cid, int val) {
     boolean isIWV = isInteractionVec(cid);
     if(val == -1) { // NA
-      val = _catNAFill[cid];
+      if (isIWV && !_useAllFactorLevels) 
+        val = _catNAFill[cid]-1; // need to -1 here because no -1 in 6 lines later for isIWV vector
+      else
+        val = _catNAFill[cid];
     }
 
     if (!_useAllFactorLevels && !isIWV) {  // categorical interaction vecs drop reference level in a special way
@@ -1027,7 +1094,7 @@ public class DataInfo extends Keyed<DataInfo> {
     int [] offs = fullCatOffsets();
     int expandedVal = val + offs[cid];
     if(expandedVal >= offs[cid+1]) {  // previously unseen level
-      assert _valid : "Categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid + 1];
+      assert (isIWV && !_useAllFactorLevels) || _valid : "Categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid + 1];
       if(_skipMissing)
         return -1;
       val = _catNAFill[cid];
@@ -1128,9 +1195,20 @@ public class DataInfo extends Keyed<DataInfo> {
   public int getInteractionOffset(Chunk[] chunks, int cid, int rid) {
     boolean useAllFactors = ((InteractionWrappedVec)chunks[cid].vec())._useAllFactorLevels;
     InteractionWrappedVec.InteractionWrappedChunk c = (InteractionWrappedVec.InteractionWrappedChunk)chunks[cid];
-    if(      c._c1IsCat ) return (int)c._c[0].at8(rid)-(useAllFactors?0:1);
-    else if( c._c2IsCat ) return (int)c._c[1].at8(rid)-(useAllFactors?0:1);
-    return 0;
+    if (c._c1IsCat) { // looking at enum by num or num by enum interaction here
+      if (!c._c[0].isNA(rid)) { // todo: add in other NA fill for enum columns
+        return (int)c._c[0].at8(rid)-(useAllFactors?0:1);
+      } else { // NA at c._c[0].at8(rid)
+        return (int)c._c[0].vec().mode()-(useAllFactors?0:1);
+      }
+    } else if (c._c2IsCat) {
+      if (!c._c[1].isNA(rid)) {
+        return (int)c._c[1].at8(rid)-(useAllFactors?0:1);
+      } else {
+        return (int)c._c[1].vec().mode()-(useAllFactors?0:1);
+      }
+    }
+    return 0; // no offset for num by num interaction column
   }
   public Vec getWeightsVec(){return _adaptedFrame.vec(weightChunkId());}
   public Vec getOffsetVec(){return _adaptedFrame.vec(offsetChunkId());}

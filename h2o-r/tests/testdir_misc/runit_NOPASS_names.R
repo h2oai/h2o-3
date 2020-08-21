@@ -14,7 +14,7 @@ test.names <- function() {
   Log.info("Define incorrect column names...")
   new_col  <- c("Column1", "Column2", "Column3", "Column4", "Column1")
   Log.info("Attempt to rename column names...")
-  checkException(names( iris.hex) <- new_col, "Renaming with duplicate column names should throw an error...", silent = T)
+  checkException(names( iris.hex) <- new_col, "Renaming with duplicate column names should throw an error...", silent = TRUE)
   
 }
 

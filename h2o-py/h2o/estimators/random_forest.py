@@ -31,7 +31,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                    "sample_rate", "sample_rate_per_class", "binomial_double_trees", "checkpoint",
                    "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                    "histogram_type", "categorical_encoding", "calibrate_model", "calibration_frame", "distribution",
-                   "custom_metric_func", "export_checkpoints_dir", "check_constant_response"}
+                   "custom_metric_func", "export_checkpoints_dir", "check_constant_response", "gainslift_bins"}
 
     def __init__(self, **kwargs):
         super(H2ORandomForestEstimator, self).__init__()
@@ -59,9 +59,9 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8],
-        ...                                 seed = 1234)
-        >>> cars_drf = H2ORandomForestEstimator(seed = 1234)
+        >>> train, valid = cars.split_frame(ratios=[.8],
+        ...                                 seed=1234)
+        >>> cars_drf = H2ORandomForestEstimator(seed=1234)
         >>> cars_drf.train(x=predictors,
         ...                y=response,
         ...                training_frame=train,
@@ -88,9 +88,9 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8],
-        ...                                 seed = 1234)
-        >>> cars_drf = H2ORandomForestEstimator(seed = 1234)
+        >>> train, valid = cars.split_frame(ratios=[.8],
+        ...                                 seed=1234)
+        >>> cars_drf = H2ORandomForestEstimator(seed=1234)
         >>> cars_drf.train(x=predictors,
         ...                y=response,
         ...                training_frame=train,
@@ -118,8 +118,8 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
         >>> folds = 5
-        >>> cars_drf = H2ORandomForestEstimator(nfolds = folds,
-        ...                                     seed = 1234)
+        >>> cars_drf = H2ORandomForestEstimator(nfolds=folds,
+        ...                                     seed=1234)
         >>> cars_drf.train(x=predictors,
         ...                y=response,
         ...                training_frame=cars)
@@ -146,13 +146,13 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_drf = H2ORandomForestEstimator(keep_cross_validation_models = True,
-        ...                                     nfolds = 5,
-        ...                                     seed = 1234)
-        >>> cars_drf.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_drf = H2ORandomForestEstimator(keep_cross_validation_models=True,
+        ...                                     nfolds=5,
+        ...                                     seed=1234)
+        >>> cars_drf.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train)
         >>> cars_drf.auc()
         """
         return self._parms.get("keep_cross_validation_models")
@@ -176,13 +176,13 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_drf = H2ORandomForestEstimator(keep_cross_validation_predictions = True,
-        ...                                     nfolds = 5,
-        ...                                     seed = 1234)
-        >>> cars_drf.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_drf = H2ORandomForestEstimator(keep_cross_validation_predictions=True,
+        ...                                     nfolds=5,
+        ...                                     seed=1234)
+        >>> cars_drf.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train)
         >>> cars_drf.cross_validation_predictions()
         """
         return self._parms.get("keep_cross_validation_predictions")
@@ -206,13 +206,13 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_drf = H2ORandomForestEstimator(keep_cross_validation_fold_assignment = True,
-        ...                                     nfolds = 5,
-        ...                                     seed = 1234)
-        >>> cars_drf.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_drf = H2ORandomForestEstimator(keep_cross_validation_fold_assignment=True,
+        ...                                     nfolds=5,
+        ...                                     seed=1234)
+        >>> cars_drf.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train)
         >>> cars_drf.cross_validation_fold_assignment()
         """
         return self._parms.get("keep_cross_validation_fold_assignment")
@@ -236,13 +236,13 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_drf = H2ORandomForestEstimator(score_each_iteration = True,
-        ...                                     ntrees = 55,
-        ...                                     seed = 1234)
-        >>> cars_drf.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_drf = H2ORandomForestEstimator(score_each_iteration=True,
+        ...                                     ntrees=55,
+        ...                                     seed=1234)
+        >>> cars_drf.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
         ...                validation_frame = valid)
         >>> cars_drf.scoring_history()
         """
@@ -267,13 +267,13 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_drf = H2ORandomForestEstimator(score_tree_interval = 5,
-        ...                                     seed = 1234)
-        >>> cars_drf.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_drf = H2ORandomForestEstimator(score_tree_interval=5,
+        ...                                     seed=1234)
+        >>> cars_drf.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_drf.scoring_history()
         """
         return self._parms.get("score_tree_interval")
@@ -299,12 +299,12 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
         >>> assignment_type = "Random"
-        >>> cars_drf = H2ORandomForestEstimator(fold_assignment = assignment_type,
-        ...                                     nfolds = 5,
-        ...                                     seed = 1234)
-        >>> cars_drf.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = cars)
+        >>> cars_drf = H2ORandomForestEstimator(fold_assignment=assignment_type,
+        ...                                     nfolds=5,
+        ...                                     seed=1234)
+        >>> cars_drf.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=cars)
         >>> cars_drf.auc(xval=True)
         """
         return self._parms.get("fold_assignment")
@@ -328,11 +328,11 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> fold_numbers = cars.kfold_column(n_folds = 5, seed = 1234)
+        >>> fold_numbers = cars.kfold_column(n_folds=5, seed=1234)
         >>> fold_numbers.set_names(["fold_numbers"])
         >>> cars = cars.cbind(fold_numbers)
         >>> print(cars['fold_numbers'])
-        >>> cars_drf = H2ORandomForestEstimator(seed = 1234)
+        >>> cars_drf = H2ORandomForestEstimator(seed=1234)
         >>> cars_drf.train(x=predictors,
         ...                y=response,
         ...                training_frame=cars,
@@ -392,13 +392,13 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> response = "economy_20mpg"
         >>> cars["const_1"] = 6
         >>> cars["const_2"] = 7
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_drf = H2ORandomForestEstimator(seed = 1234,
-        ...                                     ignore_const_cols = True)
-        >>> cars_drf.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_drf = H2ORandomForestEstimator(seed=1234,
+        ...                                     ignore_const_cols=True)
+        >>> cars_drf.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_drf.auc(valid=True)
         """
         return self._parms.get("ignore_const_cols")
@@ -441,9 +441,9 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8],
-        ...                                 seed = 1234)
-        >>> cars_drf = H2ORandomForestEstimator(seed = 1234)
+        >>> train, valid = cars.split_frame(ratios=[.8],
+        ...                                 seed=1234)
+        >>> cars_drf = H2ORandomForestEstimator(seed=1234)
         >>> cars_drf.train(x=predictors,
         ...                y=response,
         ...                training_frame=train,
@@ -472,14 +472,14 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> covtype[54] = covtype[54].asfactor()
         >>> predictors = covtype.columns[0:54]
         >>> response = 'C55'
-        >>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
-        >>> cov_drf = H2ORandomForestEstimator(balance_classes = True,
-        ...                                    seed = 1234)
-        >>> cov_drf.train(x = predictors,
-        ...               y = response,
-        ...               training_frame = train,
-        ...               validation_frame = valid)
-        >>> print('logloss', cov_drf.logloss(valid = True))
+        >>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
+        >>> cov_drf = H2ORandomForestEstimator(balance_classes=True,
+        ...                                    seed=1234)
+        >>> cov_drf.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train,
+        ...               validation_frame=valid)
+        >>> print('logloss', cov_drf.logloss(valid=True))
         """
         return self._parms.get("balance_classes")
 
@@ -503,17 +503,17 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> covtype[54] = covtype[54].asfactor()
         >>> predictors = covtype.columns[0:54]
         >>> response = 'C55'
-        >>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+        >>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
         >>> print(covtype[54].table())
         >>> sample_factors = [1., 0.5, 1., 1., 1., 1., 1.]
-        >>> cov_drf = H2ORandomForestEstimator(balance_classes = True,
-        ...                                    class_sampling_factors = sample_factors,
-        ...                                    seed = 1234)
-        >>> cov_drf.train(x = predictors,
-        ...               y = response,
-        ...               training_frame = train,
-        ...               validation_frame = valid)
-        >>> print('logloss', cov_drf.logloss(valid = True))
+        >>> cov_drf = H2ORandomForestEstimator(balance_classes=True,
+        ...                                    class_sampling_factors=sample_factors,
+        ...                                    seed=1234)
+        >>> cov_drf.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train,
+        ...               validation_frame=valid)
+        >>> print('logloss', cov_drf.logloss(valid=True))
         """
         return self._parms.get("class_sampling_factors")
 
@@ -537,17 +537,17 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> covtype[54] = covtype[54].asfactor()
         >>> predictors = covtype.columns[0:54]
         >>> response = 'C55'
-        >>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+        >>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
         >>> print(covtype[54].table())
         >>> max = .85
-        >>> cov_drf = H2ORandomForestEstimator(balance_classes = True,
-        ...                                    max_after_balance_size = max,
-        ...                                    seed = 1234)
-        >>> cov_drf.train(x = predictors,
-        ...               y = response,
-        ...               training_frame = train,
-        ...               validation_frame = valid)
-        >>> print('logloss', cov_drf.logloss(valid = True))
+        >>> cov_drf = H2ORandomForestEstimator(balance_classes=True,
+        ...                                    max_after_balance_size=max,
+        ...                                    seed=1234)
+        >>> cov_drf.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train,
+        ...               validation_frame=valid)
+        >>> print('logloss', cov_drf.logloss(valid=True))
         """
         return self._parms.get("max_after_balance_size")
 
@@ -575,7 +575,8 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def max_hit_ratio_k(self):
         """
-        Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
+        [Deprecated] Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to
+        disable)
 
         Type: ``int``  (default: ``0``).
 
@@ -585,13 +586,13 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> covtype[54] = covtype[54].asfactor()
         >>> predictors = covtype.columns[0:54]
         >>> response = 'C55'
-        >>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
-        >>> cov_drf = H2ORandomForestEstimator(max_hit_ratio_k = 3,
-        ...                                    seed = 1234)
-        >>> cov_drf.train(x = predictors,
-        ...               y = response,
-        ...               training_frame = train,
-        ...               validation_frame = valid)
+        >>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
+        >>> cov_drf = H2ORandomForestEstimator(max_hit_ratio_k=3,
+        ...                                    seed=1234)
+        >>> cov_drf.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train,
+        ...               validation_frame=valid)
         >>> cov_drf.show()
         """
         return self._parms.get("max_hit_ratio_k")
@@ -616,24 +617,24 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> predictors = titanic.columns
         >>> del predictors[1:3]
         >>> response = 'survived'
-        >>> train, valid = titanic.split_frame(ratios = [.8],
-        ...                                    seed = 1234)
+        >>> train, valid = titanic.split_frame(ratios=[.8],
+        ...                                    seed=1234)
         >>> tree_num = [20, 50, 80, 110,
         ...             140, 170, 200]
         >>> label = ["20", "50", "80", "110",
         ...          "140", "170", "200"]
         >>> for key, num in enumerate(tree_num):
         #              Input an integer for 'num' and 'key'
-        >>> titanic_drf = H2ORandomForestEstimator(ntrees = num,
-        ...                                        seed = 1234)
-        >>> titanic_drf.train(x = predictors,
-        ...                   y = response,
-        ...                   training_frame = train,
-        ...                   validation_frame = valid)
+        >>> titanic_drf = H2ORandomForestEstimator(ntrees=num,
+        ...                                        seed=1234)
+        >>> titanic_drf.train(x=predictors,
+        ...                   y=response,
+        ...                   training_frame=train,
+        ...                   validation_frame=valid)
         >>> print(label[key], 'training score',
-        ...       titanic_drf.auc(train = True))
+        ...       titanic_drf.auc(train=True))
         >>> print(label[key], 'validation score',
-        ...       titanic_drf.auc(valid = True))
+        ...       titanic_drf.auc(valid=True))
         """
         return self._parms.get("ntrees")
 
@@ -646,7 +647,7 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def max_depth(self):
         """
-        Maximum tree depth.
+        Maximum tree depth (0 for unlimited).
 
         Type: ``int``  (default: ``20``).
 
@@ -689,13 +690,13 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_drf = H2ORandomForestEstimator(min_rows = 16,
-        ...                                     seed = 1234)
-        >>> cars_drf.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_drf = H2ORandomForestEstimator(min_rows=16,
+        ...                                     seed=1234)
+        >>> cars_drf.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> print(cars_drf.auc(valid=True))
         """
         return self._parms.get("min_rows")
@@ -719,20 +720,20 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> eeg['eyeDetection'] = eeg['eyeDetection'].asfactor()
         >>> predictors = eeg.columns[:-1]
         >>> response = 'eyeDetection'
-        >>> train, valid = eeg.split_frame(ratios = [.8], seed = 1234)
+        >>> train, valid = eeg.split_frame(ratios=[.8], seed=1234)
         >>> bin_num = [16, 32, 64, 128, 256, 512]
         >>> label = ["16", "32", "64", "128", "256", "512"]
         >>> for key, num in enumerate(bin_num):
         #              Insert integer for 'num' and 'key'
-        >>> eeg_drf = H2ORandomForestEstimator(nbins = num, seed = 1234)
-        >>> eeg_drf.train(x = predictors,
-        ...               y = response,
-        ...               training_frame = train,
-        ...               validation_frame = valid)
+        >>> eeg_drf = H2ORandomForestEstimator(nbins=num, seed=1234)
+        >>> eeg_drf.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train,
+        ...               validation_frame=valid)
         >>> print(label[key], 'training score',
-        ...       eeg_drf.auc(train = True))
+        ...       eeg_drf.auc(train=True))
         >>> print(label[key], 'validation score',
-        ...       eeg_drf.auc(train = True))
+        ...       eeg_drf.auc(train=True))
         """
         return self._parms.get("nbins")
 
@@ -756,24 +757,24 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> eeg['eyeDetection'] = eeg['eyeDetection'].asfactor()
         >>> predictors = eeg.columns[:-1]
         >>> response = 'eyeDetection'
-        >>> train, valid = eeg.split_frame(ratios = [.8],
-        ...                                seed = 1234)
+        >>> train, valid = eeg.split_frame(ratios=[.8],
+        ...                                seed=1234)
         >>> bin_num = [32, 64, 128, 256, 512,
         ...            1024, 2048, 4096]
         >>> label = ["32", "64", "128", "256",
         ...          "512", "1024", "2048", "4096"]
         >>> for key, num in enumerate(bin_num):
         #              Insert integer for 'num' and 'key'
-        >>> eeg_drf = H2ORandomForestEstimator(nbins_top_level = 32,
-        ...                                    seed = 1234)
-        >>> eeg_drf.train(x = predictors,
-        ...               y = response,
-        ...               training_frame = train,
-        ...               validation_frame = valid)
+        >>> eeg_drf = H2ORandomForestEstimator(nbins_top_level=32,
+        ...                                    seed=1234)
+        >>> eeg_drf.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train,
+        ...               validation_frame=valid)
         >>> print(label[key], 'training score',
-        ...       eeg_gbm.auc(train = True))
+        ...       eeg_gbm.auc(train=True))
         >>> print(label[key], 'validation score',
-        ...       eeg_gbm.auc(valid = True))
+        ...       eeg_gbm.auc(valid=True))
         """
         return self._parms.get("nbins_top_level")
 
@@ -794,31 +795,31 @@ class H2ORandomForestEstimator(H2OEstimator):
         :examples:
 
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"]= airlines["Year"].asfactor()
-        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
         >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
         >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
         >>> response = "IsDepDelayed"
-        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
         >>> bin_num = [8, 16, 32, 64, 128, 256,
         ...            512, 1024, 2048, 4096]
         >>> label = ["8", "16", "32", "64", "128",
         ...          "256", "512", "1024", "2048", "4096"]
         >>> for key, num in enumerate(bin_num):
         #              Insert integer for 'num' and 'key'
-        >>> airlines_drf = H2ORandomForestEstimator(nbins_cats = num,
-        ...                                         seed =1234)
-        >>> airlines_drf.train(x = predictors,
-        ...                    y = response,
-        ...                    training_frame = train,
-        ...                    validation_frame = valid)
+        >>> airlines_drf = H2ORandomForestEstimator(nbins_cats=num,
+        ...                                         seed=1234)
+        >>> airlines_drf.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
         >>> print(label[key], 'training score',
-        ...       airlines_gbm.auc(train = True))
+        ...       airlines_gbm.auc(train=True))
         >>> print(label[key], 'validation score',
-        ...       airlines_gbm.auc(valid = True))
+        ...       airlines_gbm.auc(valid=True))
         """
         return self._parms.get("nbins_cats")
 
@@ -856,24 +857,24 @@ class H2ORandomForestEstimator(H2OEstimator):
         :examples:
 
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"]= airlines["Year"].asfactor()
-        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
         >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
         >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
         >>> response = "IsDepDelayed"
-        >>> train, valid= airlines.split_frame(ratios = [.8],
-        ...                                    seed = 1234)
-        >>> airlines_drf = H2ORandomForestEstimator(stopping_metric = "auc",
-        ...                                         stopping_rounds = 3,
-        ...                                         stopping_tolerance = 1e-2,
-        ...                                         seed =1234)
-        >>> airlines_drf.train(x = predictors,
-        ...                    y = response,
-        ...                    training_frame = train,
-        ...                    validation_frame = valid)
+        >>> train, valid= airlines.split_frame(ratios=[.8],
+        ...                                    seed=1234)
+        >>> airlines_drf = H2ORandomForestEstimator(stopping_metric="auc",
+        ...                                         stopping_rounds=3,
+        ...                                         stopping_tolerance=1e-2,
+        ...                                         seed=1234)
+        >>> airlines_drf.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
         >>> airlines_drf.auc(valid=True)
         """
         return self._parms.get("stopping_rounds")
@@ -892,37 +893,37 @@ class H2ORandomForestEstimator(H2OEstimator):
         client.
 
         One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
-        ``"lift_top_group"``, ``"misclassification"``, ``"aucpr"``, ``"mean_per_class_error"``, ``"custom"``,
+        ``"aucpr"``, ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``,
         ``"custom_increasing"``  (default: ``"auto"``).
 
         :examples:
 
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"]= airlines["Year"].asfactor()
-        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
         >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
         >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
         >>> response = "IsDepDelayed"
-        >>> train, valid= airlines.split_frame(ratios = [.8],
-        ...                                    seed = 1234)
-        >>> airlines_drf = H2ORandomForestEstimator(stopping_metric = "auc",
-        ...                                         stopping_rounds = 3,
-        ...                                         stopping_tolerance = 1e-2,
-        ...                                         seed =1234)
-        >>> airlines_drf.train(x = predictors,
-        ...                    y = response,
-        ...                    training_frame = train,
-        ...                    validation_frame = valid)
+        >>> train, valid= airlines.split_frame(ratios=[.8],
+        ...                                    seed=1234)
+        >>> airlines_drf = H2ORandomForestEstimator(stopping_metric="auc",
+        ...                                         stopping_rounds=3,
+        ...                                         stopping_tolerance=1e-2,
+        ...                                         seed=1234)
+        >>> airlines_drf.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
         >>> airlines_drf.auc(valid=True)
         """
         return self._parms.get("stopping_metric")
 
     @stopping_metric.setter
     def stopping_metric(self, stopping_metric):
-        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification", "aucpr", "mean_per_class_error", "custom", "custom_increasing"))
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"))
         self._parms["stopping_metric"] = stopping_metric
 
 
@@ -936,20 +937,20 @@ class H2ORandomForestEstimator(H2OEstimator):
         :examples:
 
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"]= airlines["Year"].asfactor()
-        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
         >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
         >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
         >>> response = "IsDepDelayed"
-        >>> train, valid= airlines.split_frame(ratios = [.8],
-        ...                                    seed = 1234)
-        >>> airlines_drf = H2ORandomForestEstimator(stopping_metric = "auc",
-        ...                                         stopping_rounds = 3,
-        ...                                         stopping_tolerance = 1e-2,
-        ...                                         seed =1234)
+        >>> train, valid= airlines.split_frame(ratios=[.8],
+        ...                                    seed=1234)
+        >>> airlines_drf = H2ORandomForestEstimator(stopping_metric="auc",
+        ...                                         stopping_rounds=3,
+        ...                                         stopping_tolerance=1e-2,
+        ...                                         seed=1234)
         >>> airlines_drf.train(x=predictors,
         ...                    y=response,
         ...                    training_frame=train,
@@ -977,15 +978,15 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_drf = H2ORandomForestEstimator(max_runtime_secs = 10,
-        ...                                     ntrees = 10000,
-        ...                                     max_depth = 10,
-        ...                                     seed = 1234)
-        >>> cars_drf.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_drf = H2ORandomForestEstimator(max_runtime_secs=10,
+        ...                                     ntrees=10000,
+        ...                                     max_depth=10,
+        ...                                     seed=1234)
+        >>> cars_drf.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_drf.auc(valid = True)
         """
         return self._parms.get("max_runtime_secs")
@@ -1006,20 +1007,20 @@ class H2ORandomForestEstimator(H2OEstimator):
         :examples:
 
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"]= airlines["Year"].asfactor()
-        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
         >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
         >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
         >>> response = "IsDepDelayed"
-        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
-        >>> drf_w_seed_1 = H2ORandomForestEstimator(seed = 1234)
-        >>> drf_w_seed_1.train(x = predictors,
-        ...                    y = response,
-        ...                    training_frame = train,
-        ...                    validation_frame = valid)
+        >>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
+        >>> drf_w_seed_1 = H2ORandomForestEstimator(seed=1234)
+        >>> drf_w_seed_1.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
         >>> print('auc for the 1st model build with a seed:',
         ...        drf_w_seed_1.auc(valid=True))
         """
@@ -1034,7 +1035,7 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def build_tree_one_node(self):
         """
-        Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
+        Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.
 
         Type: ``bool``  (default: ``False``).
 
@@ -1044,13 +1045,13 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_drf = H2ORandomForestEstimator(build_tree_one_node = True,
-        ...                                     seed = 1234)
-        >>> cars_drf.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_drf = H2ORandomForestEstimator(build_tree_one_node=True,
+        ...                                     seed=1234)
+        >>> cars_drf.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_drf.auc(valid=True)
         """
         return self._parms.get("build_tree_one_node")
@@ -1075,13 +1076,13 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> covtype[54] = covtype[54].asfactor()
         >>> predictors = covtype.columns[0:54]
         >>> response = 'C55'
-        >>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
-        >>> cov_drf = H2ORandomForestEstimator(mtries = 30, seed = 1234)
-        >>> cov_drf.train(x = predictors,
-        ...               y = response,
-        ...               training_frame = train,
-        ...               validation_frame = valid)
-        >>> print('logloss', cov_drf.logloss(valid = True))
+        >>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
+        >>> cov_drf = H2ORandomForestEstimator(mtries=30, seed=1234)
+        >>> cov_drf.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train,
+        ...               validation_frame=valid)
+        >>> print('logloss', cov_drf.logloss(valid=True))
         """
         return self._parms.get("mtries")
 
@@ -1101,22 +1102,22 @@ class H2ORandomForestEstimator(H2OEstimator):
         :examples:
 
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"]= airlines["Year"].asfactor()
-        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
         >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
         >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
         >>> response = "IsDepDelayed"
-        >>> train, valid= airlines.split_frame(ratios = [.8],
-        ...                                    seed = 1234)
-        >>> airlines_drf = H2ORandomForestEstimator(sample_rate = .7,
-        ...                                         seed =1234)
-        >>> airlines_drf.train(x = predictors,
-        ...                    y = response,
-        ...                    training_frame = train,
-        ...                    validation_frame = valid)
+        >>> train, valid= airlines.split_frame(ratios=[.8],
+        ...                                    seed=1234)
+        >>> airlines_drf = H2ORandomForestEstimator(sample_rate=.7,
+        ...                                         seed=1234)
+        >>> airlines_drf.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
         >>> print(airlines_drf.auc(valid=True))
         """
         return self._parms.get("sample_rate")
@@ -1140,17 +1141,17 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> covtype[54] = covtype[54].asfactor()
         >>> predictors = covtype.columns[0:54]
         >>> response = 'C55'
-        >>> train, valid = covtype.split_frame(ratios = [.8],
-        ...                                    seed = 1234)
+        >>> train, valid = covtype.split_frame(ratios=[.8],
+        ...                                    seed=1234)
         >>> print(train[response].table())
         >>> rate_per_class_list = [1, .4, 1, 1, 1, 1, 1]
-        >>> cov_drf = H2ORandomForestEstimator(sample_rate_per_class = rate_per_class_list,
-        ...                                    seed = 1234)
-        >>> cov_drf.train(x = predictors,
-        ...               y = response,
-        ...               training_frame = train,
-        ...               validation_frame = valid)
-        >>> print('logloss', cov_drf.logloss(valid = True))
+        >>> cov_drf = H2ORandomForestEstimator(sample_rate_per_class=rate_per_class_list,
+        ...                                    seed=1234)
+        >>> cov_drf.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train,
+        ...               validation_frame=valid)
+        >>> print('logloss', cov_drf.logloss(valid=True))
         """
         return self._parms.get("sample_rate_per_class")
 
@@ -1173,21 +1174,21 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_drf = H2ORandomForestEstimator(binomial_double_trees = False,
-        ...                                     seed = 1234)
-        >>> cars_drf.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_drf = H2ORandomForestEstimator(binomial_double_trees=False,
+        ...                                     seed=1234)
+        >>> cars_drf.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> print('without binomial_double_trees:',
         ...        cars_drf.auc(valid=True))
-        >>> cars_drf_2 = H2ORandomForestEstimator(binomial_double_trees = True,
-        ...                                       seed = 1234)
-        >>> cars_drf_2.train(x = predictors,
-        ...                  y = response,
-        ...                  training_frame = train,
-        ...                  validation_frame = valid)
+        >>> cars_drf_2 = H2ORandomForestEstimator(binomial_double_trees=True,
+        ...                                       seed=1234)
+        >>> cars_drf_2.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=train,
+        ...                  validation_frame=valid)
         >>> print('with binomial_double_trees:', cars_drf_2.auc(valid=True))
         """
         return self._parms.get("binomial_double_trees")
@@ -1211,14 +1212,14 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8],
-        ...                                 seed = 1234)
-        >>> cars_drf = H2ORandomForestEstimator(ntrees = 1,
-        ...                                     seed = 1234)
-        >>> cars_drf.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = cars.split_frame(ratios=[.8],
+        ...                                 seed=1234)
+        >>> cars_drf = H2ORandomForestEstimator(ntrees=1,
+        ...                                     seed=1234)
+        >>> cars_drf.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> print(cars_drf.auc(valid=True))
         """
         return self._parms.get("checkpoint")
@@ -1239,21 +1240,21 @@ class H2ORandomForestEstimator(H2OEstimator):
         :examples:
 
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"]= airlines["Year"].asfactor()
-        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
         >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
         >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
         >>> response = "IsDepDelayed"
-        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
-        >>> airlines_drf = H2ORandomForestEstimator(col_sample_rate_change_per_level = .9,
-        ...                                         seed = 1234)
-        >>> airlines_drf.train(x = predictors,
-        ...                    y = response,
-        ...                    training_frame = train,
-        ...                    validation_frame = valid)
+        >>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
+        >>> airlines_drf = H2ORandomForestEstimator(col_sample_rate_change_per_level=.9,
+        ...                                         seed=1234)
+        >>> airlines_drf.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
         >>>  print(airlines_drf.auc(valid=True))
         """
         return self._parms.get("col_sample_rate_change_per_level")
@@ -1274,21 +1275,21 @@ class H2ORandomForestEstimator(H2OEstimator):
         :examples:
 
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"]= airlines["Year"].asfactor()
-        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
         >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
         >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
         >>> response = "IsDepDelayed"
-        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
-        >>> airlines_drf = H2ORandomForestEstimator(col_sample_rate_per_tree = .7,
-        ...                                         seed =1234)
-        >>> airlines_drf.train(x = predictors,
-        ...                    y = response,
-        ...                    training_frame = train,
-        ...                    validation_frame = valid)
+        >>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
+        >>> airlines_drf = H2ORandomForestEstimator(col_sample_rate_per_tree=.7,
+        ...                                         seed=1234)
+        >>> airlines_drf.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
         >>> print(airlines_drf.auc(valid=True))
         """
         return self._parms.get("col_sample_rate_per_tree")
@@ -1312,13 +1313,13 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_drf = H2ORandomForestEstimator(min_split_improvement = 1e-3,
-        ...                                     seed = 1234)
-        >>> cars_drf.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_drf = H2ORandomForestEstimator(min_split_improvement=1e-3,
+        ...                                     seed=1234)
+        >>> cars_drf.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> print(cars_drf.auc(valid=True))
         """
         return self._parms.get("min_split_improvement")
@@ -1340,21 +1341,21 @@ class H2ORandomForestEstimator(H2OEstimator):
         :examples:
 
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"]= airlines["Year"].asfactor()
-        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
         >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
         >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
         >>> response = "IsDepDelayed"
-        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
-        >>> airlines_drf = H2ORandomForestEstimator(histogram_type = "UniformAdaptive",
-        ...                                                           seed =1234)
-        >>> airlines_drf.train(x = predictors,
-        ...                    y = response,
-        ...                    training_frame = train,
-        ...                    validation_frame = valid)
+        >>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
+        >>> airlines_drf = H2ORandomForestEstimator(histogram_type="UniformAdaptive",
+        ...                                         seed=1234)
+        >>> airlines_drf.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
         >>> print(airlines_drf.auc(valid=True))
         """
         return self._parms.get("histogram_type")
@@ -1376,22 +1377,22 @@ class H2ORandomForestEstimator(H2OEstimator):
         :examples:
 
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip") 
-        >>> airlines["Year"]= airlines["Year"].asfactor()
-        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
         >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
         >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
         >>> response = "IsDepDelayed"
-        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
         >>> encoding = "one_hot_explicit"
-        >>> airlines_drf = H2ORandomForestEstimator(categorical_encoding = encoding,
-        ...                                         seed =1234)
-        >>> airlines_drf.train(x = predictors,
-        ...                    y = response,
-        ...                    training_frame = train,
-        ...                    validation_frame = valid)
+        >>> airlines_drf = H2ORandomForestEstimator(categorical_encoding=encoding,
+        ...                                         seed=1234)
+        >>> airlines_drf.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
         >>> airlines_drf.auc(valid=True)
         """
         return self._parms.get("categorical_encoding")
@@ -1417,23 +1418,23 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> from h2o.estimators.random_forest import H2ORandomForestEstimator
         >>> response = 'Angaus'
         >>> predictors = ecology.columns[3:13]
-        >>> train, calib = ecology.split_frame(seed = 12354)
+        >>> train, calib = ecology.split_frame(seed=12354)
         >>> w = h2o.create_frame(binary_fraction=1,
         ...                      binary_ones_fraction=0.5,
         ...                      missing_fraction=0,
         ...                      rows=744, cols=1)
         >>> w.set_names(["weight"])
         >>> train = train.cbind(w)
-        >>> ecology_drf = H2ORandomForestEstimator(ntrees = 10,
-        ...                                        max_depth = 5,
-        ...                                        min_rows = 10,
-        ...                                        distribution = "multinomial",
-        ...                                        weights_column = "weight",
-        ...                                        calibrate_model = True,
-        ...                                        calibration_frame = calib)
-        >>> ecology_drf.train(x = predictors,
-        ...                   y = "Angaus",
-        ...                   training_frame = train)
+        >>> ecology_drf = H2ORandomForestEstimator(ntrees=10,
+        ...                                        max_depth=5,
+        ...                                        min_rows=10,
+        ...                                        distribution="multinomial",
+        ...                                        weights_column="weight",
+        ...                                        calibrate_model=True,
+        ...                                        calibration_frame=calib)
+        >>> ecology_drf.train(x=predictors,
+        ...                   y="Angaus",
+        ...                   training_frame=train)
         >>> predicted = ecology_drf.predict(calib)
         """
         return self._parms.get("calibrate_model")
@@ -1464,16 +1465,16 @@ class H2ORandomForestEstimator(H2OEstimator):
         ...                      rows=744, cols=1)
         >>> w.set_names(["weight"])
         >>> train = train.cbind(w)
-        >>> ecology_drf = H2ORandomForestEstimator(ntrees = 10,
-        ...                                        max_depth = 5,
-        ...                                        min_rows = 10,
-        ...                                        distribution = "multinomial",
-        ...                                        calibrate_model = True,
-        ...                                        calibration_frame = calib)
-        >>> ecology_drf.train(x = predictors,
-        ...                   y = "Angaus,
-        ...                   training_frame = train,
-        ...                   weights_column = "weight")
+        >>> ecology_drf = H2ORandomForestEstimator(ntrees=10,
+        ...                                        max_depth=5,
+        ...                                        min_rows=10,
+        ...                                        distribution="multinomial",
+        ...                                        calibrate_model=True,
+        ...                                        calibration_frame=calib)
+        >>> ecology_drf.train(x=predictors,
+        ...                   y="Angaus,
+        ...                   training_frame=train,
+        ...                   weights_column="weight")
         >>> predicted = ecology_drf.predict(train)
         """
         return self._parms.get("calibration_frame")
@@ -1496,13 +1497,13 @@ class H2ORandomForestEstimator(H2OEstimator):
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "cylinders"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_drf = H2ORandomForestEstimator(distribution = "poisson",
-        ...                                     seed = 1234)
-        >>> cars_drf.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_drf = H2ORandomForestEstimator(distribution="poisson",
+        ...                                     seed=1234)
+        >>> cars_drf.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_drf.mse(valid=True)
         """
         return self._parms.get("distribution")
@@ -1595,5 +1596,29 @@ class H2ORandomForestEstimator(H2OEstimator):
     def check_constant_response(self, check_constant_response):
         assert_is_type(check_constant_response, None, bool)
         self._parms["check_constant_response"] = check_constant_response
+
+
+    @property
+    def gainslift_bins(self):
+        """
+        Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning.
+
+        Type: ``int``  (default: ``-1``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+        >>> model = H2ORandomForestEstimator(ntrees=1, gainslift_bins=20)
+        >>> model.train(x=["Origin", "Distance"],
+        ...             y="IsDepDelayed",
+        ...             training_frame=airlines)
+        >>> model.gains_lift()
+        """
+        return self._parms.get("gainslift_bins")
+
+    @gainslift_bins.setter
+    def gainslift_bins(self, gainslift_bins):
+        assert_is_type(gainslift_bins, None, int)
+        self._parms["gainslift_bins"] = gainslift_bins
 
 

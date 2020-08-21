@@ -8,24 +8,24 @@
 This file INTENTIONALLY has NO module dependencies!
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from .compatibility import *  # NOQA
 
-import imp
+import csv
+import imp  # keeping this deprecated module as soon as we keep supporting Py2.7
+import io
 import itertools
 import os
 import re
-import sys
-import zipfile
-import io
+import shutil
 import string
 import subprocess
-import csv
-import shutil
+import sys
 import tempfile
+import zipfile
 
-from h2o.exceptions import H2OValueError
-from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import assert_is_type, is_type, numeric
 from h2o.backend.server import H2OLocalServer
+from h2o.exceptions import H2OValueError
+from h2o.utils.typechecks import assert_is_type, is_type, numeric
 
 _id_ctr = 0
 
@@ -371,7 +371,7 @@ h2o_predictor_class = "hex.genmodel.tools.PredictCsv"
 
 
 def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classpath=None, java_options=None, 
-                        verbose=False, setInvNumNA=False):
+                        verbose=False, setInvNumNA=False, predict_contributions=False):
     """
     MOJO scoring function to take a Pandas frame and use MOJO model as zip file to score.
 
@@ -383,12 +383,14 @@ def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classp
         (default) then the default classpath for this MOJO model will be used.
     :param java_options: Optional, custom user defined options for Java. By default ``-Xmx4g`` is used.
     :param verbose: Optional, if True, then additional debug information will be printed. False by default.
+    :param predict_contributions: if True, then return prediction contributions instead of regular predictions 
+        (only for tree-based models).
     :return: Pandas frame with predictions
     """
     tmp_dir = tempfile.mkdtemp()
     try:
         if not can_use_pandas():
-            raise RuntimeException('Cannot import pandas')
+            raise RuntimeError('Cannot import pandas')
         import pandas
         assert_is_type(dataframe, pandas.DataFrame)
         input_csv_path = os.path.join(tmp_dir, 'input.csv')
@@ -396,14 +398,15 @@ def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classp
         dataframe.to_csv(input_csv_path)
         mojo_predict_csv(input_csv_path=input_csv_path, mojo_zip_path=mojo_zip_path,
                          output_csv_path=prediction_csv_path, genmodel_jar_path=genmodel_jar_path,
-                         classpath=classpath, java_options=java_options, verbose=verbose, setInvNumNA=setInvNumNA)
+                         classpath=classpath, java_options=java_options, verbose=verbose, setInvNumNA=setInvNumNA,
+                         predict_contributions=predict_contributions)
         return pandas.read_csv(prediction_csv_path)
     finally:
         shutil.rmtree(tmp_dir)
 
 
 def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmodel_jar_path=None, classpath=None, 
-                     java_options=None, verbose=False, setInvNumNA=False):
+                     java_options=None, verbose=False, setInvNumNA=False, predict_contributions=False):
     """
     MOJO scoring function to take a CSV file and use MOJO model as zip file to score.
 
@@ -417,6 +420,8 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
         (default) then the default classpath for this MOJO model will be used.
     :param java_options: Optional, custom user defined options for Java. By default ``-Xmx4g -XX:ReservedCodeCacheSize=256m`` is used.
     :param verbose: Optional, if True, then additional debug information will be printed. False by default.
+    :param predict_contributions: if True, then return prediction contributions instead of regular predictions 
+        (only for tree-based models).
     :return: List of computed predictions
     """
     default_java_options = '-Xmx4g -XX:ReservedCodeCacheSize=256m'
@@ -477,7 +482,10 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
 
     if setInvNumNA:
         cmd.append('--setConvertInvalidNum')
-        
+
+    if predict_contributions:
+        cmd.append('--predictContributions')
+
     if verbose:
         cmd_str = " ".join(cmd)
         print("java cmd:\t%s" % cmd_str)
@@ -490,29 +498,6 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
     with open(output_csv_path) as csv_file:
         result = list(csv.DictReader(csv_file))
     return result
-
-
-def deprecated(message):
-    """The decorator to mark deprecated functions."""
-    from traceback import extract_stack
-    assert message, "`message` argument in @deprecated is required."
-
-    def deprecated_decorator(fun):
-        def decorator_invisible(*args, **kwargs):
-            stack = extract_stack()
-            assert len(stack) >= 2 and stack[-1][2] == "decorator_invisible", "Got confusing stack... %r" % stack
-            print("[WARNING] in %s line %d:" % (stack[-2][0], stack[-2][1]))
-            print("    >>> %s" % (stack[-2][3] or "????"))
-            print("        ^^^^ %s" % message)
-            return fun(*args, **kwargs)
-
-        decorator_invisible.__doc__ = message
-        decorator_invisible.__name__ = fun.__name__
-        decorator_invisible.__module__ = fun.__module__
-        decorator_invisible.__deprecated__ = True
-        return decorator_invisible
-
-    return deprecated_decorator
 
 
 class InMemoryZipArch(object):

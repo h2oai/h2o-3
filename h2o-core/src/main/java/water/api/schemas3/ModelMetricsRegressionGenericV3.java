@@ -5,9 +5,6 @@ import water.api.API;
 
 public class ModelMetricsRegressionGenericV3<I extends ModelMetricsRegressionGeneric, S extends ModelMetricsRegressionGenericV3<I, S>> extends ModelMetricsBaseV3<I, S> {
 
-  @API(help="The R^2 for this scoring run.", direction=API.Direction.OUTPUT)
-  public double r2;
-
   @API(help="The mean residual deviance for this scoring run.", direction=API.Direction.OUTPUT)
   public double mean_residual_deviance;
 
@@ -20,7 +17,6 @@ public class ModelMetricsRegressionGenericV3<I extends ModelMetricsRegressionGen
   @Override
   public S fillFromImpl(I modelMetrics) {
     super.fillFromImpl(modelMetrics);
-    r2 = modelMetrics.r2();
     mae = modelMetrics._mean_absolute_error;
     rmsle = modelMetrics._root_mean_squared_log_error;
     mean_residual_deviance = modelMetrics._mean_residual_deviance;

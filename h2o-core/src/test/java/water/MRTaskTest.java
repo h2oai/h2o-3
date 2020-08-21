@@ -5,6 +5,8 @@ import water.fvec.*;
 import water.util.PrettyPrint;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -98,5 +100,59 @@ public class MRTaskTest extends TestUtil {
       @Override public void map(Chunk cs[]) { }
     }.profile().doAll(vec);
   }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testPostMapAction_frame() {
+    try {
+      Scope.enter();
+      final long nChunks = 1000L;
+      Vec zeros = Vec.makeCon(0.0, nChunks, 0, true);
+      Scope.track(zeros);
+
+      MRTask.PostMapAction action = new MRTask.PostMapAction() {
+        @Override
+        void call(Chunk[] mapInput) {
+          mapInput[0].set(0, 1);
+        }
+      };
+      new MRTask() {}
+              .withPostMapAction(action)
+              .doAll(zeros);
+
+      assertEquals(nChunks, zeros.nzCnt());
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testPostMapAction_keys() {
+    final int nKeys = 100;
+    Key[] keys = new Key[nKeys];
+    for (int i = 0; i < nKeys; i++)
+      keys[i] = Key.make();
+    try {
+      MRTask.PostMapAction action = new MRTask.PostMapAction() {
+        @Override
+        void call(Key k) {
+          DKV.put(k, k);
+        }
+      };
+      new MRTask() {}
+              .withPostMapAction(action)
+              .doAll(keys);
+
+      for (Key k : keys) {
+        assertEquals(k, DKV.getGet(k));
+      }
+    } finally {
+      Futures fs = new Futures();
+      Stream.of(keys).forEach(k -> DKV.remove(k, fs));
+      fs.blockForPending();
+    }
+  }
+
 }
 

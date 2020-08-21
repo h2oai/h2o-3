@@ -39,15 +39,15 @@ test.mojo_predict_api_test <- function() {
     print(paste0("MOJO saved at ", model_zip_path))
 
     # test that we can predict using default paths
-    h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path, verbose=T)
+    h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path, verbose=TRUE)
     h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path,
-                         genmodel_jar_path=file.path(sandbox(), genmodel_name), verbose=T)
+                         genmodel_jar_path=file.path(sandbox(), genmodel_name), verbose=TRUE)
     expect_true(file.exists(output_csv), paste0('output csv cannot be found at ', output_csv))
     file.remove(model_zip_path)
     file.remove(file.path(sandbox(), genmodel_name))
     file.remove(output_csv)
-    other_sandbox_dir <- normalizePath(file.path(sandbox(), Sys.getpid()), mustWork=F)
-    dir.create(other_sandbox_dir, showWarnings=F)
+    other_sandbox_dir <- normalizePath(file.path(sandbox(), Sys.getpid()), mustWork=FALSE)
+    dir.create(other_sandbox_dir, showWarnings=FALSE)
     tryCatch(
         {
             download.mojo(regression_gbm1, normalizePath(sandbox()),
@@ -56,26 +56,26 @@ test.mojo_predict_api_test <- function() {
             expect_true(file.exists(model_zip_path))
             expect_true(file.exists(genmodel_jar))
 
-            expect_error(h2o_utils.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path, verbose=T))
+            expect_error(h2o_utils.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path, verbose=TRUE))
 
             expect_false(file.exists(file.path(other_sandbox_dir, 'h2o-genmodel.jar')), paste0("There should be no h2o-genmodel.jar at ", other_sandbox_dir))
             expect_false(file.exists(output_csv))
 
-            h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path, genmodel_jar_path=genmodel_jar, verbose=T)
+            h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path, genmodel_jar_path=genmodel_jar, verbose=TRUE)
             expect_true(file.exists(output_csv))
 
             file.remove(output_csv)
 
             output_csv <- file.path(other_sandbox_dir, "out.prediction")
 
-            h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path, genmodel_jar_path=genmodel_jar, verbose=T, output_csv_path=output_csv)
+            h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path, genmodel_jar_path=genmodel_jar, verbose=TRUE, output_csv_path=output_csv)
             expect_true(file.exists(output_csv))
             file.remove(model_zip_path)
             file.remove(genmodel_jar)
             file.remove(output_csv)
         },
         finally={
-            unlink(other_sandbox_dir, recursive=T)
+            unlink(other_sandbox_dir, recursive=TRUE)
         }
     )
 
@@ -127,10 +127,10 @@ test.mojo_predict_csv <- function() {
     mojo_zip_path <- download.mojo(bernoulli_gbm1, sandbox())
 
     prediction_result <- h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=mojo_zip_path, output_csv_path=output_csv)
-    mojo_prediction_0 <- prediction_result$X0
-    mojo_prediction_1 <- prediction_result$X1
-    print(paste0("Binomial prediction: X0: ", mojo_prediction_0))
-    print(paste0("Binomial prediction: X1: ", mojo_prediction_1))
+    mojo_prediction_0 <- prediction_result$p0
+    mojo_prediction_1 <- prediction_result$p1
+    print(paste0("Binomial prediction: p0: ", mojo_prediction_0))
+    print(paste0("Binomial prediction: p1: ", mojo_prediction_1))
 
     expect_equal(binary_prediction_0, mojo_prediction_0, info="expected predictions to be the same for binary and MOJO model for Binomial - p0")
     expect_equal(binary_prediction_1, mojo_prediction_1, info="expected predictions to be the same for binary and MOJO model for Binomial - p1")
@@ -207,10 +207,10 @@ test.mojo_predict_df <- function() {
     print(mojo_prediction)
     print(paste0("Binomial Prediction (Binary) - p0: ", h2o_prediction[1,2]))
     print(paste0("Binomial Prediction (Binary) - p1: ", h2o_prediction[1,3]))
-    print(paste0("Binomial Prediction (MOJO) - p0: ", mojo_prediction$X0))
-    print(paste0("Binomial Prediction (MOJO) - p1: ", mojo_prediction$X1))
-    expect_equal(h2o_prediction[1,2], mojo_prediction$X0, info="expected predictions to be the same for binary and MOJO model - p0")
-    expect_equal(h2o_prediction[1,3], mojo_prediction$X1, info="expected predictions to be the same for binary and MOJO model - p0")
+    print(paste0("Binomial Prediction (MOJO) - p0: ", mojo_prediction$p0))
+    print(paste0("Binomial Prediction (MOJO) - p1: ", mojo_prediction$p1))
+    expect_equal(h2o_prediction[1,2], mojo_prediction$p0, info="expected predictions to be the same for binary and MOJO model - p0")
+    expect_equal(h2o_prediction[1,3], mojo_prediction$p1, info="expected predictions to be the same for binary and MOJO model - p1")
 
     file.remove(input_csv)
 }

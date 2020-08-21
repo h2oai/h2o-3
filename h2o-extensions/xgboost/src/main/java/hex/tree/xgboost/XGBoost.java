@@ -1,26 +1,41 @@
 package hex.tree.xgboost;
 
+import biz.k11i.xgboost.gbm.GBTree;
+import biz.k11i.xgboost.gbm.GradBooster;
+import biz.k11i.xgboost.tree.RegTree;
+import biz.k11i.xgboost.tree.RegTreeNode;
 import hex.*;
+import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
+import hex.tree.PlattScalingHelper;
 import hex.tree.TreeUtils;
-import hex.tree.xgboost.rabit.RabitTrackerH2O;
+import hex.tree.xgboost.exec.LocalXGBoostExecutor;
+import hex.tree.xgboost.exec.RemoteXGBoostExecutor;
+import hex.tree.xgboost.exec.XGBoostExecutor;
+import hex.tree.xgboost.predict.XGBoostVariableImportance;
+import hex.tree.xgboost.remote.SteamExecutorStarter;
 import hex.tree.xgboost.util.FeatureScore;
 import hex.util.CheckpointUtils;
-import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
+import ml.dmlc.xgboost4j.java.Rabit;
 import ml.dmlc.xgboost4j.java.XGBoostError;
+import org.apache.log4j.Logger;
 import water.*;
-import ml.dmlc.xgboost4j.java.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
-import water.util.*;
+import water.util.ArrayUtils;
 import water.util.Timer;
+import water.util.TwoDimTable;
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
 import static hex.tree.SharedTree.createScoringHistoryTable;
@@ -30,8 +45,11 @@ import static water.H2O.technote;
  *
  *  Based on "Elements of Statistical Learning, Second Edition, page 387"
  */
-public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> {
+public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> 
+    implements PlattScalingHelper.ModelBuilderWithCalibration<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
 
+  private static final Logger LOG = Logger.getLogger(XGBoost.class);
+  
   private static final double FILL_RATIO_THRESHOLD = 0.25D;
 
   @Override public boolean haveMojo() { return true; }
@@ -62,8 +80,15 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   // Number of trees requested, including prior trees from a checkpoint
   private int _ntrees;
 
+  // Calibration frame for Platt scaling
+  private transient Frame _calib;
+
   @Override protected int nModelsInParallel(int folds) {
-    return nModelsInParallel(folds, 2);
+    if (XGBoostModel.getActualBackend(_parms, false) == XGBoostModel.XGBoostParameters.Backend.gpu) {
+      return 1;
+    } else {
+      return nModelsInParallel(folds, 2);
+    }
   }
 
   /** Start the XGBoost training Job on an F/J thread. */
@@ -80,11 +105,15 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
    *  Validate the learning rate and distribution family. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    if (H2O.CLOUD.size() > 1) {
-      if(H2O.SELF.getSecurityManager().securityEnabled) {
+    if (H2O.CLOUD.size() > 1 && H2O.SELF.getSecurityManager().securityEnabled) {
+      if (H2O.ARGS.allow_insecure_xgboost) {
+        LOG.info("Executing XGBoost on an secured cluster might compromise security.");
+      } else {
         throw new H2OIllegalArgumentException("Cannot run XGBoost on an SSL enabled cluster larger than 1 node. XGBoost does not support SSL encryption.");
       }
     }
+    if (H2O.ARGS.client && _parms._build_tree_one_node)
+      error("_build_tree_one_node", "Cannot run on a single node in client mode.");
     if (expensive) {
       if (_response.naCnt() > 0) {
         error("_response_column", "Response contains missing values (NAs) - not supported by XGBoost.");
@@ -104,6 +133,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     } else {
       _ntrees = _parms._ntrees;
     }
+
+    if (_parms._max_depth < 0) error("_max_depth", "_max_depth must be >= 0.");
+    if (_parms._max_depth == 0) _parms._max_depth = Integer.MAX_VALUE;
 
     // Initialize response based on given distribution family.
     // Regression: initially predict the response mean
@@ -131,9 +163,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (expensive) {
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(XGBoost.this);
-      if (hasOffsetCol()) {
-        error("_offset_column", "Offset is not supported for XGBoost.");
-      }
     }
 
     if ( _parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu) {
@@ -195,12 +224,48 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       error("_learn_rate", "learn_rate must be between 0 and 1");
     if( !(0. < _parms._col_sample_rate && _parms._col_sample_rate <= 1.0) )
       error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
-    if (_parms._grow_policy== XGBoostModel.XGBoostParameters.GrowPolicy.lossguide && _parms._tree_method!= XGBoostModel.XGBoostParameters.TreeMethod.hist)
+    if (_parms._grow_policy== XGBoostModel.XGBoostParameters.GrowPolicy.lossguide && 
+        _parms._tree_method!= XGBoostModel.XGBoostParameters.TreeMethod.hist)
       error("_grow_policy", "must use tree_method=hist for grow_policy=lossguide");
 
-    if ((_train != null) && (_parms._monotone_constraints != null)) {
+    if ((_train != null) && !_parms.monotoneConstraints().isEmpty()) {
+      if (_parms._tree_method == XGBoostModel.XGBoostParameters.TreeMethod.approx) {
+        error("_tree_method", "approx is not supported with _monotone_constraints, use auto/exact/hist instead");
+      } else {
+        assert _parms._tree_method == XGBoostModel.XGBoostParameters.TreeMethod.auto ||
+            _parms._tree_method == XGBoostModel.XGBoostParameters.TreeMethod.exact ||
+            _parms._tree_method == XGBoostModel.XGBoostParameters.TreeMethod.hist :
+            "Unexpected tree method used " + _parms._tree_method;
+      }
       TreeUtils.checkMonotoneConstraints(this, _train, _parms._monotone_constraints);
     }
+
+    if ((_train != null) && (H2O.CLOUD.size() > 1) &&
+        (_parms._tree_method == XGBoostModel.XGBoostParameters.TreeMethod.exact) &&    
+        !_parms._build_tree_one_node)
+      error("_tree_method", "exact is not supported in distributed environment, set build_tree_one_node to true to use exact");
+
+    PlattScalingHelper.initCalibration(this, _parms, expensive);
+  }
+
+  @Override
+  public XGBoost getModelBuilder() {
+    return this;
+  }
+
+  @Override
+  public Frame getCalibrationFrame() {
+    return _calib;
+  }
+
+  @Override
+  public void setCalibrationFrame(Frame f) {
+    _calib = f;
+  }
+
+  @Override
+  protected boolean canLearnFromNAs() {
+    return true;
   }
 
   static DataInfo makeDataInfo(Frame train, Frame valid, XGBoostModel.XGBoostParameters parms, int nClasses) {
@@ -223,9 +288,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     // 2) NAs (check that there's enough rows left)
     GLMTask.YMUTask ymt = new GLMTask.YMUTask(dinfo, nClasses,nClasses == 1, false, true, true).doAll(dinfo._adaptedFrame);
     if (parms._weights_column != null && parms._offset_column != null) {
-      Log.warn("Combination of offset and weights can lead to slight differences because Rollupstats aren't weighted - need to re-calculate weighted mean/sigma of the response including offset terms.");
+      LOG.warn("Combination of offset and weights can lead to slight differences because Rollupstats aren't weighted - need to re-calculate weighted mean/sigma of the response including offset terms.");
     }
-    if (parms._weights_column != null && parms._offset_column == null /*FIXME: offset not yet implemented*/) {
+    if (parms._weights_column != null && parms._offset_column == null) {
       dinfo.updateWeightedSigmaAndMean(ymt.predictorSDs(), ymt.predictorMeans());
       if (nClasses == 1)
         dinfo.updateWeightedSigmaAndMeanForResponse(ymt.responseSDs(), ymt.responseMeans());
@@ -235,13 +300,26 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return dinfo;
   }
 
+  @Override
+  protected Frame rebalance(Frame original_fr, boolean local, String name) {
+    if (_parms._build_tree_one_node) {
+      int original_chunks = original_fr.anyVec().nChunks();
+      if (original_chunks == 1)
+        return original_fr;
+      LOG.info("Rebalancing " + name.substring(name.length()-5) + " dataset onto a single node.");
+      Key newKey = Key.make(name + ".1chk");
+      RebalanceDataSet rb = new RebalanceDataSet(original_fr, newKey, 1);
+      H2O.submitTask(rb).join();
+      Frame singleChunkFr = DKV.get(newKey).get();
+      Scope.track(singleChunkFr);
+      return singleChunkFr;
+    } else {
+      return super.rebalance(original_fr, local, name);
+    }
+  }
+
   // ----------------------
   class XGBoostDriver extends Driver {
-
-    // Per driver instance
-    final private String featureMapFileName = "featureMap" + UUID.randomUUID().toString() + ".txt";
-    // Shared file to write list of features
-    private String featureMapFileAbsolutePath = null;
 
     @Override
     public void computeImpl() {
@@ -260,6 +338,21 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         }
       } else {
         buildModelImpl();
+      }
+    }
+    
+    private XGBoostExecutor makeExecutor(XGBoostModel model) throws IOException {
+      if (H2O.ARGS.use_external_xgboost) {
+        return SteamExecutorStarter.getInstance().getRemoteExecutor(model, _train, _job);
+      } else {
+        String remoteUriFromProp = H2O.getSysProperty("xgboost.external.address", null);
+        if (remoteUriFromProp == null) {
+          return new LocalXGBoostExecutor(model, _train);
+        } else {
+          String userName = H2O.getSysProperty("xgboost.external.user", null);
+          String password = H2O.getSysProperty("xgboost.external.password", null);
+          return new RemoteXGBoostExecutor(model, _train, remoteUriFromProp, userName, password);
+        }
       }
     }
 
@@ -281,66 +374,20 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       } else {
         model._output._sparse = isTrainDatasetSparse();
       }
+      
+      if (model.evalAutoParamsEnabled) {
+        model.initActualParamValuesAfterOutputSetup(isClassifier(), _nclass);
+      }
 
-      // Single Rabit tracker per job. Manages the node graph for Rabit.
-      final IRabitTracker rt;
-      XGBoostSetupTask setupTask = null;
-      try {
-        XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(_train);
-
-        // Prepare Rabit tracker for this job
-        // This cannot be H2O.getCloudSize() as a frame might not be distributed on all the nodes
-        // In such a case we'll perform training only on a subset of nodes while XGBoost/Rabit would keep waiting
-        // for H2O.getCloudSize() number of requests/responses.
-        rt = new RabitTrackerH2O(trainFrameNodes.getNumNodes());
-
-        if (!startRabitTracker(rt)) {
-          throw new IllegalArgumentException("Cannot start XGboost rabit tracker, please, "
-                                             + "make sure you have python installed!");
-        }
-
-        // Create a "feature map" and store in a temporary file (for Variable Importance, MOJO, ...)
-        DataInfo dataInfo = model.model_info().dataInfo();
-        assert dataInfo != null;
-        String featureMap = XGBoostUtils.makeFeatureMap(_train, dataInfo);
-        model.model_info().setFeatureMap(featureMap);
-        featureMapFileAbsolutePath = createFeatureMapFile(featureMap);
-
-        BoosterParms boosterParms = XGBoostModel.createParams(_parms, model._output.nclasses(), dataInfo.coefNames());
-        model._output._native_parameters = boosterParms.toTwoDimTable();
-
-        byte[] checkpointBytes = null;
-        if (_parms.hasCheckpoint()) {
-          checkpointBytes = model.model_info()._boosterBytes;
-        }
-        setupTask = new XGBoostSetupTask(model, _parms, boosterParms, checkpointBytes, getWorkerEnvs(rt), trainFrameNodes).run();
-        try {
-          // initial iteration
-          XGBoostUpdateTask nullModelTask = new XGBoostUpdateTask(setupTask, 0).run();
-          BoosterProvider boosterProvider = new BoosterProvider(model.model_info(), nullModelTask);
-
-          // train the model
-          scoreAndBuildTrees(setupTask, boosterProvider, model);
-
-          // shutdown rabit & XGB native resources
-          XGBoostCleanupTask.cleanUp(setupTask);
-          setupTask = null;
-
-          waitOnRabitWorkers(rt);
-        } finally {
-          stopRabitTracker(rt);
-        }
-      } catch (XGBoostError xgBoostError) {
-        xgBoostError.printStackTrace();
-        throw new RuntimeException("XGBoost failure", xgBoostError);
+      XGBoostUtils.createFeatureMap(model, _train);
+      XGBoostVariableImportance variableImportance = model.setupVarImp();
+      try (XGBoostExecutor exec = makeExecutor(model)) {
+        model.model_info().updateBoosterBytes(exec.setup());
+        scoreAndBuildTrees(model, exec, variableImportance);
+      } catch (Exception e) {
+        throw new RuntimeException("Error while training XGBoost model", e);
       } finally {
-        if (setupTask != null) {
-          try {
-            XGBoostCleanupTask.cleanUp(setupTask);
-          } catch (Exception e) {
-            Log.err("XGBoost clean-up failed - this could leak memory!", e);
-          }
-        }
+        variableImportance.cleanup();
         // Unlock & save results
         model.unlock(_job);
       }
@@ -373,43 +420,25 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       final long totalColumns = oneHotEncodedColumns + nonCategoricalColumns;
       final double denominator = (double) totalColumns * _train.numRows();
       final double fillRatio = (double) nonZeroCount / denominator;
-      Log.info("fill ratio: " + fillRatio);
+      LOG.info("fill ratio: " + fillRatio);
 
       return fillRatio < FILL_RATIO_THRESHOLD
           || ((_train.numRows() * totalColumns) > Integer.MAX_VALUE);
     }
 
-    // For feature importances - write out column info
-    private String createFeatureMapFile(String featureMap) {
-      OutputStream os = null;
-      try {
-        File tmpModelDir = java.nio.file.Files.createTempDirectory("xgboost-model-" + _result.toString()).toFile();
-        File fmFile = new File(tmpModelDir, featureMapFileName);
-        os = new FileOutputStream(fmFile);
-        os.write(featureMap.getBytes());
-        os.close();
-        return fmFile.getAbsolutePath();
-      } catch (IOException e) {
-        throw new RuntimeException("Cannot generate feature map file " + featureMapFileName, e);
-      } finally {
-        FileUtils.close(os);
-      }
-    }
-
-    private void scoreAndBuildTrees(final XGBoostSetupTask setupTask, final BoosterProvider boosterProvider,
-                                    final XGBoostModel model) throws XGBoostError {
-      for( int tid=0; tid< _ntrees; tid++) {
+    private void scoreAndBuildTrees(final XGBoostModel model, final XGBoostExecutor exec, XGBoostVariableImportance varImp) {
+      for (int tid = 0; tid < _ntrees; tid++) {
+        if (_job.stop_requested() && tid > 0) break;
         // During first iteration model contains 0 trees, then 1-tree, ...
-        boolean scored = doScoring(model, boosterProvider, false);
+        boolean scored = doScoring(model, exec, varImp, false);
         if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
-          Log.info("Early stopping triggered - stopping XGBoost training");
+          LOG.info("Early stopping triggered - stopping XGBoost training");
           break;
         }
 
         Timer kb_timer = new Timer();
-        XGBoostUpdateTask t = new XGBoostUpdateTask(setupTask, tid).run();
-        boosterProvider.reset(t);
-        Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
+        exec.update(tid);
+        LOG.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
 
         model._output._ntrees++;
@@ -418,59 +447,107 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
         if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
         if (timeout()) {
-          Log.info("Stopping XGBoost training because of timeout");
+          LOG.info("Stopping XGBoost training because of timeout");
           break;
         }
       }
+
+      Map<String, Integer> monotoneConstraints = _parms.monotoneConstraints();
+      if (!monotoneConstraints.isEmpty() &&
+          _parms._booster != XGBoostModel.XGBoostParameters.Booster.gblinear &&
+          constraintCheckEnabled()
+      ) {
+        _job.update(0, "Checking monotonicity constraints on the final model");
+        model.model_info().updateBoosterBytes(exec.updateBooster());
+        checkConstraints(model.model_info(), monotoneConstraints);
+      }
+      
       _job.update(0, "Scoring the final model");
       // Final scoring
-      doScoring(model, boosterProvider, true);
+      doScoring(model, exec, varImp, true);
       // Finish remaining work (if stopped early)
       _job.update(_parms._ntrees-model._output._ntrees);
     }
 
-    // Don't start the tracker for 1 node clouds -> the GPU plugin fails in such a case
-    private boolean startRabitTracker(IRabitTracker rt) {
-      if (H2O.CLOUD.size() > 1) {
-        return rt.start(0);
-      }
-      return true;
+    private boolean constraintCheckEnabled() {
+      return Boolean.parseBoolean(getSysProperty("xgboost.monotonicity.checkEnabled", "true"));
     }
 
-    // RT should not be started for 1 node clouds
-    private void waitOnRabitWorkers(IRabitTracker rt) {
-      if(H2O.CLOUD.size() > 1) {
-        rt.waitFor(0);
+    private void checkConstraints(XGBoostModelInfo model_info, Map<String, Integer> monotoneConstraints) {
+      GradBooster booster = XGBoostJavaMojoModel.makePredictor(model_info._boosterBytes).getBooster();
+      if (!(booster instanceof GBTree)) {
+        throw new IllegalStateException("Expected booster object to be GBTree instead it is " + booster.getClass().getName());
       }
-    }
+      final RegTree[][] groupedTrees = ((GBTree) booster).getGroupedTrees();
+      final XGBoostUtils.FeatureProperties featureProperties = XGBoostUtils.assembleFeatureNames(model_info.dataInfo()); // XGBoost's usage of one-hot encoding assumed
 
-    /**
-     *
-     * @param rt Rabit tracker to stop
-     */
-    private void stopRabitTracker(IRabitTracker rt){
-      if(H2O.CLOUD.size() > 1) {
-        rt.stop();
+      for (RegTree[] classTrees : groupedTrees) {
+        for (RegTree tree : classTrees) {
+          if (tree == null) continue;
+          checkConstraints(tree.getNodes(), monotoneConstraints, featureProperties);
+        }
       }
     }
 
-    // XGBoost seems to manipulate its frames in case of a 1 node distributed version in a way the GPU plugin can't handle
-    // Therefore don't use RabitTracker envs for 1 node
-    private Map<String, String> getWorkerEnvs(IRabitTracker rt) {
-      if(H2O.CLOUD.size() > 1) {
-        return rt.getWorkerEnvs();
-      } else {
-        return new HashMap<>();
+    private void checkConstraints(RegTreeNode[] tree, Map<String, Integer> monotoneConstraints, XGBoostUtils.FeatureProperties featureProperties) {
+      float[] mins = new float[tree.length];
+      int[] min_ids = new int[tree.length];
+      float[] maxs = new float[tree.length];
+      int[] max_ids = new int[tree.length];
+      rollupMinMaxPreds(tree, 0, mins, min_ids, maxs, max_ids);
+      for (RegTreeNode node : tree) {
+        if (node.isLeaf()) continue;
+        String splitColumn = featureProperties._names[node.getSplitIndex()];
+        if (!monotoneConstraints.containsKey(splitColumn)) continue;
+        int constraint = monotoneConstraints.get(splitColumn);
+        int left = node.getLeftChildIndex();
+        int right = node.getRightChildIndex();
+        if (constraint > 0) {
+          if (maxs[left] > mins[right]) {
+            throw new IllegalStateException("Monotonicity constraint " + constraint + " violated on column '" + splitColumn + "' (max(left) > min(right)): " +
+                maxs[left] + " > " + mins[right] +
+                "\nNode: " + node +
+                "\nLeft Node (max): " + tree[max_ids[left]] +
+                "\nRight Node (min): " + tree[min_ids[right]]);
+          }
+        } else if (constraint < 0) {
+          if (mins[left] < maxs[right]) {
+            throw new IllegalStateException("Monotonicity constraint " + constraint + " violated on column '" + splitColumn + "' (min(left) < max(right)): " +
+                mins[left] + " < " + maxs[right] +
+                "\nNode: " + node +
+                "\nLeft Node (min): " + tree[min_ids[left]] +
+                "\nRight Node (max): " + tree[max_ids[right]]);
+          }
+        }
       }
+    }
+
+    private void rollupMinMaxPreds(RegTreeNode[] tree, int nid, float[] mins, int min_ids[], float[] maxs, int[] max_ids) {
+      RegTreeNode node = tree[nid];
+      if (node.isLeaf()) {
+        mins[nid] = node.getLeafValue();
+        min_ids[nid] = nid;
+        maxs[nid] = node.getLeafValue();
+        max_ids[nid] = nid;
+        return;
+      }
+      int left = node.getLeftChildIndex();
+      int right = node.getRightChildIndex();
+      rollupMinMaxPreds(tree, left, mins, min_ids, maxs, max_ids);
+      rollupMinMaxPreds(tree, right, mins, min_ids, maxs, max_ids);
+      final int min_id = mins[left] < mins[right] ? left : right;
+      mins[nid] = mins[min_id];
+      min_ids[nid] = min_ids[min_id];
+      final int max_id = maxs[left] > maxs[right] ? left : right;
+      maxs[nid] = maxs[max_id];
+      max_ids[nid] = max_ids[max_id];
     }
 
     long _firstScore = 0;
     long _timeLastScoreStart = 0;
     long _timeLastScoreEnd = 0;
 
-    private boolean doScoring(XGBoostModel model,
-                              BoosterProvider boosterProvider,
-                              boolean finalScoring) throws XGBoostError {
+    private boolean doScoring(final XGBoostModel model, final XGBoostExecutor exec, XGBoostVariableImportance varImp, boolean finalScoring) {
       boolean scored = false;
       long now = System.currentTimeMillis();
       if (_firstScore == 0) _firstScore = now;
@@ -489,25 +566,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
               manualInterval) {
         _timeLastScoreStart = now;
-        boosterProvider.updateBooster(); // retrieve booster, expensive!
+        model.model_info().updateBoosterBytes(exec.updateBooster());
         model.doScoring(_train, _parms.train(), _valid, _parms.valid());
         _timeLastScoreEnd = System.currentTimeMillis();
         XGBoostOutput out = model._output;
-        final Map<String, FeatureScore> varimp;
-        Booster booster = null;
-        try {
-          booster = model.model_info().deserializeBooster();
-          varimp = BoosterHelper.doWithLocalRabit(new BoosterHelper.BoosterOp<Map<String, FeatureScore>>() {
-            @Override
-            public Map<String, FeatureScore> apply(Booster booster) throws XGBoostError {
-              final String[] modelDump = booster.getModelDump(featureMapFileAbsolutePath, true);
-              return XGBoostUtils.parseFeatureScores(modelDump);
-            }
-          }, booster);
-        } finally {
-          if (booster != null)
-            BoosterHelper.dispose(booster);
-        }
+        final Map<String, FeatureScore> varimp = varImp.getFeatureScores(model.model_info()._boosterBytes);
         out._varimp = computeVarImp(varimp);
         out._model_summary = createModelSummaryTable(out._ntrees, null);
         out._scoring_history = createScoringHistoryTable(out, model._output._scored_train, out._scored_valid, _job, out._training_time_ms, _parms._custom_metric_func != null, false);
@@ -517,8 +580,14 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           out._variable_importances_frequency = createVarImpTable("Frequency", ArrayUtils.toDouble(out._varimp._freqs), out._varimp._names);
         }
         model.update(_job);
-        Log.info(model);
+        LOG.info(model);
         scored = true;
+      }
+
+      // Model Calibration (only for the final model, not CV models)
+      if (finalScoring && _parms.calibrateModel() && (!_parms._is_cv_model)) {
+        model._output._calib_model = PlattScalingHelper.buildCalibrationModel(XGBoost.this, _parms, _job, model);
+        model.update(_job);
       }
 
       return scored;
@@ -548,29 +617,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return new XgbVarImp(names, gains, covers, freqs);
   }
 
-  private static final class BoosterProvider {
-    XGBoostModelInfo _modelInfo;
-    XGBoostUpdateTask _updateTask;
-
-    BoosterProvider(XGBoostModelInfo modelInfo, XGBoostUpdateTask updateTask) {
-      _modelInfo = modelInfo;
-      _updateTask = updateTask;
-      _modelInfo.setBoosterBytes(_updateTask.getBoosterBytes());
-    }
-
-    final void reset(XGBoostUpdateTask updateTask) {
-      _updateTask = updateTask;
-    }
-
-    final void updateBooster() {
-      if (_updateTask == null) {
-        throw new IllegalStateException("Booster can be retrieved only once!");
-      }
-      final byte[] boosterBytes = _updateTask.getBoosterBytes();
-      _modelInfo.setBoosterBytes(boosterBytes);
-    }
-  }
-
   private static volatile boolean DEFAULT_GPU_BLACKLISTED = false;
   private static Set<Integer> GPUS = new HashSet<>();
 
@@ -583,7 +629,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       new RPC<>(node, t).call().get();
       hasGPU = t._hasGPU;
     }
-    Log.debug("Availability of GPU (id=" + gpu_id + ") on node " + node + ": " + hasGPU);
+    LOG.debug("Availability of GPU (id=" + gpu_id + ") on node " + node + ": " + hasGPU);
     return hasGPU;
   }
 
@@ -648,7 +694,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       try {
         Rabit.shutdown();
       } catch (XGBoostError e) {
-        Log.warn("Cannot shutdown XGBoost Rabit for current thread.");
+        LOG.warn("Cannot shutdown XGBoost Rabit for current thread.");
       }
     }
   }

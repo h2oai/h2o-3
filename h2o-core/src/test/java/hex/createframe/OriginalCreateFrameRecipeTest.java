@@ -173,7 +173,7 @@ public class OriginalCreateFrameRecipeTest extends TestUtil {
     Frame frame2 = s.createAndFillImpl().exec().get();
     assertNotNull(frame2);
 
-    assertTrue(isBitIdentical(frame1, frame2));
+    assertBitIdentical(frame1, frame2);
     frame1.delete();
     frame2.delete();
   }

@@ -15,6 +15,7 @@ import hex.genmodel.PredictContributions;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,10 +28,6 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
   private Predictor _predictor;
   private TreeSHAPPredictor<FVec> _treeSHAPPredictor;
   private OneHotEncoderFactory _1hotFactory;
-
-  static {
-    XGBoostJavaObjFunRegistration.register();
-  }
 
   public XGBoostJavaMojoModel(byte[] boosterBytes, String[] columns, String[][] domains, String responseColumn) {
     this(boosterBytes, columns, domains, responseColumn, false);
@@ -45,17 +42,22 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
 
   @Override
   public void postReadInit() {
-    _1hotFactory = new OneHotEncoderFactory();
+    _1hotFactory = new OneHotEncoderFactory(
+        backwardsCompatibility10(), _sparse, _catOffsets, _cats, _nums, _useAllFactorLevels
+    );
+  }
+  
+  private boolean backwardsCompatibility10() {
+    return _mojo_version == 1.0 && !"gbtree".equals(_boosterType);
   }
 
-  private static Predictor makePredictor(byte[] boosterBytes) {
+  public static Predictor makePredictor(byte[] boosterBytes) {
     try (InputStream is = new ByteArrayInputStream(boosterBytes)) {
       return new Predictor(is);
     } catch (IOException e) {
-      throw new IllegalStateException(e);
+      throw new IllegalStateException("Failed to load predictor.", e);
     }
   }
-
   private static TreeSHAPPredictor<FVec> makeTreeSHAPPredictor(Predictor predictor) {
     if (predictor.getNumClass() > 2) {
       throw new UnsupportedOperationException("Calculating contributions is currently not supported for multinomial models.");
@@ -66,16 +68,32 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
     for (RegTree tree : trees) {
       predictors.add(TreeSHAPHelper.makePredictor(tree));
     }
-    float initPred = TreeSHAPHelper.getInitPrediction(predictor);
+    float initPred = predictor.getBaseScore();
     return new TreeSHAPEnsemble<>(predictors, initPred);
   }
 
   public final double[] score0(double[] doubles, double offset, double[] preds) {
-    if (offset != 0) throw new UnsupportedOperationException("Unsupported: offset != 0");
-
+    if (backwardsCompatibility10()) {
+      // throw an exception for unexpectedly long input vector
+      if (doubles.length > _cats + _nums) {
+        throw new ArrayIndexOutOfBoundsException("Too many input values.");
+      }
+      // for unexpectedly short input vector handle the situation gracefully
+      if (doubles.length < _cats + _nums) {
+        double[] tmp = new double[_cats + _nums];
+        System.arraycopy(doubles, 0,tmp, 0, doubles.length);
+        doubles = tmp;
+      }
+    }
     FVec row = _1hotFactory.fromArray(doubles);
-    float[] out = _predictor.predict(row);
-
+    float[] out;
+    if (_hasOffset) {
+      out = _predictor.predict(row, (float) offset);
+    } else if (offset != 0) {
+      throw new UnsupportedOperationException("Unsupported: offset != 0");
+    } else {
+      out = _predictor.predict(row);
+    }
     return toPreds(doubles, out, preds, _nclasses, _priorClassDistrib, _defaultThreshold);
   }
 
@@ -92,7 +110,7 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
   public final PredictContributions makeContributionsPredictor() {
     TreeSHAPPredictor<FVec> treeSHAPPredictor = _treeSHAPPredictor != null ? 
             _treeSHAPPredictor : makeTreeSHAPPredictor(_predictor);
-    return new XGBoostContributionsPredictor(treeSHAPPredictor);
+    return new XGBoostContributionsPredictor(this, treeSHAPPredictor);
   }
 
   static ObjFunction getObjFunction(String name) {
@@ -109,77 +127,60 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
   @Override
   public SharedTreeGraph convert(final int treeNumber, final String treeClass) {
     GradBooster booster = _predictor.getBooster();
-    return _computeGraph(booster, treeNumber);
+    return computeGraph(booster, treeNumber);
   }
 
-  private class OneHotEncoderFactory {
-    private final int[] _catMap;
-    private final float _notHot;
+  @Override
+  public SharedTreeGraph convert(final int treeNumber, final String treeClass, final ConvertTreeOptions options) {
+    return convert(treeNumber, treeClass); // Options currently do not apply to XGBoost trees conversion
+  }
 
-    OneHotEncoderFactory() {
-      _notHot = _sparse ? Float.NaN : 0;
-      if (_catOffsets == null) {
-        _catMap = new int[0];
+  @Override
+  public double getInitF() {
+    return _predictor.getBaseScore();
+  }
+
+  @Override
+  public SharedTreeMojoModel.LeafNodeAssignments getLeafNodeAssignments(double[] doubles) {
+    FVec row = _1hotFactory.fromArray(doubles);
+    final SharedTreeMojoModel.LeafNodeAssignments result = new SharedTreeMojoModel.LeafNodeAssignments();
+    result._paths = _predictor.predictLeafPath(row);
+    result._nodeIds = _predictor.predictLeaf(row);
+    return result;
+  }
+
+  @Override
+  public String[] getDecisionPath(double[] doubles) {
+    FVec row = _1hotFactory.fromArray(doubles);
+    return _predictor.predictLeafPath(row);
+  }
+
+  private final class XGBoostContributionsPredictor extends ContributionsPredictor<FVec> {
+    private XGBoostContributionsPredictor(XGBoostMojoModel model, TreeSHAPPredictor<FVec> treeSHAPPredictor) {
+      super(_nums + _catOffsets[_cats] + 1, makeFeatureContributionNames(model), treeSHAPPredictor);
+    }
+
+    @Override
+    protected FVec toInputRow(double[] input) {
+      return _1hotFactory.fromArray(input);
+    }
+  }
+
+  private static String[] makeFeatureContributionNames(XGBoostMojoModel m) {
+    final String[] names = new String[m._nums + m._catOffsets[m._cats]];
+    final String[] features = m.features();
+    int i = 0;
+    for (int c = 0; c < features.length; c++) {
+      if (m._domains[c] == null) {
+        names[i++] = features[c];
       } else {
-        _catMap = new int[_catOffsets[_cats]];
-        for (int c = 0; c < _cats; c++) {
-          for (int j = _catOffsets[c]; j < _catOffsets[c+1]; j++)
-            _catMap[j] = c;
-        }
+        for (String d : m._domains[c])
+          names[i++] = features[c] + "." + d;
+        names[i++] = features[c] + ".missing(NA)";
       }
     }
-
-    OneHotEncoderFVec fromArray(double[] input) {
-      float[] numValues = new float[_nums];
-      int[] catValues = new int[_cats];
-      GenModel.setCats(input, catValues, _cats, _catOffsets, _useAllFactorLevels);
-      for (int i = 0; i < numValues.length; i++) {
-        float val = (float) input[_cats + i];
-        numValues[i] = _sparse && (val == 0) ? Float.NaN : val;
-      }
-
-      return new OneHotEncoderFVec(_catMap, catValues, numValues, _notHot);
-    }
-  }
-
-  private class OneHotEncoderFVec implements FVec {
-    private final int[] _catMap;
-    private final int[] _catValues;
-    private final float[] _numValues;
-    private final float _notHot;
-
-    private  OneHotEncoderFVec(int[] catMap, int[] catValues, float[] numValues, float notHot) {
-      _catMap = catMap;
-      _catValues = catValues;
-      _numValues = numValues;
-      _notHot = notHot;
-    }
-
-    @Override
-    public final float fvalue(int index) {
-      if (index >= _catMap.length)
-        return _numValues[index - _catMap.length];
-
-      final boolean isHot = _catValues[_catMap[index]] == index;
-      return isHot ? 1 : _notHot;
-    }
-  }
-
-  private final class XGBoostContributionsPredictor implements PredictContributions {
-    private final TreeSHAPPredictor<FVec> _treeSHAPPredictor;
-    private final Object _workspace;
-
-    public XGBoostContributionsPredictor(TreeSHAPPredictor<FVec> treeSHAPPredictor) {
-      _treeSHAPPredictor = treeSHAPPredictor;
-      _workspace = _treeSHAPPredictor.makeWorkspace();
-    }
-
-    @Override
-    public float[] calculateContributions(double[] input) {
-      FVec row = _1hotFactory.fromArray(input);
-      float[] contribs = new float[_nums + _catOffsets[_cats] + 1];
-      return  _treeSHAPPredictor.calculateContributions(row, contribs, 0, -1, _workspace);
-    }
+    assert names.length == i;
+    return names;
   }
 
 }

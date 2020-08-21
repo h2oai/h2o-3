@@ -36,21 +36,27 @@ public class ModelJsonReader {
     }
 
     /**
-     * Extracts a Table from H2O's model serialized into JSON.
+     * Extracts a Table array from H2O's model serialized into JSON.
      *
      * @param modelJson Full JSON representation of a model
-     * @param tablePath Path in the given JSON to the desired table. Levels are dot-separated.
-     * @return An instance of {@link Table}, if there was a table found by following the given path. Otherwise null.
+     * @param tablePath Path in the given JSON to the desired table array. Levels are dot-separated.
+     * @return An instance of {@link Table} [], if there was a table array found by following the given path. Otherwise null.
      */
-    public static Table readTable(final JsonObject modelJson, final String tablePath) {
+    public static Table[] readTableArray(final JsonObject modelJson, final String tablePath) {
+        Table[] tableArray;
         Objects.requireNonNull(modelJson);
-        JsonElement potentialTableJson = findInJson(modelJson, tablePath);
-        if (potentialTableJson.isJsonNull()) {
-            System.out.println(String.format("Failed to extract element '%s' MojoModel dump.",
-                    tablePath));
+        JsonArray jsonArray = ((JsonArray) findInJson(modelJson, tablePath));
+        if (jsonArray == null)
             return null;
+        tableArray = new Table[jsonArray.size()];
+        for (int i = 0; i < jsonArray.size(); i++) {
+            Table table = readTableJson(jsonArray.get(i).getAsJsonObject());
+            tableArray[i] = table;
         }
-        final JsonObject tableJson = potentialTableJson.getAsJsonObject();
+        return tableArray;
+    }
+    
+    private static Table readTableJson(JsonObject tableJson){
         final int rowCount = tableJson.get("rowcount").getAsInt();
 
         final String[] columnHeaders;
@@ -127,6 +133,24 @@ public class ModelJsonReader {
                 new String[rowCount], columnHeaders, columnTypes, null, columnFormats, data);
     }
 
+    /**
+     * Extracts a Table from H2O's model serialized into JSON.
+     *
+     * @param modelJson Full JSON representation of a model
+     * @param tablePath Path in the given JSON to the desired table. Levels are dot-separated.
+     * @return An instance of {@link Table}, if there was a table found by following the given path. Otherwise null.
+     */
+    public static Table readTable(final JsonObject modelJson, final String tablePath) {
+        Objects.requireNonNull(modelJson);
+        JsonElement potentialTableJson = findInJson(modelJson, tablePath);
+        if (potentialTableJson.isJsonNull()) {
+            System.err.println(String.format("Failed to extract element '%s' MojoModel dump.",
+                    tablePath));
+            return null;
+        }
+        return readTableJson(potentialTableJson.getAsJsonObject());
+    }
+
     public static <T> void fillObjects(final List<T> objects, final JsonArray from) {
         for (int i = 0; i < from.size(); i++) {
             final JsonElement jsonElement = from.get(i);
@@ -141,7 +165,7 @@ public class ModelJsonReader {
         final JsonElement jsonSourceObject = findInJson(from, elementPath);
 
         if (jsonSourceObject instanceof JsonNull) {
-            System.out.println(String.format("Element '%s' not found in JSON. Skipping. Object '%s' is not populated by values.",
+            System.err.println(String.format("Element '%s' not found in JSON. Skipping. Object '%s' is not populated by values.",
                     elementPath, object.getClass().getName()));
             return;
         }
@@ -199,9 +223,9 @@ public class ModelJsonReader {
                 }
                 if (value != null) field.set(object, value);
             } catch (IllegalAccessException e) {
-                System.out.println(String.format("Field '%s' could not be accessed. Ignoring.", fieldName));
+                System.err.println(String.format("Field '%s' could not be accessed. Ignoring.", fieldName));
             } catch (ClassCastException | UnsupportedOperationException e) {
-                System.out.println(String.format("Field '%s' could not be casted to '%s'. Ignoring.", fieldName, type.toString()));
+                System.err.println(String.format("Field '%s' could not be casted to '%s'. Ignoring.", fieldName, type.toString()));
             }
         }
     }

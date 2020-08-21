@@ -71,8 +71,8 @@ General Troubleshooting Tips
 
 --------------
 
-**The following error message displayed when I tried to launch H2O -
-what should I do?**
+The following error message displayed when I tried to launch H2O. What should I do?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ::
 
@@ -101,13 +101,15 @@ and H2O should launch successfully.
 
 --------------
 
-**I am not launching on Hadoop. How can I increase the amount of time that H2O allows for expected nodes to connect?**
+I am not launching on Hadoop. How can I increase the amount of time that H2O allows for expected nodes to connect?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For cluster startup, if you are not launching on Hadoop, then you will not need to specify a timeout. You can add additional nodes to the cloud as long as you haven't submitted any jobs to the cluster. When you do submit a job to the cluster, the cluster will lock and will print a message similar to `"Locking cloud to new members, because <reason>..."`.
 
 --------------
 
-**Occasionally I receive an "out of memory" error. Is there a method based on the trees/depth/cross-validations that is used to determine how much memory is needed to store the model?**
+Occasionally I receive an "out of memory" error. Is there a method based on the trees/depth/cross-validations that is used to determine how much memory is needed to store the model?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We normally suggest 3-4 times the size of the dataset for the amount of memory required. It's difficult to calculate the exact memory footprint for each case because running with a different solver or with different parameters can change the memory footprint drastically. In GLM for example, there's an internal heuristic for checking the estimated memory needed:
 
@@ -128,7 +130,8 @@ Depending on the user-specified predictors, max_depth per tree, the number of tr
 
 --------------
 
-**What's the best approach to help diagnose a possible memory problem on a cluster?**
+What's the best approach to help diagnose a possible memory problem on a cluster?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We've found that the best way to understand JVM memory consumption is to turn on specific flags. These flags differ depending on your Java version.
 
@@ -148,7 +151,8 @@ Since Java 9, the previously metioned flags have been marked as deprecated and a
 
 --------------
 
-**How can I debug memory issues?**
+How can I debug memory issues?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We recommend the following approach using R to debug memory issues:
 
@@ -190,7 +194,26 @@ At this point you want to see if the bottom trough of the usage is growing from 
 
 --------------
 
-**Is there a way to clear everything from H2O (including H2OFrames/Models)?**
+How can I prevent out-of-memory errors when loading data into H2O?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We recommend that you size your cluster memory to be about four times the size of your data. If for some reason you are worried that during loading of data your cluster may run out of memory, you can activate our out-of-memory prevention feature. When enabled, this will stop any data loading that threatens to cause an out-of-memory error. This can be enabled by setting the following property:
+
+::
+
+    -Dsys.ai.h2o.util.frameSizeMonitor.enabled=true
+
+Please note that this property has to be set for every node.
+
+By default, the frame size monitor will shut down any imports that cause the cluster to reach less than 20% of free memory. You can adjust this threshold to be less or more aggressive, as in the example below. It should be noted that setting this value to less than 20% will make this feature less reliable, and out-of-memory errors can still occur.
+
+::
+
+    -Dsys.ai.h2o.util.frameSizeMonitor.safetyCoefficient=0.3
+
+
+Is there a way to clear everything from H2O (including H2OFrames/Models)?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can open Flow and select individual items to delete from H2O, or you can run the following to remove everything from H2O:
 
@@ -198,5 +221,3 @@ You can open Flow and select individual items to delete from H2O, or you can run
 
     import water.api.RemoveAllHandler
     new RemoveAllHandler().remove(3,new RemoveAllV3())
-
-    

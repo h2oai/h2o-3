@@ -17,9 +17,9 @@ public class ModelMetricsBinomialGLMGeneric extends ModelMetricsBinomialGeneric 
                                         CustomMetric customMetric, double mean_per_class_error, TwoDimTable thresholds_and_metric_scores,
                                         TwoDimTable max_criteria_and_metric_scores, TwoDimTable confusion_matrix,
                                         long nullDegressOfFreedom, long residualDegressOfFreedom, double resDev, double nullDev,
-                                        double aic, TwoDimTable coefficients_table, double r2) {
+                                        double aic, TwoDimTable coefficients_table, double r2, String description) {
     super(model, frame, nobs, mse, domain, sigma, auc, logloss, gainsLiftTable, customMetric, mean_per_class_error,
-            thresholds_and_metric_scores, max_criteria_and_metric_scores, confusion_matrix, r2);
+            thresholds_and_metric_scores, max_criteria_and_metric_scores, confusion_matrix, r2, description);
     _nullDegressOfFreedom = nullDegressOfFreedom;
     _residualDegressOfFreedom = residualDegressOfFreedom;
     _resDev = resDev;

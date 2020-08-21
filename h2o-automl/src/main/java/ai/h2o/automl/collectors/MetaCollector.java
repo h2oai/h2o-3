@@ -78,15 +78,9 @@ public class MetaCollector {
     private class Callback extends H2O.H2OCallback{
       public Callback(){super(ParallelTasks.this);}
       @Override public void callback(H2O.H2OCountedCompleter cc) {
-          int i = _ctr.incrementAndGet();
-          if (i < _tasks.length)
-            asyncVecTask(i);
-      }
-
-      @Override
-      public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-        ex.printStackTrace();
-        return super.onExceptionalCompletion(ex, caller);
+        int i = _ctr.incrementAndGet();
+        if (i < _tasks.length)
+          asyncVecTask(i);
       }
     }
   }
@@ -104,9 +98,9 @@ public class MetaCollector {
     public double[] _ssqs; // different from _h._ssqs
     public DynamicHisto(DHistogram h) { _h=h; }
     DynamicHisto(String name, final int nbins, int nbins_cats, byte isInt,
-                        double min, double max) {
+                        double min, double max, boolean hasNAs) {
       if(!(Double.isNaN(min)) && !(Double.isNaN(max))) { //If both are NaN then we don't need a histogram
-        _h = makeDHistogram(name, nbins, nbins_cats, isInt, min, max);
+        _h = makeDHistogram(name, nbins, nbins_cats, isInt, min, max, hasNAs);
       }else{
         Log.info("Ignoring all NaN column -> "+ name);
       }
@@ -118,7 +112,7 @@ public class MetaCollector {
       public String javaName() { return "this.is.unused"; }
     }
     public static DHistogram makeDHistogram(String name, int nbins, int nbins_cats, byte isInt,
-                                  double min, double max) {
+                                  double min, double max, boolean hasNAs) {
       final double minIn = Math.max(min,-Double.MAX_VALUE);   // inclusive vector min
       final double maxIn = Math.min(max, Double.MAX_VALUE);   // inclusive vector max
       final double maxEx = DHistogram.find_maxEx(maxIn,isInt==1?1:0); // smallest exclusive max
@@ -128,7 +122,7 @@ public class MetaCollector {
       parms._nbins = nbins;
       parms._nbins_cats = nbins_cats;
 
-      return DHistogram.make(name, nbins, isInt, minIn, maxEx, 0, parms, null, null);
+      return DHistogram.make(name, nbins, isInt, minIn, maxEx, hasNAs, 0, parms, null, null);
     }
     public double binAt(int b) { return _h.binAt(b); }
 

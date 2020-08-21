@@ -1,7 +1,5 @@
 package water.network;
 
-import water.H2OSecurityManager;
-
 import java.io.IOException;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
@@ -15,14 +13,14 @@ public class SocketChannelFactory {
 
     private volatile static SocketChannelFactory INSTANCE;
 
-    private H2OSecurityManager sm;
+    private WrappingSecurityManager sm;
 
-    private SocketChannelFactory(H2OSecurityManager sm) {
+    private SocketChannelFactory(WrappingSecurityManager sm) {
         this.sm = sm;
     }
 
     public ByteChannel serverChannel(ByteChannel channel) throws IOException {
-        if (sm.securityEnabled && !(channel instanceof SSLSocketChannel)) {
+        if (sm.isSecurityEnabled() && !(channel instanceof SSLSocketChannel)) {
             return sm.wrapServerChannel((SocketChannel) channel);
         } else {
             return channel;
@@ -30,14 +28,14 @@ public class SocketChannelFactory {
     }
 
     public ByteChannel clientChannel(ByteChannel channel, String host, int port) throws IOException {
-        if (sm.securityEnabled && !(channel instanceof SSLSocketChannel)) {
+        if (sm.isSecurityEnabled() && !(channel instanceof SSLSocketChannel)) {
             return sm.wrapClientChannel((SocketChannel) channel, host, port);
         } else {
             return channel;
         }
     }
 
-    public static SocketChannelFactory instance(H2OSecurityManager sm) {
+    public static SocketChannelFactory instance(WrappingSecurityManager sm) {
         if (null == INSTANCE) {
             synchronized (SocketChannelFactory.class) {
                 if (null == INSTANCE) {

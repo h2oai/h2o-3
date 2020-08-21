@@ -19,7 +19,7 @@ public class GbmMojoWriter extends SharedTreeMojoWriter<GBMModel, GBMModel.GBMPa
   }
 
   @Override public String mojoVersion() {
-    return "1.30";
+    return "1.40";
   }
 
   @Override
@@ -29,6 +29,5 @@ public class GbmMojoWriter extends SharedTreeMojoWriter<GBMModel, GBMModel.GBMPa
     writekv("distribution", dist._family);
     writekv("link_function", dist._linkFunction.linkFunctionType);
     writekv("init_f", model._output._init_f);
-    writekv("offset_column", "null");  // Not known yet
   }
 }

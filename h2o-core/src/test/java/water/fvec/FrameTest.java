@@ -1,8 +1,14 @@
 package water.fvec;
 
-import org.junit.*;
+import org.junit.Assume;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import water.*;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -11,20 +17,18 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.*;
 
 /**
  * Tests for Frame.java
  */
-public class FrameTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(2)
+public class FrameTest {
   
   @Rule
   public transient ExpectedException ee = ExpectedException.none();
   
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
-
   @Test
   public void testNonEmptyChunks() {
     try {
@@ -39,7 +43,7 @@ public class FrameTest extends TestUtil {
               .build());
       assertEquals(4, train1.anyVec().nonEmptyChunks());
       final Frame train2 = Scope.track(new TestFrameBuilder()
-              .withName("testFrame")
+              .withName("testFrame2")
               .withColNames("ColA", "Response")
               .withVecTypes(Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ard(1, 2, 3, 4, 0))
@@ -97,15 +101,12 @@ public class FrameTest extends TestUtil {
     Frame y = null;
     try {
       x = testData.deepSlice(new Frame(rnd.vec(1)), null);
-//      y = testData.deepSlice(new Frame(rnd.vec(2)),null);
-      assertTrue(TestUtil.isBitIdentical(subset1, x));
-//      assertTrue(isBitIdentical(subset2,y));
+      TestUtil.assertBitIdentical(subset1, x);
     } finally {
       Scope.exit();
       testData.delete();
       rnd.delete();
       subset1.delete();
-//      subset2.delete();
       if (x != null) x.delete();
       if (y != null) y.delete();
     }
@@ -205,6 +206,14 @@ public class FrameTest extends TestUtil {
       Scope.exit();
     }
   }
+  
+  private static class DoubleColTask extends MRTask {
+    @Override
+    public void map(Chunk c, NewChunk nc) {
+      for (int i = 0; i < c._len; i++)
+        nc.addNum(c.atd(i));
+    }
+  }
 
   @Test
   public void testFinalizePartialFrameRemovesTrailingChunks() {
@@ -229,13 +238,7 @@ public class FrameTest extends TestUtil {
       final long[] expectedESPC = new long[]{0, 0, 1, 1, 4, 6};
       assertArrayEquals(expectedESPC, f.anyVec().espc());
 
-      Frame f2 = Scope.track(new MRTask(){
-        @Override
-        public void map(Chunk c, NewChunk nc) {
-          for (int i = 0; i < c._len; i++)
-            nc.addNum(c.atd(i));
-        }
-      }.doAll(Vec.T_NUM, f).outputFrame());
+      Frame f2 = Scope.track(new DoubleColTask().doAll(Vec.T_NUM, f).outputFrame());
 
       // the ESPC is the same
       assertArrayEquals(expectedESPC, f2.anyVec().espc());
@@ -349,12 +352,15 @@ public class FrameTest extends TestUtil {
       @Override
       public InputStream toCSV(CSVStreamParams parms) {
         assertEquals(headers, parms._headers);
-        assertEquals(hex_string, parms._hex_string);
+        assertEquals(hex_string, parms._hexString);
         return invoked;
       }
     };
 
-    InputStream wasInvoked = f.toCSV(headers, hex_string);
+    Frame.CSVStreamParams params = new Frame.CSVStreamParams()
+        .setHeaders(headers)
+        .setHexString(hex_string);
+    InputStream wasInvoked = f.toCSV(params);
 
     assertSame(invoked, wasInvoked); // just make sure the asserts were actually called
   }
@@ -387,4 +393,27 @@ public class FrameTest extends TestUtil {
     }
   }
   
+
+  @Test
+  public void moveFirstTest() {
+    Scope.enter();
+    try {
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB", "fold")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "c"))
+              .withDataForCol(1, ar("d", "e", "f"))
+              .withDataForCol(2, ar(3,1,2))
+              .build();
+
+      fr.moveFirst(new int[]{1, 2});
+      printOutFrameAsTable(fr, false, fr.numRows());
+      assertCatVecEquals(cvec("d", "e", "f"), fr.vec(0));
+      assertVecEquals(vec(3,1,2), fr.vec(1), 1e-5);
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

@@ -23,7 +23,7 @@ testPartialPlots <- function() {
   
   ## Calculate partial dependence using h2o.partialPlot for columns "AGE" and "RACE"
   # build pdp without weight or NA
-  h2o_pp_weight_NA <- h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE"), nbins=3, plot = F, weight_column="constWeight", include_na=TRUE)
+  h2o_pp_weight_NA <- h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE"), nbins=3, plot = FALSE, weight_column="constWeight", include_na=TRUE)
   h2o2DtablePrintOut <- capture.output(h2o_pp_weight_NA[[1]]) # capture H2OTable print here
   naNum <- sum(grepl("NA", h2o2DtablePrintOut))  # should be 1
 }

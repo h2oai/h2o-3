@@ -13,13 +13,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class GenericModelOutput extends Model.Output {
+    public final String _original_model_identifier;
+    public final String _original_model_full_name;
+    public final ModelCategory _modelCategory;
+    public final int _nfeatures;
+    public final double _defaultThreshold;
+    public TwoDimTable _variable_importances;
 
-    final ModelCategory _modelCategory;
-    final int _nfeatures;
-    TwoDimTable _variable_importances;
 
-
-    public GenericModelOutput(final ModelDescriptor modelDescriptor, final ModelAttributes modelAttributes) {
+    public GenericModelOutput(final ModelDescriptor modelDescriptor, final ModelAttributes modelAttributes, final Table[] reproducibilityInformation) {
         _isSupervised = modelDescriptor.isSupervised();
         _domains = modelDescriptor.scoringDomains();
         _origDomains = modelDescriptor.scoringDomains();
@@ -31,45 +33,46 @@ public class GenericModelOutput extends Model.Output {
         _names = modelDescriptor.columnNames();
         _modelCategory = modelDescriptor.getModelCategory();
         _nfeatures = modelDescriptor.nfeatures();
+        _defaultThreshold = modelDescriptor.defaultThreshold();
+        _original_model_identifier = modelDescriptor.algoName();
+        _original_model_full_name = modelDescriptor.algoFullName();
+        _reproducibility_information_table = convertTables(reproducibilityInformation);
+
         if (modelAttributes != null) {
             _model_summary = convertTable(modelAttributes.getModelSummary());
             _cross_validation_metrics_summary = convertTable(modelAttributes.getCrossValidationMetricsSummary());
 
             if (modelAttributes instanceof SharedTreeModelAttributes) {
-                fillSharedTreeModelAttributes((SharedTreeModelAttributes) modelAttributes, modelDescriptor);
+                _variable_importances = convertVariableImportances(((SharedTreeModelAttributes) modelAttributes).getVariableImportances());
+            } else if (modelAttributes instanceof DeepLearningModelAttributes) {
+                _variable_importances = convertVariableImportances(((DeepLearningModelAttributes) modelAttributes).getVariableImportances());
             } else {
                 _variable_importances = null;
             }
             convertMetrics(modelAttributes, modelDescriptor);
             _scoring_history = convertTable(modelAttributes.getScoringHistory());
         }
-
-    }
-
-    private void fillSharedTreeModelAttributes(final SharedTreeModelAttributes sharedTreeModelAttributes, final ModelDescriptor modelDescriptor) {
-        _variable_importances = convertVariableImportances(sharedTreeModelAttributes.getVariableImportances());
     }
 
     private void convertMetrics(final ModelAttributes modelAttributes, final ModelDescriptor modelDescriptor) {
         // Training metrics
 
         if (modelAttributes.getTrainingMetrics() != null) {
-            _training_metrics = (ModelMetrics) convertObjects(modelAttributes.getTrainingMetrics(),
-                    determineModelmetricsType(modelAttributes.getTrainingMetrics(), modelDescriptor, modelAttributes));
+            _training_metrics = convertModelMetrics(modelAttributes.getTrainingMetrics(), modelDescriptor, modelAttributes);
         }
         if (modelAttributes.getValidationMetrics() != null) {
             _validation_metrics = (ModelMetrics) convertObjects(modelAttributes.getValidationMetrics(),
-                    determineModelmetricsType(modelAttributes.getValidationMetrics(), modelDescriptor, modelAttributes));
+                    convertModelMetrics(modelAttributes.getValidationMetrics(), modelDescriptor, modelAttributes));
         }
         if (modelAttributes.getCrossValidationMetrics() != null) {
             _cross_validation_metrics = (ModelMetrics) convertObjects(modelAttributes.getCrossValidationMetrics(),
-                    determineModelmetricsType(modelAttributes.getCrossValidationMetrics(), modelDescriptor, modelAttributes));
+                    convertModelMetrics(modelAttributes.getCrossValidationMetrics(), modelDescriptor, modelAttributes));
         }
         
     }
 
-    private ModelMetrics determineModelmetricsType(final MojoModelMetrics mojoMetrics, final ModelDescriptor modelDescriptor,
-                                                   final ModelAttributes modelAttributes) {
+    private ModelMetrics convertModelMetrics(final MojoModelMetrics mojoMetrics, final ModelDescriptor modelDescriptor,
+                                             final ModelAttributes modelAttributes) {
         final ModelCategory modelCategory = modelDescriptor.getModelCategory();
         switch (modelCategory) {
             case Binomial:
@@ -90,14 +93,14 @@ public class GenericModelOutput extends Model.Output {
                             convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores),
                             convertTable(binomial._confusion_matrix), glmBinomial._nullDegressOfFreedom, glmBinomial._residualDegressOfFreedom,
                             glmBinomial._resDev, glmBinomial._nullDev, glmBinomial._AIC, convertTable(modelAttributesGLM._coefficients_table),
-                            glmBinomial._r2);
+                            glmBinomial._r2, glmBinomial._description);
                 } else {
                     return new ModelMetricsBinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
                             _domains[_domains.length - 1], binomial._sigma,
                             auc, binomial._logloss, convertTable(binomial._gains_lift_table),
                             new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), binomial._mean_per_class_error,
                             convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores),
-                            convertTable(binomial._confusion_matrix), binomial._r2);
+                            convertTable(binomial._confusion_matrix), binomial._r2, binomial._description);
                 }
             case Multinomial:
                 assert mojoMetrics instanceof MojoModelMetricsMultinomial;
@@ -112,14 +115,14 @@ public class GenericModelOutput extends Model.Output {
                             glmMultinomial._logloss, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),
                             glmMultinomial._mean_per_class_error, glmMultinomial._nullDegressOfFreedom, glmMultinomial._residualDegressOfFreedom,
                             glmMultinomial._resDev, glmMultinomial._nullDev, glmMultinomial._AIC, convertTable(modelAttributesGLM._coefficients_table),
-                            glmMultinomial._r2);
+                            glmMultinomial._r2, glmMultinomial._description);
                 } else {
                     final MojoModelMetricsMultinomial multinomial = (MojoModelMetricsMultinomial) mojoMetrics;
                     return new ModelMetricsMultinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
                             _domains[_domains.length - 1], multinomial._sigma,
                             convertTable(multinomial._confusion_matrix), convertTable(multinomial._hit_ratios),
                             multinomial._logloss, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),
-                            multinomial._mean_per_class_error, multinomial._r2);
+                            multinomial._mean_per_class_error, multinomial._r2, multinomial._description);
                 }
             case Regression:
                 assert mojoMetrics instanceof MojoModelMetricsRegression;
@@ -138,7 +141,7 @@ public class GenericModelOutput extends Model.Output {
 
                     return new ModelMetricsRegressionGeneric(null, null, metricsRegression._nobs, metricsRegression._MSE,
                             metricsRegression._sigma, metricsRegression._mae, metricsRegression._root_mean_squared_log_error, metricsRegression._mean_residual_deviance,
-                            new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), metricsRegression._r2);
+                            new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), mojoMetrics._description);
                 }
             case AnomalyDetection:
                 assert mojoMetrics instanceof MojoModelMetricsAnomaly;
@@ -159,14 +162,14 @@ public class GenericModelOutput extends Model.Output {
                             ordinalMetrics._domain, ordinalMetrics._sigma, convertTable(ordinalMetrics._cm), ordinalMetrics._hit_ratios,
                             ordinalMetrics._logloss, new CustomMetric(ordinalMetrics._custom_metric_name, ordinalMetrics._custom_metric_value),
                             ordinalMetrics._r2, ordinalMetrics._nullDegressOfFreedom, ordinalMetrics._residualDegressOfFreedom, ordinalMetrics._resDev,
-                            ordinalMetrics._nullDev, ordinalMetrics._AIC, convertTable(modelAttributesGLM._coefficients_table), 
-                            convertTable(ordinalMetrics._hit_ratio_table));
+                            ordinalMetrics._nullDev, ordinalMetrics._AIC, convertTable(modelAttributesGLM._coefficients_table),
+                            convertTable(ordinalMetrics._hit_ratio_table), ordinalMetrics._mean_per_class_error, ordinalMetrics._description);
                 } else {
                     MojoModelMetricsOrdinal ordinalMetrics = (MojoModelMetricsOrdinal) mojoMetrics;
                     return new ModelMetricsOrdinalGeneric(null, null, ordinalMetrics._nobs, ordinalMetrics._MSE,
                             ordinalMetrics._domain, ordinalMetrics._sigma, convertTable(ordinalMetrics._cm), ordinalMetrics._hit_ratios,
                             ordinalMetrics._logloss, new CustomMetric(ordinalMetrics._custom_metric_name, ordinalMetrics._custom_metric_value),
-                            ordinalMetrics._r2, convertTable(ordinalMetrics._hit_ratio_table));
+                            convertTable(ordinalMetrics._hit_ratio_table), ordinalMetrics._mean_per_class_error, ordinalMetrics._description);
                 }
             case Unknown:
             case Clustering:
@@ -180,12 +183,15 @@ public class GenericModelOutput extends Model.Output {
         }
     }
 
+    @Override
+    public double defaultThreshold() {
+        return _defaultThreshold;
+    }
 
     @Override
     public ModelCategory getModelCategory() {
         return _modelCategory; // Might be calculated as well, but the information in MOJO is the one to display.
     }
-
     @Override
     public int nfeatures() {
         return _nfeatures;
@@ -241,6 +247,17 @@ public class GenericModelOutput extends Model.Output {
 
         TwoDimTable varImps = ModelMetrics.calcVarImp(variableImportances._importances, variableImportances._variables);
         return varImps;
+    }
+    
+    private static TwoDimTable[] convertTables(final Table[] inputTables) {
+        if (inputTables == null)
+            return null;
+        
+        TwoDimTable[] tables = new TwoDimTable[inputTables.length];
+        for (int i = 0; i < inputTables.length; i++) {
+            tables[i] = convertTable(inputTables[i]);
+        }
+        return tables;
     }
     
     private static TwoDimTable convertTable(final Table convertedTable){

@@ -391,7 +391,7 @@ Note: on a regular machine it may take very long time (about an hour) to run all
 
 ##### Step 2. Install JDK:
 
-Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). Installation instructions can be found here [JDK installation](http://askubuntu.com/questions/56104/how-can-i-install-sun-oracles-proprietary-java-jdk-6-7-8-or-jre). To make sure the command prompt is detecting the correct Java version, run:
+Install [Java 8](https://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). Installation instructions can be found here [JDK installation](http://askubuntu.com/questions/56104/how-can-i-install-sun-oracles-proprietary-java-jdk-6-7-8-or-jre). To make sure the command prompt is detecting the correct Java version, run:
 
     javac -version
 
@@ -487,17 +487,6 @@ cd h2o-3
 
 
 <a name="Launching"></a>
-### 4.8. Setting up your preferred IDE environment
-
-For users of Intellij's IDEA, generate project files with:
-
-    ./gradlew idea
-
-For users of Eclipse, generate project files with:
-
-    ./gradlew eclipse
-
-
 
 ## 5. Launching H2O after Building
 
@@ -586,25 +575,6 @@ When using the h2odriver (e.g. when running with `hadoop jar ...`), specify `-pr
 *  Setting any `hadoop.proxyuser.<proxyusername>.{hosts,groups,users}` property to '*' can greatly increase exposure to security risk.
 *  When users aren't authenticated before being used with the driver (e.g. like Steam does via a secure web app/API), auditability of the process/system is difficult.
 
-
-### Debugging HDFS
-
-These are the required steps to debug HDFS in IDEA as a standalone H2O process.
-
-Debugging H2O on Hadoop as a `hadoop jar` hadoop mapreduce job is a difficult thing to do. However, what you can do relatively easily is tweak the gradle settings for the project so that H2OApp has HDFS as a dependency.  Here are the steps:
-
-1.  Make the following changes to gradle build files below
-    *  Change the `hadoop-client` version in `h2o-persist-hdfs` to the desired version     
-    *  Add `h2o-persist-hdfs` as a dependency to `h2o-app`
-1.  Close IDEA
-1.  `./gradlew cleanIdea`
-1.  `./gradlew idea`
-1.  Re-open IDEA
-1.  Run or debug H2OApp, and you will now be able to read from HDFS inside the IDE debugger
-
-`h2o-persist-hdfs` is normally only a dependency of the assembly modules, since those are not used by any downstream modules.  We want the final module to define its own version of HDFS if any is desired.
-
-Note this example is for MapR 4, which requires the additional `org.json` dependency to work properly.
 
 ```
 $ git diff
@@ -714,25 +684,23 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 <a name="Roadmap"></a>
 ## 10. Roadmap
 
-### H2O 3.28 - Autumn 2019 (Q4/2019)
+### H2O 3.30.1.1 - July 2020
 
-* Support for Mixed Effects/Hierarchical GLM: [PUBDEV-6509](https://0xdata.atlassian.net/browse/PUBDEV-6509)
-* Constrained k-means Clustering: [PUBDEV-6447](https://0xdata.atlassian.net/browse/PUBDEV-6447)
-* Grid Search Improvements (parallelization, crash recovery)
-* XGBoost Improvements (upgrade, Platt Scaling)
-* MOJO Import (XGBoost support, expose original model parameters)
-* Security Improvements (SPNEGO support: [PUBDEV-6899](https://0xdata.atlassian.net/browse/PUBDEV-6899))
-* Target Encoding (Flow support): [PUBDEV-6837](https://0xdata.atlassian.net/browse/PUBDEV-6837)
+* Hive Data Export
+* XGBoost Stability/Resource utilization: Scaling cluster up for XGBoost
+* Isolation Forest Improvements (contamination, validation frame, grid search)
+* NLP Improvements: TF-IDF
+* Generalized Additive Models (improvements, not a beta anymore)
+* CoxPH additions (new metrics, baseline hazard function, MOJO)
 
-### H2O 3.30 - Winter 2020 (Q1/2020)
+### H2O 3.32.0.1 - September 2020
 
-* Generalized Additive Models: [PUBDEV-6807](https://0xdata.atlassian.net/browse/PUBDEV-6807)
-* Kubernetes Support: [PUBDEV-6852](https://0xdata.atlassian.net/browse/PUBDEV-6852)
-* Automatic cluster sizing: [PUBDEV-6045](https://0xdata.atlassian.net/browse/PUBDEV-6045)
-* Out-of-memory error protection: [PUBDEV-6614](https://0xdata.atlassian.net/browse/PUBDEV-6614)
-* Target Encoding Improvements (regression, multinomial)
-* PSVM Improvements (linear kernel, MOJO)
-
+* RuleFit algorithm
+* Extended Isolation Forest Algoritm
+* Target Encoding for Regression and Multinomial problems
+* Kubernetes Improvements (REST API clustering, healthchecks)
+* GBM monotone constraints for quantile and laplace distributions
+* Performance optimizations (lower memory usage)
 
 <a name="Community"></a>
 ## 11. Community
@@ -813,6 +781,7 @@ Pavel Pscheidl
 Michal Kurka
 Veronika Maurerova
 Jan Sterba
+Jan Jendrusak
 ```
 
 <a name="Advisors"></a>

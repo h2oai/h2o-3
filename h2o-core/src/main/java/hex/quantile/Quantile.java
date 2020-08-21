@@ -348,4 +348,31 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     assert plo <= prob && prob <= phi;
     return lo + (hi-lo)*(prob-plo)/(phi-plo); // Classic linear interpolation
   }
+
+  @Override
+  public boolean haveMojo() {
+    return false;
+  }
+
+  @Override
+  public boolean havePojo() {
+    return false;
+  }
+
+  public static double calcQuantile(Vec v, double quantile) {
+    Frame fr = new Frame(Key.make(), new String[]{"V"}, new Vec[]{v});
+    try {
+      DKV.put(fr._key, fr);
+
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._probs = new double[]{quantile};
+      QuantileModel kmm = new Quantile(parms).trainModelNested(null);
+      kmm.delete();
+      return kmm._output._quantiles[0][0];
+    } finally {
+      DKV.remove(fr._key);
+    }
+  }
+
 }

@@ -52,6 +52,7 @@
 #' @param compute_metrics \code{Logical}. Compute metrics on training data Defaults to TRUE.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
 #' @return an object of class \linkS4class{H2OBinomialModel} if the response has two categorical levels,
 #'         and \linkS4class{H2OMultinomialModel} otherwise.
 #' @examples
@@ -89,7 +90,8 @@ h2o.naiveBayes <- function(x,
                            eps_prob = 0,
                            compute_metrics = TRUE,
                            max_runtime_secs = 0,
-                           export_checkpoints_dir = NULL)
+                           export_checkpoints_dir = NULL,
+                           gainslift_bins = -1)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -163,6 +165,8 @@ h2o.naiveBayes <- function(x,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   if (!missing(threshold) && missing(min_sdev)) {
     warning("argument 'threshold' is deprecated; use 'min_sdev' instead.")
@@ -172,8 +176,146 @@ h2o.naiveBayes <- function(x,
     warning("argument 'eps' is deprecated; use 'eps_sdev' instead.")
     parms$eps_sdev <- eps
   }
+  if (!missing(max_hit_ratio_k)) {
+    warning("argument max_hit_ratio_k is deprecated and has no use.")
+    parms$offset_column <- NULL
+  }
 
   # Error check and build model
   model <- .h2o.modelJob('naivebayes', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
+}
+.h2o.train_segments_naiveBayes <- function(x,
+                                           y,
+                                           training_frame,
+                                           nfolds = 0,
+                                           seed = -1,
+                                           fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
+                                           fold_column = NULL,
+                                           keep_cross_validation_models = TRUE,
+                                           keep_cross_validation_predictions = FALSE,
+                                           keep_cross_validation_fold_assignment = FALSE,
+                                           validation_frame = NULL,
+                                           ignore_const_cols = TRUE,
+                                           score_each_iteration = FALSE,
+                                           balance_classes = FALSE,
+                                           class_sampling_factors = NULL,
+                                           max_after_balance_size = 5.0,
+                                           max_hit_ratio_k = 0,
+                                           laplace = 0,
+                                           threshold = 0.001,
+                                           min_sdev = 0.001,
+                                           eps = 0,
+                                           eps_sdev = 0,
+                                           min_prob = 0.001,
+                                           eps_prob = 0,
+                                           compute_metrics = TRUE,
+                                           max_runtime_secs = 0,
+                                           export_checkpoints_dir = NULL,
+                                           gainslift_bins = -1,
+                                           segment_columns = NULL,
+                                           segment_models_id = NULL,
+                                           parallelism = 1)
+{
+  # formally define variables that were excluded from function parameters
+  model_id <- NULL
+  verbose <- NULL
+  destination_key <- NULL
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Validate other required args
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
+     }
+  }
+
+  # Validate other args
+  .naivebayes.map <- c("x" = "ignored_columns", "y" = "response_column", 
+                       "threshold" = "min_sdev", "eps" = "eps_sdev")
+
+  # Build parameter list to send to model builder
+  parms <- list()
+  parms$training_frame <- training_frame
+  args <- .verify_dataxy(training_frame, x, y)
+  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  parms$ignored_columns <- args$x_ignore
+  parms$response_column <- args$y
+
+  if (!missing(nfolds))
+    parms$nfolds <- nfolds
+  if (!missing(seed))
+    parms$seed <- seed
+  if (!missing(fold_assignment))
+    parms$fold_assignment <- fold_assignment
+  if (!missing(fold_column))
+    parms$fold_column <- fold_column
+  if (!missing(keep_cross_validation_models))
+    parms$keep_cross_validation_models <- keep_cross_validation_models
+  if (!missing(keep_cross_validation_predictions))
+    parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
+  if (!missing(keep_cross_validation_fold_assignment))
+    parms$keep_cross_validation_fold_assignment <- keep_cross_validation_fold_assignment
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
+  if (!missing(ignore_const_cols))
+    parms$ignore_const_cols <- ignore_const_cols
+  if (!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
+  if (!missing(balance_classes))
+    parms$balance_classes <- balance_classes
+  if (!missing(class_sampling_factors))
+    parms$class_sampling_factors <- class_sampling_factors
+  if (!missing(max_after_balance_size))
+    parms$max_after_balance_size <- max_after_balance_size
+  if (!missing(max_hit_ratio_k))
+    parms$max_hit_ratio_k <- max_hit_ratio_k
+  if (!missing(laplace))
+    parms$laplace <- laplace
+  if (!missing(min_sdev))
+    parms$min_sdev <- min_sdev
+  if (!missing(eps_sdev))
+    parms$eps_sdev <- eps_sdev
+  if (!missing(min_prob))
+    parms$min_prob <- min_prob
+  if (!missing(eps_prob))
+    parms$eps_prob <- eps_prob
+  if (!missing(compute_metrics))
+    parms$compute_metrics <- compute_metrics
+  if (!missing(max_runtime_secs))
+    parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
+
+  if (!missing(threshold) && missing(min_sdev)) {
+    warning("argument 'threshold' is deprecated; use 'min_sdev' instead.")
+    parms$min_sdev <- threshold
+  }
+  if (!missing(eps) && missing(eps_sdev)) {
+    warning("argument 'eps' is deprecated; use 'eps_sdev' instead.")
+    parms$eps_sdev <- eps
+  }
+  if (!missing(max_hit_ratio_k)) {
+    warning("argument max_hit_ratio_k is deprecated and has no use.")
+    parms$offset_column <- NULL
+  }
+
+  # Build segment-models specific parameters
+  segment_parms <- list()
+  if (!missing(segment_columns))
+    segment_parms$segment_columns <- segment_columns
+  if (!missing(segment_models_id))
+    segment_parms$segment_models_id <- segment_models_id
+  segment_parms$parallelism <- parallelism
+
+  # Error check and build segment models
+  segment_models <- .h2o.segmentModelsJob('naivebayes', segment_parms, parms, h2oRestApiVersion=3)
+  return(segment_models)
 }

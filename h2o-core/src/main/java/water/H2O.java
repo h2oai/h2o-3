@@ -20,7 +20,10 @@ import water.server.ServletUtils;
 import water.util.*;
 import water.webserver.iface.WebServer;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
@@ -40,6 +43,7 @@ import static water.util.JavaVersionUtils.JAVA_VERSION;
 */
 final public class H2O {
   public static final String DEFAULT_JKS_PASS = "h2oh2o";
+  public static final int H2O_DEFAULT_PORT = 54321;
 
   //-------------------------------------------------------------------------------------------------------------------
   // Command-line argument parsing and help
@@ -103,8 +107,11 @@ final public class H2O {
             "          (This usually has a good default that you need not change.)\n" +
             "\n" +
             "    -log_level <TRACE,DEBUG,INFO,WARN,ERRR,FATAL>\n" +
-            "          Write messages at this logging level, or above.  Default is INFO." +
-            "\n" +
+            "          Write messages at this logging level, or above.  Default is INFO.\n" +
+            "\n" + 
+            "    -max_log_file_size\n" +
+            "          Maximum size of INFO and DEBUG log files. The file is rolled over after a specified size has been reached.\n" +
+            "          (The default is 3MB. Minimum is 1MB and maximum is 99999MB)\n" +
             "\n" +
             "    -flow_dir <server side directory or HDFS directory>\n" +
             "          The directory where H2O stores saved flows.\n" +
@@ -117,9 +124,9 @@ final public class H2O {
             "    -client\n" +
             "          Launch H2O node in client mode.\n" +
             "\n" +
-            "    -notify_local <fileSystemPath>" +
-            "          Specifies a file to write when the node is up. The file contains one line with the IP and" +
-            "          port of the embedded web server. e.g. 192.168.1.100:54321" +
+            "    -notify_local <fileSystemPath>\n" +
+            "          Specifies a file to write when the node is up. The file contains one line with the IP and\n" +
+            "          port of the embedded web server. e.g. 192.168.1.100:54321\n" +
             "\n" +
             "    -context_path <context_path>\n" +
             "          The context path for jetty.\n" +
@@ -249,8 +256,17 @@ final public class H2O {
     /** -internal_security_conf path (absolute or relative) to a file containing all internal security related configurations */
     public String internal_security_conf = null;
 
+    /** -internal_security_conf_rel_paths interpret paths of internal_security_conf relative to the main config file */
+    public boolean internal_security_conf_rel_paths = false;
+
     /** -internal_security_enabled is a boolean that indicates if internal communication paths are secured*/
     public boolean internal_security_enabled = false;
+
+    /** -allow_insecure_xgboost is a boolean that allows xgboost to run in a secured cluster */
+    public boolean allow_insecure_xgboost = false;
+
+    /** -use_external_xgboost; invoke XGBoost on external cluster stared by Steam */
+    public boolean use_external_xgboost = false;
 
     /** -decrypt_tool specifies the DKV key where a default decrypt tool will be installed*/
     public String decrypt_tool = null;
@@ -262,7 +278,7 @@ final public class H2O {
     public int port;
 
     /** -baseport=####; Port to start upward searching from. */
-    public int baseport = 54321;
+    public int baseport = H2O_DEFAULT_PORT;
 
     /** -port_offset=####; Offset between the API(=web) port and the internal communication port; api_port + port_offset = h2o_port */
     public int port_offset = 1;
@@ -344,6 +360,14 @@ final public class H2O {
     /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
     public boolean client;
 
+    /** -allow_clients, -allow_clients=true; Enable clients to connect to this H2O node - disabled by default */
+    public boolean allow_clients = false;
+
+    /** If this timeout is set to non 0 value, stop the cluster if there hasn't been any rest api request to leader
+     * node after the given timeout. Unit is milliseconds.
+     */
+    public int rest_api_ping_timeout = 0;
+    
     /** specifies a file to write when the node is up */
     public String notify_local;
 
@@ -351,7 +375,7 @@ final public class H2O {
     // HDFS & AWS
     //-----------------------------------------------------------------------------------
     /** -hdfs_config=hdfs_config; configuration file of the HDFS */
-    public String hdfs_config = null;
+    public String[] hdfs_config = null;
 
     /** -hdfs_skip=hdfs_skip; used by Hadoop driver to not unpack and load any HDFS jar file at runtime. */
     public boolean hdfs_skip = false;
@@ -368,6 +392,9 @@ final public class H2O {
     /** -log_level=log_level; One of DEBUG, INFO, WARN, ERRR.  Default is INFO. */
     public String log_level;
 
+    /** -max_log_file_size=max_log_file_size; Maximum size of log file. The file is rolled over after a specified size has been reached.*/
+    public String max_log_file_size;
+
     /** -random_udp_drop, -random_udp_drop=true; test only, randomly drop udp incoming */
     public boolean random_udp_drop;
 
@@ -379,6 +406,9 @@ final public class H2O {
 
     /** Timeout specifying how long to wait before we check if the client has disconnected from this node */
     public long clientDisconnectTimeout = HeartBeatThread.CLIENT_TIMEOUT * 20;
+
+    /** -embedded; when running embedded into another application (eg. Sparkling Water) - enforce all threads to be daemon threads */
+    public boolean embedded = false;
 
     /**
      * Optionally disable algorithms marked as beta or experimental.
@@ -403,7 +433,7 @@ final public class H2O {
           result.append(", ");
         }
         catch (IllegalAccessException ex) {
-          Log.err(ex);
+          Log.err(ex, ex);
         }
       }
       result.deleteCharAt(result.length() - 2);
@@ -465,6 +495,21 @@ final public class H2O {
         return portNum;
       }
     }
+    
+    public String checkFileSize(String fileSizeString){
+      int length = fileSizeString.length();
+      if(length > 2 && length < 8 && fileSizeString.substring(length-2, length).equals("MB")){
+        try {
+          Integer.parseInt(fileSizeString.substring(0, length-2));
+          return fileSizeString;
+        } catch (NumberFormatException ex){
+          parseFailed("Argument " + _lastMatchedFor + " must be String value from 1MB to 99999MB.");
+          return null;
+        }
+      } 
+      parseFailed("Argument " + _lastMatchedFor + " must be String value from 1MB to 99999MB.");
+      return null;
+    }
 
     @Override public String toString() { return _s; }
   }
@@ -523,6 +568,12 @@ final public class H2O {
       else if (s.matches("client")) {
         trgt.client = true;
       }
+      else if (s.matches("allow_clients")) {
+        trgt.allow_clients = true;
+      } else if (s.matches("rest_api_ping_timeout")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.rest_api_ping_timeout = s.parseInt(args[i]);
+      }
       else if (s.matches("notify_local")) {
         i = s.incrementAndCheck(i, args);
         trgt.notify_local = args[i];
@@ -568,7 +619,7 @@ final public class H2O {
       }
       else if (s.matches("hdfs_config")) {
         i = s.incrementAndCheck(i, args);
-        trgt.hdfs_config = args[i];
+        trgt.hdfs_config = ArrayUtils.append(trgt.hdfs_config, args[i]);
       }
       else if (s.matches("hdfs_skip")) {
         trgt.hdfs_skip = true;
@@ -588,6 +639,10 @@ final public class H2O {
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
         trgt.log_level = args[i];
+      }
+      else if (s.matches("max_log_file_size")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.max_log_file_size = s.checkFileSize(args[i]);
       }
       else if (s.matches("random_udp_drop")) {
         trgt.random_udp_drop = true;
@@ -648,6 +703,15 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         trgt.internal_security_conf = args[i];
       }
+      else if (s.matches("internal_security_conf_rel_paths")) {
+        trgt.internal_security_conf_rel_paths = true;
+      }
+      else if (s.matches("allow_insecure_xgboost")) {
+        trgt.allow_insecure_xgboost = true;
+      }
+      else if (s.matches("use_external_xgboost")) {
+        trgt.use_external_xgboost = true;
+      }
       else if (s.matches("decrypt_tool")) {
         i = s.incrementAndCheck(i, args);
         trgt.decrypt_tool = args[i];
@@ -664,6 +728,14 @@ final public class H2O {
         trgt.clientDisconnectTimeout = clientDisconnectTimeout;
       } else if (s.matches("useUDP")) {
         Log.warn("Support for UDP communication was removed from H2O, using TCP.");
+      } else if (s.matches("watchdog_client_retry_timeout")) {
+        warnWatchdogRemoved("watchdog_client_retry_timeout");
+      } else if (s.matches("watchdog_client")) {
+        warnWatchdogRemoved("watchdog_client");
+      } else if (s.matches("watchdog_client_connect_timeout")) {
+        warnWatchdogRemoved("watchdog_client_connect_timeout");
+      } else if (s.matches("watchdog_stop_without_client")) {
+        warnWatchdogRemoved("watchdog_stop_without_client");
       } else if (s.matches("features")) {
         i = s.incrementAndCheck(i, args);
         trgt.features_level = ModelBuilder.BuilderVisibility.valueOfIgnoreCase(args[i]);
@@ -674,6 +746,8 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         String value = args[i];
         trgt.extra_headers = ArrayUtils.append(trgt.extra_headers, new KeyValueArg(key, value));
+      } else if(s.matches("embedded")) {
+        trgt.embedded = true;
       } else {
         parseFailed("Unknown argument (" + s + ")");
       }
@@ -681,6 +755,11 @@ final public class H2O {
     return trgt;
   }
 
+  private static void warnWatchdogRemoved(String param) {
+    Log.warn("Support for watchdog client communication was removed and '" + param + "' argument has no longer any effect. " +
+            "It will be removed in the next major release 3.30.");
+  }
+  
   private static void validateArguments() {
     if (ARGS.jks != null) {
       if (! new File(ARGS.jks).exists()) {
@@ -731,6 +810,10 @@ final public class H2O {
       if (ARGS.session_timeout <= 0)
         parseFailed("Invalid session timeout specification (" + ARGS.session_timeout + ")");
     }
+    
+    if (ARGS.rest_api_ping_timeout < 0) {
+      parseFailed(String.format("rest_api_ping_timeout needs to be 0 or higher, was (%d)", ARGS.rest_api_ping_timeout));
+    }
 
     // Validate extension arguments
     for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
@@ -748,8 +831,60 @@ final public class H2O {
   /**
    * Register embedded H2O configuration object with H2O instance.
    */
-  public static void setEmbeddedH2OConfig(AbstractEmbeddedH2OConfig c) { embeddedH2OConfig = c; }
-  public static AbstractEmbeddedH2OConfig getEmbeddedH2OConfig() { return embeddedH2OConfig; }
+  public static void setEmbeddedH2OConfig(AbstractEmbeddedH2OConfig c) {
+    embeddedH2OConfig = c;
+  }
+
+  /**
+   * Returns an instance of {@link AbstractEmbeddedH2OConfig}. The origin of the embedded config might be either
+   * from directly setting the embeddedH2OConfig field via setEmbeddedH2OConfig setter, or dynamically provided via
+   * service loader. Directly set {@link AbstractEmbeddedH2OConfig} is always prioritized. ServiceLoader lookup is only
+   * performed if no config is previously set.
+   * <p>
+   * Result of first ServiceLoader lookup is also considered final - once a service is found, dynamic lookup is not
+   * performed any further.
+   *
+   * @return An instance of {@link AbstractEmbeddedH2OConfig}, if set or dynamically provided. Otherwise null
+   * @author Michal Kurka
+   */
+  public static AbstractEmbeddedH2OConfig getEmbeddedH2OConfig() {
+    if (embeddedH2OConfig != null) {
+      return embeddedH2OConfig;
+    }
+
+    embeddedH2OConfig = discoverEmbeddedConfigProvider()
+            .map(embeddedConfigProvider -> {
+              Log.info(String.format("Dynamically loaded '%s' as AbstractEmbeddedH2OConfigProvider.", embeddedConfigProvider.getName()));
+              return embeddedConfigProvider.getConfig();
+            }).orElse(null);
+
+    return embeddedH2OConfig;
+  }
+
+  /**
+   * Uses {@link ServiceLoader} to discover active instances of {@link EmbeddedConfigProvider}. Only one provider
+   * may be active at a time. If more providers are detected, {@link IllegalStateException} is thrown.
+   *
+   * @return An {@link Optional} of {@link EmbeddedConfigProvider}, if a single active provider is found. Otherwise
+   * an empty optional.
+   * @throws IllegalStateException When there are multiple active instances {@link EmbeddedConfigProvider} discovered.
+   */
+  private static Optional<EmbeddedConfigProvider> discoverEmbeddedConfigProvider() throws IllegalStateException {
+    final ServiceLoader<EmbeddedConfigProvider> configProviders = ServiceLoader.load(EmbeddedConfigProvider.class);
+    EmbeddedConfigProvider provider = null;
+    for (final EmbeddedConfigProvider candidateProvider : configProviders) {
+      candidateProvider.init();
+      if (!candidateProvider.isActive())
+        continue;
+      if (provider != null) {
+        throw new IllegalStateException("Multiple active EmbeddedH2OConfig providers: " + provider.getName() +
+                " and " + candidateProvider.getName() + " (possibly other as well).");
+      }
+      provider = candidateProvider;
+    }
+
+    return Optional.ofNullable(provider);
+  }
 
   /**
    * Tell the embedding software that this H2O instance belongs to
@@ -775,8 +910,9 @@ final public class H2O {
         output.write(':');
         output.write(Integer.toString(API_PORT));
         output.flush();
-      } catch ( IOException e ) {
-        e.printStackTrace();
+      } catch (IOException e) {
+        Log.err("Unable to write notify file.");
+        H2O.exit(-1);
       }
     }
     if (embeddedH2OConfig == null) { return; }
@@ -796,11 +932,12 @@ final public class H2O {
    *  @param status H2O's requested process exit value.
    */
   public static void exit(int status) {
+    // Log subsystem might be still caching message, let it know to flush the cache and start logging even if we don't have SELF yet
+    Log.notifyAboutProcessExiting();
+
     // Embedded H2O path (e.g. inside Hadoop mapper task).
     if( embeddedH2OConfig != null )
       embeddedH2OConfig.exit(status);
-    // Flush all cached messages
-    Log.flushStdout();
 
     // Standalone H2O path,p or if the embedded config does not exit
     System.exit(status);
@@ -923,7 +1060,7 @@ final public class H2O {
   //-------------------------------------------------------------------------------------------------------------------
 
   private static AtomicLong nextModelNum = new AtomicLong(0);
-
+  
   /**
    * Calculate a unique model id that includes User-Agent info (if it can be discovered).
    * For the user agent info to be discovered, this needs to be called from a Jetty thread.
@@ -940,9 +1077,12 @@ final public class H2O {
    * @param desc Model description.
    * @return The suffix.
    */
-  synchronized public static String calcNextUniqueModelId(String desc) {
+  public static String calcNextUniqueModelId(String desc) {
+    return calcNextUniqueObjectId("model", nextModelNum, desc);
+  }
+  synchronized public static String calcNextUniqueObjectId(String type, AtomicLong sequenceSource, String desc) {
     StringBuilder sb = new StringBuilder();
-    sb.append(desc).append("_model_");
+    sb.append(desc).append('_').append(type).append('_');
 
     // Append user agent string if we can figure it out.
     String source = ServletUtils.getUserAgent();
@@ -978,7 +1118,7 @@ final public class H2O {
     //
     // I actually tried only doing the addAndGet only for POST requests (and junk UUID otherwise),
     // but that didn't eliminate the gaps.
-    long n = nextModelNum.addAndGet(1);
+    long n = sequenceSource.addAndGet(1);
     sb.append(Long.toString(CLUSTER_ID)).append("_").append(Long.toString(n));
 
     return sb.toString();
@@ -1562,10 +1702,7 @@ final public class H2O {
   /* A static list of acceptable Cloud members passed via -flatfile option.
    * It is updated also when a new client appears. */
   private static Set<H2ONode> STATIC_H2OS = null;
-
-  /* List of all clients that ever connected to this cloud. Keys are IP:PORT of these clients */
-  private static Map<String, H2ONode> CLIENTS_MAP = new ConcurrentHashMap<>();
-
+  
   // Reverse cloud index to a cloud; limit of 256 old clouds.
   static private final H2O[] CLOUDS = new H2O[256];
 
@@ -1591,7 +1728,7 @@ final public class H2O {
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
   private static void printAndLogVersion(String[] arguments) {
-    Log.init(ARGS.log_level, ARGS.quiet);
+    Log.init(ARGS.log_level, ARGS.quiet, ARGS.max_log_file_size);
     Log.info("----- H2O started " + (ARGS.client?"(client)":"") + " -----");
     Log.info("Build git branch: " + ABV.branchName());
     Log.info("Build git hash: " + ABV.lastCommitHash());
@@ -1616,6 +1753,7 @@ final public class H2O {
     Log.info("Java version: Java "+System.getProperty("java.version")+" (from "+System.getProperty("java.vendor")+")");
     List<String> launchStrings = ManagementFactory.getRuntimeMXBean().getInputArguments();
     Log.info("JVM launch parameters: "+launchStrings);
+    Log.info("JVM process id: " + ManagementFactory.getRuntimeMXBean().getName());
     Log.info("OS version: "+System.getProperty("os.name")+" "+System.getProperty("os.version")+" ("+System.getProperty("os.arch")+")");
     long totalMemory = OSUtils.getTotalPhysicalMemory();
     Log.info ("Machine physical memory: " + (totalMemory==-1 ? "NA" : PrettyPrint.bytes(totalMemory)));
@@ -1645,6 +1783,11 @@ final public class H2O {
               "  2. Point your browser to " + NetworkInit.h2oHttpView.getScheme() + "://localhost:55555");
     }
 
+    if (H2O.ARGS.rest_api_ping_timeout > 0) {
+      Log.info(String.format("Registering REST API Check Thread. If 3/Ping endpoint is not" +
+          " accessed during %d ms, the cluster will be terminated.", H2O.ARGS.rest_api_ping_timeout));
+      new RestApiPingCheckThread().start();
+    }
     // Create the starter Cloud with 1 member
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
     SELF._heartbeat._client = ARGS.client;
@@ -1816,13 +1959,19 @@ final public class H2O {
 
   public static void waitForCloudSize(int x, long ms) {
     long start = System.currentTimeMillis();
+    if(!cloudIsReady(x)) 
+      Log.info("Waiting for clouding to finish. Current number of nodes " + CLOUD.size() + ". Target number of nodes: " + x);
     while (System.currentTimeMillis() - start < ms) {
-      if (CLOUD.size() >= x && Paxos._commonKnowledge)
+      if (cloudIsReady(x))
         break;
       try { Thread.sleep(100); } catch (InterruptedException ignore) {}
     }
     if (CLOUD.size() < x)
-      throw new RuntimeException("Cloud size " + CLOUD.size() + " under " + x);
+      throw new RuntimeException("Cloud size " + CLOUD.size() + " under " + x + ". Consider to increase `DEFAULT_TIME_FOR_CLOUDING`.");
+  }
+
+  private static boolean cloudIsReady(int x) {
+    return CLOUD.size() >= x && Paxos._commonKnowledge;
   }
 
   public static int getCloudSize() {
@@ -1977,8 +2126,8 @@ final public class H2O {
     // Notes: 
     // - make sure that the following whitelist is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R
     // - upgrade of the javassist library should be considered when adding support for a new java version
-    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<8 || JAVA_VERSION.getMajor()>12)) {
-      System.err.println("Only Java 8, 9, 10, 11 and 12 are supported, system version is " + System.getProperty("java.version"));
+    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<8 || JAVA_VERSION.getMajor()>14)) {
+      System.err.println("Only Java 8, 9, 10, 11, 12 and 13 are supported, system version is " + System.getProperty("java.version"));
       return true;
     }
     String vmName = System.getProperty("java.vm.name");
@@ -2050,7 +2199,7 @@ final public class H2O {
     long time2 = System.currentTimeMillis();
     printAndLogVersion(arguments);
     if( ARGS.version ) {
-      Log.flushStdout();
+      Log.flushBufferedMessages();
       exit(0);
     }
 
@@ -2170,6 +2319,12 @@ final public class H2O {
       new ClientDisconnectCheckThread().start();
     }
 
+    if (isGCLoggingEnabled()) {
+      Log.info(H2O.technote(16,
+              "GC logging is enabled, you might see messages containing \"GC (Allocation Failure)\". " +
+                      "Please note that this is a normal part of GC operations and occurrence of such messages doesn't directly indicate an issue."));
+    }
+    
     long time12 = System.currentTimeMillis();
     Log.debug("Timing within H2O.main():");
     Log.debug("    Args parsing & validation: " + (time1 - time0) + "ms");
@@ -2185,6 +2340,18 @@ final public class H2O {
     Log.debug("    Start GA: " + (time12 - time11) + "ms");
   }
 
+  private static boolean isGCLoggingEnabled() {
+    RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+    List<String> jvmArgs = runtimeMXBean.getInputArguments();
+    for (String arg : jvmArgs) {
+      if (arg.startsWith("-XX:+PrintGC") || 
+              arg.equals("-verbose:gc") || 
+              (arg.startsWith("-Xlog:") && arg.contains("gc")))
+        return true;
+    }
+    return false;
+  }
+  
   /** Find PID of the current process, use -1 if we can't find the value. */
   private static long getCurrentPID() {
     try {

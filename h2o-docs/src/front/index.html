@@ -1,970 +1,198 @@
-
 <!DOCTYPE html>
-<html lang="en-US">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>H2O.ai Documentation</title>
-        <link rel="shortcut icon" href="assets/images/favicon.ico">
-        <link rel='stylesheet' id='megamenu-css' href='assets/maxmegamenu/maxmegamenu_style.css?ver=5b6e52' type='text/css' media='all' />
-        <link rel='stylesheet' href='assets/vendor/bootstrap.min.css' type='text/css' />
-        <link rel='stylesheet' href='assets/stylesheets/style.css?ver=4.6.1' type='text/css' media='all' />
-        <script src="assets/javascripts/jquery.min.js"></script>
+<html lang="en-US" xmlns:fb="https://www.facebook.com/2008/fbml" xmlns:addthis="https://www.addthis.com/help/api-spec"  prefix="og: https://ogp.me/ns#">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=0, minimum-scale=1.0, maximum-scale=1.0">
+  <title>H2O.ai Documentation</title>
 
-<!-- Start Alexa Certify Javascript -->
-<script type="text/javascript">
-_atrk_opts = { atrk_acct:"GTD0p1IWhd10O7", domain:"h2o.ai",dynamic: true};
-(function() { var as = document.createElement('script'); as.type = 'text/javascript'; as.async = true; as.src = "https://d31qbv1cthcecs.cloudfront.net/atrk.js"; var s = document.getElementsByTagName('script')[0];s.parentNode.insertBefore(as, s); })();
-</script>
-<noscript><img src="https://d5nxst8fruw4z.cloudfront.net/atrk.gif?account=GTD0p1IWhd10O7" style="display:none" height="1" width="1" alt="" /></noscript>
-<!-- End Alexa Certify Javascript -->  
+  <link rel="canonical" href="https://docs.h2o.ai" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="H2O.ai Documentation" />
+  <meta property="og:url" content="https://docs.h2o.ai" />
+  <meta property="og:site_name" content="H2O.ai" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="H2O.ai Documentation" />
+  <!-- / Yoast SEO plugin. -->
 
-   </head>
+<!--  <link rel='dns-prefetch' href='assets/addthis/s7.addthis.com' /> -->
+  <link rel='dns-prefetch' href='assets/addthis/s.w.org' />
 
-  <body class="page page-id-176 page-parent page-template page-template-download page-template-download-php" >
-    <main>
-    <header>
-      <a href="http://www.h2o.ai/">
-        <div id="home"></div>
-      </a>
-      <div id="mega-menu-wrap-primary" class="mega-menu-wrap">
-        <div class="mega-menu-toggle" tabindex="0">
-          <div class='mega-toggle-block mega-menu-toggle-block mega-toggle-block-right mega-toggle-block-1' id='mega-toggle-block-1' style="margin-right: 15px;">
-          </div>
-        </div>
-        <ul id="mega-menu-primary" class="mega-menu mega-menu-horizontal mega-no-js" data-event="hover" data-effect="fade" data-effect-speed="200" data-panel-width="body" data-second-click="close" data-document-click="collapse" data-reverse-mobile-items="true" data-vertical-behaviour="standard" data-breakpoint="900">
-          <li class='mega-menu-item mega-menu-item-type-custom mega-menu-item-object-custom mega-menu-item-has-children mega-align-bottom-right mega-menu-megamenu mega-hide-arrow mega-menu-item-13'>
-            <a class="mega-menu-link" href="#" tabindex="0">Products</a>
-            <ul class="mega-sub-menu">
-              <li class='mega-menu-item mega-menu-item-type-widget widget_text mega-menu-columns-1-of-6 mega-menu-clear mega-menu-item-text-6'>
-                <div class="textwidget">
-                  <a style="color:#ffffff;" href="http://www.h2o.ai/h2o/"><h3>H2O</h3><p>The #1 open source platform for AI.</p></a>
-                </div>
-              </li>
-              <li class='mega-menu-item mega-menu-item-type-widget widget_text mega-menu-columns-1-of-6 mega-menu-item-text-7' id='mega-menu-item-text-7'>
-                <div class="textwidget">
-                  <a style="color:#ffffff;" href="http://www.h2o.ai/sparkling-water/"><h3>Sparkling Water</h3><p>Enterprise grade machine learning pipelines.</p></a>
-                </div>
-              </li>
-              <li class='mega-menu-item mega-menu-item-type-widget widget_text mega-menu-columns-1-of-6 mega-menu-item-text-9' id='mega-menu-item-text-9'>
-                <div class="textwidget">
-                  <a style="color:#ffffff;" href="https://www.h2o.ai/driverless-ai/"><h3>Driverless AI</h3><p>Speed, Accuracy, Interpretability. An expert system to mimic Kaggle Grandmasters.</p></a>
-                </div>
-              </li> 
-              <li class='mega-menu-item mega-menu-item-type-widget widget_text mega-menu-columns-1-of-6 mega-menu-item-text-8' id='mega-menu-item-text-8'>
-                <div class="textwidget">
-                  <a style="color:#ffffff;" href="http://www.h2o.ai/steam/"><h3>Steam</h3><p>Operationalize data science and dev ops with data products. Design and deploy AI apps quickly and easily.</p></a>
-                </div>
-              </li>
-              <li class='mega-menu-item mega-menu-item-type-widget widget_text mega-menu-columns-1-of-6 mega-menu-item-text-5' id='mega-menu-item-text-5'>
-                <div class="textwidget">
-                  <a style="color:#ffffff;" href="http://www.h2o.ai/h2o/enterprise-support/"><h3>Enterprise Support</h3><p>The industry’s best technical support for the platform features you care about.</p></a>
-                </div>
-              </li>
-            </ul>
-          </li>
-          <li class='mega-menu-item mega-menu-item-type-custom mega-menu-item-object-custom mega-menu-item-has-children mega-align-bottom-right mega-menu-megamenu mega-hide-arrow mega-menu-item-14' id='mega-menu-item-14'><a class="mega-menu-link" href="#" tabindex="0">Industries</a>
-            <ul class="mega-sub-menu">
-              <li class='mega-menu-item mega-menu-item-type-post_type mega-menu-item-object-page mega-hide-on-desktop mega-menu-columns-1-of-5 mega-menu-item-27' id='mega-menu-item-27'>
-                <a class="mega-menu-link" href="http://www.h2o.ai/financial-services/">Financial Services</a>
-              </li>
-              <li class='mega-menu-item mega-menu-item-type-post_type mega-menu-item-object-page mega-hide-on-desktop mega-menu-columns-1-of-5 mega-menu-item-24' id='mega-menu-item-24'>
-                <a class="mega-menu-link" href="http://www.h2o.ai/insurance/">Insurance</a>
-              </li>
-              <li class='mega-menu-item mega-menu-item-type-post_type mega-menu-item-object-page mega-hide-on-desktop mega-menu-columns-1-of-5 mega-menu-item-25' id='mega-menu-item-25'>
-                <a class="mega-menu-link" href="http://www.h2o.ai/healthcare/">Healthcare</a>
-              </li>
-              <li class='mega-menu-item mega-menu-item-type-post_type mega-menu-item-object-page mega-hide-on-desktop mega-menu-columns-1-of-5 mega-menu-item-25' id='mega-menu-item-25'>
-                <a class="mega-menu-link" href="http://www.h2o.ai/marketing/">Marketing</a>
-              </li>
-              <li class='mega-menu-item mega-menu-item-type-post_type mega-menu-item-object-page mega-hide-on-desktop mega-menu-columns-1-of-5 mega-menu-item-25' id='mega-menu-item-25'>
-                <a class="mega-menu-link" href="http://www.h2o.ai/telecom/">Telecom</a>
-              </li>
-              <li class='mega-menu-item mega-menu-item-type-widget widget_text mega-menu-columns-1-of-5 mega-menu-clear mega-menu-item-text-5' id='mega-menu-item-text-5'>
-                <div class="textwidget">
-                  <a style="color:#ffffff;" href="http://www.h2o.ai/financial-services/"><img src="assets/images/financial-icon.svg" /><h3>AI in Banking</h3><p>Deep learning detects patterns in fraud and money laundering activities and automates new credit application approvals.</p></a>
-                </div>
-              </li>
-              <li class='mega-menu-item mega-menu-item-type-widget widget_text mega-menu-columns-1-of-5 mega-menu-item-text-5' id='mega-menu-item-text-5'>
-                <div class="textwidget">
-                  <a style="color:#ffffff;" href="http://www.h2o.ai/insurance/"><img src="assets/images/insurance-icon.svg" /><h3>AI in Insurance</h3><p>Deep learning automates insurance product recommendations and improves customer intelligence.</p></a>
-                </div>
-              </li>
-              <li class='mega-menu-item mega-menu-item-type-widget widget_text mega-menu-columns-1-of-5 mega-menu-item-text-5' id='mega-menu-item-text-5'>
-                <div class="textwidget">
-                  <a style="color:#ffffff;" href="http://www.h2o.ai/healthcare/"><img src="assets/images/healthcare-icon.svg" /><h3>Deep Learning AI to Save Lives</h3><p>Deep learning prescribes personalized medicine, saves patient lives and reduces cancer fatalities.</p></a>
-                </div>
-              </li>
+  <style type="text/css">
+    img.wp-smiley,
+    img.emoji {
+      display: inline !important;
+      border: none !important;
+      box-shadow: none !important;
+      height: 1em !important;
+      width: 1em !important;
+      margin: 0 .07em !important;
+      vertical-align: -0.1em !important;
+      background: none !important;
+      padding: 0 !important;
+    }
+  </style>
 
-              <li class='mega-menu-item mega-menu-item-type-widget widget_text mega-menu-columns-1-of-5 mega-menu-item-text-5' id='mega-menu-item-text-5'>
-                <div class="textwidget">
-                  <a style="color:#ffffff;" href="http://www.h2o.ai/marketing/"><img src="assets/images/marketing_icon.svg" /><h3>AI for Marketing</h3><p>AI makes product recommendations and automates marketing insights and decisions.</p></a>
-                </div>
-              </li>
-
-              <li class='mega-menu-item mega-menu-item-type-widget widget_text mega-menu-columns-1-of-5 mega-menu-item-text-5' id='mega-menu-item-text-5'>
-                <div class="textwidget">
-                  <a style="color:#ffffff;" href="http://www.h2o.ai/telecom/"><img src="assets/images/telecom_icon.svg" /><h3>AI in Telecom</h3><p>AI empowers organizations to self-manage their network regardless of scale and complexity, and predicts network failures and security attacks.</p></a>
-                </div>
-              </li>
-
-            </ul>
-          </li>
-          <li class='mega-menu-item mega-menu-item-type-post_type mega-menu-item-object-page mega-align-bottom-left mega-menu-flyout mega-menu-item-89' id='mega-menu-item-89'>
-            <a class="mega-menu-link" href="http://www.h2o.ai/customers/" tabindex="0">Customers</a>
-          </li>
-          <li class='mega-menu-item mega-menu-item-type-post_type mega-menu-item-object-page mega-align-bottom-left mega-menu-flyout mega-menu-item-55' id='mega-menu-item-55'>
-            <a class="mega-menu-link" href="http://www.h2o.ai/community/" tabindex="0">Community</a>
-          </li>
-          <li class='mega-menu-item mega-menu-item-type-post_type mega-menu-item-object-page mega-current-menu-item mega-page_item mega-page-item-382 mega-current_page_item mega-align-bottom-left mega-menu-flyout mega-menu-item-717' id='mega-menu-item-717'><a class="mega-menu-link" href="https://www.h2o.ai/partners/" tabindex="0">Partners</a>
-          </li>
-          <li class='mega-menu-item mega-menu-item-type-custom mega-menu-item-object-custom mega-current-menu-item mega-align-bottom-left mega-menu-flyout mega-menu-item-90' id='mega-menu-item-90'><a class="mega-menu-link" href="https://www.h2o.ai/download/" tabindex="0">Download</a></li>
-        </ul>
-      </div>
-    </header>
-
-  <section class="no-hero drk-gry-bg"></section>
-
-  <section class="pad-top">
-    <div class="row" align="center">
-     <a name="opensource"></a><h2>H<sub>2</sub>O Documentation</h2></div>
-    </div>
-
-    <div class="container" align="center">
-        <p style="margin: 0pt;"><a href="#gettingstarted" style="margin-left: 10px; margin-right: 10px;">Getting Started &amp; User Guides</a> | <a href="#qanda" style="margin-left: 10px; margin-right: 10px;">Q &amp; A</a> | <a href="#algorithms" style="margin-left: 10px; margin-right: 10px;">Algorithms</a> | <a href="#languages" style="margin-left: 10px; margin-right: 10px;">Languages</a> | <a href="#tutorials" style="margin-left: 10px; margin-right: 10px;">Tutorials, Examples, &amp; Presentations</a> | <a href="#fordevelopers" style="margin-left: 10px; margin-right: 10px;">API &amp; Developer Docs</a> | <a href="#forenterprise" style="margin-left: 10px; margin-right: 10px;">For the Enterprise</a></p>
-    </div>
-    <hr>
-  </section>
-
-
-  <div id="toTop"></div>
-  <section class="pad">
-
-    <div class="row">
-      <div class="col-md-12">
-          <h3 class="txt-cntr"><a name="gettingstarted"></a>Getting Started &amp; User Guides</h3>
-      </div>
-      <div class="col-md3" style="padding-bottom: 10pt">
-      <table class="table">
-         <tbody>
-          <tr>
-          <td><img src="assets/images/label_yellow.png" style="height: 16pt; width: 60pt;"></td>
-          <td style="padding-bottom: 0pt; padding-top: 10pt; padding-left: 0pt; margin-bottom: 0pt; line-height: 10pt;">Open Source</td>
-          <td> | </td>
-          <td><img src="assets/images/label_gray.png" style="height: 16pt; margin-left: 5pt; width: 60pt;"></td>
-          <td style="padding-bottom: 0pt; padding-top: 10pt; padding-left: 0pt; margin-bottom: 0pt; line-height: 10pt;">Commercial</td>
-          </tr>
-        </tbody>
-       </table>
-       </div>
-    </div>
-
-    <div class="row wtrfl">
-      <div class="flex-vert col-3">
-        <div class="well well-sm">
-          <h5>H<sub>2</sub>O</h5>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 10px;">
-              <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html">What is H2O?</a>
-              <p style="margin: 0pt;"><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html" style="font-weight: 500; font-size: 1.1em;">H2O User Guide</a> (Main docs)</p>
-              <a href="http://shop.oreilly.com/product/0636920053170.do">H2O Book (O'Reilly)</a>
-              <a href="https://github.com/h2oai/h2o-3/blob/master/Changes.md">Recent Changes</a>
-              <a href="https://github.com/h2oai/h2o-3/blob/master/LICENSE">Open Source License (Apache V2)</a>
-          </div>
-          <hr>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 10px;">
-              <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/quick-start-videos.html#h2o-quick-start-with-flow">Quick Start Video - Flow Web UI</a>
-              <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/quick-start-videos.html#h2o-quick-start-with-r">Quick Start Video - R</a>
-              <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/quick-start-videos.html#h2o-quick-start-with-python">Quick Start Video - Python</a>
-          </div>
-          <hr>
-          <div class="primary txt-cntr" style="display: block; width: 100%; margin-bottom:10px;">
-              <a href="http://www.h2o.ai/download/" style="color: #000000; font-size: 1.1em;">Download H<sub>2</sub>O</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex-vert col-3">
-        <div class="well well-sm">
-          <h5>Sparkling Water</h5>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 6px;">
-              <a href="https://www.h2o.ai/products/h2o-sparkling-water/">What is Sparkling Water?</a>
-             <table class="table" style="padding: 0px; margin: 0px;">
-              <tbody class="lt-gry-bg dltile">
-                <tr>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; padding-right: 0pt; padding-left: 0pt; color: rgba(100,100,100,1);"><b>Sparkling Water User Guide</b></td>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/index.html">2.3</a></td>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/index.html">2.2</a></td>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/index.html">2.1</a></td>
-                </tr>
-              </tbody>
-            </table>
-              <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/SparklingWaterBooklet.pdf">Sparkling Water Booklet</a>
-             <table class="table" style="padding: 0px; margin: 0px;">
-              <tbody class="lt-gry-bg dltile">
-                <tr>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; padding-right: 0pt; padding-left: 0pt;">RSparkling Readme</td>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="https://github.com/h2oai/sparkling-water/blob/rel-2.3/r/README.rst">2.3</a></td>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="https://github.com/h2oai/sparkling-water/blob/rel-2.2/r/README.rst">2.2</a></td>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="https://github.com/h2oai/sparkling-water/blob/rel-2.1/r/README.rst">2.1</a></td>
-                </tr>
-                <tr>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; padding-right: 0pt; padding-left: 0pt;">PySparkling User Guide</td>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/pysparkling.html">2.3</a></td>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/pysparkling.html">2.2</a></td>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/pysparkling.html">2.1</a></td>
-                </tr>
-                <tr>
-                  <td style="padding-bottom: 3pt; padding-top: 1pt; padding-right: 0pt; padding-left: 0pt;">Recent Changes</td>
-                  <td style="padding-bottom: 3pt; padding-top: 0pt;"align="right"><a href="http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/CHANGELOG.html">2.3</a></td>
-                  <td style="padding-bottom: 3pt; padding-top: 0pt;"align="right"><a href="http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/CHANGELOG.html">2.2</a></td>
-                  <td style="padding-bottom: 3pt; padding-top: 0pt;"align="right"><a href="http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/CHANGELOG.html">2.1</a></td>
-                </tr>
-              </tbody>
-              </table>
-              <a href="https://github.com/h2oai/sparkling-water/blob/master/LICENSE">Open Source License (Apache V2)</a>
-           </div>
-          <hr>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 6px;">
-              <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/quick-start-videos.html#h2o-quick-start-with-sparkling-water">Quick Start Video - Scala</a>
-          </div>
-          <hr>
-          <div class="primary txt-cntr" style="display: block; width: 100%; margin-bottom:10px;">
-              <a href="http://www.h2o.ai/download/" style="color: #000000; font-size: 1.1em;">Download Sparkling Water</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex-vert col-3">
-        <div class="well well-sm">
-          <h5>Driverless AI</h5>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 3px;">
-          <table class="table" style="padding: 0px; margin: 0px;">
-            <tbody class="lt-gry-bg dltile">
-            <tr>
-             <td style="padding-bottom: 3pt; padding-top: 3pt; padding-right: 0pt; padding-left: 2pt;">
-              <a href="https://www.h2o.ai/products/driverless-ai/">What is Driverless AI?</a>
-             </td>
-            </tr>
-            <tr>
-              <td style="padding-bottom: 3pt; padding-top: 3pt; padding-right: 0pt; padding-left: 2pt;"><b>Driverless AI User Guide</b></td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="http://docs.h2o.ai/driverless-ai/latest-stable/docs/userguide/index.html">HTML</a></td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="http://docs.h2o.ai/driverless-ai/latest-stable/docs/userguide/UsingDriverlessAI.pdf">PDF</a></td>
-            </tr>
-            <tr>
-            <td style="padding-bottom: 3pt; padding-top: 3pt; padding-right: 0pt; padding-left: 2pt;"><a href="http://docs.h2o.ai/driverless-ai/latest-stable/docs/userguide/release_notes.html#changelog">Recent Changes</a></td>
-            </tr>
-            <tr>
-              <td style="padding-bottom: 3pt; padding-top: 3pt; padding-right: 0pt; padding-left: 2pt;"><a href="http://docs.h2o.ai/driverless-ai/latest-stable/docs/booklets/DriverlessAIBooklet.pdf">Driverless AI Booklet</a></td>
-            </tr>
-          </tbody>
-          </table>
-           <p style="margin-bottom: 0pt; margin-top: 0px; margin-left: 2pt"><a href="http://docs.h2o.ai/driverless-ai/latest-stable/docs/booklets/MLIBooklet.pdf">MLI with Driverless AI Booklet</a></p>
-          </div>
-          <hr>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 6px;">
-              <a href="https://www.youtube.com/watch?v=swrqej9tFcU&index=2&list=PLNtMya54qvOE1HZFCWx3zmYVLw8o3qD06">Quick Start Video - Downloading Driverless AI</a>
-              <a href="https://www.youtube.com/watch?v=bw6CbZu0dKk&list=PLNtMya54qvOE1HZFCWx3zmYVLw8o3qD06&index=1&t=0s">Quick Start Video - Launching an Experiment</a>
-              <a href="https://webinar.com/channel/4a90aa11b48f4a5d8823ec924e7bd8cf">Driverless AI Webinars</a>
-          </div>
-          <hr>
-          <div class="primary-commercial txt-cntr" style="display: block; width: 100%; margin-bottom:10px;">
-            <a href="https://www.h2o.ai/download/" style="color: #ffdf00; font-size: 1.1em;">Download Driverless AI</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex-vert col-3">
-        <div class="well well-sm">
-          <h5>H2O4GPU (alpha)</h5>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 3px;">
-            <a href="https://www.h2o.ai/products/h2o4gpu/">What is H2O4GPU?</a>
-            <a href="https://github.com/h2oai/h2o4gpu/blob/master/README.md">H2O4GPU Readme</a>
-<!--            <a href="http://docs.h2o.ai/h2o4gpu/latest-stable/index.html">H2O4GPU Python Module Docs</a> -->
-            <a href="https://github.com/h2oai/h2o4gpu/blob/master/LICENSE">Open Source License (Apache V2)</a>
-           </div>
-           <hr>
-          <div class="primary txt-cntr" style="display: block; width: 100%; margin-bottom:10px;">
-              <a href="https://github.com/h2oai/h2o4gpu/blob/master/README.md#installation" style="color: #000000; font-size: 1.1em;">Download H2O4GPU</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="flex-vert col-4">
-        <div class="well well-sm">
-          <h5>Enterprise Steam</h5>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 6px;">
-          <table class="table" style="padding: 0px; margin: 0px;">
-            <tbody class="lt-gry-bg dltile">
-            <tr>
-              <td style="padding-bottom: 3pt; padding-top: 3pt; padding-right: 0pt; padding-left: 2pt;">Enterprise Steam Installation Guide</td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="http://docs.h2o.ai/enterprise-steam/latest-stable/docs/install-docs/_build/html/index.html">HTML</a></td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="http://docs.h2o.ai/enterprise-steam/latest-stable/docs/install-docs/esteaminstallandsetup.pdf">PDF</a></td>
-            </tr>
-            <tr>
-              <td style="padding-bottom: 3pt; padding-top: 3pt; padding-right: 0pt; padding-left: 2pt;">Enterprise Steam User Guide</td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;" align="right"><a href="http://docs.h2o.ai/enterprise-steam/latest-stable/docs/user-docs/_build/html/index.html">HTML</a></td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;" align="right"><a href="http://docs.h2o.ai/enterprise-steam/latest-stable/docs/user-docs/esteamuserguide.pdf">PDF</a></td>
-            </tr> 
-          </tbody>
-          </table>
-          </div>
-          <hr>
-          <div class="primary-commercial txt-cntr" style="display: block; width: 100%; margin-bottom:10px;" href="mailto:sales@h2o.ai">
-            <a href="https://www.h2o.ai/download-enterprise-steam/" style="color: #ffdf00; font-size: 1.1em;">Download Enterprise Steam</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex-vert col-3">
-        <div class="well well-sm">
-          <h5>Steam</h5>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 6px;">
-            <a href="http://www.h2o.ai/steam/">What is Steam?</a>
-            <a href="http://docs.h2o.ai/steam/latest-stable/index.html">Steam User Guide</a>
-            <a href="https://github.com/h2oai/steam/blob/master/ReleaseNotes.md">Recent Changes</a>
-            <a style="line-height: 1.3em"; href="https://github.com/h2oai/steam/blob/master/LICENSE">Open Source License (AGPL)</a>
-           </div>
-          <hr>
-          <div class="primary txt-cntr" style="display: block; width: 100%; margin-bottom:10px;">
-            <a href="https://s3.amazonaws.com/steam-release/steam-1.1.6-linux-amd64.tar.gz" style="color: #000000; font-size: 1.1em;">Download Steam</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <hr>
-
-    <div class="row">
-      <div class="col-md-12">
-        <h3 class="txt-cntr"><a name="qanda"></a>Q &amp; A</h3>
-      </div>
-    </div>
-    
-      <div class="row wtrfl">
-        <div class="flex-vert col-4">
-        <div class="well well-sm">
-          <h5>Q &amp; A</h5>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 6px;">
-            <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/faq.html">FAQ</a>
-            <a href="http://jira.h2o.ai">Issue Tracking (JIRA)</a>
-            <a href="https://h2oai-community.slack.com">H2O Community on Slack</a>
-            <a href="http://stackoverflow.com/questions/tagged/h2o">Stack Overflow</a>
-            <a href="https://groups.google.com/forum/#!forum/h2ostream">h2ostream Google Group</a>
-            <a href="https://gitter.im/h2oai/h2o-3">Gitter</a>
-            <a href="http://stats.stackexchange.com/search?q=h2o">Cross Validated</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex-vert col-4">
-        <div class="well well-sm">
-          <h5>For Supported Enterprise Customers</h5>
-           <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 6px;">
-          <table class="table" style="padding: 0px; margin: 0px;">
-            <tbody class="lt-gry-bg dltile">
-            <tr>
-              <td style="padding-bottom: 3pt; padding-top: 3pt; padding-right: 0pt; padding-left: 2pt;">Enterprise Support</td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;" align="right"><a href="http://support.h2o.ai">Web</a></td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;" align="right"><a href="mailto:support@h2o.ai">Email</a></td>
-            </tr>
-          </tbody>
-          </table>
-        </div>
-        </div>
-      </div>
-
-      <div class="flex-vert col-4">
-        <div class="well well-sm">
-          <h5>Contributing</h5>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 10px;">
-              <a href="https://github.com/h2oai/h2o-3/blob/master/CONTRIBUTING.md">To H2O</a>
-              <a href="https://github.com/h2oai/sparkling-water/blob/master/README.rst#contributing">To Sparkling Water</a>
-              <a href="https://github.com/h2oai/h2o4gpu/blob/master/CONTRIBUTING.md">To H2O4GPU</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-    <hr>
-
-    <div class="row">
-      <div class="col-md-12">
-        <h3 class="txt-cntr"><a name="algorithms"></a>Algorithms</h3>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="flex-vert col-5">
-        <div class="well well-sm">
-          <h5>Supervised Learning</h5>
-          <table class="table">
-            <tbody class="lt-gry-bg dltile">
-            <tr>
-              <td style="width: 60%">Generalized Linear Modeling (GLM)</td>
-              <td><a href="http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/glm/glm.html">Tutorial</a></td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GLMBooklet.pdf">Booklet</a></td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html">Reference</a></td>
-              <td>Tuning</td>
-            </tr>
-            <tr>
-              <td>Gradient Boosting Machine (GBM)</td>
-              <td><a href="http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/gbm-randomforest/index.html">Tutorial</a></td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf">Booklet</a></td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/gbm.html">Reference</a></td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/gbm.html#gbm-tuning-guide">Tuning</a></td>
-            </tr>
-            <tr>
-              <td>Deep Learning</td>
-              <td><a href="http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/deeplearning/index.html">Tutorial</a></td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/DeepLearningBooklet.pdf">Booklet</a></td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/deep-learning.html">Reference</a></td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/deep-learning.html#deep-learning-tuning-guide">Tuning</a></td>
-            </tr>
-            <tr>
-              <td>Distributed Random Forest (DRF)</td>
-              <td><a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/rf/rf.md">Tutorial</a></td>
-              <td>Booklet</td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/drf.html">Reference</a></td>
-              <td>Tuning</td>
-            </tr>
-            <tr>
-              <td>Cox Proportional Hazards (CoxPH)</td>
-              <td>Tutorial</td>
-              <td>Booklet</td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/coxph.html">Reference</a></td>
-              <td>Tuning</td>
-            </tr>
-            <tr>
-              <td>Naive Bayes</td>
-              <td>Tutorial</td>
-              <td>Booklet</td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/naive-bayes.html">Reference</a></td>
-              <td>Tuning</td>
-            </tr>
-            <tr>
-              <td>Stacked Ensembles</td>
-              <td>Tutorial</td>
-              <td>Booklet</td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html">Reference</a></td>
-              <td>Tuning</td>
-            </tr>
-            <tr>
-              <td>XGBoost</td>
-              <td>Tutorial</td>
-              <td>Booklet</td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/xgboost.html">Reference</a></td>
-              <td>Tuning</td>
-            </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="flex-vert col-4">
-        <div class="well well-sm">
-          <h5>Unsupervised Learning</h5>
-          <table class="table">
-            <tbody class="lt-gry-bg dltile">
-            <tr>
-              <td style="width: 80%">Aggregator</td>
-              <td>Tutorial</td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/aggregator.html">Reference</a></td>
-            </tr>
-            <tr>
-              <td style="width: 80%">Generalized Low Rank Models (GLRM)</td>
-              <td><a href="http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/glrm/glrm-tutorial.html">Tutorial</a></td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glrm.html">Reference</a></td>
-            </tr>
-            <tr>
-              <td style="width: 80%">K-Means Clustering</td>
-              <td><a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/kmeans/kmeans.md">Tutorial</a></td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/k-means.html">Reference</a></td>
-            </tr>
-            <tr>
-              <td style="width: 80%">Isolation Forest</td>
-              <td><a href="https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/isolation-forest">Tutorial</a></td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/if.html">Reference</a></td>
-            </tr>            <tr>
-              <td style="width: 80%">Principal Components Analysis (PCA)</td>
-              <td><a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/pca/pca.md">Tutorial</a></td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/pca.html">Reference</a></td>
-            </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-        <div class="flex-vert col-3">
-        <div class="well well-sm">
-          <h5>Miscellaneous</h5>
-          <table class="table">
-            <tbody class="lt-gry-bg dltile">
-            <tr>
-              <td style="width: 80%">AutoML</td>
-              <td><a href="http://docs.h2o.ai/h2o-tutorials/latest-stable/h2o-world-2017/automl/index.html">Tutorial</a></td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html">Reference</a></td>
-            </tr>
-            <tr>
-              <td style="width: 80%">Word2vec</td>
-              <td>Tutorial</td>
-              <td><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/word2vec.html">Reference</a></td>
-            </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-    </div>
-    
-    <hr>
-
-    <div class="row">
-      <div class="col-md-12">
-        <h3 class="txt-cntr"><a name="languages"></a>Languages</h3>
-      </div>
-    </div>
-    <div  class="row wtrfl">
-      <div class="flex-vert col-3">
-        <div class="well well-sm">
-          <h5>R</h5>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 10px;">
-              <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/quick-start-videos.html#h2o-quick-start-with-r">Quick Start Video - R</a>
-           <table class="table" style="padding: 0px; margin: 0px;">
-            <tbody class="lt-gry-bg dltile">
-            <tr>
-              <td style="padding-bottom: 3pt; padding-top: 2pt; padding-left: 0pt;">R Package Docs</td>
-              <td style="padding-bottom: 3pt; padding-top: 2pt; align="right"><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-r/docs/index.html">HTML</a></td>
-              <td style="padding-bottom: 3pt; padding-top: 2pt; align="right"><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-r/h2o_package.pdf">PDF</a></td>
-            </tr>
-            </tbody>
-            </table>
-              <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/RBooklet.pdf">R Booklet</a>
-              <p style="padding: 0pt; margin: 0pt;"><a href="https://github.com/rstudio/cheatsheets/raw/master/h2o.pdf">RStudio Cheat Sheet</a> (PDF download)</p>
-              <a href="https://github.com/h2oai/h2o-3/tree/master/h2o-r/demos">Examples and Demos</a>
-              <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/faq/r.html">R FAQ</a>
-              <a href="https://github.com/h2oai/h2o-3/tree/master/h2o-r/ensemble/README.md">h2oEnsemble R Package Readme</a>
-             <table class="table" style="padding: 0px; margin: 0px;">
-              <tbody class="lt-gry-bg dltile">
-                <tr>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; padding-right: 0pt; padding-left: 0pt;">RSparkling Readme</td>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="https://github.com/h2oai/sparkling-water/blob/rel-2.3/r/README.rst">2.3</a></td>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="https://github.com/h2oai/sparkling-water/blob/rel-2.2/r/README.rst">2.2</a></td>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="https://github.com/h2oai/sparkling-water/blob/rel-2.1/r/README.rst">2.1</a></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-      <div class="flex-vert col-3">
-        <div class="well well-sm">
-          <h5>Python</h5>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 10px;">
-              <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/quick-start-videos.html#h2o-quick-start-with-python">Quick Start Video - Python</a>
-              <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-py/docs/index.html">Python Module Docs</a>
-              <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/PythonBooklet.pdf">Python Booklet</a>
-              <a href="https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos">Examples and Demos</a>
-              <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/faq/python.html">Python FAQ</a>
-
-              <table class="table" style="padding: 0px; margin: 0px;">
-              <tbody class="lt-gry-bg dltile">
-                <tr>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; padding-right: 0pt; padding-left: 0pt;">PySparkling User Guide</td>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/pysparkling.html">2.3</a></td>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/pysparkling.html">2.2</a></td>
-                  <td style="padding-bottom: 3pt; padding-top: 3pt; "align="right"><a href="http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/pysparkling.html">2.1</a></td>
-                </tr>
-              </tbody>
-              </table> 
-
-              <a href="https://tgsmith61591.github.io/skutil/">skutil Docs</a>
-          </div>
-        </div>
-      </div>
-      <div class="flex-vert col-3">
-        <div class="well well-sm">
-          <h5>Java</h5>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 10px;">
-              <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html">POJO and MOJO Model Javadoc</a>
-              <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-core/javadoc/index.html">H2O Core Javadoc</a>
-              <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-algos/javadoc/index.html">H2O Algorithms Javadoc</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex-vert col-3">
-        <div class="well well-sm">
-         <h5>Scala</h5>
-          <div class="lt-gry-bg dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding-top: 8px; padding-bottom: 8px;">
-           <table class="table" style="padding: 0px; margin: 0px;">
-            <tbody class="lt-gry-bg dltile">
-            <tr>
-              <td style="padding-bottom: 3pt; padding-top: 0pt;">Sparkling Water API</td>
-              <td style="padding-bottom: 3pt; padding-top: 0pt;"align="right"><a href="http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/devel/rest_api/scala_interpreter_endpoints.html">2.3</a></td>
-              <td style="padding-bottom: 3pt; padding-top: 0pt;"align="right"><a href="http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/devel/rest_api/scala_interpreter_endpoints.html">2.2</a></td>
-              <td style="padding-bottom: 3pt; padding-top: 0pt;"align="right"><a href="http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/devel/rest_api/scala_interpreter_endpoints.html">2.1</a></td>
-            </tr>
-            <tr>
-              <td style="padding-bottom: 3pt; padding-top: 3pt; padding-right: 0pt;">Sparkling Water Scaladoc</td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;"align="right"><a href="http://docs.h2o.ai/sparkling-water/2.3/latest-stable/scaladoc/index.html">2.3</a></td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;"align="right"><a href="http://docs.h2o.ai/sparkling-water/2.2/latest-stable/scaladoc/index.html">2.2</a></td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;"align="right"><a href="http://docs.h2o.ai/sparkling-water/2.1/latest-stable/scaladoc/index.html">2.1</a></td>
-            </tr>
-            <tr>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;">H2O Scaladoc</td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;"align="right"><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-scala_2.11/scaladoc/index.html">2.11</a></td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;"align="right"><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-scala_2.10/scaladoc/index.html">&nbsp;2.10</a></td>
-            </tr>
-          </tbody>
-        </table>
-       </div>
-      </div>
-    </div>
-
-    </div>
-    <hr>
-
-    <div class="row">
-      <div class="col-md-12">
-        <h3 class="txt-cntr"><a name="tutorials"></a>Tutorials, Examples, &amp; Presentations</h3>
-      </div>
-    </div>
-    <div class="row wtrfl">
-      <div class="flex-vert col-3">
-        <div class="well well-sm">
-          <h5>Tutorials and Blogs</h5>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 10px;">
-          <table class="table" style="padding: 0px; margin: 0px;">
-            <tbody class="lt-gry-bg dltile">
-            <tr>
-              <td style="padding-bottom: 3pt; padding-top: 3pt; padding-right: 0pt; padding-left: 0pt;">H2O Tutorials</td>
-              <td align="right" style="padding-bottom: 3pt; padding-top: 3pt;"><a href="http://docs.h2o.ai/h2o-tutorials/latest-stable/index.html">Web</a></td>
-              <td align="right" style="padding-bottom: 3pt; padding-top: 3pt;"><a href="http://docs.h2o.ai/h2o-tutorials/latest-stable/H2OTutorialsBook.pdf">PDF</a></td>
-            </tr>
-          </tbody>
-          </table>
-              <a href="http://blog.h2o.ai">H2O Blogs</a>
-              <a href="http://university.h2o.ai/">H2O University</a>
-              <p style="margin-top: 0pt;"><a href="https://www.ctrl.blog/entry/gdpr-web-server-logs" target="_blank">Info about GDPR</a> (from Ctrl.blog)</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex-vert col-6">
-        <div class="well well-sm">
-          <h5>Use Case Examples</h5>
-          <div class="lt-gry-bg dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding-top: 8px; padding-bottom: 8px;">
-           <table class="table" style="padding: 0px; margin: 0px;">
-            <tbody class="lt-gry-bg1" style="padding-top: 10pt; padding-bottom: 10pt;">
-            <tr>
-              <td>Chicago crime prediction</td>
-              <td><a href="https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.chicago.crime.large.R">R</a></td>
-              <td><a href="https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/H2O_chicago_crimes.ipynb">Python</a></td>
-              <td><a href="https://github.com/h2oai/sparkling-water/blob/master/examples/src/main/scala/org/apache/spark/examples/h2o/ChicagoCrimeApp.scala">ScalaSW</a></td>
-              <td><a href="http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/pysparkling/Chicago_Crime_Demo.html">PySW</a></td>
-            </tr>
-            <tr>
-              <td>Airlines delays prediction</td>
-              <td><a href="https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.airlines.delay.large.R">R</a></td>
-              <td><a href="https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/airlines_demo_small.ipynb">Python</a></td>
-              <td><a href="https://github.com/h2oai/sparkling-water/blob/master/examples/src/main/scala/org/apache/spark/examples/h2o/AirlinesWithWeatherDemo.scala">ScalaSW</a></td>
-              <td>PySW</td>
-            </tr>
-            <tr>
-              <td>Lending Club loan prediction</td>
-              <td><a href="https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.lending.club.large.R">R</a></td>
-              <td>Python</td>
-              <td>ScalaSW</td>
-              <td>PySW</td>
-            </tr>
-            <tr>
-              <td>Ham or Spam</td>
-              <td>R</td>
-              <td>Python</td>
-              <td><a href="https://github.com/h2oai/sparkling-water/blob/master/examples/src/main/scala/org/apache/spark/examples/h2o/HamOrSpamDemo.scala">ScalaSW</a></td>
-              <td>PySW</td>
-            </tr>
-            <tr>
-              <td>Prediction with prostate dataset</td>
-              <td>R</td>
-              <td><a href="https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/prostate_gbm.ipynb">Python</a></td>
-              <td><a href="https://github.com/h2oai/sparkling-water/blob/master/examples/src/main/scala/org/apache/spark/examples/h2o/ProstateDemo.scala">ScalaSW</a></td>
-              <td>PySW</td>
-            </tr>
-            <tr>
-              <td>Craigslist Job Titles</td>
-              <td><a href="https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.word2vec.craigslistjobtitles.R">R</a></td>
-              <td><a href="https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/word2vec_craigslistjobtitles.ipynb">Python</a></td>
-              <td>ScalaSW</td>
-              <td>PySW</td>
-            </tr>
-            </tbody>
-          </table>
-        </div>
-       </div>
-      </div>
-
-      <div class="flex-vert col-3">
-        <div class="well well-sm">
-          <h5>Presentations</h5>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 10px;">
-              <a href="https://github.com/h2oai/h2o-meetups">H2O Meetups</a>
-              <a href="https://www.youtube.com/playlist?list=PLNtMya54qvOHh9LaA08hkusynWVStNEhm">H2O World 2018 London Videos</a>
-              <a href="https://www.youtube.com/playlist?list=PLNtMya54qvOHCtx4-SmETYD48tNycvMDr">H2O World 2018 NYC Videos</a>
-              <a href="https://www.youtube.com/playlist?list=PLNtMya54qvOHQs2ZmV-pPSW_etMUykE0_">H2O World 2017 Videos</a>
-              <a href="http://library.fora.tv/conference/h2o_world_2015">H2O World 2015 Videos</a>
-              <a href="https://www.youtube.com/watch?v=LSoQ0HcLqHE&list=PLNtMya54qvOFQhSZ4IKKXRbMkyLMn0caa">H2O World 2014 Videos</a>
-              <a href="http://library.fora.tv/conference/h2o_open_tour_chicago">Open Tour 2016 Chicago Videos</a>
-              <a href="https://www.youtube.com/playlist?list=PLNtMya54qvOHiqbwvBAFML74HsVyTqsnW">Open Tour 2016 NYC Videos</a>
-              <a href="https://www.youtube.com/playlist?list=PLNtMya54qvOFsr6SbrA0WCtyI8hVSPoDo">Open Tour 2016 Dallas Videos</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <hr>
-
-    <div class="row">
-      <div class="col-md-8">
-        <h3 class="txt-cntr"><a name="fordevelopers"></a>API &amp; Developer Docs</h3>
-      </div>
-    </div>
-
-   <div  class="row wtrfl">
-      <div class="flex-vert col-6">
-        <div class="well well-sm">
-          <h5>API Reference</h5>
-          <div class="lt-gry-bg dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding-top: 8px; padding-bottom: 8px;">
-           <table class="table">
-            <tbody class="lt-gry-bg1 dltile">
-            <tr>
-              <td style="padding-bottom: 0pt;">
-                <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/rest-api-reference.html">REST API Endpoint reference</a>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding-bottom: 0pt;" colspan="3">
-                <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/rest-api-reference.html#schema-reference">REST API Schema reference</a>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding-bottom: 0pt;" colspan="2">
-                <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-algos/javadoc/index.html">H2O Algorithms Javadoc</a>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding-bottom: 3pt; padding-top: 6pt;">Sparkling Water API</td>
-              <td style="padding-bottom: 3pt; padding-top: 6pt;"><a href="http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/devel/rest_api/scala_interpreter_endpoints.html">2.3</a></td>
-              <td style="padding-bottom: 3pt; padding-top: 6pt;"><a href="http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/devel/rest_api/scala_interpreter_endpoints.html">2.2</a></td>
-              <td style="padding-bottom: 3pt; padding-top: 6pt;"><a href="http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/devel/rest_api/scala_interpreter_endpoints.html">2.1</a></td>
-            </tr>
-            <tr>
-              <td colspan="3" style="padding-top: 4pt;">
-               <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html">POJO and MOJO Model Javadoc</a>
-              </td>
-            </tr>
-            </tbody>
-          </table>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex-vert col-6">
-        <div class="well well-sm">
-          <h5>Developer Docs</h5>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 10px;">
-            <table class="table">
-            <tbody class="lt-gry-bg1 dltile">
-            <tr>
-              <td colspan="3" style="padding-top: 4pt;">
-                <a href="https://github.com/h2oai/h2o-3/blob/master/README.md">H2O Readme</a>
-              </td>
-            </tr>
-            <tr>
-              <td colspan="3" style="padding-bottom: 3pt; padding-top: 0pt;">
-                <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-r/README.md">R Package Readme</a>
-              </td>
-            </tr>
-            <tr>
-              <td colspan="3" style="padding-bottom: 3pt; padding-top: 3pt;">
-                <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-py/README.md">Python Module Readme</a>
-              </td>
-            </tr>
-            <tr>
-              <td colspan="3" style="padding-bottom: 3pt; padding-top: 3pt;">
-                <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-core/javadoc/index.html">H2O Core Javadoc</a>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;">
-                H2O Scaladoc
-              </td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;">
-                <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-scala_2.11/scaladoc/index.html">2.11</a>
-              </td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;">
-                <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-scala_2.10/scaladoc/index.html">2.10</a>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;">Sparkling Water Readme</td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;"><a href="https://github.com/h2oai/sparkling-water/blob/rel-2.3/README.rst">2.3</a></td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;"><a href="https://github.com/h2oai/sparkling-water/blob/rel-2.2/README.rst">2.2</a></td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;"><a href="https://github.com/h2oai/sparkling-water/blob/rel-2.1/README.rst">2.1</a></td>
-            </tr>
-            <tr>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;">Sparkling Water Scaladoc</td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;">
-                <a href="http://docs.h2o.ai/sparkling-water/2.3/latest-stable/scaladoc/index.html">2.3</a>
-              </td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;">
-                <a href="http://docs.h2o.ai/sparkling-water/2.2/latest-stable/scaladoc/index.html">2.2</a>
-              </td>
-              <td style="padding-bottom: 3pt; padding-top: 3pt;">
-                <a href="http://docs.h2o.ai/sparkling-water/2.1/latest-stable/scaladoc/index.html">2.1</a>
-               </td>
-            </tr>
-            <tr>
-              <td colspan="3" style="padding-bottom: 0pt; padding-top: 3pt;">
-                <a href="https://github.com/h2oai/steam/blob/master/DEVEL.md">Steam Developer Docs</a>
-              </td>
-            </tr>
-            </tbody>
-          </table>
-          </div>
-        </div>
-      </div>      
-   </div>
-
-    <hr>
-
-    <div class="row">
-      <div class="col-md-12">
-        <h3 class="txt-cntr"><a name="forenterprise"></a>For the Enterprise</h3>
-      </div>
-    </div>
-    
-    <div class="row wtrfl">
-      <div class="flex-vert col-4">
-        <div class="well well-sm">
-          <h5>Architecture</h5>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 10px;">
-            <p style="margin-bottom: 0pt; margin-top: 0px;">A description of H2O's <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/architecture.html">internal software architecture</a></p>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex-vert col-4">
-        <div class="well well-sm">
-          <h5>Security</h5>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 10px;">
-            <p style="margin-bottom: 0pt; margin-top: 0px;"><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html">Security features</a> for H2O, such as SSL and LDAP support</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex-vert col-4">
-        <div class="well well-sm">
-          <h5>Productionizing</h5>
-          <div class="lt-gry-bg1 dltile" style="display: flex !important; display: -webkit-flex !important; flex-direction: column; padding: 10px;">
-            <p style="margin-bottom: 0pt; margin-top: 0px;"><a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/productionizing.html">Recipes</a> for taking H2O to production</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  <footer>
-    <div class="row">
-        <div class="col-2">
-            <a href="http://h2o.ai/">
-            <div id="home-footer"></div></a>
-        </div>
-        <div class="col-2">
-        <p class="bold">Products</p>
-        <a href="http://www.h2o.ai/h2o/why-h2o/">H2O</a>
-        <a href="http://www.h2o.ai/sparkling-water/">Sparkling Water</a>
-        <a href="http://www.h2o.ai/steam/">Steam</a>
-        <a href="https://www.h2o.ai/driverless-ai/">Driverless AI</a>
-        <a href="https://www.h2o.ai/h2o/enterprise-support/">Enterprise Support</a>
-        <a href="http://h2o.ai/philosophy/">Philosophy</a>
-        </div>
-        <div class="col-2">
-        <p class="bold">Industries</p>
-        <a href="http://h2o.ai/financial-services/">Financial Services</a>
-        <a href="http://h2o.ai/insurance/">Insurance</a>
-        <a href="http://h2o.ai/healthcare/">Healthcare</a>
-        </div>
-
-        <div class="col-2">
-        <a href="http://h2o.ai/customers/">Customers</a>
-        <a href="http://docs.h2o.ai">Documentation</a>
-        <a href="https://support.h2o.ai/helpdesk">Support</a>
-        <a href="http://www.h2o.ai/resources/">Resources</a>
-        </div>
-
-        <div class="col-2">
-        <a href="http://h2o.ai/community/">Community</a>
-        <a href="http://blog.h2o.ai/">Blog</a>
-        <a href="http://h2o.ai/events/">Events</a>
-        <a href="http://open.h2o.ai">H2O Open Tour</a>
-        </div>
-
-        <div class="col-2">
-        <a href="https://www.h2o.ai/about/">Company</a>
-        <a href="https://www.h2o.ai/board-of-directors/">Board of Directors</a>
-        <a href="https://www.h2o.ai/investors/">Investors</a>
-        <a href="https://www.h2o.ai/careers/">Careers</a>
-        <a href="https://www.h2o.ai/contact/">Contact</a>
-        <a href="https://www.h2o.ai/news/">News</a>
-        <a href="https://www.h2o.ai/partners/">Partners</a>
-        <a href="https://www.h2o.ai/publications/">Publications</a>
-        </div>
-
-        <div class="col-2">
-            <a class="social" href="https://gitter.im/h2oai/h2o-3"><img src="assets/images/gitter.svg"/></a>
-            <a class="social" href="https://github.com/h2oai"><img src="assets/images/github.svg"/></a>
-            <a class="social" href="https://twitter.com/h2oai"><img src="assets/images/twitter.svg"/></a>
-        </div>
-        </div>
-    <div class="row">
-        <div class="col-12">
-    <p class="copyright"><br />Copyright &copy; 2016-2018 H2O.ai. All rights reserved. <a href="https://www.h2o.ai/privacy/">Privacy Policy</a></p>
-         </div>
-    </div>
-    </footer>
-  </section>
-  </main>
-
-<!-- Scripts to show submenu items in smaller screens -->
-  <script type='text/javascript' src='assets/javascripts/hoverIntent.min.js?ver=1.8.1'></script>
+<!-- <link rel='stylesheet' id='bodhi-svgs-attachment-css'  href='assets/styleseets/svgs-attachment.css' type='text/css' media='all' /> -->
+<!--  <link rel='stylesheet' href='assets/stylesheets/style.css?ver=4.6.1' type='text/css' media='all' />
+  <link rel='stylesheet' id='addthis_all_pages-css'  href='assets/stylesheets/addthis_wordpress_public.min.css?ver=4.9.7' type='text/css' media='all' /> -->
+<!--<link rel='stylesheet' id='megamenu-css' href='assets/maxmegamenu/maxmegamenu_style.css?ver=5b6e52' type='text/css' media='all' /> -->
+  <script type='text/javascript' src='assets/javascripts/jquery.js?ver=1.12.4'></script>
+  <script type='text/javascript' src='assets/javascripts/jquery-migrate.min.js?ver=1.4.1'></script>
   <script type='text/javascript'>
-    /* <![CDATA[ */
-    var megamenu = {"effect":{"slide":{"in":{"animate":{"height":"show"},"css":{"display":"none"}},"out":{"animate":{"height":"hide"}}}},"timeout":"300","interval":"100"};
-    /* ]]> */
+  /* <![CDATA[ */
+  var cssTarget = "img.style-svg";
+  var ForceInlineSVGActive = "false";
+  /* ]]> */
   </script>
-  <script type='text/javascript' src='assets/javascripts/maxmegamenu.js?ver=2.2.3.1'></script>
-  <script type='text/javascript' src='assets/javascripts/public.js?ver=1.5.1'></script>
+  <script type='text/javascript' src='assets/javascripts/svgs-inline-min.js'></script>
+  <link rel='https://api.w.org/' href='assets/addthis/wp-json' />
+  <link rel="EditURI" type="application/rsd+xml" title="RSD" href="assets/addthis/xmlrpc.php?rsd" />
+  <link rel="wlwmanifest" type="application/wlwmanifest+xml" href="assets/wp-includes/wlwmanifest.xml" /> 
+  <link rel='shortlink' href='https://www.h2o.ai/?p=2579' />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/images/favicon-16x16.png">
+  <link rel="manifest" href="assets/manifest/site.webmanifest" />
+  <link rel="mask-icon" href="assets/addthis/safari-pinned-tab.svg" color="#5bbad5">
+  <link rel="shortcut icon" href="assets/images/favicon.ico">
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="msapplication-config" content="assets/addthis/browserconfig.xml" />
+  <meta name="theme-color" content="#ffffff"><link rel="icon" href="assets/images/favicon-150x150.png" sizes="32x32" />
+  <link rel="icon" href="assets/images/favicon.png" sizes="192x192" />
+  <link rel="apple-touch-icon-precomposed" href="assets/images/favicon.png" />
+  <meta name="msapplication-TileImage" content="assets/images/favicon.png" />
 
-  <!-- Back to top -->
-  <script type="text/javascript">
-      $(window).load(function() {
-        $(".MCDropDownHotSpot").click();
-      });     
-      $(window).scroll(function() {
-        if ($(this).scrollTop()) {
-          $('#toTop').fadeIn();
-        } else {
-          $('#toTop').fadeOut();
-        }
-      });
-      $('#toTop').on('click', function(){
-        $('html, body').animate({scrollTop : 0},800);
-        return false;
-      });
-  </script>
+    <!-- Typekit fonts -->
+    <link rel="stylesheet" href="assets/stylesheets/gbq5zcz.css" />
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="assets/stylesheets/main.css" />
+<!--    <link rel='stylesheet' href='assets/vendor/bootstrap.min.css' type='text/css' /> -->
+    <link rel="stylesheet" href="assets/stylesheets/global.css" />
+</head>
+
+<body class="page-template-default page page-id-2579 page-parent h2o" ng-app="h2oApp">
+
+
+  <section class="no-padding banner-fourth-level">
+    <div class="bg-img">
+      <img width="1400" height="240" src="assets/images/third_level_banner.jpg" class="attachment-full size-full" alt="Banner background" src="assets/images/third_level_banner.jpg 1400w, assets/images/third_level_banner-300x51.jpg 300w, assets/images/third_level_banner-768x132.jpg 768w, assets/images/third_level_banner-1024x176.jpg 1024w, assets/imags/third_level_banner-350x60.jpg 350w" sizes="(max-width: 1400px) 100vw, 1400px" />  
+    </div>
+    <div class="v-middle-wrapper">
+      <div class="v-middle-inner container">
+        <div class="v-middle">
+          <div class="content text-left">
+              <h2 class="wow fadeInUp" data-wow-delay=".3s"><span class="bg-black text-yellow">H2O-3</span> Documentation</h2>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+<!-- h2o-3 section -->
+
+  <section class="download-products bg-lighter-grey download-with-nav" id="h2o">
+    <div class="container">
+      <div class="column-wrapper">
+        <div class="col-two left text-left">
+          <h4 class="underline-yellow wow wefadeInUp">H2O-3</h4>
+          <h5 style="padding-top: 10px;">Version 3.30.0.5</h5>
+          <h6 class="wow wefadeInUp">The H2O open source platform works with R, Python, an Scala on Hadoop/Yarn, Spark, or your laptop</h6>
+        </div>
+
+        <div class="col-two right">
+
+          <div class="bottom-wrapper wow wefadeInUp" style="padding-top: 30px;">
+              <h6>End User Documentation</h6>
+              <div class="col-one" style="padding-top: 15px;">
+                <p><a href="h2o-docs/index.html">H2O User Guide</a></p>
+              </div>
+          </div>
+
+
+          <div class="bottom-wrapper wow wefadeInUp" style="padding-top: 30px;">
+            <h6>Languages</h6>
+              <div class="col-two" style="padding-top: 15px;">
+                <h7><b>R</b></h7>
+                <table style="width: 70%;">
+                  <tbody>
+                  <tr>
+                    <td style="padding-bottom: 0pt; padding-top: 12pt; padding-right: 0pt; padding-left: 0pt;">R Package Docs</td>
+                    <td class="td-link-first" style="padding-bottom: 0pt; padding-top: 12pt;"><a href="h2o-r/docs/index.html">HTML</a></td>
+                    <td class="right" style="padding-bottom: 0pt; padding-top: 12pt;"><a href="h2o-r/h2o_package.pdf">PDF</a></td>
+                  </tr>
+                </tbody>
+                </table>
+                <p style="padding-left: 2pt;"><a href="h2o-docs/booklets/RBooklet.pdf">R Booklet</a></p>
+                <p style="padding-bottom: 20px; padding-left: 2pt;"><a href="h2o-docs/faq/r.html">R FAQ</a></p>
+
+                <h7><b>Java</b></h7>
+                <p style="padding-top: 12px;"><a href="h2o-genmodel/javadoc/index.html">POJO and MOJO Javadoc</a></p>
+                <p><a href="h2o-core/javadoc/index.html">H2O Core Javadoc</a></p>
+                <p style="padding-bottom: 3pt;"><a href="h2o-algos/javadoc/index.html">H2O Algorithms Javadoc</a></p>
+              </div>
+
+              <div class="col-two" style="padding-top: 6px;">
+                <h7><b>Python</b></h7>
+                <p style="padding-top: 12px;"><a href="h2o-py/docs/index.html">Python Module Docs</a></p>
+                <p><a href="h2o-docs/booklets/PythonBooklet.pdf">Python Booklet</a></p>
+                <p style="padding-bottom: 20px;"><a href="h2o-docs/faq/python.html">Python FAQ</a></p>
+
+              </div>
+           </div>
+         </div>
+
+        <div class="col-two right" style="padding-top: 15px;">
+          <div class="bottom-wrapper wow wefadeInUp" style="padding-top: 15px;">
+              <h6>API Reference</h6>
+              <div class="col-one" style="padding-top: 15px;">
+                <p><a href="h2o-docs/rest-api-reference.html">REST API Endpoint Reference</a></p>
+                <p><a href="h2o-docs/rest-api-reference.html#schema-reference">REST API Schema Reference</a></p>
+              </div>
+          </div>
+        </div>
+
+      </div> 
+     </div>
+   </section>
+
+
+<!-- Call all scripts in footer to avoid render blocking -->
+<script type="text/javascript" src="assets/javascripts/jquery.min.js"></script>
+<script type="text/javascript" src="assets/javascripts/plugins.js"></script>
+<script type="text/javascript" src="assets/javascripts/global.js"></script>
+<script type="text/javascript" src="assets/javascripts/main.js"></script>
+
+
+<!-- Angular scripts -->
+
+<script data-cfasync="false" type="text/javascript">if (window.addthis_product === undefined) { window.addthis_product = "wpp"; } if (window.wp_product_version === undefined) { window.wp_product_version = "wpp-6.1.6"; } if (window.wp_blog_version === undefined) { window.wp_blog_version = "4.9.7"; } if (window.addthis_share === undefined) { window.addthis_share = {}; } if (window.addthis_config === undefined) { window.addthis_config = {"data_track_clickback":true,"ui_atversion":"300"}; } if (window.addthis_plugin_info === undefined) { window.addthis_plugin_info = {"info_status":"enabled","cms_name":"WordPress","plugin_name":"Share Buttons by AddThis","plugin_version":"6.1.6","plugin_mode":"AddThis","anonymous_profile_id":"wp-175df95b63dbe232ffb43b1cdbf39490","page_info":{"template":"pages","post_type":""},"sharing_enabled_on_post_via_metabox":false}; } 
+                    (function() {
+                      var first_load_interval_id = setInterval(function () {
+                        if (typeof window.addthis !== 'undefined') {
+                          window.clearInterval(first_load_interval_id);
+                          if (typeof window.addthis_layers !== 'undefined' && Object.getOwnPropertyNames(window.addthis_layers).length > 0) {
+                            window.addthis.layers(window.addthis_layers);
+                          }
+                          if (Array.isArray(window.addthis_layers_tools)) {
+                            for (i = 0; i < window.addthis_layers_tools.length; i++) {
+                              window.addthis.layers(window.addthis_layers_tools[i]);
+                            }
+                          }
+                        }
+                     },1000)
+                    }());
+</script>
+<script type='text/javascript' src='assets/addthis/addthis_widget.js?ver=4.9.7#pubid=ra-5b4db5e927ab6841'></script>
+<script type='text/javascript'>
+/* <![CDATA[ */
+var countVars = {"disqusShortname":"h2o-ai"};
+/* ]]> */
+</script>
+<!-- <script type='text/javascript' src='assets/javascripts/comment_count.js?ver=3.0.16'></script> -->
+<script type='text/javascript' src='assets/javascripts/wp-embed.min.js?ver=4.9.7'></script>
 
   </body>
 </html>

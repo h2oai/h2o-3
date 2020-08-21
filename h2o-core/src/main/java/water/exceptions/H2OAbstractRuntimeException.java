@@ -2,7 +2,6 @@ package water.exceptions;
 
 import water.util.HttpResponseStatus;
 import water.H2OError;
-import water.util.IcedHashMap;
 import water.util.IcedHashMapGeneric;
 
 /**

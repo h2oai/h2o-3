@@ -6,24 +6,39 @@ Algorithms
 
 This section provides an overview of each algorithm available in H2O. For detailed information about the parameters that can be used for building models, refer to `Appendix A - Parameters <parameters.html>`__.
 
+Data Types
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   data-science/supported-data-types
+
 Common
 ------
 
 .. toctree::
    :maxdepth: 1
 
-   data-science/common
+   data-science/quantiles
+   data-science/early_stopping
 
 Supervised
 ----------
 
+In supervised learning, the dataset is labeled with the answer that algorithm should come up with. Supervised learning takes input variables (x) along with an output variable (y). The output variable represents the column that you want to predict on. The algorithm then uses these variables to learn and approximate the mapping function from the input to the output. Supervised learning algorithms support classification and regression problems. 
+
+H2O supports the following supervised algorithms:
+
 .. toctree::
    :maxdepth: 1
 
+   automl
    data-science/coxph
    data-science/deep-learning
    data-science/drf
    data-science/glm
+   data-science/gam
    data-science/gbm
    data-science/naive-bayes
    data-science/stacked-ensembles
@@ -32,6 +47,10 @@ Supervised
 
 Unsupervised
 ------------
+
+In unsupervised learning, the model is provided with a dataset that isn't labeled - i.e., without an explicit outcome that the algorithm should return. In this case, the algorithm attempts to find patterns and structure in the data by extracting useful features. The model organizes the data in different ways, depending on the algorithm (clustering, anomaly detection, autoencoders, etc). 
+
+H2O supports the following unsupervised algorithms:
 
 .. toctree::
    :maxdepth: 1
@@ -49,3 +68,4 @@ Miscellaneous
    :maxdepth: 1
 
    data-science/word2vec
+   data-science/tf-idf

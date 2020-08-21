@@ -49,6 +49,8 @@ public abstract class ModelingSteps extends Iced<ModelingSteps> {
                 return getDefaultModels();
             case grids:
                 return getGrids();
+            case exploitation:
+                return getExploitation();
             default:
                 return new ModelingStep[0];
         }
@@ -58,10 +60,12 @@ public abstract class ModelingSteps extends Iced<ModelingSteps> {
         ModelingStep[] all = new ModelingStep[0];  // create a fresh array to avoid type issues in arraycopy
         all = ArrayUtils.append(all, getDefaultModels());
         all = ArrayUtils.append(all, getGrids());
+        all = ArrayUtils.append(all, getExploitation());
         return all;
     }
 
     protected ModelingStep[] getDefaultModels() { return new ModelingStep[0]; }
     protected ModelingStep[] getGrids() { return new ModelingStep[0]; }
+    protected ModelingStep[] getExploitation() { return new ModelingStep[0]; }
 
 }

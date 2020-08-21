@@ -8,8 +8,8 @@ The only requirements from the original estimator are the following:
 from collections import defaultdict, OrderedDict
 import copy
 from functools import partial, update_wrapper, wraps
-import imp
 import sys
+import types
 from weakref import ref
 
 from sklearn.base import is_classifier, is_regressor, BaseEstimator, TransformerMixin, ClassifierMixin, RegressorMixin
@@ -70,7 +70,7 @@ def register_module(module_name):
     :return: the module with given name.
     """
     if module_name not in sys.modules:
-        mod = imp.new_module(module_name)
+        mod = types.ModuleType(module_name)
         sys.modules[module_name] = mod
     return sys.modules[module_name]
 
@@ -528,7 +528,7 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         # we only keep a ref to parameters names
         # all those params are also exposed as a regular attribute and can be modified directly
         #  on the estimator instance
-        self._estimator_param_names = estimator_params.keys()
+        self._estimator_param_names = list(estimator_params.keys())
         self.set_params(**estimator_params)
 
         self._frame_params = None
@@ -541,6 +541,14 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         :return: `param`, or, if the param name may conflict with another method or property on the instance,`param_`
         """
         return param+'_' if param in dir(cls) else param
+
+    @property
+    def estimator(self):
+        """
+        The wrapped estimator is created only when the current object is `fit`, so this property returns None until then.
+        :return: the wrapped estimator or None if `fit` hasn't been called on the current object yet.
+        """
+        return self._estimator
 
     def set_params(self, **params):
         """Set the parameters of this estimator.

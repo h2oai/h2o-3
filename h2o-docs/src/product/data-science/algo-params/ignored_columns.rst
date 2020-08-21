@@ -1,7 +1,7 @@
 ``ignored_columns``
 -------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, PCA, GLRM, Naïve-Bayes, K-Means, XGBoost, Aggregator, CoxPH, Isolation Forest
+- Available in: GBM, DRF, Deep Learning, GLM, GAM, PCA, GLRM, Naïve-Bayes, K-Means, XGBoost, Aggregator, CoxPH, Isolation Forest
 - Hyperparameter: no
 
 Description
@@ -21,39 +21,39 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: python
+.. tabs::
+   .. code-tab:: python
 
-	import h2o
-	from h2o.estimators.gbm import H2OGradientBoostingEstimator
-	h2o.init()
+		import h2o
+		from h2o.estimators.gbm import H2OGradientBoostingEstimator
+		h2o.init()
 
-	# import the airlines dataset:
-	# This dataset is used to classify whether a flight will be delayed 'YES' or not "NO"
-	# original data can be found at http://www.transtats.bts.gov/
-	airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+		# import the airlines dataset:
+		# This dataset is used to classify whether a flight will be delayed 'YES' or not "NO"
+		# original data can be found at http://www.transtats.bts.gov/
+		airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
 
-	# convert columns to factors
-	airlines["Year"]= airlines["Year"].asfactor()
-	airlines["Month"]= airlines["Month"].asfactor()
-	airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
-	airlines["Cancelled"] = airlines["Cancelled"].asfactor()
-	airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+		# convert columns to factors
+		airlines["Year"]= airlines["Year"].asfactor()
+		airlines["Month"]= airlines["Month"].asfactor()
+		airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+		airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+		airlines['FlightNum'] = airlines['FlightNum'].asfactor()
 
-	# set the predictor names and the response column name
-	predictors = airlines.columns[:9]
-	response = "IsDepDelayed"
+		# set the predictor names and the response column name
+		predictors = airlines.columns[:9]
+		response = "IsDepDelayed"
 
-	# split into train and validation sets
-	train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+		# split into train and validation sets
+		train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
 
-	# try using the `ignored_columns` parameter:
-	# create a list of column names to ignore
-	col_list = ['DepTime','CRSDepTime','ArrTime','CRSArrTime']
+		# try using the `ignored_columns` parameter:
+		# create a list of column names to ignore
+		col_list = ['DepTime','CRSDepTime','ArrTime','CRSArrTime']
 
-	# initialize the estimator and train the model
-	airlines_gbm = H2OGradientBoostingEstimator(ignored_columns = col_list, seed =1234)
-	airlines_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+		# initialize the estimator and train the model
+		airlines_gbm = H2OGradientBoostingEstimator(ignored_columns = col_list, seed =1234)
+		airlines_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
-	# print the auc for the validation data
-	airlines_gbm.auc(valid=True)
+		# print the auc for the validation data
+		airlines_gbm.auc(valid=True)

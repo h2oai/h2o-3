@@ -22,7 +22,9 @@ Certain cases can exist, however, in which the median starting value for this lo
 - If the distribution is ``laplace``, the response column must be numeric.
 - If the distribution is ``quantile``, the response column must be numeric.
 - If the distribution is ``huber``, the response column must be numeric.
+- If the distribution is ``modified_huber``, the response column must be 2-class categorical.
 - If the distribution is ``tweedie``, the response column must be numeric.
+- If the distribution is ``ordinal``, the response column must be categorical with at least 3 levels.
 - If the distribution is ``custom``, the response column must be numeric/binary/categorical depends on type of custom distribution.
 
 **NOTE**: ``laplace``, ``quantile``, and ``huber`` are NOT available in XGBoost. ``custom`` is available ONLY in GBM.
@@ -54,7 +56,7 @@ When ``huber`` is specified, then users can also specify a ``huber_alpha`` value
 
 When ``custom`` is specified, then users must also specify a ``custom_distribution_func`` value. This is reference to loaded custom distribution function. For information how to load custom distribution see `custom_distribution_func <custom_distribution_func.html>`__. If ``custom`` distribution is set, no deviance metrics (training deviance, validation deviance and mean deviance) are calculated.
 
-For all distributions except ``multinomial`` and ``custom``, you can specify an ``offset_column``. Offsets are per-row “bias values” that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__. 
+For all distributions except ``multinomial`` and ``custom``, you can specify an ``offset_column``. Offsets are per-row “bias values” that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <offset_column.html>`__. 
 
 Some examples of response distributions are provided below.
 
@@ -91,59 +93,59 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-	library(h2o)
-	h2o.init()
+		library(h2o)
+		h2o.init()
 
-	# import the cars dataset:
-	# this dataset is used to classify whether or not a car is economical based on
-	# the car's displacement, power, weight, and acceleration, and the year it was made
-	cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+		# import the cars dataset:
+		# this dataset is used to classify whether or not a car is economical based on
+		# the car's displacement, power, weight, and acceleration, and the year it was made
+		cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
 
-	# set the predictor names and the response column name
-	predictors <- c("displacement","power","weight","acceleration","year")
-	response <- "cylinders"
+		# set the predictor names and the response column name
+		predictors <- c("displacement","power", "weight", "acceleration", "year")
+		response <- "cylinders"
 
-	# split into train and validation sets
-	cars.splits <- h2o.splitFrame(data =  cars, ratios = .8, seed = 1234)
-	train <- cars.splits[[1]]
-	valid <- cars.splits[[2]]
+		# split into train and validation sets
+		cars_splits <- h2o.splitFrame(data =  cars, ratios = 0.8, seed = 1234)
+		train <- cars_splits[[1]]
+		valid <- cars_splits[[2]]
 
-	# try using the distribution parameter:
-	# train a GBM
-	car_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
-	                   validation_frame = valid,
-	                   distribution = "poisson",
-	                   seed = 1234)
+		# try using the distribution parameter:
+		# train a GBM
+		car_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
+		                   validation_frame = valid,
+		                   distribution = "poisson",
+		                   seed = 1234)
 
-	# print the MSE for your validation data
-	print(h2o.mse(car_gbm, valid = TRUE))
+		# print the MSE for your validation data
+		print(h2o.mse(car_gbm, valid = TRUE))
 
-   .. code-block:: python
+   .. code-tab:: python
 
-	import h2o
-	from h2o.estimators.gbm import H2OGradientBoostingEstimator
-	h2o.init()
+		import h2o
+		from h2o.estimators.gbm import H2OGradientBoostingEstimator
+		h2o.init()
 
-	# import the cars dataset:
-	# this dataset is used to classify whether or not a car is economical based on
-	# the car's displacement, power, weight, and acceleration, and the year it was made
-	cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+		# import the cars dataset:
+		# this dataset is used to classify whether or not a car is economical based on
+		# the car's displacement, power, weight, and acceleration, and the year it was made
+		cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-	# set the predictor names and the response column name
-	predictors = ["displacement","power","weight","acceleration","year"]
-	response = "cylinders"
+		# set the predictor names and the response column name
+		predictors = ["displacement","power","weight","acceleration","year"]
+		response = "cylinders"
 
-	# split into train and validation sets
-	train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+		# split into train and validation sets
+		train, valid = cars.split_frame(ratios = [.8], seed = 1234)
 
-	# try using the distribution parameter:
-	# Initialize and train a GBM
-	cars_gbm = H2OGradientBoostingEstimator(distribution = "poisson", seed = 1234)
-	cars_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+		# try using the distribution parameter:
+		# Initialize and train a GBM
+		cars_gbm = H2OGradientBoostingEstimator(distribution = "poisson", seed = 1234)
+		cars_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
-	# print the MSE for the validation data
-	cars_gbm.mse(valid=True)
+		# print the MSE for the validation data
+		cars_gbm.mse(valid=True)

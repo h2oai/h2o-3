@@ -18,117 +18,117 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-	library(h2o)
-	h2o.init()
+		library(h2o)
+		h2o.init()
 
-	# import the boston dataset:
-	# this dataset looks at features of the boston suburbs and predicts median housing prices
-	# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Housing
-	boston <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
+		# import the boston dataset:
+		# this dataset looks at features of the boston suburbs and predicts median housing prices
+		# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Housing
+		boston <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
 
-	# set the predictor names and the response column name
-	predictors <- colnames(boston)[1:13]
-	# set the response column to "medv", the median value of owner-occupied homes in $1000's
-	response <- "medv"
+		# set the predictor names and the response column name
+		predictors <- colnames(boston)[1:13]
+		# set the response column to "medv", the median value of owner-occupied homes in $1000's
+		response <- "medv"
 
-	# convert the chas column to a factor (chas = Charles River dummy variable (= 1 if tract bounds river; 0 otherwise))
-	boston["chas"] <- as.factor(boston["chas"])
+		# convert the chas column to a factor (chas = Charles River dummy variable (= 1 if tract bounds river; 0 otherwise))
+		boston["chas"] <- as.factor(boston["chas"])
 
-	# split into train and validation sets
-	boston.splits <- h2o.splitFrame(data =  boston, ratios = .8, seed = 1234)
-	train <- boston.splits[[1]]
-	valid <- boston.splits[[2]]
+		# split into train and validation sets
+		boston_splits <- h2o.splitFrame(data =  boston, ratios = 0.8, seed = 1234)
+		train <- boston_splits[[1]]
+		valid <- boston_splits[[2]]
 
-	# try using the `quantile_alpha` parameter:
-	# train your model, where you specify distribution = quantile
-	# and the quantile_alpha value
-	boston_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
-	                      validation_frame = valid,
-	                      distribution = 'quantile',
-	                      quantile_alpha = .8,
-	                      seed = 1234)
+		# try using the `quantile_alpha` parameter:
+		# train your model, where you specify distribution = quantile
+		# and the quantile_alpha value
+		boston_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
+		                      validation_frame = valid,
+		                      distribution = 'quantile',
+		                      quantile_alpha = 0.8,
+		                      seed = 1234)
 
-	# print the mse for validation set
-	print(h2o.mse(boston_gbm, valid = TRUE))
+		# print the mse for validation set
+		print(h2o.mse(boston_gbm, valid = TRUE))
 
-	# grid over `quantile_alpha` parameter
-	# select the values for `quantile_alpha` to grid over
-	hyper_params <- list( quantile_alpha = c(.2, .5, .8) )
+		# grid over `quantile_alpha` parameter
+		# select the values for `quantile_alpha` to grid over
+		hyper_params <- list( quantile_alpha = c(0.2, 0.5, 0.8) )
 
-	# this example uses cartesian grid search because the search space is small
-	# and we want to see the performance of all models. For a larger search space use
-	# random grid search instead: {'strategy': "RandomDiscrete"}
+		# this example uses cartesian grid search because the search space is small
+		# and we want to see the performance of all models. For a larger search space use
+		# random grid search instead: {'strategy': "RandomDiscrete"}
 
-	# build grid search with previously made GBM and hyperparameters
-	grid <- h2o.grid(x = predictors, y = response, training_frame = train,
-	                 validation_frame = valid, algorithm = "gbm", 
-	                 grid_id = "boston_grid", 
-	                 distribution = "quantile",
-	                 hyper_params = hyper_params,
-	                 seed = 1234)
+		# build grid search with previously made GBM and hyperparameters
+		grid <- h2o.grid(x = predictors, y = response, training_frame = train,
+		                 validation_frame = valid, algorithm = "gbm", 
+		                 grid_id = "boston_grid", 
+		                 distribution = "quantile",
+		                 hyper_params = hyper_params,
+		                 seed = 1234)
 
-	# Sort the grid models by MSE
-	sortedGrid <- h2o.getGrid("boston_grid", sort_by = "mse", decreasing = FALSE)
-	sortedGrid
+		# Sort the grid models by MSE
+		sorted_grid <- h2o.getGrid("boston_grid", sort_by = "mse", decreasing = FALSE)
+		sorted_grid
 
-   .. code-block:: python
+   .. code-tab:: python
 
-	import h2o
-	from h2o.estimators.gbm import H2OGradientBoostingEstimator
-	h2o.init()
+		import h2o
+		from h2o.estimators.gbm import H2OGradientBoostingEstimator
+		h2o.init()
 
-	# import the boston dataset:
-	# this dataset looks at features of the boston suburbs and predicts median housing prices
-	# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Housing
-	boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
+		# import the boston dataset:
+		# this dataset looks at features of the boston suburbs and predicts median housing prices
+		# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Housing
+		boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
 
-	# set the predictor names and the response column name
-	predictors = boston.columns[:-1]
-	# set the response column to "medv", the median value of owner-occupied homes in $1000's
-	response = "medv"
+		# set the predictor names and the response column name
+		predictors = boston.columns[:-1]
+		# set the response column to "medv", the median value of owner-occupied homes in $1000's
+		response = "medv"
 
-	# convert the chas column to a factor (chas = Charles River dummy variable (= 1 if tract bounds river; 0 otherwise))
-	boston['chas'] = boston['chas'].asfactor()
+		# convert the chas column to a factor (chas = Charles River dummy variable (= 1 if tract bounds river; 0 otherwise))
+		boston['chas'] = boston['chas'].asfactor()
 
-	# split into train and validation sets
-	train, valid = boston.split_frame(ratios = [.8], seed = 1234)
+		# split into train and validation sets
+		train, valid = boston.split_frame(ratios = [.8], seed = 1234)
 
-	# try using the `quantile_alpha` parameter:
-	# initialize the estimator then train the model where you specify distribution = quantile
-	# and the quantile_alpha value
-	boston_gbm = H2OGradientBoostingEstimator(distribution = "quantile", quantile_alpha = .8, seed = 1234)
+		# try using the `quantile_alpha` parameter:
+		# initialize the estimator then train the model where you specify distribution = quantile
+		# and the quantile_alpha value
+		boston_gbm = H2OGradientBoostingEstimator(distribution = "quantile", quantile_alpha = .8, seed = 1234)
 
-	# then train your model
-	boston_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+		# then train your model
+		boston_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
-	# print the MSE for the validation data
-	print(boston_gbm.mse(valid=True))
+		# print the MSE for the validation data
+		print(boston_gbm.mse(valid=True))
 
 
-	# Example of values to grid over for `quantile_alpha`
-	# import Grid Search
-	from h2o.grid.grid_search import H2OGridSearch
+		# Example of values to grid over for `quantile_alpha`
+		# import Grid Search
+		from h2o.grid.grid_search import H2OGridSearch
 
-	# select the values for `quantile_alpha` to grid over
-	hyper_params = {'quantile_alpha': [.2, .5, .8]}
+		# select the values for `quantile_alpha` to grid over
+		hyper_params = {'quantile_alpha': [.2, .5, .8]}
 
-	# this example uses cartesian grid search because the search space is small
-	# and we want to see the performance of all models. For a larger search space use
-	# random grid search instead: {'strategy': "RandomDiscrete"}
-	# initialize the GBM estimator
-	boston_gbm_2 = H2OGradientBoostingEstimator(distribution="quantile", seed = 1234,
-	                                              stopping_metric = "mse", stopping_tolerance = 1e-4)
+		# this example uses cartesian grid search because the search space is small
+		# and we want to see the performance of all models. For a larger search space use
+		# random grid search instead: {'strategy': "RandomDiscrete"}
+		# initialize the GBM estimator
+		boston_gbm_2 = H2OGradientBoostingEstimator(distribution="quantile", seed = 1234,
+		                                              stopping_metric = "mse", stopping_tolerance = 1e-4)
 
-	# build grid search with previously made GBM and hyper parameters
-	grid = H2OGridSearch(model = boston_gbm_2, hyper_params = hyper_params,
-	                     search_criteria = {'strategy': "Cartesian"})
+		# build grid search with previously made GBM and hyper parameters
+		grid = H2OGridSearch(model = boston_gbm_2, hyper_params = hyper_params,
+		                     search_criteria = {'strategy': "Cartesian"})
 
-	# train using the grid
-	grid.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+		# train using the grid
+		grid.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
-	# sort the grid models by decreasing MSE
-	sorted_grid = grid.get_grid(sort_by = 'mse', decreasing = False)
-	print(sorted_grid)
+		# sort the grid models by decreasing MSE
+		sorted_grid = grid.get_grid(sort_by = 'mse', decreasing = False)
+		print(sorted_grid)

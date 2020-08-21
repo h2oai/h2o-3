@@ -18,7 +18,7 @@ public class IsolationForestMojoWriter extends SharedTreeMojoWriter<IsolationFor
   public IsolationForestMojoWriter(IsolationForestModel model) { super(model); }
 
   @Override public String mojoVersion() {
-    return "1.30";
+    return "1.40";
   }
 
   @Override
@@ -26,6 +26,7 @@ public class IsolationForestMojoWriter extends SharedTreeMojoWriter<IsolationFor
     super.writeModelData();
     writekv("max_path_length", model._output._max_path_length);
     writekv("min_path_length", model._output._min_path_length);
+    writekv("output_anomaly_flag", model.outputAnomalyFlag());
   }
 
 }

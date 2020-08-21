@@ -1,12 +1,15 @@
 package water.rapids;
 
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import water.*;
-import water.fvec.*;
+import water.fvec.Frame;
+import water.fvec.NFSFileVec;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.rapids.ast.AstRoot;
@@ -14,9 +17,12 @@ import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNums;
-import water.rapids.vals.ValStr;
 import water.rapids.vals.ValStrs;
-import water.util.*;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
+import water.util.ArrayUtils;
+import water.util.FileUtils;
+import water.util.Log;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,22 +30,54 @@ import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.*;
 import static water.rapids.Rapids.IllegalASTException;
 
 
-public class RapidsTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
-
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class RapidsTest{
   @Rule
-  public transient ExpectedException ee = ExpectedException.none(); 
+  public transient ExpectedException ee = ExpectedException.none();
   
-  @Test public void bigSlice() {
+  @Test
+  public void testSpearmanIris() {
+    Session session = new Session();
+    Scope.enter();
+    try {
+      final Frame iris = parse_test_file(Key.make("iris_spearman"), "smalldata/junit/iris.csv");
+      Scope.track_generic(iris);
+      final Val spearmanMatrix = Rapids.exec("(cor iris_spearman iris_spearman \"complete.obs\" \"Spearman\")", session);
+      assertTrue(spearmanMatrix instanceof ValFrame);
+      // Only two columns verified by hand
+      assertEquals(-0.17200277349347703, spearmanMatrix.getFrame().vec(0).at(1), 1e-8);
+      assertEquals(0.882408773196076, spearmanMatrix.getFrame().vec(0).at(2), 1e-8);
+
+      // Categorical column test
+      assertTrue(iris.vec(4).isCategorical());
+      assertEquals(0.796932203878841, spearmanMatrix.getFrame().vec(0).at(4), 1e-8);
+
+      // Test non-squared correlation matrix
+      final Val spearmanNonSquared = Rapids.exec("(cor (cols iris_spearman [1]) (cols iris_spearman [2 3]) \"complete.obs\" \"Spearman\")", session);
+      assertTrue(spearmanNonSquared instanceof ValFrame);
+      final Frame spearman_non_squared_frame = spearmanNonSquared.getFrame();
+      assertEquals(1, spearman_non_squared_frame.numCols());
+      assertEquals(2, spearman_non_squared_frame.anyVec().length());
+    } finally {
+      Scope.exit();
+      session.end(null);
+    }
+  }
+
+  @Test
+  public void bigSlice() {
     // check that large slices do something sane
     String tree = "(rows a.hex [0:2147483647])";
     checkTree(tree);
   }
 
-  @Test public void testParseString() {
+  @Test
+  public void testParseString() {
     astStr_ok("'hello'", "hello");
     astStr_ok("\"one two three\"", "one two three");
     astStr_ok("\"  \\\"  \"", "  \"  ");
@@ -434,7 +472,7 @@ public class RapidsTest extends TestUtil {
       Val res = Rapids.exec(x);
       mergeRes = res.getFrame();
       Scope.track(mergeRes);
-      assertTrue(isBitIdentical(ans, mergeRes)); // compare our merge frame with answer from R
+      assertBitIdentical(ans, mergeRes); // compare our merge frame with answer from R
     } finally {
       Scope.exit();
     }

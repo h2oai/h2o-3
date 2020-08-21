@@ -164,13 +164,17 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
    */
   @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and " +
           "anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and " +
-          "DRF with the Python client.", values = {"AUTO", "deviance", "logloss", "MSE", "RMSE","MAE","RMSLE", "AUC", 
-          "lift_top_group", "misclassification", "AUCPR", "mean_per_class_error", "anomaly_score", "custom", 
-          "custom_increasing"}, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+          "DRF with the Python client.",
+          valuesProvider = ModelParamsValuesProviders.StoppingMetricValuesProvider.class,
+          level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
   public ScoreKeeper.StoppingMetric stopping_metric;
 
   @API(help = "Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
   public double stopping_tolerance;
+
+  @API(help = "Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning.",
+      level = API.Level.secondary, direction=API.Direction.INOUT)
+  public int gainslift_bins;
 
   /*
    * Custom metric
@@ -268,7 +272,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
    * Write the parameters, including their metadata, into an AutoBuffer.  Used by
    * ModelBuilderSchema#writeJSON_impl and ModelSchemaV3#writeJSON_impl.
    */
-  public static AutoBuffer writeParametersJSON(AutoBuffer ab, ModelParametersSchemaV3 parameters, ModelParametersSchemaV3 default_parameters) {
+  public static AutoBuffer writeParametersJSON(AutoBuffer ab, ModelParametersSchemaV3 parameters, ModelParametersSchemaV3 input_parameters, ModelParametersSchemaV3 default_parameters, String name) {
     String[] fields = parameters.fields();
 
     // Build ModelParameterSchemaV2 objects for each field, and the call writeJSON on the array
@@ -282,7 +286,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
         Field f = parameters.getClass().getField(field_name);
 
         // TODO: cache a default parameters schema
-        ModelParameterSchemaV3 schema = new ModelParameterSchemaV3(parameters, default_parameters, f);
+        ModelParameterSchemaV3 schema = new ModelParameterSchemaV3(parameters, input_parameters, default_parameters, f);
         metadata[i] = schema;
       }
     } catch (NoSuchFieldException e) {
@@ -293,7 +297,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
     if (additionalParameters != null) {
       metadata = ArrayUtils.append(metadata, additionalParameters);
     }
-    ab.putJSONA("parameters", metadata);
+    ab.putJSONA(name, metadata);
     return ab;
   }
 

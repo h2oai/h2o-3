@@ -6,12 +6,10 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.util.fp.Function;
-import water.util.fp.Functions;
 
 import java.util.Arrays;
 
-import static hex.AUC2.ThresholdCriterion.precision;
-import static hex.AUC2.ThresholdCriterion.recall;
+import static hex.AUC2.ThresholdCriterion.*;
 
 /** One-pass approximate AUC
  *
@@ -65,8 +63,14 @@ public class AUC2 extends Iced {
         double mcc = (tp*tn - fp*fn);
         if (mcc == 0) return 0;
         mcc /= Math.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn));
-        assert(Math.abs(mcc)<=1.) : tp + " " + fp + " " + fn + " " + tn;
-        return Math.abs(mcc);
+        // due tp and tn are double; the MCC could be slightly higher than 1. for example 1.000000000000002
+        double eps = 1e-10;
+        double absMcc = Math.abs(mcc);
+        assert(absMcc <= 1. + eps) : "Absolute mcc is greater than 1: mcc="+absMcc+" tp="+tp + " fp=" + fp + " fn=" + fn + " tn=" + tn;
+        if(absMcc > 1){
+          return 1;
+        }
+        return absMcc;
       } },
     // minimize max-per-class-error by maximizing min-per-class-accuracy.
     // Report from max_criterion is the smallest correct rate for both classes.
@@ -241,14 +245,6 @@ public class AUC2 extends Iced {
     return _nBins == 0;
   }
 
-  public double pr_auc() {
-    if (isEmpty()) {
-      return Double.NaN;
-    }
-    checkRecallValidity();
-    return Functions.integrate(forCriterion(recall), forCriterion(precision), 0, _nBins-1);
-  }
-
   // Checks that recall is a non-decreasing function
   void checkRecallValidity() {
     double x0 = recall.exec(this, 0);
@@ -278,6 +274,52 @@ public class AUC2 extends Iced {
     return area/_p/_n;
   }
 
+  /**
+   * Compute the Area under Precision-Recall Curves using TPs and FPs.
+   * TPs and FPs are monotonically increasing.
+   * Calulation inspired by XGBoost implementation:
+   * https://github.com/dmlc/xgboost/blob/master/src/metric/rank_metric.cc#L566-L591
+   * @return
+   */
+  public double pr_auc() {
+    if (isEmpty()) {
+      return Double.NaN;
+    }
+    checkRecallValidity();
+    
+    if (_fps[_nBins-1] == 0) return 1.0;
+    if (_tps[_nBins-1] == 0) return 0.0;
+    
+    double area = 0.0;
+    assert _p > 0 && _n > 0 : "AUC-PR calculation error, sum of positives and sum of negatives should be greater than zero.";
+    
+    double tp, prevtp = 0.0, fp, prevfp = 0.0, tpp, prevtpp, h, a, b;
+    for (int j = 0; j < _nBins; j++) {
+      tp = _tps[j];
+      fp = _fps[j];
+      if (tp == prevtp) {
+        a = 1.0;
+        b = 0.0;
+      } else {
+        h = (fp - prevfp) / (tp - prevtp);
+        a = 1.0 + h;
+        b = (prevfp - h * prevtp) / _p;
+      }
+      tpp = tp / _p;
+      prevtpp = prevtp / _p;
+      if (0.0 != b) {
+        area += (tpp - prevtpp - 
+                 b / a * (Math.log(a * tpp + b) - 
+                         Math.log(a * prevtpp + b))) / a;
+      } else {
+        area += (tpp - prevtpp) / a;
+      }
+      prevtp = tp;
+      prevfp = fp;
+    }
+    return area;
+  }
+
   // Build a CM for a threshold index. - typed as doubles because of double observation weights
   public double[/*actual*/][/*predicted*/] buildCM( int idx ) {
     //  \ predicted:  0   1
@@ -298,9 +340,6 @@ public class AUC2 extends Iced {
   public double defaultThreshold( ) { return _max_idx == -1 ? 0.5 : _ths[_max_idx]; }
   /** @return the error of the default CM */
   public double defaultErr( ) { return _max_idx == -1 ? Double.NaN : (fp(_max_idx)+fn(_max_idx))/(_p+_n); }
-
-
-
   // Compute an online histogram of the predicted probabilities, along with
   // true positive and false positive totals in each histogram bin.
   private static class AUC_Impl extends MRTask<AUC_Impl> {
@@ -542,61 +581,100 @@ public class AUC2 extends Iced {
   // ==========
   // Given the probabilities of a 1, and the actuals (0/1) report the perfect
   // AUC found by sorting the entire dataset.  Expensive, and only works for
-  // small data (probably caps out at about 10M rows).
+  // smaller data (hundreds of millions of observations).
   public static double perfectAUC( Vec vprob, Vec vacts ) {
     if( vacts.min() < 0 || vacts.max() > 1 || !vacts.isInt() )
       throw new IllegalArgumentException("Actuals are either 0 or 1");
     if( vprob.min() < 0 || vprob.max() > 1 )
       throw new IllegalArgumentException("Probabilities are between 0 and 1");
-    // Horrible data replication into array of structs, to sort.  
-    Pair[] ps = new Pair[(int)vprob.length()];
+
     Vec.Reader rprob = vprob.new Reader();
     Vec.Reader racts = vacts.new Reader();
-    for( int i=0; i<ps.length; i++ )
-      ps[i] = new Pair(rprob.at(i),(byte)racts.at8(i));
-    return perfectAUC(ps);
-  }
-  public static double perfectAUC( double ds[], double[] acts ) {
-    Pair[] ps = new Pair[ds.length];
-    for( int i=0; i<ps.length; i++ )
-      ps[i] = new Pair(ds[i],(byte)acts[i]);
-    return perfectAUC(ps);
+
+    final int posCnt = (int) vacts.nzCnt();
+    final int negCnt = (int) (vacts.length() - posCnt);
+    double[] posProbs = new double[posCnt];
+    double[] negProbs = new double[negCnt];
+
+    int pc = 0;
+    int nc = 0;
+    for (int i = 0; i < posCnt + negCnt; i++) {
+      byte actual = (byte) racts.at8(i);
+      double prob = rprob.at(i);
+      if (actual == 1) {
+        posProbs[pc++] = prob;
+      } else {
+        negProbs[nc++] = prob;
+      }
+    }
+    assert pc == posProbs.length;
+    assert nc == negProbs.length;
+
+    return perfectAUCFromComponents(negProbs, posProbs);
   }
 
-  private static double perfectAUC( Pair[] ps ) {
-    // Sort by probs, then actuals - so tied probs have the 0 actuals before
-    // the 1 actuals.  Sort probs from largest to smallest - so both the True
-    // and False Positives are zero to start.
-    Arrays.sort(ps,new java.util.Comparator<Pair>() {
-        @Override public int compare( Pair a, Pair b ) {
-          return a._prob<b._prob ? 1 : (a._prob==b._prob ? (b._act-a._act) : -1);
-        }
-      });
+  static double perfectAUC(double ds[], double[] acts) {
+    int posCnt = 0;
+    for (double act : acts) {
+      if (act == 1.0d)
+        posCnt++;
+    }
+    double[] posProbs = new double[posCnt];
+    double[] negProbs = new double[acts.length - posCnt];
+    int pi = 0;
+    int ni = 0;
+    for (int i = 0; i < acts.length; i++) {
+      if (acts[i] == 1.0d)
+        posProbs[pi++] = ds[i];
+      else
+        negProbs[ni++] = ds[i];
+    }
+    return perfectAUCFromComponents(negProbs, posProbs);
+  }
 
+  private static double perfectAUCFromComponents(double[] negProbs, double[] posProbs) {
+    Arrays.sort(posProbs);
+    Arrays.sort(negProbs);
+
+    double[] probs = new double[negProbs.length + posProbs.length];
+    byte[] acts = new byte[probs.length];
+
+    int pi = 0;
+    int ni = 0;
+    for (int i = 0; i < probs.length; i++) {
+      boolean takeNeg = pi == posProbs.length || (ni < negProbs.length && negProbs[ni] <= posProbs[pi]);
+      if (takeNeg) {
+        probs[i] = negProbs[ni++];
+        acts[i] = 0;
+      } else {
+        probs[i] = posProbs[pi++];
+        acts[i] = 1;
+      }
+    }
+
+    return perfectAUC(probs, acts);
+  }
+  
+  private static double perfectAUC(double[] sortedProbs, byte[] sortedActs) {
     // Compute Area Under Curve.  
     // All math is computed scaled by TP and FP.  We'll descale once at the
     // end.  Trapezoids from (tps[i-1],fps[i-1]) to (tps[i],fps[i])
     int tp0=0, fp0=0, tp1=0, fp1=0;
     double prob = 1.0;
     double area = 0;
-    for( Pair p : ps ) {
-      if( p._prob!=prob ) { // Tied probabilities: build a diagonal line
+    for (int i = sortedProbs.length - 1; i >= 0; i--) {
+      if( sortedProbs[i]!=prob ) { // Tied probabilities: build a diagonal line
         area += (fp1-fp0)*(tp1+tp0)/2.0; // Trapezoid
         tp0 = tp1; fp0 = fp1;
-        prob = p._prob;
+        prob = sortedProbs[i];
       }
-      if( p._act==1 ) tp1++; else fp1++;
+      if( sortedActs[i]==1 ) tp1++; else fp1++;
     }
     area += (double)tp0*(fp1-fp0); // Trapezoid: Rectangle + 
     area += (double)(tp1-tp0)*(fp1-fp0)/2.0; // Right Triangle
 
     // Descale
     return area/tp1/fp1;
-  }
-
-  private static class Pair {
-    final double _prob; final byte _act;
-    Pair( double prob, byte act ) { _prob = prob; _act = act; }
   }
 
 }

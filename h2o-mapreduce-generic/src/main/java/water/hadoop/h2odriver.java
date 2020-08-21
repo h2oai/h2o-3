@@ -5,15 +5,9 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapreduce.InputFormat;
-import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import water.H2O;
@@ -23,41 +17,25 @@ import water.hadoop.clouding.fs.CloudingEvent;
 import water.hadoop.clouding.fs.CloudingEventType;
 import water.hadoop.clouding.fs.FileSystemBasedClouding;
 import water.hadoop.clouding.fs.FileSystemCloudingEventSource;
+import water.hive.ImpersonationUtils;
+import water.hive.HiveTokenGenerator;
 import water.init.NetworkInit;
 import water.network.SecurityUtils;
 import water.util.ArrayUtils;
+import water.util.BinaryFileTransfer;
 import water.util.StringUtils;
 import water.webserver.iface.Credentials;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Writer;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static water.hadoop.h2omapper.H2O_AUTH_KEYTAB;
-import static water.hadoop.h2omapper.H2O_AUTH_PRINCIPAL;
+import static water.hive.DelegationTokenRefresher.*;
 import static water.util.JavaVersionUtils.JAVA_VERSION;
 
 /**
@@ -102,6 +80,7 @@ public class h2odriver extends Configured implements Tool {
   static String network = null;
   static boolean disown = false;
   static String clusterReadyFileName = null;
+  static String clusterFlatfileName = null;
   static String hadoopJobId = "";
   static String applicationId = "";
   static int cloudFormationTimeoutSeconds = DEFAULT_CLOUD_FORMATION_TIMEOUT_SECONDS;
@@ -119,6 +98,7 @@ public class h2odriver extends Configured implements Tool {
   static boolean enablePrintCompilation = false;
   static boolean enableExcludeMethods = false;
   static boolean enableLog4jDefaultInitOverride = true;
+  static String logLevel;
   static boolean enableDebug = false;
   static boolean enableSuspend = false;
   static int debugPort = 5005;    // 5005 is the default from IDEA
@@ -130,6 +110,8 @@ public class h2odriver extends Configured implements Tool {
   static String jksAlias = null;
   static String securityConf = null;
   static boolean internal_secure_connections = false;
+  static boolean allow_insecure_xgboost = false;
+  static boolean use_external_xgboost = false;
   static boolean hashLogin = false;
   static boolean ldapLogin = false;
   static boolean kerberosLogin = false;
@@ -147,12 +129,15 @@ public class h2odriver extends Configured implements Tool {
   static String keytabPath = null;
   static boolean reportHostname = false;
   static boolean driverDebug = false;
+  static String hiveJdbcUrlPattern = null; 
   static String hiveHost = null;
   static String hivePrincipal = null;
   static boolean refreshTokens = false;
+  static String hiveToken = null;
   static CloudingMethod cloudingMethod = CloudingMethod.CALLBACKS;
   static String cloudingDir = null;
   static boolean disableFlow = false;
+  static boolean swExtBackend = false;
 
   String proxyUrl = null;
 
@@ -168,7 +153,7 @@ public class h2odriver extends Configured implements Tool {
   // Output of clouding
   volatile String clusterIp = null;
   volatile int clusterPort = -1;
-  volatile String flatfileContent = null;
+  volatile static String flatfileContent = null;
   // Only used for debugging 
   volatile AtomicInteger numNodesStarted = new AtomicInteger();
 
@@ -386,11 +371,15 @@ public class h2odriver extends Configured implements Tool {
     }
   }
 
-  private void reportClientReady(String ip, int port) throws Exception {
+  private void reportClientReady(String ip, int port)  {
     assert client;
     if (clusterReadyFileName != null) {
       createClusterReadyFile(ip, port);
       System.out.println("Cluster notification file (" + clusterReadyFileName + ") created (using Client Mode).");
+    }
+    if (clusterFlatfileName != null) {
+      createFlatFile(flatfileContent);
+      System.out.println("Cluster flatfile (" + clusterFlatfileName+ ") created.");
     }
   }
 
@@ -401,19 +390,48 @@ public class h2odriver extends Configured implements Tool {
       createClusterReadyFile(url.getHost(), url.getPort());
       System.out.println("Cluster notification file (" + clusterReadyFileName + ") created (using Proxy Mode).");
     }
+    if (clusterFlatfileName != null) {
+      createFlatFile(flatfileContent);
+      System.out.println("Cluster flatfile (" + clusterFlatfileName+ ") created.");
+    }
   }
 
   private void reportClusterReady(String ip, int port) throws Exception {
     setClusterIpPort(ip, port);
+    if (clusterFlatfileName != null) {
+      createFlatFile(flatfileContent);
+      System.out.println("Cluster flatfile (" + clusterFlatfileName+ ") created.");
+    }
+
     if (client || proxy)
       return; // Hadoop cluster ready but we have to wait for client or proxy to come up
+
     if (clusterReadyFileName != null) {
       createClusterReadyFile(ip, port);
       System.out.println("Cluster notification file (" + clusterReadyFileName + ") created.");
     }
   }
 
-  private static void createClusterReadyFile(String ip, int port) throws Exception {
+  private static void createFlatFile(String flatFileContent) {
+    String fileName = clusterFlatfileName + ".tmp";
+    try {
+      File file = new File(fileName);
+      BufferedWriter output = new BufferedWriter(new FileWriter(file));
+      output.write(flatFileContent);
+      output.flush();
+      output.close();
+
+      File file2 = new File(clusterFlatfileName);
+      boolean success = file.renameTo(file2);
+      if (! success) {
+        throw new RuntimeException("Failed to create file " + clusterReadyFileName);
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static void createClusterReadyFile(String ip, int port) {
     String fileName = clusterReadyFileName + ".tmp";
     String text1 = ip + ":" + port + "\n";
     String text2 = hadoopJobId + "\n";
@@ -428,10 +446,10 @@ public class h2odriver extends Configured implements Tool {
       File file2 = new File(clusterReadyFileName);
       boolean success = file.renameTo(file2);
       if (! success) {
-        throw new Exception ("Failed to create file " + clusterReadyFileName);
+        throw new RuntimeException("Failed to create file " + clusterReadyFileName);
       }
-    } catch ( IOException e ) {
-      e.printStackTrace();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
@@ -491,9 +509,6 @@ public class h2odriver extends Configured implements Tool {
       catch (Exception e) {
         System.out.println("Exception occurred in CallbackHandlerThread");
         System.out.println(e.toString());
-        if (e.getMessage() != null) {
-          System.out.println(e.getMessage());
-        }
         e.printStackTrace();
       }
     }
@@ -649,7 +664,7 @@ public class h2odriver extends Configured implements Tool {
         case NODE_FAILED:
           int exitCode = 42;
           try {
-            exitCode = Integer.valueOf(event.readPayload());
+            exitCode = Integer.parseInt(event.readPayload());
           } catch (Exception e) {
             e.printStackTrace();
           }
@@ -832,6 +847,7 @@ public class h2odriver extends Configured implements Tool {
                     "              (Note nnnnn is chosen randomly to produce a unique name)\n" +
                     "          [-principal <kerberos principal> -keytab <keytab path> [-run_as_user <impersonated hadoop username>] | -run_as_user <hadoop username>]\n" +
                     "          [-hiveHost <hostname:port> -hivePrincipal <hive server kerberos principal>]\n" +
+                    "          [-hiveJdbcUrlPattern <pattern for constructing hive jdbc url>]\n" +
                     "          [-refreshTokens]\n" +
                     "          [-clouding_method <callbacks|filesystem (defaults: to 'callbacks')>]\n" +
                     "          [-driverif <ip address of mapper->driver callback interface>]\n" +
@@ -843,6 +859,7 @@ public class h2odriver extends Configured implements Tool {
                     "          [-timeout <seconds>]\n" +
                     "          [-disown]\n" +
                     "          [-notify <notification file name>]\n" +
+                    "          [-flatfile <generated flatfile name>]\n" +
                     "          [-extramempercent <0 to 20>]\n" +
                     "          [-nthreads <maximum typical worker threads, i.e. cpus to use>]\n" +
                     "          [-context_path <context_path> the context path for jetty]\n" +
@@ -963,59 +980,6 @@ public class h2odriver extends Configured implements Tool {
     return ous.toByteArray();
   }
 
-  static public void writeBinaryFile(String fileName, byte[] byteArr) throws IOException {
-    FileOutputStream out = new FileOutputStream(fileName);
-    for (byte b : byteArr) {
-      out.write(b);
-    }
-    out.close();
-  }
-
-  /**
-   * Array of bytes to brute-force convert into a hexadecimal string.
-   * The length of the returned string is byteArr.length * 2.
-   *
-   * @param byteArr byte array to convert
-   * @return hexadecimal string
-   */
-  static private String convertByteArrToString(byte[] byteArr) {
-    StringBuilder sb = new StringBuilder();
-    for (byte b : byteArr) {
-      int i = b;
-      i = i & 0xff;
-      sb.append(String.format("%02x", i));
-    }
-    return sb.toString();
-  }
-
-  /**
-   * Hexadecimal string to brute-force convert into an array of bytes.
-   * The length of the string must be even.
-   * The length of the string is 2x the length of the byte array.
-   *
-   * @param s Hexadecimal string
-   * @return byte array
-   */
-  static public byte[] convertStringToByteArr(String s) {
-    if ((s.length() % 2) != 0) {
-      throw new RuntimeException("String length must be even (was " + s.length() + ")");
-    }
-
-    ArrayList<Byte> byteArrayList = new ArrayList<Byte>();
-    for (int i = 0; i < s.length(); i = i + 2) {
-      String s2 = s.substring(i, i + 2);
-      Integer i2 = Integer.parseInt(s2, 16);
-      Byte b2 = (byte)(i2 & 0xff);
-      byteArrayList.add(b2);
-    }
-
-    byte[] byteArr = new byte[byteArrayList.size()];
-    for (int i = 0; i < byteArr.length; i++) {
-      byteArr[i] = byteArrayList.get(i);
-    }
-    return byteArr;
-  }
-
   /**
    * Parse remaining arguments after the ToolRunner args have already been removed.
    * @param args Argument list
@@ -1092,6 +1056,10 @@ public class h2odriver extends Configured implements Tool {
         i++; if (i >= args.length) { usage(); }
         clusterReadyFileName = args[i];
       }
+      else if (s.equals("-flatfile")) {
+        i++; if (i >= args.length) { usage(); }
+        clusterFlatfileName = args[i];
+      }
       else if (s.equals("-nthreads")) {
         i++; if (i >= args.length) { usage(); }
         nthreads = Integer.parseInt(args[i]);
@@ -1148,6 +1116,10 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-Dlog4j.defaultInitOverride=true")) {
         enableLog4jDefaultInitOverride = true;
       }
+      else if (s.equals("-log_level")) {
+        i++; if (i >= args.length) { usage(); }
+        logLevel = args[i];
+      } 
       else if (s.equals("-debug")) {
         enableDebug = true;
       }
@@ -1160,7 +1132,8 @@ public class h2odriver extends Configured implements Tool {
         if ((debugPort < 0) || (debugPort > 65535)) {
           error("Debug port must be between 1 and 65535");
         }
-      } else if (s.equals("-XX:+PrintGCDetails")) {
+      } 
+      else if (s.equals("-XX:+PrintGCDetails")) {
         if (!JAVA_VERSION.useUnifiedLogging()) {
           enablePrintGCDetails = true;
         } else {
@@ -1219,6 +1192,12 @@ public class h2odriver extends Configured implements Tool {
         i++; if (i >= args.length) { usage(); }
         securityConf = args[i];
       }
+      else if (s.equals("-allow_insecure_xgboost")) {
+        allow_insecure_xgboost = true;
+      }
+      else if (s.equals("-use_external_xgboost")) {
+        use_external_xgboost = true;
+      }
       else if (s.equals("-hash_login")) {
         hashLogin = true;
       }
@@ -1248,7 +1227,9 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-disable_flow")) {
         disableFlow = true;
       }
-      else if (s.equals("-session_timeout")) {
+      else if (s.equals("-sw_ext_backend")) {
+        swExtBackend = true;
+      } else if (s.equals("-session_timeout")) {
         i++; if (i >= args.length) { usage(); }
         sessionTimeout = args[i];
       }
@@ -1276,6 +1257,9 @@ public class h2odriver extends Configured implements Tool {
         reportHostname = true;
       } else if (s.equals("-driver_debug")) {
         driverDebug = true;
+      } else if (s.equals("-hiveJdbcUrlPattern")) {
+        i++; if (i >= args.length) { usage (); }
+        hiveJdbcUrlPattern = args[i];
       } else if (s.equals("-hiveHost")) {
         i++; if (i >= args.length) { usage (); }
         hiveHost = args[i];
@@ -1284,6 +1268,9 @@ public class h2odriver extends Configured implements Tool {
         hivePrincipal = args[i];
       } else if (s.equals("-refreshTokens")) {
         refreshTokens = true;
+      } else if (s.equals("-hiveToken")) {
+        i++; if (i >= args.length) { usage (); }
+        hiveToken = args[i];
       } else if (s.equals("-clouding_method")) {
         i++; if (i >= args.length) { usage(); }
         cloudingMethod = CloudingMethod.valueOf(args[i].toUpperCase()); 
@@ -1303,7 +1290,7 @@ public class h2odriver extends Configured implements Tool {
   }
 
   private void validateArgs() {
-    // Check for mandatory arguments.
+      // Check for mandatory arguments.
     if (numNodes < 1) {
       error("Number of H2O nodes must be greater than 0 (must specify -n)");
     }
@@ -1393,16 +1380,16 @@ public class h2odriver extends Configured implements Tool {
       }
     }
 
-    if (principal != null || keytabPath != null) {
-      if (principal == null) {
-        error("keytab requires a valid principal (use the '-principal' option)");
-      }
-      if (keytabPath == null) {
-        error("principal requires a valid keytab path (use the '-keytab' option)");
-      }
-      if (runAsUser != null) {
-        warning("will attempt secure impersonation with user from '-run_as_user', " + runAsUser);
-      }
+    ImpersonationUtils.validateImpersonationArgs(
+        principal, keytabPath, runAsUser, h2odriver::error, h2odriver::warning
+    );
+    
+    if (hivePrincipal != null && hiveHost == null && hiveJdbcUrlPattern == null) {
+      error("delegation token generator requires Hive host to be set (use the '-hiveHost' or '-hiveJdbcUrlPattern' option)");
+    }
+    
+    if (refreshTokens && hivePrincipal == null) {
+      error("delegation token refresh requires Hive principal to be set (use the '-hivePrincipal' option)");
     }
 
     if (client && disown) {
@@ -1413,7 +1400,7 @@ public class h2odriver extends Configured implements Tool {
       error("proxy mode doesn't support the '-disown' option");
     }
   }
-
+  
   private static String calcMyIp(String externalIp) throws Exception {
     Enumeration nis = NetworkInterface.getNetworkInterfaces();
 
@@ -1583,7 +1570,7 @@ public class h2odriver extends Configured implements Tool {
   }
 
   private void addMapperConf(Configuration conf, String name, String value, byte[] payloadData) {
-    String payload = convertByteArrToString(payloadData);
+    String payload = BinaryFileTransfer.convertByteArrToString(payloadData);
 
     conf.set(h2omapper.H2O_MAPPER_CONF_ARG_BASE + mapperConfLength, name);
     conf.set(h2omapper.H2O_MAPPER_CONF_BASENAME_BASE + mapperConfLength, value);
@@ -1649,22 +1636,8 @@ public class h2odriver extends Configured implements Tool {
     // ---------------------
     Configuration conf = getConf();
 
-    // Run impersonation options
-    if (principal != null && keytabPath != null) {
-      UserGroupInformation.setConfiguration(conf);
-      UserGroupInformation.loginUserFromKeytab(principal, keytabPath);
-      // performs user impersonation (will only work if core-site.xml has hadoop.proxyuser.*.* props set on name node
-      if (runAsUser != null) {
-        System.out.println("Attempting to securely impersonate user, " + runAsUser);
-        UserGroupInformation currentEffUser = UserGroupInformation.getLoginUser();
-        UserGroupInformation proxyUser = UserGroupInformation.createProxyUser(runAsUser, currentEffUser);
-        UserGroupInformation.setLoginUser(proxyUser);
-      }
-    } else if (runAsUser != null) {
-      UserGroupInformation.setConfiguration(conf);
-      UserGroupInformation.setLoginUser(UserGroupInformation.createRemoteUser(runAsUser));
-    }
-
+    ImpersonationUtils.impersonate(conf, principal, keytabPath, runAsUser);
+    
     if (cloudingMethod == CloudingMethod.FILESYSTEM) {
       if (cloudingDir == null) {
         cloudingDir = new Path(outputPath, ".clouding").toString();
@@ -1795,6 +1768,9 @@ public class h2odriver extends Configured implements Tool {
     if (flowDir != null) {
       addMapperArg(conf, "-flow_dir", flowDir);
     }
+    if (logLevel != null) {
+      addMapperArg(conf, "-log_level", logLevel);
+    }
     if ((new File(".h2o_no_collect")).exists() || (new File(System.getProperty("user.home") + "/.h2o_no_collect")).exists()) {
       addMapperArg(conf, "-ga_opt_out");
     }
@@ -1830,6 +1806,9 @@ public class h2odriver extends Configured implements Tool {
     if (disableFlow) {
       addMapperArg(conf, "-disable_flow");
     }
+    if (swExtBackend) {
+      addMapperArg(conf, "-allow_clients");
+    }
     addMapperArg(conf, "-user_name", userName);
 
     for (String s : extraArguments) {
@@ -1839,6 +1818,7 @@ public class h2odriver extends Configured implements Tool {
     if (client) {
       addMapperArg(conf, "-md5skip");
       addMapperArg(conf, "-disable_web");
+      addMapperArg(conf, "-allow_clients");
     }
 
     // Proxy
@@ -1850,7 +1830,12 @@ public class h2odriver extends Configured implements Tool {
       addMapperArg(conf, "-hash_login");
       addMapperConf(conf, "-login_conf", "login.conf", hashFileData);
     }
-
+    if (allow_insecure_xgboost) {
+      addMapperArg(conf, "-allow_insecure_xgboost");
+    }
+    if (use_external_xgboost) {
+      addMapperArg(conf, "-use_external_xgboost");
+    }
     conf.set(h2omapper.H2O_MAPPER_ARGS_LENGTH, Integer.toString(mapperArgsLength));
 
     // Config files.
@@ -1975,17 +1960,12 @@ public class h2odriver extends Configured implements Tool {
       final File flatfile = File.createTempFile("h2o", "txt");
       flatfile.deleteOnExit();
 
-      boolean flatfileCreated = false;
       try (Writer w = new BufferedWriter(new FileWriter(flatfile))) {
         w.write(flatfileContent);
         w.close();
-        flatfileCreated = true;
       } catch (IOException e) {
-        e.printStackTrace();
-      }
-
-      if (!flatfileCreated) {
         System.out.println("ERROR: Failed to write flatfile.");
+        e.printStackTrace();
         System.exit(1);
       }
 
@@ -2074,12 +2054,28 @@ public class h2odriver extends Configured implements Tool {
     j.setOutputKeyClass(Text.class);
     j.setOutputValueClass(Text.class);
 
-    HiveTokenGenerator.addHiveDelegationTokenIfHivePresent(j, hiveHost, hivePrincipal);
-    if (refreshTokens && principal != null && keytabPath != null) {
-      j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
-      byte[] payloadData = readBinaryFile(keytabPath);
-      String payload = convertByteArrToString(payloadData);
-      j.getConfiguration().set(H2O_AUTH_KEYTAB, payload);
+    boolean haveHiveToken;
+    if (hiveToken != null) {
+      System.out.println("Using pre-generated Hive delegation token.");
+      HiveTokenGenerator.addHiveDelegationToken(j, hiveToken);
+      haveHiveToken = true;
+    } else {
+      haveHiveToken = HiveTokenGenerator.addHiveDelegationTokenIfHivePresent(j, hiveJdbcUrlPattern, hiveHost, hivePrincipal);
+    }
+    if (refreshTokens) {
+      if (!haveHiveToken) {
+        // token not acquired, we need to distribute keytab to make token acquisition possible in mapper
+        if (runAsUser != null) j.getConfiguration().set(H2O_AUTH_USER, runAsUser);
+        if (principal != null) j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
+        if (keytabPath != null) {
+          byte[] payloadData = readBinaryFile(keytabPath);
+          String payload = BinaryFileTransfer.convertByteArrToString(payloadData);
+          j.getConfiguration().set(H2O_AUTH_KEYTAB, payload);
+        }
+      }
+      if (hiveJdbcUrlPattern != null) j.getConfiguration().set(H2O_HIVE_JDBC_URL_PATTERN, hiveJdbcUrlPattern);
+      if (hiveHost != null) j.getConfiguration().set(H2O_HIVE_HOST, hiveHost);
+      if (hivePrincipal != null) j.getConfiguration().set(H2O_HIVE_PRINCIPAL, hivePrincipal);
     }
 
     if (outputPath != null)

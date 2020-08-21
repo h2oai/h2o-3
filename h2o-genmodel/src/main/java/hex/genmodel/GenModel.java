@@ -7,8 +7,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 /**
  * This is a helper class to support Java generated models.
@@ -42,6 +42,10 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   @Deprecated
   public GenModel(String[] names, String[][] domains) {
     this(names, domains, null);
+  }
+
+  public boolean requiresOffset() {
+    return false;
   }
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -81,6 +85,64 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   /** Returns this model category. */
   @Override public abstract ModelCategory getModelCategory();
 
+  public String[] getOutputNames() {
+    final ModelCategory category = getModelCategory();
+    final String[] outputNames;
+    // Emit outputCSV column names.
+    switch (category) {
+      case AutoEncoder:
+        List<String> onames = new LinkedList<>(); 
+        final String[] cnames = getNames();
+        final int numCats = nCatFeatures();
+        final String[][] domainValues = getDomainValues();
+
+        for (int index = 0; index <= numCats - 1; index++) { // add names for categorical columns
+          String[] tdomains = domainValues[index];
+          int tdomainLen = tdomains.length-1;
+          for (int index2 = 0; index2 <= tdomainLen; index2++) {
+            onames.add("reconstr_" + cnames[index] + "." + tdomains[index2]);
+          }
+          onames.add("reconstr_" + cnames[index] + ".missing(NA)");
+        }
+        for (int index = numCats; index < cnames.length; index++) {  // add the numerical column names
+          onames.add("reconstr_" + cnames[index]);
+        }
+        outputNames = onames.toArray(new String[0]);
+        break;
+      case Binomial:
+      case Multinomial:
+      case Ordinal:
+        final String[] responseDomainValues = getDomainValues(getResponseIdx());
+        outputNames = new String[1 + responseDomainValues.length];
+        outputNames[0] = "predict";
+        System.arraycopy(responseDomainValues, 0, outputNames, 1, outputNames.length - 1);
+        // turn integer class labels such as 0, 1, etc. into p0, p1, etc.
+        for (int i = 1; i < outputNames.length; i++) {
+          try {
+            Integer.valueOf(outputNames[i]);
+            outputNames[i] = "p" + outputNames[i];
+          } catch (Exception e) {
+            // do nothing, non-integer names are fine already
+          }
+        }
+        break;
+
+      case Clustering:
+        outputNames = new String[]{"cluster"};
+        break;
+
+      case Regression:
+        outputNames = new String[]{"predict"};
+        break;
+
+      default:
+        throw new UnsupportedOperationException("Getting output column names for model category '" + 
+                category + "' is not supported.");
+    }
+
+    return outputNames;
+  }
+  
   /** Override this for models that may produce results in different categories. */
   @Override public EnumSet<ModelCategory> getModelCategories() {
     return EnumSet.of(getModelCategory());
@@ -102,7 +164,16 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   @Override public String[] getNames() {
     return _names;
   }
-
+  
+  public int getOrigNumCols() {
+    String[] origNames = getOrigNames();
+    if (origNames == null || origNames.length == 0)
+      return 0;
+    String responseName = getResponseName();
+    boolean hasResponse = origNames[origNames.length - 1].equals(responseName);
+    return hasResponse ? origNames.length - 1 : origNames.length;
+  }
+  
   /** The original names of all columns used, including response and offset columns. */
   @Override public String[] getOrigNames() {
     return null;
@@ -120,6 +191,10 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     if (!isSupervised())
       throw new UnsupportedOperationException("Cannot provide response index for unsupervised models.");
     return _domains.length - 1;
+  }
+
+  @Override public String getOffsetName() {
+    return _offsetColumn;
   }
 
   /** Get number of classes in the given column.
@@ -173,6 +248,10 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     return null;
   }
 
+  /** Returns original Eigen encoder projections array for all columns. */
+  @Override
+  public double[] getOrigProjectionArray() {return null;}
+
   /** Returns index of a column with given name, or -1 if the column is not found. */
   @Override public int getColIdx(String name) {
     String[] names = getNames();
@@ -191,8 +270,8 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   }
 
   /** Returns the expected size of preds array which is passed to `predict(double[], double[])` function. */
-  @Override public int getPredsSize() {
-    return isClassifier()? 1 + getNumResponseClasses() : 2;
+  @Override public int getPredsSize() { // fractional binomial has numerical response
+    return isClassifier() ? (1 + getNumResponseClasses()) : 2;
   }
 
   public int getPredsSize(ModelCategory mc) {
@@ -311,8 +390,17 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
    */
   public static int getPrediction(double[] preds, double[] priorClassDist, double[] data, double threshold) {
     if (preds.length == 3) {
-      return (preds[2] >= threshold) ? 1 : 0; //no tie-breaking
+      return getPredictionBinomial(preds, threshold);
+    } else {
+      return getPredictionMultinomial(preds, priorClassDist, data);
     }
+  }
+
+  public static int getPredictionBinomial(double[] preds, double threshold) {
+    return (preds[2] >= threshold) ? 1 : 0; //no tie-breaking
+  }
+
+  public static int getPredictionMultinomial(double[] preds, double[] priorClassDist, double[] data) {
     List<Integer> ties = new ArrayList<>();
     ties.add(0);
     int best=1, tieCnt=0;   // Best class; count of ties
@@ -359,7 +447,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
         return best-1;          // Return best
     throw new RuntimeException("Should Not Reach Here");
   }
-
+  
   // Utility to do bitset lookup from a POJO
   public static boolean bitSetContains(byte[] bits, int nbits, int bitoff, double dnum) {
     assert(!Double.isNaN(dnum));
@@ -573,7 +661,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   /** ??? */
   public String getHeader() { return null; }
 
-  // Helper for DeepWater and XGBoost Native (models that require explicit one-hot encoding on the fly)
+  // Helper for XGBoost Native (models that require explicit one-hot encoding on the fly)
   static public void setInput(final double[] from, float[] to, int _nums, int _cats, int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels, boolean replaceMissingWithZero) {
     double[] nums = new double[_nums]; // a bit wasteful - reallocated each time
     int[] cats = new int[_cats]; // a bit wasteful - reallocated each time
@@ -685,8 +773,5 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
       }
     }
   }
-
-  // Helpers for deeplearning mojo
-
-
+  
 }

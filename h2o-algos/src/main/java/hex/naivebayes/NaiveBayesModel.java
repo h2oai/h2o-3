@@ -6,6 +6,7 @@ import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
 import hex.genmodel.GenModel;
 import hex.schemas.NaiveBayesModelV3;
+import hex.util.EffectiveParametersUtils;
 import water.H2O;
 import water.Key;
 import water.api.schemas3.ModelSchemaV3;
@@ -52,7 +53,15 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
     public NaiveBayesOutput(NaiveBayes b) { super(b); }
   }
 
-  public NaiveBayesModel(Key selfKey, NaiveBayesParameters parms, NaiveBayesOutput output) { super(selfKey,parms,output); }
+  public NaiveBayesModel(Key selfKey, NaiveBayesParameters parms, NaiveBayesOutput output) { 
+    super(selfKey,parms,output);
+  }
+  
+  @Override
+  public void initActualParamValues() {
+    super.initActualParamValues();
+    EffectiveParametersUtils.initFoldAssignment(_parms);
+  }
 
   public ModelSchemaV3 schema() {
     return new NaiveBayesModelV3();
@@ -190,5 +199,25 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
     bodySb.i().p("}").nl();
 
     bodySb.i().p("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold()+");").nl();
+  }
+
+  @Override
+  protected boolean isFeatureUsedInPredict(int featureIdx) {
+    /**
+     * NaiveBayes considers each feature independently so even if we would have two features
+     * that are identical to the target NB would pick both... In the case of constant input
+     * hex.Model#adaptTestForTrain will take care of removing the columns and the default logic
+     * will work just fine if `_ignore_const_cols` is true else we check that the feature is
+     * independent to the response. (P(x|resp=A) = P(x|resp=B) =... ) (I think that in the real world being "numerically"
+     * independent will be pretty rare)
+     */
+    for (int response = 0; response < _output._pcond_raw[featureIdx].length; response++) {
+      double val = _output._pcond_raw[featureIdx][response][0];
+      for (double p : _output._pcond_raw[featureIdx][response]) {
+        if (val != p)
+          return true;
+      }
+    }
+    return false;
   }
 }

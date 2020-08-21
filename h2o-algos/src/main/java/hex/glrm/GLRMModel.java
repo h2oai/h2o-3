@@ -88,8 +88,9 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     public int _max_updates = 2*_max_iterations;  // Max number of updates (X or Y)
     public double _init_step_size = 1.0;          // Initial step size (decrease until we hit min_step_size)
     public double _min_step_size = 1e-4;          // Min step size
-
-    public String _representation_name;
+    
+    @Deprecated public String _loading_name;                  // store x frame frame-id given by use
+    public String _representation_name;                  // store x frame frame-id given by user
     public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
     public boolean _impute_original = false;      // Reconstruct original training data by reversing _transform?
     public boolean _verbose = true;               // Log when objective increases each iteration?
@@ -130,7 +131,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     public double[] _singular_vals;
 
     // Frame key of X matrix
-    public String _representation_name;
+    public String _representation_name; // the final frame name for X frame.  Equals to _parms._loading_name if user specified it.  Otherwise, H2O will assign.
     public Key<Frame> _representation_key;
     public Key<? extends Model> _init_key;
     public Key<Frame> _x_factor_key;  // store key of x factor generated from dataset prediction

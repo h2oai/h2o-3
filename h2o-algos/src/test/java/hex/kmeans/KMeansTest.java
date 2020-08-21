@@ -20,9 +20,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Random;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class KMeansTest extends TestUtil {
   public final double threshold = 1e-6;
@@ -34,8 +32,8 @@ public class KMeansTest extends TestUtil {
     KMeans job = new KMeans(parms);
     KMeansModel kmm = job.trainModel().get();
     checkConsistency(kmm);
-    for( int i=0; i<kmm._output._k[kmm._output._k.length-1]; i++ )
-      Assert.assertTrue( "Seed: "+seed, kmm._output._size[i] != 0 );
+    for (int i = 0; i < kmm._output._k[kmm._output._k.length - 1]; i++)
+      Assert.assertTrue("Seed: " + seed, kmm._output._size[i] != 0);
     return kmm;
   }
 
@@ -82,7 +80,7 @@ public class KMeansTest extends TestUtil {
         double flower = centers[k][4];
         Assert.assertTrue("categorical column expected",flower==(int)flower);
       }
-
+      
       // Done building model; produce a score column with cluster choices
       fr2 = kmm.score(fr);
 
@@ -92,7 +90,7 @@ public class KMeansTest extends TestUtil {
       if( kmm != null ) kmm.delete();
     }
   }
-
+  
   @Test public void testIrisAutoK() {
     KMeansModel kmm = null;
     Frame fr = null, fr2= null;
@@ -583,7 +581,7 @@ public class KMeansTest extends TestUtil {
 
   @Test
   public void testNfolds() {
-    Frame tfr = null, vfr = null;
+    Frame tfr = null;
     KMeansModel kmeans = null;
 
     Scope.enter();
@@ -620,7 +618,6 @@ public class KMeansTest extends TestUtil {
       }
     } finally {
       if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
       if (kmeans != null) {
         kmeans.deleteCrossValidationModels();
         kmeans.delete();
@@ -659,6 +656,31 @@ public class KMeansTest extends TestUtil {
       }
     } finally {
       Scope.exit();
+    }
+  }
+
+  @Test public void testTrainingMetricFrameIsNotNullPubdev6996() {
+    KMeansModel kmeans = null;
+    Frame fr = null;
+    try {
+      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = fr._key;
+      parms._k = 3;
+      parms._standardize = true;
+      parms._max_iterations = 1;
+      parms._init = KMeans.Initialization.Random;
+      parms._seed = 42;
+
+      KMeans job = new KMeans(parms);
+      kmeans = job.trainModel().get();
+
+      Assert.assertNotNull("The training metrics frame key should not be null.", kmeans._output._training_metrics.frame()._key);
+
+    } finally {
+      if( fr  != null ) fr.delete();
+      if( kmeans != null ) kmeans.delete();
     }
   }
 

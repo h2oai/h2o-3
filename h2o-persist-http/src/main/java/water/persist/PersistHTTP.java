@@ -9,6 +9,7 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.log4j.Logger;
 import water.Key;
 import water.MemoryManager;
 import water.Value;
@@ -19,7 +20,6 @@ import water.util.ByteStreams;
 import water.util.HttpResponseStatus;
 import water.util.Log;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -34,6 +34,8 @@ import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
  */
 public class PersistHTTP extends PersistEagerHTTP {
 
+  private static final Logger LOG = Logger.getLogger(PersistHTTP.class);
+  
   private final static String ENABLE_LAZY_LOAD_KEY = SYSTEM_PROP_PREFIX + "persist.http.enableLazyLoad";
 
   @Override
@@ -44,7 +46,9 @@ public class PersistHTTP extends PersistEagerHTTP {
 
     URI source = decodeKey(k);
     HttpRequestBase req = createReq(source, false);
-    req.setHeader(HttpHeaders.RANGE, "bytes=" + offset + "-" + (offset+v._max-1));
+    String rangeHeader = "bytes=" + offset + "-" + (offset+v._max-1);
+    req.setHeader(HttpHeaders.RANGE, rangeHeader);
+    LOG.debug("Loading " + rangeHeader + " from " + source);
 
     try (CloseableHttpClient client = HttpClientBuilder.create().build();
          CloseableHttpResponse response = client.execute(req)) {
@@ -111,9 +115,11 @@ public class PersistHTTP extends PersistEagerHTTP {
       Header contentLengthHeader = response.getFirstHeader(HttpHeaders.CONTENT_LENGTH);
       boolean acceptByteRange = (acceptRangesHeader != null) && "bytes".equalsIgnoreCase(acceptRangesHeader.getValue());
       if (!acceptByteRange || contentLengthHeader == null) {
+        LOG.debug(uri + " does not support range header");
         return -1L;
       }
 
+      LOG.debug("Range support confirmed for " + uri + " with length " + contentLengthHeader.getValue());
       return Long.valueOf(contentLengthHeader.getValue());
     }
   }

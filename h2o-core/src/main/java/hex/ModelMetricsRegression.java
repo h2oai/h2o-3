@@ -12,10 +12,13 @@ import water.util.ArrayUtils;
 import water.util.MathUtils;
 
 public class ModelMetricsRegression extends ModelMetricsSupervised {
-  /** For all algos except GLM this is mean residual deviance.  For GLM it's total residual deviance. */
-  public double residual_deviance() { return _mean_residual_deviance; }
-  public double mean_residual_deviance() { return _mean_residual_deviance; }
   public final double _mean_residual_deviance;
+  /**
+   * @return {@link #mean_residual_deviance()} for all algos except GLM, for which it means "total residual deviance".
+   **/
+  public double residual_deviance() { return _mean_residual_deviance; }
+  @SuppressWarnings("unused")
+  public double mean_residual_deviance() { return _mean_residual_deviance; }
   public final double _mean_absolute_error;
   public double mae() { return _mean_absolute_error; }
   public final double _root_mean_squared_log_error;
@@ -51,13 +54,18 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     return sb.toString();
   }
 
+  static public ModelMetricsRegression make(Vec predicted, Vec actual, DistributionFamily family) {
+    return make(predicted, actual, null, family);
+  }
+
   /**
    * Build a Regression ModelMetrics object from predicted and actual targets
    * @param predicted A Vec containing predicted values
    * @param actual A Vec containing the actual target values
+   * @param weights A Vec containing the observation weights (optional) 
    * @return ModelMetrics object
    */
-  static public ModelMetricsRegression make(Vec predicted, Vec actual, DistributionFamily family) {
+  static public ModelMetricsRegression make(Vec predicted, Vec actual, Vec weights, DistributionFamily family) {
     if (predicted == null || actual == null)
       throw new IllegalArgumentException("Missing actual or predicted targets for regression metrics!");
     if (!predicted.isNumeric())
@@ -66,11 +74,15 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       throw new IllegalArgumentException("Actual values must be numeric for regression metrics.");
     if (family == DistributionFamily.quantile || family == DistributionFamily.tweedie || family == DistributionFamily.huber)
       throw new IllegalArgumentException("Unsupported distribution family, requires additional parameters which cannot be specified right now.");
-    Frame predsActual = new Frame(predicted);
-    predsActual.add("actual", actual);
-    MetricBuilderRegression mb = new RegressionMetrics(family).doAll(predsActual)._mb;
-    ModelMetricsRegression mm = (ModelMetricsRegression)mb.makeModelMetrics(null, predsActual, null, null);
-    mm._description = "Computed on user-given predictions and targets, distribution: " + (family ==null? DistributionFamily.gaussian.toString(): family.toString()) + ".";
+    Frame fr = new Frame(predicted);
+    fr.add("actual", actual);
+    if (weights != null) {
+      fr.add("weights", weights);
+    }
+    family = family ==null ? DistributionFamily.gaussian : family;
+    MetricBuilderRegression mb = new RegressionMetrics(family).doAll(fr)._mb;
+    ModelMetricsRegression mm = (ModelMetricsRegression) mb.makeModelMetrics(null, fr, null, null);
+    mm._description = "Computed on user-given predictions and targets, distribution: " + family.toString() + ".";
     return mm;
   }
 
@@ -81,16 +93,20 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     public MetricBuilderRegression _mb;
     final Distribution _distribution;
     RegressionMetrics(DistributionFamily family) {
-      _distribution = family == null ? DistributionFactory.getDistribution(DistributionFamily.gaussian) : DistributionFactory.getDistribution(family);
+      _distribution = DistributionFactory.getDistribution(family);
     }
     @Override public void map(Chunk[] chks) {
       _mb = new MetricBuilderRegression(_distribution);
       Chunk preds = chks[0];
       Chunk actuals = chks[1];
-      double [] ds = new double[1];
+      Chunk weights = chks.length == 3 ? chks[2] : null;
+      double[] ds = new double[1];
+      float[] acts = new float[1];
       for (int i=0;i<chks[0]._len;++i) {
         ds[0] = preds.atd(i);
-        _mb.perRow(ds, new float[]{(float)actuals.atd(i)}, null);
+        acts[0] = (float) actuals.atd(i);
+        double w = weights != null ? weights.atd(i) : 1; 
+        _mb.perRow(ds, acts, w, 0, null);
       }
     }
     @Override public void reduce(RegressionMetrics mrt) { _mb.reduce(mrt._mb); }
@@ -125,7 +141,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       
       // Deviance method is not supported in custom distribution
       if((m != null && m._parms._distribution != DistributionFamily.custom) || (_dist != null && _dist ._family != DistributionFamily.custom)) {
-        if (m != null && m._parms._distribution != DistributionFamily.huber) {
+        if (m != null && !m.isDistributionHuber()) {
           _sumdeviance += m.deviance(w, yact[0], ds[0]);
         } else if (_dist != null) {
           _sumdeviance += _dist.deviance(w, yact[0], ds[0]);
@@ -153,7 +169,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       double rmsle = Math.sqrt(_rmslerror/_wcount); //Root Mean Squared Log Error
       if (adaptedFrame ==null) adaptedFrame = f;
       double meanResDeviance = 0;
-      if (m != null && m._parms._distribution == DistributionFamily.huber) {
+      if (m != null && m.isDistributionHuber()){
         assert(_sumdeviance==0); // should not yet be computed
         if (preds != null) {
           Vec actual = adaptedFrame.vec(m._parms._response_column);

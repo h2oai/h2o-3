@@ -6,10 +6,10 @@ Multinomial model.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-
-from ..frame import H2OFrame
-from h2o import expr
 from h2o.utils.compatibility import *  # NOQA
+
+from h2o import expr
+from ..frame import H2OFrame
 
 
 class TransformAttributeError(AttributeError):

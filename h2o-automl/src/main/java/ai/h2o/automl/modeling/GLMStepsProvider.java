@@ -1,6 +1,7 @@
 package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
+import hex.Model;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
 import water.Job;
@@ -8,7 +9,9 @@ import water.Job;
 import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
 
-public class GLMStepsProvider implements ModelingStepsProvider<GLMStepsProvider.GLMSteps> {
+public class GLMStepsProvider
+        implements ModelingStepsProvider<GLMStepsProvider.GLMSteps>
+                 , ModelParametersProvider<GLMParameters> {
 
     public static class GLMSteps extends ModelingSteps {
 
@@ -16,6 +19,11 @@ public class GLMStepsProvider implements ModelingStepsProvider<GLMStepsProvider.
 
             GLMModelStep(String id, int weight, AutoML autoML) {
                 super(Algo.GLM, id, weight, autoML);
+            }
+
+            @Override
+            protected void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults) {
+                // disabled as we're using lambda search
             }
 
             GLMParameters prepareModelParameters() {
@@ -87,6 +95,11 @@ public class GLMStepsProvider implements ModelingStepsProvider<GLMStepsProvider.
     @Override
     public GLMSteps newInstance(AutoML aml) {
         return new GLMSteps(aml);
+    }
+
+    @Override
+    public GLMParameters newDefaultParameters() {
+        return new GLMParameters();
     }
 }
 

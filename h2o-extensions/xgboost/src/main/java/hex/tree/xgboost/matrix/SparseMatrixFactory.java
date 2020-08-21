@@ -11,9 +11,11 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 
-import static hex.tree.xgboost.matrix.MatrixFactoryUtils.setResponseAndWeight;
+import java.io.*;
+
+import static hex.tree.xgboost.matrix.MatrixFactoryUtils.setResponseAndWeightAndOffset;
+import static hex.tree.xgboost.matrix.MatrixFactoryUtils.setResponseWeightAndOffset;
 import static water.MemoryManager.*;
-import static water.MemoryManager.malloc4;
 
 /*
 - truly sparse matrix - no categoricals
@@ -21,25 +23,25 @@ import static water.MemoryManager.malloc4;
  */
 public class SparseMatrixFactory {
 
-    public static DMatrix csr(
-        Frame frame, int[] chunksIds, Vec weightsVec, Vec responseVec, // for setupLocal
-        DataInfo di, float[] resp, float[] weights
-    ) throws XGBoostError {
+    public static MatrixLoader.DMatrixProvider csr(
+        Frame frame, int[] chunksIds, Vec weightsVec, Vec offsetsVec, Vec responseVec, // for setupLocal
+        DataInfo di, float[] resp, float[] weights, float[] offsets
+    ) {
 
         SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(frame, chunksIds, weightsVec, di);
         SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
 
         int actualRows = initializeFromChunkIds(
-            frame, chunksIds, weightsVec,
+            frame, chunksIds, weightsVec, offsetsVec,
             di, sparseMatrix, sparseMatrixDimensions,
-            responseVec, resp, weights);
+            responseVec, resp, weights, offsets);
 
-        return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di);
+        return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di.fullN(), resp, weights, offsets);
     }
 
     public static DMatrix csr(
-        Chunk[] chunks, int weight, int respIdx, // for MR task
-        DataInfo di, float[] resp, float[] weights
+        Chunk[] chunks, int weight, int respIdx, int offsetIdx, // for MR task
+        DataInfo di, float[] resp, float[] weights, float[] offsets
     ) throws XGBoostError {
 
         SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(chunks, di, weight);
@@ -48,16 +50,77 @@ public class SparseMatrixFactory {
         int actualRows = initializeFromChunks(
             chunks, weight,
             di, sparseMatrix._rowHeaders, sparseMatrix._sparseData, sparseMatrix._colIndices,
-            respIdx, resp, weights);
-        return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di);
+            respIdx, resp, weights, offsetIdx, offsets);
+        return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di.fullN(), resp, weights, offsets).get();
+    }
+    
+    public static class SparseDMatrixProvider extends MatrixLoader.DMatrixProvider {
+
+        private long[][] rowHeaders;
+        private int[][] colIndices;
+        private float[][] sparseData;
+        private DMatrix.SparseType csr;
+        private int shape;
+        private long nonZeroElementsCount;
+
+        public SparseDMatrixProvider(
+            long[][] rowHeaders,
+            int[][] colIndices,
+            float[][] sparseData,
+            DMatrix.SparseType csr,
+            int shape,
+            long nonZeroElementsCount,
+            int actualRows,
+            float[] response,
+            float[] weights,
+            float[] offsets
+        ) {
+            super(actualRows, response, weights, offsets);
+            this.rowHeaders = rowHeaders;
+            this.colIndices = colIndices;
+            this.sparseData = sparseData;
+            this.csr = csr;
+            this.shape = shape;
+            this.nonZeroElementsCount = nonZeroElementsCount;
+        }
+
+        public SparseDMatrixProvider() {}
+
+        @Override
+        public DMatrix makeDMatrix() throws XGBoostError {
+            return new DMatrix(rowHeaders, colIndices, sparseData, csr, shape, (int) actualRows + 1, nonZeroElementsCount);
+        }
+
+        @Override
+        public void writeExternal(ObjectOutput out) throws IOException {
+            super.writeExternal(out);
+            out.writeObject(rowHeaders);
+            out.writeObject(colIndices);
+            out.writeObject(sparseData);
+            out.writeInt(csr.ordinal());
+            out.writeInt(shape);
+            out.writeLong(nonZeroElementsCount);
+        }
+
+        @Override
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            super.readExternal(in);
+            rowHeaders = (long[][]) in.readObject();
+            colIndices = (int[][]) in.readObject();
+            sparseData = (float[][]) in.readObject();
+            csr = DMatrix.SparseType.values()[in.readInt()];
+            shape = in.readInt();
+            nonZeroElementsCount = in.readLong();
+        }
+
     }
 
-    private static DMatrix toDMatrix(SparseMatrix sm, SparseMatrixDimensions smd, int actualRows, DataInfo di) throws XGBoostError {
-        DMatrix trainMat = new DMatrix(sm._rowHeaders, sm._colIndices, sm._sparseData,
-            DMatrix.SparseType.CSR, di.fullN(), actualRows + 1,
-            smd._nonZeroElementsCount);
-        assert trainMat.rowNum() == actualRows;
-        return trainMat;
+    private static SparseDMatrixProvider toDMatrix(
+        SparseMatrix sm, SparseMatrixDimensions smd, int actualRows, int shape, float[] resp, float[] weights, float[] offsets) {
+        return new SparseDMatrixProvider(
+            sm._rowHeaders, sm._colIndices, sm._sparseData, DMatrix.SparseType.CSR, shape, smd._nonZeroElementsCount, 
+            actualRows, resp, weights, offsets
+        );
     }
     
     static class NestedArrayPointer {
@@ -99,12 +162,12 @@ public class SparseMatrixFactory {
     }
 
     public static int initializeFromChunkIds(
-        Frame frame, int[] chunks, Vec w, DataInfo di,
+        Frame frame, int[] chunks, Vec weightsVec, Vec offsetsVec, DataInfo di,
         SparseMatrix matrix, SparseMatrixDimensions dimensions,
-        Vec respVec, float[] resp, float[] weights
+        Vec respVec, float[] resp, float[] weights, float[] offsets
     ) {
         InitializeCSRMatrixFromChunkIdsMrFun fun = new InitializeCSRMatrixFromChunkIdsMrFun(
-            frame, chunks, w, di, matrix, dimensions, respVec, resp, weights
+            frame, chunks, weightsVec, offsetsVec, di, matrix, dimensions, respVec, resp, weights, offsets
         );
         H2O.submitTask(new LocalMR(fun, chunks.length)).join();
 
@@ -116,32 +179,36 @@ public class SparseMatrixFactory {
         Frame _frame;
         int[] _chunks;
         Vec _weightVec;
+        Vec _offsetsVec;
         DataInfo _di;
         SparseMatrix _matrix;
         SparseMatrixDimensions _dims;
         Vec _respVec;
-        float[] _resp; 
+        float[] _resp;
         float[] _weights;
+        float[] _offsets;
         
         // OUT
         int[] _actualRows;
         
         InitializeCSRMatrixFromChunkIdsMrFun(
-            Frame frame, int[] chunks, Vec weightVec, DataInfo di,
+            Frame frame, int[] chunks, Vec weightVec, Vec offsetVec, DataInfo di,
             SparseMatrix matrix, SparseMatrixDimensions dimensions,
-            Vec respVec, float[] resp, float[] weights
+            Vec respVec, float[] resp, float[] weights, float[] offsets
         ) {
             _actualRows = new int[chunks.length];
             
             _frame = frame;
             _chunks = chunks;
             _weightVec = weightVec;
+            _offsetsVec = offsetVec;
             _di = di;
             _matrix = matrix;
             _dims = dimensions;
             _respVec = respVec;
             _resp = resp;
             _weights = weights;
+            _offsets = offsets;
         }
 
         @Override
@@ -153,6 +220,7 @@ public class SparseMatrixFactory {
             NestedArrayPointer dataPointer = new NestedArrayPointer(nonZeroCount);
 
             Chunk weightChunk = _weightVec != null ? _weightVec.chunkForChunkIdx(chunk) : null;
+            Chunk offsetChunk = _offsetsVec != null ? _offsetsVec.chunkForChunkIdx(chunk) : null;
             Chunk respChunk = _respVec.chunkForChunkIdx(chunk);
             Chunk[] featChunks = new Chunk[_frame.vecs().length];
             for (int i = 0; i < featChunks.length; i++) {
@@ -181,13 +249,16 @@ public class SparseMatrixFactory {
                         nonZeroCount++;
                     }
                 }
-                rwRow = setResponseAndWeight(weightChunk, respChunk, _resp, _weights, rwRow, i);
+                rwRow = setResponseWeightAndOffset(weightChunk, offsetChunk, respChunk, _resp, _weights, _offsets, rwRow, i);
             }
             rowHeaderPointer.set(_matrix._rowHeaders, nonZeroCount);
         }
     }
 
-    private static int initializeFromChunks(Chunk[] chunks, int weight, DataInfo di, long[][] rowHeaders, float[][] data, int[][] colIndex, int respIdx, float[] resp, float[] weights) {
+    private static int initializeFromChunks(
+        Chunk[] chunks, int weight, DataInfo di, long[][] rowHeaders, float[][] data, int[][] colIndex, 
+        int respIdx, float[] resp, float[] weights, int offsetIdx, float[] offsets
+    ) {
         int actualRows = 0;
         int nonZeroCount = 0;
         int rwRow = 0;
@@ -218,7 +289,7 @@ public class SparseMatrixFactory {
                     nonZeroCount++;
                 }
             }
-            rwRow = setResponseAndWeight(chunks, respIdx, weight, resp, weights, rwRow, i);
+            rwRow = setResponseAndWeightAndOffset(chunks, respIdx, weight, offsetIdx, resp, weights, offsets, rwRow, i);
         }
         rowHeaderPointer.set(rowHeaders, nonZeroCount);
         return actualRows;

@@ -109,23 +109,81 @@ public class MRUtils {
     public ClassDist(int n) { _nclass = n; }
 
     public final double[] dist() { return _ys; }
-    public final double[] rel_dist() {
+    public final double[] relDist() {
       final double sum = ArrayUtils.sum(_ys);
-      return ArrayUtils.div(Arrays.copyOf(_ys, _ys.length), sum);
+      // due to CV and weights there can be sum == 0
+      return sum == 0 ? _ys : ArrayUtils.div(Arrays.copyOf(_ys, _ys.length), sum);
     }
+    
     @Override public void map(Chunk ys) {
       _ys = new double[_nclass];
       for( int i=0; i<ys._len; i++ )
         if (!ys.isNA(i))
           _ys[(int) ys.at8(i)]++;
     }
+    
     @Override public void map(Chunk ys, Chunk ws) {
       _ys = new double[_nclass];
       for( int i=0; i<ys._len; i++ )
         if (!ys.isNA(i))
           _ys[(int) ys.at8(i)] += ws.atd(i);
     }
+    
     @Override public void reduce( ClassDist that ) { ArrayUtils.add(_ys,that._ys); }
+  }
+
+  /**
+   * Compute the class distribution for qusibinomial distribution from a class label vector
+   * (not counting missing values)
+   */
+  public static class ClassDistQuasibinomial extends MRTask<ClassDistQuasibinomial> {
+    final int _nclass;
+    private double[] _ys;
+    private String[] _domain;
+    private double _firstDoubleDomain;
+
+
+    public ClassDistQuasibinomial(String[] domain) {
+      _nclass = 2;
+      _domain = domain;
+      _firstDoubleDomain = Double.valueOf(domain[0]);
+    }
+    
+    public final double[] dist() {
+      return _ys; 
+    }
+    
+    public final double[] relDist() {
+      final double sum = ArrayUtils.sum(_ys);
+      // due to CV and weights there can be sum == 0
+      return sum == 0 ? _ys : ArrayUtils.div(Arrays.copyOf(_ys, _ys.length), sum);
+    }
+    
+    public final String[] domains(){
+      return _domain;
+    }
+    
+    @Override public void map(Chunk ys) {
+      _ys = new double[_nclass];
+      for( int i=0; i<ys._len; i++ )
+        if (!ys.isNA(i)) {
+          int index = ys.atd(i) == _firstDoubleDomain ? 0 : 1;
+          _ys[index]++;
+        }
+    }
+    
+    @Override public void map(Chunk ys, Chunk ws) {
+      _ys = new double[_nclass];
+      for( int i=0; i<ys._len; i++ )
+        if (!ys.isNA(i)) {
+          int index = ys.atd(i) == _firstDoubleDomain? 0 : 1;
+          _ys[index] += ws.atd(i);
+        }
+    }
+    
+    @Override public void reduce(ClassDistQuasibinomial that) { 
+      ArrayUtils.add(_ys,that._ys);
+    }
   }
 
   public static class Dist extends MRTask<Dist> {
@@ -171,7 +229,6 @@ public class MRUtils {
     }
   }
 
-
   /**
    * Stratified sampling for classifiers - FIXME: For weights, this is not accurate, as the sampling is done with uniform weights
    * @param fr Input frame
@@ -185,6 +242,24 @@ public class MRUtils {
    * @return Sampled frame, with approximately the same number of samples from each class (or given by the requested sampling ratios)
    */
   public static Frame sampleFrameStratified(final Frame fr, Vec label, Vec weights, float[] sampling_ratios, long maxrows, final long seed, final boolean allowOversampling, final boolean verbose) {
+    return sampleFrameStratified(fr, label, weights, sampling_ratios, maxrows, seed, allowOversampling, verbose, null);
+  }
+  
+  
+  /**
+   * Stratified sampling for classifiers - FIXME: For weights, this is not accurate, as the sampling is done with uniform weights
+   * @param fr Input frame
+   * @param label Label vector (must be categorical)
+   * @param weights Weights vector, can be null
+   * @param sampling_ratios Optional: array containing the requested sampling ratios per class (in order of domains), will be overwritten if it contains all 0s
+   * @param maxrows Maximum number of rows in the returned frame
+   * @param seed RNG seed for sampling
+   * @param allowOversampling Allow oversampling of minority classes
+   * @param verbose Whether to print verbose info
+   * @param quasibinomialDomain quasibinomial domain      
+   * @return Sampled frame, with approximately the same number of samples from each class (or given by the requested sampling ratios)
+   */
+  public static Frame sampleFrameStratified(final Frame fr, Vec label, Vec weights, float[] sampling_ratios, long maxrows, final long seed, final boolean allowOversampling, final boolean verbose, String[] quasibinomialDomain) {
     if (fr == null) return null;
     assert(label.isCategorical());
     if (maxrows < label.domain().length) {
@@ -192,8 +267,13 @@ public class MRUtils {
       maxrows = label.domain().length;
     }
 
-    ClassDist cd = new ClassDist(label);
-    double[] dist = weights != null ? cd.doAll(label, weights).dist() : cd.doAll(label).dist();
+    double[] dist;
+    if(quasibinomialDomain != null){
+      dist = weights != null ? new ClassDistQuasibinomial(quasibinomialDomain).doAll(label, weights).dist() : new ClassDistQuasibinomial(quasibinomialDomain).doAll(label).dist();
+    } else {
+      dist = weights != null ? new ClassDist(label).doAll(label, weights).dist() : new ClassDist(label).doAll(label).dist();
+    }
+    
     assert(dist.length > 0);
     Log.info("Doing stratified sampling for data set containing " + fr.numRows() + " rows from " + dist.length + " classes. Oversampling: " + (allowOversampling ? "on" : "off"));
     if (verbose)
@@ -223,6 +303,9 @@ public class MRUtils {
       numrows += sampling_ratios[i] * dist[i];
     }
     if (Float.isNaN(numrows)) {
+      Log.err("Total number of sampled rows was NaN. " +
+              "Sampling ratios: " + Arrays.toString(sampling_ratios) + 
+              "; Dist: " + Arrays.toString(dist));
       throw new IllegalArgumentException("Error during sampling - too few points?");
     }
 
@@ -240,7 +323,7 @@ public class MRUtils {
       Log.info("Class '" + label.domain()[i] + "' sampling ratio: " + sampling_ratios[i]);
     }
 
-    return sampleFrameStratified(fr, label, weights, sampling_ratios, seed, verbose);
+    return sampleFrameStratified(fr, label, weights, sampling_ratios, seed, verbose, quasibinomialDomain);
   }
 
   /**
@@ -251,15 +334,16 @@ public class MRUtils {
    * @param sampling_ratios Given sampling ratios for each class, in order of domains
    * @param seed RNG seed
    * @param debug Whether to print debug info
+   * @param quasibinomialDomain quasibinomial domain
    * @return Stratified frame
    */
-  public static Frame sampleFrameStratified(final Frame fr, Vec label, Vec weights, final float[] sampling_ratios, final long seed, final boolean debug) {
-    return sampleFrameStratified(fr, label, weights, sampling_ratios, seed, debug, 0);
+  public static Frame sampleFrameStratified(final Frame fr, Vec label, Vec weights, final float[] sampling_ratios, final long seed, final boolean debug, String[] quasibinomialDomain) {
+    return sampleFrameStratified(fr, label, weights, sampling_ratios, seed, debug, 0, quasibinomialDomain);
   }
 
   // internal version with repeat counter
   // currently hardcoded to do up to 10 tries to get a row from each class, which can be impossible for certain wrong sampling ratios
-  private static Frame sampleFrameStratified(final Frame fr, Vec label, Vec weights, final float[] sampling_ratios, final long seed, final boolean debug, int count) {
+  private static Frame sampleFrameStratified(final Frame fr, Vec label, Vec weights, final float[] sampling_ratios, final long seed, final boolean debug, int count, String[] quasibinomialDomain) {
     if (fr == null) return null;
     assert(label.isCategorical());
     assert(sampling_ratios != null && sampling_ratios.length == label.domain().length);
@@ -305,7 +389,12 @@ public class MRUtils {
     // Confirm the validity of the distribution
     Vec lab = r.vecs()[labelidx];
     Vec wei = weightsidx != -1 ? r.vecs()[weightsidx] : null;
-    double[] dist = wei != null ? new ClassDist(lab).doAll(lab, wei).dist() : new ClassDist(lab).doAll(lab).dist();
+    double[] dist;
+    if(quasibinomialDomain != null){
+      dist = wei != null ? new ClassDistQuasibinomial(quasibinomialDomain).doAll(lab, wei).dist() : new ClassDistQuasibinomial(quasibinomialDomain).doAll(lab).dist();
+    } else {
+      dist = wei != null ? new ClassDist(lab).doAll(lab, wei).dist() : new ClassDist(lab).doAll(lab).dist();
+    }
 
     // if there are no training labels in the test set, then there is no point in sampling the test set
     if (dist == null) return fr;
@@ -323,7 +412,7 @@ public class MRUtils {
     if (ArrayUtils.minValue(dist) == 0 && count < 10) {
       Log.info("Re-doing stratified sampling because not all classes were represented (unlucky draw).");
       r.remove();
-      return sampleFrameStratified(fr, label, weights, sampling_ratios, seed+1, debug, ++count);
+      return sampleFrameStratified(fr, label, weights, sampling_ratios, seed+1, debug, ++count, quasibinomialDomain);
     }
 
     // shuffle intra-chunk

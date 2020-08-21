@@ -5,7 +5,6 @@ import hex.DataInfo;
 import hex.FrameSplitter;
 import hex.ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM;
 import hex.SplitFrame;
-import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
@@ -81,131 +80,142 @@ public class GLMBasicTestMultinomial extends TestUtil {
       Scope.track(tr);
       Scope.track(te);
 
-      GLMModel.GLMParameters paramsO = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.multinomial,
-              Family.multinomial.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
-      paramsO._train = tr._key;
-      paramsO._lambda_search = false;
-      paramsO._response_column = "response";
-      paramsO._lambda = new double[]{0};
-      paramsO._alpha = new double[]{0.001};  // l1pen
-      paramsO._objective_epsilon = 1e-6;
-      paramsO._beta_epsilon = 1e-4;
-      paramsO._standardize = false;
-
-      GLMModel model = new GLM(paramsO).trainModel().get();
-      Scope.track_generic(model);
-
-      Frame pred = model.score(te);
-      Scope.track(pred);
-      Assert.assertTrue(model.testJavaScoring(te, pred, _tol));
+      for (Family family : new Family[]{Family.multinomial, Family.AUTO}) {
+        for (GLMParameters.Link link : new GLMParameters.Link[]{GLMParameters.Link.family_default, GLMParameters.Link.multinomial}) {
+          GLMModel.GLMParameters paramsO = new GLMModel.GLMParameters(family, link, new double[]{0}, new double[]{0}, 0, 0);
+          paramsO._train = tr._key;
+          paramsO._lambda_search = false;
+          paramsO._response_column = "response";
+          paramsO._lambda = new double[]{0};
+          paramsO._alpha = new double[]{0.001};  // l1pen
+          paramsO._objective_epsilon = 1e-6;
+          paramsO._beta_epsilon = 1e-4;
+          paramsO._standardize = false;
+    
+          GLMModel model = new GLM(paramsO).trainModel().get();
+          Scope.track_generic(model);
+    
+          Frame pred = model.score(te);
+          Scope.track(pred);
+          Assert.assertTrue(model.testJavaScoring(te, pred, _tol));
+        }
+      }
     } finally {
       Scope.exit();
     }
   }
-
+  
   @Test
   public void testCovtypeNoIntercept(){
-    GLMParameters params = new GLMParameters(Family.multinomial);
-    GLMModel model = null;
-    Frame preds = null;
-    Vec weights = _covtype.anyVec().makeCon(1);
-    Key k = Key.<Frame>make("cov_with_weights");
-    Frame f = new Frame(k,_covtype.names(),_covtype.vecs());
-    f.add("weights",weights);
-    DKV.put(f);
-    try {
-      params._response_column = "C55";
-      params._train = k;
-      params._valid = _covtype._key;
-      params._objective_epsilon = 1e-6;
-      params._beta_epsilon = 1e-4;
-      params._weights_column = "weights";
-      params._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.Skip;
-      params._intercept = false;
-      double[] alpha = new double[]{0,.5,.1};
-      Solver s = Solver.L_BFGS;
-      System.out.println("solver = " + s);
-      params._solver = s;
-      params._max_iterations = 5000;
-      for (int i = 0; i < alpha.length; ++i) {
-        params._alpha = new double[]{alpha[i]};
-//        params._lambda[0] = lambda[i];
-        model = new GLM(params).trainModel().get();
-        System.out.println(model.coefficients());
-//        Assert.assertEquals(0,model.coefficients().get("Intercept"),0);
-        double [][] bs = model._output.getNormBetaMultinomial();
-        for(double [] b:bs)
-          Assert.assertEquals(0,b[b.length-1],0);
-        System.out.println(model._output._model_summary);
-        System.out.println(model._output._training_metrics);
-        System.out.println(model._output._validation_metrics);
-        preds = model.score(_covtype);
-        ModelMetricsMultinomialGLM mmTrain = (ModelMetricsMultinomialGLM) hex.ModelMetricsMultinomial.getFromDKV(model, _covtype);
-        assertTrue(model._output._training_metrics.equals(mmTrain));
-        model.delete();
-        model = null;
-        preds.delete();
-        preds = null;
+    for (Family family : new Family[]{Family.multinomial, Family.AUTO}) {
+      for (GLMParameters.Link link : new GLMParameters.Link[]{GLMParameters.Link.family_default, GLMParameters.Link.multinomial}) {
+        GLMParameters params = new GLMParameters(family, link);
+        GLMModel model = null;
+        Frame preds = null;
+        Vec weights = _covtype.anyVec().makeCon(1);
+        Key k = Key.<Frame>make("cov_with_weights");
+        Frame f = new Frame(k,_covtype.names(),_covtype.vecs());
+        f.add("weights",weights);
+        DKV.put(f);
+        try {
+          params._response_column = "C55";
+          params._train = k;
+          params._valid = _covtype._key;
+          params._objective_epsilon = 1e-6;
+          params._beta_epsilon = 1e-4;
+          params._weights_column = "weights";
+          params._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.Skip;
+          params._intercept = false;
+          double[] alpha = new double[]{0,.5,.1};
+          Solver s = Solver.L_BFGS;
+          System.out.println("solver = " + s);
+          params._solver = s;
+          params._max_iterations = 5000;
+          for (int i = 0; i < alpha.length; ++i) {
+            params._alpha = new double[]{alpha[i]};
+            //        params._lambda[0] = lambda[i];
+            model = new GLM(params).trainModel().get();
+            System.out.println(model.coefficients());
+            //        Assert.assertEquals(0,model.coefficients().get("Intercept"),0);
+            double [][] bs = model._output.getNormBetaMultinomial();
+            for(double [] b:bs)
+              Assert.assertEquals(0,b[b.length-1],0);
+            System.out.println(model._output._model_summary);
+            System.out.println(model._output._training_metrics);
+            System.out.println(model._output._validation_metrics);
+            preds = model.score(_covtype);
+            ModelMetricsMultinomialGLM mmTrain = (ModelMetricsMultinomialGLM) hex.ModelMetricsMultinomial.getFromDKV(model, _covtype);
+            assertTrue(model._output._training_metrics.equals(mmTrain));
+            model.delete();
+            model = null;
+            preds.delete();
+            preds = null;
+          }
+        } finally{
+          weights.remove();
+          DKV.remove(k);
+          if(model != null)model.delete();
+          if(preds != null)preds.delete();
+        }
       }
-    } finally{
-      weights.remove();
-      DKV.remove(k);
-      if(model != null)model.delete();
-      if(preds != null)preds.delete();
     }
   }
 
 
   @Test
   public void testCovtypeBasic(){
-    GLMParameters params = new GLMParameters(Family.multinomial);
-    GLMModel model = null;
-    Frame preds = null;
-    Vec weights = _covtype.anyVec().makeCon(1);
-    Key k = Key.<Frame>make("cov_with_weights");
-    Frame f = new Frame(k,_covtype.names(),_covtype.vecs());
-    f.add("weights",weights);
-    DKV.put(f);
-    try {
-      params._response_column = "C55";
-      params._train = k;
-      params._valid = _covtype._key;
-      params._lambda = new double[]{4.881e-05};
-      params._alpha = new double[]{1};
-      params._objective_epsilon = 1e-6;
-      params._beta_epsilon = 1e-4;
-      params._weights_column = "weights";
-      params._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.Skip;
-      double[] alpha = new double[]{1};
-      double[] expected_deviance = new double[]{25499.76};
-      double[] lambda = new double[]{2.544750e-05};
-      for (Solver s : new Solver[]{Solver.IRLSM, Solver.COORDINATE_DESCENT, Solver.L_BFGS}) {
-        System.out.println("solver = " + s);
-        params._solver = s;
-        params._max_iterations = params._solver == Solver.L_BFGS?300:10;
-        for (int i = 0; i < alpha.length; ++i) {
-          params._alpha[0] = alpha[i];
-          params._lambda[0] = lambda[i];
-          model = new GLM(params).trainModel().get();
-          System.out.println(model._output._model_summary);
-          System.out.println(model._output._training_metrics);
-          System.out.println(model._output._validation_metrics);
-          assertTrue(model._output._training_metrics.equals(model._output._validation_metrics));
-          assertTrue(((ModelMetricsMultinomialGLM) model._output._training_metrics)._resDev <= expected_deviance[i] * 1.1);
-          preds = model.score(_covtype);
-          ModelMetricsMultinomialGLM mmTrain = (ModelMetricsMultinomialGLM) hex.ModelMetricsMultinomial.getFromDKV(model, _covtype);
-          assertTrue(model._output._training_metrics.equals(mmTrain));
-          model.delete();
-          model = null;
-          preds.delete();
-          preds = null;
+    for (Family family : new Family[]{Family.multinomial, Family.AUTO}) {
+      for (GLMParameters.Link link : new GLMParameters.Link[]{GLMParameters.Link.family_default, GLMParameters.Link.multinomial}) {
+        GLMParameters params = new GLMParameters(family, link);
+        GLMModel model = null;
+        Frame preds = null;
+        Vec weights = _covtype.anyVec().makeCon(1);
+        Key k = Key.<Frame>make("cov_with_weights");
+        Frame f = new Frame(k, _covtype.names(), _covtype.vecs());
+        f.add("weights", weights);
+        DKV.put(f);
+        try {
+          params._response_column = "C55";
+          params._train = k;
+          params._valid = _covtype._key;
+          params._lambda = new double[]{4.881e-05};
+          params._alpha = new double[]{1};
+          params._objective_epsilon = 1e-6;
+          params._beta_epsilon = 1e-4;
+          params._weights_column = "weights";
+          params._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.Skip;
+          double[] alpha = new double[]{1};
+          double[] expected_deviance = new double[]{25499.76};
+          double[] lambda = new double[]{2.544750e-05};
+          for (Solver s : new Solver[]{Solver.IRLSM, Solver.COORDINATE_DESCENT, Solver.L_BFGS}) {
+            System.out.println("solver = " + s);
+            params._solver = s;
+            params._max_iterations = params._solver == Solver.L_BFGS ? 300 : 10;
+            for (int i = 0; i < alpha.length; ++i) {
+              params._alpha[0] = alpha[i];
+              params._lambda[0] = lambda[i];
+              model = new GLM(params).trainModel().get();
+              System.out.println(model._output._model_summary);
+              System.out.println(model._output._training_metrics);
+              System.out.println(model._output._validation_metrics);
+              assertTrue(model._output._training_metrics.equals(model._output._validation_metrics));
+              assertTrue(((ModelMetricsMultinomialGLM) model._output._training_metrics)._resDev <= expected_deviance[i] * 1.1);
+              preds = model.score(_covtype);
+              ModelMetricsMultinomialGLM mmTrain = (ModelMetricsMultinomialGLM) hex.ModelMetricsMultinomial.getFromDKV(model, _covtype);
+              assertTrue(model._output._training_metrics.equals(mmTrain));
+              model.delete();
+              model = null;
+              preds.delete();
+              preds = null;
+            }
+          }
+        } finally {
+          weights.remove();
+          DKV.remove(k);
+          if (model != null) model.delete();
+          if (preds != null) preds.delete();
         }
       }
-    } finally{
-      weights.remove();
-      DKV.remove(k);
-      if(model != null)model.delete();
-      if(preds != null)preds.delete();
     }
   }
 
@@ -216,42 +226,46 @@ public class GLMBasicTestMultinomial extends TestUtil {
    */
   @Test
   public void testCODGradients(){
-    Scope.enter();
-    Frame train;
-    GLMParameters params = new GLMParameters(Family.multinomial);
-    GLMModel model = null;
-    double[] oldGLMCoeffs = new double[] {0.059094274726151426, 0.013361781886804975, -0.00798977427248744,
-            0.007467359562151555, 0.06737827548293934, -1.002393430927568, -0.04066511294457045, -0.018960901996125427,
-            0.07330281133353159, -0.02285669809606731, 0.002805290931441751, -1.1394632268347782, 0.021976767313534512,
-            0.01013967640490087, -0.03999288928633559, 0.012385348397898913, -0.0017922461738315199,
-            -1.159667420372168};
-    try {
-      train = parse_test_file("smalldata/glm_test/multinomial_3_class.csv");
-      Scope.track(train);
-      params._response_column = "response";
-      params._train = train._key;
-      params._lambda = new double[]{4.881e-05};
-      params._alpha = new double[]{0.5};
-      params._objective_epsilon = 1e-6;
-      params._beta_epsilon = 1e-4;
-      params._max_iterations = 1; // one iteration
-      params._seed = 12345; // don't think this one matters but set it anyway
-      Solver s = Solver.COORDINATE_DESCENT;
-      System.out.println("solver = " + s);
-      params._solver = s;
-      model = new GLM(params).trainModel().get();
-      Scope.track_generic(model);
-      DataInfo tinfo = new DataInfo(train.clone(), null, 0, true, DataInfo.TransformType.STANDARDIZE,
-              DataInfo.TransformType.NONE, false, false, false,
-              /* weights */ false, /* offset */ false, /* fold */ false);
-      double[] manualCoeff = getCODCoeff(train, params._alpha[0], params._lambda[0], model._ymu, tinfo);
-      Scope.track_generic(tinfo);
-
-      compareGLMCoeffs(manualCoeff, model._output._submodels[0].beta, 2e-2);  // compare two sets of coeffs
-      compareGLMCoeffs(model._output._submodels[0].beta, oldGLMCoeffs, 1e-10);  // compare to original GLM
-
-    } finally{
-      Scope.exit();
+    for (Family family : new Family[]{Family.multinomial, Family.AUTO}) {
+      for (GLMParameters.Link link : new GLMParameters.Link[]{GLMParameters.Link.family_default, GLMParameters.Link.multinomial}) {
+        Scope.enter();
+        Frame train;
+        GLMParameters params = new GLMParameters(family, link);
+        GLMModel model = null;
+        double[] oldGLMCoeffs = new double[] {0.059094274726151426, 0.013361781886804975, -0.00798977427248744,
+                0.007467359562151555, 0.06737827548293934, -1.002393430927568, -0.04066511294457045, -0.018960901996125427,
+                0.07330281133353159, -0.02285669809606731, 0.002805290931441751, -1.1394632268347782, 0.021976767313534512,
+                0.01013967640490087, -0.03999288928633559, 0.012385348397898913, -0.0017922461738315199,
+                -1.159667420372168};
+        try {
+          train = parse_test_file("smalldata/glm_test/multinomial_3_class.csv");
+          Scope.track(train);
+          params._response_column = "response";
+          params._train = train._key;
+          params._lambda = new double[]{4.881e-05};
+          params._alpha = new double[]{0.5};
+          params._objective_epsilon = 1e-6;
+          params._beta_epsilon = 1e-4;
+          params._max_iterations = 1; // one iteration
+          params._seed = 12345; // don't think this one matters but set it anyway
+          Solver s = Solver.COORDINATE_DESCENT;
+          System.out.println("solver = " + s);
+          params._solver = s;
+          model = new GLM(params).trainModel().get();
+          Scope.track_generic(model);
+          DataInfo tinfo = new DataInfo(train.clone(), null, 0, true, DataInfo.TransformType.STANDARDIZE,
+                  DataInfo.TransformType.NONE, false, false, false,
+                  /* weights */ false, /* offset */ false, /* fold */ false);
+          double[] manualCoeff = getCODCoeff(train, params._alpha[0], params._lambda[0], model._ymu, tinfo);
+          Scope.track_generic(tinfo);
+    
+          compareGLMCoeffs(manualCoeff, model._output._submodels[0].beta, 2e-2);  // compare two sets of coeffs
+          compareGLMCoeffs(model._output._submodels[0].beta, oldGLMCoeffs, 1e-10);  // compare to original GLM
+    
+        } finally{
+          Scope.exit();
+        }
+      }
     }
   }
 
@@ -442,6 +456,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
       params._max_iterations = 500;
       params._solver = Solver.L_BFGS;
       params._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.Skip;
+      GLMParameters paramsInitClone = (GLMParameters) params.clone();
 //      params._lambda_search = true;
       model = new GLM(params).trainModel().get();
       assertEquals(covtype_copy.numRows()-3-1,model._nullDOF);
@@ -458,8 +473,8 @@ public class GLMBasicTestMultinomial extends TestUtil {
       preds.delete();
       preds = null;
       // now run the same on the subset
-      params._train = covtype_subset._key;
-      model = new GLM(params).trainModel().get();
+      paramsInitClone._train = covtype_subset._key;
+      model = new GLM(paramsInitClone).trainModel().get();
       assertEquals(covtype_copy.numRows()-3-1,model._nullDOF);
       System.out.println(model._output._training_metrics);
       System.out.println(model._output._validation_metrics);

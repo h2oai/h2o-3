@@ -23,6 +23,8 @@ water.api.schemas3.DownloadDataV3
 water.api.schemas3.FieldMetadataV3
 water.api.schemas3.FindV3
 water.api.schemas3.FrameBaseV3
+water.api.schemas3.FrameChunksV3
+water.api.schemas3.FrameChunksV3$FrameChunkV3
 water.api.schemas3.FrameSynopsisV3
 water.api.schemas3.FrameV3
 water.api.schemas3.FrameV3$ColSpecifierV3
@@ -46,6 +48,7 @@ water.api.schemas3.KeyV3
 water.api.schemas3.KeyV3$AssemblyKeyV3
 water.api.schemas3.KeyV3$FrameKeyV3
 water.api.schemas3.KeyV3$GridKeyV3
+water.api.schemas3.KeyV3$SegmentModelsKeyV3
 water.api.schemas3.KeyV3$JobKeyV3
 water.api.schemas3.KeyV3$ModelKeyV3
 water.api.schemas3.KeyV3$PartialDependenceKeyV3
@@ -66,6 +69,10 @@ water.api.schemas3.ModelMetricsBinomialGLMGenericV3
 water.api.schemas3.ModelMetricsBinomialV3
 water.api.schemas3.ModelMetricsBinomialGenericV3
 water.api.schemas3.ModelMetricsClusteringV3
+water.api.schemas3.ModelMetricsHGLMV3
+water.api.schemas3.ModelMetricsHGLMGenericV3
+water.api.schemas3.ModelMetricsHGLMGaussianGaussianV3
+water.api.schemas3.ModelMetricsHGLMGaussianGaussianGenericV3
 water.api.schemas3.ModelMetricsMultinomialGLMV3
 water.api.schemas3.ModelMetricsMultinomialV3
 water.api.schemas3.ModelMetricsMultinomialGenericV3
@@ -110,6 +117,7 @@ water.api.schemas3.RemoveAllV3
 water.api.schemas3.RemoveV3
 water.api.schemas3.RequestSchemaV3
 water.api.schemas3.RouteV3
+water.api.schemas3.SaveToHiveTableV3
 water.api.schemas3.SchemaMetadataV3
 water.api.schemas3.SchemaV3
 water.api.schemas3.ShutdownV3
@@ -152,3 +160,8 @@ water.api.schemas3.StringPairV3
 water.api.schemas3.KeyValueV3
 water.api.schemas3.GridExportV3
 water.api.schemas3.GridImportV3
+water.api.schemas3.PingV3
+water.api.schemas3.PingV3$NodeMemoryInfoV3
+water.api.schemas3.CloudLockV3
+water.api.schemas3.SegmentModelsV3
+water.api.schemas3.SegmentModelsParametersV3

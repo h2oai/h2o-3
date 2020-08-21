@@ -2,6 +2,22 @@ package hex.genmodel.easy.prediction;
 
 public class AnomalyDetectionPrediction extends AbstractPrediction {
 
+  @SuppressWarnings("unused")
+  public AnomalyDetectionPrediction() {
+  }
+  
+  public AnomalyDetectionPrediction(double[] preds) {
+    if (preds.length == 3) {
+      isAnomaly = preds[0] == 1;
+      normalizedScore = preds[1];
+      score = preds[2];
+    } else {
+      normalizedScore = preds[0];
+      score = preds[1];
+    }
+  }
+
+  public Boolean isAnomaly;
   public double score;
   public double normalizedScore;
 
@@ -16,4 +32,12 @@ public class AnomalyDetectionPrediction extends AbstractPrediction {
    */
   public double[] stageProbabilities;
 
+  public double[] toPreds() {
+    if (isAnomaly != null) {
+      return new double[] {isAnomaly ? 1 : 0, normalizedScore, score};
+    } else {
+      return new double[] {normalizedScore, score};
+    }
+  }
+  
 }

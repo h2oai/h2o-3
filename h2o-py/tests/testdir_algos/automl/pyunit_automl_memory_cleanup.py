@@ -295,10 +295,10 @@ def test_suite_clean_cv_models():
 def test_suite_remove_automl():
 
     def contains_leaderboard(project_name, keys):
-        return "AutoML_Leaderboard_{}".format(project_name) in keys['all'].values
+        return "Leaderboard_{}".format(project_name) in keys['all'].values
 
     def contains_event_log(project_name, keys):
-        return "AutoML_Events_{}".format(project_name) in keys['all'].values
+        return "Events_{}".format(project_name) in keys['all'].values
 
     def frame_in_cluster(frame):
         # reload the first row of the frame to verify that no vec has been removed
@@ -308,7 +308,7 @@ def test_suite_remove_automl():
     def test_remove_automl_with_xval():
         target, train, valid, test = prepare_data()
         project_name = 'aml_with_xval_remove_test'
-        max_models = 3
+        max_models = 5
         nfolds = 5
         aml = H2OAutoML(project_name=project_name,
                         nfolds=nfolds,
@@ -351,7 +351,7 @@ def test_suite_remove_automl():
     def test_remove_automl_with_xval_when_keeping_all_cv_details():
         target, train, valid, test = prepare_data()
         project_name = 'aml_with_xval_remove_test'
-        max_models = 3
+        max_models = 5
         nfolds = 5
         aml = H2OAutoML(project_name=project_name,
                         nfolds=nfolds,
@@ -399,7 +399,7 @@ def test_suite_remove_automl():
     def test_remove_automl_no_xval():
         target, train, blend, test = prepare_data()
         project_name = 'aml_no_xval_remove_test'
-        max_models = 3
+        max_models = 5
         aml = H2OAutoML(project_name=project_name,
                         nfolds=0,
                         max_models=max_models,

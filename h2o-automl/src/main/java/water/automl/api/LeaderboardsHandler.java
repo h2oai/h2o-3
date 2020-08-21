@@ -1,8 +1,9 @@
 package water.automl.api;
 
-import ai.h2o.automl.Leaderboard;
+import ai.h2o.automl.leaderboard.Leaderboard;
 import water.*;
 import water.api.Handler;
+import water.api.schemas3.TwoDimTableV3;
 import water.automl.api.schemas3.LeaderboardV99;
 import water.automl.api.schemas3.LeaderboardsV99;
 import water.exceptions.H2OIllegalArgumentException;
@@ -24,7 +25,7 @@ public class LeaderboardsHandler extends Handler {
 
       Leaderboard[] leaderboards = new Leaderboard[leaderboardKeys.length];
       for (int i = 0; i < leaderboardKeys.length; i++) {
-        Leaderboard leaderboard = getFromDKV("(none)", leaderboardKeys[i]);
+        Leaderboard leaderboard = getFromDKV(leaderboardKeys[i]);
         leaderboards[i] = leaderboard;
       }
 
@@ -42,30 +43,29 @@ public class LeaderboardsHandler extends Handler {
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public LeaderboardV99 fetch(int version, LeaderboardsV99 s) {
-    if (null == s.project_name)
+  public LeaderboardV99 fetch(int version, LeaderboardsV99 input) {
+    if (null == input.project_name)
       throw new H2OKeyNotFoundArgumentException("Client must specify a project_name.");
-
-    return new LeaderboardV99().fillFromImpl(getFromDKV("project_name", Leaderboard.idForProject(s.project_name)));
+    Leaderboard leaderboard = getFromDKV(Key.make(Leaderboard.idForProject(input.project_name)), "project_name");
+    LeaderboardV99 lb = new LeaderboardV99().fillFromImpl(leaderboard);
+    if (input.extensions != null) {
+      lb.table = new TwoDimTableV3().fillFromImpl(leaderboard.toTwoDimTable(input.extensions));
+    }
+    return lb;
   }
 
-  // TODO: almost identical to ModelsHandler; refactor
-  public static Leaderboard getFromDKV(String param_name, String key_str) {
-    return getFromDKV(param_name, Key.make(key_str));
+  private static Leaderboard getFromDKV(Key key) {
+      return getFromDKV(key, "(none)");
   }
 
-  // TODO: almost identical to ModelsHandler; refactor
-  public static Leaderboard getFromDKV(String param_name, Key key) {
-    if (key == null)
-      throw new H2OIllegalArgumentException(param_name, "Leaderboard.getFromDKV()", null);
-
+  private static Leaderboard getFromDKV(Key key, String argName) {
     Value v = DKV.get(key);
     if (v == null)
-      throw new H2OKeyNotFoundArgumentException(param_name, key.toString());
+      throw new H2OKeyNotFoundArgumentException(key.toString());
 
     Iced ice = v.get();
     if (! (ice instanceof Leaderboard))
-      throw new H2OKeyWrongTypeArgumentException(param_name, key.toString(), Leaderboard.class, ice.getClass());
+      throw new H2OKeyWrongTypeArgumentException(argName, key.toString(), Leaderboard.class, ice.getClass());
 
     return (Leaderboard) ice;
   }

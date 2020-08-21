@@ -3,7 +3,6 @@ package water.rapids.ast.prims.advmath;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Rule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import water.Scope;
@@ -33,7 +32,7 @@ public class AstFillNATest extends TestUtil {
     Scope.enter();
     try {
       Session sess = new Session();
-      Frame fr = Scope.track(new TestFrameBuilder()
+      Scope.track(new TestFrameBuilder()
               .withName("testFrame", sess)
               .withColNames("ColA")
               .withVecTypes(Vec.T_CAT)

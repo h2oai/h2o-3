@@ -2,6 +2,7 @@
 .origEchoValue <- getOption("echo")
 options(echo=FALSE)
 options(scipen=999)
+options(stringsAsFactors=T)
 
 #'
 #'
@@ -183,9 +184,9 @@ function() {
         # source h2o-r/h2o-package/R. overrides h2o package load
         to_src <- c("aggregator.R", "classes.R", "connection.R","config.R", "constants.R", "logging.R", "communication.R",
                     "kvstore.R", "frame.R", "targetencoder.R", "targetencoder_deprecated.R", "astfun.R","automl.R", "import.R", "parse.R", "export.R", "models.R", "edicts.R",
-                    "coxph.R", "coxphutils.R", "gbm.R", "glm.R", "glrm.R", "kmeans.R", "deeplearning.R", "deepwater.R", "randomforest.R", "generic.R",
+                    "coxph.R", "coxphutils.R", "gbm.R", "glm.R", "gam.R", "glrm.R", "kmeans.R", "deeplearning.R", "randomforest.R", "generic.R",
                     "naivebayes.R", "pca.R", "svd.R", "locate.R", "grid.R", "word2vec.R", "w2vutils.R", "stackedensemble.R",
-                    "predict.R", "xgboost.R", "isolationforest.R", "extendedisolationforest.R", "psvm.R")
+                    "predict.R", "xgboost.R", "isolationforest.R", "extendedisolationforest.R", "psvm.R", "segment.R", "tf-idf.R")
         src_path <- paste(h2oRDir,"h2o-package","R",sep=.Platform$file.sep)
         invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))
 
@@ -207,11 +208,20 @@ function() {
         if (file.exists(masterSeedFile)) seed <- read.table(masterSeedFile)[[1]]
         setupSeed(seed)
         h2o.logIt("[SEED] :", SEED)
+        
+        if (!is.na(USERNAME)) {
+            Log.info(paste0("Authenticating with http-basic, username: ", USERNAME, "."))
+        } else if (!is.na(KERB.PRINCIPAL)) {
+            Log.info(paste0("Authenticating with spnego, principal: ", KERB.PRINCIPAL, "."))
+        } else {
+            Log.info(paste0("Connecting without any authentication."))
+        }
 
         strict_version_check = FALSE
     } else {
-        stop(paste0("Unrecognized test type. Must be of type rdemo, runit, or rbooklet, but got: ", TEST.NAME)) }
-
+        stop(paste0("Unrecognized test type. Must be of type rdemo, runit, or rbooklet, but got: ", TEST.NAME)) 
+    }
+    
     cat(sprintf("[%s] %s\n", Sys.time(), paste0("Connect to h2o on IP: ",H2O.IP,", PORT: ",H2O.PORT)))
     h2o.init(ip = H2O.IP, port = H2O.PORT, startH2O = FALSE,
              https=H2O.HTTPS, insecure=H2O.HTTPS,

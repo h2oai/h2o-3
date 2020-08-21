@@ -1,10 +1,6 @@
 package water.util.fp;
 
-import static water.util.Java7.*;
-
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Operations on functions
@@ -102,10 +98,7 @@ public class Functions {
    * @param to max value of the curve range
    * @return the area under curve, the result of integrating x*y' over [from,to].
    */
-  public static double integrate(
-      Function<Integer, Double> x,
-      Function<Integer, Double> y,
-      int from, int to) {
+  public static double integrate(Function<Integer, Double> x,  Function<Integer, Double> y, int from, int to) {
     double s = 0;
     double x0 = x.apply(from);
     double y0 = y.apply(from);
@@ -113,10 +106,9 @@ public class Functions {
       double x1 = x.apply(i);
       double y1 = y.apply(i);
       s += (y1+y0)*(x1-x0)*.5;
-
-      x0 = x1; y0 = y1;
+      x0 = x1; 
+      y0 = y1;
     }
-
     return s;
   }
 }

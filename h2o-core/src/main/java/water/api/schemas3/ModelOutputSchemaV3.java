@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelCategory;
 import water.Weaver;
 import water.api.API;
+import water.util.IcedHashMap;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
@@ -18,6 +19,9 @@ public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSc
 
   @API(help="Column names", direction=API.Direction.OUTPUT)
   public String[] names;
+
+  @API(help="Original column names", direction=API.Direction.OUTPUT)
+  public String[] original_names;
 
   @API(help="Column types", direction=API.Direction.OUTPUT)
   public String[] column_types; // column type mappings can be found in Vec.java, around line 198.
@@ -46,6 +50,9 @@ public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSc
   @API(help="Scoring history", direction=API.Direction.OUTPUT, level=API.Level.secondary)
   public TwoDimTableV3 scoring_history;
 
+  @API(help="Model reproducibility information", direction=API.Direction.OUTPUT, level=API.Level.secondary)
+  public TwoDimTableV3[] reproducibility_information_table;
+  
   @API(help="Training data model metrics", direction=API.Direction.OUTPUT, level=API.Level.critical)
   public ModelMetricsBaseV3 training_metrics;
 
@@ -70,6 +77,9 @@ public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSc
   @API(help="Runtime in milliseconds", direction=API.Direction.OUTPUT, level=API.Level.secondary)
   public long run_time;
 
+  @API(help="Default threshold used for predictions", direction=API.Direction.OUTPUT)
+  public double default_threshold;
+
   @API(help="Help information for output fields", direction=API.Direction.OUTPUT)
   public IcedHashMapGeneric.IcedHashMapStringString help;
 
@@ -80,6 +90,8 @@ public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSc
   public S fillFromImpl( O impl ) {
     super.fillFromImpl(impl);
     this.model_category = impl.getModelCategory();
+    this.original_names = impl._origNames;
+    this.default_threshold = impl.defaultThreshold();
     fillHelp();
     return (S)this;
   }

@@ -12,8 +12,7 @@ def ipy_notebook_exec(path, save_and_norun=None):
     if save_and_norun is not None:
         with open(save_and_norun, "w") as f: f.write(program)
     else:
-        d = {}
-        exec(program, d)  # safe, but horrible (exec is horrible)
+        exec(program, dict(__name__='main'))
 
 def ipy_blocks(notebook):
     if 'worksheets' in list(notebook.keys()):
@@ -58,5 +57,4 @@ def pydemo_exec(test_name):
         if "h2o.init" not in line:
             program += line if '\n' in line else line + '\n'
     demo_c = compile(program, '<string>', 'exec')
-    p = {}
-    exec(demo_c, p)
+    exec(demo_c, dict(__name__='main'))

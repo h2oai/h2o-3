@@ -14,6 +14,8 @@ import water.fvec.Vec;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.*;
 
+import static water.util.ArrayUtils.constAry;
+
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -49,36 +51,84 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     }
 
     if (_parms._train != null && _parms.train() != null) {
-      if ((_parms._start_column != null) && (! _parms.startVec().isNumeric())) {
-        error("start_column", "start time must be undefined or of type numeric");
+      if (_parms._start_column != null) {
+        Vec startVec  = _parms.startVec();
+        if (startVec == null) {
+          error("start_column", "start_column " + _parms._start_column + " not found in the training frame");
+        } else if (!startVec.isNumeric()) {
+          error("start_column", "start time must be undefined or of type numeric");
+        }
       }
 
       if (_parms._stop_column != null) {
-        if (! _parms.stopVec().isNumeric())
+        Vec stopVec  = _parms.stopVec();
+        if (stopVec == null) {
+          error("stop_column", "stop_column " + _parms._stop_column + " not found in the training frame");
+        } else if (!stopVec.isNumeric()) {
           error("stop_column", "stop time must be of type numeric");
-        else
-          if (expensive) {
-            try {
-              CollectTimes.collect(_parms.stopVec());
-            } catch (CollectTimesException e) {
-              error("stop_column", e.getMessage());
-            }
+        } else if (expensive) {
+          try {
+            CollectTimes.collect(_parms.stopVec(), _parms._single_node_mode);
+          } catch (CollectTimesException e) {
+            error("stop_column", e.getMessage());
           }
+        }
       }
 
       if ((_parms._response_column != null) && ! _response.isInt() && (! _response.isCategorical()))
         error("response_column", "response/event column must be of type integer or factor");
 
-      if (_parms._start_column != null && _parms._stop_column != null) {
+      if (_parms.startVec() != null && _parms.stopVec() != null) {
         if (_parms.startVec().min() >= _parms.stopVec().max())
           error("start_column", "start times must be strictly less than stop times");
+      }
+
+      if (_parms._interactions != null) {
+        for (String col : _parms._interactions) {
+          if (col != null && !col.isEmpty() && _train.vec(col) == null) {
+            error("interactions", col + " not found in the training frame");
+          }
+        }
+      }
+
+      if (_parms._interactions_only != null) {
+        for (String col : _parms._interactions_only) {
+          if (col != null && !col.isEmpty() && _train.vec(col) == null) {
+            error("interactions_only", col + " not found in the training frame");
+          }
+        }
+      }
+
+      if (_parms._interaction_pairs != null) {
+        for (StringPair pair : _parms._interaction_pairs) {
+          if (pair._a != null && !pair._a.isEmpty() && _train.vec(pair._a) == null) {
+            error("interaction_pairs", pair._a + " not found in the training frame");
+          }
+          if (pair._b != null && !pair._b.isEmpty() && _train.vec(pair._b) == null) {
+            error("interaction_pairs", pair._b + " not found in the training frame");
+          }
+        }
+      }
+
+      if( _train != null ) {
+        int nonFeatureColCount = (_parms._start_column!=null?1:0) + (_parms._stop_column!=null?1:0);
+        if (_train.numCols() < (2 + nonFeatureColCount))
+          error("_train", "Training data must have at least 2 features (incl. response).");
+        if (null != _parms._stratify_by) {
+          int stratifyColCount = _parms._stratify_by.length;
+          if (_train.numCols() < (2 + nonFeatureColCount + stratifyColCount))
+            error("_train", "Training data must have at least 1 feature that is not a response and is not used for stratification."); 
+          }
       }
 
       if (_parms.isStratified()) {
         for (String col : _parms._stratify_by) {
           Vec v = _parms.train().vec(col);
-          if (v == null || v.get_type() != Vec.T_CAT)
+          if (v == null) {
+            error("stratify_by", "column '" + col + "' not found");
+          } else if (v.get_type() != Vec.T_CAT) {
             error("stratify_by", "non-categorical column '" + col + "' cannot be used for stratification");
+          }
           if (_parms._interactions != null) {
             for (String inter : _parms._interactions) {
               if (col.equals(inter)) {
@@ -90,6 +140,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
             }
           }
         }
+       
       }
     }
 
@@ -132,13 +183,15 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       }
     }
 
-    static Frame discretizeTime(double[] time, Vec startVec, Vec stopVec) {
+    static Frame discretizeTime(double[] time, Vec startVec, Vec stopVec, boolean runLocal) {
       final boolean hasStartColumn = startVec != null;
       final Frame f = new Frame();
       if (hasStartColumn)
         f.add("__startCol", startVec);
       f.add("__stopCol", stopVec);
-      return new DiscretizeTimeTask(time, startVec != null).doAll(hasStartColumn ? 2 : 1, Vec.T_NUM, f).outputFrame();
+      byte[] outputTypes = hasStartColumn ? new byte[]{Vec.T_NUM, Vec.T_NUM} : new byte[]{Vec.T_NUM}; 
+      return new DiscretizeTimeTask(time, startVec != null)
+              .doAll(outputTypes, f, runLocal).outputFrame();
     }
 
   }
@@ -192,19 +245,20 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       }
     }
 
-    static Vec makeStrataVec(Frame f, String[] stratifyBy, IcedHashMap<AstGroup.G, IcedInt> mapping) {
+    static Vec makeStrataVec(Frame f, String[] stratifyBy, IcedHashMap<AstGroup.G, IcedInt> mapping, boolean runLocal) {
       final Frame sf = f.subframe(stratifyBy);
-      return new StrataTask(mapping).doAll(Vec.T_NUM, sf).outputFrame().anyVec();
+      return new StrataTask(mapping).doAll(new byte[]{Vec.T_NUM}, sf, runLocal).outputFrame().anyVec();
     }
 
     static Frame stratifyTime(Frame f, double[] time, String[] stratifyBy, IcedHashMap<AstGroup.G, IcedInt> mapping,
-                              Vec startVec, Vec stopVec) {
+                              Vec startVec, Vec stopVec, boolean runLocal) {
       final Frame sf = f.subframe(stratifyBy);
       final boolean hasStartColumn = startVec != null;
       if (hasStartColumn)
         sf.add("__startVec", startVec);
       sf.add("__stopVec", stopVec);
-      return new StrataTask(mapping, time, hasStartColumn).doAll(hasStartColumn ? 3 : 2, Vec.T_NUM, sf).outputFrame();
+      return new StrataTask(mapping, time, hasStartColumn)
+              .doAll(constAry(hasStartColumn ? 3 : 2, Vec.T_NUM), sf, runLocal).outputFrame();
     }
 
     static void setupStrataMapping(Frame f, String[] stratifyBy, IcedHashMap<AstGroup.G, IcedInt> outMapping) {
@@ -253,14 +307,16 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       Frame discretizedFr;
       if (_parms.isStratified()) {
         StrataTask.setupStrataMapping(f, _parms._stratify_by, outStrataMap);
-        discretizedFr = Scope.track(StrataTask.stratifyTime(f, time, _parms._stratify_by, outStrataMap, startVec, stopVec));
+        discretizedFr = Scope.track(
+                StrataTask.stratifyTime(f, time, _parms._stratify_by, outStrataMap, startVec, stopVec, _parms._single_node_mode)
+        );
         strataVec = discretizedFr.remove(0);
         if (_parms.interactionSpec() == null) {
           // no interactions => we can drop the columns earlier
           f.remove(_parms._stratify_by);
         }
       } else {
-        discretizedFr = Scope.track(DiscretizeTimeTask.discretizeTime(time, startVec, stopVec));
+        discretizedFr = Scope.track(DiscretizeTimeTask.discretizeTime(time, startVec, stopVec, _parms._single_node_mode));
       }
       // swap time columns for their discretized versions
       if (startVec != null) {
@@ -346,7 +402,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       cs.reset();
       switch (p._ties) {
         case efron:
-          return EfronMethod.calcLoglik(dinfo, coxMR, cs);
+          return EfronMethod.calcLoglik(dinfo, coxMR, cs, _parms._single_node_mode);
         case breslow:
           final int n_coef = cs._n_coef;
           final int n_time = coxMR.sizeEvents.length;
@@ -496,7 +552,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       try {
         init(true);
 
-        final double[] time = CollectTimes.collect(_parms.stopVec());
+        final double[] time = CollectTimes.collect(_parms.stopVec(), _parms._single_node_mode);
 
         _job.update(0, "Initializing model training");
 
@@ -504,8 +560,9 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         Frame f = reorderTrainFrameColumns(strataMap, time);
 
         int nResponses = (_parms.startVec() == null ? 2 : 3) + (_parms.isStratified() ? 1 : 0);
-        final DataInfo dinfo = new DataInfo(f, null, nResponses, _parms._use_all_factor_levels, TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false, _parms.interactionSpec())
-                .disableIntercept();
+        final DataInfo dinfo = new DataInfo(f, null, nResponses, _parms._use_all_factor_levels, 
+                TransformType.DEMEAN, TransformType.NONE, true, false, false, 
+                hasWeightCol(), false, false, _parms.interactionSpec()).disableIntercept();
         Scope.track_generic(dinfo);
         DKV.put(dinfo);
 
@@ -540,7 +597,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           Timer aggregTimer = new Timer();
           coxMR = new CoxPHTask(dinfo, newCoef, time, (long) response().min() /* min event */,
                   n_offsets, has_start_column, dinfo._adaptedFrame.vec(_parms._strata_column), has_weights_column,
-                  _parms._ties).doAll(dinfo._adaptedFrame);
+                  _parms._ties).doAll(dinfo._adaptedFrame, _parms._single_node_mode);
           Log.info("CoxPHTask: iter=" + i + ", time=" + aggregTimer.toString());
           _job.update(1);
 
@@ -677,9 +734,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       int ncats = row.nBins;
       int [] cats = row.binIds;
       double [] nums = row.numVals;
-      final double weight = _has_weights_column ? response[0] : 1.0;
-      if (weight <= 0)
+      final double weight = _has_weights_column ? row.weight : 1.0;
+      if (weight <= 0) {
         throw new IllegalArgumentException("weights must be positive values");
+      }
       int respIdx = response.length - 1;
       final long event = (long) (response[respIdx--] - _min_event);
       final int t2 = (int) response[respIdx--];
@@ -799,8 +857,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     private CollectTimes() {
       super(new double[0], MAX_TIME_BINS);
     }
-    static double[] collect(Vec timeVec) {
-      return new CollectTimes().doAll(timeVec).domain();
+    static double[] collect(Vec timeVec, boolean runLocal) {
+      return new CollectTimes().doAll(timeVec, runLocal).domain();
     }
     @Override
     protected void onMaxDomainExceeded(int maxDomainSize, int currentSize) {

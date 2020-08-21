@@ -10,7 +10,7 @@ public interface ModelParamsValuesProviders {
 
   class StoppingMetricValuesProvider extends EnumValuesProvider<StoppingMetric> {
     public StoppingMetricValuesProvider() {
-      super(StoppingMetric.class, new StoppingMetric[]{StoppingMetric.custom});
+      super(StoppingMetric.class);
     }
   }
 

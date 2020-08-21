@@ -9,6 +9,7 @@ from .model_future import H2OModelFuture
 from .multinomial import H2OMultinomialModel
 from .ordinal import H2OOrdinalModel
 from .regression import H2ORegressionModel
+from .segment_models import H2OSegmentModels
 from .metrics_base import H2OAutoEncoderModelMetrics
 from .metrics_base import H2OBinomialModelMetrics
 from .metrics_base import H2OClusteringModelMetrics
@@ -19,4 +20,4 @@ from .metrics_base import H2ORegressionModelMetrics
 
 __all__ = ["H2OAutoEncoderModel", "H2OBinomialModel", "H2OClusteringModel",
            "ConfusionMatrix", "H2ODimReductionModel", "MetricsBase", "ModelBase",
-           "H2OModelFuture"]
+           "H2OModelFuture", "H2OSegmentModels"]

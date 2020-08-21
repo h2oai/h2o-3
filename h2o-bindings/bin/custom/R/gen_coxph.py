@@ -47,6 +47,24 @@ If x is missing, then all columns except event_column, start_column and stop_col
 """,
         event_column="""
 The name of binary data column in the training frame indicating the occurrence of an event.
-""",
-    )
+"""
+    ),
+    examples="""
+library(h2o)
+h2o.init()
+
+# Import the heart dataset
+f <- "http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv"
+heart <- h2o.importFile(f)
+
+# Set the predictor and response
+predictor <- "age"
+response <- "event"
+
+# Train a Cox Proportional Hazards model 
+heart_coxph <- h2o.coxph(x = predictor, training_frame = heart,
+                         event_column = "event",
+                         start_column = "start", 
+                         stop_column = "stop")
+"""
 )

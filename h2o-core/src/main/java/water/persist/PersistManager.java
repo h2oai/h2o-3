@@ -5,6 +5,8 @@ import water.*;
 import water.api.FSIOException;
 import water.api.HDFSIOException;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.FileVec;
+import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.util.FileUtils;
 import water.util.Log;
@@ -82,11 +84,15 @@ public class PersistManager {
   }
 
   private void validateHdfsConfigured() {
-    if (I[Value.HDFS] == null) {
+    if (!isHdfsConfigured()) {
       throw new H2OIllegalArgumentException("HDFS, S3, S3N, and S3A support is not configured");
     }
   }
 
+  private boolean isHdfsConfigured() {
+    return I[Value.HDFS] != null;
+  }
+  
   public boolean isGcsPath(String path) {
     return path.toLowerCase().startsWith("gs://");
   }
@@ -186,6 +192,13 @@ public class PersistManager {
   public byte[] load(int backend, Value v) throws IOException {
     stats[backend].load_count.incrementAndGet();
     byte[] arr = I[backend].load(v);
+    stats[backend].load_bytes.addAndGet(arr.length);
+    return arr;
+  }
+
+  public byte[] load(int backend, Key k, long skip, int max) throws IOException {
+    stats[backend].load_count.incrementAndGet();
+    byte[] arr = I[backend].load(k, skip, max);
     stats[backend].load_bytes.addAndGet(arr.length);
     return arr;
   }
@@ -598,6 +611,39 @@ public class PersistManager {
     }
   }
 
+  /**
+   * Opens a {@link Vec} in seekable implementation of an {@link InputStream}.
+   * 
+   * @param vec An instance of {@link Vec} to open
+   * @return A seekable instanceo of {@link InputStream}, never null.
+   * @throws IOException When the underlying resource does not allow seekable resource creation and all fallback solutions
+   * failed. Or on reading error.
+   */
+  public InputStream openSeekable(final Vec vec) throws IOException {
+    if (vec instanceof FileVec) {
+      FileVec fileVec = (FileVec) vec;
+      final String path = fileVec.getPath();
+      if (isHdfsPath(path)) {
+        validateHdfsConfigured();
+        return I[Value.HDFS].openSeekable(path);
+      } else {
+        Persist p = I[fileVec.getBackend()];
+        if (p != null && p.isSeekableOpenSupported()) {
+          return p.openSeekable(path);
+        }
+      }
+    }
+    // fallback
+    if (!isHdfsConfigured()) {
+      throw new IllegalArgumentException(String.format(
+              "Failed to open Vec '%s' for reading. " +
+              "Persistence backend doesn't provide implementation of a Seekable InputStream and HDFS fallback is not available.", 
+              vec._key));
+    }
+    Log.debug("Persist doesn't provide openSeekable. Falling back to HDFS wrapper (VecDataInputStream).");
+    return I[Value.HDFS].wrapSeekable(vec);
+  }
+  
   // Writes
 
   public boolean mkdirs(String path) {

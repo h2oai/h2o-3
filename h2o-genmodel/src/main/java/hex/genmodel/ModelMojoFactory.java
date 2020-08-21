@@ -5,7 +5,6 @@ import hex.genmodel.algos.deepwater.DeepwaterMojoReader;
 import hex.genmodel.algos.drf.DrfMojoReader;
 import hex.genmodel.algos.gbm.GbmMojoReader;
 import hex.genmodel.algos.glm.GlmMojoReader;
-import hex.genmodel.algos.isoforextended.ExtendedIsolationForestMojoReader;
 import hex.genmodel.algos.pca.PCAMojoReader;
 import hex.genmodel.algos.glrm.GlrmMojoReader;
 import hex.genmodel.algos.isofor.IsolationForestMojoReader;
@@ -60,10 +59,7 @@ public class ModelMojoFactory {
       case "Gradient Boosting Method":
       case "Gradient Boosting Machine":
         return new GbmMojoReader();
-
-      case "Deep Water":
-        return new DeepwaterMojoReader();
-
+        
       case "Generalized Low Rank Modeling":
       case "Generalized Low Rank Model":
         return new GlrmMojoReader();
@@ -71,7 +67,8 @@ public class ModelMojoFactory {
       case "Generalized Linear Modeling":
       case "Generalized Linear Model":
         return new GlmMojoReader();
-
+      case "Generalized Additive Model":
+        return new GamMojoReader();
       case "Word2Vec":
         return new Word2VecMojoReader();
         

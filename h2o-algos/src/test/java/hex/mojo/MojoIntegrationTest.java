@@ -17,11 +17,11 @@ import java.io.IOException;
 
 import static org.junit.Assert.*;
 
-public class MojoIntegrationTest {
+public class MojoIntegrationTest extends TestUtil{
 
   @Before
   public void setUp() throws Exception {
-    TestUtil.stall_till_cloudsize(1);
+    stall_till_cloudsize(1);
   }
 
 
@@ -89,6 +89,8 @@ public class MojoIntegrationTest {
 
       GBM gbm = new GBM(parameters);
       final GBMModel gbmModel = gbm.trainModel().get();
+      Scope.track_generic(gbmModel);
+
       assertNotNull(gbmModel);
 
       final File originalModelMojoFile = File.createTempFile("mojo", "zip");
@@ -101,8 +103,6 @@ public class MojoIntegrationTest {
       for (int i = 0; i < gbmModel._output._domains.length; i++) {
         assertArrayEquals(gbmModel._output._domains[i], mojoModel._domains[i]);
       }
-
-
     } finally {
       Scope.exit();
     }

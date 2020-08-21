@@ -22,7 +22,7 @@ function() {
     params$max_depth       <- sample(5, 1)
     params$min_rows        <- sample(10, 1)
     params$learn_rate      <- sample(c(0.001, 0.002, 0.01, 0.02, 0.1, 0.2), 1)
-    params$balance_classes <- sample(c(T, F), 1)
+    params$balance_classes <- sample(c(TRUE, FALSE), 1)
     params$x               <- c("pclass","name","sex","age","fare")
     params$y               <- "survived"
     params$training_frame  <- training_frame

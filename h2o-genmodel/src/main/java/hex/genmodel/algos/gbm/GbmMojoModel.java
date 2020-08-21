@@ -1,6 +1,7 @@
 package hex.genmodel.algos.gbm;
 
 import hex.genmodel.GenModel;
+import hex.genmodel.PredictContributions;
 import hex.genmodel.algos.tree.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.genmodel.utils.LinkFunctionType;
@@ -20,8 +21,8 @@ public final class GbmMojoModel extends SharedTreeMojoModelWithContributions imp
     }
 
     @Override
-    protected ContributionsPredictor getContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor) {
-        return new ContributionsPredictor(this, treeSHAPPredictor);
+    protected PredictContributions getContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor) {
+        return new SharedTreeContributionsPredictor(this, treeSHAPPredictor);
     }
     
     @Override
@@ -116,6 +117,14 @@ public final class GbmMojoModel extends SharedTreeMojoModelWithContributions imp
 
     public String[] leaf_node_assignment(double[] row) {
         return getDecisionPath(row);
+    }
+
+    @Override
+    public String[] getOutputNames() {
+        if (_family == quasibinomial && getDomainValues(getResponseIdx()) == null) {
+            return new String[]{"predict", "pVal0", "pVal1"};
+        }
+        return super.getOutputNames();
     }
 
 }

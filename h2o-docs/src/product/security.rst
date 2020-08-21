@@ -152,7 +152,7 @@ System administrators can create a configuration file with implicit arguments of
 1. Create the config file in **/etc/h2o/h2odriver.args**.
 2. Specify the default command-line options that you want to enforce. Note that each argument must be on a separate line. For example:
 
- ::
+ .. code-block:: bash
 
    h2o_ssl_jks_internal=keystore.jks
    h2o_ssl_jks_password=password
@@ -161,7 +161,7 @@ System administrators can create a configuration file with implicit arguments of
 
 3. Start H2O.
 
- ::
+ .. code-block:: bash
 
   hadoop jar h2odriver.jar -mapperXmx 3g -nodes 1
 
@@ -222,9 +222,9 @@ R Client
 The following code snippet demonstrates connecting to an H2O cluster
 with HTTPS:
 
-::
+.. code-block:: bash
 
-    h2o.init(ip = "a.b.c.d", port = 54321, https = TRUE, insecure = TRUE)
+    h2o.init(ip = "a.b.c.d", port = 54321, https = TRUE, insecure = FALSE)
 
 The underlying HTTPS implementation is provided by RCurl and by
 extension libcurl and OpenSSL.
@@ -235,9 +235,9 @@ Python Client
 The following code snippet demonstrates connecting to an H2O cluster
 with HTTPS:
 
-::
+.. code-block:: bash
 
-    h2o.init(ip = "a.b.c.d", port = 54321, https = TRUE, insecure = TRUE)
+    h2o.init(ip="a.b.c.d", port=54321, https=True, insecure=False)
 
 The underlying HTTPS implementation is provided by RCurl and by
 extension libcurl and OpenSSL.
@@ -251,15 +251,15 @@ manipulated on the command line with the
 `keytool <http://docs.oracle.com/javase/6/docs/technotes/tools/solaris/keytool.html>`_
 command.
 
-The underlying HTTPS implementation is provided by Jetty 8 and the Java
-runtime. (**Note**: Jetty 8 was chosen to retain Java 6 compatibility.)
+The underlying HTTPS implementation is provided by Jetty 9 and the Java
+runtime.
 
 Standalone H2O
 ''''''''''''''
 
 The following options are available:
 
-::
+.. code-block:: bash
 
     -jks <filename>
          Java keystore file
@@ -272,7 +272,7 @@ The following options are available:
 
 Example:
 
-::
+.. code-block:: bash
 
     java -jar h2o.jar -jks h2o.jks
 
@@ -281,7 +281,7 @@ H2O on Hadoop
 
 The following options are available:
 
-::
+.. code-block:: bash
 
     -jks <filename>
          Java keystore file
@@ -294,7 +294,7 @@ The following options are available:
 
 Example:
 
-::
+.. code-block:: bash
 
     hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -jks h2o.jks -output hdfsOutputDirectory
 
@@ -314,7 +314,7 @@ configuration:
 
 Example:
 
-::
+.. code-block:: bash
 
     $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.jks=/path/to/h2o.jks sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
 
@@ -325,7 +325,7 @@ Here is an example of how to create your own self-signed Java Keystore
 (mykeystore.jks) with a custom keystore password (mypass) and how to run
 standalone H2O using your Keystore:
 
-::
+.. code-block:: bash
 
     # Be paranoid and delete any previously existing keystore.
     rm -f mykeystore.jks
@@ -373,7 +373,7 @@ R Client
 The following code snippet demonstrates connecting to an H2O cluster
 with authentication:
 
-::
+.. code-block:: bash
 
     h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
 
@@ -382,9 +382,9 @@ Python Client
 
 For Python, connecting to H2O with authentication is similar:
 
-::
+.. code-block:: bash
 
-    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
+    h2o.init(ip="a.b.c.d", port=54321, username="myusername", password="mypassword")
 
 Kerberos H2O Server Side
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -394,7 +394,7 @@ login module
 
 Example **kerb.conf**:
 
-::
+.. code-block:: bash
 
     krb5loginmodule {
          com.sun.security.auth.module.Krb5LoginModule required
@@ -412,7 +412,7 @@ Standalone H2O
 
 The following options are required for Kerberos authentication:
 
-::
+.. code-block:: bash
 
     -kerberos_login
           Use Jetty KerberosLoginService
@@ -426,13 +426,13 @@ The following options are required for Kerberos authentication:
 
 Example:
 
-::
+.. code-block:: bash
 
     java -jar h2o.jar -kerberos_login -login_conf kerb.conf -user_name kerb_principal
 
 Example (on MacOS):
 
-::
+.. code-block:: bash
 
     java -Djava.security.krb5.realm="0XDATA.LOC" -Djava.security.krb5.kdc="ldap.0xdata.loc" -jar h2o.jar -kerberos_login -login_conf kerb.conf -user_name kerb_principal
 
@@ -441,7 +441,7 @@ H2O on Hadoop
 
 The following options are available:
 
-::
+.. code-block:: bash
 
     -kerberos_login
           Use Jetty KerberosLoginService
@@ -454,7 +454,7 @@ The following options are available:
 
 Example:
 
-::
+.. code-block:: bash
 
     hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -kerberos_login -login_conf kerb.conf -output hdfsOutputDirectory -user_name kerb_principal
 
@@ -476,7 +476,7 @@ The following Spark conf properties exist for Kerberos configuration:
 
 Example:
 
-::
+.. code-block:: bash
 
     $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.kerberos.login=true --conf spark.ext.h2o.user.name=kerb_principal --conf spark.ext.h2o.login.conf=kerb.conf sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
 
@@ -501,24 +501,25 @@ R Client
 The following code snippet demonstrates connecting to an H2O cluster
 with SPNEGO authentication:
 
-::
+.. code-block:: bash
 
     h2o.init(ip = "a.b.c.d", port = 54321, use_spnego = TRUE)
 
+**Limitation:** The R client uses the **RCurl** library, which does not allow you to specify service principal and
+is limited to automatic service principal generation via the template http/HOSTNAME@DOMAIN.
 
 Python Client
 '''''''''''''
 
 For Python, connecting to H2O with authentication is similar:
 
-::
+.. code-block:: bash
 
     from h2o.auth import SpnegoAuth
 
-    h2o.connect(ip = "a.b.c.d", port = 54321, auth = SpnegoAuth(service_principal = "HTTP/h2o_server@EXAMPLE.COM"))
+    h2o.connect(ip="a.b.c.d", port=54321, auth=SpnegoAuth(service_principal="HTTP/h2o_server@EXAMPLE.COM"))
 
-Connecting to SPNEGO configured H2O server is currently possible only via h2o.connect (h2o.init not supported).
-Read below on what to specify as service_principal.
+**Limitation:** Connecting to a SPNEGO-configured H2O server is currently possible only via ``h2o.connect``. (``h2o.init`` not supported). The next section describes how to specify ``service_principal``.
 
 Kerberos H2O Server Side
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -531,7 +532,7 @@ You must provide configuration files for the SPNEGO login module:
 
 Example **spnego.conf**:
 
-::
+.. code-block:: bash
 
     com.sun.security.jgss.initiate {
         com.sun.security.auth.module.Krb5LoginModule required
@@ -553,7 +554,7 @@ Example **spnego.conf**:
 
 Example **spnego.properties**:
 
-::
+.. code-block:: bash
 
     targetName=HTTP/h2o_server@EXAMPLE.COM
 
@@ -563,7 +564,7 @@ Standalone H2O
 
 The following options are required for SPNEGO authentication:
 
-::
+.. code-block:: bash
 
     -spnego_login
           Use Jetty SPNEGO Login Service
@@ -579,9 +580,9 @@ The following options are required for SPNEGO authentication:
 
 Example:
 
-::
+.. code-block:: bash
 
-    java -Djavax.security.auth.useSubjectCredsOnly=false -jar h2o.jar \
+    java -jar h2o.jar \
         -spnego_login -user_name pricipal@DOMAIN \
         -login_conf /path/to/spnego.conf \
         -spnego_properties /path/to/spnego.properties
@@ -592,7 +593,7 @@ H2O on Hadoop
 
 The following options are available:
 
-::
+.. code-block:: bash
 
 
     -spnego_login
@@ -610,13 +611,14 @@ The following options are available:
 
 Example:
 
-::
+.. code-block:: bash
 
     hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -output hdfsOutputDirectory \
-        -spnego_login -user_name pricipal@DOMAIN \
+        -proxy -spnego_login -user_name pricipal@DOMAIN \
         -login_conf /path/to/spnego.conf \
         -spnego_properties /path/to/spnego.properties
 
+**Limitation:** Because a Kerberos service principal is tied to a hostname, we recommend that you use SPNEGO authentication only with the ``-proxy`` option.
 
 ----------------
 
@@ -654,7 +656,7 @@ with authentication:
 
 ::
 
-    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
+    h2o.init(ip="a.b.c.d", port=54321, username="myusername", password="mypassword")
 
 LDAP H2O Server Side
 ^^^^^^^^^^^^^^^^^^^^
@@ -682,9 +684,6 @@ Example **ldap.conf**:
         userBaseDn="ou=users,dc=0xdata,dc=loc";
     };
 
-See the `Jetty 8 LdapLoginModule
-documentation <http://wiki.eclipse.org/Jetty/Feature/JAAS#LdapLoginModule>`__
-for more information.
 
 Standalone H2O
 ''''''''''''''
@@ -823,7 +822,7 @@ For Python, connecting to H2O with authentication is similar:
 
 ::
 
-    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
+    h2o.init(ip="a.b.c.d", port=54321, username="myusername", password="mypassword")
 
 
 PAM H2O Server Side
@@ -940,7 +939,7 @@ with authentication:
 
 ::
 
-    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
+    h2o.init(ip="a.b.c.d", port=54321, username="myusername", password="mypassword")
 
 Hash File H2O Server Side
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -963,9 +962,9 @@ tool:
 
     java -cp h2o.jar org.eclipse.jetty.util.security.Password username password
 
-See the `Jetty 8 HashLoginService
+See the `Jetty 9 HashLoginService
 documentation <http://wiki.eclipse.org/Jetty/Tutorial/Realms#HashLoginService>`_
-and `Jetty 8 Secure Password
+and `Jetty 9 Secure Password
 HOWTO <http://wiki.eclipse.org/Jetty/Howto/Secure_Passwords>`_ for more
 information.
 

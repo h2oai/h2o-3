@@ -36,6 +36,8 @@
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param cluster_size_constraints An array specifying the minimum number of points that should be in each cluster. The length of the constraints
+#'        array has to be the same as the number of clusters.
 #' @return an object of class \linkS4class{H2OClusteringModel}.
 #' @seealso \code{\link{h2o.cluster_sizes}}, \code{\link{h2o.totss}}, \code{\link{h2o.num_iterations}}, \code{\link{h2o.betweenss}}, \code{\link{h2o.tot_withinss}}, \code{\link{h2o.withinss}}, \code{\link{h2o.centersSTD}}, \code{\link{h2o.centers}}
 #' @examples
@@ -68,7 +70,8 @@ h2o.kmeans <- function(training_frame,
                        init = c("Random", "PlusPlus", "Furthest", "User"),
                        max_runtime_secs = 0,
                        categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                       export_checkpoints_dir = NULL)
+                       export_checkpoints_dir = NULL,
+                       cluster_size_constraints = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -124,6 +127,8 @@ h2o.kmeans <- function(training_frame,
     parms$categorical_encoding <- categorical_encoding
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(cluster_size_constraints))
+    parms$cluster_size_constraints <- cluster_size_constraints
 
   # Check if user_points is an acceptable set of user-specified starting points
   if( is.data.frame(user_points) || is.matrix(user_points) || is.list(user_points) || is.H2OFrame(user_points) ) {
@@ -155,4 +160,128 @@ h2o.kmeans <- function(training_frame,
   # Error check and build model
   model <- .h2o.modelJob('kmeans', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
+}
+.h2o.train_segments_kmeans <- function(training_frame,
+                                       x,
+                                       validation_frame = NULL,
+                                       nfolds = 0,
+                                       keep_cross_validation_models = TRUE,
+                                       keep_cross_validation_predictions = FALSE,
+                                       keep_cross_validation_fold_assignment = FALSE,
+                                       fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
+                                       fold_column = NULL,
+                                       ignore_const_cols = TRUE,
+                                       score_each_iteration = FALSE,
+                                       k = 1,
+                                       estimate_k = FALSE,
+                                       user_points = NULL,
+                                       max_iterations = 10,
+                                       standardize = TRUE,
+                                       seed = -1,
+                                       init = c("Random", "PlusPlus", "Furthest", "User"),
+                                       max_runtime_secs = 0,
+                                       categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                                       export_checkpoints_dir = NULL,
+                                       cluster_size_constraints = NULL,
+                                       segment_columns = NULL,
+                                       segment_models_id = NULL,
+                                       parallelism = 1)
+{
+  # formally define variables that were excluded from function parameters
+  model_id <- NULL
+  verbose <- NULL
+  destination_key <- NULL
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Build parameter list to send to model builder
+  parms <- list()
+  parms$training_frame <- training_frame
+  if(!missing(x)){
+    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
+    if(!missing(fold_column)){
+      parms$ignored_columns <- setdiff(parms$ignored_columns, fold_column)
+    }
+  }
+
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
+  if (!missing(nfolds))
+    parms$nfolds <- nfolds
+  if (!missing(keep_cross_validation_models))
+    parms$keep_cross_validation_models <- keep_cross_validation_models
+  if (!missing(keep_cross_validation_predictions))
+    parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
+  if (!missing(keep_cross_validation_fold_assignment))
+    parms$keep_cross_validation_fold_assignment <- keep_cross_validation_fold_assignment
+  if (!missing(fold_assignment))
+    parms$fold_assignment <- fold_assignment
+  if (!missing(fold_column))
+    parms$fold_column <- fold_column
+  if (!missing(ignore_const_cols))
+    parms$ignore_const_cols <- ignore_const_cols
+  if (!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
+  if (!missing(k))
+    parms$k <- k
+  if (!missing(estimate_k))
+    parms$estimate_k <- estimate_k
+  if (!missing(user_points))
+    parms$user_points <- user_points
+  if (!missing(max_iterations))
+    parms$max_iterations <- max_iterations
+  if (!missing(standardize))
+    parms$standardize <- standardize
+  if (!missing(seed))
+    parms$seed <- seed
+  if (!missing(init))
+    parms$init <- init
+  if (!missing(max_runtime_secs))
+    parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(categorical_encoding))
+    parms$categorical_encoding <- categorical_encoding
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(cluster_size_constraints))
+    parms$cluster_size_constraints <- cluster_size_constraints
+
+  # Check if user_points is an acceptable set of user-specified starting points
+  if( is.data.frame(user_points) || is.matrix(user_points) || is.list(user_points) || is.H2OFrame(user_points) ) {
+    if ( length(init) > 1 || init == 'User') {
+      parms[["init"]] <- "User"
+    } else {
+      warning(paste0("Parameter init must equal 'User' when user_points is set. Ignoring init = '", init, "'. Setting init = 'User'."))
+    }
+    parms[["init"]] <- "User"
+
+    # Convert user-specified starting points to H2OFrame
+    if( is.data.frame(user_points) || is.matrix(user_points) || is.list(user_points) ) {
+      if( !is.data.frame(user_points) && !is.matrix(user_points) ) user_points <- t(as.data.frame(user_points))
+      user_points <- as.h2o(user_points)
+    }
+    parms[["user_points"]] <- user_points
+
+    # Set k
+    if( !(missing(k)) && k!=as.integer(nrow(user_points)) ) {
+      warning("Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
+    }
+    parms[["k"]] <- as.numeric(nrow(user_points))
+  } else if ( is.character(init) ) { # Furthest, Random, PlusPlus{
+    parms[["user_points"]] <- NULL
+  } else{
+    stop ("argument init must be set to Furthest, Random, PlusPlus, or a valid set of user-defined starting points.")
+  }
+
+  # Build segment-models specific parameters
+  segment_parms <- list()
+  if (!missing(segment_columns))
+    segment_parms$segment_columns <- segment_columns
+  if (!missing(segment_models_id))
+    segment_parms$segment_models_id <- segment_models_id
+  segment_parms$parallelism <- parallelism
+
+  # Error check and build segment models
+  segment_models <- .h2o.segmentModelsJob('kmeans', segment_parms, parms, h2oRestApiVersion=3)
+  return(segment_models)
 }

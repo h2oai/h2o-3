@@ -2,6 +2,7 @@ package water.api.schemas3;
 
 import hex.Model;
 import hex.PartialDependence;
+import hex.segments.SegmentModels;
 import hex.grid.Grid;
 import water.*;
 import water.api.API;
@@ -101,6 +102,11 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
   public static class GridKeyV3 extends KeyV3<Iced, GridKeyV3, Grid> {
     public GridKeyV3() { }
     public GridKeyV3(Key<Grid> key) { super(key); }
+  }
+
+  public static class SegmentModelsKeyV3 extends KeyV3<Iced, SegmentModelsKeyV3, SegmentModels> {
+    public SegmentModelsKeyV3() { }
+    public SegmentModelsKeyV3(Key<SegmentModels> key) { super(key); }
   }
 
   public static class AssemblyKeyV3 extends KeyV3<Iced, AssemblyKeyV3, Assembly> {

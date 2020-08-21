@@ -1,9 +1,12 @@
 package hex.genmodel;
 
-import com.google.gson.*;
+import com.google.gson.JsonObject;
 import hex.genmodel.attributes.ModelAttributes;
 import hex.genmodel.attributes.ModelJsonReader;
+import hex.genmodel.attributes.Table;
 import hex.genmodel.descriptor.ModelDescriptorBuilder;
+import hex.genmodel.utils.DistributionFamily;
+import hex.genmodel.utils.LinkFunctionType;
 import hex.genmodel.utils.ParseUtils;
 import hex.genmodel.utils.StringEscapeUtils;
 
@@ -43,11 +46,13 @@ public abstract class ModelMojoReader<M extends MojoModel> {
    * and model evaluation.
    *
    * @param reader      An instance of {@link MojoReaderBackend} to read from existing MOJO
-   * @param readModelDescriptor If true, 
+   * @param readModelMetadata If true, parses also model metadata (model performance metrics... {@link ModelAttributes})
+   *                          Model metadata are not required for scoring, it is advised to leave this option disabled
+   *                          if you want to use MOJO for inference only.
    * @return De-serialized {@link MojoModel}
    * @throws IOException Whenever there is an error reading the {@link MojoModel}'s data.
    */
-  public static MojoModel readFrom(MojoReaderBackend reader, final boolean readModelDescriptor) throws IOException {
+  public static MojoModel readFrom(MojoReaderBackend reader, final boolean readModelMetadata) throws IOException {
     try {
       Map<String, Object> info = parseModelInfo(reader);
       if (! info.containsKey("algorithm"))
@@ -56,7 +61,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       ModelMojoReader mmr = ModelMojoFactory.INSTANCE.getMojoReader(algo);
       mmr._lkv = info;
       mmr._reader = reader;
-      mmr.readAll(readModelDescriptor);
+      mmr.readAll(readModelMetadata);
       return mmr._model;
     } finally {
       if (reader instanceof Closeable)
@@ -157,18 +162,28 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     }
     return res;
   }
+  
+  protected String[] readStringArray(String name, int size) throws IOException {
+    String[] array = new String[size];
+    int i = 0;
+    for (String line : readtext(name, true)) {
+      array[i++] = line;
+    }
+    return array;
+  }
 
 
   //--------------------------------------------------------------------------------------------------------------------
   // Private
   //--------------------------------------------------------------------------------------------------------------------
 
-  private void readAll(final boolean readModelDescriptor) throws IOException {
+  private void readAll(final boolean readModelMetadata) throws IOException {
     String[] columns = (String[]) _lkv.get("[columns]");
     String[][] domains = parseModelDomains(columns.length);
     boolean isSupervised = readkv("supervised");
     _model = makeModel(columns, domains, isSupervised ? columns[columns.length - 1] : null);
     _model._uuid = readkv("uuid");
+    _model._algoName = readkv("algo");
     _model._h2oVersion = readkv("h2o_version", "unknown");
     _model._category = hex.ModelCategory.valueOf((String) readkv("category"));
     _model._supervised = isSupervised;
@@ -182,13 +197,21 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     _model._mojo_version = ((Number) readkv("mojo_version")).doubleValue();
     checkMaxSupportedMojoVersion();
     readModelData();
-    if (readModelDescriptor) {
-      final String algoName = readkv("algo");
+    if (readModelMetadata) {
       final String algoFullName = readkv("algorithm"); // The key'algo' contains the shortcut, 'algorithm' is the long version
-      _model._modelDescriptor = new ModelDescriptorBuilder(_model, algoName, algoFullName)
+      _model._modelDescriptor = new ModelDescriptorBuilder(_model, algoFullName)
               .build();
+      _model._modelAttributes = readModelSpecificAttributes();
     }
-    _model._modelAttributes = readModelSpecificAttributes();
+    _model._reproducibilityInformation = readReproducibilityInformation() ;
+  }
+
+  protected Table[] readReproducibilityInformation() {
+    final JsonObject modelJson = ModelJsonReader.parseModelJson(_reader);
+    if (modelJson != null && modelJson.get("output") != null) {
+      return ModelJsonReader.readTableArray(modelJson, "output.reproducibility_information_table");
+    }
+    return null;
   }
 
   protected ModelAttributes readModelSpecificAttributes() {
@@ -292,6 +315,30 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   private void checkMaxSupportedMojoVersion() throws IOException {
     if(_model._mojo_version > Double.parseDouble(mojoVersion())){
       throw new IOException(String.format("MOJO version incompatibility - the model MOJO version (%.2f) is higher than the current h2o version (%s) supports. Please, use the older version of h2o to load MOJO model.", _model._mojo_version, mojoVersion()));
+    }
+  }
+
+  public static LinkFunctionType readLinkFunction(String linkFunctionTypeName, DistributionFamily family) {
+    if (linkFunctionTypeName != null)
+      return LinkFunctionType.valueOf(linkFunctionTypeName);
+    return defaultLinkFunction(family);
+  }
+
+  public static LinkFunctionType defaultLinkFunction(DistributionFamily family){
+    switch (family) {
+      case bernoulli:
+      case fractionalbinomial:
+      case quasibinomial:
+      case modified_huber:
+      case ordinal:
+        return LinkFunctionType.logit;
+      case multinomial:
+      case poisson:
+      case gamma:
+      case tweedie:
+        return LinkFunctionType.log;
+      default:
+        return LinkFunctionType.identity;
     }
   }
 

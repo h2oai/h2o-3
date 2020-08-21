@@ -4,10 +4,8 @@ dependencies {
     compile project(":h2o-core")
     compile "ai.h2o:mojo2-runtime-api:0.13.7"
 
-    testCompile "junit:junit:${junitVersion}"
+    testCompile project(":h2o-test-support")
     testCompile "net.sf.opencsv:opencsv:2.3"
-    testCompile project(path: ":h2o-core", configuration: "testArchives")
-
     testRuntimeOnly project(":${defaultWebserverModule}")
 }
 
@@ -17,6 +15,7 @@ def daiLicense = System.getenv('DRIVERLESS_AI_LICENSE_FILE')
 def mojoTestDir = System.getenv('MOJO_PIPELINE_TEST_DIR')
 
 task daiEnvironmentCheck {
+    onlyIf { ext.has("isCI") && ext.get("isCI") }
     doLast {
         if (!daiLicense || !file(daiLicense).isFile()) {
             throw new ResourceException('Please make sure environment variable DRIVERLESS_AI_LICENSE_FILE is defined and points to a valid DAI license file.')
@@ -38,6 +37,7 @@ if (mojoTestDir && file(mojoTestDir).isDirectory() && file(mojoTestDir).listFile
     }
 } else {
     task extractMojoRuntime {
+        onlyIf { ext.has("isCI") && ext.get("isCI") }
         doLast {
             throw new ResourceException("MOJO_PIPELINE_TEST_DIR doesn't point to a valid non-empty MOJO test location.")
         }
@@ -50,7 +50,7 @@ testSingleNode.dependsOn extractMojoRuntime
 test {
     dependsOn ":h2o-core:testJar"
     // Note: multi node tests are ignored right now!
-    dependsOn smalldataCheck, cpLibs, jar, testJar, testSingleNode
+    dependsOn smalldataCheck, jar, testJar, testSingleNode
 
     // Defeat task 'test' by running no tests.
     exclude '**'

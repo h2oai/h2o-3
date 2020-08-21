@@ -23,5 +23,13 @@ public class GenericModelV3 extends ModelSchemaV3<GenericModel, GenericModelV3, 
     public static final class GenericModelOutputV3 extends ModelOutputSchemaV3<GenericModelOutput, GenericModelOutputV3>{
         @API(help="Variable Importances", direction=API.Direction.OUTPUT, level = API.Level.secondary)
         TwoDimTableV3 variable_importances;
+        
+        @API(help = "Short identifier of the original algorithm name", direction = API.Direction.OUTPUT,
+                level = API.Level.secondary)
+        String original_model_identifier;
+        
+        @API(help = "Full, potentially long name of the original agorithm", direction = API.Direction.OUTPUT,
+                level = API.Level.secondary)
+        String original_model_full_name;
     }
 }

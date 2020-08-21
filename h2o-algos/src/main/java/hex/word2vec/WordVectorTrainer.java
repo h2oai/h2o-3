@@ -25,6 +25,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
   private final Job<Word2VecModel> _job;
 
   // Params
+  private final Word2Vec.WordModel _wordModel;
   private final int _wordVecSize, _windowSize, _epochs;
   private final float _initLearningRate;
   private final float _sentSampleRate;
@@ -62,6 +63,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
     _wordCountsKey = input._wordCountsKey;
 
     // Params
+    _wordModel = input.getParams()._word_model;
     _wordVecSize = input.getParams()._vec_size;
     _windowSize = input.getParams()._window_size;
     _sentSampleRate = input.getParams()._sent_sample_rate;
@@ -97,8 +99,9 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
   }
 
   @Override public void map(Chunk chk) {
-    final int winSize = _windowSize;
-    float[] neu1e = new float[_wordVecSize];
+    final int winSize = _windowSize, vecSize = _wordVecSize;
+    float[] neu1 = new float[vecSize];
+    float[] neu1e = new float[vecSize];
     ChunkSentenceIterator sentIter = new ChunkSentenceIterator(chk);
 
     int wordCount = 0;
@@ -107,7 +110,12 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
       int[] sentence = sentIter.next();
       for (int sentIdx = 0; sentIdx < sentLen; sentIdx++) {
         int curWord = sentence[sentIdx];
-
+        int bagSize = 0;
+        if (_wordModel == Word2Vec.WordModel.CBOW) {
+          for (int j = 0; j < vecSize; j++) neu1[j] = 0;
+          for (int j = 0; j < vecSize; j++) neu1e[j] = 0;
+        }
+        
         // for each item in the window (except curWord), update neu1 vals
         int winSizeMod = cheapRandInt(winSize);
         for (int winIdx = winSizeMod; winIdx < winSize * 2 + 1 - winSizeMod; winIdx++) {
@@ -115,9 +123,17 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
             int winWordSentIdx = sentIdx - winSize + winIdx;
             if (winWordSentIdx < 0 || winWordSentIdx >= sentLen) continue;
             int winWord = sentence[winWordSentIdx];
-            skipGram(curWord, winWord, neu1e);
+            if (_wordModel == Word2Vec.WordModel.SkipGram)
+              skipGram(curWord, winWord, neu1e);
+            else { // CBOW
+              for (int j = 0; j < vecSize; j++) neu1[j] += _syn0[j + winWord * vecSize];
+              bagSize++;
+            }
           }
         } // end for each item in the window
+        if (_wordModel == Word2Vec.WordModel.CBOW && bagSize > 0) {
+          CBOW(curWord, sentence, sentIdx, sentLen, winSizeMod, bagSize, neu1, neu1e);
+        }
 
         wordCount++;
         // update learning rate
@@ -175,6 +191,58 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
       for (int j = 0; j < vecSize; j++) neu1e[j] += gradient * _syn1[j + l2];
       // Learn weights hidden -> output
       for (int j = 0; j < vecSize; j++) _syn1[j + l2] += gradient * _syn0[j + l1];
+    }
+  }
+
+  private void CBOW(
+      int curWord,
+      int[] sentence,
+      int sentIdx,
+      int sentLen,
+      int winSizeMod,
+      int bagSize,
+      float[] neu1,
+      float[] neu1e
+  ) {
+    int winWordSentIdx, winWord;
+    final int vecSize = _wordVecSize, winSize = _windowSize;
+    final int curWinSize = winSize * 2 + 1 - winSize;
+
+    for (int i = 0; i < vecSize; i++) neu1[i] /= bagSize;
+    hierarchicalSoftmaxCBOW(curWord, neu1, neu1e);
+
+    // hidden -> in
+    for (int winIdx = winSizeMod; winIdx < curWinSize; winIdx++) {
+      if (winIdx != winSize) {
+        winWordSentIdx = sentIdx - winSize + winIdx;
+        if (winWordSentIdx < 0 || winWordSentIdx >= sentLen) continue;
+        winWord = sentence[winWordSentIdx];
+        for (int i = 0; i < vecSize; i++) _syn0[i + winWord * vecSize] += neu1e[i];
+      }
+    }
+  }
+
+  private void hierarchicalSoftmaxCBOW(final int targetWord, float[] neu1, float[] neu1e) {
+    final int vecSize = _wordVecSize, tWrdCodeLen = _HBWTCode[targetWord].length;
+    final float alpha = _curLearningRate;
+    float gradient, f = 0;
+    int l2;
+
+    for (int i = 0; i < tWrdCodeLen; i++, f = 0) {
+      l2 = _HBWTPoint[targetWord][i] * vecSize;
+
+      // Propagate hidden -> output (calc sigmoid)
+      for (int j = 0; j < vecSize; j++) f += neu1[j] * _syn1[j + l2];
+
+      if (f <= -MAX_EXP) continue;
+      else if (f >= MAX_EXP) continue;
+      else f = _expTable[(int) ((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))];
+
+      gradient = (1 - _HBWTCode[targetWord][i] - f) * alpha;
+      // Propagate errors output -> hidden
+      for (int j = 0; j < vecSize; j++) neu1e[j] += gradient * _syn1[j + l2];
+      // Learn weights hidden -> output
+      for (int j = 0; j < vecSize; j++) _syn1[j + l2] += gradient * neu1[j];
     }
   }
 

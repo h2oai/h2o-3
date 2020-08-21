@@ -32,7 +32,7 @@ parms$response_column <- args$y
 #'                                hidden = c(10, 10), epochs = 5)
 #' prostate_anon = h2o.anomaly(prostate_dl, prostate)
 #' head(prostate_anon)
-#' prostate_anon_per_feature = h2o.anomaly(prostate_dl, prostate, per_feature=TRUE)
+#' prostate_anon_per_feature = h2o.anomaly(prostate_dl, prostate, per_feature = TRUE)
 #' head(prostate_anon_per_feature)
 #' }
 #' @export
@@ -43,6 +43,12 @@ h2o.anomaly <- function(object, data, per_feature=FALSE) {
   h2o.getFrame(key)
 }
 """,
+    set_params="""
+if (!missing(max_hit_ratio_k)) {
+  warning("argument max_hit_ratio_k is deprecated and has no use.")
+  parms$offset_column <- NULL
+}
+"""    
 )
 
 doc = dict(
@@ -72,5 +78,6 @@ iris_dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris_hf, seed=12345
 
 # now make a prediction
 predictions <- h2o.predict(iris_dl, iris_hf)
-"""
+""",
+    max_hit_ratio_k="This argument is deprecated and has no use. Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)."
 )

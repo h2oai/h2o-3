@@ -2,6 +2,7 @@ package water;
 
 import water.network.SSLContextException;
 import water.network.SSLSocketChannelFactory;
+import water.network.WrappingSecurityManager;
 import water.util.Log;
 
 import java.io.IOException;
@@ -37,7 +38,7 @@ import java.nio.channels.SocketChannel;
  *  - data saved to disk - currently not supported, using an encrypted drive is recommended
  *
  */
-public class H2OSecurityManager {
+public class H2OSecurityManager implements WrappingSecurityManager {
 
     private volatile static H2OSecurityManager INSTANCE = null;
 
@@ -55,16 +56,22 @@ public class H2OSecurityManager {
             }
         } catch (SSLContextException e) {
             Log.err("Node initialized with SSL enabled but failed to create SSLContext. " +
-                    "Node initialization aborted.");
-            Log.err(e);
+                    "Node initialization aborted.", e);
             H2O.exit(1);
         }
     }
 
+    @Override
+    public boolean isSecurityEnabled() {
+        return securityEnabled;
+    }
+
+    @Override
     public ByteChannel wrapServerChannel(SocketChannel channel) throws IOException {
         return sslSocketChannelFactory.wrapServerChannel(channel);
     }
 
+    @Override
     public ByteChannel wrapClientChannel(SocketChannel channel, String host, int port) throws IOException {
         return sslSocketChannelFactory.wrapClientChannel(channel, host, port);
     }

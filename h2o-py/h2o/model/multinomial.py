@@ -2,11 +2,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
-from ..frame import H2OFrame
 import h2o
-from .model_base import ModelBase
 from h2o.utils.typechecks import assert_is_type
-
+from ..frame import H2OFrame
+from .model_base import ModelBase
 
 
 class H2OMultinomialModel(ModelBase):
@@ -159,7 +158,7 @@ class H2OMultinomialModel(ModelBase):
         >>> gbm.plot(metric="AUTO", timestep="AUTO")
         """
 
-        if self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
+        if self._model_json["algo"] in ("deeplearning", "xgboost", "drf", "gbm"):
             if metric == "AUTO":
                 metric = "classification_error"
             elif metric not in ("logloss", "classification_error", "rmse"):

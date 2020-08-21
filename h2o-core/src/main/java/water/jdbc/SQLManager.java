@@ -37,25 +37,26 @@ public class SQLManager {
    * @param username (Input)
    * @param password (Input)
    * @param columns (Input)
-   * @param fetch_mode (Input)
+   * @param fetchMode (Input)
+   * @param numChunksHint (optional) Specifies the desired number of chunks for the target Frame  
    */
   public static Job<Frame> importSqlTable(
       final String connection_url, final String table, final String select_query,
       final String username, final String password, final String columns,
       final Boolean useTempTable, final String tempTableName,
-      final SqlFetchMode fetch_mode) {
+      final SqlFetchMode fetchMode, final Integer numChunksHint) {
 
     final Key<Frame> destination_key = Key.make((table + "_sql_to_hex").replaceAll("\\W", "_"));
     final Job<Frame> j = new Job<>(destination_key, Frame.class.getName(), "Import SQL Table");
 
-    final String databaseType = connection_url.split(":", 3)[1];
-    initializeDatabaseDriver(databaseType);
+    final String databaseType = getDatabaseType(connection_url);
+    initializeDatabaseDriver(databaseType); // fail early if driver is not present
 
     SQLImportDriver importDriver = new SQLImportDriver(
         j, destination_key, databaseType, connection_url, 
         table, select_query, username, password, columns, 
         useTempTable, tempTableName,
-        fetch_mode
+        fetchMode, numChunksHint
     );
     j.start(importDriver, Job.WORK_UNKNOWN);
 
@@ -77,11 +78,12 @@ public class SQLManager {
     final boolean _useTempTable;
     final String _tempTableName;
     final SqlFetchMode _fetch_mode;
+    final Integer _num_chunks_hint;
 
     SQLImportDriver(
         Job<Frame> job, Key<Frame> destination_key, String database_type, 
         String connection_url, String table, String select_query, String username, String password, String columns,
-        Boolean useTempTable, String tempTableName, SqlFetchMode fetch_mode
+        Boolean useTempTable, String tempTableName, SqlFetchMode fetch_mode, Integer numChunksHint
     ) {
       _j = job;
       _destination_key = destination_key;
@@ -95,6 +97,7 @@ public class SQLManager {
       _useTempTable = shouldUseTempTable(useTempTable);
       _tempTableName = getTempTableName(tempTableName);
       _fetch_mode = fetch_mode;
+      _num_chunks_hint = numChunksHint;
     }
 
     /*
@@ -144,7 +147,7 @@ public class SQLManager {
             source_table = _tempTableName;
             //returns number of rows, but as an int, not long. if int max value is exceeded, result is negative
             _j.update(0L, "Creating a temporary table");
-            numRow = stmt.executeUpdate("CREATE TABLE " + source_table + " AS " + _select_query);
+            numRow = stmt.executeUpdate(createTempTableSql(_database_type, source_table, _select_query));
           } else {
             source_table = "(" + _select_query + ") sub_h2o_import";
           }
@@ -256,10 +259,17 @@ public class SQLManager {
                       +(float)(realcols+timecols+stringcols) *numRow*8); //8 bytes for real and time (long) values
 
       final Vec vec;
-      final int chunk_size = FileVec.calcOptimalChunkSize(totSize, numCol, numCol * 4,
-              H2O.ARGS.nthreads, H2O.getCloudSize(), false, false);
-      final double rows_per_chunk = chunk_size; //why not numRow * chunk_size / totSize; it's supposed to be rows per chunk, not the byte size
-      final int num_chunks = Vec.nChunksFor(numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
+      final int num_chunks;
+      if (_num_chunks_hint == null) {
+        final int chunk_size = FileVec.calcOptimalChunkSize(totSize, numCol, numCol * 4,
+                H2O.ARGS.nthreads, H2O.getCloudSize(), false, true);
+        final double rows_per_chunk = chunk_size; //why not numRow * chunk_size / totSize; it's supposed to be rows per chunk, not the byte size
+        num_chunks = Vec.nChunksFor(numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
+        Log.info("Optimal calculated target number of chunks: " + num_chunks);
+      } else {
+        num_chunks = _num_chunks_hint;
+        Log.info("Using user-specified target number of chunks: " + num_chunks);
+      }
 
       if (SqlFetchMode.DISTRIBUTED.equals(_fetch_mode)) {
         final int num_retrieval_chunks = ConnectionPoolProvider.estimateConcurrentConnections(H2O.getCloudSize(), H2O.ARGS.nthreads);
@@ -270,7 +280,7 @@ public class SQLManager {
         vec = Vec.makeConN(numRow, num_chunks);
       }
 
-      Log.info("Number of chunks for data retrieval: " + vec.nChunks() + ", number of rows:" + numRow);
+      Log.info("Number of chunks for data retrieval: " + vec.nChunks() + ", number of rows: " + numRow);
       _j.setWork(vec.nChunks());
 
       // Finally read the data into an H2O Frame
@@ -297,6 +307,17 @@ public class SQLManager {
 
   }
   
+  static String createTempTableSql(String databaseType, String tableName, String selectQuery) {
+
+      switch (databaseType) {
+        case TERADATA_DB_TYPE:
+          return "CREATE TABLE " + tableName + " AS (" + selectQuery + ") WITH DATA";
+
+        default:
+          return "CREATE TABLE " + tableName + " AS " + selectQuery;
+      }
+  }
+
   /**
    * Builds SQL SELECT to retrieve single row from a table based on type of database
    *
@@ -481,12 +502,31 @@ public class SQLManager {
     }
   }
 
-  private static Connection getConnectionSafe(String url, String username, String password) throws SQLException {
+  /**
+   * Makes sure the appropriate database driver is initialized before calling DriverManager#getConnection.
+   * 
+   * @param url JDBC connection string
+   * @param username username
+   * @param password password
+   * @return a connection to the URL
+   * @throws SQLException if a database access error occurs or the url is
+   */
+  public static Connection getConnectionSafe(String url, String username, String password) throws SQLException {
+    initializeDatabaseDriver(getDatabaseType(url));
     try {
       return DriverManager.getConnection(url, username, password);
     } catch (NoClassDefFoundError e) {
       throw new RuntimeException("Failed to get database connection, probably due to using thin jdbc driver jar.", e);
     }
+  }
+
+  static String getDatabaseType(String url) {
+    if (url == null)
+      return null;
+    String[] parts = url.split(":", 3);
+    if (parts.length < 2)
+      return null;
+    return parts[1];
   }
 
   /**
@@ -564,22 +604,16 @@ public class SQLManager {
         final int fetchSize = (int) Math.min(blueprint.chunkLen(0), 1e5);
         stmt.setFetchSize(fetchSize);
         rs = stmt.executeQuery(query);
-        chunks: for (int cidx = 0; cidx < blueprint.nChunks(); cidx++) {
-          if (_job.stop_requested()) break;
+        for (int cidx = 0; cidx < blueprint.nChunks(); cidx++) {
+          if (_job.stop_requested()) 
+            break;
           NewChunk[] ncs = new NewChunk[columnTypes.length];
           for (int i = 0; i < columnTypes.length; i++) {
             ncs[i] = res[i].chunkForChunkIdx(cidx);
           }
           final int len = blueprint.chunkLen(cidx);
-          int r = 0;
-          while (r < len) {
-            if (! rs.next()) {
-              long totalLen = blueprint.espc()[cidx] + r;
-              Log.warn("Query `" + query + "` returned less rows than expected. Actual: " + totalLen + ", expected: " + blueprint.length());
-              break chunks;
-            }
+          for (int r = 0; r < len && rs.next(); r++) {
             SqlTableToH2OFrame.writeRow(rs, ncs);
-            r++;
           }
           fs.add(H2O.submitTask(new FinalizeNewChunkTask(cidx, ncs)));
           _job.update(1);
@@ -599,6 +633,10 @@ public class SQLManager {
       fs.blockForPending();
 
       Vec[] vecs = AppendableVec.closeAll(res);
+      if (vecs.length > 0 && vecs[0].length() != blueprint.length()) {
+        Log.warn("Query `" + query + "` returned less rows than expected. " +
+                "Actual: " + vecs[0].length() + ", expected: " + blueprint.length());
+      }
       return new Frame(destinationKey, _columnNames, vecs);
     }
 
@@ -706,49 +744,26 @@ public class SQLManager {
     static void writeRow(ResultSet rs, NewChunk[] ncs) throws SQLException {
       for (int i = 0; i < ncs.length; i++) {
         Object res = rs.getObject(i + 1);
-        if (res == null) ncs[i].addNA();
-        else {
-          switch (res.getClass().getSimpleName()) {
-            case "Double":
-              ncs[i].addNum((double) res);
-              break;
-            case "Integer":
-              ncs[i].addNum((long) (int) res, 0);
-              break;
-            case "Long":
-              ncs[i].addNum((long) res, 0);
-              break;
-            case "Float":
-              ncs[i].addNum((double) (float) res);
-              break;
-            case "Short":
-              ncs[i].addNum((long) (short) res, 0);
-              break;
-            case "Byte":
-              ncs[i].addNum((long) (byte) res, 0);
-              break;
-            case "BigDecimal":
-              ncs[i].addNum(((BigDecimal) res).doubleValue());
-              break;
-            case "Boolean":
-              ncs[i].addNum(((boolean) res ? 1 : 0), 0);
-              break;
-            case "String":
-              ncs[i].addStr(new BufferedString((String) res));
-              break;
-            case "Date":
-              ncs[i].addNum(((Date) res).getTime(), 0);
-              break;
-            case "Time":
-              ncs[i].addNum(((Time) res).getTime(), 0);
-              break;
-            case "Timestamp":
-              ncs[i].addNum(((Timestamp) res).getTime(), 0);
-              break;
-            default:
-              ncs[i].addNA();
-          }
-        }
+        writeItem(res, ncs[i]);
+      }
+    }
+
+    static void writeItem(Object res, NewChunk nc) {
+      if (res == null)
+        nc.addNA();
+      else {
+        if (res instanceof Long || res instanceof Integer || res instanceof Short || res instanceof Byte)
+          nc.addNum(((Number) res).longValue(), 0);
+        else if (res instanceof Number)
+          nc.addNum(((Number) res).doubleValue());
+        else if (res instanceof Boolean)
+          nc.addNum(((boolean) res ? 1 : 0), 0);
+        else if (res instanceof String)
+          nc.addStr(res);
+        else if (res instanceof java.util.Date)
+          nc.addNum(((java.util.Date) res).getTime(), 0);
+        else
+          nc.addNA();
       }
     }
 

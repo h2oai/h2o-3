@@ -31,6 +31,20 @@
 #' @param max_iterations Maximum number of iteration of the algorithm Defaults to 200.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' # Import the splice dataset
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/splice/splice.svm"
+#' splice <- h2o.importFile(f)
+#' 
+#' # Train the Support Vector Machine model
+#' svm_model <- h2o.psvm(gamma = 0.01, rank_ratio = 0.1,
+#'                       y = "C1", training_frame = splice,
+#'                       disable_training_metrics = FALSE)
+#' }
 #' @export
 h2o.psvm <- function(x,
                      y,
@@ -112,4 +126,97 @@ h2o.psvm <- function(x,
   # Error check and build model
   model <- .h2o.modelJob('psvm', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
+}
+.h2o.train_segments_psvm <- function(x,
+                                     y,
+                                     training_frame,
+                                     validation_frame = NULL,
+                                     ignore_const_cols = TRUE,
+                                     hyper_param = 1,
+                                     kernel_type = c("gaussian"),
+                                     gamma = -1,
+                                     rank_ratio = -1,
+                                     positive_weight = 1,
+                                     negative_weight = 1,
+                                     disable_training_metrics = TRUE,
+                                     sv_threshold = 0.0001,
+                                     fact_threshold = 1e-05,
+                                     feasible_threshold = 0.001,
+                                     surrogate_gap_threshold = 0.001,
+                                     mu_factor = 10,
+                                     max_iterations = 200,
+                                     seed = -1,
+                                     segment_columns = NULL,
+                                     segment_models_id = NULL,
+                                     parallelism = 1)
+{
+  # formally define variables that were excluded from function parameters
+  model_id <- NULL
+  verbose <- NULL
+  destination_key <- NULL
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Validate other required args
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
+     }
+  }
+
+  # Build parameter list to send to model builder
+  parms <- list()
+  parms$training_frame <- training_frame
+  args <- .verify_dataxy(training_frame, x, y)
+  parms$ignored_columns <- args$x_ignore
+  parms$response_column <- args$y
+
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
+  if (!missing(ignore_const_cols))
+    parms$ignore_const_cols <- ignore_const_cols
+  if (!missing(hyper_param))
+    parms$hyper_param <- hyper_param
+  if (!missing(kernel_type))
+    parms$kernel_type <- kernel_type
+  if (!missing(gamma))
+    parms$gamma <- gamma
+  if (!missing(rank_ratio))
+    parms$rank_ratio <- rank_ratio
+  if (!missing(positive_weight))
+    parms$positive_weight <- positive_weight
+  if (!missing(negative_weight))
+    parms$negative_weight <- negative_weight
+  if (!missing(disable_training_metrics))
+    parms$disable_training_metrics <- disable_training_metrics
+  if (!missing(sv_threshold))
+    parms$sv_threshold <- sv_threshold
+  if (!missing(fact_threshold))
+    parms$fact_threshold <- fact_threshold
+  if (!missing(feasible_threshold))
+    parms$feasible_threshold <- feasible_threshold
+  if (!missing(surrogate_gap_threshold))
+    parms$surrogate_gap_threshold <- surrogate_gap_threshold
+  if (!missing(mu_factor))
+    parms$mu_factor <- mu_factor
+  if (!missing(max_iterations))
+    parms$max_iterations <- max_iterations
+  if (!missing(seed))
+    parms$seed <- seed
+
+  # Build segment-models specific parameters
+  segment_parms <- list()
+  if (!missing(segment_columns))
+    segment_parms$segment_columns <- segment_columns
+  if (!missing(segment_models_id))
+    segment_parms$segment_models_id <- segment_models_id
+  segment_parms$parallelism <- parallelism
+
+  # Error check and build segment models
+  segment_models <- .h2o.segmentModelsJob('psvm', segment_parms, parms, h2oRestApiVersion=3)
+  return(segment_models)
 }

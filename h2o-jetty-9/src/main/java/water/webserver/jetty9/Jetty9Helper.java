@@ -1,5 +1,6 @@
 package water.webserver.jetty9;
 
+import ai.h2o.org.eclipse.jetty.security.authentication.SpnegoAuthenticator;
 import org.eclipse.jetty.jaas.JAASLoginService;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -11,7 +12,6 @@ import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SpnegoLoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
-import org.eclipse.jetty.security.authentication.SpnegoAuthenticator;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
@@ -19,6 +19,9 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 import water.webserver.iface.H2OHttpConfig;
 import water.webserver.iface.H2OHttpView;
 import water.webserver.iface.LoginType;
@@ -26,9 +29,6 @@ import water.webserver.iface.LoginType;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 
 class Jetty9Helper {
@@ -44,7 +44,16 @@ class Jetty9Helper {
     Server createJettyServer(String ip, int port) {
         System.setProperty("org.eclipse.jetty.server.Request.maxFormContentSize", Integer.toString(Integer.MAX_VALUE));
 
-        final Server jettyServer = new Server();
+        final Server jettyServer;
+        if (config.ensure_daemon_threads) {
+            QueuedThreadPool pool = new QueuedThreadPool();
+            pool.setDaemon(true);
+            jettyServer = new Server(pool);
+            // Ensure the threads started by jetty are daemon threads so they don't prevent stopping of H2O
+            Scheduler s = jettyServer.getBean(Scheduler.class);
+            jettyServer.updateBean(s, new ScheduledExecutorScheduler(null, true));
+        } else 
+            jettyServer = new Server();
 
         final boolean isSecured = config.jks != null;
         final HttpConnectionFactory httpConnectionFactory = buildHttpConnectionFactory(isSecured);
@@ -74,7 +83,7 @@ class Jetty9Helper {
         final String proto = isSecured ? "https" : "http";
 
         final HttpConfiguration httpConfiguration = new HttpConfiguration();
-        httpConfiguration.setSendServerVersion(true);
+        httpConfiguration.setSendServerVersion(false);
         httpConfiguration.setRequestHeaderSize(getSysPropInt(proto + ".requestHeaderSize", 32 * 1024));
         httpConfiguration.setResponseHeaderSize(getSysPropInt(proto + ".responseHeaderSize", 32 * 1024));
         httpConfiguration.setOutputBufferSize(getSysPropInt(proto + ".responseBufferSize", httpConfiguration.getOutputBufferSize()));
@@ -106,6 +115,7 @@ class Jetty9Helper {
                 primaryAuthenticator = new BasicAuthenticator();
                 break;
             case SPNEGO:
+                System.setProperty("javax.security.auth.useSubjectCredsOnly", "false");
                 loginService = new SpnegoLoginService(config.loginType.jaasRealm, config.spnego_properties);
                 primaryAuthenticator = new SpnegoAuthenticator();
                 break;
@@ -123,11 +133,13 @@ class Jetty9Helper {
         final Constraint constraint = new Constraint();
         constraint.setName("auth");
         constraint.setAuthenticate(true);
+
         constraint.setRoles(new String[]{Constraint.ANY_AUTH});
 
         final ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec("/*"); // Lock down all API calls
         mapping.setConstraint(constraint);
+        security.setConstraintMappings(Collections.singletonList(mapping));
 
         // Authentication / Authorization
         final Authenticator authenticator;
@@ -142,10 +154,10 @@ class Jetty9Helper {
 
         final SessionHandler sessionHandler = new SessionHandler();
         if (config.session_timeout > 0) {
-            sessionHandler.getSessionManager().setMaxInactiveInterval(config.session_timeout * 60);
+            sessionHandler.setMaxInactiveInterval(config.session_timeout * 60);
         }
         sessionHandler.setHandler(security);
-        jettyServer.setSessionIdManager(sessionHandler.getSessionManager().getSessionIdManager());
+        jettyServer.setSessionIdManager(sessionHandler.getSessionIdManager());
 
         // Pass-through to H2O if authenticated.
         jettyServer.setHandler(sessionHandler);

@@ -124,8 +124,8 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
             false, 0.0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
 
     // For level `c` and `d` we got only one row... so after leave one out subtraction we get `0` for denominator. We need to use different formula(value) for the result.
-    assertEquals(0.66666, resultWithEncoding.vec("ColA_te").at(4), 1e-5);
-    assertEquals(0.66666, resultWithEncoding.vec("ColA_te").at(5), 1e-5);
+    assertEquals(0.66666, resultWithEncoding.vec("ColA_te").at(2), 1e-5);
+    assertEquals(0.66666, resultWithEncoding.vec("ColA_te").at(3), 1e-5);
 
     encodingMapCleanUp(targetEncodingMap);
     resultWithEncoding.delete();
@@ -168,28 +168,33 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
 
   @Test
   public void emptyStringsAndNAsAreTreatedAsDifferentCategoriesTest() {
-    String teColumnName = "ColA";
-    String targetColumnName = "ColB";
-    fr = new TestFrameBuilder()
-            .withName("testFrame")
-            .withColNames(teColumnName, targetColumnName)
-            .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-            .withDataForCol(0, ar("a", "b", "", "", null)) // null and "" are different categories even though they look the same in printout
-            .withDataForCol(1, ar("2", "6", "6", "2", "6"))
-            .build();
+    Map<String, Frame> targetEncodingMap = null;
+    Scope.enter();
+    try {
+      String teColumnName = "ColA";
+      String targetColumnName = "ColB";
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames(teColumnName, targetColumnName)
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "", "", null)) // null and "" are different categories even though they look the same in printout
+              .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+              .build();
 
-    String[] teColumns = {teColumnName};
-    TargetEncoder tec = new TargetEncoder(teColumns);
+      String[] teColumns = {teColumnName};
+      TargetEncoder tec = new TargetEncoder(teColumns);
 
-    Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
+      targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
 
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,
-            false, 0.0, true, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+      Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,
+              false, 0.0, true, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+      Scope.track(resultWithEncoding);
+      printOutFrameAsTable(resultWithEncoding);
 
-    printOutFrameAsTable(resultWithEncoding);
-
-    encodingMapCleanUp(targetEncodingMap);
-    resultWithEncoding.delete();
+    } finally {
+      if(targetEncodingMap != null) encodingMapCleanUp(targetEncodingMap);
+      Scope.exit();
+    }
   }
 
   // Test that NA and empty strings create same encoding. Imputed average is slightly different for some reason
@@ -197,47 +202,51 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
   public void comparisonBetweenNAsAndNonEmptyStringForLOOStrategyTest() {
     String teColumnName = "ColA";
     String targetColumnName = "ColB";
-    fr = new TestFrameBuilder()
-            .withName("testFrame")
-            .withColNames(teColumnName, targetColumnName)
-            .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-            .withDataForCol(0, ar("a", "b", null, null, null))
-            .withDataForCol(1, ar("2", "6", "6", "2", "6"))
-            .build();
+    Map<String, Frame> targetEncodingMap = null;
+    Map<String, Frame> targetEncodingMap2 = null;
+    Scope.enter();
+    try {
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames(teColumnName, targetColumnName)
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", null, null, null))
+              .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+              .build();
 
-    Frame fr2 = new TestFrameBuilder()
-            .withName("testFrame2")
-            .withColNames(teColumnName, targetColumnName)
-            .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-            .withDataForCol(0, ar("a", "b", "na", "na", "na"))
-            .withDataForCol(1, ar("2", "6", "6", "2", "6"))
-            .build();
+      Frame fr2 = new TestFrameBuilder()
+              .withName("testFrame2")
+              .withColNames(teColumnName, targetColumnName)
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "na", "na", "na"))
+              .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+              .build();
 
-    String[] teColumns = {teColumnName};
-    TargetEncoder tec = new TargetEncoder(teColumns);
+      String[] teColumns = {teColumnName};
+      TargetEncoder tec = new TargetEncoder(teColumns);
 
-    Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
+      targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
 
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false,
-            0.0, true, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+      Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false,
+              0.0, true, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
 
-    Map<String, Frame> targetEncodingMap2 = tec.prepareEncodingMap(fr2, targetColumnName, null);
+      targetEncodingMap2 = tec.prepareEncodingMap(fr2, targetColumnName, null);
 
-    Frame resultWithEncoding2 = tec.applyTargetEncoding(fr2, targetColumnName, targetEncodingMap2, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,
-            false, 0.0, true, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+      Frame resultWithEncoding2 = tec.applyTargetEncoding(fr2, targetColumnName, targetEncodingMap2, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,
+              false, 0.0, true, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
 
-    Frame sortedResult = resultWithEncoding.sort(new int[]{2}, new int[]{2});
-    Frame sortedResult2 = resultWithEncoding2.sort(new int[]{2}, new int[]{2});
+      Frame sortedResult = resultWithEncoding.sort(new int[]{2}, new int[]{2});
+      Frame sortedResult2 = resultWithEncoding2.sort(new int[]{2}, new int[]{2});
 
-    assertVecEquals(sortedResult.vec("ColA_te"), sortedResult2.vec("ColA_te"), 1e-5);
+      assertVecEquals(sortedResult.vec("ColA_te"), sortedResult2.vec("ColA_te"), 1e-5);
 
-    encodingMapCleanUp(targetEncodingMap);
-    encodingMapCleanUp(targetEncodingMap2);
-    fr2.delete();
-    sortedResult.delete();
-    sortedResult2.delete();
-    resultWithEncoding.delete();
-    resultWithEncoding2.delete();
+      Scope.track(fr2, sortedResult, sortedResult2, resultWithEncoding, resultWithEncoding2);
+    } finally {
+      if(targetEncodingMap != null) encodingMapCleanUp(targetEncodingMap);
+      if(targetEncodingMap2 != null) encodingMapCleanUp(targetEncodingMap2);
+
+      Scope.exit();
+    }
   }
 
   // Test that empty strings create same encodings as nonempty strings
@@ -333,9 +342,9 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumn, null);
 
     Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumn, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,
-            false, 0, true, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+            false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
 
-    Vec expected = vec(1, 0, 1, 1, 1);
+    Vec expected = vec(1, 1, 1, 1, 0);
     assertVecEquals(expected, resultWithEncoding.vec(3), 1e-5);
 
     expected.remove();
@@ -365,7 +374,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
     Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumn, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,
             foldColumnName, false, 0, true, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
 
-    Vec expected = vec(1, 0, 1, 1, 1);
+    Vec expected = vec(1, 1, 1, 1, 0);
     assertVecEquals(expected, resultWithEncoding.vec(4), 1e-5);
 
     expected.remove();
@@ -396,7 +405,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
     Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumn, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,
             foldColumnName, false, true,TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234L);
 
-    Vec expected = vec(1, 0, 1, 1, 1);
+    Vec expected = vec(1, 1, 1, 1, 0);
     double expectedDifferenceDueToNoise = 1e-2;
     assertVecEquals(expected, resultWithEncoding.vec(4), expectedDifferenceDueToNoise); // TODO is it ok that encoding contains negative values?
 
@@ -428,12 +437,9 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumnName);
 
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,
-            foldColumnName, false, 0.0, false,TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
-    Frame sortedBy1 = resultWithEncoding.sort(new int[]{1});
-    Vec encodingForColumnA_Multiple = sortedBy1.vec(4);
-    Frame sortedBy0 = resultWithEncoding.sort(new int[]{0});
-    Vec encodingForColumnB_Multiple = sortedBy0.vec(5);
+    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, foldColumnName,  false,0.0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+    Vec encodingForColumnA_Multiple = resultWithEncoding.vec(4);
+    Vec encodingForColumnB_Multiple = resultWithEncoding.vec(5);
 
     // Let's check it with Single TE version of the algorithm. So we rely here on a correctness of the single-column encoding.
     //  For the first encoded column
@@ -442,10 +448,8 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
     String[] indexForColumnA = {"ColA"};
     TargetEncoder tecA = new TargetEncoder(indexForColumnA);
     Map<String, Frame> targetEncodingMapForColumn1 = tecA.prepareEncodingMap(frA, targetColumnName, foldColumnName);
-    Frame resultWithEncodingForColumn1 = tecA.applyTargetEncoding(frA, targetColumnName, targetEncodingMapForColumn1, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,
-            foldColumnName, false, 0, false,TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
-    Frame sortedSingleColumn1ByColA = resultWithEncodingForColumn1.sort(new int[]{0});
-    Vec encodingForColumnA_Single = sortedSingleColumn1ByColA.vec(4);
+    Frame resultWithEncodingForColumn1 = tecA.applyTargetEncoding(frA, targetColumnName, targetEncodingMapForColumn1, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, foldColumnName, false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+    Vec encodingForColumnA_Single = resultWithEncodingForColumn1.vec(4);
 
     assertVecEquals(encodingForColumnA_Single, encodingForColumnA_Multiple, 1e-5);
 
@@ -455,24 +459,18 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
     String[] indexForColumnB = {"ColB"};
     TargetEncoder tecB = new TargetEncoder(indexForColumnB);
     Map<String, Frame> targetEncodingMapForColumn2 = tecB.prepareEncodingMap(frB, targetColumnName, foldColumnName);
-    Frame resultWithEncodingForColumn2 = tecB.applyTargetEncoding(frB, targetColumnName, targetEncodingMapForColumn2,
-            TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, foldColumnName, false, 0, false,TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
-    Frame sortedSingleColumn2ByColA = resultWithEncodingForColumn2.sort(new int[]{0});
-    Vec encodingForColumnB_Single = sortedSingleColumn2ByColA.vec(4);
+    Frame resultWithEncodingForColumn2 = tecB.applyTargetEncoding(frB, targetColumnName, targetEncodingMapForColumn2, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, foldColumnName, false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+    Vec encodingForColumnB_Single = resultWithEncodingForColumn2.vec(4);
 
     assertVecEquals(encodingForColumnB_Single, encodingForColumnB_Multiple, 1e-5);
 
-    sortedBy0.delete();
-    sortedBy1.delete();
-    sortedSingleColumn1ByColA.delete();
-    sortedSingleColumn2ByColA.delete();
+    resultWithEncoding.delete();
+    resultWithEncodingForColumn1.delete();
     encodingMapCleanUp(targetEncodingMap);
     encodingMapCleanUp(targetEncodingMapForColumn1);
     encodingMapCleanUp(targetEncodingMapForColumn2);
     frA.delete();
     frB.delete();
-    resultWithEncoding.delete();
-    resultWithEncodingForColumn1.delete();
     resultWithEncodingForColumn2.delete();
   }
 

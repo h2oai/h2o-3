@@ -70,9 +70,8 @@ public class OOMTest extends TestUtil {
     }
 
     // Now touch all the data, forcing a reload.  Confirm all reads the same.
-    boolean id = TestUtil.isBitIdentical(new Frame(new String[]{"C1"}, new Vec[]{vrnd1}),
+    TestUtil.assertBitIdentical(new Frame(new String[]{"C1"}, new Vec[]{vrnd1}),
                                 new Frame(new String[]{"C1"}, new Vec[]{vrnd2}));
-    Assert.assertTrue("Frames loaded from disk are equal", id);
     // All Chunks are recorded as being back-in-memory
     for( int i=0; i<nchks; i++ ) {
       Value v1 = vecChunkIdx(vrnd1, i);
@@ -132,9 +131,6 @@ public class OOMTest extends TestUtil {
       //new OOMTest().testParseMemoryStress();    // Throws on assertion error
     } catch( Throwable e ) {
       Log.err(e);
-      StringWriter sw = new StringWriter();
-      e.printStackTrace(new PrintWriter(sw));
-      Log.err(sw);
       System.exit(-1);
     }
     System.exit(0);

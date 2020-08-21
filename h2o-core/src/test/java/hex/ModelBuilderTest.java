@@ -8,7 +8,9 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.parser.BufferedString;
+import water.util.ReflectionUtils;
+import water.test.dummy.DummyModelBuilder;
+import water.test.dummy.DummyModelParameters;
 
 import java.io.File;
 import java.io.IOException;
@@ -124,6 +126,35 @@ public class ModelBuilderTest extends TestUtil {
   }
 
   @Test
+  public void testWorkSpaceInit() {
+    DummyModelBuilder builder = new DummyModelBuilder(new DummyModelParameters());
+    // workspace is initialized upon builder instantiation
+    ModelBuilder.Workspace workspace = ReflectionUtils.getFieldValue(builder, "_workspace");
+    assertNotNull(workspace);
+    assertNull(workspace.getToDelete(false));
+    // cheap init keeps workspace unchanged
+    builder.init(false);
+    workspace = ReflectionUtils.getFieldValue(builder, "_workspace");
+    assertNotNull(workspace);
+    assertNull(workspace.getToDelete(false));
+    // it is not possible to get "to delete" structure in for expensive operations
+    try {
+      workspace.getToDelete(true);
+      fail("Exception expected");
+    } catch (IllegalStateException e) {
+      assertEquals(
+              "ModelBuilder was not correctly initialized. Expensive phase requires field `_toDelete` to be non-null. " +
+                      "Does your implementation of init method call super.init(true) or alternatively initWorkspace(true)?", 
+              e.getMessage()
+      );
+    }
+    // expensive init will switch the workspace and let us get "to delete" for expensive ops
+    builder.init(true);
+    workspace = ReflectionUtils.getFieldValue(builder, "_workspace");
+    assertNotNull(workspace.getToDelete(true));
+  }
+  
+  @Test
   public void testMakeUnknownModel() {
     try {
       ModelBuilder.make("invalid", null, null);
@@ -135,20 +166,29 @@ public class ModelBuilderTest extends TestUtil {
   }
   
   @Test
-  public void testMakeByModelParameters() {
-    
-    String registrationAlgoName = "dummymodelbuilder"; // by default it is a lower case of the ModelBuilder's simple name
-    DummyModelParameters params = new DummyModelParameters("dummy_MSG", Key.make( "dummyGBM_key"), registrationAlgoName);
-    new DummyModelBuilder(params, true); // as a side effect DummyModelBuilder will be registered in a static field ModelBuilder.ALGOBASES
+  public void testMakeFromModelParams() {
+    DummyModelParameters params = new DummyModelParameters();
 
     ModelBuilder modelBuilder = ModelBuilder.make(params);
 
     assertNotNull(modelBuilder._job); 
     assertNotNull(modelBuilder._result); 
-    assertEquals(params, params); 
-    assertNotEquals(modelBuilder._parms, params); 
+    assertNotSame(modelBuilder._parms, params); 
   }
 
+  @Test
+  public void testMakeFromParamsAndKey() {
+    DummyModelParameters params = new DummyModelParameters();
+    Key<Model> mKey = Key.make();
+
+    ModelBuilder modelBuilder = ModelBuilder.make(params, mKey);
+
+    assertNotNull(modelBuilder._job);
+    assertEquals(modelBuilder._job._result, mKey);
+    assertEquals(mKey, modelBuilder._result);
+    assertNotSame(modelBuilder._parms, params);
+  }
+  
   @Test
   public void testScoreReorderedDomain() {
     Frame train = null, test = null, scored = null;
@@ -253,89 +293,6 @@ public class ModelBuilderTest extends TestUtil {
       // check that progress is as expected
       assertEquals(0.2, _j.progress(), 0.001);
       tryComplete();
-    }
-  }
-
-  public static class DummyModelOutput extends Model.Output {
-    public DummyModelOutput(ModelBuilder b, Frame train) {
-      super(b, train);
-    }
-    @Override
-    public ModelCategory getModelCategory() {
-      return ModelCategory.Binomial;
-    }
-    @Override
-    public boolean isSupervised() {
-      return true;
-    }
-  }
-  public static class DummyModelParameters extends Model.Parameters {
-    private String _msg;
-    private Key _trgt;
-    private String _registrationAlgoName;
-    private boolean _makeModel;
-    public DummyModelParameters(String msg, Key trgt) { _msg = msg; _trgt = trgt; }
-    public DummyModelParameters(String msg, Key trgt, String algoRegistrationName) { _msg = msg; _trgt = trgt; _registrationAlgoName = algoRegistrationName; }
-    @Override public String fullName() { return _registrationAlgoName == null ? "dummy": _registrationAlgoName; }
-    @Override public String algoName() { return _registrationAlgoName == null ? "dummy": _registrationAlgoName; }
-    @Override public String javaName() { return DummyModelBuilder.class.getName(); }
-    @Override public long progressUnits() { return 1; }
-  }
-  public static class DummyModel extends Model<DummyModel, DummyModelParameters, DummyModelOutput> {
-    public DummyModel(Key<DummyModel> selfKey, DummyModelParameters parms, DummyModelOutput output) {
-      super(selfKey, parms, output);
-    }
-    @Override
-    public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-      return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
-    }
-    @Override
-    protected double[] score0(double[] data, double[] preds) { return preds; }
-    @Override
-    protected Futures remove_impl(Futures fs, boolean cascade) {
-      super.remove_impl(fs, cascade);
-      DKV.remove(_parms._trgt);
-      return fs;
-    }
-  }
-  public static class DummyModelBuilder extends ModelBuilder<DummyModel, DummyModelParameters, DummyModelOutput> {
-    public DummyModelBuilder(DummyModelParameters parms) {
-      super(parms);
-      init(false);
-    }
-
-    public DummyModelBuilder(DummyModelParameters parms, boolean startup_once ) { super(parms,startup_once); }
-
-    @Override
-    protected Driver trainModelImpl() {
-      return new Driver() {
-        @Override
-        public void computeImpl() {
-          DKV.put(_parms._trgt, new BufferedString("Computed " + _parms._msg));
-          if (! _parms._makeModel)
-            return;
-          init(true);
-          Model model = null;
-          try {
-            model = new DummyModel(dest(), _parms, new DummyModelOutput(DummyModelBuilder.this, train()));
-            model.delete_and_lock(_job);
-            model.update(_job);
-          } finally {
-            if (model != null)
-              model.unlock(_job);
-          }
-        }
-      };
-    }
-
-    @Override
-    public ModelCategory[] can_build() {
-      return new ModelCategory[0];
-    }
-
-    @Override
-    public boolean isSupervised() {
-      return true;
     }
   }
 

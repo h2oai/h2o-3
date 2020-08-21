@@ -1,3 +1,32 @@
+# Migrating to H2O 3.30.1.1
+
+Jetty version 8 has been dropped as default implementation of `h2o-webserver-iface` module, as it is not actively developed and supported anymore.
+To ensure H2O uses Jetty with the latest fixes with strong emphasis on security, it has been replaced with a more recent version of Jetty 9, starting at version `9.4.11.v20180605`.
+Simply switching over to Jetty 9 has technical implications which had to be addressed. The most significant one is incompatibility with Hadoop 2.x based distributions,
+in cases when H2O is running on Hadoop. For Hadoop 3.x based distributions, Jetty 9 has been used inside H2O from the start.
+
+## Shadowing
+
+Since release `3.30.1.1`, Jetty 9 is bundled even for Hadoop 2.x based distributions. To avoid classpath collisions, as Hadoop 2.x distributions typically
+bundle some version of Jetty 8, the Jetty 9 inside H2O is **shadowed**. 
+
+- The original package names starting with `org.eclipse.jetty.*` have been shadowed by using `ai.h2o` prefix, resulting in
+`ai.h2o.org.eclipse.jetty.*` pattern.
+
+## LDAP login module
+
+H2O's official [documentation](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html) advises to use `ai.h2o.org.eclipse.jetty.plus.jaas.spi.LdapLoginModule` class for LDAP configuration.
+Such configuration is still the **valid** one after this change.
+However, due to Jetty not being shadow in previous versions, some users still used the variant without `ai.h2o` package prefix: `org.eclipse.jetty.plus.jaas.spi.LdapLoginModule`.
+On Hadoop 3 based distributions, where Jetty 9 had already been present before this complete migration to Jetty 9, some users might have been able to use `org.eclipse.jetty.jaas.spi.LdapLoginModule` 
+(missing `plus` package). This is no longer possible and users should always turn to the official [documentation](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html) 
+
+## Embedded H2O implications
+
+The module `h2o-jetty-9` builds a `jar` containing eclipse packages in the relocated form to the `ai.h2o.org.eclipse.*` package.
+The same applies for `h2o-jetty-8` module, which is now considered deprecated. Any systems embedding H2O are advised to use `h2o-jetty-9` module instead.
+API of Jetty 8 and 9 varies, therefore in the unlikely case of H2O being embedded in a system which uses Jetty APIs directly, changes related to the API differences must be made.
+
 # Migrating to H2O 3.0
 
 We're excited about the upcoming release of the latest and greatest version of H2O, and we hope you are too! H2O 3.0 has lots of improvements, including: 

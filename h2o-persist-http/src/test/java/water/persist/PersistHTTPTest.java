@@ -58,7 +58,7 @@ public class PersistHTTPTest extends TestUtil {
       Key<Frame> out = Key.make();
       Frame parsed = Scope.track(ParseDataset.parse(out, k));
 
-      assertTrue(isBitIdentical(f, parsed));
+      assertBitIdentical(f, parsed);
     } finally {
       Scope.exit();
     }
@@ -96,7 +96,7 @@ public class PersistHTTPTest extends TestUtil {
       Key<Frame> out = Key.make();
       Frame parsed = Scope.track(ParseDataset.parse(out, k));
 
-      assertTrue(isBitIdentical(f, parsed));
+      assertBitIdentical(f, parsed);
       assertEquals(imported.vec(0).nChunks(), f.anyVec().nChunks());
     } finally {
       Scope.exit();

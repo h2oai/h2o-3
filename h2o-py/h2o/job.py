@@ -15,6 +15,7 @@ from h2o.exceptions import H2OJobCancelled
 from h2o.utils.progressbar import ProgressBar
 from h2o.utils.shared_utils import clamp
 
+
 class H2OJob(object):
     """A class representing an H2O Job."""
 
@@ -59,8 +60,7 @@ class H2OJob(object):
                 pb.execute(self._refresh_job_status)
         except StopIteration as e:
             if str(e) == "cancelled":
-                h2o.api("POST /3/Jobs/%s/cancel" % self.job_key)
-                self.status = "CANCELLED"
+                self.cancel()
             # Potentially we may want to re-raise the exception here
 
         assert self.status in {"DONE", "CANCELLED", "FAILED"} or self._poll_count <= 0, \
@@ -88,6 +88,10 @@ class H2OJob(object):
         self.poll()
         self._poll_count = 10**10
         return self
+
+    def cancel(self):
+        h2o.api("POST /3/Jobs/%s/cancel" % self.job_key)
+        self.status = "CANCELLED"
 
     def _refresh_job_status(self):
         if self._poll_count <= 0: raise StopIteration("")

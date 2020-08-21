@@ -436,6 +436,20 @@ public class VecUtils {
       Arrays.sort(res);
       return res;
     }
+    
+    public String[] stringDomain(boolean integer){
+      double[] domain = domain();
+      String[] stringDomain = new String[domain.length];
+      for(int i=0; i < domain.length; i++){
+        if(integer) {
+          stringDomain[i] = String.valueOf((int) domain[i]);
+        } else {
+          stringDomain[i] = String.valueOf(domain[i]);
+        }
+      }
+      return stringDomain;
+    }
+    
     private IcedDouble addValue(IcedDouble val){
       if(Double.isNaN(val._val)) return val;
       if(_sortedKnownDomain != null && Arrays.binarySearch(_sortedKnownDomain,val._val) >= 0)
@@ -477,11 +491,10 @@ public class VecUtils {
         if( !ys.isNA(row) )
           _uniques.put(ys.at8(row), "");
     }
-
     @Override public void reduce(CollectIntegerDomain mrt) {
-      if( _uniques != mrt._uniques ) _uniques.putAll(mrt._uniques);
+        if( _uniques != mrt._uniques ) _uniques.putAll(mrt._uniques);
     }
-
+      
     public final AutoBuffer write_impl( AutoBuffer ab ) {
       return ab.putA8(_uniques==null ? null : _uniques.keySetLong());
     }
@@ -496,7 +509,6 @@ public class VecUtils {
     @Override public final void copyOver(CollectIntegerDomain that) {
       _uniques = that._uniques;
     }
-
     /** Returns exact numeric domain of given {@link Vec} computed by this task.
      * The domain is always sorted. Hence:
      *    domain()[0] - minimal domain value
@@ -508,7 +520,6 @@ public class VecUtils {
       return dom;
     }
   }
-
   /**
    * Create a new categorical {@link Vec} with deduplicated domains from a categorical {@link Vec}.
    * 

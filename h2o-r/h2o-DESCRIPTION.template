@@ -40,7 +40,7 @@ License: Apache License (== 2.0)
 URL: https://github.com/h2oai/h2o-3
 BugReports: https://0xdata.atlassian.net/projects/PUBDEV
 NeedsCompilation: no
-SystemRequirements: Java (>= 7)
+SystemRequirements: Java (>= 8)
 Depends: R (>= 2.13.0),
          methods,
          stats
@@ -83,6 +83,7 @@ Collate:
          'coxph.R'
          'coxphutils.R'
          'kmeans.R'
+         'gam.R'
          'gbm.R'
          'generic.R'
          'glm.R'
@@ -92,7 +93,6 @@ Collate:
          'psvm.R'
          'deeplearning.R'
          'stackedensemble.R'
-         'deepwater.R'
          'xgboost.R'
          'randomforest.R'
          'naivebayes.R'
@@ -100,5 +100,7 @@ Collate:
          'w2vutils.R'
          'locate.R'
          'grid.R'
+         'segment.R'
          'predict.R'
          'zzz.R'
+         'tf-idf.R'

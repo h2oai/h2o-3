@@ -6,7 +6,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test <- function(h) {
 
-	cancar = read.csv(file =locate("smalldata/glm_test/cancar_logIn.csv"),header = T) 
+	cancar = read.csv(file =locate("smalldata/glm_test/cancar_logIn.csv"),header = TRUE) 
 
 	cancar$Merit = as.factor(cancar$Merit) 
 	cancar$Class = as.factor(cancar$Class) 

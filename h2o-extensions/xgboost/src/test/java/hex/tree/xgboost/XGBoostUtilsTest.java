@@ -51,35 +51,6 @@ public class XGBoostUtilsTest extends TestUtil {
   public static final class XGBoostUtilsTestSingleRun extends XGBoostUtilsTest {
 
     @Test
-    public void parseFeatureScores() throws IOException, ParseException {
-      String[] modelDump = readLines(getClass().getResource("xgbdump.txt"));
-      String[] expectedVarImps = readLines(getClass().getResource("xgbvarimps.txt"));
-
-      Map<String, FeatureScore> scores = XGBoostUtils.parseFeatureScores(modelDump);
-      double totalGain = 0;
-      double totalCover = 0;
-      double totalFrequency = 0;
-      for (FeatureScore score : scores.values()) {
-        totalGain += score._gain;
-        totalCover += score._cover;
-        totalFrequency += score._frequency;
-      }
-
-      NumberFormat nf = NumberFormat.getInstance(Locale.US);
-      for (String varImp : expectedVarImps) {
-        String[] vals = varImp.split(" ");
-        FeatureScore score = scores.get(vals[0]);
-        assertNotNull("Score " + vals[0] + " should ve calculated", score);
-        float expectedGain = nf.parse(vals[1]).floatValue();
-        assertEquals("Gain of " + vals[0], expectedGain, score._gain / totalGain, 1e-6);
-        float expectedCover = nf.parse(vals[2]).floatValue();
-        assertEquals("Cover of " + vals[0], expectedCover, score._cover / totalCover, 1e-6);
-        float expectedFrequency = nf.parse(vals[3]).floatValue();
-        assertEquals("Frequency of " + vals[0], expectedFrequency, score._frequency / totalFrequency, 1e-6);
-      }
-    }
-
-    @Test
     public void testCSRPredictionComparison_cars() {
       //Cars is a 100% dense dataset (useful edge case)
       try {
@@ -161,9 +132,11 @@ public class XGBoostUtilsTest extends TestUtil {
                 .withDataForCol(2, ard(0, 3, 0))
                 .build());
         final DMatrix response = XGBoostUtils.convertFrameToDMatrix(
-            new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false),
-            frame, "C3", null, true
-        );
+            new DataInfo(
+                frame, null, true, DataInfo.TransformType.NONE, false, 
+                false, false), 
+            frame, "C3", null, null, true
+        ).get();
         assertNotNull(response);
         assertEquals(3, response.rowNum());
         assertArrayEquals(arf(0, 3, 0), response.getLabel(), 0f);
@@ -191,7 +164,6 @@ public class XGBoostUtilsTest extends TestUtil {
         final Vec vec = frame.anyVec();
         final int[] chunksIds = VecUtils.getLocalChunkIds(frame.anyVec());
         float[] resp = new float[(int) vec.length()];
-        float[] weights = null;
         final DataInfo di = new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false);
         final int nrows = (int) vec.length();
 
@@ -210,8 +182,9 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-                frame, chunksIds, null, di, sparseMatrix, sparseMatrixDimensions, 
-                frame.vec(response), resp, weights);
+                frame, chunksIds, null, null, di, sparseMatrix, sparseMatrixDimensions, 
+                frame.vec(response), resp, null, null
+        );
 
         assertEquals(3, actualRows);
 
@@ -246,7 +219,6 @@ public class XGBoostUtilsTest extends TestUtil {
         final Vec vec = frame.anyVec();
         final int[] chunksIds = VecUtils.getLocalChunkIds(frame.anyVec());
         float[] resp = new float[(int) vec.length()];
-        float[] weights = null;
         final DataInfo di = new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false);
         final int nrows = (int) vec.length();
 
@@ -265,8 +237,8 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-            frame, chunksIds, null, di, sparseMatrix, sparseMatrixDimensions,
-                frame.vec(response), resp, weights);
+            frame, chunksIds, null, null, di, sparseMatrix, sparseMatrixDimensions,
+                frame.vec(response), resp, null, null);
 
         assertEquals(3, actualRows);
 
@@ -304,7 +276,6 @@ public class XGBoostUtilsTest extends TestUtil {
         final Vec vec = frame.anyVec();
         final int[] chunksIds = VecUtils.getLocalChunkIds(frame.anyVec());
         float[] resp = new float[(int) vec.length()];
-        float[] weights = null;
         final DataInfo di = new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false);
         final int nrows = (int) vec.length();
 
@@ -324,8 +295,8 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-            frame, chunksIds, null, di, sparseMatrix, sparseMatrixDimensions,
-            frame.vec(response), resp, weights);
+            frame, chunksIds, null, null, di, sparseMatrix, sparseMatrixDimensions,
+            frame.vec(response), resp, null, null);
 
         assertEquals(3, actualRows);
 
@@ -363,7 +334,6 @@ public class XGBoostUtilsTest extends TestUtil {
         final Vec vec = frame.anyVec();
         final int[] chunksIds = VecUtils.getLocalChunkIds(frame.anyVec());
         float[] resp = new float[(int) vec.length()];
-        float[] weights = null;
         final DataInfo di = new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false);
         final int nrows = (int) vec.length();
 
@@ -384,8 +354,8 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-            frame, chunksIds, null, di, sparseMatrix, sparseMatrixDimensions,
-            frame.vec(response), resp, weights);
+            frame, chunksIds, null, null, di, sparseMatrix, sparseMatrixDimensions,
+            frame.vec(response), resp, null, null);
 
         assertEquals(3, actualRows);
 
@@ -489,17 +459,6 @@ public class XGBoostUtilsTest extends TestUtil {
 
   }
 
-
-  private static String[] readLines(URL url) throws IOException {
-    List<String> lines = new ArrayList<>();
-    try (BufferedReader r = new BufferedReader(new InputStreamReader(url.openStream()))) {
-      String line;
-      while ((line = r.readLine()) != null) {
-        lines.add(line);
-      }
-    }
-    return lines.toArray(new String[0]);
-  }
   /**
    * Sets maximum dimensions of XGBoost's sparse matrix filled with data
    */
@@ -786,7 +745,7 @@ public class XGBoostUtilsTest extends TestUtil {
             put("max_depth", 16);
             put("ntrees", 5);
             put("colsample_bytree", 1.0);
-            put("tree_method", "exact");
+            put("tree_method", "hist");
             put("backend", "cpu");
             put("booster", "gbtree");
             put("lambda", 1.0);
@@ -824,7 +783,7 @@ public class XGBoostUtilsTest extends TestUtil {
         parms._train = matrices._h2oFrame._key;
         parms._response_column = "response";
         parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
-        parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.exact;
+        parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist;
         parms._seed = 1;
         XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
         assertNotNull(model);

@@ -116,7 +116,9 @@ public class ScoringInfo extends Iced<ScoringInfo> {
 
     // handle StoppingMetric.AUTO
     if (criterion == ScoreKeeper.StoppingMetric.AUTO)
-      criterion = scoringInfos[0].is_classification ? ScoreKeeper.StoppingMetric.logloss : scoringInfos[0].is_autoencoder ? ScoreKeeper.StoppingMetric.RMSE : ScoreKeeper.StoppingMetric.deviance;
+      criterion = scoringInfos[0].is_classification ? ScoreKeeper.StoppingMetric.logloss
+                      : scoringInfos[0].is_autoencoder ? ScoreKeeper.StoppingMetric.RMSE
+                      : ScoreKeeper.StoppingMetric.deviance;
 
     Arrays.sort(scoringInfos, ScoringInfo.comparator(criterion));
   }

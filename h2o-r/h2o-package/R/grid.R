@@ -25,14 +25,21 @@
 #'        name and parameters specify a supervised or unsupervised algorithm.
 #' @param do_hyper_params_check  Perform client check for specified hyper parameters. It can be time expensive for
 #'        large hyper space.
-#' @param search_criteria  (Optional)  List of control parameters for smarter hyperparameter search.  The default
-#'        strategy 'Cartesian' covers the entire space of hyperparameter combinations.  Specify the
-#'        'RandomDiscrete' strategy to get random search of all the combinations of your hyperparameters.  RandomDiscrete
-#'        should be usually combined with at least one early stopping criterion,
-#'        max_models and/or max_runtime_secs, e.g. \code{list(strategy = "RandomDiscrete", max_models = 42, max_runtime_secs = 28800)}
-#'        or  \code{list(strategy = "RandomDiscrete", stopping_metric = "AUTO", stopping_tolerance = 0.001, stopping_rounds = 10)}
-#'        or  \code{list(strategy = "RandomDiscrete", stopping_metric = "misclassification", stopping_tolerance = 0.00001, stopping_rounds = 5)}.
+#' @param search_criteria  (Optional)  List of control parameters for smarter hyperparameter search.  The list can 
+#'        include values for: strategy, max_models, max_runtime_secs, stopping_metric, stopping_tolerance, stopping_rounds and
+#'        seed.  The default strategy 'Cartesian' covers the entire space of hyperparameter combinations.  If you want to use
+#'        cartesian grid search, you can leave the search_criteria argument unspecified. Specify the "RandomDiscrete" strategy
+#'        to get random search of all the combinations of your hyperparameters with three ways of specifying when to stop the
+#'        search: max number of models, max time, and metric-based early stopping (e.g., stop if MSE has not improved by 0.0001
+#'        over the 5 best models). Examples below:
+#'        \code{list(strategy = "RandomDiscrete", max_runtime_secs = 600, max_models = 100, stopping_metric = "AUTO",
+#'        stopping_tolerance = 0.00001, stopping_rounds = 5, seed = 123456)} or \code{list(strategy = "RandomDiscrete", 
+#'        max_models = 42, max_runtime_secs = 28800)} or \code{list(strategy = "RandomDiscrete", stopping_metric = "AUTO", 
+#'        stopping_tolerance = 0.001, stopping_rounds = 10)} or \code{list(strategy = "RandomDiscrete", stopping_metric = 
+#'        "misclassification", stopping_tolerance = 0.00001, stopping_rounds = 5)}.
 #' @param export_checkpoints_dir Directory to automatically export grid in binary form to.
+#' @param parallelism Level of Parallelism during grid model building. 1 = sequential building (default).
+#'        Use the value of 0 for adaptive parallelism - decided by H2O. Any number > 1 sets the exact number of models built in parallel.
 #' @importFrom jsonlite toJSON
 #' @examples
 #' \dontrun{
@@ -59,7 +66,8 @@ h2o.grid <- function(algorithm,
                      is_supervised = NULL,
                      do_hyper_params_check = FALSE,
                      search_criteria = NULL,
-                     export_checkpoints_dir = NULL)
+                     export_checkpoints_dir = NULL,
+                     parallelism = 1)
 {
   #Unsupervised algos to account for in grid (these algos do not need response)
   unsupervised_algos <- c("kmeans", "pca", "svd", "glrm")
@@ -144,6 +152,11 @@ h2o.grid <- function(algorithm,
   if(!is.null(export_checkpoints_dir)){
     params$export_checkpoints_dir = export_checkpoints_dir
   }
+  
+  # Set directory for checkpoints export
+  if(!is.null(parallelism)){
+    params$parallelism = parallelism
+  }
 
   if( !is.null(search_criteria)) {
       # Append grid search criteria in JSON form. 
@@ -179,6 +192,7 @@ h2o.grid <- function(algorithm,
 #' @param grid_id  ID of existing grid object to fetch
 #' @param sort_by Sort the models in the grid space by a metric. Choices are "logloss", "residual_deviance", "mse", "auc", "accuracy", "precision", "recall", "f1", etc.
 #' @param decreasing Specify whether sort order should be decreasing
+#' @param verbose Controls verbosity of the output, if enabled prints out error messages for failed models (default: FALSE)
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -195,7 +209,7 @@ h2o.grid <- function(algorithm,
 #' models <- lapply(model_ids, function(id) { h2o.getModel(id)})
 #' }
 #' @export
-h2o.getGrid <- function(grid_id, sort_by, decreasing) {
+h2o.getGrid <- function(grid_id, sort_by, decreasing, verbose = FALSE) {
   json <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = 99, .h2o.__GRIDS(grid_id, sort_by, decreasing))
   class <- "H2OGrid"
   grid_id <- json$grid_id$name
@@ -211,16 +225,17 @@ h2o.getGrid <- function(grid_id, sort_by, decreasing) {
 
   # print out the failure/warning messages from Java if it exists
   if (length(failure_details) > 0) {
-    sprintf("Errors/Warnings building gridsearch model!\n")
-    for (index in 1:length(failure_details)) {
-      
-      if (typeof(failed_params[[index]]) == "list") {
-        for (index2 in 1:length(hyper_names)) {
+    warning("Some models were not built due to a failure, for more details run `summary(grid_object, show_stack_traces = TRUE)`")
+    if (verbose) {
+      for (index in 1:length(failure_details)) {
+        if (typeof(failed_params[[index]]) == "list") {
+          for (index2 in 1:length(hyper_names)) {
             cat(sprintf("Hyper-parameter: %s, %s\n", hyper_names[[index2]], failed_params[[index]][[hyper_names[[index2]]]]))
+          }
         }
+        cat(sprintf("[%s] failure_details: %s \n", Sys.time(), failure_details[index]))
+        cat(sprintf("[%s] failure_stack_traces: %s \n", Sys.time(), failure_stack_traces[index]))
       }
-      cat(sprintf("[%s] failure_details: %s \n", Sys.time(), failure_details[index]))
-      cat(sprintf("[%s] failure_stack_traces: %s \n", Sys.time(), failure_stack_traces[index]))
     }
   }
 

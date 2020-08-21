@@ -1,5 +1,6 @@
-# pull base image
-FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1-jdk-8:10
+ARG PARENT_VERSION
+ARG GRADLE_VERSION
+FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop-gradle-${GRADLE_VERSION}:${PARENT_VERSION}
 
 # maintainer details
 MAINTAINER h2oai "h2o.ai"
@@ -34,7 +35,7 @@ RUN \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
         hadoop-conf-pseudo python-pip python-dev python-virtualenv \
-        mysql-server libmysql-java libmysqlclient-dev \
+        postgresql libpostgresql-jdbc-java \
         sudo unzip html2text slapd ldap-utils libkrb5-dev \
         vim
 
@@ -67,7 +68,7 @@ RUN rm /usr/hdp/*/hadoop/conf/* && \
     cp /usr/hdp/*/etc/hadoop/conf.pseudo/* /usr/hdp/*/hadoop/conf/
 
 # Copy hadoop configs
-COPY ${PATH_PREFIX}/conf/ ${HADOOP_CONF_DIR}
+COPY ${PATH_PREFIX}/../common/conf/ ${PATH_PREFIX}/conf/ ${HADOOP_CONF_DIR}/
 
 # Generate mapred-site.xml
 RUN chmod 700 /usr/sbin/generate-mapred-site && \
@@ -103,11 +104,20 @@ RUN chmod 700 /usr/sbin/startup.sh && \
 COPY ${PATH_PREFIX}/../common/conf-hive/ /etc/${HIVE_PACKAGE}/conf/
 COPY ${PATH_PREFIX}/conf-tez/ /etc/tez/conf/
 
+# Copy hive data
+RUN cd /home/jenkins/ && \
+    wget https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTest.csv.zip && \
+    wget https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv && \
+    chown jenkins:jenkins /home/jenkins/*
+
 RUN /usr/sbin/install_ldap.sh
 
 # Expose ports
 # H2O, Hadoop UI, Hive, LDAP
 EXPOSE 54321 8088 10000 389
 
-# Remove hadoop pids
-RUN rm -f tmp/*.pid /var/run/hadoop-hdfs/*.pid
+# Remove hadoop pids and fix permissions
+RUN rm -f tmp/*.pid /var/run/hadoop-hdfs/*.pid && \
+    chmod g-w /var/run/hadoop-* && \
+    chown hdfs:hadoop /var/run/hadoop-hdfs && \
+    chown mapred:hadoop /var/run/hadoop-mapreduce

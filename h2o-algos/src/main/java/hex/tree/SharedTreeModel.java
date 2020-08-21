@@ -2,8 +2,8 @@ package hex.tree;
 
 import hex.*;
 
-import static hex.ModelCategory.Binomial;
 import static hex.genmodel.GenModel.createAuxKey;
+import static hex.genmodel.algos.tree.SharedTreeMojoModel.__INTERNAL_MAX_TREE_DEPTH;
 
 import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
@@ -44,7 +44,7 @@ public abstract class SharedTreeModel<
 
   @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
-  public abstract static class SharedTreeParameters extends Model.Parameters implements Model.GetNTrees {
+  public abstract static class SharedTreeParameters extends Model.Parameters implements Model.GetNTrees, PlattScalingHelper.ParamsWithCalibration {
 
     public int _ntrees=50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
 
@@ -80,8 +80,6 @@ public abstract class SharedTreeModel<
     public boolean _calibrate_model = false; // Use Platt Scaling
     public Key<Frame> _calibration_frame;
 
-    public Frame calib() { return _calibration_frame == null ? null : _calibration_frame.get(); }
-
     @Override public long progressUnits() { return _ntrees + (_histogram_type==HistogramType.QuantilesGlobal || _histogram_type==HistogramType.RoundRobin ? 1 : 0); }
 
     public double _col_sample_rate_change_per_level = 1.0f; //relative change of the column sampling rate for every level
@@ -97,6 +95,21 @@ public abstract class SharedTreeModel<
       return _ntrees;
     }
 
+    @Override
+    public Frame getCalibrationFrame() { 
+      return _calibration_frame == null ? null : _calibration_frame.get(); 
+    }
+
+    @Override
+    public boolean calibrateModel() {
+      return _calibrate_model;
+    }
+
+    @Override
+    public Parameters getParams() {
+      return this;
+    }
+
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
@@ -108,7 +121,7 @@ public abstract class SharedTreeModel<
     }
   }
 
-  public abstract static class SharedTreeOutput extends Model.Output implements Model.GetNTrees {
+  public abstract static class SharedTreeOutput extends Model.Output implements Model.GetNTrees, PlattScalingHelper.OutputWithCalibration {
     /** InitF value (for zero trees)
      *  f0 = mean(yi) for gaussian
      *  f0 = log(yi/1-yi) for bernoulli
@@ -163,6 +176,21 @@ public abstract class SharedTreeModel<
       _modelClassDist = _priorClassDist;
     }
 
+    @Override
+    public TwoDimTable createInputFramesInformationTable(ModelBuilder modelBuilder) {
+      SharedTreeParameters params = (SharedTreeParameters) modelBuilder._parms;
+      TwoDimTable table = super.createInputFramesInformationTable(modelBuilder);
+      table.set(2, 0, "calibration_frame");
+      table.set(2, 1, params.getCalibrationFrame() != null ? params.getCalibrationFrame().checksum() : -1);
+      table.set(2, 2, params.getCalibrationFrame() != null ? Arrays.toString(params.getCalibrationFrame().anyVec().espc()) : -1);
+      return table;
+    }
+
+    @Override
+    public int getInformationTableNumRows() {
+      return super.getInformationTableNumRows() + 1;// +1 row for calibration frame
+    }
+
     // Append next set of K trees
     public void addKTrees( DTree[] trees) {
       // DEBUG: Print the generated K trees
@@ -194,6 +222,11 @@ public abstract class SharedTreeModel<
     @Override
     public int getNTrees() {
       return _ntrees;
+    }
+
+    @Override
+    public GLMModel calibrationModel() {
+      return _calib_model;
     }
 
     public CompressedTree ctree( int tnum, int knum ) { return _treeKeys[tnum][knum].get(); }
@@ -235,7 +268,7 @@ public abstract class SharedTreeModel<
   }
 
   public static class BufStringDecisionPathTracker implements SharedTreeMojoModel.DecisionPathTracker<BufferedString> {
-    private final byte[] _buf = new byte[64];
+    private final byte[] _buf = new byte[__INTERNAL_MAX_TREE_DEPTH];
     private final BufferedString _bs = new BufferedString(_buf, 0, 0);
     private int _pos = 0;
     @Override
@@ -249,6 +282,10 @@ public abstract class SharedTreeModel<
       _bs.setLen(_pos);
       _pos = 0;
       return _bs;
+    }
+    @Override
+    public BufferedString invalidPath() {
+      return null;
     }
   }
 
@@ -328,9 +365,11 @@ public abstract class SharedTreeModel<
       // convert to categorical
       Vec vv;
       Vec[] nvecs = new Vec[res.vecs().length];
+      boolean hasInvalidPaths = false;
       for(int c=0;c<res.vecs().length;++c) {
         vv = res.vec(c);
         try {
+          hasInvalidPaths = hasInvalidPaths || vv.naCnt() > 0;
           nvecs[c] = vv.toCategoricalVec();
         } catch (Exception e) {
           VecUtils.deleteVecs(nvecs, c);
@@ -340,6 +379,10 @@ public abstract class SharedTreeModel<
       res.delete();
       res = new Frame(destKey, names, nvecs);
       DKV.put(res);
+      if (hasInvalidPaths) {
+        Log.warn("Some of the leaf node assignments were skipped (NA), " +
+                "only tree-paths up to length 64 are supported.");
+      }
       return res;
     }
   }
@@ -369,7 +412,12 @@ public abstract class SharedTreeModel<
 
     @Override
     protected Frame execute(Frame adaptFrm, String[] names, Key<Frame> destKey) {
-      return doAll(names.length, Vec.T_NUM, adaptFrm).outputFrame(destKey, names, null);
+      Frame result = doAll(names.length, Vec.T_NUM, adaptFrm).outputFrame(destKey, names, null);
+      if (result.vec(0).min() < 0) {
+        Log.warn("Some of the observations were not assigned a Leaf Node ID (-1), " +
+                "only tree-paths up to length 64 are supported.");
+      }
+      return result;
     }
   }
 
@@ -480,30 +528,7 @@ public abstract class SharedTreeModel<
 
   @Override
   protected Frame postProcessPredictions(Frame adaptedFrame, Frame predictFr, Job j) {
-    if (_output._calib_model == null)
-      return predictFr;
-    if (_output.getModelCategory() == Binomial) {
-      Key<Job> jobKey = j != null ? j._key : null;
-      Key<Frame> calibInputKey = Key.make();
-      Frame calibOutput = null;
-      try {
-        Frame calibInput = new Frame(calibInputKey, new String[]{"p"}, new Vec[]{predictFr.vec(1)});
-        calibOutput = _output._calib_model.score(calibInput);
-        assert calibOutput._names.length == 3;
-        Vec[] calPredictions = calibOutput.remove(new int[]{1, 2});
-        // append calibrated probabilities to the prediction frame
-        predictFr.write_lock(jobKey);
-        for (int i = 0; i < calPredictions.length; i++)
-          predictFr.add("cal_" + predictFr.name(1 + i), calPredictions[i]);
-        return predictFr.update(jobKey);
-      } finally {
-        predictFr.unlock(jobKey);
-        DKV.remove(calibInputKey);
-        if (calibOutput != null)
-          calibOutput.remove();
-      }
-    } else
-      throw H2O.unimpl("Calibration is only supported for binomial models");
+    return PlattScalingHelper.postProcessPredictions(predictFr, j, _output);
   }
 
   protected double[] score0Incremental(Score.ScoreIncInfo sii, Chunk chks[], double offset, int row_in_chunk, double[] tmp, double[] preds) {
@@ -644,9 +669,18 @@ public abstract class SharedTreeModel<
     switch (_parms._categorical_encoding) {
       case AUTO:
       case Enum:
+      case SortByResponse:
         return CategoricalEncoding.AUTO;
       case OneHotExplicit:
         return CategoricalEncoding.OneHotExplicit;
+      case Binary:
+        return CategoricalEncoding.Binary;
+      case EnumLimited:
+        return CategoricalEncoding.EnumLimited;
+      case Eigen:
+        return CategoricalEncoding.Eigen;
+      case LabelEncoder:
+        return CategoricalEncoding.LabelEncoder;
       default:
         return null;
     }
@@ -655,17 +689,37 @@ public abstract class SharedTreeModel<
   @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
     CategoricalEncoding encoding = getGenModelEncoding();
     if (encoding == null) {
-      throw new IllegalArgumentException("Only default and 1-hot explicit scheme is supported for POJO/MOJO");
+      throw new IllegalArgumentException("Only default, SortByResponse, EnumLimited and 1-hot explicit scheme is supported for POJO/MOJO");
     }
     sb.nl();
     sb.ip("public boolean isSupervised() { return true; }").nl();
     sb.ip("public int nfeatures() { return " + _output.nfeatures() + "; }").nl();
     sb.ip("public int nclasses() { return " + _output.nclasses() + "; }").nl();
+    if (encoding == CategoricalEncoding.Eigen) {
+      sb.ip("public double[] getOrigProjectionArray() { return " + toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
+    }
     if (encoding != CategoricalEncoding.AUTO) {
       sb.ip("public hex.genmodel.CategoricalEncoding getCategoricalEncoding() { return hex.genmodel.CategoricalEncoding." + 
               encoding.name() + "; }").nl();
     }
     return sb;
+  }
+  
+  String toJavaDoubleArray(double[] array) {
+    if (array == null) {
+      return "null";
+    }
+
+    SB sb = new SB();
+    sb.p("new double[] {");
+    for (int i = 0; i < array.length; i++) {
+      sb.p(" ");
+      sb.p(array[i]);
+      if (i < array.length - 1)
+        sb.p(",");
+    }
+    sb.p("}");
+    return sb.getContent();
   }
 
   @Override protected void toJavaPredictBody(SBPrintStream body,
@@ -710,9 +764,8 @@ public abstract class SharedTreeModel<
                 out.p(sb);
               }
             }
-          } catch (Throwable t) {
-            t.printStackTrace();
-            throw new IllegalArgumentException("Internal error creating the POJO.", t);
+          } catch (Exception e) {
+            throw new RuntimeException("Internal error creating the POJO.", e);
           }
         }
       });
@@ -731,4 +784,10 @@ public abstract class SharedTreeModel<
     return (T) sb.p(mname).p("_Forest_").p(t);
   }
 
+  @Override
+  public boolean isFeatureUsedInPredict(String featureName) {
+    if (featureName.equals(_output.responseName())) return false;
+    int featureIdx = ArrayUtils.find(_output._varimp._names, featureName);
+    return featureIdx != -1 && (double) _output._varimp._varimp[featureIdx] != 0d;
+  }
 }

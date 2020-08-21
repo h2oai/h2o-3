@@ -11,11 +11,13 @@ public enum ModelCategory {
   Multinomial,
   Ordinal,
   Regression,
+  HGLMRegression,
   Clustering,
   AutoEncoder,
   TargetEncoder,
   DimReduction,
   WordEmbedding,
   CoxPH,
-  AnomalyDetection
+  AnomalyDetection,
+  KLime,
 }

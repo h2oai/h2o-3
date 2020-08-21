@@ -1,9 +1,11 @@
 # -*- encoding: utf-8 -*-
 from __future__ import division, print_function, absolute_import, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 import itertools
 
 import h2o
+from h2o.base import Keyed
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
 from h2o.exceptions import H2OValueError
@@ -11,13 +13,17 @@ from h2o.estimators.estimator_base import H2OEstimator
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
 from h2o.grid.metrics import *  # NOQA
-from h2o.utils.backward_compatibility import backwards_compatible
-from h2o.utils.shared_utils import deprecated, quoted
-from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.metaclass import Alias as alias, BackwardsCompatible, Deprecated as deprecated, h2o_meta
+from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import assert_is_type, is_type
 
 
-class H2OGridSearch(backwards_compatible()):
+@BackwardsCompatible(
+    instance_attrs=dict(
+        giniCoef=lambda self, *args, **kwargs: self.gini(*args, **kwargs)
+    )
+)
+class H2OGridSearch(h2o_meta(Keyed)):
     """
     Grid Search of a Hyper-Parameter Space for a Model
 
@@ -27,12 +33,19 @@ class H2OGridSearch(backwards_compatible()):
         search (values).
     :param str grid_id: The unique id assigned to the resulting grid object. If none is given, an id will
         automatically be generated.
-    :param search_criteria:  A dictionary of directives which control the search of the hyperparameter space.
-        The default strategy "Cartesian" covers the entire space of hyperparameter combinations. Specify the
-        "RandomDiscrete" strategy to get random search of all the combinations of your hyperparameters.
-        RandomDiscrete should usually be combined with at least one early stopping criterion: max_models
-        and/or max_runtime_secs, e.g::
+    :param search_criteria:  The optional dictionary of directives which control the search of the hyperparameter space.
+        The dictionary can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, 
+        ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default strategy, "Cartesian", covers the entire space of 
+        hyperparameter combinations. If you want to use cartesian grid search, you can leave the search_criteria 
+        argument unspecified. Specify the "RandomDiscrete" strategy to get random search of all the combinations of 
+        your hyperparameters with three ways of specifying when to stop the search: max number of models, max time, and 
+        metric-based early stopping (e.g., stop if MSE hasn’t improved by 0.0001 over the 5 best models). 
+        Examples below::
 
+            >>> criteria = {"strategy": "RandomDiscrete", "max_runtime_secs": 600,
+            ...             "max_models": 100, "stopping_metric": "AUTO",
+            ...             "stopping_tolerance": 0.00001, "stopping_rounds": 5,
+            ...             "seed": 123456}
             >>> criteria = {"strategy": "RandomDiscrete", "max_models": 42,
             ...             "max_runtime_secs": 28800, "seed": 1234}
             >>> criteria = {"strategy": "RandomDiscrete", "stopping_metric": "AUTO",
@@ -40,6 +53,9 @@ class H2OGridSearch(backwards_compatible()):
             >>> criteria = {"strategy": "RandomDiscrete", "stopping_rounds": 5,
             ...             "stopping_metric": "misclassification",
             ...             "stopping_tolerance": 0.00001}
+    :param parallelism: Level of parallelism during grid model building. 1 = sequential building (default). 
+         Use the value of 0 for adaptive parallelism - decided by H2O. Any number > 1 sets the exact number of models
+         built in parallel.
     :returns: a new H2OGridSearch instance
 
     Examples
@@ -47,15 +63,16 @@ class H2OGridSearch(backwards_compatible()):
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
-        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters)
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_parameters)
         >>> training_data = h2o.import_file("smalldata/logreg/benign.csv")
-        >>> gs.train(x=range(3) + range(4,11),y=3, training_frame=training_data)
+        >>> gs.train(x=[3, 4-11], y=3, training_frame=training_data)
         >>> gs.show()
     """
 
 
-    def __init__(self, model, hyper_params, grid_id=None, search_criteria=None, export_checkpoints_dir=None):
-        super(H2OGridSearch, self).__init__()
+    def __init__(self, model, hyper_params, grid_id=None, search_criteria=None, export_checkpoints_dir=None,
+                 parallelism=1):
         assert_is_type(model, None, H2OEstimator, lambda mdl: issubclass(mdl, H2OEstimator))
         assert_is_type(hyper_params, dict)
         assert_is_type(grid_id, None, str)
@@ -66,6 +83,7 @@ class H2OGridSearch(backwards_compatible()):
         self.hyper_params = dict(hyper_params)
         self.search_criteria = None if search_criteria is None else dict(search_criteria)
         self.export_checkpoints_dir = export_checkpoints_dir
+        self._parallelism = parallelism  # Degree of parallelism during model building
         self._grid_json = None
         self.models = None  # list of H2O Estimator instances
         self._parms = {}  # internal, for object recycle #
@@ -73,10 +91,26 @@ class H2OGridSearch(backwards_compatible()):
         self._future = False  # used by __repr__/show to query job state#
         self._job = None  # used when _future is True#
 
+    @property
+    def key(self):
+        return self._id
 
     @property
     def grid_id(self):
-        """A key that identifies this grid search object in H2O."""
+        """A key that identifies this grid search object in H2O.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5],
+        ...                     'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_parameters)
+        >>> gs.train(x=range(3)+range(4,11), y=3, training_frame=training_data)
+        >>> gs.grid_id
+        """
         return self._id
 
     @grid_id.setter
@@ -88,16 +122,61 @@ class H2OGridSearch(backwards_compatible()):
 
     @property
     def model_ids(self):
+        """
+        Returns model ids.
+        
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5],
+        ...                     'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_parameters)    
+        >>> gs.train(x=range(3)+range(4,11), y=3, training_frame=training_data)
+        >>> gs.model_ids
+        """
         return [i['name'] for i in self._grid_json["model_ids"]]
 
 
     @property
     def hyper_names(self):
+        """
+        Return the hyperparameter names.
+        
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5],
+        ...                     'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_parameters)
+        >>> gs.train(x=range(3)+range(4,11), y=3, training_frame=training_data)
+        >>> gs.hyper_names
+        """
         return self._grid_json["hyper_names"]
 
 
     @property
     def failed_params(self):
+        """
+        Return a list of failed parameters.
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5],
+        ...                     'lambda': [1e-5,1e-6],
+        ...                     'beta_epsilon': [0.05]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_parameters)
+        >>> gs.train(x=range(3)+range(4,11), y=3, training_frame=training_data)
+        >>> gs.failed_params
+        """
         return self._grid_json.get("failed_params", None)
 
 
@@ -114,6 +193,10 @@ class H2OGridSearch(backwards_compatible()):
     @property
     def failed_raw_params(self):
         return self._grid_json.get("failed_raw_params", None)
+
+
+    def detach(self):
+        self._id = None
 
 
     def start(self, x, y=None, training_frame=None, offset_column=None, fold_column=None, weights_column=None,
@@ -133,6 +216,21 @@ class H2OGridSearch(backwards_compatible()):
             assignments.
         :param weights_column: The name or index of the column in training_frame that holds the per-row weights.
         :param validation_frame: H2OFrame with validation data to be scored on while training.
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> insurance["offset"] = insurance["Holders"].log()
+        >>> insurance["Group"] = insurance["Group"].asfactor()
+        >>> insurance["Age"] = insurance["Age"].asfactor()
+        >>> insurance["District"] = insurance["District"].asfactor()
+        >>> hyper_params = {'huber_alpha': [0.2,0.5],
+        ...                 'quantile_alpha': [0.2,0.6]}
+        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5), hyper_params)
+        >>> gs.start(x=list(range(3)),y="Claims", training_frame=insurance)
+        >>> gs.join()
         """
         self._future = True
         self.train(x=x,
@@ -146,7 +244,23 @@ class H2OGridSearch(backwards_compatible()):
 
 
     def join(self):
-        """Wait until grid finishes computing."""
+        """Wait until grid finishes computing.
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> insurance["offset"] = insurance["Holders"].log()
+        >>> insurance["Group"] = insurance["Group"].asfactor()
+        >>> insurance["Age"] = insurance["Age"].asfactor()
+        >>> insurance["District"] = insurance["District"].asfactor()
+        >>> hyper_params = {'huber_alpha': [0.2,0.5],
+        ...                 'quantile_alpha': [0.2,0.6]}
+        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5), hyper_params)
+        >>> gs.start(x=list(range(3)),y="Claims", training_frame=insurance)
+        >>> gs.join()
+        """
         self._future = False
         self._job.poll()
         self._job = None
@@ -168,6 +282,22 @@ class H2OGridSearch(backwards_compatible()):
             assignments.
         :param weights_column: The name or index of the column in training_frame that holds the per-row weights.
         :param validation_frame: H2OFrame with validation data to be scored on while training.
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> insurance["offset"] = insurance["Holders"].log()
+        >>> insurance["Group"] = insurance["Group"].asfactor()
+        >>> insurance["Age"] = insurance["Age"].asfactor()
+        >>> insurance["District"] = insurance["District"].asfactor()
+        >>> hyper_params = {'huber_alpha': [0.2,0.5],
+        ...                 'quantile_alpha': [0.2,0.6]}
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5),
+        ...                    hyper_params)
+        >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
         """
         algo_params = locals()
         parms = self._parms.copy()
@@ -175,6 +305,7 @@ class H2OGridSearch(backwards_compatible()):
         # dictionaries have special handling in grid search, avoid the implicit conversion
         parms["search_criteria"] = None if self.search_criteria is None else str(self.search_criteria)
         parms["export_checkpoints_dir"] = self.export_checkpoints_dir
+        parms["parallelism"] = self._parallelism
         parms["hyper_parameters"] = None if self.hyper_params  is None else str(self.hyper_params) # unique to grid search
         parms.update({k: v for k, v in list(self.model._parms.items()) if v is not None})  # unique to grid search
         parms.update(params)
@@ -220,7 +351,8 @@ class H2OGridSearch(backwards_compatible()):
         validation_frame = algo_params.pop("validation_frame", None)
         is_auto_encoder = (algo_params is not None) and ("autoencoder" in algo_params and algo_params["autoencoder"])
         algo = self.model._compute_algo()  # unique to grid search
-        is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans" or algo == "glrm"
+        is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans" or algo == "glrm" or \
+                          algo == "isolationforest"
         if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
         if not is_unsupervised and y is None: raise ValueError("Missing response")
         if not is_unsupervised:
@@ -328,17 +460,61 @@ class H2OGridSearch(backwards_compatible()):
 
         :param H2OFrame test_data: Data to be predicted on.
         :returns: H2OFrame filled with predictions.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> y = 3
+        >>> x = [4,5,6,7,8,9,10,11]
+        >>> hyper_params = {'alpha': [0.01,0.3,0.5],
+        ...                 'lambda': [1e-5, 1e-6, 1e-7]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_params)
+        >>> gs.train(x=x,y=y, training_frame=benign)
+        >>> gs.predict(benign)
         """
         return {model.model_id: model.predict(test_data) for model in self.models}
 
 
     def is_cross_validated(self):
-        """Return True if the model was cross-validated."""
+        """Return True if the model was cross-validated.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> y = 3
+        >>> x = [4,5,6,7,8,9,10,11]
+        >>> hyper_params = {'alpha': [0.01,0.3,0.5],
+        ...                 'lambda': [1e-5, 1e-6, 1e-7]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_params)
+        >>> gs.train(x=x,y=y, training_frame=benign)
+        >>> gs.is_cross_validated()
+        """
         return {model.model_id: model.is_cross_validated() for model in self.models}
 
 
     def xval_keys(self):
-        """Model keys for the cross-validated model."""
+        """Model keys for the cross-validated model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> y = 3
+        >>> x = [4,5,6,7,8,9,10,11]
+        >>> hyper_params = {'alpha': [0.01,0.3,0.5],
+        ...                 'lambda': [1e-5, 1e-6, 1e-7]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_params)
+        >>> gs.train(x=x,y=y, training_frame=benign)
+        >>> gs.xval_keys()
+        """
         return {model.model_id: model.xval_keys() for model in self.models}
 
 
@@ -349,6 +525,16 @@ class H2OGridSearch(backwards_compatible()):
         :param str key: If None, return all cross-validated models; otherwise return the model
             specified by the key.
         :returns: A model or a list of models.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> fr = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate_train.csv")
+        >>> m = H2OGradientBoostingEstimator(nfolds=10,
+        ...                                  ntrees=10,
+        ...                                  keep_cross_validation_models=True)
+        >>> m.train(x=list(range(2,fr.ncol)), y=1, training_frame=fr)
+        >>> m.get_xval_models()
         """
         return {model.model_id: model.get_xval_models(key) for model in self.models}
 
@@ -365,6 +551,29 @@ class H2OGridSearch(backwards_compatible()):
         :param test_data: Data to create a feature space on.
         :param int layer: Index of the hidden layer.
         :returns: A dictionary of hidden layer details for each model.
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OAutoEncoderEstimator
+        >>> resp = 784
+        >>> nfeatures = 20
+        >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/train.csv.gz")
+        >>> train[resp] = train[resp].asfactor()
+        >>> test = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/test.csv.gz")
+        >>> test[resp] = test[resp].asfactor()
+        >>> sid = train[0].runif(0)
+        >>> train_unsup = train[sid >= 0.5]
+        >>> train_unsup.pop(resp)
+        >>> train_sup = train[sid < 0.5]
+        >>> ae_model = H2OAutoEncoderEstimator(activation="Tanh",
+        ...                                    hidden=[nfeatures],
+        ...                                    model_id="ae_model",
+        ...                                    epochs=1,
+        ...                                    ignore_const_cols=False,
+        ...                                    reproducible=True,
+        ...                                    seed=1234)
+        >>> ae_model.train(list(range(resp)), training_frame=train_unsup)
+        >>> ae_model.deepfeatures(train_sup[0:resp], 0)
         """
         return {model.model_id: model.deepfeatures(test_data, layer) for model in self.models}
 
@@ -375,6 +584,16 @@ class H2OGridSearch(backwards_compatible()):
 
         :param: matrix_id: an integer, ranging from 0 to number of layers, that specifies the weight matrix to return.
         :returns: an H2OFrame which represents the weight matrix identified by matrix_id
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+        >>> hh = H2ODeepLearningEstimator(hidden=[],
+        ...                               loss="CrossEntropy",
+        ...                               export_weights_and_biases=True)
+        >>> hh.train(x=list(range(4)), y=4, training_frame=iris)
+        >>> hh.weights(0)
         """
         return {model.model_id: model.weights(matrix_id) for model in self.models}
 
@@ -383,35 +602,126 @@ class H2OGridSearch(backwards_compatible()):
         """
         Return the frame for the respective bias vector.
 
-        :param: vector_id: an integer, ranging from 0 to number of layers, that specifies the bias vector to return.
+        :param vector_id: an integer, ranging from 0 to number of layers, that specifies the bias vector to return.
         :returns: an H2OFrame which represents the bias vector identified by vector_id
+
+        :examples:
+
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+        >>> hh = H2ODeepLearningEstimator(hidden=[],
+        ...                               loss="CrossEntropy",
+        ...                               export_weights_and_biases=True)
+        >>> hh.train(x=list(range(4)), y=4, training_frame=iris)
+        >>> hh.biases(0)
         """
         return {model.model_id: model.biases(vector_id) for model in self.models}
 
 
     def normmul(self):
-        """Normalization/Standardization multipliers for numeric predictors."""
+        """Normalization/Standardization multipliers for numeric predictors.
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> insurance["offset"] = insurance["Holders"].log()
+        >>> insurance["Group"] = insurance["Group"].asfactor()
+        >>> insurance["Age"] = insurance["Age"].asfactor()
+        >>> insurance["District"] = insurance["District"].asfactor()
+        >>> hyper_params = {'huber_alpha': [0.2,0.5],
+        ...                 'quantile_alpha': [0.2,0.6]}
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5),
+        ...                    hyper_params)
+        >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
+        >>> gs.normmul()
+        """
         return {model.model_id: model.normmul() for model in self.models}
 
 
     def normsub(self):
-        """Normalization/Standardization offsets for numeric predictors."""
+        """Normalization/Standardization offsets for numeric predictors.
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> insurance["offset"] = insurance["Holders"].log()
+        >>> insurance["Group"] = insurance["Group"].asfactor()
+        >>> insurance["Age"] = insurance["Age"].asfactor()
+        >>> insurance["District"] = insurance["District"].asfactor()
+        >>> hyper_params = {'huber_alpha': [0.2,0.5],
+        ...                 'quantile_alpha': [0.2,0.6]}
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5),
+        ...                    hyper_params)
+        >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
+        >>> gs.normsub()
+        """
         return {model.model_id: model.normsub() for model in self.models}
 
 
     def respmul(self):
-        """Normalization/Standardization multipliers for numeric response."""
+        """Normalization/Standardization multipliers for numeric response.
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> insurance["offset"] = insurance["Holders"].log()
+        >>> insurance["Group"] = insurance["Group"].asfactor()
+        >>> insurance["Age"] = insurance["Age"].asfactor()
+        >>> insurance["District"] = insurance["District"].asfactor()
+        >>> hyper_params = {'huber_alpha': [0.2,0.5],
+        ...                 'quantile_alpha': [0.2,0.6]}
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5),
+        ...                    hyper_params)
+        >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
+        >>> gs.respmul()
+        """
         return {model.model_id: model.respmul() for model in self.models}
 
 
     def respsub(self):
-        """Normalization/Standardization offsets for numeric response."""
+        """Normalization/Standardization offsets for numeric response.
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> insurance["offset"] = insurance["Holders"].log()
+        >>> insurance["Group"] = insurance["Group"].asfactor()
+        >>> insurance["Age"] = insurance["Age"].asfactor()
+        >>> insurance["District"] = insurance["District"].asfactor()
+        >>> hyper_params = {'huber_alpha': [0.2,0.5],
+        ...                 'quantile_alpha': [0.2,0.6]}
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5),
+        ...                    hyper_params)
+        >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
+        >>> gs.respsub()
+        """
         return {model.model_id: model.respsub() for model in self.models}
 
 
     def catoffsets(self):
         """
         Categorical offsets for one-hot encoding
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+        >>> hh = H2ODeepLearningEstimator(hidden=[],
+        ...                               loss="CrossEntropy",
+        ...                               export_weights_and_biases=True)
+        >>> hh.train(x=list(range(4)), y=4, training_frame=iris)
+        >>> hh.catoffsets()
         """
         return {model.model_id: model.catoffsets() for model in self.models}
 
@@ -426,6 +736,36 @@ class H2OGridSearch(backwards_compatible()):
         :param valid: Report the validation metrics for the model.
         :param xval: Report the validation metrics for the model.
         :return: An object of class H2OModelMetrics.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> data = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+        >>> test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+        >>> x = data.columns
+        >>> y = "response"
+        >>> x.remove(y)
+        >>> data[y] = data[y].asfactor()
+        >>> test[y] = test[y].asfactor()
+        >>> ss = data.split_frame(seed = 1)
+        >>> train = ss[0]
+        >>> valid = ss[1]
+        >>> gbm_params1 = {'learn_rate': [0.01, 0.1],
+        ...                 'max_depth': [3, 5, 9],
+        ...                 'sample_rate': [0.8, 1.0],
+        ...                 'col_sample_rate': [0.2, 0.5, 1.0]}
+        >>> gbm_grid1 = H2OGridSearch(model=H2OGradientBoostingEstimator,
+        ...                           grid_id='gbm_grid1',
+        ...                           hyper_params=gbm_params1)
+        >>> gbm_grid1.train(x=x, y=y,
+        ...                 training_frame=train,
+        ...                 validation_frame=valid,
+        ...                 ntrees=100,
+        ...                 seed=1)
+        >>> gbm_gridperf1 = gbm_grid1.get_grid(sort_by='auc', decreasing=True)
+        >>> best_gbm1 = gbm_gridperf1.models[0]
+        >>> best_gbm1.model_performance(test)
         """
         return {model.model_id: model.model_performance(test_data, train, valid, xval) for model in self.models}
 
@@ -435,12 +775,47 @@ class H2OGridSearch(backwards_compatible()):
         Retrieve model scoring history.
 
         :returns: Score history (H2OTwoDimTable)
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> insurance["offset"] = insurance["Holders"].log()
+        >>> insurance["Group"] = insurance["Group"].asfactor()
+        >>> insurance["Age"] = insurance["Age"].asfactor()
+        >>> insurance["District"] = insurance["District"].asfactor()
+        >>> hyper_params = {'huber_alpha': [0.2,0.5],
+        ...                 'quantile_alpha': [0.2,0.6]}
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5),
+        ...                    hyper_params)
+        >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
+        >>> gs.scoring_history()
         """
         return {model.model_id: model.scoring_history() for model in self.models}
 
 
     def summary(self, header=True):
-        """Print a detailed summary of the explored models."""
+        """Print a detailed summary of the explored models.
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> insurance["offset"] = insurance["Holders"].log()
+        >>> insurance["Group"] = insurance["Group"].asfactor()
+        >>> insurance["Age"] = insurance["Age"].asfactor()
+        >>> insurance["District"] = insurance["District"].asfactor()
+        >>> hyper_params = {'huber_alpha': [0.2,0.5],
+        ...                 'quantile_alpha': [0.2,0.6]}
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5),
+        ...                    hyper_params)
+        >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
+        >>> gs.summary()
+        """
         table = []
         for model in self.models:
             model_summary = model._model_json["output"]["model_summary"]
@@ -461,7 +836,25 @@ class H2OGridSearch(backwards_compatible()):
 
 
     def show(self):
-        """Print models sorted by metric."""
+        """Print models sorted by metric.
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> insurance["offset"] = insurance["Holders"].log()
+        >>> insurance["Group"] = insurance["Group"].asfactor()
+        >>> insurance["Age"] = insurance["Age"].asfactor()
+        >>> insurance["District"] = insurance["District"].asfactor()
+        >>> hyper_params = {'huber_alpha': [0.2,0.5],
+        ...                 'quantile_alpha': [0.2,0.6]}
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5),
+        ...                    hyper_params)
+        >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
+        >>> gs.show()
+        """
         hyper_combos = itertools.product(*list(self.hyper_params.values()))
         if not self.models:
             c_values = [[idx + 1, list(val)] for idx, val in enumerate(hyper_combos)]
@@ -479,6 +872,23 @@ class H2OGridSearch(backwards_compatible()):
         :param bool use_pandas: If True, then the variable importances will be returned as a pandas data frame.
 
         :returns: A dictionary of lists or Pandas DataFrame instances.
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> insurance["offset"] = insurance["Holders"].log()
+        >>> insurance["Group"] = insurance["Group"].asfactor()
+        >>> insurance["Age"] = insurance["Age"].asfactor()
+        >>> insurance["District"] = insurance["District"].asfactor()
+        >>> hyper_params = {'huber_alpha': [0.2,0.5],
+        ...                 'quantile_alpha': [0.2,0.6]}
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5),
+        ...                    hyper_params)
+        >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
+        >>> gs.varimp(use_pandas=True)
         """
         return {model.model_id: model.varimp(use_pandas) for model in self.models}
 
@@ -494,6 +904,20 @@ class H2OGridSearch(backwards_compatible()):
         :param bool xval: Get the residual deviance for the cross-validated models.
 
         :returns: the residual deviance, or None if it is not present.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> y = 3
+        >>> x = [4,5,6,7,8,9,10,11]
+        >>> hyper_params = {'alpha': [0.01,0.3,0.5],
+        ...                 'lambda': [1e-5, 1e-6, 1e-7]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_params)
+        >>> gs.train(x=x,y=y, training_frame=benign)
+        >>> gs.residual_deviance()
         """
         return {model.model_id: model.residual_deviance(train, valid, xval) for model in self.models}
 
@@ -509,6 +933,20 @@ class H2OGridSearch(backwards_compatible()):
         :param bool xval: Get the residual dof for the cross-validated models.
 
         :returns: the residual degrees of freedom, or None if they are not present.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> y = 3
+        >>> x = [4,5,6,7,8,9,10,11]
+        >>> hyper_params = {'alpha': [0.01,0.3,0.5],
+        ...                 'lambda': [1e-5, 1e-6, 1e-7]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_params)
+        >>> gs.train(x=x,y=y, training_frame=benign)
+        >>> gs.residual_degrees_of_freedom()
         """
         return {model.model_id: model.residual_degrees_of_freedom(train, valid, xval) for model in self.models}
 
@@ -524,6 +962,20 @@ class H2OGridSearch(backwards_compatible()):
         :param bool xval: Get the null deviance for the cross-validated models.
 
         :returns: the null deviance, or None if it is not present.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> y = 3
+        >>> x = [4,5,6,7,8,9,10,11]
+        >>> hyper_params = {'alpha': [0.01,0.3,0.5],
+        ...                 'lambda': [1e-5, 1e-6, 1e-7]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_params)
+        >>> gs.train(x=x,y=y, training_frame=benign)
+        >>> gs.null_deviance()
         """
         return {model.model_id: model.null_deviance(train, valid, xval) for model in self.models}
 
@@ -539,12 +991,41 @@ class H2OGridSearch(backwards_compatible()):
         :param bool xval: Get the null dof for the cross-validated models.
 
         :returns: the null dof, or None if it is not present.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> y = 3
+        >>> x = [4,5,6,7,8,9,10,11]
+        >>> hyper_params = {'alpha': [0.01,0.3,0.5],
+        ...                 'lambda': [1e-5, 1e-6, 1e-7]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_params)
+        >>> gs.train(x=x,y=y, training_frame=benign)
+        >>> gs.null_degrees_of_freedom()
         """
         return {model.model_id: model.null_degrees_of_freedom(train, valid, xval) for model in self.models}
 
 
     def pprint_coef(self):
-        """Pretty print the coefficents table (includes normalized coefficients)."""
+        """Pretty print the coefficents table (includes normalized coefficients).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> y = 3
+        >>> x = [4,5,6,7,8,9,10,11]
+        >>> hyper_params = {'alpha': [0.01,0.3,0.5],
+        ...                 'lambda': [1e-5, 1e-6, 1e-7]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_params)
+        >>> gs.train(x=x,y=y, training_frame=benign)
+        >>> gs.pprint_coef()
+        """
         for i, model in enumerate(self.models):
             print('Model', i)
             model.pprint_coef()
@@ -556,6 +1037,17 @@ class H2OGridSearch(backwards_compatible()):
 
         Note: standardize = True by default. If set to False, then coef() returns the coefficients that are fit directly.
 
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5],
+        ...                     'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_parameters)
+        >>> gs.train(x=range(3)+range(4,11), y=3, training_frame=training_data)
+        >>> gs.coef()
         """
         return {model.model_id: model.coef() for model in self.models}
 
@@ -563,6 +1055,17 @@ class H2OGridSearch(backwards_compatible()):
     def coef_norm(self):
         """Return coefficients fitted on the standardized data (requires standardize = True, which is on by default). These coefficients can be used to evaluate variable importance.
 
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5],
+        ...                     'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_parameters)
+        >>> gs.train(x=range(3)+range(4,11), y=3, training_frame=training_data)
+        >>> gs.coef_norm()
         """
         return {model.model_id: model.coef_norm() for model in self.models}
 
@@ -582,6 +1085,23 @@ class H2OGridSearch(backwards_compatible()):
         :param bool xval:  If xval is True, then return the R^2 value for the cross validation data.
 
         :returns: The R^2 for this regression model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> insurance["offset"] = insurance["Holders"].log()
+        >>> insurance["Group"] = insurance["Group"].asfactor()
+        >>> insurance["Age"] = insurance["Age"].asfactor()
+        >>> insurance["District"] = insurance["District"].asfactor()
+        >>> hyper_params = {'huber_alpha': [0.2,0.5],
+        ...                 'quantile_alpha': [0.2,0.6]}
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5),
+        ...                    hyper_params)
+        >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
+        >>> gs.r2()
         """
         return {model.model_id: model.r2(train, valid, xval) for model in self.models}
 
@@ -598,8 +1118,37 @@ class H2OGridSearch(backwards_compatible()):
         :param bool valid: If valid is True, then return the MSE value for the validation data.
         :param bool xval:  If xval is True, then return the MSE value for the cross validation data.
         :returns: The MSE for this regression model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> insurance["offset"] = insurance["Holders"].log()
+        >>> insurance["Group"] = insurance["Group"].asfactor()
+        >>> insurance["Age"] = insurance["Age"].asfactor()
+        >>> insurance["District"] = insurance["District"].asfactor()
+        >>> hyper_params = {'huber_alpha': [0.2,0.5],
+        ...                 'quantile_alpha': [0.2,0.6]}
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5),
+        ...                    hyper_params)
+        >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
+        >>> gs.mse()
         """
         return {model.model_id: model.mse(train, valid, xval) for model in self.models}
+
+
+    def rmse(self, train=False, valid=False, xval=False):
+        return {model.model_id: model.rmse(train, valid, xval) for model in self.models}
+
+
+    def mae(self, train=False, valid=False, xval=False):
+        return {model.model_id: model.mae(train, valid, xval) for model in self.models}
+
+
+    def rmsle(self, train=False, valid=False, xval=False):
+        return {model.model_id: model.rmsle(train, valid, xval) for model in self.models}
 
 
     def logloss(self, train=False, valid=False, xval=False):
@@ -615,6 +1164,20 @@ class H2OGridSearch(backwards_compatible()):
         :param bool xval:  If xval is True, then return the Log Loss value for the cross validation data.
 
         :returns: The Log Loss for this binomial model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> y = 3
+        >>> x = [4,5,6,7,8,9,10,11]
+        >>> hyper_params = {'alpha': [0.01,0.3,0.5],
+        ...                 'lambda': [1e-5, 1e-6, 1e-7]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_params)
+        >>> gs.train(x=x,y=y, training_frame=benign)
+        >>> gs.logloss()
         """
         return {model.model_id: model.logloss(train, valid, xval) for model in self.models}
 
@@ -631,6 +1194,22 @@ class H2OGridSearch(backwards_compatible()):
         :param bool valid: If valid is True, then return the Mean Residual Deviance value for the validation data.
         :param bool xval:  If xval is True, then return the Mean Residual Deviance value for the cross validation data.
         :returns: The Mean Residual Deviance for this regression model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> insurance["offset"] = insurance["Holders"].log()
+        >>> insurance["Group"] = insurance["Group"].asfactor()
+        >>> insurance["Age"] = insurance["Age"].asfactor()
+        >>> insurance["District"] = insurance["District"].asfactor()
+        >>> hyper_params = {'huber_alpha': [0.2,0.5],
+        ...                 'quantile_alpha': [0.2,0.6]}
+        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5),
+        ...                    hyper_params)
+        >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
+        >>> gs.mean_residual_deviance()
         """
         return {model.model_id: model.mean_residual_deviance(train, valid, xval) for model in self.models}
 
@@ -648,6 +1227,37 @@ class H2OGridSearch(backwards_compatible()):
         :param bool xval:  If xval is True, then return the AUC value for the validation data.
 
         :returns: The AUC.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> data = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+        >>> test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+        >>> x = data.columns
+        >>> y = "response"
+        >>> x.remove(y)
+        >>> data[y] = data[y].asfactor()
+        >>> test[y] = test[y].asfactor()
+        >>> ss = data.split_frame(seed = 1)
+        >>> train = ss[0]
+        >>> valid = ss[1]
+        >>> gbm_params1 = {'learn_rate': [0.01, 0.1],
+        ...                 'max_depth': [3, 5, 9],
+        ...                 'sample_rate': [0.8, 1.0],
+        ...                 'col_sample_rate': [0.2, 0.5, 1.0]}
+        >>> gbm_grid1 = H2OGridSearch(model=H2OGradientBoostingEstimator,
+        ...                           grid_id='gbm_grid1',
+        ...                           hyper_params=gbm_params1)
+        >>> gbm_grid1.train(x=x, y=y,
+        ...                 training_frame=train,
+        ...                 validation_frame=valid,
+        ...                 ntrees=100,
+        ...                 seed=1)
+        >>> gbm_pridperf1 = gbm_grid1.get_grid(sort_by='auc', decreasing=True)
+        >>> best_gbm1 = gbm_gridperf1.models[0]
+        >>> best_gbm_perf1 = best_gbm1.model_performance(test)
+        >>> best_gbm_perf1.auc()
         """
         return {model.model_id: model.auc(train, valid, xval) for model in self.models}
 
@@ -665,6 +1275,24 @@ class H2OGridSearch(backwards_compatible()):
         :param bool xval:  If xval is True, then return the AIC value for the validation data.
 
         :returns: The AIC.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        >>> prostate[2] = prostate[2].asfactor()
+        >>> prostate[4] = prostate[4].asfactor()
+        >>> prostate[5] = prostate[5].asfactor()
+        >>> prostate[8] = prostate[8].asfactor()
+        >>> predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+        >>> response = "CAPSULE"
+        >>> hyper_params = {'alpha': [0.01,0.5],
+        ...                 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_params)
+        >>> gs.train(x=predictors, y=response, training_frame=prostate)
+        >>> gs.aic()
         """
         return {model.model_id: model.aic(train, valid, xval) for model in self.models}
 
@@ -681,9 +1309,45 @@ class H2OGridSearch(backwards_compatible()):
         :param bool valid: If valid is True, then return the Gini Coefficient value for the validation data.
         :param bool xval:  If xval is True, then return the Gini Coefficient value for the cross validation data.
 
-        :returns: The Gini Coefficient for this binomial model.
+        :returns: The Gini Coefficient for the models in this grid.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> y = 3
+        >>> x = [4,5,6,7,8,9,10,11]
+        >>> hyper_params = {'alpha': [0.01,0.3,0.5],
+        ...                 'lambda': [1e-5, 1e-6, 1e-7]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_params)
+        >>> gs.train(x=x,y=y, training_frame=benign)
+        >>> gs.gini()
         """
         return {model.model_id: model.gini(train, valid, xval) for model in self.models}
+
+
+    # @alias('pr_auc')
+    def aucpr(self, train=False, valid=False, xval=False):
+        """
+        Get the aucPR (Area Under PRECISION RECALL Curve).
+
+        If all are False (default), then return the training metric value.
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
+
+        :param bool train: If train is True, then return the aucpr value for the training data.
+        :param bool valid: If valid is True, then return the aucpr value for the validation data.
+        :param bool xval:  If xval is True, then return the aucpr value for the validation data.
+
+        :returns: The AUCPR for the models in this grid.
+        """
+        return {model.model_id: model.aucpr(train, valid, xval) for model in self.models}
+
+    @deprecated(replaced_by=aucpr)
+    def pr_auc(self):
+        pass
 
 
     def get_hyperparams(self, id, display=True):
@@ -694,6 +1358,22 @@ class H2OGridSearch(backwards_compatible()):
         :param bool display: Flag to indicate whether to display the hyperparameter names.
 
         :returns: A list of the hyperparameters for the specified model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> y = 3
+        >>> x = [4,5,6,7,8,9,10,11]
+        >>> hyper_params = {'alpha': [0.01,0.3,0.5],
+        ...                 'lambda': [1e-5, 1e-6, 1e-7]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_params)
+        >>> gs.train(x=x,y=y, training_frame=benign)
+        >>> best_model_id = gs.get_grid(sort_by='F1',
+        ...                             decreasing=True).model_ids[0]
+        >>> gs.get_hyperparams(best_model_id)
         """
         idx = id if is_type(id, int) else self.model_ids.index(id)
         model = self[idx]
@@ -718,20 +1398,36 @@ class H2OGridSearch(backwards_compatible()):
         :param bool display: Flag to indicate whether to display the hyperparameter names.
 
         :returns: A dict of model pararmeters derived from the hyper-parameters used to train this particular model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> y = 3
+        >>> x = [4,5,6,7,8,9,10,11]
+        >>> hyper_params = {'alpha': [0.01,0.3,0.5],
+        ...                 'lambda': [1e-5, 1e-6, 1e-7]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_params)
+        >>> gs.train(x=x,y=y, training_frame=benign)
+        >>> best_model_id = gs.get_grid(sort_by='F1',
+        ...                             decreasing=True).model_ids[0]
+        >>> gs.get_hyperparams_dict(best_model_id)
         """
         idx = id if is_type(id, int) else self.model_ids.index(id)
         model = self[idx]
 
         model_params = dict()
 
-        # if cross-validation is turned on, parameters in one of the fold model actual contains the max_runtime_secs
-        # parameter and not the main model that is returned.
-        if model._is_xvalidated:
-            model = h2o.get_model(model._xval_keys[0])
-
         for param_name in self.hyper_names:
-            model_params[param_name] = model.params[param_name]['actual'][0] if \
-                isinstance(model.params[param_name]['actual'], list) else model.params[param_name]['actual']
+            # if cross-validation is turned on, parameters in one of the fold model actual contains the max_runtime_secs
+            # parameter and not the main model that is returned.
+            if 'max_runtime_secs' == param_name and model._is_xvalidated:
+                xvalidated_model = h2o.get_model(model._xval_keys[0])
+                model_params[param_name] = xvalidated_model.params[param_name]['actual']
+            else:    
+                model_params[param_name] = model.params[param_name]['actual']
 
         if display: print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']')
         return model_params
@@ -742,6 +1438,23 @@ class H2OGridSearch(backwards_compatible()):
         Retrieve summary table of an H2O Grid Search.
 
         :returns: The summary table as an H2OTwoDimTable or a Pandas DataFrame.
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> insurance["offset"] = insurance["Holders"].log()
+        >>> insurance["Group"] = insurance["Group"].asfactor()
+        >>> insurance["Age"] = insurance["Age"].asfactor()
+        >>> insurance["District"] = insurance["District"].asfactor()
+        >>> hyper_params = {'huber_alpha': [0.2,0.5],
+        ...                 'quantile_alpha': [0.2,0.6]}
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5),
+        ...                    hyper_params)
+        >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
+        >>> gs.sorted_metric_table()
         """
         summary = self._grid_json["summary_table"]
         if summary is not None: return summary.as_data_frame()
@@ -765,6 +1478,8 @@ class H2OGridSearch(backwards_compatible()):
             model_class = H2OAutoEncoderGridSearch
         elif model_type == "DimReduction":
             model_class = H2ODimReductionGridSearch
+        elif model_type == "AnomalyDetection":
+            model_class = H2OBinomialGridSearch
         else:
             raise NotImplementedError(model_type)
         return model_class
@@ -787,6 +1502,20 @@ class H2OGridSearch(backwards_compatible()):
             order (default).
 
         :returns: A new H2OGridSearch instance optionally sorted on the specified metric.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> y = 3
+        >>> x = [4,5,6,7,8,9,10,11]
+        >>> hyper_params = {'alpha': [0.01,0.3,0.5],
+        ...                 'lambda': [1e-5, 1e-6, 1e-7]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_params)
+        >>> gs.train(x=x,y=y, training_frame=benign)
+        >>> gs.get_grid(sort_by='F1', decreasing=True)
         """
         if sort_by is None and decreasing is None: return self
 
@@ -803,12 +1532,6 @@ class H2OGridSearch(backwards_compatible()):
         H2OEstimator.mixin(grid, model_class)
         grid.__dict__.update(m.__dict__.copy())
         return grid
-
-
-    # Deprecated functions; left here for backward compatibility
-    _bcim = {
-        "giniCoef": lambda self, *args, **kwargs: self.gini(*args, **kwargs)
-    }
 
 
     @deprecated("grid.sort_by() is deprecated; use grid.get_grid() instead")

@@ -4,6 +4,7 @@ import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
+import hex.util.EffectiveParametersUtils;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.codegen.CodeGenerator;
@@ -72,6 +73,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
   } // DeepLearningModelOutput
 
+    @Override
+    public void initActualParamValues() {
+      super.initActualParamValues();
+      EffectiveParametersUtils.initFoldAssignment(_parms);
+    }
+    
   void set_model_info(DeepLearningModelInfo mi) {
     assert(mi != null);
     model_info = mi;
@@ -892,28 +899,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       l2 /= in.length;
       preds[0] = l2;
     }
-  }
-
-  /**
-   * Compute quantile-based threshold (in reconstruction error) to find outliers
-   * @param mse Vector containing reconstruction errors
-   * @param quantile Quantile for cut-off
-   * @return Threshold in MSE value for a point to be above the quantile
-   */
-  public double calcOutlierThreshold(Vec mse, double quantile) {
-    Frame mse_frame = new Frame(Key.<Frame>make(), new String[]{"Reconstruction.MSE"}, new Vec[]{mse});
-    DKV.put(mse_frame._key, mse_frame);
-
-    QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
-    parms._train = mse_frame._key;
-    parms._probs = new double[]{quantile};
-    Job<QuantileModel> job = new Quantile(parms).trainModel();
-    QuantileModel kmm = job.get();
-    job.remove();
-    double q = kmm._output._quantiles[0][0];
-    kmm.delete();
-    DKV.remove(mse_frame._key);
-    return q;
   }
 
   // helper to push this model to another key (for keeping good models)
@@ -2297,6 +2282,18 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   @Override
   public DeepLearningMojoWriter getMojo() {
     return new DeepLearningMojoWriter(this);
+  }
+
+  @Override
+  public boolean isFeatureUsedInPredict(String featureName) {
+    if (!_parms._variable_importances) return true;
+    int featureIdx = ArrayUtils.find(varImp()._names, featureName);
+    return featureIdx != -1 && (double) varImp()._varimp[featureIdx] != 0d;
+  }
+
+  @Override
+  public boolean isDistributionHuber() {
+    return super.isDistributionHuber() || get_params()._distribution == DistributionFamily.huber;
   }
 }
 

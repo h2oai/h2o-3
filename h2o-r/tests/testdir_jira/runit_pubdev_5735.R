@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.gbm.trees <- function() {
   airlines.data <- h2o.importFile(path = locate('smalldata/testng/airlines_train.csv'))
-  gbm.model <- h2o.gbm(x=c("Origin", "Dest", "Distance"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model", ntrees = 1, seed = 1)
+  gbm.model <- h2o.gbm(x=c("Origin", "Dest"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model", ntrees = 1, seed = 1)
   gbm.tree <-h2o.getModelTree(gbm.model, 1, "NO") # Model only has one tree. If these numbers are changed, tests fails. This ensures index translation between R API and Java works.
   
   expect_equal("H2OTree", class(gbm.tree)[1])
@@ -26,7 +26,13 @@ test.gbm.trees <- function() {
   expect_true(is.null(gbm.tree@levels[[1]])) # Root node has no categorical splits
   expect_equal(length(gbm.tree@left_children), length(gbm.tree@levels))
   expect_true(!is.null(gbm.tree@model_id))
+  expect_false(is.null(gbm.tree@left_cat_split))
+  expect_false(is.null(gbm.tree@right_cat_split))
+  expect_equal(length(gbm.tree@right_cat_split), length(gbm.tree@left_cat_split))
   
+  print(gbm.tree@left_children)
+  print(gbm.tree@left_cat_split)
+  print(gbm.tree@right_cat_split)
   totalLength <- length(gbm.tree@left_children)
   expect_equal(totalLength, length(gbm.tree@descriptions))
   

@@ -5,6 +5,8 @@ import hex.Model;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsRegression;
 import hex.SplitFrame;
+import hex.genmodel.algos.tree.SharedTreeNode;
+import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.tree.SharedTreeModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -14,6 +16,7 @@ import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
+import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -24,8 +27,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.util.*;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class DRFTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
@@ -99,6 +101,29 @@ public class DRFTest extends TestUtil {
                     ard(0, 0, 0, 2, 37)),
             s("3", "4", "5", "6", "8"));
   }
+
+    @Test public void testClassCars1UnlimitedDepth() throws Throwable {
+        // cars ntree=1
+        basicDRFTestOOBE_Classification(
+                "./smalldata/junit/cars.csv", "cars.hex",
+                new PrepData() {
+                    @Override
+                    int prep(Frame fr) {
+                        fr.remove("name").remove();
+                        return fr.find("cylinders");
+                    }
+                },
+                1,
+                20,
+                1,
+                0,
+                ard(ard(0, 2, 0, 0, 0),
+                        ard(0, 58, 6, 4, 0),
+                        ard(0, 1, 0, 0, 0),
+                        ard(1, 3, 4, 25, 1),
+                        ard(0, 0, 0, 2, 37)),
+                s("3", "4", "5", "6", "8"));
+    }
 
   @Test public void testClassCars5() throws Throwable {
     basicDRFTestOOBE_Classification(
@@ -437,7 +462,7 @@ public class DRFTest extends TestUtil {
     basicDRF(fnametrain, hexnametrain, null, prep, ntree, max_depth, nbins, false, min_rows, null, expMSE, null);
   }
 
-  public void basicDRF(String fnametrain, String hexnametrain, String fnametest, PrepData prep, int ntree, int max_depth, int nbins, boolean classification, int min_rows, double[][] expCM, double expMSE, String[] expRespDom) throws Throwable {
+  public void basicDRF(String fnametrain, String hexnametrain, String fnametest, PrepData prep, int ntree, int max_depth, int nbins, boolean classification, int min_rows, double[][] expCM, double expMSE, String[] expRespDom) {
     Scope.enter();
     DRFModel.DRFParameters drf = new DRFModel.DRFParameters();
     Frame frTest = null, pred = null;
@@ -1754,6 +1779,168 @@ public class DRFTest extends TestUtil {
       }
 
       assertEquals(totalPathLength, ffTotal);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testIsFeatureUsedInPredict() {
+    isFeatureUsedInPredictHelper(false, false);
+    isFeatureUsedInPredictHelper(true, false);
+    isFeatureUsedInPredictHelper(false, true);
+    isFeatureUsedInPredictHelper(true, true);
+  }
+
+  private void isFeatureUsedInPredictHelper(boolean ignoreConstCols, boolean multinomial) {
+    Scope.enter();
+    Vec target = Vec.makeRepSeq(100, 3);
+    if (multinomial) target = target.toCategoricalVec();
+    Vec zeros = Vec.makeCon(0d, 100);
+    Vec nonzeros = Vec.makeCon(1e10d, 100);
+    Frame dummyFrame = new Frame(
+            new String[]{"a", "b", "c", "d", "e", "target"},
+            new Vec[]{zeros, zeros, zeros, zeros, target, target}
+    );
+    dummyFrame._key = Key.make("DummyFrame_testIsFeatureUsedInPredict");
+
+    Frame otherFrame = new Frame(
+            new String[]{"a", "b", "c", "d", "e", "target"},
+            new Vec[]{nonzeros, nonzeros, nonzeros, nonzeros, target, target}
+    );
+
+    Frame reference = null;
+    Frame prediction = null;
+    DRFModel model = null;
+    try {
+      DKV.put(dummyFrame);
+      DRFModel.DRFParameters drf = new DRFModel.DRFParameters();
+      drf._train = dummyFrame._key;
+      drf._response_column = "target";
+      drf._ntrees = 5;
+      drf._max_depth = 3;
+      drf._min_rows = 1;
+      drf._nbins = 3;
+      drf._nbins_cats = 3;
+      drf._seed = 1;
+      drf._ignore_const_cols = ignoreConstCols;
+
+      DRF job = new DRF(drf);
+      model = job.trainModel().get();
+
+      String lastUsedFeature = "";
+      int usedFeatures = 0;
+      for(String feature : model._output._names) {
+        if (model.isFeatureUsedInPredict(feature)) {
+          usedFeatures ++;
+          lastUsedFeature = feature;
+        }
+      }
+      assertEquals(1, usedFeatures);
+      assertEquals("e", lastUsedFeature);
+
+      reference = model.score(dummyFrame);
+      prediction = model.score(otherFrame);
+      for (int i = 0; i < reference.numRows(); i++) {
+        assertEquals(reference.vec(0).at(i), prediction.vec(0).at(i), 1e-10);
+      }
+    } finally {
+      dummyFrame.delete();
+      if (model != null) model.delete();
+      if (reference != null) reference.delete();
+      if (prediction != null) prediction.delete();
+      target.remove();
+      zeros.remove();
+      nonzeros.remove();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void checkDeepLeafNodeAssignmentConsistency() {
+    checkDeepLeafNodeAssignmentConsistency(31, 7);  // old supported maximum
+    checkDeepLeafNodeAssignmentConsistency(48, 10); // random point between 32 and 63 
+    checkDeepLeafNodeAssignmentConsistency(63, 12); // current supported maximum
+    checkDeepLeafNodeAssignmentConsistency(64, 17); // breaking point
+    checkDeepLeafNodeAssignmentConsistency(73, 42); // way past breaking point 
+  }
+
+  /**
+   * Grow and check properties of a very deep tree
+   * 
+   * @param depth desired tree depth 
+   * @param extraObservations how many observations should be classified in the deepest leaf node
+   */
+  private void checkDeepLeafNodeAssignmentConsistency(int depth, int extraObservations) {
+    try {
+      Scope.enter();
+      String[] x = new String[depth + extraObservations];
+      double[] w = new double[x.length];
+      double[] y = new double[x.length];
+      for (int i = 0; i < x.length; i++) {
+        x[i] = String.valueOf(i + 100);
+        w[i] = i > 0 ? (w[i-1] * 2) + 1 : 0;
+        y[i] = i;
+      }
+      Frame tfr = new TestFrameBuilder()
+              .withColNames("w", "x", "y")
+              .withDataForCol(0, w)
+              .withDataForCol(1, x)
+              .withDataForCol(2, y)
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+              .withChunkLayout(x.length)
+              .build();
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._nbins_top_level = x.length;
+      parms._nbins = x.length;
+      parms._train = tfr._key;
+      parms._response_column = "y";
+      parms._weights_column = "w";
+      parms._ntrees = 1;
+      parms._max_depth = depth;
+      parms._sample_rate = 1;
+      parms._mtries = -2;
+      parms._seed = 1234;
+      parms._min_split_improvement = 0;
+      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
+
+      DRF job = new DRF(parms);
+      DRFModel drf = job.trainModel().get();
+      assertNotNull(drf);
+      Scope.track_generic(drf);
+
+      Frame paths = drf.scoreLeafNodeAssignment(tfr, Model.LeafNodeAssignment.LeafNodeAssignmentType.Path, Key.make());
+      Scope.track(paths);
+      Frame nodeIds = drf.scoreLeafNodeAssignment(tfr, Model.LeafNodeAssignment.LeafNodeAssignmentType.Node_ID, Key.make());
+      Scope.track(nodeIds);
+
+      SharedTreeSubgraph tree = drf.getSharedTreeSubgraph(0, 0);
+      // check assumptions (are we really testing deep trees?)
+      int actualDepth = -1;
+      for (SharedTreeNode n : tree.nodesArray)
+        if (n.getDepth() >= actualDepth) {
+          actualDepth = n.getDepth();
+        }
+      assertEquals(depth, actualDepth);
+
+      Vec.Reader pathReader = paths.vec(0).new Reader();
+      Vec.Reader nodeIdReader = nodeIds.vec(0).new Reader();
+
+      for (long i = 0; i < tfr.numRows(); i++) {
+        if ((depth > 63) && (depth - 63 + extraObservations > i)) {
+          assertTrue(pathReader.isNA(i));
+          assertEquals(-1, nodeIdReader.at8(i));
+        } else {
+          assertFalse(pathReader.isNA(i));
+          assertNotEquals(-1, nodeIdReader.at8(i));
+          String path = paths.vec(0).domain()[(int) pathReader.at8(i)];
+          int nodeId = (int) nodeIdReader.at8(i);
+          SharedTreeNode node = tree.walkNodes(path);
+          assertNotNull(node);
+          assertTrue(node.isLeaf());
+          assertEquals(nodeId, node.getNodeNumber());
+        }
+      }
     } finally {
       Scope.exit();
     }

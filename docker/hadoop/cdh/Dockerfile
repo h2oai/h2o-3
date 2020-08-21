@@ -1,14 +1,18 @@
-# pull base image
-FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1-jdk-8:10
+ARG PARENT_VERSION
+ARG GRADLE_VERSION
+FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop-gradle-${GRADLE_VERSION}:${PARENT_VERSION}
 
 # maintainer details
 MAINTAINER h2oai "h2o.ai"
 
 ARG VERSION
-RUN \
-    if [ -z $VERSION ]; then \
+ARG REPO_VERSION
+RUN if [ -z $VERSION ]; then \
         echo "build-arg VERSION must be set"; \
         exit 1; \
+    fi; \
+    if [ -z $REPO_VERSION ]; then \
+        REPO_VERSION=$VERSION; \
     fi
 ARG PATH_PREFIX='.'
 ARG PYTHON_VERSIONS='2.7,3.6'
@@ -37,9 +41,9 @@ deb-src http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh${VER
         wget http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh/archive.key -O archive.key \
         ;; \
     6.*) \
-        echo "# Packages for Cloudera's Distribution of Hadoop, Version ${VERSION}.0\n\
-deb [arch=amd64] http://archive.cloudera.com/cdh6/${VERSION}.0/ubuntu1604/apt xenial-cdh${VERSION}.0 contrib\n" > /etc/apt/sources.list.d/cloudera.list && \
-        wget https://archive.cloudera.com/cdh6/${VERSION}.0/ubuntu1604/apt/archive.key -O archive.key \
+        echo "# Packages for Cloudera's Distribution of Hadoop, Version ${REPO_VERSION}\n\
+deb [arch=amd64] http://archive.cloudera.com/cdh6/${REPO_VERSION}/ubuntu1604/apt xenial-cdh${REPO_VERSION} contrib\n" > /etc/apt/sources.list.d/cloudera.list && \
+        wget https://archive.cloudera.com/cdh6/${REPO_VERSION}/ubuntu1604/apt/archive.key -O archive.key \
         ;; \
     *) \
         echo "Version ${VERSION} not supported" \
@@ -51,7 +55,7 @@ RUN apt-key add archive.key && \
     add-apt-repository -y ppa:deadsnakes && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        mysql-server libmysql-java libmysqlclient-dev \
+        postgresql libpostgresql-jdbc-java \
         hadoop-conf-pseudo python-pip python-dev python-virtualenv \
         sudo unzip html2text slapd ldap-utils libkrb5-dev \
         vim
@@ -71,7 +75,7 @@ RUN \
   /usr/bin/activate_java_8
 
 # Copy hadoop configs
-COPY ${PATH_PREFIX}/conf/ ${HADOOP_CONF_DIR}/
+COPY ${PATH_PREFIX}/../common/conf/ ${PATH_PREFIX}/conf/ ${HADOOP_CONF_DIR}/
 
 # Initialize namenode
 RUN service hadoop-hdfs-namenode init
@@ -89,14 +93,18 @@ RUN chmod 700 /usr/sbin/startup.sh && \
     chown -R hive:hive /opt/hive-scripts && \
     chmod +x /usr/sbin/install_hive.sh && \
     chmod +x /usr/sbin/install_ldap.sh && \
-    chmod +x /usr/sbin/mysql_configure.sh && \
     sync && \
     /usr/sbin/install_hive.sh && \
-    /usr/sbin/mysql_configure.sh && \
-    ln -sf /usr/share/java/mysql-connector-java.jar /usr/lib/hive/lib/mysql-connector-java.jar
+    ln -sf /usr/share/java/postgresql-jdbc4.jar /usr/lib/hive/lib/postgresql-jdbc4.jar
 
 # Copy hive configs
 COPY ${PATH_PREFIX}/../common/conf-hive/ /etc/${HIVE_PACKAGE}/conf/
+
+# Copy hive data
+RUN cd /home/jenkins/ && \
+    wget https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTest.csv.zip && \
+    wget https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv && \
+    chown jenkins:jenkins /home/jenkins/*
 
 RUN /usr/sbin/install_ldap.sh
 

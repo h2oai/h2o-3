@@ -2,10 +2,12 @@
 
 import sys
 import os
-import h2o
-sys.path.insert(1, os.path.join("..", "..", "..", "h2o-py"))
+sys.path.insert(1, os.path.join("../../../h2o-py"))
 from tests import pyunit_utils
+import h2o
 from numpy import isclose
+
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def adapt_airlines(airlines_dataset):
     airlines_dataset["table_for_h2o_import.origin"] = airlines_dataset["table_for_h2o_import.origin"].asfactor()
@@ -39,15 +41,13 @@ def gbm_on_hive():
     airlines_dataset_streaming = adapt_airlines(airlines_dataset_streaming)
 
     # datasets should be identical from user's point of view
-    pyunit_utils.compare_frames(airlines_dataset_original, airlines_dataset_streaming, 100, tol_numeric=0)
+    pyunit_utils.compare_frames_local(airlines_dataset_original, airlines_dataset_streaming, 1)
 
-    from h2o.estimators.gbm import H2OGradientBoostingEstimator
     airlines_X_col_names = airlines_dataset_streaming.col_names[:-2]
     airlines_y_col_name = airlines_dataset_streaming.col_names[-2]
     gbm_v1 = H2OGradientBoostingEstimator(model_id="gbm_airlines_v1", seed=2000000)
     gbm_v1.train(airlines_X_col_names, airlines_y_col_name,
                  training_frame=airlines_dataset_streaming, validation_frame=airlines_dataset_streaming)
-    print(gbm_v1)
     # demonstrates that metrics can be slightly different due to different chunking on the backend
     assert isclose(gbm_v1.auc(train=True), gbm_v1.auc(valid=True), rtol=1e-4)
 

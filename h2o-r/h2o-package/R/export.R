@@ -75,6 +75,15 @@ h2o.exportFile <- function(data, path, force = FALSE, sep = ",", compression = N
 #' @param path The path to write the model to. Must include the driectory and
 #'        filename.
 #' @param force logical, indicates how to deal with files that already exist.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv"
+#' train <- h2o.importFile(f)
+#' h2o.exportHDFS(train, path = " ", force = FALSE)
+#' }
 #' @export
 h2o.exportHDFS <- function(object, path, force=FALSE) { h2o.exportFile(object,path,force) }
 
@@ -125,6 +134,50 @@ h2o.downloadCSV <- function(data, filename) {
     cat("Bad return val", val, "\n")
 }
 
+
+#' Save contents of this data frame into a Hive table
+#'
+#' For example,
+#'     h2o.save_to_hive(data_frame, "jdbc:hive2://host:10000/database", "table_name")
+#'     h2o.save_to_hive(data_frame, "jdbc:hive2://host:10000/", "database.table_name", format = "parquet")
+#'
+#' @param data A H2O Frame object to be saved.
+#' @param jdbc_url Hive JDBC connection URL.
+#' @param table_name Table name into which to store the data. The table must not exist as it will be created
+#                    to match the structure of the the frame. The user must be allowed to create tables.
+#' @param format Storage format of created Hive table. (default csv, can be csv or parquet)
+#' @param table_path If specified, the table will be created as an external table and this is where the data 
+#                    will be stored.
+#' @param tmp_path Path where to store temporary data.
+#' @export
+h2o.save_to_hive <- function(data, jdbc_url, table_name, format="csv", table_path=NULL, tmp_path=NULL) {
+    if (!is.H2OFrame(data))
+        stop("`data` must be an H2OFrame object")
+    if(!is.character(jdbc_url) || length(jdbc_url) != 1L || is.na(jdbc_url) || !nzchar(jdbc_url))
+        stop("`jdbc_url` must be a non-empty character string")
+    if(!is.character(table_name) || length(table_name) != 1L || is.na(table_name) || !nzchar(table_name))
+        stop("`table_name` must be a non-empty character string")
+    if(!is.character(format) || length(format) != 1L || is.na(format) || !nzchar(format) || !format %in% c("csv", "parquet"))
+        stop("`format` must be a non-empty character string")
+    if (!is.null(table_path))
+        if(!is.character(table_path) || length(table_path) != 1L || is.na(table_path) || !nzchar(table_path))
+            stop("`table_name` if specified,  must be a non-empty character string")
+    if (!is.null(tmp_path))
+        if(!is.character(tmp_path) || length(tmp_path) != 1L || is.na(tmp_path) || !nzchar(tmp_path))
+            stop("`tmp_path` if specified,  must be a non-empty character string")
+
+    parms <- list()
+    parms$frame_id <- h2o.getId(data)
+    parms$jdbc_url <- jdbc_url
+    parms$table_name <- table_name
+    parms$format <- format
+    if (!is.null(table_path))
+        parms$table_path <- table_path
+    if (!is.null(tmp_path))
+        parms$tmp_path <- tmp_path
+    .h2o.__remoteSend('SaveToHiveTable', method = "POST", .params = parms, h2oRestApiVersion = 3)
+}
+
 # ------------------- Save H2O Model to Disk ----------------------------------------------------
 #'
 #' Save an H2O Model Object to Disk
@@ -134,6 +187,8 @@ h2o.downloadCSV <- function(data, filename) {
 #'
 #' In the case of existing files \code{force = TRUE} will overwrite the file.
 #' Otherwise, the operation will fail.
+#'
+#' The owner of the file saved is the user by which H2O cluster was executed.
 #'
 #' @param object an \linkS4class{H2OModel} object.
 #' @param path string indicating the directory the model will be written to.
@@ -145,7 +200,7 @@ h2o.downloadCSV <- function(data, filename) {
 #' # h2o.init()
 #' # prostate <- h2o.importFile(path = paste("https://raw.github.com",
 #' #    "h2oai/h2o-2/master/smalldata/logreg/prostate.csv", sep = "/"))
-#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"),
 #' #    training_frame = prostate, family = "binomial", alpha = 0.5)
 #' # h2o.saveModel(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
@@ -157,6 +212,32 @@ h2o.saveModel <- function(object, path="", force=FALSE) {
   path <- file.path(path, object@model_id)
   res <- .h2o.__remoteSend(paste0("Models.bin/",object@model_id),dir=path,force=force,h2oRestApiVersion=99)
   res$dir
+}
+
+#' Deprecated - use h2o.save_mojo instead. Save an H2O Model Object as Mojo to Disk
+#'
+#' Save an MOJO (Model Object, Optimized) to disk.
+#'
+#' MOJO will download as a zip file. In the case of existing files \code{force = TRUE}
+#' will overwrite the file. Otherwise, the operation will fail.
+#'
+#' @param object an \linkS4class{H2OModel} object.
+#' @param path string indicating the directory the model will be written to.
+#' @param force logical, indicates how to deal with files that already exist.
+#' @seealso \code{\link{h2o.saveModel}} for saving a model to disk as a binary object.
+#' @examples
+#' \dontrun{
+#' # library(h2o)
+#' # h2o.init()
+#' # prostate <- h2o.uploadFile(path = system.file("extdata", "prostate.csv", package="h2o"))
+#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"),
+#' #                         training_frame = prostate, family = "binomial", alpha = 0.5)
+#' # h2o.saveMojo(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
+#' }
+#' @export
+h2o.saveMojo <- function(object, path="", force=FALSE) {
+  .Deprecated("h2o.save_mojo")
+  h2o.save_mojo(object = object, path = path, force = force)
 }
 
 #' Save an H2O Model Object as Mojo to Disk
@@ -175,12 +256,12 @@ h2o.saveModel <- function(object, path="", force=FALSE) {
 #' # library(h2o)
 #' # h2o.init()
 #' # prostate <- h2o.uploadFile(path = system.file("extdata", "prostate.csv", package="h2o"))
-#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"),
 #' #                         training_frame = prostate, family = "binomial", alpha = 0.5)
-#' # h2o.saveMojo(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
+#' # h2o.save_mojo(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
 #' @export
-h2o.saveMojo <- function(object, path="", force=FALSE) {
+h2o.save_mojo <- function(object, path="", force=FALSE) {
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
@@ -204,7 +285,7 @@ h2o.saveMojo <- function(object, path="", force=FALSE) {
 #' # library(h2o)
 #' # h2o.init()
 #' # prostate <- h2o.uploadFile(path = system.file("extdata", "prostate.csv", package = "h2o"))
-#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"),
 #' #                         training_frame = prostate, family = "binomial", alpha = 0.5)
 #' # h2o.saveModelDetails(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
@@ -230,7 +311,7 @@ h2o.saveModelDetails <- function(object, path="", force=FALSE) {
 #' library(h2o)
 #' h2o.init()
 #'
-#'iris.hex <- as.h2o(iris)
+#'iris <- as.h2o(iris)
 #'
 #'ntrees_opts = c(1, 5)
 #'learn_rate_opts = c(0.1, 0.01)
@@ -238,8 +319,12 @@ h2o.saveModelDetails <- function(object, path="", force=FALSE) {
 #'
 #'hyper_parameters = list(ntrees = ntrees_opts, learn_rate = learn_rate_opts)
 #'# Tempdir is chosen arbitrarily. May be any valid folder on an H2O-supported filesystem.
-#'baseline_grid <- h2o.grid("gbm", grid_id="gbm_grid_test", x=1:4, y=5, training_frame=iris.hex,
-#' hyper_params = hyper_parameters)
+#'baseline_grid <- h2o.grid(algorithm = "gbm", 
+#'                          grid_id = "gbm_grid_test", 
+#'                          x = 1:4, 
+#'                          y = 5, 
+#'                          training_frame = iris,
+#'                          hyper_params = hyper_parameters)
 #'
 #'grid_path <- h2o.saveGrid(grid_directory = tempdir(), grid_id = baseline_grid@grid_id)
 #'# Remove everything from the cluster or restart it

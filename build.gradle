@@ -3,10 +3,20 @@ import org.apache.tools.ant.taskdefs.condition.Os
 // The build script settings to fetch plugins and put them on
 // classpath
 buildscript {
+    ext {
+        isCi = (System.getProperty("user.name").equals("jenkins")
+                    || System.getenv("CI") != null
+                    || (rootProject.hasProperty("doCI") && rootProject.doCI == "true"))
+    }
+
     repositories {
-        maven { url 'https://plugins.gradle.org/m2/' }
-        mavenCentral()
-        jcenter()
+        if (isCi) {
+            maven { url "${localNexusLocation}/public" }
+        } else {
+            maven { url 'https://plugins.gradle.org/m2/' }
+            mavenCentral()
+            jcenter()
+        }
     }
 
     //noinspection GroovyAssignabilityCheck
@@ -14,8 +24,6 @@ buildscript {
         classpath 'org.ow2.asm:asm:5.1'
         classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.4'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
-        classpath 'com.github.townsfolk:gradle-release:1.2'
-        classpath 'com.adaptc.gradle:nexus-workflow:0.6'
         classpath 'org.testng:testng:6.8'
         classpath 'be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+'
         classpath 'me.champeau.gradle:jmh-gradle-plugin:0.4.6'
@@ -40,11 +48,6 @@ plugins {
 //
 apply from: 'gradle/java.gradle'
 
-// For multiproject setup we have to apply release plugin here (we share same release number cross all modules)
-if (project.hasProperty("doRelease")) {
-    apply from: 'gradle/release.gradle'
-}
-
 // Print out time taken for each task so we find things that are slow.
 apply from: 'gradle/timing.gradle'
 
@@ -56,11 +59,10 @@ ext {
     // All published projects - their artifacts are going to Maven central
     publishedProjects = [
       project(':h2o-core'),
+      project(':h2o-test-support'),
       project(':h2o-algos'),
       project(':h2o-web'),
       project(':h2o-app'),
-      project(':h2o-scala_2.10'),
-      project(':h2o-scala_2.11'),
       project(':h2o-persist-gcs'),
       project(':h2o-persist-hdfs'),
       project(':h2o-persist-s3'),
@@ -76,16 +78,23 @@ ext {
       project(':h2o-ext-xgboost'),
       project(':h2o-ext-krbstandalone'),
       project(':h2o-ext-mojo-pipeline'),
+      project(':h2o-ext-steam'),
       project(':h2o-ext-target-encoder'),
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
       project(':h2o-jetty-9'),
       project(':h2o-ext-jython-cfunc'),
       project(':h2o-hive'),
+      project(':h2o-security'),
+      project(':h2o-logger'),
+      project(':h2o-genmodel-ext-jgrapht'),
+      project(':h2o-k8s'),
+      project(':h2o-genmodel-ext-deepwater')
     ]
 
     javaProjects = [
       project(':h2o-core'),
+      project(':h2o-test-support'),
       project(':h2o-algos'),
       project(':h2o-web'),
       project(':h2o-app'),
@@ -100,6 +109,7 @@ ext {
       project(':h2o-avro-parser'),
       project(':h2o-orc-parser'),
       project(':h2o-parquet-parser'),
+      project(':h2o-parquet-parser-tests'),
       project(':h2o-parquet-v17-compat'),
       project(':h2o-jaas-pam'),
       project(':h2o-automl'),
@@ -107,17 +117,18 @@ ext {
       project(':h2o-ext-xgboost'),
       project(':h2o-ext-krbstandalone'),
       project(':h2o-ext-mojo-pipeline'),
+      project(':h2o-ext-steam'),
       project(':h2o-ext-target-encoder'),
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
       project(':h2o-jetty-9'),
       project(':h2o-ext-jython-cfunc'),
       project(':h2o-hive'),
-    ]
-
-    scalaProjects = [
-      project(':h2o-scala_2.10'),
-      project(':h2o-scala_2.11'),
+      project(':h2o-security'),
+      project(':h2o-logger'),
+      project(':h2o-genmodel-ext-jgrapht'),
+      project(':h2o-k8s'), 
+      project(':h2o-genmodel-ext-deepwater')
     ]
 
     rProjects = [
@@ -133,6 +144,8 @@ ext {
       // The S3 tests needs credentials which are provided by test environment.
       // Because of restrictions of Amazon they cannot be stored in repository.
       project(':h2o-persist-s3'),
+      // MOJO2 tests need DAI license
+      project(':h2o-ext-mojo-pipeline'),
     ]
 
     // Projects with micro-benchmarks
@@ -180,18 +193,11 @@ allprojects {
     // By default inject debugging support
     apply plugin: 'project-report'
     apply from: "$rootDir/gradle/debug.gradle"
-
-    // Support different IDEs
-    apply plugin: 'idea'
-    idea.module.inheritOutputDirs = true
-    apply plugin: 'eclipse'
     apply from: "$rootDir/gradle/artifacts.gradle"
 
     ext {
         isRelease = rootProject.hasProperty("doRelease")
-        isCi = (System.getProperty("user.name").equals("jenkins")
-                || System.getenv("CI") != null
-                || (rootProject.hasProperty("doCI") && rootProject.doCI == "true"))
+        isCi = isCi
     }
 }
 
@@ -211,7 +217,7 @@ subprojects {
         if (project.hasProperty("enableMavenLocal")) { // useful for development
             mavenLocal()
         }
-        if (project.ext.isCi) {
+        if (isCi) {
             maven {
                 url "${localNexusLocation}/public"
             }
@@ -249,7 +255,6 @@ subprojects {
     // Configure Java projects
     if (project in javaProjects) {
         apply from: "$rootDir/gradle/java.gradle"
-        apply from: "$rootDir/gradle/cp.gradle"
         // Include Findbugs only if the property is specified
         if (project.hasProperty("doFindbugs") && project.doFindbugs == "true") {
             apply from: "$rootDir/gradle/findbugs.gradle"
@@ -262,21 +267,12 @@ subprojects {
         }
         if (testNeedsCiProject.contains(project)) {
             logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
-            project.testMultiNode.enabled = project.ext.isCi
+            project.testSingleNode.enabled = isCi
+            project.testMultiNode.enabled = isCi
         }
         // Analyze dependencies 
         //apply plugin: 'ca.cutterslade.analyze'
         
-    }
-
-    // Configure Scala projects
-    if (project in scalaProjects) {
-        apply from: "$rootDir/gradle/scala.gradle"
-        apply from: "$rootDir/gradle/cp.gradle"
-        if (testNeedsCiProject.contains(project)) {
-            logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
-            project.testMultiNode.enabled = project.ext.isCi
-        }
     }
 
     if (project in rProjects) {
@@ -292,31 +288,6 @@ subprojects {
             apply from: "$rootDir/gradle/ubench.gradle"
         }
     }
-}
-
-//
-// Setup global properties shared by all projects
-//
-ext {
-    // Collect all artifacts produced by all projects in this project - all "archives" artifacts
-    allArchives = subprojects.findAll().inject(
-            files(), { acc, pj -> 
-          if (pj in publishedProjects)
-            acc + pj.configurations.archives.allArtifacts.getFiles()
-          else
-            acc
-    })
-    // Collect all test artifacts
-    allTestArchives = files() // filed lazily below
-
-}
-
-// After evaluation of all projects collect all artifacts produced by testArchives configuration
-subprojects {
-    afterEvaluate( { pj ->
-        def testCnf = pj.configurations.findAll().find({ it.getName().equals("testArchives") })
-        if (testCnf != null) allTestArchives = allTestArchives + testCnf.allArtifacts.getFiles()
-    } )
 }
 
 // Include support for S3 syncing

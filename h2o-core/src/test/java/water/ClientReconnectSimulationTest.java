@@ -17,6 +17,16 @@ public class ClientReconnectSimulationTest extends TestUtil{
     stall_till_cloudsize(1);
   }
 
+  @BeforeClass
+  public static void allowClients() {
+    H2O.ARGS.allow_clients = true;
+  }
+
+  @AfterClass
+  public static void disableClients() {
+    H2O.ARGS.allow_clients = false;
+  }
+  
   @Before
   public void setupFakeAddress() throws Exception {
     FAKE_NODE_ADDRESS = InetAddress.getByAddress(new byte[]{(byte) 23, (byte) 185, (byte)0, (byte)4});

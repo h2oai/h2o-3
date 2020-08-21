@@ -1,10 +1,8 @@
 package hex.kmeans;
 
-import hex.ClusteringModel;
-import hex.ModelMetrics;
-import hex.ModelMetricsClustering;
-import hex.ToEigenVec;
+import hex.*;
 import hex.genmodel.IClusteringModel;
+import hex.util.EffectiveParametersUtils;
 import hex.util.LinearAlgebraUtils;
 import water.DKV;
 import water.Job;
@@ -39,6 +37,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     public boolean _pred_indicator = false;   // For internal use only: generate indicator cols during prediction
                                               // Ex: k = 4, cluster = 3 -> [0, 0, 1, 0]
     public boolean _estimate_k = false;       // If enabled, iteratively find up to _k clusters
+    public int[] _cluster_size_constraints = null;
   }
 
   public static class KMeansOutput extends ClusteringModel.ClusteringOutput {
@@ -69,7 +68,16 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     public KMeansOutput( KMeans b ) { super(b); }
   }
 
-  public KMeansModel(Key selfKey, KMeansParameters parms, KMeansOutput output) { super(selfKey,parms,output); }
+  public KMeansModel(Key selfKey, KMeansParameters parms, KMeansOutput output) { 
+    super(selfKey,parms,output);
+  }
+
+  @Override
+  public void initActualParamValues() {
+    super.initActualParamValues();
+    EffectiveParametersUtils.initFoldAssignment(_parms);
+    EffectiveParametersUtils.initCategoricalEncoding(_parms, Model.Parameters.CategoricalEncodingScheme.Enum);
+  }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     assert domain == null;

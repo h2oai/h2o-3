@@ -12,7 +12,6 @@ import water.util.IcedInt;
 import water.util.Log;
 
 import java.util.Arrays;
-import java.util.Collections;
 
 public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.AggregatorParameters,AggregatorModel.AggregatorOutput> {
 
@@ -231,9 +230,6 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         }
         _job.update(1, "Done.");
         model.update(_job);
-      } catch (Throwable t){
-        t.printStackTrace();
-        throw t;
       } finally {
         if (model != null) {
           model.unlock(_job);

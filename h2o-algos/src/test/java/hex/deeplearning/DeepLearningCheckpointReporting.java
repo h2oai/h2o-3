@@ -39,6 +39,8 @@ public class DeepLearningCheckpointReporting extends TestUtil {
       p._classification_stop = -1;
       p._seed = 1234;
       p._reproducible = true;
+      DeepLearningParameters p2 = (DeepLearningParameters)p.clone();
+      p2._epochs *= 2;
 
       // Convert response 'C785' to categorical (digits 1 to 10)
       int ci = frame.find("CAPSULE");
@@ -53,9 +55,7 @@ public class DeepLearningCheckpointReporting extends TestUtil {
       try { Thread.sleep(sleepTime*1000); } catch( InterruptedException ex ) { }
 
       // checkpoint restart after sleep
-      DeepLearningParameters p2 = (DeepLearningParameters)p.clone();
       p2._checkpoint = model._key;
-      p2._epochs *= 2;
       DeepLearningModel model2 = null;
       try {
         model2 = new DeepLearning(p2).trainModel().get();

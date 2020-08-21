@@ -38,7 +38,7 @@ def test_csv_parser_column_skip():
 
     try:
         importFileSkipAll = h2o.import_file(savefilenamewithpath, skipped_columns=skip_all)
-        sys.exit(1)  # should have failed here
+        assert False, "Test should have thrown an exception due to all columns are skipped"  # should have failed here
     except:
         pass
 

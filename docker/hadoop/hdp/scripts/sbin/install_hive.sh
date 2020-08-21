@@ -11,4 +11,4 @@ find $HIVE_HOME/lib | grep '.jar' | \
 # hack for missing xerces classes in Hive classpath in hdp 2.3, 2.4, 2.5
 find $HADOOP_HOME -name "*xercesImpl.jar" | tr '\n' ':' >> /opt/hive-jdbc-cp
 
-ln -sf /usr/share/java/mysql-connector-java.jar ${HIVE_HOME}/lib/mysql-connector-java.jar
+ln -sf /usr/share/java/postgresql-jdbc4.jar ${HIVE_HOME}/lib/postgresql-jdbc4.jar

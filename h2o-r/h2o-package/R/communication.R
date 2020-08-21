@@ -525,6 +525,15 @@
 #' @param header A logical value dictating whether or not the table name should be printed.
 #' @param ... Further arguments passed to or from other methods.
 #' @return The original x object
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
+#' print(cars, header = TRUE)
+#' }
 #' @export
 print.H2OTable <- function(x, header=TRUE, ...) {
   # format columns
@@ -850,13 +859,54 @@ h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
 
 #'
 #' Disable Progress Bar
-#'
+#' 
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' h2o.no_progress()
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv"
+#' iris <- h2o.importFile(f)
+#' iris["class"] <- as.factor(iris["class"])
+#' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
+#' splits <- h2o.splitFrame(iris, ratios = 0.8, seed = 1234)
+#' train <- splits[[1]]
+#' valid <- splits[[2]]
+#' 
+#' iris_km <- h2o.kmeans(x = predictors, 
+#'                       training_frame = train, 
+#'                       validation_frame = valid, 
+#'                       k = 10, estimate_k = TRUE, 
+#'                       standardize = FALSE, seed = 1234)
+#' }
 #' @export
 h2o.no_progress <- function() assign("PROGRESS_BAR", FALSE, .pkg.env)
 
 #'
 #' Enable Progress Bar
 #'
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' h2o.no_progress()
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv"
+#' iris <- h2o.importFile(f)
+#' iris["class"] <- as.factor(iris["class"])
+#' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
+#' splits <- h2o.splitFrame(iris, ratios = 0.8, seed = 1234)
+#' train <- splits[[1]]
+#' valid <- splits[[2]]
+#' h2o.show_progress()
+#' 
+#' iris_km <- h2o.kmeans(x = predictors, 
+#'                       training_frame = train, 
+#'                       validation_frame = valid, 
+#'                       k = 10, estimate_k = TRUE, 
+#'                       standardize = FALSE, seed = 1234)
+#' }
 #' @export
 h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 

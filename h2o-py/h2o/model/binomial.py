@@ -1,10 +1,10 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.compatibility import viewitems
+
+from h2o.exceptions import H2OValueError
 from h2o.utils.typechecks import assert_is_type
 from .model_base import ModelBase
-from h2o.exceptions import H2OValueError
 
 
 class H2OBinomialModel(ModelBase):
@@ -30,7 +30,7 @@ class H2OBinomialModel(ModelBase):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> r = cars[0].runif()
         >>> train = cars[r > .2]
-        >>> valid = cars[r <=.2]
+        >>> valid = cars[r <=.2] 
         >>> response_col = "economy_20mpg"
         >>> distribution = "bernoulli"
         >>> predictors = ["displacement", "power", "weight", "acceleration", "year"]
@@ -775,33 +775,17 @@ class H2OBinomialModel(ModelBase):
 
         :examples:
 
-        >>> airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"] = airlines["Year"].asfactor()
-        >>> airlines["Month"] = airlines["Month"].asfactor()
-        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
-        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
-        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
-        >>> myX = ["Origin", "Dest", "Distance", "UniqueCarrier",
-        ...        "Month", "DayofMonth", "DayOfWeek"]
-        >>> myY = "IsDepDelayed"
-        >>> train, valid = airlines.split_frame(ratios=[.8], seed=1234)
-        >>> air_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
-        ...                                        ntrees=100,
-        ...                                        max_depth=3,
-        ...                                        learn_rate=0.01)
-        >>> air_gbm.train(x=myX,
-        ...               y=myY,
-        ...               training_frame=train,
-        ...               validation_frame=valid)
-        >>> air_gbm.plot(type="roc", train=True, server=True)
-        >>> air_gbm.plot(type="roc", valid=True, server=True)
-        >>> perf = air_gbm.model_performance(valid)
-        >>> perf.plot(type="roc", server=True)
-        >>> perf.plot
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> response = 3
+        >>> predictors = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10]
+        >>> model = H2OGeneralizedLinearEstimator(family="binomial")
+        >>> model.train(x=predictors, y=response, training_frame=benign)
+        >>> model.plot(timestep="AUTO", metric="objective", server=False)
         """
         assert_is_type(metric, "AUTO", "logloss", "auc", "classification_error", "rmse", "objective", 
                        "negative_log_likelihood")
-        if self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
+        if self._model_json["algo"] in ("deeplearning", "xgboost", "drf", "gbm"):
             # make sure metric is not those of GLM metrics for other models
             if metric in ("negative_log_likelihood", "objective"):
                 raise H2OValueError("Metrics: negative_log_likelihood, objective are only for glm models.")
@@ -885,6 +869,26 @@ class H2OBinomialModel(ModelBase):
         """
         return self._delegate_to_metrics('gains_lift', train, valid, xval)
 
+    def kolmogorov_smirnov(self):
+        """
+        Retrieves a Kolmogorov-Smirnov metric for given binomial model. The number returned is in range between 0 and 1.
+        K-S metric represents the degree of separation between the positive (1) and negative (0) cumulative distribution
+        functions. Detailed metrics per each group are to be found in the gains-lift table.
+
+        :return: Kolmogorov-Smirnov metric, a number between 0 and 1
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+        >>> model = H2OGradientBoostingEstimator(ntrees=1,
+        ...                                      gainslift_bins=20)
+        >>> model.train(x=["Origin", "Distance"],
+        ...             y="IsDepDelayed",
+        ...             training_frame=airlines)
+        >>> model.kolmogorov_smirnov()
+        """
+        return max(self.gains_lift()["kolmogorov_smirnov"])
 
     def confusion_matrix(self, metrics=None, thresholds=None, train=False, valid=False, xval=False):
         """

@@ -36,15 +36,11 @@ public class TCPReceiverThread extends Thread {
    * Byte representing TCP communication for big data
    */
   static final byte TCP_BIG = 2;
-
-  /**
-   * Byte representing TCP communication for communicating with H2O backend from non-H2O environment
-   */
-  static final byte TCP_EXTERNAL = 3;
-
+  
   public TCPReceiverThread(
           ServerSocketChannel sock) {
     super("TCP-Accept");
+    ThreadHelper.initCommonThreadProperties(this);
     SOCK = sock;
     this.socketChannelFactory = H2O.SELF.getSocketFactory();
   }
@@ -89,6 +85,11 @@ public class TCPReceiverThread extends Thread {
         int chanType = bb.get(); // 1 - small, 2 - big, 3 - external
         short timestamp = bb.getShort(); // read timestamp
                                          // Note: timestamp was not part of the original protocol, was added in 3.22.0.1, #a33de44)
+        if (H2ONodeTimestamp.decodeIsClient(timestamp) && !H2O.ARGS.allow_clients) {
+          ListenerService.getInstance().report("connection-failure", "clients-disabled");
+          throw new IllegalStateException("Client connection from " + inetAddress + " blocked. " +
+                  "This cloud has client connections disabled.");
+        }
         int port = bb.getChar(); // read port
         int sentinel = (0xFF) & bb.get();
         if(sentinel != 0xef) {
@@ -98,11 +99,6 @@ public class TCPReceiverThread extends Thread {
                           "Missing EOM sentinel when opening new " + channelType + " channel.");
         }
         // todo compare against current cloud, refuse the con if no match
-
-
-        // Do H2O.Intern in corresponding case branch, we can't do H2O.intern here since it wouldn't work
-        // with ExternalFrameHandling ( we don't send the same information there as with the other communication)
-        // Pass off the TCP connection to a separate reader thread
         switch( chanType ) {
         case TCP_SMALL:
           new SmallMessagesReaderThread(H2ONode.intern(inetAddress, port, timestamp), wrappedSocket).start();
@@ -110,12 +106,9 @@ public class TCPReceiverThread extends Thread {
         case TCP_BIG:
           new TCPReaderThread(wrappedSocket, new AutoBuffer(wrappedSocket, inetAddress, timestamp), inetAddress, timestamp).start();
           break;
-        case TCP_EXTERNAL:
-          new ExternalFrameHandlerThread(wrappedSocket, new AutoBuffer(wrappedSocket)).start();
-          break;
         default:
           ListenerService.getInstance().report("protocol-failure", "channel-type", chanType);
-          throw new IOException("Communication protocol failure: Unexpected channel type " + chanType + ", only know 1 - Small, 2 - Big and 3 - ExternalFrameHandling");
+          throw new IOException("Communication protocol failure: Unexpected channel type " + chanType + ", only know 1 - Small, 2 - Big");
         }
       } catch( java.nio.channels.AsynchronousCloseException ex ) {
         break;                  // Socket closed for shutdown
@@ -123,9 +116,8 @@ public class TCPReceiverThread extends Thread {
         if (wrappedSocket != null) {
           try { wrappedSocket.close(); } catch (Exception e2) { Log.trace(e2); }
         }
-        e.printStackTrace();
         // On any error from anybody, close all sockets & re-open
-        Log.err("IO error on TCP port "+H2O.H2O_PORT+": ",e);
+        Log.err("IO error on TCP port " + H2O.H2O_PORT + ": ", e);
         saw_error = true;
         errsock = SOCK ;  SOCK = null; // Signal error recovery on the next loop
       }
@@ -141,6 +133,7 @@ public class TCPReceiverThread extends Thread {
 
     public TCPReaderThread(ByteChannel sock, AutoBuffer ab, InetAddress address, short timestamp) {
       super("TCP-"+ab._h2o+"-"+(ab._h2o._tcp_readers++));
+      ThreadHelper.initCommonThreadProperties(this);
       _sock = sock;
       _ab = ab;
       _address = address;
@@ -169,8 +162,7 @@ public class TCPReceiverThread extends Thread {
         } catch( Throwable e ) {
           // On any error from anybody, close everything
           System.err.println("IO error");
-          e.printStackTrace();
-          Log.err("IO error on TCP port "+H2O.H2O_PORT+": ",e);
+          Log.err("IO error on TCP port " + H2O.H2O_PORT + ": ", e);
           break;
         }
         // Reuse open sockets for the next task
@@ -199,6 +191,7 @@ public class TCPReceiverThread extends Thread {
 
     public SmallMessagesReaderThread(H2ONode h2o, ByteChannel chan) {
       super("TCP-SMALL-READ-" + h2o);
+      ThreadHelper.initCommonThreadProperties(this);
       _h2o = h2o;
       _chan = chan;
       _bb = ByteBuffer.allocateDirect(AutoBuffer.BBP_BIG._size).order(ByteOrder.nativeOrder());
@@ -250,7 +243,6 @@ public class TCPReceiverThread extends Thread {
         }
       } catch(Throwable t) {
         if( !idle || !(t instanceof IOException) ) {
-          t.printStackTrace();
           Log.err(t);
         }
       } finally {

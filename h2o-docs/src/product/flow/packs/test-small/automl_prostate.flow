@@ -19,7 +19,11 @@
     },
     {
       "type": "cs",
-      "input": "runAutoML {\"training_frame\":\"prostate.hex\",\"response_column\":\"CAPSULE\",\"seed\":-1,\"max_models\":3,\"max_runtime_secs\":3600,\"stopping_metric\":\"AUTO\",\"sort_metric\":null,\"stopping_rounds\":3,\"stopping_tolerance\":-1,\"nfolds\":5,\"balance_classes\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"keep_cross_validation_predictions\":true,\"keep_cross_validation_models\":true,\"keep_cross_validation_fold_assignment\":false,\"ignored_columns\":[\"ID\"],\"exclude_algos\":[],\"project_name\":\"automl_prostate\"}"
+      "input": "runAutoML {\"input_spec\":{\"training_frame\":\"prostate.hex\",\"response_column\":\"CAPSULE\",\"ignored_columns\":[\"ID\"],\"sort_metric\":\"AUTO\"},\"build_control\":{\"project_name\":\"automl_prostate\",\"nfolds\":5,\"balance_classes\":false,\"stopping_criteria\":{\"seed\":-1,\"max_models\":3,\"max_runtime_secs\":3600,\"max_runtime_secs_per_model\":0,\"stopping_rounds\":3,\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":-1},\"keep_cross_validation_predictions\":true,\"keep_cross_validation_models\":true,\"keep_cross_validation_fold_assignment\":false},\"build_models\":{\"exclude_algos\":[],\"monotone_constraints\":[]}}, 'exec'"
+    },
+    {
+      "type": "cs",
+      "input": "getLeaderboard \"automl_prostate@@CAPSULE\""
     }
   ]
 }

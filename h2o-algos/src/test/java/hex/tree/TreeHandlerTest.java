@@ -5,8 +5,12 @@ import hex.genmodel.algos.tree.SharedTreeSubgraph;
 
 import hex.glm.GLMModel;
 import hex.schemas.TreeV3;
+import hex.tree.drf.DRF;
+import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
+import hex.tree.isofor.IsolationForest;
+import hex.tree.isofor.IsolationForestModel;
 import org.apache.commons.lang.ArrayUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -17,6 +21,7 @@ import water.fvec.Frame;
 import java.util.*;
 import java.util.regex.Pattern;
 
+import static hex.genmodel.utils.DistributionFamily.AUTO;
 import static org.junit.Assert.*;
 
 public class TreeHandlerTest extends TestUtil {
@@ -451,7 +456,7 @@ public class TreeHandlerTest extends TestUtil {
         final String[] rightPreviousSplits = isLeftInclusive ? (String[]) ArrayUtils.add(previousNaSplits, parentNode.getColName()) : previousNaSplits;
 
         int naSplits = 0;
-        if(isRightInclusive ^ isLeftInclusive){
+        if (isRightInclusive ^ isLeftInclusive) {
             naSplits++;
         }
 
@@ -459,6 +464,37 @@ public class TreeHandlerTest extends TestUtil {
         if (rightChild != null) naSplits += checkNaPath(rightChild, rightPreviousSplits);
 
         return naSplits;
+    }
+
+    @Test
+    public void testEmptyInheritedCategoricalLevels() {
+        try {
+            Scope.enter();
+            final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            Scope.track_generic(trainingFrame);
+            IsolationForestModel.IsolationForestParameters parms = new IsolationForestModel.IsolationForestParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._response_column = "IsDepDelayed";
+            parms._ntrees = 10;
+            parms._max_depth = 10;
+            parms._seed = 0XFEED;
+
+            IsolationForest job = new IsolationForest(parms);
+            IsolationForestModel model = job.trainModel().get();
+            Scope.track_generic(model);
+
+            final TreeHandler treeHandler = new TreeHandler();
+            final TreeV3 arguments = new TreeV3();
+            arguments.model = new KeyV3.ModelKeyV3(model._key);
+            for (int i = 0; i < parms._ntrees; i++) {
+                arguments.tree_number = i;
+                final TreeV3 tree = treeHandler.getTree(3, arguments);
+                assertNotNull(tree);
+            }
+        } finally {
+            Scope.exit();
+        }
     }
 
 }

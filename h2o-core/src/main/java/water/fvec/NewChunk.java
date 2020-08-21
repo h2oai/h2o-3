@@ -112,6 +112,17 @@ public class NewChunk extends Chunk {
       else if (_vals4 != null) _vals4 = Arrays.copyOf(_vals4, len);
       _len = len;
     }
+
+    public long byteSize() {
+      long mem = 4;
+      if (_vals1 != null) {
+        mem += _vals1.length;
+      }
+      if (_vals4 != null) {
+        mem += _vals4.length * 4;
+      }
+      return mem;
+    }
   }
 
   /**
@@ -218,6 +229,20 @@ public class NewChunk extends Chunk {
       else if(_vals4 != null) _vals4 = Arrays.copyOf(_vals4,len);
       else if(_vals8 != null) _vals8 = Arrays.copyOf(_vals8,len);
     }
+
+    public long byteSize() {
+      long mem = 4;
+      if (_vals1 != null) {
+        mem += _vals1.length;
+      }
+      if (_vals4 != null) {
+        mem += _vals4.length * 4;
+      }
+      if (_vals8 != null) {
+        mem += _vals8.length * 8;
+      }
+      return mem;
+    }
   }
 
   public final int _cidx;
@@ -239,6 +264,33 @@ public class NewChunk extends Chunk {
   private transient double _ds[];   // Doubles, for inflating via doubles
   public transient byte[]   _ss;   // Bytes of appended strings, including trailing 0
   private transient int    _is[];   // _is[] index of strings - holds offsets into _ss[]. _is[i] == -1 means NA/sparse
+    
+  public long byteSize() {
+    long mem = 0;
+    if (_ms != null) {
+      mem += _ms.byteSize();
+    }
+    if (_missing != null) {
+      mem += _missing.size() / 8; // size() returns number of bits, convert to bytes, approx
+    }
+    if (_xs != null) {
+      mem += _xs.byteSize();
+    }
+    if (_id != null) {
+      mem += _id.length * 4;
+    }
+    if (_ds != null) {
+      mem += _ds.length * 8;
+    }
+    if (_ss != null) {
+      mem += _ss.length;
+    }
+    if (_is != null) {
+      mem += _is.length * 8;
+    }
+    return mem;
+  }
+
 
   int   [] alloc_indices(int l)  { return _id = MemoryManager.malloc4(l); }
   public double[] alloc_doubles(int l)  {
@@ -295,7 +347,6 @@ public class NewChunk extends Chunk {
     _ms = new Mantissas(4);
     _xs = new Exponents(4);
     if(sparse) _id = new int[4];
-
   }
 
   public NewChunk(double [] ds) {

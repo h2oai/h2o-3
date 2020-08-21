@@ -26,8 +26,10 @@
 #'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
 #'        "Random", "Modulo", "Stratified". Defaults to AUTO.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
+#' @param random_columns random columns indices for HGLM.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
+#' @param score_iteration_interval Perform scoring for every score_iteration_interval iterations Defaults to -1.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
@@ -35,8 +37,10 @@
 #'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
 #'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param family Family. Use binomial for classification with logistic regression, others are for regression problems. Must be
-#'        one of: "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie",
-#'        "negativebinomial". Defaults to gaussian.
+#'        one of: "AUTO", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial",
+#'        "poisson", "gamma", "tweedie", "negativebinomial". Defaults to AUTO.
+#' @param rand_family Random Component Family array.  One for each random component. Only support gaussian for now. Must be one of:
+#'        "[gaussian]".
 #' @param tweedie_variance_power Tweedie variance power Defaults to 0.
 #' @param tweedie_link_power Tweedie link power Defaults to 1.
 #' @param theta Theta Defaults to 1e-10.
@@ -78,8 +82,16 @@
 #'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.
 #' @param link Link function. Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit".
 #'        Defaults to family_default.
+#' @param rand_link Link function array for random component in HGLM. Must be one of: "[identity]", "[family_default]".
+#' @param startval double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
+#' @param calc_like \code{Logical}. if true, will return likelihood function value for HGLM. Defaults to FALSE.
+#' @param HGLM \code{Logical}. If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned Defaults
+#'        to FALSE.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
+#' @param cold_start \code{Logical}. Only applicable to multiple alpha/lambda values.  If false, build the next model for next set
+#'        of alpha/lambda values starting from the values provided by current model.  If true will start GLM model from
+#'        scratch. Defaults to FALSE.
 #' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
 #'        coefficients to zero). Default indicates: if the number of observations is greater than the number of
 #'        variables, then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of
@@ -92,14 +104,22 @@
 #' @param interaction_pairs A list of pairwise (first order) column interactions.
 #' @param obj_reg Likelihood divider in objective value computation, default is 1/nobs Defaults to -1.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
+#'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
+#'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
+#'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
+#'        "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing".
+#'        Defaults to AUTO.
+#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
+#'        much) Defaults to 0.001.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
-#' @param max_hit_ratio_k Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-#'        Defaults to 0.
+#' @param max_hit_ratio_k This argument is deprecated and has no use. Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable).
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
@@ -121,7 +141,7 @@
 #' # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
 #' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate = h2o.importFile(path = prostate_path)
-#' h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate,
+#' h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"), training_frame = prostate,
 #'         family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #' 
 #' # Run GLM of VOL ~ CAPSULE + AGE + RACE + PSA + GLEASON
@@ -137,9 +157,13 @@
 #'   path="https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv"
 #' )
 #' predictors = 1:20
-#' target="y"
-#' glm = h2o.glm(x=predictors, y=target, training_frame=bank, family="binomial", standardize=TRUE,
-#'               lambda_search=TRUE)
+#' target = "y"
+#' glm = h2o.glm(x = predictors, 
+#'               y = target, 
+#'               training_frame = bank, 
+#'               family = "binomial", 
+#'               standardize = TRUE,
+#'               lambda_search = TRUE)
 #' h2o.std_coef_plot(glm, num_of_features = 20)
 #' }
 #' @export
@@ -155,11 +179,14 @@ h2o.glm <- function(x,
                     keep_cross_validation_fold_assignment = FALSE,
                     fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                     fold_column = NULL,
+                    random_columns = NULL,
                     ignore_const_cols = TRUE,
                     score_each_iteration = FALSE,
+                    score_iteration_interval = -1,
                     offset_column = NULL,
                     weights_column = NULL,
-                    family = c("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
+                    family = c("AUTO", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
+                    rand_family = c("[gaussian]"),
                     tweedie_variance_power = 0,
                     tweedie_link_power = 1,
                     theta = 1e-10,
@@ -181,7 +208,12 @@ h2o.glm <- function(x,
                     beta_epsilon = 0.0001,
                     gradient_epsilon = -1,
                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
+                    rand_link = c("[identity]", "[family_default]"),
+                    startval = NULL,
+                    calc_like = FALSE,
+                    HGLM = FALSE,
                     prior = -1,
+                    cold_start = FALSE,
                     lambda_min_ratio = -1,
                     beta_constraints = NULL,
                     max_active_predictors = -1,
@@ -189,6 +221,9 @@ h2o.glm <- function(x,
                     interaction_pairs = NULL,
                     obj_reg = -1,
                     export_checkpoints_dir = NULL,
+                    stopping_rounds = 0,
+                    stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
+                    stopping_tolerance = 0.001,
                     balance_classes = FALSE,
                     class_sampling_factors = NULL,
                     max_after_balance_size = 5.0,
@@ -226,11 +261,16 @@ h2o.glm <- function(x,
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
+  if (HGLM && is.null(random_columns)) stop("HGLM: must specify random effect column!")
+  if (HGLM && (!is.null(random_columns))) {
+    temp <- .verify_dataxy(training_frame, random_columns, y)
+    random_columns <- temp$x_i-1  # change column index to numeric column indices starting from 0
+  }
   if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
-  parms$response_column <- args$y
+  parms$response_column <- args$y    
 
   if (!missing(model_id))
     parms$model_id <- model_id
@@ -248,16 +288,22 @@ h2o.glm <- function(x,
     parms$fold_assignment <- fold_assignment
   if (!missing(fold_column))
     parms$fold_column <- fold_column
+  if (!missing(random_columns))
+    parms$random_columns <- random_columns
   if (!missing(ignore_const_cols))
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(score_each_iteration))
     parms$score_each_iteration <- score_each_iteration
+  if (!missing(score_iteration_interval))
+    parms$score_iteration_interval <- score_iteration_interval
   if (!missing(offset_column))
     parms$offset_column <- offset_column
   if (!missing(weights_column))
     parms$weights_column <- weights_column
   if (!missing(family))
     parms$family <- family
+  if (!missing(rand_family))
+    parms$rand_family <- rand_family
   if (!missing(tweedie_variance_power))
     parms$tweedie_variance_power <- tweedie_variance_power
   if (!missing(tweedie_link_power))
@@ -298,8 +344,18 @@ h2o.glm <- function(x,
     parms$gradient_epsilon <- gradient_epsilon
   if (!missing(link))
     parms$link <- link
+  if (!missing(rand_link))
+    parms$rand_link <- rand_link
+  if (!missing(startval))
+    parms$startval <- startval
+  if (!missing(calc_like))
+    parms$calc_like <- calc_like
+  if (!missing(HGLM))
+    parms$HGLM <- HGLM
   if (!missing(prior))
     parms$prior <- prior
+  if (!missing(cold_start))
+    parms$cold_start <- cold_start
   if (!missing(lambda_min_ratio))
     parms$lambda_min_ratio <- lambda_min_ratio
   if (!missing(max_active_predictors))
@@ -310,6 +366,12 @@ h2o.glm <- function(x,
     parms$obj_reg <- obj_reg
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(stopping_rounds))
+    parms$stopping_rounds <- stopping_rounds
+  if (!missing(stopping_metric))
+    parms$stopping_metric <- stopping_metric
+  if (!missing(stopping_tolerance))
+    parms$stopping_tolerance <- stopping_tolerance
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))
@@ -338,13 +400,275 @@ h2o.glm <- function(x,
     parms$beta_constraints <- beta_constraints
     if(!missing(missing_values_handling))
       parms$missing_values_handling <- missing_values_handling
+  if (!missing(max_hit_ratio_k)) {
+    warning("Argument max_hit_ratio_k is deprecated and has no use.")
+    parms$offset_column <- NULL
+  }    
 
   # Error check and build model
   model <- .h2o.modelJob('glm', parms, h2oRestApiVersion=3, verbose=FALSE)
 
   model@model$coefficients <- model@model$coefficients_table[,2]
   names(model@model$coefficients) <- model@model$coefficients_table[,1]
+  if (!(is.null(model@model$random_coefficients_table))) {
+      model@model$random_coefficients <- model@model$random_coefficients_table[,2]
+      names(model@model$random_coefficients) <- model@model$random_coefficients_table[,1]
+  }
   return(model)
+}
+.h2o.train_segments_glm <- function(x,
+                                    y,
+                                    training_frame,
+                                    validation_frame = NULL,
+                                    nfolds = 0,
+                                    seed = -1,
+                                    keep_cross_validation_models = TRUE,
+                                    keep_cross_validation_predictions = FALSE,
+                                    keep_cross_validation_fold_assignment = FALSE,
+                                    fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
+                                    fold_column = NULL,
+                                    random_columns = NULL,
+                                    ignore_const_cols = TRUE,
+                                    score_each_iteration = FALSE,
+                                    score_iteration_interval = -1,
+                                    offset_column = NULL,
+                                    weights_column = NULL,
+                                    family = c("AUTO", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
+                                    rand_family = c("[gaussian]"),
+                                    tweedie_variance_power = 0,
+                                    tweedie_link_power = 1,
+                                    theta = 1e-10,
+                                    solver = c("AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT", "GRADIENT_DESCENT_LH", "GRADIENT_DESCENT_SQERR"),
+                                    alpha = NULL,
+                                    lambda = NULL,
+                                    lambda_search = FALSE,
+                                    early_stopping = TRUE,
+                                    nlambdas = -1,
+                                    standardize = TRUE,
+                                    missing_values_handling = c("MeanImputation", "Skip", "PlugValues"),
+                                    plug_values = NULL,
+                                    compute_p_values = FALSE,
+                                    remove_collinear_columns = FALSE,
+                                    intercept = TRUE,
+                                    non_negative = FALSE,
+                                    max_iterations = -1,
+                                    objective_epsilon = -1,
+                                    beta_epsilon = 0.0001,
+                                    gradient_epsilon = -1,
+                                    link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
+                                    rand_link = c("[identity]", "[family_default]"),
+                                    startval = NULL,
+                                    calc_like = FALSE,
+                                    HGLM = FALSE,
+                                    prior = -1,
+                                    cold_start = FALSE,
+                                    lambda_min_ratio = -1,
+                                    beta_constraints = NULL,
+                                    max_active_predictors = -1,
+                                    interactions = NULL,
+                                    interaction_pairs = NULL,
+                                    obj_reg = -1,
+                                    export_checkpoints_dir = NULL,
+                                    stopping_rounds = 0,
+                                    stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
+                                    stopping_tolerance = 0.001,
+                                    balance_classes = FALSE,
+                                    class_sampling_factors = NULL,
+                                    max_after_balance_size = 5.0,
+                                    max_hit_ratio_k = 0,
+                                    max_runtime_secs = 0,
+                                    custom_metric_func = NULL,
+                                    segment_columns = NULL,
+                                    segment_models_id = NULL,
+                                    parallelism = 1)
+{
+  # formally define variables that were excluded from function parameters
+  model_id <- NULL
+  verbose <- NULL
+  destination_key <- NULL
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Validate other required args
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
+     }
+  }
+
+  # Validate other args
+  # if (!is.null(beta_constraints)) {
+  #     if (!inherits(beta_constraints, 'data.frame') && !is.H2OFrame(beta_constraints))
+  #       stop(paste('`beta_constraints` must be an H2OH2OFrame or R data.frame. Got: ', class(beta_constraints)))
+  #     if (inherits(beta_constraints, 'data.frame')) {
+  #       beta_constraints <- as.h2o(beta_constraints)
+  #     }
+  # }
+  if (inherits(beta_constraints, 'data.frame')) {
+    beta_constraints <- as.h2o(beta_constraints)
+  }
+
+  # Build parameter list to send to model builder
+  parms <- list()
+  parms$training_frame <- training_frame
+  args <- .verify_dataxy(training_frame, x, y)
+  if (HGLM && is.null(random_columns)) stop("HGLM: must specify random effect column!")
+  if (HGLM && (!is.null(random_columns))) {
+    temp <- .verify_dataxy(training_frame, random_columns, y)
+    random_columns <- temp$x_i-1  # change column index to numeric column indices starting from 0
+  }
+  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  parms$ignored_columns <- args$x_ignore
+  parms$response_column <- args$y    
+
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
+  if (!missing(seed))
+    parms$seed <- seed
+  if (!missing(keep_cross_validation_models))
+    parms$keep_cross_validation_models <- keep_cross_validation_models
+  if (!missing(keep_cross_validation_predictions))
+    parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
+  if (!missing(keep_cross_validation_fold_assignment))
+    parms$keep_cross_validation_fold_assignment <- keep_cross_validation_fold_assignment
+  if (!missing(fold_assignment))
+    parms$fold_assignment <- fold_assignment
+  if (!missing(fold_column))
+    parms$fold_column <- fold_column
+  if (!missing(random_columns))
+    parms$random_columns <- random_columns
+  if (!missing(ignore_const_cols))
+    parms$ignore_const_cols <- ignore_const_cols
+  if (!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
+  if (!missing(score_iteration_interval))
+    parms$score_iteration_interval <- score_iteration_interval
+  if (!missing(offset_column))
+    parms$offset_column <- offset_column
+  if (!missing(weights_column))
+    parms$weights_column <- weights_column
+  if (!missing(family))
+    parms$family <- family
+  if (!missing(rand_family))
+    parms$rand_family <- rand_family
+  if (!missing(tweedie_variance_power))
+    parms$tweedie_variance_power <- tweedie_variance_power
+  if (!missing(tweedie_link_power))
+    parms$tweedie_link_power <- tweedie_link_power
+  if (!missing(theta))
+    parms$theta <- theta
+  if (!missing(solver))
+    parms$solver <- solver
+  if (!missing(alpha))
+    parms$alpha <- alpha
+  if (!missing(lambda))
+    parms$lambda <- lambda
+  if (!missing(lambda_search))
+    parms$lambda_search <- lambda_search
+  if (!missing(early_stopping))
+    parms$early_stopping <- early_stopping
+  if (!missing(nlambdas))
+    parms$nlambdas <- nlambdas
+  if (!missing(standardize))
+    parms$standardize <- standardize
+  if (!missing(plug_values))
+    parms$plug_values <- plug_values
+  if (!missing(compute_p_values))
+    parms$compute_p_values <- compute_p_values
+  if (!missing(remove_collinear_columns))
+    parms$remove_collinear_columns <- remove_collinear_columns
+  if (!missing(intercept))
+    parms$intercept <- intercept
+  if (!missing(non_negative))
+    parms$non_negative <- non_negative
+  if (!missing(max_iterations))
+    parms$max_iterations <- max_iterations
+  if (!missing(objective_epsilon))
+    parms$objective_epsilon <- objective_epsilon
+  if (!missing(beta_epsilon))
+    parms$beta_epsilon <- beta_epsilon
+  if (!missing(gradient_epsilon))
+    parms$gradient_epsilon <- gradient_epsilon
+  if (!missing(link))
+    parms$link <- link
+  if (!missing(rand_link))
+    parms$rand_link <- rand_link
+  if (!missing(startval))
+    parms$startval <- startval
+  if (!missing(calc_like))
+    parms$calc_like <- calc_like
+  if (!missing(HGLM))
+    parms$HGLM <- HGLM
+  if (!missing(prior))
+    parms$prior <- prior
+  if (!missing(cold_start))
+    parms$cold_start <- cold_start
+  if (!missing(lambda_min_ratio))
+    parms$lambda_min_ratio <- lambda_min_ratio
+  if (!missing(max_active_predictors))
+    parms$max_active_predictors <- max_active_predictors
+  if (!missing(interaction_pairs))
+    parms$interaction_pairs <- interaction_pairs
+  if (!missing(obj_reg))
+    parms$obj_reg <- obj_reg
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(stopping_rounds))
+    parms$stopping_rounds <- stopping_rounds
+  if (!missing(stopping_metric))
+    parms$stopping_metric <- stopping_metric
+  if (!missing(stopping_tolerance))
+    parms$stopping_tolerance <- stopping_tolerance
+  if (!missing(balance_classes))
+    parms$balance_classes <- balance_classes
+  if (!missing(class_sampling_factors))
+    parms$class_sampling_factors <- class_sampling_factors
+  if (!missing(max_after_balance_size))
+    parms$max_after_balance_size <- max_after_balance_size
+  if (!missing(max_hit_ratio_k))
+    parms$max_hit_ratio_k <- max_hit_ratio_k
+  if (!missing(max_runtime_secs))
+    parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(custom_metric_func))
+    parms$custom_metric_func <- custom_metric_func
+
+  if( !missing(interactions) ) {
+    # interactions are column names => as-is
+    if( is.character(interactions) )       parms$interactions <- interactions
+    else if( is.numeric(interactions) )    parms$interactions <- names(training_frame)[interactions]
+    else stop("Don't know what to do with interactions. Supply vector of indices or names")
+  }
+  # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
+  # For any other value, error out.
+  # Expunge nfolds from the message sent to H2O, since H2O doesn't understand it.
+  if (!missing(nfolds) && nfolds > 1)
+    parms$nfolds <- nfolds
+  if(!missing(beta_constraints))
+    parms$beta_constraints <- beta_constraints
+    if(!missing(missing_values_handling))
+      parms$missing_values_handling <- missing_values_handling
+  if (!missing(max_hit_ratio_k)) {
+    warning("Argument max_hit_ratio_k is deprecated and has no use.")
+    parms$offset_column <- NULL
+  }    
+
+  # Build segment-models specific parameters
+  segment_parms <- list()
+  if (!missing(segment_columns))
+    segment_parms$segment_columns <- segment_columns
+  if (!missing(segment_models_id))
+    segment_parms$segment_models_id <- segment_models_id
+  segment_parms$parallelism <- parallelism
+
+  # Error check and build segment models
+  segment_models <- .h2o.segmentModelsJob('glm', segment_parms, parms, h2oRestApiVersion=3)
+  return(segment_models)
 }
 
 

@@ -1,7 +1,7 @@
 ``theta``
 ---------
 
-- Available in: GLM
+- Available in: GLM, GAM
 - Hyperparameter: no
 
 Description
@@ -22,43 +22,43 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-	library(h2o)
-	h2o.init()
+		library(h2o)
+		h2o.init()
 
-	# Import the Swedish motor insurance dataset
-	h2o_df = h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/Motor_insurance_sweden.txt")
+		# Import the Swedish motor insurance dataset
+		h2o_df = h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/Motor_insurance_sweden.txt")
 
-	# Set the predictor names and the response column
-	predictors <- c["Payment", "Insured", "Kilometres", "Zone", "Bonus", "Make"]
-	response <- "Claims"
+		# Set the predictor names and the response column
+		predictors <- c["Payment", "Insured", "Kilometres", "Zone", "Bonus", "Make"]
+		response <- "Claims"
 
-	# Train the model
-	negativebinomial.fit <- h2o.glm(x=predictors, 
-	                                y=response, 
-	                                training_frame=h2o_df, 
-	                                family="negativebinomial", 
-	                                link="identity", 
-	                                theta=0.5)
+		# Train the model
+		negativebinomial_fit <- h2o.glm(x = predictors, 
+		                                y = response, 
+		                                training_frame = h2o_df, 
+		                                family = "negativebinomial", 
+		                                link = "identity", 
+		                                theta = 0.5)
 
-   .. code-block:: python
+   .. code-tab:: python
 
-	import h2o
-	from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-	h2o.init()
+		import h2o
+		from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+		h2o.init()
 
-	# Import the Swedish motor insurance dataset
-	h2o_df = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/Motor_insurance_sweden.txt")
+		# Import the Swedish motor insurance dataset
+		h2o_df = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/Motor_insurance_sweden.txt")
 
-	# Set the predictor names and the response column
-	predictors = ["Payment", "Insured", "Kilometres", "Zone", "Bonus", "Make"]
-	response = "Claims"
+		# Set the predictor names and the response column
+		predictors = ["Payment", "Insured", "Kilometres", "Zone", "Bonus", "Make"]
+		response = "Claims"
 
-	# Train your model
-	negativebinomial_fit = H2OGeneralizedLinearEstimator(family="negativebinomial", 
-	                                                     link="identity",
-	                                                     theta=0.5)
-	negativebinomial_fit.train(x=predictors, y=response, training_frame=h2o_df)
+		# Train your model
+		negativebinomial_fit = H2OGeneralizedLinearEstimator(family="negativebinomial", 
+		                                                     link="identity",
+		                                                     theta=0.5)
+		negativebinomial_fit.train(x=predictors, y=response, training_frame=h2o_df)
 

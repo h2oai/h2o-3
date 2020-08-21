@@ -25,6 +25,11 @@ Additional Resources:
 .. toctree::
    :maxdepth: 2
 
+   api-changes
+
+.. toctree::
+   :maxdepth: 2
+
    quick-start-videos
    
 .. toctree::
@@ -43,6 +48,11 @@ Additional Resources:
    starting-h2o
 
 .. toctree::
+   :maxdepth: 2
+
+   h2o-client
+
+.. toctree::
    :maxdepth: 4
 
    getting-data-into-h2o
@@ -56,6 +66,11 @@ Additional Resources:
    :maxdepth: 2
 
    data-science
+
+.. toctree::
+   :maxdepth: 2
+
+   training-models
 
 .. toctree::
    :maxdepth: 2
@@ -123,11 +138,6 @@ Additional Resources:
 
    glossary
 
-.. toctree::
-   :maxdepth: 1
-
-   migrating
-   
 .. toctree::
    :maxdepth: 1
 

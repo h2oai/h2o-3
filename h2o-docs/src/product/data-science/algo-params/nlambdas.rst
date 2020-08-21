@@ -1,7 +1,7 @@
 ``nlambdas``
 ------------
 
-- Available in: GLM
+- Available in: GLM, GAM
 - Hyperparameter: no
 
 Description
@@ -30,68 +30,68 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-	library(h2o)
-	h2o.init()
+		library(h2o)
+		h2o.init()
 
-	# import the boston dataset:
-	# this dataset looks at features of the boston suburbs and predicts median housing prices
-	# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Housing
-	boston <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
+		# import the boston dataset:
+		# this dataset looks at features of the boston suburbs and predicts median housing prices
+		# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Housing
+		boston <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
 
-	# set the predictor names and the response column name
-	predictors <- colnames(boston)[1:13]
-	# set the response column to "medv", the median value of owner-occupied homes in $1000's
-	response <- "medv"
+		# set the predictor names and the response column name
+		predictors <- colnames(boston)[1:13]
+		# set the response column to "medv", the median value of owner-occupied homes in $1000's
+		response <- "medv"
 
-	# convert the chas column to a factor (chas = Charles River dummy variable (= 1 if tract bounds river; 0 otherwise))
-	boston["chas"] <- as.factor(boston["chas"])
+		# convert the chas column to a factor (chas = Charles River dummy variable (= 1 if tract bounds river; 0 otherwise))
+		boston["chas"] <- as.factor(boston["chas"])
 
-	# split into train and validation sets
-	boston.splits <- h2o.splitFrame(data =  boston, ratios = .8)
-	train <- boston.splits[[1]]
-	valid <- boston.splits[[2]]
+		# split into train and validation sets
+		boston_splits <- h2o.splitFrame(data =  boston, ratios = 0.8)
+		train <- boston_splits[[1]]
+		valid <- boston_splits[[2]]
 
-	# try using the `nlambas` parameter:
-	# train your model
-	boston_glm <- h2o.glm(x = predictors, y = response, training_frame = train,
-	                      validation_frame = valid,
-	                      lambda_search = TRUE,
-	                      nlambdas = 50)
+		# try using the `nlambas` parameter:
+		# train your model
+		boston_glm <- h2o.glm(x = predictors, y = response, training_frame = train,
+		                      validation_frame = valid,
+		                      lambda_search = TRUE,
+		                      nlambdas = 50)
 
-	# print the mse for the validation data
-	print(h2o.mse(boston_glm, valid=TRUE))
-
-
-   .. code-block:: python
-
-	import h2o
-	from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-	h2o.init()
-
-	# import the boston dataset:
-	# this dataset looks at features of the boston suburbs and predicts median housing prices
-	# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Housing
-	boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
-
-	# set the predictor names and the response column name
-	predictors = boston.columns[:-1]
-	# set the response column to "medv", the median value of owner-occupied homes in $1000's
-	response = "medv"
-
-	# convert the chas column to a factor (chas = Charles River dummy variable (= 1 if tract bounds river; 0 otherwise))
-	boston['chas'] = boston['chas'].asfactor()
-
-	# split into train and validation sets
-	train, valid = boston.split_frame(ratios = [.8])
+		# print the mse for the validation data
+		print(h2o.mse(boston_glm, valid = TRUE))
 
 
-	# try using the `nlambdas` parameter:
-	# initialize the estimator then train the model
-	boston_glm = H2OGeneralizedLinearEstimator(lambda_search = True, nlambdas = 50)
-	boston_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+   .. code-tab:: python
 
-	# print the mse for the validation data
-	print(boston_glm.mse(valid=True))
+		import h2o
+		from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+		h2o.init()
+
+		# import the boston dataset:
+		# this dataset looks at features of the boston suburbs and predicts median housing prices
+		# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Housing
+		boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
+
+		# set the predictor names and the response column name
+		predictors = boston.columns[:-1]
+		# set the response column to "medv", the median value of owner-occupied homes in $1000's
+		response = "medv"
+
+		# convert the chas column to a factor (chas = Charles River dummy variable (= 1 if tract bounds river; 0 otherwise))
+		boston['chas'] = boston['chas'].asfactor()
+
+		# split into train and validation sets
+		train, valid = boston.split_frame(ratios = [.8])
+
+
+		# try using the `nlambdas` parameter:
+		# initialize the estimator then train the model
+		boston_glm = H2OGeneralizedLinearEstimator(lambda_search = True, nlambdas = 50)
+		boston_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+
+		# print the mse for the validation data
+		print(boston_glm.mse(valid=True))

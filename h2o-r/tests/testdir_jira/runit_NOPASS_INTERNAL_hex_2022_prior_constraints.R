@@ -17,7 +17,7 @@ test.Priors.BetaConstraints <- function() {
   betaConstraints.hex <- h2o.importFile(pathToConstraints)
   beta_nointercept.hex <- betaConstraints.hex[1:(nrow(betaConstraints.hex)-1),]
 
-  ## Set Parameters (default standardization = T)
+  ## Set Parameters (default standardization = TRUE)
   betaConstraints <- as.data.frame(betaConstraints.hex)
   indVars <- as.character(betaConstraints$names[1:(nrow(betaConstraints)-1)])
   depVars <- "C3"
@@ -52,7 +52,7 @@ test.Priors.BetaConstraints <- function() {
   xMatrix <- data.matrix(train.df) # converts all values to numeric
   xMatrix[,23] <- xMatrix[,23] - 1 # R factor levels start at 1, but we want to start at 0
 
-  glm.r <- glmnet(x = xMatrix, alpha = alpha, standardize = T, y = train.df[,depVars], family = family_type,
+  glm.r <- glmnet(x = xMatrix, alpha = alpha, standardize = TRUE, y = train.df[,depVars], family = family_type,
                   lower.limits = -100000, upper.limits = 100000, intercept=FALSE)
 
   xTestMatrix <- data.matrix(test.df)
@@ -104,9 +104,9 @@ test.Priors.BetaConstraints <- function() {
 
   ########### Run check of priors vs no priors
   data.hex$C3 <- as.factor(data.hex$C3)
-  glm.h2o1 <- h2o.glm(x = indVars, y = depVars, training_frame = data.hex, family = family_type, standardize = F,
+  glm.h2o1 <- h2o.glm(x = indVars, y = depVars, training_frame = data.hex, family = family_type, standardize = FALSE,
                       alpha = alpha, beta_constraint = beta_nointercept.hex)
-  glm.h2o2 <- h2o.glm(x = indVars, y = depVars, training_frame = data.hex, family = family_type, standardize = F,
+  glm.h2o2 <- h2o.glm(x = indVars, y = depVars, training_frame = data.hex, family = family_type, standardize = FALSE,
                       alpha = alpha, beta_constraint = beta_nointercept.hex[c("names","lower_bounds","upper_bounds")])
   y <- data.matrix(as.integer(train.df[,depVars]) -1) # start level count at 0
   x <- xMatrix

@@ -261,12 +261,14 @@ class H2OCloudNode(object):
     terminated: Only from a signal.  Not normal shutdown.
     """
 
-    def __init__(self, is_client, cloud_num, nodes_per_cloud, node_num, cloud_name, h2o_jar, ip, base_port,
-                 xmx, cp, output_dir, test_ssl, ldap_config_path, jvm_opts, flatfile):
+    def __init__(self, is_client, allow_clients,
+                 cloud_num, nodes_per_cloud, node_num, cloud_name, h2o_jar, ip, base_port,
+                 xmx, cp, output_dir, test_ssl, ldap_config_path, jvm_opts, flatfile, strict_port=True):
         """
         Create a node in a cloud.
 
         :param is_client: Whether this node is an H2O client node (vs a worker node) or not.
+        :param allow_clients: Whether to enable client connections.
         :param cloud_num: Dense 0-based cluster index number.
         :param nodes_per_cloud: How many H2O java instances are in a cluster. Clustes are symmetric.
         :param node_num: This node's dense 0-based node index number.
@@ -279,9 +281,11 @@ class H2OCloudNode(object):
         :param ldap_config_path: path to LDAP config, if none, no LDAP will be used.
         :param jvm_opts: str with additional JVM options.
         :param flatfile: path to flatfile (optional) 
+        :param strict_port: interpret port as exact specification, otherwise as a base port (optional, default is strict)
         :return The node object.
         """
         self.is_client = is_client
+        self.allow_clients = allow_clients
         self.cloud_num = cloud_num
         self.nodes_per_cloud = nodes_per_cloud
         self.node_num = node_num
@@ -289,6 +293,7 @@ class H2OCloudNode(object):
         self.h2o_jar = h2o_jar
         self.ip = ip
         self.base_port = base_port
+        self.strict_port = strict_port
         self.xmx = xmx
         self.cp = cp
         self.output_dir = output_dir
@@ -343,13 +348,17 @@ class H2OCloudNode(object):
                "-ea"]
         if self.jvm_opts is not None:
             cmd += [self.jvm_opts]
+        port_spec = "-port" if self.strict_port else "-baseport"
         cmd += ["-cp", classpath,
                main_class,
                "-name", self.cloud_name,
-               "-port", str(self.port),
+               port_spec, str(self.port),
                "-ip", self.ip]
         if self.flatfile is not None:
             cmd += ["-flatfile", self.flatfile]
+
+        if self.allow_clients:
+            cmd += ["-allow_clients"]
 
         if self.ldap_config_path is not None:
             cmd.append('-login_conf')
@@ -529,7 +538,7 @@ class H2OCloud(object):
     """
 
     def __init__(self, cloud_num, use_client, nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir, test_ssl,
-                 ldap_config_path, jvm_opts=None):
+                 ldap_config_path, jvm_opts=None, strict_port=True):
         """
         Create a cluster.
         See node definition above for argument descriptions.
@@ -547,6 +556,7 @@ class H2OCloud(object):
         self.test_ssl = test_ssl
         self.ldap_config_path = ldap_config_path
         self.jvm_opts = jvm_opts
+        self.strict_port = strict_port
 
         # Randomly choose a seven digit cluster number.
         n = random.randint(1000000, 9999999)
@@ -575,14 +585,14 @@ class H2OCloud(object):
                 with open(self.flatfile, "a") as ff:
                     for node in self.nodes:
                         ff.write("%s:%s\n" % (node.ip, node.port))
-            node = H2OCloudNode(is_client,
+            node = H2OCloudNode(is_client, use_client,
                                 self.cloud_num, actual_nodes_per_cloud, node_num,
                                 self.cloud_name,
                                 self.h2o_jar,
                                 "127.0.0.1", self.base_port,
                                 self.xmx, self.cp, self.output_dir,
                                 self.test_ssl, self.ldap_config_path, self.jvm_opts,
-                                self.flatfile)
+                                self.flatfile, strict_port=self.strict_port)
             if is_client:
                 self.client_nodes.append(node)
             else:

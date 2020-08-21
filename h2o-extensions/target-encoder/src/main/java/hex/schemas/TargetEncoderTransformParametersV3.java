@@ -4,6 +4,7 @@ import ai.h2o.targetencoding.TargetEncoder;
 import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.TargetEncoderTransformParameters;
 import water.api.API;
+import water.api.EnumValuesProvider;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.SchemaV3;
 
@@ -13,7 +14,7 @@ public class TargetEncoderTransformParametersV3 extends SchemaV3<TargetEncoderTr
   public KeyV3.ModelKeyV3<TargetEncoderModel> model;
   @API(help = "Seed value")
   public long seed;
-  @API(help = "Data leakage handling strategy. Default to None.", values = {"None", "KFold", "LeaveOneOut"})
+  @API(help = "Data leakage handling strategy.", valuesProvider = DataLeakageHandlingStrategyProvider.class)
   public TargetEncoder.DataLeakageHandlingStrategy data_leakage_handling;
   @API(help = "Noise")
   public double noise;
@@ -25,5 +26,9 @@ public class TargetEncoderTransformParametersV3 extends SchemaV3<TargetEncoderTr
   public double inflection_point;
   @API(help = "Smoothing")
   public double smoothing;
+
+  public static final class DataLeakageHandlingStrategyProvider extends EnumValuesProvider<TargetEncoder.DataLeakageHandlingStrategy> {
+    public DataLeakageHandlingStrategyProvider() { super(TargetEncoder.DataLeakageHandlingStrategy.class); }
+  }
 
 }

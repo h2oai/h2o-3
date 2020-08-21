@@ -6,11 +6,11 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import h2o
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum, numeric
-import h2o
 
 
 class H2OGeneralizedLinearEstimator(H2OEstimator):
@@ -31,13 +31,15 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     algo = "glm"
     param_names = {"model_id", "training_frame", "validation_frame", "nfolds", "seed", "keep_cross_validation_models",
                    "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
-                   "fold_column", "response_column", "ignored_columns", "ignore_const_cols", "score_each_iteration",
-                   "offset_column", "weights_column", "family", "tweedie_variance_power", "tweedie_link_power", "theta",
-                   "solver", "alpha", "lambda_", "lambda_search", "early_stopping", "nlambdas", "standardize",
-                   "missing_values_handling", "plug_values", "compute_p_values", "remove_collinear_columns",
-                   "intercept", "non_negative", "max_iterations", "objective_epsilon", "beta_epsilon",
-                   "gradient_epsilon", "link", "prior", "lambda_min_ratio", "beta_constraints", "max_active_predictors",
-                   "interactions", "interaction_pairs", "obj_reg", "export_checkpoints_dir", "balance_classes",
+                   "fold_column", "response_column", "ignored_columns", "random_columns", "ignore_const_cols",
+                   "score_each_iteration", "score_iteration_interval", "offset_column", "weights_column", "family",
+                   "rand_family", "tweedie_variance_power", "tweedie_link_power", "theta", "solver", "alpha", "lambda_",
+                   "lambda_search", "early_stopping", "nlambdas", "standardize", "missing_values_handling",
+                   "plug_values", "compute_p_values", "remove_collinear_columns", "intercept", "non_negative",
+                   "max_iterations", "objective_epsilon", "beta_epsilon", "gradient_epsilon", "link", "rand_link",
+                   "startval", "calc_like", "HGLM", "prior", "cold_start", "lambda_min_ratio", "beta_constraints",
+                   "max_active_predictors", "interactions", "interaction_pairs", "obj_reg", "export_checkpoints_dir",
+                   "stopping_rounds", "stopping_metric", "stopping_tolerance", "balance_classes",
                    "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k",
                    "max_runtime_secs", "custom_metric_func"}
 
@@ -68,14 +70,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8],
-        ...                                 seed = 1234)
-        >>> cars_glm = H2OGeneralizedLinearEstimator(seed = 1234,
-        ...                                          family = 'binomial')
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = cars.split_frame(ratios=[.8],
+        ...                                 seed=1234)
+        >>> cars_glm = H2OGeneralizedLinearEstimator(seed=1234,
+        ...                                          family='binomial')
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_glm.auc(train=True)
         """
         return self._parms.get("training_frame")
@@ -98,13 +100,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_glm = H2OGeneralizedLinearEstimator(seed = 1234,
-        ...                                          family = 'binomial')
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_glm = H2OGeneralizedLinearEstimator(seed=1234,
+        ...                                          family='binomial')
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_glm.auc(valid=True)
         """
         return self._parms.get("validation_frame")
@@ -128,8 +130,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
         >>> folds = 5
-        >>> cars_glm = H2OGeneralizedLinearEstimator(nfolds = folds,
-        ...                                          seed = 1234,
+        >>> cars_glm = H2OGeneralizedLinearEstimator(nfolds=folds,
+        ...                                          seed=1234,
         ...                                          family='binomial')
         >>> cars_glm.train(x=predictors,
         ...                y=response,
@@ -154,21 +156,21 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :examples:
 
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"]= airlines["Year"].asfactor()
-        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
         >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
         >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
         >>> response = "IsDepDelayed"
-        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
-        >>> glm_w_seed = H2OGeneralizedLinearEstimator(family = 'binomial',
-        ...                                            seed = 1234)
-        >>> glm_w_seed.train(x = predictors,
-        ...                  y = response,
-        ...                  training_frame = train,
-        ...                  validation_frame = valid)
+        >>> train, valid = airlines.split_frame(ratios=[.8], seed=1234)
+        >>> glm_w_seed = H2OGeneralizedLinearEstimator(family='binomial',
+        ...                                            seed=1234)
+        >>> glm_w_seed.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=train,
+        ...                  validation_frame=valid)
         >>> print(glm_w_seed_1.auc(valid=True))
         """
         return self._parms.get("seed")
@@ -192,14 +194,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_glm = H2OGeneralizedLinearEstimator(keep_cross_validation_models = True,
-        ...                                          nfolds = 5,
-        ...                                          seed = 1234,
-        ...                                          family = "binomial")
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_glm = H2OGeneralizedLinearEstimator(keep_cross_validation_models=True,
+        ...                                          nfolds=5,
+        ...                                          seed=1234,
+        ...                                          family="binomial")
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train)
         >>> cars_glm_cv_models = cars_glm.cross_validation_models()
         >>> print(cars_glm.cross_validation_models())
         """
@@ -224,14 +226,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_glm = H2OGeneralizedLinearEstimator(keep_cross_validation_predictions = True,
-        ...                                          nfolds = 5,
-        ...                                          seed = 1234,
-        ...                                          family = "binomial")
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_glm = H2OGeneralizedLinearEstimator(keep_cross_validation_predictions=True,
+        ...                                          nfolds=5,
+        ...                                          seed=1234,
+        ...                                          family="binomial")
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train)
         >>> cars_glm.cross_validation_predictions()
         """
         return self._parms.get("keep_cross_validation_predictions")
@@ -255,14 +257,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_glm = H2OGeneralizedLinearEstimator(keep_cross_validation_fold_assignment = True,
-        ...                                          nfolds = 5,
-        ...                                          seed = 1234,
-        ...                                          family = "binomial")
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_glm = H2OGeneralizedLinearEstimator(keep_cross_validation_fold_assignment=True,
+        ...                                          nfolds=5,
+        ...                                          seed=1234,
+        ...                                          family="binomial")
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train)
         >>> cars_glm.cross_validation_fold_assignment()
         """
         return self._parms.get("keep_cross_validation_fold_assignment")
@@ -288,10 +290,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
         >>> assignment_type = "Random"
-        >>> cars_gml = H2OGeneralizedLinearEstimator(fold_assignment = assignment_type,
-        ...                                          nfolds = 5,
-        ...                                          family = 'binomial',
-        ...                                          seed = 1234)
+        >>> cars_gml = H2OGeneralizedLinearEstimator(fold_assignment=assignment_type,
+        ...                                          nfolds=5,
+        ...                                          family='binomial',
+        ...                                          seed=1234)
         >>> cars_glm.train(x=predictors,
         ...                y=response,
         ...                training_frame=cars)
@@ -318,11 +320,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> fold_numbers = cars.kfold_column(n_folds = 5, seed = 1234)
+        >>> fold_numbers = cars.kfold_column(n_folds=5, seed=1234)
         >>> fold_numbers.set_names(["fold_numbers"])
         >>> cars = cars.cbind(fold_numbers)
         >>> print(cars['fold_numbers'])
-        >>>  cars_glm = H2OGeneralizedLinearEstimator(seed = 1234,
+        >>>  cars_glm = H2OGeneralizedLinearEstimator(seed=1234,
         ...                                           family="binomial")
         >>> cars_glm.train(x=predictors,
         ...                y=response,
@@ -369,6 +371,21 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
 
     @property
+    def random_columns(self):
+        """
+        random columns indices for HGLM.
+
+        Type: ``List[int]``.
+        """
+        return self._parms.get("random_columns")
+
+    @random_columns.setter
+    def random_columns(self, random_columns):
+        assert_is_type(random_columns, None, [int])
+        self._parms["random_columns"] = random_columns
+
+
+    @property
     def ignore_const_cols(self):
         """
         Ignore constant columns.
@@ -383,14 +400,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> response = "economy_20mpg"
         >>> cars["const_1"] = 6
         >>> cars["const_2"] = 7
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_glm = H2OGeneralizedLinearEstimator(seed = 1234,
-        ...                                          ignore_const_cols = True,
-        ...                                          family = "binomial")
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_glm = H2OGeneralizedLinearEstimator(seed=1234,
+        ...                                          ignore_const_cols=True,
+        ...                                          family="binomial")
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_glm.auc(valid=True)
         """
         return self._parms.get("ignore_const_cols")
@@ -414,14 +431,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_glm = H2OGeneralizedLinearEstimator(score_each_iteration = True,
-        ...                                          seed = 1234,
-        ...                                          family = 'binomial')
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_glm = H2OGeneralizedLinearEstimator(score_each_iteration=True,
+        ...                                          seed=1234,
+        ...                                          family='binomial')
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_glm.scoring_history()
         """
         return self._parms.get("score_each_iteration")
@@ -430,6 +447,21 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def score_each_iteration(self, score_each_iteration):
         assert_is_type(score_each_iteration, None, bool)
         self._parms["score_each_iteration"] = score_each_iteration
+
+
+    @property
+    def score_iteration_interval(self):
+        """
+        Perform scoring for every score_iteration_interval iterations
+
+        Type: ``int``  (default: ``-1``).
+        """
+        return self._parms.get("score_iteration_interval")
+
+    @score_iteration_interval.setter
+    def score_iteration_interval(self, score_iteration_interval):
+        assert_is_type(score_iteration_interval, None, int)
+        self._parms["score_iteration_interval"] = score_iteration_interval
 
 
     @property
@@ -446,9 +478,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> response = "medv"
         >>> boston['chas'] = boston['chas'].asfactor()
         >>> boston["offset"] = boston["medv"].log()
-        >>> train, valid = boston.split_frame(ratios = [.8], seed = 1234)
-        >>> boston_glm = H2OGeneralizedLinearEstimator(offset_column = "offset",
-        ...                                            seed = 1234)
+        >>> train, valid = boston.split_frame(ratios=[.8], seed=1234)
+        >>> boston_glm = H2OGeneralizedLinearEstimator(offset_column="offset",
+        ...                                            seed=1234)
         >>> boston_glm.train(x=predictors,
         ...                  y=response,
         ...                  training_frame=train,
@@ -480,14 +512,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_glm = H2OGeneralizedLinearEstimator(seed = 1234,
-        ...                                          family = 'binomial')
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid,
-        ...                weights_column = "weight")
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_glm = H2OGeneralizedLinearEstimator(seed=1234,
+        ...                                          family='binomial')
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid,
+        ...                weights_column="weight")
         >>> cars_glm.auc(valid=True)
         """
         return self._parms.get("weights_column")
@@ -503,8 +535,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Family. Use binomial for classification with logistic regression, others are for regression problems.
 
-        One of: ``"gaussian"``, ``"binomial"``, ``"quasibinomial"``, ``"ordinal"``, ``"multinomial"``, ``"poisson"``,
-        ``"gamma"``, ``"tweedie"``, ``"negativebinomial"``  (default: ``"gaussian"``).
+        One of: ``"auto"``, ``"gaussian"``, ``"binomial"``, ``"fractionalbinomial"``, ``"quasibinomial"``,
+        ``"ordinal"``, ``"multinomial"``, ``"poisson"``, ``"gamma"``, ``"tweedie"``, ``"negativebinomial"``  (default:
+        ``"auto"``).
 
         :examples:
 
@@ -512,20 +545,35 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8])
-        >>> cars_glm = H2OGeneralizedLinearEstimator(family = 'binomial')
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = cars.split_frame(ratios=[.8])
+        >>> cars_glm = H2OGeneralizedLinearEstimator(family='binomial')
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_glm.auc(valid = True)
         """
         return self._parms.get("family")
 
     @family.setter
     def family(self, family):
-        assert_is_type(family, None, Enum("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"))
+        assert_is_type(family, None, Enum("auto", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"))
         self._parms["family"] = family
+
+
+    @property
+    def rand_family(self):
+        """
+        Random Component Family array.  One for each random component. Only support gaussian for now.
+
+        Type: ``List[Enum["[gaussian]"]]``.
+        """
+        return self._parms.get("rand_family")
+
+    @rand_family.setter
+    def rand_family(self, rand_family):
+        assert_is_type(rand_family, None, [Enum("[gaussian]")])
+        self._parms["rand_family"] = rand_family
 
 
     @property
@@ -541,13 +589,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> predictors = auto.names
         >>> predictors.remove('y')
         >>> response = "y"
-        >>> train, valid = auto.split_frame(ratios = [.8])
-        >>> auto_glm = H2OGeneralizedLinearEstimator(family = 'tweedie',
-        ...                                          tweedie_variance_power = 1)
-        >>> auto_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = auto.split_frame(ratios=[.8])
+        >>> auto_glm = H2OGeneralizedLinearEstimator(family='tweedie',
+        ...                                          tweedie_variance_power=1)
+        >>> auto_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> print(auto_glm.mse(valid=True))
         """
         return self._parms.get("tweedie_variance_power")
@@ -571,13 +619,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> predictors = auto.names
         >>> predictors.remove('y')
         >>> response = "y"
-        >>> train, valid = auto.split_frame(ratios = [.8])
-        >>> auto_glm = H2OGeneralizedLinearEstimator(family = 'tweedie',
-        ...                                          tweedie_link_power = 1)
-        >>> auto_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = auto.split_frame(ratios=[.8])
+        >>> auto_glm = H2OGeneralizedLinearEstimator(family='tweedie',
+        ...                                          tweedie_link_power=1)
+        >>> auto_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> print(auto_glm.mse(valid=True))
         """
         return self._parms.get("tweedie_link_power")
@@ -631,12 +679,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> predictors = boston.columns[:-1]
         >>> response = "medv"
         >>> boston['chas'] = boston['chas'].asfactor()
-        >>> train, valid = boston.split_frame(ratios = [.8])
-        >>> boston_glm = H2OGeneralizedLinearEstimator(solver = 'irlsm')
-        >>> boston_glm.train(x = predictors,
-        ...                  y = response,
-        ...                  training_frame = train,
-        ...                  validation_frame = valid)
+        >>> train, valid = boston.split_frame(ratios=[.8])
+        >>> boston_glm = H2OGeneralizedLinearEstimator(solver='irlsm')
+        >>> boston_glm.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=train,
+        ...                  validation_frame=valid)
         >>> print(boston_glm.mse(valid=True))
         """
         return self._parms.get("solver")
@@ -662,12 +710,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> predictors = boston.columns[:-1]
         >>> response = "medv"
         >>> boston['chas'] = boston['chas'].asfactor()
-        >>> train, valid = boston.split_frame(ratios = [.8])
-        >>> boston_glm = H2OGeneralizedLinearEstimator(alpha = .25)
-        >>> boston_glm.train(x = predictors,
-        ...                  y = response,
-        ...                  training_frame = train,
-        ...                  validation_frame = valid)
+        >>> train, valid = boston.split_frame(ratios=[.8])
+        >>> boston_glm = H2OGeneralizedLinearEstimator(alpha=.25)
+        >>> boston_glm.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=train,
+        ...                  validation_frame=valid)
         >>> print(boston_glm.mse(valid=True))
         """
         return self._parms.get("alpha")
@@ -689,21 +737,21 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :examples:
 
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"]= airlines["Year"].asfactor()
-        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
         >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
         >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
         >>> response = "IsDepDelayed"
-        >>> train, valid= airlines.split_frame(ratios = [.8])
-        >>> airlines_glm = H2OGeneralizedLinearEstimator(family = 'binomial',
-        ...                                              lambda_ = .0001)
-        >>> airlines_glm.train(x = predictors,
-        ...                    y = response
-        ...                    trainig_frame = train,
-        ...                    validation_frame = valid)
+        >>> train, valid = airlines.split_frame(ratios=[.8])
+        >>> airlines_glm = H2OGeneralizedLinearEstimator(family='binomial',
+        ...                                              lambda_=.0001)
+        >>> airlines_glm.train(x=predictors,
+        ...                    y=response
+        ...                    trainig_frame=train,
+        ...                    validation_frame=valid)
         >>> print(airlines_glm.auc(valid=True))
         """
         return self._parms.get("lambda")
@@ -727,12 +775,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> predictors = boston.columns[:-1]
         >>> response = "medv"
         >>> boston['chas'] = boston['chas'].asfactor()
-        >>> train, valid = boston.split_frame(ratios = [.8])
-        >>> boston_glm = H2OGeneralizedLinearEstimator(lambda_search = True)
-        >>> boston_glm.train(x = predictors,
-        ...                  y = response,
-        ...                  training_frame = train,
-        ...                  validation_frame = valid)
+        >>> train, valid = boston.split_frame(ratios=[.8])
+        >>> boston_glm = H2OGeneralizedLinearEstimator(lambda_search=True)
+        >>> boston_glm.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=train,
+        ...                  validation_frame=valid)
         >>> print(boston_glm.mse(valid=True))
         """
         return self._parms.get("lambda_search")
@@ -756,14 +804,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8])
-        >>> cars_glm = H2OGeneralizedLinearEstimator(family = 'binomial',
-        ...                                          early_stopping = True)
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
-        >>> cars_glm.auc(valid = True)
+        >>> train, valid = cars.split_frame(ratios=[.8])
+        >>> cars_glm = H2OGeneralizedLinearEstimator(family='binomial',
+        ...                                          early_stopping=True)
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
+        >>> cars_glm.auc(valid=True)
         """
         return self._parms.get("early_stopping")
 
@@ -787,13 +835,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> predictors = boston.columns[:-1]
         >>> response = "medv"
         >>> boston['chas'] = boston['chas'].asfactor()
-        >>> train, valid = boston.split_frame(ratios = [.8])
-        >>> boston_glm = H2OGeneralizedLinearEstimator(lambda_search = True,
-        ...                                            nlambdas = 50)
-        >>> boston_glm.train(x = predictors,
-        ...                  y = response,
-        ...                  training_frame = train,
-        ...                  validation_frame = valid)
+        >>> train, valid = boston.split_frame(ratios=[.8])
+        >>> boston_glm = H2OGeneralizedLinearEstimator(lambda_search=True,
+        ...                                            nlambdas=50)
+        >>> boston_glm.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=train,
+        ...                  validation_frame=valid)
         >>> print(boston_glm.mse(valid=True))
         """
         return self._parms.get("nlambdas")
@@ -817,12 +865,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> predictors = boston.columns[:-1]
         >>> response = "medv"
         >>> boston['chas'] = boston['chas'].asfactor()
-        >>> train, valid = boston.split_frame(ratios = [.8])
-        >>> boston_glm = H2OGeneralizedLinearEstimator(standardize = True)
-        >>> boston_glm.train(x = predictors,
-        ...                  y = response,
-        ...                  training_frame = train,
-        ...                  validation_frame = valid)
+        >>> train, valid = boston.split_frame(ratios=[.8])
+        >>> boston_glm = H2OGeneralizedLinearEstimator(standardize=True)
+        >>> boston_glm.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=train,
+        ...                  validation_frame=valid)
         >>> boston_glm.mse()
         """
         return self._parms.get("standardize")
@@ -847,12 +895,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> response = "medv"
         >>> boston['chas'] = boston['chas'].asfactor()
         >>> boston.insert_missing_values()
-        >>> train, valid = boston.split_frame(ratios = [.8])
-        >>> boston_glm = H2OGeneralizedLinearEstimator(missing_values_handling = "skip")
-        >>> boston_glm.train(x = predictors,
-        ...                  y = response,
-        ...                  training_frame = train,
-        ...                  validation_frame = valid)
+        >>> train, valid = boston.split_frame(ratios=[.8])
+        >>> boston_glm = H2OGeneralizedLinearEstimator(missing_values_handling="skip")
+        >>> boston_glm.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=train,
+        ...                  validation_frame=valid)
         >>> boston_glm.mse()
         """
         return self._parms.get("missing_values_handling")
@@ -908,23 +956,23 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :examples:
 
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"]= airlines["Year"].asfactor()
-        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
         >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
         >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
         >>> response = "IsDepDelayed"
-        >>> train, valid= airlines.split_frame(ratios = [.8])
-        >>> airlines_glm = H2OGeneralizedLinearEstimator(family = 'binomial',
-        ...                                              lambda_ = 0,
-        ...                                              remove_collinear_columns = True,
-        ...                                              compute_p_values = True)
-        >>> airlines_glm.train(x = predictors,
-        ...                    y = response,
-        ...                    training_frame = train,
-        ...                    validation_frame = valid)
+        >>> train, valid= airlines.split_frame(ratios=[.8])
+        >>> airlines_glm = H2OGeneralizedLinearEstimator(family='binomial',
+        ...                                              lambda_=0,
+        ...                                              remove_collinear_columns=True,
+        ...                                              compute_p_values=True)
+        >>> airlines_glm.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
         >>> airlines_glm.mse()
         """
         return self._parms.get("compute_p_values")
@@ -945,22 +993,22 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :examples:
 
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"]= airlines["Year"].asfactor()
-        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
         >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
         >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
         >>> response = "IsDepDelayed"
-        >>> train, valid= airlines.split_frame(ratios = [.8])
-        >>> airlines_glm = H2OGeneralizedLinearEstimator(family = 'binomial',
-        ...                                              lambda_ = 0,
-        ...                                              remove_collinear_columns = True)
-        >>> airlines_glm.train(x = predictors,
-        ...                    y = response,
-        ...                    training_frame = train,
-        ...                    validation_frame = valid)
+        >>> train, valid = airlines.split_frame(ratios=[.8])
+        >>> airlines_glm = H2OGeneralizedLinearEstimator(family='binomial',
+        ...                                              lambda_=0,
+        ...                                              remove_collinear_columns=True)
+        >>> airlines_glm.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
         >>> airlines_glm.auc()
         """
         return self._parms.get("remove_collinear_columns")
@@ -984,14 +1032,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> iris['class'] = iris['class'].asfactor()
         >>> predictors = iris.columns[:-1]
         >>> response = 'class'
-        >>> train, valid = iris.split_frame(ratios = [.8])
-        >>> iris_glm = H2OGeneralizedLinearEstimator(family = 'multinomial',
-        ...                                          intercept = True)
-        >>> iris_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
-        >>> iris_glm.logloss(valid = True)
+        >>> train, valid = iris.split_frame(ratios=[.8])
+        >>> iris_glm = H2OGeneralizedLinearEstimator(family='multinomial',
+        ...                                          intercept=True)
+        >>> iris_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
+        >>> iris_glm.logloss(valid=True)
         """
         return self._parms.get("intercept")
 
@@ -1011,21 +1059,21 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :examples:
 
         >>> airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"]= airlines["Year"].asfactor()
-        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
         >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
         >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
         >>> response = "IsDepDelayed"
-        >>> train, valid= airlines.split_frame(ratios = [.8])
-        >>> airlines_glm = H2OGeneralizedLinearEstimator(family = 'binomial',
-        ...                                              non_negative = True)
-        >>> airlines_glm.train(x = predictors,
-        ...                    y = response,
-        ...                    training_frame = train,
-        ...                    validation_frame = valid)
+        >>> train, valid= airlines.split_frame(ratios=[.8])
+        >>> airlines_glm = H2OGeneralizedLinearEstimator(family='binomial',
+        ...                                              non_negative=True)
+        >>> airlines_glm.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
         >>> airlines_glm.auc()
         """
         return self._parms.get("non_negative")
@@ -1049,13 +1097,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8])
-        >>> cars_glm = H2OGeneralizedLinearEstimator(family = 'binomial',
-        ...                                          max_iterations = 50)
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = cars.split_frame(ratios=[.8])
+        >>> cars_glm = H2OGeneralizedLinearEstimator(family='binomial',
+        ...                                          max_iterations=50)
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_glm.mse()
         """
         return self._parms.get("max_iterations")
@@ -1082,12 +1130,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> predictors = boston.columns[:-1]
         >>> response = "medv"
         >>> boston['chas'] = boston['chas'].asfactor()
-        >>> train, valid = boston.split_frame(ratios = [.8])
-        >>> boston_glm = H2OGeneralizedLinearEstimator(objective_epsilon = 1e-3)
-        >>> boston_glm.train(x = predictors,
-        ...                  y = response,
-        ...                  training_frame = train,
-        ...                  validation_frame = valid)
+        >>> train, valid = boston.split_frame(ratios=[.8])
+        >>> boston_glm = H2OGeneralizedLinearEstimator(objective_epsilon=1e-3)
+        >>> boston_glm.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=train,
+        ...                  validation_frame=valid)
         >>> boston_glm.mse()
         """
         return self._parms.get("objective_epsilon")
@@ -1111,11 +1159,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> predictors = ["displacement","power","weight","year"]
         >>> response = "acceleration"
         >>> train, valid = cars.split_frame(ratios=[.8])
-        >>> cars_glm = H2OGeneralizedLinearEstimator(beta_epsilon = 1e-3)
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> cars_glm = H2OGeneralizedLinearEstimator(beta_epsilon=1e-3)
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_glm.mse()
         """
         return self._parms.get("beta_epsilon")
@@ -1142,12 +1190,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> predictors = boston.columns[:-1]
         >>> response = "medv"
         >>> boston['chas'] = boston['chas'].asfactor()
-        >>> train, valid = boston.split_frame(ratios = [.8])
-        >>> boston_glm = H2OGeneralizedLinearEstimator(gradient_epsilon = 1e-3)
-        >>> boston_glm.train(x = predictors,
-        ...                  y = response,
-        ...                  training_frame = train,
-        ...                  validation_frame = valid)
+        >>> train, valid = boston.split_frame(ratios=[.8])
+        >>> boston_glm = H2OGeneralizedLinearEstimator(gradient_epsilon=1e-3)
+        >>> boston_glm.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=train,
+        ...                  validation_frame=valid)
         >>> boston_glm.mse()
         """
         return self._parms.get("gradient_epsilon")
@@ -1172,13 +1220,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> iris['class'] = iris['class'].asfactor()
         >>> predictors = iris.columns[:-1]
         >>> response = 'class'
-        >>> train, valid = iris.split_frame(ratios = [.8])
-        >>> iris_glm = H2OGeneralizedLinearEstimator(family = 'multinomial',
-        ...                                          link = 'family_default')
-        >>> iris_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = iris.split_frame(ratios=[.8])
+        >>> iris_glm = H2OGeneralizedLinearEstimator(family='multinomial',
+        ...                                          link='family_default')
+        >>> iris_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> iris_glm.logloss()
         """
         return self._parms.get("link")
@@ -1187,6 +1235,66 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def link(self, link):
         assert_is_type(link, None, Enum("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"))
         self._parms["link"] = link
+
+
+    @property
+    def rand_link(self):
+        """
+        Link function array for random component in HGLM.
+
+        Type: ``List[Enum["[identity]", "[family_default]"]]``.
+        """
+        return self._parms.get("rand_link")
+
+    @rand_link.setter
+    def rand_link(self, rand_link):
+        assert_is_type(rand_link, None, [Enum("[identity]", "[family_default]")])
+        self._parms["rand_link"] = rand_link
+
+
+    @property
+    def startval(self):
+        """
+        double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
+
+        Type: ``List[float]``.
+        """
+        return self._parms.get("startval")
+
+    @startval.setter
+    def startval(self, startval):
+        assert_is_type(startval, None, [numeric])
+        self._parms["startval"] = startval
+
+
+    @property
+    def calc_like(self):
+        """
+        if true, will return likelihood function value for HGLM.
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("calc_like")
+
+    @calc_like.setter
+    def calc_like(self, calc_like):
+        assert_is_type(calc_like, None, bool)
+        self._parms["calc_like"] = calc_like
+
+
+    @property
+    def HGLM(self):
+        """
+        If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("HGLM")
+
+    @HGLM.setter
+    def HGLM(self, HGLM):
+        assert_is_type(HGLM, None, bool)
+        self._parms["HGLM"] = HGLM
 
 
     @property
@@ -1203,12 +1311,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8])
-        >>> cars_glm1 = H2OGeneralizedLinearEstimator(family = 'binomial', prior=0.5)
-        >>> cars_glm1.train(x = predictors,
-        ...                 y = response,
-        ...                 training_frame = train,
-        ...                 validation_frame = valid)
+        >>> train, valid = cars.split_frame(ratios=[.8])
+        >>> cars_glm1 = H2OGeneralizedLinearEstimator(family='binomial', prior=0.5)
+        >>> cars_glm1.train(x=predictors,
+        ...                 y=response,
+        ...                 training_frame=train,
+        ...                 validation_frame=valid)
         >>> cars_glm1.mse()
         """
         return self._parms.get("prior")
@@ -1217,6 +1325,22 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def prior(self, prior):
         assert_is_type(prior, None, numeric)
         self._parms["prior"] = prior
+
+
+    @property
+    def cold_start(self):
+        """
+        Only applicable to multiple alpha/lambda values.  If false, build the next model for next set of alpha/lambda
+        values starting from the values provided by current model.  If true will start GLM model from scratch.
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("cold_start")
+
+    @cold_start.setter
+    def cold_start(self, cold_start):
+        assert_is_type(cold_start, None, bool)
+        self._parms["cold_start"] = cold_start
 
 
     @property
@@ -1235,12 +1359,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> predictors = boston.columns[:-1]
         >>> response = "medv"
         >>> boston['chas'] = boston['chas'].asfactor()
-        >>> train, valid = boston.split_frame(ratios = [.8])
-        >>> boston_glm = H2OGeneralizedLinearEstimator(lambda_min_ratio = .0001)
-        >>> boston_glm.train(x = predictors,
-        ...                  y = response,
-        ...                  training_frame = train,
-        ...                  validation_frame = valid)
+        >>> train, valid = boston.split_frame(ratios=[.8])
+        >>> boston_glm = H2OGeneralizedLinearEstimator(lambda_min_ratio=.0001)
+        >>> boston_glm.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=train,
+        ...                  validation_frame=valid)
         >>> boston_glm.mse()
         """
         return self._parms.get("lambda_min_ratio")
@@ -1270,12 +1394,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         ...                             'upper_bounds': [1000]*n,
         ...                             'beta_given': [1]*n,
         ...                             'rho': [0.2]*n})
-        >>> cars_glm = H2OGeneralizedLinearEstimator(standardize = True,
-        ...                                          beta_constraints = constraints)
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> cars_glm = H2OGeneralizedLinearEstimator(standardize=True,
+        ...                                          beta_constraints=constraints)
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_glm.mse()
         """
         return self._parms.get("beta_constraints")
@@ -1300,13 +1424,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> predictors = higgs.names
         >>> predictors.remove('response')
         >>> response = "response"
-        >>> train, valid = higgs.split_frame(ratios = [.8])
-        >>> higgs_glm = H2OGeneralizedLinearEstimator(family = 'binomial',
-        ...                                           max_active_predictors = 200)
-        >>> higgs_glm.train(x = predictors,
-        ...                 y = response,
-        ...                 training_frame = train,
-        ...                 validation_frame = valid)
+        >>> train, valid = higgs.split_frame(ratios=[.8])
+        >>> higgs_glm = H2OGeneralizedLinearEstimator(family='binomial',
+        ...                                           max_active_predictors=200)
+        >>> higgs_glm.train(x=predictors,
+        ...                 y=response,
+        ...                 training_frame=train,
+        ...                 validation_frame=valid)
         >>> higgs_glm.auc()
         """
         return self._parms.get("max_active_predictors")
@@ -1330,13 +1454,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> predictors = boston.columns[:-1]
         >>> response = "medv"
         >>> boston['chas'] = boston['chas'].asfactor()
-        >>> train, valid = boston.split_frame(ratios = [.8])
+        >>> train, valid = boston.split_frame(ratios=[.8])
         >>> interactions_list = ['crim', 'dis']
-        >>> boston_glm = H2OGeneralizedLinearEstimator(interactions = interactions_list) 
-        >>> boston_glm.train(x = predictors,
-        ...                  y = response,
-        ...                  training_frame = train,
-        ...                  validation_frame = valid)
+        >>> boston_glm = H2OGeneralizedLinearEstimator(interactions=interactions_list) 
+        >>> boston_glm.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=train,
+        ...                  validation_frame=valid)
         >>> boston_glm.mse()
         """
         return self._parms.get("interactions")
@@ -1393,10 +1517,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
         >>> df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/glm_ordinal_logit/ordinal_multinomial_training_set.csv")
         >>> df["C11"] = df["C11"].asfactor()
-        >>> ordinal_fit = H2OGeneralizedLinearEstimator(family = "ordinal",
-        ...                                             alpha = 1.0,
+        >>> ordinal_fit = H2OGeneralizedLinearEstimator(family="ordinal",
+        ...                                             alpha=1.0,
         ...                                             lambda_=0.000000001,
-        ...                                             obj_reg = 0.00001,
+        ...                                             obj_reg=0.00001,
         ...                                             max_iterations=1000,
         ...                                             beta_epsilon=1e-8,
         ...                                             objective_epsilon=1e-10)
@@ -1429,12 +1553,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> response = "acceleration"
         >>> train, valid = cars.split_frame(ratios=[.8])
         >>> checkpoints = tempfile.mkdtemp()
-        >>> cars_glm = H2OGeneralizedLinearEstimator(export_checkpoints_dir = checkpoints,
-        ...                                          seed = 1234)
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> cars_glm = H2OGeneralizedLinearEstimator(export_checkpoints_dir=checkpoints,
+        ...                                          seed=1234)
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_glm.mse()
         >>> len(listdir(checkpoints_dir))
         """
@@ -1444,6 +1568,56 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+    @property
+    def stopping_rounds(self):
+        """
+        Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
+        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
+
+        Type: ``int``  (default: ``0``).
+        """
+        return self._parms.get("stopping_rounds")
+
+    @stopping_rounds.setter
+    def stopping_rounds(self, stopping_rounds):
+        assert_is_type(stopping_rounds, None, int)
+        self._parms["stopping_rounds"] = stopping_rounds
+
+
+    @property
+    def stopping_metric(self):
+        """
+        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score
+        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+        client.
+
+        One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
+        ``"aucpr"``, ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``,
+        ``"custom_increasing"``  (default: ``"auto"``).
+        """
+        return self._parms.get("stopping_metric")
+
+    @stopping_metric.setter
+    def stopping_metric(self, stopping_metric):
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"))
+        self._parms["stopping_metric"] = stopping_metric
+
+
+    @property
+    def stopping_tolerance(self):
+        """
+        Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
+
+        Type: ``float``  (default: ``0.001``).
+        """
+        return self._parms.get("stopping_tolerance")
+
+    @stopping_tolerance.setter
+    def stopping_tolerance(self, stopping_tolerance):
+        assert_is_type(stopping_tolerance, None, numeric)
+        self._parms["stopping_tolerance"] = stopping_tolerance
 
 
     @property
@@ -1459,12 +1633,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> predictors = ["displacement","power","weight","year"]
         >>> response = "acceleration"
         >>> train, valid = cars.split_frame(ratios=[.8])
-        >>> cars_glm = H2OGeneralizedLinearEstimator(balance_classes = True,
-        ...                                          seed = 1234)
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> cars_glm = H2OGeneralizedLinearEstimator(balance_classes=True,
+        ...                                          seed=1234)
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_glm.mse()
         """
         return self._parms.get("balance_classes")
@@ -1490,13 +1664,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> response = "acceleration"
         >>> train, valid = cars.split_frame(ratios=[.8])
         >>> sample_factors = [1., 0.5, 1., 1., 1., 1., 1.]
-        >>> cars_glm = H2OGeneralizedLinearEstimator(balance_classes = True,
-        ...                                          class_sampling_factors = sample_factors,
-        ...                                          seed = 1234)
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> cars_glm = H2OGeneralizedLinearEstimator(balance_classes=True,
+        ...                                          class_sampling_factors=sample_factors,
+        ...                                          seed=1234)
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_glm.mse()
         """
         return self._parms.get("class_sampling_factors")
@@ -1522,13 +1696,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> response = "acceleration"
         >>> train, valid = cars.split_frame(ratios=[.8])
         >>> max = .85
-        >>> cars_glm = H2OGeneralizedLinearEstimator(balance_classes = True,
-        ...                                          max_after_balance_size = max,
-        ...                                          seed = 1234)
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> cars_glm = H2OGeneralizedLinearEstimator(balance_classes=True,
+        ...                                          max_after_balance_size=max,
+        ...                                          seed=1234)
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_glm.mse()
         """
         return self._parms.get("max_after_balance_size")
@@ -1557,7 +1731,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def max_hit_ratio_k(self):
         """
-        Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
+        [Deprecated] Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to
+        disable)
 
         Type: ``int``  (default: ``0``).
 
@@ -1567,12 +1742,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> predictors = ["displacement","power","weight","year"]
         >>> response = "acceleration"
         >>> train, valid = cars.split_frame(ratios=[.8])
-        >>> cars_glm = H2OGeneralizedLinearEstimator(max_hit_ratio_k = 3,
-        ...                                          seed = 1234)
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> cars_glm = H2OGeneralizedLinearEstimator(max_hit_ratio_k=3,
+        ...                                          seed=1234)
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_glm.mse()
         """
         return self._parms.get("max_hit_ratio_k")
@@ -1596,13 +1771,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8])
-        >>> cars_glm = H2OGeneralizedLinearEstimator(max_runtime_secs = 10,
-        ...                                          seed = 1234) 
-        >>> cars_glm.train(x = predictors,
-        ...                y = response,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
+        >>> train, valid = cars.split_frame(ratios=[.8])
+        >>> cars_glm = H2OGeneralizedLinearEstimator(max_runtime_secs=10,
+        ...                                          seed=1234) 
+        >>> cars_glm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
         >>> cars_glm.mse()
         """
         return self._parms.get("max_runtime_secs")
@@ -1654,8 +1829,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         ...         x = [2,3,4,5,6,7,8],
         ...         y = 1)
         >>> r = H2OGeneralizedLinearEstimator.getGLMRegularizationPath(m)
-        >>> m2 = H2OGeneralizedLinearEstimator.makeGLMModel(model = m,
-        ...                                                 coefs = r['coefficients'][10])
+        >>> m2 = H2OGeneralizedLinearEstimator.makeGLMModel(model=m,
+        ...                                                 coefs=r['coefficients'][10])
         >>> dev1 = r['explained_deviance_train'][10]
         >>> p = m2.model_performance(d)
         >>> dev2 = 1-p.residual_deviance()/p.null_deviance()
@@ -1665,6 +1840,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         ns = x.pop("coefficient_names")
         res = {
             "lambdas": x["lambdas"],
+            "alphas": x["alphas"],
             "explained_deviance_train": x["explained_deviance_train"],
             "explained_deviance_valid": x["explained_deviance_valid"],
             "coefficients": [dict(zip(ns, y)) for y in x["coefficients"]],
@@ -1687,15 +1863,15 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :examples:
 
         >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
-        >>> m = H2OGeneralizedLinearEstimator(family = 'binomial',
-        ...                                   lambda_search = True,
-        ...                                   solver = 'COORDINATE_DESCENT')
-        >>> m.train(training_frame = d,
-        ...         x = [2,3,4,5,6,7,8],
-        ...         y = 1)
+        >>> m = H2OGeneralizedLinearEstimator(family='binomial',
+        ...                                   lambda_search=True,
+        ...                                   solver='COORDINATE_DESCENT')
+        >>> m.train(training_frame=d,
+        ...         x=[2,3,4,5,6,7,8],
+        ...         y=1)
         >>> r = H2OGeneralizedLinearEstimator.getGLMRegularizationPath(m)
-        >>> m2 = H2OGeneralizedLinearEstimator.makeGLMModel(model = m,
-        ...                                                 coefs = r['coefficients'][10])
+        >>> m2 = H2OGeneralizedLinearEstimator.makeGLMModel(model=m,
+        ...                                                 coefs=r['coefficients'][10])
         >>> dev1 = r['explained_deviance_train'][10]
         >>> p = m2.model_performance(d)
         >>> dev2 = 1-p.residual_deviance()/p.null_deviance()

@@ -22,7 +22,26 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
     _model._ntrees_per_group = tpc;
     _model._compressed_trees = new byte[_model._ntree_groups * tpc][];
     _model._mojo_version = ((Number) readkv("mojo_version")).doubleValue();
-
+    if (_model._mojo_version < 1.40) {
+        _model._genmodel_encoding = "AUTO";
+    } else {
+        _model._genmodel_encoding = readkv("_genmodel_encoding").toString();
+        _model._orig_projection_array = readkv("_orig_projection_array");
+        Integer n = readkv("_n_orig_names");
+        if (n != null) {
+            _model._orig_names = readStringArray("_orig_names", n);
+        }
+        n = readkv("_n_orig_domain_values");
+        if (n != null) {
+            _model._orig_domain_values = new String[n][];
+            for (int i = 0; i < n; i++) {
+                int m = readkv("_m_orig_domain_values_" + i);
+                if (m > 0) {
+                    _model._orig_domain_values[i] = readStringArray("_orig_domain_values_" + i, m);
+                } 
+            }
+        }
+    }
 
     if (_model._mojo_version > 1.0) { // In mojos v=1.0 this info wasn't saved
       _model._compressed_trees_aux = new byte[_model._ntree_groups * tpc][];

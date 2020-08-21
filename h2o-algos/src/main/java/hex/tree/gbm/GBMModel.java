@@ -5,6 +5,7 @@ import hex.KeyValue;
 import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
+import hex.util.EffectiveParametersUtils;
 import water.DKV;
 import water.Key;
 import water.MRTask;
@@ -59,9 +60,10 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
       }
       boolean useBounds = _distribution == DistributionFamily.gaussian ||
               _distribution == DistributionFamily.bernoulli ||
+              _distribution == DistributionFamily.tweedie ||
               _distribution == DistributionFamily.quasibinomial ||
               _distribution == DistributionFamily.multinomial;
-      return new Constraints(cs, _distribution, useBounds);
+      return new Constraints(cs, DistributionFactory.getDistribution(this), useBounds);
     }
 
     // allows to override the behavior in tests (eg. create empty constraints and test execution as if constraints were used)
@@ -72,6 +74,7 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {
+    public String[] _quasibinomialDomains;
     boolean _quasibinomial;
     int _nclasses;
     public int nclasses() {
@@ -85,8 +88,9 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
     @Override
     public String[] classNames() {
       String [] res = super.classNames();
-      if(res == null && _quasibinomial)
-        return new String[]{"0", "1"};
+      if(_quasibinomial){
+        return _quasibinomialDomains;
+      }
       return res;
     }
   }
@@ -94,6 +98,19 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
 
   public GBMModel(Key<GBMModel> selfKey, GBMParameters parms, GBMOutput output) {
     super(selfKey,parms,output);
+  }
+
+  @Override
+  public void initActualParamValues() {
+    super.initActualParamValues();
+    EffectiveParametersUtils.initFoldAssignment(_parms);
+    EffectiveParametersUtils.initHistogramType(_parms);
+    EffectiveParametersUtils.initCategoricalEncoding(_parms, Parameters.CategoricalEncodingScheme.Enum);
+  }
+  
+  public void initActualParamValuesAfterOutputSetup(int nclasses, boolean isClassifier) {
+    EffectiveParametersUtils.initStoppingMetric(_parms, isClassifier);
+    EffectiveParametersUtils.initDistribution(_parms, nclasses);
   }
 
   @Override

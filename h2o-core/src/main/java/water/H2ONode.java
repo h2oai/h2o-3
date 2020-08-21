@@ -3,10 +3,7 @@ package water;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
 import water.network.SocketChannelFactory;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.util.MathUtils;
-import water.util.UnsafeUtils;
+import water.util.*;
 
 import java.io.IOException;
 import java.net.*;
@@ -40,13 +37,13 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   transient public int _tcp_readers;               // Count of started TCP reader threads
     
   transient private short _timestamp;
-
   transient private boolean _removed_from_cloud;
+  transient private volatile boolean _accessed_local_dkv; // Did this remote node ever accessed the local portion of DKV?
 
   public final boolean isClient() {
     return _heartbeat._client;
   }
-
+  
   final void setTimestamp(short newTimestamp) {
     if (!H2ONodeTimestamp.isDefined(_timestamp) && H2ONodeTimestamp.isDefined(newTimestamp)) {
       // Note: time stamp is only known when the H2ONode actually opens a connection to this node
@@ -89,6 +86,10 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   }
 
   private SmallMessagesSendThread startSendThread() {
+    if (isClient() && !H2O.ARGS.allow_clients) {
+      throw new IllegalStateException("Attempt to communicate with client " + getIpPortString() + " blocked. " +
+          "Client connections are not allowed in this cloud.");
+    }
     SmallMessagesSendThread newSendThread = new SmallMessagesSendThread(); // Launch the send thread for small messages  
     _sendThread = newSendThread;
     newSendThread.start();
@@ -160,6 +161,10 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     static int SIZE = SIZE_OF_IP /* ip */ + 2 /* port */;
   }
 
+  public String getIp() {
+    return _key.getHostString();
+  }
+
   public String getIpPortString() {
     return _key.getIpPortString();
   }
@@ -191,6 +196,14 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     return (now - _last_heard_from) < HeartBeatThread.TIMEOUT;
   }
 
+  public void markLocalDKVAccess() {
+    _accessed_local_dkv = true;
+  }
+
+  public boolean accessedLocalDKV() {
+    return _accessed_local_dkv;
+  }
+  
   // ---------------
   // A dense integer index for every unique IP ever seen, since the JVM booted.
   // Used to track "known replicas" per-key across Cloud change-ups.  Just use
@@ -250,9 +263,12 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // *interned*: there is only one per InetAddress.
   static private H2ONode intern(H2Okey key, short timestamp) {
     final boolean foundPossibleClient = H2ONodeTimestamp.decodeIsClient(timestamp);
+    if (!H2O.ARGS.client && foundPossibleClient && !H2O.ARGS.allow_clients) {
+      throw new IllegalStateException("Client connections are not allowed, source " + key.getIpPortString());
+    }
     H2ONode h2o = INTERN.get(key);
     if (h2o != null) {
-      if (foundPossibleClient || h2o.isPossibleClient()) {
+      if (foundPossibleClient || h2o.isPossibleClient()) {  
         h2o.refreshClient(timestamp);
       }
       // Transition the timestamp to defined state for both workers & client
@@ -285,11 +301,11 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     return h2o;
   }
 
-  public static H2ONode intern(InetAddress ip, int port, short timestamp) { return intern(new H2Okey(ip, port), timestamp); }
+  static H2ONode intern(InetAddress ip, int port, short timestamp) { return intern(new H2Okey(ip, port), timestamp); }
 
   public static H2ONode intern(InetAddress ip, int port) { return intern(ip, port, H2ONodeTimestamp.UNDEFINED); }
 
-  public static H2ONode intern(byte[] bs, int off) {
+  static H2ONode intern(byte[] bs, int off) {
     byte[] b = new byte[H2Okey.SIZE_OF_IP]; // the size depends on version of selected IP stack
     int port;
     // The static constant should be optimized
@@ -367,7 +383,6 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     sb.append("(");
     sb.append("timestamp=").append(_timestamp);
     if (_heartbeat != null) {
-      sb.append(", ").append("watchdog=").append(_heartbeat._watchdog_client);
       sb.append(", ").append("cloud_name_hash=").append(_heartbeat._cloud_name_hash);
     }
     sb.append(")");
@@ -462,20 +477,13 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   /**
    * Returns a new connection of type {@code tcpType}, the type can be either
-   *   TCPReceiverThread.TCP_SMALL, TCPReceiverThread.TCP_BIG or
-   *   TCPReceiverThread.TCP_EXTERNAL.
-   *
-   * In case of TCPReceiverThread.TCP_EXTERNAL, we need to keep in mind that this method is executed in environment
-   * where H2O is not running, but it is just on the classpath so users can establish connection with the external H2O
-   * cluster.
+   *   TCPReceiverThread.TCP_SMALL or TCPReceiverThread.TCP_BIG.
    *
    * If socket channel factory is set, the communication will considered to be secured - this depends on the
    * configuration of the {@link SocketChannelFactory}. In case of the factory is null, the communication won't be secured.
    * @return new socket channel
    */
   public static ByteChannel openChan(byte tcpType, SocketChannelFactory socketFactory, InetAddress originAddr, int originPort, short nodeTimeStamp) throws IOException {
-    // This method can't internally use static fields which depends on initialized H2O cluster in case of
-    //communication to the external H2O cluster
     // Must make a fresh socket
     SocketChannel sock = SocketChannel.open();
     sock.socket().setReuseAddress(true);
@@ -487,9 +495,6 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     assert !sock.isConnectionPending() && sock.isBlocking() && sock.isConnected() && sock.isOpen();
     sock.socket().setTcpNoDelay(true);
     ByteBuffer bb = ByteBuffer.allocate(6).order(ByteOrder.nativeOrder());
-    // In Case of tcpType == TCPReceiverThread.TCP_EXTERNAL, H2O.H2O_PORT is 0 as it is undefined, because
-    // H2O cluster is not running in this case. However,
-    // it is fine as the receiver of the external backend does not use this value.
     bb.put(tcpType).putShort(nodeTimeStamp).putChar((char)H2O.H2O_PORT).put((byte) 0xef).flip();
 
     ByteChannel wrappedSocket = socketFactory.clientChannel(sock, isa.getHostName(), isa.getPort());
@@ -522,6 +527,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
     SmallMessagesSendThread(){
       super(SEND_THREAD_NAME_PREFIX + H2ONode.this);
+      ThreadHelper.initCommonThreadProperties(this);
       _bb = AutoBuffer.BBP_BIG.make();
     }
 
@@ -760,5 +766,14 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   public H2OSecurityManager getSecurityManager() {
     return _security;
+  }
+
+  /**
+   * 
+   * @return True if and only if this node is leader of the cloud. Otherwise false.
+   */
+  public boolean isLeaderNode() {
+    if(H2O.CLOUD.size() == 0) return false;
+     return H2O.CLOUD.leader() != null && H2O.CLOUD.leader().equals(this);
   }
 }

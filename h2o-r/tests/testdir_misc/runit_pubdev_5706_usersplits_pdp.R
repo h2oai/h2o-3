@@ -25,7 +25,7 @@ testpdpUserSplits <- function() {
                          training_frame = prostate_hex, ntrees = 50, learn_rate=0.05, seed = 12345)
   
   # build pdp normal
-  h2o_pp = h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE", "DCAPS"), plot = F)
+  h2o_pp = h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE", "DCAPS"), plot = FALSE)
   ## Calculate partial dependence using h2o.partialPlot for columns "AGE" and "RACE"
   ageSplit = c(43.0, 44.89473684210526, 46.78947368421053, 48.68421052631579, 50.578947368421055,
                52.473684210526315, 54.368421052631575, 56.26315789473684, 58.1578947368421,
@@ -37,7 +37,7 @@ testpdpUserSplits <- function() {
   h2o_pp_splits = h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE", "DCAPS"), plot = F, user_splits=user_splits_list)
   
   # build pdp normal
-  h2o_pp = h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE", "DCAPS"), plot = F)
+  h2o_pp = h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE", "DCAPS"), plot = FALSE)
   # compare pdp from both.  They are not the same length.  The user split is one shorter.
   assert_partialPlots_twoDTable_equal(h2o_pp_splits[[1]],h2o_pp[[1]]) # for AGE
   assert_partialPlots_twoDTable_equal(h2o_pp_splits[[2]],h2o_pp[[2]])  # for RACE

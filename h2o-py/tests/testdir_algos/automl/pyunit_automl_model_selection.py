@@ -10,7 +10,7 @@ from h2o.automl import H2OAutoML
 
 """This test suite checks the AutoML parameters influencing the model selection pipeline"""
 
-max_models = 2
+max_models = 5
 
 
 def import_dataset(seed=0, larger=False):
@@ -246,6 +246,30 @@ def test_exclude_algos_is_applied_on_top_of_modeling_plan():
     assert len(se) == 0
 
 
+def test_monotone_constraints():
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_monotone_constraints",
+                    monotone_constraints=dict(AGE=1, VOL=-1),  # constraints just for the sake of testing
+                    max_models=6,
+                    seed=1)
+    aml.train(y=ds.target, training_frame=ds.train)
+    model_names, _, _ = get_partitioned_model_names(aml.leaderboard)
+    models_supporting_monotone_constraints = [n for n in model_names if re.match(r"GBM|XGBoost", n)]
+    assert len(models_supporting_monotone_constraints) < len(model_names), \
+        "models not supporting the constraint should not have been skipped"
+    for m in models_supporting_monotone_constraints:
+        model = h2o.get_model(m)
+        value = next(v['actual'] for n, v in model.params.items() if n == 'monotone_constraints')
+        assert isinstance(value, list)
+        assert len(value) == 2
+        age = next((v for v in value if v['key'] == 'AGE'), None)
+        assert age is not None
+        assert age['value'] == 1.0
+        vol = next((v for v in value if v['key'] == 'VOL'), None)
+        assert vol is not None
+        assert vol['value'] == -1.0
+
+
 def test_monotone_constraints_can_be_passed_as_algo_parameter():
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_monotone_constraints",
@@ -319,6 +343,54 @@ def test_cannot_set_unauthorized_algo_parameter():
         assert "algo_parameters: score_tree_interval" in str(e)
 
 
+def test_exploitation_disabled():
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_exploitation_ratio_disabled",
+                    exploitation_ratio=.0,
+                    max_models=6,
+                    seed=1)
+    aml.train(y=ds.target, training_frame=ds.train)
+    assert 'start_GBM_lr_annealing' not in aml.training_info
+    assert 'start_XGBoost_lr_search' not in aml.training_info
+
+
+def test_exploitation_doesnt_impact_max_models():
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_exploitation_ratio_max_models",
+                    exploitation_ratio=.1,
+                    max_models=6,
+                    seed=1)
+    aml.train(y=ds.target, training_frame=ds.train)
+    assert 'start_GBM_lr_annealing' in aml.training_info
+    assert 'start_XGBoost_lr_search' in aml.training_info
+    _, non_se, se = get_partitioned_model_names(aml.leaderboard)
+    assert len(non_se) == 6
+    assert len(se) == 2
+
+
+def test_exploitation_impacts_exploration_duration():
+    ds = import_dataset()
+    planned_duration = 30
+    aml = H2OAutoML(project_name="py_exploitation_ratio_max_runtime",
+                    exploitation_ratio=.5,  # excessive ratio on purpose, due to training overheads in multinode
+                    exclude_algos=['DeepLearning', 'XGBoost'],  # removing some algos for the same reason as above
+                    max_runtime_secs=planned_duration,
+                    seed=1,
+                    # verbosity='debug'
+                    )
+    aml.train(y=ds.target, training_frame=ds.train)
+    automl_start = int(aml.training_info['start_epoch'])
+    assert 'start_GBM_lr_annealing' in aml.training_info
+    # assert 'start_XGBoost_lr_search' in aml.training_info
+    exploitation_start = int(aml.training_info['start_GBM_lr_annealing'])
+    exploration_duration = exploitation_start - automl_start
+    se_start = int(aml.training_info['start_StackedEnsemble_best'])
+    exploitation_duration = se_start - exploitation_start
+    # can't reliably check duration ratio
+    assert 0 < exploration_duration < planned_duration
+    assert 0 < exploitation_duration < exploration_duration
+
+
 pu.run_tests([
     test_exclude_algos,
     test_include_algos,
@@ -330,7 +402,11 @@ pu.run_tests([
     test_modeling_plan_using_minimal_syntax,
     test_modeling_steps,
     test_exclude_algos_is_applied_on_top_of_modeling_plan,
+    test_monotone_constraints,
     test_monotone_constraints_can_be_passed_as_algo_parameter,
     test_algo_parameter_can_be_applied_only_to_a_specific_algo,
     test_cannot_set_unauthorized_algo_parameter,
+    test_exploitation_disabled,
+    test_exploitation_doesnt_impact_max_models,
+    test_exploitation_impacts_exploration_duration,
 ])

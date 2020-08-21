@@ -59,27 +59,23 @@ public abstract class Paxos {
       }
     }
 
+    if(!H2O.ARGS.allow_clients && h2o.isClient()) {
+      // ignore requests from clients if cloud is not started with client connections enabled
+      ListenerService.getInstance().report("clients_disabled", h2o);
+      h2o.removeClient();
+      return 0;
+    }
+    
     if(h2o._heartbeat._cloud_name_hash != H2O.SELF._heartbeat._cloud_name_hash){
       // ignore requests from this node as they are coming from different cluster
+      ListenerService.getInstance().report("different_cloud", h2o);
       return 0;
     }
 
-
-    // Update manual flatfile in case of flatfile is enabled
-    if (H2O.isFlatfileEnabled()) {
-      if (!H2O.ARGS.client && h2o._heartbeat._client && !H2O.isNodeInFlatfile(h2o)) {
-        // A new client was reported to this node so we propagate this information to all nodes in the cluster, to this
-        // as well
-        UDPClientEvent.ClientEvent.Type.CONNECT.broadcast(h2o);
-      } else if (H2O.ARGS.client && !H2O.isNodeInFlatfile(h2o)) {
-        // This node is a client and using a flatfile to figure out a topology of the cluster. The flatfile passed to the
-        // client is always modified at the start of H2O to contain only a single node. This node is used to propagate
-        // information about the client to the cluster. Once the nodes have the information about the client, then propagate
-        // themselves via heartbeat to the client
+    if (H2O.isFlatfileEnabled() && !H2O.ARGS.client && h2o._heartbeat._client && !H2O.isNodeInFlatfile(h2o)) {
         H2O.addNodeToFlatfile(h2o);
-      }
     }
-
+    
     // Never heard of this dude?  See if we want to kill him off for being cloud-locked
     if( !PROPOSED.contains(h2o) && !h2o._heartbeat._client ) {
       if( _cloudLocked ) {
@@ -145,7 +141,7 @@ public abstract class Paxos {
   // Before we start doing distributed writes... block until the cloud
   // stabilizes.  After we start doing distributed writes, it is an error to
   // change cloud shape - the distributed writes will be in the wrong place.
-  static void lockCloud(Object reason) {
+  public static void lockCloud(Object reason) {
     if( _cloudLocked ) return; // Fast-path cutout
     lockCloud_impl(reason);
   }

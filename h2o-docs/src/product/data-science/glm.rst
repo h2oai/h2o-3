@@ -1,3 +1,5 @@
+.. _glm:
+
 Generalized Linear Model (GLM)
 ------------------------------
 
@@ -11,6 +13,7 @@ The GLM suite includes:
 -  Gaussian regression
 -  Poisson regression
 -  Binomial regression (classification)
+-  Fractional binomial regression
 -  Quasibinomial regression 
 -  Multinomial classification
 -  Gamma regression
@@ -43,6 +46,8 @@ Defining a GLM Model
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
+
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Specify whether to keep the cross-validation predictions.
 
 -  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment.
@@ -53,17 +58,21 @@ Defining a GLM Model
 
 -  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
+- `random_columns <algo-params/random_columns.html>`__: An array of random column indices to be used for HGLM.
+
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Enable this option to ignore constant
    training columns, since no information can be gained from them. This
    option is enabled by default.
 
 -  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Enable this option to score during each iteration of the model training.
 
+- **score_iteration_interval**: Perform scoring for every ``score_iteration_interval`` iteration. Defaults to ``-1``.
+
 -  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset; the value cannot be the same as the value for the ``weights_column``.
    
-     **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
+     **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 
--  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified``weights_column``. 
+-  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
    
     **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
@@ -71,6 +80,7 @@ Defining a GLM Model
 
    -  If the family is **gaussian**, the response must be numeric (**Real** or **Int**). (default)
    -  If the family is **binomial**, the response must be categorical 2 levels/classes or binary (**Enum** or **Int**).
+   -  If the family is **fractionalbinomial**, the response must be a numeric between 0 and 1.
    -  If the family is **multinomial**, the response can be categorical with more than two levels/classes (**Enum**).
    -  If the family is **ordinal**, the response must be categorical with at least 3 levels.
    -  If the family is **quasibinomial**, the response must be numeric.
@@ -78,6 +88,13 @@ Defining a GLM Model
    -  If the family is **negativebinomial**, the response must be numeric and non-negative (**Int**).
    -  If the family is **gamma**, the response must be numeric and continuous and positive (**Real** or **Int**).
    -  If the family is **tweedie**, the response must be numeric and continuous (**Real**) and non-negative.
+   - If the family is **AUTO**,
+
+      - and the response is **Enum** with cardinality = 2, then the family is automatically determined as **binomial**.
+      - and the response is **Enum** with cardinality > 2, then the family is automatically determined as **multinomial**.
+      - and the response is numeric (**Real** or **Int**), then the family is automatically determined as **gaussian**.
+
+-  `rand_family <algo-params/rand_family.html>`__: The Random Component Family specified as an array. You must include one family for each random component. Currently only ``rand_family={"[gaussisan]"}`` is supported.
 
 -  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if *Tweedie* is
    specified for **Family**) Specify the Tweedie variance power.
@@ -87,7 +104,7 @@ Defining a GLM Model
 
 -  `theta <algo-params/theta.html>`__: Theta value (equal to 1/r) for use with the negative binomial family. This value must be > 0 and defaults to 1e-10.  
 
--  `solver <algo-params/solver.html>`__: Specify the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT, GRADIENT_DESCENT_LH, or GRADIENT_DESCENT_SQERR). IRLSM is fast on problems with a small number of predictors and for lambda search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. GRADIENT_DESCENT_LH and GRADIENT_DESCENT_SQERR can only be used with the Ordinal family.
+-  `solver <algo-params/solver.html>`__: Specify the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT, GRADIENT_DESCENT_LH, or GRADIENT_DESCENT_SQERR). IRLSM is fast on problems with a small number of predictors and for lambda search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. GRADIENT_DESCENT_LH and GRADIENT_DESCENT_SQERR can only be used with the Ordinal family. AUTO well set the solver based on the given data and other parameters.
 
 -  `alpha <algo-params/alpha.html>`__: Specify the regularization distribution between L1 and L2.
 
@@ -96,8 +113,36 @@ Defining a GLM Model
 -  `lambda_search <algo-params/lambda_search.html>`__: Specify whether to enable lambda search, starting with lambda max (the smallest :math:`\lambda` that drives all coefficients to zero). If you also specify a value for ``lambda_min_ratio``, then this value is interpreted as lambda min. If you do not specify a value for ``lambda_min_ratio``, then GLM will calculate the minimum lambda. 
 
 -  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training  or validation set.
+
+- `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for **stopping_metric** doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify ``0``. 
+
+    **Note:** If cross-validation is enabled:
+  
+    - All cross-validation models stop training when the validation metric doesn't improve.
+    - The main model runs for the mean number of epochs.
+    - N+1 models may be off by the number specified for **stopping_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
+
+- `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. The available options are:
+
+  - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that ``custom`` and ``custom_increasing`` can only be used in GBM and DRF with the Python Client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
+  - ``anomaly_score`` (Isolation Forest only)
+  - ``deviance``
+  - ``logloss``
+  - ``MSE``
+  - ``RMSE``
+  - ``MAE``
+  - ``RMSLE``
+  - ``AUC`` (area under the ROC curve)
+  - ``AUCPR`` (area under the Precision-Recall curve)
+  - ``lift_top_group``
+  - ``misclassification``
+  - ``mean_per_class_error``
+  - ``custom`` (GBM/DRF Python client only)
+  - ``custom_increasing`` (GBM/DRF Python client only)
+
+- `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. Defaults to ``0.001``.
    
--  `nlambdas <algo-params/nlambdas.html>`__: (Applicable only if **lambda_search** is enabled) Specify the number of lambdas to use in the search. The default is 100.
+-  `nlambdas <algo-params/nlambdas.html>`__: (Applicable only if **lambda_search** is enabled) Specify the number of lambdas to use in the search. When ``alpha`` > 0, the default value for ``lambda_min_ratio`` is :math:`1e^{-4}`, then the default value for ``nlambdas`` is 100. This gives a ratio of 0.912. (For best results when using strong rules, keep the ratio close to this default.) When ``alpha=0``, the default value for ``nlamdas`` is set to 30 because fewer lambdas are needed for ridge regression.
 
 -  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is enabled by default.
 
@@ -115,16 +160,17 @@ Defining a GLM Model
 
 -  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations.
 
--  `objective_epsilon <algo-params/objective_epsilon.html>`__: Specify a threshold for convergence. If the objective value is less than this threshold, the model is converged.
+-  `objective_epsilon <algo-params/objective_epsilon.html>`__: If the objective value is less than this threshold, then the model is converged. If ``lambda_search=True``, then this value defaults to .0001. If ``lambda_search=False`` and lambda is equal to zero, then this value defaults to .000001. For any other value of lambda, the default value of objective_epsilon is set to .0001.
 
--  `beta_epsilon <algo-params/beta_epsilon.html>`__: Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence.
+-  `beta_epsilon <algo-params/beta_epsilon.html>`__: Converge if beta changes less than this value (using L-infinity norm). This only applies to IRLSM solver.
 
--  `gradient_epsilon <algo-params/gradient_epsilon.html>`__: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged.
+-  `gradient_epsilon <algo-params/gradient_epsilon.html>`__: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged. If ``lambda_search=True``, then this value defaults to .0001. If ``lambda_search=False`` and lambda is equal to zero, then this value defaults to .000001. For any other value of lambda, this value defaults to .0001.
 
 -  `link <algo-params/link.html>`__: Specify a link function (Identity, Family_Default, Logit, Log, Inverse, Tweedie, or Ologit).
 
    -  If the family is **Gaussian**, then **Identity**, **Log**, and **Inverse** are supported.
    -  If the family is **Binomial**, then **Logit** is supported.
+   -  If the family is **Fractionalbinomial**, then **Logit** is supported.
    -  If the family is **Poisson**, then **Log** and **Identity** are supported.
    -  If the family is **Gamma**, then **Inverse**, **Log**, and **Identity** are supported.
    -  If the family is **Tweedie**, then only **Tweedie** is supported.
@@ -132,6 +178,23 @@ Defining a GLM Model
    -  If the family is **Quasibinomial**, then only **Logit** is supported.
    -  If the family is **Ordinal**, then only **Ologit** is supported
    -  If the family is **Negative Binomial**, then only **Log** and **Identity** are supported.
+   - If the family is **AUTO**,
+
+      - and a link is not specified, then the link is determined as **Family_Default** (defaults to the family to which AUTO is determined).
+      - and a link is specified, the link is used so long as the specified link is compatible with the family to which AUTO is determined. Otherwise, an error message is thrown stating that AUTO for underlying data requires a different link and gives a list of possible compatible links.
+      - The list of supported links for ``family = AUTO`` is:
+
+          1. If the response is **Enum** with cardinality = 2, then **Logit** is supported.
+          2. If the response is **Enum** with cardinality > 2, then only **Family_Default** is supported (this defaults to **multinomial**).
+          3. If the response is numeric (**Real** or **Int**), then **Identity**, **Log**, and **Inverse** are suported.
+
+-  **rand_link**: The link function for random component in HGLM specified as an array. Available options include ``identity`` and ``family_default``. 
+
+-  **startval**: The initial starting values for fixed and randomized coefficients in HGLM specified as a double array. 
+
+-  **calc_like**: Specify whether to return likelihood function value for HGLM. This is disabled by default.
+
+-  `HGLM <algo-params/hglm.html>`__: If enabled, then an HGLM model will be built; if disabled (default), then a GLM model will be built. 
 
 -  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to -1 and must be a value in the range (0,1).
    
@@ -150,10 +213,6 @@ Defining a GLM Model
 -  `interaction_pairs <algo-params/interaction_pairs.html>`__: When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
 
 -  **obj_reg**: Specifies the likelihood divider in objective value computation. This defaults to 1/nobs.
-
--  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
-
--  `upload_custom_metric <algo-params/upload_custom_metric.html>`__: Upload a custom metric into a running H2O cluster.
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
@@ -192,6 +251,8 @@ When GLM performs regression (with factor columns), one category can be left out
 The reason for the different behavior with regularization is that collinearity is not a problem with regularization. 
 And it’s better to leave regularization to find out which level to ignore (or how to distribute the coefficients between the levels).
 
+.. _family_and_link_functions:
+
 Family and Link Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -210,6 +271,7 @@ The ``family`` option specifies a probability distribution from an exponential f
 
 - ``gaussian``: (See `Linear Regression (Gaussian Family)`_.) The response must be numeric (Real or Int). This is the default family.
 - ``binomial``: (See `Logistic Regression (Binomial Family)`_). The response must be categorical 2 levels/classes or binary (Enum or Int).
+- ``fractionalbinomial``: See (`Fractional Logit Model (Fraction Binomial)`_). The response must be a numeric between 0 and 1.
 - ``ordinal``: (See `Logistic Ordinal Regression (Ordinal Family)`_). Requires a categorical response with at least 3 levels. (For 2-class problems, use family="binomial".)
 - ``quasibinomial``: (See `Pseudo-Logistic Regression (Quasibinomial Family)`_). The response must be numeric.
 - ``multinomial``: (See `Multiclass Classification (Multinomial Family)`_). The response can be categorical with more than two levels/classes (Enum).
@@ -217,6 +279,7 @@ The ``family`` option specifies a probability distribution from an exponential f
 - ``gamma``: (See `Gamma Models`_). The response must be numeric and continuous and positive (Real or Int).
 - ``tweedie``: (See `Tweedie Models`_). The response must be numeric and continuous (Real) and non-negative.
 - ``negativebinomial``: (See `Negative Binomial Models`_). The response must be numeric and non-negative (Int).
+- ``AUTO``: Determines the family automatically for the user.
 
 **Note**: If your response column is binomial, then you must convert that column to a categorical (``.asfactor()`` in Python and ``as.factor()`` in R) and set ``family = binomial``. The following configurations can lead to unexpected results. 
 
@@ -276,6 +339,18 @@ The corresponding deviance is equal to:
 .. math::
 
  D = -2 \sum_{i=1}^{n} \big( y_i \text{log}(\hat {y}_i) + (1 - y_i) \text{log}(1 - \hat {y}_i) \big)
+
+Fractional Logit Model (Fraction Binomial)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In the financial service industry, there are many outcomes that are fractional in the range of [0,1]. For example, LGD (Loss Given Default in credit risk) measures the proportion of losses not recovered from a default borrower during the collection process, and this can be observed to be in the closed interval [0, 1]. The following assumptions are made for this model.
+
+- :math:`\text{Pr}(y=1|x) = E(y) = \frac{1}{1 + \text{exp}(-\beta^T x-\beta_0)}`
+- The likelihood function = :math:`\text{Pr}{(y=1|x)}^y (1-\text{Pr}(y=1|x))^{(1-y)}` for :math:`1 \geq y \geq 0`
+- :math:`var(y) = \varphi E(y)(1-E(y))` and :math:`\varphi` is estimated as :math:`\varphi = \frac{1}{n-p} \frac{\sum {(y_i - E(y))}2} {E(y)(1-E(y))}`
+
+Note that these are exactly the same as the binomial distribution.  However, the values are  calculated with the value of :math:`y` in the range of 0 and 1 instead of just 0 and 1.  Therefore, we implemented the fractional binomial family using the code of binomial.  Changes are made when needed.
+
 
 Logistic Ordinal Regression (Ordinal Family)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -478,30 +553,282 @@ H2O's GLM supports the following link functions: Family_Default, Identity, Logit
 
 The following table describes the allowed Family/Link combinations.
 
-+-------------------+-------------------------------------------------------------+--------+
-| **Family**        | **Link Function**                                                    |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-|                   | Family_Default | Identity | Logit | Log | Inverse | Tweedie | Ologit |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Binomial          | X              |          | X     |     |         |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Quasibinomial     | X              |          | X     |     |         |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Multinomial       | X              |          |       |     |         |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Ordinal           | X              |          |       |     |         |         | X      |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Gaussian          | X              | X        |       | X   | X       |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Poisson           | X              | X        |       | X   |         |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Gamma             | X              | X        |       | X   | X       |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Tweedie           | X              |          |       |     |         | X       |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Negative Binomial | X              | X        |       | X   |         |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
++---------------------+-------------------------------------------------------------+--------+
+| **Family**          | **Link Function**                                                    |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+|                     | Family_Default | Identity | Logit | Log | Inverse | Tweedie | Ologit |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Binomial            | X              |          | X     |     |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Fractional Binomial | X              |          | X     |     |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Quasibinomial       | X              |          | X     |     |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Multinomial         | X              |          |       |     |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Ordinal             | X              |          |       |     |         |         | X      |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Gaussian            | X              | X        |       | X   | X       |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Poisson             | X              | X        |       | X   |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Gamma               | X              | X        |       | X   | X       |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Tweedie             | X              |          |       |     |         | X       |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Negative Binomial   | X              | X        |       | X   |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| AUTO                | X***           | X*       | X**   | X*  | X*      |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
 
+For **AUTO**:
+
+- X*: the data is numeric (``Real`` or ``Int``) (family determined as ``gaussian``)
+- X**: the data is ``Enum`` with cardinality = 2 (family determined as ``binomial``)
+- X***: the data is ``Enum`` with cardinality > 2 (family determined as ``multinomial``)
+
+Hierarchical GLM
+~~~~~~~~~~~~~~~~
+
+Introduced in 3.28.0.1, Hierarchical GLM (HGLM) fits generalized linear models with random effects, where the random effect can come from a conjugate exponential-family distribution (for example, Gaussian). HGLM allows you to specify both fixed and random effects, which allows fitting correlated to random effects as well as random regression models. HGLM can be used for linear mixed models and for generalized linear mixed models with random effects for a variety of links and a variety of distributions for both the outcomes and the random effects. 
+
+**Note**: The initial release of HGLM supports only the Gaussian family and random family.
+
+Gaussian Family and Random Family in HGLM
+'''''''''''''''''''''''''''''''''''''''''
+
+To build an HGLM, we need the hierarchical log-likelihood (h-likelihood) function. The h-likelihood function can be expressed as (equation 1):
+
+.. math::
+
+ h(\beta, \theta, u) = \log(f (y|u)) + \log (f(u))
+
+for fixed effects :math:`\beta`, variance components :math:`\theta`, and random effects :math:`u`.
+
+A standard linar mixed model can be expressed as (equation 2):
+
+.. math::
+
+  y = X\beta + Zu + e
+
+where
+
+ - :math:`e \text ~ N(0, I_n, \delta_e^2), u \text ~ N(0, I_k, \delta_u^2)`
+ - :math:`e, u` are independent, and :math:`u` represents the random effects
+ - :math:`n` is the number of i.i.d observations of :math:`y` with mean :math:`0`
+ - :math:`q` is the number of values :math:`Z` can take
+
+Then rewriting equation 2 as :math:`e = X\beta + Zu - y` and derive the h-likelihood as:
+
+.. figure:: ../images/h-likelihood.png
+   :align: center
+
+where :math:`C_1 = - \frac{n}{2} \log(2\pi), C_2 = - \frac{q}{2} \log(2\pi)`
+
+In principal, the HGLM model building involves the following main steps:
+
+1. Set the initial values to :math:`\delta_u^2, \delta_e^2, u, \beta`
+2. Estimate the fixed (:math:`\beta`) and random effects (:math:`u`) by solving for :math:`\frac{\partial h}{\partial \beta} = 0, \frac{\partial h}{\partial u} = 0`
+3. Estimate variance components using the adjusted profile likelihood:
+
+ .. math::
+
+   h_p = \big(h + \frac{1}{2} log \big| 2 \pi D^{-1}\big| \big)_{\beta=\hat \beta, u=\hat u}
+
+ and solving for
+
+ .. math::
+
+   \frac{\partial h_p}{\partial \theta} = 0
+
+ Note that :math:`D` is the matrix of the second derivatives of :math:`h` around :math:`\beta = \hat \beta, u = \hat u, \theta = (\delta_u^2, \delta_e^2)`.
+
+H2O Implementation
+''''''''''''''''''
+
+In reality, Lee and Nelder (see References) showed that linear mixed models can be fitted using a hierarchy of GLM by using an augmented linear model.  The linear mixed model will be written as:
+
+.. math::
+
+  y = X\beta + Zu + e \\
+  v = ZZ^T\sigma_u^2 + R\sigma_e^2
+
+where :math:`R` is a diagonal matrix with elements given by the estimated dispersion model. The dispersion model refers to the variance part of the fixed effect model with error :math:`e`. There are cases where the dispersion model is modeled itself as :math:`exp(x_d, \beta_d)`. However, in our current version, the variance is just a constant :math:`\sigma_e^2`, and hence :math:`R` is just a scalar value. It is initialized to be the identity matrix.  The model can be written as an augmented weighted linear model:
+
+.. math::
+
+  y_a = T_a \delta + e_a
+
+where
+
+.. figure:: ../images/hglm_augmentation.png
+   :align: center
+
+Note that :math:`q` is the number of columns in :math:`Z, 0_q` is a vector of :math:`q` zeroes, :math:`I_q` is the :math:`qxq` identity matrix. The variance-covariance matrix of the augmented residual matrix is
+
+.. figure:: ../images/hglm_variance_covariance.png
+   :align: center
+
+Fixed and Random Coefficients Estimation
+''''''''''''''''''''''''''''''''''''''''
+
+The estimates for :math:`\delta` from weighted least squares are given by solving
+
+.. math::
+
+  T_a^T W^{-1} T_a \delta=T_a^T W^{-1} y_a 
+
+where 
+
+.. math::
+
+  W= V(e_a )
+
+The two variance components are estimated iteratively by applying a gamma GLM to the residuals :math:`e_i^2,u_i^2`. Because we are not using a dispersion model, there is only an intercept terms in the linear predictors. The leverages :math:`h_i` for these models are calculated from the diagonal elements of the hat matrix: 
+
+.. math::
+
+ H_a=T_a (T_a^T W^{-1} T_a )^{-1} T_a^T W^{-1}
+
+Estimation of Fixed Effect Dispersion Parameter/Variance
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+A gamma GLM is used to fit the dispersion part of the model with response
+:math:`y_{d,i}=(e_i^2)⁄(1-h_i )` where :math:`E(y_d )=u_d` and :math:`u_d≡\phi` (i.e., :math:`\delta_e^2` for a Gaussian response). The GLM model for the dispersion parameter is then specified by the link function :math:`g_d (.)` and the linear predictor :math:`X_d \beta_d` with prior weights for :math:`(1-h_i )⁄2` for :math:`g_d (u_d )=X_d \beta_d`. Because we are not using a dispersion model, :math:`X_d \beta_d` will only contain the intercept term.
+
+Estimation of Random Effect Dispersion Parameter/Variance
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Similarly, a gamma GLM is fitted to the dispersion term :math:`alpha` (i.e., :math:`\delta_e^2` for a GLM) for the random effect :math:`v`, with :math:`y_\alpha,j = u_j^2⁄(1-h_{n+j}), j=1,2,…,q` and :math:`g_\alpha (u_\alpha )=\lambda`, where the prior weights are :math:`(1-h_{n+j} )⁄2`, and the estimated dispersion term for the random effect is given by :math:`\hat \alpha = g_α^{-1}(\hat \lambda)`.
+
+Fitting Algorithm Overview
+''''''''''''''''''''''''''
+
+The following fitting algorithm from "Generalized linear models with random effects" (Y. Lee, J. A. Nelder and Y. Pawitan; see References) is used to build our HGLM. Let :math:`n` be the number of observations and :math:`k` be the number of levels in the random effect. The algorithm that was implemented here at H2O will perform the following:
+
+1. Initialize starting values either from user by setting parameter startval or by the system if startval is left unspecified.  
+2. Construct an augmented model with response :math:`y_{aug}= {y \choose {E(u)}}`.
+3. Use a GLM to estimate :math:`\delta={\beta \choose u}` given the dispersion :math:`\phi` and :math:`\lambda`. Save the deviance components and leverages from the fitted model.
+4. Use a gamma GLM to estimate the dispersion parameter for :math:`\phi` (i.e. :math:`\delta_e^2` for a Gaussian response).
+5. Use a similar GLM as in step 4 to estimate :math:`\lambda` from the last :math:`k` deviance components and leverages obtained from the GLM in step 3.
+6. Iterate between steps 3-5 until convergence. Note that the convergence measure here is either a timeout event or the following condition has been met: :math:`\frac {\Sigma_i{(\text{eta}. i - \text{eta}.o)^2}} {\Sigma_i(\text{eta}.i)^2 \text{<} 1e - 6}`.
+
+A timeout event can be defined as the following:
+
+1. Maximum number of iterations have been reached
+2. Model building run time exceeds what is specified in ``max_runtime_secs``
+3. A user has clicked on stop model button or similar from Flow.
+
+For families and random families other than Gaussian, link functions are used to translate from the linear space to the model the mean output.  
+
+Linear Mixed Model with Correlated Random Effect
+''''''''''''''''''''''''''''''''''''''''''''''''
+
+Let :math:`A` be a matrix with known elements that describe the correlation among the random effects. The model is now given by:
+
+.. figure:: ../images/hglm_linear_mixed_model1.png
+   :align: center
+
+where :math:`N` is normal distribution and :math:`MVN` is multi-variable normal. This can be easily translated to:
+
+.. figure:: ../images/hglm_linear_mixed_model2.png
+   :align: center
+
+where :math:`Z^* = ZL` and :math:`L` is the Cholesky factorization of :math:`A`. Hence, if you have correlated random effects, you can first perform the transformation to your data before using our HGLM implementation here.
+
+HGLM Model Metrics
+''''''''''''''''''
+
+H2O provides the following model metrics at the end of each HGLM experiment:
+
+- fixef: fixed effects coefficients
+- ranef: random effects coefficients
+- randc: vector of random column indices
+- varfix: dispersion parameter of the mean model
+- varranef: dispersion parameter of the random effects
+- converge: true if algorithm has converge, otherwise false
+- sefe: standard errors of fixed effects
+- sere: standard errors of random effects
+- dfrefe: deviance degrees of freedom for the mean part of model
+- sumvc1: estimates and standard errors of linear predictor in the dispersion model
+- summvc2: estimates and standard errors of the linear predictor for the dispersion parameter of the random effects
+- likelihood: if ``calc_like`` is true, the following four values are returned:
+
+   - hlik: log-h-likelihood;
+   - pvh: adjusted profile log-likelihood profiled over the random effects;
+   - pbvh: adjusted profile log-likelihood profiled over fixed and random effects;
+   - caic: conditional AIC.
+
+- bad: row index of the most influential observation.
+
+Mapping of Fitting Algorithm to the H2O-3 Implementation
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+This mapping is done in four steps:
+
+1. Initialize starting values by the system.
+2. Estimate :math:`\delta =` :math:`\beta \choose u`.
+3. Estimate :math:`\delta_e^2(\text {tau})`.
+4. Estimate :math:`\delta_u^2(\text {phi})`.
+
+**Step 1**: Initialize starting values by the system.
+
+Following the implementation from R, when a user fails to specify starting values for psi, :math:`\beta`, :math:`\mu`, :math:`\delta_e^2`, :math:`\delta_u^2`, we will do it for the users as follows: 
+
+ 1. A GLM model is built with just the fixed columns and response.
+ 2. Next init_sig_e(:math:`\delta_e^2`)/tau is set to 0.6*residual_deviance()/residual_degrees_of_freedom().
+ 3. init_sig_u(:math:`\delta_u^2`) is set to 0.66*init_sig_e.
+ 4. For numerical stability, we restrict the magnitude to init_sig_e and init_sig_u to >= 0.1.
+ 5. Set phi = vector of length number of random columns of value init_sig_u/(number of random columns).
+ 6. Set :math:`\beta` to the GLM model coefficients, :math:`\mu` to be a zero vector.
+ 7. Set psi to be a zero vector.
+
+**Step 2**: Estimate :math:`\delta =` :math:`\beta \choose u`.
+
+Given the current values of :math:`\delta_e^2, \delta_u^2`, we will solve for :math:`\delta =` :math:`\beta \choose u`. Instead of solving :math:`\delta` from :math:`T_a^T W^{-1} T_a \delta=T_a^T W^{-1} y_a`, a different set of formulae are used. A loop is used to solve for the coefficients:
+
+ 1. The following variables are generated:
+
+  - :math:`v.i= g_r^{-1} (u_i)` where :math:`u_i` are the random coefficients of the random effects/columns and :math:`g_r^{-1}` can be considered as the inverse link function.
+  - :math:`tau` is a vector of length number of data containing init.sig.e;
+  - :math:`eta.i=X_i \beta+offset` and store the previous :math:`eta.i` as :math:`eta.o`.
+  - :math:`mu.i=g^{-1} (eta.i)`.
+  - dmu_deta is derivative of :math:`g^{-1} (eta.i)` with respect to :math:`eta.i`, which is 1 for identity link.
+  - :math:`z_i=eta.i-offset+(y_i-mu.i)/\text {dmu_deta}`
+  - :math:`zmi= \text{psi}`
+  - :math:`augZ =` :math:`zi \choose zmi`.
+  - du_dv is the derivative of :math:`g_r^{-1} (u_i)` with respect to :math:`v.i.`  Again, for identity link, this is 1.
+  - The weight :math:`W =` :math:`wdata \choose wpsi` where :math:`wdata = \frac {d \text{mu_deta}^2}{\text {prior_weight*family}\$\text{variance}(mu.i)*tau}` and :math:`wpsi = \frac {d \text{u_dv}^2}{\text {prior_weight*family}\$\text{variance(psi)*phi}}`
+
+ 2. Finally the following formula is used to solve for the parameters: :math:`augXZ \cdot \delta=augZW` where :math:`augXZ=T_a \cdot W` and :math:`augZW=augZ \cdot W`:
+
+  - Use QR decomposition to augXZ and obtain: :math:`QR \delta = augZW`.
+  - Use backward solve to obtain the coefficients :math:`\delta` from :math:`R \delta = Q^T augZW`.
+  - Calculate :math:`hv=\text{rowsum}(Q)` of length n+number of expanded and store in returnFrame.
+  - Calculate :math:`dev =` :math:`prior weight*(y_i-mu.i)^2 \choose (psi -u_i )^2` of length n+number of expanded random columns and store in returnFrame.
+  - Calculate :math:`resid= \frac {(y-mu.i)} {\sqrt \frac {sum(dev)(1-hv)}{n-p}}` of length n and store in returnFrame.
+  - Go back to step 1 unless :math:`\Sigma_i(eta.i-eta.o)^2 / \Sigma_i(eta.i)^2<1e-6` or a timeout event has occurred. 
+
+**Step 3**: Estimate :math:`\delta_e^2(\text {tau})`
+
+With the newly estimated fixed and random coefficients, we will estimate the dispersion parameter for the fixed effects/columns by building a gamma GLM:
+
+ 1. Generate a training frame with constant predictor column of 1 to force glm model to generate only the intercept term:
+
+  - Response column as :math:`dev/(1-hv)`.
+  - Weight column as :math:`(1-hv)/2`.
+  - Predictor column of ones.
+  - The length of the training frame is the number of data rows.
+
+ 2. Build a gamma GLM with ``family=gamma`` and ``link=log``.
+ 3. Set :math:`tau = \text {exp (intercept value)}`.
+ 4. Assign estimation standard error and sigma from the GLM standard error calculation for coefficients.
+
+**Step 4**: Estimate :math:`\delta_u^2(\text {phi})`.
+
+Again, a gamma GLM model is used here. In addition, the error estimates are generated for each random column. Exactly the same steps are used here as in Step 3. The only difference is that we are looking at the :math:`dev,hv` corresponding to the expanded random columns/effects.
+
+.. _regularization:
 
 Regularization
 ~~~~~~~~~~~~~~
@@ -581,6 +908,8 @@ To extract the regularization path from R or python:
 - R: call h2o.getGLMFullRegularizationPath. This takes the model as an argument. An example is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/glm/runit_GLM_reg_path.R>`__.
 - Python: H2OGeneralizedLinearEstimator.getGLMRegularizationPath (static method). This takes the model as an argument. An example is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_glm_regularization_path.py>`__.
 
+.. _solvers:
+
 Solvers
 ~~~~~~~
 
@@ -628,6 +957,8 @@ Gradient Descent
 
 For Ordinal regression problems, H2O provides options for `Gradient Descent <https://en.wikipedia.org/wiki/Gradient_descent>`__. Gradient Descent is a first-order iterative optimization algorithm for finding the minimum of a function. In H2O's GLM, conventional ordinal regression uses a likelihood function to adjust the model parameters. The model parameters are adjusted by maximizing the log-likelihood function using gradient descent. When the Ordinal family is specified, the ``solver`` parameter will automatically be set to ``GRADIENT_DESCENT_LH``. To adjust the model parameters using the loss function, you can set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
 
+.. _coefficients_table: 
+
 Coefficients Table
 ~~~~~~~~~~~~~~~~~~
 
@@ -647,11 +978,24 @@ You can extract the columns in the Coefficients Table by specifying ``names``, `
 - ``coef()``: Coefficients that can be applied to non-standardized data
 - ``coef_norm()``: Coefficients that can be fitted on the standardized data (requires ``standardized=TRUE``, which is the default)
 
-Example
-'''''''
+For an example, refer `here <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#examples>`__.
 
-.. example-code::
-   .. code-block:: r
+
+Modifying or Creating a Custom GLM Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In R and python, the makeGLMModel call can be used to create an H2O model from given coefficients. It needs a source GLM model trained on the same dataset to extract the dataset information. To make a custom GLM model from R or python:
+
+- R: call h2o.makeGLMModel. This takes a model, a vector of coefficients, and (optional) decision threshold as parameters.
+- Pyton: H2OGeneralizedLinearEstimator.makeGLMModel (static method) takes a model, a dictionary containing coefficients, and (optional) decision threshold as parameters.
+
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a Generalized Linear model.
+
+.. tabs::
+   .. code-tab:: r R
 
     library(h2o)
     h2o.init()
@@ -665,20 +1009,25 @@ Example
     predictors <- c("AGE", "RACE", "VOL", "GLEASON")
     response <- "CAPSULE"
 
-    prostate.glm <- h2o.glm(family= "binomial", x= predictors, y=response, training_frame=df, lambda = 0, compute_p_values = TRUE)
+    prostate_glm <- h2o.glm(family = "binomial", 
+                            x = predictors, 
+                            y = response, 
+                            training_frame = df, 
+                            lambda = 0, 
+                            compute_p_values = TRUE)
 
     # Coefficients that can be applied to the non-standardized data
-    h2o.coef(prostate.glm)
+    h2o.coef(prostate_glm)
       Intercept      RACE.1      RACE.2         AGE         VOL     GLEASON 
     -6.67515539 -0.44278752 -0.58992326 -0.01788870 -0.01278335  1.25035939
 
     # Coefficients fitted on the standardized data (requires standardize=TRUE, which is on by default)
-    h2o.coef_norm(prostate.glm)
+    h2o.coef_norm(prostate_glm)
       Intercept      RACE.1      RACE.2         AGE         VOL     GLEASON 
     -0.07610006 -0.44278752 -0.58992326 -0.11676080 -0.23454402  1.36533415 
 
     # Print the coefficients table
-    prostate.glm@model$coefficients_table
+    prostate_glm@model$coefficients_table
     Coefficients: glm coefficients
           names coefficients std_error   z_value  p_value standardized_coefficients
     1 Intercept    -6.675155  1.931760 -3.455478 0.000549                 -0.076100
@@ -689,22 +1038,22 @@ Example
     6   GLEASON     1.250359  0.156156  8.007103 0.000000                  1.365334
 
     # Print the standard error
-    prostate.glm@model$coefficients_table$std_error
+    prostate_glm@model$coefficients_table$std_error
     [1] 1.931760363 1.324230832 1.373465793 0.018701933 0.007514354 0.156156271
 
     # Print the p values
-    prostate.glm@model$coefficients_table$p_value
+    prostate_glm@model$coefficients_table$p_value
     [1] 5.493181e-04 7.380978e-01 6.675490e-01 3.388116e-01 8.890718e-02
     [6] 1.221245e-15
 
     # Print the z values
-    prostate.glm@model$coefficients_table$z_value
+    prostate_glm@model$coefficients_table$z_value
     [1] -3.4554780 -0.3343734 -0.4295143 -0.9565159 -1.7011907  8.0071033
 
     # Retrieve a graphical plot of the standardized coefficient magnitudes
-    h2o.std_coef_plot(prostate.glm)
+    h2o.std_coef_plot(prostate_glm)
 
-   .. code-block:: python
+   .. code-tab:: python
 
     import h2o
     h2o.init()
@@ -719,7 +1068,9 @@ Example
     predictors = ["AGE", "RACE", "VOL", "GLEASON"]
     response_col = "CAPSULE"
 
-    glm_model = H2OGeneralizedLinearEstimator(family= "binomial", lambda_ = 0, compute_p_values = True)
+    glm_model = H2OGeneralizedLinearEstimator(family= "binomial", 
+                                              lambda_ = 0, 
+                                              compute_p_values = True)
     glm_model.train(predictors, response_col, training_frame= prostate)
     
     # Coefficients that can be applied to the non-standardized data.
@@ -756,15 +1107,6 @@ Example
 
     # Retrieve a graphical plot of the standardized coefficient magnitudes
     glm_model.std_coef_plot()
-
-
-Modifying or Creating a Custom GLM Model
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-In R and python, the makeGLMModel call can be used to create an H2O model from given coefficients. It needs a source GLM model trained on the same dataset to extract the dataset information. To make a custom GLM model from R or python:
-
-- R: call h2o.makeGLMModel. This takes a model, a vector of coefficients, and (optional) decision threshold as parameters.
-- Pyton: H2OGeneralizedLinearEstimator.makeGLMModel (static method) takes a model, a dictionary containing coefficients, and (optional) decision threshold as parameters.
 
 
 FAQ
@@ -974,6 +1316,10 @@ Distributions: Setting the Scene.” Ecological modeling 157.2 (2002):
 Journal of the Royal Statistical Society. Series A (General) (1972):
 370-384. <https://docs.ufpr.br/~taconeli/CE225/Artigo.pdf>`__
 
+Lee, Y and Nelder, J. A. Hierarchical generalized linear models with discussion. J. R. Statist.Soc. B, 58:619-678, 1996.
+
+Lee, Y and Nelder, J. A. and Y. Pawitan. Generalized linear models with random effects. Chapman & Hall/CRC, 2006.
+
 `Pearce, Jennie, and Simon Ferrier. “Evaluating the Predictive
 Performance of Habitat Models Developed Using Logistic Regression.”
 Ecological modeling 133.3 (2000):
@@ -986,5 +1332,7 @@ Statistical Association 73.364 (April, 2012):
 
 Snee, Ronald D. “Validation of Regression Models: Methods and Examples.”
 Technometrics 19.4 (1977): 415-428.
+
+`Ronnegard, Lars. HGLM course at the Roslin Institute, http://users.du.se/~lrn/DUweb/Roslin/RoslinCourse_hglmAlgorithm_Nov13.pdf. <http://users.du.se/~lrn/DUweb/Roslin/RoslinCourse_hglmAlgorithm_Nov13.pdf>`__
 
 `Balzer, Laura B, and van der Laan, Mark J. "Estimating Effects on Rare Outcomes: Knowledge is Power." U.C. Berkeley Division of Biostatistics Working Paper Series (2013) <http://biostats.bepress.com/ucbbiostat/paper310/>`__.

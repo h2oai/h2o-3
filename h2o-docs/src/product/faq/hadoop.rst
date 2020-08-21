@@ -1,8 +1,8 @@
 Hadoop
 ------
 
-**Why did I get an error in R when I tried to save my model to my home
-directory in Hadoop?**
+Why did I get an error in R when I tried to save my model to my home directory in Hadoop?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To save the model in HDFS, prepend the save directory with ``hdfs://``:
 
@@ -19,7 +19,8 @@ To save the model in HDFS, prepend the save directory with ``hdfs://``:
 
 --------------
 
-**What amount of resources are used and reported back to YARN?**
+What amount of resources are used and reported back to YARN?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following table provides a summary of the YARN resource usage. 
 
@@ -50,7 +51,8 @@ You can also review the YARN resource manager for more information. Refer to the
 
 --------------
 
-**How do I specify which nodes should run H2O in a Hadoop cluster?**
+How do I specify which nodes should run H2O in a Hadoop cluster?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After creating and applying the desired node labels and associating them
 with specific queues as described in the Hadoop
@@ -69,9 +71,10 @@ documentation, launch H2O using the following command:
 
 --------------
 
-**How do I import data from HDFS in R and in Flow?**
+How do I import data from HDFS in R and in Flow?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To import from HDFS in R:
+To import a folder from HDFS in R:
 
 ::
 
@@ -96,8 +99,8 @@ Click the file to add it to the *Search:* field.
 
 --------------
 
-**Why do I receive the following error when I try to save my notebook in
-Flow?**
+Why do I receive the following error when I try to save my notebook in Flow?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ::
 
@@ -114,7 +117,8 @@ You can view the default download directory in the logs by clicking
 
 --------------
 
-**How do I access data in HDFS without launching H2O on YARN?**
+How do I access data in HDFS without launching H2O on YARN?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Each h2odriver.jar file is built with a specific Hadoop distribution so
 in order to have a working HDFS connection download the h2odriver.jar
@@ -124,8 +128,8 @@ file for your Hadoop distribution `from here <http://www.h2o.ai/download/h2o/had
 Then run the command to launch the H2O Application in the driver by
 specifying the classpath:
 
-::
+.. substitution-code-block:: bash
 
-        unzip h2o-<version>.zip
-        cd h2o-<version>
-        java -cp h2odriver.jar water.H2OApp
+      unzip h2o-|version|.zip
+      cd h2o-|version|
+      java -cp h2odriver.jar water.H2OApp

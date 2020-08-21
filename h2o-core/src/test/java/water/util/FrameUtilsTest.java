@@ -6,7 +6,6 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
@@ -199,7 +198,32 @@ public class FrameUtilsTest extends TestUtil {
               fr, new String[]{}, Model.Parameters.CategoricalEncodingScheme.EnumLimited, null, 5);
       Scope.track(enc);
       
+      System.out.println(enc.toTwoDimTable());
+      
       assertArrayEquals(new String[] {"70", "68", "65", "71", "66", "other"}, enc.vec("AGE.top_5_levels").domain());
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testEnumLimitedEncodingNA() {
+    Scope.enter();
+    try {
+      Frame fr = new TestFrameBuilder()
+              .withColNames("CatCol")
+              .withVecTypes(Vec.T_CAT)
+              .withDataForCol(0, new String[]{null, null, null, null, "c", "c", "c", "b", "b", "a"})
+              .build();
+
+      Frame enc = FrameUtils.categoricalEncoder(
+              fr, new String[]{}, Model.Parameters.CategoricalEncodingScheme.EnumLimited, null, 2);
+      Scope.track(enc);
+
+      System.out.println(enc.toTwoDimTable());
+
+      assertArrayEquals(new String[] {"c", "b", "other"}, enc.vec("CatCol.top_2_levels").domain());
+      assertEquals(4, enc.vec("CatCol.top_2_levels").naCnt());
     } finally {
       Scope.exit();
     }

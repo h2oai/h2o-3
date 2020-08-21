@@ -13,7 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecParameters,Word2VecModel.Word2VecOutput> {
-  public enum WordModel { SkipGram }
+  public enum WordModel { SkipGram, CBOW }
   public enum NormModel { HSM }
 
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.WordEmbedding, }; }

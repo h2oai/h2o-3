@@ -20,7 +20,7 @@ public class JobTest extends TestUtil {
 
   @Test
   public void setWork() {
-    final Job<Frame> j = new Job<>(Key.<Frame>make(), Frame.class.getName(), "Test Job");
+    final Job<Frame> j = new Job<>(Key.make(), Frame.class.getName(), "Test Job");
 
     H2O.H2OCountedCompleter worker = new H2O.H2OCountedCompleter() {
       @Override
@@ -39,7 +39,7 @@ public class JobTest extends TestUtil {
 
   @Test
   public void setWorkIllegal() {
-    final Job<Frame> j = new Job<>(Key.<Frame>make(), Frame.class.getName(), "Test Job");
+    final Job<Frame> j = new Job<>(Key.make(), Frame.class.getName(), "Test Job");
 
     H2O.H2OCountedCompleter worker = new H2O.H2OCountedCompleter() {
       @Override
@@ -55,4 +55,57 @@ public class JobTest extends TestUtil {
     j.start(worker, 12).get();
   }
 
+  @Test
+  public void jobStatus() {
+    final Job<Frame> j = new Job<>(Key.make(), Frame.class.getName(), "Test Job");
+    
+    assertEquals(Job.JobStatus.PENDING, j.getStatus());
+    j.start(new H2O.H2OCountedCompleter() {
+      @Override
+      public void compute2() {
+        assertEquals(Job.JobStatus.RUNNING, j.getStatus());
+        tryComplete();
+      }
+    }, 1).get();
+    assertEquals(Job.JobStatus.SUCCEEDED, j.getStatus());
+  }
+
+  @Test
+  public void jobStatusFailed() {
+    final Job<Frame> j = new Job<>(Key.make(), Frame.class.getName(), "Test Job");
+
+    ee.expectMessage("Test Job Failure");
+    
+    try {
+      j.start(new H2O.H2OCountedCompleter() {
+        @Override
+        public void compute2() {
+          throw new IllegalStateException("Test Job Failure");
+        }
+      }, 1).get();
+    } finally {
+      assertEquals(Job.JobStatus.FAILED, j.getStatus());
+    }
+  }
+
+  @Test
+  public void jobStatusStopped() {
+    final Job<Frame> j = new Job<>(Key.make(), Frame.class.getName(), "Test Job");
+
+    ee.expect(Job.JobCancelledException.class);
+
+    try {
+      j.start(new H2O.H2OCountedCompleter() {
+        @Override
+        public void compute2() {
+          j.stop();
+          assertTrue(j.stop_requested());
+          throw new Job.JobCancelledException();
+        }
+      }, 1).get();
+    } finally {
+      assertEquals(Job.JobStatus.STOPPED, j.getStatus());
+    }
+  }
+  
 }

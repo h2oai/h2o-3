@@ -36,7 +36,7 @@ def glrm_mojo():
     predID, pred_mojo = pyunit_utils.mojo_predict(glrmModel, TMPDIR, MOJONAME, glrmIterNumber=100) # save mojo predict
     pred_h2o = h2o.get_frame("GLRMLoading_"+predID)
     print("Comparing mojo x Factor and model x Factor for 100 iterations")
-    pyunit_utils.compare_frames_local(pred_h2o, pred_mojo, 1, tol=1e-10)
+    pyunit_utils.compare_frames_local(pred_h2o, pred_mojo, 1, tol=1e-6)
     
     # scoring with 2 iterations should be shorter than scoring with 8000 iterations
     starttime = time.time()

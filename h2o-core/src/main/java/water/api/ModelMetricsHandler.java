@@ -8,6 +8,7 @@ import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.Log;
 
@@ -285,6 +286,9 @@ class ModelMetricsHandler extends Handler {
     @API(help="Actuals Frame.", direction=API.Direction.INOUT)
     public String actuals_frame;
 
+    @API(help="Weights Frame.", direction=API.Direction.INOUT)
+    public String weights_frame;
+
     @API(help="Domain (for classification).", direction=API.Direction.INOUT)
     public String[] domain;
 
@@ -309,17 +313,24 @@ class ModelMetricsHandler extends Handler {
     Frame act = DKV.getGet(s.actuals_frame);
     if (null == act) throw new H2OKeyNotFoundArgumentException("actuals_frame", "make", s.actuals_frame);
 
+    Vec weights = null;
+    if (null != s.weights_frame) {
+      Frame weightsFrame = DKV.getGet(s.weights_frame);
+      if (null == weightsFrame) throw new H2OKeyNotFoundArgumentException("weights_frame", "make", s.actuals_frame);
+      weights = weightsFrame.anyVec();
+    }
+
     if (s.domain ==null) {
       if (pred.numCols()!=1) {
         throw new H2OIllegalArgumentException("predictions_frame", "make", "For regression problems (domain=null), the predictions_frame must have exactly 1 column.");
       }
-      ModelMetricsRegression mm = ModelMetricsRegression.make(pred.anyVec(), act.anyVec(), s.distribution);
+      ModelMetricsRegression mm = ModelMetricsRegression.make(pred.anyVec(), act.anyVec(), weights, s.distribution);
       s.model_metrics = new ModelMetricsRegressionV3().fillFromImpl(mm);
     } else if (s.domain.length==2) {
       if (pred.numCols()!=1) {
         throw new H2OIllegalArgumentException("predictions_frame", "make", "For domains with 2 class labels, the predictions_frame must have exactly one column containing the class-1 probabilities.");
       }
-      ModelMetricsBinomial mm = ModelMetricsBinomial.make(pred.anyVec(), act.anyVec(), s.domain);
+      ModelMetricsBinomial mm = ModelMetricsBinomial.make(pred.anyVec(), act.anyVec(), weights, s.domain);
       s.model_metrics = new ModelMetricsBinomialV3().fillFromImpl(mm);
     } else if (s.domain.length>2){
       if (pred.numCols()!=s.domain.length) {
@@ -330,7 +341,7 @@ class ModelMetricsHandler extends Handler {
         ModelMetricsOrdinal mm = ModelMetricsOrdinal.make(pred, act.anyVec(), s.domain);
         s.model_metrics = new ModelMetricsOrdinalV3().fillFromImpl(mm);
       } else {
-        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred, act.anyVec(), s.domain);
+        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred, act.anyVec(), weights, s.domain);
         s.model_metrics = new ModelMetricsMultinomialV3().fillFromImpl(mm);
       }
     } else {
@@ -352,36 +363,39 @@ class ModelMetricsHandler extends Handler {
     if (null == s.frame) throw new H2OIllegalArgumentException("frame", "predict", s.frame);
     if (null == DKV.get(s.frame.name)) throw new H2OKeyNotFoundArgumentException("frame", "predict", s.frame.name);
 
-    if (s.deviances || null != s.deviances_frame) throw new H2OIllegalArgumentException("deviances", "not supported for async", s.deviances_frame);
+    if (s.deviances || null != s.deviances_frame) 
+      throw new H2OIllegalArgumentException("deviances", "not supported for async", s.deviances_frame);
 
     final ModelMetricsList parms = s.createAndFillImpl();
-
-    //predict2 does not return modelmetrics, so cannot handle deeplearning: reconstruction_error (anomaly) or GLRM: reconstruct and archetypes
-    //predict2 can handle deeplearning: deepfeatures and predict
-
-    if (s.deep_features_hidden_layer > 0 || s.deep_features_hidden_layer_name != null) {
+    
+    long workAmount = parms._frame.anyVec().nChunks();
+    if (s.predict_contributions) {
+      workAmount = parms._frame.anyVec().length();
+      if (null == parms._predictions_name)
+        parms._predictions_name = "contributions_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+    } else if (s.deep_features_hidden_layer > 0 || s.deep_features_hidden_layer_name != null) {
       if (null == parms._predictions_name)
         parms._predictions_name = "deep_features" + Key.make().toString().substring(0, 5) + "_" +
                 parms._model._key.toString() + "_on_" + parms._frame._key.toString();
     } else if (null == parms._predictions_name) {
-      if (parms._exemplar_index >= 0) {
-        parms._predictions_name = "members_" + parms._model._key.toString() + "_for_exemplar_" + parms._exemplar_index;
-      } else {
-        parms._predictions_name = "transformation" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
-      }
+      parms._predictions_name = "transformation" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
     }
 
-    final Job<Frame> j = new Job(Key.make(parms._predictions_name), Frame.class.getName(), "transformation");
-
+    final Job<Frame> j = new Job<>(Key.make(parms._predictions_name), Frame.class.getName(), "transformation");
 
     H2O.H2OCountedCompleter work = new H2O.H2OCountedCompleter() {
       @Override
       public void compute2() {
-        if (s.deep_features_hidden_layer < 0 && s.deep_features_hidden_layer_name == null) {
+        if (s.predict_contributions) {
+          if (! (parms._model instanceof Model.Contributions)) {
+            throw new H2OIllegalArgumentException("Model type " + parms._model._parms.algoName() + " doesn't support calculating Feature Contributions.");
+          }
+          Model.Contributions mc = (Model.Contributions) parms._model;
+          mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j);
+        } else if (s.deep_features_hidden_layer < 0 && s.deep_features_hidden_layer_name == null) {
           parms._model.score(parms._frame, parms._predictions_name, j, false, CFuncRef.from(s.custom_metric_func));
-        }
-        else if (s.deep_features_hidden_layer_name != null){
-          Frame predictions = null;
+        } else if (s.deep_features_hidden_layer_name != null){
+          Frame predictions;
           try {
             predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer_name, j);
           } catch(IllegalArgumentException e) {
@@ -389,13 +403,12 @@ class ModelMetricsHandler extends Handler {
             throw e;
           }
           if (predictions!=null) {
-            predictions = new Frame(Key.<Frame>make(parms._predictions_name), predictions.names(), predictions.vecs());
+            predictions = new Frame(Key.make(parms._predictions_name), predictions.names(), predictions.vecs());
             DKV.put(predictions._key, predictions);
           }
-        }
-        else {
+        } else {
           Frame predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer, j);
-          predictions = new Frame(Key.<Frame>make(parms._predictions_name), predictions.names(), predictions.vecs());
+          predictions = new Frame(Key.make(parms._predictions_name), predictions.names(), predictions.vecs());
           DKV.put(predictions._key, predictions);
         }
         if ((parms._model._warningsP != null) && (parms._model._warningsP.length > 0)) { // add prediction warning here only
@@ -405,7 +418,7 @@ class ModelMetricsHandler extends Handler {
         tryComplete();
       }
     };
-    j.start(work, parms._frame.anyVec().nChunks());
+    j.start(work, workAmount);
     return new JobV3().fillFromImpl(j);
   }
 
@@ -496,9 +509,10 @@ class ModelMetricsHandler extends Handler {
         if (! (parms._model instanceof Model.Contributions)) {
           throw new H2OIllegalArgumentException("Model type " + parms._model._parms.algoName() + " doesn't support calculating Feature Contributions.");
         }
+        Model.Contributions mc = (Model.Contributions) parms._model;
         if (null == parms._predictions_name)
           parms._predictions_name = "contributions_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
-        predictions = ((Model.Contributions) parms._model).scoreContributions(parms._frame, Key.<Frame>make(parms._predictions_name));
+        predictions = mc.scoreContributions(parms._frame, Key.make(parms._predictions_name));
       } else if(s.exemplar_index >= 0) {
         assert(Model.ExemplarMembers.class.isAssignableFrom(parms._model.getClass()));
         if (null == parms._predictions_name)

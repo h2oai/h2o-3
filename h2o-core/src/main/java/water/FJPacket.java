@@ -2,6 +2,7 @@ package water;
 
 import water.H2O.H2OCountedCompleter;
 import water.UDP.udp;
+import water.util.Log;
 
 /**
  * A class to handle the work of a received UDP packet.  Typically we'll do a
@@ -35,9 +36,7 @@ class FJPacket extends H2OCountedCompleter {
   /** Exceptional completion path; mostly does printing if the exception was
    *  not handled earlier in the stack.  */
   @Override public boolean onExceptionalCompletion(Throwable ex, jsr166y.CountedCompleter caller) {
-    System.err.println("onExCompletion for "+this);
-    ex.printStackTrace();
-    water.util.Log.err(ex);
+    Log.err("onExCompletion for " + this, ex);
     return true;
   }
 }

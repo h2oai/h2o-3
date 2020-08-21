@@ -51,24 +51,15 @@ public final class PersistNFS extends Persist {
   public byte[] load(Value v) throws IOException {
     assert v.isPersisted();
     // Convert a file chunk into a long-offset from the base file.
-    Key k = v._key;
-    long skip = k.isChunkKey() ? water.fvec.NFSFileVec.chunkOffset(k) : 0;
-    try {
-      FileInputStream s = null;
-      try {
-        s = new FileInputStream(getFileForKey(k));
-        FileChannel fc = s.getChannel();
-        fc.position(skip);
-        AutoBuffer ab = new AutoBuffer(fc, true, Value.NFS);
-        byte[] b = ab.getA1(v._max);
-        ab.close();
-        return b;
-      } finally {
-        if (s != null) s.close();
-      }
-    } catch ( IOException e ) { // Broken disk / short-file???
-      Log.debug("[h2o] Problem ignored: "+e.toString());
-      return null;
+    Key<?> k = v._key;
+    final long skip = k.isChunkKey() ? water.fvec.NFSFileVec.chunkOffset(k) : 0;
+    try (FileInputStream s = new FileInputStream(getFileForKey(k));
+         FileChannel fc = s.getChannel()) {
+      fc.position(skip);
+      AutoBuffer ab = new AutoBuffer(fc, true, Value.NFS);
+      byte[] b = ab.getA1(v._max);
+      ab.close();
+      return b;
     }
   }
 

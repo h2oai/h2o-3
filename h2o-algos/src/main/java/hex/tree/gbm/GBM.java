@@ -1,6 +1,7 @@
 package hex.tree.gbm;
 
 import hex.DistributionFactory;
+import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
 import hex.Distribution;
 import hex.ModelCategory;
@@ -15,8 +16,12 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.util.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
+
+import static hex.util.LinearAlgebraUtils.toEigenArray;
 
 /** Gradient Boosted Trees
  *
@@ -91,8 +96,27 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         error("_offset_column", "Offset is not supported for "+_parms._distribution+" distribution.");
       }
       if (_parms._monotone_constraints != null && _parms._monotone_constraints.length > 0 &&
-              !(DistributionFamily.gaussian.equals(_parms._distribution) || DistributionFamily.bernoulli.equals(_parms._distribution))) {
+              !(DistributionFamily.gaussian.equals(_parms._distribution) || 
+                      DistributionFamily.bernoulli.equals(_parms._distribution) || DistributionFamily.tweedie.equals(_parms._distribution))) {
         error("_monotone_constraints", "Monotone constraints are only supported for Gaussian and Bernoulli distributions, your distribution: " + _parms._distribution + ".");
+      }
+
+      if (_origTrain != null && _origTrain != _train) {
+        List<Double> projections = new ArrayList<>();
+        for (int i = 0; i < _origTrain.numCols(); i++) {
+          Vec currentCol = _origTrain.vec(i);
+          if (currentCol.isCategorical()) {
+            double[] actProjection = toEigenArray(currentCol);
+            for (double v : actProjection) {
+              projections.add(v);
+            }
+          }
+        }
+        double[] primitive_projections = new double[projections.size()];
+        for (int i = 0; i < projections.size(); i++) { 
+          primitive_projections[i] = projections.get(i);
+        }
+        _orig_projection_array = primitive_projections;
       }
     }
 
@@ -185,6 +209,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // for Bernoulli, we compute the initial value with Newton-Raphson iteration, otherwise it might be NaN here
       DistributionFamily distr = _parms._distribution;
       _initialPrediction = _nclass > 2 || distr == DistributionFamily.laplace || distr == DistributionFamily.huber || distr == DistributionFamily.quantile ? 0 : getInitialValue();
+      if(distr == DistributionFamily.quasibinomial){
+        _model._output._quasibinomialDomains = new VecUtils.CollectDoubleDomain(null,2).doAll(_response).stringDomain(_response.isInt());
+      }
       if (distr == DistributionFamily.bernoulli || distr == DistributionFamily.quasibinomial) {
         if (hasOffsetCol())
           _initialPrediction = getInitialValueBernoulliOffset(_train);
@@ -194,6 +221,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         _initialPrediction = getInitialValueQuantile(_parms._quantile_alpha);
       }
       _model._output._init_f = _initialPrediction; //always write the initial value here (not just for Bernoulli)
+      if (_model.evalAutoParamsEnabled) {
+        _model.initActualParamValuesAfterOutputSetup(_nclass, isClassifier());
+      }
 
       // Set the initial prediction into the tree column 0
       if (_initialPrediction != 0.0) {
@@ -388,6 +418,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
 
       if ((cs != null) && constraintCheckEnabled()) {
+        _job.update(0, "Checking monotonicity constraints on the final model");
         checkConstraints(ktrees, leaves, cs);
       }
 
@@ -556,7 +587,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // where huberDelta is the alpha-percentile of the residual across all observations
       Frame tmpFrame2 = new Frame(_train.vecs());
       tmpFrame2.add("resMinusMedianRes", diffMinusMedianDiff);
-      double[] huberGamma = new HuberLeafMath(frameMap, huberDelta,strata).doAll(tmpFrame2)._huberGamma;
+      double[] huberGamma = new HuberLeafMath(frameMap, huberDelta, strata).doAll(tmpFrame2)._huberGamma;
 
       // now assign the median per leaf + the above _huberCorrection[i] to each leaf
       final DTree tree = ktrees[0];
@@ -589,7 +620,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           LeafNode leafNode = (LeafNode) ktrees[k].node(leafs[k] + i);
           final double gamma;
           if (useSplitPredictions) {
-            gamma = leafNode.getSplitPrediction();
+            gamma = gp.gamma(leafNode.getSplitPrediction());
           } else {
             gamma = gp.gamma(k, i);
           }
@@ -954,8 +985,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     @Override
     public void map(Chunk[] cs) {
-      if (_strataMin < 0 || _strataMax < 0) {
+      if (_strata.length() == 0) {
         Log.warn("No Huber math can be done since there's no strata.");
+        _huberGamma = new double[0];
         return;
       }
       final int nstrata = _strataMax - _strataMin + 1;
@@ -1052,9 +1084,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
     double gamma(int tree, int nid, double num) {
-      if (_denom[tree][nid] == 0) return 0;
+      if (_denom[tree][nid] == 0)
+        return 0;
       double g = num / _denom[tree][nid];
-      assert (!Double.isInfinite(g) && !Double.isNaN(g));
+      assert !Double.isInfinite(g) && !Double.isNaN(g);
+      return gamma(g);
+    }
+    
+    double gamma(double g) {
       if (_dist._family == DistributionFamily.poisson ||
               _dist._family == DistributionFamily.gamma ||
               _dist._family == DistributionFamily.tweedie) {
@@ -1098,16 +1135,19 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           continue;
         for (int row = 0; row < nids._len; row++) { // For all rows
           double w = weights.atd(row);
-          if (w == 0) continue;
+          if (w == 0)
+            continue;
 
           double y = resp.atd(row); //response
-          if (Double.isNaN(y)) continue;
+          if (Double.isNaN(y)) 
+            continue;
 
           // Compute numerator and denominator of terminal node estimate (gamma)
           int nid = (int) nids.at8(row);          // Get Node to decide from
           final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow(nid); //same for all k
           if (wasOOBRow) nid = ScoreBuildHistogram.oob2Nid(nid);
-          if (nid < 0) continue;
+          if (nid < 0) 
+            continue;
           DecidedNode dn = tree.decided(nid);           // Must have a decision point
           if (dn._split == null)                    // Unable to decide?
             dn = tree.decided(dn.pid());  // Then take parent's decision

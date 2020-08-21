@@ -5,6 +5,8 @@ import water.fvec.Chunk;
 import water.util.MathUtils;
 
 import java.math.BigInteger;
+import static java.math.BigInteger.ONE;
+import static java.math.BigInteger.ZERO;
 
 class RadixCount extends MRTask<RadixCount> {
   static class Long2DArray extends Iced {
@@ -46,16 +48,34 @@ class RadixCount extends MRTask<RadixCount> {
     long tmp[] = _counts._val[chk.cidx()] = new long[256];
     boolean isIntVal = chk.vec().isCategorical() || chk.vec().isInt();
     // TODO: assert chk instanceof integer or enum; -- but how since many
-    // integers (C1,C2 etc)?  Alternatively: chk.getClass().equals(C8Chunk.class)
-    if (!(_isLeft && chk.vec().isCategorical())) {  // for numeric columns or to deal with the rite frame during merge
+    if (chk.vec().isCategorical()) {
+      assert _id_maps[0].length > 0;
+      assert _base.compareTo(ZERO)==0;
+      if (chk.vec().naCnt() == 0) {
+        for (int r=0; r<chk._len; r++) {
+          int ctrVal = _isLeft?BigInteger.valueOf(_id_maps[0][(int)chk.at8(r)]+1).shiftRight(_shift).intValue()
+                  :BigInteger.valueOf((int)chk.at8(r)+1).shiftRight(_shift).intValue();
+          tmp[ctrVal]++;
+        }
+      } else {
+        for (int r=0; r<chk._len; r++) {
+          if (chk.isNA(r)) tmp[0]++;
+          else {
+            int ctrVal = _isLeft?BigInteger.valueOf(_id_maps[0][(int)chk.at8(r)]+1).shiftRight(_shift).intValue()
+                    :BigInteger.valueOf((int)chk.at8(r)+1).shiftRight(_shift).intValue();
+            tmp[ctrVal]++;
+          }
+        }
+      }
+    } else if (!(_isLeft && chk.vec().isCategorical())) {
       if (chk.vec().naCnt() == 0) { // no NAs in column
         // There are no NA in this join column; hence branch-free loop. Most
         // common case as should never really have NA in join columns.
         for (int r = 0; r < chk._len; r++) {    // note that 0th bucket here is for rows to exclude from merge result
           long ctrVal = isIntVal ?
-                  BigInteger.valueOf(chk.at8(r)*_ascending).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue():
-                  MathUtils.convertDouble2BigInteger(_ascending*chk.atd(r)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue();
-          tmp[(int) ctrVal]++;
+                  BigInteger.valueOf(chk.at8(r)*_ascending).subtract(_base).add(ONE).shiftRight(_shift).longValue():
+                  MathUtils.convertDouble2BigInteger(_ascending*chk.atd(r)).subtract(_base).add(ONE).shiftRight(_shift).longValue();
+          tmp[(int) ctrVal]++;  // ctrVal is the MSB value of chk.at8(r)
         }
       } else {    // contains NAs in column
         // There are some NA in the column so have to branch.  TODO: warn user
@@ -64,8 +84,8 @@ class RadixCount extends MRTask<RadixCount> {
           if (chk.isNA(r)) tmp[0]++;
           else {
             long ctrVal = isIntVal ?
-                    BigInteger.valueOf(_ascending*chk.at8(r)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue():
-                    MathUtils.convertDouble2BigInteger(_ascending*chk.atd(r)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue();
+                    BigInteger.valueOf(_ascending*chk.at8(r)).subtract(_base).add(ONE).shiftRight(_shift).longValue():
+                    MathUtils.convertDouble2BigInteger(_ascending*chk.atd(r)).subtract(_base).add(ONE).shiftRight(_shift).longValue();
             tmp[(int) ctrVal]++;
           }
 
@@ -73,23 +93,6 @@ class RadixCount extends MRTask<RadixCount> {
           // TODO: allow NA-to-NA join to be turned off.  Do that in bmerge as a simple low-cost switch.
           // Note that NA and the minimum may well both be in MSB 0 but most of
           // the time we will not have NA in join columns
-        }
-      }
-    } else {
-      // first column (for MSB split) in an Enum
-      // map left categorical to right levels using _id_maps
-      assert _id_maps[0].length > 0;
-      assert _base.compareTo(BigInteger.ZERO)==0;
-      if (chk.vec().naCnt() == 0) {
-        for (int r=0; r<chk._len; r++) {
-          tmp[BigInteger.valueOf(_id_maps[0][(int)chk.at8(r)]+1).shiftRight(_shift).intValue()]++;
-        //  tmp[(_id_maps[0][(int)chk.at8(r)]+1) >> _shift]++;
-        }
-      } else {
-        for (int r=0; r<chk._len; r++) {
-          if (chk.isNA(r)) tmp[0]++;
-          else tmp[BigInteger.valueOf(_id_maps[0][(int)chk.at8(r)]+1).shiftRight(_shift).intValue()]++;
-       //   else tmp[(_id_maps[0][(int)chk.at8(r)]+1) >> _shift]++;
         }
       }
     }

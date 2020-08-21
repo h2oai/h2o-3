@@ -2,17 +2,8 @@ package water.util;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static water.util.ArrayUtils.append;
-import static water.util.ArrayUtils.countNonzeros;
-import static water.util.ArrayUtils.decodeAsInt;
-import static water.util.ArrayUtils.encodeAsInt;
-import static water.util.ArrayUtils.remove;
-import static water.util.ArrayUtils.toDouble;
+import static org.junit.Assert.*;
+import static water.util.ArrayUtils.*;
 
 /**
  * Test FrameUtils interface.
@@ -300,4 +291,38 @@ public class ArrayUtilsTest {
     assertArrayEquals(new double[]{-1, 0.5, 0.25, -8.25, 2, 5}, res, 0);
   }
 
+  @Test
+  public void testOccurrenceCount() {
+    byte[] arr = new byte[]{ 1, 2, 1, 1, 3, 4 };
+    assertEquals("Occurrence count mismatch.", 3, ArrayUtils.occurrenceCount(arr, (byte) 1));
+    assertEquals("Occurrence count mismatch.", 0, ArrayUtils.occurrenceCount(arr, (byte) 0));
+  }
+
+  @Test
+  public void testOccurrenceCountEmptyArray() {
+    byte[] arr = new byte[]{};
+    assertEquals("Occurrence count mismatch.", 0, ArrayUtils.occurrenceCount(arr, (byte) 1));
+  }
+  
+  @Test
+  public void testByteArraySelect() {
+    byte[] arr = new byte[]{ 1, 2, 3, 4, 5, 6 };
+    int[] idxs = new int[]{ 3, 1, 5 };
+
+    byte[] expectedSelectedElements = new byte[]{ 4, 2, 6 };
+
+    assertArrayEquals("Selected array elements mismatch.", 
+                      expectedSelectedElements, ArrayUtils.select(arr, idxs));
+  }
+  
+  @Test
+  public void testByteArrayEmptySelect() {
+    byte[] arr = new byte[]{ 1, 2, 3, 4, 5, 6 };
+    int[] idxs = new int[]{};
+
+    byte[] expectedSelectedElements = new byte[]{};
+
+    assertArrayEquals("Selected array elements mismatch.",
+                      expectedSelectedElements, ArrayUtils.select(arr, idxs));
+  }
 }

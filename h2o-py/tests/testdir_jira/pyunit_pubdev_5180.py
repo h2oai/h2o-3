@@ -7,7 +7,7 @@ from tests import pyunit_utils
 def pubdev_5180():
 
     frame = h2o.create_frame(binary_fraction=1, binary_ones_fraction=0.5, missing_fraction=0, rows=1, cols=1)
-    exp_str = ExprNode("assign", 123456789123456789123456789, frame)._get_ast_str(False)
+    exp_str = ExprNode("assign", 123456789123456789123456789, frame)._get_ast_str()
     assert exp_str.find('123456789123456789L') == -1
 
 if __name__ == "__main__":

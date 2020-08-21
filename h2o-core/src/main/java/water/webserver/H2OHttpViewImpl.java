@@ -2,16 +2,11 @@ package water.webserver;
 
 import org.apache.commons.io.IOUtils;
 import water.ExtensionManager;
-import water.api.DatasetServlet;
-import water.api.NpsBinServlet;
-import water.api.PostFileServlet;
-import water.api.PutKeyServlet;
 import water.api.RequestServer;
+import water.server.ServletService;
 import water.server.ServletUtils;
 import water.util.Log;
-import water.webserver.iface.H2OHttpConfig;
-import water.webserver.iface.H2OHttpView;
-import water.webserver.iface.RequestAuthExtension;
+import water.webserver.iface.*;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -30,17 +25,6 @@ import java.util.LinkedHashMap;
 public class H2OHttpViewImpl implements H2OHttpView {
   private static volatile boolean _acceptRequests = false;
   private final H2OHttpConfig config;
-  private static final LinkedHashMap<String, Class<? extends HttpServlet>> SERVLETS = new LinkedHashMap<>();
-  static {
-    SERVLETS.put("/3/NodePersistentStorage.bin/*", NpsBinServlet.class);
-    SERVLETS.put("/3/PostFile.bin", PostFileServlet.class);
-    SERVLETS.put("/3/PostFile", PostFileServlet.class);
-    SERVLETS.put("/3/DownloadDataset", DatasetServlet.class);
-    SERVLETS.put("/3/DownloadDataset.bin", DatasetServlet.class);
-    SERVLETS.put("/3/PutKey.bin", PutKeyServlet.class);
-    SERVLETS.put("/3/PutKey", PutKeyServlet.class);
-    SERVLETS.put("/", RequestServer.class);
-  }
 
   public H2OHttpViewImpl(H2OHttpConfig config) {
     this.config = config;
@@ -59,26 +43,32 @@ public class H2OHttpViewImpl implements H2OHttpView {
 
   @Override
   public LinkedHashMap<String, Class<? extends HttpServlet>> getServlets() {
-    return SERVLETS;
+    return ServletService.INSTANCE.getAllServlets();
+  }
+
+  @Override
+  public LinkedHashMap<String, Class<? extends H2OWebsocketServlet>> getWebsockets() {
+    return ServletService.INSTANCE.getAllWebsockets();
   }
 
   @Override
   public boolean authenticationHandler(HttpServletRequest request, HttpServletResponse response) throws IOException {
     if (!config.loginType.needToCheckUserName()) {
-      //TODO for LoginType.HASH, this equals not adding the handler at all; consinder this optimization
       return false;
     }
-
+    
     if (request.getUserPrincipal() == null) {
-      return false;
+      throw new IllegalStateException("AuthenticateHandler called with request.userPrincipal is null");
     }
+  
     final String loginName = request.getUserPrincipal().getName();
     if (loginName.equals(config.user_name)) {
       return false;
+    } else {
+      Log.warn("Login name (" + loginName + ") does not match cluster owner name (" + config.user_name + ")");
+      ServletUtils.sendResponseError(response, HttpServletResponse.SC_UNAUTHORIZED, "Login name does not match cluster owner name");
+      return true;
     }
-    Log.warn("Login name (" + loginName + ") does not match cluster owner name (" + config.user_name + ")");
-    ServletUtils.sendResponseError(response, HttpServletResponse.SC_UNAUTHORIZED, "Login name does not match cluster owner name");
-    return true;
   }
 
   @Override

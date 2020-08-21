@@ -9,6 +9,7 @@ import water.Job;
 import water.Key;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
+import water.util.ArrayUtils;
 import water.util.IcedHashMapGeneric;
 import water.util.TwoDimTable;
 
@@ -32,8 +33,10 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   public static class TargetEncoderParameters extends Model.Parameters {
     public boolean _blending = false;
-    public BlendingParams _blending_parameters = TargetEncoder.DEFAULT_BLENDING_PARAMS;
+    public double _k = TargetEncoder.DEFAULT_BLENDING_PARAMS.getK();
+    public double _f = TargetEncoder.DEFAULT_BLENDING_PARAMS.getF();
     public TargetEncoder.DataLeakageHandlingStrategy _data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None;
+    public double _noise_level = 0.01;
     
     @Override
     public String algoName() {
@@ -52,9 +55,12 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
     @Override
     public long progressUnits() {
-      return 0;
+      return 1;
     }
-    
+
+    public BlendingParams getBlendingParameters() {
+      return _k!=0 && _f!=0 ? new BlendingParams(_k, _f) : TargetEncoder.DEFAULT_BLENDING_PARAMS;
+    }
   }
 
   public static class TargetEncoderOutput extends Model.Output {
@@ -87,13 +93,14 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     }
     
     private TwoDimTable constructSummary(){
-      TwoDimTable summary = new TwoDimTable("Target Encoder model summary.", "Summary for target encoder model", new String[_names.length],
+
+      String[] columnsForSummary = ArrayUtils.difference(_names, new String[]{responseName(), foldName()});
+      TwoDimTable summary = new TwoDimTable("Target Encoder model summary.", "Summary for target encoder model", new String[columnsForSummary.length],
               new String[]{"Original name", "Encoded column name"}, new String[]{"string", "string"}, null, null);
 
-      for (int i = 0; i < _names.length; i++) {
-        final String originalColName = _names[i];
-        if(originalColName.equals(responseName())) continue;
-        
+      for (int i = 0; i < columnsForSummary.length; i++) {
+        final String originalColName = columnsForSummary[i];
+
         summary.set(i, 0, originalColName);
         summary.set(i, 1, originalColName + TargetEncoder.ENCODED_COLUMN_POSTFIX);
       }
@@ -119,7 +126,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    */
   public Frame transform(Frame data, byte strategy, double noiseLevel, final boolean useBlending, BlendingParams blendingParams,
                          long seed) {
-    if(blendingParams == null) blendingParams = _parms._blending_parameters != null ? _parms._blending_parameters : TargetEncoder.DEFAULT_BLENDING_PARAMS;
+    if(blendingParams == null) blendingParams = _parms.getBlendingParameters();
     
     final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.fromVal(strategy);
     return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
@@ -137,7 +144,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    * @return An instance of {@link Frame} with transformed data, registered in DKV.
    */
   public Frame transform(Frame data, byte strategy, final boolean useBlending, BlendingParams blendingParams, long seed) {
-    if(blendingParams == null) blendingParams = _parms._blending_parameters != null ? _parms._blending_parameters : TargetEncoder.DEFAULT_BLENDING_PARAMS;
+    if(blendingParams == null) blendingParams = _parms.getBlendingParameters();
     
     final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.fromVal(strategy);
     return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
@@ -146,17 +153,17 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   
   @Override
   protected double[] score0(double data[], double preds[]){
-    throw new UnsupportedOperationException("TargetEncoderModel doesn't support scoring. Use `transform()` instead.");
+    throw new UnsupportedOperationException("TargetEncoderModel doesn't support scoring on raw data. Use transform() or score() instead.");
   }
 
   @Override
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-    final BlendingParams blendingParams = _parms._blending_parameters != null ? _parms._blending_parameters : TargetEncoder.DEFAULT_BLENDING_PARAMS;
+    final BlendingParams blendingParams = _parms.getBlendingParameters();
     final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = 
             _parms._data_leakage_handling != null ? _parms._data_leakage_handling : TargetEncoder.DataLeakageHandlingStrategy.None;
     
     return _targetEncoder.applyTargetEncoding(fr, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
-            _parms._fold_column, _parms._blending, _parms._seed,false, Key.<Frame>make(destination_key), blendingParams);
+            _parms._fold_column, _parms._blending, _parms._noise_level, _parms._seed, Key.<Frame>make(destination_key), blendingParams );
   }
   
 

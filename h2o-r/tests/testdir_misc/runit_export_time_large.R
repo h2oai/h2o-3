@@ -9,7 +9,7 @@ test.export.time <- function() {
 
   fr = h2o.importFile(locate("bigdata/laptop/citibike-nyc/2013-07.csv"))
   
-  t = system.time(h2o.exportFile(fr,paste0(sandbox(),"foo",sep=.Platform$file.sep),force=T))
+  t = system.time(h2o.exportFile(fr,paste0(sandbox(),"foo",sep=.Platform$file.sep),force=TRUE))
   
   print(paste("Time to export is",t[3],"seconds"))
   expect_true(t[3]>2)

@@ -1,3 +1,5 @@
+.. _glrm:
+
 Generalized Low Rank Models (GLRM)
 ----------------------------------
 
@@ -33,9 +35,9 @@ Defining a GLRM Model
 
 -  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training.
 
--  **loading_name**: Specify the frame key to save the resulting X.
+-  **representation_name**: Specify the frame key to save the resulting X.
 
--  `transform <algo-params/transform.html>`__: Specify the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale. The default is None.
+-  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data: None, Standardize, Normalize, Demean, or Descale. The default is None.
 
 -  `k <algo-params/k.html>`__: (Required) Specify the rank of matrix approximation.
 
@@ -67,7 +69,7 @@ Defining a GLRM Model
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
 
--  `init <algo-params/init.html>`__: Specify the initialization mode: Random, SVD, PlusPlus, or User.
+-  `init <algo-params/init1.html>`__: Specify the initialization mode: Random, Furthest (Default), PlusPlus, or User.
 
 -  **svd_method**: Specify the method for computing SVD during initialization: GramSVD, Power, Randomized.
 
@@ -86,6 +88,67 @@ Defining a GLRM Model
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Specify the maximum allowed runtime in seconds for model training. Use 0 to disable.
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
+
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a Generalized Low Rank model.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+    h2o.init()
+
+    # Import the USArrests dataset into H2O:
+    arrests <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+
+    # Split the dataset into a train and valid set:
+    arrests_splits <- h2o.splitFrame(data = arrests, ratios = 0.8, seed = 1234)
+    train <- arrests_splits[[1]]
+    valid <- arrests_splits[[2]]
+
+    # Build and train the model:
+    glrm_model = h2o.glrm(training_frame = train, 
+                          k = 4, 
+                          loss = "Quadratic", 
+                          gamma_x = 0.5, 
+                          gamma_y = 0.5,  
+                          max_iterations = 700, 
+                          recover_svd = TRUE, 
+                          init = "SVD", 
+                          transform = "STANDARDIZE")
+
+    # Eval performance:
+    arrests_perf <- h2o.performance(glrm_model)
+
+    # Generate predictions on a validation set (if necessary):
+    arrests_pred <- h2o.predict(glrm_model, newdata = valid)
+
+
+   .. code-tab:: python
+
+    import h2o
+    from h2o.estimators import H2OGeneralizedLowRankEstimator
+    h2o.init()
+
+    # Import the USArrests dataset into H2O:
+    arrestsH2O = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+
+    # Split the dataset into a train and valid set:
+    train, valid = arrestsH2O.split_frame(ratios=[.8], seed=1234)
+
+    # Build and train the model:
+    glrm_model = H2OGeneralizedLowRankEstimator(k=4, 
+                                                loss="quadratic", 
+                                                gamma_x=0.5, 
+                                                gamma_y=0.5, 
+                                                max_iterations=700, 
+                                                recover_svd=True, 
+                                                init="SVD", 
+                                                transform="standardize")
+    glrm_model.train(training_frame=train) 
+
 
 FAQ
 ~~~

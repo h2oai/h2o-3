@@ -10,7 +10,7 @@ import java.io.InputStream;
 import water.DKV;
 import water.TestUtil;
 
-import static water.udf.JFuncTest.mockedRow;
+import static water.udf.JFuncUtils.mockedRow;
 import static water.udf.JFuncUtils.getSkippingClassloader;
 import static water.udf.JFuncUtils.loadRawTestFunc;
 import static water.udf.JFuncUtils.loadTestFunc;

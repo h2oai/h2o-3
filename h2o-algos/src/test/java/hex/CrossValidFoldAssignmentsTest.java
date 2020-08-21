@@ -51,7 +51,7 @@ public class CrossValidFoldAssignmentsTest extends TestUtil {
       assertNotNull(gbm._output._cross_validation_fold_assignment_frame_id);
       cvFoldAssignmentFrame = DKV.getGet(gbm._output._cross_validation_fold_assignment_frame_id);
       assertEquals(tfr.numRows(), cvFoldAssignmentFrame.numRows());
-      isBitIdentical(foldId, cvFoldAssignmentFrame);
+      assertBitIdentical(foldId, cvFoldAssignmentFrame);
 
     } finally {
       if (tfr != null) tfr.remove();

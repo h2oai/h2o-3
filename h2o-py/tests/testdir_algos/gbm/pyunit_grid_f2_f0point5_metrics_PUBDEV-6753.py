@@ -8,6 +8,7 @@ from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.grid.grid_search import H2OGridSearch
 
+
 def grid_f0point5_metrics():
 
     gbm_grid1 = train_grid()
@@ -102,9 +103,7 @@ def train_grid():
     return gbm_grid1
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(grid_f0point5_metrics)
-    pyunit_utils.standalone_test(grid_f2_metrics)
-else:
-    grid_f0point5_metrics()
-    grid_f2_metrics()
+pyunit_utils.run_tests([
+    grid_f0point5_metrics,
+    grid_f2_metrics
+])

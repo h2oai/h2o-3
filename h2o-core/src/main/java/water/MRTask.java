@@ -179,6 +179,12 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   /** If true, run entirely local - which will pull all the data locally. */
   protected boolean _run_local;
 
+  private PostMapAction<?> _postMap; 
+  public final MRTask<T> withPostMapAction(PostMapAction<?> postMap) {
+    _postMap = postMap;
+    return this;
+  }
+
   public String profString() { return _profile != null ? _profile.toString() : "Profiling turned off"; }
   MRProfile _profile;
 
@@ -454,9 +460,18 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     _fr = fr;                   // Record vectors to work on
     _nlo = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
     _run_local = run_local;     // Run locally by copying data, or run globally?
+    assert checkRunLocal() : "MRTask is expected to be running in a local-mode but _run_local = false";
     setupLocal0();              // Local setup
     H2O.submitTask(this);       // Begin normal execution on a FJ thread
     return self();
+  }
+
+  private boolean checkRunLocal() {
+    if (!Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.checkRunLocal"))
+      return true;
+    if ("water.fvec.RollupStats$Roll".equals(getClass().getName()))
+      return true;
+    return _run_local;
   }
 
   /** Block for and get any final results from a dfork'd MRTask.
@@ -601,6 +616,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         if(_profile!=null) _profile._userstart = System.currentTimeMillis();
         if( _keys != null ) map(_keys[_lo]);
         _res = self();        // Save results since called map() at least once!
+        if (_postMap != null)
+          _postMap.call(_keys[_lo]);
         if(_profile!=null) _profile._closestart = System.currentTimeMillis();
       }
     } else if( _hi > _lo ) {    // Frame, Single chunk?
@@ -661,6 +678,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         // Further D/K/V put any new vec results.
         if(_profile!=null)
           _profile._closestart = System.currentTimeMillis();
+        if (_postMap != null)
+          _postMap.call(bvs);
         for( Chunk bv : bvs )  bv.close(_lo,_fs);
         if( _output_types != null) for(NewChunk nch:appendableChunks)nch.close(_lo, _fs);
       }
@@ -796,4 +815,14 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     x.setPendingCount(0); // Volatile write for completer field; reset pending count also
     return x;
   }
+
+  public static abstract class PostMapAction<T extends PostMapAction<T>> extends Iced<T> {
+    void call(Key mapInput) {
+      // do nothing by default
+    }
+    void call(Chunk[] mapInput) {
+      // do nothing by default
+    }
+  }
+
 }

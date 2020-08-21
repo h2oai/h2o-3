@@ -44,7 +44,8 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
             foldColumn, false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
 
     Vec vec = resultWithEncoding.vec(4);
-    Vec expected = dvec(0.5, 0.5, 1, 1, 1);
+    printOutFrameAsTable(resultWithEncoding);
+    Vec expected = dvec(0.5, 1, 1, 1, 0.5);
     assertVecEquals(expected, vec, 1e-5);
 
     expected.remove();
@@ -79,10 +80,10 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
 
     printOutFrameAsTable(resultWithEncoding);
     double expectedDifferenceDueToNoise = 1e-2;
-    Vec vec = resultWithEncoding.vec(4);
+    Vec actualEncodings = resultWithEncoding.vec(4);
 
-    Vec expected = dvec(0.5, 0.5, 1, 1, 1);
-    assertVecEquals(expected, vec, expectedDifferenceDueToNoise);
+    Vec expected = dvec(0.5, 1, 1, 1, 0.5);
+    assertVecEquals(expected, actualEncodings, expectedDifferenceDueToNoise);
 
     expected.remove();
     encodingMapCleanUp(targetEncodingMap);
@@ -120,7 +121,7 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
     printOutFrameAsTable(resultWithEncoding);
 
     Vec vec = resultWithEncoding.vec(2);
-    Vec expected = dvec(0.8, 0.8, 0.8, 0.5, 1, 1, 1);
+    Vec expected = dvec(0.5, 1 ,0.8, 0.8, 0.8, 1, 1);
     assertVecEquals(expected, vec, 1e-5);
 
     training.delete();
@@ -155,14 +156,15 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
     Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None,
             foldColumn, false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
 
-    Vec expected = dvec(0.5, 1, 0.5, 1, 1);
-    assertVecEquals(expected, resultWithEncoding.vec(4), 1e-5);
+    Vec expectedColAEncodings = dvec(0.5, 1, 1, 1, 0.5);
+    printOutFrameAsTable(resultWithEncoding);
+    assertVecEquals(expectedColAEncodings, resultWithEncoding.vec(4), 1e-5);
 
-    Vec expected2 = dvec(0.5, 0.5, 1, 1, 1);
-    assertVecEquals(expected2, resultWithEncoding.vec(5), 1e-5);
+    Vec expectedColBEncodings = dvec(0.5, 1, 0.5, 1, 1);
+    assertVecEquals(expectedColBEncodings, resultWithEncoding.vec(5), 1e-5);
 
-    expected.remove();
-    expected2.remove();
+    expectedColAEncodings.remove();
+    expectedColBEncodings.remove();
     encodingMapCleanUp(targetEncodingMap);
     resultWithEncoding.delete();
   }

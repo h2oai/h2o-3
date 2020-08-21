@@ -6,7 +6,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test <- function() {
-	ca = read.csv(file =locate("smalldata/glm_test/cancar_logIn.csv"),header = T)
+	ca = read.csv(file =locate("smalldata/glm_test/cancar_logIn.csv"),header = TRUE)
 	cc = as.h2o(ca,destination_frame = "cc")
 	cc$Merit = as.factor(cc$Merit)
 	cc$Class = as.factor(cc$Class)
@@ -21,7 +21,7 @@ test <- function() {
 	#pr = predict(gg, ca, type="response")
 	#summary(pr)  #mean = 20200.0; min = 727.6 ; max = 202400.0
 	hh = h2o.deeplearning(x = myX,y = "Claims",distribution ="poisson",hidden = c(6),epochs = 995,train_samples_per_iteration = -1,
-                      reproducible = T,activation = "Tanh",balance_classes = F,force_load_balance = F,
+                      reproducible = TRUE,activation = "Tanh",balance_classes = F,force_load_balance = FALSE,
                       seed = 5313,score_training_samples = 0,score_validation_samples = 0,
                       training_frame = cc, stopping_rounds=0)
 	hh@model$training_metrics@metrics$mean_residual_deviance #-407674.1
@@ -46,7 +46,7 @@ test <- function() {
 	#pred = exp(link.offset)
 	#summary(pred)  #mean = 20200.0; min = 530.1; max = 215900.0
 	hh = h2o.deeplearning(x = myX,y = "Claims",distribution ="poisson",hidden = c(6),epochs = 995,train_samples_per_iteration = -1,
-                      reproducible = T,activation = "Tanh",balance_classes = F,force_load_balance = F,
+                      reproducible = TRUE,activation = "Tanh",balance_classes = FALSE,force_load_balance = FALSE,
                       seed = 5313,score_training_samples = 0,score_validation_samples = 0,
                       offset_column = "logInsured",training_frame = cc, stopping_rounds=0)
 	#hh@model$training_metrics@metrics$mean_residual_deviance 

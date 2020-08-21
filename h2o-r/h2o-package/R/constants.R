@@ -53,7 +53,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
                    data.frame(type = "character", scalar = TRUE,  row.names = "VecSpecifier", stringsAsFactors = FALSE),
                    data.frame(type = "character", scalar = FALSE,  row.names = "VecSpecifier[]", stringsAsFactors = FALSE),
                    data.frame(type = "list",      scalar = FALSE, row.names = "KeyValue[]",   stringsAsFactors = FALSE),
-                   data.frame(type = "list",      scalar = FALSE, row.names = "StringPair[]", stringsAsFactors = FALSE))
+                   data.frame(type = "list",      scalar = FALSE, row.names = "StringPair[]", stringsAsFactors = FALSE),
+                   data.frame(type = "list",        scalar = FALSE, row.names = "Key<Keyed>[]", stringsAsFactors = FALSE))
 
 #' Capabilities endpoints
 .h2o.__ALL_CAPABILITIES  <- "Capabilities"
@@ -104,6 +105,11 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 #' @param algo Cannonical identifier of H2O algorithm.
 .h2o.__MODEL_BUILDERS <- function(algo) paste0("ModelBuilders/", algo)
 
+#' Segment Models Builder Endpoint Generator
+#'
+#' @param algo Cannonical identifier of H2O algorithm.
+.h2o.__SEGMENT_MODELS_BUILDERS <- function(algo) paste0("SegmentModelsBuilders/", algo)
+
 #' Export Files Endpoint Generator
 #'
 #' @param frame H2OFrame
@@ -131,6 +137,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 # Export/Import Model Endpoints
 .h2o.__SAVE_MODEL <- function(model) paste0("Models.bin/", model)
 .h2o.__LOAD_MODEL <- "Models.bin/"
+.h2o.__UPLOAD_MODEL <- "Models.upload.bin/"
 
 # Grid search 
 .h2o.__GRID <- function(algo) paste0("Grid/", algo)

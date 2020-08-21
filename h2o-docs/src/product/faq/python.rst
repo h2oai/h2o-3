@@ -1,8 +1,8 @@
 Python
 ------
 
-**I tried to install H2O in Python but ``pip install scikit-learn``
-failed - what should I do?**
+I tried to install H2O in Python but ``pip install scikit-learn`` failed. What should I do?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use the following commands (prepending with ``sudo`` if necessary):
 
@@ -42,22 +42,21 @@ packages, including dependencies:
 
 --------------
 
-**How do I specify a value as an enum in Python? Is there a Python
-equivalent of ``as.factor()`` in R?**
+How do I specify a value as an enum in Python? Is there a Python equivalent of ``as.factor()`` in R?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use ``.asfactor()`` to specify a value as an enum.
 
 --------------
 
-**I received the following error when I tried to install H2O using the
-Python instructions on the downloads page - what should I do to resolve
-it?**
+I received the following error when I tried to install H2O using the Python instructions on the downloads page. What should I do to resolve it?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-::
+  .. substitution-code-block:: bash
 
-    Downloading/unpacking http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/12/Python/h2o-3.0.0.12-py2.py3-none-any.whl 
-      Downloading h2o-3.0.0.12-py2.py3-none-any.whl (43.1Mb): 43.1Mb downloaded 
-      Running setup.py egg_info for package from http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/12/Python/h2o-3.0.0.12-py2.py3-none-any.whl 
+    Downloading/unpacking http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/12/Python/h2o-|version|-py2.py3-none-any.whl 
+      Downloading h2o-|version|-py2.py3-none-any.whl (43.1Mb): 43.1Mb downloaded 
+      Running setup.py egg_info for package from http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/12/Python/h2o-|version|-py2.py3-none-any.whl 
         Traceback (most recent call last): 
           File "<string>", line 14, in <module> 
         IOError: [Errno 2] No such file or directory: '/tmp/pip-nTu3HK-build/setup.py' 
@@ -136,7 +135,8 @@ After completing this procedure, go to Python and use ``h2o.init()`` to start H2
 
 --------------
 
-**How should I specify the datatype during import in Python?**
+How should I specify the datatype during import in Python?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Refer to the following example:
 
@@ -164,7 +164,8 @@ Refer to the following example:
 
 --------------
 
-**How do I view a list of variable importances in Python?**
+How do I view a list of variable importances in Python?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use ``model.varimp(return_list=True)`` as shown in the following example:
 
@@ -177,7 +178,8 @@ Use ``model.varimp(return_list=True)`` as shown in the following example:
 
 --------------
 
-**How can I get the H2O Python Client to work with third-party plotting libraries for plotting metrics outside of Flow?**
+How can I get the H2O Python Client to work with third-party plotting libraries for plotting metrics outside of Flow?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In Flow, plots are created using the H2O UI and using specific RESTful commands that are issued from the UI. You can obtain similar plotting specific data in Python using a third-party plotting library such as Pandas or Matplotlib. In addition, every metric that H2O displays in the Flow is calculated on the backend and stored for each model. So you can inspect any metric after getting the data from H2O and then using a plotting library in Python to create the graphs. 
 
@@ -199,7 +201,8 @@ The example below shows how to plot the logloss for training and validation usin
 
 --------------
 
-**What is PySparkling? How can I use it for grid search or early stopping?**
+What is PySparkling? How can I use it for grid search or early stopping?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 PySparkling basically calls H2O Python functions for all operations on H2O data frames. You can perform all H2O Python operations available in H2O Python version 3.6.0.3 or later from PySparkling.
 
@@ -243,6 +246,7 @@ Here is an example of early stopping in PySparkling:
 
 --------------
 
-**Do you have a tutorial for grid search in Python?**
+Do you have a tutorial for grid search in Python?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Yes, a notebook is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/H2O_tutorial_eeg_eyestate.ipynb>`__ that demonstrates the use of grid search in Python.

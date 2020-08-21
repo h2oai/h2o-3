@@ -1,6 +1,10 @@
 package hex.genmodel.algos.deeplearning;
 
+import com.google.gson.JsonObject;
 import hex.genmodel.ModelMojoReader;
+import hex.genmodel.attributes.DeepLearningModelAttributes;
+import hex.genmodel.attributes.ModelAttributes;
+import hex.genmodel.attributes.ModelJsonReader;
 import hex.genmodel.utils.DistributionFamily;
 
 import java.io.IOException;
@@ -60,7 +64,18 @@ public class DeeplearningMojoReader extends ModelMojoReader<DeeplearningMojoMode
     return new DeeplearningMojoModel(columns, domains, responseColumn);
   }
 
-  @Override public String mojoVersion() {
+  @Override
+  public String mojoVersion() {
     return "1.00";
+  }
+
+  @Override
+  protected ModelAttributes readModelSpecificAttributes() {
+    final JsonObject modelJson = ModelJsonReader.parseModelJson(_reader);
+    if (modelJson != null) {
+      return new DeepLearningModelAttributes(_model, modelJson);
+    } else {
+      return null;
+    }
   }
 }

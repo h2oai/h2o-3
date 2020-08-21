@@ -94,6 +94,11 @@
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh6.3.zip"
         },
         {
+            "distribution" : "cdp7.0",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdp7.0.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdp7.0.zip"
+        },
+        {
             "distribution" : "hdp2.2",
             "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-hdp2.2.zip",
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-hdp2.2.zip"
@@ -169,7 +174,7 @@
         {
             "name" : "H2O Documentation",
             "id"   : "doc-front",
-            "path" : "http://docs.h2o.ai"
+            "path" : "https://docs.h2o.ai"
         },
         {
             "name" : "H2O User Guide",
@@ -200,11 +205,6 @@
             "name" : "Sparkling Water Readme",
             "id"   : "doc-sparkling-water",
             "path" : "https://github.com/h2oai/sparkling-water/blob/master/README.rst"
-        },
-        {
-            "name" : "Migrating to H2O 3",
-            "id"   : "doc-migration",
-            "path" : "docs-website/h2o-docs/migrating.html"
         }
     ],
 
@@ -233,21 +233,6 @@
             "name" : "H2O Generated POJO Model API Developer Documentation (Javadoc)",
             "id"   : "doc-h2o-genmodel-javadoc",
             "path" : "docs-website/h2o-genmodel/javadoc/index.html"
-        },
-        {
-            "name" : "H2O Scala API Developer Documentation (Scaladoc)",
-            "id"   : "doc-h2o-scala-javadoc",
-            "path" : "docs-website/h2o-scala_2.10/scaladoc/index.html"
-        },
-        {
-            "name" : "H2O Scala 2.10 API Developer Documentation (Scaladoc)",
-            "id"   : "doc-h2o-scala-2-10-javadoc",
-            "path" : "docs-website/h2o-scala_2.10/scaladoc/index.html"
-        },
-        {
-            "name" : "H2O Scala 2.11 API Developer Documentation (Scaladoc)",
-            "id"   : "doc-h2o-scala-2-11-javadoc",
-            "path" : "docs-website/h2o-scala_2.11/scaladoc/index.html"
         }
     ],
 

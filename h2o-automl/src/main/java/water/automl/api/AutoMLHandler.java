@@ -1,6 +1,7 @@
 package water.automl.api;
 
 import ai.h2o.automl.AutoML;
+import ai.h2o.automl.leaderboard.Leaderboard;
 import water.*;
 import water.api.Handler;
 import water.automl.api.schemas3.AutoMLV99;
@@ -25,28 +26,7 @@ public class AutoMLHandler extends Handler {
     return autoMLV99.fillFromImpl(autoML);
   }
 
-  // TODO: almost identical to ModelsHandler; refactor
-  public static AutoML getFromDKV(String param_name, String key_str) {
-    return getFromDKV(param_name, Key.make(key_str));
-  }
-
-  // TODO: almost identical to ModelsHandler; refactor
-  public static AutoML getFromDKV(String param_name, Key key) {
-    if (key == null)
-      throw new H2OIllegalArgumentException(param_name, "AutoML.getFromDKV()", null);
-
-    Value v = DKV.get(key);
-    if (v == null)
-      throw new H2OKeyNotFoundArgumentException(param_name, key.toString());
-
-    Iced ice = v.get();
-    if (! (ice instanceof AutoML))
-      throw new H2OKeyWrongTypeArgumentException(param_name, key.toString(), AutoML.class, ice.getClass());
-
-    return (AutoML) ice;
-  }
-
-  public static AutoML[] fetchAllForProject(final String project_name) {
+  private static AutoML[] fetchAllForProject(final String project_name) {
     final Key[] automlKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
       public boolean filter(KeySnapshot.KeyInfo k) {
@@ -55,9 +35,17 @@ public class AutoMLHandler extends Handler {
     }).keys();
     AutoML[] amls = new AutoML[automlKeys.length];
     for (int i = 0; i < automlKeys.length; i++) {
-      AutoML aml = getFromDKV("(none)", automlKeys[i]);
+      AutoML aml = getFromDKV(automlKeys[i]);
       amls[i] = aml;
     }
     return amls;
   }
+
+  private static AutoML getFromDKV(Key key) {
+    Value v = DKV.get(key);
+    if (v == null)
+      throw new H2OKeyNotFoundArgumentException(key.toString());
+    return (AutoML) v.get();
+  }
+
 }

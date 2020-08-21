@@ -55,7 +55,7 @@ public class UDPRebooted extends UDP {
       }
     }else{
       ListenerService.getInstance().report("shutdown_ignored");
-      Log.warn("Receive "+ T.values()[shutdownPacketType].toString()+ " request from H2O with older version than 3.14.0.4. This request" +
+      Log.warn("Receive shutdownPacketType=" + shutdownPacketType + " request from H2O with older version than 3.14.0.4. This request" +
               " will be ignored");
     }
     // if we receive request from H2O with a wrong version, just ignore the request
@@ -131,11 +131,15 @@ public class UDPRebooted extends UDP {
       ab._h2o.rebooted();
     return ab;
   }
-
-
+  
   // Pretty-print bytes 1-15; byte 0 is the udp_type enum
-  @Override String print16( AutoBuffer ab ) {
+  @Override
+  String print16(AutoBuffer ab) {
     ab.getPort();
-    return T.values()[ab.get1()].toString();
+    int value = ab.get1();
+    if (value == MAGIC_SAFE_CLUSTER_KILL_BYTE) {
+      value = ab.get1();
+    }
+    return T.values()[value].toString();
   }
 }

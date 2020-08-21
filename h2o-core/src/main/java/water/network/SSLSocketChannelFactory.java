@@ -4,6 +4,7 @@ import water.H2O;
 import water.util.Log;
 
 import javax.net.ssl.*;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.channels.ByteChannel;
@@ -13,13 +14,17 @@ import java.security.cert.CertificateException;
 
 public class SSLSocketChannelFactory {
 
+    private static final String DEFAULT_TLS_VERSION = "TLSv1.2";
+    
     private SSLContext sslContext = null;
     private SSLProperties properties = null;
 
     public SSLSocketChannelFactory() throws SSLContextException {
         try {
-            SSLProperties props = new SSLProperties();
-            props.load(new FileInputStream(H2O.ARGS.internal_security_conf));
+            File confFile = new File(H2O.ARGS.internal_security_conf); 
+            SSLProperties props = H2O.ARGS.internal_security_conf_rel_paths ? 
+                    new SSLProperties(confFile.getParentFile()) : new SSLProperties();
+            props.load(new FileInputStream(confFile));
             init(props);
         } catch (IOException e) {
             Log.err("Failed to initialized SSL context.", e);
@@ -35,7 +40,7 @@ public class SSLSocketChannelFactory {
         properties = props;
         try {
             if (requiredParamsPresent()) {
-                this.sslContext = SSLContext.getInstance(properties.h2o_ssl_protocol());
+                this.sslContext = SSLContext.getInstance(properties.h2o_ssl_protocol(DEFAULT_TLS_VERSION));
                 this.sslContext.init(keyManager(), trustManager(), null);
             } else {
                 this.sslContext = SSLContext.getDefault();
@@ -111,4 +116,9 @@ public class SSLSocketChannelFactory {
         }
         return new SSLSocketChannel(channel, sslEngine);
     }
+
+    SSLProperties getProperties() {
+        return properties;
+    }
+
 }

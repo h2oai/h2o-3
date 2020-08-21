@@ -18,8 +18,6 @@ public class HeartBeat extends Iced<HeartBeat> {
   byte[] _jar_md5;              // JAR file digest
 
   public boolean _client;       // This is a client node: no keys homed here
-  public boolean _watchdog_client = false; // Special client mode - kill cluster when client disappears
-
 
   public int _pid;              // Process ID
 
@@ -50,6 +48,7 @@ public class HeartBeat extends Iced<HeartBeat> {
   public long get_pojo_mem() { return _pojo_mem; }
   public long get_free_mem() { return _free_mem; }
   public long get_swap_mem() { return _swap_mem; }
+  
 
   public int _keys;       // Number of LOCAL keys in this node, cached or homed
 

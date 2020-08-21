@@ -1,13 +1,15 @@
 General
 -------
 
-**I updated my H2O to the newest version. Why can I no longer load a pre-trained model?**
+I updated my H2O to the newest version. Why can I no longer load a pre-trained model?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When saving an H2O binary model with ``h2o.saveModel`` (R), ``h2o.save_model`` (Python), or in Flow, you will only be able to load and use that saved binary model with the same version of H2O that you used to train your model. H2O binary models are not compatible across H2O versions. If you update your H2O version, then you will need to retrain your model. For production, you can save your model as a :ref:`POJO/MOJO <about-pojo-mojo>`. These artifacts are not tied to a particular version of H2O because they are just plain Java code and do not require an H2O cluster to be running.
 
 --------------
 
-**How do I score using an exported JSON model?**
+How do I score using an exported JSON model?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Since JSON is just a representation format, it cannot be directly
 executed, so a JSON export can't be used for scoring. However, you can
@@ -23,7 +25,8 @@ or
 
 --------------
 
-**How do I score using an exported POJO?**
+How do I score using an exported POJO?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The generated POJO can be used indepedently of a H2O cluster. First use
 ``curl`` to send the h2o-genmodel.jar file and the java code for model
@@ -63,14 +66,16 @@ to read the hex strings as numerics.
 
 --------------
 
-**How do I predict using multiple response variables?**
+How do I predict using multiple response variables?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Currently, H2O does not support multiple response variables. To predict
 different response variables, build multiple models.
 
 --------------
 
-**How do I kill any running instances of H2O?**
+How do I kill any running instances of H2O?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In Terminal, enter ``ps -efww | grep h2o``, then kill any running PIDs.
 You can also find the running instance in Terminal and press **Ctrl +
@@ -80,7 +85,8 @@ display.
 
 --------------
 
-**Why is H2O not launching from the command line?**
+Why is H2O not launching from the command line?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ::
 
@@ -103,7 +109,8 @@ We recommend Oracle's `Java
 
 --------------
 
-**Why did I receive the following error when I tried to launch H2O?**
+Why did I receive the following error when I tried to launch H2O?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ::
 
@@ -176,7 +183,8 @@ launch parameters than you have available.
 
 --------------
 
-**How does the architecture of H2O work?**
+How does the architecture of H2O work?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This
 `PDF <https://github.com/h2oai/h2o-meetups/blob/master/2014_11_18_H2O_in_Big_Data_Environments/H2OinBigDataEnvironments.pdf>`__
@@ -185,7 +193,8 @@ environments.
 
 --------------
 
-**How does ``importFiles()`` work in H2O?**
+How does ``importFiles()`` work in H2O?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``importFiles()`` gets the basic information for the file and then
 returns a key representing that file. This key is used during parsing to
@@ -196,7 +205,8 @@ vec that loads the file when necessary, and returns a key.
 
 --------------
 
-**Does H2O support GPUs?**
+Does H2O support GPUs?
+~~~~~~~~~~~~~~~~~~~~~~
 
 GPU support is available in H2O's XGBoost if the following requirements are met:
 
@@ -209,7 +219,8 @@ In addition to XGBoost H2O also supports GPUs as part of our H2O4GPU offering. R
 
 --------------
 
-**Can we make use of GPUs with AutoML?** 
+Can we make use of GPUs with AutoML?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 XGBoost models in AutoML can make use of GPUs. Keep in mind that the following requirements must be met:
 
@@ -220,7 +231,8 @@ And again, you can monitor your GPU utilization via the ``nvidia-smi`` command. 
 
 --------------
 
-**How can I continue working on a model in H2O after restarting?**
+How can I continue working on a model in H2O after restarting?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 There are a number of ways you can save your model in H2O:
 
@@ -237,8 +249,8 @@ There are a number of ways you can save your model in H2O:
 
 --------------
 
-**How can I find out more about H2O's real-time, nano-fast scoring
-engine?**
+How can I find out more about H2O's real-time, nano-fast scoring engine?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 H2O's scoring engine uses a Plain Old Java Object (POJO). The POJO code
 runs quickly but is single-threaded. It is intended for embedding into
@@ -259,107 +271,124 @@ Frame and can be written out using ``h2o.exportFile()``, for example.
 
 --------------
 
-**I am writing an academic research paper and I would like to cite H2O
-in my bibliography - how should I do that?**
+I am writing an academic research paper and I would like to cite H2O in my bibliography. How should I do that?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To cite our software:
+To cite our software (insert correct H2O version & year):
 
--  The H2O.ai Team. (2015) *h2o: R Interface for H2O*. R package version
-   3.1.0.99999. http://www.h2o.ai.
+-  H2O.ai. (2020) *h2o: R Interface for H2O*. R package version
+   |version|. https://github.com/h2oai/h2o-3.
 
--  The H2O.ai Team. (2015) *h2o: h2o: Python Interface for H2O*. Python
-   package version 3.1.0.99999. http://www.h2o.ai.
+-  H2O.ai. (2020) *h2o: Python Interface for H2O*. Python
+   package version |version|. https://github.com/h2oai/h2o-3.
 
--  The H2O.ai Team. (2015) *H2O: Scalable Machine Learning*. Version 3.1.0.99999. http://www.h2o.ai.
+-  H2O.ai. (2020) *H2O: Scalable Machine Learning Platform*. Version |version|. https://github.com/h2oai/h2o-3.
 
 To cite one of our booklets:
 
--  Nykodym, T., Hussami, N., Kraljevic, T.,Rao, A., and Wang, A. (Sept.
-   2015). *Generalized Linear Modeling with H2O.*
-   http://h2o.ai/resources.
+-  Nykodym, N., Kraljevic, T., Wang, A., and Wong W. (March 2020). *Generalized Linear Modeling with H2O.*
+   http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GLMBooklet.pdf.
 
--  Candel, A., LeDell, E., Parmar, V., and Arora, A. (Sept. 2015). *Deep
-   Learning with H2O.* http://h2o.ai/resources.
+-  Candel, A., and LeDell, E. (March 2020). *Deep
+   Learning with H2O.* http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/DeepLearningBooklet.pdf.
 
--  Click, C., Malohlava, M., Parmar, V., and Roark, H. (Sept. 2015).
-   *Gradient Boosted Models with H2O.* http://h2o.ai/resources.
+-  Candel, A., and Malohlava, M. (March 2020).
+   *Gradient Boosted Machine with H2O.* http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf.
 
--  Aiello, S., Eckstrand, E., Fu, A., Landry, M., and Aboyoun, P. (Sept.
-   2015) *Fast Scalable R with H2O.* http://h2o.ai/resources.
+-  Landry, M. (March 2020) *Machine Learning 
+   with R and H2O.* http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/RBooklet.pdf.
 
--  Aiello, S., Click, C., Roark, H. and Rehak, L. (Sept. 2015) *Machine
-   Learning with Python and H2O* http://h2o.ai/resources.
+-  Stetsenko, P. (March 2020) *Machine Learning 
+   with Python and H2O* http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/PythonBooklet.pdf.
 
--  Malohlava, M., and Tellez, A. (Sept. 2015) *Machine Learning with
-   Sparkling Water: H2O + Spark* http://h2o.ai/resources.
+-  Malohlava, M., Hava, J., and Mehta, N. (March 2020) *Machine Learning with
+   Sparkling Water: H2O + Spark* http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/SparklingWaterBooklet.pdf.
+
+To cite H2O AutoML, please use the instructions `here <../automl.html#citation>`__.
+
 
 If you are using Bibtex:
 
-::
+.. substitution-code-block:: bash
 
+
+    @Manual{h2o_R_package,
+        title = {h2o: R Interface for H2O},
+        year = {2020},
+        month = {March},
+        note = {R package version |version|},
+        url = {http://www.h2o.ai},
+    }
+
+    @Manual{h2o_Python_module,
+        title = {h2o: Python Interface for H2O},
+        author = {H2O.ai},
+        year = {2020},
+        note = {Python package version |version|},
+        url = {https://github.com/h2oai/h2o-3},
+    }
+
+    @Manual{h2o_platform,
+        title = {H2O: Scalable Machine Learning Platform},
+        author = {H2O.ai},
+        year = {2020},
+        note = {version |version|},
+        url = {https://github.com/h2oai/h2o-3},
+    }
 
     @Manual{h2o_GLM_booklet,
         title = {Generalized Linear Modeling with H2O},
-        author = {Nykodym, T. and Hussami, N. and Kraljevic, T. and Rao, A. and Wang, A.},
-        year = {2015},
-        month = {September},
-        url = {http://h2o.ai/resources},
+        author = {Nykodym, T. and Kraljevic, T. and Wang, A. and Wong W.},
+        year = {2020},
+        month = {March},
+        url = {http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GLMBooklet.pdf},
     }
 
     @Manual{h2o_DL_booklet,
         title = {Deep Learning with H2O},
-        author = {Candel, A. and LeDell, E. and Arora, A. and Parmar, V.},
-        year = {2015},
-        month = {September},
-        url = {http://h2o.ai/resources},
+        author = {Candel, A. and LeDell, E.},
+        year = {2020},
+        month = {March},
+        url = {http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/DeepLearningBooklet.pdf},
     }
 
     @Manual{h2o_GBM_booklet,
         title = {Gradient Boosted Models},
-        author = {Click, C. and Lanford, J. and Malohlava, M. and Parmar, V. and Roark, H.},
-        year = {2015},
-        month = {September},
-        url = {http://h2o.ai/resources},
+        author = {Candel, A., and Malohlava, M.},
+        year = {2020},
+        month = {March},
+        url = {http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf},
     }
 
     @Manual{h2o_R_booklet,
-        title = {Fast Scalable R with H2O},
-        author = {Aiello, S. and Eckstrand, E. and Fu, A. and Landry, M. and Aboyoun, P. },
-        year = {2015},
-        month = {September},
-        url = {http://h2o.ai/resources},
+        title = {Machine Learning with R and H2O},
+        author = {Landry, M.},
+        year = {2020},
+        month = {March},
+        url = {http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/RBooklet.pdf},
     }
 
-    @Manual{h2o_R_package,
-        title = {h2o: R Interface for H2O},
-        author = {The H2O.ai team},
-        year = {2015},
-        note = {R package version 3.1.0.99999},
-        url = {http://www.h2o.ai},
+    @Manual{h2o_Python_booklet,
+        title = {Machine Learning with Python and H2O},
+        author = {Stetsenko, P.},
+        year = {2020},
+        month = {March},
+        url = {http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/PythonBooklet.pdf},
     }
 
+    @Manual{h2o_SW_booklet,
+        title = {Machine Learning with Sparkling Water: H2O + Spark},
+        author = {Malohlava, M., and Hava, J., and Mehta, N},
+        year = {2020},
+        month = {March},
+        url = {http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/SparklingWaterBooklet.pdf},
+    }    
 
-    @Manual{h2o_Python_module,
-        title = {h2o: Python Interface for H2O},
-        author = {The H2O.ai team},
-        year = {2015},
-        note = {Python package version 3.1.0.99999},
-        url = {http://www.h2o.ai},
-    }
-
-
-    @Manual{h2o_Java_software,
-        title = {H2O: Scalable Machine Learning},
-        author = {The H2O.ai team},
-        year = {2015},
-        note = {version 3.1.0.99999},
-        url = {http://www.h2o.ai},
-    }
 
 --------------
 
-**What are these RTMP and py\_ temporary Frames? Why are they the same
-size as my original data?**
+What are these RTMP and py\_ temporary Frames? Why are they the same size as my original data?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 No data is copied. H2O does a classic copy-on-write optimization. That
 Frame you see - it's nothing more than a thin wrapper over an internal

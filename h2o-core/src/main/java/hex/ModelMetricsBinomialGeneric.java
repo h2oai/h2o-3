@@ -14,7 +14,8 @@ public class ModelMetricsBinomialGeneric extends ModelMetricsBinomial {
   public ModelMetricsBinomialGeneric(Model model, Frame frame, long nobs, double mse, String[] domain,
                                      double sigma, AUC2 auc, double logloss, TwoDimTable gainsLiftTable,
                                      CustomMetric customMetric, double mean_per_class_error, TwoDimTable thresholds_and_metric_scores,
-                                     TwoDimTable max_criteria_and_metric_scores, TwoDimTable confusion_matrix, double r2) {
+                                     TwoDimTable max_criteria_and_metric_scores, TwoDimTable confusion_matrix, double r2,
+                                     final String description) {
     super(model, frame, nobs, mse, domain, sigma, auc, logloss, null, customMetric);
     _gainsLiftTable = gainsLiftTable;
     _thresholds_and_metric_scores = thresholds_and_metric_scores;
@@ -22,6 +23,7 @@ public class ModelMetricsBinomialGeneric extends ModelMetricsBinomial {
     _confusion_matrix = confusion_matrix;
     _mean_per_class_error = mean_per_class_error;
     _r2 = r2;
+     _description = description;
   }
 
   @Override

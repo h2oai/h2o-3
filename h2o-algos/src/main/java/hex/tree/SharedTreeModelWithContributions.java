@@ -24,9 +24,14 @@ public abstract class SharedTreeModelWithContributions<
   public SharedTreeModelWithContributions(Key<M> selfKey, P parms, O output) {
         super(selfKey, parms, output);
     }
-    
+
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
+    return scoreContributions(frame, destination_key, null);
+  }
+
+  @Override
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j) {
     if (_output.nclasses() > 2) {
       throw new UnsupportedOperationException(
               "Calculating contributions is currently not supported for multinomial models.");
@@ -43,6 +48,7 @@ public abstract class SharedTreeModelWithContributions<
     final String[] outputNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
     
     return getScoreContributionsTask(this)
+            .withPostMapAction(JobUpdatePostMap.forJob(j))
             .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
             .outputFrame(destination_key, outputNames, null);
   }

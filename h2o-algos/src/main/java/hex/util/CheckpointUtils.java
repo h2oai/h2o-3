@@ -56,7 +56,7 @@ public class CheckpointUtils {
     ) {
         M checkpointModel = cv.get();
         try {
-            validateWithCheckpoint(builder._parms, nonModifiableFields, checkpointModel._parms);
+            validateWithCheckpoint(builder._parms, nonModifiableFields, checkpointModel._input_parms);
             if (builder.isClassifier() != checkpointModel._output.isClassifier())
                 throw new IllegalArgumentException("Response type must be the same as for the checkpointed model.");
             if (!Arrays.equals(builder.train().names(), checkpointModel._output._names)) {

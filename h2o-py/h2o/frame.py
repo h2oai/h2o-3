@@ -6,17 +6,18 @@ H2O data frame.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 import csv
 import datetime
 import functools
+from io import StringIO
 import os
 import sys
 import tempfile
 import traceback
-import warnings
-from io import StringIO
 from types import FunctionType
+import warnings
 
 import h2o
 from h2o.base import Keyed
@@ -25,8 +26,6 @@ from h2o.exceptions import H2OTypeError, H2OValueError
 from h2o.expr import ExprNode
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
-from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.compatibility import viewitems, viewvalues
 from h2o.utils.config import get_config_value
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
@@ -90,7 +89,7 @@ class H2OFrame(Keyed):
     def __init__(self, python_obj=None, destination_frame=None, header=0, separator=",",
                  column_names=None, column_types=None, na_strings=None, skipped_columns=None):
     
-        coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "numeric",
+        coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "long", "numeric",
                     "categorical", "factor", "enum", "time")
         assert_is_type(python_obj, None, list, tuple, dict, numpy_ndarray, pandas_dataframe, scipy_sparse)
         assert_is_type(destination_frame, None, str)
@@ -204,7 +203,7 @@ class H2OFrame(Keyed):
         :param int cols: number of columns to fetch (all by default)
         :param full_cols: number of columns to fetch together with backed data
         :param int cols_offset: offset to fetch rows from (0 by default)
-        :param bool light: wether to use light frame endpoint or not
+        :param bool light: whether to use light frame endpoint or not
         :returns: an existing H2OFrame with the id provided; or None if such frame doesn't exist.
 
         :examples:
@@ -422,12 +421,12 @@ class H2OFrame(Keyed):
 
 
     def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings,
-                      skipped_columns=None, custom_non_data_line_markers = None):
+                      skipped_columns=None, custom_non_data_line_markers=None, partition_by=None):
         if H2OFrame.__LOCAL_EXPANSION_ON_SINGLE_IMPORT__ and is_type(path, str) and "://" not in path:  # fixme: delete those 2 lines, cf. PUBDEV-5717
             path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path, pattern)
         self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                    skipped_columns, custom_non_data_line_markers)
+                    skipped_columns, custom_non_data_line_markers, partition_by)
         return self
 
 
@@ -439,9 +438,9 @@ class H2OFrame(Keyed):
 
 
     def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None,
-               na_strings=None, skipped_columns=None, custom_non_data_line_markers = None):
+               na_strings=None, skipped_columns=None, custom_non_data_line_markers=None, partition_by=None):
         setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                                skipped_columns, custom_non_data_line_markers)
+                                skipped_columns, custom_non_data_line_markers, partition_by)
         return self._parse_raw(setup)
 
 
@@ -458,7 +457,8 @@ class H2OFrame(Keyed):
              "blocking": False,
              "column_types": None,
              "skipped_columns":None,
-             "custom_non_data_line_markers": setup["custom_non_data_line_markers"]
+             "custom_non_data_line_markers": setup["custom_non_data_line_markers"],
+             "partition_by": setup["partition_by"]
              }
 
         if setup["column_names"]: p["column_names"] = None
@@ -519,7 +519,7 @@ class H2OFrame(Keyed):
         ...                          binary_ones_fraction=0,
         ...                          missing_fraction=0)
         >>> num = frame.columns_by_type(coltype="numeric")
-        >>> str = frame.columns_by_type(coltype="string)
+        >>> str = frame.columns_by_type(coltype="string")
         >>> num
         >>> string
         """
@@ -2136,6 +2136,38 @@ class H2OFrame(Keyed):
             frame.pop(0)
         return frame
 
+    def save_to_hive(self, jdbc_url, table_name, format="csv", table_path=None, tmp_path=None):
+        """
+        Save contents of this data frame into a Hive table.
+        
+        :param jdbc_url: Hive JDBC connection URL.
+        :param table_name: Table name into which to store the data. The table must not exist as it will be created
+            to match the structure of the the frame. The user must be allowed to create tables.
+        :param format: Storage format of created Hive table, can be either ``csv`` (default) or ``parquet``.
+        :param table_path: If specified, the table will be created as an external table and this is where the data 
+            will be stored.
+        :param tmp_path: Path where to store temporary data.
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines.save_to_hive("jdbc:hive2://hive-server:10000/default", "airlines")
+        """
+        assert_is_type(jdbc_url, str)
+        assert_is_type(table_name, str)
+        assert_is_type(format, Enum("csv", "parquet"))
+        assert_is_type(table_path, str, None)
+        assert_is_type(tmp_path, str, None)
+        p = {
+            "frame_id": self.frame_id,
+            "jdbc_url": jdbc_url,
+            "table_name": table_name,
+            "format": format,
+            "table_path": table_path,
+            "tmp_path": tmp_path
+        }
+        h2o.api("POST /3/SaveToHiveTable", data=p)
 
     def get_frame_data(self):
         """
@@ -2151,7 +2183,7 @@ class H2OFrame(Keyed):
         >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
         >>> iris.get_frame_data()
         """
-        return h2o.api("GET /3/DownloadDataset", data={"frame_id": self.frame_id, "hex_string": False})
+        return h2o.api("GET /3/DownloadDataset", data={"frame_id": self.frame_id, "hex_string": False, "escape_quotes" : True})
 
 
     def __getitem__(self, item):
@@ -2633,8 +2665,16 @@ class H2OFrame(Keyed):
             if frame.ncol != self.ncol:
                 raise H2OValueError("Cannot row-bind a dataframe with %d columns to a data frame with %d columns: "
                                     "the columns must match" % (frame.ncol, self.ncol))
-            if frame.columns != self.columns or frame.types != self.types:
-                raise H2OValueError("Column names and types must match for rbind() to work")
+            if frame.columns != self.columns:
+                raise H2OValueError("Column names must match for rbind() to work")
+            if frame.types != self.types: # compare the whole list here
+                validTypes = [u'float', u'real', u'double', u'int', u'long', u'numeric']
+                for eachKey in frame.types.keys(): 
+                    sametypes = frame.types[eachKey]==self.types[eachKey]
+                    bothNumericTypes = (frame.types[eachKey] in validTypes) and (self.types[eachKey] in validTypes)
+                    if not(sametypes) and not(bothNumericTypes):
+                        raise H2OValueError("Column types must match for rbind() to work.  First column type {0}.  "
+                                            "Second column type {1})".format(self.types[eachKey], frame.types[eachKey]))
         fr = H2OFrame._expr(expr=ExprNode("rbind", self, *frames), cache=self._ex._cache)
         fr._ex._cache.nrows = self.nrow + sum(frame.nrow for frame in frames)
         return fr
@@ -2698,7 +2738,6 @@ class H2OFrame(Keyed):
 
         splits = []
         tmp_runif = self.runif(seed)
-        tmp_runif.frame_id = "%s_splitter" % _py_tmp_key(h2o.connection().session_id)
 
         i = 0
         while i < num_slices:
@@ -3247,7 +3286,7 @@ class H2OFrame(Keyed):
         return ExprNode("sd", self, na_rm)._eager_scalar()
 
 
-    def cor(self, y=None, na_rm=False, use=None):
+    def cor(self, y=None, na_rm=False, use=None, method="Pearson"):
         """
         Compute the correlation matrix of one or two H2OFrames.
 
@@ -3263,6 +3302,7 @@ class H2OFrame(Keyed):
         :param bool na_rm: an alternative to ``use``: when this is True then default value for ``use`` is
             ``"everything"``; and if False then default ``use`` is ``"complete.obs"``. This parameter has no effect
             if ``use`` is given explicitly.
+        :param str method: Which method to use - value must be in ["Pearson", "Spearman"]. Defaults to "Pearson".
 
         :returns: An H2OFrame of the correlation matrix of the columns of this frame (if ``y`` is not given),
             or with the columns of ``y`` (if ``y`` is given). However when this frame and ``y`` are both single rows
@@ -3284,8 +3324,8 @@ class H2OFrame(Keyed):
         if y is None:
             y = self
         if use is None: use = "complete.obs" if na_rm else "everything"
-        if self.nrow == 1 or (self.ncol == 1 and y.ncol == 1): return ExprNode("cor", self, y, use)._eager_scalar()
-        return H2OFrame._expr(expr=ExprNode("cor", self, y, use))._frame()
+        if self.nrow == 1 or (self.ncol == 1 and y.ncol == 1): return ExprNode("cor", self, y, use, method)._eager_scalar()
+        return H2OFrame._expr(expr=ExprNode("cor", self, y, use, method))._frame()
 
 
     def distance(self, y, measure=None):
@@ -3318,6 +3358,11 @@ class H2OFrame(Keyed):
         if measure is None: measure = "l2"
         return H2OFrame._expr(expr=ExprNode("distance", self, y, measure))._frame()
 
+    def drop_duplicates(self, columns, keep = "first"):
+        assert_is_type(columns, [int], [str])
+        assert_is_type(keep,  Enum("first", "last"))
+    
+        return H2OFrame._expr(expr=ExprNode("dropdup", self, columns, keep))._frame()
 
     def strdistance(self, y, measure=None, compare_empty=True):
         """
@@ -3985,6 +4030,19 @@ class H2OFrame(Keyed):
         :param value_name: Name of the value-column (default: "value").
         :param skipna: If enabled, do not include NAs in the result. 
         :returns: Returns an unpivoted H2OFrame.
+
+        :examples:
+
+        >>> import pandas as pd
+        >>> from h2o.frame import H2OFrame
+        >>> df = pd.DataFrame({'A': {0: 'a', 1: 'b', 2: 'c'},
+        ...                    'B': {0: 1, 2: 5},
+        ...                    'C': {0: 2, 1: 4, 2: 6}})
+        >>> df
+        >>> frozen_h2o = H2OFrame(df)
+        >>> frozen_h2o
+        >>> melted = frozen_h2o.melt(id_vars=["A"], value_vars=["B"])
+        >>> melted
         """
         assert_is_type(id_vars, [str])
         assert_is_type(value_vars, [str], None)

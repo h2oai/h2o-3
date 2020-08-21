@@ -27,7 +27,7 @@ public class MultinomialModelPrediction extends AbstractPrediction {
    * If they are valid numeric values, then they will sum up to 1.0.
    */
   public double[] classProbabilities;
-  public String[] leafNodeAssignments;  // only valid for GBM or DRF, null for all other mojo models
+  public String[] leafNodeAssignments;  // only valid for tree-based models, null for all other mojo models
   public int[] leafNodeAssignmentIds;   // ditto, available in MOJO 1.3 and newer
 
   /**

@@ -38,12 +38,9 @@ public class RapidsHandler extends Handler {
       val = Rapids.exec(rapids.ast, ses);
     } catch (IllegalArgumentException e) {
       throw e;
-    } catch (Throwable e) {
-      Log.err(e);
-      e.printStackTrace();
-      throw e;
+    } catch (Throwable t) {
+      throw Log.throwErr(t);
     }
-
     switch (val.type()) {
       case Val.NUM:  return new RapidsNumberV3(val.getNum());
       case Val.NUMS: return new RapidsNumbersV3(val.getNums());

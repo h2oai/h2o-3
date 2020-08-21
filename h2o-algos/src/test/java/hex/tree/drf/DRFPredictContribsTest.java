@@ -8,7 +8,7 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.easy.prediction.RegressionModelPrediction;
-import hex.util.NaiveTreeSHAP;
+import water.test.util.NaiveTreeSHAP;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -87,7 +87,9 @@ public class DRFPredictContribsTest extends TestUtil {
             Frame contributions = drf.scoreContributions(fr, Key.<Frame>make("contributions_regression_titanic"));
             Scope.track(contributions);
 
-            Frame contribsAggregated = new DRFPredictContribsTest.RowSumTask().doAll(Vec.T_NUM, contributions).outputFrame();
+            Frame contribsAggregated = new DRFPredictContribsTest.RowSumTask()
+                    .doAll(Vec.T_NUM, contributions)
+                    .outputFrame(null, new String[]{"predict"}, null);
             Scope.track(contribsAggregated);
             
             assertTrue(drf.testJavaScoring(fr, contribsAggregated, 1e-5));
@@ -97,6 +99,7 @@ public class DRFPredictContribsTest extends TestUtil {
                     .setModel(drf.toMojo())
                     .setEnableContributions(true);
             EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
+            assertArrayEquals(contributions.names(), wrapper.getContributionNames());
 
             for (long row = 0; row < fr.numRows(); row++) {
                 RowData rd = toRowData(fr, drf._output._names, row);
@@ -173,16 +176,19 @@ public class DRFPredictContribsTest extends TestUtil {
             Frame contributions = drf.scoreContributions(fr, Key.<Frame>make("contributions_binomial_titanic"));
             Scope.track(contributions);
 
-            Frame contribsAggregated = new DRFPredictContribsTest.RowSumTask().doAll(Vec.T_NUM, contributions).outputFrame();
-            Scope.track(contribsAggregated);
+            Frame predsFromContribs = new DRFPredictContribsTest.BinomAggregateTask()
+                    .doAll(new byte[]{Vec.T_CAT, Vec.T_NUM, Vec.T_NUM}, contributions)
+                    .outputFrame(null, new String[]{"predict", "p0", "p1"}, new String[][]{new String[]{"0", "1"}, null, null});
+            Scope.track(predsFromContribs);
             
-            assertTrue(drf.testJavaScoring(fr, contribsAggregated, 1e-5));
+            assertTrue(drf.testJavaScoring(fr, predsFromContribs, 1e-5, 1e-7));
 
             // Now test MOJO scoring
             EasyPredictModelWrapper.Config cfg = new EasyPredictModelWrapper.Config()
                     .setModel(drf.toMojo())
                     .setEnableContributions(true);
             EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
+            assertArrayEquals(contributions.names(), wrapper.getContributionNames());
 
             for (long row = 0; row < fr.numRows(); row++) {
                 RowData rd = toRowData(fr, drf._output._names, row);
@@ -218,7 +224,7 @@ public class DRFPredictContribsTest extends TestUtil {
         @Override
         public void map(Chunk[] cs) {
             final TreeSHAP<double[], SharedTreeNode, SharedTreeNode> treeSHAP = new TreeSHAP<>(_nodes, _nodes, 0);
-            final NaiveTreeSHAP<double[], SharedTreeNode, SharedTreeNode> naiveTreeSHAP = new NaiveTreeSHAP<>(_nodes, _nodes, 0, 0);
+            final NaiveTreeSHAP<double[], SharedTreeNode, SharedTreeNode> naiveTreeSHAP = new NaiveTreeSHAP<>(_nodes, _nodes, 0);
 
             final double[] row = MemoryManager.malloc8d(cs.length);
             final float[] contribs = MemoryManager.malloc4f(cs.length);
@@ -255,4 +261,20 @@ public class DRFPredictContribsTest extends TestUtil {
             }
         }
     }
+
+    private static class BinomAggregateTask extends MRTask<DRFPredictContribsTest.BinomAggregateTask> {
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+            for (int i = 0; i < cs[0]._len; i++) {
+                double p1 = 0;
+                for (Chunk c : cs)
+                    p1 += c.atd(i);
+                ncs[0].addNA();
+                ncs[1].addNum(1-p1);
+                ncs[2].addNum(p1);
+            }
+        }
+    }
+
+
 }

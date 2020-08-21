@@ -20,20 +20,20 @@ While H2O Flow supports REST API, R scripts, and CoffeeScript, no programming ex
 Download Flow
 -------------
 
-1. First `Download H2O <http://www.h2o.ai/download/>`_. This will download a zip file in your Downloads folder that contains everything you need to get started. Alternatively, you can run the following from your command line, replacing "{version}" with the appropriate version (for example, 3.20.0.2):
+1. First `Download H2O <http://www.h2o.ai/download/>`_. This will download a zip file in your Downloads folder that contains everything you need to get started. Alternatively, you can run the following from your command line.
 
-  ::
+  .. substitution-code-block:: bash
 
-    curl -o h2o.zip http://download.h2o.ai/versions/h2o-{version}.zip
+    curl -o h2o.zip http://download.h2o.ai/versions/h2o-|version|.zip
         
 
-2. Next in your terminal, enter the following command lines one at a time:
+2. Next in your terminal, enter the following command lines one at a time. The first line changes into your Downloads folder, the second line unzips your zipfile, the third line changes into your h2o-3-|version| folder, and the fourth line runs your jar file.
 
-  *(The first line changes into your Downloads folder, the second line unzips your zipfile, the third line changes into your h2o-3.20.0.2 folder, and the fourth line runs your jar file.)*::
+  .. substitution-code-block:: bash
 
     cd ~/Downloads
-    unzip h2o-3.20.0.2.zip
-    cd h2o-3.20.0.2
+    unzip h2o-|version|.zip
+    cd h2o-|version|
     java -jar h2o.jar
 
 3. Finally, to start Flow point your browser to http://localhost:54321.
@@ -44,9 +44,11 @@ Launch Flow
 
 The next time you want to launch Flow, change into the directory that contains your H2O package and run the JAR file from the command line.
 
-**Note**: If your H2O package is not in the Downloads folder, replace the following path  ~/Downloads/h2o-{version} with the correct path to your h2o-{version} package)::
+**Note**: If your H2O package is not in the Downloads folder, replace the following path  ~/Downloads/h2o-|version| with the correct path to your h2o-|version| package.
 
-  cd ~/Downloads/h2o-{version} 
+.. substitution-code-block:: bash
+
+  cd ~/Downloads/h2o-|version| 
   java -jar h2o.jar
 
 
@@ -685,7 +687,7 @@ The available options vary depending on the selected model. If an option is only
    -  *Randomized*: Uses randomized subspace iteration method
    -  *GLRM*: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra
 
--  **family**: (GLM) Select the model type (Gaussian, Binomial, Multinomial, Poisson, Gamma, Tweedie, Negativebinomial, or Ordinal).
+-  **family**: (GLM) Select the model type (Gaussian, Binomial, Fractionalbinomial, Multinomial, Poisson, Gamma, Tweedie, Negativebinomial, or Ordinal).
 
 -  **solver**: (GLM) Select the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, or COORDINATE_DESCENT). IRLSM is fast on on problems with a small number of predictors and for lambda-search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE and COORDINATE_DESCENT are currently experimental.
 
@@ -792,9 +794,9 @@ The available options vary depending on the selected model. If an option is only
 
 -  **fold_column**: (GLM, GBM, DL, DRF, K-Means, XGBoost) Select the column that contains the cross-validation fold index assignment per observation.
 
--  **offset_column**: (GLM, DRF, GBM, DL, XGBoost, CoxPH) Select a column to use as the offset. *Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
+-  **offset_column**: (GLM, DRF, GBM, DL, XGBoost, CoxPH, Stacked Ensembles) Select a column to use as the offset. *Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
 
--  **weights_column**: (GLM, DL, DRF, GBM, XGBoost, CoxPH) Select a column to use for the observation weights. The specified ``weights_column`` must be included in the specified ``training_frame``. *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. *Note*: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+-  **weights_column**: (GLM, DL, DRF, GBM, XGBoost, CoxPH, Stacked Ensembles) Select a column to use for the observation weights. The specified ``weights_column`` must be included in the specified ``training_frame``. *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. *Note*: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
 -  **loss**: (DL) Select the loss function. For DL, the options are Automatic, Quadratic, CrossEntropy, Huber, or Absolute and the default value is Automatic. Absolute, Quadratic, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
 
@@ -948,7 +950,7 @@ The available options vary depending on the selected model. If an option is only
 
 -  **export_checkpoints_dir**: (DL, DRF, GBM) Optionally specify a path to a directory where every generated model will be stored when checkpointing models.
 
--  **custom_metric_func**: (GBM, DRF, GLM) Optionally specify a custom evaluation function.
+-  **custom_metric_func**: (GBM, DRF) Optionally specify a custom evaluation function.
 
 
 **Expert Options**
@@ -1020,10 +1022,6 @@ The available options vary depending on the selected model. If an option is only
 -  **max_abs_leafnode_pred**: (GBM, XGBoost) The maximum absolute value of a leaf node prediction.
 
 -  **max_bin**: (XGBoost) For tree_method=hist only: specify the maximum number of bins for binning continuous features.
-
--  **min_sum_hessian_in_leaf**: (XGBoost) For tree_method=hist only: the mininum sum of hessian in a leaf to keep splitting
-
--  **min_data_in_leaf**: (XGBoost) For tree_method=hist only: the mininum data in a leaf to keep splitting
 
 -  **booster**: (XGBoost) Specify the booster type. This can be one of the following: "gbtree", "gblinear", or "dart". Note that "gbtree" and "dart" use a tree-based model while "gblinear" uses linear function. This value defaults to "gbtree".
 
@@ -1325,7 +1323,12 @@ The lower-left side of the graph represents less tolerance for false positives w
 Partial Dependence Plots
 ------------------------
 
-For models that include only numerical values, you can view a Partial Dependence Plot (PDP) for that model. This provides a graphical representation of the marginal effect of a variable on the class probability (classification) or response (regression). 
+For models that include only numerical values, you can view a Partial Dependence Plot (PDP) for that model. This provides a graphical representation of the marginal effect of a variable on the class probability (binary and multiclass classification) or response (regression). 
+
+**Notes**:
+
+- For multiclass problems, users must specify a target class
+- In Flow (unlike Python or R), only one target class can be specified for multiclass problems. 
 
 Viewing Partial Dependence Plots
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

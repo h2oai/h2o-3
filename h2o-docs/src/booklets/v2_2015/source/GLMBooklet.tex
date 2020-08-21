@@ -373,6 +373,24 @@ function. Change the regression by changing the family to binomial.
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_binomial_example.py}
 
 
+\subsubsection{Fractional Logit Model (Fraction Binomial)}
+
+In the financial service industry, there are many outcomes that are fractional in the range of [0,1]. For example, LGD (Loss Given Default in credit risk) measures the proportion of losses not recovered from a default borrower during the collection process, and this can be observed to be in the closed interval [0, 1]. The following assumptions are made for this model.
+
+\begin{itemize}
+\item $\text{Pr}(y=1|x) = E(y) = \frac{1}{1 + \text{exp}(-\beta^T x-\beta_0)}$
+\item The likelihood function = $\text{Pr}{(y=1|x)}^y (1-\text{Pr}(y=1|x))^{(1-y)}$ for $1 \geq y \geq 0$
+\item $var(y) = \varphi E(y)(1-E(y))$ and $\varphi$ is estimated as $\varphi = \frac{1}{n-p} \frac{\sum {(y_i - E(y))}2} {E(y)(1-E(y))}$
+\end{itemize}
+
+Note that these are exactly the same as the binomial distribution.  However, the values are  calculated with the value of $y$ in the range of 0 and 1 instead of just 0 and 1.  Therefore, we implemented the fractional binomial family using the code of binomial.  Changes are made when needed.
+
+\waterExampleInR
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_fractionalbinomial_example.R}
+
+\waterExampleInPython
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_fractionalbinomial_example.py}
+
 \subsubsection{Logistic Ordinal Regression (Ordinal Family)}
 
 A logistic ordinal regression model is a generalized linear model that predicts ordinal variables - variables that are discreet, as in classification, but that can be ordered, as in regression.
@@ -594,6 +612,181 @@ $$D = 2 \sum_{i=1}^{N} \bigg \{ y_i \text{log} \big(\frac{y_i}{\mu_i} \big) - (y
 
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_negativebinomial_example.py}
+
+\subsection{Hierarchical GLM}
+
+Introduced in 3.28.0.1, Hierarchical GLM (HGLM) fits generalized linear models with random effects, where the random effect can come from a conjugate exponential-family distribution (for example, Gaussian). HGLM allows you to specify both fixed and random effects, which allows fitting correlated to random effects as well as random regression models. HGLM can be used for linear mixed models and for generalized linear mixed models with random effects for a variety of links and a variety of distributions for both the outcomes and the random effects.
+
+\textbf{Note}: The initial release of HGLM supports only the Gaussian family and random family.
+
+\subsubsection{Gaussian Family and Random Family in HGLM}
+
+To build an HGLM, we need the hierarchical log-likelihood (h-likelihood) function. The h-likelihood function can be expressed as (equation 1):
+
+$$h(\beta, \theta, u) = \log(f (y|u)) + \log (f(u))$$
+
+for fixed effects $\beta$, variance components $\theta$, and random effects $u$.
+
+A standard linar mixed model can be expressed as (equation 2):
+
+$$y = X\beta + Zu + e$$
+
+where
+
+    \begin{itemize}
+    \item  $e \text ~ N(0, I_n, \delta_e^2), u \text ~ N(0, I_k, \delta_u^2)$
+    \item  $e$, $u$ are independent, and $u$ represents the random effects
+    \item $n$ is the number of i.i.d observations of $y$ with mean $0$
+    \item $q$ is the number of values $Z$ can take
+    \end{itemize}
+    
+Then rewriting equation $2 as e = X\beta + Zu - y$ and derive the h-likelihood as:
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.5]{../../../product/images/h-likelihood.png}
+\end{figure}
+
+where $C_1 = - \frac{n}{2} \log(2\pi), C_2 = - \frac{q}{2} \log(2\pi)$
+
+In principal, the HGLM model building involves the following main steps:
+
+\begin{itemize}
+    \item Set the initial values to $\delta_u^2, \delta_e^2, u, \beta$
+    \item Estimate the fixed $(\beta)$ and random effects $(u)$ by solving for $\frac{\partial h}{\partial \beta} = 0, \frac{\partial h}{\partial u} = 0$
+    \item Estimate variance components using the adjusted profile likelihood:
+        $$h_p = \big(h + \frac{1}{2} log \big| 2 \pi D^{-1}\big| \big)_{\beta=\hat \beta, u=\hat u}$$
+        and solving for
+        $$\frac{\partial h_p}{\partial \theta} = 0$$
+        Note that $D$ is the matrix of the second derivatives of $h$ around $\beta = \hat \beta, u = \hat u, \theta = (\delta_u^2, \delta_e^2)$.  
+\end{itemize}
+
+\subsubsection{H2O Implementation}
+
+In reality, Lee and Nelder (see References) showed that linear mixed models can be fitted using a hierarchy of GLM by using an augmented linear model. The linear mixed model will be written as:
+
+$$y = X\beta + Zu + e \\
+v = ZZ^T\sigma_u^2 + R\sigma_e^2$$
+
+where $R$ is a diagonal matrix with elements given by the estimated dispersion model. The dispersion model refers to the variance part of the fixed effect model with error $e$. There are cases where the dispersion model is modeled itself as $exp(x_d, \beta_d)$. However, in our current version, the variance is just a constant $\sigma_e^2$, and hence $R$ is just a scalar value. It is initialized to be the identity matrix. The model can be written as an augmented weighted linear model:
+
+$$y_a = T_a \delta + e_a$$
+
+where
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.5]{../../../product/images/hglm_augmentation.png}
+\end{figure}
+
+Note that $q$ is the number of columns in $Z$, $0_q$ is a vector of $q$ zeroes, $I_q$ is the $qxq$ identity matrix. The variance-covariance matrix of the augmented residual matrix is
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.5]{../../../product/images/hglm_variance_covariance.png}
+\end{figure}
+
+\subsubsection{Fixed and Random Coefficients Estimation}
+
+The estimates for $\delta$ from weighted least squares are given by solving
+
+$$T_a^T W^{-1} T_a \delta=T_a^T W^{-1} y_a$$
+
+where
+
+$$W= V(e_a )$$
+
+The two variance components are estimated iteratively by applying a gamma GLM to the residuals $e_i^2,u_i^2$. Because we are not using a dispersion model, there is only an intercept terms in the linear predictors. The leverages $h_i$ for these models are calculated from the diagonal elements of the hat matrix:
+
+$$H_a=T_a (T_a^T W^{-1} T_a )^{-1} T_a^T W^{-1}$$
+
+\subsubsection{Estimation of Fixed Effect Dispersion Parameter/Variance}
+
+A gamma GLM is used to fit the dispersion part of the model with response $y_{d,i}=(e_i^2)⁄(1-h_i )$ where $E(y_d )=u_d$ and $u_d\equiv \phi$ (i.e., $\delta_e^2$ for a Gaussian response). The GLM model for the dispersion parameter is then specified by the link function $g_d (.)$ and the linear predictor $X_d \beta_d$ with prior weights for $(1-h_i )⁄2$ for $g_d (u_d )=X_d \beta_d$. Because we are not using a dispersion model, $X_d \beta_d$ will only contain the intercept term.
+
+\subsubsection{Estimation of Random Effect Dispersion Parameter/Variance}
+
+Similarly, a gamma GLM is fitted to the dispersion term $alpha$ (i.e., $\delta_e^2$ for a GLM) for the random effect $v$, with $y_\alpha,j = u_j^2⁄(1-h_{n+j}), j=1,2,\ldots ,q$ and $g_\alpha (u_\alpha )=\lambda$, where the prior weights are $(1-h_{n+j} )⁄2$, and the estimated dispersion term for the random effect is given by $\hat \alpha = g_\alpha ^{-1}(\hat \lambda)$.
+
+\subsubsection{Fitting Algorithm Overview}
+
+The following fitting algorithm from "Generalized linear models with random effects" (Y. Lee, J. A. Nelder and Y. Pawitan; see References) is used to build our HGLM. Let n be the number of observations and k be the number of levels in the random effect. The algorithm that was implemented here at H2O will perform the following:
+
+\begin{enumerate}
+    \item Initialize starting values either from user by setting parameter startval or by the system if startval is left unspecified.
+    \item Construct an augmented model with response $y_{aug}= {y \choose {E(u)}}$.
+    \item Use a GLM to estimate $\delta={\beta \choose u}$ given the dispersion $\phi$ and $\lambda$. Save the deviance components and leverages from the fitted model.
+    \item Use a gamma GLM to estimate the dispersion parameter for $\phi$ (i.e. $\delta_e^2$ for a Gaussian response).
+    \item Use a similar GLM as in step 4 to estimate $\lambda$ from the last $k$ deviance components and leverages obtained from the GLM in step 3.
+    \item Iterate between steps 3-5 until convergence. Note that the convergence measure here is either a timeout event or the following condition has been met: $\frac {\Sigma_i{(\text{eta}. i - \text{eta}.o)^2}} {\Sigma_i(\text{eta}.i)^2 \text{<} 1e - 6}$.
+\end{enumerate}
+    
+A timeout event can be defined as the following:
+
+\begin{enumerate}
+    \item Maximum number of iterations have been reached
+    \item Model building run time exceeds what is specified in \texttt{max\_runtime\_secs}
+    \item A user has clicked on stop model button or similar from Flow.
+\end{enumerate}
+
+For families and random families other than Gaussian, link functions are used to translate from the linear space to the model the mean output.
+
+\subsubsection{Linear Mixed Model with Correlated Random Effect}
+
+Let $A$ be a matrix with known elements that describe the correlation among the random effects. The model is now given by:
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.5]{../../../product/images/hglm_linear_mixed_model1.png}
+\end{figure}
+
+where $N$ is normal distribution and $MVN$ is multi-variable normal. This can be easily translated to:
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.5]{../../../product/images/hglm_linear_mixed_model2.png}
+\end{figure}
+
+where $Z^* = ZL$ and $L$ is the Cholesky factorization of $A$. Hence, if you have correlated random effects, you can first perform the transformation to your data before using our HGLM implementation here.
+
+\subsubsection{HGLM Model Metrics}
+
+H2O provides the following model metrics at the end of each HGLM experiment:
+
+\begin{itemize}
+    \item fixef: fixed effects coefficients
+    \item ranef: random effects coefficients
+    \item randc: vector of random column indices
+    \item varfix: dispersion parameter of the mean model
+    \item varranef: dispersion parameter of the random effects
+    \item converge: true if algorithm has converge, otherwise false
+    \item sefe: standard errors of fixed effects
+    \item sere: standard errors of random effects
+    \item dfrefe: deviance degrees of freedom for the mean part of model
+    \item sumvc1: estimates and standard errors of linear predictor in the dispersion model
+    \item summvc2: estimates and standard errors of the linear predictor for the dispersion parameter of the random effects
+    \item likelihood: if \texttt{calc\_like} is true, the following four values are returned:
+    
+    	\begin{itemize}
+		\item hlik: log-h-likelihood;
+                 \item pvh: adjusted profile log-likelihood profiled over the random effects;
+                 \item pbvh: adjusted profile log-likelihood profiled over fixed and random effects;
+                 \item caic: conditional AIC.
+	\end{itemize}
+	
+    \item bad: row index of the most influential observation.
+\end{itemize}
+
+\subsubsection{Mapping of Fitting Algorithm to the H2O-3 Implementation}
+
+This mapping is done in four steps:
+
+\begin{enumerate}
+\item Initialize starting values by the system.
+\item Estimate $\delta =$ $\beta \choose u$.
+\item Estimate $\delta_e^2(\text {tau})$.
+\item Estimate $\delta_u^2(\text {phi})$.
+\end{enumerate}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -1389,6 +1582,7 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item \texttt{non\_negative}: Forces coefficients to have non-negative values.
 \item \texttt{remove\_collinear\_columns}: Specify whether to automatically remove collinear columns during model building. When enabled, collinear columns will be dropped from the model and will have a 0 coefficient in the returned model. This can only be set if there is no regularization.
 \item \texttt{interactions}: Optionally specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list.
+\item \texttt{hglm}: Specify whether to build a hierarchical generalized linear model. HGLM produces estimates for fixed effects, random effects, variance components and their standard errors. It also produces diagnostics, such as variances and leverages. This option is disabled by default. Note that HGLM currently supports only the Gaussian family and random family.
 \end{itemize}
 %Additional: 
 %Strong Rules Enables: Uses strong rules to filter out inactive columns. Default is true. 

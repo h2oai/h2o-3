@@ -31,7 +31,7 @@ def prostate_automl():
     aml.train(y="CAPSULE", training_frame=train,validation_frame=valid, leaderboard_frame=test)
     print(aml.leader)
     print(aml.leaderboard)
-    assert set(aml.leaderboard.columns) == set(["model_id", "auc", "logloss", "mean_per_class_error", "rmse", "mse"])
+    assert set(aml.leaderboard.columns) == set(["model_id", "auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse"])
 
 # Should we allow models to accumulate in the leaderboard across runs?
 removeall_before_running = True

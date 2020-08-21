@@ -3,7 +3,8 @@ Sparkling Water
 
 **Note**: This topic is deprecated and will be removed in a later release. Refer to the `Sparkling Water User Guide <http://docs.h2o.ai/#sparkling-water>`__ for Sparkling Water FAQs. 
 
-**What is Sparkling Water?**
+What is Sparkling Water?
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sparkling Water allows users to combine the fast, scalable machine
 learning algorithms of H2O with the capabilities of Spark. With
@@ -13,7 +14,8 @@ for application developers.
 
 --------------
 
-**What are the advantages of using Sparkling Water compared with H2O?**
+What are the advantages of using Sparkling Water compared with H2O?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sparkling Water contains the same features and functionality as H2O but
 provides a way to use H2O with `Spark <http://spark.apache.org/>`__, a
@@ -28,7 +30,8 @@ Water directly from PySpark.
 
 --------------
 
-**How do I filter an H2OFrame using Sparkling Water?**
+How do I filter an H2OFrame using Sparkling Water?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Filtering columns is easy: just remove the unnecessary columns or create
 a new H2OFrame from the columns you want to include
@@ -50,7 +53,8 @@ or
 
 --------------
 
-**How do I save and load models using Sparkling Water?**
+How do I save and load models using Sparkling Water?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Models can be saved and loaded in Sparkling Water using the ``water.support.ModelSerializationSupport class``. For example:
 
@@ -77,7 +81,8 @@ Note that you can also specify type of model to be loaded:
 
 --------------
 
-**How do I inspect H2O using Flow while a droplet is running?**
+How do I inspect H2O using Flow while a droplet is running?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If your droplet execution time is very short, add a simple sleep
 statement to your code:
@@ -86,7 +91,8 @@ statement to your code:
 
 --------------
 
-**How do I change the memory size of the executors in a droplet?**
+How do I change the memory size of the executors in a droplet?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 There are two ways to do this:
 
@@ -103,8 +109,8 @@ or
 
 --------------
 
-**I received the following error while running Sparkling Water using
-multiple nodes, but not when using a single node - what should I do?**
+I received the following error while running Sparkling Water using multiple nodes, but not when using a single node. What should I do?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ::
 
@@ -128,15 +134,16 @@ nodes, then try again.
 
 --------------
 
-**Are there any drawbacks to using Sparkling Water compared to
-standalone H2O?**
+Are there any drawbacks to using Sparkling Water compared to standalone H2O?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The version of H2O embedded in Sparkling Water is the same as the
 standalone version.
 
 --------------
 
-**How do I use Sparkling Water from the Spark shell?**
+How do I use Sparkling Water from the Spark shell?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 There are two methods:
 
@@ -180,7 +187,8 @@ After successfully launching H2O, the following output displays:
 
 --------------
 
-**How do I use H2O with Spark Submit?**
+How do I use H2O with Spark Submit?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Spark Submit is for submitting self-contained applications. For more
 information, refer to the `Spark
@@ -207,13 +215,15 @@ The "magic" behind ``run-example.sh`` is a regular Spark Submit:
 
 --------------
 
-**How do I use Sparkling Water with Databricks?**
+How do I use Sparkling Water with Databricks?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Refer to the "Running Sparkling Water on Databricks Azure Cluster" in the `Sparkling Water User Guide <http://docs.h2o.ai/#sparkling-water>`__ for information on how to use Sparkling Water with Databricks. 
 
 --------------
 
-**How do I develop applications with Sparkling Water?**
+How do I develop applications with Sparkling Water?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For a regular Spark application (a self-contained application as
 described in the `Spark
@@ -230,7 +240,8 @@ documentation in the `Sparkling Water User Guide <http://docs.h2o.ai/#sparkling-
 
 --------------
 
-**How do I connect to Sparkling Water from R or Python?**
+How do I connect to Sparkling Water from R or Python?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After starting ``H2OServices`` by starting ``H2OContext``, point your
 client to the IP address and port number specified in ``H2OContext``.

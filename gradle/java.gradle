@@ -10,19 +10,13 @@ compileJava {
   options.encoding = "UTF-8"
 }
 
+java {
+    withJavadocJar()
+}
+
 task testJar(type: Jar, dependsOn: testClasses, group: "build") {
     classifier = 'test'
     from sourceSets.test.output
-}
-
-// Create a configuration containing only for test artifacts
-configurations {
-    testArchives
-}
-
-// Explicitly 
-artifacts {
-    testArchives testJar
 }
 
 // Enable support for multi-node testing
@@ -34,27 +28,6 @@ if (JavaVersion.current().isJava8Compatible()) {
         options.addStringOption('Xdoclint:none', '-quiet')
     }
 }
-
-javadoc {
-    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version)
-    def tmp = title.tokenize()[0] +  " version " + bv.getProjectVersion() + " API"
-    title = tmp
-}
-
-// Default task to bundle javadoc as jar
-task javadocJar(type: Jar) {
-    classifier = 'javadoc'
-    from javadoc
-}
-
-plugins.withType(org.gradle.api.publish.maven.plugins.MavenPublishPlugin) {
-    // Publish it only if "maven-publish" plugin is in the context
-    artifacts {
-        toPublish javadocJar
-        toPublish testJar
-    }
-}
-
 
 clean {
     doLast {

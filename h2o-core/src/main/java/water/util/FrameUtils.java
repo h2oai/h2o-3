@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.zip.GZIPOutputStream;
 
 public class FrameUtils {
 
@@ -422,14 +421,11 @@ public class FrameUtils {
       @Override
       public void map(Chunk[] cs) {
         if (cs[0]._len == 0) return;
-        Frame.CSVStream is = new Frame.CSVStream(cs, null, 1, _parms);
-        try {
+        try (Frame.CSVStream is = new Frame.CSVStream(cs, null, 1, _parms)) {
           _nNonEmpty++;
           _size += is.getCurrentRowSize() * cs[0]._len;
         } catch (IOException e) {
           throw new RuntimeException(e);
-        } finally {
-          try { is.close(); } catch (Exception e) { Log.err(e); }
         }
       }
 
@@ -828,13 +824,7 @@ public class FrameUtils {
             Frame train = new Frame(source, new String[]{"enum"}, new Vec[]{src});
             DKV.put(train);
             Log.info("Reducing the cardinality of a categorical column with " + src.cardinality() + " levels to " + _maxLevels);
-            Interaction inter = new Interaction();
-            inter._source_frame = train._key;
-            inter._max_factors = _maxLevels; // keep only this many most frequent levels
-            inter._min_occurrence = 2; // but need at least 2 observations for a level to be kept
-            inter._pairwise = false;
-            inter._factor_columns = train.names();
-            train = inter.execImpl(dest).get();
+            train = Interaction.getInteraction(train._key, train.names(), _maxLevels).execImpl(dest).get();
             outputFrame.add(_frame.name(i) + ".top_" + _maxLevels + "_levels", train.anyVec().makeCopy());
             train.remove();
             DKV.remove(source);
@@ -925,6 +915,9 @@ public class FrameUtils {
   }
 
   static public void cleanUp(IcedHashMap<Key, String> toDelete) {
+    if (toDelete == null) {
+      return;
+    }
     Futures fs = new Futures();
     for (Key k : toDelete.keySet()) {
       Keyed.remove(k, fs, true);
@@ -1032,5 +1025,17 @@ public class FrameUtils {
     public double getWeightedSigma() {
       return _weightedSigma;
     }
+  }
+
+  /**
+   * Labels frame's rows with a sequence starting with 1 & sending with total number of rows in the frame.
+   * A vector is added to the frame given, no data are duplicated.
+   *
+   * @param frame           Frame to label
+   * @param labelColumnName Name of the label column
+   */
+  public static void labelRows(final Frame frame, final String labelColumnName) {
+    final Vec labelVec = Vec.makeSeq(1, frame.numRows());
+    frame.add(labelColumnName, labelVec);
   }
 }

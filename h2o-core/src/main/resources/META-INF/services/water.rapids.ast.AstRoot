@@ -188,3 +188,4 @@ water.rapids.ast.prims.advmath.AstStratifiedSplit
 water.rapids.ast.prims.string.AstReplaceAll
 water.rapids.ast.prims.string.AstToUpper
 water.rapids.ast.prims.operators.AstLOr
+water.rapids.ast.prims.models.AstModelResetThreshold

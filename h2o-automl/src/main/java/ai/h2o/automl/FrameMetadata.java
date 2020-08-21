@@ -1,6 +1,7 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.EventLogEntry.*;
+import ai.h2o.automl.events.EventLog;
+import ai.h2o.automl.events.EventLogEntry.*;
 import ai.h2o.automl.collectors.MetaCollector;
 import ai.h2o.automl.colmeta.ColMeta;
 import ai.h2o.automl.utils.AutoMLUtils;
@@ -473,7 +474,7 @@ public class FrameMetadata extends Iced {
       int xbins = (char) ((long) v.max() - (long) v.min());
 
       if(!(_colMeta._ignored) && !(_colMeta._v.isBad()) && xbins > 0) {
-        _colMeta._histo = MetaCollector.DynamicHisto.makeDHistogram(colname, nbins, nbins, (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0)), v.min(), v.max());
+        _colMeta._histo = MetaCollector.DynamicHisto.makeDHistogram(colname, nbins, nbins, (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0)), v.min(), v.max(), v.naCnt() > 0);
       }
 
       // Skewness & Kurtosis

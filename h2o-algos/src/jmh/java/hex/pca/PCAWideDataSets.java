@@ -4,6 +4,7 @@ import hex.DataInfo;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;
+import water.util.Log;
 
 import java.util.Random;
 
@@ -133,7 +134,7 @@ public class PCAWideDataSets {
 		try {
 			pcaModel = pca.trainModel().get();
 		} catch (Exception e) {
-			e.printStackTrace();
+			Log.err(e);
 			return false;
 		}
 		return true;
@@ -143,7 +144,7 @@ public class PCAWideDataSets {
 		try {
 			pcaScore = pcaModel.score(trainingFrame);
 		} catch (Exception e) {
-			e.printStackTrace();
+			Log.err(e);
 			return false;
 		}
 		return true;

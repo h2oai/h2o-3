@@ -13,7 +13,8 @@
 #' @param validation_frame Id of the validation data frame.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
-#' @param loading_name Frame key to save resulting X
+#' @param representation_name Frame key to save resulting X
+#' @param loading_name [Deprecated] Use representation_name instead.  Frame key to save resulting X.
 #' @param transform Transformation of training data Must be one of: "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE".
 #'        Defaults to NONE.
 #' @param k Rank of matrix approximation Defaults to 1.
@@ -66,6 +67,7 @@ h2o.glrm <- function(training_frame,
                      validation_frame = NULL,
                      ignore_const_cols = TRUE,
                      score_each_iteration = FALSE,
+                     representation_name = NULL,
                      loading_name = NULL,
                      transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
                      k = 1,
@@ -111,6 +113,8 @@ h2o.glrm <- function(training_frame,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(score_each_iteration))
     parms$score_each_iteration <- score_each_iteration
+  if (!missing(representation_name))
+    parms$representation_name <- representation_name
   if (!missing(loading_name))
     parms$loading_name <- loading_name
   if (!missing(transform))
@@ -182,6 +186,9 @@ h2o.glrm <- function(training_frame,
     if( !(missing(k)) && k!=as.integer(nrow(user_y)) ) {
       warning("Argument k is not equal to the number of rows in user-specified Y. Ignoring k. Using specified Y.")
     }
+    if ( !missing(loading_name)) {
+      warning("Argument loading_name is deprecated.  Use representation_name instead.")
+    }
     parms[["k"]] <- as.numeric(nrow(user_y))
   # } else if( is.null(user_y) ) {
   #  if(!missing(init) && parms[["init"]] == "User")
@@ -208,6 +215,173 @@ h2o.glrm <- function(training_frame,
   # Error check and build model
   model <- .h2o.modelJob('glrm', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
+}
+.h2o.train_segments_glrm <- function(training_frame,
+                                     cols = NULL,
+                                     validation_frame = NULL,
+                                     ignore_const_cols = TRUE,
+                                     score_each_iteration = FALSE,
+                                     representation_name = NULL,
+                                     loading_name = NULL,
+                                     transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
+                                     k = 1,
+                                     loss = c("Quadratic", "Absolute", "Huber", "Poisson", "Hinge", "Logistic", "Periodic"),
+                                     loss_by_col = c("Quadratic", "Absolute", "Huber", "Poisson", "Hinge", "Logistic", "Periodic", "Categorical", "Ordinal"),
+                                     loss_by_col_idx = NULL,
+                                     multi_loss = c("Categorical", "Ordinal"),
+                                     period = 1,
+                                     regularization_x = c("None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex"),
+                                     regularization_y = c("None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex"),
+                                     gamma_x = 0,
+                                     gamma_y = 0,
+                                     max_iterations = 1000,
+                                     max_updates = 2000,
+                                     init_step_size = 1,
+                                     min_step_size = 0.0001,
+                                     seed = -1,
+                                     init = c("Random", "SVD", "PlusPlus", "User"),
+                                     svd_method = c("GramSVD", "Power", "Randomized"),
+                                     user_y = NULL,
+                                     user_x = NULL,
+                                     expand_user_y = TRUE,
+                                     impute_original = FALSE,
+                                     recover_svd = FALSE,
+                                     max_runtime_secs = 0,
+                                     export_checkpoints_dir = NULL,
+                                     segment_columns = NULL,
+                                     segment_models_id = NULL,
+                                     parallelism = 1)
+{
+  # formally define variables that were excluded from function parameters
+  model_id <- NULL
+  verbose <- NULL
+  destination_key <- NULL
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Build parameter list to send to model builder
+  parms <- list()
+  parms$training_frame <- training_frame
+  if(!missing(cols))
+    parms$ignored_columns <- .verify_datacols(training_frame, cols)$cols_ignore  
+
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
+  if (!missing(ignore_const_cols))
+    parms$ignore_const_cols <- ignore_const_cols
+  if (!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
+  if (!missing(representation_name))
+    parms$representation_name <- representation_name
+  if (!missing(loading_name))
+    parms$loading_name <- loading_name
+  if (!missing(transform))
+    parms$transform <- transform
+  if (!missing(k))
+    parms$k <- k
+  if(!missing(loss)) {
+    if(loss == "MeanSquare") {
+      warning("Loss name 'MeanSquare' is deprecated; please use 'Quadratic' instead.")
+      parms$loss <- "Quadratic"
+    } else 
+      parms$loss <- loss
+  }
+  if (!missing(loss_by_col))
+    parms$loss_by_col <- loss_by_col
+  if (!missing(loss_by_col_idx))
+    parms$loss_by_col_idx <- loss_by_col_idx
+  if (!missing(multi_loss))
+    parms$multi_loss <- multi_loss
+  if (!missing(period))
+    parms$period <- period
+  if (!missing(regularization_x))
+    parms$regularization_x <- regularization_x
+  if (!missing(regularization_y))
+    parms$regularization_y <- regularization_y
+  if (!missing(gamma_x))
+    parms$gamma_x <- gamma_x
+  if (!missing(gamma_y))
+    parms$gamma_y <- gamma_y
+  if (!missing(max_iterations))
+    parms$max_iterations <- max_iterations
+  if (!missing(max_updates))
+    parms$max_updates <- max_updates
+  if (!missing(init_step_size))
+    parms$init_step_size <- init_step_size
+  if (!missing(min_step_size))
+    parms$min_step_size <- min_step_size
+  if (!missing(seed))
+    parms$seed <- seed
+  if (!missing(init))
+    parms$init <- init
+  if (!missing(svd_method))
+    parms$svd_method <- svd_method
+  if (!missing(user_y))
+    parms$user_y <- user_y
+  if (!missing(user_x))
+    parms$user_x <- user_x
+  if (!missing(expand_user_y))
+    parms$expand_user_y <- expand_user_y
+  if (!missing(impute_original))
+    parms$impute_original <- impute_original
+  if (!missing(recover_svd))
+    parms$recover_svd <- recover_svd
+  if (!missing(max_runtime_secs))
+    parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
+
+  # Check if user_y is an acceptable set of user-specified starting points
+  if( is.data.frame(user_y) || is.matrix(user_y) || is.list(user_y) || is.H2OFrame(user_y) ) {
+    # Convert user-specified starting points to H2OFrame
+    if( is.data.frame(user_y) || is.matrix(user_y) || is.list(user_y) ) {
+      if( !is.data.frame(user_y) && !is.matrix(user_y) ) user_y <- t(as.data.frame(user_y))
+      user_y <- as.h2o(user_y)
+    }
+    parms[["user_y"]] <- user_y
+
+    # Set k
+    if( !(missing(k)) && k!=as.integer(nrow(user_y)) ) {
+      warning("Argument k is not equal to the number of rows in user-specified Y. Ignoring k. Using specified Y.")
+    }
+    if ( !missing(loading_name)) {
+      warning("Argument loading_name is deprecated.  Use representation_name instead.")
+    }
+    parms[["k"]] <- as.numeric(nrow(user_y))
+  # } else if( is.null(user_y) ) {
+  #  if(!missing(init) && parms[["init"]] == "User")
+  #    warning("Initializing Y to a standard Gaussian random matrix.")
+  # } else
+  } else if( !is.null(user_y) )
+    stop("Argument user_y must either be null or a valid user-defined starting Y matrix.")
+
+  # Check if user_x is an acceptable set of user-specified starting points
+  if( is.data.frame(user_x) || is.matrix(user_x) || is.list(user_x) || is.H2OFrame(user_x) ) {
+    # Convert user-specified starting points to H2OFrame
+    if( is.data.frame(user_x) || is.matrix(user_x) || is.list(user_x) ) {
+      if( !is.data.frame(user_x) && !is.matrix(user_x) ) user_x <- t(as.data.frame(user_x))
+      user_x <- as.h2o(user_x)
+    }
+    parms[["user_x"]] <- user_x
+  # } else if( is.null(user_x) ) {
+  #  if(!missing(init) && parms[["init"]] == "User")
+  #    warning("Initializing X to a standard Gaussian random matrix.")
+  # } else
+  } else if( !is.null(user_x) )
+    stop("Argument user_x must either be null or a valid user-defined starting X matrix.")
+
+  # Build segment-models specific parameters
+  segment_parms <- list()
+  if (!missing(segment_columns))
+    segment_parms$segment_columns <- segment_columns
+  if (!missing(segment_models_id))
+    segment_parms$segment_models_id <- segment_models_id
+  segment_parms$parallelism <- parallelism
+
+  # Error check and build segment models
+  segment_models <- .h2o.segmentModelsJob('glrm', segment_parms, parms, h2oRestApiVersion=3)
+  return(segment_models)
 }
 
 

@@ -3,7 +3,9 @@ package hex.deeplearning;
 import hex.*;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
+import hex.util.EffectiveParametersUtils;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -17,6 +19,7 @@ import water.util.Log;
 import water.util.MRUtils;
 import water.util.PrettyPrint;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -203,14 +206,31 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
   public class DeepLearningDriver extends Driver {
     @Override public void computeImpl() {
       init(true); //this can change the seed if it was set to -1
-      long cs = _parms.checksum();
+      if (Model.evaluateAutoModelParameters()) {
+        initActualParamValues();
+      }
+      Model.Parameters parmsToCheck = _parms.clone();
       // Something goes wrong
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DeepLearning.this);
       buildModel();
-      //check that _parms isn't changed during DL model training
-      long cs2 = _parms.checksum();
-      assert(cs == cs2);
+      //check that all members of _param apart of those which were originally set to AUTO haven't changed during DL model training
+      checkNonAutoParmsNotChanged(parmsToCheck, _parms);
+    }
+
+    public void checkNonAutoParmsNotChanged(Model.Parameters params1, Model.Parameters params2){
+      try {
+        for (Field field : params1.getClass().getFields()) {
+          Class type = field.getType();
+          Object value1 = field.get(params1);
+          if (value1 != null && !"AUTO".equalsIgnoreCase(value1.toString())){
+            Object value2 = field.get(params2);
+            assert(value1.toString().equalsIgnoreCase(value2.toString())) : "Found non-AUTO value in _parms which has changed during DL model training";
+          }
+        }
+      } catch (IllegalAccessException e) {
+        throw new RuntimeException("Error while checking param changes during DL model training", e);
+      }
     }
 
     /**
@@ -245,7 +265,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           throw new H2OIllegalArgumentException("Model type must be the same as for the checkpointed model.");
 
         //READ ONLY
-        DeepLearningParameters.Sanity.checkIfParameterChangeAllowed(previous._parms, _parms);
+        DeepLearningParameters.Sanity.checkIfParameterChangeAllowed(previous._input_parms, _parms);
 
         DataInfo dinfo;
         try {
@@ -301,6 +321,11 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         } finally {
           if (cp != null) cp.unlock(_job);
         }
+      }
+      DistributionFamily actualDistribution = cp.model_info().get_params()._distribution;
+      if (Model.evaluateAutoModelParameters() && _parms._distribution == DistributionFamily.AUTO) {
+        _parms._distribution = actualDistribution;
+        cp._parms._distribution = actualDistribution;
       }
       trainModel(cp);
       for (Key k : removeMe) DKV.remove(k);
@@ -367,7 +392,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           Vec l = train.lastVec();
           Vec w = train.vec(model._output.weightsName());
           MRUtils.ClassDist cd = new MRUtils.ClassDist(l);
-          model._output._modelClassDist = _weights != null ? cd.doAll(l, w).rel_dist() : cd.doAll(l).rel_dist();
+          model._output._modelClassDist = _weights != null ? cd.doAll(l, w).relDist() : cd.doAll(l).relDist();
         }
         model.training_rows = train.numRows();
         if (_weights != null && _weights.min()==0 && _weights.max()==1 && _weights.isInt()) {
@@ -495,6 +520,10 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       return model;
     }
 
+    public void initActualParamValues() {
+      EffectiveParametersUtils.initStoppingMetric(_parms, isClassifier());
+      EffectiveParametersUtils.initCategoricalEncoding(_parms, Model.Parameters.CategoricalEncodingScheme.OneHotInternal);
+    }
 
     /**
      * Compute the fraction of rows that need to be used for training during one iteration

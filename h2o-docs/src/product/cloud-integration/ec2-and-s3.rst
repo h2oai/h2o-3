@@ -18,10 +18,12 @@ AWS Standalone Instance
 '''''''''''''''''''''''
 
 When running H2O in standalone mode using the simple Java launch command, we can pass in the S3 credentials in three ways.
+H2O supports both AWS Credentials (pair consisting of AWS SECRET KEY and AWS SECRET ACCESS KEY) and temporary authentication using Session token
+(a triplet consisting of AWS SECRET KEY, AWS SECRET ACCESS KEY and AWS SESSION TOKEN).
 
--  You can pass in credentials in standalone mode by creating a ``core-site.xml`` file and passing it in with the flag ``-hdfs_config``. For an example ``core-site.xml`` file, refer to `Core-site.xml`_.
+-  You can pass in AWS Credentials in standalone mode by creating a ``core-site.xml`` file and passing it in with the flag ``-hdfs_config``. For an example ``core-site.xml`` file, refer to `Core-site.xml`_.
 
-   1. Edit the properties in the core-site.xml file to include your Access Key ID and Access Key as shown in the following example:
+   1. Edit the properties in the core-site.xml file to include your Access Key ID, Access Key, and Session Token as shown in the following example:
 
      ::
 
@@ -59,114 +61,58 @@ When running H2O in standalone mode using the simple Java launch command, we can
         set_s3_credentials("AWS_ACCESS_KEY", "AWS_SECRET_KEY")
         h2o.import_file(path = "s3://bucket/path/to/file.csv")
 
-**Note**: Passing credentials in the URL, e.g. ``h2o.importFile(path = "s3://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")``, is considered a security risk and is deprecated. 
+        
+-  Just like regular AWS credentials, temporary credentials using AWS SESSION TOKEN can be passed in standalone mode by creating a ``core-site.xml`` file and passing it in with the flag ``-hdfs_config``. For an example ``core-site.xml`` file, refer to `Core-site.xml`_. The only difference lies in specifying a triplet of (AWS SECRET KEY, AWS SECRET ACCESS KEY and AWS SESSION TOKEN) and defining a credentials provider capable of resolving temporary credentials.
 
-AWS Multi-Node Instance
-'''''''''''''''''''''''
+   1. Edit the properties in the core-site.xml file to include your Access Key ID, Access Key, and Session Token as shown in the following example:
 
-`Python <http://www.amazon.com/Python-and-AWS-Cookbook-ebook/dp/B005ZTO0UW/ref=sr_1_1?ie=UTF8&qid=1379879111&sr=8-1&keywords=python+aws>`_ and the `boto <http://boto.readthedocs.org/en/latest/>`_ Python library are required to launch a multi-node instance of H2O on EC2. Confirm these dependencies are installed before proceeding.
+     ::
 
-For more information, refer to the `H2O EC2 repo <https://github.com/h2oai/h2o-3/tree/master/ec2>`_.
+       <property>
+         <name>fs.s3a.aws.credentials.provider</name>
+         <value>org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider</value>
+       </property>
 
-Build a cluster of EC2 instances by running the following commands on the host that can access the nodes using a public DNS name.
+       <property>
+         <name>fs.s3a.access.key</name>
+         <value>[AWS SECRET KEY]</value>
+       </property>
 
-1. Edit `h2o-cluster-launch-instances.py` to include your SSH key name and security group name, as well as any other environment-specific variables.
+       <property>
+         <name>fs.s3a.secret.key</name>
+         <value>[AWS SECRET ACCESS KEY]</value>
+       </property>
 
- ::
+       <property>
+         <name>fs.s3a.session.token</name>
+         <value>[AWS SESSION TOKEN]<value>
+       <property>
 
-    ./h2o-cluster-launch-instances.py
-    ./h2o-cluster-distribute-h2o.sh
 
- --OR--
+   2. Launch with the configuration file ``core-site.xml`` by entering the following in the command line:
 
- ::
+     ::
 
-    ./h2o-cluster-launch-instances.py
-    ./h2o-cluster-download-h2o.sh
+       java -jar h2o.jar -hdfs_config core-site.xml
 
- **Note**: The second method may be faster than the first because download pulls from S3.
+   3. Set the credentials dynamically before accessing the bucket (where ``AWS_ACCESS_KEY`` represents your user name, ``AWS_SECRET_KEY`` represents your password and ``AWS_SESSION_TOKEN`` represents temporary session token).
 
-2. Distribute the credentials using ``./h2o-cluster-distribute-aws-credentials.sh``.
+    -  To set the credentials dynamically using the R API:
 
-  **Note**: If you are running H2O using an IAM role, it is not necessary to distribute the AWS credentials to all the nodes in the cluster. The latest version of H2O can access the temporary access key.
+      ::
 
-  **Caution**: Distributing the AWS credentials copies the Amazon `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to the instances to enable S3 and S3N access. Use caution when adding your security keys to the cloud.
+        h2o.set_s3_credentials("AWS_ACCESS_KEY", "AWS_SECRET_KEY", "AWS_SESSION_TOKEN")
+        h2o.importFile(path = "s3://bucket/path/to/file.csv")
 
-3. Start H2O by launching one H2O node per EC2 instance:
+    -  To set the credentials dynamically using the Python API:
 
- ::
+      ::
 
-    ./h2o-cluster-start-h2o.sh
+        from h2o.persist import set_s3_credentials
+        set_s3_credentials("AWS_ACCESS_KEY", "AWS_SECRET_KEY", "AWS_SESSION_TOKEN")
+        h2o.import_file(path = "s3://bucket/path/to/file.csv")
 
- Wait 60 seconds after entering the command before entering it on the next node.
-
-4. In your internet browser, substitute any of the public DNS node addresses for *IP_ADDRESS* in the following example: ``http://IP_ADDRESS:54321``
-
-  - To start H2O: ``./h2o-cluster-start-h2o.sh``
-  - To stop H2O: ``./h2o-cluster-stop-h2o.sh``
-  - To shut down the cluster, use your `Amazon AWS console <http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/UsingEMR_TerminateJobFlow.html>`_ to shut down the cluster manually.
-
-  **Note**: To successfully import data, the data must reside in the same location on all nodes.
-
-.. _minio:
-
-Minio Instance
-''''''''''''''
-
-Minio Cloud Storage is an alternative to Amazon AWS S3. When using a Minio server, the following additional parameters are specified in the Java launch command:
-
-- ``endpoint``: Specifies a minio server instance (including address and port). This overrides the existing endpoint, which is currently hardcoded to be AWS S3.
-
-- ``enable.path.style``: Specifies to override the default S3 behavior to expose every bucket as a full DNS enabled path. Note that this is a Minio recommendation.
-
-1. Edit the properties in the ``core-site.xml`` file to include your these new parameters as well as the Access Key ID and Access Key. Refer to the following example:
-
-  ::
-
-      <property>
-        <name>Dsys.ai.h2o.persist.s3.endPoint</name>
-        <value>example.minio.io:9000</value>
-      </property>
-      <property>
-        <name>Dsys.ai.h2o.persist.s3.enable.path.style</name>
-        <value>true</value>
-      </property>
-      <property>
-        <name>Daws.AccessKeyId</name>
-        <value>[MINIO SECRET KEY]</value>
-      </property>
-
-      <property>
-        <name>Daws.SecretAccessKey</name>
-        <value>[MINIO SECRET ACCESS KEY]</value>
-      </property>
-
-2. Launch with the configuration file ``core-site.xml`` by entering the following in the command line:
-
-  ::
-
-      java -jar h2o.jar -hdfs_config core-site.xml
-
-3. Import the data using ``importFile`` with the Minio S3 url path: **s3://bucket/path/to/file.csv**. You can pass the AWS Access Key and Secret Access Key in an S3 URL in Flow, R, or Python (where ``MINIO_ACCESS_KEY`` represents your user name, and ``MINIO_SECRET_KEY`` represents your password).
-
- - To import the data from the Flow API:
-
-  ::
-
-   importFiles [ "s3://<MINIO_ACCESS_KEY>:<MINIO_SECRET_KEY>@bucket/path/to/file.csv" ]
-
- - To import the data from the R API:
-
-  ::
-
-   h2o.importFile(path = "s3://<MINIO_ACCESS_KEY>:<MINIO_SECRET_KEY>@bucket/path/to/file.csv")
-
- - To import the data from the Python API:
-
-  ::
-
-   h2o.import_file(path = "s3://<MINIO_ACCESS_KEY>:<MINIO_SECRET_KEY>@bucket/path/to/file.csv")
-
+**Note**: Passing credentials in the URL, e.g. ``h2o.importFile(path = "s3://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>:<AWS_SESSION_TOKEN>@bucket/path/to/file.csv")``, is considered a security risk and is deprecated. 
 
 .. _Core-site.xml:
 
@@ -200,8 +146,112 @@ The following is an example core-site.xml file:
             <name>fs.s3.awsSecretAccessKey</name>
             <value>insert secret key here</value>
         </property>
-        </configuration>
 
+        <property>
+            <name>fs.s3.awsSessionToken</name>
+            <value>insert session token here</value>
+        </property>
+    </configuration>
+
+AWS Multi-Node Instance
+'''''''''''''''''''''''
+
+`Python <http://www.amazon.com/Python-and-AWS-Cookbook-ebook/dp/B005ZTO0UW/ref=sr_1_1?ie=UTF8&qid=1379879111&sr=8-1&keywords=python+aws>`_ and the `boto <http://boto.readthedocs.org/en/latest/>`_ Python library are required to launch a multi-node instance of H2O on EC2. Confirm these dependencies are installed before proceeding.
+
+For more information, refer to the `H2O EC2 repo <https://github.com/h2oai/h2o-3/tree/master/ec2>`_.
+
+Build a cluster of EC2 instances by running the following commands on the host that can access the nodes using a public DNS name.
+
+1. Edit `h2o-cluster-launch-instances.py` to include your SSH key name and security group name, as well as any other environment-specific variables.
+
+ ::
+
+    ./h2o-cluster-launch-instances.py
+    ./h2o-cluster-distribute-h2o.sh
+
+ --OR--
+
+ ::
+
+    ./h2o-cluster-launch-instances.py
+    ./h2o-cluster-download-h2o.sh
+
+ **Note**: The second method may be faster than the first because download pulls from S3.
+
+2. Distribute the credentials using ``./h2o-cluster-distribute-aws-credentials.sh``.
+
+  **Note**: If you are running H2O using an IAM role, it is not necessary to distribute the AWS credentials to all the nodes in the cluster. The latest version of H2O can access the temporary access key.
+
+  **Caution**: Distributing both regular AWS credentials and temporary AWS credentials using session token copies the Amazon AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and optionally (if temporary credentials are used) AWS_SESSION_TOKEN to the instances to enable S3 and S3N access. Use caution when adding your security keys to the cloud.
+
+3. Start H2O by launching one H2O node per EC2 instance:
+
+ ::
+
+    ./h2o-cluster-start-h2o.sh
+
+ Wait 60 seconds after entering the command before entering it on the next node.
+
+4. In your internet browser, substitute any of the public DNS node addresses for *IP_ADDRESS* in the following example: ``http://IP_ADDRESS:54321``
+
+  - To start H2O: ``./h2o-cluster-start-h2o.sh``
+  - To stop H2O: ``./h2o-cluster-stop-h2o.sh``
+  - To shut down the cluster, use your `Amazon AWS console <http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/UsingEMR_TerminateJobFlow.html>`_ to shut down the cluster manually.
+
+  **Note**: To successfully import data, the data must reside in the same location on all nodes.
+
+.. _minio:
+
+Minio Instance
+''''''''''''''
+
+Minio Cloud Storage is an alternative to Amazon AWS S3. When connecting to a Minio server, the following additional parameters are specified in the Java launch command:
+
+- ``endpoint``: Specifies a Minio server instance (including address and port). This overrides the existing endpoint, which is currently hardcoded to be AWS S3.
+
+- ``enable.path.style``: Specifies to override the default S3 behavior to expose every bucket as a full DNS enabled path. Note that this is a Minio recommendation.
+
+To pass in credentials, create a ``core-site.xml`` file that contains your Access Key ID and Secret Access Key and use the flag ``-hdfs_config`` flag when launching:
+
+::
+
+       <property>
+         <name>fs.s3.awsAccessKeyId</name>
+         <value>[AWS SECRET KEY]</value>
+       </property>
+
+       <property>
+         <name>fs.s3.awsSecretAccessKey</name>
+         <value>[AWS SECRET ACCESS KEY]</value>
+       </property>
+
+1. Launch H2O by entering the following in the command line:
+
+  ::
+
+      java -Dsys.ai.h2o.persist.s3.endPoint=https://play.min.io:9000 -Dsys.ai.h2o.persist.s3.enable.path.style=true -jar h2o.jar -hdfs_config core-site.xml
+
+  **Note**: https://play.min.io:9000 is an example Minio server URL.
+
+2. Import the data using ``importFile`` with the Minio S3 url path: **s3://bucket/path/to/file.csv**.
+
+ - To import the data from the Flow API:
+
+  ::
+
+   importFiles [ "s3://bucket/path/to/file.csv" ]
+
+ - To import the data from the R API:
+
+  ::
+
+   h2o.importFile(path = "s3://bucket/path/to/file.csv")
+
+ - To import the data from the Python API:
+
+  ::
+
+   h2o.import_file(path = "s3://bucket/path/to/file.csv")
 
 Launching H2O
 '''''''''''''
@@ -238,7 +288,7 @@ For Windows users who do not have the ability to use ``ssh`` from the terminal, 
 
   ::
 
-    ssh -i amy_account.pem ec2-user@54.165.25.98``
+    ssh -i amy_account.pem ec2-user@54.165.25.98
 
 Otherwise, download PuTTY and follow these instructions:
 

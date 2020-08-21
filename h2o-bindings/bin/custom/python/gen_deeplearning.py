@@ -1,3 +1,5 @@
+deprecated = ['max_hit_ratio_k']
+
 def module_extensions():
     class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
         """
@@ -52,7 +54,7 @@ examples = dict(
 >>> fr = h2o.H2OFrame(rows)
 >>> fr[4] = fr[4].asfactor()
 >>> model = H2ODeepLearningEstimator()
->>> model.train(x = range(4), y = 4, training_frame = fr)
+>>> model.train(x=range(4), y=4, training_frame=fr)
 >>> model.logloss()
 """,
     activation="""
@@ -60,11 +62,11 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "cylinders"
->>> cars_dl = H2ODeepLearningEstimator(activation = "tanh")
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> cars_dl = H2ODeepLearningEstimator(activation="tanh")
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.mse()
 """,
     adaptive_rate="""
@@ -72,11 +74,11 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "cylinders"
->>> cars_dl = H2ODeepLearningEstimator(adaptive_rate = True)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> cars_dl = H2ODeepLearningEstimator(adaptive_rate=True)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.mse()
 """,
     autoencoder="""
@@ -84,11 +86,11 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "cylinders"
->>> cars_dl = H2ODeepLearningEstimator(autoencoder = True)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> cars_dl = H2ODeepLearningEstimator(autoencoder=True)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.mse()
 """,
     average_activation="""
@@ -96,12 +98,12 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "cylinders"
->>> cars_dl = H2ODeepLearningEstimator(average_activation = 1.5,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> cars_dl = H2ODeepLearningEstimator(average_activation=1.5,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.mse()
 """,
     balance_classes="""
@@ -109,13 +111,13 @@ examples = dict(
 >>> covtype[54] = covtype[54].asfactor()
 >>> predictors = covtype.columns[0:54]
 >>> response = 'C55'
->>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
->>> cov_dl = H2ODeepLearningEstimator(balance_classes = True,
-...                                   seed = 1234)
->>> cov_dl.train(x = predictors,
-...              y = response,
-...              training_frame = train,
-...              validation_frame = valid)
+>>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
+>>> cov_dl = H2ODeepLearningEstimator(balance_classes=True,
+...                                   seed=1234)
+>>> cov_dl.train(x=predictors,
+...              y=response,
+...              training_frame=train,
+...              validation_frame=valid)
 >>> cov_dl.mse()
 """,
     categorical_encoding="""
@@ -128,14 +130,14 @@ examples = dict(
 >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
 ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
 >>> response = "IsDepDelayed"
->>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+>>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
 >>> encoding = "one_hot_internal"
->>> airlines_dl = H2ODeepLearningEstimator(categorical_encoding = encoding,
-...                                        seed = 1234)
->>> airlines_dl.train(x = predictors,
-...                   y = response,
-...                   training_frame = train,
-...                   validation_frame = valid)
+>>> airlines_dl = H2ODeepLearningEstimator(categorical_encoding=encoding,
+...                                        seed=1234)
+>>> airlines_dl.train(x=predictors,
+...                   y=response,
+...                   training_frame=train,
+...                   validation_frame=valid)
 >>> airlines_dl.mse()
 """,
     checkpoint="""
@@ -143,22 +145,22 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
 >>> cars_dl = H2ODeepLearningEstimator(activation="tanh",
 ...                                    autoencoder=True,
-...                                    seed = 1234,
+...                                    seed=1234,
 ...                                    model_id="cars_dl")
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.mse()
->>> cars_cont = H2ODeepLearningEstimator(checkpoint = cars_dl,
-...                                      seed = 1234)
->>> cars_cont.train(x = predictors,
-...                 y = response,
-...                 training_frame = train,
-...                 validation_frame = valid)
+>>> cars_cont = H2ODeepLearningEstimator(checkpoint=cars_dl,
+...                                      seed=1234)
+>>> cars_cont.train(x=predictors,
+...                 y=response,
+...                 training_frame=train,
+...                 validation_frame=valid)
 >>> cars_cont.mse()
 """,
     class_sampling_factors="""
@@ -166,15 +168,15 @@ examples = dict(
 >>> covtype[54] = covtype[54].asfactor()
 >>> predictors = covtype.columns[0:54]
 >>> response = 'C55'
->>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+>>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
 >>> sample_factors = [1., 0.5, 1., 1., 1., 1., 1.]
->>> cars_dl = H2ODeepLearningEstimator(balance_classes = True,
-...                                    class_sampling_factors = sample_factors,
-...                                    seed = 1234)
->>> cov_dl.train(x = predictors,
-...              y = response,
-...              training_frame = train,
-...              validation_frame = valid)
+>>> cars_dl = H2ODeepLearningEstimator(balance_classes=True,
+...                                    class_sampling_factors=sample_factors,
+...                                    seed=1234)
+>>> cov_dl.train(x=predictors,
+...              y=response,
+...              training_frame=train,
+...              validation_frame=valid)
 >>> cov_dl.mse()
 """,
     classification_stop="""
@@ -182,13 +184,13 @@ examples = dict(
 >>> covtype[54] = covtype[54].asfactor()
 >>> predictors = covtype.columns[0:54]
 >>> response = 'C55'
->>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(classification_stop = 1.5,
-...                                    seed = 1234)
->>> cov_dl.train(x = predictors,
-...              y = response,
-...              training_frame = train,
-...              validation_frame = valid)
+>>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(classification_stop=1.5,
+...                                    seed=1234)
+>>> cov_dl.train(x=predictors,
+...              y=response,
+...              training_frame=train,
+...              validation_frame=valid)
 >>> cov_dl.mse()
 """,
     diagnostics="""
@@ -196,13 +198,13 @@ examples = dict(
 >>> covtype[54] = covtype[54].asfactor()
 >>> predictors = covtype.columns[0:54]
 >>> response = 'C55'
->>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(diagnostics = True,
-...                                    seed = 1234)  
->>> cov_dl.train(x = predictors,
-...              y = response,
-...              training_frame = train,
-...              validation_frame = valid)
+>>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(diagnostics=True,
+...                                    seed=1234)  
+>>> cov_dl.train(x=predictors,
+...              y=response,
+...              training_frame=train,
+...              validation_frame=valid)
 >>> cov_dl.mse()
 """,
     distribution="""
@@ -210,13 +212,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "cylinders"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(distribution = "poisson",
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(distribution="poisson",
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.mse()
 """,
     elastic_averaging="""
@@ -224,13 +226,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "cylinders"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(elastic_averaging = True,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(elastic_averaging=True,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.mse()
 """,
     elastic_averaging_moving_rate="""
@@ -238,13 +240,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "cylinders"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(elastic_averaging_moving_rate = .8,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(elastic_averaging_moving_rate=.8,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.mse()
 """,
     elastic_averaging_regularization="""
@@ -252,13 +254,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "cylinders"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(elastic_averaging_regularization = .008,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(elastic_averaging_regularization=.008,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.mse()
 """,
     epochs="""
@@ -266,13 +268,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "cylinders"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(epochs = 15,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(epochs=15,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.mse()
 """,
     epsilon="""
@@ -280,13 +282,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "cylinders"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(epsilon = 1e-6,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(epsilon=1e-6,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.mse()
 """,
     export_checkpoints_dir="""
@@ -296,14 +298,14 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "cylinders"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
 >>> checkpoints_dir = tempfile.mkdtemp()
 >>> cars_dl = H2ODeepLearningEstimator(export_checkpoints_dir=checkpoints_dir,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> len(listdir(checkpoints_dir))
 """,
     export_weights_and_biases="""
@@ -311,13 +313,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "cylinders"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(export_weights_and_biases = True,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(export_weights_and_biases=True,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.mse()
 """,
     fast_mode="""
@@ -325,13 +327,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "cylinders"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(fast_mode = False,
-...                                    seed = 1234)          
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(fast_mode=False,
+...                                    seed=1234)          
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.mse()
 """,
     fold_assignment="""
@@ -339,14 +341,14 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "cylinders"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(fold_assignment = "Random",
-...                                    nfolds = 5,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(fold_assignment="Random",
+...                                    nfolds=5,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.mse()
 """,
     fold_column="""
@@ -354,15 +356,15 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "cylinders"
->>> fold_numbers = cars.kfold_column(n_folds = 5, seed = 1234)
+>>> fold_numbers = cars.kfold_column(n_folds=5, seed=1234)
 >>> fold_numbers.set_names(["fold_numbers"])
 >>> cars = cars.cbind(fold_numbers)
 >>> print(cars['fold_numbers'])
->>> cars_dl = H2ODeepLearningEstimator(seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = cars,
-...               fold_column = "fold_numbers")
+>>> cars_dl = H2ODeepLearningEstimator(seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=cars,
+...               fold_column="fold_numbers")
 >>> cars_dl.mse()
 """,
     force_load_balance="""
@@ -370,13 +372,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "cylinders"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(force_load_balance = False,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(force_load_balance=False,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.mse()
 """,
     hidden="""
@@ -384,13 +386,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "cylinders"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(hidden = [100,100],
-...                                    seed = 1234) 
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(hidden=[100,100],
+...                                    seed=1234) 
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.mse()
 """,
     hidden_dropout_ratios="""
@@ -400,15 +402,15 @@ examples = dict(
 >>> target = 784
 >>> train[target] = train[target].asfactor()
 >>> valid[target] = valid[target].asfactor()
->>> model = H2ODeepLearningEstimator(epochs = 20,
-...                                  hidden = [200,200],
-...                                  hidden_dropout_ratios = [0.5,0.5],
-...                                  seed = 1234,
+>>> model = H2ODeepLearningEstimator(epochs=20,
+...                                  hidden=[200,200],
+...                                  hidden_dropout_ratios=[0.5,0.5],
+...                                  seed=1234,
 ...                                  activation='tanhwithdropout')
->>> model.train(x = features,
-...             y = target,
-...             training_frame = train,
-...             validation_frame = valid)
+>>> model.train(x=features,
+...             y=target,
+...             training_frame=train,
+...             validation_frame=valid)
 >>> model.mse()
 """,
     huber_alpha="""
@@ -417,14 +419,14 @@ examples = dict(
 >>> response = 'Claims'
 >>> insurance['Group'] = insurance['Group'].asfactor()
 >>> insurance['Age'] = insurance['Age'].asfactor()
->>> train, valid = insurance.split_frame(ratios = [.8], seed = 1234)
->>> insurance_dl = H2ODeepLearningEstimator(distribution = "huber",
-...                                         huber_alpha = 0.9,
-...                                         seed = 1234)
->>> insurance_dl.train(x = predictors,
-...                    y = response,
-...                    training_frame = train,
-...                    validation_frame = valid)
+>>> train, valid = insurance.split_frame(ratios=[.8], seed=1234)
+>>> insurance_dl = H2ODeepLearningEstimator(distribution="huber",
+...                                         huber_alpha=0.9,
+...                                         seed=1234)
+>>> insurance_dl.train(x=predictors,
+...                    y=response,
+...                    training_frame=train,
+...                    validation_frame=valid)
 >>> insurance_dl.mse()
 """,
     ignore_const_cols="""
@@ -434,13 +436,13 @@ examples = dict(
 >>> response = "economy_20mpg"
 >>> cars["const_1"] = 6
 >>> cars["const_2"] = 7
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(seed = 1234,
-...                                    ignore_const_cols = True)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(seed=1234,
+...                                    ignore_const_cols=True)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.auc()
 """,
     initial_biases="""
@@ -490,13 +492,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(initial_weight_distribution = "Uniform",
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(initial_weight_distribution="Uniform",
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.auc()
 """,
     initial_weight_scale="""
@@ -504,13 +506,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(initial_weight_scale = 1.5,
-...                                    seed = 1234) 
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(initial_weight_scale=1.5,
+...                                    seed=1234) 
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.auc()
 """,
     input_dropout_ratio="""
@@ -518,13 +520,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(input_dropout_ratio = 0.2,
-...                                    seed = 1234) 
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(input_dropout_ratio=0.2,
+...                                    seed=1234) 
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.auc()
 """,
     keep_cross_validation_fold_assignment="""
@@ -532,13 +534,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_fold_assignment = True,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_fold_assignment=True,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> print(cars_dl.cross_validation_fold_assignment())
 """,
     keep_cross_validation_models="""
@@ -546,13 +548,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_models = True,
-...                                   seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_models=True,
+...                                   seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> print(cars_dl.cross_validation_models())
 """,
     keep_cross_validation_predictions="""
@@ -560,12 +562,12 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_predictions = True,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_predictions=True,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train)
 >>> print(cars_dl.cross_validation_predictions())
 """,
     l1="""
@@ -615,15 +617,15 @@ examples = dict(
 >>> covtype[54] = covtype[54].asfactor()
 >>> predictors = covtype.columns[0:54]
 >>> response = 'C55'
->>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+>>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
 >>> max = .85
->>> cov_dl = H2ODeepLearningEstimator(balance_classes = True,
-...                                   max_after_balance_size = max,
-...                                   seed = 1234)
->>> cov_dl.train(x = predictors,
-...              y = response,
-...              training_frame = train,
-...              validation_frame = valid)
+>>> cov_dl = H2ODeepLearningEstimator(balance_classes=True,
+...                                   max_after_balance_size=max,
+...                                   seed=1234)
+>>> cov_dl.train(x=predictors,
+...              y=response,
+...              training_frame=train,
+...              validation_frame=valid)
 >>> cov_dl.logloss()
 """,
     max_categorical_features="""
@@ -631,14 +633,14 @@ examples = dict(
 >>> covtype[54] = covtype[54].asfactor()
 >>> predictors = covtype.columns[0:54]
 >>> response = 'C55'
->>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
->>> cov_dl = H2ODeepLearningEstimator(balance_classes = True,
-...                                   max_categorical_features = 2147483647,
-...                                   seed = 1234)
->>> cov_dl.train(x = predictors,
-...              y = response,
-...              training_frame = train,
-...              validation_frame = valid)
+>>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
+>>> cov_dl = H2ODeepLearningEstimator(balance_classes=True,
+...                                   max_categorical_features=2147483647,
+...                                   seed=1234)
+>>> cov_dl.train(x=predictors,
+...              y=response,
+...              training_frame=train,
+...              validation_frame=valid)
 >>> cov_dl.logloss()
 """,
     max_hit_ratio_k="""
@@ -646,13 +648,13 @@ examples = dict(
 >>> covtype[54] = covtype[54].asfactor()
 >>> predictors = covtype.columns[0:54]
 >>> response = 'C55'
->>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
->>> cov_dl = H2ODeepLearningEstimator(max_hit_ratio_k = 3,
-...                                   seed = 1234) 
->>> cov_dl.train(x = predictors,
-...              y = response,
-...              training_frame = train,
-...              validation_frame = valid)
+>>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
+>>> cov_dl = H2ODeepLearningEstimator(max_hit_ratio_k=3,
+...                                   seed=1234) 
+>>> cov_dl.train(x=predictors,
+...              y=response,
+...              training_frame=train,
+...              validation_frame=valid)
 >>> cov_dl.show()
 """,
     max_runtime_secs="""
@@ -660,13 +662,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(max_runtime_secs = 10,
-...                                    seed = 1234) 
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(max_runtime_secs=10,
+...                                    seed=1234) 
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.auc()
 """,
     max_w2="""
@@ -674,18 +676,18 @@ examples = dict(
 >>> covtype[54] = covtype[54].asfactor()
 >>> predictors = covtype.columns[0:54]
 >>> response = 'C55'
->>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
->>> cov_dl = H2ODeepLearningEstimator(activation = "RectifierWithDropout",
-...                                   hidden = [10,10],
-...                                   epochs = 10,
-...                                   input_dropout_ratio = 0.2,
-...                                   l1 = 1e-5,
-...                                   max_w2 = 10.5,
-...                                   stopping_rounds = 0)
->>> cov_dl.train(x = predictors,
-...              y = response,
-...              training_frame = train,
-...              validation_frame = valid)
+>>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
+>>> cov_dl = H2ODeepLearningEstimator(activation="RectifierWithDropout",
+...                                   hidden=[10,10],
+...                                   epochs=10,
+...                                   input_dropout_ratio=0.2,
+...                                   l1=1e-5,
+...                                   max_w2=10.5,
+...                                   stopping_rounds=0)
+>>> cov_dl.train(x=predictors,
+...              y=response,
+...              training_frame=train,
+...              validation_frame=valid)
 >>> cov_dl.mse()
 """,
     mini_batch_size="""
@@ -693,19 +695,19 @@ examples = dict(
 >>> covtype[54] = covtype[54].asfactor()
 >>> predictors = covtype.columns[0:54]
 >>> response = 'C55'
->>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
->>> cov_dl = H2ODeepLearningEstimator(activation = "RectifierWithDropout",
-...                                   hidden = [10,10],
-...                                   epochs = 10,
-...                                   input_dropout_ratio = 0.2,
-...                                   l1 = 1e-5,
-...                                   max_w2 = 10.5,
-...                                   stopping_rounds = 0)
-...                                   mini_batch_size = 35
->>> cov_dl.train(x = predictors,
-...              y = response,
-...              training_frame = train,
-...              validation_frame = valid)
+>>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
+>>> cov_dl = H2ODeepLearningEstimator(activation="RectifierWithDropout",
+...                                   hidden=[10,10],
+...                                   epochs=10,
+...                                   input_dropout_ratio=0.2,
+...                                   l1=1e-5,
+...                                   max_w2=10.5,
+...                                   stopping_rounds=0)
+...                                   mini_batch_size=35
+>>> cov_dl.train(x=predictors,
+...              y=response,
+...              training_frame=train,
+...              validation_frame=valid)
 >>> cov_dl.mse()
 """,
     missing_values_handling="""
@@ -714,12 +716,12 @@ examples = dict(
 >>> response = "medv"
 >>> boston['chas'] = boston['chas'].asfactor()
 >>> boston.insert_missing_values()
->>> train, valid = boston.split_frame(ratios = [.8])
->>> boston_dl = H2ODeepLearningEstimator(missing_values_handling = "skip")
->>> boston_dl.train(x = predictors,
-...                 y = response,
-...                 training_frame = train,
-...                 validation_frame = valid)
+>>> train, valid = boston.split_frame(ratios=[.8])
+>>> boston_dl = H2ODeepLearningEstimator(missing_values_handling="skip")
+>>> boston_dl.train(x=predictors,
+...                 y=response,
+...                 training_frame=train,
+...                 validation_frame=valid)
 >>> boston_dl.mse()
 """,
     momentum_ramp="""
@@ -739,9 +741,9 @@ examples = dict(
 ...                                        mini_batch_size=32,
 ...                                        score_duty_cycle=0.25,
 ...                                        score_interval=1)
->>> airlines_dl.train(x = predictors,
-...                   y = response_col,
-...                   training_frame = airlines)
+>>> airlines_dl.train(x=predictors,
+...                   y=response_col,
+...                   training_frame=airlines)
 >>> airlines_dl.mse()
 """,
     momentum_stable="""
@@ -761,9 +763,9 @@ examples = dict(
 ...                                        mini_batch_size=32,
 ...                                        score_duty_cycle=0.25,
 ...                                        score_interval=1)
->>> airlines_dl.train(x = predictors,
-...                   y = response_col,
-...                   training_frame = airlines)
+>>> airlines_dl.train(x=predictors,
+...                   y=response_col,
+...                   training_frame=airlines)
 >>> airlines_dl.mse()
 """,
 
@@ -784,9 +786,9 @@ examples = dict(
 ...                                        mini_batch_size=32,
 ...                                        score_duty_cycle=0.25,
 ...                                        score_interval=1)
->>> airlines_dl.train(x = predictors,
-...                   y = response_col,
-...                   training_frame = airlines)
+>>> airlines_dl.train(x=predictors,
+...                   y=response_col,
+...                   training_frame=airlines)
 >>> airlines_dl.mse()
 """,
     nesterov_accelerated_gradient="""
@@ -797,23 +799,23 @@ examples = dict(
 >>> train[resp] = train[resp].asfactor()
 >>> test[resp] = test[resp].asfactor()
 >>> nclasses = train[resp].nlevels()[0]
->>> model = H2ODeepLearningEstimator(activation = "RectifierWithDropout",
-...                                  adaptive_rate = False,
-...                                  rate = 0.01,
-...                                  rate_decay = 0.9,
-...                                  rate_annealing = 1e-6,
-...                                  momentum_start = 0.95,
-...                                  momentum_ramp = 1e5,
-...                                  momentum_stable = 0.99,
-...                                  nesterov_accelerated_gradient = False,
-...                                  input_dropout_ratio = 0.2,
-...                                  train_samples_per_iteration = 20000,
-...                                  classification_stop = -1,
-...                                  l1 = 1e-5) 
->>> model.train (x = predictors,
-...              y = resp,
-...              training_frame = train,
-...              validation_frame = test)
+>>> model = H2ODeepLearningEstimator(activation="RectifierWithDropout",
+...                                  adaptive_rate=False,
+...                                  rate=0.01,
+...                                  rate_decay=0.9,
+...                                  rate_annealing=1e-6,
+...                                  momentum_start=0.95,
+...                                  momentum_ramp=1e5,
+...                                  momentum_stable=0.99,
+...                                  nesterov_accelerated_gradient=False,
+...                                  input_dropout_ratio=0.2,
+...                                  train_samples_per_iteration=20000,
+...                                  classification_stop=-1,
+...                                  l1=1e-5) 
+>>> model.train (x=predictors,
+...              y=resp,
+...              training_frame=train,
+...              validation_frame=test)
 >>> model.model_performance()
 """,
     nfolds="""
@@ -821,10 +823,10 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> cars_dl = H2ODeepLearningEstimator(nfolds = 5, seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = cars)
+>>> cars_dl = H2ODeepLearningEstimator(nfolds=5, seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=cars)
 >>> cars_dl.auc()
 """,
     offset_column="""
@@ -833,13 +835,13 @@ examples = dict(
 >>> response = "medv"
 >>> boston['chas'] = boston['chas'].asfactor()
 >>> boston["offset"] = boston["medv"].log()
->>> train, valid = boston.split_frame(ratios = [.8], seed = 1234)
->>> boston_dl = H2ODeepLearningEstimator(offset_column = "offset",
-...                                      seed = 1234)
->>> boston_dl.train(x = predictors,
-...                 y = response,
-...                 training_frame = train,
-...                 validation_frame = valid)
+>>> train, valid = boston.split_frame(ratios=[.8], seed=1234)
+>>> boston_dl = H2ODeepLearningEstimator(offset_column="offset",
+...                                      seed=1234)
+>>> boston_dl.train(x=predictors,
+...                 y=response,
+...                 training_frame=train,
+...                 validation_frame=valid)
 >>> boston_dl.mse()
 """,
     overwrite_with_best_model="""
@@ -848,13 +850,13 @@ examples = dict(
 >>> response = "medv"
 >>> boston['chas'] = boston['chas'].asfactor()
 >>> boston["offset"] = boston["medv"].log()
->>> train, valid = boston.split_frame(ratios = [.8], seed = 1234)
->>> boston_dl = H2ODeepLearningEstimator(overwrite_with_best_model = True,
-...                                      seed = 1234)
->>> boston_dl.train(x = predictors,
-...                 y = response,
-...                 training_frame = train,
-...                 validation_frame = valid)
+>>> train, valid = boston.split_frame(ratios=[.8], seed=1234)
+>>> boston_dl = H2ODeepLearningEstimator(overwrite_with_best_model=True,
+...                                      seed=1234)
+>>> boston_dl.train(x=predictors,
+...                 y=response,
+...                 training_frame=train,
+...                 validation_frame=valid)
 >>> boston_dl.mse()
 """,
     pretrained_autoencoder="""
@@ -866,17 +868,17 @@ examples = dict(
 >>> train[resp] = train[resp].asfactor()
 >>> test[resp] = test[resp].asfactor()
 >>> sid = train[0].runif(0)
->>> train_unsupervised = train[sid >=0.5]
+>>> train_unsupervised = train[sid>=0.5]
 >>> train_unsupervised.pop(resp)
->>> train_supervised = train[sid < 0.5]
->>> ae_model = H2OAutoEncoderEstimator(activation = "Tanh",
-...                                    hidden = [nfeatures],
-...                                    model_id = "ae_model",
-...                                    epochs = 1,
-...                                    ignore_const_cols = False,
-...                                    reproducible = True,
-...                                    seed = 1234)
->>> ae_model.train(list(range(resp)), training_frame = train_unsupervised)
+>>> train_supervised = train[sid<0.5]
+>>> ae_model = H2OAutoEncoderEstimator(activation="Tanh",
+...                                    hidden=[nfeatures],
+...                                    model_id="ae_model",
+...                                    epochs=1,
+...                                    ignore_const_cols=False,
+...                                    reproducible=True,
+...                                    seed=1234)
+>>> ae_model.train(list(range(resp)), training_frame=train_unsupervised)
 >>> ae_model.mse()
 >>> pretrained_model = H2ODeepLearningEstimator(activation="Tanh",
 ...                                             hidden=[nfeatures],
@@ -895,14 +897,14 @@ examples = dict(
 >>> predictors = boston.columns[:-1]
 >>> response = "medv"
 >>> boston['chas'] = boston['chas'].asfactor()
->>> train, valid = boston.split_frame(ratios = [.8], seed = 1234)
->>> boston_dl = H2ODeepLearningEstimator(distribution = "quantile",
-...                                      quantile_alpha = .8,
-...                                      seed = 1234)
->>> boston_dl.train(x = predictors,
-...                 y = response,
-...                 training_frame = train,
-...                 validation_frame = valid)
+>>> train, valid = boston.split_frame(ratios=[.8], seed=1234)
+>>> boston_dl = H2ODeepLearningEstimator(distribution="quantile",
+...                                      quantile_alpha=.8,
+...                                      seed=1234)
+>>> boston_dl.train(x=predictors,
+...                 y=response,
+...                 training_frame=train,
+...                 validation_frame=valid)
 >>> boston_dl.mse()
 """,
     quiet_mode="""
@@ -911,13 +913,13 @@ examples = dict(
 >>> predictors = titanic.columns
 >>> del predictors[1:3]
 >>> response = 'survived'
->>> train, valid = titanic.split_frame(ratios = [.8], seed = 1234)
->>> titanic_dl = H2ODeepLearningEstimator(quiet_mode = True,
-...                                       seed = 1234)
->>> titanic_dl.train(x = predictors,
-...                  y = response,
-...                  training_frame = train,
-...                  validation_frame = valid)
+>>> train, valid = titanic.split_frame(ratios=[.8], seed=1234)
+>>> titanic_dl = H2ODeepLearningEstimator(quiet_mode=True,
+...                                       seed=1234)
+>>> titanic_dl.train(x=predictors,
+...                  y=response,
+...                  training_frame=train,
+...                  validation_frame=valid)
 >>> titanic_dl.mse()
 """,
     rate="""
@@ -1008,13 +1010,13 @@ examples = dict(
 >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
 ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
 >>> response = "IsDepDelayed"
->>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
->>> airlines_dl = H2ODeepLearningEstimator(regression_stop = 1e-6,
-...                                        seed = 1234)
->>> airlines_dl.train(x = predictors,
-...                   y = response,
-...                   training_frame = train,
-...                   validation_frame = valid)
+>>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
+>>> airlines_dl = H2ODeepLearningEstimator(regression_stop=1e-6,
+...                                        seed=1234)
+>>> airlines_dl.train(x=predictors,
+...                   y=response,
+...                   training_frame=train,
+...                   validation_frame=valid)
 >>> airlines_dl.auc()
 """,
     replicate_training_data="""
@@ -1027,10 +1029,10 @@ examples = dict(
 >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
 ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
 >>> response = "IsDepDelayed"
->>> airlines_dl = H2ODeepLearningEstimator(replicate_training_data = False)
->>> airlines_dl.train(x = predictors,
-...                   y = response,
-...                   training_frame = airlines) 
+>>> airlines_dl = H2ODeepLearningEstimator(replicate_training_data=False)
+>>> airlines_dl.train(x=predictors,
+...                   y=response,
+...                   training_frame=airlines) 
 >>> airlines_dl.auc()
 """,
     reproducible="""
@@ -1043,12 +1045,12 @@ examples = dict(
 >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
 ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
 >>> response = "IsDepDelayed"
->>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
->>> airlines_dl = H2ODeepLearningEstimator(reproducible = True)
->>> airlines_dl.train(x = predictors,
-...                   y = response,
-...                   training_frame = train,
-...                   validation_frame = valid)
+>>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
+>>> airlines_dl = H2ODeepLearningEstimator(reproducible=True)
+>>> airlines_dl.train(x=predictors,
+...                   y=response,
+...                   training_frame=train,
+...                   validation_frame=valid)
 >>> airlines_dl.auc()
 """,
     rho="""
@@ -1056,11 +1058,11 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> cars_dl = H2ODeepLearningEstimator(rho = 0.9,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = cars)
+>>> cars_dl = H2ODeepLearningEstimator(rho=0.9,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=cars)
 >>> cars_dl.auc()
 """,
     score_duty_cycle="""
@@ -1068,11 +1070,11 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> cars_dl = H2ODeepLearningEstimator(score_duty_cycle = 0.2,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = cars)
+>>> cars_dl = H2ODeepLearningEstimator(score_duty_cycle=0.2,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=cars)
 >>> cars_dl.auc()
 """,
     score_each_iteration="""
@@ -1080,11 +1082,11 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> cars_dl = H2ODeepLearningEstimator(score_each_iteration = True,
-...                                    seed = 1234) 
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = cars)
+>>> cars_dl = H2ODeepLearningEstimator(score_each_iteration=True,
+...                                    seed=1234) 
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=cars)
 >>> cars_dl.auc()
 """,
     score_interval="""
@@ -1092,11 +1094,11 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> cars_dl = H2ODeepLearningEstimator(score_interval = 3,
-...                                    seed = 1234) 
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = cars)
+>>> cars_dl = H2ODeepLearningEstimator(score_interval=3,
+...                                    seed=1234) 
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=cars)
 >>> cars_dl.auc()
 """,
     score_training_samples="""
@@ -1104,11 +1106,11 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> cars_dl = H2ODeepLearningEstimator(score_training_samples = 10000,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = cars)
+>>> cars_dl = H2ODeepLearningEstimator(score_training_samples=10000,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=cars)
 >>> cars_dl.auc()
 """,
     score_validation_samples="""
@@ -1116,13 +1118,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios=[.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(score_validation_samples = 3,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(score_validation_samples=3,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.auc()
 """,
     score_validation_sampling="""
@@ -1130,13 +1132,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios=[.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(score_validation_sampling = "uniform",
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(score_validation_sampling="uniform",
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.auc()
 """,
     seed="""
@@ -1144,12 +1146,12 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios=[.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.auc()
 """,
     shuffle_training_data="""
@@ -1157,12 +1159,12 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios=[.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(shuffle_training_data = True,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = cars)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(shuffle_training_data=True,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=cars)
 >>> cars_dl.auc()
 """,
     single_node_mode="""
@@ -1170,12 +1172,12 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios=[.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(single_node_mode = True,
-...                                    seed = 1234) 
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = cars)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(single_node_mode=True,
+...                                    seed=1234) 
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=cars)
 >>> cars_dl.auc()
 """,
     sparse="""
@@ -1183,12 +1185,12 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios=[.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(sparse = True,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = cars)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(sparse=True,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=cars)
 >>> cars_dl.auc()
 """,
     sparsity_beta="""
@@ -1200,17 +1202,17 @@ examples = dict(
 >>> train[resp] = train[resp].asfactor()
 >>> test[resp] = test[resp].asfactor()
 >>> sid = train[0].runif(0)
->>> train_unsupervised = train[sid >=0.5]
+>>> train_unsupervised = train[sid>=0.5]
 >>> train_unsupervised.pop(resp)
->>> ae_model = H2OAutoEncoderEstimator(activation = "Tanh",
-...                                    hidden = [nfeatures],
-...                                    epochs = 1,
-...                                    ignore_const_cols = False,
-...                                    reproducible = True,
-...                                    sparsity_beta = 0.5,
-...                                    seed = 1234)
+>>> ae_model = H2OAutoEncoderEstimator(activation="Tanh",
+...                                    hidden=[nfeatures],
+...                                    epochs=1,
+...                                    ignore_const_cols=False,
+...                                    reproducible=True,
+...                                    sparsity_beta=0.5,
+...                                    seed=1234)
 >>> ae_model.train(list(range(resp)),
-...                training_frame = train_unsupervised)
+...                training_frame=train_unsupervised)
 >>> ae_model.mse()
 """,
     standardize="""
@@ -1218,11 +1220,11 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> cars_dl = H2ODeepLearningEstimator(standardize = True,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = cars)
+>>> cars_dl = H2ODeepLearningEstimator(standardize=True,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=cars)
 >>> cars_dl.auc()
 """,
     stopping_metric="""
@@ -1235,15 +1237,15 @@ examples = dict(
 >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
 ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
 >>> response = "IsDepDelayed"
->>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
->>> airlines_dl = H2ODeepLearningEstimator(stopping_metric = "auc",
-...                                        stopping_rounds = 3,
-...                                        stopping_tolerance = 1e-2,
-...                                        seed = 1234)
->>> airlines_dl.train(x = predictors,
-...                   y = response,
-...                   training_frame = train,
-...                   validation_frame = valid)
+>>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
+>>> airlines_dl = H2ODeepLearningEstimator(stopping_metric="auc",
+...                                        stopping_rounds=3,
+...                                        stopping_tolerance=1e-2,
+...                                        seed=1234)
+>>> airlines_dl.train(x=predictors,
+...                   y=response,
+...                   training_frame=train,
+...                   validation_frame=valid)
 >>> airlines_dl.auc()
 """,
     stopping_rounds="""
@@ -1256,15 +1258,15 @@ examples = dict(
 >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
 ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
 >>> response = "IsDepDelayed"
->>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
->>> airlines_dl = H2ODeepLearningEstimator(stopping_metric = "auc",
-...                                        stopping_rounds = 3,
-...                                        stopping_tolerance = 1e-2,
-...                                        seed = 1234)
->>> airlines_dl.train(x = predictors,
-...                   y = response,
-...                   training_frame = train,
-...                   validation_frame = valid)
+>>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
+>>> airlines_dl = H2ODeepLearningEstimator(stopping_metric="auc",
+...                                        stopping_rounds=3,
+...                                        stopping_tolerance=1e-2,
+...                                        seed=1234)
+>>> airlines_dl.train(x=predictors,
+...                   y=response,
+...                   training_frame=train,
+...                   validation_frame=valid)
 >>> airlines_dl.auc()
 """,
     stopping_tolerance="""
@@ -1277,15 +1279,15 @@ examples = dict(
 >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
 ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
 >>> response = "IsDepDelayed"
->>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
->>> airlines_dl = H2ODeepLearningEstimator(stopping_metric = "auc",
-...                                        stopping_rounds = 3,
-...                                        stopping_tolerance = 1e-2,
-...                                        seed = 1234)
->>> airlines_dl.train(x = predictors,
-...                   y = response,
-...                   training_frame = train,
-...                   validation_frame = valid)
+>>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
+>>> airlines_dl = H2ODeepLearningEstimator(stopping_metric="auc",
+...                                        stopping_rounds=3,
+...                                        stopping_tolerance=1e-2,
+...                                        seed=1234)
+>>> airlines_dl.train(x=predictors,
+...                   y=response,
+...                   training_frame=train,
+...                   validation_frame=valid)
 >>> airlines_dl.auc()
 """,
     target_ratio_comm_to_comp="""
@@ -1298,13 +1300,13 @@ examples = dict(
 >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
 ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
 >>> response = "IsDepDelayed"
->>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
->>> airlines_dl = H2ODeepLearningEstimator(target_ratio_comm_to_comp = 0.05,
-...                                        seed = 1234)
->>> airlines_dl.train(x = predictors,
-...                   y = response,
-...                   training_frame = train,
-...                   validation_frame = valid)
+>>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
+>>> airlines_dl = H2ODeepLearningEstimator(target_ratio_comm_to_comp=0.05,
+...                                        seed=1234)
+>>> airlines_dl.train(x=predictors,
+...                   y=response,
+...                   training_frame=train,
+...                   validation_frame=valid)
 >>> airlines_dl.auc()
 """,
     train_samples_per_iteration="""
@@ -1317,14 +1319,14 @@ examples = dict(
 >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
 ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
 >>> response = "IsDepDelayed"
->>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
->>> airlines_dl = H2ODeepLearningEstimator(train_samples_per_iteration = -1,
-...                                        epochs = 1,
-...                                        seed = 1234)
->>> airlines_dl.train(x = predictors,
-...                   y = response,
-...                   training_frame = train,
-...                   validation_frame = valid)
+>>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
+>>> airlines_dl = H2ODeepLearningEstimator(train_samples_per_iteration=-1,
+...                                        epochs=1,
+...                                        seed=1234)
+>>> airlines_dl.train(x=predictors,
+...                   y=response,
+...                   training_frame=train,
+...                   validation_frame=valid)
 >>> airlines_dl.auc()
 """,
     training_frame="""
@@ -1337,12 +1339,12 @@ examples = dict(
 >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
 ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
 >>> response = "IsDepDelayed"
->>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+>>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
 >>> airlines_dl = H2ODeepLearningEstimator()
->>> airlines_dl.train(x = predictors,
-...                   y = response,
-...                   training_frame = train,
-...                   validation_frame = valid)
+>>> airlines_dl.train(x=predictors,
+...                   y=response,
+...                   training_frame=train,
+...                   validation_frame=valid)
 >>> airlines_dl.auc()
 """,
     tweedie_power="""
@@ -1355,13 +1357,13 @@ examples = dict(
 >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
 ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
 >>> response = "IsDepDelayed"
->>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
->>> airlines_dl = H2ODeepLearningEstimator(tweedie_power = 1.5,
-...                                        seed = 1234) 
->>> airlines_dl.train(x = predictors,
-...                   y = response,
-...                   training_frame = train,
-...                   validation_frame = valid)
+>>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
+>>> airlines_dl = H2ODeepLearningEstimator(tweedie_power=1.5,
+...                                        seed=1234) 
+>>> airlines_dl.train(x=predictors,
+...                   y=response,
+...                   training_frame=train,
+...                   validation_frame=valid)
 >>> airlines_dl.auc()
 """,
     use_all_factor_levels="""
@@ -1374,13 +1376,13 @@ examples = dict(
 >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
 ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
 >>> response = "IsDepDelayed"
->>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
->>> airlines_dl = H2ODeepLearningEstimator(use_all_factor_levels = True,
-...                                        seed = 1234)
->>> airlines_dl.train(x = predictors,
-...                   y = response,
-...                   training_frame = train,
-...                   validation_frame = valid)
+>>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
+>>> airlines_dl = H2ODeepLearningEstimator(use_all_factor_levels=True,
+...                                        seed=1234)
+>>> airlines_dl.train(x=predictors,
+...                   y=response,
+...                   training_frame=train,
+...                   validation_frame=valid)
 >>> airlines_dl.mse()
 """,
     validation_frame="""
@@ -1388,13 +1390,13 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios=[.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(standardize = True,
-...                                    seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(standardize=True,
+...                                    seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.auc()
 """,
     variable_importances="""
@@ -1407,13 +1409,13 @@ examples = dict(
 >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
 ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
 >>> response = "IsDepDelayed"
->>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
->>> airlines_dl = H2ODeepLearningEstimator(variable_importances = True,
-...                                        seed = 1234)
->>> airlines_dl.train(x = predictors,
-...                   y = response,
-...                   training_frame = train,
-...                   validation_frame = valid)
+>>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
+>>> airlines_dl = H2ODeepLearningEstimator(variable_importances=True,
+...                                        seed=1234)
+>>> airlines_dl.train(x=predictors,
+...                   y=response,
+...                   training_frame=train,
+...                   validation_frame=valid)
 >>> airlines_dl.mse()
 """,
     weights_column="""
@@ -1421,12 +1423,12 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_dl = H2ODeepLearningEstimator(seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response,
-...               training_frame = train,
-...               validation_frame = valid)
+>>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+>>> cars_dl = H2ODeepLearningEstimator(seed=1234)
+>>> cars_dl.train(x=predictors,
+...               y=response,
+...               training_frame=train,
+...               validation_frame=valid)
 >>> cars_dl.auc()
 """
 )

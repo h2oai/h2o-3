@@ -4,12 +4,12 @@ source /usr/sbin/get_hive_home.sh
 
 cd /home/jenkins
 # Download dataset and upload it to HDFS
-wget https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTest.csv.zip
 unzip AirlinesTest.csv.zip
 rm AirlinesTest.csv.zip
 sed -i 's/\"//g' AirlinesTest.csv
-
 sudo -E -u hive hadoop fs -put -f ./AirlinesTest.csv /tmp/AirlinesTest.csv
+sudo -E -u hive hadoop fs -put -f ./chicagoCensus.csv /tmp/chicagoCensus.csv
+rm *.csv
 
 # Execute all hive-scripts
 cd /opt/hive-scripts
@@ -20,6 +20,3 @@ fi
 for f in $(ls *.hql); do
     sudo -E -u hive ${HIVE_HOME}/bin/beeline -u "jdbc:hive2://localhost:10000/${KRB_SUFFIX}" -f ${f}
 done
-
-sudo -E -u hive hadoop fs -put -f /home/jenkins/AirlinesTest.csv /tmp/AirlinesTest.csv
-rm /home/jenkins/AirlinesTest.csv

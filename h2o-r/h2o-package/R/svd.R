@@ -104,3 +104,81 @@ h2o.svd <- function(training_frame,
   model <- .h2o.modelJob('svd', parms, h2oRestApiVersion=99, verbose=FALSE)
   return(model)
 }
+.h2o.train_segments_svd <- function(training_frame,
+                                    x,
+                                    validation_frame = NULL,
+                                    ignore_const_cols = TRUE,
+                                    score_each_iteration = FALSE,
+                                    transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
+                                    svd_method = c("GramSVD", "Power", "Randomized"),
+                                    nv = 1,
+                                    max_iterations = 1000,
+                                    seed = -1,
+                                    keep_u = TRUE,
+                                    u_name = NULL,
+                                    use_all_factor_levels = TRUE,
+                                    max_runtime_secs = 0,
+                                    export_checkpoints_dir = NULL,
+                                    segment_columns = NULL,
+                                    segment_models_id = NULL,
+                                    parallelism = 1)
+{
+  # formally define variables that were excluded from function parameters
+  model_id <- NULL
+  verbose <- NULL
+  destination_key <- NULL
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Build parameter list to send to model builder
+  parms <- list()
+  parms$training_frame <- training_frame
+  if(!missing(x))
+    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
+  if(!missing(destination_key)) {
+    warning("'destination_key' is deprecated; please use 'model_id' instead.")
+    if(missing(model_id)) {
+      parms$model_id <- destination_key
+    }
+  }
+
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
+  if (!missing(ignore_const_cols))
+    parms$ignore_const_cols <- ignore_const_cols
+  if (!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
+  if (!missing(transform))
+    parms$transform <- transform
+  if (!missing(svd_method))
+    parms$svd_method <- svd_method
+  if (!missing(nv))
+    parms$nv <- nv
+  if (!missing(max_iterations))
+    parms$max_iterations <- max_iterations
+  if (!missing(seed))
+    parms$seed <- seed
+  if (!missing(keep_u))
+    parms$keep_u <- keep_u
+  if (!missing(u_name))
+    parms$u_name <- u_name
+  if (!missing(use_all_factor_levels))
+    parms$use_all_factor_levels <- use_all_factor_levels
+  if (!missing(max_runtime_secs))
+    parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
+
+  # Build segment-models specific parameters
+  segment_parms <- list()
+  if (!missing(segment_columns))
+    segment_parms$segment_columns <- segment_columns
+  if (!missing(segment_models_id))
+    segment_parms$segment_models_id <- segment_models_id
+  segment_parms$parallelism <- parallelism
+
+  # Error check and build segment models
+  segment_models <- .h2o.segmentModelsJob('svd', segment_parms, parms, h2oRestApiVersion=99)
+  return(segment_models)
+}

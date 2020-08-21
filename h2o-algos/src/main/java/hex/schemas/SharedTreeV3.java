@@ -48,7 +48,7 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help="Number of trees.", gridable = true)
     public int ntrees;
 
-    @API(help="Maximum tree depth.", gridable = true)
+    @API(help="Maximum tree depth (0 for unlimited).", gridable = true)
     public int max_depth;
 
     @API(help="Fewest allowed (weighted) observations in a leaf.", gridable = true)
@@ -69,7 +69,7 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
     public long seed;
 
-    @API(help="Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.", level = API.Level.expert, gridable = false)
+    @API(help="Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.", level = API.Level.expert, gridable = false)
     public boolean build_tree_one_node;
 
     @API(help = "A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree", level = API.Level.expert, gridable = true)

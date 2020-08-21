@@ -1,6 +1,7 @@
 package hex.tree.xgboost;
 
 import hex.ModelMojoWriter;
+import hex.glm.GLMModel;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -18,7 +19,7 @@ public class XGBoostMojoWriter extends ModelMojoWriter<XGBoostModel, XGBoostMode
   }
 
   @Override public String mojoVersion() {
-    return "1.00";
+    return "1.10";
   }
 
   @Override
@@ -33,5 +34,13 @@ public class XGBoostMojoWriter extends ModelMojoWriter<XGBoostModel, XGBoostMode
     writekv("ntrees", model._parms._ntrees);
     writeblob("feature_map", model.model_info().getFeatureMap().getBytes(Charset.forName("UTF-8")));
     writekv("use_java_scoring_by_default", true);
+    if (model._output._calib_model != null) {
+      GLMModel calibModel = model._output._calib_model;
+      double[] beta = calibModel.beta();
+      assert beta.length == model._output.nclasses();
+      writekv("calib_method", "platt");
+      writekv("calib_glm_beta", beta);
+    }
+    writekv("has_offset", model._output.hasOffset());
   }
 }

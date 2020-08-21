@@ -1,15 +1,13 @@
 package water.webserver.jetty9;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.proxy.ProxyServlet;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 
 /**

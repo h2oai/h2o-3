@@ -5,10 +5,6 @@ description = "H2O Algorithms"
 
 dependencies {
   compile project(":h2o-core")
-  // Include ad-hoc dependency represented by deepwater fat jar
-  if (file("${rootDir}/lib/deepwater-all.jar").exists()) {
-      compile files("${rootDir}/lib/deepwater-all.jar")
-  }
 
   // Jama dependencies
   compile "gov.nist.math:jama:1.0.3"
@@ -18,7 +14,7 @@ dependencies {
   // Manually define all dependencies in com.github.fommil.netlib:all:1.1.2 to make Databricks maven resolver happy.
   // Also exclude arpack_combined_all dependency and manually add it later. The fommil libraries 
   // reference this dependency and also its javadoc which confuses some maven resolvers (Spark ivy resolver)
-  compile('com.github.fommil.netlib:core:1.1.2'){
+  compile('com.github.fommil.netlib:core:1.1.2') {
     exclude group: 'net.sourceforge.f2j', module: 'arpack_combined_all'
   }
   compile('net.sourceforge.f2j:arpack_combined_all:0.1')
@@ -47,22 +43,21 @@ dependencies {
     exclude group: 'net.sourceforge.f2j', module: 'arpack_combined_all'
   }
 
-  compile('com.googlecode.matrix-toolkits-java:mtj:1.0.4'){
+  compile('com.googlecode.matrix-toolkits-java:mtj:1.0.4') {
     exclude group: 'com.github.fommil.netlib', module: 'all'
   }
 
-
   // Test dependencies only
-  testCompile "junit:junit:${junitVersion}"
-  testCompile project(path: ":h2o-core", configuration: "testArchives")
-  testCompileOnly 'javax.servlet:servlet-api:2.5'
+  testCompile project(":h2o-test-support")
+  testCompile project(":h2o-genmodel-ext-jgrapht")
   testRuntimeOnly project(":${defaultWebserverModule}")
+  testCompileOnly "javax.servlet:javax.servlet-api:3.0.1"
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
 
 task testSSLEncryption(type: Exec) {
-  dependsOn cpLibs, jar, testJar
+  dependsOn jar, testJar
   if(project.hasProperty('doTestSSL')) {
       commandLine 'bash', './testSSL.sh'
   } else {
@@ -81,7 +76,7 @@ task testSSLEncryption(type: Exec) {
 // level) to files - then scrape the files later for test results.
 test {
   dependsOn ":h2o-core:testJar"
-  dependsOn smalldataCheck, cpLibs, jar, testJar, testSingleNode, testMultiNode, testSSLEncryption
+  dependsOn smalldataCheck, jar, testJar, testSingleNode, testMultiNode, testSSLEncryption
 
   // Defeat task 'test' by running no tests.
   exclude '**'

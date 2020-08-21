@@ -361,9 +361,10 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
     df.clone[,is_num] <- scale(df.clone[,is_num], center = center, scale = scale)
     df.clone <- df.clone[, c(which(!is_num), which(is_num))]   # Move categorical column to front
   }
-
   if(ignore_const_cols) {
-    is_const <- sapply(df.clone, function(z) { var(z, na.rm = TRUE) == 0 })
+    is_const <- sapply(df.clone, function(z) {
+        ifelse(is.factor(z) || is.character(z), length(unique(z)) <= 1, var(z, na.rm = TRUE) == 0)
+    })
     if(any(is_const))
       df.clone <- df.clone[,!is_const]
   }
@@ -407,6 +408,19 @@ makeSuite<-
 function(..., envir=parent.frame()) {
     tests <- all.vars(substitute(c(...)))
     list(tests=tests, envir=envir)
+}
+
+set.seed.R <- set.seed
+set.seed<-
+function(seed) {
+    major <- as.numeric(R.Version()$major)
+    minor <- as.numeric(strsplit(R.Version()$minor, '.', fixed=TRUE)[[1]][1])
+    if (major >= 4 || (major == 3 && minor >= 6)) {
+        # revert sample to the old behavior before 3.6 for R >= 3.6
+        set.seed.R(seed, sample.kind = "Rounding")
+    } else {
+        set.seed.R(seed)
+    }
 }
 
 setupSeed<-
@@ -752,6 +766,23 @@ compare_tables <- function(table1, table2, tol=1e-6) {
 }
 
 #----------------------------------------------------------------------
+# This function will compare two R lists and see if they are equal within tolerance
+#
+# Parameters:  array1, array2 and tolerance
+#
+# Returns:     Exception will be thrown if comparison failed
+#----------------------------------------------------------------------
+compare_arrays <- function(array1, array2, tol=1e-6) {
+    dim1 = length(array1)
+    dim2 = length(array2)
+
+    expect_equal(dim1, dim2)
+
+    for (i in 1:dim1) {
+            expect_equal(TRUE, (abs(array1[i]-array2[i]) < tol))
+    }
+}
+#----------------------------------------------------------------------
 # This function will generate a random dataset for regression/binomial
 # and multinomial.  Copied from Pasha.
 #
@@ -914,17 +945,33 @@ random_NN <- function(actFunc, max_layers, max_node_number) {
 # Parameters:  frame1, frame2: H2O frames to be compared.
 #              tolerance: tolerance of comparison
 #----------------------------------------------------------------------
-compareFrames <- function(frame1, frame2, prob=0.5, tolerance=1e-6) {
+compareFrames <- function(frame1, frame2, prob=0.5, tolerance=1e-6, enum2String=FALSE, col.types=NULL) {
   expect_true(nrow(frame1) == nrow(frame2) && ncol(frame1) == ncol(frame2), info="frame1 and frame2 are different in size.")
-  for (colInd in range(1, ncol(frame1))) {
-    temp1=as.numeric(frame1[,colInd])
-    temp2=as.numeric(frame2[,colInd])
-    for (rowInd in range(1,nrow(frame1))) {
-      if (runif(1,0,1) < prob)
-        if (is.na(temp1[rowInd, 1])) {
-          expect_true(is.na(temp2[rowInd, 1]), info=paste0("Errow at row ", rowInd, ". Frame is value is na but Frame 2 value is ", temp2[rowInd,1]))
+  rframe1 <- as.data.frame(frame1)
+  rframe2 <- as.data.frame(frame2)
+  for (colInd in c(1:ncol(frame1))) {
+    notNumericCols = !(h2o.isnumeric(frame1[,colInd]) && h2o.isnumeric(frame2[,colInd]))
+    if (notNumericCols) {
+      if (enum2String) {
+        temp1 <- as.character(rframe1[, colInd])
+        temp2 <- as.character(rframe2[, colInd])
+      } else {
+        temp1 <- as.factor(rframe1[, colInd])
+        temp2 <- as.factor(rframe2[, colInd])
+      }
+    } else { 
+      temp1 <- as.numeric(rframe1[,colInd])
+      temp2 <- as.numeric(rframe2[,colInd])
+    }
+    for (rowInd in c(1:nrow(frame1))) {
+      if (runif(1,0,1) <= prob)
+        if (is.na(temp1[rowInd])) {
+          expect_true(is.na(temp2[rowInd]), info=paste0("Errow at row ", rowInd, ". Frame is value is na but Frame 2 value is ", temp2[rowInd]))
         } else {
-          expect_true((abs(temp1[rowInd,1]-temp2[rowInd,1])/max(1,abs(temp1[rowInd,1]), abs(temp2[rowInd,1])))< tolerance, info=paste0("Error at row ", rowInd, ". Frame 1 value ", temp1[rowInd,1], ". Frame 2 value ", temp2[rowInd,1]))
+          if (notNumericCols)
+            expect_true(temp1[rowInd]==temp2[rowInd],info=paste0("Error at row ", rowInd, ". Frame 1 value ", temp1[rowInd], ". Frame 2 value ", temp2[rowInd]))
+          else          
+            expect_true((abs(temp1[rowInd]-temp2[rowInd])/max(1,abs(temp1[rowInd]), abs(temp2[rowInd])))< tolerance, info=paste0("Error at row ", rowInd, ". Frame 1 value ", temp1[rowInd], ". Frame 2 value ", temp2[rowInd]))
         }
     }
   }
@@ -1101,7 +1148,7 @@ buildModelSaveMojoTrees <- function(params, model_name) {
     safeSystem(sprintf("rm -fr %s", tmpdir_name))
     safeSystem(sprintf("mkdir -p %s", tmpdir_name))
   }
-  h2o.saveMojo(model, path = tmpdir_name, force = TRUE) # save mojo
+  h2o.save_mojo(model, path = tmpdir_name, force = TRUE) # save mojo
   h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
 
   return(list("model"=model, "dirName"=tmpdir_name))
@@ -1118,9 +1165,26 @@ buildModelSaveMojoGLM <- function(params) {
     safeSystem(sprintf("rm -fr %s", tmpdir_name))
     safeSystem(sprintf("mkdir -p %s", tmpdir_name))
   }
-  h2o.saveMojo(model, path = tmpdir_name, force = TRUE) # save mojo
+  h2o.save_mojo(model, path = tmpdir_name, force = TRUE) # save mojo
   h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
 
+  return(list("model"=model, "dirName"=tmpdir_name))
+}
+
+buildModelSaveMojoGAM <- function(params) {
+  model <- do.call("h2o.gam", params)
+  model_key <- model@model_id
+  tmpdir_name <- sprintf("%s/tmp_model_%s", sandbox(), as.character(Sys.getpid()))
+  if (.Platform$OS.type == "windows") {
+    shell(sprintf("C:\\cygwin64\\bin\\rm.exe -fr %s", normalizePath(tmpdir_name)))
+    shell(sprintf("C:\\cygwin64\\bin\\mkdir.exe -p %s", normalizePath(tmpdir_name)))
+  } else {
+    safeSystem(sprintf("rm -fr %s", tmpdir_name))
+    safeSystem(sprintf("mkdir -p %s", tmpdir_name))
+  }
+  h2o.save_mojo(model, path = tmpdir_name, force = TRUE) # save mojo
+  h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
+  
   return(list("model"=model, "dirName"=tmpdir_name))
 }
 
@@ -1135,7 +1199,7 @@ shell(sprintf("C:\\cygwin64\\bin\\mkdir.exe -p %s", normalizePath(tmpdir_name)))
 safeSystem(sprintf("rm -fr %s", tmpdir_name))
 safeSystem(sprintf("mkdir -p %s", tmpdir_name))
 }
-h2o.saveMojo(model, path = tmpdir_name, force = TRUE) # save mojo
+h2o.save_mojo(model, path = tmpdir_name, force = TRUE) # save mojo
 h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
 
 return(list("model"=model, "dirName"=tmpdir_name))
@@ -1152,13 +1216,13 @@ buildModelSaveMojoGLRM <- function(params) {
     safeSystem(sprintf("rm -fr %s", tmpdir_name))
     safeSystem(sprintf("mkdir -p %s", tmpdir_name))
   }
-  h2o.saveMojo(model, path = tmpdir_name, force = TRUE) # save mojo
+  h2o.save_mojo(model, path = tmpdir_name, force = TRUE) # save mojo
   h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
 
   return(list("model"=model, "dirName"=tmpdir_name))
 }
 
-mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=FALSE, glrmReconstruct=FALSE, glrmIterNumber=-1) {
+mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=FALSE, glrmReconstruct=FALSE, glrmIterNumber=-1, col.types=NULL) {
   newTest <- h2o.importFile(filename)
   predictions1 <- h2o.predict(model, newTest)
 
@@ -1204,7 +1268,7 @@ mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=
 
   safeSystem(cmd)  # perform mojo prediction
   predictions2 = h2o.importFile(paste(tmpdir_name, "out_mojo.csv", sep =
-  '/'), header=T)
+  '/'), header=T, col.types = col.types)
 
   if (glrmReconstruct || !(model@algorithm=="glrm")) {
     return(list("h2oPredict"=predictions1, "mojoPredict"=predictions2))

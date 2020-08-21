@@ -16,7 +16,7 @@ import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.util.Log;
 
-import static water.parser.ParserTest.makeByteVec;
+import static water.fvec.FVecFactory.makeByteVec;
 
 public class AggregatorTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }

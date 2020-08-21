@@ -1,11 +1,12 @@
 package hex.glm;
 
 import hex.CreateFrame;
+import hex.GLMMetrics;
 import hex.ModelMetricsBinomialGLM;
 import hex.SplitFrame;
-import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
+import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -17,9 +18,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.util.VecUtils;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -35,6 +34,87 @@ public class GLMBasicTestBinomial extends TestUtil {
   static Frame _airlinesTest;
   double _tol = 1e-10;
 
+  /**
+   * Easy test for fractional binomial implementation.  Two models are built:
+   * 1. family = fractionalbinomial
+   * 2. family = binomial, response will be 0 or 1 but with weights derived from response column of fractionabinomial
+   * family.
+   * 
+   * The coefficients are compared and they should equal.
+   */
+  @Test
+  public void testFractionalBinomial() {
+    try {
+      Scope.enter();
+      Frame trainData = parse_test_file("smalldata/glm_test/fraction_binommialOrig.csv");
+      Scope.track(trainData);
+      List<String> cnames = Arrays.asList(trainData.names());
+      boolean rightDataset = cnames.contains("y") && cnames.contains("z") && cnames.contains("conc");
+      Frame trainDataB = parse_test_file("smalldata/glm_test/fractional_binomial1.csv");
+      Scope.track(trainDataB);
+      List<String> cnamesB = Arrays.asList(trainDataB.names());
+      rightDataset = rightDataset && cnamesB.contains("z") && cnames.contains("y");
+      if (rightDataset) {
+        GLMParameters parms = new GLMParameters();
+        parms._train = trainData._key;
+        parms._family = Family.fractionalbinomial;
+        parms._response_column = "y";
+        parms._ignored_columns = new String[]{"z", "conc"};
+        parms._compute_p_values = true;
+        parms._standardize = false;
+        parms._lambda = new double[]{0};
+        GLMModel model = new GLM(parms).trainModel().get();
+        Scope.track_generic(model);
+
+        GLMParameters parmsB = new GLMParameters();
+        parmsB._train = trainDataB._key;
+        parmsB._family = Family.binomial;
+        parmsB._response_column = "z";
+        parmsB._weights_column = "y";
+        parmsB._standardize = false;
+        parmsB._ignored_columns = new String[]{"conc"};
+        parmsB._lambda = new double[]{0};
+        GLMModel modelB = new GLM(parmsB).trainModel().get();
+        Scope.track_generic(modelB);
+
+        TestUtil.checkArrays(model._output._global_beta, modelB._output._global_beta, 1e-4);
+      } else 
+        System.out.println("testFractionalBinomial is skipped because the wrong dataset is loaded.");
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testFractionalBinomialMojo() {
+    try {
+      Scope.enter();
+      final Frame trainData = parse_test_file("smalldata/glm_test/fraction_binommialOrig.csv");
+      Scope.track(trainData);
+      final Frame te = parse_test_file("smalldata/glm_test/fraction_binommialOrig.csv");
+      Scope.track(te);
+      
+      final GLMParameters parms = new GLMParameters();
+      parms._train = trainData._key;
+      parms._family = Family.fractionalbinomial;
+      parms._response_column = "y";
+      parms._ignored_columns = new String[]{"z", "conc"};
+      parms._compute_p_values = true;
+      parms._standardize = false;
+      parms._lambda = new double[]{0};
+      
+      final GLMModel model = new GLM(parms).trainModel().get();
+      Scope.track_generic(model);
+      
+      final Frame pred = model.score(te);
+      Scope.track(pred);
+      Scope.track(pred.remove("StdErr"));
+      Assert.assertTrue(model.testJavaScoring(te, pred, _tol));
+    } finally {
+      Scope.exit();
+    }
+  }
+  
   // test and make sure the h2opredict, pojo and mojo predict agrees with multinomial dataset that includes
   // both enum and numerical datasets
   @Test
@@ -796,19 +876,19 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    1.31814009  0.82918839  0.63285077  0.02949062  0.00000000  0.83011321
     String [] cfs1 = new String [] {"Intercept", "AGE", "DPROS.b",    "DPROS.c",     "DPROS.d",  "DCAPS.b",  "PSA",      "VOL", "GLEASON"};
     double [] vals = new double [] {-7.85142421,   0.0,    0.93030614,   1.31814009,    0.82918839, 0.63285077, 0.02949062, 0.0,    0.83011321};
-    GLMParameters params = new GLMParameters(Family.binomial);
-    params._response_column = "CAPSULE";
-    params._ignored_columns = new String[]{"ID",};
-    params._train = _prostateTrain._key;
-    params._lambda = new double[]{0};
-    params._alpha = new double[]{0};
-    params._standardize = false;
-    params._non_negative = true;
-    params._intercept = true;
-    params._objective_epsilon = 1e-10;
-    params._gradient_epsilon = 1e-6;
-    params._max_iterations = 10000; // not expected to reach max iterations here
     for(Solver s:new Solver[]{Solver.IRLSM,Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
+      GLMParameters params = new GLMParameters(Family.binomial);
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID",};
+      params._train = _prostateTrain._key;
+      params._lambda = new double[]{0};
+      params._alpha = new double[]{0};
+      params._standardize = false;
+      params._non_negative = true;
+      params._intercept = true;
+      params._objective_epsilon = 1e-10;
+      params._gradient_epsilon = 1e-6;
+      params._max_iterations = 10000; // not expected to reach max iterations here
       Frame scoreTrain = null, scoreTest = null;
       try {
         params._solver = s;
@@ -849,19 +929,19 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    0.000000000 0.000000000 0.680406869 0.007137494 0.000000000 0.000000000
     String [] cfs1 = new String [] {"Intercept", "AGE", "DPROS.b",    "DPROS.c",     "DPROS.d",  "DCAPS.b",   "PSA",      "VOL", "GLEASON", "RACE.R1"};
     double [] vals = new double [] { 0.0,         0.0,   0.0,          0,             0.0,        0.680406869, 0.007137494, 0.0,  0.0,       0.240953925};
-    GLMParameters params = new GLMParameters(Family.binomial);
-    params._response_column = "CAPSULE";
-    params._ignored_columns = new String[]{"ID",};
-    params._train = _prostateTrain._key;
-    params._lambda = new double[]{0};
-    params._alpha = new double[]{0};
-    params._standardize = false;
-    params._non_negative = true;
-    params._intercept = false;
-    params._objective_epsilon = 1e-6;
-    params._gradient_epsilon = 1e-5;
-    params._max_iterations = 150; // not expected to reach max iterations here
     for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
+      GLMParameters params = new GLMParameters(Family.binomial);
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID",};
+      params._train = _prostateTrain._key;
+      params._lambda = new double[]{0};
+      params._alpha = new double[]{0};
+      params._standardize = false;
+      params._non_negative = true;
+      params._intercept = false;
+      params._objective_epsilon = 1e-6;
+      params._gradient_epsilon = 1e-5;
+      params._max_iterations = 150; // not expected to reach max iterations here
       Frame scoreTrain = null, scoreTest = null;
       try {
         params._solver = s;
@@ -1366,6 +1446,34 @@ public class GLMBasicTestBinomial extends TestUtil {
     assertEquals(0,fails);
     predict.delete();
     model.delete();
+  }
+  
+  @Test
+  public void testAUTOBinomial(){
+    Vec cat = Vec.makeVec(new long[]{1,1,1,0,0},new String[]{"black","red"},Vec.newKey());
+    Vec res = Vec.makeVec(new long[]{1,1,0,0,0},new String[]{"sun","moon"},Vec.newKey());
+    Frame fr = new Frame(Key.<Frame>make("fr"), new String[]{"x", "y"}, new Vec[]{cat, res});
+    DKV.put(fr);
+    for (Family family : new Family[]{Family.binomial, Family.AUTO}) {
+      for (GLMParameters.Link link : new GLMParameters.Link[]{GLMParameters.Link.family_default, GLMParameters.Link.logit}) {
+        GLMParameters parms = new GLMParameters();
+        parms._train = fr._key;
+        parms._alpha = new double[]{0};
+        parms._response_column = "y";
+        parms._intercept = false;
+        parms._family = family;
+        parms._link = link;
+        // just make sure it runs
+        GLMModel model = new GLM(parms).trainModel().get();
+        Map<String, Double> coefs = model.coefficients();
+        System.out.println("coefs = " + coefs);
+        Assert.assertEquals(coefs.get("Intercept"), 0, 0);
+        Assert.assertEquals(4.2744474, ((GLMMetrics) model._output._training_metrics).residual_deviance(), 1e-4);
+        System.out.println();
+        model.delete();
+      }
+    }
+    fr.delete();
   }
 
   @BeforeClass

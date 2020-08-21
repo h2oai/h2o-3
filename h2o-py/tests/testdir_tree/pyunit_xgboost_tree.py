@@ -1,8 +1,12 @@
+import os,sys
+sys.path.insert(1, os.path.join("..",".."))
+from tests import pyunit_utils
 import h2o
 
 from h2o.tree import H2OTree
 from h2o.estimators import H2OXGBoostEstimator
 from tests import pyunit_utils
+
 
 def xgboost_tree_test():
 
@@ -83,7 +87,7 @@ def xgboost_tree_test():
         H2OTree(multinomialTree, 0, None)  # There is no such Destination mas 'ABCD'
         assert False;
     except h2o.exceptions.H2OResponseError as e:
-        assert e.args[0].dev_msg == "Non-regressional models require tree class specified."
+        assert e.args[0].dev_msg == "Model category \'Multinomial\' requires tree class to be specified."
 
 
     # Regression

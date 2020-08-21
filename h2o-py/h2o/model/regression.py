@@ -1,8 +1,9 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
+# noinspection PyUnresolvedReferences
+from h2o.utils.compatibility import *  # NOQA
 
 from h2o.model.model_base import ModelBase
-from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import _colmean
 
 
@@ -38,7 +39,7 @@ class H2ORegressionModel(ModelBase):
         >>> gbm.plot(timestep="AUTO", metric="AUTO",)
         """
 
-        if self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
+        if self._model_json["algo"] in ("deeplearning", "xgboost", "drf", "gbm"):
             if metric == "AUTO":
                 metric = "rmse"
             elif metric not in ("rmse", "deviance", "mae"):

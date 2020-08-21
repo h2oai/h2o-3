@@ -23,7 +23,7 @@ At a minimum, we recommend the following for compatibility with H2O:
 
 -  **Languages**: Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required. Supported versions include:
 
-   -  Java 8, 9, 10, 11, and 12
+   -  Java 8, 9, 10, 11, 12, and 13
 
       - To build H2O or run H2O tests, the 64-bit JDK is required.
       - To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required.
@@ -85,83 +85,83 @@ New users can follow the steps below to quickly get up and running with H2O dire
 
 1. In a terminal window, create a folder for the H2O repository. The example below creates a folder called "repos" on the desktop.
 
- ::
+ .. code-block:: bash
 
    user$ mkdir ~/Desktop/repos
 
 2. Change directories to that new folder, and then clone the repository. Notice that the prompt changes when you change directories.
 
- ::
+ .. code-block:: bash
 
     user$ cd ~/Desktop/repos
     repos user$ git clone https://github.com/h2oai/h2o-3.git
 
 3. After the repo is cloned, change directories to the **h2o** folder.
 
- ::
+ .. code-block:: bash
 
     repos user$ cd h2o-3
     h2o-3 user$
 
 4. Run the following command to retrieve sample datasets. These datasets are used throughout this User Guide and within the `Booklets <http://www.h2o.ai/resources/>`_.
 
- ::
+ .. code-block:: bash
 
    h2o-3 user$ ./gradlew syncSmalldata
 
 At this point, determine whether you want to complete this quick start in either R or Python, and run the corresponding commands below from either the R or Python tab.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # Download and install R:
-    # 1. Go to http://cran.r-project.org/mirrors.html.
-    # 2. Select your closest local mirror.
-    # 3. Select your operating system (Linux, OS X, or Windows).
-    # 4. Depending on your OS, download the appropriate file, along with any required packages.
-    # 5. When the download is complete, unzip the file and install.
+        # Download and install R:
+        # 1. Go to http://cran.r-project.org/mirrors.html.
+        # 2. Select your closest local mirror.
+        # 3. Select your operating system (Linux, OS X, or Windows).
+        # 4. Depending on your OS, download the appropriate file, along with any required packages.
+        # 5. When the download is complete, unzip the file and install.
 
-    # Start R
-    h2o-3 user$ r
-    ...
-    Type 'demo()' for some demos, 'help()' for on-line help, or
-    'help.start()' for an HTML browser interface to help.
-    Type 'q()' to quit R.
-    >
+        # Start R
+        h2o-3 user$ r
+        ...
+        Type 'demo()' for some demos, 'help()' for on-line help, or
+        'help.start()' for an HTML browser interface to help.
+        Type 'q()' to quit R.
+        >
 
-    # Copy and paste the following commands in R to download dependency packages.
-    > pkgs <- c("methods","statmod","stats","graphics","RCurl","jsonlite","tools","utils")
-    > for (pkg in pkgs) {if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }}
+        # Copy and paste the following commands in R to download dependency packages.
+        > pkgs <- c("methods", "statmod", "stats", "graphics", "RCurl", "jsonlite", "tools", "utils")
+        > for (pkg in pkgs) {if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }}
 
-    # Run the following command to load the H2O:
-    > library(h2o)
+        # Run the following command to load the H2O:
+        > library(h2o)
 
-    # Run the following command to initialize H2O on your local machine (single-node cluster) using all available CPUs.
-    > h2o.init()
- 
-    # Import the Iris (with headers) dataset.
-    > path <- "smalldata/iris/iris_wheader.csv"
-    > iris <- h2o.importFile(path)
+        # Run the following command to initialize H2O on your local machine (single-node cluster) using all available CPUs.
+        > h2o.init()
+     
+        # Import the Iris (with headers) dataset.
+        > path <- "smalldata/iris/iris_wheader.csv"
+        > iris <- h2o.importFile(path)
 
-    # View a summary of the imported dataset.
-    > print(iris)
+        # View a summary of the imported dataset.
+        > print(iris)
 
-      sepal_len    sepal_wid    petal_len    petal_wid        class
-    -----------  -----------  -----------  -----------  -----------
-            5.1          3.5          1.4          0.2  Iris-setosa
-            4.9          3            1.4          0.2  Iris-setosa
-            4.7          3.2          1.3          0.2  Iris-setosa
-            4.6          3.1          1.5          0.2  Iris-setosa
-            5            3.6          1.4          0.2  Iris-setosa
-            5.4          3.9          1.7          0.4  Iris-setosa
-            4.6          3.4          1.4          0.3  Iris-setosa
-            5            3.4          1.5          0.2  Iris-setosa
-            4.4          2.9          1.4          0.2  Iris-setosa
-            4.9          3.1          1.5          0.1  Iris-setosa
-    [150 rows x 5 columns]
-    >
+          sepal_len    sepal_wid    petal_len    petal_wid        class
+        -----------  -----------  -----------  -----------  -----------
+                5.1          3.5          1.4          0.2  Iris-setosa
+                4.9          3            1.4          0.2  Iris-setosa
+                4.7          3.2          1.3          0.2  Iris-setosa
+                4.6          3.1          1.5          0.2  Iris-setosa
+                5            3.6          1.4          0.2  Iris-setosa
+                5.4          3.9          1.7          0.4  Iris-setosa
+                4.6          3.4          1.4          0.3  Iris-setosa
+                5            3.4          1.5          0.2  Iris-setosa
+                4.4          2.9          1.4          0.2  Iris-setosa
+                4.9          3.1          1.5          0.1  Iris-setosa
+        [150 rows x 5 columns]
+        >
 
-   .. code-block:: python
+   .. code-tab:: python
 
     # Before starting Python, run the following commands to install dependencies.
     # Prepend these commands with `sudo` only if necessary.
@@ -172,7 +172,6 @@ At this point, determine whether you want to complete this quick start in either
 
     # Start python
     h2o-3 user$ python
-    >>>
 
     # Run the following command to import the H2O module:
     >>> import h2o
@@ -206,16 +205,16 @@ At this point, determine whether you want to complete this quick start in either
 
     [150 rows x 5 columns]
     <bound method H2OFrame.summary of >
-    >>>
+
 
 Experienced Users
 -----------------
 
 If you've used previous versions of H2O, the following links will help guide you through the process of upgrading to H2O-3.
 
--  :ref:`migration`: This section provides a comprehensive guide to assist users in upgrading to H2O 3.0. It gives an overview of the changes to the algorithms and the web UI introduced in this version and describes the benefits of upgrading for users of R, APIs, and Java.
-
 -  `Recent Changes <https://github.com/h2oai/h2o-3/blob/master/Changes.md>`_: This document describes the most recent changes in the latest build of H2O. It lists new features, enhancements (including changed parameter default values), and bug fixes for each release, organized by sub-categories such as Python, R, and Web UI.
+
+-  `API Related Changes <api-changes.html>`__: This section describes changes made in H2O-3 that can affect backwards compatibility. 
 
 -  `Contributing code <https://github.com/h2oai/h2o-3/blob/master/CONTRIBUTING.md>`_: If you're interested in contributing code to H2O, we appreciate your assistance! This document describes how to access our list of Jiras that are suggested tasks for contributors and how to contact us.
 
@@ -382,7 +381,7 @@ For older versions of IDEA IntelliJ, run ``./gradlew idea``, then **Import Proje
 
 For JUnit tests to pass, you may need multiple H2O nodes. Create a "Run/Debug" configuration with the following parameters:
 
-::
+.. code-block:: bash
 
     Type: Application
     Main class: H2OApp
@@ -400,8 +399,6 @@ After starting multiple "worker" node processes in addition to the JUnit test pr
 -  `apps.h2o.ai <http://apps.h2o.ai/>`_: Apps.h2o.ai is designed to support application developers via events, networking opportunities, and a new, dedicated website comprising developer kits and technical specs, news, and product spotlights.
 
 -  `H2O Droplet Project Templates <https://github.com/h2oai/h2o-droplets>`_: This page provides template info for projects created in Java, Scala, or Sparkling Water.
-
--  H2O Scala API Developer Documentation for `Scala 2.11 <../h2o-scala_2.11/scaladoc/index.html>`__ or `Scala 2.10 <../h2o-scala_2.10/scaladoc/index.html>`__: The definitive Scala API guide for H2O.
 
 -  `Hacking Algos <https://www.h2o.ai/blog/hacking-algorithms-in-h2o-with-cliff/>`_: This blog post by Cliff walks you through building a new algorithm, using K-Means, Quantiles, and Grep as examples.
 
@@ -488,14 +485,14 @@ The following steps show you how to download or build H2O with Hadoop and the pa
 
 2. Prepare the job input on the Hadoop Node by unzipping the build file and changing to the directory with the Hadoop and H2O's driver jar files.
 
-   ::
+  .. code-block:: bash
 
        unzip h2o-{{project_version}}-*.zip
        cd h2o-{{project_version}}-*
 
 3. To launch H2O nodes and form a cluster on the Hadoop cluster, run:
 
-   ::
+  .. code-block:: bash
 
      hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g
 
@@ -509,7 +506,7 @@ The following steps show you how to download or build H2O with Hadoop and the pa
 
 4. To monitor your job, direct your web browser to your standard job tracker Web UI. To access H2O's Web UI, direct your web browser to one of the launched instances. If you are unsure where your JVM is launched, review the output from your command after the nodes have clouded up and formed a cluster. Any of the nodes' IP addresses will work as there is no master node.
 
-   ::
+  .. code-block:: bash
 
        Determining driver host interface for mapper->driver callback...
        [Possible callback IP address: 172.16.2.181]
@@ -544,7 +541,7 @@ Hadoop Launch Parameters
 -  ``-mapperXmx <per mapper Java Xmx heap size>``: Specify the amount of memory to allocate to H2O (at least 6g).
 -  ``-extramempercent``: Specify the extra memory for internal JVM use outside of the Java heap. This is a percentage of ``mapperXmx``. **Recommendation**: Set this to a high value when running XGBoost, for example, 120. 
 -  ``-n | -nodes <number of H2O nodes>``: Specify the number of nodes.
--  ``-nthreads <maximum number of CPUs>``: Specify the number of CPUs to use. This defaults to using all CPUs on the host, or you can enter a positive integer.
+-  ``-nthreads <maximum number of vcores>``: Specify the maximum number of parallel threads of execution. This is usually capped by the max number of vcores.
 -  ``-baseport <initialization port for H2O nodes>``: Specify the initialization port for the H2O nodes. The default is ``54321``.
 -  ``-license <license file name>``: Specify the directory of local filesytem location and the license file name.
 -  ``-o | -output <HDFS output directory>``: Specify the HDFS directory for the output.
@@ -569,9 +566,9 @@ Edit Hadoop's ``core-site.xml``, then set the ``HADOOP_CONF_DIR`` environment pr
 
 You can also pass the S3 credentials when launching H2O with the Hadoop jar command. Use the ``-D`` flag to pass the credentials:
 
-::
+.. code-block:: bash
 
-        hadoop jar h2odriver.jar -Dfs.s3.awsAccessKeyId="${AWS_ACCESS_KEY}" -Dfs.s3n.awsSecretAccessKey="${AWS_SECRET_KEY}" -n 3 -mapperXmx 10g  -output outputDirectory
+  hadoop jar h2odriver.jar -Dfs.s3.awsAccessKeyId="${AWS_ACCESS_KEY}" -Dfs.s3n.awsSecretAccessKey="${AWS_SECRET_KEY}" -n 3 -mapperXmx 10g  -output outputDirectory
 
 where ``AWS_ACCESS_KEY`` represents your user name and ``AWS_SECRET_KEY`` represents your password.
 
@@ -579,19 +576,19 @@ Then import the data with the S3 URL path:
 
 -  To import the data from the Flow API:
 
-   ::
+  .. code-block:: bash
 
        importFiles [ "s3:/path/to/bucket/file/file.tab.gz" ]
 
 -  To import the data from the R API:
 
-   ::
+  .. code-block:: bash
 
        h2o.importFile(path = "s3://bucket/path/to/file.csv")
 
 -  To import the data from the Python API:
 
-   ::
+  .. code-block:: bash
 
        h2o.import_frame(path = "s3://bucket/path/to/file.csv")
 
@@ -667,7 +664,7 @@ Configuring YARN
 
 To verify the values were changed, check the values for the following properties:
 
-::
+.. code-block:: bash
 
      - <name>yarn.nodemanager.resource.memory-mb</name>
      - <name>yarn.scheduler.maximum-allocation-mb</name>
@@ -690,7 +687,7 @@ To specify a queue with Hadoop, enter ``-Dmapreduce.job.queuename=<my-h2o-queue>
 
 For example,
 
-::
+.. code-block:: bash
 
   hadoop jar h2odriver.jar -Dmapreduce.job.queuename=<my-h2o-queue> -nodes <num-nodes> -mapperXmx 6g -output hdfsOutputDirName
 
@@ -799,15 +796,15 @@ Depending on your OS, select the appropriate installation method:
 
 .. todo:: figure out if branch_name is getting replaced with the actual branch_name or how to set that up
 
-  ::
+ .. code-block:: bash
 
       mkdir -p /data/h2o-{{branch_name}}
 
 2. Next, either download or create a Dockerfile, which is a build recipe that builds the container.
 
-  Download and use our `Dockerfile template <https://github.com/h2oai/h2o-3/blob/master/Dockerfile>`__ by running:
+ Download and use our `Dockerfile template <https://github.com/h2oai/h2o-3/blob/master/Dockerfile>`__ by running:
 
-  ::
+  .. code-block:: bash
 
       cd /data/h2o-{{branch_name}}
       wget https://raw.githubusercontent.com/h2oai/h2o-3/master/Dockerfile
@@ -823,7 +820,7 @@ Depending on your OS, select the appropriate installation method:
 
 From the **/data/h2o-{{branch\_name}}** directory, run the following. Note below that ``v5`` represents the current version number.
 
-::
+ .. code-block:: bash
 
     docker build -t "h2o.ai/{{branch_name}}:v5" .
 
@@ -833,7 +830,7 @@ Because it assembles all the necessary parts for the image, this process can tak
 
 On a Mac, use the argument ``-p 54321:54321`` to expressly map the port 54321. This is not necessary on Linux. Note below that ``v5`` represents the version number.
 
-::
+ .. code-block:: bash
 
     docker run -ti -p 54321:54321 h2o.ai/{{branch_name}}:v5 /bin/bash
 
@@ -841,7 +838,7 @@ On a Mac, use the argument ``-p 54321:54321`` to expressly map the port 54321. T
 
 Navigate to the ``/opt`` directory and launch H2O. Change the value of ``-Xmx`` to the amount of memory you want to allocate to the H2O instance. By default, H2O launches on port 54321. 
 
-::
+ .. code-block:: bash
 
     cd /opt
     java -Xmx1g -jar h2o.jar
@@ -850,13 +847,13 @@ Navigate to the ``/opt`` directory and launch H2O. Change the value of ``-Xmx`` 
 
 -  **On Linux**: After H2O launches, copy and paste the IP address and port of the H2O instance into the address bar of your browser. In the following example, the IP is ``172.17.0.5:54321``.
 
-  ::
+   .. code-block:: bash
 
      03:58:25.963 main      INFO WATER: Cloud of size 1 formed [/172.17.0.5:54321 (00:00:00.000)]
 
 -  **On OSX**: Locate the IP address of the Docker's network (``192.168.59.103`` in the following examples) that bridges to your Host OS by opening a new Terminal window (not a bash for your container) and running ``boot2docker ip``.
 
-  ::
+   .. code-block:: bash
 
      $ boot2docker ip
      192.168.59.103
@@ -882,15 +879,146 @@ You can also view the IP address (``192.168.99.100`` in the example below) by sc
 After obtaining the IP address, point your browser to the specified ip address and port to open Flow. In R and Python, you can access the instance by installing the latest version of the H2O R or Python package and then initializing H2O:
 
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # Initialize H2O
-    library(h2o)
-    dockerH2O <- h2o.init(ip = "192.168.59.103", port = 54321)
+        # Initialize H2O
+        library(h2o)
+        dockerH2O <- h2o.init(ip = "192.168.59.103", port = 54321)
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # Initialize H2O 
-    import h2o
-    docker_h2o = h2o.init(ip = "192.168.59.103", port = 54321) 
+        # Initialize H2O 
+        import h2o
+        docker_h2o = h2o.init(ip = "192.168.59.103", port = 54321) 
+
+
+Kubernetes Integration
+----------------------
+
+H2O nodes must be treated as stateful by the Kubernetes environment because H2O is a stateful application. H2O nodes are, therefore, spawned together and deallocated together as a single unit. Subsequently, Kubernetes tooling for stateless applications is not applicable to H2O. In Kubernetes, a set of pods sharing a common state is named as a StatefulSet.
+
+H2O Pods deployed on Kubernetes cluster require a `headless service <https://kubernetes.io/docs/concepts/services-networking/service/#headless-services>`__ for H2O Node discovery. The headless service, instead of load-balancing incoming requests to the underlying H2O pods, returns a set of adresses of all the underlying pods.
+
+.. figure:: images/h2o-k8s-clustering.png
+
+Requirements
+~~~~~~~~~~~~
+
+To spawn an H2O cluster inside of a Kubernetes cluster, the following are needed:
+
+- A Kubernetes cluster: either local development (e.g. `ks3 <https://k3s.io/>`__) or easy start (e.g. `OpenShift <https://www.openshift.com/>`__ by RedHat).
+- A Docker image with H2O inside.
+- A Kubernetes deployment definition with a `StatefulSet <https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/>`__ of H2O pods and a headless service.
+
+Creating the Docker Image
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A simple Docker container with H2O running on startup is enough:
+
+.. code:: bash
+
+  FROM ubuntu:latest
+  ARG H2O_VERSION
+  RUN apt-get update \
+    && apt-get install default-jdk unzip wget -y
+  RUN wget http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/1/h2o-${H2O_VERSION}
+    && unzip h2o-${H2O_VERSION}.zip
+  ENV H2O_VERSION ${H2O_VERSION}
+  CMD java -jar h2o-${H2O_VERSION}/h2o.jar
+
+To build the Docker image, use ``docker build . -t {image-name} --build-arg H2O_VERSION=3.30.0.1``. Make sure to replace ``{image-name}`` with the meaningful H2O deployment name. **Note:** For the rest of this example, the Docker image will be named ``h2o-k8s``.
+
+Creating the Headless Service
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+First, a headless service must be created on Kubernetes:
+
+.. code:: bash
+
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: h2o-service
+  spec:
+    type: ClusterIP
+    clusterIP: None
+    selector:
+      app: h2o-k8s
+    ports:
+    - protocol: TCP
+      port: 54321
+
+The ``clusterIP: None`` setting defines the service as headless. 
+
+The ``port: 54321`` setting is the default H2O port. Users and client libraries use this port to talk to the H2O cluster.
+
+The ``app: h2o-k8s`` setting is of **great importance** because it is the name of the application with H2O pods inside. While the name is arbitrarily chosen for this example, it **must** correspond to the chosen H2O deployment name. 
+
+Creating the H2O Deployment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We strongly recommended running H2O as a `StatefulSet <https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/>`__ on a Kubernetes cluster. Treating H2O nodes as stateful ensures that:
+
+- H2O nodes are treated as a single unit. They will be brought up and down gracefully and together.
+- No attempts will be made by a K8S healthcheck to restart individual H2O nodes in case of an error.
+- The cluster will be restared as a whole (if required).
+- Persistent storages and volumes associated with the StatefulSet of H2O nodes will not be deleted once the cluster is brought down.
+
+.. code:: bash
+
+  apiVersion: apps/v1
+  kind: StatefulSet
+  metadata:
+    name: h2o-stateful-set
+    namespace: h2o-statefulset
+  spec:
+    serviceName: h2o-service
+    replicas: 3
+    selector:
+      matchLabels:
+        app: h2o-k8s
+    template:
+      metadata:
+        labels:
+          app: h2o-k8s
+      spec:
+        terminationGracePeriodSeconds: 10
+        containers:
+          - name: h2o-k8s
+            image: 'h2oai/h2o-open-source-k8s:latest'
+            resources:
+              requests:
+                memory: "4Gi"
+            ports:
+              - containerPort: 54321
+                protocol: TCP
+            env:
+            - name: H2O_KUBERNETES_SERVICE_DNS
+              value: h2o-service.h2o-statefulset.svc.cluster.local
+            - name: H2O_NODE_LOOKUP_TIMEOUT
+              value: '180'
+            - name: H2O_NODE_EXPECTED_COUNT
+              value: '3'
+
+The environment variables used are described below:
+
+- ``H2O_KUBERNETES_SERVICE_DNS`` - **[MANDATORY]** Crucial for the clustering to work. The format usually follows the ``<service-name>.<project-name>.svc.cluster.local`` pattern. This setting enables H2O node discovery via DNS. It must be modified to match the name of the headless service created. Also, pay attention to the rest of the address. It must match the specifics of your Kubernetes implementation.
+- ``H2O_NODE_LOOKUP_TIMEOUT`` - **[OPTIONAL]** Node lookup constraint. Specify the time before the node lookup times out.
+- ``H2O_NODE_EXPECTED_COUNT`` - **[OPTIONAL]** Node lookup constraint. This is the expected number of H2O pods to be discovered.
+- ``H2O_KUBERNETES_API_PORT`` - **[OPTIONAL]** Port for Kubernetes API checks to listen on. Defaults to 8080.
+
+If none of the optional lookup constraints are specified, a sensible default node lookup timeout will be set - currently
+defaults to 3 minutes. If any of the lookup constraints are defined, the H2O node lookup is terminated on whichever
+condition is met first.
+
+In the above example, ``'h2oai/h2o-open-source-k8s:latest'`` retrieves the latest build of the H2O Docker image. Replace ``latest`` with ``nightly`` to get the bleeding-edge Docker image with H2O inside.
+
+The documentation for the official H2O Docker images is available at the official `H2O Docker Hub page <https://hub.docker.com/r/h2oai/h2o-open-source-k8s>`__. 
+
+Exposing the H2O Cluster
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Exposing the H2O cluster is the responsibility of the Kubernetes administrator. By default, an `Ingress <https://kubernetes.io/docs/concepts/services-networking/ingress/>`__ can be created. Different platforms offer different capabilities (e.g. OpenShift offers `Routes <https://docs.openshift.com/container-platform/4.3/networking/routes/route-configuration.html>`__).
+
+For more information on running an H2O cluster on a Kubernetes cluster, refer to this `link <https://www.pavel.cool/h2o-3/h2o-kubernetes-support/>`__.

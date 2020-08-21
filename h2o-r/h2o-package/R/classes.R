@@ -252,11 +252,11 @@ setMethod("summary", "H2OModel", function(object, ...) {
   if( !is.null(tm$logloss)                                         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss)
   if( !is.null(tm$mean_per_class_error)                            )  cat("\nMean Per-Class Error:", tm$mean_per_class_error)
   if( !is.null(tm$AUC)                                             )  cat("\nAUC: (Extract with `h2o.auc`)", tm$AUC)
-    if( !is.null(tm$pr_auc)                                             )  cat("\npr_auc: (Extract with `h2o.pr_auc`)", tm$pr_auc)
+    if( !is.null(tm$pr_auc)                                             )  cat("\nAUCPR: (Extract with `h2o.aucpr`)", tm$pr_auc)
   if( !is.null(tm$Gini)                                            )  cat("\nGini: (Extract with `h2o.gini`)", tm$Gini)
   if( !is.null(tm$null_deviance)                                   )  cat("\nNull Deviance: (Extract with `h2o.nulldeviance`)", tm$null_deviance)
   if( !is.null(tm$residual_deviance)                               )  cat("\nResidual Deviance: (Extract with `h2o.residual_deviance`)", tm$residual_deviance)
-  if(!is.null(o@algorithm) && o@algorithm %in% c("glm","gbm","drf","xgboost","generic")) {
+  if(!is.null(o@algorithm) && o@algorithm %in% c("gam","glm","gbm","drf","xgboost","generic")) {
     if( !is.null(tm$r2) && !is.na(tm$r2)                           )  cat("\nR^2: (Extract with `h2o.r2`)", tm$r2)
   }
   if( !is.null(tm$AIC)                                             )  cat("\nAIC: (Extract with `h2o.aic`)", tm$AIC)
@@ -503,7 +503,6 @@ setGeneric("getParms", function(object) { standardGeneric("getParms") })
 #' @rdname ModelAccessors
 #' @export
 setMethod("getParms", "H2OModel", function(object) { object@parameters })
-
 #' @rdname ModelAccessors
 #' @export
 setGeneric("getCenters", function(object) { standardGeneric("getCenters") })
@@ -594,9 +593,9 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     cat("LogLoss:  ", object@metrics$logloss, "\n", sep="")
     cat("Mean Per-Class Error:  ", object@metrics$mean_per_class_error, "\n", sep="")
     cat("AUC:  ", object@metrics$AUC, "\n", sep="")
-    cat("pr_auc:  ", object@metrics$pr_auc, "\n", sep="")
+    cat("AUCPR:  ", object@metrics$pr_auc, "\n", sep="")
     cat("Gini:  ", object@metrics$Gini, "\n", sep="")
-    if(!is.null(object@algorithm) && object@algorithm %in% c("glm","gbm","drf","xgboost","generic")) {
+    if(!is.null(object@algorithm) && object@algorithm %in% c("gam","glm","gbm","drf","xgboost","generic")) {
 
       if (!is.null(object@metrics$r2) && !is.na(object@metrics$r2)) cat("R^2:  ", object@metrics$r2, "\n", sep="")
       if (!is.null(object@metrics$null_deviance0)) cat("Null Deviance:  ", object@metrics$null_deviance,"\n", sep="")
@@ -666,8 +665,29 @@ setMethod("show", "H2ORegressionMetrics", function(object) {
   cat("RMSE:  ", object@metrics$RMSE, "\n", sep="")
   cat("MAE:  ", object@metrics$mae, "\n", sep="")
   cat("RMSLE:  ", object@metrics$rmsle, "\n", sep="")
-  cat("Mean Residual Deviance :  ", h2o.mean_residual_deviance(object), "\n", sep="")
-  if(!is.null(object@algorithm) && object@algorithm %in% c("glm","gbm","drf","xgboost","generic")) {
+  if(!is.null(object@algorithm) && object@algorithm %in% c("glm") && exists("sefe", where=object@metrics)) {
+      cat("sefe:  ", object@metrics$sefe, "\n", sep="")
+      cat("sere:  ", object@metrics$sere, "\n", sep="")
+      cat("fixedf:  ", object@metrics$fixedf, "\n", sep="")
+      cat("ranef:  ", object@metrics$ranef, "\n", sep="")
+      cat("randc:  ", object@metrics$randc, "\n", sep="")
+      cat("varfix:  ", object@metrics$varfix, "\n", sep="")
+      cat("varranef:  ", object@metrics$varranef, "\n", sep="")
+      cat("converge:  ", object@metrics$converge, "\n", sep="")
+      cat("dfrefe:  ", object@metrics$dfrefe, "\n", sep="")
+      cat("summvc1:  ", object@metrics$summvc1, "\n", sep="")
+      cat("summvc2:  ", object@metrics$summvc2, "\n", sep="")
+      cat("bad:  ", object@metrics$bad, "\n", sep="")
+      if (exists("hlik", where=object@metrics) && !is.null(object@metrics$hlik)) {
+      cat("hlik:  ", object@metrics$hlik, "\n", sep="")
+      cat("pvh:  ", object@metrics$pvh, "\n", sep="")
+      cat("pbvh:  ", object@metrics$pbvh, "\n", sep="")
+      cat("caic:  ", object@metrics$caic, "\n", sep="")
+      }
+  } else {
+      cat("Mean Residual Deviance :  ", h2o.mean_residual_deviance(object), "\n", sep="")
+  }
+  if(!is.null(object@algorithm) && object@algorithm %in% c("gam","glm","generic") && exists("r2", where=object@metrics)) {
     if (!is.na(h2o.r2(object))) cat("R^2 :  ", h2o.r2(object), "\n", sep="")
     null_dev <- h2o.null_deviance(object)
     res_dev  <- h2o.residual_deviance(object)
@@ -682,6 +702,7 @@ setMethod("show", "H2ORegressionMetrics", function(object) {
   }
   cat("\n")
 })
+
 #' @rdname H2OModelMetrics-class
 #' @export
 setClass("H2OClusteringMetrics",  contains="H2OModelMetrics")
@@ -758,6 +779,22 @@ setClass("H2OTargetEncoderMetrics", contains="H2OModelMetrics")
 #' @export
 setClass("H2OModelFuture", representation(job_key="character", model_id="character"))
 
+#' H2O Future Segment Models
+#'
+#' A class to contain the information for background segment models jobs.
+#' @slot job_key a character key representing the identification of the job process.
+#' @slot segment_models_id the final identifier for the segment models collections
+#' @seealso \linkS4class{H2OSegmentModels} for the final segment models types.
+#' @export
+setClass("H2OSegmentModelsFuture", representation(job_key="character", segment_models_id="character"))
+
+#' H2O Segment Models
+#'
+#' A class to contain the information for segment models.
+#' @slot segment_models_id the  identifier for the segment models collections
+#' @export
+setClass("H2OSegmentModels", representation(segment_models_id="character"))
+
 #' H2O Grid
 #'
 #' A class to contain the information about grid results
@@ -782,6 +819,9 @@ setClass("H2OGrid", representation(grid_id = "character",
                                    failure_stack_traces = "list",
                                    failed_raw_params = "matrix",
                                    summary_table = "ANY"))
+
+#' @rdname h2o.keyof
+setMethod("h2o.keyof", signature("H2OGrid"), function(object) object@grid_id)
 
 #' Format grid object in user-friendly way
 #'
@@ -872,3 +912,54 @@ setClass("H2OAutoML", slots = c(project_name = "character",
                       contains = "Keyed")
 #' @rdname h2o.keyof
 setMethod("h2o.keyof", signature("H2OAutoML"), function(object) attr(object, "id"))
+
+#'
+#' Format AutoML object in user-friendly way
+#'
+#' @param object an \code{H2OAutoML} object.
+#' @export
+setMethod("show", signature("H2OAutoML"), function(object) {
+  cat("AutoML Details\n")
+  cat("==============\n")
+  cat("Project Name:", object@project_name, "\n")
+  cat("Leader Model ID:", object@leader@model_id, "\n")
+  cat("Algorithm:", object@leader@algorithm, "\n\n")
+
+  cat("Total Number of Models Trained:", nrow(object@leaderboard), "\n")
+  cat("Start Time:",
+      as.character(as.POSIXct(as.numeric(object@training_info$start_epoch), origin="1970-01-01")), h2o.getTimezone(), "\n")
+  cat("End Time:",
+      as.character(as.POSIXct(as.numeric(object@training_info$stop_epoch), origin="1970-01-01")), h2o.getTimezone(), "\n")
+  cat("Duration:", object@training_info$duration_secs, "s\n\n")
+
+  cat("Leaderboard\n")
+  cat("===========\n")
+  print(object@leaderboard, n = 10)
+
+  invisible(NULL)
+})
+
+#' Format AutoML object in user-friendly way
+#'
+#' @param object an \code{H2OAutoML} object.
+#' @export
+setMethod("summary", signature("H2OAutoML"), function(object) {
+  cat("AutoML Summary\n")
+  cat("==============\n")
+  cat("Project Name:", object@project_name, "\n")
+  cat("Leader Model ID:", object@leader@model_id, "\n")
+  cat("Algorithm:", object@leader@algorithm, "\n\n")
+
+  cat("Total Number of Models Trained:", nrow(object@leaderboard), "\n")
+  cat("Start Time:",
+      as.character(as.POSIXct(as.numeric(object@training_info$start_epoch), origin="1970-01-01")), h2o.getTimezone(), "\n")
+  cat("End Time:",
+      as.character(as.POSIXct(as.numeric(object@training_info$stop_epoch), origin="1970-01-01")), h2o.getTimezone(), "\n")
+  cat("Duration:", object@training_info$duration_secs, "s\n\n")
+
+  cat("Leaderboard\n")
+  cat("===========\n")
+  print(h2o.get_leaderboard(object, "ALL"), n = Inf)
+
+  invisible(NULL)
+})

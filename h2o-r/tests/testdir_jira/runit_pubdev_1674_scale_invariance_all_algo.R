@@ -81,13 +81,13 @@ test <- function() {
 	x =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
 	myX = 2:8
 	myY = "GLEASON"
-	gg = h2o.deeplearning(x = myX,y = myY,training_frame = x,hidden = c(10,10),epochs = 100,activation = "Tanh",seed = 12345,reproducible = T)
+	gg = h2o.deeplearning(x = myX,y = myY,training_frame = x,hidden = c(10,10),epochs = 100,activation = "Tanh",seed = 12345,reproducible = TRUE)
 	pr = as.data.frame(h2o.predict(gg,newdata = x))
 	y =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
 	scale = s[i]
 	print(scale)
 	y$GLEASON = y$GLEASON/scale
-	hh = h2o.deeplearning(x = myX,y = myY,training_frame = y,hidden = c(10,10),epochs = 100,activation = "Tanh",seed = 12345,reproducible = T)
+	hh = h2o.deeplearning(x = myX,y = myY,training_frame = y,hidden = c(10,10),epochs = 100,activation = "Tanh",seed = 12345,reproducible = TRUE)
 	ph = as.data.frame(h2o.predict(hh,newdata = y))
 	scaled_pr = ph[,1]*scale
 	print(summary(scaled_pr))

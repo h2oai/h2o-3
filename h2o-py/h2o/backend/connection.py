@@ -13,6 +13,7 @@ Class for communication with an H2O server.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 import atexit
 import os
@@ -31,8 +32,7 @@ from h2o.backend import H2OCluster, H2OLocalServer
 from h2o.exceptions import H2OConnectionError, H2OServerError, H2OResponseError, H2OValueError
 from h2o.schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
 from h2o.two_dim_table import H2OTwoDimTable
-from h2o.utils.backward_compatibility import backwards_compatible, CallableString
-from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.metaclass import CallableString, BackwardsCompatible, h2o_meta
 from h2o.utils.shared_utils import stringify_list, stringify_dict, print2
 from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfies, is_type, numeric)
 from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,
@@ -44,6 +44,7 @@ if tuple(int(x) for x in requests.__version__.split('.')) < (2, 10):
     print("[WARNING] H2O requires requests module of version 2.10 or newer. You have version %s.\n"
           "You can upgrade to the newest version of the module running from the command line\n"
           "    $ pip%s install --upgrade requests" % (requests.__version__, sys.version_info[0]))
+
 
 class H2OConnectionConf(object):
     """
@@ -71,7 +72,7 @@ class H2OConnectionConf(object):
             self._fill_from_config(config)
 
     """List of allowed property names exposed by this class"""
-    allowed_properties = ["ip", "port", "https", "context_path", "verify_ssl_certificates",
+    allowed_properties = ["ip", "port", "https", "context_path", "verify_ssl_certificates", "cacert",
                           "proxy", "auth", "cookies", "verbose"]
 
     def _fill_from_config(self, config):
@@ -190,7 +191,42 @@ class H2OConnectionConf(object):
         return curl
 
 
-class H2OConnection(backwards_compatible()):
+@BackwardsCompatible(
+    class_attrs=dict(
+        __ENCODING__="utf-8",
+        __ENCODING_ERROR__="replace",
+        default=lambda: _deprecated_default(),
+        jar_paths=lambda: list(getattr(H2OLocalServer, "_jar_paths")()),
+        rest_version=lambda: 3,
+        https=lambda: __H2OCONN__.base_url.split(":")[0] == "https",
+        ip=lambda: __H2OCONN__.base_url.split(":")[1][2:],
+        port=lambda: __H2OCONN__.base_url.split(":")[2],
+        username=lambda: _deprecated_username(),
+        password=lambda: _deprecated_password(),
+        insecure=lambda: not getattr(__H2OCONN__, "_verify_ssl_cert"),
+        current_connection=lambda: __H2OCONN__,
+        check_conn=lambda: _deprecated_check_conn(),
+        make_url=lambda url_suffix, _rest_version=3: __H2OCONN__.make_url(url_suffix, _rest_version),
+        get=lambda url_suffix, **kwargs: _deprecated_get(__H2OCONN__, url_suffix, **kwargs),
+        post=lambda url_suffix, file_upload_info=None, **kwa: _deprecated_post(__H2OCONN__, url_suffix, file_upload_info=file_upload_info, **kwa),
+        delete=lambda url_suffix, **kwargs: _deprecated_delete(__H2OCONN__, url_suffix, **kwargs),
+        get_json=lambda url_suffix, **kwargs: _deprecated_get(__H2OCONN__, url_suffix, **kwargs),
+        post_json=lambda url_suffix, file_upload_info=None, **kwa: _deprecated_post(__H2OCONN__, url_suffix, file_upload_info=file_upload_info, **kwa),
+        rest_ctr=lambda: __H2OCONN__.requests_count,
+    ),
+    instance_attrs=dict(
+        cluster_is_up=lambda self: self.cluster.is_running(),
+        info=lambda self, refresh=True: self.cluster,
+        shutdown_server=lambda self, prompt=True: self.cluster.shutdown(prompt),
+        make_url=lambda self, url_suffix, _rest_version=3: "/".join([self._base_url, str(_rest_version), url_suffix]),
+        get=lambda *args, **kwargs: _deprecated_get(*args, **kwargs),
+        post=lambda *args, **kwargs: _deprecated_post(*args, **kwargs),
+        delete=lambda *args, **kwargs: _deprecated_delete(*args, **kwargs),
+        get_json=lambda *args, **kwargs: _deprecated_get(*args, **kwargs),
+        post_json=lambda *args, **kwargs: _deprecated_post(*args, **kwargs),
+    )
+)
+class H2OConnection(h2o_meta()):
     """
     Connection handle to an H2O cluster.
 
@@ -572,7 +608,6 @@ class H2OConnection(backwards_compatible()):
 
     def __init__(self):
         """[Private] Please use H2OConnection.connect() to create H2OConnection objects."""
-        super(H2OConnection, self).__init__()
         globals()["__H2OCONN__"] = self  # for backward-compatibility: __H2OCONN__ is the latest instantiated object
         self._stage = 0             # 0 = not connected, 1 = connected, -1 = disconnected
         self._session_id = None     # Rapids session id; issued upon request only
@@ -825,54 +860,6 @@ class H2OConnection(backwards_compatible()):
         self.close()
         assert len(args) == 3  # Avoid warning about unused args...
         return False  # ensure that any exception will be re-raised
-
-
-
-    #-------------------------------------------------------------------------------------------------------------------
-    # DEPRECATED
-    #
-    # Access to any of these vars / methods will produce deprecation warnings.
-    # Consult backwards_compatible.py for the description of these vars.
-    #
-    # These methods are deprecated since July 2016. Please remove them if it's 2017 already...
-    #-------------------------------------------------------------------------------------------------------------------
-
-    _bcsv = {"__ENCODING__": "utf-8", "__ENCODING_ERROR__": "replace"}
-    _bcsm = {
-        "default": lambda: _deprecated_default(),
-        "jar_paths": lambda: list(getattr(H2OLocalServer, "_jar_paths")()),
-        "rest_version": lambda: 3,
-        "https": lambda: __H2OCONN__.base_url.split(":")[0] == "https",
-        "ip": lambda: __H2OCONN__.base_url.split(":")[1][2:],
-        "port": lambda: __H2OCONN__.base_url.split(":")[2],
-        "username": lambda: _deprecated_username(),
-        "password": lambda: _deprecated_password(),
-        "insecure": lambda: not getattr(__H2OCONN__, "_verify_ssl_cert"),
-        "current_connection": lambda: __H2OCONN__,
-        "check_conn": lambda: _deprecated_check_conn(),
-        "make_url": lambda url_suffix, _rest_version=3: __H2OCONN__.make_url(url_suffix, _rest_version),
-        "get": lambda url_suffix, **kwargs: _deprecated_get(__H2OCONN__, url_suffix, **kwargs),
-        "post": lambda url_suffix, file_upload_info=None, **kwa:
-            _deprecated_post(__H2OCONN__, url_suffix, file_upload_info=file_upload_info, **kwa),
-        "delete": lambda url_suffix, **kwargs: _deprecated_delete(__H2OCONN__, url_suffix, **kwargs),
-        "get_json": lambda url_suffix, **kwargs: _deprecated_get(__H2OCONN__, url_suffix, **kwargs),
-        "post_json": lambda url_suffix, file_upload_info=None, **kwa:
-            _deprecated_post(__H2OCONN__, url_suffix, file_upload_info=file_upload_info, **kwa),
-        "rest_ctr": lambda: __H2OCONN__.requests_count,
-    }
-    _bcim = {
-        "cluster_is_up": lambda self: self.cluster.is_running(),
-        "info": lambda self, refresh=True: self.cluster,
-        "shutdown_server": lambda self, prompt=True: self.cluster.shutdown(prompt),
-        "make_url": lambda self, url_suffix, _rest_version=3:
-            "/".join([self._base_url, str(_rest_version), url_suffix]),
-        "get": lambda *args, **kwargs: _deprecated_get(*args, **kwargs),
-        "post": lambda *args, **kwargs: _deprecated_post(*args, **kwargs),
-        "delete": lambda *args, **kwargs: _deprecated_delete(*args, **kwargs),
-        "get_json": lambda *args, **kwargs: _deprecated_get(*args, **kwargs),
-        "post_json": lambda *args, **kwargs: _deprecated_post(*args, **kwargs),
-    }
-
 
 
 

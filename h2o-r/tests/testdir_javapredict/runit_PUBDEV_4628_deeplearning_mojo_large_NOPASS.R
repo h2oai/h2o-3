@@ -68,7 +68,7 @@ mojoH2Opredict<-function(model, tmpdir_name, filename) {
   }
   safeSystem(cmd)  # perform mojo prediction
   predictions2 = h2o.importFile(paste(tmpdir_name, "out_mojo.csv", sep =
-                                        '/'), header=T)
+                                        '/'), header=TRUE)
   
   return(list("h2oPredict"=predictions1, "mojoPredict"=predictions2))
 }
@@ -92,17 +92,17 @@ setParmsData <- function(numTest=1000) {
   missingValues <- c('Skip', 'MeanImputation')
   allFactors <- c(TRUE, FALSE)
   categoricalEncodings <- c("AUTO", "OneHotInternal", "Binary", "Eigen")
-  enableAutoEncoder <- allFactors[sample(1:length(allFactors), replace = F)[1]]
+  enableAutoEncoder <- allFactors[sample(1:length(allFactors), replace = FALSE)[1]]
 
   if (!enableAutoEncoder) # autoEncoder cannot use maxout
     allAct <- c(allAct, "Maxout", "MaxoutWithDropout")
   
-  problem <- problemType[sample(1:length(problemType), replace = F)[1]]
-  actFunc <- allAct[sample(1:length(allAct), replace = F)[1]]
-  missing_values <- missingValues[sample(1:length(missingValues), replace = F)[1]]
-  cateEn <-categoricalEncodings[sample(1:length(categoricalEncodings), replace = F)[1]]
-  toStandardize <- allFactors[sample(1:length(allFactors), replace = F)[1]]
-  useAllFactors <- allFactors[sample(1:length(allFactors), replace = F)[1]]
+  problem <- problemType[sample(1:length(problemType), replace = FALSE)[1]]
+  actFunc <- allAct[sample(1:length(allAct), replace = FALSE)[1]]
+  missing_values <- missingValues[sample(1:length(missingValues), replace = FALSE)[1]]
+  cateEn <-categoricalEncodings[sample(1:length(categoricalEncodings), replace = FALSE)[1]]
+  toStandardize <- allFactors[sample(1:length(allFactors), replace = FALSE)[1]]
+  useAllFactors <- allFactors[sample(1:length(allFactors), replace = FALSE)[1]]
   
   training_file <- random_dataset(problem, testrow = numTest)
   ratios <- (h2o.nrow(training_file)-numTest)/h2o.nrow(training_file)

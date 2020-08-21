@@ -32,7 +32,7 @@ public class CompressedTreeTest extends TestUtil  {
       GBMModel model = trainGbm(ntrees);
       GbmMojoModel mojo = (GbmMojoModel) model.toMojo();
 
-      SharedTreeGraph expectedGraph = mojo._computeGraph(-1);
+      SharedTreeGraph expectedGraph = mojo.computeGraph(-1);
       assertEquals(5, expectedGraph.subgraphArray.size()); // sanity check the MOJO created graph
 
       for (int i = 0; i < ntrees; i++) {
@@ -56,7 +56,7 @@ public class CompressedTreeTest extends TestUtil  {
       GBMModel model = trainGbm(ntrees);
       GbmMojoModel mojo = (GbmMojoModel) model.toMojo();
 
-      SharedTreeGraph expectedGraph = mojo._computeGraph(-1);
+      SharedTreeGraph expectedGraph = mojo.computeGraph(-1);
       assertEquals(5, expectedGraph.subgraphArray.size()); // sanity check the MOJO created graph
 
       double[][] data = frameToMatrix(getAdaptedTrainFrame(model));

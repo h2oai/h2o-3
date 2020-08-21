@@ -1,8 +1,8 @@
 CREATE EXTERNAL TABLE IF NOT EXISTS AirlinesTest(
-  fYear STRING ,
-  fMonth STRING ,
-  fDayofMonth STRING ,
-  fDayOfWeek STRING ,
+  fYear VARCHAR(10) ,
+  fMonth VARCHAR(10) ,
+  fDayofMonth VARCHAR(20) ,
+  fDayOfWeek VARCHAR(20) ,
   DepTime INT ,
   ArrTime INT ,
   UniqueCarrier STRING ,
@@ -12,7 +12,6 @@ CREATE EXTERNAL TABLE IF NOT EXISTS AirlinesTest(
   IsDepDelayed STRING ,
   IsDepDelayed_REC INT
 )
-COMMENT 'stefan test table'
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY ','
 tblproperties ("skip.header.line.count"="1");

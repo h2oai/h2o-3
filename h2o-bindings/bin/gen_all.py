@@ -13,6 +13,7 @@ import sys
 import os
 sys.path.insert(0, "../../scripts")
 import run
+import atexit
 
 # Create results folder, where H2OCloud stores its logs
 results_dir = "../build/logs"
@@ -34,8 +35,11 @@ cloud = run.H2OCloud(
     cp="",
     output_dir=results_dir,
     test_ssl=False,
-    ldap_config_path=None
+    ldap_config_path=None,
+    strict_port=False
 )
+atexit.register(lambda: cloud.stop())
+
 cloud.start()
 cloud.wait_for_cloud_to_be_up()
 
@@ -53,6 +57,3 @@ gen_csharp.main()
 gen_java.main()
 bindings.done()
 print()
-
-# The END
-cloud.stop()

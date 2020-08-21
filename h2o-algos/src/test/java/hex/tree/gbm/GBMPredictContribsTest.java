@@ -7,7 +7,7 @@ import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.RegressionModelPrediction;
-import hex.util.NaiveTreeSHAP;
+import water.test.util.NaiveTreeSHAP;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -95,6 +95,7 @@ public class GBMPredictContribsTest extends TestUtil {
               .setModel(gbm.toMojo())
               .setEnableContributions(true);
       EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
+      assertArrayEquals(contributions.names(), wrapper.getContributionNames());
 
       for (long row = 0; row < fr.numRows(); row++) {
         RowData rd = toRowData(fr, gbm._output._names, row);
@@ -129,7 +130,7 @@ public class GBMPredictContribsTest extends TestUtil {
     @Override
     public void map(Chunk[] cs) {
       final TreeSHAP<double[], SharedTreeNode, SharedTreeNode> treeSHAP = new TreeSHAP<>(_nodes, _nodes, 0);
-      final NaiveTreeSHAP<double[], SharedTreeNode, SharedTreeNode> naiveTreeSHAP = new NaiveTreeSHAP<>(_nodes, _nodes, 0, 0);
+      final NaiveTreeSHAP<double[], SharedTreeNode, SharedTreeNode> naiveTreeSHAP = new NaiveTreeSHAP<>(_nodes, _nodes, 0);
 
       final double[] row = MemoryManager.malloc8d(cs.length);
       final float[] contribs = MemoryManager.malloc4f(cs.length);

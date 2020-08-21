@@ -28,6 +28,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/check_constant_response
    data-science/algo-params/checkpoint
    data-science/algo-params/class_sampling_factors
+   data-science/algo-params/cluster_size_constraints
    data-science/algo-params/col_sample_rate
    data-science/algo-params/col_sample_rate_change_per_level
    data-science/algo-params/col_sample_rate_per_tree
@@ -45,7 +46,9 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/family
    data-science/algo-params/fold_assignment
    data-science/algo-params/fold_column
+   data-science/algo-params/gainslift_bins
    data-science/algo-params/gradient_epsilon
+   data-science/algo-params/hglm
    data-science/algo-params/histogram_type
    data-science/algo-params/holdout_type
    data-science/algo-params/huber_alpha
@@ -106,6 +109,8 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/pred_noise_bandwidth
    data-science/algo-params/prior
    data-science/algo-params/quantile_alpha
+   data-science/algo-params/rand_family
+   data-science/algo-params/random_columns
    data-science/algo-params/rate
    data-science/algo-params/rate_annealing
    data-science/algo-params/rate_decay
@@ -116,6 +121,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/score_each_iteration
    data-science/algo-params/score_tree_interval
    data-science/algo-params/seed
+   data-science/algo-params/single_node_mode
    data-science/algo-params/smoothing
    data-science/algo-params/solver
    data-science/algo-params/sort_metric

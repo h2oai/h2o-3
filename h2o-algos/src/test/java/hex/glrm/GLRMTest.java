@@ -1,9 +1,6 @@
 package hex.glrm;
 
-import hex.CreateFrame;
-import hex.DataInfo;
-import hex.ModelMetrics;
-import hex.SplitFrame;
+import hex.*;
 import hex.genmodel.algos.glrm.GlrmInitialization;
 import hex.genmodel.algos.glrm.GlrmLoss;
 import hex.genmodel.algos.glrm.GlrmRegularizer;
@@ -679,7 +676,7 @@ public class GLRMTest extends TestUtil {
 						boolean[] flippedEig = TestUtil.checkEigvec(modelW._output._eigenvectors, modelN._output._eigenvectors,
               tolerance);
 						assertTrue(Arrays.equals(flippedArch, flippedEig)); // should be the same
-      assertTrue(TestUtil.isIdenticalUpToRelTolerance(scoreW, scoreN, tolerance));
+      TestUtil.assertIdenticalUpToRelTolerance(scoreW, scoreN, tolerance);
     } finally {
       Scope.exit();
     }
@@ -730,7 +727,7 @@ public class GLRMTest extends TestUtil {
       boolean[] flippedEig = TestUtil.checkEigvec(modelW._output._eigenvectors, modelN._output._eigenvectors,
               tolerance);
       assertTrue(Arrays.equals(flippedArch, flippedEig)); // should be the same
-      assertTrue(TestUtil.isIdenticalUpToRelTolerance(scoreW, scoreN, tolerance));
+      TestUtil.assertIdenticalUpToRelTolerance(scoreW, scoreN, tolerance);
     } finally {
       Scope.exit();
     }

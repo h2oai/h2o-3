@@ -18,10 +18,10 @@ properties([
 
 IMAGE_NAME_PREFIX = 'harbor.h2o.ai/opsh2oai/h2o-3'
 
-JDK_VERSIONS = ['8', '10', '11', '12', '13']
+JDK_VERSIONS = ['8', '10', '11', '12', '13', '14']
 OPENJDK_VERSIONS = ['7']
-PYTHON_VERSIONS = ['2.7', '3.5', '3.6']
-R_VERSION = ['3.4.1', '3.3.3']
+PYTHON_VERSIONS = ['2.7', '3.5', '3.6', '3.7', '3.8']
+R_VERSION = ['3.3.3', '3.4.1', '3.5.3', '3.6.2', '4.0.2']
 
 def pipelineContext
 
@@ -54,6 +54,8 @@ ansiColor('xterm') {
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-10/x64-linux/jdk-10.0.2_linux-x64_bin.tar.gz"
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-11/x64-linux/jdk-11.0.3_linux-x64_bin.tar.gz"
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-12/x64-linux/jdk-12.0.2_linux-x64_bin.tar.gz"
+                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-13/x64-linux/jdk-13.0.2_linux-x64_bin.tar.gz"
+                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-14/x64-linux/jdk-14.0.2_linux-x64_bin.tar.gz"
                         }
                     }
                     stash name: 'docker-sources'

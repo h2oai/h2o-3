@@ -11,14 +11,93 @@ def update_param(name, param):
 
 def class_extensions():
     def metalearner(self):
-        """Print the metalearner of an H2OStackedEnsembleEstimator."""
+        """Print the metalearner of an H2OStackedEnsembleEstimator.
+
+        :examples:
+
+        >>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+        >>> higgs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_train_5k.csv")
+        >>> train, blend = higgs.split_frame(ratios = [.8], seed = 1234)
+        >>> x = train.columns
+        >>> y = "response"
+        >>> x.remove(y)
+        >>> train[y] = train[y].asfactor()
+        >>> blend[y] = blend[y].asfactor()
+        >>> nfolds = 3
+        >>> my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
+        ...                                       ntrees=10,
+        ...                                       nfolds=nfolds,
+        ...                                       fold_assignment="Modulo",
+        ...                                       keep_cross_validation_predictions=True,
+        ...                                       seed=1)
+        >>> my_gbm.train(x=x, y=y, training_frame=train)
+        >>> my_rf = H2ORandomForestEstimator(ntrees=50,
+        ...                                  nfolds=nfolds,
+        ...                                  fold_assignment="Modulo",
+        ...                                  keep_cross_validation_predictions=True,
+        ...                                  seed=1)
+        >>> my_rf.train(x=x, y=y, training_frame=train)
+        >>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
+        ...                                           seed=1,
+        ...                                           keep_levelone_frame=True)
+        >>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
+        >>> stack_blend.metalearner()
+        """
+        def _get_item(self, key):
+            warnings.warn(
+                "The usage of stacked_ensemble.metalearner()['name'] will be deprecated. "
+                "Metalearner now returns the metalearner object. If you need to get the "
+                "'name' please use stacked_ensemble.metalearner().model_id",
+                DeprecationWarning
+            )
+            if key == "name":
+                return self.model_id
+            raise NotImplementedError
+
         model = self._model_json["output"]
         if "metalearner" in model and model["metalearner"] is not None:
-            return model["metalearner"]
+            metalearner = h2o.get_model(model["metalearner"]["name"])
+            metalearner.__class__.__getitem__ = _get_item
+            return metalearner
         print("No metalearner for this model")
 
     def levelone_frame_id(self):
-        """Fetch the levelone_frame_id for an H2OStackedEnsembleEstimator."""
+        """Fetch the levelone_frame_id for an H2OStackedEnsembleEstimator.
+
+        :examples:
+        
+        >>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+        >>> higgs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_train_5k.csv")
+        >>> train, blend = higgs.split_frame(ratios = [.8], seed = 1234)
+        >>> x = train.columns
+        >>> y = "response"
+        >>> x.remove(y)
+        >>> train[y] = train[y].asfactor()
+        >>> blend[y] = blend[y].asfactor()
+        >>> nfolds = 3
+        >>> my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
+        ...                                       ntrees=10,
+        ...                                       nfolds=nfolds,
+        ...                                       fold_assignment="Modulo",
+        ...                                       keep_cross_validation_predictions=True,
+        ...                                       seed=1)
+        >>> my_gbm.train(x=x, y=y, training_frame=train)
+        >>> my_rf = H2ORandomForestEstimator(ntrees=50,
+        ...                                  nfolds=nfolds,
+        ...                                  fold_assignment="Modulo",
+        ...                                  keep_cross_validation_predictions=True,
+        ...                                  seed=1)
+        >>> my_rf.train(x=x, y=y, training_frame=train)
+        >>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
+        ...                                           seed=1,
+        ...                                           keep_levelone_frame=True)
+        >>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
+        >>> stack_blend.levelone_frame_id()
+        """
         model = self._model_json["output"]
         if "levelone_frame_id" in model and model["levelone_frame_id"] is not None:
             return model["levelone_frame_id"]
@@ -31,30 +110,42 @@ def class_extensions():
         print("No stacking strategy for this model")
 
     # Override train method to support blending
-    def train(self, x=None, y=None, training_frame=None, blending_frame=None, **kwargs):
+    def train(self, x=None, y=None, training_frame=None, blending_frame=None, verbose=False, **kwargs):
         has_training_frame = training_frame is not None or self.training_frame is not None
         blending_frame = H2OFrame._validate(blending_frame, 'blending_frame', required=not has_training_frame)
 
         if not has_training_frame:
             training_frame = blending_frame  # used to bypass default checks in super class and backend and to guarantee default metrics
 
+        sup = super(self.__class__, self)
+
         def extend_parms(parms):
             if blending_frame is not None:
                 parms['blending_frame'] = blending_frame
             if self.metalearner_fold_column is not None:
                 parms['ignored_columns'].remove(quoted(self.metalearner_fold_column))
+        parms = sup._make_parms(x, y, training_frame, extend_parms_fn=extend_parms, **kwargs)
 
-        super(self.__class__, self)._train(x, y, training_frame,
-                                           extend_parms_fn=extend_parms,
-                                           **kwargs)
+        sup._train(parms, verbose=verbose)
+        if self.metalearner() is None:
+            raise H2OResponseError("Meta learner didn't get to be trained in time. "
+                                   "Try increasing max_runtime_secs or setting it to 0 (unlimited).")
+
 
 
 extensions = dict(
     __imports__="""
+import ast
+import json
+import warnings
+
+import h2o
+from h2o.base import Keyed
+from h2o.exceptions import H2OResponseError
+from h2o.grid import H2OGridSearch
+from h2o.job import H2OJob
 from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import is_type
-import json
-import ast
 """,
     __class__=class_extensions
 )
@@ -62,12 +153,25 @@ import ast
 overrides = dict(
     base_models=dict(
         setter="""
-if is_type(base_models, {ptype}):
-    {pname} = [b.model_id for b in {pname}]
+def _get_id(something):
+    if isinstance(something, Keyed):
+        return something.key
+    return something
+
+if not is_type(base_models, list):
+    base_models = [base_models]
+if is_type(base_models, [H2OEstimator, H2OGridSearch, str]):
+    {pname} = [_get_id(b) for b in {pname}]
     self._parms["{sname}"] = {pname}
 else:
-    assert_is_type({pname}, None, [str])
-    self._parms["{sname}"] = {pname}
+    assert_is_type({pname}, None)
+""",
+        getter="""
+base_models = self.actual_params.get("base_models", [])
+base_models = [base_model["name"] for base_model in base_models]
+if len(base_models) == 0:
+    base_models = self._parms.get("base_models")
+return base_models
 """
     ),
 
@@ -113,21 +217,400 @@ examples = dict(
 >>> from h2o.estimators.random_forest import H2ORandomForestEstimator
 >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
 >>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
->>> col_types = ["numeric", "numeric", "numeric", "enum", "enum", "numeric", "numeric", "numeric", "numeric"]
+>>> col_types = ["numeric", "numeric", "numeric", "enum",
+...              "enum", "numeric", "numeric", "numeric", "numeric"]
 >>> data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv", col_types=col_types)
 >>> train, test = data.split_frame(ratios=[.8], seed=1)
 >>> x = ["CAPSULE","GLEASON","RACE","DPROS","DCAPS","PSA","VOL"]
 >>> y = "AGE"
 >>> nfolds = 5
->>> my_gbm = H2OGradientBoostingEstimator(nfolds=nfolds, fold_assignment="Modulo", keep_cross_validation_predictions=True)
->>> my_gbm.train(x=x, y=y, training_frame=train)
->>> my_rf = H2ORandomForestEstimator(nfolds=nfolds, fold_assignment="Modulo", keep_cross_validation_predictions=True)
->>> my_rf.train(x=x, y=y, training_frame=train)
->>> stack = H2OStackedEnsembleEstimator(model_id="my_ensemble", training_frame=train, validation_frame=test, base_models=[my_gbm.model_id, my_rf.model_id])
+>>> gbm = H2OGradientBoostingEstimator(nfolds=nfolds,
+...                                    fold_assignment="Modulo",
+...                                    keep_cross_validation_predictions=True)
+>>> gbm.train(x=x, y=y, training_frame=train)
+>>> rf = H2ORandomForestEstimator(nfolds=nfolds,
+...                               fold_assignment="Modulo",
+...                               keep_cross_validation_predictions=True)
+>>> rf.train(x=x, y=y, training_frame=train)
+>>> stack = H2OStackedEnsembleEstimator(model_id="ensemble",
+...                                     training_frame=train,
+...                                     validation_frame=test,
+...                                     base_models=[gbm.model_id, rf.model_id])
 >>> stack.train(x=x, y=y, training_frame=train, validation_frame=test)
 >>> stack.model_performance()
 """,
-    metalearner_params="""
-    >>> metalearner_params = {'max_depth': 2, 'col_sample_rate': 0.3}
+    base_models="""
+>>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+>>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+>>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+>>> col_types = ["numeric", "numeric", "numeric", "enum",
+...              "enum", "numeric", "numeric", "numeric", "numeric"]
+>>> data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv", col_types=col_types)
+>>> train, test = data.split_frame(ratios=[.8], seed=1)
+>>> x = ["CAPSULE","GLEASON","RACE","DPROS","DCAPS","PSA","VOL"]
+>>> y = "AGE"
+>>> nfolds = 5
+>>> gbm = H2OGradientBoostingEstimator(nfolds=nfolds,
+...                                    fold_assignment="Modulo",
+...                                    keep_cross_validation_predictions=True)
+>>> gbm.train(x=x, y=y, training_frame=train)
+>>> rf = H2ORandomForestEstimator(nfolds=nfolds,
+...                               fold_assignment="Modulo",
+...                               keep_cross_validation_predictions=True)
+>>> rf.train(x=x, y=y, training_frame=train)
+>>> stack = H2OStackedEnsembleEstimator(model_id="ensemble",
+...                                     training_frame=train,
+...                                     validation_frame=test,
+...                                     base_models=[gbm.model_id, rf.model_id])
+>>> stack.train(x=x, y=y, training_frame=train, validation_frame=test)
+>>> stack.model_performance()
 """,
+    blending_frame="""
+>>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+>>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+>>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+>>> higgs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_train_5k.csv")
+>>> train, blend = higgs.split_frame(ratios = [.8], seed = 1234)
+>>> x = train.columns
+>>> y = "response"
+>>> x.remove(y)
+>>> train[y] = train[y].asfactor()
+>>> blend[y] = blend[y].asfactor()
+>>> nfolds = 3
+>>> my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
+...                                       ntrees=10,
+...                                       nfolds=nfolds,
+...                                       fold_assignment="Modulo",
+...                                       keep_cross_validation_predictions=True,
+...                                       seed=1)
+>>> my_gbm.train(x=x, y=y, training_frame=train)
+>>> my_rf = H2ORandomForestEstimator(ntrees=50,
+...                                  nfolds=nfolds,
+...                                  fold_assignment="Modulo",
+...                                  keep_cross_validation_predictions=True,
+...                                  seed=1)
+>>> my_rf.train(x=x, y=y, training_frame=train)
+>>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
+...                                           seed=1)
+>>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
+>>> stack_blend.model_performance(blend).auc()
+""",
+    export_checkpoints_dir="""
+>>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+>>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+>>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+>>> import tempfile
+>>> from os import listdir
+>>> higgs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_train_5k.csv")
+>>> train, blend = higgs.split_frame(ratios = [.8], seed = 1234)
+>>> x = train.columns
+>>> y = "response"
+>>> x.remove(y)
+>>> train[y] = train[y].asfactor()
+>>> blend[y] = blend[y].asfactor()
+>>> nfolds = 3
+>>> checkpoints_dir = tempfile.mkdtemp()
+>>> my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
+...                                       ntrees=10,
+...                                       nfolds=nfolds,
+...                                       fold_assignment="Modulo",
+...                                       keep_cross_validation_predictions=True,
+...                                       seed=1)
+>>> my_gbm.train(x=x, y=y, training_frame=train)
+>>> my_rf = H2ORandomForestEstimator(ntrees=50,
+...                                  nfolds=nfolds,
+...                                  fold_assignment="Modulo",
+...                                  keep_cross_validation_predictions=True,
+...                                  seed=1)
+>>> my_rf.train(x=x, y=y, training_frame=train)
+>>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
+...                                           seed=1,
+...                                           export_checkpoints_dir=checkpoints_dir)
+>>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
+>>> len(listdir(checkpoints_dir))
+""",
+    keep_levelone_frame="""
+>>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+>>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+>>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+>>> higgs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_train_5k.csv")
+>>> train, blend = higgs.split_frame(ratios = [.8], seed = 1234)
+>>> x = train.columns
+>>> y = "response"
+>>> x.remove(y)
+>>> train[y] = train[y].asfactor()
+>>> blend[y] = blend[y].asfactor()
+>>> nfolds = 3
+>>> my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
+...                                       ntrees=1,
+...                                       nfolds=nfolds,
+...                                       fold_assignment="Modulo",
+...                                       keep_cross_validation_predictions=True,
+...                                       seed=1)
+>>> my_gbm.train(x=x, y=y, training_frame=train)
+>>> my_rf = H2ORandomForestEstimator(ntrees=50,
+...                                  nfolds=nfolds,
+...                                  fold_assignment="Modulo",
+...                                  keep_cross_validation_predictions=True,
+...                                  seed=1)
+>>> my_rf.train(x=x, y=y, training_frame=train)
+>>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
+...                                           seed=1,
+...                                           keep_levelone_frame=True)
+>>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
+>>> stack_blend.model_performance(blend).auc()
+""",
+    metalearner_algorithm="""
+>>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+>>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+>>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+>>> higgs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_train_5k.csv")
+>>> train, blend = higgs.split_frame(ratios = [.8], seed = 1234)
+>>> x = train.columns
+>>> y = "response"
+>>> x.remove(y)
+>>> train[y] = train[y].asfactor()
+>>> blend[y] = blend[y].asfactor()
+>>> nfolds = 3
+>>> my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
+...                                       ntrees=1,
+...                                       nfolds=nfolds,
+...                                       fold_assignment="Modulo",
+...                                       keep_cross_validation_predictions=True,
+...                                       seed=1)
+>>> my_gbm.train(x=x, y=y, training_frame=train)
+>>> my_rf = H2ORandomForestEstimator(ntrees=50,
+...                                  nfolds=nfolds,
+...                                  fold_assignment="Modulo",
+...                                  keep_cross_validation_predictions=True,
+...                                  seed=1)
+>>> my_rf.train(x=x, y=y, training_frame=train)
+>>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
+...                                           seed=1,
+...                                           metalearner_algorithm="gbm")
+>>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
+>>> stack_blend.model_performance(blend).auc()
+""",
+    metalearner_fold_assignment="""
+>>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+>>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+>>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+>>> higgs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_train_5k.csv")
+>>> train, blend = higgs.split_frame(ratios = [.8], seed = 1234)
+>>> x = train.columns
+>>> y = "response"
+>>> x.remove(y)
+>>> train[y] = train[y].asfactor()
+>>> blend[y] = blend[y].asfactor()
+>>> nfolds = 3
+>>> my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
+...                                       ntrees=1,
+...                                       nfolds=nfolds,
+...                                       fold_assignment="Modulo",
+...                                       keep_cross_validation_predictions=True,
+...                                       seed=1)
+>>> my_gbm.train(x=x, y=y, training_frame=train)
+>>> my_rf = H2ORandomForestEstimator(ntrees=50,
+...                                  nfolds=nfolds,
+...                                  fold_assignment="Modulo",
+...                                  keep_cross_validation_predictions=True,
+...                                  seed=1)
+>>> my_rf.train(x=x, y=y, training_frame=train)
+>>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
+...                                           seed=1,
+...                                           metalearner_fold_assignment="Random")
+>>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
+>>> stack_blend.model_performance(blend).auc()
+""",
+    metalearner_fold_column="""
+>>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+>>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+>>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+>>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_train_5k.csv")
+>>> test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_test_5k.csv")
+>>> fold_column = "fold_id"
+>>> train[fold_column] = train.kfold_column(n_folds=3, seed=1)
+>>> x = train.columns
+>>> y = "response"
+>>> x.remove(y)
+>>> x.remove(fold_column)
+>>> train[y] = train[y].asfactor()
+>>> test[y] = test[y].asfactor()
+>>> nfolds = 3
+>>> my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
+...                                       ntrees=10,
+...                                       nfolds=nfolds,
+...                                       fold_assignment="Modulo",
+...                                       keep_cross_validation_predictions=True,
+...                                       seed=1)
+>>> my_gbm.train(x=x, y=y, training_frame=train)
+>>> my_rf = H2ORandomForestEstimator(ntrees=50,
+...                                  nfolds=nfolds,
+...                                  fold_assignment="Modulo",
+...                                  keep_cross_validation_predictions=True,
+...                                  seed=1)
+>>> my_rf.train(x=x, y=y, training_frame=train)
+>>> stack = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
+...                                     metalearner_fold_column=fold_column,
+...                                     metalearner_params=dict(keep_cross_validation_models=True))
+>>> stack.train(x=x, y=y, training_frame=train)
+>>> stack.model_performance().auc()
+""",
+    metalearner_nfolds="""
+>>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+>>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+>>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+>>> higgs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_train_5k.csv")
+>>> train, blend = higgs.split_frame(ratios = [.8], seed = 1234)
+>>> x = train.columns
+>>> y = "response"
+>>> x.remove(y)
+>>> train[y] = train[y].asfactor()
+>>> blend[y] = blend[y].asfactor()
+>>> nfolds = 3
+>>> my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
+...                                       ntrees=1,
+...                                       nfolds=nfolds,
+...                                       fold_assignment="Modulo",
+...                                       keep_cross_validation_predictions=True,
+...                                       seed=1)
+>>> my_gbm.train(x=x, y=y, training_frame=train)
+>>> my_rf = H2ORandomForestEstimator(ntrees=50,
+...                                  nfolds=nfolds,
+...                                  fold_assignment="Modulo",
+...                                  keep_cross_validation_predictions=True,
+...                                  seed=1)
+>>> my_rf.train(x=x, y=y, training_frame=train)
+>>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
+...                                           seed=1,
+...                                           metalearner_nfolds=3)
+>>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
+>>> stack_blend.model_performance(blend).auc()
+""",
+    metalearner_params="""
+>>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+>>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+>>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+>>> higgs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_train_5k.csv")
+>>> train, blend = higgs.split_frame(ratios = [.8], seed = 1234)
+>>> x = train.columns
+>>> y = "response"
+>>> x.remove(y)
+>>> train[y] = train[y].asfactor()
+>>> blend[y] = blend[y].asfactor()
+>>> nfolds = 3
+>>> gbm_params = {"ntrees" : 100, "max_depth" : 6}
+>>> my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
+...                                       ntrees=1,
+...                                       nfolds=nfolds,
+...                                       fold_assignment="Modulo",
+...                                       keep_cross_validation_predictions=True,
+...                                       seed=1)
+>>> my_gbm.train(x=x, y=y, training_frame=train)
+>>> my_rf = H2ORandomForestEstimator(ntrees=50,
+...                                  nfolds=nfolds,
+...                                  fold_assignment="Modulo",
+...                                  keep_cross_validation_predictions=True,
+...                                  seed=1)
+>>> my_rf.train(x=x, y=y, training_frame=train)
+>>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
+...                                           metalearner_algorithm="gbm",
+...                                           metalearner_params=gbm_params)
+>>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
+>>> stack_blend.model_performance(blend).auc()
+""",
+    seed="""
+>>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+>>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+>>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+>>> higgs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_train_5k.csv")
+>>> train, blend = higgs.split_frame(ratios = [.8], seed = 1234)
+>>> x = train.columns
+>>> y = "response"
+>>> x.remove(y)
+>>> train[y] = train[y].asfactor()
+>>> blend[y] = blend[y].asfactor()
+>>> nfolds = 3
+>>> my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
+...                                       ntrees=1,
+...                                       nfolds=nfolds,
+...                                       fold_assignment="Modulo",
+...                                       keep_cross_validation_predictions=True,
+...                                       seed=1)
+>>> my_gbm.train(x=x, y=y, training_frame=train)
+>>> my_rf = H2ORandomForestEstimator(ntrees=50,
+...                                  nfolds=nfolds,
+...                                  fold_assignment="Modulo",
+...                                  keep_cross_validation_predictions=True,
+...                                  seed=1)
+>>> my_rf.train(x=x, y=y, training_frame=train)
+>>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
+...                                           seed=1,
+...                                           metalearner_fold_assignment="Random")
+>>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
+>>> stack_blend.model_performance(blend).auc()
+""",
+    training_frame="""
+>>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+>>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+>>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+>>> higgs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_train_5k.csv")
+>>> train, valid = higgs.split_frame(ratios = [.8], seed = 1234)
+>>> x = train.columns
+>>> y = "response"
+>>> x.remove(y)
+>>> train[y] = train[y].asfactor()
+>>> blend[y] = blend[y].asfactor()
+>>> nfolds = 3
+>>> my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
+...                                       ntrees=1,
+...                                       nfolds=nfolds,
+...                                       fold_assignment="Modulo",
+...                                       keep_cross_validation_predictions=True,
+...                                       seed=1)
+>>> my_gbm.train(x=x, y=y, training_frame=train)
+>>> my_rf = H2ORandomForestEstimator(ntrees=50,
+...                                  nfolds=nfolds,
+...                                  fold_assignment="Modulo",
+...                                  keep_cross_validation_predictions=True,
+...                                  seed=1)
+>>> my_rf.train(x=x, y=y, training_frame=train)
+>>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
+...                                           seed=1,
+...                                           metalearner_fold_assignment="Random")
+>>> stack_blend.train(x=x, y=y, training_frame=train, validation_frame=valid)
+>>> stack_blend.model_performance(blend).auc()
+""",
+    validation_frame="""
+>>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+>>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+>>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+>>> higgs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_train_5k.csv")
+>>> train, valid = higgs.split_frame(ratios = [.8], seed = 1234)
+>>> x = train.columns
+>>> y = "response"
+>>> x.remove(y)
+>>> train[y] = train[y].asfactor()
+>>> blend[y] = blend[y].asfactor()
+>>> nfolds = 3 
+>>> my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
+...                                       ntrees=1,
+...                                       nfolds=nfolds,
+...                                       fold_assignment="Modulo",
+...                                       keep_cross_validation_predictions=True,
+...                                       seed=1)
+>>> my_gbm.train(x=x, y=y, training_frame=train)
+>>> my_rf = H2ORandomForestEstimator(ntrees=50,
+...                                  nfolds=nfolds,
+...                                  fold_assignment="Modulo",
+...                                  keep_cross_validation_predictions=True,
+...                                  seed=1)
+>>> my_rf.train(x=x, y=y, training_frame=train)
+>>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
+...                                           seed=1,
+...                                           metalearner_fold_assignment="Random")
+>>> stack_blend.train(x=x, y=y, training_frame=train, validation_frame=valid)
+>>> stack_blend.model_performance(blend).auc()
+"""
 )
+

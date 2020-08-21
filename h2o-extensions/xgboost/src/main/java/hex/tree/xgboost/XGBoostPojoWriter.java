@@ -86,6 +86,7 @@ public abstract class XGBoostPojoWriter {
         } else if (ObjectiveType.BINARY_LOGISTIC.getId().equals(objFunction)) {
             renderPredTransformViaLinkFunction(LinkFunctionType.logit, sb);
         } else if (ObjectiveType.REG_LINEAR.getId().equals(objFunction) ||
+            ObjectiveType.REG_SQUAREDERROR.getId().equals(objFunction) ||
             ObjectiveType.RANK_PAIRWISE.getId().equals(objFunction)) {
             renderPredTransformViaLinkFunction(LinkFunctionType.identity, sb);
         } else if (ObjectiveType.MULTI_SOFTPROB.getId().equals(objFunction)) {

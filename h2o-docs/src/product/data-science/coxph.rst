@@ -26,7 +26,7 @@ Defining a CoxPH Model
 
 -  `stop_column <algo-params/stop_column.html>`__: (Required) The name of an integer column in the **source** data set representing the stop time. 
 
--  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable. The data can be numeric or categorical.
+-  `y <algo-params/y.html>`__ (Python) / **event_column** (R): (Required) Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
 -  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
@@ -38,7 +38,7 @@ Defining a CoxPH Model
 
 -  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset.
    
-	 **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__. 
+	 **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 
 -  `stratify_by <algo-params/stratify_by.html>`__: A list of columns to use for stratification.
 
@@ -55,6 +55,8 @@ Defining a CoxPH Model
 -  `interaction_pairs <algo-params/interaction_pairs.html>`__: (Internal only.) When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns. This option is disabled by default.
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
+
+- `single_node_mode <algo-params/single_node_mode.html>`__: Specify whether to run on a single node for fine-tuning of model parameters. Running on a single node reduces the effect of network overhead (for smaller datasets).
 
 Cox Proportional Hazards Model Results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -82,33 +84,35 @@ Coefficients
 Model Statistics
 ''''''''''''''''
 
-- Cox and Snell Generalized :math:`R^2`
+-  Cox and Snell Generalized :math:`R^2`
 
   :math:`\tt{R^2} := 1 - \exp\bigg(\frac{2\big(pl(\beta^{(0)}) - pl(\hat{\beta})\big)}{n}\bigg)`
 
-- Maximum Possible Value for Cox and Snell Generalized :math:`R^2`
+-  Maximum Possible Value for Cox and Snell Generalized :math:`R^2`
 
   :math:`\tt{Max. R^2} := 1 - \exp\big(\frac{2 pl(\beta^{(0)})}{n}\big)`
 
-- Likelihood Ratio Test
+-  Likelihood Ratio Test
 
   :math:`2\big(pl(\hat{\beta}) - pl(\beta^{(0)})\big)`, which under the null
   hypothesis of :math:`\hat{beta} = \beta^{(0)}` follows a chi-square
   distribution with :math:`p` degrees of freedom.
 
-Wald Test
+-  Wald Test 
+
   :math:`\big(\hat{\beta} - \beta^{(0)}\big)^T I\big(\hat{\beta}\big) \big(\hat{\beta} - \beta^{(0)}\big)`,
   which under the null hypothesis of :math:`\hat{beta} = \beta^{(0)}` follows a
   chi-square distribution with :math:`p` degrees of freedom. When there is a
   single coefficient in the model, the Wald test statistic value is that
   coefficient's z statistic.
 
-Score (Log-Rank) Test
+-  Score (Log-Rank) Test
+
   :math:`U\big(\beta^{(0)}\big)^T \hat{I}\big(\beta^{0}\big)^{-1} U\big(\beta^{(0)}\big)`,
   which under the null hypothesis of :math:`\hat{beta} = \beta^{(0)}` follows a
   chi-square distribution with :math:`p` degrees of freedom.
 
-where
+ where
 
   :math:`n` is the number of complete cases
 
@@ -185,6 +189,64 @@ To add numeric stability to the model fitting calculations, the numeric predicto
      :math:`LRE(x, y) = - \log_{10}\big(\frac{\mid x - y \mid}{y}\big)`, if :math:`y \ne 0`
 
      :math:`LRE(x, y) = - \log_{10}(\mid x \mid)`, if :math:`y = 0`
+
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a CoxPH model.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+    h2o.init()
+
+    # Import the heart dataset into H2O:
+    heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+
+    # Split the dataset into a train and test set:
+    heart_split <- h2o.splitFrame(data = heart, ratios = 0.8, seed = 1234)
+    train <- heart_split[[1]]
+    test <- heart_split[[2]]
+
+    # Build and train the model:
+    heart_coxph <- h2o.coxph(x = "age", 
+                             event_column = "event",
+                             start_column = "start", 
+                             stop_column = "stop", 
+                             ties = "breslow", 
+                             training_frame = train)
+
+    # Eval performance:
+    perf <- h2o.performance(heart_coxph)
+
+    # Generate predictions on a test set (if necessary):
+    predict <- h2o.predict(heart_coxph, newdata = test)
+
+
+   .. code-tab:: python
+   
+    import h2o
+    from h2o.estimators.coxph import H2OCoxProportionalHazardsEstimator
+    h2o.init()
+
+    # Import the heart dataset into H2O:
+    heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+
+    # Split the dataset into a train and test set:
+    train, test = heart.split_frame(ratios = [.8], seed = 1234)   
+
+    # Build and train the model:
+    heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+                                                     stop_column="stop", 
+                                                     ties="breslow")
+    heart_coxph.train(x="age", 
+                y="event", 
+                training_frame=train)
+
+    # Generate predictions on a test set (if necessary):
+    pred = heart_coxph.predict(test)
+
 
 
 References

@@ -1,12 +1,13 @@
 package hex.schemas;
 
-import hex.ScoreKeeper;
+import hex.ScoreKeeper.StoppingMetric;
 import hex.grid.HyperSpaceSearchCriteria;
+import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import water.api.API;
 import water.api.EnumValuesProvider;
-import water.api.schemas3.ModelParamsValuesProviders.StoppingMetricValuesProvider;
 import water.api.schemas3.SchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
+import water.util.PojoUtils;
 
 /**
  * Search criteria for a hyperparameter search including directives for how to search and
@@ -33,7 +34,7 @@ public class HyperSpaceSearchCriteriaV99<I extends HyperSpaceSearchCriteria, S e
    * Search criteria for random hyperparameter search using hyperparameter values given by
    * lists. Includes directives for how to search and when to stop the search.
    */
-  public static class RandomDiscreteValueSearchCriteriaV99 extends HyperSpaceSearchCriteriaV99<HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria, RandomDiscreteValueSearchCriteriaV99> {
+  public static class RandomDiscreteValueSearchCriteriaV99 extends HyperSpaceSearchCriteriaV99<RandomDiscreteValueSearchCriteria, RandomDiscreteValueSearchCriteriaV99> {
     public RandomDiscreteValueSearchCriteriaV99() {
       strategy = HyperSpaceSearchCriteria.Strategy.RandomDiscrete;
     }
@@ -54,14 +55,41 @@ public class HyperSpaceSearchCriteriaV99<I extends HyperSpaceSearchCriteria, S e
     @API(help = "Maximum time to spend building models (optional).", direction = API.Direction.INOUT)
     public double max_runtime_secs;
 
-    @API(help = "Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)",
+            level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public int stopping_rounds;
 
-    @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)", valuesProvider = StoppingMetricValuesProvider.class, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
-    public ScoreKeeper.StoppingMetric stopping_metric;
+    @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)",
+            valuesProvider = RandomSearchStoppingMetricValuesProvider.class,
+            level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    public StoppingMetric stopping_metric;
 
-    @API(help = "Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)",
+            level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public double stopping_tolerance;
+
+    @Override
+    public RandomDiscreteValueSearchCriteria fillImpl(RandomDiscreteValueSearchCriteria impl) {
+      RandomDiscreteValueSearchCriteria filledImpl = super.fillImpl(impl);
+      PojoUtils.copyProperties(filledImpl.stoppingCriteria(), this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+      return filledImpl;
+    }
+
+    @Override
+    public RandomDiscreteValueSearchCriteriaV99 fillFromImpl(RandomDiscreteValueSearchCriteria impl) {
+      RandomDiscreteValueSearchCriteriaV99 schema = super.fillFromImpl(impl);
+      PojoUtils.copyProperties(this, impl.stoppingCriteria(), PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
+      return schema;
+    }
+  }
+
+  public static class RandomSearchStoppingMetricValuesProvider extends EnumValuesProvider<StoppingMetric> {
+    public RandomSearchStoppingMetricValuesProvider() {
+      super(StoppingMetric.class, new StoppingMetric[]{ // non-supported stopping metrics in grid search, cf. ScoringInfo.metric
+              StoppingMetric.custom,
+              StoppingMetric.custom_increasing,
+      });
+    }
   }
 
   public static class StrategyValuesProvider extends EnumValuesProvider<HyperSpaceSearchCriteria.Strategy> {
@@ -79,7 +107,7 @@ public class HyperSpaceSearchCriteriaV99<I extends HyperSpaceSearchCriteria, S e
     if (HyperSpaceSearchCriteria.Strategy.Cartesian == strategy) {
       defaults = new HyperSpaceSearchCriteria.CartesianSearchCriteria();
     } else if (HyperSpaceSearchCriteria.Strategy.RandomDiscrete == strategy) {
-      defaults = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+      defaults = new RandomDiscreteValueSearchCriteria();
     } else {
       throw new H2OIllegalArgumentException("search_criteria.strategy", strategy.toString());
     }

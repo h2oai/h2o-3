@@ -13,9 +13,9 @@ test.topNbottomN = function() {
 
     # test topN with randomly chosen N percent, and with column names and column index
     frameNames = names(dataset)
-    nP = nPercent[sample(1 : length(nPercent), 1, replace = F)]
-    colIndex = sample(1 : length(frameNames), 1, replace = F)
-    testToRun = sample(1 : 2, 1, replace = F)
+    nP = nPercent[sample(1 : length(nPercent), 1, replace = FALSE)]
+    colIndex = sample(1 : length(frameNames), 1, replace = FALSE)
+    testToRun = sample(1 : 2, 1, replace = FALSE)
 
     if (testToRun == 1) {   # only run topN or bottomN but not both
         print(paste("test topN: nPercent is", nP, " Column index is ", colIndex))

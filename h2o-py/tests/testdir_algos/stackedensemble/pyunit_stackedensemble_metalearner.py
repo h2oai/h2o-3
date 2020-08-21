@@ -2,11 +2,11 @@
 # -*- encoding: utf-8 -*-
 from __future__ import print_function
 
-import h2o
-
 import sys
+import warnings
 sys.path.insert(1,"../../../")  # allow us to run this standalone
 
+import h2o
 from h2o.estimators.random_forest import H2ORandomForestEstimator
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
@@ -54,64 +54,78 @@ def stackedensemble_metalearner_test():
                                      seed=1)
     my_rf.train(x=x, y=y, training_frame=train)
 
-    
-    # Check that not setting metalearner_algorithm still produces correct results
-    # should be glm with non-negative weights
-    stack0 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf])
-    stack0.train(x=x, y=y, training_frame=train)
-    # Check that metalearner_algorithm default is GLM w/ non-negative
-    assert(stack0.params['metalearner_algorithm']['actual'] == "AUTO")
-    # Check that the metalearner is GLM w/ non-negative
-    meta0 = h2o.get_model(stack0.metalearner()['name'])
-    assert(meta0.algo == "glm")
-    assert(meta0.params['non_negative']['actual'] is True)
+
+    def train_ensemble_using_metalearner(algo, expected_algo):
+        print("Training ensemble using {} metalearner.".format(algo))
+
+        meta_params = dict(metalearner_nfolds=3)
+
+        se = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_algorithm=algo, **meta_params)
+        se.train(x=x, y=y, training_frame=train)
+        assert(se.params['metalearner_algorithm']['actual'] == expected_algo)
+        if meta_params:
+            assert(se.params['metalearner_nfolds']['actual'] == 3)
+
+        meta = h2o.get_model(se.metalearner()['name'])
+        assert(meta.algo == expected_algo), "Expected that the metalearner would use {}, but actually used {}.".format(expected_algo, meta.algo)
+        if meta_params:
+            assert(meta.params['nfolds']['actual'] == 3)
+
+    metalearner_algos = ['AUTO', 'deeplearning', 'drf', 'gbm', 'glm', 'naivebayes', 'xgboost']
+    for algo in metalearner_algos:
+        expected_algo = 'glm' if algo == 'AUTO' else algo
+        train_ensemble_using_metalearner(algo, expected_algo)
 
 
-    # Train a stacked ensemble & check that metalearner_algorithm works
-    stack1 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_algorithm="gbm")
-    stack1.train(x=x, y=y, training_frame=train)
-    # Check that metalearner_algorithm is a default GBM
-    assert(stack1.params['metalearner_algorithm']['actual'] == "gbm")
-    # Check that the metalearner is default GBM
-    meta1 = h2o.get_model(stack1.metalearner()['name'])
-    assert(meta1.algo == "gbm")
-    # TO DO: Add a check that no other hyperparams have been set
+# PUBDEV-6955 - modify metalearner property to return metalearner object not JSON while being backward compatible
+# in regards to the "name" property
+def metalearner_property_test():
+    train = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris_train.csv"))
+    test = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris_test.csv"))
+    x = train.columns
+    y = "species"
+    x.remove(y)
 
- 
-    # Train a stacked ensemble & metalearner_algorithm "drf"; check that metalearner_algorithm works with CV
-    stack2 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_algorithm="drf", metalearner_nfolds=3)
-    stack2.train(x=x, y=y, training_frame=train)
-    # Check that metalearner_algorithm is a default RF
-    assert(stack2.params['metalearner_algorithm']['actual'] == "drf")
-    # Check that CV was performed
-    assert(stack2.params['metalearner_nfolds']['actual'] == 3)
-    meta2 = h2o.get_model(stack2.metalearner()['name'])
-    assert(meta2.algo == "drf")
-    assert(meta2.params['nfolds']['actual'] == 3)
+    nfolds = 2
+    gbm = H2OGradientBoostingEstimator(nfolds=nfolds,
+                                       fold_assignment="Modulo",
+                                       keep_cross_validation_predictions=True)
+    gbm.train(x=x, y=y, training_frame=train)
+    rf = H2ORandomForestEstimator(nfolds=nfolds,
+                                  fold_assignment="Modulo",
+                                  keep_cross_validation_predictions=True)
+    rf.train(x=x, y=y, training_frame=train)
+    se = H2OStackedEnsembleEstimator(training_frame=train,
+                                     validation_frame=test,
+                                     base_models=[gbm.model_id, rf.model_id])
+    se.train(x=x, y=y, training_frame=train)
 
+    old_way_retrieved_metalearner = h2o.get_model(se.metalearner()["name"])
 
-    # Train a stacked ensemble & check that metalearner_algorithm "glm" works
-    stack3 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_algorithm="glm")
-    stack3.train(x=x, y=y, training_frame=train)
-    # Check that metalearner_algorithm is a default GLM
-    assert(stack3.params['metalearner_algorithm']['actual'] == "glm")
-    # Check that the metalearner is default GLM
-    meta3 = h2o.get_model(stack3.metalearner()['name'])
-    assert(meta3.algo == "glm")
+    # Test backward compatibility
+    assert se.metalearner()["name"] == old_way_retrieved_metalearner.model_id
+    # Test we get the same metalearner as we used to get
+    assert old_way_retrieved_metalearner.model_id == se.metalearner().model_id
 
-
-    # Train a stacked ensemble & check that metalearner_algorithm "deeplearning" works
-    stack4 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_algorithm="deeplearning")
-    stack4.train(x=x, y=y, training_frame=train)
-    # Check that metalearner_algorithm is a default DNN
-    assert(stack4.params['metalearner_algorithm']['actual'] == "deeplearning")
-    # Check that the metalearner is default DNN
-    meta4 = h2o.get_model(stack4.metalearner()['name'])
-    assert(meta4.algo == "deeplearning")
-
+    # Check we emit deprecation warning
+    for v in sys.modules.values():
+        if getattr(v, '__warningregistry__', None):
+            v.__warningregistry__ = {}
+    with warnings.catch_warnings(record=True) as ws:
+        # Get all DeprecationWarnings
+        warnings.simplefilter("always", DeprecationWarning)
+        # Trigger a warning.
+        _ = se.metalearner()["name"]
+        # Assert that we get the deprecation warning
+        assert any((
+            issubclass(w.category, DeprecationWarning) and
+            "metalearner()['name']" in str(w.message)
+            for w in ws
+        ))
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(stackedensemble_metalearner_test)
+    pyunit_utils.run_tests([stackedensemble_metalearner_test, metalearner_property_test])
 else:
     stackedensemble_metalearner_test()
+    metalearner_property_test()

@@ -32,6 +32,8 @@ reference:
       - colnames
       - dim.H2OFrame
       - dimnames.H2OFrame
+      - feature_frequencies.H2OModel
+      - get_seed.H2OModel
       - h2o
       - h2o.abs
       - h2o.acos
@@ -91,13 +93,12 @@ reference:
       - h2o.decryptionSetup
       - h2o.deepfeatures
       - h2o.deeplearning
-      - h2o.deepwater.available
-      - h2o.deepwater
       - h2o.describe
       - h2o.difflag1
       - h2o.dim
       - h2o.dimnames
       - h2o.distance
+      - h2o.download_model
       - h2o.download_mojo
       - h2o.download_pojo
       - h2o.downloadAllLogs
@@ -115,7 +116,11 @@ reference:
       - h2o.flow
       - h2o.gainsLift
       - h2o.gbm
-      - h2o.getAutoML
+      - h2o.genericModel
+      - h2o.get_automl
+      - h2o.get_leaderboard
+      - h2o.get_ntrees_actual
+      - h2o.get_segment_models
       - h2o.getConnection
       - h2o.getFrame
       - h2o.getFutureModel
@@ -128,6 +133,7 @@ reference:
       - h2o.getTypes
       - h2o.getVersion
       - h2o.giniCoef
+      - h2o.gam
       - h2o.glm
       - h2o.glrm
       - h2o.grep
@@ -155,15 +161,19 @@ reference:
       - h2o.isnumeric
       - h2o.isolationForest
       - h2o.extendedIsolationForest
+      - h2o.keyof
       - h2o.kfold_column
       - h2o.killMinus3
       - h2o.kmeans
+      - h2o.kolmogorov_smirnov
       - h2o.kurtosis
       - h2o.levels
       - h2o.list_all_extensions
       - h2o.list_api_extensions
       - h2o.list_core_extensions
+      - h2o.list_jobs
       - h2o.listTimezones
+      - h2o.loadGrid
       - h2o.loadModel
       - h2o.log
       - h2o.log1p
@@ -182,6 +192,7 @@ reference:
       - h2o.mean_residual_deviance
       - h2o.mean
       - h2o.median
+      - h2o.melt
       - h2o.merge
       - h2o.metric
       - h2o.min
@@ -211,6 +222,7 @@ reference:
       - h2o.performance
       - h2o.pivot
       - h2o.prcomp
+      - h2o.predict
       - h2o.predict_json
       - h2o.print
       - h2o.prod 
@@ -228,22 +240,26 @@ reference:
       - h2o.removeAll
       - h2o.removeVecs
       - h2o.rep_len
+      - h2o.reset_threshold
       - h2o.residual_deviance 
       - h2o.residual_dof
-      - h2o.retain
       - h2o.rm 
       - h2o.rmse
       - h2o.rmsle
       - h2o.round
       - h2o.rstrip
       - h2o.runif
+      - h2o.save_mojo
+      - h2o.saveGrid
       - h2o.saveModel
       - h2o.saveModelDetails
       - h2o.saveMojo
       - h2o.scale
       - h2o.scoreHistory
+      - h2o.scoreHistoryGAM
       - h2o.sd 
       - h2o.sdev
+      - h2o.set_s3_credentials
       - h2o.setLevels
       - h2o.setTimezone
       - h2o.show_progress
@@ -273,6 +289,7 @@ reference:
       - h2o.target_encode_create
       - h2o.target_encode_fit
       - h2o.target_encode_transform
+      - h2o.targetencoder
       - h2o.toFrame
       - h2o.tokenize
       - h2o.tolower
@@ -280,13 +297,20 @@ reference:
       - h2o.tot_withinss
       - h2o.totss 
       - h2o.toupper
+      - h2o.train_segments
       - h2o.transform
+      - h2o.transform_word2vec
+      - h2o.transform,H2OTargetEncoderModel-method
+      - h2o.transform,H2OWordEmbeddingModel-method
       - h2o.trim
       - h2o.trunc
       - h2o.unique
+      - h2o.upload_model
+      - h2o.upload_mojo
       - h2o.var 
       - h2o.varimp_plot
       - h2o.varimp 
+      - h2o.varsplits
       - h2o.week 
       - h2o.weights
       - h2o.which_max
@@ -319,6 +343,7 @@ reference:
       - is.factor 
       - is.h2o 
       - is.numeric
+      - length,H2OTree-method
       - Logical-or
       - ModelAccessors
       - names.H2OFrame

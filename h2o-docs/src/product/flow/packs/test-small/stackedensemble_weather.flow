@@ -1,0 +1,41 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/junit/weather.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/junit/weather.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/junit/weather.csv\"]\n  destination_frame: \"weather.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 24\n  single_quotes: false\n  column_names: [\"Date\",\"EvapMM\",\"Sunshine\",\"MaxWindSpeed\",\"Temp9am\",\"RelHumid9am\",\"Cloud9am\",\"WindSpeed9am\",\"Pressure9am\",\"Temp3pm\",\"RelHumid3pm\",\"Cloud3pm\",\"WindSpeed3pm\",\"Pressure3pm\",\"ChangeTemp\",\"ChangeTempDir\",\"ChangeTempMag\",\"ChangeWindDirect\",\"MaxWindPeriod\",\"RainToday\",\"TempRange\",\"PressureChange\",\"RISK_MM\",\"RainTomorrow\"]\n  column_types: [\"Time\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"weather.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'drf', {\"model_id\":\"drf-ed824362-1f8e-4b03-b0bd-7702c0886406\",\"training_frame\":\"weather.hex\",\"validation_frame\":\"weather.hex\",\"nfolds\":2,\"response_column\":\"RainTomorrow\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"ntrees\":50,\"max_depth\":20,\"min_rows\":1,\"nbins\":20,\"seed\":1,\"mtries\":-1,\"sample_rate\":0.632,\"score_each_iteration\":false,\"score_tree_interval\":0,\"fold_assignment\":\"AUTO\",\"nbins_top_level\":1024,\"nbins_cats\":1024,\"r2_stopping\":1.7976931348623157e+308,\"stopping_rounds\":0,\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":0.001,\"max_runtime_secs\":0,\"col_sample_rate_per_tree\":1,\"min_split_improvement\":0.00001,\"histogram_type\":\"AUTO\",\"categorical_encoding\":\"AUTO\",\"distribution\":\"AUTO\",\"keep_cross_validation_models\":true,\"keep_cross_validation_predictions\":true,\"keep_cross_validation_fold_assignment\":true,\"build_tree_one_node\":false,\"sample_rate_per_class\":[],\"binomial_double_trees\":false,\"col_sample_rate_change_per_level\":1,\"calibrate_model\":false,\"check_constant_response\":true}"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-204e1edf-8521-4658-b531-71c1fea360f6\",\"training_frame\":\"weather.hex\",\"validation_frame\":\"weather.hex\",\"nfolds\":2,\"response_column\":\"RainTomorrow\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"seed\":1,\"learn_rate\":0.1,\"sample_rate\":1,\"col_sample_rate\":1,\"score_each_iteration\":false,\"score_tree_interval\":0,\"fold_assignment\":\"AUTO\",\"nbins_top_level\":1024,\"nbins_cats\":1024,\"r2_stopping\":1.7976931348623157e+308,\"stopping_rounds\":0,\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":0.001,\"max_runtime_secs\":0,\"learn_rate_annealing\":1,\"distribution\":\"AUTO\",\"huber_alpha\":0.9,\"col_sample_rate_per_tree\":1,\"min_split_improvement\":0.00001,\"histogram_type\":\"AUTO\",\"categorical_encoding\":\"AUTO\",\"monotone_constraints\":[],\"keep_cross_validation_models\":true,\"keep_cross_validation_predictions\":true,\"keep_cross_validation_fold_assignment\":true,\"build_tree_one_node\":false,\"sample_rate_per_class\":[],\"col_sample_rate_change_per_level\":1,\"max_abs_leafnode_pred\":1.7976931348623157e+308,\"pred_noise_bandwidth\":0,\"calibrate_model\":false,\"check_constant_response\":true}"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'stackedensemble'"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'stackedensemble', {\"model_id\":\"stackedensemble-6d61bf50-c3c0-4c82-b76f-4845723264e3\",\"training_frame\":\"weather.hex\",\"response_column\":\"RainTomorrow\",\"validation_frame\":\"weather.hex\",\"base_models\":[\"gbm-204e1edf-8521-4658-b531-71c1fea360f6\",\"drf-ed824362-1f8e-4b03-b0bd-7702c0886406\"],\"metalearner_algorithm\":\"AUTO\",\"metalearner_nfolds\":0,\"seed\":-1,\"keep_levelone_frame\":false,\"max_runtime_secs\":4}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"stackedensemble-6d61bf50-c3c0-4c82-b76f-4845723264e3\""
+    }
+  ]
+}

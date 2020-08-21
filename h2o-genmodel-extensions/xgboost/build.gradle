@@ -7,28 +7,15 @@ sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 ext {
-    xgboost4jVersion = "0.90.5"
+    xgboostPredictorVersion = "0.3.17"
 }
 
 dependencies {
     compile project(":h2o-genmodel")
-
-    compile('ai.h2o:xgboost-predictor:0.3.9') {
+    compile("ai.h2o:xgboost-predictor:${xgboostPredictorVersion}") {
         exclude group: 'net.jafama', 'module': 'jafama'
     }
-
-    // XGBoost dependencies published into Maven central by H2O
-    // Versioning rules may differ for XGBoost artifacts published by H2O
-    compile("ai.h2o:xgboost4j:${xgboost4jVersion}") {
-        exclude group: 'org.scala-lang', module: 'scala-compiler'
-        exclude group: 'org.scala-lang', module: 'scala-reflect'
-        exclude group: 'org.scala-lang', module: 'scala-library'
-        exclude group: 'com.typesafe.akka', module: 'akka-actor_2.11'
-        exclude group: 'com.esotericsoftware.kryo', module: 'kryo'
-    }
-    compile "ai.h2o:xgboost4j-linux-gpuv4:${xgboost4jVersion}"
-    compile "ai.h2o:xgboost4j-linux-minimal:${xgboost4jVersion}"
-    compile "ai.h2o:xgboost4j-osx-minimal:${xgboost4jVersion}"
+    compile "commons-logging:commons-logging:1.2"
     compileOnly 'com.esotericsoftware.kryo:kryo:2.21'
 
     testCompile 'com.esotericsoftware.kryo:kryo:2.21'

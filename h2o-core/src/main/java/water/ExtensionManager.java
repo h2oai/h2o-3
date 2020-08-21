@@ -161,7 +161,7 @@ public class ExtensionManager {
           restApiExtensions.put(r.getName(), r);
         }
       } catch (Exception e) {
-        Log.info("Cannot register extension: " + r + ". Skipping it...");
+        Log.err("Cannot register extension: " + r + ". Skipping it...", e);
       }
     }
 

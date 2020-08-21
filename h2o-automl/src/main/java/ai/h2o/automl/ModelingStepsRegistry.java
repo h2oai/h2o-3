@@ -1,8 +1,9 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.EventLogEntry.Stage;
+import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.StepDefinition.Alias;
 import ai.h2o.automl.StepDefinition.Step;
+import hex.Model;
 import water.Iced;
 import water.nbhm.NonBlockingHashMap;
 import water.util.ArrayUtils;
@@ -21,12 +22,27 @@ import java.util.stream.Stream;
 public class ModelingStepsRegistry extends Iced<ModelingStepsRegistry> {
 
     static final NonBlockingHashMap<String, ModelingStepsProvider> stepsByName = new NonBlockingHashMap<>();
+    static final NonBlockingHashMap<String, ModelParametersProvider> parametersByName = new NonBlockingHashMap<>();
 
     static {
         ServiceLoader<ModelingStepsProvider> trainingStepsProviders = ServiceLoader.load(ModelingStepsProvider.class);
         for (ModelingStepsProvider provider : trainingStepsProviders) {
-            stepsByName.put(provider.getName(), provider);
+            registerProvider(provider);
         }
+    }
+
+    public static void registerProvider(ModelingStepsProvider provider) {
+        stepsByName.put(provider.getName(), provider);
+        if (provider instanceof ModelParametersProvider) {  // mainly for hardcoded providers in this module, that's why we can reuse the ModelingStepsProvider
+            parametersByName.put(provider.getName(), (ModelParametersProvider)provider);
+        }
+    }
+
+    public static Model.Parameters defaultParameters(String provider) {
+        if (parametersByName.containsKey(provider)) {
+            return parametersByName.get(provider).newDefaultParameters();
+        }
+        return null;
     }
 
     /**
@@ -42,6 +58,8 @@ public class ModelingStepsRegistry extends Iced<ModelingStepsRegistry> {
                 throw new IllegalArgumentException("Missing provider for training steps '"+def._name+"'");
             }
             ModelingSteps steps = provider.newInstance(aml);
+            if (steps == null) continue;
+
             ModelingStep[] toAdd;
             if (def._alias != null) {
                 toAdd = steps.getSteps(def._alias);

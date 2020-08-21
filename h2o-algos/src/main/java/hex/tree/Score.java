@@ -3,6 +3,7 @@ package hex.tree;
 import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.gbm.GBMModel;
 import water.Iced;
 import water.Key;
 import water.fvec.C0DChunk;
@@ -50,27 +51,35 @@ public class Score extends CMetricScoringTask<Score> {
 
   @Override public void map(Chunk allchks[]) {
     final Chunk[] chks = getScoringChunks(allchks);
-    Chunk ys = _bldr.isSupervised() ? _bldr.chk_resp(chks) : new C0DChunk(0, chks[0]._len);  // Response
+    Chunk ys; // Response
+    if (_bldr.isSupervised()) {
+      ys = _bldr.chk_resp(chks);
+    } else if (_bldr.isResponseOptional() && _kresp != null) {
+      ys = _kresp.get().chunkForChunkIdx(chks[0].cidx());
+    } else {
+      ys = new C0DChunk(0, chks[0]._len); // Dummy response to simplify code
+    }
     SharedTreeModel m = _bldr._model;
     Chunk weightsChunk = m._output.hasWeights() ? chks[m._output.weightsIdx()] : null;
     Chunk offsetChunk = m._output.hasOffset() ? chks[m._output.offsetIdx()] : null;
-    final int nclass = _bldr.nclasses();
     // Because of adaption - the validation training set has at least as many
     // classes as the training set (it may have more).  The Confusion Matrix
     // needs to be at least as big as the training set domain.
-    String[] domain = _kresp != null ? _kresp.get().domain() : null;
-    if (domain == null && m._parms._distribution == DistributionFamily.quasibinomial)
-      domain = new String[]{"0", "1"};
+    final String[] domain;
+    if (m._parms._distribution == DistributionFamily.quasibinomial) {
+      domain = ((GBMModel) m)._output._quasibinomialDomains;
+    } else {
+      domain = _kresp != null ? _kresp.get().domain() : null;
+    }
+    final int nclass = _bldr.nclasses();
+    _mb = m.makeMetricBuilder(domain);
     // If this is a score-on-train AND DRF, then oobColIdx makes sense,
     // otherwise this field is unused.
     final int oobColIdx = _bldr.idx_oobt();
-    _mb = m.makeMetricBuilder(domain);
-//    _gainsLiftBuilder = _bldr._model._output.nclasses()==2 ? new GainsLift.GainsLiftBuilder(_fr.vec(_bldr.idx_tree(0)).pctiles()) : null;
     final double[] cdists = _mb._work; // Temp working array for class distributions
     // If working a validation set, need to push thru official model scoring
     // logic which requires a temp array to hold the features.
     final double[] tmp = _is_train && _bldr._ntrees > 0 ? null : new double[_bldr._ncols];
-//    final double[] tmp = new double[_bldr._ncols];
 
     // Score all Rows
     float [] val= new float[1];
@@ -93,12 +102,20 @@ public class Score extends CMetricScoringTask<Score> {
         for( int i=0; i< tmp.length; i++ )
           tmp[i] = chks[i].atd(row);
 
-      if( nclass > 1 ) cdists[0] = GenModel.getPrediction(cdists, m._output._priorClassDist, tmp, m.defaultThreshold()); // Fill in prediction
+      if (nclass > 2) { // Fill in prediction for multinomial
+        cdists[0] = GenModel.getPredictionMultinomial(cdists, m._output._priorClassDist, tmp);
+      } else if (nclass == 2) {
+        // for binomial the predicted class is not needed
+        // and it even cannot be returned because the threshold is calculated based on model metrics that are not known yet
+        // (we are just building the metrics)
+        cdists[0] = -1;
+      }
       val[0] = (float)ys.atd(row);
       _mb.perRow(cdists, val, weight, offset, m);
 
-      if (_preds != null)
+      if (_preds != null) {
         _mb.cachePrediction(cdists, allchks, row, chks.length, m);
+      }
 
       // Compute custom metric if necessary
       customMetricPerRow(cdists, val, weight, offset, m);
@@ -145,7 +162,7 @@ public class Score extends CMetricScoringTask<Score> {
       assert preds != null : "Predictions were pre-created";
       mm = _mb.makeModelMetrics(model, fr, adaptedFr, preds);
     } else {
-      boolean calculatePreds = preds == null && model._parms._distribution == DistributionFamily.huber;
+      boolean calculatePreds = preds == null && model.isDistributionHuber();
       // FIXME: PUBDEV-4992 we should avoid doing full scoring!
       if (calculatePreds) {
         Log.warn("Going to calculate predictions from scratch. This can be expensive for large models! See PUBDEV-4992");
@@ -158,12 +175,9 @@ public class Score extends CMetricScoringTask<Score> {
     return mm;
   }
 
-  static Frame makePredictionCache(SharedTreeModel model, Vec resp) {
-    String[] domain = resp.domain();
-    if (domain == null && model._parms._distribution == DistributionFamily.quasibinomial)
-      domain = new String[]{"0", "1"};
+  static Frame makePredictionCache(SharedTreeModel model, Vec templateVec, String[] domain) {
     ModelMetrics.MetricBuilder mb = model.makeMetricBuilder(domain);
-    return mb.makePredictionCache(model, resp);
+    return mb.makePredictionCache(model, templateVec);
   }
 
   public static class ScoreIncInfo extends Iced<ScoreIncInfo> {

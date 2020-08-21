@@ -1,0 +1,29 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/logreg/prostate.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/logreg/prostate.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/logreg/prostate.csv\"]\n  destination_frame: \"prostate.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 9\n  single_quotes: false\n  column_names: [\"ID\",\"CAPSULE\",\"AGE\",\"RACE\",\"DPROS\",\"DCAPS\",\"PSA\",\"VOL\",\"GLEASON\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "runAutoML {\"build_control\":{\"project_name\":\"automl_prostate_prefill\",\"nfolds\":4,\"balance_classes\":false,\"stopping_criteria\":{\"seed\":-1,\"max_models\":3,\"max_runtime_secs\":600,\"max_runtime_secs_per_model\":0,\"stopping_rounds\":3,\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":-1},\"keep_cross_validation_predictions\":false,\"keep_cross_validation_models\":false,\"keep_cross_validation_fold_assignment\":false},\"input_spec\":{\"training_frame\":\"prostate.hex\",\"response_column\":\"CAPSULE\",\"ignored_columns\":[\"ID\"],\"sort_metric\":\"AUTO\"},\"build_models\":{\"exclude_algos\":['GBM', 'DeepLearning'],\"monotone_constraints\":[{'key':'AGE', 'value':-1}]}}"
+    },
+    {
+      "type": "cs",
+      "input": "runAutoML {\"build_control\":{\"project_name\":\"automl_prostate_prefill\",\"nfolds\":4,\"balance_classes\":false,\"stopping_criteria\":{\"seed\":-1,\"max_models\":3,\"max_runtime_secs\":600,\"max_runtime_secs_per_model\":0,\"stopping_rounds\":3,\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":-1},\"keep_cross_validation_predictions\":false,\"keep_cross_validation_models\":false,\"keep_cross_validation_fold_assignment\":false},\"input_spec\":{\"training_frame\":\"prostate.hex\",\"response_column\":\"CAPSULE\",\"ignored_columns\":[\"ID\"],\"sort_metric\":\"AUTO\"},\"build_models\":{\"exclude_algos\":[\"GBM\",\"DeepLearning\"],\"monotone_constraints\":[{\"key\":\"AGE\",\"value\":-1}]}}, 'exec'"
+    },
+    {
+      "type": "cs",
+      "input": "getLeaderboard \"automl_prostate_prefill@@CAPSULE\""
+    }
+  ]
+}

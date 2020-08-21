@@ -11,10 +11,7 @@ import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingSetInt;
-import water.util.ArrayUtils;
-import water.util.FrameUtils;
-import water.util.Log;
-import water.util.PrettyPrint;
+import water.util.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -762,9 +759,9 @@ public final class ParseDataset {
                 ctypes[i], chunkOff);
       return localSetup._parse_type.equals(SVMLight_INFO)
         ? new SVMLightFVecParseWriter(_vg, _vecIdStart,chunkOff, _parseSetup._chunk_size, avs,
-              _parseSetup._parse_columns_indices)
+              _parseSetup._parse_columns_indices, _jobKey)
         : new FVecParseWriter(_vg, chunkOff, categoricals(_cKey, localSetup._number_columns),
-              localSetup._column_types, _parseSetup._chunk_size, avs, _parseSetup._parse_columns_indices);
+              localSetup._column_types, _parseSetup._chunk_size, avs, _parseSetup._parse_columns_indices, _jobKey);
     }
 
     // Called once per file
@@ -788,7 +785,7 @@ public final class ParseDataset {
         switch( cpr ) {
         case NONE:
           ParserInfo.ParseMethod pm = _parseSetup.parseMethod(_keys.length, vec);
-          Log.debug("Key " + key + " will be parsed using method " + pm + ".");
+          Log.info("Key " + key + " will be parsed using method " + pm + ".");
 
           if(pm == ParserInfo.ParseMethod.DistributedParse) {
             new DistributedParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks()).dfork(vec).getResult(false);
@@ -954,20 +951,20 @@ public final class ParseDataset {
         case "PARQUET":
           Categorical [] categoricals = categoricals(_cKey, _setup._number_columns);
           dout = new FVecParseWriter(_vg,_startChunkIdx + in.cidx(), categoricals, _setup._column_types,
-                  _setup._chunk_size, avs, _setup._parse_columns_indices); //TODO: use _setup._domains instead of categoricals
+                  _setup._chunk_size, avs, _setup._parse_columns_indices, _jobKey); //TODO: use _setup._domains instead of categoricals
           break;
         case "SVMLight":
           dout = new SVMLightFVecParseWriter(_vg, _vecIdStart, in.cidx() + _startChunkIdx, _setup._chunk_size,
-                  avs, _setup._parse_columns_indices);
+                  avs, _setup._parse_columns_indices, _jobKey);
           break;
         case "ORC":  // setup special case for ORC
           Categorical [] orc_categoricals = categoricals(_cKey, _setup._number_columns);
           dout = new FVecParseWriter(_vg, in.cidx() + _startChunkIdx, orc_categoricals, _setup._column_types,
-                  _setup._chunk_size, avs, _setup._parse_columns_indices);
+                  _setup._chunk_size, avs, _setup._parse_columns_indices, _jobKey);
           break;
         default: // FIXME: should not be default and creation strategy should be forwarded to ParserProvider
           dout = new FVecParseWriter(_vg, in.cidx() + _startChunkIdx, null, _setup._column_types,
-                  _setup._chunk_size, avs, _setup._parse_columns_indices);
+                  _setup._chunk_size, avs, _setup._parse_columns_indices, _jobKey);
           break;
         }
         if ((_setup.getParseType().name().toLowerCase().equals("svmlight") ||
@@ -1010,11 +1007,9 @@ public final class ParseDataset {
       }
       @Override public void reduce(DistributedParse dp) {
         _dout.reduce(dp._dout);
-
       }
 
       @Override public void postGlobal() {
-        super.postGlobal();
         _outerMFPT._dout[_outerMFPT._lo] = _dout;
         if(_dout.hasErrors()) {
           ParseWriter.ParseErr [] errs = _dout.removeErrors();
@@ -1132,11 +1127,16 @@ public final class ParseDataset {
         }
       }
 
-      if (printLogSeparatorToStdout)
+      if (printLogSeparatorToStdout) {
         Log.info("Additional column information only sent to log file...");
+      }
 
       String s = String.format(format, CStr, typeStr, minStr, maxStr, meanStr, sigmaStr, naStr, isConstantStr, numLevelsStr);
-      Log.info(s,printColumnToStdout);
+      if (printColumnToStdout) {
+        Log.info(s);
+      } else {
+        Log.trace(s);
+      }
     }
     Log.info(FrameUtils.chunkSummary(fr).toString());
   }

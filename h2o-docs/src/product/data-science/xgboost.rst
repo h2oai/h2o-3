@@ -1,8 +1,6 @@
 XGBoost
 -------
 
-**Note**: This section is a work in progress.
-
 Introduction
 ~~~~~~~~~~~~
 
@@ -31,6 +29,8 @@ Defining an XGBoost Model
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
+
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation predictions.
 
 -  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. 
@@ -45,7 +45,9 @@ Defining an XGBoost Model
 
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option is enabled by default.
 
--  `offset_column <algo-params/offset_column.html>`__: Available, but not currently supported in XGBoost. 
+-  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset.
+
+    **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 
 -  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
    
@@ -64,18 +66,18 @@ Defining an XGBoost Model
 -  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
    The available options are:
     
-    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that custom and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
+    - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that custom and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
     - ``anomaly_score`` (Isolation Forest only)
     - ``deviance``
     - ``logloss``
-    - ``mse``
-    - ``rmse``
-    - ``mae``
-    - ``rmsle``
-    - ``auc``
+    - ``MSE``
+    - ``RMSE``
+    - ``MAE``
+    - ``RMSLE``
+    - ``AUC`` (area under the ROC curve)
+    - ``AUCPR`` (area under the Precision-Recall curve)
     - ``lift_top_group``
     - ``misclassification``
-    - ``aucpr``
     - ``mean_per_class_error``
     - ``custom`` (Python client only)
     - ``custom_increasing`` (Python client only)
@@ -83,6 +85,8 @@ Defining an XGBoost Model
 -  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. This value defaults to 0.001.
 
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. This option defaults to 0 (disabled) by default.
+
+-  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. Also useful when you want to use ``exact`` tree method.
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to -1 (time-based random number).
 
@@ -108,7 +112,7 @@ Defining an XGBoost Model
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
   - ``label_encoder`` or ``LabelEncoder``: Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.) 
   - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. 
-  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** (1024) most frequent levels, and then internally do one hot encoding in the case of XGBoost.
+  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** (10) most frequent levels, and then internally do one hot encoding in the case of XGBoost.
 
   **Note**: This value defaults to ``label_encoder``. Similarly, if ``auto`` is specified, then the algorithm performs ``label_encoder`` encoding. 
 
@@ -126,11 +130,13 @@ Defining an XGBoost Model
 
 -  `col_sample_rate <algo-params/col_sample_rate.html>`__ (alias: ``colsample_bylevel``): Specify the column sampling rate (y-axis) for each split in each level. (Note that this method is sample without replacement.) This value defaults to 1.0, and the range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
--  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__ (alias: ``colsample_bytree``: Specify the column subsampling rate per tree. (Note that this method is sample without replacement.) This value defaults to 1.0 and can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
+-  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__ (alias: ``colsample_bytree``): Specify the column subsampling rate per tree. (Note that this method is sample without replacement.) This value defaults to 1.0 and can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate`` and ``colsample_bynode``, so setting all parameters to 0.8, for example, results in 51% of columns being considered at any given node to split.
+
+-  `colsample_bynode <algo-params/colsample_bynode.html>`__: Specify the column subsampling rate per tree node. (Note that this method is sample without replacement.) This value defaults to 1.0 and can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate`` and ``col_sample_rate_per_tree``, so setting all parameters to 0.8, for example, results in 51% of columns being considered at any given node to split.
 
 -  `max_abs_leafnode_pred <algo-params/max_abs_leafnode_pred.html>`__ (alias: ``max_delta_step``): Specifies the maximum delta step allowed in each tree’s weight estimation. This value defaults to 0. Setting this value to 0 specifies no constraint. Setting this value to be greater than 0 can help making the update step more conservative and reduce overfitting by limiting the absolute value of a leafe node prediction. This option also helps in logistic regression when a class is extremely imbalanced. 
 
--  `monotone_constraints <algo-params/monotone_constraints.html>`__: A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns. Also note that this option can only be used when the distribution is either ``gaussian`` or ``bernoulli``. A Python demo is available `here <https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/H2O_tutorial_gbm_monotonicity.ipynb>`__.
+-  `monotone_constraints <algo-params/monotone_constraints.html>`__: A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns. Also note that this option can only be used when the distribution is ``gaussian``, ``bernoulli``, or ``tweedie``. A Python demo is available `here <https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/H2O_tutorial_gbm_monotonicity.ipynb>`__.
 
 -  `score_tree_interval <algo-params/score_tree_interval.html>`__: Score the model after every so many trees. This value is set to 0 (disabled) by default.
 
@@ -151,17 +157,13 @@ Defining an XGBoost Model
 
 -  **max_leaves**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the maximum number of leaves to include each tree. This value defaults to 0.
 
--  **min_sum_hessian_in_leaf**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the mininum sum of hessian in a leaf to keep splitting. This value defaults to 100.
-
--  **min_data_in_leaf**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the mininum data in a leaf to keep splitting. This value defaults to 0.
-
 -  **booster**: Specify the booster type. This can be one of the following: ``gbtree``, ``gblinear``, or ``dart``. 
    Note that ``gbtree`` and ``dart`` use a tree-based model while ``gblinear`` uses linear function. This value 
    defaults to ``gbtree``. Together with ``tree_method`` this will also determine the ``updater`` XGBoost parameter:
 
     - for ``gblinear`` the ``coord_descent`` updater will be configured (``gpu_coord_descent`` for GPU backend)
-    - for ``gbtree`` and ``dart`` with GPU backend selected ``grow_gpu`` is used when ``tree_method`` is ``exact``
-      and ``grow_gpu_hist`` otherwise
+    - for ``gbtree`` and ``dart`` with GPU backend only ``grow_gpu_hist`` is supported, 
+      ``tree_method`` other than ``auto`` or ``hist`` will force CPU backend
     - for other cases the ``updater`` is set automatically by XGBoost, visit the 
       `XGBoost Documentation <https://xgboost.readthedocs.io/en/latest/parameter.html#parameters-for-tree-booster>`__
       to learn more about updaters
@@ -196,6 +198,13 @@ Defining an XGBoost Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
+-  `calibrate_model <algo-params/calibrate_model.html>`__: Use Platt scaling to calculate calibrated class probabilities. Defaults to False.
+
+-  `calibration_frame <algo-params/calibration_frame.html>`__: Specifies the frame to be used for Platt scaling.
+
+- `gainslift_bins <algo-params/gainslift_bins.html>`__: The number of bins for a Gains/Lift table. The default value is ``-1`` and makes the binning automatic. To disable this feature, set to ``0``.
+
+
 "LightGBM" Emulation Mode Options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -210,8 +219,6 @@ When the above are configured, then the following additional "LightGBM" options 
 
 - ``max_bin``
 - ``max_leaves``
-- ``min_sum_hessian_in_leaf``
-- ``min_data_in_leaf``
 
 XGBoost Only Options
 ~~~~~~~~~~~~~~~~~~~~
@@ -246,9 +253,12 @@ GPU Support
 GPU support is available in H2O's XGBoost if the following requirements are met:
 
 - NVIDIA GPUs (GPU Cloud, DGX Station, DGX-1, or DGX-2)
-- CUDA 8
+- CUDA 9
 
-You can monitor your GPU utilization via the ``nvidia-smi`` command. Refer to https://developer.nvidia.com/nvidia-system-management-interface for more information.
+**Notes**:
+
+ - You can verify that your CUDA runtime version is CUDA 9 by typing ``ls /usr/local/cuda``. If this does not point to CUDA 9, and you have CUDA 9 installed, then create a symlink that points to CUDA 9.
+ - You can monitor your GPU utilization via the ``nvidia-smi`` command. Refer to https://developer.nvidia.com/nvidia-system-management-interface for more information.
 
 Limitations
 ~~~~~~~~~~~
@@ -298,6 +308,79 @@ Some environments may required disabling XGBoost. This can be done by setting ``
   hadoop jar h2odriver.jar -JJ "-Dsys.ai.h2o.ext.core.toggle.XGBoost=False" -nodes 1  -mapperXmx 3g  -output tmp/a39
 
 Setting ``-Dsys.ai.h2o.ext.core.toggle.XGBoost`` to ``False`` can be done on any H2O version that supports XGBoost and removes XGBoost from the list of available algorithms. 
+
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a XGBoost model.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+    h2o.init()
+
+    # Import the iris dataset into H2O:
+    titanic <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+
+    # Set the predictors and response; set the response as a factor:
+    titanic['survived'] <- as.factor(titanic['survived'])
+    predictors <- setdiff(colnames(titanic), colnames(titanic)[2:3])
+    response <- "survived"
+
+    # Split the dataset into a train and valid set:
+    titanic_splits <- h2o.splitFrame(data =  titanic, ratios = 0.8, seed = 1234)
+    train <- titanic_splits[[1]]
+    valid <- titanic_splits[[2]]
+
+    # Build and train the model:
+    titanic_xgb <- h2o.xgboost(x = predictors, 
+                               y = response, 
+                               training_frame = train, 
+                               validation_frame = valid, 
+                               booster = "dart", 
+                               normalize_type = "tree", 
+                               seed = 1234)
+
+    # Eval performance:
+    perf <- h2o.performance(titanic_xgb)
+
+    # Generate predictions on a test set (if necessary):
+    pred <- h2o.predict(titanic_xgb, newdata = valid)
+
+
+   .. code-tab:: python
+   
+    import h2o
+    from h2o.estimators import H2OXGBoostEstimator
+    h2o.init()
+
+    # Import the titanic dataset into H2O:
+    titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+
+    # Set the predictors and response; set the response as a factor:
+    titanic["survived"] = titanic["survived"].asfactor()
+    predictors = titanic.columns
+    response = "survived" 
+
+    # Split the dataset into a train and valid set: 
+    train, valid = titanic.split_frame(ratios=[.8], seed=1234)
+
+    # Build and train the model:
+    titanic_xgb = H2OXGBoostEstimator(booster='dart', 
+                                      normalize_type="tree", 
+                                      seed=1234)
+    titanic_xgb.train(x=predictors, 
+                      y=response, 
+                      training_frame=train, 
+                      validation_frame=valid)
+
+    # Eval performance:
+    perf = titanic_xgb.model_performance()
+
+    # Generate predictions on a test set (if necessary):
+    pred = titanic_xgb.predict(valid)
+  
 
 FAQs
 ~~~~

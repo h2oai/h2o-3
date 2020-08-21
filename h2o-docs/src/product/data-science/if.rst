@@ -1,3 +1,5 @@
+.. _isoforest:
+
 Isolation Forest
 ----------------
 
@@ -45,9 +47,9 @@ Defining an Isolation Forest Model
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
 
--  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used.
+-  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used.
 
--  `mtries <algo-params/mtries.html>`__: Specify the columns to randomly select at each level. If the default value of ``-1`` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors). The range is -1 to >=1.
+-  `mtries <algo-params/mtries.html>`__: Specify the columns to randomly select at each level. If the default value of ``-1`` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors). If ``-2`` is specified, all features of IF are used. Valid values for this option are -2, -1, and any value >= 1.
 
 -  `sample_size <algo-params/sample_size.html>`__: The number of randomly sampled observations used to train each Isolation Forest tree. Only one of ``sample_size`` or ``sample_rate`` should be defined. If ``sample_rate`` is defined, ``sample_size`` will be ignored. This value defaults to 256.
 
@@ -71,7 +73,7 @@ Defining an Isolation Forest Model
 
   - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In Isolation Forest, the algorithm will automatically perform ``enum`` encoding.
   - ``enum`` or ``Enum``: 1 column per categorical feature
-  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** most frequent levels.
+  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** (10) most frequent levels.
   - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels
   - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
@@ -93,18 +95,18 @@ Defining an Isolation Forest Model
 -  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
    The available options are:
     
-    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that custom and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
+    - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that custom and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
     - ``anomaly_score`` (Isolation Forest only)
     - ``deviance``
     - ``logloss``
-    - ``mse``
-    - ``rmse``
-    - ``mae``
-    - ``rmsle``
-    - ``auc``
+    - ``MSE``
+    - ``RMSE``
+    - ``MAE``
+    - ``RMSLE``
+    - ``AUC`` (area under the ROC curve)
+    - ``AUCPR`` (area under the Precision-Recall curve)
     - ``lift_top_group``
     - ``misclassification``
-    - ``aucpr``
     - ``mean_per_class_error``
     - ``custom`` (Python client only)
     - ``custom_increasing`` (Python client only)
@@ -115,67 +117,68 @@ Defining an Isolation Forest Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
-Simple Example
-~~~~~~~~~~~~~~
+- **contamination**: The contamination ratio is the proportion of anomalies in the input dataset. If undefined (``-1``), the predict function will not mark observations as anomalies and only anomaly score will be returned. Defaults to ``-1``.
 
-Below is a simple example showing Isolation Forest from model training through prediction and predicted leaf node assignment. 
+Examples
+~~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+Below is a simple example showing how to build an Isolation Forest model. 
 
-    library(h2o)
-    h2o.init()
+.. tabs::
+   .. code-tab:: r R
 
-    # Import the prostate dataset
-    prostate.hex <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv", 
-                                   destination_frame = "prostate.hex")
+        library(h2o)
+        h2o.init()
 
-    # Split dataset giving the training dataset 75% of the data
-    prostate.split <- h2o.splitFrame(data=prostate.hex, ratios=0.75)
+        # Import the prostate dataset
+        prostate <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
 
-    # Create a training set from the 1st dataset in the split
-    train <- prostate.split[[1]]
+        # Split dataset giving the training dataset 75% of the data
+        prostate_split <- h2o.splitFrame(data = prostate, ratios = 0.75)
 
-    # Create a testing set from the 2nd dataset in the split
-    test <- prostate.split[[2]]
+        # Create a training set from the 1st dataset in the split
+        train <- prostate_split[[1]]
 
-    # Build an Isolation forest model
-    model <- h2o.isolationForest(training_frame=train, 
-                                 sample_rate = 0.1, 
-                                 max_depth = 20, 
-                                 ntrees = 50)
+        # Create a testing set from the 2nd dataset in the split
+        test <- prostate_split[[2]]
 
-    # Calculate score
-    score <- h2o.predict(model, test)
-    result_pred <- score$predict
+        # Build an Isolation forest model
+        model <- h2o.isolationForest(training_frame = train, 
+                                     sample_rate = 0.1, 
+                                     max_depth = 20, 
+                                     ntrees = 50)
 
-    # Predict the leaf node assignment
-    ln_pred <- h2o.predict_leaf_node_assignment(model, test)
+        # Calculate score
+        score <- h2o.predict(model, test)
+        result_pred <- score$predict
 
-   .. code-block:: python
+        # Predict the leaf node assignment
+        ln_pred <- h2o.predict_leaf_node_assignment(model, test)
 
-    import h2o
-    from h2o.estimators import H2OIsolationForestEstimator
-    h2o.init()
-    
-    # Import the prostate dataset
-    h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
-    
-    # Split the data giving the training dataset 75% of the data
-    train,test = h2o_df.split_frame(ratios=[0.75])
+   .. code-tab:: python
 
-    # Build an Isolation forest model
-    model = H2OIsolationForestEstimator(sample_rate = 0.1, 
-                                        max_depth = 20, 
-                                        ntrees = 50)
-    model.train(training_frame=train)
+        import h2o
+        from h2o.estimators import H2OIsolationForestEstimator
+        h2o.init()
+        
+        # Import the prostate dataset
+        h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
+        
+        # Split the data giving the training dataset 75% of the data
+        train,test = h2o_df.split_frame(ratios=[0.75])
 
-    # Calculate score
-    score = model.predict(test)
-    result_pred = score["predict"]
+        # Build an Isolation forest model
+        model = H2OIsolationForestEstimator(sample_rate = 0.1, 
+                                            max_depth = 20, 
+                                            ntrees = 50)
+        model.train(training_frame=train)
 
-    # Predict the leaf node assignment
-    ln_pred = model.predict_leaf_node_assignment(test, "Path")
+        # Calculate score
+        score = model.predict(test)
+        result_pred = score["predict"]
+
+        # Predict the leaf node assignment
+        ln_pred = model.predict_leaf_node_assignment(test, "Path")
 
 
 References

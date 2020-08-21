@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 automl.model_selection.suite <- function() {
-  max_models <- 2
+  max_models <- 5
 
   import_dataset <- function() {
     y <- "CAPSULE"
@@ -203,6 +203,28 @@ automl.model_selection.suite <- function() {
     expect_equal(length(models$non_se), 3)
   }
 
+  test_monotone_constraints <- function() {
+    ds <- import_dataset()
+    aml <- h2o.automl(x = ds$x, y = ds$y.idx,
+      training_frame = ds$train,
+      monotone_constraints = list(AGE=1, VOL=-1),
+      project_name="r_monotone_constraints",
+      max_models = 6,
+      seed = 1
+    )
+    models <- get_partitioned_models(aml)$all
+    models_supporting_monotone_constraints <- models[grepl("^(GBM|XGBoost)", models)]
+    expect_lt(length(models_supporting_monotone_constraints), length(models))
+    for (m in models_supporting_monotone_constraints) {
+      model <- h2o.getModel(m)
+      mc <- model@parameters$monotone_constraints
+      expect_equal(mc[[1]]$key, "AGE")
+      expect_equal(mc[[1]]$value, 1)
+      expect_equal(mc[[2]]$key, "VOL")
+      expect_equal(mc[[2]]$value, -1)
+    }
+  }
+
   test_monotone_constraints_can_be_passed_as_algo_parameter <- function() {
     ds <- import_dataset()
     aml <- h2o.automl(x = ds$x, y = ds$y.idx,
@@ -259,6 +281,32 @@ automl.model_selection.suite <- function() {
     }
   }
 
+  test_exploitation_enabled <- function() {
+    ds <- import_dataset()
+    aml <- h2o.automl(x = ds$x, y = ds$y.idx,
+                      training_frame = ds$train,
+                      project_name="r_exploitation_ratio_enabled",
+                      exploitation_ratio = 0.2,
+                      max_models = 6,
+                      seed = 1
+    )
+    expect_true('start_GBM_lr_annealing' %in% names(aml@training_info))
+    expect_true('start_XGBoost_lr_search' %in% names(aml@training_info))
+  }
+
+  test_exploitation_disabled <- function() {
+    ds <- import_dataset()
+    aml <- h2o.automl(x = ds$x, y = ds$y.idx,
+                      training_frame = ds$train,
+                      project_name="r_exploitation_ratio_disabled",
+                      exploitation_ratio = 0,
+                      max_models = 6,
+                      seed = 1
+    )
+    expect_false('start_GBM_lr_annealing' %in% names(aml@training_info))
+    expect_false('start_XGBoost_lr_search' %in% names(aml@training_info))
+  }
+
 
   makeSuite(
     test_exclude_algos,
@@ -269,8 +317,11 @@ automl.model_selection.suite <- function() {
     test_modeling_plan_minimal_syntax,
     test_modeling_steps,
     test_exclude_algos_is_applied_on_top_of_modeling_plan,
+    test_monotone_constraints,
     test_monotone_constraints_can_be_passed_as_algo_parameter,
     test_algo_parameter_can_be_applied_only_to_a_specific_algo,
+    test_exploitation_enabled,
+    test_exploitation_disabled,
   )
 }
 

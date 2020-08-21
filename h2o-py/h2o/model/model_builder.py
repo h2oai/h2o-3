@@ -6,9 +6,10 @@ Model builder.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+# noinspection PyUnresolvedReferences
+from h2o.utils.compatibility import *  # NOQA
 
 import h2o
-from h2o.utils.compatibility import *  # NOQA
 from ..frame import H2OFrame
 from ..job import H2OJob
 from .model_future import H2OModelFuture

@@ -2,6 +2,7 @@ package hex.glm;
 
 import hex.*;
 import hex.DataInfo.TransformType;
+import hex.genmodel.algos.glm.GlmMojoModel;
 import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
@@ -25,6 +26,7 @@ import java.util.HashMap;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
+import static hex.genmodel.utils.ArrayUtils.flat;
 import static org.junit.Assert.*;
 
 public class GLMTest  extends TestUtil {
@@ -109,6 +111,132 @@ public class GLMTest  extends TestUtil {
       }
     }
   }
+
+  @Test
+  public void testStandardizedCoeff() {
+    // test for multinomial
+    testCoeffs(Family.multinomial, "smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv", "C11");
+    // test for binomial
+    testCoeffs(Family.binomial, "smalldata/glm_test/binomial_20_cols_10KRows.csv", "C21");
+    // test for Gaussian
+    testCoeffs(Family.gaussian, "smalldata/glm_test/gaussian_20cols_10000Rows.csv", "C21");
+  }
+  
+  public void testCoeffs(Family family, String fileName, String responseColumn) {
+    try {
+      Scope.enter();
+      Frame train = parse_test_file(fileName);
+      // set cat columns
+      int numCols = train.numCols();
+      int enumCols = (numCols-1)/2;
+      for (int cindex=0; cindex<enumCols; cindex++) {
+        train.replace(cindex, train.vec(cindex).toCategoricalVec()).remove();
+      }
+      int response_index = numCols-1;
+      if (family.equals(Family.binomial) || (family.equals(Family.multinomial))) {
+        train.replace((response_index), train.vec(response_index).toCategoricalVec()).remove();
+      }
+      DKV.put(train);
+      Scope.track(train);
+      
+      GLMParameters params = new GLMParameters(family);
+      params._standardize=true;
+      params._response_column = responseColumn;
+      params._train = train._key;
+      GLMModel glm = new GLM(params).trainModel().get();
+      Scope.track_generic(glm);
+      
+      // standardize numerical columns of train
+      int numStart = enumCols;  // start of numerical columns
+      int[] numCols2Transform = new int[enumCols];
+      double[] colMeans = new double[enumCols];
+      double[] oneOSigma = new double[enumCols];
+      int countIndex = 0;
+      HashMap<String, Double> cMeans = new HashMap<>();
+      HashMap<String, Double> cSigmas = new HashMap<>();
+      String[] cnames = train.names();
+      for (int cindex = numStart; cindex < response_index; cindex++) {
+        numCols2Transform[countIndex]=cindex;
+        colMeans[countIndex] = train.vec(cindex).mean();
+        oneOSigma[countIndex] = 1.0/train.vec(cindex).sigma();
+        cMeans.put(cnames[cindex], colMeans[countIndex]);
+        cSigmas.put(cnames[cindex], train.vec(cindex).sigma());
+        countIndex++;
+      }
+
+      params._standardize = false;  // build a model on non-standardized columns with no standardization.
+      GLMModel glmF = new GLM(params).trainModel().get();
+      Scope.track_generic(glmF);
+
+      HashMap<String, Double> coeffSF = glmF.coefficients(true);
+      HashMap<String, Double> coeffF = glmF.coefficients();
+      if (family.equals(Family.multinomial)) {
+        double[] interPClass = new double[glmF._output._nclasses];
+        for (String key : coeffSF.keySet()) {
+          double temp1 = coeffSF.get(key);
+          double temp2 = coeffF.get(key);
+          if (Math.abs(temp1 - temp2) > 1e-6) { // coefficient same for categoricals, different for numericals
+            String[] coNames = key.split("_");
+            if (!(coNames[0].equals("Intercept"))) {  // skip over intercepts
+              String colnames = coNames[0];
+              interPClass[Integer.valueOf(coNames[1])] += temp2 * cMeans.get(colnames);
+              temp2 = temp2 * cSigmas.get(colnames);
+              assert Math.abs(temp1 - temp2) < 1e-6 : "Expected coefficients for " + coNames[0] + " is " + temp1 + " but actual " + temp2;
+            }
+          }
+        }
+        // check for equality of intercepts
+        for (int index = 0; index < glmF._output._nclasses; index++) {
+          String interceptKey = "Intercept_" + index;
+          double temp1 = coeffSF.get(interceptKey);
+          double temp2 = coeffF.get(interceptKey) + interPClass[index];
+          assert Math.abs(temp1 - temp2) < 1e-6 : "Expected coefficients for " + interceptKey + " is " + temp1 + " but actual "
+                  + temp2;
+        }
+      } else {
+        double interceptOffset = 0;
+        for (String key:coeffF.keySet()) {
+          double temp1 = coeffSF.get(key);
+          double temp2 = coeffF.get(key);
+          if (Math.abs(temp1 - temp2) > 1e-6) {
+            if (!key.equals("Intercept")) {
+              interceptOffset += temp2*cMeans.get(key);
+              temp2 = temp2*cSigmas.get(key);
+              assert Math.abs(temp1 - temp2) < 1e-6 : "Expected coefficients for " + key + " is " + temp1 + " but actual " + temp2;
+            }
+          }
+        }
+        // check intercept terms 
+        double temp1 = coeffSF.get("Intercept");
+        double temp2 = coeffF.get("Intercept")+interceptOffset;
+        assert Math.abs(temp1 - temp2) < 1e-6 : "Expected coefficients for Intercept is " + temp1 + " but actual "
+                + temp2;
+      }
+      new TestUtil.StandardizeColumns(numCols2Transform, colMeans, oneOSigma, train).doAll(train);
+      DKV.put(train);
+      Scope.track(train);
+
+      params._standardize=false;
+      params._train = train._key;
+      GLMModel glmS = new GLM(params).trainModel().get();
+      Scope.track_generic(glmS);
+      
+      if (family.equals(Family.multinomial)) {
+        double[][] coeff1 = glm._output.getNormBetaMultinomial();
+        double[][] coeff2 = glmS._output.getNormBetaMultinomial();
+        for (int classind = 0; classind < coeff1.length; classind++) {
+          assert TestUtil.equalTwoArrays(coeff1[classind], coeff2[classind], 1e-6);
+        }
+      } else {
+        assert TestUtil.equalTwoArrays(glm._output.getNormBeta(), glmS._output.getNormBeta(), 1e-6);
+      }
+      HashMap<String, Double> coeff1 = glm.coefficients(true);
+      HashMap<String, Double> coeff2 = glmS.coefficients(true);
+      assert TestUtil.equalTwoHashMaps(coeff1, coeff2, 1e-6); 
+    } finally {
+      Scope.exit();
+    }
+  }
   //------------------- simple tests on synthetic data------------------------------------
   @Test
   public void testGaussianRegression() throws InterruptedException, ExecutionException {
@@ -116,25 +244,27 @@ public class GLMTest  extends TestUtil {
     Key parsed = Key.make("gaussian_test_data_parsed");
     GLMModel model = null;
     Frame fr = null, res = null;
-    try {
-      // make data so that the expected coefficients is icept = col[0] = 1.0
-      FVecTest.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9");
-      fr = ParseDataset.parse(parsed, raw);
-      GLMParameters params = new GLMParameters(Family.gaussian);
-      params._train = fr._key;
-      // params._response = 1;
-      params._response_column = fr._names[1];
-      params._lambda = new double[]{0};
-//      params._standardize= false;
-      model = new GLM(params).trainModel().get();
-      HashMap<String, Double> coefs = model.coefficients();
-      assertEquals(0.0, coefs.get("Intercept"), 1e-4);
-      assertEquals(0.1, coefs.get("x"), 1e-4);
-      testScoring(model,fr);
-    } finally {
-      if (fr != null) fr.remove();
-      if (res != null) res.remove();
-      if (model != null) model.remove();
+    for (Family family : new Family[]{Family.gaussian, Family.AUTO}) {
+      try {
+        // make data so that the expected coefficients is icept = col[0] = 1.0
+        FVecFactory.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9");
+        fr = ParseDataset.parse(parsed, raw);
+        GLMParameters params = new GLMParameters(family);
+        params._train = fr._key;
+        // params._response = 1;
+        params._response_column = fr._names[1];
+        params._lambda = new double[]{0};
+  //      params._standardize= false;
+        model = new GLM(params).trainModel().get();
+        HashMap<String, Double> coefs = model.coefficients();
+        assertEquals(0.0, coefs.get("Intercept"), 1e-4);
+        assertEquals(0.1, coefs.get("x"), 1e-4);
+        testScoring(model,fr);
+      } finally {
+        if (fr != null) fr.remove();
+        if (res != null) res.remove();
+        if (model != null) model.remove();
+      }
     }
   }
 
@@ -151,7 +281,7 @@ public class GLMTest  extends TestUtil {
     Frame fr = null, res = null;
     try {
       // make data so that the expected coefficients is icept = col[0] = 1.0
-      FVecTest.makeByteVec(raw, "x,y\n0,2\n1,4\n2,8\n3,16\n4,32\n5,64\n6,128\n7,256");
+      FVecFactory.makeByteVec(raw, "x,y\n0,2\n1,4\n2,8\n3,16\n4,32\n5,64\n6,128\n7,256");
       fr = ParseDataset.parse(parsed, raw);
       Vec v = fr.vec(0);
       System.out.println(v.min() + ", " + v.max() + ", mean = " + v.mean());
@@ -169,7 +299,7 @@ public class GLMTest  extends TestUtil {
       fr.delete();
 
       // Test 2, example from http://www.biostat.umn.edu/~dipankar/bmtry711.11/lecture_13.pdf
-      FVecTest.makeByteVec(raw, "x,y\n1,0\n2,1\n3,2\n4,3\n5,1\n6,4\n7,9\n8,18\n9,23\n10,31\n11,20\n12,25\n13,37\n14,45\n150,7.193936e+16\n");
+      FVecFactory.makeByteVec(raw, "x,y\n1,0\n2,1\n3,2\n4,3\n5,1\n6,4\n7,9\n8,18\n9,23\n10,31\n11,20\n12,25\n13,37\n14,45\n150,7.193936e+16\n");
       fr = ParseDataset.parse(parsed, raw);
       GLMParameters params2 = new GLMParameters(Family.poisson);
       params2._train = fr._key;
@@ -206,7 +336,7 @@ public class GLMTest  extends TestUtil {
       // make data so that the expected coefficients is icept = col[0] = 1.0
       Key raw = Key.make("gamma_test_data_raw");
       Key parsed = Key.make("gamma_test_data_parsed");
-      FVecTest.makeByteVec(raw, "x,y\n0,1\n1,0.5\n2,0.3333333\n3,0.25\n4,0.2\n5,0.1666667\n6,0.1428571\n7,0.125");
+      FVecFactory.makeByteVec(raw, "x,y\n0,1\n1,0.5\n2,0.3333333\n3,0.25\n4,0.2\n5,0.1666667\n6,0.1428571\n7,0.125");
       fr = ParseDataset.parse(parsed, raw);
 //      /public GLM2(String desc, Key dest, Frame src, Family family, Link link, double alpha, double lambda) {
 //      double [] vals = new double[] {1.0,1.0};
@@ -236,7 +366,7 @@ public class GLMTest  extends TestUtil {
 //    GLMModel model = null;
 //    try {
 //      // make data so that the expected coefficients is icept = col[0] = 1.0
-//      FVecTest.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9\n0,0\n1,0\n2,0\n3,0\n4,0\n5,0\n6,0\n7,0\n8,0\n9,0");
+//      FVecFactory.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9\n0,0\n1,0\n2,0\n3,0\n4,0\n5,0\n6,0\n7,0\n8,0\n9,0");
 //      fr = ParseDataset.parse(parsed, new Key[]{raw});
 //      double [] powers = new double [] {1.5,1.1,1.9};
 //      double [] intercepts = new double []{3.643,1.318,9.154};
@@ -263,7 +393,7 @@ public class GLMTest  extends TestUtil {
   public void testAllNAs() {
     Key raw = Key.make("gamma_test_data_raw");
     Key parsed = Key.make("gamma_test_data_parsed");
-    FVecTest.makeByteVec(raw, "x,y,z\n1,0,NA\n2,NA,1\nNA,3,2\n4,3,NA\n5,NA,1\nNA,6,4\n7,NA,9\n8,NA,18\nNA,9,23\n10,31,NA\nNA,11,20\n12,NA,25\nNA,13,37\n14,45,NA\n");
+    FVecFactory.makeByteVec(raw, "x,y,z\n1,0,NA\n2,NA,1\nNA,3,2\n4,3,NA\n5,NA,1\nNA,6,4\n7,NA,9\n8,NA,18\nNA,9,23\n10,31,NA\nNA,11,20\n12,NA,25\nNA,13,37\n14,45,NA\n");
     Frame fr = ParseDataset.parse(parsed, raw);
     GLM job = null;
     try {
@@ -441,35 +571,37 @@ public class GLMTest  extends TestUtil {
       -4.303234e-04,  2.608783e-05,  7.889196e-05, -3.559375e-04, -5.551586e-04, -2.777131e-04, 6.505911e-04,  1.033867e-05,  1.837583e-05,  6.750772e-04,
        1.247379e-04, -5.408403e-04,  -4.453114e-04,
     };
-  Vec origRes = null;
-    try {
-      fr = parse_test_file(parsed, "smalldata/covtype/covtype.20k.data");
-      fr.remove("C21").remove();
-      fr.remove("C29").remove();
-      GLMParameters params = new GLMParameters(Family.multinomial);
-      params._response_column = "C55";
-      // params._response = fr.find(params._response_column);
-      params._ignored_columns = new String[]{};
-      params._train = parsed;
-      params._lambda = new double[]{0};
-      params._alpha = new double[]{0};
-      origRes = fr.remove("C55");
-      Vec res = fr.add("C55",origRes.toCategoricalVec());
-      double [] means = new double [res.domain().length];
-      long [] bins = res.bins();
-      double sumInv = 1.0/ArrayUtils.sum(bins);
-      for(int i = 0; i < bins.length; ++i)
-        means[i] = bins[i]*sumInv;
-      DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      GLMTask.GLMMultinomialGradientBaseTask gmt = new GLMTask.GLMMultinomialGradientTask(null,dinfo,0,beta,1.0/fr.numRows()).doAll(dinfo._adaptedFrame);
-      assertEquals(0.6421113,gmt._likelihood/fr.numRows(),1e-8);
-      System.out.println("likelihood = " + gmt._likelihood/fr.numRows());
-      double [] g = gmt.gradient();
-      for(int i = 0; i < g.length; ++i)
-        assertEquals("Mismatch at coefficient '" + "' (" + i + ")",exp_grad[i], g[i], 1e-8);
-    } finally {
-      if(origRes != null)origRes.remove();
-      if (fr != null) fr.delete();
+    Vec origRes = null;
+    for (Family family : new Family[]{Family.multinomial, Family.AUTO}) {
+      try {
+        fr = parse_test_file(parsed, "smalldata/covtype/covtype.20k.data");
+        fr.remove("C21").remove();
+        fr.remove("C29").remove();
+        GLMParameters params = new GLMParameters(family/*Family.multinomial*/);
+        params._response_column = "C55";
+        // params._response = fr.find(params._response_column);
+        params._ignored_columns = new String[]{};
+        params._train = parsed;
+        params._lambda = new double[]{0};
+        params._alpha = new double[]{0};
+        origRes = fr.remove("C55");
+        Vec res = fr.add("C55",origRes.toCategoricalVec());
+        double [] means = new double [res.domain().length];
+        long [] bins = res.bins();
+        double sumInv = 1.0/ArrayUtils.sum(bins);
+        for(int i = 0; i < bins.length; ++i)
+          means[i] = bins[i]*sumInv;
+        DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
+        GLMTask.GLMMultinomialGradientBaseTask gmt = new GLMTask.GLMMultinomialGradientTask(null,dinfo,0,beta,1.0/fr.numRows()).doAll(dinfo._adaptedFrame);
+        assertEquals(0.6421113,gmt._likelihood/fr.numRows(),1e-8);
+        System.out.println("likelihood = " + gmt._likelihood/fr.numRows());
+        double [] g = gmt.gradient();
+        for(int i = 0; i < g.length; ++i)
+          assertEquals("Mismatch at coefficient '" + "' (" + i + ")",exp_grad[i], g[i], 1e-8);
+      } finally {
+        if(origRes != null)origRes.remove();
+        if (fr != null) fr.delete();
+      }
     }
   }
   //------------ TEST on selected files form small data and compare to R results ------------------------------------
@@ -618,7 +750,7 @@ public class GLMTest  extends TestUtil {
     double[] vals = new double[]{-0.006502588, -0.500000000, 0.500000000, 0.400000000, 0.034826559, -0.011661747, 0.500000000, -4.564024};
 
 //    [AGE, RACE, DPROS, DCAPS, PSA, VOL, GLEASON, Intercept]
-    FVecTest.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n AGE, -.5, .5\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5\nGLEASON, -.5, .5");
+    FVecFactory.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n AGE, -.5, .5\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5\nGLEASON, -.5, .5");
     Frame betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
 
     try {
@@ -647,7 +779,7 @@ public class GLMTest  extends TestUtil {
       model.delete();
       params._lambda = new double[]{0};
       params._alpha = new double[]{0};
-      FVecTest.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5");
+      FVecFactory.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5");
       betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
       glm = new GLM( params, modelKey);
       model = glm.trainModel().get();
@@ -681,6 +813,32 @@ public class GLMTest  extends TestUtil {
     }
   }
 
+  @Ignore // remove when PUBDEV-7693 is fixed
+  @Test
+  public void testInteractionPairs_airlines() {
+    Scope.enter();
+    try {
+      Frame train = Scope.track(parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip"));
+      Frame test = Scope.track(parse_test_file("smalldata/airlines/AirlinesTest.csv.zip"));
+      GLMParameters params = new GLMParameters();
+      params._family = Family.binomial;
+      params._response_column = "IsDepDelayed";
+      params._ignored_columns = new String[]{"IsDepDelayed_REC"};
+      params._train = train._key;
+      params._interaction_pairs = new StringPair[] {
+          new StringPair("DepTime", "UniqueCarrier"),
+          new StringPair("DepTime", "Origin"),
+          new StringPair("UniqueCarrier", "Origin")
+      };
+      GLM glm = new GLM(params);
+      GLMModel model = (GLMModel) Scope.track_generic(glm.trainModel().get());
+      Frame scored = Scope.track(model.score(test));
+      model.testJavaScoring(train, scored, 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
   @Test
   public void testCoordinateDescent_airlines() {
     GLMModel model = null;
@@ -813,7 +971,7 @@ public class GLMTest  extends TestUtil {
     DKV.put(fr._key, fr);
     Key betaConsKey = Key.make("beta_constraints");
 
-    FVecTest.makeByteVec(betaConsKey, "names, beta_given, rho\n AGE, 0.1, 1\n RACE, -0.1, 1 \n DPROS, 10, 1 \n DCAPS, -10, 1 \n PSA, 0, 1\n VOL, 0, 1\nGLEASON, 0, 1\n Intercept, 0, 0 \n");
+    FVecFactory.makeByteVec(betaConsKey, "names, beta_given, rho\n AGE, 0.1, 1\n RACE, -0.1, 1 \n DPROS, 10, 1 \n DCAPS, -10, 1 \n PSA, 0, 1\n VOL, 0, 1\nGLEASON, 0, 1\n Intercept, 0, 0 \n");
     Frame betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
     try {
       // H2O differs on intercept and race, same residual deviance though
@@ -1526,7 +1684,7 @@ public class GLMTest  extends TestUtil {
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
       hex.AUC2 adata = mm._auc;
       assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
-      assertEquals(0.7588625640559653, adata.pr_auc(), 1e-8);
+      assertEquals(0.7654038154645615, adata.pr_auc(), 1e-8);
       assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
       assertEquals(((ModelMetricsBinomialGLM)model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm)._resDev, 1e-8);
       model.score(fr).delete();
@@ -1781,7 +1939,7 @@ public class GLMTest  extends TestUtil {
               parms2._objective_epsilon = 1e-8;
               GLMModel model2 = new GLM(parms2).trainModel().get();
               double[] beta_ls = rp._coefficients_std[i];
-              double [] beta = fam == Family.multinomial?ArrayUtils.flat(model2._output.getNormBetaMultinomial()):model2._output.getNormBeta();
+              double [] beta = fam == Family.multinomial?flat(model2._output.getNormBetaMultinomial()):model2._output.getNormBeta();
               System.out.println(ArrayUtils.pprint(new double[][]{beta,beta_ls}));
               // Can't compare beta here, have to compare objective value
               double null_dev = ((GLMMetrics) model2._output._training_metrics).null_deviance();
@@ -1973,7 +2131,7 @@ public class GLMTest  extends TestUtil {
         GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
         parms._train = tfr._key;
         String resp = tfr.lastVecName();
-        if (fam==Family.binomial || fam==Family.multinomial) {
+        if (fam==Family.binomial || fam==Family.multinomial || fam == Family.fractionalbinomial) {
           resp = fam==Family.multinomial?"rad":"chas";
           Vec v = tfr.remove(resp);
           tfr.add(resp, v.toCategoricalVec());
@@ -2031,6 +2189,7 @@ public class GLMTest  extends TestUtil {
       parms._train = trn._key;
       parms._response_column = "label";
       parms._missing_values_handling = MissingValuesHandling.Skip;
+      GLMParameters parms2 = (GLMParameters) parms.clone(); 
       GLMModel m = new GLM(parms).trainModel().get();
       System.out.println("coefficients = " + m.coefficients());
       double icpt = m.coefficients().get("Intercept");
@@ -2039,8 +2198,8 @@ public class GLMTest  extends TestUtil {
       Assert.assertEquals(icpt+m.coefficients().get("color.blue"), preds.vec(0).at(1), 0);
       Assert.assertEquals(icpt+m.coefficients().get("color.blue"), preds.vec(0).at(2), 0);
       Assert.assertEquals(icpt, preds.vec(0).at(3), 0);
-      parms._missing_values_handling = MissingValuesHandling.MeanImputation;
-      GLMModel m2 = new GLM(parms).trainModel().get();
+      parms2._missing_values_handling = MissingValuesHandling.MeanImputation;
+      GLMModel m2 = new GLM(parms2).trainModel().get();
       Frame preds2 = m2.score(tst);
       icpt = m2.coefficients().get("Intercept");
       System.out.println("coefficients = " + m2.coefficients());
@@ -2055,6 +2214,77 @@ public class GLMTest  extends TestUtil {
       preds2.delete();
       m2.delete();
     }finally {
+      Scope.exit();
+    }
+  }
+
+
+  @Test
+  public void testIsFeatureUsedInPredict() {
+    isFeatureUsedInPredictHelper(false, false);
+    isFeatureUsedInPredictHelper(true, false);
+    isFeatureUsedInPredictHelper(false, true);
+    isFeatureUsedInPredictHelper(true, true);
+  }
+
+  private void isFeatureUsedInPredictHelper(boolean ignoreConstCols, boolean multinomial) {
+    Scope.enter();
+    Vec target = Vec.makeRepSeq(100, 3);
+    if (multinomial) target = target.toCategoricalVec();
+    Vec zeros = Vec.makeCon(0d, 100);
+    Vec nonzeros = Vec.makeCon(1e10d, 100);
+    Frame dummyFrame = new Frame(
+            new String[]{"a", "b", "c", "d", "e", "target"},
+            new Vec[]{zeros, zeros, zeros, zeros, target, target}
+    );
+    dummyFrame._key = Key.make("DummyFrame_testIsFeatureUsedInPredict");
+
+    Frame otherFrame = new Frame(
+            new String[]{"a", "b", "c", "d", "e", "target"},
+            new Vec[]{nonzeros, nonzeros, nonzeros, nonzeros, target, target}
+    );
+
+    Frame reference = null;
+    Frame prediction = null;
+    GLMModel model = null;
+    try {
+      DKV.put(dummyFrame);
+      GLMModel.GLMParameters glm = new GLMModel.GLMParameters();
+      glm._train = dummyFrame._key;
+      glm._response_column = "target";
+      glm._seed = 1;
+      glm._ignore_const_cols = ignoreConstCols;
+      if (multinomial) {
+        glm._family = Family.multinomial;
+      }
+
+      GLM job = new GLM(glm);
+      model = job.trainModel().get();
+
+      String lastUsedFeature = "";
+      int usedFeatures = 0;
+      for(String feature : model._output._names) {
+        if (model.isFeatureUsedInPredict(feature)) {
+          usedFeatures ++;
+          lastUsedFeature = feature;
+        }
+      }
+      assertEquals(1, usedFeatures);
+      assertEquals("e", lastUsedFeature);
+
+      reference = model.score(dummyFrame);
+      prediction = model.score(otherFrame);
+      for (int i = 0; i < reference.numRows(); i++) {
+        assertEquals(reference.vec(0).at(i), prediction.vec(0).at(i), 1e-10);
+      }
+    } finally {
+      dummyFrame.delete();
+      if (model != null) model.delete();
+      if (reference != null) reference.delete();
+      if (prediction != null) prediction.delete();
+      target.remove();
+      zeros.remove();
+      nonzeros.remove();
       Scope.exit();
     }
   }

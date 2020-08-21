@@ -1,3 +1,5 @@
+.. _kmeans:
+
 K-Means Clustering
 ------------------
 
@@ -26,12 +28,14 @@ Defining a K-Means Model
 
 -  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation.
 
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
+
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the
    cross-validation predictions.
 
 -  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment.
 
--  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for **nfolds** is specified and **fold_column** is not specified) Specify the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems).
+-  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for **nfolds** is specified and **fold_column** is not specified) Specify the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__.
 
 -  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the cross-validation fold index assignment per observation.
 
@@ -72,10 +76,12 @@ Defining a K-Means Model
   - ``enum`` or ``Enum``: 1 column per categorical feature
   - ``one_hot_explicit``: N+1 new columns for categorical features with N levels
   - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
-  - ```eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+  - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
   - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
+
+-  `cluster_size_constraints <algo-params/cluster_size_constraints.html>`__: An array specifying the minimum number of points that should be in each cluster. The length of the constraints array has to be the same as the number of clusters.
 
 Interpreting a K-Means Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -119,6 +125,48 @@ H2O stops splitting when :math:`PRE` falls below a :math:`threshold`, which is a
  :math:`\big[0.02 + \frac{10}{number\_of\_training\_rows} + \frac{2.5}{number\_of\_model\_features^{2}}\big]`
 
 
+Constrained K-Means 
+~~~~~~~~~~~~~~~~~~~
+
+The ``cluster_size_constraints`` parameter allows the user to define an array that specifies the minimum size of each cluster during the training. The size of the array must be equal to the ``k`` parameter.
+
+To satisfy the custom minimal cluster size, the calculation of clusters is converted to the Minimal Cost Flow problem. Instead of using the Lloyd iteration algorithm, a graph is constructed based on the distances and constraints. The goal is to go iteratively through the input edges and create an optimal spanning tree that satisfies the constraints.
+
+More information about how to convert the standard K-means algorithm to the Minimal Cost Flow problem is described in this paper: https://pdfs.semanticscholar.org/ecad/eb93378d7911c2f7b9bd83a8af55d7fa9e06.pdf.
+
+The result cluster size is guaranteed only on **training data** and only **during training**. Depending on the cluster assignment at the end of the training, the result centers are calculated. However, the result cluster assignment could be different when you score on the same data that was used for training because of during scoring, the resulting cluster is assigned based on the final centers and the distances from them. **No constraints are taken into account during scoring.**
+
+If the ``nfolds`` and ``cluster_size_constraints`` parameters are set simultaneously, the sum of constraints has to be less than the number of data points in one fold.
+
+**Minimum-cost flow problems can be efficiently solved in polynomial time (or in the worst case, in exponential time). The performance of this implementation of the Constrained K-means algorithm is slow due to many repeatable calculations that cannot be parallelized and more optimized at the H2O backend. For large dataset with large sum of constraints, the calculation can last hours. For example, a dataset with 100000 rows and five features can run several hours.**
+
+Expected time with various sized data (OS debian 10.0 (x86-64), processor Intel© Core™ i7-7700HQ CPU @ 2.80GHz × 4, RAM 23.1 GiB):
+
+* 10 000 rows, 5 features  ~ 0h  9m 21s
+* 20 000 rows, 5 features  ~ 0h 39m 27s
+* 30 000 rows, 5 features  ~ 1h 26m 43s
+* 40 000 rows, 5 features  ~ 2h 13m 31s
+* 50 000 rows, 5 features  ~ 4h  4m 18s
+
+**The sum of constraints is smaller the time is faster - it uses MCF calculation until all constraints are satisfied then use standard K-means.**
+
+
+Constrained K-Means with the Aggregator Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To solve Constrained K-means in a shorter time, you can use the `H2O Aggregator algorithm <aggregator.html>`__ to aggregate data to smaller sizes first and then pass this data to the Constrained K-means algorithm to calculate the final centroids to be used with scoring. The results won't be as accurate as the results of a model with the whole dataset; however, it should help solve the problem of huge datasets.
+
+However, there are some assumptions:
+
+* The large dataset has to consist of many similar data points. If not, the insensitive aggregation can break the structure of the dataset.
+* The resulting clustering may not meet the initial constraints exactly when scoring. (This also applies to Constrained K-means models; scoring uses resulting centroids to score - no constraints defined before.)
+
+The H2O Aggregator method is a clustering-based method for reducing a numerical/categorical dataset into a dataset with fewer rows. Aggregator maintains outliers as outliers but lumps together dense clusters into exemplars with an attached count column showing the member points.
+
+The following demos are available for constrained KMeans with the Aggregator model:
+
+- https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/constrained_kmeans_demo_cluto.ipynb
+- https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/constrained_kmeans_demo_chicago.ipynb
 
 FAQ
 ~~~
@@ -220,6 +268,76 @@ The number of clusters :math:`K` is user-defined and is determined a priori.
    :math:`m_{k}`. Repeat steps 2 through 5 until the specified number of max
    iterations is reached or cluster assignments of the :math:`x_{i}` are
    stable.
+
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a KMeans model.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+    h2o.init()
+
+    # Import the iris dataset into H2O:
+    iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+
+    # Set the predictors:
+    predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
+
+    # Split the dataset into a train and valid set:
+    iris_split <- h2o.splitFrame(data = iris, ratios = 0.8, seed = 1234)
+    train <- iris_split[[1]]
+    valid <- iris_split[[2]]
+
+    # Build and train the model:
+    iris_kmeans <- h2o.kmeans(k = 10, 
+                              estimate_k = TRUE, 
+                              standardize = FALSE, 
+                              seed = 1234, 
+                              x = predictors, 
+                              training_frame = train, 
+                              validation_frame = valid)
+
+    # Eval performance:
+    perf <- h2o.performance(iris_kmeans)
+
+    # Generate predictions on a validation set (if necessary):
+    pred <- h2o.predict(iris_kmeans, newdata = valid)
+
+
+
+   .. code-tab:: python
+
+    import h2o
+    from h2o.estimators import H2OKMeansEstimator
+    h2o.init()
+
+    # Import the iris dataset into H2O:
+    iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+
+    # Set the predictors:
+    predictors = ["sepal_len", "sepal_wid", "petal_len", "petal_wid"]
+
+    # Split the dataset into a train and valid set:
+    train, valid = iris.split_frame(ratios=[.8], seed=1234)
+
+    # Build and train the model:
+    iris_kmeans = H2OKMeansEstimator(k=10, 
+                                     estimate_k=True, 
+                                     standardize=False, 
+                                     seed=1234)
+    iris_kmeans.train(x=predictors, 
+                      training_frame=train, 
+                      validation_frame=valid)
+
+    # Eval performance:
+    perf = iris_kmeans.model_performance()
+
+    #  Generate predictions on a validation set (if necessary):
+    pred = iris_kmeans.predict(valid)
+
 
 References
 ~~~~~~~~~~

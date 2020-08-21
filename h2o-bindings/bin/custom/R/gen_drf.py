@@ -11,6 +11,10 @@ if (!missing(offset_column)) {
   warning("Argument offset_column is deprecated and has no use for Random Forest.")
   parms$offset_column <- NULL
 }
+if (!missing(max_hit_ratio_k)) {
+  warning("Argument max_hit_ratio_k is deprecated and has no use.")
+  parms$offset_column <- NULL
+}
 """
 )
 
@@ -24,6 +28,7 @@ Builds a Random Forest model on an H2OFrame.
     params=dict(
         distribution="Distribution. This argument is deprecated and has no use for Random Forest.",
         offset_column="Offset column. This argument is deprecated and has no use for Random Forest.",
+        max_hit_ratio_k="This argument is deprecated and has no use. Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable).",
         verbose="""
 \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 """
@@ -34,4 +39,22 @@ Creates a \linkS4class{H2OModel} object of the right type.
     seealso="""
 \code{\link{predict.H2OModel}} for prediction
 """,
+    examples="""
+library(h2o)
+h2o.init()
+
+# Import the cars dataset
+f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+cars <- h2o.importFile(f)
+
+# Set predictors and response; set response as a factor
+cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+predictors <- c("displacement", "power", "weight", "acceleration", "year")
+response <- "economy_20mpg"
+
+# Train the DRF model
+cars_drf <- h2o.randomForest(x = predictors, y = response,
+                            training_frame = cars, nfolds = 5,
+                            seed = 1234)
+"""
 )

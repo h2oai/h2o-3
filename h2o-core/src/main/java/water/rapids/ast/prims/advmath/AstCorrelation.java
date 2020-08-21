@@ -9,8 +9,10 @@ import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstFunction;
 import water.util.ArrayUtils;
+import water.util.EnumUtils;
+
+import java.util.Arrays;
 
 /**
  * Calculate Pearson's Correlation Coefficient between columns of a frame
@@ -21,14 +23,16 @@ import water.util.ArrayUtils;
 public class AstCorrelation extends AstPrimitive {
   @Override
   public String[] args() {
-    return new String[]{"ary", "x", "y", "use"};
+    return new String[]{"ary", "x", "y", "use", "method"};
   }
 
-  private enum Mode {Everything, AllObs, CompleteObs}
+  protected enum Mode {Everything, AllObs, CompleteObs}
+
+  private enum Method {Pearson, Spearman}
 
   @Override
   public int nargs() {
-    return 1 + 3; /* (cor X Y use) */
+    return 1 + 4; /* (cor X Y use method) */
   }
 
   @Override
@@ -59,7 +63,34 @@ public class AstCorrelation extends AstPrimitive {
         throw new IllegalArgumentException("unknown use mode: " + use);
     }
 
-    return fry.numRows() == 1 ? scalar(frx, fry, mode) : array(frx, fry, mode);
+    final Method method = getMethodFromUserInput(stk.track(asts[4].exec(env)).getStr());
+    switch (method) {
+      case Pearson:
+        return fry.numRows() == 1 ? scalar(frx, fry, mode) : array(frx, fry, mode);
+      case Spearman:
+        return spearman(frx, fry, mode);
+      default:
+        throw new IllegalStateException(String.format("Given method input'%s' is not supported. Available options are: %s",
+                method, Arrays.toString(Method.values())));
+    }
+  }
+
+  private static Method getMethodFromUserInput(final String methodUserInput) {
+    return EnumUtils.valueOfIgnoreCase(Method.class, methodUserInput)
+            .orElseThrow(() -> new IllegalArgumentException(String.format("Unknown correlation method '%s'. Available options are: %s",
+                    methodUserInput, Arrays.toString(Method.values()))));
+  }
+
+  private Val spearman(final Frame frameX, final Frame frameY, final Mode mode) {
+    final Frame spearmanMatrix = SpearmanCorrelation.calculate(frameX, frameY, mode);
+
+    if (frameY.numCols() == 1) {
+      // If there are only two columns compared, return a single number with the correlation coefficient
+      return new ValNum(spearmanMatrix.vec(0).at(0));
+    } else {
+      // Otherwise just return the correlation matrix
+      return new ValFrame(spearmanMatrix);
+    }
   }
 
   // Pearson Correlation for one row, which will return a scalar value.
@@ -127,9 +158,12 @@ public class AstCorrelation extends AstPrimitive {
     if (mode.equals(Mode.Everything) || mode.equals(Mode.AllObs)) {
 
       if (mode.equals(Mode.AllObs)) {
-        for (Vec v : vecxs)
-          if (v.naCnt() != 0)
-            throw new IllegalArgumentException("Mode is 'all.obs' but NAs are present");
+        if (mode.equals(Mode.AllObs)) {
+          for (Vec v : vecxs)
+            if (v.naCnt() != 0)
+              throw new IllegalArgumentException("Mode is 'all.obs' but NAs are present");
+        }
+
       }
 
       //Set up CoVarTask

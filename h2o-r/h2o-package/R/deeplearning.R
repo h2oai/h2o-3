@@ -100,7 +100,7 @@
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
 #'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
 #'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
-#'        "lift_top_group", "misclassification", "AUCPR", "mean_per_class_error", "custom", "custom_increasing".
+#'        "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing".
 #'        Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.
@@ -212,7 +212,7 @@ h2o.deeplearning <- function(x,
                              classification_stop = 0,
                              regression_stop = 1e-06,
                              stopping_rounds = 5,
-                             stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "AUCPR", "mean_per_class_error", "custom", "custom_increasing"),
+                             stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                              stopping_tolerance = 0,
                              max_runtime_secs = 0,
                              score_validation_sampling = c("Uniform", "Stratified"),
@@ -441,9 +441,324 @@ h2o.deeplearning <- function(x,
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
 
+  if (!missing(max_hit_ratio_k)) {
+    warning("argument max_hit_ratio_k is deprecated and has no use.")
+    parms$offset_column <- NULL
+  }
+
   # Error check and build model
   model <- .h2o.modelJob('deeplearning', parms, h2oRestApiVersion=3, verbose=verbose)
   return(model)
+}
+.h2o.train_segments_deeplearning <- function(x,
+                                             y,
+                                             training_frame,
+                                             validation_frame = NULL,
+                                             nfolds = 0,
+                                             keep_cross_validation_models = TRUE,
+                                             keep_cross_validation_predictions = FALSE,
+                                             keep_cross_validation_fold_assignment = FALSE,
+                                             fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
+                                             fold_column = NULL,
+                                             ignore_const_cols = TRUE,
+                                             score_each_iteration = FALSE,
+                                             weights_column = NULL,
+                                             offset_column = NULL,
+                                             balance_classes = FALSE,
+                                             class_sampling_factors = NULL,
+                                             max_after_balance_size = 5.0,
+                                             max_hit_ratio_k = 0,
+                                             checkpoint = NULL,
+                                             pretrained_autoencoder = NULL,
+                                             overwrite_with_best_model = TRUE,
+                                             use_all_factor_levels = TRUE,
+                                             standardize = TRUE,
+                                             activation = c("Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"),
+                                             hidden = c(200, 200),
+                                             epochs = 10,
+                                             train_samples_per_iteration = -2,
+                                             target_ratio_comm_to_comp = 0.05,
+                                             seed = -1,
+                                             adaptive_rate = TRUE,
+                                             rho = 0.99,
+                                             epsilon = 1e-08,
+                                             rate = 0.005,
+                                             rate_annealing = 1e-06,
+                                             rate_decay = 1,
+                                             momentum_start = 0,
+                                             momentum_ramp = 1000000,
+                                             momentum_stable = 0,
+                                             nesterov_accelerated_gradient = TRUE,
+                                             input_dropout_ratio = 0,
+                                             hidden_dropout_ratios = NULL,
+                                             l1 = 0,
+                                             l2 = 0,
+                                             max_w2 = 3.4028235e+38,
+                                             initial_weight_distribution = c("UniformAdaptive", "Uniform", "Normal"),
+                                             initial_weight_scale = 1,
+                                             initial_weights = NULL,
+                                             initial_biases = NULL,
+                                             loss = c("Automatic", "CrossEntropy", "Quadratic", "Huber", "Absolute", "Quantile"),
+                                             distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
+                                             quantile_alpha = 0.5,
+                                             tweedie_power = 1.5,
+                                             huber_alpha = 0.9,
+                                             score_interval = 5,
+                                             score_training_samples = 10000,
+                                             score_validation_samples = 0,
+                                             score_duty_cycle = 0.1,
+                                             classification_stop = 0,
+                                             regression_stop = 1e-06,
+                                             stopping_rounds = 5,
+                                             stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
+                                             stopping_tolerance = 0,
+                                             max_runtime_secs = 0,
+                                             score_validation_sampling = c("Uniform", "Stratified"),
+                                             diagnostics = TRUE,
+                                             fast_mode = TRUE,
+                                             force_load_balance = TRUE,
+                                             variable_importances = TRUE,
+                                             replicate_training_data = TRUE,
+                                             single_node_mode = FALSE,
+                                             shuffle_training_data = FALSE,
+                                             missing_values_handling = c("MeanImputation", "Skip"),
+                                             quiet_mode = FALSE,
+                                             autoencoder = FALSE,
+                                             sparse = FALSE,
+                                             col_major = FALSE,
+                                             average_activation = 0,
+                                             sparsity_beta = 0,
+                                             max_categorical_features = 2147483647,
+                                             reproducible = FALSE,
+                                             export_weights_and_biases = FALSE,
+                                             mini_batch_size = 1,
+                                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                                             elastic_averaging = FALSE,
+                                             elastic_averaging_moving_rate = 0.9,
+                                             elastic_averaging_regularization = 0.001,
+                                             export_checkpoints_dir = NULL,
+                                             segment_columns = NULL,
+                                             segment_models_id = NULL,
+                                             parallelism = 1)
+{
+  # formally define variables that were excluded from function parameters
+  model_id <- NULL
+  verbose <- NULL
+  destination_key <- NULL
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Validate other required args
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
+     }
+  }
+
+  # Build parameter list to send to model builder
+  parms <- list()
+  parms$training_frame <- training_frame
+  args <- .verify_dataxy(training_frame, x, y, autoencoder)
+  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  parms$ignored_columns <- args$x_ignore
+  parms$response_column <- args$y
+
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
+  if (!missing(nfolds))
+    parms$nfolds <- nfolds
+  if (!missing(keep_cross_validation_models))
+    parms$keep_cross_validation_models <- keep_cross_validation_models
+  if (!missing(keep_cross_validation_predictions))
+    parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
+  if (!missing(keep_cross_validation_fold_assignment))
+    parms$keep_cross_validation_fold_assignment <- keep_cross_validation_fold_assignment
+  if (!missing(fold_assignment))
+    parms$fold_assignment <- fold_assignment
+  if (!missing(fold_column))
+    parms$fold_column <- fold_column
+  if (!missing(ignore_const_cols))
+    parms$ignore_const_cols <- ignore_const_cols
+  if (!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
+  if (!missing(weights_column))
+    parms$weights_column <- weights_column
+  if (!missing(offset_column))
+    parms$offset_column <- offset_column
+  if (!missing(balance_classes))
+    parms$balance_classes <- balance_classes
+  if (!missing(class_sampling_factors))
+    parms$class_sampling_factors <- class_sampling_factors
+  if (!missing(max_after_balance_size))
+    parms$max_after_balance_size <- max_after_balance_size
+  if (!missing(max_hit_ratio_k))
+    parms$max_hit_ratio_k <- max_hit_ratio_k
+  if (!missing(checkpoint))
+    parms$checkpoint <- checkpoint
+  if (!missing(pretrained_autoencoder))
+    parms$pretrained_autoencoder <- pretrained_autoencoder
+  if (!missing(overwrite_with_best_model))
+    parms$overwrite_with_best_model <- overwrite_with_best_model
+  if (!missing(use_all_factor_levels))
+    parms$use_all_factor_levels <- use_all_factor_levels
+  if (!missing(standardize))
+    parms$standardize <- standardize
+  if (!missing(activation))
+    parms$activation <- activation
+  if (!missing(hidden))
+    parms$hidden <- hidden
+  if (!missing(epochs))
+    parms$epochs <- epochs
+  if (!missing(train_samples_per_iteration))
+    parms$train_samples_per_iteration <- train_samples_per_iteration
+  if (!missing(target_ratio_comm_to_comp))
+    parms$target_ratio_comm_to_comp <- target_ratio_comm_to_comp
+  if (!missing(seed))
+    parms$seed <- seed
+  if (!missing(adaptive_rate))
+    parms$adaptive_rate <- adaptive_rate
+  if (!missing(rho))
+    parms$rho <- rho
+  if (!missing(epsilon))
+    parms$epsilon <- epsilon
+  if (!missing(rate))
+    parms$rate <- rate
+  if (!missing(rate_annealing))
+    parms$rate_annealing <- rate_annealing
+  if (!missing(rate_decay))
+    parms$rate_decay <- rate_decay
+  if (!missing(momentum_start))
+    parms$momentum_start <- momentum_start
+  if (!missing(momentum_ramp))
+    parms$momentum_ramp <- momentum_ramp
+  if (!missing(momentum_stable))
+    parms$momentum_stable <- momentum_stable
+  if (!missing(nesterov_accelerated_gradient))
+    parms$nesterov_accelerated_gradient <- nesterov_accelerated_gradient
+  if (!missing(input_dropout_ratio))
+    parms$input_dropout_ratio <- input_dropout_ratio
+  if (!missing(hidden_dropout_ratios))
+    parms$hidden_dropout_ratios <- hidden_dropout_ratios
+  if (!missing(l1))
+    parms$l1 <- l1
+  if (!missing(l2))
+    parms$l2 <- l2
+  if (!missing(max_w2))
+    parms$max_w2 <- max_w2
+  if (!missing(initial_weight_distribution))
+    parms$initial_weight_distribution <- initial_weight_distribution
+  if (!missing(initial_weight_scale))
+    parms$initial_weight_scale <- initial_weight_scale
+  if (!missing(initial_weights))
+    parms$initial_weights <- initial_weights
+  if (!missing(initial_biases))
+    parms$initial_biases <- initial_biases
+  if(!missing(loss)) {
+    if(loss == "MeanSquare") {
+      warning("Loss name 'MeanSquare' is deprecated; please use 'Quadratic' instead.")
+      parms$loss <- "Quadratic"
+    } else 
+      parms$loss <- loss
+  }
+  if (!missing(distribution))
+    parms$distribution <- distribution
+  if (!missing(quantile_alpha))
+    parms$quantile_alpha <- quantile_alpha
+  if (!missing(tweedie_power))
+    parms$tweedie_power <- tweedie_power
+  if (!missing(huber_alpha))
+    parms$huber_alpha <- huber_alpha
+  if (!missing(score_interval))
+    parms$score_interval <- score_interval
+  if (!missing(score_training_samples))
+    parms$score_training_samples <- score_training_samples
+  if (!missing(score_validation_samples))
+    parms$score_validation_samples <- score_validation_samples
+  if (!missing(score_duty_cycle))
+    parms$score_duty_cycle <- score_duty_cycle
+  if (!missing(classification_stop))
+    parms$classification_stop <- classification_stop
+  if (!missing(regression_stop))
+    parms$regression_stop <- regression_stop
+  if (!missing(stopping_rounds))
+    parms$stopping_rounds <- stopping_rounds
+  if (!missing(stopping_metric))
+    parms$stopping_metric <- stopping_metric
+  if (!missing(stopping_tolerance))
+    parms$stopping_tolerance <- stopping_tolerance
+  if (!missing(max_runtime_secs))
+    parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(score_validation_sampling))
+    parms$score_validation_sampling <- score_validation_sampling
+  if (!missing(diagnostics))
+    parms$diagnostics <- diagnostics
+  if (!missing(fast_mode))
+    parms$fast_mode <- fast_mode
+  if (!missing(force_load_balance))
+    parms$force_load_balance <- force_load_balance
+  if (!missing(variable_importances))
+    parms$variable_importances <- variable_importances
+  if (!missing(replicate_training_data))
+    parms$replicate_training_data <- replicate_training_data
+  if (!missing(single_node_mode))
+    parms$single_node_mode <- single_node_mode
+  if (!missing(shuffle_training_data))
+    parms$shuffle_training_data <- shuffle_training_data
+  if (!missing(missing_values_handling))
+    parms$missing_values_handling <- missing_values_handling
+  if (!missing(quiet_mode))
+    parms$quiet_mode <- quiet_mode
+  if (!missing(autoencoder))
+    parms$autoencoder <- autoencoder
+  if (!missing(sparse))
+    parms$sparse <- sparse
+  if (!missing(col_major))
+    parms$col_major <- col_major
+  if (!missing(average_activation))
+    parms$average_activation <- average_activation
+  if (!missing(sparsity_beta))
+    parms$sparsity_beta <- sparsity_beta
+  if (!missing(max_categorical_features))
+    parms$max_categorical_features <- max_categorical_features
+  if (!missing(reproducible))
+    parms$reproducible <- reproducible
+  if (!missing(export_weights_and_biases))
+    parms$export_weights_and_biases <- export_weights_and_biases
+  if (!missing(mini_batch_size))
+    parms$mini_batch_size <- mini_batch_size
+  if (!missing(categorical_encoding))
+    parms$categorical_encoding <- categorical_encoding
+  if (!missing(elastic_averaging))
+    parms$elastic_averaging <- elastic_averaging
+  if (!missing(elastic_averaging_moving_rate))
+    parms$elastic_averaging_moving_rate <- elastic_averaging_moving_rate
+  if (!missing(elastic_averaging_regularization))
+    parms$elastic_averaging_regularization <- elastic_averaging_regularization
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
+
+  if (!missing(max_hit_ratio_k)) {
+    warning("argument max_hit_ratio_k is deprecated and has no use.")
+    parms$offset_column <- NULL
+  }
+
+  # Build segment-models specific parameters
+  segment_parms <- list()
+  if (!missing(segment_columns))
+    segment_parms$segment_columns <- segment_columns
+  if (!missing(segment_models_id))
+    segment_parms$segment_models_id <- segment_models_id
+  segment_parms$parallelism <- parallelism
+
+  # Error check and build segment models
+  segment_models <- .h2o.segmentModelsJob('deeplearning', segment_parms, parms, h2oRestApiVersion=3)
+  return(segment_models)
 }
 
 
@@ -469,7 +784,7 @@ h2o.deeplearning <- function(x,
 #'                                hidden = c(10, 10), epochs = 5)
 #' prostate_anon = h2o.anomaly(prostate_dl, prostate)
 #' head(prostate_anon)
-#' prostate_anon_per_feature = h2o.anomaly(prostate_dl, prostate, per_feature=TRUE)
+#' prostate_anon_per_feature = h2o.anomaly(prostate_dl, prostate, per_feature = TRUE)
 #' head(prostate_anon_per_feature)
 #' }
 #' @export

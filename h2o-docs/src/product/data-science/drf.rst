@@ -48,6 +48,8 @@ Defining a DRF Model
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
+
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation prediction.
 
 -  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment.
@@ -148,18 +150,18 @@ Defining a DRF Model
 -  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
    The available options are:
     
-    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that custom and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
+    - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that custom and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
     - ``anomaly_score`` (Isolation Forest only)
     - ``deviance``
     - ``logloss``
-    - ``mse``
-    - ``rmse``
-    - ``mae``
-    - ``rmsle``
-    - ``auc``
+    - ``MSE``
+    - ``RMSE``
+    - ``MAE``
+    - ``RMSLE``
+    - ``AUC`` (area under the ROC curve)
+    - ``AUCPR`` (area under the Precision-Recall curve)
     - ``lift_top_group``
     - ``misclassification``
-    - ``aucpr``
     - ``mean_per_class_error``
     - ``custom`` (Python client only)
     - ``custom_increasing`` (Python client only)
@@ -176,15 +178,9 @@ Defining a DRF Model
    consistent for each H2O instance so that you can create models with
    the same starting conditions in alternative configurations.
 
--  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: To run on a single node, check this
-   checkbox. This is suitable for small datasets as there is no network
-   overhead but fewer CPUs are used.
+-  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used
 
--  `mtries <algo-params/mtries.html>`__: Specify the columns to randomly select at each level. If
-   the default value of ``-1`` is used, the number of variables is the
-   square root of the number of columns for classification and p/3 for
-   regression (where p is the number of predictors). The range is -1 to
-   >=1.
+-  `mtries <algo-params/mtries.html>`__: Specify the columns to randomly select at each level. If the default value of ``-1`` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors). If ``-2`` is specified, all features of DRF are used. Valid values for this option are -2, -1, and any value >= 1.
 
 -  `sample_rate <algo-params/sample_rate.html>`__: Specify the row sampling rate (x-axis). (Note that this method is sample without replacement.) The range is 0.0 to 1.0, and this value defaults to 0.6320000291. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
@@ -227,7 +223,7 @@ Defining a DRF Model
 
   - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In DRF, the algorithm will automatically perform ``enum`` encoding.
   - ``enum`` or ``Enum``: 1 column per categorical feature
-  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** (1024) most frequent levels.
+  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** (10) most frequent levels.
   - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels
   - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
@@ -247,6 +243,8 @@ Defining a DRF Model
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
 -  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not.
+
+- `gainslift_bins <algo-params/gainslift_bins.html>`__: The number of bins for a Gains/Lift table. The default value is ``-1`` and makes the binning automatic. To disable this feature, set to ``0``.
 
 Interpreting a DRF Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -281,6 +279,87 @@ predictions from Flow. Those leaf nodes represent decision rules that
 can be fed to other models (i.e., GLM with lambda search and strong
 rules) to obtain a limited set of the most important rules. 
 
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a Random Forest model.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+    h2o.init()
+
+    # Import the cars dataset into H2O:
+    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # Set the predictors and response; 
+    # set the response as a factor:
+    cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+    predictors <- c("displacement", "power", "weight", "acceleration", "year")
+    response <- "economy_20mpg"
+
+    # Split the dataset into a train and valid set:
+    cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
+    train <- cars_split[[1]]
+    valid <- cars_split[[2]]
+
+    # Build and train the model:
+    cars_drf <- h2o.randomForest(x = predictors, 
+                                 y = response, 
+                                 ntrees = 10, 
+                                 max_depth = 5, 
+                                 min_rows = 10, 
+                                 calibrate_model = TRUE, 
+                                 calibration_frame = valid,
+                                 binomial_double_trees = TRUE, 
+                                 training_frame = train, 
+                                 validation_frame = valid)
+
+    # Eval performance:
+    perf <- h2o.performance(cars_drf)
+
+    # Generate predictions on a validation set (if necessary):
+    predict <- h2o.predict(cars_drf, newdata = valid)
+
+
+   .. code-tab:: python
+   
+    import h2o
+    from h2o.estimators import H2ORandomForestEstimator
+    h2o.init()
+
+    # Import the cars dataset into H2O:
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # Set the predictors and response; 
+    # set the response as a factor:
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+    predictors = ["displacement","power","weight","acceleration","year"]
+    response = "economy_20mpg"
+
+    # Split the dataset into a train and valid set:
+    train, valid = cars.split_frame(ratios=[.8], seed=1234)
+
+    # Build and train the model:
+    cars_drf = H2ORandomForestEstimator(ntrees=10, 
+                                        max_depth=5, 
+                                        min_rows=10, 
+                                        calibrate_model=True, 
+                                        calibration_frame=valid,
+                                        binomial_double_trees=True)
+    cars_drf.train(x=predictors, 
+                   y=response, 
+                   training_frame=train, 
+                   validation_frame=valid
+
+    # Eval performance:
+    perf = cars_drf.model_performance()
+
+    # Generate predictions on a validation set (if necessary):
+    pred = cars_drf.predict(valid)
+
+
 FAQ
 ~~~
 
@@ -298,8 +377,7 @@ FAQ
 
   No errors will occur, but nothing will be learned from rows containing missing values in the response column.
 
--  **What happens when you try to predict on a categorical level not
-   seen during training?**
+-  **What happens when you try to predict on a categorical level not seen during training?**
 
   DRF converts a new categorical level to a NA value in the test set, and then splits left on the NA value during scoring. The algorithm splits left on NA values because, during training, NA values are grouped with the outliers in the left-most bin.
 
@@ -311,8 +389,7 @@ FAQ
 
   No.
 
--  **How does the algorithm handle highly imbalanced data in a response
-   column?**
+-  **How does the algorithm handle highly imbalanced data in a response column?**
 
   Specify ``balance_classes``, ``class_sampling_factors`` and ``max_after_balance_size`` to control over/under-sampling.
 
@@ -324,35 +401,35 @@ FAQ
 
   Large numbers of categoricals are handled very efficiently - there is never any one-hot encoding.
 
-- **Does the algo stop splitting when all the possible splits lead to worse error measures?**
+-  **Does the algo stop splitting when all the possible splits lead to worse error measures?**
 
- It does if you use ``min_split_improvement`` (min_split_improvement turned ON by default (0.00001).) When properly tuned, this option can help reduce overfitting. 
+  It does if you use ``min_split_improvement`` (min_split_improvement turned ON by default (0.00001).) When properly tuned, this option can help reduce overfitting. 
 
-- **When does the algo stop splitting on an internal node?**
+-  **When does the algo stop splitting on an internal node?**
 
- A single tree will stop splitting when there are no more splits that satisfy the minimum rows parameter, if it reaches ``max_depth``, or if there are no splits that satisfy the ``min_split_improvement`` parameter.
+  A single tree will stop splitting when there are no more splits that satisfy the minimum rows parameter, if it reaches ``max_depth``, or if there are no splits that satisfy the ``min_split_improvement`` parameter.
 
-- **How does DRF decide which feature to split on?**
+-  **How does DRF decide which feature to split on?**
 
- It splits on the column and level that results in the greatest reduction in residual sum of the squares (RSS) in the subtree at that point. It considers all fields available from the algorithm. Note that any use of column sampling and row sampling will cause each decision to not consider all data points, and that this is on purpose to generate more robust trees. To find the best level, the histogram binning process is used to quickly compute the potential MSE of each possible split. The number of bins is controlled via ``nbins_cats`` for categoricals, the pair of ``nbins`` (the number of bins for the histogram to build, then split at the best point), and ``nbins_top_level`` (the minimum number of bins at the root level to use to build the histogram). This number will then be decreased by a factor of two per level. 
+  It splits on the column and level that results in the greatest reduction in residual sum of the squares (RSS) in the subtree at that point. It considers all fields available from the algorithm. Note that any use of column sampling and row sampling will cause each decision to not consider all data points, and that this is on purpose to generate more robust trees. To find the best level, the histogram binning process is used to quickly compute the potential MSE of each possible split. The number of bins is controlled via ``nbins_cats`` for categoricals, the pair of ``nbins`` (the number of bins for the histogram to build, then split at the best point), and ``nbins_top_level`` (the minimum number of bins at the root level to use to build the histogram). This number will then be decreased by a factor of two per level. 
 
- For ``nbins_top_level``, higher = more precise, but potentially more prone to overfitting. Higher also takes more memory and possibly longer to run.
+  For ``nbins_top_level``, higher = more precise, but potentially more prone to overfitting. Higher also takes more memory and possibly longer to run.
 
-- **What is the difference between nbins and nbins_top_level?**
+-  **What is the difference between nbins and nbins_top_level?**
 
- ``nbins`` and ``nbins_top_level`` are both for numerics (real and integer). ``nbins_top_level`` is the number of bins DRF uses at the top of each tree. It then divides by 2 at each ensuing level to find a new number. ``nbins`` controls when DRF stops dividing by 2.
+  ``nbins`` and ``nbins_top_level`` are both for numerics (real and integer). ``nbins_top_level`` is the number of bins DRF uses at the top of each tree. It then divides by 2 at each ensuing level to find a new number. ``nbins`` controls when DRF stops dividing by 2.
 
-- **How is variable importance calculated for DRF?**
+-  **How is variable importance calculated for DRF?**
 
   When calculating variable importances, H2O-3 looks at the squared error before and after the split using a particular variable. The difference is the improvement. H2O uses the improvement in squared error for each feature that was split on (rather than the accuracy). Each features improvement is then summed up at the end to get its total feature importance (and then scaled between 0-1).
 
-- **How is column sampling implemented for DRF?**
+-  **How is column sampling implemented for DRF?**
 
   For an example model using:
 
-  - 100 columns
-  - ``col_sample_rate_per_tree`` is 0.602
-  - ``mtries`` is -1 or 7 (refers to the number of active predictor columns for the dataset)
+  -  100 columns
+  -  ``col_sample_rate_per_tree`` is 0.602
+  -  ``mtries`` is -1 or 7 (refers to the number of active predictor columns for the dataset)
 
   For each tree, the floor is used to determine the number of columns that are randomly picked (for this example, (0.602*100)=60 out of the 100 columns). 
 
@@ -362,7 +439,7 @@ FAQ
 
   ``mtries`` is configured independently of ``col_sample_rate_per_tree``, but it can be limited by it. For example, if ``col_sample_rate_per_tree=0.01``, then there’s only one column left for each split, regardless of how large the value for ``mtries`` is.
 
-- **Why does performance appear slower in DRF than in GBM?**
+-  **Why does performance appear slower in DRF than in GBM?**
 
   With DRF, depth and size of trees can result in speed tradeoffs.
 
@@ -374,9 +451,9 @@ FAQ
 
   For both algorithms, finding one split requires a pass over one column and all rows. Assume a dataset with 250k rows and 500 columns. GBM can take minutes minutes, while DRF may take hours. This is because:
 
-  - Assuming the above, GBM needs to pass over up to 31\*500\*250k = 4 billion numbers per tree, and assuming 50 trees, that’s up to (typically equal to) 200 billion numbers in 11 minutes, or 300M per second, which is pretty fast.
+  -  Assuming the above, GBM needs to pass over up to 31\*500\*250k = 4 billion numbers per tree, and assuming 50 trees, that’s up to (typically equal to) 200 billion numbers in 11 minutes, or 300M per second, which is pretty fast.
 
-  - DRF needs to pass over up to 1M\*22\*250k = 5500 billion numbers per tree, and assuming 50 trees, that’s up to 275 trillion numbers, which can take a few hours
+  -  DRF needs to pass over up to 1M\*22\*250k = 5500 billion numbers per tree, and assuming 50 trees, that’s up to 275 trillion numbers, which can take a few hours
 
 
 DRF Algorithm
@@ -388,7 +465,7 @@ DRF Algorithm
    :target: http://www.slideshare.net/0xdata/rf-brighttalk
 
 
-`Building Random Forest at Scale <http://www.slideshare.net/0xdata/rf-brighttalk>`_ from Sri Ambati
+`Building Random Forest at Scale <https://www.slideshare.net/0xdata/rf-brighttalk>`_ from Sri Ambati
 
 References
 ~~~~~~~~~~

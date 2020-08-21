@@ -4,13 +4,11 @@ import static org.junit.Assert.*;
 import static water.parser.DefaultParserProviders.XLS_INFO;
 
 import org.junit.*;
-import java.io.File;
 
 import water.*;
 import water.fvec.Vec;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
-import water.util.FileUtils;
 
 public class ParseCompressedAndXLSTest extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(5); }
@@ -22,9 +20,9 @@ public class ParseCompressedAndXLSTest extends TestUtil {
       k2 = parse_test_file("smalldata/junit/iris.xls");
       k3 = parse_test_file("smalldata/junit/iris.csv.gz");
       k4 = parse_test_file("smalldata/junit/iris.csv.zip");
-      assertTrue(TestUtil.isBitIdentical(k1,k2));
-      assertTrue(TestUtil.isBitIdentical(k2,k3));
-      assertTrue(TestUtil.isBitIdentical(k3,k4));
+      TestUtil.assertBitIdentical(k1,k2);
+      TestUtil.assertBitIdentical(k2,k3);
+      TestUtil.assertBitIdentical(k3,k4);
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
@@ -61,7 +59,7 @@ public class ParseCompressedAndXLSTest extends TestUtil {
                 12,       // ncols
                 new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "DepTime", "ArrTime", "UniqueCarrier", "Origin", "Dest", "Distance", "IsDepDelayed", "IsDepDelayed_REC"},
                 ctypes,
-                null, null, null);
+                null, null, null, null, null);
       try {
         k1 = ParseDataset.parse(Key.make(), new Key[]{nfs._key}, true, setup, true)._job.get();
         assertTrue("Should have thrown ParseException since file isn't XLS file",false); // fail - should've thrown

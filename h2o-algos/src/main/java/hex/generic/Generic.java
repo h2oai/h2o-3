@@ -20,15 +20,22 @@ import java.util.*;
  * Only H2O Mojos are currently supported.
  */
 public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, GenericModelOutput> {
-    
+
+    /**
+     * Unmodifiable {@link Set} of Algorithm MOJOs which are allowed to be imported as generic model
+     */
     private static final Set<String> ALLOWED_MOJO_ALGOS;
-    static{
-        ALLOWED_MOJO_ALGOS = new HashSet<>();
-        ALLOWED_MOJO_ALGOS.add("gbm");
-        ALLOWED_MOJO_ALGOS.add("glm");
-        ALLOWED_MOJO_ALGOS.add("xgboost");
-        ALLOWED_MOJO_ALGOS.add("isolationforest");
-        ALLOWED_MOJO_ALGOS.add("drf");
+    static{ 
+        final Set<String> allowedAlgos = new HashSet<>(6);
+        allowedAlgos.add("gbm");
+        allowedAlgos.add("glm");
+        allowedAlgos.add("xgboost");
+        allowedAlgos.add("isolationforest");
+        allowedAlgos.add("drf");
+        allowedAlgos.add("deeplearning");
+        allowedAlgos.add("stackedensemble");
+        
+        ALLOWED_MOJO_ALGOS = Collections.unmodifiableSet(allowedAlgos);
     }
 
 
@@ -92,7 +99,7 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
                         throw new IllegalArgumentException(String.format("Unsupported MOJO model '%s'. ", mojoModel._modelDescriptor.algoName()));
                 }
 
-                final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes);
+                final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes, mojoModel._reproducibilityInformation);
                 final GenericModel genericModel = new GenericModel(_result, _parms, genericModelOutput, mojoModel, dataKey);
 
                 genericModel.write_lock(_job);

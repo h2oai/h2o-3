@@ -11,6 +11,7 @@ Local server.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 import atexit
 import os
@@ -18,12 +19,12 @@ import subprocess
 import sys
 import tempfile
 import time
+import re
 from random import choice
 from sysconfig import get_config_var
 from warnings import warn
 
 from h2o.exceptions import H2OServerError, H2OStartupError, H2OValueError
-from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, BoundInt, I, is_type
 
 __all__ = ("H2OLocalServer", )
@@ -59,10 +60,11 @@ class H2OLocalServer(object):
     _TIME_TO_START = 60  # Maximum time we wait for the server to start up (in seconds)
     _TIME_TO_KILL = 3    # Maximum time we wait for the server to shut down until we kill it (in seconds)
 
+    _BAD_JAVA_VERSION_RETURN_CODE_ = 3
 
     @staticmethod
     def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None,
-              ice_root=None, log_dir=None, log_level=None, port="54321+", name=None, extra_classpath=None,
+              ice_root=None, log_dir=None, log_level=None, max_log_file_size=None, port="54321+", name=None, extra_classpath=None,
               verbose=True, jvm_custom_args=None, bind_to_localhost=True):
         """
         Start new H2O server on the local machine.
@@ -77,6 +79,8 @@ class H2OLocalServer(object):
         :param log_dir: Directory for H2O logs to be stored if a new instance is started. Default directory is determined
             by H2O internally.
         :param log_level: The logger level for H2O if a new instance is started.
+        :param max_log_file_size: Maximum size of INFO and DEBUG log files. The file is rolled over after a specified 
+            size has been reached. (The default is 3MB. Minimum is 1MB and maximum is 99999MB)
         :param ice_root: A directory where H2O stores its temporary files. Default location is determined by
             tempfile.mkdtemp().
         :param port: Port where to start the new server. This could be either an integer, or a string of the form
@@ -101,6 +105,7 @@ class H2OLocalServer(object):
         assert_is_type(log_dir, str, None)
         assert_is_type(log_level, str, None)
         assert_satisfies(log_level, log_level in [None, "TRACE", "DEBUG", "INFO", "WARN", "ERRR", "FATA"])
+        assert_is_type(max_log_file_size, str, None)
         assert_is_type(ice_root, None, I(str, os.path.isdir))
         assert_is_type(extra_classpath, None, [str])
         assert_is_type(jvm_custom_args, list, None)
@@ -135,7 +140,7 @@ class H2OLocalServer(object):
         if verbose: print("Attempting to start a local H2O server...")
         hs._launch_server(port=port, baseport=baseport, nthreads=int(nthreads), ea=enable_assertions,
                           mmax=max_mem_size, mmin=min_mem_size, jvm_custom_args=jvm_custom_args,
-                          bind_to_localhost=bind_to_localhost, log_dir=log_dir, log_level=log_level)
+                          bind_to_localhost=bind_to_localhost, log_dir=log_dir, log_level=log_level, max_log_file_size=max_log_file_size)
         if verbose: print("  Server is running at %s://%s:%d" % (hs.scheme, hs.ip, hs.port))
         atexit.register(lambda: hs.shutdown())
         return hs
@@ -263,7 +268,7 @@ class H2OLocalServer(object):
         yield os.path.join(prefix2, "h2o_jar", "h2o.jar")
 
 
-    def _launch_server(self, port, baseport, mmax, mmin, ea, nthreads, jvm_custom_args, bind_to_localhost, log_dir=None, log_level=None):
+    def _launch_server(self, port, baseport, mmax, mmin, ea, nthreads, jvm_custom_args, bind_to_localhost, log_dir=None, log_level=None, max_log_file_size=None):
         """Actually start the h2o.jar executable (helper method for `.start()`)."""
         self._ip = "127.0.0.1"
 
@@ -310,6 +315,9 @@ class H2OLocalServer(object):
 
         if log_level:
             cmd += ["-log_level", log_level]
+            
+        if max_log_file_size:
+            cmd += ["-max_log_file_size", max_log_file_size]
 
         if not self._name:
             self._name = "H2O_from_python_%s" % self._tmp_file("salt")
@@ -343,7 +351,15 @@ class H2OLocalServer(object):
         giveup_time = time.time() + self._TIME_TO_START
         while True:
             if proc.poll() is not None:
-                raise H2OServerError("Server process terminated with error code %d" % proc.returncode)
+                if proc.returncode == self._BAD_JAVA_VERSION_RETURN_CODE_:
+                    error_message = "Server process terminated because of unsupported Java version" 
+                else:
+                    error_message = "Server process terminated with error code %d" % proc.returncode 
+                if os.stat(self._stderr).st_size > 0:
+                    error_message += ": %s" % open(self._stderr).read()
+                else:
+                    error_message += "."
+                raise H2OServerError(error_message)
             ret = self._get_server_info_from_logs()
             if ret:
                 self._scheme = ret[0]
@@ -367,7 +383,14 @@ class H2OLocalServer(object):
                                   "Please download the latest 64-bit Java SE JDK from Oracle.")
         if "Client VM" in jver:
             warn("  You have a 32-bit version of Java. H2O works best with 64-bit Java.\n"
-                 "  Please download the latest 64-bit Java SE JDK from Oracle.\n")
+                 "  Please download the latest 64-bit Java SE JDK from Oracle.\n") 
+        H2OLocalServer._has_compatible_version(jver)
+
+    @staticmethod
+    def _has_compatible_version(java_version):
+        pattern = re.compile("1\\.[1-7]\\.")
+        if pattern.search(java_version):
+            raise H2OStartupError("Your java is not supported: " + java_version.strip().replace("\n", "; "))
 
     @staticmethod
     def _find_java():
@@ -454,7 +477,7 @@ class H2OLocalServer(object):
 
         :returns: (scheme, ip, port) tuple if the server has already started, None otherwise.
         """
-        searchstr = "INFO: Open H2O Flow in your web browser:"
+        searchstr = ": Open H2O Flow in your web browser:"
         with open(self._stdout, "rt") as f:
             for line in f:
                 if searchstr in line:

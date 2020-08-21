@@ -9,8 +9,8 @@ import sys
 
 try:
     import pip
-    version_tuple = tuple(map(int, pip.__version__.split('.')))
-    if version_tuple >= (10, 0, 0):
+    pip_maj_version = int(pip.__version__.split('.', 1)[0])
+    if pip_maj_version >= 10:
         from pip._internal.utils.misc import get_installed_distributions
     else:
         from pip import get_installed_distributions
@@ -130,7 +130,7 @@ def test_module(mod, min_version, installed_modules):
 
 
 def main(kind, metayaml_file):
-    installed = get_installed_distributions(skip=())
+    installed = get_installed_distributions(skip=(), local_only=False)
     msgs = test_requirements(kind, metayaml_file, installed)
     if msgs:
         print("\n    ERRORS:\n", file=sys.stderr)

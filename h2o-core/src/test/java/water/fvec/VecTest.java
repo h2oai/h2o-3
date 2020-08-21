@@ -265,4 +265,37 @@ public class VecTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testIsConst() {
+    Scope.enter();
+    try {
+      assertTrue(Scope.track(vec(0, 0)).isConst());
+      assertFalse(Scope.track(vec(0, 1)).isConst());
+      assertFalse(Scope.track(dvec(Double.NaN, Double.NaN)).isConst());
+      // NAs are ignored by default
+      assertTrue(Scope.track(dvec(Double.NaN, 1)).isConst());
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testIsConstNA() {
+    Scope.enter();
+    try {
+      assertTrue(Scope.track(vec(0, 0)).isConst(false));
+      assertFalse(Scope.track(vec(0, 1)).isConst(false));
+      assertFalse(Scope.track(dvec(Double.NaN, Double.NaN)).isConst(false));
+      assertTrue(Scope.track(dvec(Double.NaN, 1)).isConst(false));
+
+      assertTrue(Scope.track(vec(0, 0)).isConst(true));
+      assertFalse(Scope.track(vec(0, 1)).isConst(true));
+      assertFalse(Scope.track(dvec(Double.NaN, Double.NaN)).isConst(true));
+      // NA is considered to be a value
+      assertFalse(Scope.track(dvec(Double.NaN, 1)).isConst(true));
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

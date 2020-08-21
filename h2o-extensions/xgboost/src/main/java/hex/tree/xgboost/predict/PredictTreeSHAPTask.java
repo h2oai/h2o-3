@@ -2,13 +2,14 @@ package hex.tree.xgboost.predict;
 
 import hex.DataInfo;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
-import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostOutput;
-import ml.dmlc.xgboost4j.java.XGBoostModelInfo;
+import hex.tree.xgboost.XGBoostModelInfo;
 import water.MRTask;
 import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
+
+import java.util.Arrays;
 
 public class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
 
@@ -32,7 +33,7 @@ public class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
   }
 
   @Override
-  public void map(Chunk chks[], NewChunk[] nc) {
+  public void map(Chunk[] chks, NewChunk[] nc) {
     MutableOneHotEncoderFVec rowFVec = new MutableOneHotEncoderFVec(_di, _output._sparse);
 
     double[] input = MemoryManager.malloc8d(chks.length);
@@ -44,9 +45,7 @@ public class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
       for (int i = 0; i < chks.length; i++) {
         input[i] = chks[i].atd(row);
       }
-      for (int i = 0; i < contribs.length; i++) {
-        contribs[i] = 0;
-      }
+      Arrays.fill(contribs, 0);
       rowFVec.setInput(input);
 
       // calculate Shapley values

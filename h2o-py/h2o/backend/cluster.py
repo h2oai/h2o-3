@@ -1,17 +1,18 @@
 # -*- encoding: utf-8 -*-
 """Information about the backend H2O cluster."""
 from __future__ import division, print_function, absolute_import, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 import sys
 import time
+import json
 
 import h2o
 from h2o.exceptions import H2OConnectionError, H2OServerError
 from h2o.display import H2ODisplay
-from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type
 from h2o.utils.shared_utils import get_human_readable_bytes, get_human_readable_time
-
+from h2o.two_dim_table import H2OTwoDimTable
 
 
 class H2OCluster(object):
@@ -214,49 +215,39 @@ class H2OCluster(object):
 
         :param detailed: if True, then also print detailed information about each node.
         """
+        keys = _cluster_status_info_keys
+        values = self._get_cluster_status_info_values()
+        table = [[k+":", values[i]] for i, k in enumerate(keys)]
+        H2ODisplay(table)
+
+        if detailed:
+            keys = _cluster_status_detailed_info_keys
+            header = ["Nodes info:"] + ["Node %d" % (i + 1) for i in range(len(self.nodes))]
+            table = [[k]+[node[k] for node in self.nodes] for k in keys]
+            H2ODisplay(table=table, header=header)
+
+    def get_status(self):
+        """
+        Returns H2OTwoDimTable with current cluster status information.
+        """
+        keys = _cluster_status_info_keys
+        values = self._get_cluster_status_info_values()
+        table = H2OTwoDimTable(cell_values=[values], col_header=keys)
+        return table
+
+    def get_status_details(self):
+        """
+        Returns H2OTwoDimTable with detailed current status information about each node.
+        """
         if self._retrieved_at + self.REFRESH_INTERVAL < time.time():
             # Info is stale, need to refresh
             new_info = h2o.api("GET /3/Cloud")
             self._fill_from_h2ocluster(new_info)
-        ncpus = sum(node["num_cpus"] for node in self.nodes)
-        allowed_cpus = sum(node["cpus_allowed"] for node in self.nodes)
-        free_mem = sum(node["free_mem"] for node in self.nodes)
-        unhealthy_nodes = sum(not node["healthy"] for node in self.nodes)
-        status = "locked" if self.locked else "accepting new members"
-        if unhealthy_nodes == 0:
-            status += ", healthy"
-        else:
-            status += ", %d nodes are not healthy" % unhealthy_nodes
-        api_extensions = self.list_api_extensions()
-        H2ODisplay([
-            ["H2O cluster uptime:",        get_human_readable_time(self.cloud_uptime_millis)],
-            ["H2O cluster timezone:",      self.cloud_internal_timezone],
-            ["H2O data parsing timezone:", self.datafile_parser_timezone],
-            ["H2O cluster version:",       self.version],
-            ["H2O cluster version age:",   "{} {}".format(self.build_age, ("!!!" if self.build_too_old else ""))],
-            ["H2O cluster name:",          self.cloud_name],
-            ["H2O cluster total nodes:",   self.cloud_size],
-            ["H2O cluster free memory:",   get_human_readable_bytes(free_mem)],
-            ["H2O cluster total cores:",   str(ncpus)],
-            ["H2O cluster allowed cores:", str(allowed_cpus)],
-            ["H2O cluster status:",        status],
-            ["H2O connection url:",        h2o.connection().base_url],
-            ["H2O connection proxy:",      h2o.connection().proxy],
-            ["H2O internal security:",     self.internal_security_enabled],
-            ["H2O API Extensions:",        ', '.join(api_extensions)],
-            ["Python version:",            "%d.%d.%d %s" % tuple(sys.version_info[:4])],
-        ])
-
-        if detailed:
-            keys = ["h2o", "healthy", "last_ping", "num_cpus", "sys_load", "mem_value_size", "free_mem", "pojo_mem",
-                    "swap_mem", "free_disk", "max_disk", "pid", "num_keys", "tcps_active", "open_fds", "rpcs_active"]
-            header = ["Nodes info:"] + ["Node %d" % (i + 1) for i in range(len(self.nodes))]
-            table = [[k] for k in keys]
-            for node in self.nodes:
-                for i, k in enumerate(keys):
-                    table[i].append(node[k])
-            H2ODisplay(table=table, header=header)
-
+        keys = _cluster_status_detailed_info_keys[:]
+        node_table = [["Node %d" % (j + 1)] + [node[k] for k in keys] for j, node in enumerate(self.nodes)]
+        keys.insert(0, "node")
+        table = H2OTwoDimTable(cell_values=node_table, col_header=keys, row_header=keys)
+        return table
 
     def network_test(self):
         """Test network connectivity."""
@@ -342,6 +333,52 @@ class H2OCluster(object):
         else:
             return 'Unknown'
 
+   
+
+    def _get_cluster_status_info_values(self):
+        if self._retrieved_at + self.REFRESH_INTERVAL < time.time():
+            # Info is stale, need to refresh
+            new_info = h2o.api("GET /3/Cloud")
+            self._fill_from_h2ocluster(new_info)
+        ncpus = sum(node["num_cpus"] for node in self.nodes)
+        allowed_cpus = sum(node["cpus_allowed"] for node in self.nodes)
+        free_mem = sum(node["free_mem"] for node in self.nodes)
+        unhealthy_nodes = sum(not node["healthy"] for node in self.nodes)
+        status = "locked" if self.locked else "accepting new members"
+        if unhealthy_nodes == 0:
+            status += ", healthy"
+        else:
+            status += ", %d nodes are not healthy" % unhealthy_nodes
+        api_extensions = self.list_api_extensions()
+        values = [get_human_readable_time(self.cloud_uptime_millis),
+                  self.cloud_internal_timezone,
+                  self.datafile_parser_timezone,
+                  self.version,
+                  "{} {}".format(self.build_age, ("!!!" if self.build_too_old else "")),
+                  self.cloud_name,
+                  self.cloud_size,
+                  get_human_readable_bytes(free_mem),
+                  ncpus,
+                  allowed_cpus,
+                  status,
+                  h2o.connection().base_url,
+                  json.dumps(h2o.connection().proxy),
+                  self.internal_security_enabled,
+                  ', '.join(api_extensions),
+                  "%d.%d.%d %s" % tuple(sys.version_info[:4])]
+        return values
+
+
+_cluster_status_info_keys = ["H2O_cluster_uptime", "H2O_cluster_timezone", "H2O_data_parsing_timezone",
+            "H2O_cluster_version", "H2O_cluster_version_age", "H2O_cluster_name", "H2O_cluster_total_nodes",
+            "H2O_cluster_free_memory", "H2O_cluster_total_cores", "H2O_cluster_allowed_cores", "H2O_cluster_status",
+            "H2O_connection_url", "H2O_connection_proxy", "H2O_internal_security", "H2O_API_Extensions", "Python_version"]
+    
+_cluster_status_detailed_info_keys = ["h2o", "healthy", "last_ping", "num_cpus", "sys_load", "mem_value_size",
+                                      "free_mem", "pojo_mem", "swap_mem", "free_disk", "max_disk", "pid", "num_keys",
+                                      "tcps_active", "open_fds", "rpcs_active"]
+
 _cloud_v3_valid_keys = {"is_client", "build_number", "cloud_name", "locked", "node_idx", "consensus", "branch_name",
-                        "version", "cloud_uptime_millis", "cloud_internal_timezone", "datafile_parser_timezone", "cloud_healthy", "bad_nodes", "cloud_size", "skip_ticks",
+                        "version", "last_commit_hash", "describe", "compiled_by", "compiled_on", "cloud_uptime_millis",
+                        "cloud_internal_timezone", "datafile_parser_timezone", "cloud_healthy", "bad_nodes", "cloud_size", "skip_ticks",
                         "nodes", "build_age", "build_too_old", "internal_security_enabled", "leader_idx"}

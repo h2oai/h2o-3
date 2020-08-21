@@ -1,24 +1,14 @@
 package ai.h2o.automl;
 
 import hex.Model;
-import hex.ScoreKeeper;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
-import hex.glm.GLMModel.GLMParameters;
-import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
-import hex.tree.drf.DRFModel.DRFParameters;
-import hex.tree.gbm.GBMModel.GBMParameters;
-import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
+import hex.ScoreKeeper.StoppingMetric;
+import hex.grid.HyperSpaceSearchCriteria;
 import water.H2O;
 import water.Iced;
 import water.Key;
-import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
-import water.util.IcedHashMap;
-import water.util.Log;
-import water.util.PojoUtils;
+import water.util.*;
 import water.util.PojoUtils.FieldNaming;
 
 import java.util.ArrayList;
@@ -34,7 +24,7 @@ import java.util.Date;
  */
 public class AutoMLBuildSpec extends Iced {
 
-  private static final DateFormat projectTimeStampFormat = new SimpleDateFormat("yyyyMMdd_HmmssSSS");
+  private static final ThreadLocal<DateFormat> projectTimeStampFormat = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyyMMdd_HmmssSSS"));
 
   /**
    * The specification of overall build parameters for the AutoML process.
@@ -56,19 +46,11 @@ public class AutoMLBuildSpec extends Iced {
     public boolean keep_cross_validation_predictions = false;
     public boolean keep_cross_validation_models = false;
     public boolean keep_cross_validation_fold_assignment = false;
+
     public String export_checkpoints_dir = null;
 
     public AutoMLBuildControl() {
       stopping_criteria = new AutoMLStoppingCriteria();
-
-      // reasonable defaults:
-      stopping_criteria.set_max_models(0);
-      stopping_criteria.set_max_runtime_secs(3600);
-      stopping_criteria.set_max_runtime_secs_per_model(0);
-
-      stopping_criteria.set_stopping_rounds(3);
-      stopping_criteria.set_stopping_tolerance(0.001);
-      stopping_criteria.set_stopping_metric(ScoreKeeper.StoppingMetric.AUTO);
     }
   }
 
@@ -76,8 +58,23 @@ public class AutoMLBuildSpec extends Iced {
 
     public static final int AUTO_STOPPING_TOLERANCE = -1;
 
-    private final RandomDiscreteValueSearchCriteria _searchCriteria = new RandomDiscreteValueSearchCriteria();
+    public static double default_stopping_tolerance_for_frame(Frame frame) {
+      return HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(frame);
+    }
+
+    private final HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria _searchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
     private double _max_runtime_secs_per_model = 0;
+
+    public AutoMLStoppingCriteria() {
+      // reasonable defaults:
+      set_max_models(0); // no limit
+      set_max_runtime_secs(0); // no limit
+      set_max_runtime_secs_per_model(0); // no limit
+
+      set_stopping_rounds(3);
+      set_stopping_tolerance(AUTO_STOPPING_TOLERANCE);
+      set_stopping_metric(StoppingMetric.AUTO);
+    }
 
     public double max_runtime_secs_per_model() {
       return _max_runtime_secs_per_model;
@@ -103,7 +100,7 @@ public class AutoMLBuildSpec extends Iced {
       return _searchCriteria.stopping_rounds();
     }
 
-    public ScoreKeeper.StoppingMetric stopping_metric() {
+    public StoppingMetric stopping_metric() {
       return _searchCriteria.stopping_metric();
     }
 
@@ -127,7 +124,7 @@ public class AutoMLBuildSpec extends Iced {
       _searchCriteria.set_stopping_rounds(stopping_rounds);
     }
 
-    public void set_stopping_metric(ScoreKeeper.StoppingMetric stopping_metric) {
+    public void set_stopping_metric(StoppingMetric stopping_metric) {
       _searchCriteria.set_stopping_metric(stopping_metric);
     }
 
@@ -139,14 +136,9 @@ public class AutoMLBuildSpec extends Iced {
       _searchCriteria.set_default_stopping_tolerance_for_frame(frame);
     }
 
-    public static double default_stopping_tolerance_for_frame(Frame frame) {
-      return RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(frame);
-    }
-
-    public RandomDiscreteValueSearchCriteria getSearchCriteria() {
+    public HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria getSearchCriteria() {
       return _searchCriteria;
     }
-
   }
 
   /**
@@ -166,7 +158,7 @@ public class AutoMLBuildSpec extends Iced {
     public String fold_column;
     public String weights_column;
     public String[] ignored_columns;
-    public String sort_metric;
+    public String sort_metric = StoppingMetric.AUTO.name();
   }
 
   /**
@@ -176,6 +168,7 @@ public class AutoMLBuildSpec extends Iced {
     public Algo[] exclude_algos;
     public Algo[] include_algos;
     public StepDefinition[] modeling_plan;
+    public double exploitation_ratio = 0;
     public AutoMLCustomParameters algo_parameters = new AutoMLCustomParameters();
   }
 
@@ -193,18 +186,18 @@ public class AutoMLBuildSpec extends Iced {
     private static final String ROOT_PARAM = "algo_parameters";
 
     public static final class AutoMLCustomParameter<V> extends Iced {
-      public AutoMLCustomParameter(String name, V value) {
+      private AutoMLCustomParameter(String name, V value) {
         _name = name;
         _value = value;
       }
 
-      public AutoMLCustomParameter(Algo algo, String name, V value) {
+      private AutoMLCustomParameter(IAlgo algo, String name, V value) {
         _algo = algo;
         _name = name;
         _value = value;
       }
 
-      private Algo _algo;
+      private IAlgo _algo;
       private String _name;
       private V _value;
     }
@@ -219,7 +212,7 @@ public class AutoMLBuildSpec extends Iced {
         return this;
       }
 
-      public <V> Builder add(Algo algo, String param, V value) {
+      public <V> Builder add(IAlgo algo, String param, V value) {
         assertParameterAllowed(param);
         _specificAlgoParams.add(new AutoMLCustomParameter<>(algo, param, value));
         return this;
@@ -259,15 +252,15 @@ public class AutoMLBuildSpec extends Iced {
     private final IcedHashMap<String, String[]> _algoParameterNames = new IcedHashMap<>(); // stores the parameters names overridden, by algo name
     private final IcedHashMap<String, Model.Parameters> _algoParameters = new IcedHashMap<>(); //stores the parameters values, by algo name
 
-    public boolean hasCustomParams(Algo algo) {
+    public boolean hasCustomParams(IAlgo algo) {
       return _algoParameterNames.get(algo.name()) != null;
     }
 
-    public boolean hasCustomParam(Algo algo, String param) {
+    public boolean hasCustomParam(IAlgo algo, String param) {
       return ArrayUtils.contains(_algoParameterNames.get(algo.name()), param);
     }
 
-    public void applyCustomParameters(Algo algo, Model.Parameters destParams) {
+    public void applyCustomParameters(IAlgo algo, Model.Parameters destParams) {
       if (hasCustomParams(algo)) {
         String[] paramNames = getCustomParameterNames(algo);
         String[] onlyParamNames = Stream.of(paramNames).map(p -> "_"+p).toArray(String[]::new);
@@ -275,28 +268,23 @@ public class AutoMLBuildSpec extends Iced {
       }
     }
 
-    String[] getCustomParameterNames(Algo algo) {
+    String[] getCustomParameterNames(IAlgo algo) {
       return _algoParameterNames.get(algo.name());
     }
 
-    Model.Parameters getCustomizedDefaults(Algo algo) {
-      if (!_algoParameters.containsKey(algo.name())) _algoParameters.put(algo.name(), defaultParameters(algo));
+    Model.Parameters getCustomizedDefaults(IAlgo algo) {
+      if (!_algoParameters.containsKey(algo.name())) {
+        Model.Parameters defaults = defaultParameters(algo);
+        if (defaults != null) _algoParameters.put(algo.name(), defaults);
+      }
       return _algoParameters.get(algo.name());
     }
 
-    private Model.Parameters defaultParameters(Algo algo) {
-      switch (algo) {
-        case DeepLearning: return new DeepLearningParameters();
-        case DRF: return new DRFParameters();
-        case GBM: return new GBMParameters();
-        case GLM: return new GLMParameters();
-        case StackedEnsemble: return new StackedEnsembleParameters();
-        case XGBoost: return new XGBoostParameters();
-        default: throw new H2OIllegalArgumentException("Custom parameters are not supported for "+algo.name()+".");
-      }
+    private Model.Parameters defaultParameters(IAlgo algo) {
+      return algo.enabled() ? ModelingStepsRegistry.defaultParameters(algo.name()) : null;
     }
 
-    private void addParameterName(Algo algo, String param) {
+    private void addParameterName(IAlgo algo, String param) {
       if (!_algoParameterNames.containsKey(algo.name())) {
         _algoParameterNames.put(algo.name(), new String[] {param});
       } else {
@@ -315,11 +303,12 @@ public class AutoMLBuildSpec extends Iced {
       return added;
     }
 
-    private <V> boolean addParameter(Algo algo, String param, V value) {
+    private <V> boolean addParameter(IAlgo algo, String param, V value) {
       Model.Parameters customParams = getCustomizedDefaults(algo);
       try {
-        if (setField(customParams, param, value, FieldNaming.DEST_HAS_UNDERSCORES)
-                || setField(customParams, param, value, FieldNaming.CONSISTENT)) {
+        if (customParams != null
+                && (setField(customParams, param, value, FieldNaming.DEST_HAS_UNDERSCORES)
+                    || setField(customParams, param, value, FieldNaming.CONSISTENT))) {
           addParameterName(algo, param);
           return true;
         } else {
@@ -353,8 +342,16 @@ public class AutoMLBuildSpec extends Iced {
 
   public String project() {
     if (build_control.project_name == null) {
-      build_control.project_name = "AutoML_"+ projectTimeStampFormat.format(new Date());
+      build_control.project_name = "AutoML_"+ projectTimeStampFormat.get().format(new Date());
     }
     return build_control.project_name;
   }
+
+  public Key<AutoML> makeKey() {
+    // if user offers a different response column,
+    //   the new models will be added to a new Leaderboard, without removing the previous one.
+    // otherwise, the new models will be added to the existing leaderboard.
+    return Key.make(project() + AutoML.keySeparator + StringUtils.sanitizeIdentifier(input_spec.response_column));
+  }
+
 }

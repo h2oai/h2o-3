@@ -3,6 +3,11 @@ apply plugin: 'java'
 apply plugin: 'com.github.hierynomus.license'
 
 description = "H2O Application Assembly"
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+
 // Exclude unwanted dependencies
 configurations {
     compile.exclude module: 'junit'
@@ -23,10 +28,12 @@ dependencies {
     compile project(":h2o-persist-s3")
     compile project(":h2o-persist-http")
     compile project(":h2o-persist-hdfs")
+    compile project(":h2o-ext-krbstandalone")
     if (project.hasProperty("doIncludeOrc") && project.doIncludeOrc == "true") {
         compile project(":h2o-orc-parser")
     }
     compile project(":h2o-parquet-parser")
+    compile project(":h2o-k8s")
     compile "org.slf4j:slf4j-log4j12:1.7.10"
 }
 

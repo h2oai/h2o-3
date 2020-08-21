@@ -6,6 +6,7 @@ import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.algos.tree.TreeBackedMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
@@ -14,6 +15,8 @@ import hex.genmodel.easy.prediction.*;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+
+import static hex.genmodel.utils.ArrayUtils.nanArray;
 
 /**
  * An easy-to-use prediction wrapper for generated models.  Instantiate as follows.  The following two are equivalent.
@@ -133,9 +136,9 @@ public class EasyPredictModelWrapper implements Serializable {
     public Config setEnableLeafAssignment(boolean val) throws IOException {
       if (val && (model==null))
         throw new IOException("enableLeafAssignment cannot be set with null model.  Call setModel() first.");
-      if (val && !(model instanceof SharedTreeMojoModel))
-        throw new IOException("enableLeafAssignment can be set to true only with SharedTreeMojoModel," +
-                " i.e. with GBM or DRF.");
+      if (val && !(model instanceof TreeBackedMojoModel))
+        throw new IOException("enableLeafAssignment can be set to true only with TreeBackedMojoModel," +
+                " i.e. with GBM, DRF, Isolation forest or XGBoost.");
 
       enableLeafAssignment = val;
       return this;
@@ -301,22 +304,18 @@ public class EasyPredictModelWrapper implements Serializable {
       predictContributions = null;
     }
 
-    if ((m.getCategoricalEncoding() != CategoricalEncoding.AUTO) && !config.getUseExternalEncoding()) {
-      throw new UnsupportedOperationException("Categorical Encoding `" + m.getCategoricalEncoding() + 
-              "` is currently not supported by EasyPredictModelWrapper. Instantiate the wrapper with `useExternalEncoding=true` " +
-              " and apply the encoding manually before calling the predict function. For more information please refer to https://0xdata.atlassian.net/browse/PUBDEV-6929.");
-    }
+    CategoricalEncoding categoricalEncoding = config.getUseExternalEncoding() ?
+            CategoricalEncoding.AUTO : m.getCategoricalEncoding();
+    Map<String, Integer> columnMapping = categoricalEncoding.createColumnMapping(m);
+    Map<Integer, CategoricalEncoder> domainMap = categoricalEncoding.createCategoricalEncoders(m, columnMapping);
 
-    Map<Integer, CategoricalEncoder> domainMap = new DomainMapConstructor(m).create();
-    // Create map of column names to index number.
-    String[] modelColumnNames = m.getNames();
-    Map<String, Integer> modelColumnNameToIndexMap = new HashMap<>(modelColumnNames.length);
-    for (int i = 0; i < modelColumnNames.length; i++) {
-      modelColumnNameToIndexMap.put(modelColumnNames[i], i);
+    if (m instanceof ConverterFactoryProvidingModel) {
+      rowDataConverter = ((ConverterFactoryProvidingModel) m).makeConverterFactory(columnMapping, domainMap, errorConsumer, config);
+    } else {
+      rowDataConverter = new RowToRawDataConverter(m, columnMapping, domainMap, errorConsumer, config);
     }
-
-    rowDataConverter = RowDataConverterFactory.makeConverter(m, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
   }
+
 
   /**
    * Create a wrapper for a generated model.
@@ -365,7 +364,8 @@ public class EasyPredictModelWrapper implements Serializable {
         return transformWithTargetEncoding(data);
       case AnomalyDetection:
         return predictAnomalyDetection(data);
-
+      case KLime:
+        return predictKLime(data);
       case Unknown:
         throw new PredictException("Unknown model category");
       default:
@@ -381,8 +381,18 @@ public class EasyPredictModelWrapper implements Serializable {
     return rowDataConverter.getErrorConsumer();
   }
 
-  
-  
+  /**
+   * Returns names of contributions for prediction results with constributions enabled. 
+   * @return array of contribution names (array has same lenght as the actual contributions, last is BiasTerm)
+   */
+  public String[] getContributionNames() {
+    if (predictContributions == null) {
+      throw new IllegalStateException(
+              "Contributions were not enabled using in EasyPredictModelWrapper (use setEnableContributions).");
+    }
+    return predictContributions.getContributionNames();
+  }
+
   /**
    * Make a prediction on a new data point using an AutoEncoder model.
    * @param data A new data point.
@@ -521,9 +531,7 @@ public class EasyPredictModelWrapper implements Serializable {
   public AnomalyDetectionPrediction predictAnomalyDetection(RowData data) throws PredictException {
     double[] preds = preamble(ModelCategory.AnomalyDetection, data, 0.0);
 
-    AnomalyDetectionPrediction p = new AnomalyDetectionPrediction();
-    p.normalizedScore = preds[0];
-    p.score = preds[1];
+    AnomalyDetectionPrediction p = new AnomalyDetectionPrediction(preds);
     if (enableLeafAssignment) { // only get leaf node assignment if enabled
       SharedTreeMojoModel.LeafNodeAssignments assignments = leafNodeAssignmentExtended(data);
       p.leafNodeAssignments = assignments._paths;
@@ -615,13 +623,13 @@ public class EasyPredictModelWrapper implements Serializable {
   public String[] leafNodeAssignment(RowData data) throws PredictException {
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
-    return ((SharedTreeMojoModel) m).getDecisionPath(rawData);
+    return ((TreeBackedMojoModel) m).getDecisionPath(rawData);
   }
 
   public SharedTreeMojoModel.LeafNodeAssignments leafNodeAssignmentExtended(RowData data) throws PredictException {
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
-    return ((SharedTreeMojoModel) m).getLeafNodeAssignments(rawData);
+    return ((TreeBackedMojoModel) m).getLeafNodeAssignments(rawData);
   }
 
   /**
@@ -794,6 +802,18 @@ public class EasyPredictModelWrapper implements Serializable {
     return p;
   }
 
+  public KLimeModelPrediction predictKLime(RowData data) throws PredictException {
+    double[] preds = preamble(ModelCategory.KLime, data);
+
+    KLimeModelPrediction p = new KLimeModelPrediction();
+    p.value = preds[0];
+    p.cluster = (int) preds[1];
+    p.reasonCodes = new double[preds.length - 2];
+    System.arraycopy(preds, 2, p.reasonCodes, 0, p.reasonCodes.length);
+
+    return p;
+  }
+
   //----------------------------------------------------------------------
   // Transparent methods passed through to GenModel.
   //----------------------------------------------------------------------
@@ -847,14 +867,6 @@ public class EasyPredictModelWrapper implements Serializable {
     return predict(data, offset, new double[predsSize]);
   }
 
-  private static double[] nanArray(int len) {
-    double[] arr = new double[len];
-    for (int i = 0; i < len; i++) {
-      arr[i] = Double.NaN;
-    }
-    return arr;
-  }
-
   protected double[] fillRawData(RowData data, double[] rawData) throws PredictException {
     return rowDataConverter.convert(data, rawData);
   }
@@ -862,11 +874,11 @@ public class EasyPredictModelWrapper implements Serializable {
   protected double[] predict(RowData data, double offset, double[] preds) throws PredictException {
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
-    if (offset == 0) {
-      preds = m.score0(rawData, preds);
+    if (m.requiresOffset() || offset != 0) {
+      preds = m.score0(rawData, offset, preds);
     }
     else {
-      preds = m.score0(rawData, offset, preds);
+      preds = m.score0(rawData, preds);
     }
     return preds;
   }

@@ -154,6 +154,14 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     String filename = JCodeGen.toJavaId(s.model_id.key().toString()) + ".zip";
     return new StreamingSchema(model.getMojo(), filename);
   }
+  
+  @SuppressWarnings("unused") // called from the RequestServer through reflection
+  public StreamingSchema fetchBinaryModel(int version, ModelsV3 s) {
+    Model model = getFromDKV("key", s.model_id.key());
+    String filename = JCodeGen.toJavaId(s.model_id.key().toString());
+    StreamingSchema ss = new StreamingSchema(model, filename);
+    return ss;
+  }
 
   @SuppressWarnings("unused") // called from the RequestServer through reflection
   public JobV3 makePartialDependence(int version, PartialDependenceV3 s) {
@@ -214,6 +222,18 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     return s;
   }
 
+    @SuppressWarnings("unused") // called through reflection by RequestServer
+    public ModelsV3 uploadModel(int version, ModelImportV3 mimport) {
+        ModelsV3 s = Schema.newInstance(ModelsV3.class);
+        try {
+            Model<?, ?, ?> model = Model.uploadBinaryModel(mimport.dir);
+            s.models = new ModelSchemaV3[]{(ModelSchemaV3) SchemaServer.schema(version, model).fillFromImpl(model)};
+        } catch (IOException | FSIOException e) {
+            throw new H2OIllegalArgumentException("dir", "importModel", e);
+        }
+        return s;
+    }
+  
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelExportV3 exportModel(int version, ModelExportV3 mexport) {
     Model model = getFromDKV("model_id", mexport.model_id.key());

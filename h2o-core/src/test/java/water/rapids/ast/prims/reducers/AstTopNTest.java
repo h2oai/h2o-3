@@ -127,7 +127,7 @@ public class AstTopNTest extends TestUtil {
       Scope.track(sortedF);
       Frame sortedFT = DMatrix.transpose(sortedF);
       Scope.track(sortedFT);
-      assertTrue(isIdenticalUpToRelTolerance(topN, sortedFT, tolerance));
+      assertIdenticalUpToRelTolerance(topN, sortedFT, tolerance);
       Scope.track(topN);
       Scope.track_generic(ksplits[0].get());
       Scope.track_generic(ksplits[1].get());

@@ -1,10 +1,13 @@
 package water.network;
 
+import org.junit.Rule;
 import org.junit.Test;
-import water.util.FileUtils;
+import org.junit.rules.TemporaryFolder;
+import water.H2O;
 import water.util.StringUtils;
 
 import javax.net.ssl.SSLException;
+import java.io.File;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.InetSocketAddress;
@@ -21,10 +24,13 @@ public class SSLSocketChannelFactoryTest {
 
     private int port = 9999;
 
+    @Rule
+    public TemporaryFolder tmp = new TemporaryFolder();
+    
     @Test
     public void shouldHandshake() throws IOException, SSLContextException, BrokenBarrierException, InterruptedException {
         SSLProperties props = new SSLProperties();
-        props.put("h2o_ssl_protocol", SecurityUtils.defaultTLSVersion());
+        props.put("h2o_ssl_protocol", "TLSv1.2");
         props.put("h2o_ssl_jks_internal", getFile("src/test/resources/keystore.jks").getPath());
         props.put("h2o_ssl_jks_password", "password");
         props.put("h2o_ssl_jts", getFile("src/test/resources/cacerts.jks").getPath());
@@ -212,6 +218,26 @@ public class SSLSocketChannelFactoryTest {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    @Test
+    public void createFromProperties() throws IOException, SSLContextException {
+        assertFalse(H2O.ARGS.internal_security_conf_rel_paths);
+        final String origConf = H2O.ARGS.internal_security_conf;
+        String sslConf = tmp.newFile("ssl.conf").getAbsolutePath();
+        try {
+            // 1. interpret paths relative to working directory
+            H2O.ARGS.internal_security_conf = sslConf;
+            SSLSocketChannelFactory fact1 = new SSLSocketChannelFactory();
+            assertNull(fact1.getProperties().getPathRoot());
+            // 2. interpret paths relative to security conf file
+            H2O.ARGS.internal_security_conf_rel_paths = true;
+            SSLSocketChannelFactory fact2 = new SSLSocketChannelFactory();
+            assertEquals(new File(sslConf).getParentFile(), fact2.getProperties().getPathRoot());
+        } finally {
+            H2O.ARGS.internal_security_conf = origConf;
+            H2O.ARGS.internal_security_conf_rel_paths = false;
         }
     }
 

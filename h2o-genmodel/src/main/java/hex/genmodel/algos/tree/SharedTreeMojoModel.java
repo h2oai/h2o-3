@@ -1,11 +1,14 @@
 package hex.genmodel.algos.tree;
 
+import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.attributes.VariableImportances;
 import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.GenmodelBitSet;
+import water.logging.Logger;
+import water.logging.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -15,12 +18,15 @@ import java.util.Map;
  * Common ancestor for {@link DrfMojoModel} and {@link GbmMojoModel}.
  * See also: `hex.tree.SharedTreeModel` and `hex.tree.TreeVisitor` classes.
  */
-public abstract class SharedTreeMojoModel extends MojoModel implements SharedTreeGraphConverter{
+public abstract class SharedTreeMojoModel extends MojoModel implements TreeBackedMojoModel, PlattScalingMojoHelper.MojoModelWithCalibration {
+    
     private static final int NsdNaVsRest = NaSplitDir.NAvsREST.value();
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
 
     private ScoreTree _scoreTree;
+    
+    private static Logger logger = LoggerFactory.getLogger(SharedTreeMojoModel.class);
 
     /**
      * {@code _ntree_groups} is the number of trees requested by the user. For
@@ -33,6 +39,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
      */
     protected int _ntree_groups;
     protected int _ntrees_per_group;
+
     /**
      * Array of binary tree data, each tree being a {@code byte[]} array. The
      * trees are logically grouped into a rectangular grid of dimensions
@@ -51,8 +58,14 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
      * GLM's beta used for calibrating output probabilities using Platt Scaling.
      */
     protected double[] _calib_glm_beta;
+    
+    protected String _genmodel_encoding;
+    
+    protected String[] _orig_names;
 
-    protected VariableImportances _variable_importances;
+    protected String[][] _orig_domain_values;
+
+    protected double[] _orig_projection_array;
 
 
     protected void postInit() {
@@ -64,14 +77,15 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
         _scoreTree = new ScoreTree2(); // Current version
     }
 
+    @Override
     public final int getNTreeGroups() {
       return _ntree_groups;
     }
 
+    @Override
     public final int getNTreesPerGroup() {
       return _ntrees_per_group;
     }
-
 
     /**
      * @deprecated use {@link #scoreTree0(byte[], double[], boolean)} instead.
@@ -100,12 +114,13 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
       return scoreTree(tree, row, computeLeafAssignment, domains);
     }
 
+  public static final int __INTERNAL_MAX_TREE_DEPTH = 64;
   /**
    * Highly efficient (critical path) tree scoring
    *
    * Given a tree (in the form of a byte array) and the row of input data, compute either this tree's
    * predicted value when `computeLeafAssignment` is false, or the the decision path within the tree (but no more
-   * than 64 levels) when `computeLeafAssignment` is true.
+   * than 64 levels) when `computeLeafAssignment` is true. If path has 64 levels or more, Double.NaN is returned.
    *
    * Note: this function is also used from the `hex.tree.CompressedTree` class in `h2o-algos` project.
    */
@@ -120,7 +135,9 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
             int colId = ab.get2();
             if (colId == 65535) {
               if (computeLeafAssignment) {
-                bitsRight |= 1 << level;  // mark the end of the tree
+                if (level >= __INTERNAL_MAX_TREE_DEPTH)
+                  return Double.NaN;
+                bitsRight |= 1L << level;  // mark the end of the tree
                 return Double.longBitsToDouble(bitsRight);
               } else {
                 return ab.get4f();
@@ -202,7 +219,11 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
                     default:
                         assert false : "illegal lmask value " + lmask + " in tree " + Arrays.toString(tree);
                 }
-                if (computeLeafAssignment && level < 64) bitsRight |= 1 << level;
+                if (computeLeafAssignment) {
+                    if (level >= __INTERNAL_MAX_TREE_DEPTH)
+                      return Double.NaN;
+                    bitsRight |= 1L << level;
+                }
                 lmask = (nodeType & 0xC0) >> 2;  // Replace leftmask with the rightmask
             } else {
                 // go LEFT
@@ -213,7 +234,9 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
             level++;
             if ((lmask & 16) != 0) {
                 if (computeLeafAssignment) {
-                    bitsRight |= 1 << level;  // mark the end of the tree
+                    if (level >= __INTERNAL_MAX_TREE_DEPTH)
+                      return Double.NaN;
+                    bitsRight |= 1L << level;  // mark the end of the tree
                     return Double.longBitsToDouble(bitsRight);
                 } else {
                     return ab.get4f();
@@ -221,10 +244,49 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
             }
         }
     }
+    
+
+    @Override
+    public CategoricalEncoding getCategoricalEncoding() {
+        switch (_genmodel_encoding) {
+            case "AUTO":
+            case "Enum":
+            case "SortByResponse":
+                return CategoricalEncoding.AUTO;
+            case "OneHotExplicit":
+                return CategoricalEncoding.OneHotExplicit;
+            case "Binary":
+                return CategoricalEncoding.Binary;
+            case "EnumLimited":
+                return CategoricalEncoding.EnumLimited;
+            case "Eigen":
+                return CategoricalEncoding.Eigen;
+            case "LabelEncoder":
+                return CategoricalEncoding.LabelEncoder;
+            default:
+                return null;
+        }
+    }
+
+    @Override
+    public String[] getOrigNames() {
+      return _orig_names;
+    }
+
+    @Override
+    public double[] getOrigProjectionArray() {
+        return _orig_projection_array;
+    }
+
+    @Override
+    public String[][] getOrigDomainValues() {
+        return _orig_domain_values;
+    }
 
     public interface DecisionPathTracker<T> {
         boolean go(int depth, boolean right);
         T terminate();
+        T invalidPath();
     }
 
     public static class StringDecisionPathTracker implements DecisionPathTracker<String> {
@@ -242,8 +304,12 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
             _pos = 0;
             return path;
         }
+        @Override
+        public String invalidPath() {
+            return null;
+        }
     }
-
+    
     public static class LeafDecisionPathTracker implements DecisionPathTracker<LeafDecisionPathTracker> {
         private final AuxInfoLightReader _auxInfo;
         private boolean _wentRight = false; // Was the last step _right_?
@@ -288,9 +354,18 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
         final int getLeafNodeId() {
           return _nodeId;
         }
+
+        @Override
+        public LeafDecisionPathTracker invalidPath() {
+          _nodeId = -1;
+          return this;
+        }
     }
 
     public static <T> T getDecisionPath(double leafAssignment, DecisionPathTracker<T> tr) {
+        if (Double.isNaN(leafAssignment)) {
+          return tr.invalidPath();
+        }
         long l = Double.doubleToRawLongBits(leafAssignment);
         for (int i = 0; i < 64; ++i) {
             boolean right = ((l>>i) & 0x1L) == 1;
@@ -313,7 +388,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
     //------------------------------------------------------------------------------------------------------------------
 
     private static void computeTreeGraph(SharedTreeSubgraph sg, SharedTreeNode node, byte[] tree, ByteBufferWrapper ab, HashMap<Integer, AuxInfo> auxMap,
-                                         String names[], String[][] domains) {
+                                         String names[], String[][] domains, ConvertTreeOptions options) {
         int nodeType = ab.get1U();
         int colId = ab.get2();
         if (colId == 65535) {
@@ -394,7 +469,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
                 auxInfo.predR = leafValue;
             }
             else {
-                computeTreeGraph(sg, newNode, tree, ab2, auxMap, names, domains);
+                computeTreeGraph(sg, newNode, tree, ab2, auxMap, names, domains, options);
             }
         }
 
@@ -417,7 +492,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
                 auxInfo.predL = leafValue;
             }
             else {
-                computeTreeGraph(sg, newNode, tree, ab2, auxMap, names, domains);
+                computeTreeGraph(sg, newNode, tree, ab2, auxMap, names, domains, options);
             }
         }
         if (node.getNodeNumber() == 0) {
@@ -427,7 +502,9 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
           node.setSquaredError(auxInfo.sqErrR + auxInfo.sqErrL);
           node.setWeight(auxInfo.weightL + auxInfo.weightR);
         }
-        checkConsistency(auxInfo, node);
+        if (options._checkTreeConsistency) {
+          checkConsistency(auxInfo, node);
+        }
     }
 
     /**
@@ -435,7 +512,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
      *
      * @return A graph of the forest.
      */
-    public SharedTreeGraph _computeGraph(int treeToPrint) {
+    public SharedTreeGraph computeGraph(int treeToPrint, ConvertTreeOptions options) {
         SharedTreeGraph g = new SharedTreeGraph();
 
         if (treeToPrint >= _ntree_groups) {
@@ -457,7 +534,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
                 String treeName = treeName(j, i, domainValues);
                 SharedTreeSubgraph sg = g.makeSubgraph(treeName);
                 computeTreeGraph(sg, _compressed_trees[itree], _compressed_trees_aux[itree],
-                        getNames(), getDomainValues());
+                        getNames(), getDomainValues(), options);
             }
 
             if (treeToPrint >= 0) {
@@ -468,22 +545,37 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
         return g;
     }
 
-    public static SharedTreeSubgraph computeTreeGraph(int treeNum, String treeName, byte[] tree, byte[] auxTreeInfo,
-                                                      String names[], String[][] domains) {
-      SharedTreeSubgraph sg = new SharedTreeSubgraph(treeNum, treeName);
-      computeTreeGraph(sg, tree, auxTreeInfo, names, domains);
-      return sg;
+    public SharedTreeGraph computeGraph(int treeId) {
+      return computeGraph(treeId, ConvertTreeOptions.DEFAULT);
     }
 
+    @Deprecated
+    @SuppressWarnings("unused")
+    public SharedTreeGraph _computeGraph(int treeId) {
+      return computeGraph(treeId);
+    }
+
+    public static SharedTreeSubgraph computeTreeGraph(int treeNum, String treeName, byte[] tree, byte[] auxTreeInfo,
+                                                      String names[], String[][] domains) {
+      return computeTreeGraph(treeNum, treeName, tree, auxTreeInfo, names, domains, ConvertTreeOptions.DEFAULT);
+    }
+
+    public static SharedTreeSubgraph computeTreeGraph(int treeNum, String treeName, byte[] tree, byte[] auxTreeInfo,
+                                                      String names[], String[][] domains, ConvertTreeOptions options) {
+      SharedTreeSubgraph sg = new SharedTreeSubgraph(treeNum, treeName);
+      computeTreeGraph(sg, tree, auxTreeInfo, names, domains, options);
+      return sg;
+    }
+  
     private static void computeTreeGraph(SharedTreeSubgraph sg, byte[] tree, byte[] auxTreeInfo,
-                                         String names[], String[][] domains) {
+                                         String names[], String[][] domains, ConvertTreeOptions options) {
       SharedTreeNode node = sg.makeRootNode();
       node.setSquaredError(Float.NaN);
       node.setPredValue(Float.NaN);
       ByteBufferWrapper ab = new ByteBufferWrapper(tree);
       ByteBufferWrapper abAux = new ByteBufferWrapper(auxTreeInfo);
       HashMap<Integer, AuxInfo> auxMap = readAuxInfos(abAux);
-      computeTreeGraph(sg, node, tree, ab, auxMap, names, domains);
+      computeTreeGraph(sg, node, tree, ab, auxMap, names, domains, options);
     }
 
     private static HashMap<Integer, AuxInfo> readAuxInfos(ByteBufferWrapper abAux) {
@@ -640,17 +732,17 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
         weight_ok = (Math.abs(node.getWeight() - sum) < 1e-5 * (node.getWeight() + sum));
         ok &= weight_ok;
       }
-      if (!ok) {
-        System.err.println("\nTree inconsistency found:");
-        if (node.depth == 1 && !weight_ok) {
-          System.err.println("Note: this is a known issue for DRF and Isolation Forest models, " +
+      if (!ok && logger.isErrorEnabled()) {
+        logger.error("\nTree inconsistency found:");
+        if (node.depth == 1 && !weight_ok) { 
+            logger.error("Note: this is a known issue for DRF and Isolation Forest models, " +
                   "please refer to https://0xdata.atlassian.net/browse/PUBDEV-6140");
         }
-        node.print(System.err, "parent");
-        node.leftChild.print(System.err, "left child");
-        node.rightChild.print(System.err, "right child");
-        System.err.println("Auxiliary tree info:");
-        System.err.println(auxInfo.toString());
+        logger.error(node.getPrintString("parent"));
+        logger.error(node.leftChild.getPrintString("left child"));
+        logger.error(node.rightChild.getPrintString("right child"));
+        logger.error("Auxiliary tree info:");
+        logger.error(auxInfo.toString());
       }
     }
 
@@ -917,7 +1009,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
           default:
             assert false : "illegal lmask value " + lmask + " in tree " + Arrays.toString(tree);
         }
-        if (computeLeafAssignment && level < 64) bitsRight |= 1 << level;
+        if (computeLeafAssignment && level < 64) bitsRight |= 1L << level;
         lmask = (nodeType & 0xC0) >> 2;  // Replace leftmask with the rightmask
       } else {
         // go LEFT
@@ -928,7 +1020,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
       level++;
       if ((lmask & 16) != 0) {
         if (computeLeafAssignment) {
-          bitsRight |= 1 << level;  // mark the end of the tree
+          bitsRight |= 1L << level;  // mark the end of the tree
           return Double.longBitsToDouble(bitsRight);
         } else {
           return ab.get4f();
@@ -937,21 +1029,24 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
     }
   }
 
-  @Override
-  public boolean calibrateClassProbabilities(double[] preds) {
-    if (_calib_glm_beta == null)
-      return false;
-    assert _nclasses == 2; // only supported for binomial classification
-    assert preds.length == _nclasses + 1;
-    double p = GLM_logitInv((preds[1] * _calib_glm_beta[0]) + _calib_glm_beta[1]);
-    preds[1] = 1 - p;
-    preds[2] = p;
-    return true;
-  }
+    @Override
+    public boolean calibrateClassProbabilities(double[] preds) { 
+      return PlattScalingMojoHelper.calibrateClassProbabilities(this, preds);
+    }
+
+    @Override
+    public double[] getCalibGlmBeta() {
+        return _calib_glm_beta;
+    }
 
     @Override
     public SharedTreeGraph convert(final int treeNumber, final String treeClass) {
-        return _computeGraph(treeNumber);
+        return computeGraph(treeNumber);
+    }
+
+    @Override
+    public SharedTreeGraph convert(final int treeNumber, final String treeClass, ConvertTreeOptions options) {
+      return computeGraph(treeNumber, options);
     }
 
     /**

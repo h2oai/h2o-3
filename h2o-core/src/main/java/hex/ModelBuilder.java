@@ -13,6 +13,7 @@ import water.udf.CFuncRef;
 import water.util.*;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -21,11 +22,17 @@ import java.util.*;
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
 
+  private ModelBuilderListener _modelBuilderListener;
+
+  public void setModelBuilderListener(final ModelBuilderListener modelBuilderListener) {
+    this._modelBuilderListener = modelBuilderListener;
+  }
+
   public ToEigenVec getToEigenVec() { return null; }
   public boolean shouldReorder(Vec v) { return _parms._categorical_encoding.needsResponse() && isSupervised(); }
 
-  transient private IcedHashMap<Key,String> _toDelete = new IcedHashMap<>();
-  void cleanUp() { FrameUtils.cleanUp(_toDelete); }
+  // initialized to be non-null to provide nicer exceptions when used incorrectly (instead of NPE)
+  private transient Workspace _workspace = new Workspace(false);
 
   public Job<M> _job;     // Job controlling this build
   /** Block till completion, and return the built model from the DKV.  Note the
@@ -56,6 +63,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return _job.stop_requested() || timeout();
   }
 
+  protected long remainingTimeSecs() {
+    return (long) Math.ceil(_build_model_countdown.remainingTime() / 1000.0);
+  }
+
   /** Default model-builder key */
   public static <S extends Model> Key<S> defaultKey(String algoName) {
     return Key.make(H2O.calcNextUniqueModelId(algoName));
@@ -70,6 +81,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected ModelBuilder(P parms, Key<M> key) {
     _job = new Job<>(_result = key, parms.javaName(), parms.algoName());
     _parms = parms;
+    _input_parms = (P) parms.clone();
   }
 
   /** Shared pre-existing Job and unique new result key */
@@ -77,6 +89,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _job = job;
     _result = defaultKey(parms.algoName());
     _parms = parms;
+    _input_parms = (P) parms.clone();
   }
 
   /** List of known ModelBuilders with all default args; endlessly cloned by
@@ -87,6 +100,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   private static String[] SCHEMAS = new String[0];
   private static ModelBuilder[] BUILDERS = new ModelBuilder[0];
 
+  protected boolean _startUpOnceModelBuilder = false;
+
   /** One-time start-up only ModelBuilder, endlessly cloned by the GUI for the
    *  default settings. */
   protected ModelBuilder(P parms, boolean startup_once) { this(parms,startup_once,"hex.schemas."); }
@@ -94,6 +109,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     String base = getName();
     if (!startup_once)
       throw H2O.fail("Algorithm " + base + " registration issue. It can only be called at startup.");
+    _startUpOnceModelBuilder = true;
     _job = null;
     _result = null;
     _parms = parms;
@@ -119,55 +135,35 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** gbm -> "hex.schemas." ; custAlgo -> "org.myOrg.schemas." */
   public static String schemaDirectory(String urlName) { return SCHEMAS[ArrayUtils.find(ALGOBASES,urlName)]; }
 
-  /**
-   *
-   * @param urlName url name of the algo, for example gbm for Gradient Boosting Machine
-   * @return true, if model supports exporting to POJO
-   */
-  public static boolean havePojo(String urlName) {
-    return BUILDERS[ensureBuilderIndex(urlName)].havePojo();
-  }
-
-  /**
-   *
-   * @param urlName url name of the algo, for example gbm for Gradient Boosting Machine
-   * @return true, if model supports exporting to MOJO
-   */
-  public static boolean haveMojo(String urlName) {
-    return BUILDERS[ensureBuilderIndex(urlName)].haveMojo();
-  }
-
-  /**
-   * Returns <strong>valid</strong> index of given url name in {@link #ALGOBASES} or throws an exception.
-   * @param urlName url name to return the index for
-   * @return valid index, if url name is not present in {@link #ALGOBASES} throws an exception
-   */
-  private static int ensureBuilderIndex(String urlName) {
+  @SuppressWarnings("unchecked")
+  static <B extends ModelBuilder> Optional<B> getRegisteredBuilder(String urlName) {
     final String formattedName = urlName.toLowerCase();
-    int index = ArrayUtils.find(ALGOBASES, formattedName);
-    if (index < 0) {
-      throw new IllegalArgumentException(String.format("Cannot find Builder for algo url name %s", formattedName));
-    }
-    return index;
+    int idx = ArrayUtils.find(ALGOBASES, formattedName);
+    if (idx < 0)
+      return Optional.empty();
+    return Optional.of((B) BUILDERS[idx]);
   }
-
 
   /** Factory method to create a ModelBuilder instance for given the algo name.
    *  Shallow clone of both the default ModelBuilder instance and a Parameter. */
   public static <B extends ModelBuilder> B make(String algo, Job job, Key<Model> result) {
-    int idx = ArrayUtils.find(ALGOBASES,algo.toLowerCase());
-    if (idx < 0) {
-      StringBuilder sb = new StringBuilder();
-      sb.append("Unknown algo: '").append(algo).append("'; Extension report: ");
-      Log.err(ExtensionManager.getInstance().makeExtensionReport(sb));
-      throw new IllegalStateException("Algorithm '" + algo + "' is not registered. Available algos: [" +
-              StringUtils.join(",", ALGOBASES)  + "]");
-    }
-    B mb = (B)BUILDERS[idx].clone();
-    mb._job = job;
-    mb._result = result;
-    mb._parms = BUILDERS[idx]._parms.clone();
-    return mb;
+    return getRegisteredBuilder(algo)
+            .map(prototype -> { 
+              @SuppressWarnings("unchecked")
+              B mb = (B) prototype.clone();
+              mb._job = job;
+              mb._result = result;
+              mb._parms = prototype._parms.clone();
+              mb._input_parms = prototype._parms.clone();
+              return mb;
+            })
+            .orElseThrow(() -> {
+              StringBuilder sb = new StringBuilder();
+              sb.append("Unknown algo: '").append(algo).append("'; Extension report: ");
+              Log.err(ExtensionManager.getInstance().makeExtensionReport(sb));
+              return new IllegalStateException("Algorithm '" + algo + "' is not registered. " +
+                      "Available algos: [" + StringUtils.join(",", ALGOBASES)  + "]");
+            });
   }
 
   /**
@@ -175,15 +171,22 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   public static <B extends ModelBuilder, MP extends Model.Parameters> B make(MP parms) {
     Key<Model> mKey = ModelBuilder.defaultKey(parms.algoName());
+    return make(parms, mKey);
+  }
+
+  public static <B extends ModelBuilder, MP extends Model.Parameters> B make(MP parms, Key<Model> mKey) {
     Job<Model> mJob = new Job<>(mKey, parms.javaName(), parms.algoName());
     B newMB = ModelBuilder.make(parms.algoName(), mJob, mKey);
     newMB._parms = parms.clone();
+    newMB._input_parms = parms.clone();
     return newMB;
   }
 
   /** All the parameters required to build the model. */
   public P _parms;              // Not final, so CV can set-after-clone
 
+  /** All the parameters required to build the model conserved in the input form, with AUTO values not evaluated yet. */
+  public P _input_parms;
 
   /** Training frame: derived from the parameter's training frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
@@ -191,13 +194,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public final Frame train() { return _train; }
   protected transient Frame _train;
 
+  protected transient Frame _origTrain;
+
   public void setTrain(Frame train) {
     _train = train;
   }
   /** Validation frame: derived from the parameter's validation frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
    *  response column to a Categorical, etc.  Is null if no validation key is set.  */
-  protected final Frame valid() { return _valid; }
+  public final Frame valid() { return _valid; }
   protected transient Frame _valid;
 
   // TODO: tighten up the type
@@ -219,6 +224,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public Vec vresponse(){return _vresponse == null ? _response : _vresponse;}
 
   abstract protected class Driver extends H2O.H2OCountedCompleter<Driver> {
+
     protected Driver(){ super(); }
     protected Driver(H2O.H2OCountedCompleter completer){ super(completer); }
     // Pull the boilerplate out of the computeImpl(), so the algo writer doesn't need to worry about the following:
@@ -230,16 +236,42 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Scope.enter();
         _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         computeImpl();
+        computeParameters();
         saveModelCheckpointIfConfigured();
       } finally {
-        setFinalState();
         _parms.read_unlock_frames(_job);
         if (!_parms._is_cv_model) cleanUp(); //cv calls cleanUp on its own terms
         Scope.exit();
       }
       tryComplete();
     }
+
+    @Override
+    public void onCompletion(CountedCompleter caller) {
+      setFinalState();
+      if (_modelBuilderListener != null) {
+        _modelBuilderListener.onModelSuccess(_result.get());
+      }
+    }
+
+    @Override
+    public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+      setFinalState();
+      if (_modelBuilderListener != null) {
+        _modelBuilderListener.onModelFailure(ex, _parms);
+      }
+      return true;
+    }
+
     public abstract void computeImpl();
+
+    public final void computeParameters() {
+      M model = _result.get();
+      if (model != null) {
+        //set input parameters
+        model.setInputParms(_input_parms);
+      }
+    }
   }
 
   private void setFinalState() {
@@ -249,6 +281,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (res != null && res._output != null) {
       res._output._job = _job;
       res._output.stopClock();
+//      res.unlock(_job == null ? null : _job._key, false); // last resort: dirty way to force unlock to be able to reacquire lock
+      res.write_lock(_job);
+      res.update(_job);
+      res.unlock(_job);
     }
     Log.info("Completing model "+ reskey);
   }
@@ -280,6 +316,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public Job<M> trainModelOnH2ONode() {
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
+    this._input_parms = (P) this._parms.clone();
     TrainModelRunnable trainModel = new TrainModelRunnable(this);
     H2O.runOnH2ONode(trainModel);
     return _job;
@@ -290,17 +327,20 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     private Job<Model> _job;
     private Key<Model> _key;
     private Model.Parameters _parms;
+    private Model.Parameters _input_parms;
     @SuppressWarnings("unchecked")
     private TrainModelRunnable(ModelBuilder mb) {
       _mb = mb;
       _job = (Job<Model>) _mb._job;
       _key = _job._result;
       _parms = _mb._parms;
+      _input_parms = _mb._input_parms;
     }
     @Override
     public void setupOnRemote() {
       _mb = ModelBuilder.make(_parms.algoName(), _job, _key);
       _mb._parms = _parms;
+      _mb._input_parms = _input_parms;
       _mb.init(false); // validate parameters
     }
     @Override
@@ -323,6 +363,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                         public void compute2() {
                           computeCrossValidation();
                           tryComplete();
+                          if (_modelBuilderListener != null) {
+                            _modelBuilderListener.onModelSuccess(_job.get());
+                          }
                         }
                         @Override
                         public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
@@ -331,6 +374,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                             Keyed.remove(_job._result); //ensure there's no incomplete model left for manipulation after crash or cancellation
                           } catch (Exception logged) {
                             Log.warn("Exception thrown when removing result from job "+ _job._description, logged);
+                          }
+                          if (_modelBuilderListener != null) {
+                            _modelBuilderListener.onModelFailure(ex, _parms);
                           }
                           return true;
                         }
@@ -388,6 +434,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     public void run() {
       ModelBuilder mb = ModelBuilder.make(_parms.algoName(), _job, _key);
       mb._parms = _parms;
+      mb._input_parms = _parms.clone();
       mb.trainModelNested(_fr);
     }
   }
@@ -554,7 +601,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
-  public ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, Vec[] weights ) {
+  private ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, Vec[] weights ) {
     final long old_cs = _parms.checksum();
     final String origDest = _result.toString();
 
@@ -570,13 +617,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for( int i=0; i<N; i++ ) {
       String identifier = origDest + "_cv_" + (i+1);
       // Training/Validation share the same data, but will have exclusive weights
-      Frame cvTrain = new Frame(Key.<Frame>make(identifier+"_train"),cv_fr.names(),cv_fr.vecs());
+      Frame cvTrain = new Frame(Key.make(identifier + "_train"), cv_fr.names(), cv_fr.vecs());
+      cvTrain.write_lock(_job);
       cvTrain.add(weightName, weights[2*i]);
-      DKV.put(cvTrain);
-      Frame cvValid = new Frame(Key.<Frame>make(identifier+"_valid"),cv_fr.names(),cv_fr.vecs());
+      cvTrain.update(_job);
+      Frame cvValid = new Frame(Key.make(identifier + "_valid"), cv_fr.names(), cv_fr.vecs());
+      cvValid.write_lock(_job);
       cvValid.add(weightName, weights[2*i+1]);
-      DKV.put(cvValid);
-
+      cvValid.update(_job);
+      
       // Shallow clone - not everything is a private copy!!!
       ModelBuilder<M, P, O> cv_mb = (ModelBuilder)this.clone();
       cv_mb.setTrain(cvTrain);
@@ -591,6 +640,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_mb._parms._nfolds = 0; // Each submodel is not itself folded
       cv_mb._parms._max_runtime_secs = cv_max_runtime_secs;
       cv_mb.clearValidationErrors(); // each submodel gets its own validation messages and error_count()
+      cv_mb._input_parms = (P) _parms.clone();
 
       // Error-check all the cross-validation Builders before launching any
       cv_mb.init(false);
@@ -704,7 +754,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       mbs[i] = cvModel.scoreMetrics(adaptFr);
       if (nclasses() == 2 /* need holdout predictions for gains/lift table */
               || _parms._keep_cross_validation_predictions
-              || (_parms._distribution== DistributionFamily.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
+              || (cvModel.isDistributionHuber() /*need to compute quantiles on abs error of holdout predictions*/)) {
         String predName = cvModelBuilders[i].getPredictionKey();
         cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.NOP);
         DKV.put(cvModel);
@@ -757,7 +807,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     Frame holdoutPreds = null;
-    if (_parms._keep_cross_validation_predictions || (nclasses()==2 /*GainsLift needs this*/ || _parms._distribution == DistributionFamily.huber)) {
+    if (_parms._keep_cross_validation_predictions || (nclasses()==2 /*GainsLift needs this*/ || mainModel.isDistributionHuber())) {
       Key<Frame> cvhp = Key.make("cv_holdout_prediction_" + mainModel._key.toString());
       if (_parms._keep_cross_validation_predictions) //only show the user if they asked for it
         mainModel._output._cross_validation_holdout_predictions_frame_id = cvhp;
@@ -848,6 +898,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected boolean logMe() { return true; }
 
   abstract public boolean isSupervised();
+
+  public boolean isResponseOptional() {
+    return false;
+  }
   
   protected transient Vec _response; // Handy response column
   protected transient Vec _vresponse; // Handy response column
@@ -856,11 +910,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected transient Vec _fold; // fold id column
   protected transient String[] _origNames; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   protected transient String[][] _origDomains; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
-  
+  protected transient double[] _orig_projection_array; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
+
   public boolean hasOffsetCol(){ return _parms._offset_column != null;} // don't look at transient Vec
-  public boolean hasWeightCol(){return _parms._weights_column != null;} // don't look at transient Vec
-  public boolean hasFoldCol(){return _parms._fold_column != null;} // don't look at transient Vec
-  public int numSpecialCols() { return (hasOffsetCol() ? 1 : 0) + (hasWeightCol() ? 1 : 0) + (hasFoldCol() ? 1 : 0); }
+  public boolean hasWeightCol(){ return _parms._weights_column != null;} // don't look at transient Vec
+  public boolean hasFoldCol()  { return _parms._fold_column != null;} // don't look at transient Vec
+  public int numSpecialCols()  { return (hasOffsetCol() ? 1 : 0) + (hasWeightCol() ? 1 : 0) + (hasFoldCol() ? 1 : 0); }
   public String[] specialColNames() {
     String[] n = new String[numSpecialCols()];
     int i=0;
@@ -880,6 +935,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   public final boolean isClassifier() { return nclasses() > 1; }
 
+  protected boolean validateStoppingMetric() {
+    return true;
+  }
+  
   /**
    * Find and set response/weights/offset/fold and put them all in the end,
    * @return number of non-feature vecs
@@ -993,7 +1052,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       new FilterCols(npredictors) {
         @Override protected boolean filter(Vec v) {
           boolean isBad = v.isBad();
-          boolean skipConst = ignoreConstColumns() && v.isConst();
+          boolean skipConst = ignoreConstColumns() && v.isConst(canLearnFromNAs()); // NAs can have information
           boolean skipString = ignoreStringColumns() && v.isString();
           boolean skipUuid = ignoreUuidColumns() && v.isUUID();
           boolean skip = isBad || skipConst || skipString || skipUuid;
@@ -1002,6 +1061,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }.doIt(_train,"Dropping bad and constant columns: ",expensive);
   }
 
+  /**
+   * Indicates that the algorithm is able to natively learn from NA values, there is no need
+   * to eg. impute missing values or skip rows that have missing values.
+   * @return whether model builder natively supports NAs
+   */
+  protected boolean canLearnFromNAs() {
+    return false;
+  }
+  
   /**
    * Checks response variable attributes and adds errors if response variable is unusable.
    */
@@ -1115,6 +1183,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     // NOTE: allow re-init:
     clearInitState();
+    initWorkspace(expensive);
     assert _parms != null;      // Parms must already be set in
 
     if( _parms._train == null ) {
@@ -1145,7 +1214,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       } else {
         hide("_nfolds", "nfolds is ignored when a fold column is specified.");
       }
-      if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO) {
+      if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO && _parms._fold_assignment != null && _parms != null) {
         error("_fold_assignment", "Fold assignment is not allowed in conjunction with a fold column.");
       }
     }
@@ -1158,7 +1227,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       hide("_keep_cross_validation_predictions", "Only for cross-validation.");
       hide("_keep_cross_validation_fold_assignment", "Only for cross-validation.");
       hide("_fold_assignment", "Only for cross-validation.");
-      if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO) {
+      if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO && _parms._fold_assignment != null) {
         error("_fold_assignment", "Fold assignment is only allowed for cross-validation.");
       }
     }
@@ -1232,18 +1301,28 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         error("_max_after_balance_size","Max size after balancing needs to be positive, suggest 1.0f");
 
       if( _train != null ) {
-        if (_train.numCols() <= 1)
+        if (_train.numCols() <= 1 && !getClass().toString().equals("class hex.gam.GAM")) // gam can have zero predictors
           error("_train", "Training data must have at least 2 features (incl. response).");
         if( null == _parms._response_column) {
           error("_response_column", "Response column parameter not set.");
           return;
         }
+        
         if(_response != null && computePriorClassDistribution()) {
-          if (isClassifier() && isSupervised() && _parms._distribution != DistributionFamily.quasibinomial) {
-            MRUtils.ClassDist cdmt =
-                _weights != null ? new MRUtils.ClassDist(nclasses()).doAll(_response, _weights) : new MRUtils.ClassDist(nclasses()).doAll(_response);
-            _distribution = cdmt.dist();
-            _priorClassDist = cdmt.rel_dist();
+          if (isClassifier() && isSupervised()) {
+            if(_parms._distribution == DistributionFamily.quasibinomial){
+              String[] quasiDomains = new VecUtils.CollectDoubleDomain(null,2).doAll(_response).stringDomain(_response.isInt());
+              MRUtils.ClassDistQuasibinomial cdmt =
+                      _weights != null ? new MRUtils.ClassDistQuasibinomial(quasiDomains).doAll(_response, _weights) : new MRUtils.ClassDistQuasibinomial(quasiDomains).doAll(_response);
+              _distribution = cdmt.dist();
+              _priorClassDist = cdmt.relDist();
+            } else {
+              MRUtils.ClassDist cdmt =
+                      _weights != null ? new MRUtils.ClassDist(nclasses()).doAll(_response, _weights) : new MRUtils.ClassDist(nclasses()).doAll(_response);
+              _distribution = cdmt.dist();
+              _priorClassDist = cdmt.relDist();
+              
+            }
           } else {                    // Regression; only 1 "class"
             _distribution = new double[]{ (_weights != null ? _weights.mean() : 1.0) * train().numRows() };
             _priorClassDist = new double[]{1.0f};
@@ -1267,13 +1346,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
     }
     else {
-      hide("_response_column", "Ignored for unsupervised methods.");
+      if (!isResponseOptional()) {
+        hide("_response_column", "Ignored for unsupervised methods.");
+        _vresponse = null;
+      }
       hide("_balance_classes", "Ignored for unsupervised methods.");
       hide("_class_sampling_factors", "Ignored for unsupervised methods.");
       hide("_max_after_balance_size", "Ignored for unsupervised methods.");
       hide("_max_confusion_matrix_size", "Ignored for unsupervised methods.");
       _response = null;
-      _vresponse = null;
       _nclass = 1;
     }
 
@@ -1285,8 +1366,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Toss out extra columns, complain about missing ones, remap categoricals
     Frame va = _parms.valid();  // User-given validation set
     if (va != null) {
+      if (isResponseOptional() && _parms._response_column != null && _response == null) {
+        _vresponse = va.vec(_parms._response_column);
+      }
       _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive);
-      _vresponse = _valid.vec(_parms._response_column);
+      if (!isResponseOptional() || (_parms._response_column != null && _valid.find(_parms._response_column) >= 0)) {
+        _vresponse = _valid.vec(_parms._response_column);
+      }
     } else {
       _valid = null;
       _vresponse = null;
@@ -1295,14 +1381,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (expensive) {
       Frame newtrain = encodeFrameCategoricals(_train, ! _parms._is_cv_model);
       if (newtrain != _train) {
+        _origTrain = _train;
         _origNames = _train.names();
         _origDomains = _train.domains();
         setTrain(newtrain);
         separateFeatureVecs(); //fix up the pointers to the special vecs
+      } else {
+        _origTrain = null;
       }
       if (_valid != null) {
         _valid = encodeFrameCategoricals(_valid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
-        _vresponse = _valid.vec(_parms._response_column);
       }
       boolean restructured = false;
       Vec[] vecs = _train.vecs();
@@ -1359,7 +1447,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         warn("_stopping_tolerance", "Stopping tolerance is ignored for _stopping_rounds=0.");
     } else if (_parms._stopping_rounds < 0) {
       error("_stopping_rounds", "Stopping rounds must be >= 0.");
-    } else {
+    } else if (validateStoppingMetric()){
       if (isClassifier()) {
         if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance && !getClass().getSimpleName().contains("GLM")) {
           error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
@@ -1409,7 +1497,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @param expensive indicates full ("expensive") processing
    * @return adapted frame
    */
-  protected Frame init_adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
+  public Frame init_adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
     Frame adapted = adaptFrameToTrain(fr, frDesc, field, expensive);
     if (expensive)
       adapted = encodeFrameCategoricals(adapted, true);
@@ -1420,9 +1508,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (fr.numRows()==0) error(field, frDesc + " must have > 0 rows.");
     Frame adapted = new Frame(null /* not putting this into KV */, fr._names.clone(), fr.vecs().clone());
     try {
-      String[] msgs = Model.adaptTestForTrain(adapted, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete, false);
+      String[] msgs = Model.adaptTestForTrain(adapted, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _workspace.getToDelete(expensive), false);
       Vec response = adapted.vec(_parms._response_column);
-      if (response == null && _parms._response_column != null)
+      if (response == null && _parms._response_column != null && !isResponseOptional())
         error(field, frDesc + " must have a response column '" + _parms._response_column + "'.");
       if (expensive) {
         for (String s : msgs) {
@@ -1444,7 +1532,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (scopeTrack)
         Scope.track(encoded);
       else
-        _toDelete.put(encoded._key, Arrays.toString(Thread.currentThread().getStackTrace()));
+        _workspace.getToDelete(true).put(encoded._key, Arrays.toString(Thread.currentThread().getStackTrace()));
     }
     return encoded;
   }
@@ -1534,10 +1622,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   public void checkDistributions() {
-    if (_parms._distribution == DistributionFamily.quasibinomial) {
-      if (_response.min() != 0)
-        error("_response", "For quasibinomial distribution, response must have a low value of 0 (negative class), but instead has min value of " + _response.min() + ".");
-    } else if (_parms._distribution == DistributionFamily.poisson) {
+    if (_parms._distribution == DistributionFamily.poisson) {
       if (_response.min() < 0)
         error("_response", "Response must be non-negative for Poisson distribution.");
     } else if (_parms._distribution == DistributionFamily.gamma) {
@@ -1720,6 +1805,39 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   public String getName() {
     return getClass().getSimpleName().toLowerCase();
+  }
+
+  private void cleanUp() {
+    _workspace.cleanUp();
+  }
+
+  @SuppressWarnings("WeakerAccess") // optionally allow users create workspace directly (instead of relying on init) 
+  protected final void initWorkspace(boolean expensive) {
+    if (expensive)
+      _workspace = new Workspace(true);
+  }
+
+  static class Workspace {
+    private final IcedHashMap<Key,String> _toDelete;
+
+    private Workspace(boolean expensive) {
+      _toDelete = expensive ? new IcedHashMap<>() : null;
+    }
+
+    IcedHashMap<Key, String> getToDelete(boolean expensive) {
+      if (! expensive)
+        return null; // incorrect usages during "inexpensive" initialization will fail
+      if (_toDelete == null) {
+        throw new IllegalStateException("ModelBuilder was not correctly initialized. " +
+                "Expensive phase requires field `_toDelete` to be non-null. " +
+                "Does your implementation of init method call super.init(true) or alternatively initWorkspace(true)?");
+      }
+      return _toDelete;
+    }
+
+    void cleanUp() {
+      FrameUtils.cleanUp(_toDelete);
+    }
   }
 
 }

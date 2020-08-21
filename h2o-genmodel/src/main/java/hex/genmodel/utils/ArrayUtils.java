@@ -8,11 +8,17 @@ import java.util.Random;
  * Copied (partially) from water.util.ArrayUtils
  */
 public class ArrayUtils {
-
+  public static double[] nanArray(int len) {
+    double[] arr = new double[len];
+    for (int i = 0; i < len; i++) {
+      arr[i] = Double.NaN;
+    }
+    return arr;
+  }
+  
   public static double l2norm(double[] x) {
     return Math.sqrt(l2norm2(x));
   }
-
   public static double l2norm2(double [] x){
     return l2norm2(x, false);
   }
@@ -23,6 +29,31 @@ public class ArrayUtils {
     for (int i = 0; i < last; ++i)
       sum += x[i]*x[i];
     return sum;
+  }
+
+  public static double[] flat(double[][] arr) {
+    if (arr == null) return null;
+    if (arr.length == 0) return null;
+    int tlen = 0;
+    for (double[] t : arr) tlen += (t != null) ? t.length : 0;
+    double[] result = Arrays.copyOf(arr[0], tlen);
+    int j = arr[0].length;
+    for (int i = 1; i < arr.length; i++) {
+      if (arr[i] == null)
+        continue;
+      System.arraycopy(arr[i], 0, result, j, arr[i].length);
+      j += arr[i].length;
+    }
+    return result;
+  }
+  
+  public static double[] eleDiff(final double[] from) {
+    int arryLen = from.length-1;
+    double[] cumsumR = new double[arryLen];
+    for (int index = 0; index < arryLen; index++) {
+      cumsumR[index] = from[index+1]-from[index];
+    }
+    return cumsumR;
   }
 
   /**
@@ -100,4 +131,21 @@ public class ArrayUtils {
       for (int i = 0; i < idxs.length; ++i) idxs[i] = d[i];
     }
   }
+
+  public static String[] append(String[] a, String... b) {
+    if (a==null ) 
+      return b;
+    String[] tmp = Arrays.copyOf(a,a.length + b.length);
+    System.arraycopy(b, 0, tmp, a.length, b.length);
+    return tmp;
+  }
+
+  public static String[][] append(String[][] a, String[]... b) {
+    if (a==null )
+      return b;
+    String[][] tmp = Arrays.copyOf(a,a.length + b.length);
+    System.arraycopy(b, 0, tmp, a.length, b.length);
+    return tmp;
+  }
+
 }

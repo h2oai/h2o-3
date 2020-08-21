@@ -25,12 +25,12 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.tree.isofor .IsolationForest(true),
             new hex.tree.isoforextended .ExtendedIsolationForest(true),
             new hex.aggregator  .Aggregator  (true),
-            new hex.deepwater   .DeepWater   (true),
             new hex.word2vec    .Word2Vec    (true),
             new hex.ensemble    .StackedEnsemble(true),
             new hex.coxph       .CoxPH       (true),
             new hex.generic     .Generic     (true),
-            new PSVM(true)        
+            new hex.gam         .GAM         (true),
+            new PSVM(true)
     };
 
     // "Word2Vec", "Example", "Grep"

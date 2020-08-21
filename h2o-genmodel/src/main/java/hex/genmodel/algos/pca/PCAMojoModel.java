@@ -56,4 +56,13 @@ public class PCAMojoModel extends MojoModel {
     return _k;
   }
 
+  @Override
+  public String[] getOutputNames() {
+    String[] names = new String[_k];
+    for (int i = 0; i < names.length; i++) {
+      names[i] = "PC" + (i + 1);
+    }
+    return names;
+  }
+
 }

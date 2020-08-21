@@ -1,7 +1,7 @@
 ``fold_assignment``
 -------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost
+- Available in: GBM, DRF, Deep Learning, GLM, GAM, Naïve-Bayes, K-Means, XGBoost
 - Hyperparameter: no
 
 
@@ -35,66 +35,66 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-	library(h2o)
-	h2o.init()
+		library(h2o)
+		h2o.init()
 
-	# import the cars dataset:
-	# this dataset is used to classify whether or not a car is economical based on
-	# the car's displacement, power, weight, and acceleration, and the year it was made
-	cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+		# import the cars dataset:
+		# this dataset is used to classify whether or not a car is economical based on
+		# the car's displacement, power, weight, and acceleration, and the year it was made
+		cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-	# convert response column to a factor
-	cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+		# convert response column to a factor
+		cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 
-	# set the predictor names and the response column name
-	predictors <- c("displacement","power","weight","acceleration","year")
-	response <- "economy_20mpg"
+		# set the predictor names and the response column name
+		predictors <- c("displacement", "power", "weight", "acceleration", "year")
+		response <- "economy_20mpg"
 
-	# try using the fold_assignment parameter:
-	# note you must set nfolds to use this parameter
-	assignment_type <- "Random"
-	# you can also try "Auto", "Modulo", and "Stratified"
+		# try using the fold_assignment parameter:
+		# note you must set nfolds to use this parameter
+		assignment_type <- "Random"
+		# you can also try "Auto", "Modulo", and "Stratified"
 
-	# train a GBM
-	car_gbm <- h2o.gbm(x = predictors, y = response, training_frame = cars,
-	                   fold_assignment = assignment_type,
-	                   nfolds = 5, seed = 1234)
+		# train a GBM
+		car_gbm <- h2o.gbm(x = predictors, y = response, training_frame = cars,
+		                   fold_assignment = assignment_type,
+		                   nfolds = 5, seed = 1234)
 
-	# print the auc for your validation data
-	print(h2o.auc(car_gbm, xval = TRUE))
-
-
+		# print the auc for your validation data
+		print(h2o.auc(car_gbm, xval = TRUE))
 
 
-   .. code-block:: python
 
-	import h2o
-	from h2o.estimators.gbm import H2OGradientBoostingEstimator
-	h2o.init()
 
-	# import the cars dataset:
-	# this dataset is used to classify whether or not a car is economical based on
-	# the car's displacement, power, weight, and acceleration, and the year it was made
-	cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+   .. code-tab:: python
 
-	# convert response column to a factor
-	cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+		import h2o
+		from h2o.estimators.gbm import H2OGradientBoostingEstimator
+		h2o.init()
 
-	# set the predictor names and the response column name
-	predictors = ["displacement","power","weight","acceleration","year"]
-	response = "economy_20mpg"
+		# import the cars dataset:
+		# this dataset is used to classify whether or not a car is economical based on
+		# the car's displacement, power, weight, and acceleration, and the year it was made
+		cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-	# try using the fold_assignment parameter:
-	# note you must set nfolds to use this parameter
-	assignment_type = "Random"
-	# you can also try "Auto", "Modulo", and "Stratified"
+		# convert response column to a factor
+		cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 
-	# Initialize and train a GBM
-	cars_gbm = H2OGradientBoostingEstimator(fold_assignment = assignment_type, nfolds = 5, seed = 1234)
-	cars_gbm.train(x = predictors, y = response, training_frame = cars)
+		# set the predictor names and the response column name
+		predictors = ["displacement","power","weight","acceleration","year"]
+		response = "economy_20mpg"
 
-	# print the auc for the validation data
-	cars_gbm.auc(xval=True)
+		# try using the fold_assignment parameter:
+		# note you must set nfolds to use this parameter
+		assignment_type = "Random"
+		# you can also try "Auto", "Modulo", and "Stratified"
+
+		# Initialize and train a GBM
+		cars_gbm = H2OGradientBoostingEstimator(fold_assignment = assignment_type, nfolds = 5, seed = 1234)
+		cars_gbm.train(x = predictors, y = response, training_frame = cars)
+
+		# print the auc for the validation data
+		cars_gbm.auc(xval=True)

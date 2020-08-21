@@ -5,22 +5,29 @@ import hex.KeyValue;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBMModel;
 import hex.tree.xgboost.XGBoostModel;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TestRule;
+import water.Key;
 import water.exceptions.H2OIllegalValueException;
+
+import static org.junit.Assert.*;
 
 import java.util.Arrays;
 
-public class AutoMLBuildSpecTest {
+public class AutoMLBuildSpecTest extends water.TestUtil {
 
     @Rule
     public ExpectedException thrown= ExpectedException.none();
 
     @Rule
     public final TestRule restoreSystemProperties = new RestoreSystemProperties();
+
+    @BeforeClass
+    public static void setup() { stall_till_cloudsize(1); }
 
     private void enableAnyCustomParam() {
         System.setProperty(AutoMLCustomParameters.ALGO_PARAMS_ALL_ENABLED, "true");
@@ -178,4 +185,18 @@ public class AutoMLBuildSpecTest {
         algoParameters.applyCustomParameters(Algo.DRF, destDRFParameters);
         assert destDRFParameters._ntrees == 111;
     }
+
+    @Test
+    public void expect_automl_key_is_sanitized() {
+        AutoMLBuildSpec buildSpec = new AutoMLBuildSpec() {
+            @Override
+            public String project() {
+                return "test_project";
+            }
+        };
+        buildSpec.input_spec.response_column = "is%this good?";
+        Key<AutoML> key = buildSpec.makeKey();
+        assertEquals("test_project@@is_this_good_", key.toString());
+    }
+
 }

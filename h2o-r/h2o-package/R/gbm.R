@@ -41,10 +41,9 @@
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
-#' @param max_hit_ratio_k Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-#'        Defaults to 0.
+#' @param max_hit_ratio_k This argument is deprecated and has no use. Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable).
 #' @param ntrees Number of trees. Defaults to 50.
-#' @param max_depth Maximum tree depth. Defaults to 5.
+#' @param max_depth Maximum tree depth (0 for unlimited). Defaults to 5.
 #' @param min_rows Fewest allowed (weighted) observations in a leaf. Defaults to 10.
 #' @param nbins For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point
 #'        Defaults to 20.
@@ -60,14 +59,14 @@
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
 #'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
 #'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
-#'        "lift_top_group", "misclassification", "AUCPR", "mean_per_class_error", "custom", "custom_increasing".
+#'        "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing".
 #'        Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
-#' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
+#' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.
 #'        Defaults to FALSE.
 #' @param learn_rate Learning rate (from 0.0 to 1.0) Defaults to 0.1.
 #' @param learn_rate_annealing Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999)  Defaults to 1.
@@ -101,6 +100,7 @@
 #' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
 #'        column is a constant value.If disabled, then model will train regardless of the response column being a
 #'        constant value or not. Defaults to TRUE.
+#' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
@@ -111,7 +111,7 @@
 #' # Run regression GBM on australia data
 #' australia_path <- system.file("extdata", "australia.csv", package = "h2o")
 #' australia <- h2o.uploadFile(path = australia_path)
-#' independent <- c("premax", "salmax","minairtemp", "maxairtemp", "maxsst",
+#' independent <- c("premax", "salmax", "minairtemp", "maxairtemp", "maxsst",
 #'                  "maxsoilmoist", "Max_czcs")
 #' dependent <- "runoffnew"
 #' h2o.gbm(y = dependent, x = independent, training_frame = australia,
@@ -146,7 +146,7 @@ h2o.gbm <- function(x,
                     nbins_cats = 1024,
                     r2_stopping = 1.797693135e+308,
                     stopping_rounds = 0,
-                    stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "AUCPR", "mean_per_class_error", "custom", "custom_increasing"),
+                    stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                     stopping_tolerance = 0.001,
                     max_runtime_secs = 0,
                     seed = -1,
@@ -175,6 +175,7 @@ h2o.gbm <- function(x,
                     export_checkpoints_dir = NULL,
                     monotone_constraints = NULL,
                     check_constant_response = TRUE,
+                    gainslift_bins = -1,
                     verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -314,8 +315,235 @@ h2o.gbm <- function(x,
     parms$monotone_constraints <- monotone_constraints
   if (!missing(check_constant_response))
     parms$check_constant_response <- check_constant_response
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
+
+  if (!missing(max_hit_ratio_k)) {
+    warning("Argument max_hit_ratio_k is deprecated and has no use.")
+    parms$offset_column <- NULL
+  }
 
   # Error check and build model
   model <- .h2o.modelJob('gbm', parms, h2oRestApiVersion=3, verbose=verbose)
   return(model)
+}
+.h2o.train_segments_gbm <- function(x,
+                                    y,
+                                    training_frame,
+                                    validation_frame = NULL,
+                                    nfolds = 0,
+                                    keep_cross_validation_models = TRUE,
+                                    keep_cross_validation_predictions = FALSE,
+                                    keep_cross_validation_fold_assignment = FALSE,
+                                    score_each_iteration = FALSE,
+                                    score_tree_interval = 0,
+                                    fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
+                                    fold_column = NULL,
+                                    ignore_const_cols = TRUE,
+                                    offset_column = NULL,
+                                    weights_column = NULL,
+                                    balance_classes = FALSE,
+                                    class_sampling_factors = NULL,
+                                    max_after_balance_size = 5.0,
+                                    max_hit_ratio_k = 0,
+                                    ntrees = 50,
+                                    max_depth = 5,
+                                    min_rows = 10,
+                                    nbins = 20,
+                                    nbins_top_level = 1024,
+                                    nbins_cats = 1024,
+                                    r2_stopping = 1.797693135e+308,
+                                    stopping_rounds = 0,
+                                    stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
+                                    stopping_tolerance = 0.001,
+                                    max_runtime_secs = 0,
+                                    seed = -1,
+                                    build_tree_one_node = FALSE,
+                                    learn_rate = 0.1,
+                                    learn_rate_annealing = 1,
+                                    distribution = c("AUTO", "bernoulli", "quasibinomial", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber", "custom"),
+                                    quantile_alpha = 0.5,
+                                    tweedie_power = 1.5,
+                                    huber_alpha = 0.9,
+                                    checkpoint = NULL,
+                                    sample_rate = 1,
+                                    sample_rate_per_class = NULL,
+                                    col_sample_rate = 1,
+                                    col_sample_rate_change_per_level = 1,
+                                    col_sample_rate_per_tree = 1,
+                                    min_split_improvement = 1e-05,
+                                    histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
+                                    max_abs_leafnode_pred = 1.797693135e+308,
+                                    pred_noise_bandwidth = 0,
+                                    categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                                    calibrate_model = FALSE,
+                                    calibration_frame = NULL,
+                                    custom_metric_func = NULL,
+                                    custom_distribution_func = NULL,
+                                    export_checkpoints_dir = NULL,
+                                    monotone_constraints = NULL,
+                                    check_constant_response = TRUE,
+                                    gainslift_bins = -1,
+                                    segment_columns = NULL,
+                                    segment_models_id = NULL,
+                                    parallelism = 1)
+{
+  # formally define variables that were excluded from function parameters
+  model_id <- NULL
+  verbose <- NULL
+  destination_key <- NULL
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Validate other required args
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
+     }
+  }
+
+  # Validate other args
+  # Required maps for different names params, including deprecated params
+  .gbm.map <- c("x" = "ignored_columns",
+                "y" = "response_column")
+
+  # Build parameter list to send to model builder
+  parms <- list()
+  parms$training_frame <- training_frame
+  args <- .verify_dataxy(training_frame, x, y)
+  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  parms$ignored_columns <- args$x_ignore
+  parms$response_column <- args$y
+
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
+  if (!missing(nfolds))
+    parms$nfolds <- nfolds
+  if (!missing(keep_cross_validation_models))
+    parms$keep_cross_validation_models <- keep_cross_validation_models
+  if (!missing(keep_cross_validation_predictions))
+    parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
+  if (!missing(keep_cross_validation_fold_assignment))
+    parms$keep_cross_validation_fold_assignment <- keep_cross_validation_fold_assignment
+  if (!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
+  if (!missing(score_tree_interval))
+    parms$score_tree_interval <- score_tree_interval
+  if (!missing(fold_assignment))
+    parms$fold_assignment <- fold_assignment
+  if (!missing(fold_column))
+    parms$fold_column <- fold_column
+  if (!missing(ignore_const_cols))
+    parms$ignore_const_cols <- ignore_const_cols
+  if (!missing(offset_column))
+    parms$offset_column <- offset_column
+  if (!missing(weights_column))
+    parms$weights_column <- weights_column
+  if (!missing(balance_classes))
+    parms$balance_classes <- balance_classes
+  if (!missing(class_sampling_factors))
+    parms$class_sampling_factors <- class_sampling_factors
+  if (!missing(max_after_balance_size))
+    parms$max_after_balance_size <- max_after_balance_size
+  if (!missing(max_hit_ratio_k))
+    parms$max_hit_ratio_k <- max_hit_ratio_k
+  if (!missing(ntrees))
+    parms$ntrees <- ntrees
+  if (!missing(max_depth))
+    parms$max_depth <- max_depth
+  if (!missing(min_rows))
+    parms$min_rows <- min_rows
+  if (!missing(nbins))
+    parms$nbins <- nbins
+  if (!missing(nbins_top_level))
+    parms$nbins_top_level <- nbins_top_level
+  if (!missing(nbins_cats))
+    parms$nbins_cats <- nbins_cats
+  if (!missing(r2_stopping))
+    parms$r2_stopping <- r2_stopping
+  if (!missing(stopping_rounds))
+    parms$stopping_rounds <- stopping_rounds
+  if (!missing(stopping_metric))
+    parms$stopping_metric <- stopping_metric
+  if (!missing(stopping_tolerance))
+    parms$stopping_tolerance <- stopping_tolerance
+  if (!missing(max_runtime_secs))
+    parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(seed))
+    parms$seed <- seed
+  if (!missing(build_tree_one_node))
+    parms$build_tree_one_node <- build_tree_one_node
+  if (!missing(learn_rate))
+    parms$learn_rate <- learn_rate
+  if (!missing(learn_rate_annealing))
+    parms$learn_rate_annealing <- learn_rate_annealing
+  if (!missing(distribution))
+    parms$distribution <- distribution
+  if (!missing(quantile_alpha))
+    parms$quantile_alpha <- quantile_alpha
+  if (!missing(tweedie_power))
+    parms$tweedie_power <- tweedie_power
+  if (!missing(huber_alpha))
+    parms$huber_alpha <- huber_alpha
+  if (!missing(checkpoint))
+    parms$checkpoint <- checkpoint
+  if (!missing(sample_rate))
+    parms$sample_rate <- sample_rate
+  if (!missing(sample_rate_per_class))
+    parms$sample_rate_per_class <- sample_rate_per_class
+  if (!missing(col_sample_rate))
+    parms$col_sample_rate <- col_sample_rate
+  if (!missing(col_sample_rate_change_per_level))
+    parms$col_sample_rate_change_per_level <- col_sample_rate_change_per_level
+  if (!missing(col_sample_rate_per_tree))
+    parms$col_sample_rate_per_tree <- col_sample_rate_per_tree
+  if (!missing(min_split_improvement))
+    parms$min_split_improvement <- min_split_improvement
+  if (!missing(histogram_type))
+    parms$histogram_type <- histogram_type
+  if (!missing(max_abs_leafnode_pred))
+    parms$max_abs_leafnode_pred <- max_abs_leafnode_pred
+  if (!missing(pred_noise_bandwidth))
+    parms$pred_noise_bandwidth <- pred_noise_bandwidth
+  if (!missing(categorical_encoding))
+    parms$categorical_encoding <- categorical_encoding
+  if (!missing(calibrate_model))
+    parms$calibrate_model <- calibrate_model
+  if (!missing(calibration_frame))
+    parms$calibration_frame <- calibration_frame
+  if (!missing(custom_metric_func))
+    parms$custom_metric_func <- custom_metric_func
+  if (!missing(custom_distribution_func))
+    parms$custom_distribution_func <- custom_distribution_func
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(monotone_constraints))
+    parms$monotone_constraints <- monotone_constraints
+  if (!missing(check_constant_response))
+    parms$check_constant_response <- check_constant_response
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
+
+  if (!missing(max_hit_ratio_k)) {
+    warning("Argument max_hit_ratio_k is deprecated and has no use.")
+    parms$offset_column <- NULL
+  }
+
+  # Build segment-models specific parameters
+  segment_parms <- list()
+  if (!missing(segment_columns))
+    segment_parms$segment_columns <- segment_columns
+  if (!missing(segment_models_id))
+    segment_parms$segment_models_id <- segment_models_id
+  segment_parms$parallelism <- parallelism
+
+  # Error check and build segment models
+  segment_models <- .h2o.segmentModelsJob('gbm', segment_parms, parms, h2oRestApiVersion=3)
+  return(segment_models)
 }

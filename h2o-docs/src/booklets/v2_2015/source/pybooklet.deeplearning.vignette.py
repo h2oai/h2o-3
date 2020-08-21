@@ -3,6 +3,7 @@ def deeplearning_vignette():
     story1 = [
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_importfile_example.py"),
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_examplerun.py"),
+        pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_checkpoint.py"),
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_crossval.py"),
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_inspect_model.py"),
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_predict.py"),
@@ -10,7 +11,6 @@ def deeplearning_vignette():
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_gridsearch.py"),
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.py"),
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_gridsearch_random.py"),
-        pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_checkpoint.py"),
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_savemodel.py"),
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_loadmodel_checkpoint.py"),
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_getmodel.py"),

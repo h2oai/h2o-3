@@ -7,7 +7,9 @@ import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
 import water.api.API;
+import water.api.SchemaMetadata;
 import water.api.SchemaMetadata.FieldMetadata;
+import water.api.ValuesProvider;
 import water.util.PojoUtils;
 
 // TODO: move into hex.schemas!
@@ -43,6 +45,9 @@ public class ModelParameterSchemaV3 extends SchemaV3<Iced, ModelParameterSchemaV
   @API(help="actual value as set by the user and / or modified by the ModelBuilder, e.g., 10", direction=API.Direction.OUTPUT)
   public Iced actual_value;
 
+  @API(help="input value as set by the user, e.g., 10", direction=API.Direction.OUTPUT)
+  public Iced input_value;
+
   @API(help="the importance of the parameter, used by the UI, e.g. \"critical\", \"extended\" or \"expert\"", direction=API.Direction.OUTPUT)
   public String level;
 
@@ -62,17 +67,21 @@ public class ModelParameterSchemaV3 extends SchemaV3<Iced, ModelParameterSchemaV
   }
 
   /** TODO: refactor using SchemaMetadata. */
-  public ModelParameterSchemaV3(ModelParametersSchemaV3 schema, ModelParametersSchemaV3 default_schema, Field f) {
+  public ModelParameterSchemaV3(ModelParametersSchemaV3 schema, ModelParametersSchemaV3 input_schema, ModelParametersSchemaV3 default_schema, Field f) {
     f.setAccessible(true);
     try {
       this.name = f.getName();
       API annotation = f.getAnnotation(API.class);
 
-      boolean is_array = f.getType().isArray();
       Object o;
 
       o = f.get(default_schema);
       this.default_value = FieldMetadata.consValue(o);
+      
+      if (input_schema != null) {
+        o = f.get(input_schema);
+        this.input_value = FieldMetadata.consValue(o);
+      }
 
       o = f.get(schema);
       this.actual_value = FieldMetadata.consValue(o);
@@ -81,14 +90,14 @@ public class ModelParameterSchemaV3 extends SchemaV3<Iced, ModelParameterSchemaV
       this.type = FieldMetadata.consType(schema, f.getType(), f.getName(), annotation);
 
       if (null != annotation) {
-        String l = annotation.label();
         this.label = this.name;
         this.help = annotation.help();
         this.required = annotation.required();
 
         this.level = annotation.level().toString();
 
-        this.values = annotation.values();
+        this.values = annotation.valuesProvider() == ValuesProvider.NULL ? annotation.values()
+                      : SchemaMetadata.getValues(annotation.valuesProvider());
 
         // If the field is an enum then the values annotation field had better be set. . .
         if (is_enum && (null == this.values || 0 == this.values.length)) {
@@ -137,19 +146,9 @@ public class ModelParameterSchemaV3 extends SchemaV3<Iced, ModelParameterSchemaV
     ab.putJSONStrUnquoted("required", required ? "true" : "false"); ab.put1(',');
     ab.putJSONStr("type", type);                                    ab.put1(',');
 
-    if (default_value instanceof IcedWrapper) {
-      ab.putJSONStr("default_value").put1(':');
-      ((IcedWrapper) default_value).writeUnwrappedJSON(ab);            ab.put1(',');
-    } else {
-      ab.putJSONStr("default_value").put1(':').putJSON(default_value); ab.put1(',');
-    }
-
-    if (actual_value instanceof IcedWrapper) {
-      ab.putJSONStr("actual_value").put1(':');
-      ((IcedWrapper) actual_value).writeUnwrappedJSON(ab);             ab.put1(',');
-    } else {
-      ab.putJSONStr("actual_value").put1(':').putJSON(actual_value);   ab.put1(',');
-    }
+    writeValue(ab, "default_value", default_value);
+    writeValue(ab, "actual_value", actual_value);
+    writeValue(ab, "input_value", input_value);
 
     ab.putJSONStr("level", level);                                            ab.put1(',');
     ab.putJSONAStr("values", values);                                         ab.put1(',');
@@ -157,5 +156,16 @@ public class ModelParameterSchemaV3 extends SchemaV3<Iced, ModelParameterSchemaV
     ab.putJSONAStr("is_mutually_exclusive_with", is_mutually_exclusive_with); ab.put1(',');
     ab.putJSONStrUnquoted("gridable", gridable ? "true" : "false");
     return ab;
+  }
+  
+  private void writeValue(AutoBuffer ab, String label, Iced value) {
+    if (value instanceof IcedWrapper) {
+      ab.putJSONStr(label).put1(':');
+      ((IcedWrapper) value).writeUnwrappedJSON(ab);
+      ab.put1(',');
+    } else {
+      ab.putJSONStr(label).put1(':').putJSON(value);
+      ab.put1(',');
+    }
   }
 }

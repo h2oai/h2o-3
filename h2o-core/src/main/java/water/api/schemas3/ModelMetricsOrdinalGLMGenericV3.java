@@ -33,6 +33,7 @@ public class ModelMetricsOrdinalGLMGenericV3<I extends ModelMetricsOrdinalGLMGen
     this.null_degrees_of_freedom = modelMetrics._nullDegressOfFreedom;
     this.residual_degrees_of_freedom = modelMetrics._residualDegressOfFreedom;
     this.coefficients_table = new TwoDimTableV3().fillFromImpl(modelMetrics._coefficients_table);
+    this.r2 = modelMetrics._r2;
         
     return (S) this;
   }

@@ -1,6 +1,5 @@
 package water.network;
 
-import java.nio.channels.ByteChannel;
 import java.nio.channels.Channel;
 import java.nio.channels.SocketChannel;
 

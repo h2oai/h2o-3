@@ -2,17 +2,19 @@ package hex.tree.xgboost.rabit;
 
 import hex.tree.xgboost.rabit.communication.XGBoostAutoBuffer;
 import hex.tree.xgboost.rabit.util.LinkMap;
-import water.ExternalFrameUtils;
-import water.util.Log;
+import org.apache.log4j.Logger;
+import water.AutoBuffer;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class RabitWorker implements Comparable<RabitWorker> {
+
+    private static final Logger LOG = Logger.getLogger(RabitWorker.class);
 
     final String host;
     final int workerPort;
@@ -43,7 +45,7 @@ public class RabitWorker implements Comparable<RabitWorker> {
 
         writerAB = new XGBoostAutoBuffer();
         writerAB.put4(RabitTrackerH2O.MAGIC);
-        ExternalFrameUtils.writeToChannel(writerAB.buffer(), socket);
+        AutoBuffer.writeToChannel(writerAB.buffer(), socket);
 
         this.rank = ab.get4();
         this.worldSize = ab.get4();
@@ -51,7 +53,7 @@ public class RabitWorker implements Comparable<RabitWorker> {
         this.cmd = safeLowercase(ab.getStr());
         this.waitAccept = 0;
         this.port = -1;
-        Log.debug("Initialized worker " + this.host + " with rank " + this.rank + " and command [" + this.cmd + "].");
+        LOG.debug("Initialized worker " + this.host + " with rank " + this.rank + " and command [" + this.cmd + "].");
     }
 
     private String safeLowercase(String str) {
@@ -100,19 +102,19 @@ public class RabitWorker implements Comparable<RabitWorker> {
         } else {
             writerAB.put4(-1);
         }
-        ExternalFrameUtils.writeToChannel(writerAB.buffer(), socket);
+        AutoBuffer.writeToChannel(writerAB.buffer(), socket);
 
         while (true) {
             int ngood = ab.get4();
-            Set<Integer> goodSet = new HashSet<>();
+            Set<Integer> goodSet = new LinkedHashSet<>();
             for(int i = 0; i < ngood; i++) {
                 int got = ab.get4();
                 goodSet.add(got);
             }
             assert nnset.containsAll(goodSet);
-            Set<Integer> badSet = new HashSet<>(nnset);
+            Set<Integer> badSet = new LinkedHashSet<>(nnset);
             badSet.removeAll(goodSet);
-            Set<Integer> conset = new HashSet<>();
+            Set<Integer> conset = new LinkedHashSet<>();
             for (Integer r : badSet) {
                 if(waitConn.containsKey(r)) {
                     conset.add(r);
@@ -120,15 +122,15 @@ public class RabitWorker implements Comparable<RabitWorker> {
             }
 
             writerAB.put4(conset.size());
-            ExternalFrameUtils.writeToChannel(writerAB.buffer(), socket);
+            AutoBuffer.writeToChannel(writerAB.buffer(), socket);
             writerAB.put4(badSet.size() - conset.size());
-            ExternalFrameUtils.writeToChannel(writerAB.buffer(), socket);
+            AutoBuffer.writeToChannel(writerAB.buffer(), socket);
 
             for (Integer r : conset) {
                 writerAB.putStr(waitConn.get(r).host);
                 writerAB.put4(waitConn.get(r).port);
                 writerAB.put4(r);
-                ExternalFrameUtils.writeToChannel(writerAB.buffer(), socket);
+                AutoBuffer.writeToChannel(writerAB.buffer(), socket);
             }
 
             int nerr = ab.get4();
@@ -136,7 +138,7 @@ public class RabitWorker implements Comparable<RabitWorker> {
                 continue;
             }
             this.port = ab.get4();
-            Set<Integer> rmset = new HashSet<>();
+            Set<Integer> rmset = new LinkedHashSet<>();
             // All connections were successfully setup
             for (Integer r : conset) {
                 waitConn.get(r).waitAccept -= 1;
@@ -154,6 +156,6 @@ public class RabitWorker implements Comparable<RabitWorker> {
 
     @Override
     public int compareTo(RabitWorker o) {
-        return host.compareTo(o.host);
+        return jobId.compareTo(o.jobId);
     }
 }

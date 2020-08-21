@@ -5,12 +5,10 @@ import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.io.api.Converter;
 import org.apache.parquet.io.api.GroupConverter;
 import org.apache.parquet.io.api.PrimitiveConverter;
-import org.apache.parquet.schema.MessageType;
-import org.apache.parquet.schema.OriginalType;
-import org.apache.parquet.schema.PrimitiveType;
-import org.apache.parquet.schema.Type;
+import org.apache.parquet.schema.*;
 import water.fvec.Vec;
 import water.parser.BufferedString;
+import water.parser.parquet.ext.DecimalUtils;
 import water.util.StringUtils;
 
 /**
@@ -27,20 +25,18 @@ class ChunkConverter extends GroupConverter {
 
   private final WriterDelegate _writer; // this guy actually performs the writing.
   private final Converter[] _converters;
-  private final boolean[] _keepColumns;
 
   private long _currentRecordIdx = -1;
 
-  ChunkConverter(MessageType parquetSchema, byte[] chunkSchema, WriterDelegate writer, boolean[] keepcolumns) {
+  ChunkConverter(MessageType parquetSchema, byte[] chunkSchema, WriterDelegate writer, boolean[] keepColumns) {
     _writer = writer;
-    _keepColumns = keepcolumns;
 
     int colIdx = 0; // index to columns actually parsed
     _converters = new Converter[chunkSchema.length];
     int trueColumnIndex = 0;  // count all columns including the skipped ones
     for (Type parquetField : parquetSchema.getFields()) {
       assert parquetField.isPrimitive();
-      if (_keepColumns[trueColumnIndex]) {
+      if (keepColumns[trueColumnIndex]) {
         _converters[trueColumnIndex] = newConverter(colIdx, chunkSchema[trueColumnIndex], parquetField.asPrimitiveType());
         colIdx++;
       } else {
@@ -130,6 +126,9 @@ class ChunkConverter extends GroupConverter {
       case Vec.T_BAD:
       case Vec.T_CAT:
       case Vec.T_STR:
+        if (parquetType.getPrimitiveTypeName().equals(PrimitiveType.PrimitiveTypeName.BOOLEAN)) {
+          return new BooleanConverter(_writer, colIdx);
+        }
       case Vec.T_UUID:
       case Vec.T_TIME:
         if (OriginalType.TIMESTAMP_MILLIS.equals(parquetType.getOriginalType()) || parquetType.getPrimitiveTypeName().equals(PrimitiveType.PrimitiveTypeName.INT96)) {
@@ -140,7 +139,7 @@ class ChunkConverter extends GroupConverter {
         }
       case Vec.T_NUM:
         if (OriginalType.DECIMAL.equals(parquetType.getOriginalType()))
-          return new DecimalConverter(colIdx, parquetType.getDecimalMetadata().getScale(), _writer);
+          return new DecimalConverter(colIdx, parquetType.getDecimalMetadata(), _writer);
         else
           return new NumberConverter(colIdx, _writer);
       default:
@@ -148,6 +147,26 @@ class ChunkConverter extends GroupConverter {
     }
   }
 
+  private static class BooleanConverter extends PrimitiveConverter {
+    private BufferedString TRUE = new BufferedString("True"); // note: this cannot be static - some BS ops are not thread safe!
+    private BufferedString FALSE = new BufferedString("False");
+
+    private final int _colIdx;
+    private final WriterDelegate _writer;
+
+    BooleanConverter(WriterDelegate writer, int colIdx) {
+      _colIdx = colIdx;
+      _writer = writer;
+    }
+
+    @Override
+    public void addBoolean(boolean value) {
+      BufferedString bsValue = value ? TRUE : FALSE;
+      _writer.addStrCol(_colIdx, bsValue);
+    }
+
+  }
+  
   private static class StringConverter extends PrimitiveConverter {
     private final BufferedString _bs = new BufferedString();
     private final int _colIdx;
@@ -238,13 +257,14 @@ class ChunkConverter extends GroupConverter {
 
     private final int _colIdx;
     private final WriterDelegate _writer;
-    private final BufferedString _bs = new BufferedString();
-    private final int _exp;
+    private final int _precision;
+    private final int _scale;
 
-    DecimalConverter(int colIdx, int scale, WriterDelegate writer) {
+    DecimalConverter(int colIdx, DecimalMetadata dm, WriterDelegate writer) {
       _colIdx = colIdx;
+      _precision = dm.getPrecision();
+      _scale = dm.getScale();
       _writer = writer;
-      _exp = -scale;
     }
 
     @Override
@@ -264,18 +284,17 @@ class ChunkConverter extends GroupConverter {
 
     @Override
     public void addInt(int value) {
-      _writer.addNumCol(_colIdx, value, _exp);
+      _writer.addNumCol(_colIdx, value, -_scale);
     }
 
     @Override
     public void addLong(long value) {
-      _writer.addNumCol(_colIdx, value, _exp);
+      _writer.addNumCol(_colIdx, value, -_scale);
     }
 
     @Override
     public void addBinary(Binary value) {
-      throw new UnsupportedOperationException("Arbitrary precision Decimal type is currently not supported by H2O." +
-              "Please use 64-bit decimal type instead (precision <= 18).");
+      _writer.addNumCol(_colIdx, DecimalUtils.binaryToDecimal(value, _precision, _scale).doubleValue());
     }
   }
 

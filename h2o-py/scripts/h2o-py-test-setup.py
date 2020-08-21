@@ -154,10 +154,14 @@ def h2o_test_setup(sys_args):
     print("[{0}] {1}\n".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), "Connect to h2o on IP: {0} PORT: {1}".format(_H2O_IP_, _H2O_PORT_)))
     auth = None
     if _LDAP_USER_NAME_ is not None and _LDAP_PASSWORD_ is not None:
+        print("Using basic auth with %s user name" % _LDAP_USER_NAME_)
         auth = (_LDAP_USER_NAME_, _LDAP_PASSWORD_)
     elif _KERB_PRINCIPAL_ is not None:
+        print("Using SPNEGO auth with %s principal" % _KERB_PRINCIPAL_)
         from h2o.auth import SpnegoAuth
         auth = SpnegoAuth(service_principal=_KERB_PRINCIPAL_)
+    else:
+        print("Not using any auth")
     h2o.connect(ip=_H2O_IP_, port=_H2O_PORT_, verbose=False, auth=auth, **_H2O_EXTRA_CONNECT_ARGS_)
     h2o.utils.config.H2OConfigReader.get_config()["general.allow_breaking_changes"] = True
 

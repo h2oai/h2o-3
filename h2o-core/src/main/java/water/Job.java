@@ -21,6 +21,19 @@ import java.util.Arrays;
  *  Long running tasks will has-a Job, not is-a Job.
  */
 public final class Job<T extends Keyed> extends Keyed<Job> {
+
+  public enum JobStatus {
+    PENDING,
+    RUNNING,
+    SUCCEEDED,
+    STOPPED,
+    FAILED;
+
+    public static String[] domain() {
+      return Arrays.stream(values()).map(Object::toString).toArray(String[]::new);
+    }
+  }
+
   /** Result Key */
   public final Key<T> _result;
   public final int _typeid;
@@ -97,6 +110,19 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   public boolean isCrashing(){ return isRunning() && _ex != null; }
   public boolean isCrashed (){ return isStopped() && _ex != null; }
 
+  public JobStatus getStatus() {
+    if (isCrashed())
+      return JobStatus.FAILED;
+    else if (isStopped())
+      if (stop_requested())
+        return JobStatus.STOPPED;
+      else
+        return JobStatus.SUCCEEDED;
+    else if (isRunning())
+      return JobStatus.RUNNING;
+    else
+      return JobStatus.PENDING;
+  }
 
   /** Current runtime; zero if not started. */
   public long msec() {
@@ -126,6 +152,17 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
           Log.debug("Job "+job._description+" requested to stop");
         }
       }.apply(this);
+  }
+  public void fail(Throwable ex) {
+    new JAtomic() {
+      @Override boolean abort(Job job) { return job._stop_requested; }
+      @Override void update(Job job) {
+        job._stop_requested = true;
+        job._ex = AutoBuffer.javaSerializeWritePojo(ex);
+        job._msg = ex.getMessage();
+        Log.debug("Job " + job._description + " failed because of " + ex.getMessage());
+      }
+    }.apply(this);
   }
 
   /** Any exception thrown by this Job, or null if none.  Note that while
@@ -334,7 +371,8 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   }
 
   static public boolean isCancelledException(Throwable ex) {
-    return ex instanceof JobCancelledException || ex.getCause() != null && ex.getCause() instanceof JobCancelledException;
+    return (ex != null) && 
+            (ex instanceof JobCancelledException || ex.getCause() != null && ex.getCause() instanceof JobCancelledException);
   }
 
   private static class Barrier1OnCom extends JAtomic {

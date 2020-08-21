@@ -8,9 +8,9 @@ check.deeplearning_imbalanced <- function() {
   
   covtype <- h2o.uploadFile(locate("smalldata/covtype/covtype.20k.data"))
   covtype[,55] <- as.factor(covtype[,55])
-  hh_imbalanced<-h2o.deeplearning(x=c(1:54),y=55,l1=1e-5,epochs=1,training_frame=covtype,balance_classes=F,reproducible=T, seed=12345)
+  hh_imbalanced<-h2o.deeplearning(x=c(1:54),y=55,l1=1e-5,epochs=1,training_frame=covtype,balance_classes=F,reproducible=TRUE, seed=12345)
   print(hh_imbalanced)
-  hh_balanced<-h2o.deeplearning(x=c(1:54),y=55,l1=1e-5,epochs=1,training_frame=covtype,balance_classes=T,reproducible=T, seed=12345)
+  hh_balanced<-h2o.deeplearning(x=c(1:54),y=55,l1=1e-5,epochs=1,training_frame=covtype,balance_classes=T,reproducible=TRUE, seed=12345)
   print(hh_balanced)
 
   #compare overall logloss

@@ -5,8 +5,8 @@ description = "H2O Persist GCS"
 dependencies {
     compile project(":h2o-core")
     compile 'com.google.cloud:google-cloud-storage:1.19.0'
-    testCompile "junit:junit:${junitVersion}"
-    testCompile project(path: ":h2o-core", configuration: "testArchives")
+
+    testCompile project(":h2o-test-support")
     testRuntimeOnly project(":${defaultWebserverModule}")
 }
 
@@ -14,7 +14,7 @@ apply from: "${rootDir}/gradle/dataCheck.gradle"
 
 test {
     dependsOn ":h2o-core:testJar"
-    dependsOn smalldataCheck, cpLibs, jar, testJar, testMultiNode
+    dependsOn smalldataCheck, jar, testJar, testMultiNode
 
     // Defeat task 'test' by running no tests.
     exclude '**'

@@ -1,7 +1,7 @@
 ``nfolds``
 ---------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost, AutoML
+- Available in: GBM, DRF, Deep Learning, GLM, GAM, Naïve-Bayes, K-Means, XGBoost, AutoML
 - Hyperparameter: no
 
 
@@ -32,62 +32,62 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-	library(h2o)
-	h2o.init()
+		library(h2o)
+		h2o.init()
 
-	# import the cars dataset: 
-	# this dataset is used to classify whether or not a car is economical based on 
-	# the car's displacement, power, weight, and acceleration, and the year it was made 
-	cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+		# import the cars dataset: 
+		# this dataset is used to classify whether or not a car is economical based on 
+		# the car's displacement, power, weight, and acceleration, and the year it was made 
+		cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-	# convert response column to a factor
-	cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+		# convert response column to a factor
+		cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 
-	# set the predictor names and the response column name
-	predictors <- c("displacement","power","weight","acceleration","year")
-	response <- "economy_20mpg"
+		# set the predictor names and the response column name
+		predictors <- c("displacement", "power", "weight", "acceleration", "year")
+		response <- "economy_20mpg"
 
-	# set the number of folds for you n-fold cross validation:
-	folds <- 5
-	# folds <- 5
+		# set the number of folds for you n-fold cross validation:
+		folds <- 5
+		# folds <- 5
 
-	# train a gbm using the nfolds parameter:
-	cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = cars,
-	                    nfolds = folds, seed = 1234)
+		# train a gbm using the nfolds parameter:
+		cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = cars,
+		                    nfolds = folds, seed = 1234)
 
-	# print the auc for the cross-validated data
-	print(h2o.auc(cars_gbm, xval = TRUE))
+		# print the auc for the cross-validated data
+		print(h2o.auc(cars_gbm, xval = TRUE))
 
-   .. code-block:: python
+   .. code-tab:: python
 
-	import h2o
-	from h2o.estimators.gbm import H2OGradientBoostingEstimator
-	h2o.init()
-	h2o.cluster().show_status()
+		import h2o
+		from h2o.estimators.gbm import H2OGradientBoostingEstimator
+		h2o.init()
+		h2o.cluster().show_status()
 
-	# import the cars dataset: 
-	# this dataset is used to classify whether or not a car is economical based on 
-	# the car's displacement, power, weight, and acceleration, and the year it was made 
-	cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+		# import the cars dataset: 
+		# this dataset is used to classify whether or not a car is economical based on 
+		# the car's displacement, power, weight, and acceleration, and the year it was made 
+		cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-	# convert response column to a factor
-	cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+		# convert response column to a factor
+		cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 
-	# set the predictor names and the response column name
-	predictors = ["displacement","power","weight","acceleration","year"]
-	response = "economy_20mpg"
+		# set the predictor names and the response column name
+		predictors = ["displacement","power","weight","acceleration","year"]
+		response = "economy_20mpg"
 
-	# set the number of folds for you n-fold cross validation:
-	folds = 5
-	# folds = 5
+		# set the number of folds for you n-fold cross validation:
+		folds = 5
+		# folds = 5
 
-	# initialize the estimator then train the model
-	cars_gbm = H2OGradientBoostingEstimator(nfolds = folds, seed = 1234)
-	cars_gbm.train(x=predictors, y=response, training_frame=cars)
+		# initialize the estimator then train the model
+		cars_gbm = H2OGradientBoostingEstimator(nfolds = folds, seed = 1234)
+		cars_gbm.train(x=predictors, y=response, training_frame=cars)
 
-	# print the auc for the cross-validated data
-	cars_gbm.auc(xval=True)
+		# print the auc for the cross-validated data
+		cars_gbm.auc(xval=True)
 	

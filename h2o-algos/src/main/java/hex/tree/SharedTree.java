@@ -3,11 +3,10 @@ package hex.tree;
 import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
-import hex.glm.GLM;
-import hex.glm.GLMModel;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.util.CheckpointUtils;
+import hex.tree.gbm.GBMModel;
 import hex.util.LinearAlgebraUtils;
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
@@ -29,7 +28,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends ModelBuilder<M,P,O> {
+public abstract class SharedTree<
+    M extends SharedTreeModel<M,P,O>, 
+    P extends SharedTreeModel.SharedTreeParameters, 
+    O extends SharedTreeModel.SharedTreeOutput> 
+    extends ModelBuilder<M,P,O> 
+    implements PlattScalingHelper.ModelBuilderWithCalibration<M, P, O> {
 
   private static final boolean DEBUG_PUBDEV_6686 = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.pubdev6686");
 
@@ -65,8 +69,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   protected Random _rand;
 
-  protected final Frame calib() { return _calib; }
-  protected transient Frame _calib;
+  private transient Frame _calib;
 
   protected final Frame validWorkspace() { return _validWorkspace; }
   protected transient Frame _validWorkspace;
@@ -78,7 +81,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   public boolean isSupervised(){return true;}
 
   @Override public boolean haveMojo() { return true; }
-  @Override public boolean havePojo() { return true; }
+  @Override public boolean havePojo() { 
+    if (_parms == null)
+      return true;
+    return _parms._offset_column == null; // offset column is not supported for POJO
+  }
 
   public boolean scoreZeroTrees(){return true;}
 
@@ -135,7 +142,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (_parms._nbins_cats >= 1<<16) error ("_nbins_cats", "nbins_cats must be < " + (1<<16));
     if (_parms._nbins_top_level < _parms._nbins) error ("_nbins_top_level", "nbins_top_level must be >= nbins (" + _parms._nbins + ").");
     if (_parms._nbins_top_level >= 1<<16) error ("_nbins_top_level", "nbins_top_level must be < " + (1<<16));
-    if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
+    if (_parms._max_depth < 0) error("_max_depth", "_max_depth must be >= 0.");
+    if (_parms._max_depth == 0) _parms._max_depth = Integer.MAX_VALUE;
     if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
     if (_parms._r2_stopping!=Double.MAX_VALUE) warn("_r2_stopping", "_r2_stopping is no longer supported - please use stopping_rounds, stopping_metric and stopping_tolerance instead.");
     if (_parms._score_tree_interval < 0) error ("_score_tree_interval", "_score_tree_interval must be >= 0.");
@@ -156,19 +164,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if( _train != null )
       _ncols = _train.numCols()-(isSupervised()?1:0)-numSpecialCols();
 
-    // Calibration
-    Frame cf = _parms.calib();  // User-given calibration set
-    if (cf != null) {
-      if (! _parms._calibrate_model)
-        warn("_calibration_frame", "Calibration frame was specified but calibration was not requested.");
-      _calib = init_adaptFrameToTrain(cf, "Calibration Frame", "_calibration_frame", expensive);
-    }
-    if (_parms._calibrate_model) {
-      if (nclasses() != 2)
-        error("_calibrate_model", "Model calibration is only currently supported for binomial models.");
-      if (cf == null)
-        error("_calibrate_model", "Calibration frame was not specified.");
-    }
+    PlattScalingHelper.initCalibration(this, _parms, expensive);
   }
 
   protected void validateRowSampleRate() {
@@ -212,13 +208,26 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           _model._output._init_f = _initialPrediction;
         }
 
-        // Compute the response domain; makes for nicer printouts
-        String[] domain = isSupervised() ? _response.domain() : null;
-        if (_parms._distribution == DistributionFamily.quasibinomial) {
-          domain = new String[]{"0", "1"};
+        final boolean isQuasibinomial = _parms._distribution == DistributionFamily.quasibinomial;
+
+        // Get the actual response domain
+        final String[] actualDomain;
+        if (isQuasibinomial) {
+          // Quasibinomial GBM can have different domains than {0, 1}
+          actualDomain = new VecUtils.CollectDoubleDomain(null,2)
+                  .doAll(_response).stringDomain(_response.isInt());
+          ((GBMModel)_model)._output._quasibinomialDomains = actualDomain;
+        } else if (isSupervised()) {
+          // Regular supervised case, most common
+          actualDomain = _response.domain();
+        } else {
+          // Unsupervised, no domain
+          actualDomain = null;
         }
-        assert (_nclass > 1 && domain != null) || (_nclass==1 && domain==null);
-        if( _nclass==1 ) domain = new String[] {"r"}; // For regression, give a name to class 0
+
+        // Compute the print-out response domain; makes for nicer printouts
+        assert (_nclass > 1 && actualDomain != null) || (_nclass==1 && actualDomain==null);
+        final String[] domain = _nclass == 1 ? new String[] {"r"} : actualDomain; // For regression, give a name to class 0   
 
         // Compute class distribution, used to for initial guesses and to
         // upsample minority classes (if asked for).
@@ -229,23 +238,36 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           // model.score() corrects the probabilities back using the
           // distribution ratios
           if(_model._output.isClassifier() && _parms._balance_classes ) {
-
             float[] trainSamplingFactors = new float[_train.lastVec().domain().length]; //leave initialized to 0 -> will be filled up below
             if (_parms._class_sampling_factors != null) {
               if (_parms._class_sampling_factors.length != _train.lastVec().domain().length)
                 throw new IllegalArgumentException("class_sampling_factors must have " + _train.lastVec().domain().length + " elements");
               trainSamplingFactors = _parms._class_sampling_factors.clone(); //clone: don't modify the original
             }
-            Frame stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), _train.vec(_model._output.weightsName()), trainSamplingFactors, (long)(_parms._max_after_balance_size*_train.numRows()), _parms._seed, true, false);
+            boolean verboseSampling = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.sharedTree.sampleFrameStratified.verbose");
+            Frame stratified;
+            if(isQuasibinomial) {
+              stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), _train.vec(_model._output.weightsName()), trainSamplingFactors, (long) (_parms._max_after_balance_size * _train.numRows()), _parms._seed, true, verboseSampling, domain);
+            } else {
+              stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), _train.vec(_model._output.weightsName()), trainSamplingFactors, (long) (_parms._max_after_balance_size * _train.numRows()), _parms._seed, true, verboseSampling, null);
+            }
             if (stratified != _train) {
               _train = stratified;
               _response = stratified.vec(_parms._response_column);
               _weights = stratified.vec(_parms._weights_column);
               // Recompute distribution since the input frame was modified
-              MRUtils.ClassDist cdmt2 = _weights != null ?
-                      new MRUtils.ClassDist(_nclass).doAll(_response, _weights) : new MRUtils.ClassDist(_nclass).doAll(_response);
-              _model._output._distribution = cdmt2.dist();
-              _model._output._modelClassDist = cdmt2.rel_dist();
+              if (isQuasibinomial){
+                  MRUtils.ClassDistQuasibinomial cdmt2 = _weights != null ?
+                          new MRUtils.ClassDistQuasibinomial(domain).doAll(_response, _weights) : new MRUtils.ClassDistQuasibinomial(domain).doAll(_response);
+                  _model._output._distribution = cdmt2.dist();
+                  _model._output._modelClassDist = cdmt2.relDist();
+                  _model._output._domains[_model._output._domains.length] = domain;
+              }  else {
+                  MRUtils.ClassDist cdmt2 = _weights != null ?
+                          new MRUtils.ClassDist(_nclass).doAll(_response, _weights) : new MRUtils.ClassDist(_nclass).doAll(_response);
+                  _model._output._distribution = cdmt2.dist();
+                  _model._output._modelClassDist = cdmt2.relDist();
+              }
             }
           }
           Log.info("Prior class distribution: " + Arrays.toString(_model._output._priorClassDist));
@@ -325,7 +347,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         final int [] cons = new int[_nclass];
         for( int i=0; i<_nclass; i++ ) {
           names[i] = "NIDs_" + domain[i];
-          cons[i] = isSupervised() && ((_parms._distribution == DistributionFamily.quasibinomial || _model._output._distribution[i]==0)) ? -1 : 0;
+          cons[i] = isSupervised() && _model._output._distribution[i] == 0 ? -1 : 0;
         }
         Vec [] vs = templateVec().makeVolatileInts(cons);
         _train.add(names, vs);
@@ -334,9 +356,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
         if (_valid != null) {
           _validWorkspace = makeValidWorkspace();
-          _validPredsCache = Score.makePredictionCache(_model, vresponse());
+          String[] vdomain = isQuasibinomial ? actualDomain : vresponse().domain();
+          _validPredsCache = Score.makePredictionCache(_model, vresponse(), vdomain);
         }
-        _trainPredsCache = Score.makePredictionCache(_model, templateVec());
+        _trainPredsCache = Score.makePredictionCache(_model, templateVec(), actualDomain);
 
         // Variable importance: squared-error-improvement-per-variable-per-split
         _improvPerVar = new float[_ncols];
@@ -491,16 +514,17 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Add temporary workspace vectors (optional weights are taken over from fr)
       int respIdx = fr2.find(_parms._response_column);
       int weightIdx = fr2.find(_parms._weights_column);
-      fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]);                              //tree predictions
-      int workIdx = fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
-      int nidIdx  = fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
+      int predsIdx = fr2.numCols(); fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]); //tree predictions
+      int workIdx =  fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
+      int nidIdx  =  fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
       if (DEV_DEBUG) {
         System.out.println("Building a layer for class " + k + ":\n" + fr2.toTwoDimTable());
       }
       // Async tree building
       // step 1: build histograms
       // step 2: split nodes
-      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, respIdx, weightIdx, workIdx, nidIdx));
+      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, 
+              respIdx, weightIdx, predsIdx, workIdx, nidIdx));
     }
     // Block for all K trees to complete.
     boolean did_split=false;
@@ -538,12 +562,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     final DistributionFamily _family;
     final int _respIdx; // index of the actual response column for the whole model (not the residuals!) 
     final int _weightIdx;
+    final int _predsIdx;
     final int _workIdx;
     final int _nidIdx;
 
     boolean _did_split;
 
-    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family, int respIdx, int weightIdx, int workIdx, int nidIdx) {
+    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family,
+                      int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdx) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
@@ -557,6 +583,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _family = family;
       _respIdx = respIdx;
       _weightIdx = weightIdx;
+      _predsIdx = predsIdx;
       _workIdx = workIdx;
       _nidIdx = nidIdx;
     }
@@ -570,7 +597,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
 //      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _weightIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
-      new ScoreBuildHistogram2(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _respIdx, _weightIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
+      new ScoreBuildHistogram2(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, 
+              _respIdx, _weightIdx, _predsIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
       ScoreBuildHistogram sbh = (ScoreBuildHistogram) caller;
@@ -756,63 +784,36 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if( updated ) _model.update(_job);
 
     // Model Calibration (only for the final model, not CV models)
-    if (finalScoring && _parms._calibrate_model && (! _parms._is_cv_model)) {
-      Key<Frame> calibInputKey = Key.make();
-      try {
-        Scope.enter();
-        _job.update(0, "Calibrating probabilities");
-        Vec calibWeights = _parms._weights_column != null ? calib().vec(_parms._weights_column) : null;
-        Frame calibPredict = Scope.track(_model.score(calib(), null, _job, false));
-
-        Frame calibInput = new Frame(calibInputKey,
-                new String[]{"p", "response"}, new Vec[]{calibPredict.vec(1), calib().vec(_parms._response_column)});
-        if (calibWeights != null) {
-          calibInput.add("weights", calibWeights);
-        }
-        DKV.put(calibInput);
-
-        Key<Model> calibModelKey = Key.make();
-        Job calibJob = new Job<>(calibModelKey, ModelBuilder.javaName("glm"), "Platt Scaling (GLM)");
-        GLM calibBuilder = ModelBuilder.make("GLM", calibJob, calibModelKey);
-        calibBuilder._parms._intercept = true;
-        calibBuilder._parms._response_column = "response";
-        calibBuilder._parms._train = calibInput._key;
-        calibBuilder._parms._family = GLMModel.GLMParameters.Family.binomial;
-        calibBuilder._parms._lambda = new double[] {0.0};
-        if (calibWeights != null) {
-          calibBuilder._parms._weights_column = "weights";
-        }
-
-        _model._output._calib_model = calibBuilder.trainModel().get();
-        _model.update(_job);
-      } finally {
-        Scope.exit();
-        DKV.remove(calibInputKey);
-      }
+    if (finalScoring && _parms.calibrateModel() && (!_parms._is_cv_model)) {
+      _model._output._calib_model = PlattScalingHelper.buildCalibrationModel(SharedTree.this, _parms, _job, _model);
+      _model.update(_job);
     }
 
     return updated;
   }
 
-  protected void addCustomInfo(O out) {
-    // nothing by default - can be overridden in subclasses
+  @Override
+  public ModelBuilder getModelBuilder() {
+    return this;
   }
 
-  static int counter = 0;
-  // helper for debugging
-  @SuppressWarnings("unused")
-  static protected void printGenerateTrees(DTree[] trees) {
-    for( DTree dtree : trees )
-      if( dtree != null ) {
-        try {
-          PrintWriter writer = new PrintWriter("/tmp/h2o-3.tree" + ++counter + ".txt", "UTF-8");
-          writer.println(dtree.root().toString2(new StringBuilder(), 0));
-          writer.close();
-        } catch (FileNotFoundException|UnsupportedEncodingException e) {
-          e.printStackTrace();
-        }
-        System.out.println(dtree.root().toString2(new StringBuilder(), 0));
-      }
+  @Override
+  public final Frame getCalibrationFrame() { 
+    return _calib; 
+  }
+
+  @Override
+  public void setCalibrationFrame(Frame f) {
+    _calib = f;
+  }
+
+  @Override
+  protected boolean canLearnFromNAs() {
+    return true;
+  }
+
+  protected void addCustomInfo(O out) {
+    // nothing by default - can be overridden in subclasses
   }
 
   protected TwoDimTable createScoringHistoryTable() {

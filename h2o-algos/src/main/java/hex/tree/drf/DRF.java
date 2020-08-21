@@ -114,6 +114,9 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       if (!(1 <= _mtry && _mtry <= _ncols)) {
         throw new IllegalArgumentException("Computed mtry should be in interval <1," + _ncols + "> but it is " + _mtry);
       }
+      if (_model != null && _model.evalAutoParamsEnabled) {
+        _model.initActualParamValuesAfterOutputSetup(isClassifier());
+      }
 
       _initialPrediction = isClassifier() ? 0 : getInitialValue();
       // Initialize TreeVotes for classification, MSE arrays for regression

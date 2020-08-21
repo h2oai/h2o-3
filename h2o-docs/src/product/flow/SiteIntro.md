@@ -300,9 +300,6 @@ After starting multiple "worker" node processes in addition to the JUnit test pr
 
 - <a href="https://github.com/h2oai/h2o-droplets" target="_blank">H2O Project Templates</a>: This page provides template info for projects created in Java, Scala, or Sparkling Water. 
 
-- <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-scala/scaladoc/index.html" target="_blank">H2O Scala API Developer Documentation</a>: The definitive Scala API guide for H2O. 
-
-
 - <a href="http://h2o.ai/blog/2014/16/Hacking/Algos/" target="_blank">Hacking Algos</a>: This blog post by Cliff walks you through building a new algorithm, using K-Means, Quantiles, and Grep as examples. 
 
 - <a href="http://0xdata.com/blog/2014/05/kv-store-memory-analytics-part-2-2/" target="_blank">KV Store Guide</a>: Learn more about performance characteristics when implementing new algorithms. 

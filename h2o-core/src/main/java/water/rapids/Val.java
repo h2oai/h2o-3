@@ -1,6 +1,7 @@
 package water.rapids;
 
 import hex.Model;
+import water.Keyed;
 import water.fvec.Frame;
 import water.Iced;
 import water.rapids.ast.AstPrimitive;
@@ -21,7 +22,8 @@ abstract public class Val extends Iced {
   final public static int ROW = 6;     // Row of data; limited to a single array of doubles
   final public static int FUN = 7;     // Function
   final public static int MOD = 8;     // Model
-  final public static int MFRM = 9;     // Map of (String, Frame)
+  final public static int MFRM = 9;    // Map of (String, Frame)
+  final public static int KEYED = 10;  // Keyed
 
 
   abstract public int type();
@@ -37,6 +39,7 @@ abstract public class Val extends Iced {
   public boolean isRow()   { return false; }
   public boolean isFun()   { return false; }
   public boolean isModel() { return false; }
+  public boolean isKeyed() { return false; }
 
   // One of these methods is overridden in each subclass
   public double   getNum()   { throw badValue("number"); }
@@ -49,6 +52,7 @@ abstract public class Val extends Iced {
   public double[] getRow()   { throw badValue("Row"); }
   public AstPrimitive getFun() { throw badValue("function"); }
   public Model    getModel() { throw badValue("Model"); }
+  public Keyed    getKeyed() { throw badValue("Keyed"); }
 
   private IllegalArgumentException badValue(String expectedType) {
     return new IllegalArgumentException("Expected a " + expectedType + " but found a " + getClass());

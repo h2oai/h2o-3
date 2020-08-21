@@ -127,13 +127,14 @@ public class ScoreKeeper extends Iced {
     MAE(ConvergenceStrategy.LESS_IS_BETTER, true),
     RMSLE(ConvergenceStrategy.LESS_IS_BETTER, true),
     AUC(ConvergenceStrategy.MORE_IS_BETTER, true),
+    AUCPR(ConvergenceStrategy.MORE_IS_BETTER, true),
     lift_top_group(ConvergenceStrategy.MORE_IS_BETTER, false),
     misclassification(ConvergenceStrategy.LESS_IS_BETTER, true),
-    AUCPR(ConvergenceStrategy.MORE_IS_BETTER, true),
     mean_per_class_error(ConvergenceStrategy.LESS_IS_BETTER, true),
+    anomaly_score(ConvergenceStrategy.NON_DIRECTIONAL, false),
     custom(ConvergenceStrategy.LESS_IS_BETTER, false),
     custom_increasing(ConvergenceStrategy.MORE_IS_BETTER, false),
-    anomaly_score(ConvergenceStrategy.NON_DIRECTIONAL, false);
+    ;
 
     private final ConvergenceStrategy _convergence;
     private final boolean _lowerBoundBy0;

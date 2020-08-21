@@ -62,11 +62,10 @@ public class AstToLower extends AstPrimitive {
     String[] dom = vec.domain().clone();
     for (int i = 0; i < dom.length; ++i)
       dom[i] = dom[i].toLowerCase(Locale.ENGLISH);
-
     return vec.makeCopy(dom);
   }
 
-  private Vec toLowerStringCol(Vec vec) {
+  public static Vec toLowerStringCol(Vec vec) {
     return new MRTask() {
       @Override
       public void map(Chunk chk, NewChunk newChk) {

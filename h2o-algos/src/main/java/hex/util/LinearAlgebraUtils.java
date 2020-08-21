@@ -6,7 +6,10 @@ import hex.DataInfo;
 import hex.FrameTask;
 import hex.Interaction;
 import hex.ToEigenVec;
+import hex.gam.MatrixFrameUtils.TriDiagonalMatrix;
 import hex.gram.Gram;
+import jsr166y.ForkJoinTask;
+import jsr166y.RecursiveAction;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -14,6 +17,8 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+
+import java.util.Arrays;
 
 import static java.util.Arrays.sort;
 import static org.apache.commons.lang.ArrayUtils.reverse;
@@ -23,7 +28,7 @@ public class LinearAlgebraUtils {
    * Forward substitution: Solve Lx = b for x with L = lower triangular matrix, b = real vector
    */
   public static double[] forwardSolve(double[][] L, double[] b) {
-    assert L != null && L.length == L[0].length && L.length == b.length;
+    assert L != null && L.length == b.length; // && L.length == L[0].length, allow true lower triangular matrix
     double[] res = new double[b.length];
 
     for(int i = 0; i < b.length; i++) {
@@ -35,6 +40,198 @@ public class LinearAlgebraUtils {
     return res;
   }
 
+
+  /**
+   * Given a matrix aMat as a double [][] array, this function will return an array that is the
+   * square root of the diagonals of aMat.  Note that the first index is column and the second index
+   * is row.
+   * @param aMat
+   * @return
+   */
+  public static double[] sqrtDiag(double[][] aMat) {
+    int matrixSize = aMat.length;
+    double[] answer = new double[matrixSize];
+    for (int index=0; index < matrixSize; index++)
+      answer[index] = Math.sqrt(aMat[index][index]);
+    return answer;
+  }
+  
+  public static double[][] chol2Inv(final double[][] cholR, boolean upperTriag) {
+    final int matrixSize = cholR.length;  // cholR is actuall transpose(R) from QR
+    double[][] cholL = upperTriag?ArrayUtils.transpose(cholR):cholR; // this is R from QR
+    final double[][] inverted = new double[matrixSize][];
+    RecursiveAction[] ras = new RecursiveAction[matrixSize];
+    for (int index=0; index<matrixSize; index++) {
+      final double[] oneColumn = new double[matrixSize];
+      oneColumn[index] = 1.0;
+      final int i = index;
+      ras[i] = new RecursiveAction() {
+        @Override protected void compute() {
+          double[] upperColumn = forwardSolve(cholL, oneColumn);
+          inverted[i] = Arrays.copyOf(upperColumn, matrixSize);
+        }
+      };
+    }
+    ForkJoinTask.invokeAll(ras);
+    double[][] cholRNew = upperTriag?cholR:ArrayUtils.transpose(cholR);
+    for (int index=0; index<matrixSize; index++) {
+      final double[] oneColumn = new double[matrixSize];
+      oneColumn[index] = 1.0;
+      final int i = index;
+      ras[i] = new RecursiveAction() {
+        @Override protected void compute() {
+          double[] lowerColumn = new double[matrixSize];
+          backwardSolve(cholRNew, inverted[i], lowerColumn);
+          inverted[i] = Arrays.copyOf(lowerColumn, matrixSize);
+        }
+      };
+    }
+    ForkJoinTask.invokeAll(ras);
+    return inverted;
+  }
+
+  /**
+   * Given the cholesky decomposition of X = QR, this method will return the inverse of
+   * transpose(X)*X by attempting to solve for transpose(R)*R*XTX_inverse = Identity matrix
+   * 
+   * @param cholR
+   * @return
+   */
+  public static double[][] chol2Inv(final double[][] cholR) {
+    return chol2Inv(cholR, true);
+  }
+
+  /***
+   * Generate D matrix as a lower diagonal matrix since it is symmetric and contains only 3 diagonals
+   * @param hj
+   * @return
+   */
+  public static double[][] generateTriDiagMatrix(final double[] hj) {
+    final int matrixSize = hj.length-1;  // matrix size is numKnots-2
+    final double[][] lowDiag = new double[matrixSize][];
+    RecursiveAction[] ras = new RecursiveAction[matrixSize];
+    for (int index=0; index<matrixSize; index++) {
+      final int rowSize = index+1;
+      final int i = index;
+      final double hjIndex = hj[index];
+      final double hjIndexP1 = hj[index+1];
+      final double oneO3 = 1.0/3.0;
+      final double oneO6 = 1.0/6.0;
+      final double[] tempDiag = MemoryManager.malloc8d(rowSize);
+      ras[i] = new RecursiveAction() {
+        @Override protected void compute() {
+          ;
+          tempDiag[i] = (hjIndex+hjIndexP1)*oneO3;
+          if (i > 0)
+            tempDiag[i-1] = hjIndex*oneO6;
+          lowDiag[i] = Arrays.copyOf(tempDiag, rowSize);
+        }
+      };
+    }
+    ForkJoinTask.invokeAll(ras);
+    return lowDiag;
+  }
+
+  public static double[][] expandLowTrian2Ful(double[][] cholL) {
+    int numRows = cholL.length;
+    final double[][] result = new double[numRows][];
+    RecursiveAction[] ras = new RecursiveAction[numRows];
+    for (int index = 0; index < numRows; index++) {
+      final int i = index;
+      final double[] tempResult = MemoryManager.malloc8d(numRows);
+      ras[i] = new RecursiveAction() {
+        @Override protected void compute() {
+          for (int colIndex = 0; colIndex <= i; colIndex++)
+            tempResult[colIndex] = cholL[i][colIndex];
+          result[i] = Arrays.copyOf(tempResult, numRows);
+        }
+      };
+    }
+    ForkJoinTask.invokeAll(ras);
+    return result;
+  }
+  
+  public static double[][] matrixMultiply(double[][] A, double[][] B ) {
+    int arow = A[0].length; // number of rows of result
+    int acol = A.length;    // number columns in A
+    int bcol = B.length;    // number of columns of B
+    final double[][] result = new double[bcol][];
+    RecursiveAction[] ras = new RecursiveAction[acol];
+    for (int index = 0; index < acol; index++) {
+      final int i = index;
+      final double[] tempResult = new double[arow];
+      ras[i] = new RecursiveAction() {
+        @Override protected void compute() {
+          ArrayUtils.multArrVec(A, B[i], tempResult);
+          result[i] = Arrays.copyOf(tempResult, arow);
+        }
+      };
+    }
+    ForkJoinTask.invokeAll(ras);
+    return result;
+  }
+
+  /**
+   * 
+   * @param A
+   * @param B
+   * @param transposeResult: true will return A*B. Otherwise will return transpose(A*B)
+   * @return
+   */
+  public static double[][] matrixMultiplyTriagonal(double[][] A, TriDiagonalMatrix B, boolean transposeResult) {
+    int arow = A.length; // number of rows of result
+    int bcol = B._size+2;    // number of columns of B, K+2
+    final int lastCol = bcol-1;
+    final int secondLastCol = bcol-2; // also equal to K
+    final int kMinus1 = bcol-3;
+    final int kMinus2 = bcol-4;
+    final double[][] result = new double[bcol][];
+    RecursiveAction[] ras = new RecursiveAction[bcol];
+    for (int index = 0; index < bcol; index++) { // column  index
+      final int i = index;
+      final double[] tempResult = new double[arow];
+      final double[] bCol = new double[B._size];
+      ras[i] = new RecursiveAction() {
+        @Override protected void compute() {
+          if (i==0) {
+            bCol[0] = B._first_diag[0];
+          } else if (i==1) {
+            bCol[0] = B._second_diag[0];
+            bCol[1] = B._first_diag[1];
+          } else if (i==lastCol) {
+            bCol[kMinus1] = B._third_diag[kMinus1];
+          } else if (i==secondLastCol) {
+            bCol[kMinus2] = B._third_diag[kMinus2];
+            bCol[kMinus1] =B._second_diag[kMinus1];
+          } else {
+            bCol[i-2] = B._third_diag[i-2];
+            bCol[i-1] = B._second_diag[i-1];
+            bCol[i] = B._first_diag[i];
+          }
+          
+          ArrayUtils.multArrVec(A, bCol, tempResult);
+          result[i] = Arrays.copyOf(tempResult, arow);
+        }
+      };
+    }
+    ForkJoinTask.invokeAll(ras);
+    return transposeResult?ArrayUtils.transpose(result):result;
+  }
+
+  public static double[] backwardSolve(double[][] L, double[] b, double[] res) {
+    assert L != null && L.length == L[0].length && L.length == b.length;
+    if (res==null)  // only allocate memory if needed
+      res = new double[b.length];
+    int lastIndex = b.length-1;
+    for (int rowIndex = lastIndex; rowIndex >= 0; rowIndex--) {
+      res[rowIndex] = b[rowIndex];
+      for (int colIndex = lastIndex; colIndex > rowIndex; colIndex--) {
+        res[rowIndex] -= L[rowIndex][colIndex]*res[colIndex];
+      }
+      res[rowIndex] /= L[rowIndex][rowIndex];
+    }
+    return res;
+  }
   /*
    * Impute missing values and transform numeric value x in col of dinfo._adaptedFrame
    */
@@ -123,6 +320,50 @@ public class LinearAlgebraUtils {
     }
     return eigenvectors;
   }
+  
+  public static class FindMaxIndex extends MRTask<FindMaxIndex> {
+    public long _maxIndex = -1;
+    int _colIndex;
+    double _maxValue;
+    
+    public FindMaxIndex(int colOfInterest, double maxValue) {
+      _colIndex = colOfInterest;
+      _maxValue = maxValue;
+    }
+    
+    @Override
+    public void map(Chunk[] cs) {
+      int rowLen = cs[0].len();
+      long startRowIndex = cs[0].start();
+      for (int rowIndex=0; rowIndex < rowLen; rowIndex++) {
+        double rowVal = cs[_colIndex].atd(rowIndex);
+        if (rowVal == _maxValue) {
+          _maxIndex = startRowIndex+rowIndex;
+        }
+      }
+    }
+    
+    @Override public void reduce(FindMaxIndex other) {
+      if (this._maxIndex < 0)
+        this._maxIndex = other._maxIndex;
+      else if (this._maxIndex > other._maxIndex)
+        this._maxIndex = other._maxIndex; 
+    }
+  }
+  
+  public static class CopyQtoQMatrix extends MRTask<CopyQtoQMatrix> {
+    @Override public void map(Chunk[] cs) {
+      int totColumn = cs.length;  // all columns in cs.
+      int halfColumn = totColumn/2; // start of Q matrix
+      int totRows = cs[0].len();
+      for (int rowIndex=0; rowIndex < totRows; rowIndex++) {
+        for (int colIndex=0; colIndex < halfColumn; colIndex++) {
+          cs[colIndex].set(rowIndex, cs[colIndex+halfColumn].atd(rowIndex));
+        }
+      }
+    }
+  }
+  
 
   /**
    * Computes B = XY where X is n by k and Y is k by p, saving result in new vecs
@@ -147,6 +388,53 @@ public class LinearAlgebraUtils {
   }
 
   /**
+   * Compute B = XY where where X is n by k and Y is k by p and they are both stored as Frames.  The 
+   * result will be stored in part of X as X|B.  Make sure you allocate the correct memory to your X
+   * frame.  In addition, this will only work with numerical columns.
+   * 
+   * Note that there are a size limitation on y Frame.  It needs to have row indexed by integer values only and
+   * not long.  Otherwise, the result will be jibberish.
+   */
+  public static class BMulTaskMatrices extends MRTask<BMulTaskMatrices> {
+    final Frame _y; // frame to store y
+    final int _nyChunks;  // number of chunks of y Frame
+    final int _yColNum;
+
+    public BMulTaskMatrices(Frame y) {
+      _y = y;
+      _nyChunks = _y.anyVec().nChunks();
+      _yColNum = _y.numCols();
+    }
+    
+    private void mulResultPerYChunk(Chunk[] xChunk, Chunk[] yChunk) {
+      int xChunkLen = xChunk[0].len();
+      int yColLen = yChunk.length;
+      int yChunkLen = yChunk[0].len();
+      int resultColOffset = xChunk.length-yColLen;  // start of result column in xChunk
+      int xChunkColOffset = (int) yChunk[0].start();
+      for (int colIndex=0; colIndex < yColLen; colIndex++) {
+        int resultColIndex = colIndex+resultColOffset;
+        for (int rowIndex=0; rowIndex < xChunkLen; rowIndex++) {
+          double origResult = xChunk[resultColIndex].atd(rowIndex);
+          for (int interIndex=0; interIndex < yChunkLen; interIndex++) {
+            origResult += xChunk[interIndex+xChunkColOffset].atd(rowIndex)*yChunk[colIndex].atd(interIndex);
+          }
+          xChunk[resultColIndex].set(rowIndex, origResult);
+        }
+      }
+    }
+    
+    @Override public void map(Chunk[] xChunk) {
+      Chunk[] ychunk = new Chunk[_y.numCols()];
+      for (int ychunkInd=0; ychunkInd < _nyChunks; ychunkInd++) {
+        for (int chkIndex =0 ; chkIndex < _yColNum; chkIndex++) // grab a y chunk
+          ychunk[chkIndex] = _y.vec(chkIndex).chunkForChunkIdx(ychunkInd);
+        mulResultPerYChunk(xChunk, ychunk);
+      }
+    }
+  }
+
+  /**
    * Computes B = XY where X is n by k and Y is k by p, saving result in same frame
    * Input: [X,B] (large frame) passed to doAll, where we write to B
    *        yt = Y' = transpose of Y (small matrix)
@@ -156,14 +444,8 @@ public class LinearAlgebraUtils {
     final DataInfo _xinfo;  // Info for frame X
     final double[][] _yt;   // _yt = Y' (transpose of Y)
     final int _ncolX;     // Number of cols in X
-
-    public BMulInPlaceTask(DataInfo xinfo, double[][] yt) {
-      assert yt != null && yt[0].length == numColsExp(xinfo._adaptedFrame,true);
-      _xinfo = xinfo;
-      _ncolX = xinfo._adaptedFrame.numCols();
-      _yt = yt;
-    }
-
+    public boolean _originalImplementation = true;  // if true will produce xB+b0.  If false, just inner product
+    
     public BMulInPlaceTask(DataInfo xinfo, double[][] yt, int nColsExp) {
       assert yt != null && yt[0].length == nColsExp;
       _xinfo = xinfo;
@@ -171,10 +453,19 @@ public class LinearAlgebraUtils {
       _yt = yt;
     }
 
+    public BMulInPlaceTask(DataInfo xinfo, double[][] yt, int nColsExp, boolean originalWay) {
+      assert yt != null && yt[0].length == nColsExp;
+      _xinfo = xinfo;
+      _ncolX = xinfo._adaptedFrame.numCols();
+      _yt = yt;
+      _originalImplementation = originalWay;
+    }
+
     @Override public void map(Chunk[] cs) {
       assert cs.length == _ncolX + _yt.length;
+      int lastColInd = _ncolX-1;
       // Copy over only X frame chunks
-      Chunk[] xchk = new Chunk[_ncolX];
+      Chunk[] xchk = new Chunk[_ncolX]; // only refer to X part, old part of frame
       DataInfo.Row xrow = _xinfo.newDenseRow();
       System.arraycopy(cs,0,xchk,0,_ncolX);
       double sum;
@@ -185,8 +476,8 @@ public class LinearAlgebraUtils {
         int bidx = _ncolX;
         for (double[] ps : _yt ) {
           // Inner product of X row with Y column (Y' row)
-          sum = xrow.innerProduct(ps);
-          cs[bidx].set(row, sum);   // Save inner product to B
+          sum = _originalImplementation?xrow.innerProduct(ps):xrow.innerProduct(ps)-ps[lastColInd];
+          cs[bidx].set(row, sum);   // Save inner product to B, new part of frame
           bidx++;
         }
         assert bidx == cs.length;
@@ -269,6 +560,30 @@ public class LinearAlgebraUtils {
     }
   }
 
+  /***
+   * compute the cholesky of xx which stores the lower part of a symmetric square tridiagonal matrix.  We assume
+   * that all the elements are positive and it is in place replacement where L will be stored back in the input
+   * xx.
+   * @param xx
+   * @return
+   */
+  public static void choleskySymDiagMat(double[][] xx) {
+    xx[0][0] = Math.sqrt(xx[0][0]);
+    int rowNumber = xx.length;
+    for (int row = 1; row < rowNumber; row++) {
+      // deals with lower diagonal element
+      int lowerDiag = row-1;
+      if (lowerDiag > 0) {
+        int kMinus2 = lowerDiag - 1;
+        xx[row][lowerDiag] = (xx[row][lowerDiag] - xx[row][kMinus2])/xx[lowerDiag][lowerDiag];
+      } else {
+        xx[row][lowerDiag] = xx[row][lowerDiag]/xx[lowerDiag][lowerDiag];
+      }
+      // deals with diagonal element
+      xx[row][row] = Math.sqrt(xx[row][row]-xx[row][lowerDiag]*xx[row][lowerDiag]);
+    }
+  }
+
   /**
    * Get R = L' from Cholesky decomposition Y'Y = LL' (same as R from Y = QR)
    * @param jobKey Job key for Gram calculation
@@ -276,7 +591,7 @@ public class LinearAlgebraUtils {
    * @param transpose Should result be transposed to get L?
    * @return L or R matrix from Cholesky of Y Gram
    */
-  public static double[][] computeR(Key<Job> jobKey, DataInfo yinfo, boolean transpose, double[][] xx) {
+  public static double[][] computeR(Key<Job> jobKey, DataInfo yinfo, boolean transpose) {
     // Calculate Cholesky of Y Gram to get R' = L matrix
     Gram.GramTask gtsk = new Gram.GramTask(jobKey, yinfo);  // Gram is Y'Y/n where n = nrow(Y)
     gtsk.doAll(yinfo._adaptedFrame);
@@ -295,10 +610,17 @@ public class LinearAlgebraUtils {
    * @return l2 norm of Q - W, where W is old matrix in frame, Q is computed factorization
    */
   public static double computeQ(Key<Job> jobKey, DataInfo yinfo, Frame ywfrm, double[][] xx) {
-    double[][] cholL = computeR(jobKey, yinfo, true, xx);
-    ForwardSolve qrtsk = new ForwardSolve(yinfo, cholL);
+    xx = computeR(jobKey, yinfo, true);
+    ForwardSolve qrtsk = new ForwardSolve(yinfo, xx);
     qrtsk.doAll(ywfrm);
     return qrtsk._sse;      // \sum (Q_{i,j} - W_{i,j})^2
+  }
+
+  public static double[][] computeQ(Key<Job> jobKey, DataInfo yinfo, Frame ywfrm) {
+    double[][] xx = computeR(jobKey, yinfo, true);
+    ForwardSolve qrtsk = new ForwardSolve(yinfo, xx);
+    qrtsk.doAll(ywfrm);
+    return xx;      // \sum (Q_{i,j} - W_{i,j})^2
   }
 
   /**
@@ -306,10 +628,11 @@ public class LinearAlgebraUtils {
    * @param jobKey Job key for Gram calculation
    * @param yinfo DataInfo for Y matrix
    */
-  public static void computeQInPlace(Key<Job> jobKey, DataInfo yinfo) {
-    double[][] cholL = computeR(jobKey, yinfo, true, null);
+  public static double[][] computeQInPlace(Key<Job> jobKey, DataInfo yinfo) {
+    double[][] cholL = computeR(jobKey, yinfo, true);
     ForwardSolveInPlace qrtsk = new ForwardSolveInPlace(yinfo, cholL);
     qrtsk.doAll(yinfo._adaptedFrame);
+    return cholL;
   }
 
   /**
@@ -449,7 +772,37 @@ public class LinearAlgebraUtils {
       }
     }
   }
-
+  
+  public static double[] toEigenArray(Vec src) {
+    Key<Frame> source = Key.make();
+    Key<Frame> dest = Key.make();
+    Frame train = new Frame(source, new String[]{"enum"}, new Vec[]{src});
+    int maxLevels = 1024; // keep eigen projection method reasonably fast
+    boolean created=false;
+    if (src.cardinality()>maxLevels) {
+      DKV.put(train);
+      created=true;
+      Log.info("Reducing the cardinality of a categorical column with " + src.cardinality() + " levels to " + maxLevels);
+      train = Interaction.getInteraction(train._key, train.names(), maxLevels).execImpl(dest).get();
+    }
+    DataInfo dinfo = new DataInfo(train, null, 0, true /*_use_all_factor_levels*/, DataInfo.TransformType.NONE,
+            DataInfo.TransformType.NONE, /* skipMissing */ false, /* imputeMissing */ true,
+            /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
+    DKV.put(dinfo);
+    Gram.GramTask gtsk = new Gram.GramTask(null, dinfo).doAll(dinfo._adaptedFrame);
+    // round the numbers to float precision to be more reproducible
+    double[] rounded = new double[gtsk._gram._diag.length];
+    for (int i = 0; i < rounded.length; ++i)
+      rounded[i] = (float) gtsk._gram._diag[i];
+    dinfo.remove();
+    double [] array = multiple(rounded, (int) gtsk._nobs, 1);
+    if (created) {
+      train.remove();
+      DKV.remove(source);
+    }
+    return array;
+  }
+  
   public static Vec toEigen(Vec src) {
     Key<Frame> source = Key.make();
     Key<Frame> dest = Key.make();
@@ -460,26 +813,9 @@ public class LinearAlgebraUtils {
       DKV.put(train);
       created=true;
       Log.info("Reducing the cardinality of a categorical column with " + src.cardinality() + " levels to " + maxLevels);
-      Interaction inter = new Interaction();
-      inter._source_frame = train._key;
-      inter._max_factors = maxLevels; // keep only this many most frequent levels
-      inter._min_occurrence = 2; // but need at least 2 observations for a level to be kept
-      inter._pairwise = false;
-      inter._factor_columns = train.names();
-      train = inter.execImpl(dest).get();
+      train = Interaction.getInteraction(train._key, train.names(), maxLevels).execImpl(dest).get();
     }
-    DataInfo dinfo = new DataInfo(train, null, 0, true /*_use_all_factor_levels*/, DataInfo.TransformType.NONE,
-            DataInfo.TransformType.NONE, /* skipMissing */ false, /* imputeMissing */ true,
-            /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
-    DKV.put(dinfo);
-    Gram.GramTask gtsk = new Gram.GramTask(null, dinfo).doAll(dinfo._adaptedFrame);
-    // round the numbers to float precision to be more reproducible
-//    double[] rounded = gtsk._gram._diag;
-    double[] rounded = new double[gtsk._gram._diag.length];
-    for (int i = 0; i < rounded.length; ++i)
-      rounded[i] = (float) gtsk._gram._diag[i];
-    dinfo.remove();
-    Vec v = new ProjectOntoEigenVector(multiple(rounded, (int) gtsk._nobs, 1)).doAll(1, (byte) 3, train).outputFrame().anyVec();
+    Vec v = new ProjectOntoEigenVector(toEigenArray(src)).doAll(1, (byte) 3, train).outputFrame().anyVec();
     if (created) {
       train.remove();
       DKV.remove(source);

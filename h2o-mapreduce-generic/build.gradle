@@ -11,11 +11,14 @@ compileJava {
 
 dependencies {
   // we need to compile against something - the versions here are not important - assemblies will bundle the correct versions
-  compileOnly "org.apache.hive:hive-jdbc:1.1.0-cdh5.10.0"
   compileOnly "org.apache.hadoop:hadoop-client:2.6.0-cdh5.10.0"
   compile(project(':h2o-app')) {
     exclude module: "${defaultWebserverModule}"
   }
+  compile(project(':h2o-hive')) {
+    transitive = false
+  }
+  compile project(":h2o-security")
   testCompile "junit:junit:${junitVersion}"
   testCompile "org.mockito:mockito-core:2.23.0"
   testCompile "org.apache.hadoop:hadoop-client:2.6.0-cdh5.10.0"

@@ -71,6 +71,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       targetEncoderBuilder.trainModel().get();
 
       targetEncoderModel = targetEncoderBuilder.getTargetEncoderModel();
+      Scope.track_generic(targetEncoderModel);
 
       try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
         targetEncoderModel.getMojo().writeTo(modelOutput);
@@ -116,7 +117,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       assertEquals(currentEncodings[currentHomeDestPredIdx == 0 ? 1 : 0], encodingForHomeEmbarked, 1e-5);
 
     } finally {
-      targetEncoderModel.remove();
       Scope.exit();
     }
   }
@@ -167,6 +167,7 @@ public class TEMojoIntegrationTest extends TestUtil {
         targetEncoderBuilder.trainModel().get();
 
         targetEncoderModel = targetEncoderBuilder.getTargetEncoderModel();
+        Scope.track_generic(targetEncoderModel);
 
         try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)){
           targetEncoderModel.getMojo().writeTo(modelOutput);
@@ -212,7 +213,6 @@ public class TEMojoIntegrationTest extends TestUtil {
         }
 
       } finally {
-        targetEncoderModel.remove();
         mojoFile.delete(); // As we are in the loop we need to remove tmp file manually
         Scope.exit();
       }
@@ -262,6 +262,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       job.trainModel().get();
 
       targetEncoderModel = job.getTargetEncoderModel();
+      Scope.track_generic(targetEncoderModel);
 
       try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
         targetEncoderModel.getMojo().writeTo(modelOutput);
@@ -305,7 +306,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       assertEquals(encodings[0], encodingForHomeEmbarked, 1e-5);
 
     } finally {
-      targetEncoderModel.remove();
       Scope.exit();
     }
   }
@@ -332,7 +332,6 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._blending = true;
-      targetEncoderParameters._blending_parameters = TargetEncoder.DEFAULT_BLENDING_PARAMS;
       targetEncoderParameters._response_column = responseColumnName;
       targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", targetEncoderParameters._response_column);
       targetEncoderParameters._ignore_const_cols = false;
@@ -343,6 +342,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       job.trainModel().get();
 
       targetEncoderModel = job.getTargetEncoderModel();
+      Scope.track_generic(targetEncoderModel);
 
       testEncodingMap = targetEncoderModel._output._target_encoding_map;
 
@@ -395,14 +395,13 @@ public class TEMojoIntegrationTest extends TestUtil {
       int homeDestIndex = ArrayUtils.find(fr.vec(teColumn).domain(), homeDestFactorValue);
       int[] encodingComponentsForHomeDest = homeDestEncodingMap.get(homeDestIndex);
       double posteriorMean = (double) encodingComponentsForHomeDest[0] / encodingComponentsForHomeDest[1];
-      double expectedLambda = TargetEncoderMojoModel.computeLambda(encodingComponentsForHomeDest[1], targetEncoderParameters._blending_parameters.getK(), targetEncoderParameters._blending_parameters.getF());
+      double expectedLambda = TargetEncoderMojoModel.computeLambda(encodingComponentsForHomeDest[1], targetEncoderParameters._k, targetEncoderParameters._f);
 
       double expectedBlendedEncodingForHomeDest = TargetEncoderMojoModel.computeBlendedEncoding(expectedLambda, posteriorMean, expectedPriorMean);
 
       assertEquals(expectedBlendedEncodingForHomeDest, encodings[1], 1e-5);
 
     } finally {
-      targetEncoderModel.remove();
       Scope.exit();
     }
   }
@@ -431,7 +430,8 @@ public class TEMojoIntegrationTest extends TestUtil {
       
       // We want to test case when inflection point is higher than number of missing values in the training frame, i.e. blending would favor prior probability
       int inflectionPoint = 600;
-      targetEncoderParameters._blending_parameters = new BlendingParams(inflectionPoint, 1);
+      targetEncoderParameters._k = inflectionPoint;
+      targetEncoderParameters._f = 1;
       targetEncoderParameters._ignore_const_cols = false;
       targetEncoderParameters.setTrain(fr._key);
 
@@ -440,6 +440,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       job.trainModel().get();
 
       targetEncoderModel = job.getTargetEncoderModel();
+      Scope.track_generic(targetEncoderModel);
 
       try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
         targetEncoderModel.getMojo().writeTo(modelOutput);
@@ -470,7 +471,8 @@ public class TEMojoIntegrationTest extends TestUtil {
 
 
       // Encoding should be coming from posterior probability of NAs in the training frame
-      Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(withNullFrame, noneHoldoutStrategy, 0.0, true,targetEncoderParameters._blending_parameters, 1234);
+      BlendingParams blendingParams = new BlendingParams(targetEncoderParameters._k, targetEncoderParameters._f);
+      Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(withNullFrame, noneHoldoutStrategy, 0.0, true, blendingParams, 1234);
       Scope.track(encodingsFromTargetEncoderModel);
 
       assertEquals(encodingsFromMojoModel[0], encodingsFromTargetEncoderModel.vec("home.dest_te").at(0), 1e-5);
@@ -484,14 +486,13 @@ public class TEMojoIntegrationTest extends TestUtil {
               .build();
 
       // In case we predict for unseen level, encodings should be coming from prior probability of the response
-      Frame encodingsFromTEModelForUnseenLevel = targetEncoderModel.transform(withUnseenLevelFrame, noneHoldoutStrategy, 0.0,true, targetEncoderParameters._blending_parameters, 1234);
+      Frame encodingsFromTEModelForUnseenLevel = targetEncoderModel.transform(withUnseenLevelFrame, noneHoldoutStrategy, 0.0,true, blendingParams, 1234);
       Scope.track(encodingsFromTEModelForUnseenLevel);
 
       // This prediction will essentially be a prior as inflection point is 600 vs only one value in the `withUnseenLevelFrame` frame
       assertEquals(encodingsFromMojoModel[0], encodingsFromTEModelForUnseenLevel.vec("home.dest_te").at(0), 1e-5);
 
     } finally {
-      targetEncoderModel.remove();
       Scope.exit();
     }
   }
@@ -519,7 +520,8 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       // We want to test case when inflection point is lower than number of missing values in the training frame, i.e. blending would favor posterior probability
       int inflectionPoint = 5;
-      targetEncoderParameters._blending_parameters = new BlendingParams(inflectionPoint, 1);
+      targetEncoderParameters._k = inflectionPoint;
+      targetEncoderParameters._f = 1;
       targetEncoderParameters._ignore_const_cols = false;
       targetEncoderParameters.setTrain(fr._key);
 
@@ -528,6 +530,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       job.trainModel().get();
 
       targetEncoderModel = job.getTargetEncoderModel();
+      Scope.track_generic(targetEncoderModel);
 
       try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
         targetEncoderModel.getMojo().writeTo(modelOutput);
@@ -558,7 +561,8 @@ public class TEMojoIntegrationTest extends TestUtil {
 
 
       // Encoding should be coming from posterior probability of NAs in the training frame
-      Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(withNullFrame, noneHoldoutStrategy, 0.0, true,targetEncoderParameters._blending_parameters, 1234);
+      BlendingParams blendingParams = new BlendingParams(targetEncoderParameters._k, targetEncoderParameters._f);
+      Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(withNullFrame, noneHoldoutStrategy, 0.0, true, blendingParams, 1234);
       Scope.track(encodingsFromTargetEncoderModel);
 
       assertEquals(encodingsFromMojoModel[0], encodingsFromTargetEncoderModel.vec("home.dest_te").at(0), 1e-5);
@@ -571,13 +575,12 @@ public class TEMojoIntegrationTest extends TestUtil {
               .withDataForCol(0, ar("xxx"))
               .build();
 
-      Frame encodingsFromTEModelForUnseenLevel = targetEncoderModel.transform(withUnseenLevelFrame, noneHoldoutStrategy, 0.0,true, targetEncoderParameters._blending_parameters, 1234);
+      Frame encodingsFromTEModelForUnseenLevel = targetEncoderModel.transform(withUnseenLevelFrame, noneHoldoutStrategy, 0.0,true, blendingParams, 1234);
       Scope.track(encodingsFromTEModelForUnseenLevel);
 
       assertEquals(encodingsFromMojoModel[0], encodingsFromTEModelForUnseenLevel.vec("home.dest_te").at(0), 1e-5);
 
     } finally {
-      targetEncoderModel.remove();
       Scope.exit();
     }
   }
@@ -587,7 +590,6 @@ public class TEMojoIntegrationTest extends TestUtil {
 
     String mojoFileName = "mojo_te.zip";
     File mojoFile = folder.newFile(mojoFileName);
-    ;
     TargetEncoderModel targetEncoderModel = null;
     Scope.enter();
     try {
@@ -598,14 +600,13 @@ public class TEMojoIntegrationTest extends TestUtil {
       asFactor(fr, responseColumnName);
       Scope.track(fr);
       
-      printOutFrameAsTable(fr);
-
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._response_column = responseColumnName;
       targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", targetEncoderParameters._response_column);
       // Enable blending
       targetEncoderParameters._blending = true;
-      targetEncoderParameters._blending_parameters = new BlendingParams(randomInflectionPoint, 1);
+      targetEncoderParameters._k = randomInflectionPoint;
+      targetEncoderParameters._f = 1;
       targetEncoderParameters._ignore_const_cols = false;
       targetEncoderParameters.setTrain(fr._key);
 
@@ -614,6 +615,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       job.trainModel().get();
 
       targetEncoderModel = job.getTargetEncoderModel();
+      Scope.track_generic(targetEncoderModel);
 
       try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
         targetEncoderModel.getMojo().writeTo(modelOutput);
@@ -643,7 +645,8 @@ public class TEMojoIntegrationTest extends TestUtil {
               .build();
 
 
-      Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(withNullFrame, noneHoldoutStrategy, 0.0, true,targetEncoderParameters._blending_parameters, 1234);
+      BlendingParams blendingParams = new BlendingParams(targetEncoderParameters._k, targetEncoderParameters._f);
+      Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(withNullFrame, noneHoldoutStrategy, 0.0, true, blendingParams, 1234);
       Scope.track(encodingsFromTargetEncoderModel);
 
       double predictionFromTEModel = encodingsFromTargetEncoderModel.vec("home.dest_te").at(0);
@@ -651,7 +654,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       assertEquals(predictionFromMojo, predictionFromTEModel, 1e-5);
 
     } finally {
-      targetEncoderModel.remove();
       Scope.exit();
     }
   }
@@ -673,7 +675,8 @@ public class TEMojoIntegrationTest extends TestUtil {
       targetEncoderParameters._response_column = responseColumnName;
       targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", targetEncoderParameters._response_column);
       targetEncoderParameters._blending = true;
-      targetEncoderParameters._blending_parameters = new BlendingParams(5, 1);
+      targetEncoderParameters._k = 5;
+      targetEncoderParameters._f = 1;
 
       targetEncoderParameters._ignore_const_cols = false;
       targetEncoderParameters.setTrain(fr._key);
@@ -726,6 +729,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       targetEncoderBuilder.trainModel().get();
 
       targetEncoderModel = targetEncoderBuilder.getTargetEncoderModel();
+      Scope.track_generic(targetEncoderModel);
 
       try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
         targetEncoderModel.getMojo().writeTo(modelOutput);
@@ -761,7 +765,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       assertEquals(currentEncodings[currentHomeDestPredIdx], encodingForHomeDest, 1e-5);
       assertEquals(currentEncodings[currentHomeDestPredIdx == 0 ? 1 : 0], encodingForHomeEmbarked, 1e-5);
     } finally {
-      targetEncoderModel.remove();
       Scope.exit();
     }
   }

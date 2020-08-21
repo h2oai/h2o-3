@@ -111,3 +111,78 @@ h2o.prcomp <- function(training_frame,
   model <- .h2o.modelJob('pca', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
+.h2o.train_segments_prcomp <- function(training_frame,
+                                       x,
+                                       validation_frame = NULL,
+                                       ignore_const_cols = TRUE,
+                                       score_each_iteration = FALSE,
+                                       transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
+                                       pca_method = c("GramSVD", "Power", "Randomized", "GLRM"),
+                                       pca_impl = c("MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX", "JAMA"),
+                                       k = 1,
+                                       max_iterations = 1000,
+                                       use_all_factor_levels = FALSE,
+                                       compute_metrics = TRUE,
+                                       impute_missing = FALSE,
+                                       seed = -1,
+                                       max_runtime_secs = 0,
+                                       export_checkpoints_dir = NULL,
+                                       segment_columns = NULL,
+                                       segment_models_id = NULL,
+                                       parallelism = 1)
+{
+  # formally define variables that were excluded from function parameters
+  model_id <- NULL
+  verbose <- NULL
+  destination_key <- NULL
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Build parameter list to send to model builder
+  parms <- list()
+  parms$training_frame <- training_frame
+  if(!missing(x))
+    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
+
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
+  if (!missing(ignore_const_cols))
+    parms$ignore_const_cols <- ignore_const_cols
+  if (!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
+  if (!missing(transform))
+    parms$transform <- transform
+  if (!missing(pca_method))
+    parms$pca_method <- pca_method
+  if (!missing(pca_impl))
+    parms$pca_impl <- pca_impl
+  if (!missing(k))
+    parms$k <- k
+  if (!missing(max_iterations))
+    parms$max_iterations <- max_iterations
+  if (!missing(use_all_factor_levels))
+    parms$use_all_factor_levels <- use_all_factor_levels
+  if (!missing(compute_metrics))
+    parms$compute_metrics <- compute_metrics
+  if (!missing(impute_missing))
+    parms$impute_missing <- impute_missing
+  if (!missing(seed))
+    parms$seed <- seed
+  if (!missing(max_runtime_secs))
+    parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
+
+  # Build segment-models specific parameters
+  segment_parms <- list()
+  if (!missing(segment_columns))
+    segment_parms$segment_columns <- segment_columns
+  if (!missing(segment_models_id))
+    segment_parms$segment_models_id <- segment_models_id
+  segment_parms$parallelism <- parallelism
+
+  # Error check and build segment models
+  segment_models <- .h2o.segmentModelsJob('pca', segment_parms, parms, h2oRestApiVersion=3)
+  return(segment_models)
+}

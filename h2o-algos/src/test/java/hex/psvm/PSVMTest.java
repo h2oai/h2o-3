@@ -9,6 +9,7 @@ import org.junit.Test;
 import water.*;
 import water.fvec.*;
 import water.rapids.ast.prims.math.AstSgn;
+import water.test.util.ConfusionMatrixUtils;
 import water.util.FrameUtils;
 
 import static org.junit.Assert.*;
@@ -266,10 +267,10 @@ public class PSVMTest extends TestUtil {
       if (! predicted.isCategorical()) {
         predicted = Scope.track(predicted.toCategoricalVec());
       }
-      ConfusionMatrix expectedCM = ConfusionMatrixTest.buildCM(actuals, predicted);
+      ConfusionMatrix expectedCM = ConfusionMatrixUtils.buildCM(actuals, predicted);
       ConfusionMatrix actualCM = ModelMetricsBinomial.getFromDKV(model, frame).cm();
       System.out.println(actualCM.table().toString());
-      ConfusionMatrixTest.assertCMEqual(domain, expectedCM._cm, actualCM);
+      ConfusionMatrixUtils.assertCMEqual(domain, expectedCM._cm, actualCM);
     } finally {
       Scope.exit();
     }

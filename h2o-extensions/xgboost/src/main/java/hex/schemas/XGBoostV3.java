@@ -3,6 +3,7 @@ package hex.schemas;
 import hex.tree.xgboost.XGBoost;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.api.API;
+import water.api.schemas3.KeyV3;
 import water.api.schemas3.KeyValueV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 
@@ -48,6 +49,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "sample_rate", "subsample",
         "col_sample_rate", "colsample_bylevel",
         "col_sample_rate_per_tree", "colsample_bytree",
+        "colsample_bynode",
         "max_abs_leafnode_pred", "max_delta_step",
 
         "monotone_constraints",
@@ -57,12 +59,16 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
 
         //runtime
         "nthread",
+        "save_matrix_directory",
+        "build_tree_one_node",
+
+        //platt scaling
+        "calibrate_model",
+        "calibration_frame",
 
         //lightgbm only
         "max_bins",
         "max_leaves",
-        "min_sum_hessian_in_leaf",
-        "min_data_in_leaf",
 
         //dart
         "sample_type",
@@ -79,15 +85,14 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "reg_alpha",
         "dmatrix_type",
         "backend",
-        "gpu_id"
+        "gpu_id",
+        "gainslift_bins"
     };
 
     @API(help="(same as n_estimators) Number of trees.", gridable = true)
     public int ntrees;
-    @API(help="(same as ntrees) Number of trees.", gridable = true)
-    public int n_estimators;
 
-    @API(help="Maximum tree depth.", gridable = true)
+    @API(help="Maximum tree depth (0 for unlimited).", gridable = true)
     public int max_depth;
 
     @API(help="(same as min_child_weight) Fewest allowed (weighted) observations in a leaf.", gridable = true)
@@ -118,6 +123,9 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     @API(help = "(same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
     public double colsample_bytree;
 
+    @API(help = "Column sample rate per tree node (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
+    public double colsample_bynode;
+
     @API(help = "A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.", level = API.Level.secondary)
     public KeyValueV3[] monotone_constraints;
 
@@ -140,17 +148,23 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     @API(help = "Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O cluster limits (-nthreads parameter). Defaults to maximum available", level = API.Level.expert)
     public int nthread;
 
+    @API(help="Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.", level = API.Level.expert, gridable = false)
+    public boolean build_tree_one_node;
+
+    @API(help = "Directory where to save matrices passed to XGBoost library. Useful for debugging.", level = API.Level.expert)
+    public String save_matrix_directory;
+
+    @API(help="Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more accurate estimates of class probabilities.", level = API.Level.expert)
+    public boolean calibrate_model;
+
+    @API(help="Calibration frame for Platt Scaling", level = API.Level.expert, direction = API.Direction.INOUT)
+    public KeyV3.FrameKeyV3 calibration_frame;
+
     @API(help = "For tree_method=hist only: maximum number of bins", level = API.Level.expert, gridable = true)
     public int max_bins;
 
     @API(help = "For tree_method=hist only: maximum number of leaves", level = API.Level.secondary, gridable = true)
     public int max_leaves;
-
-    @API(help = "For tree_method=hist only: the mininum sum of hessian in a leaf to keep splitting", level = API.Level.expert, gridable = true)
-    public float min_sum_hessian_in_leaf;
-
-    @API(help = "For tree_method=hist only: the mininum data in a leaf to keep splitting", level = API.Level.expert, gridable = true)
-    public float min_data_in_leaf;
 
     @API(help="Tree method", values = { "auto", "exact", "approx", "hist"}, level = API.Level.secondary, gridable = true)
     public XGBoostParameters.TreeMethod tree_method;

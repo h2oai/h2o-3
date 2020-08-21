@@ -19,9 +19,9 @@ Supervised
     :show-inheritance:
     :members:
 
-:mod:`H2ODeepWaterEstimator`
-----------------------------
-.. autoclass:: h2o.estimators.deepwater.H2ODeepWaterEstimator
+:mod:`H2OGeneralizedAdditiveEstimator`
+--------------------------------------
+.. autoclass:: h2o.estimators.gam.H2OGeneralizedAdditiveEstimator
     :show-inheritance:
     :members:
 
@@ -123,21 +123,21 @@ Unsupervised
 Miscellaneous
 +++++++++++++
 
+:mod:`automl`
+-------------
+.. automodule:: h2o.automl
+    :members:
+    :exclude-members: H2OAutoML
+
 :mod:`H2OAutoML`
 ----------------
-.. autoclass:: h2o.automl.autoh2o.H2OAutoML
+.. autoclass:: h2o.automl.H2OAutoML
     :show-inheritance:
     :members:
 
 :mod:`H2OEstimator`
 -------------------
 .. autoclass:: h2o.estimators.estimator_base.H2OEstimator
-    :show-inheritance:
-    :members:
-
-:mod:`H2OGridSearch`
---------------------
-.. autoclass:: h2o.grid.grid_search.H2OGridSearch
     :show-inheritance:
     :members:
 
@@ -150,6 +150,12 @@ Miscellaneous
 :mod:`H2OWord2vecEstimator`
 ---------------------------
 .. autoclass:: h2o.estimators.word2vec.H2OWord2vecEstimator
+    :show-inheritance:
+    :members:
+
+:mod:`H2OGridSearch`
+--------------------
+.. autoclass:: h2o.grid.H2OGridSearch
     :show-inheritance:
     :members:
 

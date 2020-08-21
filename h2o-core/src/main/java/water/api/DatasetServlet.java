@@ -20,18 +20,17 @@ public class DatasetServlet extends HttpServlet {
   protected void doGet(HttpServletRequest request, HttpServletResponse response) {
     String uri = ServletUtils.getDecodedUri(request);
     try {
-      boolean use_hex = false;
       String f_name = request.getParameter("frame_id");
       String hex_string = request.getParameter("hex_string");
+      String escape_quotes_string = request.getParameter("escape_quotes");
       if (f_name == null) {
-        throw new RuntimeException("Cannot find value for parameter \'frame_id\'");
+        throw new RuntimeException("Cannot find value for parameter 'frame_id'");
       }
-      if (hex_string != null && hex_string.toLowerCase().equals("true")) {
-        use_hex = true;
-      }
-
       Frame dataset = DKV.getGet(f_name);
-      InputStream is = dataset.toCSV(new Frame.CSVStreamParams().setHexString(use_hex));
+      Frame.CSVStreamParams parms = new Frame.CSVStreamParams()
+          .setHexString(Boolean.parseBoolean(hex_string))
+          .setEscapeQuotes(Boolean.parseBoolean(escape_quotes_string));
+      InputStream is = dataset.toCSV(parms);
       response.setContentType("application/octet-stream");
       // Clean up the file name
       int x = f_name.length() - 1;

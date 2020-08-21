@@ -21,6 +21,9 @@ if( is.data.frame(user_y) || is.matrix(user_y) || is.list(user_y) || is.H2OFrame
   if( !(missing(k)) && k!=as.integer(nrow(user_y)) ) {
     warning("Argument k is not equal to the number of rows in user-specified Y. Ignoring k. Using specified Y.")
   }
+  if ( !missing(loading_name)) {
+    warning("Argument loading_name is deprecated.  Use representation_name instead.")
+  }
   parms[["k"]] <- as.numeric(nrow(user_y))
 # } else if( is.null(user_y) ) {
 #  if(!missing(init) && parms[["init"]] == "User")

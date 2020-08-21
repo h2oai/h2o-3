@@ -1,25 +1,19 @@
 package water.hive;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
-import org.apache.hadoop.hive.metastore.api.FieldSchema;
-import org.apache.hadoop.hive.metastore.api.Partition;
-import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
-import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.log4j.Logger;
 import water.AbstractH2OExtension;
 import water.H2O;
 import water.Job;
 import water.Key;
 import water.api.ImportHiveTableHandler;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.parser.CsvParser;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,11 +26,19 @@ import static water.parser.ParseSetup.NO_HEADER;
 @SuppressWarnings("unused") // called via reflection
 public class HiveTableImporterImpl extends AbstractH2OExtension implements ImportHiveTableHandler.HiveTableImporter {
 
-  private static String NAME = "HiveTableImporter";
+  private static final Logger LOG = Logger.getLogger(HiveTableImporterImpl.class);
 
   @Override
   public String getExtensionName() {
     return NAME;
+  }
+  
+  private HiveMetaData getMetaDataClient(String database) {
+    if (database != null && database.startsWith("jdbc:")) {
+      return new JdbcHiveMetadata(database);
+    } else {
+      return new DirectHiveMetadata(database);
+    }
   }
 
   public Job<Frame> loadHiveTable(
@@ -45,20 +47,12 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
       String[][] partitionFilter,
       boolean allowDifferentFormats
   ) throws Exception {
-    Configuration conf = new Configuration();
-    HiveConf hiveConf = new HiveConf(conf, HiveTableImporterImpl.class);
-
-    HiveMetaStoreClient client = new HiveMetaStoreClient(hiveConf);
-    if (database == null) {
-      database = DEFAULT_DATABASE;
-    }
-    Table table = client.getTable(database, tableName);
-    String targetFrame = "hive_" + database + "_" + tableName;
-    List<Partition> partitions = client.listPartitions(database, tableName, Short.MAX_VALUE);
-    if (partitions.isEmpty()) {
+    HiveMetaData.Table table = getMetaDataClient(database).getTable(tableName);
+    String targetFrame = "hive_table_" + tableName + Key.rand().substring(0, 10);
+    if (!table.hasPartitions()) {
       return loadTable(table, targetFrame);
     } else {
-      List<Partition> filteredPartitions = filterPartitions(partitions, partitionFilter);
+      List<HiveMetaData.Partition> filteredPartitions = filterPartitions(table, partitionFilter);
       if (arePartitionsSameFormat(table, filteredPartitions)) {
         return loadPartitionsSameFormat(table, filteredPartitions, targetFrame);
       } else if (allowDifferentFormats) {
@@ -69,14 +63,14 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     }
   }
   
-  private boolean arePartitionsSameFormat(Table table, List<Partition> partitions) {
-    String tableLib = table.getSd().getSerdeInfo().getSerializationLib();
-    String tableInput = table.getSd().getInputFormat();
-    Map<String, String> tableParams = table.getSd().getSerdeInfo().getParameters();
-    for (Partition part : partitions) {
-      if (!tableLib.equals(part.getSd().getSerdeInfo().getSerializationLib()) ||
-          !tableParams.equals(part.getSd().getSerdeInfo().getParameters()) ||
-          !tableInput.equals(part.getSd().getInputFormat())
+  private boolean arePartitionsSameFormat(HiveMetaData.Table table, List<HiveMetaData.Partition> partitions) {
+    String tableLib = table.getSerializationLib();
+    String tableInput = table.getInputFormat();
+    Map<String, String> tableParams = table.getSerDeParams();
+    for (HiveMetaData.Partition part : partitions) {
+      if (!tableLib.equals(part.getSerializationLib()) ||
+          !tableParams.equals(part.getSerDeParams()) ||
+          !tableInput.equals(part.getInputFormat())
       ) {
         return false;
       }
@@ -84,16 +78,16 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     return true;
   }
 
-  private List<Partition> filterPartitions(List<Partition> partitions, String[][] partitionFilter) {
+  private List<HiveMetaData.Partition> filterPartitions(HiveMetaData.Table table, String[][] partitionFilter) {
     if (partitionFilter == null || partitionFilter.length == 0) {
-      return partitions;
+      return table.getPartitions();
     }
     List<List<String>> filtersAsLists = new ArrayList<>(partitionFilter.length);
     for (String[] f : partitionFilter) {
       filtersAsLists.add(Arrays.asList(f));
     }
-    List<Partition> matchedPartitions = new ArrayList<>(partitions.size());
-    for (Partition p : partitions) {
+    List<HiveMetaData.Partition> matchedPartitions = new ArrayList<>(table.getPartitions().size());
+    for (HiveMetaData.Partition p : table.getPartitions()) {
       for (List<String> filter : filtersAsLists) {
         if (p.getValues().equals(filter)) {
           matchedPartitions.add(p);
@@ -107,8 +101,8 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     return matchedPartitions;
   }
 
-  private byte getSeparator(StorageDescriptor sd) {
-    Map<String, String> serDeParams = sd.getSerdeInfo().getParameters();
+  private byte getSeparator(HiveMetaData.Storable table) {
+    Map<String, String> serDeParams = table.getSerDeParams();
     String explicitSeparator = serDeParams.get("field.delim"); // for basic TextFormat
     if (explicitSeparator != null && !explicitSeparator.isEmpty()) {
       return (byte) explicitSeparator.charAt(0);
@@ -122,9 +116,9 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     }
   }
   
-  private ParseSetup guessTableSetup(Key[] filesKeys, Table table) {
-    ParseSetup setup = guessSetup(filesKeys, table.getSd());
-    List<FieldSchema> tableColumns = table.getSd().getCols();
+  private ParseSetup guessTableSetup(Key[] filesKeys, HiveMetaData.Table table) {
+    ParseSetup setup = guessSetup(filesKeys, table);
+    List<HiveMetaData.Column> tableColumns = table.getColumns();
     String[] columnNames = new String[tableColumns.size()];
     byte[] columnTypes = new byte[tableColumns.size()];
     fillColumnNamesAndTypes(tableColumns, columnNames, columnTypes);
@@ -140,29 +134,29 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     return parse._job;
   }
   
-  private void checkTableNotEmpty(Table table, Key[] filesKeys) {
+  private void checkTableNotEmpty(HiveMetaData.Table table, Key[] filesKeys) {
     if (filesKeys.length == 0) {
       throwTableEmpty(table);
     }
   }
 
-  private void throwTableEmpty(Table table) {
-    throw new IllegalArgumentException("Table " + table.getTableName() + " is empty. Nothing to import.");
+  private void throwTableEmpty(HiveMetaData.Table table) {
+    throw new IllegalArgumentException("Table " + table.getName() + " is empty. Nothing to import.");
   }
 
-  private Job<Frame> loadTable(Table table, String targetFrame) {
-    Key[] filesKeys = importFiles(table.getSd().getLocation());
+  private Job<Frame> loadTable(HiveMetaData.Table table, String targetFrame) {
+    Key[] filesKeys = importFiles(table.getLocation());
     checkTableNotEmpty(table, filesKeys);
     ParseSetup setup = guessTableSetup(filesKeys, table);
     return parseTable(targetFrame, filesKeys, setup);
   }
   
-  private Job<Frame> loadPartitionsSameFormat(Table table, List<Partition> partitions, String targetFrame) {
+  private Job<Frame> loadPartitionsSameFormat(HiveMetaData.Table table, List<HiveMetaData.Partition> partitions, String targetFrame) {
     List<Key> fileKeysList = new ArrayList<>();
-    int keyCount = table.getPartitionKeysSize();
+    int keyCount = table.getPartitionKeys().size();
     List<String[]> partitionValuesMap = new ArrayList<>();
-    for (Partition p : partitions) {
-      Key[] partFileKeys = importFiles(p.getSd().getLocation());
+    for (HiveMetaData.Partition p : partitions) {
+      Key[] partFileKeys = importFiles(p.getLocation());
       fileKeysList.addAll(Arrays.asList(partFileKeys));
       String[] keyValues = p.getValues().toArray(new String[0]);
       for (Key f : partFileKeys) {
@@ -176,13 +170,13 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     for (int i = 0; i < table.getPartitionKeys().size(); i++) {
       partitionKeys[i] = table.getPartitionKeys().get(i).getName();
     }
-    setup.setSyntheticColumns(partitionKeys, partitionValuesMap.toArray(new String[0][]));
+    setup.setSyntheticColumns(partitionKeys, partitionValuesMap.toArray(new String[0][]), T_STR);
     return parseTable(targetFrame, filesKeys, setup);
   }
   
-  private Job<Frame> loadPartitions(Table table, List<Partition> partitions, String targetFrame) {
-    List<FieldSchema> partitionColumns = table.getPartitionKeys();
-    List<FieldSchema> tableColumns = table.getSd().getCols();
+  private Job<Frame> loadPartitions(HiveMetaData.Table table, List<HiveMetaData.Partition> partitions, String targetFrame) {
+    List<HiveMetaData.Column> partitionColumns = table.getPartitionKeys();
+    List<HiveMetaData.Column> tableColumns = table.getColumns();
     String[] columnNames = new String[tableColumns.size()];
     byte[] columnTypes = new byte[columnNames.length];
     fillColumnNamesAndTypes(tableColumns, columnNames, columnTypes);
@@ -202,12 +196,12 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     return job.start(joiner, partitions.size()+1);
   }
 
-  private Job<Frame> parsePartition(List<FieldSchema> partitionColumns, Partition part, String targetFrame, String[] columnNames, byte[] columnTypes) {
-    Key[] files = importFiles(part.getSd().getLocation());
+  private Job<Frame> parsePartition(List<HiveMetaData.Column> partitionColumns, HiveMetaData.Partition part, String targetFrame, String[] columnNames, byte[] columnTypes) {
+    Key[] files = importFiles(part.getLocation());
     if (files.length == 0) {
       return null;
     }
-    ParseSetup setup = guessSetup(files, part.getSd());
+    ParseSetup setup = guessSetup(files, part);
     setup.setColumnNames(columnNames);
     setup.setColumnTypes(columnTypes);
     setup.setNumberColumns(columnNames.length);
@@ -215,15 +209,15 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     return parse._job;
   }
 
-  private void fillColumnNamesAndTypes(List<FieldSchema> columns, String[] columnNames, byte[] columnTypes) {
+  private void fillColumnNamesAndTypes(List<HiveMetaData.Column> columns, String[] columnNames, byte[] columnTypes) {
     for (int i = 0; i < columns.size(); i++) {
-      FieldSchema col = columns.get(i);
+      HiveMetaData.Column col = columns.get(i);
       columnNames[i] = col.getName();
       columnTypes[i] = convertHiveType(col.getType());
     }
   }
   
-  private ParseSetup guessSetup(Key[] keys, StorageDescriptor sd) {
+  private ParseSetup guessSetup(Key[] keys, HiveMetaData.Storable sd) {
     ParseSetup parseGuess = new ParseSetup();
     parseGuess.setParseType(GUESS_INFO);
     parseGuess.setSeparator(getSeparator(sd));
@@ -259,11 +253,17 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     return columnNames;
   }
 
-  private byte convertHiveType(String hiveType) {
-    switch (hiveType) {
+  static byte convertHiveType(String hiveType) {
+    return convertHiveType(hiveType, false);
+  }
+  
+  static byte convertHiveType(final String hiveType, final boolean strict) {
+    final String sanitized = sanitizeHiveType(hiveType);
+    switch (sanitized) {
       case "tinyint":
       case "smallint":
       case "int":
+      case "bigint":
       case "integer":
       case "float":
       case "double":
@@ -278,12 +278,26 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
       case "string":
       case "varchar":
       case "char":
+      case "binary": // binary could be a UTF8-encoded String (similar to what Parquet does)
         return T_STR;
       case "boolean":
         return T_CAT;
       default:
-        throw new IllegalArgumentException("Unsupported column type: " + hiveType);
+        if (strict)
+          throw new IllegalArgumentException("Unsupported column type: " + hiveType);
+        else {
+          LOG.warn("Unrecognized Hive type '" + hiveType + "'. Using String type instead.");
+          return T_STR;
+        }
     }
   }
 
+  static String sanitizeHiveType(String type) {
+    int paramIdx = type.indexOf('(');
+    if (paramIdx >= 0) {
+      type = type.substring(0, paramIdx);
+    }
+    return type.trim().toLowerCase();
+  }
+  
 }

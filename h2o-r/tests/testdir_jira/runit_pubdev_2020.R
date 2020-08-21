@@ -8,13 +8,13 @@ test1 <- function() {
   
   part1 = splits[[1]]
   i = 1
-  split_was_sequential = T
+  split_was_sequential = TRUE
   nrow_part1 = nrow(part1)
   while(i <= nrow_part1) {
     value = part1[i,"C1"]
     print(value)
     if (value != i) {
-      split_was_sequential = F
+      split_was_sequential = FALSE
     }
     
     i = i + 1

@@ -18,7 +18,7 @@ err <- as.data.frame(fith2o@model$scoring_history$training_rmse)
 REPRMSE <- err[4,]
 
 #RMSE Calculated by hand From H2O predicted values
-pred <- as.data.frame(predict(fith2o, newdata=smtreesH2O))
+pred <- as.data.frame(predict(fith2o, newdata=smtreesH2O))$predict
 diff <- pred-smtreesR[,4]
 diffsq <- diff^2
 EXPRMSE <- sqrt(mean(diffsq))

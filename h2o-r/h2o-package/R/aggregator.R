@@ -25,15 +25,21 @@
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,
-#'                       binary_fraction=0, real_range=100, integer_range=100, missing_fraction=0)
-#' target_num_exemplars=1000
-#' rel_tol_num_exemplars=0.5
-#' encoding="Eigen"
-#' agg <- h2o.aggregator(training_frame=df,
-#'                      target_num_exemplars=target_num_exemplars,
-#'                      rel_tol_num_exemplars=rel_tol_num_exemplars,
-#'                      categorical_encoding=encoding)
+#' df <- h2o.createFrame(rows = 100, 
+#'                       cols = 5, 
+#'                       categorical_fraction = 0.6, 
+#'                       integer_fraction = 0,
+#'                       binary_fraction = 0, 
+#'                       real_range = 100, 
+#'                       integer_range = 100, 
+#'                       missing_fraction = 0)
+#' target_num_exemplars = 1000
+#' rel_tol_num_exemplars = 0.5
+#' encoding = "Eigen"
+#' agg <- h2o.aggregator(training_frame = df,
+#'                      target_num_exemplars = target_num_exemplars,
+#'                      rel_tol_num_exemplars = rel_tol_num_exemplars,
+#'                      categorical_encoding = encoding)
 #' }
 #' @export
 h2o.aggregator <- function(training_frame,
@@ -82,6 +88,62 @@ h2o.aggregator <- function(training_frame,
   model@model$aggregated_frame_id <- model@model$output_frame$name
   return(model)
 }
+.h2o.train_segments_aggregator <- function(training_frame,
+                                           x,
+                                           ignore_const_cols = TRUE,
+                                           target_num_exemplars = 5000,
+                                           rel_tol_num_exemplars = 0.5,
+                                           transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
+                                           categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                                           save_mapping_frame = FALSE,
+                                           num_iteration_without_new_exemplar = 500,
+                                           export_checkpoints_dir = NULL,
+                                           segment_columns = NULL,
+                                           segment_models_id = NULL,
+                                           parallelism = 1)
+{
+  # formally define variables that were excluded from function parameters
+  model_id <- NULL
+  verbose <- NULL
+  destination_key <- NULL
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+
+  # Build parameter list to send to model builder
+  parms <- list()
+  parms$training_frame <- training_frame
+  if(!missing(x))
+    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
+
+  if (!missing(ignore_const_cols))
+    parms$ignore_const_cols <- ignore_const_cols
+  if (!missing(target_num_exemplars))
+    parms$target_num_exemplars <- target_num_exemplars
+  if (!missing(rel_tol_num_exemplars))
+    parms$rel_tol_num_exemplars <- rel_tol_num_exemplars
+  if (!missing(transform))
+    parms$transform <- transform
+  if (!missing(categorical_encoding))
+    parms$categorical_encoding <- categorical_encoding
+  if (!missing(save_mapping_frame))
+    parms$save_mapping_frame <- save_mapping_frame
+  if (!missing(num_iteration_without_new_exemplar))
+    parms$num_iteration_without_new_exemplar <- num_iteration_without_new_exemplar
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
+
+  # Build segment-models specific parameters
+  segment_parms <- list()
+  if (!missing(segment_columns))
+    segment_parms$segment_columns <- segment_columns
+  if (!missing(segment_models_id))
+    segment_parms$segment_models_id <- segment_models_id
+  segment_parms$parallelism <- parallelism
+
+  # Error check and build segment models
+  segment_models <- .h2o.segmentModelsJob('aggregator', segment_parms, parms, h2oRestApiVersion=99)
+  return(segment_models)
+}
 
 
 #' Retrieve an aggregated frame from an Aggregator model
@@ -93,15 +155,21 @@ h2o.aggregator <- function(training_frame,
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,
-#'                       binary_fraction=0, real_range=100, integer_range=100, missing_fraction=0)
-#' target_num_exemplars=1000
-#' rel_tol_num_exemplars=0.5
-#' encoding="Eigen"
-#' agg <- h2o.aggregator(training_frame=df,
-#'                      target_num_exemplars=target_num_exemplars,
-#'                      rel_tol_num_exemplars=rel_tol_num_exemplars,
-#'                      categorical_encoding=encoding)
+#' df <- h2o.createFrame(rows = 100, 
+#'                       cols = 5, 
+#'                       categorical_fraction = 0.6, 
+#'                       integer_fraction = 0,
+#'                       binary_fraction = 0, 
+#'                       real_range = 100, 
+#'                       integer_range = 100, 
+#'                       missing_fraction = 0)
+#' target_num_exemplars = 1000
+#' rel_tol_num_exemplars = 0.5
+#' encoding = "Eigen"
+#' agg <- h2o.aggregator(training_frame = df,
+#'                      target_num_exemplars = target_num_exemplars,
+#'                      rel_tol_num_exemplars = rel_tol_num_exemplars,
+#'                      categorical_encoding = encoding)
 #' # Use the aggregated frame to create a new dataframe
 #' new_df <- h2o.aggregated_frame(agg)
 #' }
