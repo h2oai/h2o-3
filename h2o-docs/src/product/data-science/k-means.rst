@@ -35,6 +35,8 @@ Defining a K-Means Model
 
 -  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment.
 
+-  **parallelize_cross_validation**: Specify whether to enable parallel training of cross-validation models.
+
 -  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for **nfolds** is specified and **fold_column** is not specified) Specify the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__.
 
 -  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the cross-validation fold index assignment per observation.
@@ -69,6 +71,8 @@ Defining a K-Means Model
  **Note**: If PlusPlus is specified, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
 
 - `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+- **max_categorical_levels**: For each categorical feature, specify a limit on the number of most frequent categorical levels used for model training.
 
 - `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
