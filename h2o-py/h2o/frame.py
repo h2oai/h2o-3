@@ -1560,10 +1560,11 @@ class H2OFrame(Keyed):
         return res
 
 
-    def unique(self):
+    def unique(self, include_nas=False):
         """
         Extract the unique values in the column.
-
+        
+        :param include_nas: If set to true, NAs are included. False (turned off) by default.
         :returns: H2OFrame of just the unique values in the column.
 
         :examples:
@@ -1573,7 +1574,7 @@ class H2OFrame(Keyed):
         >>> h2oframe = h2o.H2OFrame(python_obj=python_lists)
         >>> h2oframe.unique()
         """
-        return H2OFrame._expr(expr=ExprNode("unique", self))
+        return H2OFrame._expr(expr=ExprNode("unique", self, include_nas))
 
 
     def levels(self):
