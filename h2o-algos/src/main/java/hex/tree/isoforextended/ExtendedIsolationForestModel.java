@@ -25,7 +25,7 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
 
     @Override
     public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-        return new ModelMetricsAnomaly.MetricBuilderAnomaly("Extended Isolation Forest Metrics");
+        return new ModelMetricsAnomaly.MetricBuilderAnomaly("Extended Isolation Forest Metrics", false);
     }
 
     @Override

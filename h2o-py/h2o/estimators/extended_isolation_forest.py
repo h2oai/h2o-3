@@ -191,7 +191,7 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
     @property
     def max_depth(self):
         """
-        Maximum tree depth.
+        Maximum tree depth (0 for unlimited).
 
         Type: ``int``  (default: ``8``).
 
@@ -297,7 +297,7 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
     @property
     def build_tree_one_node(self):
         """
-        Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
+        Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.
 
         Type: ``bool``  (default: ``False``).
 

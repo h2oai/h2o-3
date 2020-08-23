@@ -52,7 +52,6 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
     @Override
     public void init(boolean expensive) {
         super.init(expensive);
-        System.out.println("init");
         if (_parms.train() != null) {
             long extensionLevelMax = _parms.train().numCols() - 1;
             if (_parms.extension_level < 0 || _parms.extension_level > extensionLevelMax) {

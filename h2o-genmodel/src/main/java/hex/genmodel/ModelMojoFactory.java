@@ -1,10 +1,11 @@
 package hex.genmodel;
 
 import hex.genmodel.algos.deeplearning.DeeplearningMojoReader;
-import hex.genmodel.algos.deepwater.DeepwaterMojoReader;
 import hex.genmodel.algos.drf.DrfMojoReader;
+import hex.genmodel.algos.gam.GamMojoReader;
 import hex.genmodel.algos.gbm.GbmMojoReader;
 import hex.genmodel.algos.glm.GlmMojoReader;
+import hex.genmodel.algos.isoforextended.ExtendedIsolationForestMojoReader;
 import hex.genmodel.algos.pca.PCAMojoReader;
 import hex.genmodel.algos.glrm.GlrmMojoReader;
 import hex.genmodel.algos.isofor.IsolationForestMojoReader;

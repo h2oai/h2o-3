@@ -241,7 +241,7 @@ class H2OEstimator(ModelBase):
         if "__class__" in parms:  # FIXME: hackt for PY3
             del parms["__class__"]
         is_auto_encoder = bool(parms.get("autoencoder"))
-        is_supervised = not(is_auto_encoder or algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest", "generic"})
+        is_supervised = not(is_auto_encoder or algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest", "extendedisolationforest", "generic"})
     
         names = training_frame.names if training_frame is not None else []
         ncols = training_frame.ncols if training_frame is not None else 0
