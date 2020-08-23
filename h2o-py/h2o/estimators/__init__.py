@@ -12,8 +12,8 @@ from .coxph import H2OCoxProportionalHazardsEstimator
 from .deeplearning import H2OAutoEncoderEstimator
 from .deeplearning import H2ODeepLearningEstimator
 from .estimator_base import H2OEstimator
-from .gam import H2OGeneralizedAdditiveEstimator
 from .extended_isolation_forest import H2OExtendedIsolationForestEstimator
+from .gam import H2OGeneralizedAdditiveEstimator
 from .gbm import H2OGradientBoostingEstimator
 from .generic import H2OGenericEstimator
 from .glm import H2OGeneralizedLinearEstimator
@@ -57,4 +57,5 @@ __all__ = (
     "H2OPrincipalComponentAnalysisEstimator", "H2OSupportVectorMachineEstimator", "H2ORandomForestEstimator",
     "H2ORuleFitEstimator", "H2OStackedEnsembleEstimator", "H2OSingularValueDecompositionEstimator",
     "H2OTargetEncoderEstimator", "H2OWord2vecEstimator", "H2OXGBoostEstimator", "H2OExtendedIsolationForestEstimator"
+
 )

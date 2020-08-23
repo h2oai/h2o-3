@@ -24,4 +24,9 @@ public final class ExtendedIsolationForestMojoModel extends SharedTreeMojoModel 
     super.scoreAllTrees(row, preds);
     return unifyPreds(row, offset, preds);
   }
+
+  @Override
+  public double getInitF() {
+    return 0;
+  }
 }
