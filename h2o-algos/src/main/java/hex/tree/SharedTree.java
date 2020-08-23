@@ -437,7 +437,7 @@ public abstract class SharedTree<
      * Build more trees, as specified by the model parameters
      * @param oob Whether or not Out-Of-Bag scoring should be performed
      */
-    protected final void scoreAndBuildTrees(boolean oob) {
+    protected void scoreAndBuildTrees(boolean oob) {
       for( int tid=0; tid< _ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         boolean scored = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
