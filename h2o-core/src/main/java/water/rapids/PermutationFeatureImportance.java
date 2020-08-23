@@ -22,9 +22,8 @@ public class PermutationFeatureImportance {
     private String _response_col; 
     
     private String[] _features; 
-    String[] _features_wo_res; // features without response col
+    private String[] _features_wo_res; // features without response col
     
-    Vec [] response_vec;
     private Model _model;
     private Frame _train_fr; // original dataset used to train model
 
@@ -37,7 +36,7 @@ public class PermutationFeatureImportance {
         init();
     }
 
-    public PermutationFeatureImportance(Model model, Frame data_set, Frame prediction_frame) {
+    public PermutationFeatureImportance(Model model, Frame data_set) {
         _model = model;
         _train_fr = data_set;
         init();
@@ -88,20 +87,18 @@ public class PermutationFeatureImportance {
     private void setOriginalMetrics(LocalMetric m) {
         ModelMetrics og_mm = ModelMetrics.getFromDKV(_model, _model._parms.train());
 //        ModelMetricsBinomial og_mm = (ModelMetricsBinomial)_model._output._training_metrics;
-
         try{
             if (_model._output.isBinomialClassifier()){ // binomial
-                if (og_mm.auc_obj() != null && !Double.isNaN(og_mm.auc_obj()._auc)){// FIXME: checck properly if modell has auc 
+                if (og_mm.auc_obj() != null && !Double.isNaN(og_mm.auc_obj()._auc)){ // check properly if model has auc 
                     m.og_auc = og_mm.auc_obj()._auc;
                 } else throw new MetricNotFoundExeption("Initial metric for binomial auc not found for model " + _model._key);
             }
             else if (_model._output.isMultinomialClassifier()) { //   multinomial
                 if (!Double.isNaN(((ModelMetricsMultinomial)og_mm)._logloss)) m.og_logloss = og_mm.mse();
             }
-//        else if (!Double.isNaN(og_mm.mse()))             m.og_mse = og_mm.mse();
             else if (_model._output.isSupervised()){
                 m.og_mse = og_mm.mse();
-            } else throw new MetricNotFoundExeption("Unhandeled model metric category for model " + _model._key);
+            } else throw new MetricNotFoundExeption("Unhandled model metric category for model " + _model._key);
         } catch (MetricNotFoundExeption e){
             System.err.println("ModelMetricCalculation threw an exception unchecked Classifier " + _model._key);
             e.printStackTrace();
@@ -134,7 +131,7 @@ public class PermutationFeatureImportance {
                     } else throw new MetricNotFoundExeption("Multinomial model doesnt have logloss " + _model._key);
                     break;
                 default:
-                    throw new MetricNotFoundExeption("Model Categoryt not supported for model" + _model._key);
+                    throw new MetricNotFoundExeption("Model Category not supported for model" + _model._key);
             }
         } catch (MetricNotFoundExeption e) {
             System.err.println("ModelMetricCalculation threw an exception unchecked Classifier " + _model._key);
@@ -168,15 +165,17 @@ public class PermutationFeatureImportance {
             // score the model again and compute diff
             Frame new_score = _model.score(_train_fr);
 
-            // set and add new metrics
+            // set and add new metrics ~ fills @param _p_var_imp needed for ModelMetrics.calcVarImp()
             pfi_m = addToFeatureToTable(pfi_m, id++, _train_fr);
             
             //return the original data
             _train_fr.replace(f, og_feature); // TODO use .add .remove methods to fix leaks (I presume)
-            Frame f_og = new Frame(Key.<Frame>make(_model._key + "_original"), _features, _train_fr.vecs());
+            Frame f_og = new Frame(Key.<Frame>make(_model._key + "_original"), _features, _train_fr.vecs());    
             DKV.put(f_og);
 
 //            DKV.put(_train_fr); // "Caller must perform global update (DKV.put) on this updated frame"
+//            f.replace(f.find(response), f.vecs()[f.find("cylinders")].toNumericVec()).remove();
+
 
             new_score.remove(); // clearing (some) leaks i think
             shuffled_feature.remove();
@@ -185,24 +184,35 @@ public class PermutationFeatureImportance {
         return ModelMetrics.calcVarImp(_p_var_imp, _features_wo_res);
     }
     
-    public TwoDimTable oat (){ return oat(0); } // default is relative value of the TwoDimTable 
+    /**
+     * Default is set to return the Relative value of the Permutation Feature Importance (PFI)
+     * */
+    public TwoDimTable oat (){ return oat(0); } 
+    
+    /**
+     * @param type {0,1,2}
+     * type 0: Relative value of PFI
+     * type 1: Scaled value of PFI
+     * type 2: Percentage value of PFI
+     * */
     
     public TwoDimTable oat(int type) {
-        int r = 4; // set 4 to 10 value
+        int r = 4; // set 4 to 10 
         TwoDimTable[] morris_FI_arr = new TwoDimTable[r];
         
-        // generate r tables of Feature importance differently shuffled
-        for (int i = 0; i < r; i++) morris_FI_arr[i] = getFeatureImportance();
-
-        System.out.println(morris_FI_arr[0]);
-
+        // Generate r tables of Feature importance differently shuffled
+        for (int i = 0; i < r; i++) 
+        {
+            morris_FI_arr[i] = getFeatureImportance();
+            System.out.println(morris_FI_arr[i]);
+        }
 
         double[] mean_FI = new double[_features_wo_res.length];
 
-        // contians mean of the absolute value and standard deviation of each features importance
-         double [][] _response = new double [_features_wo_res.length][2]; 
+        // Contains the mean of the absolute value and standard deviation of each feature's importance, hence the [2]
+         double [][] response = new double [_features_wo_res.length][2]; 
 
-        // formula (add link to thesis or paper)
+        // Calculate the mean of the absolute value of each feature's importance (add link to thesis or paper)
         for (int f = 0; f < _features_wo_res.length; f++) {
             double acc_abs = 0;
             double acc = 0;
@@ -210,27 +220,28 @@ public class PermutationFeatureImportance {
                 acc_abs += Math.abs((Double) morris_FI_arr[i].get(f, type));
                 acc += (Double) morris_FI_arr[i].get(f, type);
             }
-            _response[f][0] = (1.0 / r) * acc_abs; // for 2dTable
+            response[f][0] = (1.0 / r) * acc_abs; // for TwoDimTable column 0
             mean_FI[f] = (1.0 / r) * acc; // for the upcoming calculation
         }
 
-        // another formula 
+        // Calculate the standard deviation of each feature's importance 
         for (int f = 0; f < _features_wo_res.length; f++) {
             double inner = 0;
             for (int i = 0 ; i < r ; i++){
                 inner += Math.pow((Double) morris_FI_arr[i].get(f, type) - mean_FI[f], 2);
             }
-            _response[f][1] = Math.sqrt(1.0 / r * inner); // for 2dTable
+            response[f][1] = Math.sqrt(1.0 / r * inner); // for TwoDimTable column 1
         }
         
+        // Necessary to create the TwoDimTable
         String [] col_types = new String[2];
         String [] col_formats = new String[2];
         Arrays.fill(col_types, "double");
         Arrays.fill(col_formats, "%5f");
         
         
-        return new TwoDimTable("Morris method analysis", null, _features_wo_res, new String [] {"Mean of the absolute value tsst", "standard deviation"},
-                    col_types, col_formats, "Feature Importance", new String[_features_wo_res.length][], _response);
+        return new TwoDimTable("One At a Time", null, _features_wo_res, new String [] {"Mean of the absolute value", "standard deviation"},
+                    col_types, col_formats, "Feature Importance", new String[_features_wo_res.length][], response);
 
     }
 }
