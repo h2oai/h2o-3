@@ -1,10 +1,8 @@
 package water.rapids;
 
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
-import water.fvec.Frame;
+import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.*;
 import water.parser.BufferedString;
 import water.util.FrameUtils;
 import water.util.RandomUtils;
@@ -18,13 +16,16 @@ public class ShuffleVec {
     public static long seed(int cidx) {
         return (0xe031e74f321f7e29L + ((long) cidx << 32L));
     }
-
+    
     public static class ShuffleTask extends MRTask<ShuffleTask> {
 
         @Override
-        public void map(Chunk[] cs, NewChunk [] ncs) { //consider NewChunk oc
+        public void map(Chunk[] cs, NewChunk [] ncs) { 
             Random rand = new Random();
             long rseed = rand.nextLong();
+            
+//            if (chk instanceof C0DChunk) { // all NAs
+//            if (!chk.isNA(i)) {
             Random rng = getRNG(rseed);
             for (int col = 0; col < cs.length; ++col) {
                 Chunk curr_col = cs[col];
@@ -35,7 +36,7 @@ public class ShuffleVec {
                 }
             }
         }
-
+        
         public static Vec shuffle(Vec ivec) {
             Vec ovec = Vec.makeZero(ivec.length(), ivec.get_type());
             switch (ivec.get_type()) {
@@ -43,6 +44,10 @@ public class ShuffleVec {
                     new ShuffleTaskString().doAll(ivec, ovec).outputFrame();
                     break;
                 case Vec.T_NUM:
+                case Vec.T_CAT: // Integer
+                case Vec.T_TIME:
+                case Vec.T_BAD:
+                case Vec.T_UUID: // chk.at16l(i)
                     new ShuffleTask().doAll(ivec, ovec).outputFrame();
                     break;
                 default:
@@ -50,7 +55,7 @@ public class ShuffleVec {
 //                    new ShuffleTask().doAll(ivec, ovec).outputFrame();
                         new ShuffleTask().doAll(ivec).outputFrame();
                     } catch (Exception e){
-                        throw new IllegalArgumentException("vec type not supported yet");
+                        throw new H2OIllegalArgumentException("Unrecognized column type " + ivec.get_type_str() + "given Shuffle task");
                     }
             }
             return ovec;
