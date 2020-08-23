@@ -81,8 +81,6 @@ def test_gridsearch_specific():
     test_gam_grid.match_models()
 
 if __name__ == "__main__":
-    #h2o.init(ip='192.168.1.2', port=54321, strict_version_check=False) #Remove
     pyunit_utils.standalone_test(test_gridsearch_specific)
 else:
-    #h2o.init(ip='192.168.1.2', port=54321, strict_version_check=False) #Remove
     test_gridsearch_specific()
