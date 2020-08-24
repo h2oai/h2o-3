@@ -58,6 +58,10 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         init(false);
     }
 
+    public RuleFit(boolean startup_once) {
+        super(new RuleFitModel.RuleFitParameters(), startup_once);
+    }
+
     @Override
     public void init(boolean expensive) {
         super.init(expensive);
@@ -103,8 +107,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             } else if (_nclass == 2) { // binomial classification
                 _parms._glm_params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.binomial);
             } else { // multinomial classification
-                // TODO: multinomial cases not supported yet
-                throw new UnsupportedOperationException("Multinomial cases are not supported yet for RuleFit.");
+                _parms._glm_params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.multinomial);
             }
             _parms._glm_params._response_column = _parms._response_column;
         } else {
@@ -141,6 +144,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 // TODO: move this to some distributed task
                 Frame paths = null;
                 Key[] keys = new Key[depths.length];
+                // prepare rules
                 for (int modelId = 0; modelId < depths.length; modelId++) {
                     SharedTreeModel treeModel = trainTreeModel(_parms._algorithm, depths[modelId]);
                     treeModels.add(treeModel);
@@ -152,6 +156,13 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                     keys[modelId] = paths._key;
                     DKV.put(paths);
                     DKV.put(treeModel);
+                }
+                // prepare linear terms
+                if (RuleFitModel.ModelType.RulesAndLinear.equals(_parms._model_type)) {
+                    Frame adaptFrm = new Frame(_train.deepCopy(null));
+                    adaptFrm.remove(_parms._response_column);
+                    adaptFrm.setNames(RuleFitUtils.getLinearNames(adaptFrm.numCols(), adaptFrm.names()));
+                    pathsFrame.add(adaptFrm);
                 }
                 DKV.put(pathsFrame);
 
@@ -244,11 +255,12 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             double[] lambdas = regularizationPath._lambdas;
             int bestLambdaIndex;
 
-            if (deviance.length < 5) {
+            
+//            if (deviance.length < 5) {
                 bestLambdaIndex = deviance.length - 1;
-            } else {
-                bestLambdaIndex = getBestLambdaIndex(deviance);
-            }
+//            } else {
+//                bestLambdaIndex = getBestLambdaIndex(deviance); // todo can happen that bestLambdaIndex > lambdas.length
+//            }
 
             lambdaModel.remove();
             return new double[]{lambdas[bestLambdaIndex]};
@@ -307,7 +319,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
 
         List getRules(GLMModel.GLMParameters.Family family, HashMap<String, Double> glmCoefficients, List<SharedTreeModel> treeModels, RuleFitModel.Algorithm algorithm) {
-            // extract variable-coefficient map
+            // extract variable-coefficient map (filter out intercept and zero betas)
             Map<String, Double> filteredRules = glmCoefficients.entrySet()
                     .stream()
                     .filter(e -> !"Intercept".equals(e.getKey()) && 0 != e.getValue())
@@ -320,14 +332,16 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
             for (Map.Entry<String, Double> entry : filteredRules.entrySet()) {
                 Rule rule = mapColumnName(entry.getKey(), family);
-
-                args = new TreeV3();
-                args.model = new KeyV3.ModelKeyV3(treeModels.get(rule.modelIdx)._key);
-                args.tree_class = rule.treeClass;
-                args.tree_number = rule.treeNum;
-
-                tree = treeHandler.getTree(3, args);
-                rule.languageRule = treeTraverser(tree, rule.path);
+                
+                if (!rule.variable.startsWith("linear.")) {
+                    args = new TreeV3();
+                    args.model = new KeyV3.ModelKeyV3(treeModels.get(rule.modelIdx)._key);
+                    args.tree_class = rule.treeClass;
+                    args.tree_number = rule.treeNum;
+    
+                    tree = treeHandler.getTree(3, args);
+                    rule.languageRule = treeTraverser(tree, rule.path);
+                }
                 rule.coefficient = entry.getValue();
 
                 rules.add(rule);
@@ -344,10 +358,25 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             Rule rule;
             if (GLMModel.GLMParameters.Family.binomial.equals(family)) {
                 String[] extractedFields = columnName.replace("tree_", "").replace("T", "").replace("C", "").split("\\.");
-                rule = new Rule(columnName, Integer.parseInt(extractedFields[0]), Integer.parseInt(extractedFields[1]) - 1, String.valueOf(Integer.parseInt(extractedFields[2]) - 1), extractedFields[3]);
+                if ("linear".equals(extractedFields[0])) {
+                    rule = new Rule(columnName); 
+                } else {
+                    rule = new Rule(columnName, Integer.parseInt(extractedFields[0]), Integer.parseInt(extractedFields[1]) - 1, null, extractedFields[3]);
+                }
+            } else if (GLMModel.GLMParameters.Family.multinomial.equals(family)) {
+                String[] extractedFields = columnName.replace("tree_", "").replace("T", "").replace("C", "").split("\\.");
+                if ("linear".equals(extractedFields[0])) {
+                    rule = new Rule(columnName);
+                } else {
+                    rule = new Rule(columnName, Integer.parseInt(extractedFields[0]), Integer.parseInt(extractedFields[1]) - 1, String.valueOf(Integer.parseInt(extractedFields[2]) - 1), extractedFields[3]);
+                }
             } else {
                 String[] extractedFields = columnName.replace("tree_", "").replace("T", "").split("\\.");
-                rule = new Rule(columnName, Integer.parseInt(extractedFields[0]), Integer.parseInt(extractedFields[1]) - 1, null, extractedFields[2]);
+                if ("linear".equals(extractedFields[0])) {
+                    rule = new Rule(columnName);
+                } else {
+                    rule = new Rule(columnName, Integer.parseInt(extractedFields[0]), Integer.parseInt(extractedFields[1]) - 1, null, extractedFields[2]);
+                }
             }
             return rule;
         }
@@ -422,9 +451,9 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
     }
 
     private String formattedRule(String rule) {
-        rule = rule.substring(rule.indexOf('\n') + 1); // remove line with Prediction value + dart leading to it 
-        rule = rule.replace("^\n" + "|\n" + "|\n" + "|\n", "");
+        rule = rule.substring(rule.indexOf('\n') + 1); // remove line with Prediction value
         rule = rule.replace("\n" + "^\n" + "|\n" + "|\n" + "|\n", " AND "); // replace parent to children darts by AND
+        rule = rule.replace("^\n" + "|\n" + "|\n" + "|\n", ""); // remove dart leadind to Prediction value
         rule = rule.replace("If ", "");
         rule = rule.replace("  ]", "]");
         rule = rule.replace("( ", "(");
@@ -448,6 +477,10 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             this.treeClass = treeClass;
             this.path = path;
             this.languageRule = null;
+        }
+
+        public Rule(String variable) {
+            this.variable = variable;
         }
 
         double getAbsCoefficient() {

@@ -9,4 +9,12 @@ public class RuleFitUtils {
         }
         return pathNames;
     }
+
+    public static String[] getLinearNames(int numCols, String[] names) {
+        String[] pathNames = new String[numCols];
+        for (int i = 0; i < numCols; i++) {
+            pathNames[i] = "linear." + names[i];
+        }
+        return pathNames;
+    }
 }

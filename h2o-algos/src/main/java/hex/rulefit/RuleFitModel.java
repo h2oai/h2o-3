@@ -13,6 +13,8 @@ import water.util.TwoDimTable;
 public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParameters, RuleFitModel.RuleFitOutput> {
     public enum Algorithm {DRF, /*XGBOOST,*/ GBM, AUTO}
 
+    public enum ModelType {Rules, RulesAndLinear}
+
     @Override
     public ToEigenVec getToEigenVec() {
         return LinearAlgebraUtils.toEigen;
@@ -40,7 +42,7 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
             return RuleFit.WORK_TOTAL;
         }
 
-        // the algorithm to use to generate rules. Options are "DRF" (default), "XGBoost", "GBM"
+        // the algorithm to use to generate rules. Options are "DRF" (default), "GBM"
         public Algorithm _algorithm = Algorithm.AUTO;
 
         // minimum length of rules. Defaults to 1.
@@ -59,6 +61,8 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         // additional parameters that can be passed to the linear model. Defaults to null.
         public GLMModel.GLMParameters _glm_params = null;
 
+        public ModelType _model_type = ModelType.RulesAndLinear;
+        
         // TODO: parametrize other options according to http://statweb.stanford.edu/~jhf/ftp/RuleFit.pdf and http://statweb.stanford.edu/~jhf/R_RuleFit.html
     }
 
@@ -112,6 +116,11 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         Frame pathsFrame = new Frame(Key.make("paths_frame" + destination_key));
         Frame paths = null;
         Key[] keys = new Key[_output.treeModelsKeys.length];
+        if (ModelType.RulesAndLinear.equals(this._parms._model_type)) {
+            Frame adaptFrm = new Frame(fr.deepCopy(null));
+            adaptFrm.setNames(RuleFitUtils.getLinearNames(adaptFrm.numCols(), adaptFrm.names()));
+            pathsFrame.add(adaptFrm);
+        }
         for (int i = 0; i < _output.treeModelsKeys.length; i++) {
             SharedTreeModel treeModel = DKV.getGet(_output.treeModelsKeys[i]);
             paths = treeModel.scoreLeafNodeAssignment(fr, Model.LeafNodeAssignment.LeafNodeAssignmentType.Path, Key.make("path_" + i + destination_key));
