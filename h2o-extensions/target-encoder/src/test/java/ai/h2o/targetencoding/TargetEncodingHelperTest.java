@@ -318,7 +318,7 @@ public class TargetEncodingHelperTest extends TestUtil {
               .withDataForCol(0, ard(1, 2, 3))
               .withDataForCol(1, ard(3, 4, 5))
               .build();
-      double result = calculatePriorMean(fr);
+      double result = TargetEncoderHelper.computePriorMean(fr);
       assertEquals(result, 0.5, 1e-5);
     } finally {
       Scope.exit();

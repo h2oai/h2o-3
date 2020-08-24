@@ -13,14 +13,13 @@ public class TargetEncoderMojoModel extends MojoModel {
   public static double computeBlendedEncoding(double lambda, double posteriorMean, double priorMean) {
     return lambda * posteriorMean + (1 - lambda) * priorMean;
   }
-
+  
   public EncodingMaps _targetEncodingMap;
   public Map<String, Integer> _columnNameToIdx;
   public Map<String, Boolean> _teColumn2HasNAs; // tells if a given encoded column has NAs
   public boolean _withBlending;
   public double _inflectionPoint;
   public double _smoothing;
-  public double _priorMean;
 
   /**
    * Whether during training of the model unknown categorical level was imputed with NA level. 
@@ -31,11 +30,15 @@ public class TargetEncoderMojoModel extends MojoModel {
 
   public TargetEncoderMojoModel(String[] columns, String[][] domains, String responseName) {
     super(columns, domains, responseName);
-
-    _columnNameToIdx = new HashMap<>(columns.length);
-    for (int i = 0; i < columns.length - 1; i++) {
-      _columnNameToIdx.put(columns[i], i);
+    _columnNameToIdx = name2Idx(columns);
+  }
+  
+  private Map<String, Integer> name2Idx(String[] columns) {
+    Map<String, Integer> nameToIdx = new HashMap<>(columns.length);
+    for (int i = 0; i < columns.length; i++) {
+      nameToIdx.put(columns[i], i);
     }
+    return nameToIdx;
   }
 
   @Override
@@ -48,27 +51,24 @@ public class TargetEncoderMojoModel extends MojoModel {
       Map<String, EncodingMap> sortedByColumnIndex = sortByColumnIndex(_targetEncodingMap.encodingMap());
 
       for (Map.Entry<String, EncodingMap> columnToEncodingsMap : sortedByColumnIndex.entrySet() ) {
-        EncodingMap encodings = columnToEncodingsMap.getValue();
-
         String teColumn = columnToEncodingsMap.getKey();
+        EncodingMap encodings = columnToEncodingsMap.getValue();
         int colIdx = _columnNameToIdx.get(teColumn);
+        double category = row[colIdx]; 
         
-        double categoricalLevel = row[colIdx]; 
-        
-        if (Double.isNaN(categoricalLevel)) {
+        if (Double.isNaN(category)) {
           if (_imputeUnknownLevels) {
             if (_teColumn2HasNAs.get(teColumn)) {
-              int naLevel = encodings._encodingMap.size() - 1;
-              computeEncodings(preds, predsIdx, encodings, naLevel);
+              computeEncodings(preds, predsIdx, encodings, encodings.getNACategory());
             } else { // imputation was enabled but we didn't encounter missing values in training data so using `_priorMean`
-              preds[predsIdx] = _priorMean;
+              preds[predsIdx] = encodings.getPriorMean();
             }
           } else {
-            preds[predsIdx] = _priorMean;
+            preds[predsIdx] = encodings.getPriorMean();
           }
         } else {
           //It is assumed that categorical levels are only represented with int values
-          computeEncodings(preds, predsIdx, encodings, (int)categoricalLevel);
+          computeEncodings(preds, predsIdx, encodings, (int)category);
         }
         predsIdx++;
       }
@@ -79,14 +79,14 @@ public class TargetEncoderMojoModel extends MojoModel {
     return preds;
   }
 
-  private void computeEncodings(double[] preds, int idx, EncodingMap encodings, int categoryLevel) {
-    double[] numDen = encodings._encodingMap.get(categoryLevel);
+  private void computeEncodings(double[] preds, int idx, EncodingMap encodings, int category) {
+    double[] numDen = encodings.getNumDen(category);
     double posteriorMean = numDen[0] / numDen[1];
 
     if (_withBlending) {
       long rowsCountWithCategory = (long)numDen[1];
       double lambda = computeLambda(rowsCountWithCategory, _inflectionPoint, _smoothing);
-      double blendedValue = computeBlendedEncoding(lambda, posteriorMean, _priorMean);
+      double blendedValue = computeBlendedEncoding(lambda, posteriorMean, encodings.getPriorMean());
       preds[idx] = blendedValue;
     } else {
       preds[idx] = posteriorMean;

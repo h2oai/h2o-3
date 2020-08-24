@@ -93,7 +93,7 @@ public class TargetEncodingExceptionsHandlingTest extends TestUtil {
           Scope.track(teModel.score(fr));
           fail("should not be raised");
         } catch (AssertionError ex) {
-          assertEquals("calculatePriorMean", ex.getStackTrace()[0].getMethodName());
+          assertEquals("computePriorMean", ex.getStackTrace()[0].getMethodName());
         }
       } finally {
         Scope.exit();

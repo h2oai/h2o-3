@@ -81,20 +81,18 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
           throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(TargetEncoder.this);
 
         TargetEncoderModel.TargetEncoderOutput emptyOutput =
-                new TargetEncoderModel.TargetEncoderOutput(TargetEncoder.this, new IcedHashMap<>(), Double.NaN);
+                new TargetEncoderModel.TargetEncoderOutput(TargetEncoder.this, new IcedHashMap<>());
         TargetEncoderModel model = new TargetEncoderModel(dest(), _parms, emptyOutput);
         _targetEncoderModel = model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
 
         IcedHashMap<String, Frame> _targetEncodingMap = prepareEncodingMap();
-        // Mean could be computed from any encoding map as response column is shared
-        double priorMean = calculatePriorMean(_targetEncodingMap.entrySet().iterator().next().getValue());
 
         for (Map.Entry<String, Frame> entry : _targetEncodingMap.entrySet()) {
-          Frame frameWithEncodingMap = entry.getValue();
-          Scope.untrack(frameWithEncodingMap.keys());
+          Frame encodings = entry.getValue();
+          Scope.untrack(encodings);
         }
 
-        _targetEncoderModel._output = new TargetEncoderModel.TargetEncoderOutput(TargetEncoder.this, _targetEncodingMap, priorMean);
+        _targetEncoderModel._output = new TargetEncoderModel.TargetEncoderOutput(TargetEncoder.this, _targetEncodingMap);
         _job.update(1);
       } catch (Exception e) {
         if (_targetEncoderModel != null) {

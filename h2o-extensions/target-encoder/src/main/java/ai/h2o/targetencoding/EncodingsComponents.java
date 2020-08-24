@@ -4,7 +4,7 @@ import water.Iced;
 
 class EncodingsComponents extends Iced<EncodingsComponents> {
 
-  private int _class = -1;
+  private int _targetclass = -1;
   private double _numerator;
   private long _denominator;
 
@@ -13,18 +13,18 @@ class EncodingsComponents extends Iced<EncodingsComponents> {
     _denominator = denominator;
   }
 
-  public EncodingsComponents(int cls, double numerator, long denominator) {
-    _class = cls;
+  public EncodingsComponents(int targetclass, double numerator, long denominator) {
+    _targetclass = targetclass;
     _numerator = numerator;
     _denominator = denominator;
   }
   
   public boolean hasTargetClass() {
-    return _class >= 0;
+    return _targetclass >= 0;
   }
 
   public int getTargetClass() {
-    return _class;
+    return _targetclass;
   }
 
   public double getNumerator() {
