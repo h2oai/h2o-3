@@ -239,11 +239,11 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         public void print() {
             for (int i = 0; i < _nodes.length; i++) {
                 if (_nodes[i] == null)
-                    System.out.print(". ");
+                    Log.debug(". ");
                 else
-                    System.out.print(_nodes[i]._numRows + " ");
+                    Log.debug(_nodes[i]._numRows + " ");
             }
-            System.out.println("");
+            Log.debug("");
         }
 
         /**
@@ -252,11 +252,11 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         public void printHeight() {
             for (int i = 0; i < _nodes.length; i++) {
                 if (_nodes[i] == null)
-                    System.out.print(". ");
+                    Log.debug(". ");
                 else
-                    System.out.print(_nodes[i]._height + " ");
+                    Log.debug(_nodes[i]._height + " ");
             }
-            System.out.println("");
+            Log.debug("");
         }
 
         /**
