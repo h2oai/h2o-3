@@ -18,7 +18,7 @@ This option specifies the encoding scheme to use for handling categorical featur
   - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
   - ``label_encoder`` or ``LabelEncoder``: Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.) The categories are lexicographically mapped to numbers and lose their categorical nature, becoming ordinal. After the strings are mapped to integers, you can split {0, 1, 2, 3, 4, 5} as {0, 1, 2} and {3, 4, 5}.
-  - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. Note that this requires a specified response column.
+  - ``sort_by_response`` or ``SortByResponse``:(GBM/DRF) Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. Note that this requires a specified response column.
 
 **Deep Learning**
 
@@ -46,7 +46,6 @@ This option specifies the encoding scheme to use for handling categorical featur
   - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels
   - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels
   - ``binary``: No more than 32 columns per categorical feature
-  - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
   - ``label_encoder`` or ``LabelEncoder``: Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.) The categories are lexicographically mapped to numbers and lose their categorical nature, becoming ordinal. After the strings are mapped to integers, you can split {0, 1, 2, 3, 4, 5} as {0, 1, 2} and {3, 4, 5}. 
   - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. Note that this requires a specified response column.
   - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** (10) most frequent levels, and then internally do one hot encoding in the case of XGBoost.
@@ -59,6 +58,8 @@ This option specifies the encoding scheme to use for handling categorical featur
   - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
   - ``label_encoder`` or ``LabelEncoder``: Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.) The categories are lexicographically mapped to numbers and lose their categorical nature, becoming ordinal. After the strings are mapped to integers, you can split {0, 1, 2, 3, 4, 5} as {0, 1, 2} and {3, 4, 5}.
+  - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). Note that this requires a specified response column.
+  - ``enum_limited`` or ``EnumLimited``: Automatically reduce cateforical levels to the most prevalent ones during training and only keep the **T** (10) most frequent levels.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

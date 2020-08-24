@@ -78,7 +78,6 @@ Defining an Isolation Forest Model
   - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
   - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
-  - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. Note that this requires a specified response column.
 
 -  `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for
    **stopping\_metric** doesn't improve for the specified number of
