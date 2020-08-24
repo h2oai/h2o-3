@@ -84,7 +84,7 @@ public class TargetEncodingOnMulticlassTest extends TestUtil {
       Scope.track_generic(teModel);
       Frame encodings = teModel._output._target_encoding_map.get("categorical");
       printOutFrameAsTable(encodings);
-      double priorMean = teModel._output._prior_mean;
+      double priorMean = TargetEncoderHelper.computePriorMean(encodings);
       assertEquals(0.556, priorMean, 1e-3); // == 5/9
 
       Vec expectedCatColumn = vec(ar("a", "b", "categorical_NA"), 0, 1, 2); //  we should have an entry per category
@@ -149,7 +149,7 @@ public class TargetEncodingOnMulticlassTest extends TestUtil {
       Scope.track_generic(teModel);
       Frame encodings = teModel._output._target_encoding_map.get("categorical");
       printOutFrameAsTable(encodings);
-      double priorMean = teModel._output._prior_mean;
+      double priorMean = TargetEncoderHelper.computePriorMean(encodings);
       assertEquals(0.6, priorMean, 1e-3); // == 6/10
 
       Vec expectedCatColumn = vec(ar("a", "b", "c", "categorical_NA"), 0, 1, 2, 3); //  we should have an entry per category
@@ -220,7 +220,7 @@ public class TargetEncodingOnMulticlassTest extends TestUtil {
       Scope.track_generic(teModel);
       Frame encodings = teModel._output._target_encoding_map.get("categorical");
       printOutFrameAsTable(encodings);
-      double priorMean = teModel._output._prior_mean;
+      double priorMean = TargetEncoderHelper.computePriorMean(encodings);
       assertEquals(0.6, priorMean, 1e-3); // == 6/10
 
       Vec expectedCatColumn = vec(ar("a", "b", "c", "categorical_NA"), 0, 1, 2, 3, 0, 1, 3); // for each fold value, we should have an entry per category (except for 'c', only in fold 0)

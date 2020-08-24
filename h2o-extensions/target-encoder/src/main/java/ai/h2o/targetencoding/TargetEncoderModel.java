@@ -70,20 +70,20 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   }
 
   public static class TargetEncoderOutput extends Model.Output {
+
+    public final TargetEncoderParameters _parms;
+    public final int _nclasses;
+    public final IcedHashMap<String, Frame> _target_encoding_map;
+    public final IcedHashMap<String, Boolean> _te_column_to_hasNAs;
     
-    public IcedHashMap<String, Frame> _target_encoding_map;
-    public TargetEncoderParameters _parms;
-    public IcedHashMap<String, Boolean> _te_column_to_hasNAs;
-    public double _prior_mean;
-    
-    public TargetEncoderOutput(TargetEncoder b, IcedHashMap<String, Frame> teMap, double priorMean) {
+    public TargetEncoderOutput(TargetEncoder b, IcedHashMap<String, Frame> teMap) {
       super(b);
-      _target_encoding_map = teMap;
       _parms = b._parms;
+      _nclasses = b.nclasses();
+      _target_encoding_map = teMap;
       _model_summary = constructSummary();
 
       _te_column_to_hasNAs = buildCol2HasNAsMap();
-      _prior_mean = priorMean;
     }
 
     private IcedHashMap<String, Boolean> buildCol2HasNAsMap() {
@@ -269,7 +269,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
         String encodedColumn = columnToEncode + ENCODED_COLUMN_POSTFIX;
         Frame encodings = columnToEncodings.get(columnToEncode);
-        double priorMean = calculatePriorMean(encodings);
+        double priorMean = TargetEncoderHelper.computePriorMean(encodings);
         int teColumnIdx = encodedFrame.find(columnToEncode);
         int encodingsTEColIdx = encodings.find(columnToEncode);
 

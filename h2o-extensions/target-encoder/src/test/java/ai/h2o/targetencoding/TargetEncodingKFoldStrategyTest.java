@@ -277,7 +277,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
         
         printOutFrameAsTable(encoded, false, encoded.numRows());
         Frame encodings = teModel._output._target_encoding_map.get("categorical");
-        double priorMean = calculatePriorMean(encodings);
+        double priorMean = TargetEncoderHelper.computePriorMean(encodings);
         assertEquals(.8, priorMean, 1e-6);
         // We expect that for `c` level we will get global priorMean. Maybe we should have instead priorMean on all folds but 3 -> 0.75
         Vec expected = dvec(1.0, 1.0, 0.8, 1, 0.0);
@@ -362,7 +362,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
       Vec catEnc = encoded.vec("categorical_te");
       printOutFrameAsTable(encoded);
       
-      double priorMean = teModel._output._prior_mean;
+      double priorMean = TargetEncoderHelper.computePriorMean(teModel._output._target_encoding_map.get("categorical"));
       BlendingParams bp = teModel._parms.getBlendingParameters();
 
       // values below obtained empirically with default blending params (10, 20): should not change as soon as we don't change those default values. 
@@ -454,7 +454,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
         printOutFrameAsTable(encoded, false, 100);
         
         Frame encodings = teModel._output._target_encoding_map.get("categorical");
-        double priorMean = calculatePriorMean(encodings);
+        double priorMean = TargetEncoderHelper.computePriorMean(encodings);
         assertEquals(.571429, priorMean, 1e-6);
 
         Vec catEnc = encoded.vec("categorical_te");
@@ -649,7 +649,11 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
       TargetEncoder te = new TargetEncoder(teParams);
       TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
-      assertEquals(0.8, teModel._output._prior_mean, 1e-6);
+      
+      double priorMean1 = TargetEncoderHelper.computePriorMean(teModel._output._target_encoding_map.get("cat1"));
+      double priorMean2 = TargetEncoderHelper.computePriorMean(teModel._output._target_encoding_map.get("cat2"));
+      assertEquals(0.8, priorMean1, 1e-6);
+      assertEquals(0.8, priorMean2, 1e-6);
 
       Frame encoded = teModel.transform(test);
       Scope.track(encoded);

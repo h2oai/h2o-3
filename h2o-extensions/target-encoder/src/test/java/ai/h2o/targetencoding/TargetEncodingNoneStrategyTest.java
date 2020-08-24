@@ -290,7 +290,11 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
       TargetEncoder te = new TargetEncoder(teParams);
       TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
-      assertEquals(0.8, teModel._output._prior_mean, 1e-6);
+
+      double priorMean1 = TargetEncoderHelper.computePriorMean(teModel._output._target_encoding_map.get("cat1"));
+      double priorMean2 = TargetEncoderHelper.computePriorMean(teModel._output._target_encoding_map.get("cat2"));
+      assertEquals(0.8, priorMean1, 1e-6);
+      assertEquals(0.8, priorMean2, 1e-6);
 
       Frame encoded = teModel.transform(test);
       Scope.track(encoded);

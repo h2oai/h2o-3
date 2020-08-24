@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Random;
 
 import static ai.h2o.targetencoding.TargetEncoderHelper.addKFoldColumn;
-import static ai.h2o.targetencoding.TargetEncoderMojoWriter.convertEncodingMapValues;
 import static hex.genmodel.algos.targetencoder.TargetEncoderMojoModel.computeBlendedEncoding;
 import static hex.genmodel.algos.targetencoder.TargetEncoderMojoModel.computeLambda;
 import static org.junit.Assert.assertEquals;
@@ -199,9 +198,9 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
   }
 
   private double getEncodedCategory(Frame fr, String categoricalColumn, String category, EncodingMaps encodingMaps) {
-    int factorIndex = ArrayUtils.find(fr.vec(categoricalColumn).domain(), category);
-    double[] encodingComponents = encodingMaps.get(categoricalColumn).get(factorIndex);
-    return encodingComponents[0] / encodingComponents[1];
+    int catVal = ArrayUtils.find(fr.vec(categoricalColumn).domain(), category);
+    double[] numDen = encodingMaps.get(categoricalColumn).getNumDen( catVal);
+    return numDen[0] / numDen[1];
   }
 
   @Test
@@ -325,17 +324,16 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
       // Check that specified in the test categorical columns have been encoded in accordance with encoding map
       // We reusing static helper methods from TargetEncoderMojoModel as it is not the point of current test to check them.
       // We want to check here that proper blending params were being used during `.transformWithTargetEncoding()` transformation
-      EncodingMaps convertedEncodingMap = convertEncodingMapValues(teMap);
+      EncodingMaps loadedEncodingMap = loadedMojoModel._targetEncodingMap;
 
       String teColumn = "home.dest";
-      EncodingMap encodings = convertedEncodingMap.get(teColumn);
-
-      // Checking that priorMean was written and loaded properly
-      assertEquals(teModel._output._prior_mean, loadedMojoModel._priorMean, 1e-5);
-      double expectedPriorMean = loadedMojoModel._priorMean;
+      EncodingMap encodings = loadedEncodingMap.get(teColumn);
+      
+      double expectedPriorMean = TargetEncoderHelper.computePriorMean(teMap.get("embarked"));
+      assertEquals(expectedPriorMean, encodings.getPriorMean(), 1e-6);
       // Checking that predictions from Mojo model and manually computed ones are equal
       int homeDestIndex = ArrayUtils.find(fr.vec(teColumn).domain(), homeDestCat);
-      double[] homeDestEncComponents = encodings.get(homeDestIndex);
+      double[] homeDestEncComponents = encodings.getNumDen(homeDestIndex);
       double posteriorMean = homeDestEncComponents[0] / homeDestEncComponents[1];
       double expectedLambda = computeLambda((long)homeDestEncComponents[1], teParams._inflection_point, teParams._smoothing);
       double expectedBlendedEncoding = computeBlendedEncoding(expectedLambda, posteriorMean, expectedPriorMean);

@@ -50,7 +50,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       // encodings has denominator=1 for 'b'
       // so when applying TE with LOO strategy on 'b', it will substract 1, giving a 0 denominator.
       // TargetEncoderModel should handle this and encode 'b' as priorMean value in this case.
-      double priorMean = calculatePriorMean(encodings);
+      double priorMean = TargetEncoderHelper.computePriorMean(encodings);
       assertEquals(2./3, priorMean, 1e-6);
       
       Frame encoded = teModel.transformTraining(fr);
@@ -115,7 +115,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       Vec catEnc = encoded.vec("categorical_te");
 
       Frame encodings = teModel._output._target_encoding_map.get("categorical");
-      double priorMean = calculatePriorMean(encodings);
+      double priorMean = TargetEncoderHelper.computePriorMean(encodings);
       assertEquals(2./3, priorMean, 1e-6);
       
       // For level `c` and `d` we got only one row... so after leave one out subtraction we get `0` for denominator.
@@ -151,7 +151,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       Scope.track_generic(teModel);
 
       Frame encodings = teModel._output._target_encoding_map.get("categorical");
-      double priorMean = calculatePriorMean(encodings);
+      double priorMean = TargetEncoderHelper.computePriorMean(encodings);
       assertEquals(.6, priorMean, 1e-6);
 
       Frame encoded = teModel.transformTraining(fr);
@@ -190,7 +190,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       Scope.track_generic(teModel);
 
       Frame encodings = teModel._output._target_encoding_map.get("categorical");
-      double priorMean = calculatePriorMean(encodings);
+      double priorMean = TargetEncoderHelper.computePriorMean(encodings);
       assertEquals(.6, priorMean, 1e-6);
 
       Frame encoded = teModel.transformTraining(fr);
@@ -237,7 +237,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       Scope.track_generic(teModel1);
 
       Frame encodings = teModel1._output._target_encoding_map.get("categorical");
-      double priorMean = calculatePriorMean(encodings);
+      double priorMean = TargetEncoderHelper.computePriorMean(encodings);
       assertEquals(.6, priorMean, 1e-6);
 
       Frame encoded1 = teModel1.transformTraining(fr1);
@@ -552,7 +552,11 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       TargetEncoder te = new TargetEncoder(teParams);
       TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
-      assertEquals(0.8, teModel._output._prior_mean, 1e-6);
+      
+      double priorMean1 = TargetEncoderHelper.computePriorMean(teModel._output._target_encoding_map.get("cat1"));
+      double priorMean2 = TargetEncoderHelper.computePriorMean(teModel._output._target_encoding_map.get("cat2"));
+      assertEquals(0.8, priorMean1, 1e-6);
+      assertEquals(0.8, priorMean2, 1e-6);
 
       Frame encoded = teModel.transform(test);
       Scope.track(encoded);
