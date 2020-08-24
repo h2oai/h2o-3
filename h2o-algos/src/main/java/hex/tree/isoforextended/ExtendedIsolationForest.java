@@ -353,23 +353,30 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
 
         @Override
         public void compute2() {
-            int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
-            int randomUnit = _rand.nextInt();
+            try {
+                Scope.enter();
+                int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
+                int randomUnit = _rand.nextInt();
 
-            // remove auto generated features
-            byte[] subTypes = ArrayUtils.subarray(_train.types(), 0, _train.numCols() - 4);
-            Vec[] subFrame = ArrayUtils.subarray(_train.vecs(), 0, _train.numCols() - 4);
-            String[] subNames = ArrayUtils.subarray(_train.names(), 0, _train.numCols() - 4);
-            String[][] subDomains = ArrayUtils.subarray2DLazy(_train.domains(), 0, _train.numCols() - 4);
+                // remove auto generated features
+                byte[] subTypes = ArrayUtils.subarray(_train.types(), 0, _train.numCols() - 4);
+                Vec[] subFrame = ArrayUtils.subarray(_train.vecs(), 0, _train.numCols() - 4);
+                String[] subNames = ArrayUtils.subarray(_train.names(), 0, _train.numCols() - 4);
+                String[][] subDomains = ArrayUtils.subarray2DLazy(_train.domains(), 0, _train.numCols() - 4);
 
-            Frame subSample = new SubSampleTask(_parms._sample_size, _parms._seed + randomUnit)
-                    .doAll(subTypes, subFrame).outputFrame(Key.make(), subNames, subDomains);
+                Frame subSample = new SubSampleTask(_parms._sample_size, _parms._seed + randomUnit)
+                        .doAll(subTypes, subFrame).outputFrame(Key.make(), subNames, subDomains);
 
-            this.iTree = new IsolationTree(subSample._key, heightLimit, _parms._seed + randomUnit, _parms.extension_level);
-            this.iTree.buildTree();
-//            this.iTree.print();
-//            iTree.printHeight();
-            tryComplete();
+                iTree = new IsolationTree(subSample._key, heightLimit, _parms._seed + randomUnit, _parms.extension_level);
+                iTree.buildTree();
+                if (Log.isLoggingFor(Log.DEBUG)) {
+                    iTree.print();
+                    iTree.printHeight();   
+                }
+                tryComplete();
+            } finally {
+                Scope.exit();
+            }
         }
 
         /** Blocking call to obtain a result of computation. */
