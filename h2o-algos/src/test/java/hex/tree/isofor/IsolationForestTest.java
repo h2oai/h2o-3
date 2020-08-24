@@ -3,10 +3,14 @@ package hex.tree.isofor;
 import hex.ConfusionMatrix;
 import hex.ModelMetricsBinomial;
 import hex.ScoreKeeper;
+import hex.genmodel.GenModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import hex.genmodel.tools.PredictCsv;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import water.Scope;
 import water.TestUtil;
 import water.exceptions.H2OIllegalArgumentException;
@@ -16,18 +20,23 @@ import water.fvec.Vec;
 import water.test.util.ConfusionMatrixUtils;
 import water.util.ArrayUtils;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Random;
 
 import static org.junit.Assert.*;
 
 public class IsolationForestTest extends TestUtil {
 
+  @Rule
+  public transient TemporaryFolder tempFolder = new TemporaryFolder();
+
   @BeforeClass() public static void setup() {
     stall_till_cloudsize(1);
   }
 
   @Test
-  public void testBasic() {
+  public void testBasic() throws Exception {
     try {
       Scope.enter();
       Frame train = Scope.track(parse_test_file("smalldata/anomaly/ecg_discord_train.csv"));
@@ -48,6 +57,20 @@ public class IsolationForestTest extends TestUtil {
       assertEquals(train.numRows(), preds.numRows());
 
       assertTrue(model.testJavaScoring(train, preds, 1e-8));
+
+      // check that CSV Predictor works 
+      File predictorInCsv = new File(tempFolder.getRoot(), "predictor_in.csv");
+      Frame.export(train, predictorInCsv.getAbsolutePath(), train._key.toString(), false, 1).get();
+      File predictorOutCsv = tempFolder.newFile("predictor_out.csv");
+      PredictCsv predictor = PredictCsv.make(
+              new String[]{
+                      "--embedded",
+                      "--input", predictorInCsv.getAbsolutePath(),
+                      "--output", predictorOutCsv.getAbsolutePath(),
+                      "--decimal"}, model.toMojo());
+      predictor.run();
+      Frame predictorOutFrame = Scope.track(parse_test_file(predictorOutCsv.getAbsolutePath()));
+      assertTrue(model.testJavaScoring(train, predictorOutFrame, 1e-8));
 
       assertTrue(model._output._min_path_length < Integer.MAX_VALUE);
     } finally {
