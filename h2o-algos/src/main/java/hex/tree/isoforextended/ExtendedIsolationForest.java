@@ -10,10 +10,7 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.MathUtils;
-import water.util.RandomUtils;
-import water.util.VecUtils;
+import water.util.*;
 
 import java.util.Arrays;
 
@@ -132,11 +129,12 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         protected void scoreAndBuildTrees(boolean oob) {
             IsolationTreeForkJoinTask [] iTreeTasks = new IsolationTreeForkJoinTask[_parms._ntrees];
             for (int t = 0; t < _parms._ntrees; t++) {
-                iTreeTasks[t] = new IsolationTreeForkJoinTask(_train, _parms._seed);
+                iTreeTasks[t] = new IsolationTreeForkJoinTask();
                 H2O.submitTask(iTreeTasks[t]);
             }
             for (int t = 0; t < _parms._ntrees; t++) {
                 _iTrees[t] = iTreeTasks[t].getResult();
+                _job.update(1);
             }
             addCustomInfo(_model._output);
         }
@@ -329,10 +327,6 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
 
         private ExtendedIsolationForest.IsolationTree iTree;
 
-        public IsolationTreeForkJoinTask(Frame frame, Long seed) {
-
-        }
-
         @Override
         public void compute2() {
             try {
@@ -361,7 +355,9 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             }
         }
 
-        /** Blocking call to obtain a result of computation. */
+        /**
+         * Blocking call to obtain a result of computation.
+         */
         public ExtendedIsolationForest.IsolationTree getResult() {
             join();
             return this.iTree;
@@ -369,11 +365,12 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
 
         @Override
         public void onCompletion(CountedCompleter caller) {
-            System.out.println("onCompletion");
+            // nothing to do
         }
+
         @Override
         public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-            ex.printStackTrace();
+            Log.err(ex);
             return true;
         }
     }
