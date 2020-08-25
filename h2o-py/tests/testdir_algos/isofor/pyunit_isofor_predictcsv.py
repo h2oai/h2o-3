@@ -36,7 +36,7 @@ def download_mojo(model, mojo_zip_path, genmodel_path=None):
 
 
 def mojo_predict_csv_test(target_dir):
-    mojo_file_name = "prostate_gbm_model.zip"
+    mojo_file_name = "prostate_isofor_model.zip"
     mojo_zip_path = os.path.join(target_dir, mojo_file_name)
 
     data_path = pyunit_utils.locate("smalldata/logreg/prostate.csv")
@@ -54,22 +54,22 @@ def mojo_predict_csv_test(target_dir):
     download_mojo(isofor, mojo_zip_path)
 
     output_csv = "%s/prediction.csv" % target_dir
-    print("\nPerforming Regression Prediction using MOJO @... " + target_dir)
+    print("\nPerforming Isolation Forest Prediction using MOJO @... " + target_dir)
     pred_mojo_csv = h2o.mojo_predict_csv(input_csv_path=data_path, mojo_zip_path=mojo_zip_path,
                                          output_csv_path=output_csv)
-    pred_mojo_df = pd.DataFrame(pred_mojo_csv, dtype=np.float64)
+    pred_mojo_df = pd.DataFrame(pred_mojo_csv, dtype=np.float64, columns=["predict", "mean_length"])
+    print("*** pred_h2o_df ***")
+    print(pred_h2o_df)
+    print("***pred_mojo_df ***")
+    print(pred_mojo_df)
     assert_frame_equal(pred_h2o_df, pred_mojo_df, check_dtype=False)
 
 
-csv_test_dir = tempfile.mkdtemp()
 api_test_dir = tempfile.mkdtemp()
-pandas_test_dir = tempfile.mkdtemp()
 try:
     if __name__ == "__main__":
         pyunit_utils.standalone_test(lambda: mojo_predict_csv_test(api_test_dir))
     else:
         mojo_predict_csv_test(api_test_dir)
 finally:
-    shutil.rmtree(csv_test_dir)
     shutil.rmtree(api_test_dir)
-    shutil.rmtree(pandas_test_dir)
