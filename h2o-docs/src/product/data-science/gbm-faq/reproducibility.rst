@@ -292,3 +292,59 @@ Reproducibility in H2O depends on keeping the layout of the cluster exactly the 
 The parallelization level (number of cores, nthreads) controls how the dataset will be partitioned in memory (into "chunks"). H2O then runs map-reduce tasks in a predictable order on these chunks/partitions. If the number of chunks/partitions is different, the order of reduce operations will be different. Generally, numeric operations can produce different results based on the order of operations. AUC calculation is also sensitive to the ordering, and will produce slightly different results for different chunking. This might cause the model to stop later or earlier.
 
 .. Role in GBM - scoring intervals and early stopping, creating histograms
+
+How do I access reproducibility information for MOJOs?
+######################################################
+
+Reproducibility information is divided into node information, cluster configuration, and input frames and is stored in MOJO. This can be accessed as: ``model._model_json['output']['reproducibility_information_table']``
+
+The **Input Frames Information** subtable stores the following data (``checksum``  and ``ESPC``) for frames used in the input of the algorithm:
+
+- training frame
+- validation frame (optional)
+- calibration frame (optional)
+
+The **Cluster Configuration** subtable stores monitoring information:
+
+- ``H2O cluster uptime``
+- ``H2O cluster timezone``
+- ``H2O data parsing timezone``
+- ``H2O cluster verison``
+- ``H2O cluster version age``
+- ``H2O cluster name``
+- ``H2O cluster total nodes``
+- ``H2O cluster free memory``
+- ``H2O cluster total cores``
+- ``H2O cluster allowed cores``
+- ``H2O cluster status``
+- ``H2O internal security``
+- ``H2O API Extensions``
+
+The **Node Information** subtable stores monitoring information for each node. This includes information about the number of threads, the number of CPU cores, node leadership, and the Java runtime:
+
+- ``h2o``: IP
+- ``healthy``: (*now-last_ping)<HeartbeatThread.TIMEOUT*
+- ``last_ping``: Time (in ms) of last ping
+- ``num_cpus``: Actual number of CPUs available to Java
+- ``sys_load``: System load; average #runnables/#cores
+- ``mem_value_size``: Data on node memory
+- ``free_mem``: Free heap
+- ``pojo_mem``: Temp (non-data) memory
+- ``swap_mem``: Size of data on node's disk
+- ``free_disc``: Free disk
+- ``max_disc``: Max disk
+- ``pid``: PID of current H2O process
+- ``num_keys``: Number of local keys
+- ``tcps:active``: Open TCP connections
+- ``open_fde``: *Open File Descripters*
+- ``rpcs_active``: Active Remote Procedural Calls
+- ``nthreads``: Number of threads
+- ``is_leader``: True only if this node is leader of the cloud; otherwise, false
+- ``total_mem``: Total amount of memory in the Java virtual machine
+- ``max_mem``: Maximum amount of memory that the Java virtual machine will attempt to use
+- ``java_version``: Java version
+- ``jvm_launch_parameters``: JVM launch parameters
+- ``jvm_pid``: JVM process ID
+- ``os_version``: OS version
+- ``machine_physical_mem``: Machine physical memory
+- ``machine_locale``: Machine locale
