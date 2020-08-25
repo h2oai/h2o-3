@@ -2,9 +2,8 @@ package hex.genmodel.algos.targetencoder;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.Map.Entry;
 
-public class EncodingMap implements /*Iterable<Entry<Integer, double[]>>,*/ Serializable {
+public class EncodingMap implements Serializable {
   
   private static final Integer NO_TARGET_CLASS = -1;
 
@@ -110,40 +109,4 @@ public class EncodingMap implements /*Iterable<Entry<Integer, double[]>>,*/ Seri
     return num/den;
   }
 
-//  @Override
-//  public Iterator<Entry<Integer, double[]>> iterator() {
-//    return new Iterator<Entry<Integer, double[]>>() {
-//      
-//      private Iterator<Entry<Integer, Map<Integer, double[]>>> _outerIt = _encodingMap.entrySet().iterator();
-//      private Iterator<Entry<Integer, double[]>> _innerIt = null;
-//      private Entry<Integer, Map<Integer, double[]>> _currentOuter;
-//        
-//      @Override
-//      public boolean hasNext() {
-//        return _outerIt.hasNext() || (_innerIt != null && _innerIt.hasNext());
-//      }
-//
-//      @Override
-//      public Entry<Integer, double[]> next() {
-//        if (_innerIt == null || !_innerIt.hasNext()) {
-//          _currentOuter = _outerIt.next();
-//          _innerIt = _currentOuter.getValue().entrySet().iterator();
-//        }
-//        Entry<Integer, double[]> encodingsEntry = _innerIt.next();
-//        Integer category = _currentOuter.getKey();
-//        double[] encodingComponents = encodingsEntry.getValue();  // regression + binary
-//        if (_nclasses > 2) { // multiclass
-//          // adding the targetclass as a third column
-//          encodingComponents = Arrays.copyOf(encodingsEntry.getValue(), 3); 
-//          encodingComponents[encodingComponents.length-1] = encodingsEntry.getKey();
-//        }
-//        return new AbstractMap.SimpleEntry<>(category, encodingComponents);
-//      }
-//
-//      @Override
-//      public void remove() { 
-//        throw new UnsupportedOperationException();
-//      }
-//    };
-//  }
 }

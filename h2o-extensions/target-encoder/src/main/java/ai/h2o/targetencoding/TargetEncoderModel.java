@@ -212,7 +212,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    * @param blendingParams this provides parameters allowing to mitigate the effect 
    *                       caused by small observations of some categories when computing their encoded value.
    *                       Use null to disable blending.
-   * @param noiseLevel amount of noise to add to the final encodings.
+   * @param noise amount of noise to add to the final encodings.
    *                   Use 0 to disable noise.
    *                   Use -1 to use the default noise level computed from the target.
    * @param resultKey key of the result frame
@@ -221,15 +221,15 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   Frame applyTargetEncoding(Frame data,
                             boolean asTraining,
                             BlendingParams blendingParams,
-                            double noiseLevel,
+                            double noise,
                             Key<Frame> resultKey) {
     
     final String targetColumn = _parms._response_column;
     final String foldColumn = _parms._fold_column;
     final DataLeakageHandlingStrategy dataLeakageHandlingStrategy = asTraining ? _parms._data_leakage_handling : DataLeakageHandlingStrategy.None;
     final long seed = _parms._seed;
-
-    // check requirements on frame
+    
+    // early check on frame requirements
     switch (dataLeakageHandlingStrategy) {
       case KFold:
         if (data.find(foldColumn) < 0)
@@ -245,168 +245,77 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
         break;
     }
 
-    if (noiseLevel < 0 ) {
-      noiseLevel = defaultNoiseLevel(data, data.find(targetColumn));
-      logger.warn("No noise level specified, using default noise level: "+noiseLevel);
+    // applying defaults
+    if (noise < 0 ) {
+      noise = defaultNoiseLevel(data, data.find(targetColumn));
+      logger.warn("No noise level specified, using default noise level: "+noise);
+    }
+    if (resultKey == null){
+      resultKey = Key.make();
     }
 
-    Frame encodedFrame = null;
-    try {
-      if (resultKey == null){
-        resultKey = Key.make();
-      }
+    EncodingStrategy strategy;
+    switch (dataLeakageHandlingStrategy) {
+      case KFold:
+        strategy = new KFoldEncodingStrategy(targetColumn, foldColumn, blendingParams, noise, seed);
+        break;
+      case LeaveOneOut:
+        strategy = new LeaveOneOutEncodingStrategy(targetColumn, foldColumn, blendingParams, noise, seed);
+        break;
+      case None:
+      default:
+        strategy = new DefaultEncodingStrategy(targetColumn, foldColumn, blendingParams, noise, seed);
+        break;
+    }
 
+    Frame workingFrame = null;
+    Key<Frame> tmpKey;
+    try {
       //FIXME: why do we need a deep copy of the whole frame? TE is not supposed to modify existing columns
       // a simple solution would be to duplicate only the columnToEncode in the loop below, 
       // this would allow us to modify it inplace using the current MRTasks and use it to generate the encoded column,
       // finally, we can drop this tmp column.
-      encodedFrame = data.deepCopy(Key.make().toString());
-        
+      workingFrame = data.deepCopy(Key.make().toString());
+      tmpKey = workingFrame._key;
+
       final Map<String, Frame> columnToEncodings = _output._target_encoding_map;
-      for (String columnToEncode : columnToEncodings.keySet()) { // TODO: parallelize this, should mainly require change in naming of num/den columns
-        int colIdx = encodedFrame.find(columnToEncode);
-        imputeCategoricalColumn(encodedFrame, colIdx, columnToEncode + NA_POSTFIX);
+      
+      for (Map.Entry<String, Frame> kv: columnToEncodings.entrySet()) { // TODO: parallelize this, should mainly require change in naming of num/den columns
+        String columnToEncode = kv.getKey();
+        Frame encodings = kv.getValue();
 
-        String encodedColumn = columnToEncode + ENCODED_COLUMN_POSTFIX;
-        Frame encodings = columnToEncodings.get(columnToEncode);
-        double priorMean = TargetEncoderHelper.computePriorMean(encodings);
-        int teColumnIdx = encodedFrame.find(columnToEncode);
-        int encodingsTEColIdx = encodings.find(columnToEncode);
-
-        switch (dataLeakageHandlingStrategy) {
-          case KFold:
-            try {
-              Scope.enter();
-              int foldColIdx = encodedFrame.find(foldColumn);
-              int encodingsFoldColIdx = encodings.find(foldColumn);
-              long[] foldValues = getUniqueColumnValues(encodings, encodings.find(foldColumn));
-              int maxFoldValue = (int) ArrayUtils.maxValue(foldValues);
-
-              Frame joinedFrame = mergeEncodings(
-                      encodedFrame, encodings,
-                      teColumnIdx, foldColIdx,
-                      encodingsTEColIdx, encodingsFoldColIdx,
-                      maxFoldValue
-              );
-              Scope.track(joinedFrame);
-              DKV.remove(encodedFrame._key); // don't need previous version of encoded frame anymore 
-
-              //XXX: the priorMean here is computed on the entire training set, regardless of the folding structure, therefore it introduces a data leakage.
-              // Shouldn't we instead provide a priorMean per fold? 
-              // We should be able to compute those k priorMeans directly from the encodings Frame, so it doesn't require any change in the Mojo.
-              // However, applyEncodings would also need an additional arg for the foldColumn.
-              int encodedColIdx = applyEncodings(joinedFrame, encodedColumn, priorMean, blendingParams);
-              applyNoise(joinedFrame, encodedColIdx, noiseLevel, seed);
-              // Cases when we can introduce NAs in the encoded column:
-              // - if the column to encode contains categories unseen during training (including NA): 
-              //   however this is very unlikely as KFold strategy is usually used when applying TE on the training frame.
-              // - if during training, a category is present only in one fold, 
-              //   then this couple (category, fold) will be missing in the encodings frame,
-              //   and mergeEncodings will put NAs for both num and den, turning into a NA in the encoded column after applyEncodings.
-              imputeMissingValues(joinedFrame, encodedColIdx, priorMean); //XXX: same concern as above regarding priorMean.
-              removeNumeratorAndDenominatorColumns(joinedFrame);
-              encodedFrame = joinedFrame;
-              Scope.untrack(encodedFrame);
-            } finally {
-              Scope.exit();
-            }
-            break;
-
-          case LeaveOneOut:
-            try {
-              Scope.enter();
-              Frame joinedFrame = mergeEncodings(encodedFrame, encodings, teColumnIdx, encodingsTEColIdx);
-              Scope.track(joinedFrame);
-              DKV.remove(encodedFrame._key); // don't need previous version of encoded frame anymore 
-
-              subtractTargetValueForLOO(joinedFrame, targetColumn);
-              
-              int encodedColIdx = applyEncodings(joinedFrame, encodedColumn, priorMean, blendingParams);
-              applyNoise(joinedFrame, encodedColIdx, noiseLevel, seed);
-              // Cases when we can introduce NAs in the encoded column:
-              // - only when the column to encode contains categories unseen during training (including NA).
-              imputeMissingValues(joinedFrame, encodedColIdx, priorMean);
-              removeNumeratorAndDenominatorColumns(joinedFrame);
-              encodedFrame = joinedFrame;
-              Scope.untrack(encodedFrame);
-            } finally {
-              Scope.exit();
-            }
-            break;
-
-          case None:
-            try {
-              Scope.enter();
-              if (!asTraining && encodings.find(foldColumn) >= 0) { // applying TE trained with KFold strategy
-                encodings = groupEncodingsByCategory(encodings, encodingsTEColIdx);
-                Scope.track(encodings);
-              }
-              Frame joinedFrame = mergeEncodings(encodedFrame, encodings, teColumnIdx, encodingsTEColIdx);
-              Scope.track(joinedFrame);
-              DKV.remove(encodedFrame._key); // don't need previous version of encoded frame anymore 
-
-              int encodedColIdx = applyEncodings(joinedFrame, encodedColumn, priorMean, blendingParams);
-              applyNoise(joinedFrame, encodedColIdx, noiseLevel, seed);
-              // Cases when we can introduce NAs in the encoded column:
-              // - only when the column to encode contains categories unseen during training (including NA).
-              // We impute NAs with mean computed from training set, which is a data leakage.
-              // Note: In case of creating encoding map based on the holdout set we'd better use stratified sampling.
-              // Maybe even choose size of holdout taking into account size of the minimal set that represents all levels.
-              // Otherwise there are higher chances to get NA's for unseen categories.
-              double valueForImputation = valueForImputation(columnToEncode, encodings, priorMean, blendingParams);
-              imputeMissingValues(joinedFrame, encodedColIdx, valueForImputation);
-              removeNumeratorAndDenominatorColumns(joinedFrame);
-              encodedFrame = joinedFrame;
-              Scope.untrack(encodedFrame);
-            } finally {
-              Scope.exit();
-            }
-            break;
-        } // end switch on strategy
+        if (!asTraining && encodings.find(foldColumn) >= 0) { // if not applying encodings to training data, then get rid of the foldColumn in encodings.
+          encodings = groupEncodingsByCategory(encodings, encodings.find(columnToEncode));
+        }
+        
+        int colIdx = workingFrame.find(columnToEncode);
+        imputeCategoricalColumn(workingFrame, colIdx, columnToEncode + NA_POSTFIX);
+        
+        if (_output._nclasses > 2) { //multinomial
+          int tcIdx = encodings.find(TARGETCLASS_COL);
+          for (int i=1; i < _output._nclasses; i++) { //for symmetry with binary, ignoring class 0
+            Frame classEncodings = filterByValue(encodings, tcIdx, i);
+            workingFrame = strategy.apply(workingFrame, columnToEncode, classEncodings);
+            DKV.remove(tmpKey);
+            tmpKey = workingFrame._key;
+          }
+        } else { // binary + regression
+          workingFrame = strategy.apply(workingFrame, columnToEncode, encodings);
+          DKV.remove(tmpKey);
+          tmpKey = workingFrame._key;
+        }
       } // end for each columnToEncode
 
-      encodedFrame._key = resultKey;
-      DKV.put(resultKey, encodedFrame);
-      return encodedFrame;
-    } catch (Exception ex) {
-      if (encodedFrame != null) encodedFrame.delete();
-      throw ex;
+      DKV.remove(tmpKey);
+      workingFrame._key = resultKey;
+      DKV.put(workingFrame);
+//      for (Vec v : workingFrame.vecs()) DKV.put(v);
+      return workingFrame;
+    } catch (Exception e) {
+      if (workingFrame != null) workingFrame.delete();
+      throw e;
     }
   }
-  
-  //XXX: usage of this method is confusing:
-  // - if there was no NAs during training, we can only impute missing values on encoded column with priorMean (there's no posterior to blend with).
-  // - if there was NAs during training, then encodings must contain entries for the NA category, so true NAs will be properly encoded at this point.
-  //   Therefore, we impute only unseen categories, which we can decide to encode with priorMean (after all we don't have posterior for this new category),
-  //   or as if these were true NAs: this is what the code below does, but it doesn't look fully justified, except maybe to reduce the leakage from priorMean.
-  // If this is useful to reduce leakage, shouldn't we also use it in LOO + KFold strategies? 
-  private double valueForImputation(String columnToEncode, Frame encodings,
-                                    double priorMean, BlendingParams blendingParams) {
-    assert encodings.name(0).equals(columnToEncode);
-    int nRows = (int) encodings.numRows();
-    String lastDomain = encodings.domains()[0][nRows - 1];
-    boolean hadMissingValues = lastDomain.equals(columnToEncode + NA_POSTFIX);
-
-    double numeratorNA = encodings.vec(NUMERATOR_COL).at(nRows - 1);
-    long denominatorNA = encodings.vec(DENOMINATOR_COL).at8(nRows - 1);
-    double posteriorNA = numeratorNA / denominatorNA;
-    boolean useBlending = blendingParams != null;
-    return !hadMissingValues ? priorMean  // no NA during training, so no posterior, the new (unseen) cat can only be encoded using priorMean.
-            : useBlending ? getBlendedValue(posteriorNA, priorMean, denominatorNA, blendingParams)  // consider new (unseen) cat as a true NA + apply blending.
-            : posteriorNA; // consider new (unseen) cat as a true NA + no blending.
-  }
-
-  /** FIXME: this method is modifying the original fr column in-place, one of the reasons why we currently need a complete deep-copy of the training frame... */
-  private void imputeMissingValues(Frame fr, int columnIndex, double imputedValue) {
-    Vec vec = fr.vec(columnIndex);
-    assert vec.get_type() == Vec.T_NUM : "Imputation of missing value is supported only for numerical vectors.";
-    if (vec.naCnt() > 0) {
-      new FillNAWithDoubleValueTask(columnIndex, imputedValue).doAll(fr);
-      if (logger.isInfoEnabled())
-        logger.info(String.format("Frame with id = %s was imputed with posterior value = %f ( %d rows were affected)", fr._key, imputedValue, vec.naCnt()));
-    }
-  }
-
 
   private double defaultNoiseLevel(Frame fr, int targetIndex) {
     double defaultNoiseLevel = 0.01;
@@ -417,17 +326,6 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       noiseLevel = targetVec.isNumeric() ? defaultNoiseLevel * (targetVec.max() - targetVec.min()) : defaultNoiseLevel;
     }
     return noiseLevel;
-  }
-  
-  private void applyNoise(Frame frame, int columnIdx, double noiseLevel, long seed) {
-    if (noiseLevel > 0) addNoise(frame, columnIdx, noiseLevel, seed);
-  }
-  
-  void removeNumeratorAndDenominatorColumns(Frame fr) {
-    Vec removedNumeratorNone = fr.remove(NUMERATOR_COL);
-    removedNumeratorNone.remove();
-    Vec removedDenominatorNone = fr.remove(DENOMINATOR_COL);
-    removedDenominatorNone.remove();
   }
   
   @Override
@@ -443,6 +341,189 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       }
     }
     return super.remove_impl(fs, cascade);
+  }
+  
+  
+  private static abstract class EncodingStrategy {
+
+    String _targetColumn;
+    String _foldColumn;
+    BlendingParams _blendingParams;
+    double _noise;
+    long _seed;
+    
+    public EncodingStrategy(String targetColumn, String foldColumn, 
+                            BlendingParams blendingParams, double noise, long seed) {
+      _targetColumn = targetColumn;
+      _foldColumn = foldColumn;
+      _blendingParams = blendingParams;
+      _noise = noise;
+      _seed = seed;
+    }
+    
+    public Frame apply(Frame fr, String columnToEncode, Frame encodings) {
+      try {
+        Scope.enter();
+        Frame encoded = doApply(fr, columnToEncode, encodings);
+        Scope.untrack(encoded);
+        return encoded;
+      } finally {
+        Scope.exit();
+      }
+    }
+    
+    public abstract Frame doApply(Frame fr, String columnToEncode, Frame encodings);
+    
+    protected String getEncodedColumn(String columnToEncode) {
+      return columnToEncode+ENCODED_COLUMN_POSTFIX;
+    }
+    
+    protected void applyNoise(Frame frame, int columnIdx, double noiseLevel, long seed) {
+      if (noiseLevel > 0) addNoise(frame, columnIdx, noiseLevel, seed);
+    }
+    
+    /** FIXME: this method is modifying the original fr column in-place, one of the reasons why we currently need a complete deep-copy of the training frame... */
+    protected void imputeMissingValues(Frame fr, int columnIndex, double imputedValue) {
+      Vec vec = fr.vec(columnIndex);
+      assert vec.get_type() == Vec.T_NUM : "Imputation of missing value is supported only for numerical vectors.";
+      if (vec.naCnt() > 0) {
+        new FillNAWithDoubleValueTask(columnIndex, imputedValue).doAll(fr);
+        if (logger.isInfoEnabled())
+          logger.info(String.format("Frame with id = %s was imputed with posterior value = %f ( %d rows were affected)", fr._key, imputedValue, vec.naCnt()));
+      }
+    }
+    
+    //XXX: usage of this method is confusing:
+    // - if there was no NAs during training, we can only impute missing values on encoded column with priorMean (there's no posterior to blend with).
+    // - if there was NAs during training, then encodings must contain entries for the NA category, so true NAs will be properly encoded at this point.
+    //   Therefore, we impute only unseen categories, which we can decide to encode with priorMean (after all we don't have posterior for this new category),
+    //   or as if these were true NAs: this is what the code below does, but it doesn't look fully justified, except maybe to reduce the leakage from priorMean.
+    // If this is useful to reduce leakage, shouldn't we also use it in LOO + KFold strategies? 
+    protected double valueForImputation(String columnToEncode, Frame encodings,
+                                        double priorMean, BlendingParams blendingParams) {
+      assert encodings.name(0).equals(columnToEncode);
+      int nRows = (int) encodings.numRows();
+      String lastDomain = encodings.domains()[0][nRows - 1];
+      boolean hadMissingValues = lastDomain.equals(columnToEncode + NA_POSTFIX);
+
+      double numeratorNA = encodings.vec(NUMERATOR_COL).at(nRows - 1);
+      long denominatorNA = encodings.vec(DENOMINATOR_COL).at8(nRows - 1);
+      double posteriorNA = numeratorNA / denominatorNA;
+      boolean useBlending = blendingParams != null;
+      return !hadMissingValues ? priorMean  // no NA during training, so no posterior, the new (unseen) cat can only be encoded using priorMean.
+              : useBlending ? getBlendedValue(posteriorNA, priorMean, denominatorNA, blendingParams)  // consider new (unseen) cat as a true NA + apply blending.
+              : posteriorNA; // consider new (unseen) cat as a true NA + no blending.
+    }
+    
+    protected void removeNumeratorAndDenominatorColumns(Frame fr) {
+      Vec removedNumeratorNone = fr.remove(NUMERATOR_COL);
+      removedNumeratorNone.remove();
+      Vec removedDenominatorNone = fr.remove(DENOMINATOR_COL);
+      removedDenominatorNone.remove();
+    }
+
+  }
+
+  private static class KFoldEncodingStrategy extends EncodingStrategy {
+
+    public KFoldEncodingStrategy(String targetColumn, String foldColumn, 
+                                 BlendingParams blendingParams, double noise, long seed) {
+      super(targetColumn, foldColumn, blendingParams, noise, seed);
+    }
+
+    @Override
+    public Frame doApply(Frame fr, String columnToEncode, Frame encodings) {
+      int teColumnIdx = fr.find(columnToEncode);
+      int foldColIdx = fr.find(_foldColumn);
+      int encodingsFoldColIdx = encodings.find(_foldColumn);
+      int encodingsTEColIdx = encodings.find(columnToEncode);
+      long[] foldValues = getUniqueColumnValues(encodings, encodingsFoldColIdx);
+      int maxFoldValue = (int) ArrayUtils.maxValue(foldValues);
+      double priorMean = computePriorMean(encodings);
+
+      Frame joinedFrame = mergeEncodings(
+              fr, encodings,
+              teColumnIdx, foldColIdx,
+              encodingsTEColIdx, encodingsFoldColIdx,
+              maxFoldValue
+      );
+      Scope.track(joinedFrame);
+
+      //XXX: the priorMean here is computed on the entire training set, regardless of the folding structure, therefore it introduces a data leakage.
+      // Shouldn't we instead provide a priorMean per fold? 
+      // We should be able to compute those k priorMeans directly from the encodings Frame, so it doesn't require any change in the Mojo.
+      // However, applyEncodings would also need an additional arg for the foldColumn.
+      int encodedColIdx = applyEncodings(joinedFrame, getEncodedColumn(columnToEncode), priorMean, _blendingParams);
+      applyNoise(joinedFrame, encodedColIdx, _noise, _seed);
+      // Cases when we can introduce NAs in the encoded column:
+      // - if the column to encode contains categories unseen during training (including NA): 
+      //   however this is very unlikely as KFold strategy is usually used when applying TE on the training frame.
+      // - if during training, a category is present only in one fold, 
+      //   then this couple (category, fold) will be missing in the encodings frame,
+      //   and mergeEncodings will put NAs for both num and den, turning into a NA in the encoded column after applyEncodings.
+      imputeMissingValues(joinedFrame, encodedColIdx, priorMean); //XXX: same concern as above regarding priorMean.
+      removeNumeratorAndDenominatorColumns(joinedFrame);
+      return joinedFrame;
+    }
+  }
+
+  private static class LeaveOneOutEncodingStrategy extends EncodingStrategy {
+
+    public LeaveOneOutEncodingStrategy(String targetColumn, String foldColumn,
+                                       BlendingParams blendingParams, double noise, long seed) {
+      super(targetColumn, foldColumn, blendingParams, noise, seed);
+    }
+
+    @Override
+    public Frame doApply(Frame fr, String columnToEncode, Frame encodings) {
+      int teColumnIdx = fr.find(columnToEncode);
+      int encodingsTEColIdx = encodings.find(columnToEncode);
+      double priorMean = computePriorMean(encodings);
+      
+      Frame joinedFrame = mergeEncodings(fr, encodings, teColumnIdx, encodingsTEColIdx);
+      Scope.track(joinedFrame);
+
+      subtractTargetValueForLOO(joinedFrame, _targetColumn);
+
+      int encodedColIdx = applyEncodings(joinedFrame, getEncodedColumn(columnToEncode), priorMean, _blendingParams);
+      applyNoise(joinedFrame, encodedColIdx, _noise, _seed);
+      // Cases when we can introduce NAs in the encoded column:
+      // - only when the column to encode contains categories unseen during training (including NA).
+      imputeMissingValues(joinedFrame, encodedColIdx, priorMean);
+      removeNumeratorAndDenominatorColumns(joinedFrame);
+      return joinedFrame;
+    }
+  }
+
+  private static class DefaultEncodingStrategy extends EncodingStrategy {
+
+    public DefaultEncodingStrategy(String targetColumn, String foldColumn, 
+                                   BlendingParams blendingParams, double noise, long seed) {
+      super(targetColumn, foldColumn, blendingParams, noise, seed);
+    }
+
+    @Override
+    public Frame doApply(Frame fr, String columnToEncode, Frame encodings) {
+      int teColumnIdx = fr.find(columnToEncode);
+      int encodingsTEColIdx = encodings.find(columnToEncode);
+      double priorMean = computePriorMean(encodings);
+      
+      Frame joinedFrame = mergeEncodings(fr, encodings, teColumnIdx, encodingsTEColIdx);
+      Scope.track(joinedFrame);
+
+      int encodedColIdx = applyEncodings(joinedFrame, getEncodedColumn(columnToEncode), priorMean, _blendingParams);
+      applyNoise(joinedFrame, encodedColIdx, _noise, _seed);
+      // Cases when we can introduce NAs in the encoded column:
+      // - only when the column to encode contains categories unseen during training (including NA).
+      // We impute NAs with mean computed from training set, which is a data leakage.
+      // Note: In case of creating encoding map based on the holdout set we'd better use stratified sampling.
+      // Maybe even choose size of holdout taking into account size of the minimal set that represents all levels.
+      // Otherwise there are higher chances to get NA's for unseen categories.
+      double valueForImputation = valueForImputation(columnToEncode, encodings, priorMean, _blendingParams);
+      imputeMissingValues(joinedFrame, encodedColIdx, valueForImputation);
+      removeNumeratorAndDenominatorColumns(joinedFrame);
+      return joinedFrame;
+    }
   }
 
 }

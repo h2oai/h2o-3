@@ -1,26 +1,21 @@
 package ai.h2o.targetencoding;
 
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
-import org.junit.After;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-
-import java.util.Map;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import static org.junit.Assert.*;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class TargetEncodingNoneStrategyTest extends TestUtil {
-
-
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
 
   @Test
   public void test_fold_column_is_ignored_with_None_strategy() {

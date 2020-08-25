@@ -102,7 +102,7 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter<TargetEncoderModel,
         for (Entry<String, Frame> encodingMapEntry : targetEncodingMap.entrySet()) {
           String teColumn = encodingMapEntry.getKey();
           Frame encodingsWithFolds = encodingMapEntry.getValue();
-          Frame encodingsWithoutFolds = TargetEncoderHelper.groupEncodingsByCategory(encodingsWithFolds, encodingsWithFolds.find(teColumn) , true);
+          Frame encodingsWithoutFolds = groupEncodingsByCategory(encodingsWithFolds, encodingsWithFolds.find(teColumn) , true);
           targetEncodingMap.put(teColumn, encodingsWithoutFolds);
           encodingsWithFolds.delete();
         }

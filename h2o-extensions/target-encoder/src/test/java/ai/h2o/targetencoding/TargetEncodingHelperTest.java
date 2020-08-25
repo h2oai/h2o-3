@@ -1,7 +1,7 @@
 package ai.h2o.targetencoding;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Scope;
@@ -9,6 +9,8 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -16,12 +18,10 @@ import java.util.Random;
 import static ai.h2o.targetencoding.TargetEncoderHelper.*;
 import static org.junit.Assert.*;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class TargetEncodingHelperTest extends TestUtil {
   
-  @BeforeClass public static void setup() {
-    stall_till_cloudsize(1);
-  }
-
   @Test
   public void addVecToFrameTest() {
     Scope.enter();
