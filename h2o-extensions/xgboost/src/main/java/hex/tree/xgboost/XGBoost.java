@@ -181,6 +181,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (_parms._distribution == DistributionFamily.quasibinomial)
       error("_distribution", "Quasibinomial is not supported for XGBoost in current H2O.");
 
+    if (_parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Enum) {
+      error("_categorical_encoding", "Enum encoding is not supported for XGBoost in current H2O.");
+    }
+    
     switch( _parms._distribution) {
       case bernoulli:
         if( _nclass != 2 /*&& !couldBeBool(_response)*/)
