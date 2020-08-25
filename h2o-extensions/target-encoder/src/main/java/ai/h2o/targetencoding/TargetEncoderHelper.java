@@ -1,6 +1,7 @@
 package ai.h2o.targetencoding;
 
 import water.*;
+import water.fvec.CategoricalWrappedVec;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -141,9 +142,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
                 : new String[]{fr.name(columnToEncodeIdx), fr.name(foldColumnIdx), DENOMINATOR_COL};
         result = melt(result, idVars, targetVals, TARGETCLASS_COL, NUMERATOR_COL, true);
         // convert targetclass column to ensure it has the same domain as target
-//        CategoricalWrappedVec.updateDomain(result.vec(CLASS_COL), targetVec.domain());
-        Vec targetClassCol = result.vec(TARGETCLASS_COL).adaptTo(targetVec.domain());
-        result.replace(result.find(TARGETCLASS_COL), targetClassCol);
+        CategoricalWrappedVec.updateDomain(result.vec(TARGETCLASS_COL), targetVec.domain());
 //        printFrame(result);
         
       } else { // works for both binary and regression
@@ -422,7 +421,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
   }
   
   static Frame melt(Frame fr, String[] idVars, String[] valueVars, String varCol, String valueCol, boolean skipNA) {
-    return new AstMelt().exec(new Val[]{
+    Frame melted = new AstMelt().exec(new Val[]{
             null,
             new ValFrame(fr),
             new ValStrs(idVars),
@@ -431,6 +430,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
             new ValStr(valueCol),
             new ValNum(skipNA ? 1 : 0)
     }).getFrame();
+    return register(melted);
   }
 
   static Frame rBind(Frame a, Frame b) {
