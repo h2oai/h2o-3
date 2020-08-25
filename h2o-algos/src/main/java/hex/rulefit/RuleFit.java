@@ -30,6 +30,10 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
     protected static final long WORK_TOTAL = 1000000;
 
+    private SharedTreeModel.SharedTreeParameters treeParameters = null;
+
+    private GLMModel.GLMParameters glmParameters = null;
+
     @Override
     public ModelCategory[] can_build() {
         return new ModelCategory[]{
@@ -72,7 +76,6 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             if (_parms._algorithm == RuleFitModel.Algorithm.AUTO) {
                 _parms._algorithm = RuleFitModel.Algorithm.DRF;
             }
-            // try to set _nfolds to 5
 
             initTreeParameters();
             initGLMParameters();
@@ -82,41 +85,31 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
     }
 
     private void initTreeParameters() {
-        if (_parms._tree_params == null) {
-            if (_parms._algorithm == RuleFitModel.Algorithm.GBM) {
-                _parms._tree_params = new GBMModel.GBMParameters();
-            } else if (_parms._algorithm == RuleFitModel.Algorithm.DRF) {
-                _parms._tree_params = new DRFModel.DRFParameters();
-            } else {
-                throw new RuntimeException("Unsupported algorithm for tree building: " + _parms._algorithm);
-            }
-            _parms._tree_params._response_column = _parms._response_column;
-            _parms._tree_params._train = _parms._train;
+        if (_parms._algorithm == RuleFitModel.Algorithm.GBM) {
+            treeParameters = new GBMModel.GBMParameters();
+        } else if (_parms._algorithm == RuleFitModel.Algorithm.DRF) {
+            treeParameters = new DRFModel.DRFParameters();
         } else {
-            // max_depth provided in tree_params - min_rule_len and max_rule_len will be ignored
-            _parms._min_rule_length = _parms._tree_params._max_depth;
-            _parms._max_rule_length = _parms._tree_params._max_depth;
+            throw new RuntimeException("Unsupported algorithm for tree building: " + _parms._algorithm);
         }
-        _parms._tree_params._seed = _parms._seed;
+        treeParameters._response_column = _parms._response_column;
+        treeParameters._train = _parms._train;
+        treeParameters._ignored_columns = _parms._ignored_columns;
+        treeParameters._seed = _parms._seed;
     }
 
     private void initGLMParameters() {
-        if (_parms._glm_params == null) {
-            if (_nclass < 2) { // regression
-                _parms._glm_params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.gaussian);
-            } else if (_nclass == 2) { // binomial classification
-                _parms._glm_params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.binomial);
-            } else { // multinomial classification
-                _parms._glm_params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.multinomial);
-            }
-            _parms._glm_params._response_column = _parms._response_column;
-        } else {
-            // lambda_ ignored by rulefit
-            _parms._glm_params._lambda = null;
+        if (_nclass < 2) { // regression
+            glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.gaussian);
+        } else if (_nclass == 2) { // binomial classification
+            glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.binomial);
+        } else { // multinomial classification
+            glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.multinomial);
         }
-        _parms._glm_params._seed = _parms._seed;
+        glmParameters._response_column = _parms._response_column;
+        glmParameters._seed = _parms._seed;
         // alpha ignored - set to 1 by rulefit (Lasso)
-        _parms._glm_params._alpha = new double[]{1};
+        glmParameters._alpha = new double[]{1};
 
     }
 
@@ -135,30 +128,31 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             try {
                 // 1. Rule generation
 
-                // get paths from random forrest models
+                // get paths from tree models
                 Frame pathsFrame = new Frame(Key.make("paths_frame" + _result));
                 int[] depths = range(_parms._min_rule_length, _parms._max_rule_length + 1);
                 List<SharedTreeModel> treeModels = new ArrayList<SharedTreeModel>();
 
                 pathsFrame.add(_parms._response_column, _response.makeCopy());
-                // TODO: move this to some distributed task
                 Frame paths = null;
                 Key[] keys = new Key[depths.length];
                 // prepare rules
-                for (int modelId = 0; modelId < depths.length; modelId++) {
-                    SharedTreeModel treeModel = trainTreeModel(_parms._algorithm, depths[modelId]);
-                    treeModels.add(treeModel);
-
-                    paths = treeModel.scoreLeafNodeAssignment(_train, Model.LeafNodeAssignment.LeafNodeAssignmentType.Path, Key.make("path_" + modelId + _result));
-                    paths.setNames(RuleFitUtils.getPathNames(modelId, paths.numCols(), paths.names()));
-                    pathsFrame.add(paths);
-
-                    keys[modelId] = paths._key;
-                    DKV.put(paths);
-                    DKV.put(treeModel);
+                if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.RULES.equals(_parms._model_type)) {
+                    for (int modelId = 0; modelId < depths.length; modelId++) {
+                        SharedTreeModel treeModel = trainTreeModel(_parms._algorithm, depths[modelId]);
+                        treeModels.add(treeModel);
+    
+                        paths = treeModel.scoreLeafNodeAssignment(_train, Model.LeafNodeAssignment.LeafNodeAssignmentType.Path, Key.make("path_" + modelId + _result));
+                        paths.setNames(RuleFitUtils.getPathNames(modelId, paths.numCols(), paths.names()));
+                        pathsFrame.add(paths);
+    
+                        keys[modelId] = paths._key;
+                        DKV.put(paths);
+                        DKV.put(treeModel);
+                    }
                 }
                 // prepare linear terms
-                if (RuleFitModel.ModelType.RulesAndLinear.equals(_parms._model_type)) {
+                if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.LINEAR.equals(_parms._model_type)) {
                     Frame adaptFrm = new Frame(_train.deepCopy(null));
                     adaptFrm.remove(_parms._response_column);
                     adaptFrm.setNames(RuleFitUtils.getLinearNames(adaptFrm.numCols(), adaptFrm.names()));
@@ -167,16 +161,16 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 DKV.put(pathsFrame);
 
                 // 2. Sparse linear model with Lasso
-                _parms._glm_params._train = pathsFrame._key;
-                if (_parms._max_num_rules != null) {
-                    _parms._glm_params._max_active_predictors = _parms._max_num_rules + 1;
-                    _parms._glm_params._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT;
+                glmParameters._train = pathsFrame._key;
+                if (_parms._max_num_rules > 0) {
+                    glmParameters._max_active_predictors = _parms._max_num_rules + 1;
+                    glmParameters._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT;
                 } else {
-                    _parms._glm_params._lambda = getOptimalLambda();
-                    _parms._glm_params._nfolds = _parms._nfolds;
+                    glmParameters._lambda = getOptimalLambda();
+                    glmParameters._nfolds = _parms._nfolds;
                 }
 
-                GLM job = new GLM(_parms._glm_params);
+                GLM job = new GLM(glmParameters);
                 glmModel = job.trainModel().get();
                 DKV.put(glmModel);
 
@@ -225,14 +219,14 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
         SharedTreeModel trainTreeModel(RuleFitModel.Algorithm algorithm, int maxDepth) {
             SharedTreeModel treeModel;
-            _parms._tree_params._max_depth = maxDepth;
+            treeParameters._max_depth = maxDepth;
 
             if (algorithm.equals(RuleFitModel.Algorithm.DRF)) {
-                DRF job = new DRF((DRFModel.DRFParameters) _parms._tree_params);
+                DRF job = new DRF((DRFModel.DRFParameters) treeParameters);
                 treeModel = job.trainModel().get();
 
             } else if (algorithm.equals(RuleFitModel.Algorithm.GBM)) {
-                GBM job = new GBM((GBMModel.GBMParameters) _parms._tree_params);
+                GBM job = new GBM((GBMModel.GBMParameters) treeParameters);
                 treeModel = job.trainModel().get();
             } else {
                 // TODO XGB
@@ -243,11 +237,11 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         }
 
         double[] getOptimalLambda() {
-            _parms._glm_params._lambda_search = true;
+            glmParameters._lambda_search = true;
 
-            GLM job = new GLM(_parms._glm_params);
+            GLM job = new GLM(glmParameters);
             GLMModel lambdaModel = job.trainModel().get();
-            _parms._glm_params._lambda_search = false;
+            glmParameters._lambda_search = false;
 
             // get the best GLM lambda by choosing one diminishing returns on explained deviance
             GLMModel.RegularizationPath regularizationPath = lambdaModel.getRegularizationPath();
@@ -259,7 +253,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 //            if (deviance.length < 5) {
                 bestLambdaIndex = deviance.length - 1;
 //            } else {
-//                bestLambdaIndex = getBestLambdaIndex(deviance); // todo can happen that bestLambdaIndex > lambdas.length
+//                bestLambdaIndex = getBestLambdaIndex(deviance); // TODO: can happen that bestLambdaIndex > lambdas.length
 //            }
 
             lambdaModel.remove();
@@ -340,6 +334,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                     args.tree_number = rule.treeNum;
     
                     tree = treeHandler.getTree(3, args);
+                    // TODO: make getting language rule not needing TreeV3
                     rule.languageRule = treeTraverser(tree, rule.path);
                 }
                 rule.coefficient = entry.getValue();

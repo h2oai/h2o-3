@@ -11,9 +11,9 @@ import water.util.TwoDimTable;
 
 
 public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParameters, RuleFitModel.RuleFitOutput> {
-    public enum Algorithm {DRF, /*XGBOOST,*/ GBM, AUTO}
+    public enum Algorithm {DRF, GBM, AUTO}
 
-    public enum ModelType {Rules, RulesAndLinear}
+    public enum ModelType {RULES, RULES_AND_LINEAR, LINEAR}
 
     @Override
     public ToEigenVec getToEigenVec() {
@@ -51,19 +51,12 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         // maximum length of rules. Defaults to 10.
         public int _max_rule_length = 10;
 
-        // the maximum number of rules to return. defaults to null which means the number of rules is selected 
+        // the maximum number of rules to return. Defaults to -1 which means the number of rules is selected 
         // by diminishing returns in model deviance.
-        public Integer _max_num_rules = null;
+        public int _max_num_rules = -1;
 
-        // additional parameters that can be passed to the tree model. defaults to null.
-        public SharedTreeModel.SharedTreeParameters _tree_params = null;
-
-        // additional parameters that can be passed to the linear model. Defaults to null.
-        public GLMModel.GLMParameters _glm_params = null;
-
-        public ModelType _model_type = ModelType.RulesAndLinear;
-        
-        // TODO: parametrize other options according to http://statweb.stanford.edu/~jhf/ftp/RuleFit.pdf and http://statweb.stanford.edu/~jhf/R_RuleFit.html
+        // specifies type of base learners in the ensemble. Options are RULES_AND_LINEAR (initial ensemble includes both rules and linear terms, default), RULES (prediction rules only), LINEAR (linear terms only)
+        public ModelType _model_type = ModelType.RULES_AND_LINEAR;
     }
 
     public static class RuleFitOutput extends Model.Output {
@@ -116,17 +109,19 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         Frame pathsFrame = new Frame(Key.make("paths_frame" + destination_key));
         Frame paths = null;
         Key[] keys = new Key[_output.treeModelsKeys.length];
-        if (ModelType.RulesAndLinear.equals(this._parms._model_type)) {
+        if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.RULES.equals(this._parms._model_type)) {
+            for (int i = 0; i < _output.treeModelsKeys.length; i++) {
+                SharedTreeModel treeModel = DKV.getGet(_output.treeModelsKeys[i]);
+                paths = treeModel.scoreLeafNodeAssignment(fr, Model.LeafNodeAssignment.LeafNodeAssignmentType.Path, Key.make("path_" + i + destination_key));
+                paths.setNames(RuleFitUtils.getPathNames(i, paths.numCols(), paths.names()));
+                pathsFrame.add(paths);
+                keys[i] = paths._key;
+            }
+        }
+        if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.LINEAR.equals(this._parms._model_type)) {
             Frame adaptFrm = new Frame(fr.deepCopy(null));
             adaptFrm.setNames(RuleFitUtils.getLinearNames(adaptFrm.numCols(), adaptFrm.names()));
             pathsFrame.add(adaptFrm);
-        }
-        for (int i = 0; i < _output.treeModelsKeys.length; i++) {
-            SharedTreeModel treeModel = DKV.getGet(_output.treeModelsKeys[i]);
-            paths = treeModel.scoreLeafNodeAssignment(fr, Model.LeafNodeAssignment.LeafNodeAssignmentType.Path, Key.make("path_" + i + destination_key));
-            paths.setNames(RuleFitUtils.getPathNames(i, paths.numCols(), paths.names()));
-            pathsFrame.add(paths);
-            keys[i] = paths._key;
         }
         GLMModel glmModel = DKV.getGet(_output.glmModelKey);
         Frame destination = glmModel.score(pathsFrame, destination_key, null, true);

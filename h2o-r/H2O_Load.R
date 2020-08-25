@@ -15,7 +15,7 @@ function() {
   to_src <- c("astfun.R", "classes.R", "config.R", "connection.R", "constants.R", "logging.R", "communication.R",
               "import.R", "frame.R", "kvstore.R", "grid.R", "generic.R",
               "parse.R", "export.R", "models.R", "edicts.R", "coxph.R", "coxphutils.R", "glm.R", "gam.R", "glrm.R", "pca.R", "kmeans.R",
-              "gbm.R", "deeplearning.R", "naivebayes.R", "randomforest.R", "svd.R", "locate.R", "predict.R",
+              "gbm.R", "deeplearning.R", "naivebayes.R", "randomforest.R", "svd.R", "locate.R", "predict.R", "rulefit.R",
               "isolationforest.R", "psvm.R", "tf-idf.R")
   require(jsonlite); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(FULL.PATH, x, sep = ""))}))

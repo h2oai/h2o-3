@@ -443,6 +443,7 @@ class H2OEstimator(ModelBase):
         if name == "H2OIsolationForestEstimator": return "isolationforest"
         if name in ["H2OPCA", "H2OPrincipalComponentAnalysisEstimator"]: return "pca"
         if name in ["H2OSVD", "H2OSingularValueDecompositionEstimator"]: return "svd"
+        if name == "H2ORuleFitEstimator": return "rulefit"
 
 
     @staticmethod

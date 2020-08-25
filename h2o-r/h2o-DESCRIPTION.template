@@ -103,3 +103,4 @@ Collate:
          'predict.R'
          'zzz.R'
          'tf-idf.R'
+         'rulefit.R'
