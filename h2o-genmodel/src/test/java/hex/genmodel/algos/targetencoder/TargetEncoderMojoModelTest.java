@@ -65,13 +65,13 @@ public class TargetEncoderMojoModelTest {
     targetEncoderMojoModel._nfeatures = names.length; // model.getNumCols is overriden in MojoModel and GenModel's version which is based on `names` is not used
     
     EncodingMaps encodingMap = new EncodingMaps();
-    EncodingMap encodingMapForCat1 = new EncodingMap();
+    EncodingMap encodingMapForCat1 = new EncodingMap(2);
     int factorForLevelA = 0;
     int factorForLevelB = 1;
     int factorForLevelC = 2;
-    encodingMapForCat1.put(factorForLevelA, new double[]{2,5}); 
-    encodingMapForCat1.put(factorForLevelB, new double[]{3,6}); 
-    encodingMapForCat1.put(factorForLevelC, new double[]{4,7}); // remove
+    encodingMapForCat1.add(factorForLevelA, new double[]{2,5}); 
+    encodingMapForCat1.add(factorForLevelB, new double[]{3,6}); 
+    encodingMapForCat1.add(factorForLevelC, new double[]{4,7}); // remove
     
     encodingMap.put(predictorName, encodingMapForCat1);
 
@@ -79,10 +79,9 @@ public class TargetEncoderMojoModelTest {
     targetEncoderMojoModel._withBlending = true;
     targetEncoderMojoModel._inflectionPoint = 5;
     targetEncoderMojoModel._smoothing = 1;
-    targetEncoderMojoModel._priorMean = (2.0 + 3 + 4) / (5 + 6 + 7);
 
     
-    targetEncoderMojoModel._columnNameToIdx = new HashMap<>();
+    targetEncoderMojoModel._columnNameToIdx.clear();
     targetEncoderMojoModel._columnNameToIdx.put(predictorName, 1);
 
 
@@ -144,18 +143,18 @@ public class TargetEncoderMojoModelTest {
     targetEncoderMojoModel._nfeatures = names.length; // model.getNumCols is overriden in MojoModel and GenModel's version which is based on `names` is not used
 
     EncodingMaps encodingMap = new EncodingMaps();
-    EncodingMap encodingMapForCat1 = new EncodingMap();
+    EncodingMap encodingMapForCat1 = new EncodingMap(2);
     int factorForLevelA = 0;
     int factorForLevelB = 1;
-    encodingMapForCat1.put(factorForLevelA, new double[]{2,5});
-    encodingMapForCat1.put(factorForLevelB, new double[]{3,7});
+    encodingMapForCat1.add(factorForLevelA, new double[]{2,5});
+    encodingMapForCat1.add(factorForLevelB, new double[]{3,7});
 
     encodingMap.put(predictorName, encodingMapForCat1);
 
     targetEncoderMojoModel._targetEncodingMap = encodingMap;
     targetEncoderMojoModel._withBlending = false;
 
-    targetEncoderMojoModel._columnNameToIdx = new HashMap<>();
+    targetEncoderMojoModel._columnNameToIdx.clear();
     targetEncoderMojoModel._columnNameToIdx.put(predictorName, 1);
 
 
@@ -201,20 +200,20 @@ public class TargetEncoderMojoModelTest {
     targetEncoderMojoModel._nfeatures = names.length; // model.getNumCols is overriden in MojoModel and GenModel's version which is based on `names` is not used
 
     EncodingMaps encodingMap = new EncodingMaps();
-    EncodingMap encodingMapForCat1 = new EncodingMap();
+    EncodingMap encodingMapForCat1 = new EncodingMap(2);
     int factorForLevelA = 0;
     int factorForLevelB = 1;
     int factorForNA = 2;
-    encodingMapForCat1.put(factorForLevelA, new double[]{2, 5});
-    encodingMapForCat1.put(factorForLevelB, new double[]{3, 7});
-    encodingMapForCat1.put(factorForNA, new double[]{6, 8});
+    encodingMapForCat1.add(factorForLevelA, new double[]{2, 5});
+    encodingMapForCat1.add(factorForLevelB, new double[]{3, 7});
+    encodingMapForCat1.add(factorForNA, new double[]{6, 8});
 
     encodingMap.put(predictorName, encodingMapForCat1);
 
     targetEncoderMojoModel._targetEncodingMap = encodingMap;
     targetEncoderMojoModel._withBlending = false;
 
-    targetEncoderMojoModel._columnNameToIdx = new HashMap<>();
+    targetEncoderMojoModel._columnNameToIdx.clear();
     targetEncoderMojoModel._columnNameToIdx.put(predictorName, 1);
     targetEncoderMojoModel._teColumn2HasNAs = new HashMap<>();
     targetEncoderMojoModel._teColumn2HasNAs.put(predictorName, true);
@@ -277,22 +276,21 @@ public class TargetEncoderMojoModelTest {
     targetEncoderMojoModel._nfeatures = names.length; // model.getNumCols is overriden in MojoModel and GenModel's version which is based on `names` is not used
 
     EncodingMaps encodingMap = new EncodingMaps();
-    EncodingMap encodingMapForCat1 = new EncodingMap();
+    EncodingMap encodingMapForCat1 = new EncodingMap(2);
     int factorForLevelA = 0;
     int factorForLevelB = 1;
-    encodingMapForCat1.put(factorForLevelA, new double[]{2, 5});
-    encodingMapForCat1.put(factorForLevelB, new double[]{3, 7});
+    encodingMapForCat1.add(factorForLevelA, new double[]{2, 5});
+    encodingMapForCat1.add(factorForLevelB, new double[]{3, 7});
 
     encodingMap.put(predictorName, encodingMapForCat1);
 
     targetEncoderMojoModel._targetEncodingMap = encodingMap;
     targetEncoderMojoModel._withBlending = false;
 
-    targetEncoderMojoModel._columnNameToIdx = new HashMap<>();
+    targetEncoderMojoModel._columnNameToIdx.clear();
     targetEncoderMojoModel._columnNameToIdx.put(predictorName, 1);
     targetEncoderMojoModel._teColumn2HasNAs = new HashMap<>();
     targetEncoderMojoModel._teColumn2HasNAs.put(predictorName, false);
-    targetEncoderMojoModel._priorMean = (2.0 + 3) / (5 + 7);
 
 
     VoidErrorConsumer errorConsumer = new VoidErrorConsumer();
@@ -337,29 +335,18 @@ public class TargetEncoderMojoModelTest {
   // We test that order of transformation/predictions is determined by index of teColumn in the input data.
   @Test
   public void sortEncodingMapByIndex() {
-    TargetEncoderMojoModel targetEncoderMojoModel = new TargetEncoderMojoModel(new String[0], new String[0][0], null);
+    String[] predictors = new String[] {"cat3", "cat1", "cat2"};
+    TargetEncoderMojoModel targetEncoderMojoModel = new TargetEncoderMojoModel(predictors, new String[0][0], null);
     EncodingMaps encodingMaps = new EncodingMaps();
-    EncodingMap encodingMapForCat1 = new EncodingMap();
+    EncodingMap encodingMapForCat1 = new EncodingMap(2);
     int factorValueForA = 0;
     int factorValueForB = 1;
-    encodingMapForCat1.put(factorValueForA, new double[]{2,5});
-    encodingMapForCat1.put(factorValueForB, new double[]{3,7});
+    encodingMapForCat1.add(factorValueForA, new double[]{2,5});
+    encodingMapForCat1.add(factorValueForB, new double[]{3,7});
 
-    String predictorName = "categ_var1";
-    encodingMaps.put(predictorName, encodingMapForCat1);
-    
-    String predictorName2 = "categ_var2";
-    encodingMaps.put(predictorName2, encodingMapForCat1);
-    
-    String predictorName3 = "categ_var3";
-    encodingMaps.put(predictorName3, encodingMapForCat1);
-
-    Map<String, Integer> teColumnNameToIdx = new HashMap<>();
-    teColumnNameToIdx.put(predictorName, 42);
-    teColumnNameToIdx.put(predictorName2, 100);
-    teColumnNameToIdx.put(predictorName3, 7);
-
-    targetEncoderMojoModel._columnNameToIdx = teColumnNameToIdx;
+    encodingMaps.put(predictors[2], encodingMapForCat1);
+    encodingMaps.put(predictors[0], encodingMapForCat1);
+    encodingMaps.put(predictors[1], encodingMapForCat1);
 
     Map<String, EncodingMap> sortedByColumnIndex = targetEncoderMojoModel.sortByColumnIndex(encodingMaps.encodingMap());
 
@@ -369,7 +356,7 @@ public class TargetEncoderMojoModelTest {
       sortedTeColumns.add(entry.getKey());
     }
     
-    assertArrayEquals(new String[]{predictorName3, predictorName, predictorName2}, sortedTeColumns.toArray(new String[0]));
+    assertArrayEquals(predictors, sortedTeColumns.toArray(new String[0]));
   }
 
   private static double[] nanArray(int len) {

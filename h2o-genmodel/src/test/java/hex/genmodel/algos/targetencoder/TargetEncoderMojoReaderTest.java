@@ -4,6 +4,7 @@ import hex.genmodel.MojoReaderBackend;
 import org.junit.Test;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
@@ -22,8 +23,19 @@ public class TargetEncoderMojoReaderTest {
     }
 
     @Override public String getModelName() { return null; }
-    @Override protected void readModelData() { }
+    @Override protected void readModelData() throws IOException {
+      _model._nclasses = 2;
+      _model._targetEncodingMap = parseEncodingMap();
+    }
     @Override public String mojoVersion() { return null; }
+    
+    public void initModel() {
+      _model = makeModel(new String[0], new String[0][], "response");
+    }
+    
+    public TargetEncoderMojoModel getModel() {
+      return _model;
+    }
 
     @Override
     public MojoReaderBackend getMojoReaderBackend() {
@@ -52,10 +64,11 @@ public class TargetEncoderMojoReaderTest {
     when(mojoReaderBackendMock.getTextFile(anyString())).thenReturn(encodingsBR);
 
     TestMojoReader testMojoReader = new TestMojoReader(mojoReaderBackendMock);
-
-    EncodingMaps parsedEncodings = testMojoReader.parseEncodingMap();
-    assertArrayEquals(parsedEncodings.get("embarked").get(0), new double[]{2, 4}, 1e-8);
-    assertArrayEquals(parsedEncodings.get("sex").get(0), new double[]{3, 42}, 1e-8);
+    testMojoReader.initModel();
+    testMojoReader.readModelData();
+    EncodingMaps parsedEncodings = testMojoReader.getModel()._targetEncodingMap;
+    assertArrayEquals(parsedEncodings.get("embarked").getNumDen(0), new double[]{2, 4}, 1e-8);
+    assertArrayEquals(parsedEncodings.get("sex").getNumDen(0), new double[]{3, 42}, 1e-8);
 
   }
 }

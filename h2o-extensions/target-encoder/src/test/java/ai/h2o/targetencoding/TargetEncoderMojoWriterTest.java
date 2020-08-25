@@ -1,12 +1,14 @@
 package ai.h2o.targetencoding;
 
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -14,10 +16,9 @@ import java.io.FileOutputStream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class TargetEncoderMojoWriterTest extends TestUtil {
-
-  @BeforeClass
-  public static void stall() { stall_till_cloudsize(1); }
 
   @Rule
   public TemporaryFolder folder = new TemporaryFolder();

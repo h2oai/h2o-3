@@ -160,7 +160,7 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
             for (long foldValue : foldValues) {
               Frame outOfFoldEncodings = getOutOfFoldEncodings(encodings, foldColumn, foldValue);
               Scope.track(outOfFoldEncodings);
-              Frame tmpEncodings = groupEncodingsByCategory(outOfFoldEncodings, encodingsTEColIdx);
+              Frame tmpEncodings = register(groupEncodingsByCategory(outOfFoldEncodings, encodingsTEColIdx));
               Scope.track(tmpEncodings);
               addCon(tmpEncodings, foldColumn, foldValue); //groupEncodingsByCategory always removes the foldColumn, so we can reuse the same name immediately
 

@@ -47,7 +47,7 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
     return cols2HasNAs;
   }
   
-  public EncodingMaps parseEncodingMap() throws IOException {
+  protected EncodingMaps parseEncodingMap() throws IOException {
     if (!exists(ENCODING_MAP_PATH)) {
       return null;
     }

@@ -5,23 +5,23 @@ import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import static ai.h2o.targetencoding.TargetEncoderHelper.DENOMINATOR_COL;
 import static ai.h2o.targetencoding.TargetEncoderHelper.NUMERATOR_COL;
 import static org.junit.Assert.assertEquals;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class TargetEncodingOnRegressionTest extends TestUtil {
   
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
-
   @Test
   public void test_encodings_with_continuous_target() {
     try {

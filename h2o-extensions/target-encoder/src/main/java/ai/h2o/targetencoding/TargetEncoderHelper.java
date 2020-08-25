@@ -110,7 +110,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
         Scope.track(oheTarget);
         Frame expandedFr = new Frame(fr).add(oheTarget);
         Scope.track(expandedFr);
-        printFrame(expandedFr);
+//        printFrame(expandedFr);
         
         // add one sum aggregator per targetclass -> this will produce a {targetclass} numerator.
         // add one single nrow aggregator for the shared denominator.
@@ -144,7 +144,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
 //        CategoricalWrappedVec.updateDomain(result.vec(CLASS_COL), targetVec.domain());
         Vec targetClassCol = result.vec(TARGETCLASS_COL).adaptTo(targetVec.domain());
         result.replace(result.find(TARGETCLASS_COL), targetClassCol);
-        printFrame(result);
+//        printFrame(result);
         
       } else { // works for both binary and regression
         aggs = new AstGroup.AGG[2];
@@ -154,7 +154,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
         // change the default column names assigned by the aggregation task
         renameColumn(result, "sum_" + fr.name(targetIdx), NUMERATOR_COL);
         renameColumn(result, "nrow", DENOMINATOR_COL);
-        printFrame(result);
+//        printFrame(result);
       }
 
       Scope.untrack(result);
@@ -190,16 +190,14 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
     //change the default column names assigned by the aggregation task
     renameColumn(result, "sum_"+ NUMERATOR_COL, NUMERATOR_COL);
     renameColumn(result, "sum_"+ DENOMINATOR_COL, DENOMINATOR_COL);
-    return register(result);
+    return result;
   }
   
   static Frame groupEncodingsByCategory(Frame encodingsFrame, int teColumnIdx, boolean hasFolds) {
     if (hasFolds) {
       return groupEncodingsByCategory(encodingsFrame, teColumnIdx);
     } else {
-      Frame result = encodingsFrame.deepCopy(Key.make().toString());  // XXX: is this really necessary? 
-      DKV.put(result);
-      return result;
+      return encodingsFrame.deepCopy(Key.make().toString());  // XXX: is this really necessary? 
     }
   }
 

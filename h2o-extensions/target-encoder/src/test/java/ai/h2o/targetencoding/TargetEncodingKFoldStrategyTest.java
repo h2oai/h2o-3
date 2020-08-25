@@ -2,10 +2,10 @@ package ai.h2o.targetencoding;
 
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
 import water.exceptions.H2OIllegalArgumentException;
@@ -13,6 +13,8 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
 import java.util.Map;
@@ -21,12 +23,9 @@ import static ai.h2o.targetencoding.TargetEncoderHelper.*;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertTrue;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class TargetEncodingKFoldStrategyTest extends TestUtil {
-  
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
   
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -88,7 +87,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
 
       Frame scored = teModel.score(fr);
       Scope.track(scored);
-      Frame transformed = teModel.transform(fr, null, -1);
+      Frame transformed = teModel.transform(fr);
       Scope.track(transformed);
       assertBitIdentical(scored, transformed);
     } finally {
