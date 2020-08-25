@@ -127,18 +127,18 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
         for (String columnToEncode : _columnsToEncode) { // TODO: parallelize
           int colIdx = workingFrame.find(columnToEncode);
           imputeCategoricalColumn(workingFrame, colIdx, columnToEncode + NA_POSTFIX);
-          Frame encodingsFrame = buildEncodingsFrame(workingFrame, colIdx, targetIdx, foldColIdx, nclasses());
+          Frame encodings = buildEncodingsFrame(workingFrame, colIdx, targetIdx, foldColIdx, nclasses());
 
-          Frame finalEncodingsFrame = applyLeakageStrategyToEncodings(
-                  encodingsFrame, 
+          Frame finalEncodings = applyLeakageStrategyToEncodings(
+                  encodings, 
                   columnToEncode, 
                   _parms._data_leakage_handling, 
                   _parms._fold_column
           );
-          encodingsFrame.delete();
-          encodingsFrame = finalEncodingsFrame;
+          encodings.delete();
+          encodings = finalEncodings;
 
-          columnToEncodings.put(columnToEncode, encodingsFrame);
+          columnToEncodings.put(columnToEncode, encodings);
         }
         
         return columnToEncodings;
