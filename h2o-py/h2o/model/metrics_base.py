@@ -101,6 +101,7 @@ class MetricsBase(h2o_meta()):
         types_w_logloss = types_w_bin + types_w_mult+types_w_ord
         types_w_dim = ["ModelMetricsGLRM"]
         types_w_anomaly = ['ModelMetricsAnomaly']
+        types_w_cox = ['ModelMetricsRegressionCoxPH']
 
         print()
         print(metric_type + ": " + self._algo)
@@ -178,6 +179,12 @@ class MetricsBase(h2o_meta()):
         if metric_type in types_w_dim:
             print("Sum of Squared Error (Numeric): " + str(self.num_err()))
             print("Misclassification Error (Categorical): " + str(self.cat_err()))
+            
+        if metric_type in types_w_cox:
+            print("Concordance score: " + str(self.concordance()))
+            print("Concordant count: " + str(self.concordance()))
+            print("Tied cout: " + str(self.concordance()))
+        
         if self.custom_metric_name():
             print("{}: {}".format(self.custom_metric_name(), self.custom_metric_value()))
 
@@ -1733,7 +1740,7 @@ class H2OAnomalyDetectionModelMetrics(MetricsBase):
         return None
 
 
-class H2OCoxPHModelMetrics(MetricsBase):
+class H2OModelMetricsRegressionCoxPH(MetricsBase):
     """
     :examples:
 
@@ -1746,8 +1753,28 @@ class H2OCoxPHModelMetrics(MetricsBase):
     >>> coxph
     """
 
+    def concordance(self):
+        """Concordance metrics (c-index). 
+        Proportion of concordant pairs divided by the total number of possible evaluation pairs.
+        1.0 for perfect match, 0.5 for random results."""
+        if MetricsBase._has(self._metric_json, "concordance"):
+            return self._metric_json["concordance"]
+        return None
+        
+    def concordant(self):
+        """Count of concordant pairs."""
+        if MetricsBase._has(self._metric_json, "concordant"):
+            return self._metric_json["concordant"]
+        return None  
+    
+    def tiedY(self):
+        """Count of tied pairs."""
+        if MetricsBase._has(self._metric_json, "tiedY"):
+            return self._metric_json["tiedY"]
+        return None
+
     def __init__(self, metric_json, on=None, algo=""):
-        super(H2OCoxPHModelMetrics, self).__init__(metric_json, on, algo)
+        super(H2OModelMetricsRegressionCoxPH, self).__init__(metric_json, on, algo)
 
 
 class H2OTargetEncoderMetrics(MetricsBase):

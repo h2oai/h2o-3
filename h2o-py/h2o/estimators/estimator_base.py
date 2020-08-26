@@ -24,7 +24,7 @@ from ..model.dim_reduction import H2ODimReductionModel, H2OTargetEncoderMetrics
 from ..model.metrics_base import (H2OBinomialModelMetrics, H2OClusteringModelMetrics, H2ORegressionModelMetrics,
                                   H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics, H2ODimReductionModelMetrics,
                                   H2OWordEmbeddingModelMetrics, H2OOrdinalModelMetrics, H2OAnomalyDetectionModelMetrics,
-                                  H2OCoxPHModelMetrics)
+                                  H2OModelMetricsRegressionCoxPH)
 from ..model.model_base import ModelBase
 from ..model.multinomial import H2OMultinomialModel
 from ..model.ordinal import H2OOrdinalModel
@@ -565,7 +565,7 @@ class H2OEstimator(ModelBase):
             valid_metrics_class = H2OBinomialModelMetrics
             model_class = H2OAnomalyDetectionModel
         elif model_type == "CoxPH":
-            metrics_class = H2OCoxPHModelMetrics
+            metrics_class = H2OModelMetricsRegressionCoxPH
             model_class = H2OCoxPHModel
         elif model_type == "TargetEncoder":
             metrics_class = H2OTargetEncoderMetrics
