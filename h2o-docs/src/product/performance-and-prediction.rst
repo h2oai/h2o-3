@@ -1379,7 +1379,7 @@ Examples:
         pros[8] = pros[8].asfactor()
 
         # split the data into training and validation sets:
-        train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        train, valid = pros.split_frame(ratios=[.8], seed=1234)
 
         # set the predictors and response columns:
         predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
@@ -1494,7 +1494,7 @@ Examples:
         # split the data into training and validation sets:
         cars_splits <- h2o.splitFrame(data = cars, ratio = 0.8, seed = 1234)
         train <- cars_splits[[1]]
-        valid <- cars_splits[[2]
+        valid <- cars_splits[[2]]
 
         # set the predictors columns, response column, and distribution type:
         predictors <- c("displacement", "power", "weight", "acceleration", "year")
