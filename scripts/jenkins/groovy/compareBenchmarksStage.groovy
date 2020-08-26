@@ -105,6 +105,48 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ]
             ]
         ],
+        'gam': [
+            'paribas': [
+                COORDINATE_DESCENT: [
+                    'train_time_min': 2,
+                    'train_time_max': 6
+                ],
+                IRLSM: [
+                    'train_time_min': 2,
+                    'train_time_max': 6
+                ]
+            ],
+            'homesite': [
+                COORDINATE_DESCENT: [
+                    'train_time_min': 2,
+                    'train_time_max': 8
+                ],
+                IRLSM: [
+                    'train_time_min': 2,
+                    'train_time_max': 7
+                ]
+            ],
+            'springleaf': [
+                COORDINATE_DESCENT: [
+                    'train_time_min': 3,
+                    'train_time_max': 8
+                ],
+                IRLSM: [
+                    'train_time_min': 17,
+                    'train_time_max': 21
+                ]
+            ],
+            'higgs': [
+                COORDINATE_DESCENT: [
+                    'train_time_min': 90,
+                    'train_time_max': 110
+                ],
+                IRLSM: [
+                    'train_time_min': 130,
+                    'train_time_max': 145
+                ]
+            ]
+        ],
         'gbm-client': [
             'paribas': [
                 50: [
@@ -250,19 +292,19 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'fileSize10millionRows2ColsallxyTF': [
                 [10000000, 2]: [
-                    'train_time_min': 7,
+                    'train_time_min': 4,
                     'train_time_max': 9
                 ]
             ],
             'fileSize100millionRows2ColsallxyFF': [
                 [100000000, 2]: [
                     'train_time_min': 33,
-                    'train_time_max': 35
+                    'train_time_max': 37
                 ]
             ],
             'fileSize10millionRows2ColsallxyFF': [
                 [10000000, 2]: [
-                    'train_time_min': 7,
+                    'train_time_min': 4,
                     'train_time_max': 9
                 ]
             ]
