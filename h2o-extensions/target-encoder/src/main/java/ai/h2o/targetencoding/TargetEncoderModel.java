@@ -15,6 +15,7 @@ import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 import water.util.TwoDimTable;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.PrimitiveIterator;
 import java.util.PrimitiveIterator.OfInt;
@@ -172,9 +173,21 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   public Frame transform(Frame fr, BlendingParams blendingParams, double noiseLevel, boolean asTraining) {
     Frame adaptFr = new Frame(fr);
     try {
-      String[] msgs = adaptTestForTrain(adaptFr, true, false); //ensure that domains are compatible with training ones.
+//      String[] msgs = adaptTestForTrain(adaptFr, true, false); //ensure that domains are compatible with training ones.
       // we only log the warnings messages here and ignore the warningP logic that is designed for scoring only 
-      for (String msg : msgs) logger.warn(msg);
+//      for (String msg : msgs) logger.warn(msg);
+      for (int i=0; i<_output._names.length; i++) {
+        String col = _output._names[i];
+        String[] domain = _output._domains[i];
+        if (domain != null && ArrayUtils.contains(adaptFr.names(), col)) {
+          int toAdaptIdx = adaptFr.find(col);
+          Vec toAdapt = adaptFr.vec(toAdaptIdx);
+          if (!Arrays.equals(toAdapt.domain(), domain)) {
+            Vec adapted = toAdapt.adaptTo(domain);
+            adaptFr.replace(toAdaptIdx, adapted);
+          }
+        }
+      }
       return applyTargetEncoding(
               adaptFr,
               asTraining,

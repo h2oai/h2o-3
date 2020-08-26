@@ -109,11 +109,9 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
         // transform the target into multiple columns that each will be interpreted as a target
         // used to generate the new {targetclass}_te features
         Frame targetFr = new Frame(new String[]{targetName}, new Vec[]{targetVec});
-        Scope.track(targetFr);
         Frame oheTarget = new FrameUtils.CategoricalOneHotEncoder(targetFr, new String[]{}).exec().get();
         Scope.track(oheTarget);
         Frame expandedFr = new Frame(fr).add(oheTarget);
-        Scope.track(expandedFr);
 //        printFrame(expandedFr);
         
         // add one sum aggregator per targetclass -> this will produce a {targetclass} numerator.
