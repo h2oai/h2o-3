@@ -1342,13 +1342,17 @@ Examples:
    .. code-tab:: r R
 
         # import the prostate dataset:
-        prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        pros <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-        # set the factor:
-        prostate[, 2] <- as.factor(prostate[, 2])
+        # set the factors:
+        pros[, 2] <- as.factor(pros[, 2])
+        pros[, 4] <- as.factor(pros[, 4])
+        pros[, 5] <- as.factor(pros[, 5])
+        pros[, 6] <- as.factor(pros[, 6])
+        pros[, 9] <- as.factor(pros[, 9])
 
         # split the data into training and validation sets:
-        pros_split <- h2o.splitFrame(data = prostate, ratio = 0.8, seed = 1234)
+        pros_split <- h2o.splitFrame(data = pros, ratio = 0.8, seed = 1234)
         train <- pros_split[[1]]
         valid <- pros_split[[2]]
 
@@ -1425,9 +1429,9 @@ Examples:
         pros[, 9] <- as.factor(pros[, 9])
 
         # split the data into training and validation sets:
-        cars_splits <- h2o.splitFrame(data = cars, ratio = 0.8, seed = 1234)
-        train <- cars_splits[[1]]
-        valid <- cars_splits[[2]
+        pros_splits <- h2o.splitFrame(data = pros, ratio = 0.8, seed = 1234)
+        train <- pros_splits[[1]]
+        valid <- pros_splits[[2]]
 
         # build and train the model:
         pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
@@ -1458,7 +1462,7 @@ Examples:
         response = "CAPSULE"
 
         # split the data into training and validation sets:
-        train, valid = cars.split_frame(ratios=[.8],seed=1234)
+        train, valid = pros.split_frame(ratios=[.8], seed=1234)
 
         # build and train the model:
         pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
@@ -1546,10 +1550,14 @@ Examples:
    .. code-tab:: r R
 
         # import the prostate dataset:
-        prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        pros <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-        # set the factor:
-        prostate[, 2] <- as.factor(prostate[, 2])
+        # set the factors:
+        pros[, 2] <- as.factor(pros[, 2])
+        pros[, 4] <- as.factor(pros[, 4])
+        pros[, 5] <- as.factor(pros[, 5])
+        pros[, 6] <- as.factor(pros[, 6])
+        pros[, 9] <- as.factor(pros[, 9])
 
         # set the predictors and response columns:
         response <- "CAPSULE"
@@ -1558,7 +1566,7 @@ Examples:
         # build and train the model:
         pros_glm <- h2o.glm(x = predictors, 
                             y = response, 
-                            training_frame = prostate, 
+                            training_frame = pros, 
                             family = "binomial", 
                             nfolds = 5, 
                             alpha = 0.5, 
@@ -1572,10 +1580,14 @@ Examples:
    
         # import H2OGeneralizedLinearEstimator and the prostate dataset:
         from h2o.estimators import H2OGeneralizedLinearEstimator
-        prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        pros = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-        # set the factor:
-        prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
+        # set the factors:
+        pros[1] = pros[1].asfactor()
+        pros[3] = pros[3].asfactor()
+        pros[4] = pros[4].asfactor()
+        pros[5] = pros[5].asfactor()
+        pros[8] = pros[8].asfactor()
 
         # set the predictors and response columns:
         response = "CAPSULE"
@@ -1586,7 +1598,7 @@ Examples:
                                             alpha = 0.5, 
                                             lambda_search = False, 
                                             family = "binomial")
-        glm.train(x = predictors, y = response, training_frame = prostate)
+        glm.train(x = predictors, y = response, training_frame = pros)
 
         # build the standardized coefficient magnitudes plot:
         glm.std_coef_plot()
@@ -1645,26 +1657,26 @@ Binomial Examples
    .. code-tab:: r R
 
         # import the prostate dataset:
-        prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        pros <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
         # set the factors:
-        prostate[, "CAPSULE"] <- as.factor(prostate[, "CAPSULE"])
-        prostate[, "RACE"] <- as.factor(prostate[, "RACE"])
+        pros[, "CAPSULE"] <- as.factor(pros[, "CAPSULE"])
+        pros[, "RACE"] <- as.factor(pros[, "RACE"])
 
         # build and train the model:
         pros_gbm <- h2o.gbm(x = c("AGE","RACE"), y = "CAPSULE", 
-                            training_frame = prostate, 
+                            training_frame = pros, 
                             ntrees = 10, max_depth = 5, 
                             learn_rate = 0.1, seed = 1234)
 
         # build a 1-dimensional partial dependence plot:
         h2o_1d_pdp = h2o.partialPlot(object = pros_gbm, 
-                                     data = prostate, 
+                                     data = pros, 
                                      cols = c("AGE", "RACE"))
 
         # build a 2-dimensional partial depedence plot:
         h2o_2d_pdp <- h2o.partialPlot(object = pros_gbm, 
-                                      data = prostate, 
+                                      data = pros, 
                                       col_pairs_2dpdp=list(c("RACE", "AGE"), c("AGE", "PSA")),
                                       plot = FALSE)
 
@@ -1672,11 +1684,11 @@ Binomial Examples
    
         # import H2OGradiantBoostingEstimator and the prostate dataset:
         from h2o.estimators import H2OGradientBoostingEstimator
-        prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        pros = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
         # set the factors:
-        prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
-        prostate["RACE"] = prostate["RACE"].asfactor()
+        pros["CAPSULE"] = pros["CAPSULE"].asfactor()
+        pros["RACE"] = pros["RACE"].asfactor()
 
         # set the predictors and response columns:
         predictors = ["AGE","RACE"]
@@ -1687,13 +1699,13 @@ Binomial Examples
                                                 max_depth = 5, 
                                                 learn_rate = 0.1,
                                                 seed = 1234)
-        pros_gbm.train(x = predictors, y = response, training_frame = prostate)
+        pros_gbm.train(x = predictors, y = response, training_frame = pros)
 
         # build a 1-dimensional partial dependence plot:
-        pros_gbm.partial_plot(data = prostate, cols = ["AGE","RACE"], server=True, plot = True)
+        pros_gbm.partial_plot(data = pros, cols = ["AGE","RACE"], server=True, plot = True)
 
         # build a 2-dimensional partial dependence plot:
-        pdp2dOnly = pros_gbm.partial_plot(data = prostate, 
+        pdp2dOnly = pros_gbm.partial_plot(data = pros, 
                                           server = True, 
                                           plot = False, 
                                           col_pairs_2dpdp = [['AGE', 'PSA'],['AGE', 'RACE']])
@@ -1800,21 +1812,25 @@ This section provides examples of performing predictions in Python and R. Refer 
         library(h2o)
         h2o.init()
 
-        # Import the prostate dataset
-        prostate <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
+        # import the prostate dataset:
+        pros <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-        # Split dataset giving the training dataset 75% of the data
-        prostate_split <- h2o.splitFrame(data = prostate, ratios = 0.75, seed = 1234)
-        prostate_train <- prostate_split[[1]]
-        prostate_test <- prostate_split[[2]]
+        # set the factors:
+        pros[, 2] <- as.factor(pros[, 2])
+        pros[, 4] <- as.factor(pros[, 4])
+        pros[, 5] <- as.factor(pros[, 5])
+        pros[, 6] <- as.factor(pros[, 6])
+        pros[, 9] <- as.factor(pros[, 9])
 
-        # Convert the response column to a factor
-        prostate_train$CAPSULE <- as.factor(prostate_train$CAPSULE)
+        # split the data into training and validation sets:
+        pros_splits <- h2o.splitFrame(data = pros, ratio = 0.8, seed = 1234)
+        train <- pros_splits[[1]]
+        test <- pros_splits[[2]]        
 
         # Build a GBM model
         model <- h2o.gbm(y = "CAPSULE",
-                         x = c("AGE", "RACE", "PSA", "GLEASON"),
-                         training_frame = prostate_train,
+                         x = 3:9,
+                         training_frame = train,
                          distribution = "bernoulli",
                          ntrees = 100,
                          max_depth = 4,
@@ -1822,7 +1838,7 @@ This section provides examples of performing predictions in Python and R. Refer 
                          seed = 1234)
 
         # Predict using the GBM model and the testing dataset
-        pred <- h2o.predict(object = model, newdata = prostate_test)
+        pred <- h2o.predict(object = model, newdata = test)
         pred
           predict         p0         p1
         1       0 0.7260791 0.27392089
@@ -1851,13 +1867,13 @@ This section provides examples of performing predictions in Python and R. Refer 
         h2o.init()
         
         # Import the prostate dataset
-        h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
+        pros = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
 
         # Convert the response column to a factor
-        h2o_df["CAPSULE"] = h2o_df["CAPSULE"].asfactor()
+        pros["CAPSULE"] = pros["CAPSULE"].asfactor()
 
         # Split the data into train and test 
-        train, test = h2o_df.split_frame(ratios = [.75], seed = 1234)
+        train, test = pros.split_frame(ratios = [.75], seed = 1234)
         
         # Generate a GBM model using the training dataset
         model = H2OGradientBoostingEstimator(distribution = "bernoulli",
@@ -1906,7 +1922,7 @@ Using the previous example, run the following to predict the leaf node assignmen
   
         # Predict the leaf node assignment using the GBM model and test data.
         # Predict based on the path from the root node of the tree.
-        predict_lna <- h2o.predict_leaf_node_assignment(model, prostate_test)
+        predict_lna <- h2o.predict_leaf_node_assignment(model, test)
 
         # View a summary of the leaf node assignment prediction
         summary(predict_lna$T1.C1, exact_quantiles = TRUE)
