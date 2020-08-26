@@ -19,13 +19,11 @@ doc = dict(
 library(h2o)
 h2o.init()
 
-# Run regression GBM on australia data
-australia_path <- system.file("extdata", "australia.csv", package = "h2o")
-australia <- h2o.uploadFile(path = australia_path)
-independent <- c("premax", "salmax", "minairtemp", "maxairtemp", "maxsst",
-                 "maxsoilmoist", "Max_czcs")
-dependent <- "runoffnew"
-h2o.gbm(y = dependent, x = independent, training_frame = australia,
-        ntrees = 3, max_depth = 3, min_rows = 2)
+titanic = h2o.uploadFile(locate("smalldata/gbm_test/titanic.csv"))
+response = "survived"
+predictors <- c("age", "sibsp", "parch", "fare", "sex", "pclass")
+titanic[,response] <- as.factor(titanic[,response])
+titanic[,"pclass"] <- as.factor(titanic[,"pclass"])
+rf_h2o = h2o.rulefit(y=response, x=predictors, training_frame = titanic, max_rule_length=10, max_num_rules=100, seed=1234, model_type="rules")
 """
 )

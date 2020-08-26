@@ -22,7 +22,7 @@ class H2ORuleFitEstimator(H2OEstimator):
 
     algo = "rulefit"
     param_names = {"model_id", "training_frame", "seed", "response_column", "ignored_columns", "algorithm",
-                   "min_rule_length", "max_rule_length", "max_num_rules", "model_type"}
+                   "min_rule_length", "max_rule_length", "max_num_rules", "model_type", "weights_column", "distribution"}
 
     def __init__(self, **kwargs):
         super(H2ORuleFitEstimator, self).__init__()
@@ -170,5 +170,40 @@ class H2ORuleFitEstimator(H2OEstimator):
     def model_type(self, model_type):
         assert_is_type(model_type, None, Enum("rules_and_linear", "rules", "linear"))
         self._parms["model_type"] = model_type
+
+
+    @property
+    def weights_column(self):
+        """
+        Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the
+        dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
+        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the data
+        frame. This is typically the number of times a row is repeated, but non-integer values are supported as well.
+        During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+
+        Type: ``str``.
+        """
+        return self._parms.get("weights_column")
+
+    @weights_column.setter
+    def weights_column(self, weights_column):
+        assert_is_type(weights_column, None, str)
+        self._parms["weights_column"] = weights_column
+
+
+    @property
+    def distribution(self):
+        """
+        Distribution function
+
+        One of: ``"auto"``, ``"bernoulli"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``, ``"gamma"``,
+        ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
+        """
+        return self._parms.get("distribution")
+
+    @distribution.setter
+    def distribution(self, distribution):
+        assert_is_type(distribution, None, Enum("auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
+        self._parms["distribution"] = distribution
 
 

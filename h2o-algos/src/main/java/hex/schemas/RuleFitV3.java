@@ -19,7 +19,9 @@ public class RuleFitV3 extends ModelBuilderSchema<RuleFit, RuleFitV3, RuleFitV3.
             "min_rule_length", 
             "max_rule_length",
             "max_num_rules",
-            "model_type"
+            "model_type",
+            "weights_column", 
+            "distribution"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable).", gridable = true)

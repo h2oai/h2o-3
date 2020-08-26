@@ -2,6 +2,7 @@ package hex.rulefit;
 
 import hex.ConfusionMatrix;
 import hex.ScoringInfo;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import org.junit.Assert;
@@ -48,6 +49,7 @@ public class RuleFitTest extends TestUtil {
             params._response_column = responseColumnName;
             params._max_num_rules = 100;
             params._model_type = RuleFitModel.ModelType.RULES;
+            params._distribution = DistributionFamily.bernoulli;
 
             rfModel = new RuleFit(params).trainModel().get();
 
@@ -139,12 +141,17 @@ public class RuleFitTest extends TestUtil {
             fr.remove("body").remove();
             fr.remove("home.dest").remove();
 
+            final Vec weightsVector = Vec.makeOne(fr.numRows());
+            final String weightsColumnName = "weights";
+            fr.add(weightsColumnName, weightsVector);
+
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
             params._train = fr._key;
             params._response_column = responseColumnName;
             params._max_num_rules = 100;
             params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
+            params._weights_column = "weights";
 
             rfModel = new RuleFit(params).trainModel().get();
 
@@ -310,6 +317,7 @@ public class RuleFitTest extends TestUtil {
             params._max_num_rules = 200;
             params._max_rule_length = 5;
             params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
+            params._distribution = DistributionFamily.gaussian;
 
             model = new RuleFit( params).trainModel().get();
 
@@ -500,7 +508,7 @@ public class RuleFitTest extends TestUtil {
 
 
     @Test
-    public void testDiabetes() {
+    public void testDiabetesWithWeights() {
         RuleFitModel rfModel = null;
         GLMModel glmModel = null;
         Frame fr = null, fr2 = null, fr3 = null;
@@ -509,12 +517,17 @@ public class RuleFitTest extends TestUtil {
             fr = parse_test_file("./smalldata/diabetes/diabetes_text_train.csv");
             Scope.track(fr);
 
+            final Vec weightsVector = createRandomBinaryWeightsVec(fr.numRows(), 10);
+            final String weightsColumnName = "weights";
+            fr.add(weightsColumnName, weightsVector);
+            
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 12345;
             params._train = fr._key;
             params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
             params._response_column = "diabetesMed";
             params._max_num_rules = 2000;
+            params._weights_column = "weights";
 
 
             rfModel = new RuleFit(params).trainModel().get();

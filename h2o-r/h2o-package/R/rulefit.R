@@ -19,19 +19,24 @@
 #'        diminishing returns in model deviance. Defaults to -1.
 #' @param model_type Specifies type of base learners in the ensemble. Must be one of: "RULES_AND_LINEAR", "RULES", "LINEAR".
 #'        Defaults to RULES_AND_LINEAR.
+#' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
+#'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
+#'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
+#'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
+#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+#' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
+#'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
 #' @examples
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' 
-#' # Run regression GBM on australia data
-#' australia_path <- system.file("extdata", "australia.csv", package = "h2o")
-#' australia <- h2o.uploadFile(path = australia_path)
-#' independent <- c("premax", "salmax", "minairtemp", "maxairtemp", "maxsst",
-#'                  "maxsoilmoist", "Max_czcs")
-#' dependent <- "runoffnew"
-#' h2o.gbm(y = dependent, x = independent, training_frame = australia,
-#'         ntrees = 3, max_depth = 3, min_rows = 2)
+#' titanic = h2o.uploadFile(locate("smalldata/gbm_test/titanic.csv"))
+#' response = "survived"
+#' predictors <- c("age", "sibsp", "parch", "fare", "sex", "pclass")
+#' titanic[,response] <- as.factor(titanic[,response])
+#' titanic[,"pclass"] <- as.factor(titanic[,"pclass"])
+#' rf_h2o = h2o.rulefit(y=response, x=predictors, training_frame = titanic, max_rule_length=10, max_num_rules=100, seed=1234, model_type="rules")
 #' }
 #' @export
 h2o.rulefit <- function(x,
@@ -43,7 +48,9 @@ h2o.rulefit <- function(x,
                         min_rule_length = 1,
                         max_rule_length = 10,
                         max_num_rules = -1,
-                        model_type = c("RULES_AND_LINEAR", "RULES", "LINEAR"))
+                        model_type = c("RULES_AND_LINEAR", "RULES", "LINEAR"),
+                        weights_column = NULL,
+                        distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -79,6 +86,10 @@ h2o.rulefit <- function(x,
     parms$max_num_rules <- max_num_rules
   if (!missing(model_type))
     parms$model_type <- model_type
+  if (!missing(weights_column))
+    parms$weights_column <- weights_column
+  if (!missing(distribution))
+    parms$distribution <- distribution
 
   # Error check and build model
   model <- .h2o.modelJob('rulefit', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -93,6 +104,8 @@ h2o.rulefit <- function(x,
                                         max_rule_length = 10,
                                         max_num_rules = -1,
                                         model_type = c("RULES_AND_LINEAR", "RULES", "LINEAR"),
+                                        weights_column = NULL,
+                                        distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                                         segment_columns = NULL,
                                         segment_models_id = NULL,
                                         parallelism = 1)
@@ -133,6 +146,10 @@ h2o.rulefit <- function(x,
     parms$max_num_rules <- max_num_rules
   if (!missing(model_type))
     parms$model_type <- model_type
+  if (!missing(weights_column))
+    parms$weights_column <- weights_column
+  if (!missing(distribution))
+    parms$distribution <- distribution
 
   # Build segment-models specific parameters
   segment_parms <- list()

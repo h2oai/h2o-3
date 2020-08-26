@@ -1,6 +1,7 @@
 package hex.rulefit;
 
 import hex.*;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.schemas.TreeV3;
@@ -96,21 +97,60 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         treeParameters._train = _parms._train;
         treeParameters._ignored_columns = _parms._ignored_columns;
         treeParameters._seed = _parms._seed;
+        treeParameters._weights_column = _parms._weights_column;
+        treeParameters._distribution = _parms._distribution;
     }
 
     private void initGLMParameters() {
-        if (_nclass < 2) { // regression
-            glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.gaussian);
-        } else if (_nclass == 2) { // binomial classification
-            glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.binomial);
-        } else { // multinomial classification
-            glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.multinomial);
+        if (_parms._distribution == DistributionFamily.AUTO) {
+            if (_nclass < 2) { // regression
+                glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.gaussian);
+            } else if (_nclass == 2) { // binomial classification
+                glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.binomial);
+            } else { // multinomial classification
+                glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.multinomial);
+            }
+        } else {
+            switch (_parms._distribution) {
+                case bernoulli:
+                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.binomial);
+                    break;
+                case quasibinomial:
+                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.quasibinomial);
+                    break;
+                case multinomial:
+                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.multinomial);
+                    break;
+                case ordinal:
+                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.ordinal);
+                    break;
+                case gaussian:
+                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.gaussian);
+                    break;
+                case poisson:
+                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.poisson);
+                    break;
+                case gamma:
+                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.gamma);
+                    break;
+                case tweedie:
+                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.tweedie);
+                    break;
+                case fractionalbinomial:
+                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.fractionalbinomial);
+                    break;
+                case negativebinomial:
+                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.negativebinomial);
+                    break;
+                default:
+                    error("_distribution", "Distribution not supported.");
+            }
         }
         glmParameters._response_column = _parms._response_column;
         glmParameters._seed = _parms._seed;
         // alpha ignored - set to 1 by rulefit (Lasso)
         glmParameters._alpha = new double[]{1};
-
+        glmParameters._weights_column = _parms._weights_column;
     }
 
 
@@ -134,6 +174,9 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 List<SharedTreeModel> treeModels = new ArrayList<SharedTreeModel>();
 
                 pathsFrame.add(_parms._response_column, _response.makeCopy());
+                if (_parms._weights_column != null) {
+                    pathsFrame.add(_parms._weights_column, _weights.makeCopy());
+                }
                 Frame paths = null;
                 Key[] keys = new Key[depths.length];
                 // prepare rules
