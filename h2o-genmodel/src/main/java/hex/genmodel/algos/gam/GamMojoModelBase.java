@@ -81,8 +81,8 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
       if (Double.isNaN(data[ind])) data[ind] = _catNAFills[ind];
 
     if (data.length == nfeatures()) { // using centered gam cols, nfeatures denotes centered gam columns
-      for (int ind = 0; ind < _numsCenter; ind++)
-        if (Double.isNaN(data[ind + _cats])) data[ind] = _numNAFillsCenter[ind];
+      for (int ind = _cats; ind < _numsCenter + _cats; ind++)
+        if (Double.isNaN(data[ind])) data[ind] = _numNAFillsCenter[ind - _cats];
     } else {
       for (int ind = 0; ind < _nums; ind++) {
         int colInd = ind+_cats;
@@ -106,9 +106,6 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
   // This method will read in categorical value and adjust for when useAllFactorLevels = true or false
   int readCatVal(double data, int dataIndex) {
     int ival = _useAllFactorLevels ? ((int) data) : ((int) data - 1);
-    double targetVal = _useAllFactorLevels ? (data) : (data - 1);
-    if (ival != targetVal) 
-      throw new IllegalArgumentException("categorical value out of range");
     if (ival < 0)
       return -1;
     ival += _catOffsets[dataIndex];
