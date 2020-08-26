@@ -793,8 +793,18 @@ public class DTree extends Iced {
       boolean isLeft = parent._nids[0] == _nid;
       return isLeft ? parent._split._tree_p0 : parent._split._tree_p1;
     }
-  }
 
+    /**
+     * Returns column which were used to create a leaf node.
+     * For quantile distributions this can be used to calculate monotone constraints
+     * @return column index
+     */
+    public final int geSplitColumn(){
+      DTree.DecidedNode parent = (DTree.DecidedNode) _tree.node(_pid);
+      return parent._split._col;
+    }
+  }
+  
   final static public int NO_PARENT = -1;
   static public boolean isRootNode(Node n)   { return n._pid == NO_PARENT; }
 
