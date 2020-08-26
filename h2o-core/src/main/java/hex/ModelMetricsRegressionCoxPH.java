@@ -164,6 +164,8 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
     }
 
     private static Stats concordanceStats(Vec.Reader startVec, Vec.Reader stopVec, Vec.Reader eventVec, List<Vec.Reader> strataVecs, Vec.Reader estimateVec, long length) {
+      assert 0 <= length && length <= Integer.MAX_VALUE;
+      
       Stream<Integer> allIndexes = IntStream.range(0, (int) length).boxed();
 
       Map<List<Long>, List<Integer>> byStrata = allIndexes.collect(groupingBy(
@@ -173,11 +175,11 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
       ));
 
       return byStrata.values().stream().map(
-        indexes -> statsForAStrata(startVec, stopVec, eventVec, strataVecs, estimateVec, length, indexes)
+        indexes -> statsForAStrata(startVec, stopVec, eventVec, estimateVec, indexes)
       ).reduce(new Stats(), Stats::plus);
     }
 
-    private static Stats statsForAStrata(Vec.Reader startVec, Vec.Reader stopVec, Vec.Reader eventVec, List<Vec.Reader> strataVecs, Vec.Reader estimateVec, long length, List<Integer> indexes) {
+    private static Stats statsForAStrata(Vec.Reader startVec, Vec.Reader stopVec, Vec.Reader eventVec, Vec.Reader estimateVec, List<Integer> indexes) {
       long ntotals = 0;
       long nNotNaN = 0;
       long nconcordant = 0;
@@ -194,10 +196,6 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
           final long event2 = eventVec.at8(j);
           final double estimate1 = estimateVec.at(i);
           final double estimate2 = estimateVec.at(j);
-
-          strataVecs.stream().forEach(
-             v -> { assert v.at8(i) == v.at(j); }
-          );
 
           boolean censored1 = 0 == event1;
           boolean censored2 = 0 == event2;

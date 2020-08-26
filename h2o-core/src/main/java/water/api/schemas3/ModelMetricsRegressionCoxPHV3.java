@@ -5,16 +5,16 @@ import water.api.API;
 import water.api.API.Direction;
 
 public class ModelMetricsRegressionCoxPHV3 extends ModelMetricsRegressionV3<ModelMetricsRegressionCoxPH, ModelMetricsRegressionCoxPHV3> {
-  @API(help="concordance",direction = Direction.OUTPUT)
+  @API(help="concordance index",direction = Direction.OUTPUT)
   public double concordance;
 
-  @API(help = "concordant", direction = Direction.OUTPUT)
+  @API(help = "number of concordant pairs", direction = Direction.OUTPUT)
   public long concordant;
 
-  @API(help = "discordant", direction = Direction.OUTPUT)
+  @API(help = "number of discordant pairs", direction = Direction.OUTPUT)
   public long discordant;
 
-  @API(help = "tiedY", direction = Direction.OUTPUT)
+  @API(help = "number of pairs tied in Y value", direction = Direction.OUTPUT)
   public long tiedY;
 
   @Override
