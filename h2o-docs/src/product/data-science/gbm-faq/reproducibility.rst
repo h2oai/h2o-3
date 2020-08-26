@@ -293,7 +293,7 @@ The parallelization level (number of cores, nthreads) controls how the dataset w
 
 .. Role in GBM - scoring intervals and early stopping, creating histograms
 
-How do I access reproducibility information for MOJOs?
+How does my model provide reproducibility information?
 ######################################################
 
 Reproducibility information is divided into node information, cluster configuration, and input frames and is stored in MOJO. This can be accessed as: ``model._model_json['output']['reproducibility_information_table']``
