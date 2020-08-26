@@ -27,14 +27,14 @@ import water.util.TwoDimTable;
 
 import java.util.Random;
 
+import static ai.h2o.targetencoding.EncodingsComponents.NO_TARGET_CLASS;
+
 /**
  * This is a helper class for target encoding related logic,
  * grouping mainly distributed tasks or other utility functions needed to generate and apply the target encoding maps.
  *
  */
 public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
-
-  static final int NO_TARGET_CLASS = -1;
 
   static String NUMERATOR_COL = "numerator";
   static String DENOMINATOR_COL = "denominator";
@@ -389,7 +389,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
    * 
    * @param fr the frame with a numerator and denominator columns, which will be modified based on the value in the target column.
    * @param targetColumn the name of the target column.
-   * @param targetClass for regression use {@value #NO_TARGET_CLASS}, 
+   * @param targetClass for regression use {@value EncodingsComponents#NO_TARGET_CLASS}, 
    *                    for classification this is the target value to match in order to decrement the numerator.
    */
   static void subtractTargetValueForLOO(Frame fr, String targetColumn, int targetClass) {
