@@ -14,8 +14,7 @@ import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
-import static ai.h2o.targetencoding.TargetEncoderHelper.DENOMINATOR_COL;
-import static ai.h2o.targetencoding.TargetEncoderHelper.NUMERATOR_COL;
+import static ai.h2o.targetencoding.TargetEncoderHelper.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(H2ORunner.class)
@@ -29,7 +28,7 @@ public class TargetEncodingOnMulticlassTest extends TestUtil {
       final Frame fr = new TestFrameBuilder()
               .withColNames("categorical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-              .withDataForCol(0, ar("a", "a", "a", "a", "b", "b"))
+              .withDataForCol(0, ar("a",    "a",   "a",     "a",  "b",   "b"))
               .withDataForCol(1, ar("NO", "YES", "YES", "MAYBE", "NO", "YES"))
               .build();
 
@@ -42,21 +41,39 @@ public class TargetEncodingOnMulticlassTest extends TestUtil {
       TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
       Frame encodings = teModel._output._target_encoding_map.get("categorical");
+//      printOutFrameAsTable(encodings);
         
-      Vec expectedCatColumn = vec(ar("a", "b"), 0, 1);
-      Vec expectedNumColumn = vec(3, 1);  // for binomial, numerator should correspond to the sum of positive occurrences (here "YES" ) for each category
-      Vec expectedDenColumn = vec(4, 2);  // for binomial, denominator should correspond to the sum of all occurrences for each category
+      Vec expectedCatColumn = vec(ar("a", "b"),  // 4 entries per category (one for each target class+NA)
+              0, 0, 0, 0, 
+              1, 1, 1, 1);
+      Vec expectedTargetClassColumn = vec(ar("MAYBE", "NO", "YES", "missing(NA)"), // 2 entries per target class, one for each category (from the categorical column)
+              0, 1, 2, 3,
+              0, 1, 2, 3); 
+      Vec expectedNumColumn = vec( // for multinomial, numerator should correspond to the sum of matching target occurrences for each category
+              1, 1, 2, 0, 
+              0, 1, 1, 0);  
+      Vec expectedDenColumn = vec( // for multinomial, denominator should correspond to the sum of all occurrences for each category
+              4, 4, 4, 4, 
+              2, 2, 2, 2); 
 
       assertVecEquals(expectedCatColumn, encodings.vec("categorical"), 0);
+      assertVecEquals(expectedTargetClassColumn, encodings.vec(TARGETCLASS_COL), 0);
       assertVecEquals(expectedNumColumn, encodings.vec(NUMERATOR_COL), 0);
       assertVecEquals(expectedDenColumn, encodings.vec(DENOMINATOR_COL), 0);
       
       Frame trainEncoded = teModel.transformTraining(fr);
       Scope.track(trainEncoded);
-      Vec trainEncodedCol = trainEncoded.vec("categorical_te");
-      Assert.assertNotNull(trainEncodedCol);
-      Vec expectedEncodedCol = dvec(.75, .75, .75, .75, .5, .5);
-      assertVecEquals(expectedEncodedCol, trainEncodedCol, 1e-6);
+      Assert.assertEquals(4, trainEncoded.numCols()); // 2 original cols + 2 (=3-1) enc columns for the categorical col (NA target currently ignored)
+      
+      Vec trainNOEncCol = trainEncoded.vec("categorical_NO_te");
+      Assert.assertNotNull(trainNOEncCol);
+      Vec expectedNOEncCol = dvec(.25, .25, .25, .25, .5, .5);
+      assertVecEquals(expectedNOEncCol, trainNOEncCol, 1e-6);
+      
+      Vec trainYESEncCol = trainEncoded.vec("categorical_YES_te");
+      Assert.assertNotNull(trainYESEncCol);
+      Vec expectedYESEncCol = dvec(.5, .5, .5, .5, .5, .5);
+      assertVecEquals(expectedYESEncCol, trainYESEncCol, 1e-6);
     } finally {
       Scope.exit();
     }
@@ -69,8 +86,8 @@ public class TargetEncodingOnMulticlassTest extends TestUtil {
       final Frame fr = new TestFrameBuilder()
               .withColNames("categorical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-              .withDataForCol(0, ar( "a",   "a",  null,   "b",   "a",  null,  "b",   "a", null))
-              .withDataForCol(1, ar("NO", "YES",  "NO", "YES", "YES", "MAYBE", "NO", "YES", "NO"))
+              .withDataForCol(0, ar( "a",   "a",    null,   "b",   "a",    null,  "b",   "a", null,     "a"))
+              .withDataForCol(1, ar("NO", "YES", "MAYBE", "YES", "YES", "MAYBE", "NO", "YES", "NO", "MAYBE"))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -84,23 +101,47 @@ public class TargetEncodingOnMulticlassTest extends TestUtil {
       Scope.track_generic(teModel);
       Frame encodings = teModel._output._target_encoding_map.get("categorical");
       printOutFrameAsTable(encodings);
-      double priorMean = TargetEncoderHelper.computePriorMean(encodings);
-      assertEquals(0.556, priorMean, 1e-3); // == 5/9
 
-      Vec expectedCatColumn = vec(ar("a", "b", "categorical_NA"), 0, 1, 2); //  we should have an entry per category
-      Vec expectedNumColumn = vec(3, 1, 1); // for binomial, numerator should correspond to the sum of positive occurrences (here "YES" ) for each category
-      Vec expectedDenColumn = vec(4, 2, 3); // for binomial, denominator should correspond to the sum of all occurrences for each category
+      Vec expectedCatColumn = vec(ar("a", "b", "categorical_NA"),  // 4 entries per category (one for each target class+NA)
+          //  M  N  Y na
+              0, 0, 0, 0,  //a
+              1, 1, 1, 1,  //b
+              2, 2, 2, 2); //NA
+      Vec expectedTargetClassColumn = vec(ar("MAYBE", "NO", "YES", "missing(NA)"), // 2 entries per target class, one for each category (from the categorical column)
+              0, 1, 2, 3,
+              0, 1, 2, 3,
+              0, 1, 2, 3);
+      Vec expectedNumColumn = vec( // for multinomial, numerator should correspond to the sum of matching target occurrences for each category
+              1, 1, 3, 0,
+              0, 1, 1, 0,
+              2, 1, 0, 0);
+      Vec expectedDenColumn = vec( // for multinomial, denominator should correspond to the sum of all occurrences for each category
+              5, 5, 5, 5,
+              2, 2, 2, 2,
+              3, 3, 3, 3);
 
       assertCatVecEquals(expectedCatColumn, encodings.vec("categorical"));
+      assertVecEquals(expectedTargetClassColumn, encodings.vec(TARGETCLASS_COL), 0);
       assertVecEquals(expectedNumColumn, encodings.vec(NUMERATOR_COL), 0);
       assertVecEquals(expectedDenColumn, encodings.vec(DENOMINATOR_COL), 0);
 
       Frame trainEncoded = teModel.transformTraining(fr);
       Scope.track(trainEncoded);
-      Vec trainEncodedCol = trainEncoded.vec("categorical_te");
-      Assert.assertNotNull(trainEncodedCol);
-      Vec expectedEncodedCol = dvec(0.75, 0.75, 0.333, 0.5, 0.75, 0.333, 0.5, 0.75, 0.333); // == (3/4, 3/4, 1/3, 1/2, 3/4, 1/3, 1/2, 3/4, 1/3)
-      assertVecEquals(expectedEncodedCol, trainEncodedCol, 1e-3);
+      Assert.assertEquals(4, trainEncoded.numCols()); // 2 original cols + 2 (=3-1) enc columns for the categorical col (NA target currently ignored)
+
+      Vec trainNOEncCol = trainEncoded.vec("categorical_NO_te");
+      Assert.assertNotNull(trainNOEncCol);
+      double priorMeanNO = computePriorMean(encodings, 1);
+      assertEquals(0.3, priorMeanNO, 1e-3); // == 3/10
+      Vec expectedNOEncCol = dvec(.2, .2, .333, .5, .2, .333, .5, .2, .333, .2); // == (1/5, 1/5, 1/3, 1/2, 1/5, 1/3, 1/2, 1/5, 1/3, 1/5)
+      assertVecEquals(expectedNOEncCol, trainNOEncCol, 1e-3);
+
+      Vec trainYESEncCol = trainEncoded.vec("categorical_YES_te");
+      Assert.assertNotNull(trainYESEncCol);
+      double priorMeanYES = computePriorMean(encodings, 2);
+      assertEquals(0.4, priorMeanYES, 1e-3); // == 4/10
+      Vec expecteYESEncCol = dvec(.6, .6, 0, .5, .6, 0, .5, .6, 0, .6); // == (3/5, 3/5, 0/3, 1/2, 3/5, 0/3, 1/2, 3/5, 0/3, 3/5)
+      assertVecEquals(expecteYESEncCol, trainYESEncCol, 1e-3);
       
       final Frame test = new TestFrameBuilder()
               .withColNames("categorical")
@@ -109,19 +150,27 @@ public class TargetEncodingOnMulticlassTest extends TestUtil {
               .build();
       Frame testEncoded = teModel.transform(test);
       Scope.track(testEncoded);
-      Vec testEncodedCol = testEncoded.vec("categorical_te");
-      Assert.assertNotNull(testEncodedCol);
-      Vec expectedTestEnc = dvec(0.333, 0.5, 0.75, 0.333); // == (1/3, 1/2, 3/4, 1/3), unseen "c' currently trainEncodedCol like null (would rather use prior...)
-      assertVecEquals(expectedTestEnc, testEncodedCol, 1e-3);
+
+      Vec testNOEncCol = testEncoded.vec("categorical_NO_te");
+      Assert.assertNotNull(testNOEncCol);
+      Vec expectedTestNOEnc = dvec(0.333, .5, .2, 0.333); // == (1/3, 1/2, 1/5, 1/3), unseen "c' currently like null (would rather use prior...)
+      assertVecEquals(expectedTestNOEnc, testNOEncCol, 1e-3);
+
+      Vec testYESEncCol = testEncoded.vec("categorical_YES_te");
+      Assert.assertNotNull(testYESEncCol);
+      Vec expectedTestYESEnc = dvec(0, .5, .6, 0); // == (0/3, 1/2, 3/5, 0/3), unseen "c' currently like null (would rather use prior...)
+      assertVecEquals(expectedTestYESEnc, testYESEncCol, 1e-3);
 
       Frame testPredictions = teModel.score(test);
       Scope.track(testPredictions);
-      assertVecEquals(expectedTestEnc, testPredictions.vec("categorical_te"), 1e-3);
-      
-      // with None strategy, transformTraining behaves the same as default transform
+      assertVecEquals(expectedTestNOEnc, testPredictions.vec("categorical_NO_te"), 1e-3);
+      assertVecEquals(expectedTestYESEnc, testPredictions.vec("categorical_YES_te"), 1e-3);
+
+//       with None strategy, transformTraining behaves the same as default transform
       Frame testEncodedAsTrain = teModel.transformTraining(test);
       Scope.track(testEncodedAsTrain);
-      assertVecEquals(expectedTestEnc, testEncodedAsTrain.vec("categorical_te"), 1e-3);
+      assertVecEquals(expectedTestNOEnc, testEncodedAsTrain.vec("categorical_NO_te"), 1e-3);
+      assertVecEquals(expectedTestYESEnc, testEncodedAsTrain.vec("categorical_YES_te"), 1e-3);
     } finally {
       Scope.exit();
     }
@@ -134,8 +183,8 @@ public class TargetEncodingOnMulticlassTest extends TestUtil {
       final Frame fr = new TestFrameBuilder()
               .withColNames("categorical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-              .withDataForCol(0, ar( "a",   "a",  null,   "b",   "a",  null,  "b",   "a", null,   "c"))
-              .withDataForCol(1, ar("NO", "YES",  "NO", "YES", "YES", "YES", "NO", "YES", "NO", "YES"))
+              .withDataForCol(0, ar( "a",   "a",    null,   "b",   "a",    null,  "b",   "a", null,   "c",     "a",   "a"))
+              .withDataForCol(1, ar("NO", "YES", "MAYBE", "YES", "YES", "MAYBE", "NO", "YES", "NO", "YES", "MAYBE", "YES"))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -149,23 +198,53 @@ public class TargetEncodingOnMulticlassTest extends TestUtil {
       Scope.track_generic(teModel);
       Frame encodings = teModel._output._target_encoding_map.get("categorical");
       printOutFrameAsTable(encodings);
-      double priorMean = TargetEncoderHelper.computePriorMean(encodings);
-      assertEquals(0.6, priorMean, 1e-3); // == 6/10
 
-      Vec expectedCatColumn = vec(ar("a", "b", "c", "categorical_NA"), 0, 1, 2, 3); //  we should have an entry per category
-      Vec expectedNumColumn = vec(3, 1, 1, 1); // for binomial, numerator should correspond to the sum of positive occurrences (here "YES" ) for each category
-      Vec expectedDenColumn = vec(4, 2, 1, 3); // for binomial, denominator should correspond to the sum of all occurrences for each category
+      Vec expectedCatColumn = vec(ar("a", "b", "c", "categorical_NA"),  // 4 entries per category (one for each target class+NA)
+           // M  N  Y na   
+              0, 0, 0, 0,  //a
+              1, 1, 1, 1,  //b
+              2, 2, 2, 2,  //c
+              3, 3, 3, 3); //NA
+      Vec expectedTargetClassColumn = vec(ar("MAYBE", "NO", "YES", "missing(NA)"), // 2 entries per target class, one for each category (from the categorical column)
+              0, 1, 2, 3,
+              0, 1, 2, 3,
+              0, 1, 2, 3,
+              0, 1, 2, 3);
+      Vec expectedNumColumn = vec( // for multinomial, numerator should correspond to the sum of matching target occurrences for each category
+              1, 1, 4, 0,
+              0, 1, 1, 0,
+              0, 0, 1, 0,
+              2, 1, 0, 0);
+      Vec expectedDenColumn = vec( // for multinomial, denominator should correspond to the sum of all occurrences for each category
+              6, 6, 6, 6,
+              2, 2, 2, 2,
+              1, 1, 1, 1,
+              3, 3, 3, 3);
 
       assertCatVecEquals(expectedCatColumn, encodings.vec("categorical"));
+      assertVecEquals(expectedTargetClassColumn, encodings.vec(TARGETCLASS_COL), 0);
       assertVecEquals(expectedNumColumn, encodings.vec(NUMERATOR_COL), 0);
       assertVecEquals(expectedDenColumn, encodings.vec(DENOMINATOR_COL), 0);
 
       Frame trainEncoded = teModel.transformTraining(fr);
       Scope.track(trainEncoded);
-      Vec encodedCol = trainEncoded.vec("categorical_te");
-      Assert.assertNotNull(encodedCol);
-      Vec expectedEncodedCol = dvec(1., 0.667, 0.5, 0., 0.667, 0., 1., 0.667, 0.5, 0.6); // == (3/3, 2/3, 1/2, 0/1, 2/3, 0/2, 1/1, 2/3, 1/2, 0/0=prior)
-      assertVecEquals(expectedEncodedCol, encodedCol, 1e-3);
+      Assert.assertEquals(4, trainEncoded.numCols()); // 2 original cols + 2 (=3-1) enc columns for the categorical col (NA target currently ignored)
+      printOutFrameAsTable(trainEncoded);
+      
+      Vec trainNOEncCol = trainEncoded.vec("categorical_NO_te");
+      Assert.assertNotNull(trainNOEncCol);
+      double priorMeanNO = computePriorMean(encodings, 1);
+      assertEquals(0.25, priorMeanNO, 1e-3); // == 3/12
+      Vec expectedNOEncCol = dvec(0, .2, .5, 1, .2, .5, 0, .2, 0, .25, .2, .2); // == (0/5, 1/5, 1/2, 1/1, 1/5, 1/2, 0/1, 1/5, 0/2, 0/0=prior, 1/5, 1/5)
+      assertVecEquals(expectedNOEncCol, trainNOEncCol, 1e-3);
+
+      Vec trainYESEncCol = trainEncoded.vec("categorical_YES_te");
+      Assert.assertNotNull(trainYESEncCol);
+      double priorMeanYES = computePriorMean(encodings, 2);
+      assertEquals(0.5, priorMeanYES, 1e-3); // == 6/12
+      Vec expecteYESEncCol = dvec(.8, .6, 0, 0, .6, 0, 1, .6, 0, .5, .8, .6); // == (4/5, 3/5, 0/2, 0/1, 3/5, 0/2, 1/1, 3/5, 0/2, 0/0=prior, 4/5, 3/5)
+      assertVecEquals(expecteYESEncCol, trainYESEncCol, 1e-3);
+      
       
       final Frame test = new TestFrameBuilder()
               .withColNames("categorical", "target")
@@ -175,21 +254,22 @@ public class TargetEncodingOnMulticlassTest extends TestUtil {
               .build();
       Frame testEncoded = teModel.transform(test); // LOO should not be applied this time (target ignored).
       Scope.track(testEncoded);
-      Vec testEncodedCol = testEncoded.vec("categorical_te");
+      Vec testEncodedCol = testEncoded.vec("categorical_YES_te");
       Assert.assertNotNull(testEncodedCol);
-      Vec expectedTestEnc = dvec(0.333, 1., 0.5, 0.75, 0.333); // == (1.3, 1/1, 1/2, 3/4, 1/3), unseen "d' encoded like a NA this time (None strategy)
+      Vec expectedTestEnc = dvec(0, 1, .5, .667, 0); // == (0/3, 1/1, 1/2, 4/6, 0/3), unseen "d' encoded like a NA this time (None strategy)
       assertVecEquals(expectedTestEnc, testEncodedCol, 1.e-3);
 
       Frame testPredictions = teModel.score(test);
       Scope.track(testPredictions);
-      assertVecEquals(expectedTestEnc, testPredictions.vec("categorical_te"), 1e-3);
+      assertVecEquals(expectedTestEnc, testPredictions.vec("categorical_YES_te"), 1e-3);
       
       // with LOO strategy, transformTraining applies to test as if it were a training frame, requiring and taking target into account
       Frame testEncodedAsTrain = teModel.transformTraining(test);
       Scope.track(testEncodedAsTrain);
-      Vec testEncodedAsTrainCol = testEncodedAsTrain.vec("categorical_te");
+      printOutFrameAsTable(testEncodedAsTrain);
+      Vec testEncodedAsTrainCol = testEncodedAsTrain.vec("categorical_YES_te");
       Assert.assertNotNull(testEncodedAsTrainCol);
-      Vec expectedTestEncAsTrain = dvec(0.6, 0.6, 0., 0.667, 0.); // == (prior, 1/0=prior, 0/1, 2/3, 0/2), unseen "d' encodedCol using prior (inconsistent with None strategy)
+      Vec expectedTestEncAsTrain = dvec(.5, .5, 0, .6, -.5); // == (prior, 1/0=prior, 0/1, 3/5, -1/2), unseen "d' encodedCol using prior (inconsistent with None strategy)
       assertVecEquals(expectedTestEncAsTrain, testEncodedAsTrainCol, 1e-3);
     } finally {
       Scope.exit();
@@ -203,9 +283,9 @@ public class TargetEncodingOnMulticlassTest extends TestUtil {
       final Frame fr = new TestFrameBuilder()
               .withColNames("categorical", "target", "foldc")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
-              .withDataForCol(0, ar( "a",   "a",  null,   "b",   "a",  null,  "b",   "a", null,   "c"))
-              .withDataForCol(1, ar("NO", "YES",  "NO", "YES", "YES", "YES", "NO", "YES", "MAYBE", "YES"))
-              .withDataForCol(2, ar(   0,     1,     0,     1,     0,     1,    0,     1,    0,     1))
+              .withDataForCol(0, ar( "a",   "a",    null,   "b",   "a",    null,  "b",   "a", null,   "c",     "a",   "a"))
+              .withDataForCol(1, ar("NO", "YES", "MAYBE", "YES", "YES", "MAYBE", "NO", "YES", "NO", "YES", "MAYBE", "YES"))
+              .withDataForCol(2, ar(   0,     1,       0,     1,     0,       1,    0,     1,    0,     1,        0,    1))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -220,32 +300,74 @@ public class TargetEncodingOnMulticlassTest extends TestUtil {
       Scope.track_generic(teModel);
       Frame encodings = teModel._output._target_encoding_map.get("categorical");
       printOutFrameAsTable(encodings);
-      double priorMean = TargetEncoderHelper.computePriorMean(encodings);
-      assertEquals(0.6, priorMean, 1e-3); // == 6/10
-
-      Vec expectedCatColumn = vec(ar("a", "b", "c", "categorical_NA"), 0, 1, 2, 3, 0, 1, 3); // for each fold value, we should have an entry per category (except for 'c', only in fold 0)
-      Vec expectedNumColumn = vec( // for binomial, numerator should correspond to the sum of positive occurrences (here "YES" ) for each category
-              2, 1, 1, 1,    // out of fold 0 encodings
-              1, 0, 0      // out of fold 1 encodings
+      
+      Vec expectedCatColumn = vec(ar("a", "b", "c", "categorical_NA"),  // 4 entries per category (one for each target class+NA)
+           // M  N  Y na   
+              0, 0, 0, 0,  //a oof 0
+              1, 1, 1, 1,  //b oof 0
+              2, 2, 2, 2,  //c oof 0
+              3, 3, 3, 3,  //NA oof 0
+              0, 0, 0, 0,  //a oof 1
+              1, 1, 1, 1,  //b oof 1
+              3, 3, 3, 3   //NA oof 1
       ); 
-      Vec expectedDenColumn = vec(   // for binomial, denominator should correspond to the sum of all occurrences for each category
-              2, 1, 1, 1,    // out of fold 0 encodings
-              2, 1, 2    // out of fold 1 encodings
-      );
-      Vec expectedFoldColumn = vec(0, 0, 0, 0, 1, 1, 1);
+      Vec expectedTargetClassColumn = vec(ar("MAYBE", "NO", "YES", "missing(NA)"), // 2 entries per target class, one for each category (from the categorical column)
+              0, 1, 2, 3,
+              0, 1, 2, 3,
+              0, 1, 2, 3,
+              0, 1, 2, 3,
+              0, 1, 2, 3,
+              0, 1, 2, 3,
+              0, 1, 2, 3);
+      Vec expectedNumColumn = vec( // for multinomial, numerator should correspond to the sum of matching target occurrences for each category
+             0, 0, 3, 0,
+              0, 0, 1, 0,
+              0, 0, 1, 0,
+              1, 0, 0, 0,
+              1, 1, 1, 0,
+              0, 1, 0, 0,
+              1, 1, 0, 0);
+      Vec expectedDenColumn = vec( // for multinomial, denominator should correspond to the sum of all occurrences for each category
+              3, 3, 3, 3,
+              1, 1, 1, 1,
+              1, 1, 1, 1,
+              1, 1, 1, 1,
+              3, 3, 3, 3,
+              1, 1, 1, 1,
+              2, 2, 2, 2);
+      Vec expectedFoldColumn = vec(
+              0, 0, 0, 0, 
+              0, 0, 0, 0,
+              0, 0, 0, 0,
+              0, 0, 0, 0,
+              1, 1, 1, 1, 
+              1, 1, 1, 1,
+              1, 1, 1, 1);
 
       assertCatVecEquals(expectedCatColumn, encodings.vec("categorical"));
+      assertVecEquals(expectedTargetClassColumn, encodings.vec(TARGETCLASS_COL), 0);
       assertVecEquals(expectedNumColumn, encodings.vec(NUMERATOR_COL), 0);
       assertVecEquals(expectedDenColumn, encodings.vec(DENOMINATOR_COL), 0);
       assertVecEquals(expectedFoldColumn, encodings.vec("foldc"), 0);
+
+      Frame trainEncoded = teModel.transformTraining(fr);
+      Scope.track(trainEncoded);
+      Assert.assertEquals(5, trainEncoded.numCols()); // 3 original cols + 2 (=3-1) enc columns for the categorical col (NA target currently ignored)
+      printOutFrameAsTable(trainEncoded);
       
-      Frame predictions = teModel.transformTraining(fr);
-      Scope.track(predictions);
-      Vec encoded = predictions.vec("categorical_te");
-      Assert.assertNotNull(encoded);
-      Vec expectedEncodedCol = dvec(1., 0.5, 1., 0., 1., 0., 1., 0.5, 1., 0.6); // == (2/2, 1/2, 1/1, 0/1, 2/2, 0/2, 1/1, 1/2, 1/1, unseen_in_fold1=prior)
-      //XXX: unseen in fold1 is encoded as global prior. Wouldn't it be better to encode it using out-of-fold1 prior (here 1/5=0.2) to avoid leakage? 
-      assertVecEquals(expectedEncodedCol, encoded, 1e-3);
+      Vec trainNOEncCol = trainEncoded.vec("categorical_NO_te");
+      Assert.assertNotNull(trainNOEncCol);
+      double priorMeanNO = computePriorMean(encodings, 1);
+      assertEquals(0.25, priorMeanNO, 1e-3); // == 3/12
+      Vec expectedNOEncCol = dvec(0, .333, 0, 1, 0, .5, 0, .333, 0, .25, 0, .333); // == (0/3, 1/3, 0/1, 1/1, 0/3, 1/2, 0/1, 1/3, 0/1, unseen_in_f1=prior, 0/3, 1/3)
+      assertVecEquals(expectedNOEncCol, trainNOEncCol, 1e-3);
+
+      Vec trainYESEncCol = trainEncoded.vec("categorical_YES_te");
+      Assert.assertNotNull(trainYESEncCol);
+      double priorMeanYES = computePriorMean(encodings, 2);
+      assertEquals(0.5, priorMeanYES, 1e-3); // == 6/12
+      Vec expecteYESEncCol = dvec(1, .333, 0, 0, 1, 0, 1, .333, 0, .5, 1, .333); // == (3/3, 1/3, 0/1, 0/1, 3/3, 0/2, 1/1, 1/3, 0/1, unseen_in_f1=prior, 3/3, 1/3)
+      assertVecEquals(expecteYESEncCol, trainYESEncCol, 1e-3);
       
       final Frame test = new TestFrameBuilder()
               .withColNames("categorical", "foldc")
@@ -255,21 +377,21 @@ public class TargetEncodingOnMulticlassTest extends TestUtil {
               .build();
       Frame testEncoded = teModel.transform(test); //KFold should not be applied (fold column ignored, all folds being merged/summed)
       Scope.track(testEncoded);
-      Vec testEncodedCol = testEncoded.vec("categorical_te");
+      Vec testEncodedCol = testEncoded.vec("categorical_YES_te");
       Assert.assertNotNull(testEncodedCol);
-      Vec expectedTestEnc = dvec(0.333, 1., 0.5, 0.75, 0.333); // == (1.3, 1/1, 1/2, 3/4, 1/3), unseen "d' encoded like a NA this time (None strategy)
+      Vec expectedTestEnc = dvec(0, 1, .5, .667, 0); // == (0/3, 1/1, 1/2, 4/6, 0/3), unseen "d' encoded like a NA this time (None strategy)
       assertVecEquals(expectedTestEnc, testEncodedCol, 1.e-3);
 
       Frame testPredictions = teModel.score(test);
       Scope.track(testPredictions);
-      assertVecEquals(expectedTestEnc, testPredictions.vec("categorical_te"), 1e-3);
+      assertVecEquals(expectedTestEnc, testPredictions.vec("categorical_YES_te"), 1e-3);
 
       // with Kfold strategy, transformTraining applies to test as if it were a training frame, requiring and taking fold column into account
       Frame testEncodedAsTrain = teModel.transformTraining(test);
       Scope.track(testEncodedAsTrain);
-      Vec testEncodedAsTrainCol = testEncodedAsTrain.vec("categorical_te");
+      Vec testEncodedAsTrainCol = testEncodedAsTrain.vec("categorical_YES_te");
       Assert.assertNotNull(testEncodedAsTrainCol);
-      Vec expectedTestEncAsTrain = dvec(0.6, 1., 1., 1., 1.); // == (prior, 1/1, 1/1, 2/2, 1/1), unseen "d' encoded using prior (inconsistent with None strategy)
+      Vec expectedTestEncAsTrain = dvec(.5, 1, 1, 1, 0); // == (prior, 1/1, 1/1, 3/3, 0/1), unseen "d' encoded using prior (inconsistent with None strategy)
       assertVecEquals(expectedTestEncAsTrain, testEncodedAsTrainCol, 1e-3);
     } finally {
       Scope.exit();

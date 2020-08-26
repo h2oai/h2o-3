@@ -16,12 +16,17 @@ import water.util.IcedHashMap;
 import water.util.TwoDimTable;
 
 import java.util.Map;
+import java.util.PrimitiveIterator;
+import java.util.PrimitiveIterator.OfInt;
+import java.util.stream.IntStream;
 
 import static ai.h2o.targetencoding.TargetEncoderHelper.*;
 
 public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> {
 
   public static final String ALGO_NAME = "TargetEncoder";
+  static final String ENCODED_COLUMN_POSTFIX = "_te";
+  static final BlendingParams DEFAULT_BLENDING_PARAMS = new BlendingParams(10, 20);
   private static final Logger logger = LoggerFactory.getLogger(TargetEncoderModel.class);
 
   public enum DataLeakageHandlingStrategy {
@@ -32,8 +37,8 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   public static class TargetEncoderParameters extends Model.Parameters {
     public boolean _blending = false;
-    public double _inflection_point = TargetEncoderHelper.DEFAULT_BLENDING_PARAMS.getInflectionPoint();
-    public double _smoothing = TargetEncoderHelper.DEFAULT_BLENDING_PARAMS.getSmoothing();
+    public double _inflection_point = DEFAULT_BLENDING_PARAMS.getInflectionPoint();
+    public double _smoothing =DEFAULT_BLENDING_PARAMS.getSmoothing();
     public DataLeakageHandlingStrategy _data_leakage_handling = DataLeakageHandlingStrategy.None;
     public double _noise = 0.01;
     
@@ -59,7 +64,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
     public BlendingParams getBlendingParameters() {
       return _blending 
-              ? _inflection_point!=0 && _smoothing!=0 ? new BlendingParams(_inflection_point, _smoothing) : TargetEncoderHelper.DEFAULT_BLENDING_PARAMS
+              ? _inflection_point!=0 && _smoothing!=0 ? new BlendingParams(_inflection_point, _smoothing) : DEFAULT_BLENDING_PARAMS
               : null;
     }
 
@@ -165,23 +170,21 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    * @return An instance of {@link Frame} with transformed fr, registered in DKV.
    */
   public Frame transform(Frame fr, BlendingParams blendingParams, double noiseLevel, boolean asTraining) {
-    //XXX: commented out logic for PUBDEV-7714: need to properly test separately
-    Frame adaptFr = fr;
-//    Frame adaptFr = new Frame(fr);
-//    String[] msgs = adaptTestForTrain(adaptFr,true, false); //ensure that domains are compatible with training ones.
-    // we only log the warnings messages here and ignore the warningP logic designed for scoring only 
-//    for (String msg : msgs) {
-//      logger.warn(msg);
-//    }
-    Frame transformed = applyTargetEncoding(
-            adaptFr, 
-            asTraining,
-            blendingParams, 
-            noiseLevel,
-            null
-    );
-//    Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, fr);
-    return transformed;
+    Frame adaptFr = new Frame(fr);
+    try {
+      String[] msgs = adaptTestForTrain(adaptFr, true, false); //ensure that domains are compatible with training ones.
+      // we only log the warnings messages here and ignore the warningP logic that is designed for scoring only 
+      for (String msg : msgs) logger.warn(msg);
+      return applyTargetEncoding(
+              adaptFr,
+              asTraining,
+              blendingParams,
+              noiseLevel,
+              null
+      );
+    } finally {
+      Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, fr);
+    }
   }
 
   @Override
@@ -290,26 +293,25 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
         
         int colIdx = workingFrame.find(columnToEncode);
         imputeCategoricalColumn(workingFrame, colIdx, columnToEncode + NA_POSTFIX);
-        
-        if (_output._nclasses > 2) { //multinomial
-          int tcIdx = encodings.find(TARGETCLASS_COL);
-          for (int i=1; i < _output._nclasses; i++) { //for symmetry with binary, ignoring class 0
-            Frame classEncodings = filterByValue(encodings, tcIdx, i);
-            workingFrame = strategy.apply(workingFrame, columnToEncode, classEncodings);
+
+        IntStream posTargetClasses = _output.nclasses() == 1 ? IntStream.of(NO_TARGET_CLASS) // regression
+                : _output.nclasses() == 2 ? IntStream.of(1)  // binary (use only positive target)
+                : IntStream.range(1, _output._nclasses);     // multiclass (skip only the 0 target for symmetry with binary)
+
+        for (OfInt it = posTargetClasses.iterator(); it.hasNext(); ) {
+          int tc = it.next();
+          try {
+            workingFrame = strategy.apply(workingFrame, columnToEncode, encodings, tc);
+          } finally {
             DKV.remove(tmpKey);
             tmpKey = workingFrame._key;
           }
-        } else { // binary + regression
-          workingFrame = strategy.apply(workingFrame, columnToEncode, encodings);
-          DKV.remove(tmpKey);
-          tmpKey = workingFrame._key;
-        }
+        } // end for each target 
       } // end for each columnToEncode
 
       DKV.remove(tmpKey);
       workingFrame._key = resultKey;
       DKV.put(workingFrame);
-//      for (Vec v : workingFrame.vecs()) DKV.put(v);
       return workingFrame;
     } catch (Exception e) {
       if (workingFrame != null) workingFrame.delete();
@@ -361,10 +363,23 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       _seed = seed;
     }
     
-    public Frame apply(Frame fr, String columnToEncode, Frame encodings) {
+    public Frame apply(Frame fr, String columnToEncode, Frame encodings, int targetClass) {
       try {
         Scope.enter();
-        Frame encoded = doApply(fr, columnToEncode, encodings);
+        String encodedColumn;
+        Frame appliedEncodings;
+        int tcIdx = encodings.find(TARGETCLASS_COL);
+        if (tcIdx < 0) {
+          encodedColumn = columnToEncode+ENCODED_COLUMN_POSTFIX;
+          appliedEncodings = encodings;
+        } else {
+          String targetClassName = encodings.vec(tcIdx).domain()[targetClass];
+          encodedColumn = columnToEncode + "_" + targetClassName + ENCODED_COLUMN_POSTFIX;
+          appliedEncodings = filterByValue(encodings, tcIdx, targetClass);
+          Scope.track(appliedEncodings);
+          appliedEncodings.remove(TARGETCLASS_COL);
+        }
+        Frame encoded = doApply(fr, columnToEncode, appliedEncodings, encodedColumn, targetClass);
         Scope.untrack(encoded);
         return encoded;
       } finally {
@@ -372,11 +387,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       }
     }
     
-    public abstract Frame doApply(Frame fr, String columnToEncode, Frame encodings);
-    
-    protected String getEncodedColumn(String columnToEncode) {
-      return columnToEncode+ENCODED_COLUMN_POSTFIX;
-    }
+    public abstract Frame doApply(Frame fr, String columnToEncode, Frame encodings, String encodedColumn, int targetClass);
     
     protected void applyNoise(Frame frame, int columnIdx, double noiseLevel, long seed) {
       if (noiseLevel > 0) addNoise(frame, columnIdx, noiseLevel, seed);
@@ -432,7 +443,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     }
 
     @Override
-    public Frame doApply(Frame fr, String columnToEncode, Frame encodings) {
+    public Frame doApply(Frame fr, String columnToEncode, Frame encodings, String encodedColumn, int targetClass) {
       int teColumnIdx = fr.find(columnToEncode);
       int foldColIdx = fr.find(_foldColumn);
       int encodingsFoldColIdx = encodings.find(_foldColumn);
@@ -453,7 +464,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       // Shouldn't we instead provide a priorMean per fold? 
       // We should be able to compute those k priorMeans directly from the encodings Frame, so it doesn't require any change in the Mojo.
       // However, applyEncodings would also need an additional arg for the foldColumn.
-      int encodedColIdx = applyEncodings(joinedFrame, getEncodedColumn(columnToEncode), priorMean, _blendingParams);
+      int encodedColIdx = applyEncodings(joinedFrame, encodedColumn, priorMean, _blendingParams);
       applyNoise(joinedFrame, encodedColIdx, _noise, _seed);
       // Cases when we can introduce NAs in the encoded column:
       // - if the column to encode contains categories unseen during training (including NA): 
@@ -475,7 +486,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     }
 
     @Override
-    public Frame doApply(Frame fr, String columnToEncode, Frame encodings) {
+    public Frame doApply(Frame fr, String columnToEncode, Frame encodings, String encodedColumn, int targetClass) {
       int teColumnIdx = fr.find(columnToEncode);
       int encodingsTEColIdx = encodings.find(columnToEncode);
       double priorMean = computePriorMean(encodings);
@@ -483,9 +494,9 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       Frame joinedFrame = mergeEncodings(fr, encodings, teColumnIdx, encodingsTEColIdx);
       Scope.track(joinedFrame);
 
-      subtractTargetValueForLOO(joinedFrame, _targetColumn);
+      subtractTargetValueForLOO(joinedFrame, _targetColumn, targetClass);
 
-      int encodedColIdx = applyEncodings(joinedFrame, getEncodedColumn(columnToEncode), priorMean, _blendingParams);
+      int encodedColIdx = applyEncodings(joinedFrame, encodedColumn, priorMean, _blendingParams);
       applyNoise(joinedFrame, encodedColIdx, _noise, _seed);
       // Cases when we can introduce NAs in the encoded column:
       // - only when the column to encode contains categories unseen during training (including NA).
@@ -503,7 +514,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     }
 
     @Override
-    public Frame doApply(Frame fr, String columnToEncode, Frame encodings) {
+    public Frame doApply(Frame fr, String columnToEncode, Frame encodings, String encodedColumn, int targetClass) {
       int teColumnIdx = fr.find(columnToEncode);
       int encodingsTEColIdx = encodings.find(columnToEncode);
       double priorMean = computePriorMean(encodings);
@@ -511,7 +522,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       Frame joinedFrame = mergeEncodings(fr, encodings, teColumnIdx, encodingsTEColIdx);
       Scope.track(joinedFrame);
 
-      int encodedColIdx = applyEncodings(joinedFrame, getEncodedColumn(columnToEncode), priorMean, _blendingParams);
+      int encodedColIdx = applyEncodings(joinedFrame, encodedColumn, priorMean, _blendingParams);
       applyNoise(joinedFrame, encodedColIdx, _noise, _seed);
       // Cases when we can introduce NAs in the encoded column:
       // - only when the column to encode contains categories unseen during training (including NA).
