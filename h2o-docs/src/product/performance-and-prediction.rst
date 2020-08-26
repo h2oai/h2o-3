@@ -1379,7 +1379,7 @@ Examples:
         pros[8] = pros[8].asfactor()
 
         # split the data into training and validation sets:
-        train, valid = cars.split_frame(ratios=[.8],seed=1234)
+        train, valid = cars.split_frame(ratios=[.8], seed=1234)
 
         # set the predictors and response columns:
         predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
@@ -1436,7 +1436,7 @@ Examples:
         # build and train the model:
         pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
                             training_frame = train, 
-                            validation_frame = test, 
+                            validation_frame = valid, 
                             nfolds = 2)
 
         # build the roc curve:
@@ -1462,14 +1462,14 @@ Examples:
         response = "CAPSULE"
 
         # split the data into training and validation sets:
-        train, valid = pros.split_frame(ratios=[.8], seed=1234)
+        train, test = pros.split_frame(ratios=[.8], seed=1234)
 
         # build and train the model:
         pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
-        pros_gbm.train(x = predictors, y = response, training_frame = pros)
+        pros_gbm.train(x = predictors, y = response, training_frame = train)
 
         # build the roc curve:
-        perf = pros_gbm.model_performance(pros)
+        perf = pros_gbm.model_performance(test)
         perf.plot(type = "roc")
 
 Hit Ratio
