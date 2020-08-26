@@ -2028,7 +2028,7 @@ Using the previous example, run the following to predict probabilities at each s
    .. code-tab:: r R
   
         # Predict the class probabilities using the GBM model and test data.
-        staged_predict_proba <- h2o.staged_predict_proba(model, prostate_test)
+        staged_predict_proba <- h2o.staged_predict_proba(model, test)
 
 
    .. code-tab:: python
@@ -2058,7 +2058,7 @@ Using the previous example, run the following to the find frequency of each feat
   
         # Retrieve the number of occurrences of each feature for given observations
         # on their respective paths in a tree ensemble model
-        feature_frequencies <- h2o.feature_frequencies(model, prostate_train)
+        feature_frequencies <- h2o.feature_frequencies(model, train)
         feature_frequencies
 
           AGE RACE PSA GLEASON
