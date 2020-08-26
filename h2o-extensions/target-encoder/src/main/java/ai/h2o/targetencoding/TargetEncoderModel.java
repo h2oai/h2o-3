@@ -17,10 +17,10 @@ import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.PrimitiveIterator;
 import java.util.PrimitiveIterator.OfInt;
 import java.util.stream.IntStream;
 
+import static ai.h2o.targetencoding.EncodingsComponents.NO_TARGET_CLASS;
 import static ai.h2o.targetencoding.TargetEncoderHelper.*;
 
 public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> {

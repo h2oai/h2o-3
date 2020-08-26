@@ -4,7 +4,9 @@ import water.Iced;
 
 class EncodingsComponents extends Iced<EncodingsComponents> {
 
-  private int _targetclass = -1;
+  static final int NO_TARGET_CLASS = -1;
+  
+  private int _targetclass = NO_TARGET_CLASS;
   private double _numerator;
   private long _denominator;
 
