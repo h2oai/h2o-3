@@ -16,10 +16,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.util.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static hex.util.LinearAlgebraUtils.toEigenArray;
 
@@ -30,9 +27,9 @@ import static hex.util.LinearAlgebraUtils.toEigenArray;
 public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
   @Override public ModelCategory[] can_build() {
     return new ModelCategory[]{
-      ModelCategory.Regression,
-      ModelCategory.Binomial,
-      ModelCategory.Multinomial,
+            ModelCategory.Regression,
+            ModelCategory.Binomial,
+            ModelCategory.Multinomial,
     };
   }
 
@@ -96,9 +93,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         error("_offset_column", "Offset is not supported for "+_parms._distribution+" distribution.");
       }
       if (_parms._monotone_constraints != null && _parms._monotone_constraints.length > 0 &&
-              !(DistributionFamily.gaussian.equals(_parms._distribution) || 
-                      DistributionFamily.bernoulli.equals(_parms._distribution) || 
-                      DistributionFamily.tweedie.equals(_parms._distribution) || 
+              !(DistributionFamily.gaussian.equals(_parms._distribution) ||
+                      DistributionFamily.bernoulli.equals(_parms._distribution) ||
+                      DistributionFamily.tweedie.equals(_parms._distribution) ||
                       DistributionFamily.quantile.equals(_parms._distribution))) {
         error("_monotone_constraints", "Monotone constraints are only supported for Gaussian, Bernoulli, Tweedie and Quantile distributions, your distribution: " + _parms._distribution + ".");
       }
@@ -115,7 +112,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           }
         }
         double[] primitive_projections = new double[projections.size()];
-        for (int i = 0; i < projections.size(); i++) { 
+        for (int i = 0; i < projections.size(); i++) {
           primitive_projections[i] = projections.get(i);
         }
         _orig_projection_array = primitive_projections;
@@ -123,51 +120,51 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
     switch( _parms._distribution) {
-    case bernoulli:
-      if( _nclass != 2 /*&& !couldBeBool(_response)*/)
-        error("_distribution", H2O.technote(2, "Binomial requires the response to be a 2-class categorical"));
-      break;
-    case quasibinomial:
-      if ( !_response.isNumeric() )
-        error("_distribution", H2O.technote(2, "Quasibinomial requires the response to be numeric."));
-      if ( _nclass != 2)
-        error("_distribution", H2O.technote(2, "Quasibinomial requires the response to be binary."));
-      break;
-    case modified_huber:
-      if( _nclass != 2 /*&& !couldBeBool(_response)*/)
-        error("_distribution", H2O.technote(2, "Modified Huber requires the response to be a 2-class categorical."));
-      break;
-    case multinomial:
-      if (!isClassifier()) error("_distribution", H2O.technote(2, "Multinomial requires an categorical response."));
-      break;
-    case huber:
-      if (isClassifier()) error("_distribution", H2O.technote(2, "Huber requires the response to be numeric."));
-      break;
-    case poisson:
-      if (isClassifier()) error("_distribution", H2O.technote(2, "Poisson requires the response to be numeric."));
-      break;
-    case gamma:
-      if (isClassifier()) error("_distribution", H2O.technote(2, "Gamma requires the response to be numeric."));
-      break;
-    case tweedie:
-      if (isClassifier()) error("_distribution", H2O.technote(2, "Tweedie requires the response to be numeric."));
-      break;
-    case gaussian:
-      if (isClassifier()) error("_distribution", H2O.technote(2, "Gaussian requires the response to be numeric."));
-      break;
-    case laplace:
-      if (isClassifier()) error("_distribution", H2O.technote(2, "Laplace requires the response to be numeric."));
-      break;
-    case quantile:
-      if (isClassifier()) error("_distribution", H2O.technote(2, "Quantile requires the response to be numeric."));
-      break;
-    case custom:
-      if(_parms._custom_distribution_func == null) error("_distribution", H2O.technote(2, "Custom requires custom function loaded."));
-      break;
-    case AUTO:
-      break;
-    default:
-      error("_distribution","Invalid distribution: " + _parms._distribution);
+      case bernoulli:
+        if( _nclass != 2 /*&& !couldBeBool(_response)*/)
+          error("_distribution", H2O.technote(2, "Binomial requires the response to be a 2-class categorical"));
+        break;
+      case quasibinomial:
+        if ( !_response.isNumeric() )
+          error("_distribution", H2O.technote(2, "Quasibinomial requires the response to be numeric."));
+        if ( _nclass != 2)
+          error("_distribution", H2O.technote(2, "Quasibinomial requires the response to be binary."));
+        break;
+      case modified_huber:
+        if( _nclass != 2 /*&& !couldBeBool(_response)*/)
+          error("_distribution", H2O.technote(2, "Modified Huber requires the response to be a 2-class categorical."));
+        break;
+      case multinomial:
+        if (!isClassifier()) error("_distribution", H2O.technote(2, "Multinomial requires an categorical response."));
+        break;
+      case huber:
+        if (isClassifier()) error("_distribution", H2O.technote(2, "Huber requires the response to be numeric."));
+        break;
+      case poisson:
+        if (isClassifier()) error("_distribution", H2O.technote(2, "Poisson requires the response to be numeric."));
+        break;
+      case gamma:
+        if (isClassifier()) error("_distribution", H2O.technote(2, "Gamma requires the response to be numeric."));
+        break;
+      case tweedie:
+        if (isClassifier()) error("_distribution", H2O.technote(2, "Tweedie requires the response to be numeric."));
+        break;
+      case gaussian:
+        if (isClassifier()) error("_distribution", H2O.technote(2, "Gaussian requires the response to be numeric."));
+        break;
+      case laplace:
+        if (isClassifier()) error("_distribution", H2O.technote(2, "Laplace requires the response to be numeric."));
+        break;
+      case quantile:
+        if (isClassifier()) error("_distribution", H2O.technote(2, "Quantile requires the response to be numeric."));
+        break;
+      case custom:
+        if(_parms._custom_distribution_func == null) error("_distribution", H2O.technote(2, "Custom requires custom function loaded."));
+        break;
+      case AUTO:
+        break;
+      default:
+        error("_distribution","Invalid distribution: " + _parms._distribution);
     }
 
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
@@ -230,7 +227,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Set the initial prediction into the tree column 0
       if (_initialPrediction != 0.0) {
         new FillVecWithConstant(_initialPrediction)
-          .doAll(vec_tree(_train, 0), _parms._build_tree_one_node);  // Only setting tree-column 0
+                .doAll(vec_tree(_train, 0), _parms._build_tree_one_node);  // Only setting tree-column 0
       }
     }
 
@@ -241,9 +238,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
      */
     private double getInitialValueQuantile(double quantile) {
       // obtain y - o
-      Vec y = hasOffsetCol()
-          ? new ResponseLessOffsetTask(frameMap).doAll(1, Vec.T_NUM, _train).outputFrame().anyVec()
-          : response();
+      Vec y = hasOffsetCol() 
+              ? new ResponseLessOffsetTask(frameMap).doAll(1, Vec.T_NUM, _train).outputFrame().anyVec() 
+              : response();
 
       // Now compute (weighted) quantile of y - o
       double res;
@@ -358,7 +355,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       // Get distribution 
       Distribution distributionImpl = DistributionFactory.getDistribution(_parms);
-      
+
       // Compute predictions and resulting residuals
       // ESL2, page 387, Steps 2a, 2b
       // fills "Work" columns for all rows (incl. OOB) with the residuals
@@ -376,7 +373,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       } else {
         // compute predictions and residuals in one shot
         new ComputePredAndRes(frameMap, _nclass, _model._output._distribution, distributionImpl)
-            .doAll(_train, _parms._build_tree_one_node);
+                .doAll(_train, _parms._build_tree_one_node);
       }
       for (int k = 0; k < _nclass; k++) {
         if (DEV_DEBUG && ktrees[k]!=null) {
@@ -408,6 +405,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           fitBestConstantsQuantile(ktrees, leaves[0], _parms._quantile_alpha); //compute the alpha-quantile for each leaf node and store that as prediction
         } else {
           fitBestConstants(ktrees, leaves, gp, cs); // compute quantile monotone constraints using precomputed parent prediction
+          resetQuantileConstants(ktrees, _parms._quantile_alpha, cs);
         }
       } else if (_parms._distribution == DistributionFamily.huber) {
         fitBestConstantsHuber(ktrees, leaves[0], huberDelta); //compute the alpha-quantile for each leaf node and store that as prediction
@@ -417,8 +415,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       // Apply a correction for strong mispredictions (otherwise deviance can explode)
       if (_parms._distribution == DistributionFamily.gamma ||
-          _parms._distribution == DistributionFamily.poisson ||
-          _parms._distribution == DistributionFamily.tweedie) {
+              _parms._distribution == DistributionFamily.poisson ||
+              _parms._distribution == DistributionFamily.tweedie) {
         assert(_nclass == 1);
         truncatePreds(ktrees[0], leaves[0], _parms._distribution);
       }
@@ -434,7 +432,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Tree <== f(Tree)
       // Nids <== 0
       new AddTreeContributions(
-          frameMap, ktrees, _parms._pred_noise_bandwidth, _parms._seed, _parms._ntrees, _model._output._ntrees
+              frameMap, ktrees, _parms._pred_noise_bandwidth, _parms._seed, _parms._ntrees, _model._output._ntrees
       ).doAll(_train);
 
       // sanity check
@@ -540,7 +538,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         }
       } // -- k-trees are done
     }
-    
+
     // Jerome Friedman 1999: Greedy Function Approximation: A Gradient Boosting Machine
     // https://statweb.stanford.edu/~jhf/ftp/trebst.pdf
     private void fitBestConstantsHuber(DTree[] ktrees, int firstLeafIndex, double huberDelta) {
@@ -587,7 +585,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     private double effective_learning_rate() {
       return _parms._learn_rate * Math.pow(_parms._learn_rate_annealing, (_model._output._ntrees-1));
     }
-    
+
     private void fitBestConstantsQuantile(DTree[] ktrees, int firstLeafIndex, double quantile) {
       if (firstLeafIndex == ktrees[0]._len) return; // no splits happened - nothing to do
       assert(_nclass==1);
@@ -603,18 +601,113 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       final DTree tree = ktrees[0];
       for (int i = 0; i < sqt._quantiles.length; i++) {
-        if (Double.isNaN(sqt._quantiles[i])) continue; //no active rows for this NID
-        double val = effective_learning_rate() * sqt._quantiles[i];
-        assert !Double.isNaN(val) && !Double.isInfinite(val);
+        double leafQuantile = sqt._quantiles[i];
+        if (Double.isNaN(leafQuantile)) continue; //no active rows for this NID
+        double val = effective_learning_rate() * leafQuantile;
         if (val > _parms._max_abs_leafnode_pred) val = _parms._max_abs_leafnode_pred;
+        if (val < -_parms._max_abs_leafnode_pred) val = -_parms._max_abs_leafnode_pred;
         ((LeafNode) tree.node(sqt._nids[i]))._pred = (float) val;
-        if (DEV_DEBUG) { Log.info("Leaf " + sqt._nids[i] + " has quantile: " + sqt._quantiles[i]); }
       }
     }
-    
+
+    /**
+     * This method recompute result leaf node prediction to get a more precise prediction but respecting 
+     * the column constraints
+     * @param ktrees array of all trained trees
+     * @param quantile quantile alpha parameter
+     * @param cs constraint object to get information about constraints for each column 
+     */
+    void resetQuantileConstants(DTree[] ktrees, double quantile, Constraints cs){
+      assert cs != null : "Expects constraint object is not null";
+      // vectors to compute real quantile prediction in the leafs of trained trees
+      Vec diff = new ComputeDiff(frameMap).doAll(1, (byte)3,  _train).outputFrame().anyVec();
+      Vec weights = hasWeightCol() ? _train.vecs()[idx_weight()] : null;
+      Vec strata = vec_nids(_train,0);
+
+      // compute quantile for all leaf nodes
+      QuantileModel.CombineMethod combine_method = QuantileModel.CombineMethod.INTERPOLATE;
+      Quantile.StratifiedQuantilesTask sqt = new Quantile.StratifiedQuantilesTask(null, quantile, diff, weights, strata, combine_method);
+      H2O.submitTask(sqt);
+      sqt.join();
+
+      // use real quantiles to reset prediction values in each leaf to be more precious but with respect constraints
+      for (int k = 0; k < _nclass; k++) {
+        final DTree tree = ktrees[k];
+        if (tree == null || tree.len() < 2) continue;
+        // map to save order of leaves of each column which were used for splitting
+        HashMap<Integer, ArrayList<Integer>> leafMap = new HashMap<>();
+        // go through the tree and find leaves in 'inorder' order
+        leafInOrder(tree, tree.root(), leafMap);
+        int dnSize = tree._len - tree._leaves; // calculate index where leaves starts
+        for (int columnId : leafMap.keySet()) {
+          ArrayList<Integer> leafIds = leafMap.get(columnId);
+          int constraint = cs.getColumnConstraint(columnId);
+          // if the column has constraint, recalculate the value, otherwise do nothing
+          if(constraint != 0){
+            // start recalculate result quantile prediction from the most left/right leaf to respect constraint
+            int from, to;
+            if(constraint == -1){
+              // count from the most left leaf and continue to the right to be sure the prediction is always decreasing
+              from = 0;
+              to = leafIds.size();
+            } else {
+              // count from the most right leaf and continue to the left to be sure the prediction is always increasing
+              from = leafIds.size() - 1;
+              to = -1;
+            }
+            // go through all leaves connected to the one constrained column and use precious quantile if it is possible
+            for(int leafId = from; constraint == 1 ? leafId > to : leafId < to; leafId = leafId + -1 * constraint){
+              int quantileId = leafMap.get(columnId).get(leafId) - dnSize;
+              double leafQuantile = sqt._quantiles[quantileId];
+              LeafNode node = ((LeafNode) tree.node(sqt._nids[quantileId]));
+              // leaf quantile could be higher (constraint = 1) or less (constraint = -1) than prediction but also 
+              // should be less (constraint = 1) or higher (constraint = -1) than the next leaf in order
+              if((constraint == 1 && leafQuantile > node._pred) || (constraint == -1 && leafQuantile < node._pred)){
+                if(leafId != from) {
+                  int nextLeafId = leafIds.get(leafId+constraint) - dnSize;
+                  LeafNode nextLeafNode = ((LeafNode) tree.node(sqt._nids[nextLeafId]));
+                  if((constraint == 1 && leafQuantile < nextLeafNode._pred) || (constraint == -1 && leafQuantile > nextLeafNode._pred)){
+                    node._pred = (float) leafQuantile;
+                  }
+                } else {
+                  node._pred = (float) leafQuantile;
+                }
+              }
+              if(leafId != from) {
+                int nextLeafId = leafIds.get(leafId+constraint) - dnSize;
+                LeafNode nextLeafNode = ((LeafNode) tree.node(sqt._nids[nextLeafId]));
+                if ((constraint == 1 && node._pred > nextLeafNode._pred) || (constraint == -1 && node._pred > nextLeafNode._pred)) {
+                  node._pred = nextLeafNode._pred;
+                }
+              }
+            } 
+          }
+        }
+      }
+    }
+
+
+    private void leafInOrder(DTree tree, DTree.Node node, HashMap<Integer, ArrayList<Integer>> map) {
+      if (node instanceof LeafNode) {
+        ArrayList<Integer> ids = map.get(((LeafNode) node).geSplitColumn());
+        if(ids != null){
+          ids.add(node.nid());
+        } else {
+          ids = new ArrayList<>();
+          ids.add(node.nid());
+          map.put(((LeafNode) node).geSplitColumn(), ids);
+        }
+        return;
+      }
+      DecidedNode dn = (DecidedNode) node;
+      leafInOrder(tree, tree.node(dn._nids[0]), map);
+      leafInOrder(tree, tree.node(dn._nids[1]), map);
+    }
+
+
     private void fitBestConstants(DTree[] ktrees, int[] leafs, GammaPass gp, Constraints cs) {
       final boolean useSplitPredictions = cs != null && cs.useBounds();
-      double m1class = (_nclass > 1 && _parms._distribution == DistributionFamily.multinomial) || 
+      double m1class = (_nclass > 1 && _parms._distribution == DistributionFamily.multinomial) ||
               (_nclass > 2 && _parms._distribution == DistributionFamily.custom) ? (double) (_nclass - 1) / _nclass : 1.0; // K-1/K for multinomial
       for (int k = 0; k < _nclass; k++) {
         final DTree tree = ktrees[k];
@@ -1096,7 +1189,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       assert !Double.isInfinite(g) && !Double.isNaN(g);
       return gamma(g);
     }
-    
+
     double gamma(double g) {
       if (_dist._family == DistributionFamily.poisson ||
               _dist._family == DistributionFamily.gamma ||
@@ -1106,7 +1199,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         return g;
       }
     }
-    
+
     @Override
     protected boolean modifiesVolatileVecs() {
       return true;
@@ -1145,21 +1238,21 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             continue;
 
           double y = resp.atd(row); //response
-          if (Double.isNaN(y)) 
+          if (Double.isNaN(y))
             continue;
 
           // Compute numerator and denominator of terminal node estimate (gamma)
           int nid = (int) nids.at8(row);          // Get Node to decide from
           final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow(nid); //same for all k
           if (wasOOBRow) nid = ScoreBuildHistogram.oob2Nid(nid);
-          if (nid < 0) 
+          if (nid < 0)
             continue;
           DecidedNode dn = tree.decided(nid);           // Must have a decision point
           if (dn._split == null)                    // Unable to decide?
             dn = tree.decided(dn.pid());  // Then take parent's decision
           int leafnid = dn.getChildNodeID(chks, row); // Decide down to a leafnode
           assert leaf <= leafnid && leafnid < tree._len :
-              "leaf: " + leaf + " leafnid: " + leafnid + " tree._len: " + tree._len + "\ndn: " + dn;
+                  "leaf: " + leaf + " leafnid: " + leafnid + " tree._len: " + tree._len + "\ndn: " + dn;
           assert tree.node(leafnid) instanceof LeafNode;
           // Note: I can tell which leaf/region I end up in, but I do not care for
           // the prediction presented by the tree.  For GBM, we compute the
@@ -1171,9 +1264,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           // OOB rows get placed properly (above), but they don't affect the computed Gamma (below)
           // For Laplace/Quantile distribution, we need to compute the median of (y-offset-preds == y-f), will be done outside of here
           if (wasOOBRow
-              || _dist._family == DistributionFamily.laplace
-              || _dist._family == DistributionFamily.huber
-              || _dist._family == DistributionFamily.quantile) continue;
+                  || _dist._family == DistributionFamily.laplace
+                  || _dist._family == DistributionFamily.huber
+                  || _dist._family == DistributionFamily.quantile) continue;
 
           double z = ress.atd(row);  // residual
           double f = preds.atd(row) + offset.atd(row);
@@ -1202,7 +1295,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     private int _ntrees2;
 
     public AddTreeContributions(
-        FrameMap frameMap, DTree[] ktrees, double predictionNoiseBandwidth, long seed, int nTreesInp, int nTreesOut
+            FrameMap frameMap, DTree[] ktrees, double predictionNoiseBandwidth, long seed, int nTreesInp, int nTreesOut
     ) {
       fm = frameMap;
       _ktrees = ktrees;
@@ -1269,12 +1362,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   private static double score1static(Chunk[] chks, int treeIdx, double offset, double[] fs, int row, Distribution dist, int nClasses) {
     double f = chks[treeIdx].atd(row) + offset;
     double p = dist.linkInv(f);
-    if (dist._family == DistributionFamily.modified_huber || dist._family == DistributionFamily.bernoulli || dist._family == DistributionFamily.quasibinomial || 
+    if (dist._family == DistributionFamily.modified_huber || dist._family == DistributionFamily.bernoulli || dist._family == DistributionFamily.quasibinomial ||
             (dist._family == DistributionFamily.custom && nClasses == 2)) {
       fs[2] = p;
       fs[1] = 1.0 - p;
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0
-    } else if (dist._family == DistributionFamily.multinomial || 
+    } else if (dist._family == DistributionFamily.multinomial ||
             (dist._family == DistributionFamily.custom && nClasses > 2)) {
       if (nClasses == 2) {
         // This optimization assumes the 2nd tree of a 2-class system is the
