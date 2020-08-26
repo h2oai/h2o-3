@@ -1343,7 +1343,12 @@ public class Vec extends Keyed<Vec> {
     return fs;
   }
 
-  static void bulk_remove( final Key[] keys, final int ncs ) {
+  @Override protected Futures remove_self_key_impl(Futures fs) {
+    // nothing to do, Vec removal is handled in a special way in bulk_remove
+    return fs;
+  }
+
+  static void bulk_remove(final Key[] keys, final int ncs ) {
     // Need to mark the Vec as mutating to make sure that no running computations of RollupStats will
     // re-insert the rollups into DKV after they are deleted in bulk_remove(Key, int).
     Futures fs = new Futures();

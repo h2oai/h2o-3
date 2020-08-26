@@ -24,7 +24,7 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
   }
   /** Remove this Keyed object, including all subparts if cascade = true.  */
   public final Futures remove( Futures fs, boolean cascade ) {
-    if( _key != null ) DKV.remove(_key,fs);
+    fs = remove_self_key_impl(fs);
     return remove_impl(fs, cascade);
   }
 
@@ -38,6 +38,13 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
    *  Examples include {@link Vec} (removing associated {@link Chunk} keys)
    *  and {@link Frame} (removing associated {@link Vec} keys.) */
   protected Futures remove_impl(Futures fs, boolean cascade) { return remove_impl(fs); }
+
+  /** Remove my own key from DKV.  */
+  protected Futures remove_self_key_impl(Futures fs) {
+    if (_key != null)
+      DKV.remove(_key,fs);
+    return fs;
+  }
 
   /** Removes the Keyed object associated to the key, and all subparts; blocking. */
   public static void remove( Key k ) {

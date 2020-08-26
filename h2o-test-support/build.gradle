@@ -12,4 +12,6 @@ dependencies {
   compile "org.apache.derby:derby:10.14.2.0"
   // using tyrus client since using jetty gets us into conflict because of jetty8/9 dichotomy
   compile "org.glassfish.tyrus.bundles:tyrus-standalone-client:1.12"
+  testRuntimeOnly project(":${defaultWebserverModule}")
+  testCompileOnly "javax.servlet:javax.servlet-api:3.0.1"
 }
