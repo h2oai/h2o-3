@@ -548,7 +548,7 @@ public class TargetEncodingHelperTest extends TestUtil {
               .withDataForCol(3, ar("N", "Y", "Y", "Y", "Y", null))
               .build();
 
-      subtractTargetValueForLOO(fr, "target");
+      subtractTargetValueForLOO(fr, "target", 1);
 
       // We check here that for  `target column = NA` we do not subtract anything and for other cases we subtract current row's target value
       Vec expectedNum = vec(1, 0, 3, 6, 3, 2); // num is decremented by 1 iff target==1 (here "Y" is 1)

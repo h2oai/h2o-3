@@ -1,6 +1,7 @@
 package ai.h2o.targetencoding;
 
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
+import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderOutput;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import water.DKV;
@@ -16,7 +17,7 @@ import java.util.*;
 
 import static ai.h2o.targetencoding.TargetEncoderHelper.*;
 
-public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> {
+public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderOutput> {
 
   private static final Logger logger = LoggerFactory.getLogger(TargetEncoder.class);
   private TargetEncoderModel _targetEncoderModel;
@@ -80,8 +81,8 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
         if (error_count() > 0)
           throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(TargetEncoder.this);
 
-        TargetEncoderModel.TargetEncoderOutput emptyOutput =
-                new TargetEncoderModel.TargetEncoderOutput(TargetEncoder.this, new IcedHashMap<>());
+        TargetEncoderOutput emptyOutput =
+                new TargetEncoderOutput(TargetEncoder.this, new IcedHashMap<>());
         TargetEncoderModel model = new TargetEncoderModel(dest(), _parms, emptyOutput);
         _targetEncoderModel = model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
 
@@ -92,7 +93,7 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
           Scope.untrack(encodings);
         }
 
-        _targetEncoderModel._output = new TargetEncoderModel.TargetEncoderOutput(TargetEncoder.this, _targetEncodingMap);
+        _targetEncoderModel._output = new TargetEncoderOutput(TargetEncoder.this, _targetEncodingMap);
         _job.update(1);
       } catch (Exception e) {
         if (_targetEncoderModel != null) {

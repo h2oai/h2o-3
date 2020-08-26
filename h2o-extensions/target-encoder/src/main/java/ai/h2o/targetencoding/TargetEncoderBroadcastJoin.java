@@ -24,7 +24,7 @@ class TargetEncoderBroadcastJoin {
                     Frame rightFrame, int[] rightCatColumnsIdxs, int rightFoldColumnIdx,
                     int maxFoldValue) {
     int rightNumeratorIdx = rightFrame.find(TargetEncoderHelper.NUMERATOR_COL);
-    int rightDenominatorIdx = rightNumeratorIdx + 1; // enforced by 
+    int rightDenominatorIdx = rightFrame.find(TargetEncoderHelper.DENOMINATOR_COL);
     
     // currently supporting only one categorical column
     assert leftCatColumnsIdxs.length == 1;

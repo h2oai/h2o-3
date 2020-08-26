@@ -27,7 +27,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withName("testFrame")
               .withColNames("categorical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-              .withDataForCol(0, ar("a", "b", "a"))
+              .withDataForCol(0, ar(  "a",  "b",   "a"))
               .withDataForCol(1, ar("yes", "no", "yes"))
               .build();
 
@@ -93,7 +93,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withColNames("categorical", "num", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "c", "d", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 5, 4))
+              .withDataForCol(1, ard( 1,   1,   4,   7,   5,   4))
               .withDataForCol(2, ar("N", "Y", "Y", "N", "Y", "Y"))
               .build();
 
@@ -133,7 +133,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withColNames("categorical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", null, null, null))
-              .withDataForCol(1, ar("N", "Y", "Y", "N", "Y"))
+              .withDataForCol(1, ar("N", "Y",  "Y",  "N",  "Y"))
               .withChunkLayout(3, 2)
               .build();
 
@@ -171,8 +171,8 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withName("testFrame")
               .withColNames("categorical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-              .withDataForCol(0, ar("a", "b", "", "", null)) // null and "" are different categories even though they look the same in printout
-              .withDataForCol(1, ar("N", "Y", "Y", "N", "Y"))
+              .withDataForCol(0, ar("a", "b",  "",  "", null)) // null and "" are different categories even though they look the same in printout
+              .withDataForCol(1, ar("N", "Y", "Y", "N",  "Y"))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -210,7 +210,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withColNames("categorical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", null, null, null))
-              .withDataForCol(1, ar("N", "Y", "Y", "N", "Y"))
+              .withDataForCol(1, ar("N", "Y",  "Y",  "N",  "Y"))
               .build();
 
       Frame fr2 = new TestFrameBuilder()
@@ -218,7 +218,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withColNames("categorical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "na", "na", "na"))
-              .withDataForCol(1, ar("N", "Y", "Y", "N", "Y"))
+              .withDataForCol(1, ar("N", "Y",  "Y",  "N",  "Y"))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -267,7 +267,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard( 1,   1,   4,   7,   4))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
               .build();
 
@@ -302,9 +302,9 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target", "foldc")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard(1,    1,   4,   7,   4))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
-              .withDataForCol(3, ar(1, 2, 2, 3, 2))
+              .withDataForCol(3, ar(  1,   2,   2,   3,   2))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -339,7 +339,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard(1,    1,   4,   7,   4))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
               .build();
 
@@ -445,7 +445,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard( 1,   1,   4,   7,   4))
               .withDataForCol(2, ar("N", "N", "Y", "Y", "Y"))
               .build();
 
@@ -489,7 +489,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard( 1,   1,   4,   7,   4))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
               .build();
 

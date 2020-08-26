@@ -53,6 +53,8 @@ public class TargetEncodingOnRegressionTest extends TestUtil {
       
       Frame trainEncoded = teModel.transformTraining(fr);
       Scope.track(trainEncoded);
+      Assert.assertEquals(3, trainEncoded.numCols()); // 2 original cols + 1 enc column for the categorical one
+        
       Vec trainEncodedCol = trainEncoded.vec("categorical_te");
       Assert.assertNotNull(trainEncodedCol);
       Vec expectedEncodedCol = dvec(2.5, 2.5, 2.5, 2.5, 5.5, 5.5);

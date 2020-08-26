@@ -25,7 +25,7 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       final Frame fr = new TestFrameBuilder()
               .withColNames("categorical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-              .withDataForCol(0, ar("a", "a", "a", "a", "b", "b"))
+              .withDataForCol(0, ar("a",    "a",   "a",   "a",  "b",   "b"))
               .withDataForCol(1, ar("NO", "YES", "YES", "YES", "NO", "YES"))
               .build();
 
@@ -49,6 +49,8 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       
       Frame trainEncoded = teModel.transformTraining(fr);
       Scope.track(trainEncoded);
+      Assert.assertEquals(3, trainEncoded.numCols()); // 2 original cols + 1 enc column for the categorical one
+        
       Vec trainEncodedCol = trainEncoded.vec("categorical_te");
       Assert.assertNotNull(trainEncodedCol);
       Vec expectedEncodedCol = dvec(.75, .75, .75, .75, .5, .5);
@@ -219,7 +221,9 @@ public class TargetEncodingOnBinaryTest extends TestUtil {
       double priorMean = TargetEncoderHelper.computePriorMean(encodings);
       assertEquals(0.6, priorMean, 1e-3); // == 6/10
 
-      Vec expectedCatColumn = vec(ar("a", "b", "c", "categorical_NA"), 0, 1, 2, 3, 0, 1, 3); // for each fold value, we should have an entry per category (except for 'c', only in fold 0)
+      Vec expectedCatColumn = vec(ar("a", "b", "c", "categorical_NA"), // for each fold value, we should have an entry per category (except for 'c', only in fold 0)
+              0, 1, 2, 3, 
+              0, 1, 3);
       Vec expectedNumColumn = vec( // for binomial, numerator should correspond to the sum of positive occurrences (here "YES" ) for each category
               2, 1, 1, 1,    // out of fold 0 encodings
               1, 0, 0      // out of fold 1 encodings

@@ -26,9 +26,9 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target", "foldc")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard(1,    1,   4,   7,   4))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
-              .withDataForCol(3, ar(1, 2, 2, 3, 2))
+              .withDataForCol(3, ar(1,     2,   2,   3,   2))
               .build();
 
       TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
@@ -64,7 +64,7 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard( 1,   1,   4,   7,   4))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
               .build();
 
@@ -190,7 +190,7 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard( 1,   1,   4,   7,   4))
               .withDataForCol(2, ar("N", "N", "Y", "Y", "Y"))
               .build();
 
@@ -227,7 +227,7 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard( 1,   1,   4,   7,   4))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "N"))
               .build();
 

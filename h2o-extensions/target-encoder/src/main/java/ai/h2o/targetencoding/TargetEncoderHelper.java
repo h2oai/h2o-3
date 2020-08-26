@@ -34,8 +34,6 @@ import java.util.Random;
  */
 public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
 
-  static final String ENCODED_COLUMN_POSTFIX = "_te";
-  static final BlendingParams DEFAULT_BLENDING_PARAMS = new BlendingParams(10, 20);
   static final int NO_TARGET_CLASS = -1;
 
   static String NUMERATOR_COL = "numerator";
@@ -69,12 +67,17 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
   static double computePriorMean(Frame encodings, int targetClass) {
     int tcIdx = encodings.find(TARGETCLASS_COL);
     assert (targetClass == NO_TARGET_CLASS) == (tcIdx < 0);
-    Frame fr = tcIdx < 0 ? encodings : filterByValue(encodings, tcIdx, targetClass);
-    Vec numeratorVec = fr.vec(NUMERATOR_COL);
-    Vec denominatorVec = fr.vec(DENOMINATOR_COL);
-    assert numeratorVec != null;
-    assert denominatorVec != null;
-    return numeratorVec.mean() / denominatorVec.mean();
+    Frame fr = null;
+    try {
+      fr = tcIdx < 0 ? encodings:filterByValue(encodings, tcIdx, targetClass);
+      Vec numeratorVec = fr.vec(NUMERATOR_COL);
+      Vec denominatorVec = fr.vec(DENOMINATOR_COL);
+      assert numeratorVec!=null;
+      assert denominatorVec!=null;
+      return numeratorVec.mean() / denominatorVec.mean();
+    } finally {
+      if (fr != null && fr != encodings) fr.delete();
+    }
   }
 
   /**
@@ -275,7 +278,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
    * 
    * @param fr the frame
    * @param newEncodedColumnName the new encoded column to compute and append to the original frame.
-   * @param priorMean the global mean on .
+   * @param priorMean the global mean.
    * @param blendingParams if provided, those params are used to blend the prior and posterior values when calculating the encoded value.
    * @return the index of the new encoded column
    */
@@ -383,27 +386,36 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
     }
   }
 
-  /** FIXME: this method is modifying the original fr column in-place, one of the reasons why we currently need a complete deep-copy of the training frame... */
-  static void subtractTargetValueForLOO(Frame data, String targetColumnName) {
-    int numeratorIndex = data.find(NUMERATOR_COL);
-    int denominatorIndex = data.find(DENOMINATOR_COL);
-    int targetIndex = data.find(targetColumnName);
+  /** 
+   * FIXME: this method is modifying the original fr column in-place, one of the reasons why we currently need a complete deep-copy of the training frame...
+   * 
+   * @param fr the frame with a numerator and denominator columns, which will be modified based on the value in the target column.
+   * @param targetColumn the name of the target column.
+   * @param targetClass for regression use {@value #NO_TARGET_CLASS}, 
+   *                    for classification this is the target value to match in order to decrement the numerator.
+   */
+  static void subtractTargetValueForLOO(Frame fr, String targetColumn, int targetClass) {
+    int numeratorIndex = fr.find(NUMERATOR_COL);
+    int denominatorIndex = fr.find(DENOMINATOR_COL);
+    int targetIndex = fr.find(targetColumn);
     assert numeratorIndex >= 0;
     assert denominatorIndex >= 0;
     assert targetIndex >= 0;
 
-    new SubtractCurrentRowForLeaveOneOutTask(numeratorIndex, denominatorIndex, targetIndex).doAll(data);
+    new SubtractCurrentRowForLeaveOneOutTask(numeratorIndex, denominatorIndex, targetIndex, targetClass).doAll(fr);
   }
 
   private static class SubtractCurrentRowForLeaveOneOutTask extends MRTask<SubtractCurrentRowForLeaveOneOutTask> {
     private int _numeratorIdx;
     private int _denominatorIdx;
     private int _targetIdx;
+    private int _targetClass;
 
-    public SubtractCurrentRowForLeaveOneOutTask(int numeratorIdx, int denominatorIdx, int targetIdx) {
+    public SubtractCurrentRowForLeaveOneOutTask(int numeratorIdx, int denominatorIdx, int targetIdx, int targetClass) {
       _numeratorIdx = numeratorIdx;
       _denominatorIdx = denominatorIdx;
       _targetIdx = targetIdx;
+      _targetClass = targetClass;
     }
 
     @Override
@@ -413,7 +425,13 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
       Chunk target = cs[_targetIdx];
       for (int i = 0; i < num._len; i++) {
         if (!target.isNA(i)) {
-          num.set(i, num.atd(i) - target.atd(i));
+          double ti = target.atd(i);
+          
+          if (_targetClass == NO_TARGET_CLASS)  // regression
+            num.set(i, num.atd(i) - target.atd(i));
+          else if (_targetClass == ti)          // classification
+            num.set(i, num.atd(i) - 1);
+          
           den.set(i, den.atd(i) - 1);
         }
       }
