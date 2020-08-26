@@ -1,9 +1,7 @@
 package hex.genmodel.algos.targetencoder;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 public class EncodingMaps implements Iterable<Entry<String, EncodingMap>>, Serializable {
@@ -37,8 +35,8 @@ public class EncodingMaps implements Iterable<Entry<String, EncodingMap>>, Seria
     return _encodingMaps;
   }
   
-  public boolean hasColumn(String columnToEncode) {
-    return _encodingMaps.containsKey(columnToEncode);
+  public Set<String> getColumns() {
+    return Collections.unmodifiableSet(_encodingMaps.keySet());
   }
 
   @Override
