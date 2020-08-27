@@ -81,6 +81,9 @@ def gen_module(schema, algo, module):
                     pdocs[pname] = get_customizations_or_defaults_for(algo, 'doc.params.'+pname, get_help(param, indent=len(tag)+4))
         else:
             pdocs[pname] = get_customizations_or_defaults_for(algo, 'doc.params.'+pname)
+    if ellipsis_param is not None:
+        pdocs['...'] = get_customizations_or_defaults_for(algo, 'doc.params._ellipsis_')
+    
 
     for pname, pdoc in pdocs.items():
         if pdoc:
@@ -151,6 +154,8 @@ def gen_module(schema, algo, module):
     sig_bulk_params.append("segment_columns = NULL")
     sig_bulk_params.append("segment_models_id = NULL")
     sig_bulk_params.append("parallelism = 1")
+    if ellipsis_param is not None:
+        sig_bulk_params.append("...")
 
     if algo != "generic":
         #

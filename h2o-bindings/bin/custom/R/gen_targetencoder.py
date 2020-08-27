@@ -30,6 +30,9 @@ doc = dict(
     preamble="""
  Transformation of a categorical variable with a mean value of the target variable
 """,
+    params=dict(
+        _ellipsis_="Mainly used for backwards compatibility, to allow deprecated parameters."
+    ),
     examples="""
 library(h2o)
 h2o.init()

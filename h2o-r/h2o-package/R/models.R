@@ -557,7 +557,8 @@ setGeneric("h2o.transform", function(model, ...) {
 #'  By default, model settings are respected, if not overridden by this setting.
 #' @param noise An amount of random noise added to the encoding, this helps prevent overfitting.
 #'  By default, model settings are respected, if not overridden by this setting.
-#' @param as_training. Must be set to True when encoding the training frame. Defaults to False.
+#' @param as_training Must be set to True when encoding the training frame. Defaults to False.
+#' @param ... Mainly used for backwards compatibility, to allow deprecated parameters.
 #' @return Returns an H2OFrame object with data transformed.
 #' @export
 setMethod("h2o.transform", signature("H2OTargetEncoderModel"), function(model, data,

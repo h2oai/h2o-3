@@ -31,6 +31,7 @@
 #'        determine a reasonable amount of noise. Defaults to 0.01.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
+#' @param ... Mainly used for backwards compatibility, to allow deprecated parameters.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -145,7 +146,8 @@ h2o.targetencoder <- function(x,
                                               seed = -1,
                                               segment_columns = NULL,
                                               segment_models_id = NULL,
-                                              parallelism = 1)
+                                              parallelism = 1,
+                                              ...)
 {
   varargs <- list(...)
   for (arg in names(varargs)) {
