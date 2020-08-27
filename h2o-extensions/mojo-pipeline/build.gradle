@@ -2,7 +2,7 @@ description = "H2O MOJO Pipeline support"
 
 dependencies {
     compile project(":h2o-core")
-    compile "ai.h2o:mojo2-runtime-api:0.13.7"
+    compile "ai.h2o:mojo2-runtime-api:2.4.10"
 
     testCompile project(":h2o-test-support")
     testCompile "net.sf.opencsv:opencsv:2.3"
