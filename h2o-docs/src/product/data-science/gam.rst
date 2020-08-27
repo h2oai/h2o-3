@@ -182,7 +182,7 @@ Defining a GAM Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
-- **constraints**: A list of model parameters that, when in the same constraint list, can vary freely amongst each other. This allows the user to group model parameters that can vary with restrictions. If specified, the following parameters must have the same array dimension:
+- **subspaces**: A list of model parameters that, when in the same constraint list, can vary freely amongst each other. This allows the user to group model parameters that can vary with restrictions. If specified, the following parameters must have the same array dimension:
   
   - ``gam_columns``
   - ``scale``

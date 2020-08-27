@@ -795,7 +795,7 @@ GAM Hyperparameters
 
 -  ``alpha``
 -  ``bs``
--  ``constraints``
+-  ``subspaces``
 -  ``gam_x``
 -  ``k``
 -  ``lambda``
