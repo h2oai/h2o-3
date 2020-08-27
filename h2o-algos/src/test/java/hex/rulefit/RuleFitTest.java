@@ -246,23 +246,21 @@ public class RuleFitTest extends TestUtil {
             System.out.println(model._output._rule_importance);
             
             fr2 = model.score(fr);
+            
+            double[] expectedCoeffs = new double[] {13.54857, 8.37943,  8.33535, 7.78235, 7.62020, -7.57865, -5.59529, 5.54992, -4.04620, -3.73222, -3.66495,
+                    -3.42013, -3.15808, -2.35471, -2.18179, 1.37956, -1.21565, -1.14398, -0.72780, -0.65794,  -0.60032, -0.51938, -0.24730, -0.21409, 0.16232,
+                    0.15663, 0.11327, 0.09523, -0.02568, -0.02156, 0.00606, 0.00080,  -0.00059, 0.00000, 0.00000, -0.00000, -0.00000};
 
-// will be commented until how to make getOptimalLambda() will be resolved            
-//            double[] expectedCoeffs = new double[] {13.004402060936888, 9.113603209948424, 7.68771232020914, 6.824080671930569, -5.628368368360579,
-//                    5.274377189184506, 5.046628698255106, 5.015034906113102, -4.4200157573980885, 3.1860670448265282, -2.979522789418401, 2.9039591116960635,
-//                    -2.42070125353312, 2.3911818561425418, 2.066540600979733, -1.878938007410801, -1.5163118005971468, -1.3062651329031085, -1.2804225662948483,
-//                    1.0996496571874164, 0.9528000637892864, -0.8982300672540523, -0.7915602005810082, -0.6984875168240434, -0.6867872999692551, -0.5111780981012599,
-//                    -0.19300513004373684, -0.12219542917921311, 0.1177744584884146, -0.03326857456036694, 1.7909238277924778E-11};
-//            
-//            String[] expectedVars = new String[] {"tree_2.T26.RLL", "tree_2.T10.LRL", "tree_3.T27.RLRR", "tree_4.T27.RLRRR", "tree_1.T38.LR", "tree_3.T25.RLLR",
-//            "tree_2.T21.LRL", "tree_3.T23.LRRL", "tree_0.T6.R", "tree_3.T39.LRRL", "tree_2.T25.LRR", "tree_2.T1.LRL", "tree_2.T43.LLR", "tree_5.T13.LLRRRR",
-//            "tree_5.T30.LRLRLR", "tree_4.T11.RRRLR", "tree_1.T37.LR", "tree_3.T3.LRRL", "tree_2.T36.LLL", "tree_1.T11.LR", "tree_3.T1.LRLR", "tree_1.T36.LL",
-//            "tree_1.T41.LL", "tree_3.T9.LLRR", "tree_2.T17.RLR", "tree_1.T31.LL", "tree_1.T17.RL", "tree_2.T49.LLR", "tree_4.T30.LRLRL", "tree_1.T42.LR", "tree_2.T25.RLL"};
-//            
-//            for (int i = 0; i < model._output._rule_importance.getRowDim(); i++) {
-//                assertEquals(expectedCoeffs[i], (double) model._output._rule_importance.get(i,1),1e-4);
-//                assertEquals(expectedVars[i], model._output._rule_importance.get(i,0));
-//            }
+            String[] expectedVars = new String[] {"tree_0.T1.R", "tree_1.T26.RL", "tree_1.T49.LR", "tree_1.T29.RL", "tree_1.T19.LR", "tree_1.T14.LR",
+            "tree_1.T7.LR", "tree_1.T27.LR", "tree_1.T5.RR", "tree_2.T31.LLL", "tree_1.T1.LL", "tree_2.T37.LLL", "tree_1.T37.LL", "tree_1.T15.LL", "tree_1.T2.RL",
+            "tree_0.T2.L", "tree_1.T3.RR", "tree_3.T14.LRRR", "tree_1.T27.RL", "tree_1.T21.RL", "tree_1.T34.RL", "tree_2.T39.LRL", "tree_1.T6.LL", "tree_0.T1.L",
+            "tree_0.T12.R", "tree_0.T19.L", "tree_0.T27.L", "tree_0.T23.R", "tree_0.T2.R", "tree_1.T8.LL", "tree_1.T4.RL", "tree_0.T28.R", "tree_0.T12.L",
+            "tree_1.T38.RL", "tree_0.T15.R", "tree_0.T5.R", "tree_1.T10.LL"};
+
+            for (int i = 0; i < model._output._rule_importance.getRowDim(); i++) {
+                assertEquals(expectedCoeffs[i], (double) model._output._rule_importance.get(i,1),1e-4);
+                assertEquals(expectedVars[i], model._output._rule_importance.get(i,0));
+            }
 
             GLMModel.GLMParameters glmParameters = model.glmModel._parms;
             glmParameters._train = fr._key;
@@ -460,7 +458,6 @@ public class RuleFitTest extends TestUtil {
             params._train = fr._key;
             params._model_type = RuleFitModel.ModelType.RULES;
             params._response_column = responseColumnName;
-            params._max_num_rules = 2000;
 
             rfModel = new RuleFit(params).trainModel().get();
 
@@ -526,7 +523,6 @@ public class RuleFitTest extends TestUtil {
             params._train = fr._key;
             params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
             params._response_column = "diabetesMed";
-            params._max_num_rules = 2000;
             params._weights_column = "weights";
 
 

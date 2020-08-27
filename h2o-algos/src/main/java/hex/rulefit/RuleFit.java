@@ -146,6 +146,9 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                     error("_distribution", "Distribution not supported.");
             }
         }
+        if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) && _parms._ignored_columns != null) {
+            glmParameters._ignored_columns = _parms._ignored_columns;
+        }
         glmParameters._response_column = _parms._response_column;
         glmParameters._seed = _parms._seed;
         // alpha ignored - set to 1 by rulefit (Lasso)
@@ -207,10 +210,11 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 glmParameters._train = pathsFrame._key;
                 if (_parms._max_num_rules > 0) {
                     glmParameters._max_active_predictors = _parms._max_num_rules + 1;
-                    glmParameters._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT;
+                    if (_parms._distribution != DistributionFamily.multinomial) {
+                        glmParameters._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT;
+                    }
                 } else {
                     glmParameters._lambda = getOptimalLambda();
-                    glmParameters._nfolds = _parms._nfolds;
                 }
 
                 GLM job = new GLM(glmParameters);
@@ -286,70 +290,58 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             GLMModel lambdaModel = job.trainModel().get();
             glmParameters._lambda_search = false;
 
-            // get the best GLM lambda by choosing one diminishing returns on explained deviance
             GLMModel.RegularizationPath regularizationPath = lambdaModel.getRegularizationPath();
             double[] deviance = regularizationPath._explained_deviance_train;
             double[] lambdas = regularizationPath._lambdas;
             int bestLambdaIndex;
 
-            
-//            if (deviance.length < 5) {
-                bestLambdaIndex = deviance.length - 1;
-//            } else {
-//                bestLambdaIndex = getBestLambdaIndex(deviance); // TODO: can happen that bestLambdaIndex > lambdas.length
-//            }
+           if (deviance.length < 5) {
+               bestLambdaIndex = deviance.length - 1;
+           } else {
+               bestLambdaIndex = getBestLambdaIndex(deviance, lambdas);
+           }
 
             lambdaModel.remove();
             return new double[]{lambdas[bestLambdaIndex]};
         }
 
-        double[] differenceArray(double[] array) {
-            double[] differenceArray = new double[array.length - 1];
-            for (int i = 0; i < array.length - 1; i++) {
-                differenceArray[i] = array[i + 1] - array[i];
-            }
-            return differenceArray;
-        }
-
-        double[] signArray(double[] array) {
-            double[] signArray = new double[array.length];
-            for (int i = 0; i < array.length; i++) {
-                if (array[i] > 0)
-                    signArray[i] = 1;
-                else if (array[i] < 0)
-                    signArray[i] = -1;
-                else
-                    signArray[i] = 0;
-            }
-            return signArray;
-        }
-
-        int getBestLambdaIndex(double[] deviance) {
-            int bestLambdaIndex = deviance.length - 1;
-            if (deviance.length >= 5) {
-                double[] array = differenceArray(signArray(differenceArray(differenceArray(deviance))));
-                for (int i = 0; i < array.length; i++) {
-                    if (array[i] != 0 && i > 0) {
-                        bestLambdaIndex = 3 * i;
-                        break;
-                    }
+        int getBestLambdaIndex(double[] deviance, double[] lambdas) {
+            double[] leftUpPoint = new double[] {deviance[0], lambdas[0]};
+            double[] rightLowPoint = new double[] {deviance[deviance.length - 1], lambdas[lambdas.length - 1]};
+            double[] leftActualPoint = new double[2];
+            double[] rightActualPoint = new double[2];
+            double leftVolume, rightVolume;
+            
+            int leftActualId = 0;
+            int rightActualId = deviance.length - 1;
+            while (leftActualId < deviance.length && rightActualId < deviance.length) {
+                 if (leftActualId >= rightActualId) // volumes overlap
+                    break;
+                 
+                // leftVolume
+                leftActualPoint[0] = deviance[leftActualId];
+                leftActualPoint[1] = lambdas[leftActualId];
+                leftVolume = (leftUpPoint[1] - leftActualPoint[1]) * (leftActualPoint[0] - leftUpPoint[0]);
+                
+                // rightVolume
+                rightActualPoint[0] = deviance[rightActualId];
+                rightActualPoint[1] = lambdas[rightActualId];
+                rightVolume = (rightActualPoint[1] - rightLowPoint[1]) * (rightLowPoint[0] - rightActualPoint[0]);
+                
+                if (Math.abs(leftVolume) > Math.abs(rightVolume)) {
+                    rightActualId--; // add point to rightvolume
+                } else {
+                    leftActualId++; // add point to leftvolume
                 }
             }
-            return bestLambdaIndex;
+            return rightActualId;
         }
 
         double[] getIntercept(GLMModel glmModel) {
-            GLMModel.GLMParameters.Family family = glmModel._parms._family;
-            // get paths
             HashMap<String, Double> glmCoefficients = glmModel.coefficients();
-            if (GLMModel.GLMParameters.Family.multinomial.equals(family)) {
-                // TODO multinomial here
-                return new double[]{};
-            } else {
-                for (Map.Entry<String, Double> coefficient : glmCoefficients.entrySet()) {
-                    if ("Intercept".equals(coefficient.getKey()))
-                        return new double[]{coefficient.getValue()};
-                }
+            for (Map.Entry<String, Double> coefficient : glmCoefficients.entrySet()) {
+                if ("Intercept".equals(coefficient.getKey()))
+                    return new double[]{coefficient.getValue()};
             }
             return new double[]{};
         }
