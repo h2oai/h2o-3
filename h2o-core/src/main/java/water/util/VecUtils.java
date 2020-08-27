@@ -1,5 +1,7 @@
 package water.util;
 
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
@@ -10,6 +12,7 @@ import water.fvec.Vec;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
 import water.parser.Categorical;
+import water.rapids.ShuffleVec;
 
 import java.util.*;
 
@@ -349,7 +352,7 @@ public class VecUtils {
         } else {
           for (int i=0; i < chk._len; i++) {
             if (!chk.isNA(i))
-              newChk.addStr(PrettyPrint.number(chk, chk.atd(i), 4));
+              newChk.addStr(PrettyPrint.number(chk, chk.atd(i), 4)); 
             else
               newChk.addNA();
           }
@@ -839,4 +842,47 @@ public class VecUtils {
       }
     }
   }
+
+  public static long seed(int cidx) {
+    return (0xe031e74f321f7e29L + ((long) cidx << 32L));
+  }
+
+
+  /**
+   * Randomly shuffle randomly a vector from a Frame
+   * */
+
+  public static Vec shuffle(Vec src) {
+    Vec mr = new MRTask() {
+      @Override public void map(Chunk ic, NewChunk nc) {
+        Random rng = getRNG(seed(ic.cidx()));
+        for (int i = 0; i < ic._len - 1; i++) {
+          int j = rng.nextInt(i); // inclusive upper bound <0,i>
+          switch (ic.vec().get_type()) {
+            case Vec.T_BAD: break; /* NOP */
+            case Vec.T_UUID:
+              if (j != i) nc.setAny(i, ic.at16l(j));
+              nc.setAny(j, ic.at16l(i));
+              break;
+            case Vec.T_STR:
+              if (j != i) nc.setAny(i, ic.stringAt(j));
+              ic.setAny(j, ic.stringAt(i));
+              break;
+            case Vec.T_NUM: /* fallthrough */
+            case Vec.T_CAT:
+            case Vec.T_TIME:
+              if (j != i) nc.setAny(i, ic.atd(i));
+              ic.setAny(j, ic.atd(i));
+              break;
+            default:
+              throw new IllegalArgumentException("Unsupported vector type: " + ic.vec().get_type());
+          }
+        }
+      }
+    }.doAll(src).outputFrame().anyVec();
+
+    return mr;
+  }
+
 }
+ 
