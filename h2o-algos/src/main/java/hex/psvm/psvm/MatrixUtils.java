@@ -213,9 +213,10 @@ public class MatrixUtils {
 
     @Override
     public void map(Chunk[] cs, NewChunk[] ncs) {
+      Vec.Reader vReader = v.new Reader();
       for (int column = 0; column < cs.length; column++) {
         for (int row = 0; row < cs[0]._len; row++) {
-          ncs[column].addNum(cs[column].atd(row) - v.at(column));
+          ncs[column].addNum(cs[column].atd(row) - vReader.at(column));
         }
       }
     }
@@ -273,10 +274,11 @@ public class MatrixUtils {
 
     @Override
     public void map(Chunk[] cs, NewChunk nc) {
+      Vec.Reader vReader = v.new Reader();
       for (int row = 0; row < cs[0]._len; row++) {
         double sum = 0.0;
         for (int column = 0; column < cs.length; ++column) {
-          sum += cs[column].atd(row) * v.at(column);
+          sum += cs[column].atd(row) * vReader.at(column);
         }
         nc.addNum(sum);
       }

@@ -27,8 +27,9 @@ public class FilterGteTask extends MRTask<FilterGteTask> {
 
     @Override
     public void map(Chunk[] cs, NewChunk[] ncs) {
+        Vec.Reader vecReader = vec.new Reader();
         for (int row = 0; row < cs[0]._len; row++) {
-            double num = vec.at(cs[0].start() + row);
+            double num = vecReader.at(cs[0].start() + row);
             if (num >= value) {
                 for (int column = 0; column < cs.length; column++) {
                     ncs[column].addNum(cs[column].atd(row));
