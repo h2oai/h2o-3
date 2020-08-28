@@ -150,4 +150,30 @@ public class AstDropDuplicatesTest {
     }
   }
 
+
+  @Test
+  public void testDropUniquesOnColumnSubset() {
+    try {
+      Scope.enter();
+      final Frame frame = new TestFrameBuilder()
+          .withColNames("C1", "C2", "C3", "C4")
+          .withDataForCol(0, new double[]{1d, 1d, 1d, 1d, 1d, 2d, 2d})
+          .withDataForCol(1, new double[]{2d, 2d, 2d, 2d, 2d, 3d, 3d})
+          .withDataForCol(2, new double[]{3d, 2d, 2d, 2d, 2d, 3d, 3d})
+          .withDataForCol(3, new double[]{4d, 2d, 2d, 2d, 2d, 3d, 3d})
+          .withChunkLayout(7)
+          .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+          .build();
+
+      Val val = Rapids.exec(String.format("(dropdup %s ['C1', 'C2'] first)", frame._key.toString()));
+      assertNotNull(val);
+      assertTrue(val.isFrame());
+      final Frame deduplicatedFrame = Scope.track(val.getFrame());
+      assertEquals(2, deduplicatedFrame.numRows());
+      assertEquals(frame.numCols(), deduplicatedFrame.numCols());
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

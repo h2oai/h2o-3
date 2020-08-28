@@ -44,9 +44,11 @@ public class DropDuplicateRows {
       final Frame deDuplicatedFrame = Scope.track(new DropDuplicateRowsTask(chunkBoundaries, comparedColumnIndices)
               .doAll(sortedFrame.types(), sortedFrame)
               .outputFrame(null, sortedFrame.names(), sortedFrame.domains())); // Removing duplicates, domains remain the same
-
+      // Before the final sorted duplicated is created, remove the unused datasets to free some space early
+      chunkBoundaries.remove();
+      sortedFrame.remove();
       outputFrame = Scope.track(Merge.sort(deDuplicatedFrame, deDuplicatedFrame.numCols() - 1));
-      outputFrame.remove(outputFrame.numCols() - 1);
+      outputFrame.remove(outputFrame.numCols() - 1).remove();
       return outputFrame;
     } finally {
       if (outputFrame != null) {
