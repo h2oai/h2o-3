@@ -88,14 +88,13 @@ public class ModelAttributes implements Serializable {
       case Ordinal:
         if (mojoModel instanceof GlmOrdinalMojoModel) {
           return new MojoModelMetricsOrdinalGLM();
-        } else return new MojoModelMetricsOrdinal(); 
-      case CoxPH:
-        return new MojoModelMetricsRegressionCoxPH();
+        } else return new MojoModelMetricsOrdinal();
       case Unknown:
       case Clustering:
       case AutoEncoder:
       case DimReduction:
       case WordEmbedding:
+      case CoxPH:
       default:
         return new MojoModelMetrics(); // Basic model metrics if nothing else is available
     }
