@@ -15,7 +15,7 @@ public class ModelMetricsRegressionCoxPHV3 extends ModelMetricsRegressionV3<Mode
   public long discordant;
 
   @API(help = "number of pairs tied in Y value", direction = Direction.OUTPUT)
-  public long tiedY;
+  public long tied_y;
 
   @Override
   public ModelMetricsRegressionCoxPHV3 fillFromImpl(ModelMetricsRegressionCoxPH modelMetrics) {
@@ -23,7 +23,7 @@ public class ModelMetricsRegressionCoxPHV3 extends ModelMetricsRegressionV3<Mode
     this.concordance = modelMetrics.concordance();
     this.concordant = modelMetrics.concordant();
     this.discordant = modelMetrics.discordant();
-    this.tiedY = modelMetrics.tiedY();
+    this.tied_y = modelMetrics.tiedY();
     return this;
   }
 

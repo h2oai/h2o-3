@@ -21,7 +21,7 @@ def coxph_smoke():
     metrics = coxph.model_performance(heart)
     assert 0.581 > metrics.concordance() and 0.580 < metrics.concordance()
     assert 3696 == metrics.concordant()
-    assert 10 == metrics.tiedY()
+    assert 10 == metrics.tied_y()
 
 
 if __name__ == "__main__":

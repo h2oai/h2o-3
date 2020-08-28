@@ -1767,10 +1767,10 @@ class H2OModelMetricsRegressionCoxPH(MetricsBase):
             return self._metric_json["concordant"]
         return None  
     
-    def tiedY(self):
+    def tied_y(self):
         """Count of tied pairs."""
-        if MetricsBase._has(self._metric_json, "tiedY"):
-            return self._metric_json["tiedY"]
+        if MetricsBase._has(self._metric_json, "tied_y"):
+            return self._metric_json["tied_y"]
         return None
 
     def __init__(self, metric_json, on=None, algo=""):

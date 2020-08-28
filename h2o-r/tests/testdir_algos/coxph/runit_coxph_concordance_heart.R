@@ -29,7 +29,7 @@ test.CoxPH.predict <- function() {
         
         hexConcordantCount <- perf@metrics$concordant
         hexDiscordantCount <- perf@metrics$discordant
-        hexTiedCount <- perf@metrics$tiedY
+        hexTiedCount <- perf@metrics$tied_y
         
         expect_equal(hexConcordance, (hexConcordantCount + 0.5 * hexTiedCount) / (hexConcordantCount + hexDiscordantCount + hexTiedCount))
     }
