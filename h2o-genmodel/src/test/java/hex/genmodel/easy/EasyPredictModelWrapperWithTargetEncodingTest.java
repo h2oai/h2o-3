@@ -33,7 +33,7 @@ public class EasyPredictModelWrapperWithTargetEncodingTest {
     try {
       modelWrapper.predictTargetEncoding(row);
       fail();
-    } catch (IllegalStateException ex) {
+    } catch (NullPointerException ex) {
       assertEquals((String) row.get("embarked"), "S");
     }
   }
