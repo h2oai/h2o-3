@@ -369,7 +369,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                     args.tree_number = rule.treeNum;
     
                     tree = treeHandler.getTree(3, args);
-                    // TODO: make getting language rule not needing TreeV3
+                    // TODO: make getting language rule not needing TreeV3. will be done during PUBDEV-7740
                     rule.languageRule = treeTraverser(tree, rule.path);
                 }
                 rule.coefficient = entry.getValue();
