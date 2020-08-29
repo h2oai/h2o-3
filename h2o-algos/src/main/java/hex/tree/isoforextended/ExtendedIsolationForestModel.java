@@ -9,6 +9,7 @@ import hex.tree.isofor.ModelMetricsAnomaly;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.Log;
 import water.util.SBPrintStream;
 
 /**
@@ -49,12 +50,12 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
         for (ExtendedIsolationForest.IsolationTree iTree : _output.iTrees) {
             double iTreeScore = iTree.computePathLength(data);
             pathLength += iTreeScore;
-//            System.out.println("iTreeScore " + iTreeScore);
+            Log.debug("iTreeScore " + iTreeScore);
         }
         pathLength = pathLength / _output.iTrees.length;
-//        System.out.println("pathLength " + pathLength);
+        Log.debug("pathLength " + pathLength);
         double anomalyScore = anomalyScore(pathLength);
-//        System.out.println("Anomaly score " + anomalyScore);
+        Log.debug("Anomaly score " + anomalyScore);
         preds[0] = anomalyScore;
         preds[1] = pathLength;
         return preds;
