@@ -166,7 +166,7 @@ public class MatrixUtils {
 
     @Override
     public void reduce(ProductMMTask mrt) {
-      ArrayUtils.add(_result, mrt._result);
+      ArrayUtils.addSave(_result, mrt._result);
     }
   }
 
@@ -193,7 +193,7 @@ public class MatrixUtils {
 
     @Override
     public void reduce(ProductMtvTask mrt) {
-      ArrayUtils.add(_result, mrt._result);
+      ArrayUtils.addSave(_result, mrt._result);
     }
   }
 

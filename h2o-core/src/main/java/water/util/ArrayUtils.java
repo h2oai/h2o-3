@@ -349,6 +349,22 @@ public class ArrayUtils {
     for(int i = 0; i < a.length; i++ ) a[i] += b[i];
     return a;
   }
+
+  /**
+   * Array length save ADD operation
+   */
+  public static double[] addSave(double[] a, double[] b) {
+    if (a == null) return b;
+    if (b == null) return a;
+    if (a.length < b.length) {
+      for (int i = 0; i < a.length; i++) b[i] += a[i];
+      return b;
+    } else {
+      for (int i = 0; i < b.length; i++) a[i] += b[i];
+      return a;
+    }
+  }
+
   public static double[] add(double[] a, double b) {
     for(int i = 0; i < a.length; i++ ) a[i] += b;
     return a;
