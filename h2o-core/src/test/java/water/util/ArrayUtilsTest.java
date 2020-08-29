@@ -325,4 +325,45 @@ public class ArrayUtilsTest {
     double[] res = ArrayUtils.subtract(a, b);
     assertArrayEquals(new double[]{-1, 0.5, 0.25, -8.25, 2, 5}, res, 0);
   }
+  
+  @Test
+  public void testAddSave() {
+    double[] a = new double[]{1, 2.5, 2.25, -6.25, 4, 7};
+    double[] b = new double[]{2, 2, 2, 2, 2, 2};
+    double[] res = ArrayUtils.addSave(a, b);
+
+    assertArrayEquals("Wrong add", new double[]{3, 4.5, 4.25, -4.25, 6, 9}, res, 1e-3);
+    assertArrayEquals("array A is not changed", new double[]{3, 4.5, 4.25, -4.25, 6, 9}, a, 1e-3);
+    assertArrayEquals("array B is changed", new double[]{2, 2, 2, 2, 2, 2}, b, 1e-3);
+
+    a = new double[]{1, 2.5, 2.25, -6.25, 4, 7};
+    b = new double[]{2, 2, 2};
+    res = ArrayUtils.addSave(a, b);
+
+    assertArrayEquals("Wrong add", new double[]{3, 4.5, 4.25, -6.25, 4, 7}, res, 1e-3);
+    assertArrayEquals("array A is not changed", new double[]{3, 4.5, 4.25, -6.25, 4, 7}, a, 1e-3);
+    assertArrayEquals("array B is changed", new double[]{2, 2, 2}, b, 1e-3);
+
+    a = new double[]{1, 2.5, 2.25};
+    b = new double[]{2, 2, 2, 2, 2};
+    res = ArrayUtils.addSave(a, b);
+
+    assertArrayEquals("Wrong add", new double[]{3, 4.5, 4.25, 2, 2}, res, 1e-3);
+    assertArrayEquals("array B is not changed", new double[]{3, 4.5, 4.25, 2, 2}, b, 1e-3);
+    assertArrayEquals("array A is changed", new double[]{1, 2.5, 2.25}, a, 1e-3);
+
+    a = new double[]{1, 2.5, 2.25};
+    b = null;
+    res = ArrayUtils.addSave(a, b);
+    assertArrayEquals("Wrong add", new double[]{1, 2.5, 2.25}, res, 1e-3);
+    assertArrayEquals("array A is changed", new double[]{1, 2.5, 2.25}, a, 1e-3);
+    assertTrue("Array B is changed", b == null);
+
+    a = null;
+    b = new double[]{1, 2.5, 2.25};
+    res = ArrayUtils.addSave(a, b);
+    assertArrayEquals("Wrong add", new double[]{1, 2.5, 2.25}, res, 1e-3);
+    assertArrayEquals("array B is changed", new double[]{1, 2.5, 2.25}, b, 1e-3);
+    assertTrue("Array A is changed", a == null);
+  }
 }
