@@ -346,12 +346,7 @@ public class ArrayUtils {
 
   public static double[] add(double[] a, double[] b) {
     if( a==null ) return b;
-    if (a.length <= b.length) {
-      for (int i = 0; i < a.length; i++) a[i] += b[i];
-    } else {
-      for (int i = 0; i < b.length; i++) b[i] += a[i];
-      return b;
-    }
+    for(int i = 0; i < a.length; i++ ) a[i] += b[i];
     return a;
   }
   public static double[] add(double[] a, double b) {
