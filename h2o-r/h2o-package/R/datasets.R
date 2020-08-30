@@ -1,7 +1,7 @@
 #' Australia Coastal Data
 #' 
 #' Temperature, soil moisture, runoff, and other environmental measurements from
-#' the Australia coast. The data is available from \url{https://cs.colby.edu/courses/S11/cs251/labs/lab07/AustraliaSubset.csv}.
+#' the Australia coast. The data is available from https://cs.colby.edu/courses/S11/cs251/labs/lab07/AustraliaSubset.csv.
 #' 
 #' @docType data
 #' @keywords datasets
@@ -58,7 +58,7 @@ NULL
 #' The musculoskeletal model, experimental data, settings files, and results 
 #' for three-dimensional, muscle-actuated simulations at walking speed as 
 #' described in Hamner and Delp (2013). Simulations were generated using OpenSim 2.4.
-#' The data is available from \url{https://simtk.org/project/xml/downloads.xml?group_id=603}.
+#' The data is available from \url{https://simtk.org/frs/index.php?group_id=603}.
 #' 
 #' @docType data
 #' @keywords datasets
