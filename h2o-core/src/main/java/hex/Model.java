@@ -1648,7 +1648,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     PermutationFeatureImportance fi = new PermutationFeatureImportance(this, fr, scored);
     return fi.getFeatureImportance();
   }
-  public TwoDimTable getPermVarImpTable_oat(Frame fr, Frame scored){
+  public TwoDimTable getPermVarImpTableOat(Frame fr, Frame scored){
     PermutationFeatureImportance fi = new PermutationFeatureImportance(this, fr, scored);
     return fi.oat();
   }
