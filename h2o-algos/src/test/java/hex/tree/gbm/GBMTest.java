@@ -3807,8 +3807,6 @@ public class GBMTest extends TestUtil {
       GBMModel model = new GBM(parms).trainModel().get();
       Scope.track_generic(model);
 
-      Vec unchangedPreds = Scope.track(model.score(f)).anyVec();
-      
       Vec lastPreds = null;
       for (String ageStr : uniqueAges) {
         final int age = Integer.parseInt(ageStr);
@@ -3827,7 +3825,6 @@ public class GBMTest extends TestUtil {
         if (lastPreds != null)
           for (int i = 0; i < lastPreds.length(); i++) {
             assertTrue("age=" + age + ", id=" + f.vec("ID").at8(i), lastPreds.at(i) <= currentPreds.at(i));
-            System.out.println("age=" + age + ", id=" + f.vec("ID").at8(i)+" "+lastPreds.at(i) +" <= "+currentPreds.at(i)+" - "+unchangedPreds.at(i));
           }
         lastPreds = currentPreds;
       }
