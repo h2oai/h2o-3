@@ -284,14 +284,14 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     EncodingStrategy strategy;
     switch (dataLeakageHandlingStrategy) {
       case KFold:
-        strategy = new KFoldEncodingStrategy(targetColumn, foldColumn, blendingParams, noise, seed);
+        strategy = new KFoldEncodingStrategy(foldColumn, blendingParams, noise, seed);
         break;
       case LeaveOneOut:
-        strategy = new LeaveOneOutEncodingStrategy(targetColumn, foldColumn, blendingParams, noise, seed);
+        strategy = new LeaveOneOutEncodingStrategy(targetColumn, blendingParams, noise, seed);
         break;
       case None:
       default:
-        strategy = new DefaultEncodingStrategy(targetColumn, foldColumn, blendingParams, noise, seed);
+        strategy = new DefaultEncodingStrategy(blendingParams, noise, seed);
         break;
     }
 
@@ -311,7 +311,8 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
         String columnToEncode = kv.getKey();
         Frame encodings = kv.getValue();
 
-        if (!asTraining && encodings.find(foldColumn) >= 0) { // if not applying encodings to training data, then get rid of the foldColumn in encodings.
+        // if not applying encodings to training data, then get rid of the foldColumn in encodings.
+        if (dataLeakageHandlingStrategy != DataLeakageHandlingStrategy.KFold && encodings.find(foldColumn) >= 0) {
           encodings = groupEncodingsByCategory(encodings, encodings.find(columnToEncode));
         }
         
@@ -372,16 +373,11 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   
   private static abstract class EncodingStrategy {
 
-    String _targetColumn;
-    String _foldColumn;
     BlendingParams _blendingParams;
     double _noise;
     long _seed;
     
-    public EncodingStrategy(String targetColumn, String foldColumn, 
-                            BlendingParams blendingParams, double noise, long seed) {
-      _targetColumn = targetColumn;
-      _foldColumn = foldColumn;
+    public EncodingStrategy(BlendingParams blendingParams, double noise, long seed) {
       _blendingParams = blendingParams;
       _noise = noise;
       _seed = seed;
@@ -461,9 +457,12 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   private static class KFoldEncodingStrategy extends EncodingStrategy {
 
-    public KFoldEncodingStrategy(String targetColumn, String foldColumn, 
+    String _foldColumn;
+    
+    public KFoldEncodingStrategy(String foldColumn, 
                                  BlendingParams blendingParams, double noise, long seed) {
-      super(targetColumn, foldColumn, blendingParams, noise, seed);
+      super(blendingParams, noise, seed);
+      _foldColumn = foldColumn;
     }
 
     @Override
@@ -504,9 +503,12 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   private static class LeaveOneOutEncodingStrategy extends EncodingStrategy {
 
-    public LeaveOneOutEncodingStrategy(String targetColumn, String foldColumn,
+    String _targetColumn;
+    
+    public LeaveOneOutEncodingStrategy(String targetColumn,
                                        BlendingParams blendingParams, double noise, long seed) {
-      super(targetColumn, foldColumn, blendingParams, noise, seed);
+      super(blendingParams, noise, seed);
+      _targetColumn = targetColumn;
     }
 
     @Override
@@ -532,9 +534,8 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   private static class DefaultEncodingStrategy extends EncodingStrategy {
 
-    public DefaultEncodingStrategy(String targetColumn, String foldColumn, 
-                                   BlendingParams blendingParams, double noise, long seed) {
-      super(targetColumn, foldColumn, blendingParams, noise, seed);
+    public DefaultEncodingStrategy(BlendingParams blendingParams, double noise, long seed) {
+      super(blendingParams, noise, seed);
     }
 
     @Override
