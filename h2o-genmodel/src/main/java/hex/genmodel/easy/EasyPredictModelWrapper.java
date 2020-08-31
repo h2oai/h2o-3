@@ -491,18 +491,51 @@ public class EasyPredictModelWrapper implements Serializable {
               ((GlrmMojoModel) m)._numLevels);
     return p;
   }
+
   /**
-   * Lookup word embeddings for a given word (or set of words).
-   * @param data RawData structure, every key with a String value will be translated to an embedding
+   * Calculate an aggregated word-embedding for a given input sentence (sequence of words).
+   * 
+   * @param sentence array of word forming a sentence
+   * @return word-embedding for the given sentence calculated by averaging the embeddings of the input words
+   * @throws PredictException if model is not a WordEmbedding model
+   */
+  public float[] predictWord2Vec(String[] sentence) throws PredictException {
+    final WordEmbeddingModel weModel = asWordEmbeddingModel();
+    final int vecSize = weModel.getVecSize();
+
+    final float[] aggregated = new float[vecSize];
+    final float[] current = new float[vecSize];
+    int embeddings = 0;
+    for (String word : sentence) {
+      final float[] embedding = weModel.transform0(word, current);
+      if (embedding == null)
+        continue;
+      embeddings++;
+      for (int i = 0; i < vecSize; i++)
+        aggregated[i] += embedding[i];
+    }
+    if (embeddings > 0) {
+      for (int i = 0; i < vecSize; i++) {
+        aggregated[i] /= (float) embeddings;
+      }
+    } else {
+      Arrays.fill(aggregated, Float.NaN);
+    }
+
+    return aggregated;
+  }
+
+  /**
+   * Lookup word embeddings for a given word (or set of words). The result is a dictionary of
+   * words mapped to their respective embeddings.
+   * 
+   * @param data RawData structure, every key with a String value will be translated to an embedding,
+   *             note: keys only purpose is to link the output embedding to the input word
    * @return The prediction
    * @throws PredictException if model is not a WordEmbedding model
    */
   public Word2VecPrediction predictWord2Vec(RowData data) throws PredictException {
-    validateModelCategory(ModelCategory.WordEmbedding);
-
-    if (! (m instanceof WordEmbeddingModel))
-      throw new PredictException("Model is not of the expected type, class = " + m.getClass().getSimpleName());
-    final WordEmbeddingModel weModel = (WordEmbeddingModel) m;
+    final WordEmbeddingModel weModel = asWordEmbeddingModel();
     final int vecSize = weModel.getVecSize();
 
     HashMap<String, float[]> embeddings = new HashMap<>(data.size());
@@ -521,6 +554,14 @@ public class EasyPredictModelWrapper implements Serializable {
 
   }
 
+  private WordEmbeddingModel asWordEmbeddingModel() throws PredictException {
+    validateModelCategory(ModelCategory.WordEmbedding);
+
+    if (! (m instanceof WordEmbeddingModel))
+      throw new PredictException("Model is not of the expected type, class = " + m.getClass().getSimpleName());
+    return  (WordEmbeddingModel) m;
+  }
+  
   /**
    * Make a prediction on a new data point using a Binomial model.
    *
