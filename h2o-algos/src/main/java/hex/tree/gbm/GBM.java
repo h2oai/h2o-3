@@ -617,7 +617,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
      * @param quantile quantile alpha parameter
      * @param cs constraint object to get information about constraints for each column 
      */
-    void resetQuantileConstants(DTree[] ktrees, double quantile, Constraints cs){
+    void resetQuantileConstants2(DTree[] ktrees, double quantile, Constraints cs){
       assert cs != null : "Expects constraint object is not null";
       // vectors to compute real quantile prediction in the leafs of trained trees
       Vec diff = new ComputeDiff(frameMap).doAll(1, (byte)3,  _train).outputFrame().anyVec();
@@ -705,6 +705,67 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
 
+    /**
+     * This method recompute result leaf node prediction to get a more precise prediction but respecting 
+     * the column constraints in subtrees
+     * @param ktrees array of all trained trees
+     * @param quantile quantile alpha parameter
+     * @param cs constraint object to get information about constraints for each column 
+     */
+    private void resetQuantileConstants(DTree[] ktrees, double quantile, Constraints cs) {
+      Vec diff = new ComputeDiff(frameMap).doAll(1, (byte)3,  _train).outputFrame().anyVec();
+      Vec weights = hasWeightCol() ? _train.vecs()[idx_weight()] : null;
+      Vec strata = vec_nids(_train,0);
+
+      // compute quantile for all leaf nodes
+      QuantileModel.CombineMethod combine_method = QuantileModel.CombineMethod.INTERPOLATE;
+      Quantile.StratifiedQuantilesTask sqt = new Quantile.StratifiedQuantilesTask(null, quantile, diff, weights, strata, combine_method);
+      H2O.submitTask(sqt);
+      sqt.join();
+
+      for (int k = 0; k < _nclass; k++) {
+        final DTree tree = ktrees[k];
+        if (tree == null || tree.len() < 2) continue;
+        float[] mins = new float[tree._len];
+        int[] min_ids = new int[tree._len];
+        float[] maxs = new float[tree._len];
+        int[] max_ids = new int[tree._len];
+        int dnSize = tree._len - tree._leaves; // calculate index where leaves starts
+        rollupMinMaxPreds(tree, tree.root(), mins, min_ids, maxs, max_ids);
+        for (int i = dnSize; i < tree.len(); i++) {
+          LeafNode node = (LeafNode)tree.node(i);
+          int quantileId = i - dnSize;
+          double leafQuantile = sqt._quantiles[quantileId];
+          boolean canBeReplaced = true;
+          DTree.Node tmpNode = tree.node(i);
+          while(tmpNode.pid() != DTree.NO_PARENT) {
+            DecidedNode parent = (DecidedNode) tree.node(tmpNode._pid);
+            int constraint = cs.getColumnConstraint(parent._split._col);
+            if (parent._split.naSplitDir() == DHistogram.NASplitDir.NAvsREST || constraint == 0) {
+              tmpNode = parent;
+              continue;
+            }
+            if (constraint > 0) {
+              if (leafQuantile > mins[parent._nids[0]] || leafQuantile < maxs[parent._nids[1]]) {
+                canBeReplaced = false;
+                break;
+              }
+            } else {
+              if (leafQuantile < maxs[parent._nids[0]] || leafQuantile > mins[parent._nids[1]]) {
+                canBeReplaced = false;
+                break;
+              }
+            }
+            tmpNode = parent;
+          }
+          if(canBeReplaced){
+            node._pred = (float) leafQuantile;
+          }
+        }
+      }
+    }
+
+
     private void fitBestConstants(DTree[] ktrees, int[] leafs, GammaPass gp, Constraints cs) {
       final boolean useSplitPredictions = cs != null && cs.useBounds();
       double m1class = (_nclass > 1 && _parms._distribution == DistributionFamily.multinomial) ||
@@ -771,6 +832,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
                       "\nLeft Node (max): " + tree.node(max_ids[dn._nids[0]]) +
                       "\nRight Node (min): " + tree.node(min_ids[dn._nids[1]]);
               throw new IllegalStateException(message);
+              //Log.info(message);
             }
           } else if (constraint < 0) {
             if (mins[dn._nids[0]] < maxs[dn._nids[1]]) {
@@ -780,6 +842,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
                       "\nLeft Node (min): " + tree.node(min_ids[dn._nids[0]]) +
                       "\nRight Node (max): " + tree.node(max_ids[dn._nids[1]]);
               throw new IllegalStateException(message);
+              //Log.info(message);
             }
           }
         }
