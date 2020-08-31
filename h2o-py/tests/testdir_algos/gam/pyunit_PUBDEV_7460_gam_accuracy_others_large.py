@@ -9,7 +9,7 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
 # In this test, we check and make sure that we can print out all relevevant model metrics for Binomial
 def test_gam_model_predict():
-    path = 'https://raw.githubusercontent.com/h2oai/app-consumer-loan/master/data/loan.csv'
+    path = pyunit_utils.locate("bigdata/laptop/lending-club/loan.csv")
     col_types = {'bad_loan': 'enum'}
     frame = h2o.import_file(path=path, col_types=col_types) # import from url
     frame.describe() # summarize table
