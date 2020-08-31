@@ -1,18 +1,12 @@
 package water.util;
 
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
-import water.fvec.C0DChunk;
-import water.fvec.Chunk;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
 import water.parser.Categorical;
-import water.rapids.ShuffleVec;
 
 import java.util.*;
 
@@ -876,38 +870,41 @@ public class VecUtils {
   /**
    * Randomly shuffle randomly a vector from a Frame
    * */
-
-  public static Vec shuffle(Vec src) {
-    Vec mr = new MRTask() {
-      @Override public void map(Chunk ic, NewChunk nc) {
-        Random rng = getRNG(seed(ic.cidx()));
-        for (int i = 0; i < ic._len - 1; i++) {
-          int j = rng.nextInt(i); // inclusive upper bound <0,i>
-          switch (ic.vec().get_type()) {
-            case Vec.T_BAD: break; /* NOP */
-            case Vec.T_UUID:
-              if (j != i) nc.setAny(i, ic.at16l(j));
-              nc.setAny(j, ic.at16l(i));
-              break;
-            case Vec.T_STR:
-              if (j != i) nc.setAny(i, ic.stringAt(j));
-              ic.setAny(j, ic.stringAt(i));
-              break;
-            case Vec.T_NUM: /* fallthrough */
-            case Vec.T_CAT:
-            case Vec.T_TIME:
-              if (j != i) nc.setAny(i, ic.atd(i));
-              ic.setAny(j, ic.atd(i));
-              break;
-            default:
-              throw new IllegalArgumentException("Unsupported vector type: " + ic.vec().get_type());
-          }
+  
+  public static class ShuffleVecTask extends MRTask<ShuffleVecTask> {
+    @Override public void map(Chunk ic, Chunk nc) {
+      Random rng = getRNG(seed(ic.cidx()));
+      for (int i = 1; i < ic._len ; i++) {
+        int j = rng.nextInt(i); // inclusive upper bound <0,i>
+        switch (ic.vec().get_type()) {
+          case Vec.T_BAD: break; /* NOP */
+          case Vec.T_UUID:
+            if (j != i) nc.setAny(i, ic.at16l(j));
+            nc.setAny(j, ic.at16l(i));
+            break;
+          case Vec.T_STR:
+            if (j != i) nc.setAny(i, ic.stringAt(j));
+            nc.setAny(j, ic.stringAt(i));
+            break;
+          case Vec.T_NUM: /* fallthrough */
+          case Vec.T_CAT:
+          case Vec.T_TIME:
+            if (j != i) nc.setAny(i, ic.atd(j));
+            nc.setAny(j, ic.atd(i));
+            break;
+          default:
+            throw new IllegalArgumentException("Unsupported vector type: " + ic.vec().get_type());
         }
       }
-    }.doAll(src).outputFrame().anyVec();
-
-    return mr;
+    }
   }
+  
+  public static Vec ShuffleVec(Vec ivec, Vec src_vec) {
+    new ShuffleVecTask().doAll(ivec, src_vec);
+    return src_vec;
+  }
+  
+
 
 }
  
