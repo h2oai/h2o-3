@@ -171,23 +171,9 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    * @return An instance of {@link Frame} with transformed fr, registered in DKV.
    */
   public Frame transform(Frame fr, BlendingParams blendingParams, double noiseLevel, boolean asTraining) {
-    Frame adaptFr = new Frame(fr);
+    Frame adaptFr = null;
     try {
-//      String[] msgs = adaptTestForTrain(adaptFr, true, false); //ensure that domains are compatible with training ones.
-      // we only log the warnings messages here and ignore the warningP logic that is designed for scoring only 
-//      for (String msg : msgs) logger.warn(msg);
-      for (int i=0; i<_output._names.length; i++) {
-        String col = _output._names[i];
-        String[] domain = _output._domains[i];
-        if (domain != null && ArrayUtils.contains(adaptFr.names(), col)) {
-          int toAdaptIdx = adaptFr.find(col);
-          Vec toAdapt = adaptFr.vec(toAdaptIdx);
-          if (!Arrays.equals(toAdapt.domain(), domain)) {
-            Vec adapted = toAdapt.adaptTo(domain);
-            adaptFr.replace(toAdaptIdx, adapted);
-          }
-        }
-      }
+      adaptFr = adaptForEncoding(fr);
       return applyTargetEncoding(
               adaptFr,
               asTraining,
@@ -196,7 +182,8 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
               null
       );
     } finally {
-      Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, fr);
+      if (adaptFr != null)
+        Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, fr);
     }
   }
 
@@ -210,13 +197,37 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    */
   @Override
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-    return applyTargetEncoding(
-            fr, 
-            false,
-            _parms.getBlendingParameters(),
-            _parms._noise, 
-            Key.make(destination_key)
-    );
+    Frame adaptFr = null;
+    try {
+      adaptFr = adaptForEncoding(fr);
+      return applyTargetEncoding(
+              adaptFr, 
+              false,
+              _parms.getBlendingParameters(),
+              _parms._noise, 
+              Key.make(destination_key)
+      );
+    } finally {
+      if (adaptFr != null)
+        Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, fr);
+    }
+  }
+  
+  private Frame adaptForEncoding(Frame fr) {
+    Frame adaptFr = new Frame(fr);
+    for (int i=0; i<_output._names.length; i++) {
+      String col = _output._names[i];
+      String[] domain = _output._domains[i];
+      if (domain != null && ArrayUtils.contains(adaptFr.names(), col)) {
+        int toAdaptIdx = adaptFr.find(col);
+        Vec toAdapt = adaptFr.vec(toAdaptIdx);
+        if (!Arrays.equals(toAdapt.domain(), domain)) {
+          Vec adapted = toAdapt.adaptTo(domain);
+          adaptFr.replace(toAdaptIdx, adapted);
+        }
+      }
+    }
+    return adaptFr;
   }
   
   
