@@ -51,7 +51,7 @@ public class CoxPHModelTest extends TestUtil {
                     c.set(i, rng.nextFloat());
                 }
             }
-        }, 0.5d, 0.01d); 
+        }, 0.5d, 0.03d); 
     }
 
     @Test
@@ -148,7 +148,7 @@ public class CoxPHModelTest extends TestUtil {
     private void checkConcordanceForEstimate(MRTask estimateTask, double expected, double delta) {
         try {
             Scope.enter();
-            final int len = 2000;
+            final int len = 5000;
 
             final Vec starts = Scope.track(Vec.makeCon(0.0, len));
             final Vec times = Scope.track(Vec.makeCon(0.0, len).makeRand(0));
