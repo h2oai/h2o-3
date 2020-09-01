@@ -13,6 +13,7 @@ import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.test.WebsocketClient;
+import water.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -180,7 +181,10 @@ public class SteamExecutorStarterTest {
                 fail("Expected exception to be thrown");
             } catch (Exception e) {
                 Scope.track_generic(model1._result.get()); // even though the training failed we need to remove the model
-                assertEquals("No response received from Steam.", e.getCause().getCause().getMessage());
+                if (!(e.getCause() != null && e.getCause().getCause() != null && "No response received from Steam.".equals(e.getCause().getCause().getMessage()))) {
+                    Log.err("Unexpected exception: ", e);
+                    fail("Unexpected exception!");
+                }
             }
             
             // steam responds eventually

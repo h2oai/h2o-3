@@ -55,6 +55,12 @@ Supervised
     :show-inheritance:
     :members:
 
+:mod:`H2ORuleFitEstimator`
+--------------------------
+.. autoclass:: h2o.estimators.rulefit.H2ORuleFitEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2OStackedEnsembleEstimator`
 ----------------------------------
 .. autoclass:: h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator

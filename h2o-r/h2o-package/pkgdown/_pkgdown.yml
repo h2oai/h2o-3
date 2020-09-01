@@ -320,6 +320,7 @@ reference:
       - h2o.xgboost.available
       - h2o.xgboost 
       - h2o.year
+      - h2o.rulefit
       - H2OAutoML-class
       - H2OClusteringModel-class
       - H2OConnection-class
