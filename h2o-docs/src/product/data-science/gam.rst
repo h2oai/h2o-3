@@ -182,6 +182,32 @@ Defining a GAM Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
+- **subspaces**: A list of model parameters that, when in the same subspace list, can vary freely amongst each other. This allows the user to group model parameters that can vary with restrictions. If specified, the following parameters must have the same array dimension:
+  
+  - ``gam_columns``
+  - ``scale``
+  - ``num_knots``
+  - ``bs``
+
+These parameters can be specified as follows:
+
+  .. code-block:: bash
+    
+    hyper_parameters = {
+        'alpha':[0.9, 0.1],
+        ‘subspaces’: [{
+            ‘scale’:[[1,1,1],[0.1, 0.1, 0.1]], 
+            ‘num_knots’:[[4,4,4],[5,5,5]], 
+            ‘gam_columns’:[[“C1”,“C2",“C3”]]
+        }, {
+            ‘scale’:[[1,1],[0.1, 0.1,]], 
+            ‘num_knots’:[[4,4],[5,5]], 
+            ‘gam_columns’:[[“C2",“C3”]]
+        }]
+   }
+
+With this hyperparameter specification, there will be 16 GAM models built.
+
 -  **num_knots**: An array that specifies the number of knots for each predictor specified in ``gam_columns``.
             
 -  **knot_ids**: A string array storing frame keys/IDs that contain knot locations. Specify one value for each GAM column specified in ``gam_columns``.
