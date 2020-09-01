@@ -82,7 +82,6 @@ public class GAMMojoWriter extends ModelMojoWriter<GAMModel, GAMModel.GAMParamet
       writeDoubleArray(model._output._zTranspose[countGamCols], gamCol+"_zTranspose");      // write zTranspose
       writeDoubleArray(model._output._binvD[countGamCols++], gamCol+"_binvD");      // write binvD
     }
-    // store variable importance information
   }
   
   public String[] genTrainColGamCols(int gamColLength, int gamCColLength) {
