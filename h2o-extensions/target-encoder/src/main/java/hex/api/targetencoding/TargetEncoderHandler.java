@@ -27,9 +27,9 @@ public class TargetEncoderHandler extends Handler {
     
     final Frame transformedFrame = model.transform(
             parameters._frame.get(),
-            blendingParams,
-            noise,
-            asTraining
+            asTraining,
+            TargetEncoderModel.NO_FOLD, blendingParams,
+            noise
     );
 
     return new KeyV3.FrameKeyV3(transformedFrame._key);

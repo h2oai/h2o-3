@@ -33,7 +33,6 @@ import java.net.URI;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import static water.util.FrameUtils.categoricalEncoder;
 import static water.util.FrameUtils.cleanUp;
@@ -268,6 +267,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       final boolean _needResponse;
       boolean needsResponse() { return _needResponse; }
     }
+    
+    public Key<ModelPreprocessor>[] _preprocessors;
+    
     public long _seed = -1;
     public long getOrMakeRealSeed(){
       while (_seed==-1) {
@@ -278,6 +280,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.AUTO;
     public CategoricalEncodingScheme _categorical_encoding = CategoricalEncodingScheme.AUTO;
+//    public String[] _categorical_encoding_skipped_columns; //internal use
     public int _max_categorical_levels = 10;
 
     public DistributionFamily _distribution = DistributionFamily.AUTO;
@@ -298,6 +301,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean _check_constant_response = true;
 
     public boolean _is_cv_model; //internal helper
+    public int _cv_fold = -1; //internal use
 
     // Scoring a model on a dataset is not free; sometimes it is THE limiting
     // factor to model building.  By default, partially built models are only
@@ -1583,6 +1587,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
+    adaptFr = applyPreprocessors(adaptFr);
     computeMetrics = computeMetrics && 
             (!_output.hasResponse() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
@@ -1627,6 +1632,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, fr);
     return output;
+  }
+  
+  private Frame applyPreprocessors(Frame fr) {
+    if (_parms._preprocessors == null) return fr;
+    
+    for (Key<ModelPreprocessor> key : _parms._preprocessors) {
+      DKV.prefetch(key);
+    }
+    Frame result = fr;
+    for (Key<ModelPreprocessor> key : _parms._preprocessors) {
+      ModelPreprocessor preprocessor = key.get();
+      result = preprocessor.processScoring(result, this);
+    }
+    return result;
   }
 
   /**
