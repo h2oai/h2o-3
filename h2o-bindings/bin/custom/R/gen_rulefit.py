@@ -15,6 +15,12 @@ parms$response_column <- args$y
 )
 
 doc = dict(
+    preamble="""
+Build a RuleFit Model
+    
+Builds a Distributed RuleFit model on a parsed dataset, for regression or 
+classification.
+    """,
     examples="""
 library(h2o)
 h2o.init()
