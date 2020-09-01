@@ -33,7 +33,9 @@ Tutorials and Blogs
 
 The following tutorials are available that describe how to use Extended Isolation Forest. 
 
-- todo link to notebooks? Thesis? External Sources?
+- `Master's thesis: Anomaly detection using Extended Isolation Forest <https://dspace.cvut.cz/bitstream/handle/10467/87988/F8-DP-2020-Valenta-Adam-thesis.pdf?sequence=-1&isAllowed=y>`__: The thesis deals with anomaly detection algorithms with a focus on the Extended Isolation Forest algorithm including the implementation to the H2O-3 open-source Machine Learning platform.
+- `Extended Isolation Forest jupyter notebook created by the authors of the algorithm <https://github.com/sahandha/eif/blob/master/Notebooks/EIF.ipynb>`__: Describes how Extended Isolation Forest behaves compare to Isolation Forest.
+
 
 Defining an Extended Isolation Forest Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
