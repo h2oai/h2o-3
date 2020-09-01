@@ -28,3 +28,7 @@ print(summary(iris.hex))
 print("Run GBM with y = column 5, x = columns 1:4")
 iris.gbm <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex, distribution = "multinomial")
 print(iris.gbm)
+
+print("Calculating Permutation Variable Importance...")
+permutation_varimp <- h2o.permutation_varimp(iris.gbm, iris.hex)
+print("Permutation Variable importance: ",permutation_varimp)
