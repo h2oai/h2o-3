@@ -24,7 +24,7 @@ import water.exceptions.JCodeSB;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.persist.Persist;
-import water.rapids.PermutationFeatureImportance;
+import water.rapids.PermutationVarImp;
 import water.udf.CFuncRef;
 import water.util.*;
 
@@ -716,9 +716,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *
    * @return*/
   public TwoDimTable permutationFeatureImportance(Model model){
+    if (model.scoringInfo == null)
+      throw new IllegalArgumentException("Model must be scored before calculating Permutation Feature Importance");
 
-    PermutationFeatureImportance Fi = new PermutationFeatureImportance(model);
-    return Fi.getFeatureImportance();
+    PermutationVarImp Fi = new PermutationVarImp(model);
+    return Fi.getPermutationVarImp();
 
   }
 
@@ -1596,11 +1598,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   
   public TwoDimTable getPermVarImpTable(Frame fr, Frame scored){
-    PermutationFeatureImportance fi = new PermutationFeatureImportance(this, fr, scored);
-    return fi.getFeatureImportance();
+    PermutationVarImp fi = new PermutationVarImp(this, fr);
+    return fi.getPermutationVarImp();
   }
   public TwoDimTable getPermVarImpTableOat(Frame fr, Frame scored){
-    PermutationFeatureImportance fi = new PermutationFeatureImportance(this, fr, scored);
+    PermutationVarImp fi = new PermutationVarImp(this, fr);
     return fi.oat();
   }
   
