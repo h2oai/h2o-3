@@ -707,6 +707,21 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   }
 
+  /**
+   * Should be called after Model is scored, Otherwise no one can tell you what will happen
+   *
+   *
+   *
+   * @return*/
+  public TwoDimTable permutationFeatureImportance(Model model){
+    if (model.scoringInfo == null)
+      throw new IllegalArgumentException("Model must be scored before calculating Permutation Feature Importance");
+
+    PermutationVarImp Fi = new PermutationVarImp(model);
+    return Fi.getPermutationVarImp();
+
+  }
+
   /** Model-specific output class.  Each model sub-class contains an instance
    *  of one of these containing its "output": the pieces of the model needed
    *  for scoring.  E.g. KMeansModel has a KMeansOutput extending Model.Output
@@ -1595,12 +1610,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   
   public TwoDimTable getPermVarImpTable(Frame fr, Frame scored){
-    PermutationFeatureImportance fi = new PermutationFeatureImportance(this, fr, scored);
-    return fi.getFeatureImportance();
+    PermutationVarImp fi = new PermutationVarImp(this, fr);
+    return fi.getPermutationVarImp();
   }
   
   public TwoDimTable getPermVarImpTableOat(Frame fr, Frame scored){
-    PermutationFeatureImportance fi = new PermutationFeatureImportance(this, fr, scored);
+    PermutationVarImp fi = new PermutationVarImp(this, fr);
     return fi.oat();
   }
   
