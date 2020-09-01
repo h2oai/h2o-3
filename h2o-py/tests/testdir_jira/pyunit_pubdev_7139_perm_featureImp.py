@@ -11,7 +11,7 @@ from sklearn.metrics import roc_auc_score
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from tests import pyunit_utils
 
-from h2o.model.PermutationFeatureImportance import permutation_varimp
+from h2o.model.permutation_varimp import permutation_varimp
 
 
 def model_rel_bernoulli_gbm():
