@@ -3,6 +3,12 @@
 #'
 # -------------------------- rulefit -------------------------- #
 #'
+#' Build a RuleFit Model
+#' 
+#' Builds a Distributed RuleFit model on a parsed dataset, for regression or 
+#' classification.
+#' 
+#'
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
 #' @param y The name or column index of the response variable in the data. 
