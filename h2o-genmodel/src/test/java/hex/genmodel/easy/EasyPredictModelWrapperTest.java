@@ -435,6 +435,16 @@ public class EasyPredictModelWrapperTest {
     Assert.assertNull(p.wordEmbeddings.get("C3"));
   }
 
+  @Test
+  public void testPredictAggregatedEmbeddings() throws Exception {
+    MyWordEmbeddingModel rawModel = new MyWordEmbeddingModel();
+    EasyPredictModelWrapper m = new EasyPredictModelWrapper(rawModel);
+
+    String[] sentence = new String[]{"0.9,0.1", "0.1,0.3", "NA"};
+    Assert.assertArrayEquals(new float[]{0.5f, 0.2f}, m.predictWord2Vec(sentence), 1e-5f);
+    Assert.assertArrayEquals(new float[]{Float.NaN, Float.NaN}, m.predictWord2Vec(new String[]{"NA"}), 1e-5f);
+  }
+  
   private static class MyWordEmbeddingModel extends MojoModel implements WordEmbeddingModel {
 
     public MyWordEmbeddingModel() {
