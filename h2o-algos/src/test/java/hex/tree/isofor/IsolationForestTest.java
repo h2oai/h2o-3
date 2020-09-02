@@ -1,22 +1,27 @@
 package hex.tree.isofor;
 
 import hex.ConfusionMatrix;
+import hex.Model;
 import hex.ModelMetricsBinomial;
 import hex.ScoreKeeper;
 import hex.genmodel.GenModel;
+import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.tools.PredictCsv;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import water.DKV;
 import water.Scope;
 import water.TestUtil;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.parser.ParseSetup;
 import water.test.util.ConfusionMatrixUtils;
 import water.util.ArrayUtils;
 
@@ -347,4 +352,65 @@ public class IsolationForestTest extends TestUtil {
       Scope.exit();
     }
   }
+
+    @Test public void testMOJOandPOJOSupportedCategoricalEncodings() throws Exception {
+        try {
+            Scope.enter();
+            final String response = "CAPSULE";
+            final String testFile = "./smalldata/logreg/prostate.csv";
+            Frame fr = parse_test_file(testFile)
+                    .toCategoricalCol("RACE")
+                    .toCategoricalCol("GLEASON")
+                    .toCategoricalCol(response);
+            fr.remove("ID").remove();
+            fr.vec("RACE").setDomain(ArrayUtils.append(fr.vec("RACE").domain(), "3"));
+            Scope.track(fr);
+            DKV.put(fr);
+
+            Model.Parameters.CategoricalEncodingScheme[] supportedSchemes = {
+                    Model.Parameters.CategoricalEncodingScheme.AUTO,
+                    // TODO EnumLimited, Binary, LabelEncoder, Eigen in PUBDEV-7612
+            };
+
+            for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
+
+                IsolationForestModel.IsolationForestParameters parms = new IsolationForestModel.IsolationForestParameters();
+                parms._train = fr._key;
+                parms._response_column = response;
+                parms._categorical_encoding = scheme;
+
+                IsolationForest job = new IsolationForest(parms);
+                IsolationForestModel dl = job.trainModel().get();
+                Scope.track_generic(dl);
+
+                // Done building model; produce a score column with predictions
+                Frame scored = Scope.track(dl.score(fr));
+
+                // Build a POJO & MOJO, validate same results
+                Assert.assertTrue(dl.testJavaScoring(fr, scored, 1e-15));
+
+                File mojoScoringOutput = tempFolder.newFile(dl._key + "_scored2.csv");
+                MojoModel mojoModel = dl.toMojo();
+
+                PredictCsv predictor = PredictCsv.make(
+                        new String[]{
+                                "--embedded",
+                                "--input", TestUtil.makeNfsFileVec(testFile).getPath(),
+                                "--output", mojoScoringOutput.getAbsolutePath(),
+                                "--decimal"}, (GenModel) mojoModel);
+                predictor.run();
+                Frame scoredWithMojo = Scope.track(parse_test_file(mojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+                    @Override
+                    public ParseSetup transformSetup(ParseSetup guessedSetup) {
+                        return guessedSetup.setCheckHeader(1);
+                    }
+                }));
+
+                scoredWithMojo.setNames(scored.names());
+                assertFrameEquals(scored, scoredWithMojo, 1e-8);
+            }
+        } finally {
+            Scope.exit();
+        }
+    }
 }

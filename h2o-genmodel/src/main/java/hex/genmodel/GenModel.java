@@ -169,8 +169,11 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     String[] origNames = getOrigNames();
     if (origNames == null || origNames.length == 0)
       return 0;
-    String responseName = getResponseName();
-    boolean hasResponse = origNames[origNames.length - 1].equals(responseName);
+    boolean hasResponse = false;
+    if (isSupervised()) {
+      String responseName = getResponseName();
+      hasResponse = origNames[origNames.length - 1].equals(responseName);
+    } 
     return hasResponse ? origNames.length - 1 : origNames.length;
   }
   
