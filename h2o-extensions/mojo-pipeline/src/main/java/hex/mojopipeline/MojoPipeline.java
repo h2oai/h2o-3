@@ -129,9 +129,20 @@ public class MojoPipeline extends Iced<MojoPipeline> {
         NewChunk nc = ncs[col];
         MojoColumn column = transformed.getColumn(col);
         assert column.size() == cs[0].len();
-        double[] data = (double[]) column.getData();
-        for (double d : data) {
-          nc.addNum(d);
+        // Note: will work fine with current MOJO because they only output floating point values
+        switch (column.getType()) {
+          case Float32:
+            for (float d : (float[]) column.getData()) {
+              nc.addNum(d);
+            }
+            break;
+          case Float64:
+            for (double d : (double[]) column.getData()) {
+              nc.addNum(d);
+            }
+            break;
+          default:
+            throw new UnsupportedOperationException("Output type " + column.getType() + " is currently not supported for MOJO2. See https://0xdata.atlassian.net/browse/PUBDEV-7741");
         }
       }
     }
