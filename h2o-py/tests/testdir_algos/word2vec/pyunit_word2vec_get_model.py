@@ -14,12 +14,13 @@ def word2vec_get_model():
     word_embeddings = words.cbind(embeddings)
 
     w2v_model = H2OWord2vecEstimator(pre_trained=word_embeddings)
-    w2v_model.train(training_frame=word_embeddings)
+    w2v_model.train()
 
     model_id = w2v_model.model_id
     model = h2o.get_model(model_id)
 
-    assert model, "Model was retrived"
+    assert model, "Model was retrieved"
+    
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(word2vec_get_model)
