@@ -420,7 +420,6 @@ class LaplaceDistribution extends Distribution {
     }
 }
 
-
 class QuantileDistribution extends Distribution {
 
     public QuantileDistribution(Model.Parameters params){
@@ -432,16 +431,6 @@ class QuantileDistribution extends Distribution {
 
     @Override
     public double negHalfGradient(double y, double f) { return y > f ? 0.5 * _quantileAlpha : 0.5 * (_quantileAlpha - 1); }
-
-    @Override
-    public double initFNum(double w, double o, double y) {
-        return w * _quantileAlpha * (y - o);
-    }
-
-    @Override
-    public double initFDenom(double w, double o, double y) {
-        return w * _quantileAlpha;
-    }
 }
 
 /**

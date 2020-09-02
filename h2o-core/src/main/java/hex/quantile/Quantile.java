@@ -161,7 +161,6 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         if (sumRows>0) {
           Histo h = new Histo(_response.min(), _response.max(), 0, sumRows, _response.isInt());
           h.doAll(_response, newWeights);
-          //h = h.refinePass(_prob).doAll(_response, newWeights);
           while (Double.isNaN(_quantiles[i] = h.findQuantile(_prob, _combine_method)))
             h = h.refinePass(_prob).doAll(_response, newWeights);
           newWeights.remove();
