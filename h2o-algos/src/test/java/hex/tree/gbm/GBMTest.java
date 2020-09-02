@@ -27,6 +27,7 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.rapids.PermutationVarImp;
 import water.util.*;
 
 import java.io.File;
@@ -107,7 +108,6 @@ public class GBMTest extends TestUtil {
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
       Assert.assertTrue(job.isStopped()); //HEX-1817
-
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
       //job.response() can be used in place of fr.vecs()[1] but it has been rebalanced
@@ -253,7 +253,7 @@ public class GBMTest extends TestUtil {
     basicGBM("./smalldata/junit/cars.csv",
             new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
             false, gaussian);
-
+    
     basicGBM("./smalldata/junit/cars.csv",
             new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
             false, DistributionFamily.poisson);
@@ -372,6 +372,7 @@ public class GBMTest extends TestUtil {
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
 
+      new PermutationVarImp(gbm, fr).oat();
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(fr,fr2,1e-15));
 
@@ -884,7 +885,7 @@ public class GBMTest extends TestUtil {
 
 
   // Test uses big data and is too slow for a pre-push
-  @Test @Ignore public void testMNIST() {
+  @Test public void testMNIST() {
     Frame tfr=null, vfr=null;
     Scope.enter();
     try {
@@ -4158,6 +4159,7 @@ public class GBMTest extends TestUtil {
     }
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
 
   @Test
   public void testGBMFeatureInteractions() {
@@ -4280,6 +4282,7 @@ public class GBMTest extends TestUtil {
     } finally {
       Scope.exit();
     }
+<<<<<<< HEAD
   }
 
   @Test
@@ -4320,4 +4323,9 @@ public class GBMTest extends TestUtil {
       Scope.exit();
     }
   }
+=======
+
+
+  }  
+>>>>>>> Testing PermutationVarImp with existing VarImp
 }

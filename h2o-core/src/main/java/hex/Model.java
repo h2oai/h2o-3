@@ -713,20 +713,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *
    *
    * @return*/
-  public TwoDimTable permutationFeatureImportance(Model model){
-    if (model.scoringInfo == null)
-      throw new IllegalArgumentException("Model must be scored before calculating Permutation Feature Importance");
+  public static TwoDimTable permutationVarImp(Model model){
+    return permutationVarImp(model, model._parms._train.get());
+  }
+  
 
-    PermutationVarImp Fi = new PermutationVarImp(model);
+  public static TwoDimTable permutationVarImp(Model model, Frame fr){
+    if (hex.ModelMetrics.getFromDKV(model, fr) == null)
+      throw new IllegalArgumentException("Model must be scored before calculating Permutation Variable Importance");
+    
+    PermutationVarImp Fi = new PermutationVarImp(model, fr);
     return Fi.getPermutationVarImp();
-
   }
 
-  /** Model-specific output class.  Each model sub-class contains an instance
-   *  of one of these containing its "output": the pieces of the model needed
-   *  for scoring.  E.g. KMeansModel has a KMeansOutput extending Model.Output
-   *  which contains the cluster centers.  The output also includes the names,
-   *  domains and other fields which are determined at training time.  */
+
+    /** Model-specific output class.  Each model sub-class contains an instance
+     *  of one of these containing its "output": the pieces of the model needed
+     *  for scoring.  E.g. KMeansModel has a KMeansOutput extending Model.Output
+     *  which contains the cluster centers.  The output also includes the names,
+     *  domains and other fields which are determined at training time.  */
   public abstract static class Output extends Iced {
     /** Columns used in the model and are used to match up with scoring data
      *  columns.  The last name is the response column name (if any). */
