@@ -42,29 +42,29 @@ Defining a DRF Model
 -  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate
    the accuracy of the model.
 
--  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation.
+-  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. This option defaults to 0.
 
 -  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
--  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option is enabled by default.
 
--  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation prediction.
+-  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation prediction. This option is disabled by default.
 
--  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment.
+-  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. This option is disabled by default.
 
 -  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Enable this option to score
-   during each iteration of the model training.
+   during each iteration of the model training. This option defaults to false.
 
 -  `score_tree_interval <algo-params/score_tree_interval.html>`__: Score the model after every so many trees.
-   Disabled if set to 0.
+   Disabled if set to 0 (default).
 
 -  `fold_assignment <algo-params/fold_assignment.html>`_-: (Applicable only if a value for **nfolds** is
    specified and **fold\_column** is not specified) Specify the
    cross-validation fold assignment scheme. The available options are
    AUTO (which is Random), Random, 
-   `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems).
+   `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems). This option defaults to AUTO.
 
 -  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the
    cross-validation fold index assignment per observation.
@@ -95,7 +95,7 @@ Defining a DRF Model
    | **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
 -  `balance_classes <algo-params/balance_classes.html>`__: Oversample the minority classes to balance the
-   class distribution. This option is not enabled by default and can
+   class distribution. This option is disabled by default and can
    increase the data frame size. This option is only applicable for
    classification.
 
@@ -103,26 +103,26 @@ Defining a DRF Model
 
 -  `max_after_balance_size <algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of
    the training data after balancing class counts (**balance\_classes**
-   must be enabled). The value can be less than 1.0.
+   must be enabled). The value can be less than 1.0 and defaults to 5.0.
 
 -  `max_hit_ratio_k <algo-params/max_hit_ratio_k.html>`__: Specify the maximum number (top K) of
    predictions to use for hit ratio computation. Applicable to
-   multi-class only. To disable, enter 0.
+   multi-class only. To disable, enter 0 (default).
 
--  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees.
+-  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees (defaults to 50).
 
 -  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth. Higher values will make the model more complex and can lead to overfitting. Setting this value to 0 specifies no limit. This value defaults to 20. 
 
 -  `min_rows <algo-params/min_rows.html>`__: Specify the minimum number of observations for a leaf
-   (``nodesize`` in R).
+   (``nodesize`` in R). This value defaults to 1.
 
 -  `nbins <algo-params/nbins.html>`__: (Numerical/real/int only) Specify the number of bins for
-   the histogram to build, then split at the best point.
+   the histogram to build, then split at the best point. This option defaults to 20.
 
 -  `nbins_top_level <algo-params/nbins_top_level.html>`__: (For numerical/real/int columns only) Specify
    the minimum number of bins at the root level to use to build the
    histogram. This number will then be decreased by a factor of two per
-   level.
+   level. This options defaults to 1024.
 
 -  `nbins_cats <algo-params/nbins_cats.html>`__: (Categorical/enums only) Specify the maximum number
    of bins for the histogram to build, then split at the best point.
@@ -131,14 +131,14 @@ Defining a DRF Model
    share bins. This value has a more significant impact on model fitness
    than **nbins**. Larger values may increase runtime, especially for
    deep trees and large clusters, so tuning may be required to find the
-   optimal value for your configuration.
+   optimal value for your configuration. This option defaults to 1024.
 
--  **r2\_stopping**: ``r2_stopping`` is no longer supported and will be ignored if set - please use ``stopping_rounds``, ``stopping_metric``, and ``stopping_tolerance`` instead.
+-  **r2\_stopping**: ``r2_stopping`` is no longer supported and will be ignored if set - please use ``stopping_rounds``, ``stopping_metric``, and ``stopping_tolerance`` instead. This option defaults to 1.797693135e+308.
 
 -  `stopping_rounds <algo-params/stopping_rounds.html>`_-: Stops training when the option selected for
    **stopping\_metric** doesn't improve for the specified number of
    training rounds, based on a simple moving average. To disable this
-   feature, specify ``0``. The metric is computed on the validation data
+   feature, specify ``0`` (default). The metric is computed on the validation data
    (if provided); otherwise, training data is used. 
    
    **Note**: If cross-validation is enabled:
@@ -168,19 +168,19 @@ Defining a DRF Model
     
 -  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less
-   than this value.
+   than this value. This option defaults to 0.001.
 
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model
-   training. Use 0 to disable.
+   training. Use 0 (default) to disable.
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for
    algorithm components dependent on randomization. The seed is
    consistent for each H2O instance so that you can create models with
-   the same starting conditions in alternative configurations.
+   the same starting conditions in alternative configurations. This value defaults to -1 (time-based random number).
 
--  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used
+-  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. This option is disabled by default.
 
--  `mtries <algo-params/mtries.html>`__: Specify the columns to randomly select at each level. If the default value of ``-1`` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors). If ``-2`` is specified, all features of DRF are used. Valid values for this option are -2, -1, and any value >= 1.
+-  `mtries <algo-params/mtries.html>`__: Specify the columns to randomly select at each level. If the default value of ``-1`` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors). If ``-2`` is specified, all features of DRF are used. Valid values for this option are -2, -1 (default), and any value >= 1.
 
 -  `sample_rate <algo-params/sample_rate.html>`__: Specify the row sampling rate (x-axis). (Note that this method is sample without replacement.) The range is 0.0 to 1.0, and this value defaults to 0.6320000291. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
@@ -209,11 +209,11 @@ Defining a DRF Model
 
 -  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0 and defaults to 1. Note that this method is sample without replacement.
 
--  `min_split_improvement <algo-params/min_split_improvement.html>`__: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.
+-  `min_split_improvement <algo-params/min_split_improvement.html>`__: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range. This value defaults to 1e-05.
 
 -  `histogram_type <algo-params/histogram_type.html>`__: By default (AUTO) DRF bins from min...max in steps of (max-min)/N. Random split points or quantile-based split points can be selected as well. RoundRobin can be specified to cycle through all histogram types (one per tree). Use this option to specify the type of histogram to use for finding optimal split points:
 
-	- AUTO
+	- AUTO (default)
 	- UniformAdaptive
 	- Random
 	- QuantilesGlobal
@@ -242,7 +242,7 @@ Defining a DRF Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
--  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not.
+-  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not. This option is disabled by default.
 
 - `gainslift_bins <algo-params/gainslift_bins.html>`__: The number of bins for a Gains/Lift table. The default value is ``-1`` and makes the binning automatic. To disable this feature, set to ``0``.
 
