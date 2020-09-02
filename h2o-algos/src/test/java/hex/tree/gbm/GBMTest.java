@@ -27,6 +27,7 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.rapids.PermutationVarImp;
 import water.util.*;
 
 import java.io.File;
@@ -106,7 +107,6 @@ public class GBMTest extends TestUtil {
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
       Assert.assertTrue(job.isStopped()); //HEX-1817
-
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
       //job.response() can be used in place of fr.vecs()[1] but it has been rebalanced
@@ -221,7 +221,7 @@ public class GBMTest extends TestUtil {
     basicGBM("./smalldata/junit/cars.csv",
             new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
             false, gaussian);
-
+    
     basicGBM("./smalldata/junit/cars.csv",
             new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
             false, DistributionFamily.poisson);
@@ -340,6 +340,7 @@ public class GBMTest extends TestUtil {
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
 
+      new PermutationVarImp(gbm, fr).oat();
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(fr,fr2,1e-15));
 
@@ -852,7 +853,7 @@ public class GBMTest extends TestUtil {
 
 
   // Test uses big data and is too slow for a pre-push
-  @Test @Ignore public void testMNIST() {
+  @Test public void testMNIST() {
     Frame tfr=null, vfr=null;
     Scope.enter();
     try {
@@ -4054,4 +4055,69 @@ public class GBMTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  //PUBDEV-7139
+  @Test
+  public void testPermVarImp(){
+    try {
+      Scope.enter();
+      final String response = "CAPSULE";
+      final String testFile = "./smalldata/logreg/prostate.csv";
+      Frame fr = parse_test_file(testFile)
+              .toCategoricalCol("RACE")
+              .toCategoricalCol("GLEASON")
+              .toCategoricalCol(response);
+      fr.remove("ID").remove();
+      fr.vec("RACE").setDomain(ArrayUtils.append(fr.vec("RACE").domain(), "3"));
+      Scope.track(fr);
+      DKV.put(fr);
+
+      Model.Parameters.CategoricalEncodingScheme[] supportedSchemes = {
+              Model.Parameters.CategoricalEncodingScheme.OneHotExplicit,
+              Model.Parameters.CategoricalEncodingScheme.SortByResponse,
+              Model.Parameters.CategoricalEncodingScheme.EnumLimited,
+              Model.Parameters.CategoricalEncodingScheme.Enum,
+              Model.Parameters.CategoricalEncodingScheme.Binary,
+              Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
+              Model.Parameters.CategoricalEncodingScheme.Eigen
+      };
+
+      for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
+
+        GBMModel.GBMParameters parms = makeGBMParameters();
+        parms._train = fr._key;
+        parms._response_column = response;
+        parms._ntrees = 5;
+        parms._categorical_encoding = scheme;
+        if (scheme == Model.Parameters.CategoricalEncodingScheme.EnumLimited) {
+          parms._max_categorical_levels = 3;
+        }
+
+        GBM job = new GBM(parms);
+        GBMModel gbm = job.trainModel().get();
+        Scope.track_generic(gbm);
+
+        // Done building model; produce a score column with predictions
+        Frame scored = Scope.track(gbm.score(fr));
+
+        TwoDimTable varImp = gbm._output._variable_importances;
+        PermutationVarImp PermVarImp = new PermutationVarImp(gbm, fr);
+
+        TwoDimTable permVarImp = PermVarImp.getPermutationVarImp();
+                
+        Map<String, Double> perVarImp = PermVarImp.toMapScaled();
+        Map<String, Float> b_varImp = gbm._output._varimp.toMapScaled();
+
+        for (String name : perVarImp.keySet()){
+          double pvi = perVarImp.get(name);
+          double vi = (double) b_varImp.get(name); // VarImp stores floats, typecast needed
+          Assert.assertEquals(pvi, vi, 0.2);
+        }
+      }
+    } finally {
+      Scope.exit();
+    }
+
+
+  }  
 }

@@ -15,6 +15,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
+import water.rapids.PermutationVarImp;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.Triple;
@@ -467,6 +468,7 @@ public class DRFTest extends TestUtil {
       DRF job = new DRF(drf);
       // Get the model
       model = job.trainModel().get();
+      
 
 //      StreamingSchema ss = new StreamingSchema(model.getMojo(), "model.zip");
 //      FileOutputStream fos = new FileOutputStream("model.zip");
@@ -488,6 +490,10 @@ public class DRFTest extends TestUtil {
 
       test = parse_test_file(fnametrain);
       res = model.score(test);
+      
+        System.out.println(model._output._variable_importances);
+        PermutationVarImp pfi = new PermutationVarImp(model,test);
+        System.out.println(pfi.getPermutationVarImp());
 
       // Build a POJO, validate same results
       Assert.assertTrue(model.testJavaScoring(test,res,1e-15));
@@ -1059,7 +1065,11 @@ public class DRFTest extends TestUtil {
       Frame pred = drf.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
 
-      // Non-OOB
+        System.out.println(drf._output._variable_importances);
+        System.out.println(new PermutationVarImp(drf, pred).getPermutationVarImp());
+
+
+        // Non-OOB
       assertEquals(1, mm2.auc_obj()._auc, 1e-8);
       assertEquals(0.0154320987654321, mm2.mse(), 1e-8);
       assertEquals(0.08349430638608361, mm2.logloss(), 1e-8);
@@ -1457,9 +1467,12 @@ public class DRFTest extends TestUtil {
 
       // Build a first model; all remaining models should be equal
       drf = new DRF(parms).trainModel().get();
-
+      
       ModelMetricsRegression mm = (ModelMetricsRegression)drf._output._training_metrics;
       assertEquals(0.12358322821934015, mm.mse(), 1e-4);
+
+        System.out.println(drf._output._variable_importances);
+        System.out.println(new PermutationVarImp(drf, tfr).getPermutationVarImp());
 
     } finally {
       if (tfr != null) tfr.remove();

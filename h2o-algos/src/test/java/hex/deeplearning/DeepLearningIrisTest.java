@@ -15,6 +15,7 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.rapids.PermutationVarImp;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MathUtils;
@@ -318,6 +319,7 @@ public class DeepLearningIrisTest extends TestUtil {
                               Frame bestPredict = null;
                               try {
                                 bestPredict = mymodel.score(_train);
+
                                 hex.ModelMetrics mmbest = hex.ModelMetrics.getFromDKV(mymodel,_train);
                                 final double bestErr = mmbest.cm().err();
                                 Log.info("Best_model's error : " + bestErr * 100 + "%.");
@@ -327,6 +329,7 @@ public class DeepLearningIrisTest extends TestUtil {
                               }
                             }
                             Log.info("Parameters combination " + num_runs + ": PASS");
+                            PermutationVarImp Fi = new PermutationVarImp(mymodel, _train);
 
                           } finally {
                             // cleanup
