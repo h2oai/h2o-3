@@ -793,16 +793,6 @@ public class DTree extends Iced {
       boolean isLeft = parent._nids[0] == _nid;
       return isLeft ? parent._split._tree_p0 : parent._split._tree_p1;
     }
-
-    /**
-     * Returns column which were used to create a leaf node.
-     * For quantile distributions this can be used to calculate monotone constraints
-     * @return column index
-     */
-    public final int geSplitColumn(){
-      DTree.DecidedNode parent = (DTree.DecidedNode) _tree.node(_pid);
-      return parent._split._col;
-    }
   }
   
   final static public int NO_PARENT = -1;
@@ -1126,7 +1116,7 @@ public class DTree extends Iced {
                   tmpPredLeft = wYlo[quantileBinLeft] + wYNA;
                   tmpPredRight = wYlo[quantileBinRight] - wYlo[b];
                 } else {
-                tmpPredLeft = hasDenom? (nomlo[b] + nomNA) / (denlo[b] + denNA) : (wYlo[b] + wYNA) / (wlo[b] + wNA);
+                tmpPredLeft = hasDenom ? (nomlo[b] + nomNA) / (denlo[b] + denNA) : (wYlo[b] + wYNA) / (wlo[b] + wNA);
                 tmpPredRight = hasDenom ? nomhi[b] / denhi[b] : wYhi[b] / whi[b];
               }
               if (constraint == 0 || (constraint * tmpPredLeft <= constraint * tmpPredRight)) {
@@ -1242,8 +1232,9 @@ public class DTree extends Iced {
     // assert hasNomin || nomLeft == predLeft;
     // assert hasNomin || nomRight == predRight;
 
-    final double node_p0 = predLeft/nLeft;
-    final double node_p1 = predRight/nRight;
+    final double node_p0 = predLeft / nLeft;
+    final double node_p1 = predRight / nRight;
+    
 
     if (constraint != 0) {
       if (constraint * tree_p0 > constraint * tree_p1) {
