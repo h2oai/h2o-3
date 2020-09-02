@@ -34,7 +34,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to true.
 
--  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation predictions. This option defaults to false,.
+-  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation predictions. This option defaults to false.
 
 -  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. This option defaults to false.
 
@@ -78,7 +78,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  **pretrained_autoencoder**: Specify a pretrained autoencoder model to initialize this model with.
 
--  **overwrite_with_best_model**: Specify whether to overwrite the final model with the best model found during training, based on the option specified for **stopping_metric**. This option is enabled (true) by default.
+-  **overwrite_with_best_model**: Specify whether to overwrite the final model with the best model found during training, based on the option specified for **stopping_metric**. This option is enabled by default.
 
 -  `use_all_factor_levels <algo-params/use_all_factor_levels.html>`__: Specify whether to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For Deep Learning models, this option is useful for determining variable importances and is automatically enabled if the autoencoder is selected. This option is true by default.
 
@@ -98,7 +98,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
 
--  **adaptive_rate**: Specify whether to enable the adaptive learning rate (ADADELTA). This option is enabled (true) by default.
+-  **adaptive_rate**: Specify whether to enable the adaptive learning rate (ADADELTA). This option is enabled by default.
 
 -  **rho**: (Applicable only if **adaptive\_rate** is enabled) Specify the adaptive learning rate time decay factor. This option defaults to 0.99.
 
@@ -186,7 +186,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
     - The main model runs for the mean number of epochs.
     - N+1 models may be off by the number specified for **stopping_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
--  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. 
+-  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
    The available options are:
     
     - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that custom and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
@@ -235,7 +235,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
    
     **Note**: Cross-validation is not supported when autoencoder is enabled.
 
--  **sparse**: Specify whether to enable sparse data handling, which is more efficient for data with many zero values. This option is no enabled by default.
+-  **sparse**: Specify whether to enable sparse data handling, which is more efficient for data with many zero values. This option is not enabled by default.
 
 -  **col_major**: Specify whether to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not enabled by default.
 
