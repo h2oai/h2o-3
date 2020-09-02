@@ -16,6 +16,7 @@ import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
+import water.rapids.PermutationVarImp;
 import water.util.VecUtils;
 
 import java.util.*;
@@ -107,6 +108,10 @@ public class GLMBasicTestBinomial extends TestUtil {
       Scope.track_generic(model);
       
       final Frame pred = model.score(te);
+
+      PermutationVarImp Fi = new PermutationVarImp(model, trainData);
+
+
       Scope.track(pred);
       Scope.track(pred.remove("StdErr"));
       Assert.assertTrue(model.testJavaScoring(te, pred, _tol));
