@@ -521,6 +521,8 @@ public class GLMBasicTestRegression extends TestUtil {
         assertEquals(pvals_exp[id], pvals_actual[i], Math.max(1e-8,pvals_exp[id]) * 5e-3);
       }
       predict = model.score(parms._train.get());
+
+
       Vec.Reader r = predict.vec("StdErr").new Reader();
       for(int i = 0; i < 10; i++)
         System.out.println(tweedie_se_fit[i] + " ?=? " + r.at(i));
@@ -542,7 +544,7 @@ public class GLMBasicTestRegression extends TestUtil {
 //    (Intercept) -1.279e+00  3.481e-01  -3.673 0.000239 ***
 //    Merit1      -1.498e-01  2.972e-02  -5.040 4.64e-07 ***
 //    Merit2      -2.364e-01  3.859e-02  -6.127 8.96e-10 ***
-//    Merit3      -3.197e-01  5.095e-02  -6.274 3.52e-10 ***
+//    Merit3      -3.197e-01  5.095e-02  -6.274 3.52e-10 ***pred
 //    Class2       6.899e-02  8.006e-02   0.862 0.388785
 //    Class3       2.892e-01  6.333e-02   4.566 4.97e-06 ***
 //    Class4       2.708e-01  4.911e-02   5.515 3.49e-08 ***
