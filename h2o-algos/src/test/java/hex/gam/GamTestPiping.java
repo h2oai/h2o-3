@@ -14,6 +14,7 @@ import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.rapids.PermutationVarImp;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.ArrayUtils;
@@ -499,6 +500,8 @@ public class GamTestPiping extends TestUtil {
       Scope.track_generic(multinomialModel);
       Frame predictMult = Scope.track(multinomialModel.score(trainMultinomial));
       Frame predictGLMMulti = Scope.track(parse_test_file("smalldata/gam_test/predictMultinomialGAM2.csv"));
+      PermutationVarImp Fi = new PermutationVarImp(multinomialModel, trainMultinomial);
+      
       TestUtil.assertIdenticalUpToRelTolerance(predictMult, predictGLMMulti, 1e-6);
       
       // test for binomial
@@ -656,6 +659,9 @@ public class GamTestPiping extends TestUtil {
               testFrame, true);
       Scope.track_generic(binomialModel);
       Frame testPred = binomialModel.score(trainFrame);
+
+
+
       Scope.track(testPred);
       assert testPred.numRows() > testFrame.numRows();
     } finally {
