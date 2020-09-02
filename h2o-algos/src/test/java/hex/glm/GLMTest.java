@@ -18,6 +18,7 @@ import water.H2O.H2OCountedCompleter;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
+import water.rapids.PermutationVarImp;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
@@ -1205,6 +1206,8 @@ public class GLMTest  extends TestUtil {
       parms._ignored_columns = new String[]{"DepTime", "ArrTime", "Cancelled", "CancellationCode", "DepDelay", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"};
       parms._standardize = true;
       model1 = new GLM(parms).trainModel().get();
+      
+      
       model1.delete();
     fr.delete();
   }
@@ -1292,6 +1295,7 @@ public class GLMTest  extends TestUtil {
       params._train = fr._key;
       params._ignored_columns = ignoredCols;
       model4 = new GLM( params).trainModel().get();
+
       testScoring(model4,fr);
       assertEquals(nullDeviance(model3), nullDeviance(model4), 1e-4);
       assertEquals(residualDeviance(model4), residualDeviance(model3), nullDeviance(model3) * 1e-3);
@@ -1839,6 +1843,7 @@ public class GLMTest  extends TestUtil {
       GLM glm = new GLM( params);
       model = glm.trainModel().get();
       testScoring(model,vfr);
+
     } finally {
       tfr.remove();
       vfr.remove();
