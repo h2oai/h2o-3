@@ -20,7 +20,7 @@ public class GamMojoModel extends GamMojoModelBase {
     if (data.length == nfeatures())  // centered data, use center coefficients
       _beta = _beta_center;
     else  // use non-centering coefficients
-    _beta = _beta_no_center;
+      _beta = _beta_no_center;
     double eta = generateEta(_beta, data);  // generate eta, inner product of beta and data
     double mu = evalLink(eta);
 

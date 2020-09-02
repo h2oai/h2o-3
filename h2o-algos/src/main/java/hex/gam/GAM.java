@@ -344,11 +344,10 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           @Override
           protected void compute() {
             GenerateGamMatrixOneColumn genOneGamCol = new GenerateGamMatrixOneColumn(splineType, numKnots, 
-                    _knots[frameIndex], predictVec,
-                    _parms._standardize).doAll(numKnots, Vec.T_NUM, predictVec);
+                    _knots[frameIndex], predictVec).doAll(numKnots, Vec.T_NUM, predictVec);
             if (_parms._savePenaltyMat)  // only save this for debugging
               GamUtils.copy2DArray(genOneGamCol._penaltyMat, _penalty_mat[frameIndex]); // copy penalty matrix
-            // calculate z transpose
+              // calculate z transpose
               Frame oneAugmentedColumnCenter = genOneGamCol.outputFrame(Key.make(), newColNames,
                       null);
               for (int cind=0; cind < numKnots; cind++) 
@@ -370,7 +369,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       }
       ForkJoinTask.invokeAll(generateGamColumn);
     }
-    
+
     void verifyGamTransformedFrame(Frame gamTransformed) {
       int numGamCols = _gamColNamesCenter.length;
       int numGamFrame = _parms._gam_columns.length;
@@ -420,7 +419,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
                 _parms.makeImputer(),
                 false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms.interactionSpec());
         DKV.put(dinfo._key, dinfo);
-        model = new GAMModel(dest(), _parms, new GAMModel.GAMModelOutput(GAM.this, dinfo._adaptedFrame, dinfo));
+        model = new GAMModel(dest(), _parms, new GAMModel.GAMModelOutput(GAM.this, dinfo));
         model.delete_and_lock(_job);
         if (_parms._keep_gam_cols) {  // save gam column keys
           model._output._gamTransformedTrainCenter = newTFrame._key;
@@ -451,7 +450,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           model.unlock(_job);
           Scope.untrack(keep);  // leave the vectors alone.
         }
-        if (dinfo!=null)
+        if (dinfo != null)
           dinfo.remove();
         if (newValidFrame != null) {
           DKV.remove(newValidFrame._key);
@@ -465,7 +464,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
      *      
      * @param model
      * @param scoreFrame
-     * @param forTraining: true for training dataset and false for validation dataset
+     * @param forTraining true for training dataset and false for validation dataset
      */
     private void scoreGenModelMetrics(GAMModel model, Frame scoreFrame, boolean forTraining) {
       Frame scoringTrain = new Frame(scoreFrame);
@@ -491,9 +490,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         if ((_parms._scale != null) && (_parms._scale[find] != 1.0))
           _penalty_mat_center[find] = ArrayUtils.mult(_penalty_mat_center[find], _parms._scale[find]);
       }
-
-      GLMModel model = new GLM(glmParam, _penalty_mat_center,  _gamColNamesCenter).trainModel().get();
-      return model;
+      return new GLM(glmParam, _penalty_mat_center,  _gamColNamesCenter).trainModel().get();
     }
     
     void fillOutGAMModel(GLMModel glm, GAMModel model, DataInfo dinfo) {
@@ -568,8 +565,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     void copyGLMCoeffs(GLMModel glm, GAMModel model, DataInfo dinfo) {
       int totCoefNumsNoCenter = dinfo.fullN()+1+_parms._gam_columns.length;
       model._output._coefficient_names_no_centering = new String[totCoefNumsNoCenter]; // copy coefficient names from GLM to GAM
-      int gamNumStart = copyGLMCoeffNames2GAMCoeffNames(model, glm, dinfo);
-      copyGLMCoeffs2GAMCoeffs(model, glm, dinfo, _parms._family, gamNumStart, _parms._standardize, _nclass); // obtain beta without centering
+      int gamNumStart = copyGLMCoeffNames2GAMCoeffNames(model, glm);
+      copyGLMCoeffs2GAMCoeffs(model, glm, _parms._family, gamNumStart, _nclass); // obtain beta without centering
       // copy over GLM coefficients
       int glmCoeffLen = glm._output._coefficient_names.length;
       model._output._coefficient_names = new String[glmCoeffLen];

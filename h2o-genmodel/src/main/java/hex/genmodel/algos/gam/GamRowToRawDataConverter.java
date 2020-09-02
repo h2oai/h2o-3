@@ -19,7 +19,6 @@ public class GamRowToRawDataConverter extends RowToRawDataConverter {
   @Override
   public double[] convert(RowData data, double[] rawData) throws PredictException {
     rawData = super.convert(data, rawData);
-    rawData = _m.addExpandGamCols(rawData, data);
-    return rawData;
+    return _m.addExpandGamCols(rawData, data);
   }
 }

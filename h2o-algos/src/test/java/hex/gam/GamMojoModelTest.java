@@ -2,12 +2,14 @@ package hex.gam;
 
 import hex.CreateFrame;
 import hex.glm.GLMModel;
-import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import water.DKV;
 import water.Scope;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
@@ -16,12 +18,45 @@ import java.util.ArrayList;
 import static hex.gam.GamTestPiping.getModel;
 import static hex.gam.GamTestPiping.massageFrame;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
+import static org.junit.Assert.*;
 import static water.TestUtil.parse_test_file;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
 public class GamMojoModelTest {
   public static final double _tol = 1e-6;
+
+  @Rule
+  public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  
+  @Test
+  public void testNaN() {
+    Scope.enter();
+    try {
+      final Frame fr = Scope.track(createTrainFrameWithNaNs());
+      final GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+      int cidx = 0;
+      String[] gam_columns = new String[3];
+      for (int i = 0; i < fr.numCols(); i++) {
+        if (!fr.name(i).equals("response")&& fr.vec(i).get_type() == Vec.T_NUM) {
+          gam_columns[cidx++] = fr.name(i);
+          if (cidx == gam_columns.length) break;
+        }
+      }
+      params._response_column = "response";
+      params._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.MeanImputation;
+      params._family = gaussian;
+      params._gam_columns = gam_columns;
+      params._scale = new double[] {0.001, 0.001, 0.001};
+      params._train = fr._key;
+      final GAMModel model = new GAM(params).trainModel().get();
+      Scope.track_generic(model);
+      Frame predictFrame = Scope.track(model.score(fr));
+      assertTrue(model.testJavaScoring(fr, predictFrame, _tol));
+    } finally {
+      Scope.exit();
+    }
+  }
 
   // test and make sure that tweedie mojo works.
   @Test
@@ -42,7 +77,7 @@ public class GamMojoModelTest {
       final GAMModel model = new GAM(params).trainModel().get();
       Scope.track_generic(model);
       Frame predictFrame = Scope.track(model.score(fr));
-      Assert.assertTrue(model.testJavaScoring(fr, predictFrame, _tol));
+      assertTrue(model.testJavaScoring(fr, predictFrame, _tol));
     } finally {
       Scope.exit();
     }
@@ -66,7 +101,7 @@ public class GamMojoModelTest {
       final GAMModel model = new GAM(params).trainModel().get();      
       Frame predictFrame = Scope.track(model.score(fr));
       Scope.track_generic(model);
-      Assert.assertTrue(model.testJavaScoring(fr, predictFrame, _tol));
+      assertTrue(model.testJavaScoring(fr, predictFrame, _tol));
     } finally {
       Scope.exit();
     }
@@ -93,7 +128,7 @@ public class GamMojoModelTest {
       Scope.track_generic(binomialModel);
       binomialModel._output._training_metrics = null; // force prediction threshold of 0.5
       Frame predictBinomial = Scope.track(binomialModel.score(trainBinomial));
-      Assert.assertTrue(binomialModel.testJavaScoring(trainBinomial, predictBinomial, _tol));
+      assertTrue(binomialModel.testJavaScoring(trainBinomial, predictBinomial, _tol));
     } finally {
       Scope.exit();
     }
@@ -119,7 +154,7 @@ public class GamMojoModelTest {
       Frame predictG = predictGaussian.subframe(new String[]{"predict"});
       Scope.track(predictG);
 
-      Assert.assertTrue(gaussianmodel.testJavaScoring(trainGaussian, predictG, _tol)); // compare scoring result with mojo
+      assertTrue(gaussianmodel.testJavaScoring(trainGaussian, predictG, _tol)); // compare scoring result with mojo
     } finally {
       Scope.exit();
     }
@@ -143,12 +178,11 @@ public class GamMojoModelTest {
               true, null,null, false);
       Scope.track_generic(multinomialModel);
       Frame predictMult = Scope.track(multinomialModel.score(trainMultinomial));
-      Assert.assertTrue(multinomialModel.testJavaScoring(trainMultinomial, predictMult, _tol)); // compare scoring result with mojo
+      assertTrue(multinomialModel.testJavaScoring(trainMultinomial, predictMult, _tol)); // compare scoring result with mojo
     } finally {
       Scope.exit();
     }
   }
-  
   
   public GAMModel.GAMParameters buildGamParams(Frame train, GLMModel.GLMParameters.Family fam) {
     GAMModel.GAMParameters paramsO = new GAMModel.GAMParameters();
@@ -181,18 +215,18 @@ public class GamMojoModelTest {
     return numericCols.toArray(gam_columns);
   }
   
-  public Frame createTrainTestFrame(int responseFactor) {
+  private Frame createTrainFrameWithNaNs() {
     CreateFrame cf = new CreateFrame();
-    int numRows = 18888;
-    int numCols = 18;
+    int numRows = 20000;
+    int numCols = 11;
     cf.rows= numRows;
     cf.cols = numCols;
     cf.factors=10;
-    cf.has_response=true;
-    cf.response_factors = responseFactor; // 1 for real-value response
-    cf.positive_response=true;
-    cf.missing_fraction = 0;
-    cf.seed = 12345;
+    cf.has_response = true;
+    cf.positive_response = true;
+    cf.missing_fraction = 0.5;
+    cf.response_factors = 1;
+    cf.seed = 2;
     System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
     return cf.execImpl().get();
   }

@@ -52,17 +52,15 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
   int _numExpandedGamCols; // number of expanded gam columns
   int _lastClass;
   
-  private int getTotFeatureSize() { return _totFeatureSize;}
-  
   GamMojoModelBase(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
   }
 
   @Override
   public double[] score0(double[] row, double[] preds) {
-    if (_meanImputation)
+    if (_meanImputation) {
       imputeMissingWithMeans(row);  // perform imputation for each row
-    
+    }
     return gamScore0(row, preds);
   }
   
@@ -83,8 +81,8 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
       if (Double.isNaN(data[ind])) data[ind] = _catNAFills[ind];
 
     if (data.length == nfeatures()) { // using centered gam cols, nfeatures denotes centered gam columns
-      for (int ind = 0; ind < _numsCenter; ind++)
-        if (Double.isNaN(data[ind + _cats])) data[ind] = _numNAFillsCenter[ind];
+      for (int ind = _cats; ind < _numsCenter + _cats; ind++)
+        if (Double.isNaN(data[ind])) data[ind] = _numNAFillsCenter[ind - _cats];
     } else {
       for (int ind = 0; ind < _nums; ind++) {
         int colInd = ind+_cats;
@@ -107,9 +105,7 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
 
   // This method will read in categorical value and adjust for when useAllFactorLevels = true or false
   int readCatVal(double data, int dataIndex) {
-    int ival = _useAllFactorLevels?((int) data):((int) data-1);
-    double targetVal = _useAllFactorLevels?(data):(data-1);
-    if (ival != targetVal) throw new IllegalArgumentException("categorical value out of range");
+    int ival = _useAllFactorLevels ? ((int) data) : ((int) data - 1);
     if (ival < 0)
       return -1;
     ival += _catOffsets[dataIndex];
@@ -149,7 +145,7 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
        return rawData;     // already contain gamified columns.  Nothing needs to be done.
     }
     // add expanded gam columns to rowData
-    double[] dataWithGamifiedColumns = nanArray(getTotFeatureSize());
+    double[] dataWithGamifiedColumns = nanArray(_totFeatureSize);
     System.arraycopy(rawData, 0, dataWithGamifiedColumns, 0, dataIndEnd);
     for (int cind = 0; cind < _num_gam_columns; cind++) {
       if (_bs[cind] == 0) { // to generate basis function values for cubic regression spline

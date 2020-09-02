@@ -1,6 +1,5 @@
 package hex.gam.MatrixFrameUtils;
 
-import hex.DataInfo;
 import hex.Model;
 import hex.gam.GAMModel;
 import hex.gam.GAMModel.GAMParameters;
@@ -9,7 +8,6 @@ import hex.glm.GLMModel.GLMParameters;
 import water.DKV;
 import water.Key;
 import water.MemoryManager;
-import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -18,6 +16,8 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+
+import static water.util.ArrayUtils.find;
 
 public class GamUtils {
 
@@ -38,7 +38,7 @@ public class GamUtils {
     return array3D;
   }
 
-  public static enum AllocateType {firstOneLess, sameOrig, bothOneLess, firstTwoLess} // special functions are performed depending on GLMType.  Internal use
+  public enum AllocateType {firstOneLess, sameOrig, bothOneLess, firstTwoLess} // special functions are performed depending on GLMType.  Internal use
 
   public static Integer[] sortCoeffMags(int arrayLength, double[] coeffMags) {
     Integer[] indices = new Integer[arrayLength];
@@ -92,14 +92,16 @@ public class GamUtils {
     Field[] field2 = Model.Parameters.class.getDeclaredFields();
     setParamField(parms, glmParam, true, field2);
     glmParam._train = trainData._key;
-    glmParam._valid = valid==null?null:valid._key;
+    glmParam._valid = valid == null ? null : valid._key;
     return glmParam;
   }
 
   public static void setParamField(GAMParameters parms, GLMParameters glmParam, boolean superClassParams, Field[] gamFields) {
     // assign relevant GAMParameter fields to GLMParameter fields
-    List<String> gamOnlyList = Arrays.asList(new String[]{"_num_knots", "_gam_columns", "_bs", "_scale", "_train", "_saveZMatrix",
-            "_saveGamCols", "_savePenaltyMat"});
+    List<String> gamOnlyList = Arrays.asList(
+            "_num_knots", "_gam_columns", "_bs", "_scale", "_train", 
+        "_saveZMatrix", "_saveGamCols", "_savePenaltyMat"
+    );
     Field glmField;
     for (Field oneField : gamFields) {
       try {
@@ -110,25 +112,14 @@ public class GamUtils {
             glmField = glmParam.getClass().getDeclaredField(oneField.getName());
           glmField.set(glmParam, oneField.get(parms));
         }
-      } catch (IllegalAccessException e) { // suppress error printing, only cares about fields that are accessible
-        ;
-      } catch (NoSuchFieldException e) {  // only cares about fields that are there and don't care about missing ones
+      } catch (IllegalAccessException|NoSuchFieldException e) { // suppress error printing, only cares about fields that are accessible
         ;
       }
     }
   }
 
-  public static int colIndexFromColNames(String[] colnames, String oneName) {
-    int len = colnames.length;
-    for (int index = 0; index < len; index++)
-      if (colnames[index].equals(oneName))
-        return index;
-
-    return -1;
-  }
-
-  public static void copyGLMCoeffs2GAMCoeffs(GAMModel model, GLMModel glm, DataInfo dinfo, GLMParameters.Family family,
-                                             int gamNumStart, boolean standardized, int nclass) {
+  public static void copyGLMCoeffs2GAMCoeffs(GAMModel model, GLMModel glm, GLMParameters.Family family,
+                                             int gamNumStart, int nclass) {
     int numCoeffPerClass = model._output._coefficient_names_no_centering.length;
     if (family.equals(GLMParameters.Family.multinomial) || family.equals(GLMParameters.Family.ordinal)) {
       double[][] model_beta_multinomial = glm._output.get_global_beta_multinomial();
@@ -149,8 +140,7 @@ public class GamUtils {
     }
   }
 
-  
-// This method carries out the evaluation of beta = Z betaCenter as explained in documentation 7.2
+  // This method carries out the evaluation of beta = Z betaCenter as explained in documentation 7.2
   public static double[] convertCenterBeta2Beta(double[][][] ztranspose, int gamNumStart, double[] centerBeta,
                                                 int betaSize) {
     double[] originalBeta = new double[betaSize];
@@ -174,17 +164,20 @@ public class GamUtils {
     return originalBeta;
   }
 
-  public static int copyGLMCoeffNames2GAMCoeffNames(GAMModel model, GLMModel glm, DataInfo dinfo) {
+  public static int copyGLMCoeffNames2GAMCoeffNames(GAMModel model, GLMModel glm) {
       int numGamCols = model._gamColNamesNoCentering.length;
       String[] glmColNames = glm._output.coefficientNames();
       int lastGLMCoeffIndex = glmColNames.length-1;
       int lastGAMCoeffIndex = lastGLMCoeffIndex+numGamCols;
-      int gamNumColStart = colIndexFromColNames(glmColNames, model._gamColNames[0][0]);
+      int gamNumColStart = find(glmColNames, model._gamColNames[0][0]);
       int gamLengthCopied = gamNumColStart;
       System.arraycopy(glmColNames, 0, model._output._coefficient_names_no_centering, 0, gamLengthCopied); // copy coeff names before gam columns
       for (int gamColInd = 0; gamColInd < numGamCols; gamColInd++) {
-        System.arraycopy(model._gamColNamesNoCentering[gamColInd], 0, model._output._coefficient_names_no_centering, gamLengthCopied,
-                model._gamColNamesNoCentering[gamColInd].length);
+        System.arraycopy(
+                model._gamColNamesNoCentering[gamColInd], 0, 
+                model._output._coefficient_names_no_centering, gamLengthCopied,
+                model._gamColNamesNoCentering[gamColInd].length
+        );
         gamLengthCopied += model._gamColNamesNoCentering[gamColInd].length;
       }
       model._output._coefficient_names_no_centering[lastGAMCoeffIndex] = new String(glmColNames[lastGLMCoeffIndex]);

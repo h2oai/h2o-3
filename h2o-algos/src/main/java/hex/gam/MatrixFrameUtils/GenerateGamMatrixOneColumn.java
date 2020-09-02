@@ -27,7 +27,7 @@ public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColum
   double[] _maxAbsRowSum; // store maximum row sum
   double _s_scale;
 
-  public GenerateGamMatrixOneColumn(int splineType, int numKnots, double[] knots, Frame gamx, boolean standardize) {
+  public GenerateGamMatrixOneColumn(int splineType, int numKnots, double[] knots, Frame gamx) {
     _splineType = splineType;
     _numKnots = numKnots;
      CubicRegressionSplines crSplines = new CubicRegressionSplines(numKnots, knots);
@@ -45,7 +45,7 @@ public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColum
     int chunkRows = chk[0].len(); // number of rows in chunk
     CubicRegressionSplines crSplines = new CubicRegressionSplines(_numKnots, _knots); // not iced, must have own
     double[] basisVals = new double[_numKnots];
-    for (int rowIndex=0; rowIndex < chunkRows; rowIndex++) {
+    for (int rowIndex = 0; rowIndex < chunkRows; rowIndex++) {
       double gamRowSum = 0.0;
       // find index of knot bin where row value belongs to
       double xval = chk[0].atd(rowIndex);
