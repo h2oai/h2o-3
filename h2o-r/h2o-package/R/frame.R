@@ -1937,7 +1937,7 @@ h2o.which <- function(x) {
 #' @param na.rm \code{logical}. Indicate whether missing values should be removed.
 #' @param axis \code{integer}. Indicate whether to calculate the mean down a column (0) or across a row (1).
 #' @return Returns an H2OFrame object.
-#' @seealso \code{\link[base]{which.max}} for the base R method.
+#' @seealso \code{\link[base]{which.min}} for the base R method, \code{which.max()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -2713,7 +2713,7 @@ median.H2OFrame <- h2o.median
 #'                             is ignored.
 #' @param return_frame \code{logical}. Indicate whether to return an H2O frame or a list. Default is FALSE (returns a list).
 #' @param ... Further arguments to be passed from or to other methods.
-#' @seealso \code{\link[base]{mean}} , \code{\link[base]{rowMeans}}, or \code{\link[base]{colMeans}} for the base R implementation
+#' @seealso \code{\link[base]{Round}} for base R implementation, \code{mean()} and \code{\link[base]{colSums}} for the base R implementation, \code{colMeans()}.
 #' @return Returns a list containing the mean for each column (NaN for non-numeric columns) if return_frame is set to FALSE.
 #'         If return_frame is set to TRUE, then it will return an H2O frame with means per column or row (depends on axis argument).
 #' @examples
@@ -2818,7 +2818,7 @@ kurtosis.H2OFrame <- h2o.kurtosis
 #'   "everything"            - outputs NaNs whenever one of its contributing observations is missing
 #'   "all.obs"               - presence of missing observations will throw an error
 #'   "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
-#' @seealso \code{\link[stats]{var}} for the base R implementation. \code{\link{h2o.sd}} for standard deviation.
+#' @seealso \code{\link[stats]{cor}} for the base R implementation, \code{var()}. \code{\link{h2o.sd}} for standard deviation.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -3003,7 +3003,7 @@ sd <- function(x, na.rm=FALSE) {
 #' @name h2o.signif
 #' @param x An H2OFrame object.
 #' @param digits Number of significant digits to round doubles/floats.
-#' @seealso \code{\link[base]{signif}} for the base R implementation.
+#' @seealso \code{\link[base]{Round}} for the base R implementation, \code{signif()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3032,7 +3032,7 @@ signif <- function(x, digits=6) {
 #' @param digits Number of decimal places to round doubles/floats. Rounding to a negative number of decimal places is 
 #         not supported. For rounding off a 5, the IEC 60559 standard is used, 'go to the even digit'. Therefore 
 #         rounding 2.5 gives 2 and rounding 3.5 gives 4.
-#' @seealso \code{\link[base]{round}} for the base R implementation.
+#' @seealso \code{\link[base]{Round}} for the base R implementation, \code{round()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3123,7 +3123,7 @@ scale.H2OFrame <- function(x, center = TRUE, scale = TRUE) {
 #'
 #' @name h2o.log10
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{log10}} for the base R implementation.
+#' @seealso \code{\link[base]{Log}} for the base R implementation, \code{log10()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3145,7 +3145,7 @@ h2o.log10 <- function(x) {
 #'
 #' @name h2o.log2
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{log2}} for the base R implementation.
+#' @seealso \code{\link[base]{Log}} for the base R implementation, \code{log2()}
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3167,7 +3167,7 @@ h2o.log2 <- function(x) {
 #'
 #' @name h2o.log1p
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{log1p}} for the base R implementation.
+#' @seealso \code{\link[base]{Log}} for the base R implementation, \code{log1p()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3191,7 +3191,7 @@ h2o.log1p <- function(x) {
 #'
 #' @name h2o.trunc
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{trunc}} for the base R implementation.
+#' @seealso \code{\link[base]{Round}} for the base R implementation, \code{trunc()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3295,7 +3295,7 @@ h2o.colnames <- function(x) {
 #'
 #' @name h2o.isfactor
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{is.factor}} for the base R implementation.
+#' @seealso \code{\link[base]{factor}} for the base R implementation, \code{is.factor()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3316,7 +3316,7 @@ h2o.isfactor <- function(x) {
 #'
 #' @name h2o.isnumeric
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{is.numeric}} for the base R implementation.
+#' @seealso \code{\link[base]{numeric}} for the base R implementation, \code{is.numeric()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3336,7 +3336,7 @@ h2o.isnumeric <- function(x) {
 #'
 #' @name h2o.ischaracter
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{is.character}} for the base R implementation.
+#' @seealso \code{\link[base]{character}} for the base R implementation, \code{is.character()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3357,7 +3357,7 @@ h2o.ischaracter <- function(x) {
 #'
 #' @name h2o.asfactor
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{as.numeric}} for the base R implementation.
+#' @seealso \code{\link[base]{factor}} for the base R implementation, \code{as.factor()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3377,7 +3377,7 @@ h2o.asfactor <- function(x) {
 #'
 #' @name h2o.asnumeric
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{as.factor}} for the base R implementation.
+#' @seealso \code{\link[base]{numeric}} for the base R implementation, \code{as.numeric()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3457,7 +3457,7 @@ h2o.str <- function(object, ..., cols=FALSE) {
 #'
 #' @name h2o.cos
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{cos}} for the base R implementation.
+#' @seealso \code{\link[base]{Trig}} for the base R implementation, \code{cos()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3479,7 +3479,7 @@ h2o.cos <- function(x) {
 #'
 #' @name h2o.sin
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{sin}} for the base R implementation.
+#' @seealso \code{\link[base]{Trig}} for the base R implementation, \code{sin()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3501,7 +3501,7 @@ h2o.sin <- function(x) {
 #'
 #' @name h2o.acos
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{acos}} for the base R implementation.
+#' @seealso \code{\link[base]{Trig}} for the base R implementation, \code{acos()}.
 #' @examples
 #' \dontrun{
 #' h2o.init()
@@ -3519,7 +3519,7 @@ h2o.acos <- function(x) {
 #'
 #' @name h2o.cosh
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{cosh}} for the base R implementation.
+#' @seealso \code{\link[base]{Hyperbolic}} for the base R implementation, \code{cosh()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3541,7 +3541,7 @@ h2o.cosh <- function(x) {
 #'
 #' @name h2o.tan
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{tan}} for the base R implementation.
+#' @seealso \code{\link[base]{Trig}} for the base R implementation, \code{tan()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3563,7 +3563,7 @@ h2o.tan <- function(x) {
 #'
 #' @name h2o.tanh
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{tanh}} for the base R implementation.
+#' @seealso \code{\link[base]{Hyperbolic}} for the base R implementation, \code{tanh()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3585,7 +3585,7 @@ h2o.tanh <- function(x) {
 #'
 #' @name h2o.exp
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{exp}} for the base R implementation.
+#' @seealso \code{\link[base]{Log}} for the base R implementation, \code{exp()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3607,7 +3607,7 @@ h2o.exp <- function(x) {
 #'
 #' @name h2o.log
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{log}} for the base R implementation.
+#' @seealso \code{\link[base]{Log}} for the base R implementation, \code{log}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3630,7 +3630,7 @@ h2o.log <- function(x) {
 #'
 #' @name h2o.sqrt
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{sqrt}} for the base R implementation.
+#' @seealso \code{\link[base]{MathFun}} for the base R implementation, \code{sqrt()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3652,7 +3652,7 @@ h2o.sqrt <- function(x) {
 #'
 #' @name h2o.abs
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{abs}} for the base R implementation.
+#' @seealso \code{\link[base]{MathFun}} for the base R implementation, \code{abs()}.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -3682,7 +3682,7 @@ h2o.abs <- function(x) {
 #'
 #' @name h2o.ceiling
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{ceiling}} for the base R implementation.
+#' @seealso \code{\link[base]{Round}} for the base R implementation, \code{ceiling()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3705,7 +3705,7 @@ h2o.ceiling <- function(x) {
 #'
 #' @name h2o.floor
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{floor}} for the base R implementation.
+#' @seealso \code{\link[base]{Round}} for the base R implementation, \code{floor()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3800,7 +3800,7 @@ h2o.cumsum <- function(x, axis = 0){
 #' @name h2o.cumprod
 #' @param x An H2OFrame object.
 #' @param axis An int that indicates whether to do down a column (0) or across a row (1).
-#' @seealso \code{\link[base]{cumprod}} for the base R implementation.
+#' @seealso \code{\link[base]{cumsum}} for the base R implementation, \code{cumprod()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3823,7 +3823,7 @@ h2o.cumprod <- function(x, axis = 0){
 #' @name h2o.cummin
 #' @param x An H2OFrame object.
 #' @param axis An int that indicates whether to do down a column (0) or across a row (1).
-#' @seealso \code{\link[base]{cummin}} for the base R implementation.
+#' @seealso \code{\link[base]{cumsum}} for the base R implementation, \code{cummin()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3846,7 +3846,7 @@ h2o.cummin <- function(x, axis = 0){
 #' @name h2o.cummax
 #' @param x An H2OFrame object.
 #' @param axis An int that indicates whether to do down a column (0) or across a row (1).
-#' @seealso \code{\link[base]{cummax}} for the base R implementation.
+#' @seealso \code{\link[base]{cumsum}} for the base R implementation, \code{cummax()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3900,7 +3900,7 @@ h2o.any <- function(x) {
 #' @name h2o.min
 #' @param x An H2OFrame object.
 #' @param na.rm \code{logical}. indicating whether missing values should be removed.
-#' @seealso \code{\link[base]{min}} for the base R implementation.
+#' @seealso \code{\link[base]{Extremes}} for the base R implementation, \code{min()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3921,7 +3921,7 @@ h2o.min <- function(x,na.rm = FALSE) {
 #' @name h2o.max
 #' @param x An H2OFrame object.
 #' @param na.rm \code{logical}. indicating whether missing values should be removed.
-#' @seealso \code{\link[base]{max}} for the base R implementation.
+#' @seealso \code{\link[base]{Extremes}} for the base R implementation, \code{max()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3961,7 +3961,7 @@ h2o.nrow <- function(x) {
 #'
 #' @name h2o.ncol
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{ncol}} for the base R implementation.
+#' @seealso \code{\link[base]{nrow}} for the base R implementation, \code{ncol()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -4611,7 +4611,7 @@ h2o.cbind <- function(...) {
 #' @param \dots A sequence of H2OFrame arguments. All datasets must exist on the same H2O instance
 #'        (IP and port) and contain the same number and types of columns.
 #' @return An H2OFrame object containing the combined \dots arguments row-wise.
-#' @seealso \code{\link[base]{rbind}} for the base \code{R} method.
+#' @seealso \code{\link[base]{cbind}} for the base \code{R} method, \code{rbind()}.
 #' @examples
 #' \dontrun{
 #' library(h2o)
