@@ -737,7 +737,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
                       "\nLeft Node (max): " + tree.node(max_ids[dn._nids[0]]) +
                       "\nRight Node (min): " + tree.node(min_ids[dn._nids[1]]);
               throw new IllegalStateException(message);
-              //Log.info(message);
             }
           } else if (constraint < 0) {
             if (mins[dn._nids[0]] < maxs[dn._nids[1]]) {
@@ -747,7 +746,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
                       "\nLeft Node (min): " + tree.node(min_ids[dn._nids[0]]) +
                       "\nRight Node (max): " + tree.node(max_ids[dn._nids[1]]);
               throw new IllegalStateException(message);
-              //Log.info(message);
             }
           }
         }

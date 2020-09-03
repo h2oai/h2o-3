@@ -17,11 +17,6 @@ test_varimp_monotone_gbm <- function(){
     varimp_constrained <- h2o.varimp(gbm_constrained)[,c("variable", "percentage")]
 
     varimps <- merge(varimp_regular, varimp_constrained, by="variable")
-    print(varimp_regular)
-    print(varimp_constrained)
-    print(auc_regular)
-    print(auc_constrained)
-    print(varimps)
     expect_equal(varimps$percentage.x, varimps$percentage.y, tolerance = 0.01, scale = 1)
     
     expect_equal(auc_regular, auc_constrained, tolerance = 0.01, scale = 1)
