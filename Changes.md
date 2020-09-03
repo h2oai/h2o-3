@@ -10,15 +10,15 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/2/index.h
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4722'>PUBDEV-4722</a>] -         The ‘h2o.unique()’ command will now only return the unique values within a column.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7627'>PUBDEV-7627</a>] -         k-LIME easy predict wrapper should use Regression or KLime as a model category instead of just KLime 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7627'>PUBDEV-7627</a>] -         k-LIME easy predict wrapper now uses Regression or KLime as a model category instead of just KLime.
 </li>
-<li>(IN PROGRESS)[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7657'>PUBDEV-7657</a>] -         Fixed the CRAN check warnings on r-devel for cross-references in the R documentation.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7657'>PUBDEV-7657</a>] -         Fixed the CRAN check warnings on r-devel for cross-references in the R documentation.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7704'>PUBDEV-7704</a>] -         Documentation added detailing the supported encodings for CSV files.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7708'>PUBDEV-7708</a>] -         GLM parameters integrated into GAM parameters.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7738'>PUBDEV-7738</a>] -         Fixed broken URLs in R docs that caused CRAN failures.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7738'>PUBDEV-7738</a>] -         Fixed broken URLs in R documentation that caused CRAN failures.
 </li>
 </ul>
     
@@ -30,7 +30,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/2/index.h
     
 <h4>Task</h4>
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7481'>PUBDEV-7481</a>] -         When using multiple alpha/lambda values for calling GLM from GAM, GLM now returns the best results across all alpha/lambda values. ‘cold_start’ parameter added to GLM.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7481'>PUBDEV-7481</a>] -         When using multiple alpha/lambda values for calling GLM from GAM, GLM now returns the best results across all alpha/lambda values. Also added the ‘cold_start’ parameter added to GLM.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7721'>PUBDEV-7721</a>] -         Added documentation for new GAM hyperparameter ’subspaces’.
 </li>
