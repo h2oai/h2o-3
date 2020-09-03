@@ -2,7 +2,6 @@ package hex.tree;
 
 import hex.Distribution;
 import hex.genmodel.utils.DistributionFamily;
-import hex.quantile.Quantile;
 import jsr166y.RecursiveAction;
 import water.*;
 import water.fvec.Chunk;
