@@ -8,93 +8,55 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/2/index.h
 
 <h4>Bug</h4>
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4722'>PUBDEV-4722</a>] -         R: h2o.unique returns the entire domain rather than the unique values present in the column
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7281'>PUBDEV-7281</a>] -         NPE in parallel grid search ( non-deterministic)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4722'>PUBDEV-4722</a>] -         The ‘h2o.unique()’ command will now only return the unique values within a column.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7627'>PUBDEV-7627</a>] -         k-LIME easy predict wrapper should use Regression or KLime as a model category instead of just KLime 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7636'>PUBDEV-7636</a>] -         AIOOB exception with GLM when calling fitIRLSM()
+<li>(IN PROGRESS)[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7657'>PUBDEV-7657</a>] -         Fixed the CRAN check warnings on r-devel for cross-references in the R documentation.
 </li>
-<li>(IN PROGRESS)[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7657'>PUBDEV-7657</a>] -         Fix CRAN check warnings on r-devel for cross-references in R docs
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7704'>PUBDEV-7704</a>] -         Documentation added detailing the supported encodings for CSV files.
 </li>
-<li>*[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7704'>PUBDEV-7704</a>] -         Documentation added detailing the supported encodings for CSV files.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7708'>PUBDEV-7708</a>] -         GLM parameters integrated into GAM parameters.
 </li>
-<li>*[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7708'>PUBDEV-7708</a>] -         GLM parameters integrated into GAM parameters.
-</li>
-<li>*[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7738'>PUBDEV-7738</a>] -         Fixed broken URLs in R docs that caused CRAN failures.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7738'>PUBDEV-7738</a>] -         Fixed broken URLs in R docs that caused CRAN failures.
 </li>
 </ul>
     
 <h4>New Feature</h4>
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5923'>PUBDEV-5923</a>] -         Cross-validation predictions not saved with h2o.saveModel
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7359'>PUBDEV-7359</a>] -         Kubernetes healtcheck for H2O-3 
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7466'>PUBDEV-7466</a>] -         Provide SHAP values in Generic Model
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7507'>PUBDEV-7507</a>] -         Make the MOJO aware of model metadata like response column name
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7534'>PUBDEV-7534</a>] -         Add an XGBoost Random Forest to AutoML
-</li>
-<li>(IN PROGRESS)[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7552'>PUBDEV-7552</a>] -         Add support for model checkpointing of the Stacked Ensemble metalearner
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7602'>PUBDEV-7602</a>] -         Expose predict contributions using MOJO in R
-</li>
-<li>*[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7622'>PUBDEV-7622</a>] -         Added concordance score for CoxPH models.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7622'>PUBDEV-7622</a>] -         Added the concordance statistic for CoxPH models.
 </li>
 </ul>
     
 <h4>Task</h4>
 <ul>
-<li>*[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7481'>PUBDEV-7481</a>] -         When using multiple alpha/lambda values for calling GLM from GAM, GLM now returns the best results across all alpha/lambda values. ‘cold_start’ parameter added to GLM.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7481'>PUBDEV-7481</a>] -         When using multiple alpha/lambda values for calling GLM from GAM, GLM now returns the best results across all alpha/lambda values. ‘cold_start’ parameter added to GLM.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7529'>PUBDEV-7529</a>] -         Add a warning to AutoML and XGBoost functions about memory usage
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7721'>PUBDEV-7721</a>] -         Added documentation for new GAM hyperparameter ’subspaces’.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7618'>PUBDEV-7618</a>] -         Clean up specific handling of `stopping_rounds` for XGBoost in tests
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7634'>PUBDEV-7634</a>] -         Add support for interaction to MOJO/POJO
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7683'>PUBDEV-7683</a>] -         External XGBoost - improve performance
-</li>
-<li>*[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7721'>PUBDEV-7721</a>] -         Added documentation for new GAM hyperparameter ’subspaces’.
-</li>
-<li>*[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7726'>PUBDEV-7726</a>] -         GLM new parameter ‘cold_start’ added to User Guide and GLM booklet.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7726'>PUBDEV-7726</a>] -         GLM new parameter ‘cold_start’ added to User Guide and GLM booklet.
 </li>
 </ul>
     
 <h4>Improvement</h4>
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7542'>PUBDEV-7542</a>] -         Dynamic Stacked Ensemble metalearning strategy in AutoML
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7654'>PUBDEV-7654</a>] -         Reduced the memory cost of the `drop_duplicate` operation by cleaning up data early.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7551'>PUBDEV-7551</a>] -         Fully undocument algo_parameters or activate the functionality in h2o.init by default
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7723'>PUBDEV-7723</a>] -          When calculating unique() values on a column that is the result of an AstRowSlice operation, the domain is now collected in-place and no longer results in an error.
 </li>
-<li>(IN PROGRESS)[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7595'>PUBDEV-7595</a>] -         AutoML: time budget should give priority to default models
-</li>
-<li>(IN PROGRESS)[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7654'>PUBDEV-7654</a>] -         Explore reducing drop_duplicates memory usage
-</li>
-<li>*[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7723'>PUBDEV-7723</a>] -          When calculating unique() values on a column that is the result of an AstRowSlice operation, the domain is now collected in-place and no longer results in an error.
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7724'>PUBDEV-7724</a>] -         Update/clarify error messages when XGBoost fails to load
-</li>
-<li>*[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7731'>PUBDEV-7731</a>] -         Categorical encoding documentation updated by adding ‘EnumLimited’ & ’SortByReponse’ to KMeans and removing ‘Eigen’ from XGBoost.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7731'>PUBDEV-7731</a>] -         Categorical encoding documentation updated by adding ‘EnumLimited’ & ’SortByReponse’ to KMeans and removing ‘Eigen’ from XGBoost.
 </li>
 </ul>
     
 <h4>Technical task</h4>
 <ul>
-<li>*[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7367'>PUBDEV-7367</a>] -         Tests added to verify grid search functionality for GAM and allows the user to create more complex hyper spaces for grid search by adding ‘subspaces’ key and functionality to grid search backend.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7367'>PUBDEV-7367</a>] -         Tests added to verify grid search functionality for GAM and allows the user to create more complex hyper spaces for grid search by adding ‘subspaces’ key and functionality to grid search backend.
 </li>
 </ul>
     
 <h4>Docs</h4>
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7541'>PUBDEV-7541</a>] -         Update descriptions of AutoML in R and Python packages
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7633'>PUBDEV-7633</a>] -         Add Documentation on how Target Encoding handles unseen values
-</li>
-<li>*[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7732'>PUBDEV-7732</a>] -         Added documentation on how to retrieve reproducibility information.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7732'>PUBDEV-7732</a>] -         Added documentation on how to retrieve reproducibility information.
 </li>
 </ul>
 
