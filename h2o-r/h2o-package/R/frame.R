@@ -3374,7 +3374,7 @@ h2o.asfactor <- function(x) {
 #'
 #' @name h2o.asnumeric
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{factor}} for the base R implementation, \code{as.numeric()}.
+#' @seealso \code{\link[base]{numeric}} for the base R implementation, \code{as.numeric()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
