@@ -20,10 +20,10 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         return LinearAlgebraUtils.toEigen;
     }
 
-    SharedTreeModel[] treeModels;
-
     GLMModel glmModel;
 
+    RuleEnsemble ruleEnsemble;
+    
     public static class RuleFitParameters extends Model.Parameters {
         public String algoName() {
             return "RuleFit";
@@ -78,10 +78,10 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         }
     }
 
-    public RuleFitModel(Key<RuleFitModel> selfKey, RuleFitParameters parms, RuleFitOutput output, SharedTreeModel[] treeModels, GLMModel glmModel) {
+    public RuleFitModel(Key<RuleFitModel> selfKey, RuleFitParameters parms, RuleFitOutput output, GLMModel glmModel, RuleEnsemble ruleEnsemble) {
         super(selfKey, parms, output);
-        this.treeModels = treeModels;
         this.glmModel = glmModel;
+        this.ruleEnsemble = ruleEnsemble;
     }
 
     @Override
@@ -107,16 +107,8 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
     @Override
     public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
         Frame pathsFrame = new Frame(Key.make("paths_frame" + destination_key));
-        Frame paths = null;
-        Key[] keys = new Key[_output.treeModelsKeys.length];
         if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.RULES.equals(this._parms._model_type)) {
-            for (int i = 0; i < _output.treeModelsKeys.length; i++) {
-                SharedTreeModel treeModel = DKV.getGet(_output.treeModelsKeys[i]);
-                paths = treeModel.scoreLeafNodeAssignment(fr, Model.LeafNodeAssignment.LeafNodeAssignmentType.Path, Key.make("path_" + i + destination_key));
-                paths.setNames(RuleFitUtils.getPathNames(i, paths.numCols(), paths.names()));
-                pathsFrame.add(paths);
-                keys[i] = paths._key;
-            }
+            pathsFrame.add(ruleEnsemble.transform(fr));
         }
         if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.LINEAR.equals(this._parms._model_type)) {
             Frame adaptFrm = new Frame(fr.deepCopy(null));
@@ -127,12 +119,6 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         Frame destination = glmModel.score(pathsFrame, destination_key, null, true);
 
         pathsFrame.remove();
-        if (paths != null) {
-            paths.remove();
-        }
-        for (int i = 0; i < _output.treeModelsKeys.length; i++) {
-            DKV.remove(keys[i]);
-        }
         return destination;
     }
 

@@ -1,7 +1,6 @@
 package hex.tree;
 
 import hex.Model;
-import hex.ModelCategory;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
@@ -12,6 +11,8 @@ import water.MemoryManager;
 import water.api.Handler;
 import java.util.*;
 import java.util.stream.IntStream;
+
+import static hex.tree.TreeUtils.getResponseLevelIndex;
 
 /**
  * Handling requests for various model trees
@@ -167,32 +168,6 @@ public class TreeHandler extends Handler {
             conditionLine.append("]) {");
         }
         return conditionLine;
-    }
-
-    private static int getResponseLevelIndex(final String categorical, final SharedTreeModel.SharedTreeOutput sharedTreeOutput) {
-        final String trimmedCategorical = categorical != null ? categorical.trim() : ""; // Trim the categorical once - input from the user
-
-        if (! sharedTreeOutput.isClassifier()) {
-            if (!trimmedCategorical.isEmpty())
-                throw new IllegalArgumentException("There are no tree classes for " + sharedTreeOutput.getModelCategory() + ".");
-            return 0; // There is only one tree for non-classification models
-        }
-
-        final String[] responseColumnDomain = sharedTreeOutput._domains[sharedTreeOutput.responseIdx()];
-        if (sharedTreeOutput.getModelCategory() == ModelCategory.Binomial) {
-            if (!trimmedCategorical.isEmpty() && !trimmedCategorical.equals(responseColumnDomain[0])) {
-                throw new IllegalArgumentException("For binomial, only one tree class has been built per each iteration: " + responseColumnDomain[0]);
-            } else {
-                return 0;
-            }
-        } else {
-            for (int i = 0; i < responseColumnDomain.length; i++) {
-                // User is supposed to enter the name of the categorical level correctly, not ignoring case
-                if (trimmedCategorical.equals(responseColumnDomain[i]))
-                    return i;
-            }
-            throw new IllegalArgumentException("There is no such tree class. Given categorical level does not exist in response column: " + trimmedCategorical);
-        }
     }
 
     /**
