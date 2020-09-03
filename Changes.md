@@ -2,6 +2,65 @@
 
 ## H2O
 
+### Zeno (3.30.1.2) - 9/3/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/2/index.html</a>
+
+<h4>Bug</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4722'>PUBDEV-4722</a>] -         The ‘h2o.unique()’ command will now only return the unique values within a column.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7627'>PUBDEV-7627</a>] -         k-LIME easy predict wrapper now uses Regression or KLime as a model category instead of just KLime.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7657'>PUBDEV-7657</a>] -         Fixed the CRAN check warnings on r-devel for cross-references in the R documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7704'>PUBDEV-7704</a>] -         Documentation added detailing the supported encodings for CSV files.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7708'>PUBDEV-7708</a>] -         GLM parameters integrated into GAM parameters.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7738'>PUBDEV-7738</a>] -         Fixed broken URLs in R documentation that caused CRAN failures.
+</li>
+</ul>
+    
+<h4>New Feature</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7622'>PUBDEV-7622</a>] -         Added the concordance statistic for CoxPH models.
+</li>
+</ul>
+    
+<h4>Task</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7481'>PUBDEV-7481</a>] -         When using multiple alpha/lambda values for calling GLM from GAM, GLM now returns the best results across all alpha/lambda values. Also added the ‘cold_start’ parameter added to GLM.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7721'>PUBDEV-7721</a>] -         Added documentation for new GAM hyperparameter ’subspaces’.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7726'>PUBDEV-7726</a>] -         GLM new parameter ‘cold_start’ added to User Guide and GLM booklet.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7654'>PUBDEV-7654</a>] -         Reduced the memory cost of the `drop_duplicate` operation by cleaning up data early.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7723'>PUBDEV-7723</a>] -          When calculating unique() values on a column that is the result of an AstRowSlice operation, the domain is now collected in-place and no longer results in an error.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7731'>PUBDEV-7731</a>] -         Categorical encoding documentation updated by adding ‘EnumLimited’ & ’SortByReponse’ to KMeans and removing ‘Eigen’ from XGBoost.
+</li>
+</ul>
+    
+<h4>Technical task</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7367'>PUBDEV-7367</a>] -         Tests added to verify grid search functionality for GAM and allows the user to create more complex hyper spaces for grid search by adding ‘subspaces’ key and functionality to grid search backend.
+</li>
+</ul>
+    
+<h4>Docs</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7732'>PUBDEV-7732</a>] -         Added documentation on how to retrieve reproducibility information.
+</li>
+</ul>
+
+
 ### Zeno (3.30.1.1) - 8/10/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/1/index.html</a>
