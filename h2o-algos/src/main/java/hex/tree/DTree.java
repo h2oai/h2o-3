@@ -981,8 +981,13 @@ public class DTree extends Iced {
       predLeft = wYhi[0];
       nRight = wNA;
       predRight = wYNA;
-      tree_p0 = predLeft / nLeft;
-      tree_p1 = predRight / nRight;
+      if(hasDenom){
+        tree_p0 = nomhi[0] /denhi[0];
+        tree_p1 = denNA / nomNA;
+      } else {
+        tree_p0 = predLeft / nLeft;
+        tree_p1 = predRight / nRight;
+      }
     }
 
     // Now roll the split-point across the bins.  There are 2 ways to do this:
@@ -1234,7 +1239,6 @@ public class DTree extends Iced {
 
     final double node_p0 = predLeft / nLeft;
     final double node_p1 = predRight / nRight;
-    
 
     if (constraint != 0) {
       if (constraint * tree_p0 > constraint * tree_p1) {
