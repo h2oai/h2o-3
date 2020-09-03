@@ -3354,7 +3354,7 @@ h2o.ischaracter <- function(x) {
 #'
 #' @name h2o.asfactor
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{numeric}} for the base R implementation, \code{as.factor()}.
+#' @seealso \code{\link[base]{factor}} for the base R implementation, \code{as.factor()}.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
