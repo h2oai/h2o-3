@@ -1,6 +1,6 @@
 package hex.mojopipeline;
 
-import ai.h2o.mojos.runtime.MojoPipelineFactory;
+import ai.h2o.mojos.runtime.api.PipelineLoaderFactory;
 import water.AbstractH2OExtension;
 import water.util.Log;
 
@@ -40,7 +40,7 @@ public class MojoPipelineExtension extends AbstractH2OExtension {
 
   private boolean hasMojoRuntime() {
     // relying on implementation - need to improve MOJO2 API
-    return ServiceLoader.load(MojoPipelineFactory.class).iterator().hasNext();
+    return ServiceLoader.load(PipelineLoaderFactory.class).iterator().hasNext();
   }
 
 }
