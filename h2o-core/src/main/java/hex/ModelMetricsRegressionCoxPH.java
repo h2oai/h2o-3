@@ -4,13 +4,13 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
+import org.apache.commons.lang.ArrayUtils;
+
+import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.*;
 
 public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
@@ -124,17 +124,15 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
 
     static class Stats {
       final long ntotals;
-      final long nNotNaN;
       final long nconcordant;
       final long nties;
 
       Stats() {
-        this(0, 0, 0, 0);
+        this(0, 0, 0);
       }
 
-      Stats(long ntotals, long nNotNaN, long nconcordant, long nties) {
+      Stats(long ntotals, long nconcordant, long nties) {
         this.ntotals = ntotals;
-        this.nNotNaN = nNotNaN;
         this.nconcordant = nconcordant;
         this.nties = nties;
       }
@@ -147,8 +145,18 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
         return ntotals - nconcordant - nties;
       }
 
+      @Override
+      public String toString() {
+        return "Stats{" +
+                "ntotals=" + ntotals +
+                ", nconcordant=" + nconcordant +
+                ", ndiscordant=" + discordant() +
+                ", nties=" + nties +
+                '}';
+      }
+
       Stats plus(Stats s2) {
-        return new Stats(ntotals + s2.ntotals, nNotNaN + s2.nNotNaN, nconcordant + s2.nconcordant, nties + s2.nties);
+        return new Stats(ntotals + s2.ntotals, nconcordant + s2.nconcordant, nties + s2.nties);
       }
     }
     
@@ -166,64 +174,343 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
     private static Stats concordanceStats(Vec.Reader startVec, Vec.Reader stopVec, Vec.Reader eventVec, List<Vec.Reader> strataVecs, Vec.Reader estimateVec, long length) {
       assert 0 <= length && length <= Integer.MAX_VALUE;
       
-      Stream<Integer> allIndexes = IntStream.range(0, (int) length).boxed();
+      Collection<List<Integer>> byStrata =
+        IntStream.range(0, (int) length)
+                 .filter(i -> !estimateVec.isNA(i) && !stopVec.isNA(i) && (null == startVec || !startVec.isNA(i)))
+                 .boxed()
+                 .collect(groupingBy(
+                      i -> strataVecs.stream()
+                              .map(v -> v.at8(i))
+                              .collect(toList())
+                 )).values();
 
-      Map<List<Long>, List<Integer>> byStrata = allIndexes.collect(groupingBy(
-              i -> strataVecs.stream()
-                      .map(v -> v.at8(i))
-                      .collect(toList())
-      ));
-
-      return byStrata.values().stream().map(
-        indexes -> statsForAStrata(startVec, stopVec, eventVec, estimateVec, indexes)
-      ).reduce(new Stats(), Stats::plus);
+      return byStrata.stream()
+        .map(
+          indexes -> statsForAStrata(startVec, stopVec, eventVec, estimateVec, indexes)
+        ).reduce(new Stats(), Stats::plus);
     }
 
     private static Stats statsForAStrata(Vec.Reader startVec, Vec.Reader stopVec, Vec.Reader eventVec, Vec.Reader estimateVec, List<Integer> indexes) {
-      long ntotals = 0;
-      long nNotNaN = 0;
-      long nconcordant = 0;
-      long nties = 0;
+      int[] indexesOfDead = indexes.stream()
+                                   .filter(i -> 0 != eventVec.at(i))
+                                   .sorted(Comparator.<Integer>comparingDouble(i -> deadTime(startVec, stopVec, i)))
+                                   .mapToInt(Integer::intValue)
+                                   .toArray();
+      
+      int[] indexesOfCensored = indexes.stream()
+                                       .filter(i -> 0 == eventVec.at(i))
+                                       .sorted(Comparator.<Integer>comparingDouble(i -> deadTime(startVec, stopVec, i)))
+                                       .mapToInt(Integer::intValue)
+                                       .toArray(); 
 
-      for (final int i : indexes) {
-        for (final int j : indexes) {
-          if (j <= i) { continue; }
+      assert indexesOfCensored.length + indexesOfDead.length == indexes.size();
 
-          final double t1 = stopVec.at(i) - ((startVec != null) ? startVec.at(i) : 0d);
-          final double t2 = stopVec.at(j) - ((startVec != null) ? startVec.at(j) : 0d);
+      int diedIndex = 0;
+      int censoredIndex = 0;
 
-          final long event1 = eventVec.at8(i);
-          final long event2 = eventVec.at8(j);
-          final double estimate1 = estimateVec.at(i);
-          final double estimate2 = estimateVec.at(j);
+      final DoubleStream estimatesOfDead = stream(indexesOfDead).mapToDouble(i -> estimateTime(estimateVec, i));
+      final StatTree timesToCompare = new StatTree(estimatesOfDead.distinct().sorted().toArray());
 
-          boolean censored1 = 0 == event1;
-          boolean censored2 = 0 == event2;
+      long nTotals = 0L;
+      long nConcordant = 0L;
+      long nTied = 0L;
 
-          if (!Double.isNaN(t1) && !Double.isNaN(t2) && !Double.isNaN(estimate1) && !Double.isNaN(estimate2)) {
-            nNotNaN++;
-          } else {
-            continue;
+      for(;;) {
+        final boolean hasMoreCensored = censoredIndex < indexesOfCensored.length;
+        final boolean hasMoreDead = diedIndex < indexesOfDead.length;
+
+        // Should we look at some censored indices next, or died indices?
+        if (hasMoreCensored && (!hasMoreDead || deadTime(startVec, stopVec, indexesOfDead[diedIndex]) > deadTime(startVec, stopVec,indexesOfCensored[censoredIndex]))) {
+          final PairStats pairStats = handlePairs(indexesOfCensored, estimateVec, censoredIndex, timesToCompare);
+
+          nTotals += pairStats.pairs;
+          nConcordant += pairStats.concordant;
+          nTied += pairStats.tied;
+
+          censoredIndex = pairStats.next_ix;
+        } else if (hasMoreDead && (!hasMoreCensored || deadTime(startVec, stopVec, indexesOfDead[diedIndex]) <= deadTime(startVec, stopVec, indexesOfCensored[censoredIndex]))) {
+          final PairStats pairStats = handlePairs(indexesOfDead, estimateVec, diedIndex, timesToCompare);
+
+          for (int i = diedIndex; i < pairStats.next_ix; i++) {
+            final double pred = estimateTime(estimateVec, indexesOfDead[i]);
+            timesToCompare.insert(pred);
           }
-
-          if (isValidComparison(t1, t2, !censored1, !censored2)) {
-            ntotals++;
-            if (estimate1 == estimate2) {
-              nties++;
-            } else if (estimate1 > estimate2) {
-              if ((t1 < t2) || (t1 == t2 && !censored1 && censored2)) {
-                nconcordant++;
-              }
-            } else {
-              if ((t1 > t2) || (t1 == t2 && censored1 && !censored2)) {
-                nconcordant++;
-              }
-            }
-          }
+         
+          nTotals += pairStats.pairs;
+          nConcordant += pairStats.concordant;
+          nTied += pairStats.tied; 
+          
+          diedIndex = pairStats.next_ix;
+        } else {
+          assert !(hasMoreDead || hasMoreCensored);
+          break;
         }
       }
 
-      return new Stats(ntotals, nNotNaN, nconcordant, nties);
+      return new Stats(nTotals, nConcordant, nTied);
+    }
+
+    private static double deadTime(Vec.Reader startVec, Vec.Reader stopVec, int i) {
+      return startVec == null ? stopVec.at(i) : stopVec.at(i) - startVec.at(i);
+    }
+    private static double estimateTime(Vec.Reader estimateVec, int i) {
+      return -estimateVec.at(i);
+    }
+
+    static class PairStats {
+      final long pairs; 
+      final long concordant;
+      final long tied;
+      final int next_ix;
+
+      public PairStats(long pairs, long concordant, long tied, int next_ix) {
+        this.pairs = pairs;
+        this.concordant = concordant;
+        this.tied = tied;
+        this.next_ix = next_ix;
+      }
+      
+      @Override
+      public String toString() {
+        return "PairStats{" +
+                "pairs=" + pairs +
+                ", concordant=" + concordant +
+                ", tied=" + tied +
+                ", next_ix=" + next_ix +
+                '}';
+      }
+    }
+
+    static PairStats handlePairs(int[] truth, Vec.Reader estimateVec, int first_ix, StatTree statTree) {
+      int next_ix = first_ix;
+
+      while (next_ix < truth.length && truth[next_ix] == truth[first_ix]) {
+        next_ix++;
+      }
+
+      final long pairs = statTree.len() * (next_ix - first_ix);
+      long correct = 0L;
+      long tied = 0L;
+
+      for (int i = first_ix; i <  next_ix; i++) {
+        double estimateTime = estimateTime(estimateVec, truth[i]);
+        StatTree.RankAndCount rankAndCount = statTree.rankAndCount(estimateTime);
+        correct += rankAndCount.rank;
+        tied += rankAndCount.count;
+      }
+
+      PairStats pairStats = new PairStats(pairs, correct, tied, next_ix);
+      return pairStats;
+    }
+   }
+  
+  static class StatTree {
+    
+    final double[] values;
+    final long[] counts;
+
+    StatTree(double[] possibleValues) {
+      assert null != possibleValues;
+      assert sortedAscending(possibleValues);
+     
+      this.values = new double[possibleValues.length];
+      
+      final int filled = fillTree(possibleValues, 0, possibleValues.length, 0);
+      addMissingValues(possibleValues, filled);
+
+      this.counts = new long[possibleValues.length];
+     
+      assert containsAll(possibleValues, this.values);
+      assert isSearchTree(this.values);
+      assert allZeroes(this.counts);
+    }
+
+    private void addMissingValues(double[] possibleValues, int filled) {
+      final int missing = possibleValues.length - filled;
+
+      for (int i = 0; i < missing; i++) {
+        this.values[filled + i] = possibleValues[i * 2];
+      }
+    }
+
+    private int fillTree(final double[] inputValues, final int start, final int stop, final int rootIndex) {
+      int len = stop - start;
+      
+      if (0 >= len) {
+        return 0;
+      }
+      
+      final int lastFullRow = 32 - Integer.numberOfLeadingZeros(len + 1) - 1;
+      final int fillable = (1 << lastFullRow) - 1;
+      final int totalOverflow = len - fillable;
+      final int leftOverflow = Math.min(totalOverflow, (1 << (lastFullRow - 1)));
+      final int leftTreeSize = (1 << (lastFullRow - 1)) - 1 + leftOverflow;
+      
+      this.values[rootIndex] = inputValues[start + leftTreeSize];
+      
+      fillTree(inputValues, start, start + leftTreeSize, leftChild(rootIndex));
+      fillTree(inputValues, start + leftTreeSize + 1, stop, rightChild(rootIndex));
+
+      return fillable;
+    }
+
+
+    static private boolean sortedAscending(double[] a) {
+      int i = 1;
+      while (i < a.length) {
+        if (a[i - 1] > a[i]) return false;
+        i++;
+      }
+      return true;
+    }
+    
+    static private boolean containsAll(double[] a, double b[]) {
+      for (int i = 0; i < b.length; i++) {
+        if (!ArrayUtils.contains(a, b[i])) {
+          return false;
+        }
+      }
+      return true;
+    } 
+    
+    static private boolean isSearchTree(double[] a) {
+      for (int i = 0; i < a.length; i++) {
+        final int leftChild = leftChild(i);
+        if (leftChild < a.length && a[i] < a[leftChild]){
+          return false;
+        }
+        final int rightChild = rightChild(i);
+        if (rightChild < a.length && a[i] > a[rightChild]){
+          return false;
+        }
+      }
+      return true;
+    }
+
+    static private boolean allZeroes(long[] a) {
+      for (int i = 0; i < a.length; i++) {
+        if (0L != a[i]){
+          return false;
+        }
+      }
+      return true;
+    }
+
+    void insert(final double value) {
+      int i = 0;
+      final long n = this.values.length;
+      
+      while (i < n) {
+        double cur = this.values[i];
+        this.counts[i]++;
+        
+        if (value < cur) {
+          i = leftChild(i);
+        } else if (value > cur) {
+          i = rightChild(i);
+        } else {
+          return; 
+        }
+      }
+      throw new IllegalArgumentException("Value " + value + " not contained in tree. Tree counts now in illegal state;");
+    }
+
+    public int size() {
+      return this.values.length;
+    }
+
+    public long len() {
+      return counts[0];
+    }
+
+    static class RankAndCount {
+      final long rank;
+      final long count;
+
+      public RankAndCount(long rank, long count) {
+        this.rank = rank;
+        this.count = count;
+      }
+
+      @Override
+      public String toString() {
+        return "RankAndCount{" +
+                "rank=" + rank +
+                ", count=" + count +
+                '}';
+      }
+    }
+    
+    RankAndCount rankAndCount(double value) {
+//      System.out.println("v=" + value);
+      int i = 0;
+      int rank = 0;
+      long count = 0;
+      
+      while (i < this.values.length) {
+        double cur = this.values[i];
+
+        if (value < cur) {
+          i = leftChild(i);
+        } else if (value > cur) {
+          rank += this.counts[i];
+          //subtract off the right tree if exists
+          final int nexti = rightChild(i);
+          if (nexti < this.values.length) {
+            rank -= this.counts[nexti];
+            i = nexti;
+          } else {
+            return new RankAndCount(rank,count);
+          }
+        } else { //value == cur
+          count = this.counts[i];
+          final int lefti = leftChild(i);
+          if (lefti < this.values.length) {
+            long nleft = this.counts[lefti];
+            count -= nleft;
+            rank += nleft;
+            final int righti = rightChild(i);
+            if (righti < this.values.length) {
+              count -= this.counts[righti];
+            }
+          }
+          return new RankAndCount(rank, count);
+        }
+      }
+      return new RankAndCount(rank, count);
+    }
+
+    @Override
+    public String toString() {
+      return toString(new StringBuilder()).toString();
+    }
+
+    private StringBuilder toString(StringBuilder strBuilder) {
+      int i = 0;
+      int to = 2;
+      for (;;) {
+
+
+        for (; i < to - 1; i++) {
+          if (i < this.values.length) {
+            strBuilder.append(this.values[i]).append('(').append(this.counts[i]).append(')').append(" ");
+          } else {
+            return strBuilder;
+          }
+        }
+
+        strBuilder.append("\n");
+        to*=2;
+      }
+      
+    }
+
+    private static int leftChild(int i) {
+      return 2 * i + 1;
+    }
+
+    private static int rightChild(int i) {
+      return 2 * i + 2;
     }
   }
 }

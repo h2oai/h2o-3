@@ -20,12 +20,12 @@ test.CoxPH.predict <- function() {
         expect_equal(fit.pred, hex.lp, tolerance = 1e-5, scale = 1)
     }
     
-    check.concordance <- function (rModel, hexModel, data) {
+    check.concordance <- function (rModel, hexModel, data, tolerance = 1e-4) {
         perf <- h2o.performance(hexModel, data=heart.hex)
         
     	rConcordance <- unname(summary(rModel)$concordance)[1]
         hexConcordance <- perf@metrics$concordance
-        expect_equal(rConcordance, hexConcordance, tolerance = 1e-5)
+        expect_equal(rConcordance, hexConcordance, tolerance = tolerance, scale = 1)
         
         hexConcordantCount <- perf@metrics$concordant
         hexDiscordantCount <- perf@metrics$discordant
@@ -34,8 +34,7 @@ test.CoxPH.predict <- function() {
         expect_equal(hexConcordance, (hexConcordantCount + 0.5 * hexTiedCount) / (hexConcordantCount + hexDiscordantCount + hexTiedCount))
     }
 
-    #heart.hex <- h2o.importFile(locate("smalldata/coxph_test/heart.csv"))
-    heart.df <- heart #.data.frame(heart.hex)
+    heart.df <- heart
     
     heart.hex <- as.h2o(heart.df)
     heart.hex$surgery <- as.factor(heart.hex$surgery)
@@ -60,7 +59,7 @@ test.CoxPH.predict <- function() {
     check.pred(rModel, hexModel, heart.df, heart.hex)
     check.concordance(rModel, hexModel, heart.hex)
 
-#   # with multiple columns and interactions
+ #  # with multiple columns and interactions
 
     hexModel <- h2o.coxph(x=c("age", "year", "surgery", "transplant" ), event_column="event",
                           stop_column="stop", training_frame=heart.hex, ties="breslow",
@@ -91,7 +90,7 @@ test.CoxPH.predict <- function() {
                               data = heart.df, ties="efron")
 
     check.pred(rModel, hexModel, heart.df, heart.hex)
-    check.concordance(rModel, hexModel, heart.hex)   
+    check.concordance(rModel, hexModel, heart.hex, 1.2e-3)   
 }
 
 doTest("CoxPH: Predict Test", test.CoxPH.predict)
