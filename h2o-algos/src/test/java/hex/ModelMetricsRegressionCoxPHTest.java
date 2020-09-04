@@ -1,5 +1,7 @@
 package hex;
 
+//import hex.ModelMetricsRegressionCoxPH.StatTree;
+import hex.ModelMetricsRegressionCoxPH.StatTree;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
@@ -12,8 +14,9 @@ import java.util.Random;
 
 import static hex.ModelMetricsRegressionCoxPH.MetricBuilderRegressionCoxPH.concordance;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-public class CoxPHModelTest extends TestUtil {
+public class ModelMetricsRegressionCoxPHTest extends TestUtil {
     
     @BeforeClass
     public static void setup() { stall_till_cloudsize(1); }
@@ -66,7 +69,24 @@ public class CoxPHModelTest extends TestUtil {
             final double c = concordance(starts, stops, status, Collections.emptyList(), estimates).c();
             
             final double pairCount = starts.length() * (starts.length() - 1) / 2d;
-            assertEquals((pairCount - 1) / pairCount, c, 0.01);
+            assertEquals((pairCount - 1) / pairCount, c, 0.001);
+        } finally {
+            Scope.exit();
+        }
+    }
+    
+    @Test
+    public void concordanceExampleOneBadEstimateAndCensoring() throws Exception {
+        try {
+            Scope.enter();
+            final Vec starts = Scope.track(Vec.makeVec(new double[] {0d, 0d, 0d, 0d, 0d, 0d, 0d}, Vec.newKey()));
+            final Vec stops = Scope.track(Vec.makeVec(new double[] {0d, 1d, 2d, 3d, 4d, 5d, 6d}, Vec.newKey()));
+            final Vec status = Scope.track(Vec.makeVec(new double[] {1d, 0d, 1d, 1d, 0d, 1d, 1d}, Vec.newKey()));
+            final Vec estimates = Scope.track(Vec.makeVec(new double[] {6d, 5d, 4d, 3d, 2d, 0d, 1d}, Vec.newKey()));
+            
+            final double c = concordance(starts, stops, status, Collections.emptyList(), estimates).c();
+            
+            assertEquals(0.92857, c, 0.001);
         } finally {
             Scope.exit();
         }
@@ -85,7 +105,7 @@ public class CoxPHModelTest extends TestUtil {
             final double c = concordance(starts, stops, status, Collections.singletonList(strata), estimates).c();
             
             final double pairCount = 4 * (4 - 1) / 2 + 3 * (3 - 1) / 2;
-            assertEquals((pairCount - 1) / pairCount, c, 0.01);
+            assertEquals((pairCount - 1) / pairCount, c, 0.001);
         } finally {
             Scope.exit();
         }
@@ -103,7 +123,7 @@ public class CoxPHModelTest extends TestUtil {
             final double c = concordance(starts, stops, status, Collections.emptyList(), estimates).c();
 
             final double pairCount = stops.length() * (stops.length() - 1) / 2d;
-            assertEquals((pairCount - 3) / pairCount, c, 0.01);
+            assertEquals((pairCount - 3) / pairCount, c, 0.001);
         } finally {
             Scope.exit();
         }
@@ -114,14 +134,14 @@ public class CoxPHModelTest extends TestUtil {
         try {
             Scope.enter();
             final Vec starts = null;
-            final Vec stops = Scope.track(Vec.makeVec(new double[] {0d, 1d, 2d, 3d, 4d, 5d, 6d}, Vec.newKey()));
+            final Vec stops = Scope.track(Vec.makeVec(new double[] {0d, 10d, 20d, 30d, 40d, 50d, 60d}, Vec.newKey()));
             final Vec status = Scope.track(Vec.makeVec(new double[] {1d, 1d, 1d, 1d, 1d, 1d, 1d}, Vec.newKey()));
             final Vec estimates = Scope.track(Vec.makeVec(new double[] {6d, 5d, 4d, 3d, 2d, 2d, 0d}, Vec.newKey()));
 
             final double c = concordance(starts, stops, status, Collections.emptyList(), estimates).c();
 
             final double pairCount = stops.length() * (stops.length() - 1) / 2d;
-            assertEquals((pairCount - 0.5) / pairCount, c, 0.01);
+            assertEquals((pairCount - 0.5) / pairCount, c, 0.001);
         } finally {
             Scope.exit();
         }
@@ -139,7 +159,7 @@ public class CoxPHModelTest extends TestUtil {
             final double c = concordance(starts, stops, status, Collections.emptyList(), estimates).c();
 
             final double pairCount = stops.length() * (stops.length() - 1) / 2d;
-            assertEquals((pairCount - 0.5) / pairCount, c, 0.01);
+            assertEquals((pairCount - 0.5) / pairCount, c, 0.001);
         } finally {
             Scope.exit();
         }
@@ -181,5 +201,86 @@ public class CoxPHModelTest extends TestUtil {
 
         estimateTask.doAll(estimates);
         return estimates;
+    }
+
+    @Test
+    public void statTreeSimple() throws Exception {
+        StatTree t = new StatTree(new double[] {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0});
+        
+        for (int i = 0; i < 10; i++) {
+            assertEquals(t.rankAndCount(i).count, 0);
+            assertEquals(t.rankAndCount(i).rank, 0);
+        }
+
+        assertEquals(t.len(), 0);
+        t.insert(5);
+        t.insert(6);
+        t.insert(6);
+        t.insert(0);
+        t.insert(9);
+        assertEquals(t.len(), 5);
+
+        assertEquals(t.rankAndCount(0).rank,0);
+        assertEquals(t.rankAndCount(0).count,1);
+        assertEquals(t.rankAndCount(0.5).rank,1);
+        assertEquals(t.rankAndCount(0.5).count,0);
+        assertEquals(t.rankAndCount(4.5).rank,1);
+        assertEquals(t.rankAndCount(4.5).count,0);
+        assertEquals(t.rankAndCount(5).rank, 1);
+        assertEquals(t.rankAndCount(5).count, 1);
+        assertEquals(t.rankAndCount(5.5).rank,2);
+        assertEquals(t.rankAndCount(5.5).count, 0);
+        assertEquals(t.rankAndCount(6).rank,2);
+        assertEquals(t.rankAndCount(6).count, 2);
+        assertEquals(t.rankAndCount(6.5).rank,4);
+        assertEquals(t.rankAndCount(6.5).count,0);
+        assertEquals(t.rankAndCount(8.5).rank,4);
+        assertEquals(t.rankAndCount(8.5).count,0);
+        assertEquals(t.rankAndCount(9).rank,4);
+        assertEquals(t.rankAndCount(9).count, 1);
+        assertEquals(t.rankAndCount(9.5).rank,5);
+        assertEquals(t.rankAndCount(9.5).count, 0);
+
+        try {
+            t.insert(123.4);
+            assertTrue("Should fail with exception", false);
+        } catch (IllegalArgumentException e) {
+            assertEquals("Value 123.4 not contained in tree. Tree counts now in illegal state;", e.getMessage());
+        }
+    }
+    
+    @Test
+    public void statTreeConstructionAndInsertAndRank() throws Exception { 
+        for (int len = 1; len < 200 ; len++) {
+            final double[] values = new double[len];
+
+           for (int i = 0; i < len; i++) {
+                values[i] = 11 * i;
+            }
+
+            final StatTree statTree = new StatTree(values);
+
+//            System.out.println("-----------------");
+//            System.out.println(statTree);
+//            System.out.println("-----------------");
+
+            for (double value : values) {
+                statTree.insert(value);
+            }
+            for (double value : values) {
+                statTree.insert(value);
+                statTree.insert(value);
+            }
+
+            for (long count : statTree.counts) {
+                assertTrue(count >= 1);
+            }
+
+            for (double value : values) {
+                StatTree.RankAndCount rankAndCount = statTree.rankAndCount(value);
+
+                assertEquals(3, rankAndCount.count);
+            }
+        }
     }
 }
