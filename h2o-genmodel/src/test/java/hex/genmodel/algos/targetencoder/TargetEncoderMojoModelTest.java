@@ -69,9 +69,9 @@ public class TargetEncoderMojoModelTest {
     int factorForLevelA = 0;
     int factorForLevelB = 1;
     int factorForLevelC = 2;
-    encodingMapForCat1.put(factorForLevelA, new int[]{2,5}); 
-    encodingMapForCat1.put(factorForLevelB, new int[]{3,6}); 
-    encodingMapForCat1.put(factorForLevelC, new int[]{4,7}); // remove
+    encodingMapForCat1.put(factorForLevelA, new double[]{2,5}); 
+    encodingMapForCat1.put(factorForLevelB, new double[]{3,6}); 
+    encodingMapForCat1.put(factorForLevelC, new double[]{4,7}); // remove
     
     encodingMap.put(predictorName, encodingMapForCat1);
 
@@ -82,8 +82,8 @@ public class TargetEncoderMojoModelTest {
     targetEncoderMojoModel._priorMean = (2.0 + 3 + 4) / (5 + 6 + 7);
 
     
-    targetEncoderMojoModel._teColumnNameToIdx = new HashMap<>();
-    targetEncoderMojoModel._teColumnNameToIdx.put(predictorName, 1);
+    targetEncoderMojoModel._columnNameToIdx = new HashMap<>();
+    targetEncoderMojoModel._columnNameToIdx.put(predictorName, 1);
 
 
     VoidErrorConsumer errorConsumer = new VoidErrorConsumer();
@@ -147,16 +147,16 @@ public class TargetEncoderMojoModelTest {
     EncodingMap encodingMapForCat1 = new EncodingMap();
     int factorForLevelA = 0;
     int factorForLevelB = 1;
-    encodingMapForCat1.put(factorForLevelA, new int[]{2,5});
-    encodingMapForCat1.put(factorForLevelB, new int[]{3,7});
+    encodingMapForCat1.put(factorForLevelA, new double[]{2,5});
+    encodingMapForCat1.put(factorForLevelB, new double[]{3,7});
 
     encodingMap.put(predictorName, encodingMapForCat1);
 
     targetEncoderMojoModel._targetEncodingMap = encodingMap;
     targetEncoderMojoModel._withBlending = false;
 
-    targetEncoderMojoModel._teColumnNameToIdx = new HashMap<>();
-    targetEncoderMojoModel._teColumnNameToIdx.put(predictorName, 1);
+    targetEncoderMojoModel._columnNameToIdx = new HashMap<>();
+    targetEncoderMojoModel._columnNameToIdx.put(predictorName, 1);
 
 
     VoidErrorConsumer errorConsumer = new VoidErrorConsumer();
@@ -205,19 +205,19 @@ public class TargetEncoderMojoModelTest {
     int factorForLevelA = 0;
     int factorForLevelB = 1;
     int factorForNA = 2;
-    encodingMapForCat1.put(factorForLevelA, new int[]{2, 5});
-    encodingMapForCat1.put(factorForLevelB, new int[]{3, 7});
-    encodingMapForCat1.put(factorForNA, new int[]{6, 8});
+    encodingMapForCat1.put(factorForLevelA, new double[]{2, 5});
+    encodingMapForCat1.put(factorForLevelB, new double[]{3, 7});
+    encodingMapForCat1.put(factorForNA, new double[]{6, 8});
 
     encodingMap.put(predictorName, encodingMapForCat1);
 
     targetEncoderMojoModel._targetEncodingMap = encodingMap;
     targetEncoderMojoModel._withBlending = false;
 
-    targetEncoderMojoModel._teColumnNameToIdx = new HashMap<>();
-    targetEncoderMojoModel._teColumnNameToIdx.put(predictorName, 1);
-    targetEncoderMojoModel._teColumnNameToMissingValuesPresence = new HashMap<>();
-    targetEncoderMojoModel._teColumnNameToMissingValuesPresence.put(predictorName, 1);
+    targetEncoderMojoModel._columnNameToIdx = new HashMap<>();
+    targetEncoderMojoModel._columnNameToIdx.put(predictorName, 1);
+    targetEncoderMojoModel._teColumn2HasNAs = new HashMap<>();
+    targetEncoderMojoModel._teColumn2HasNAs.put(predictorName, true);
 
 
     VoidErrorConsumer errorConsumer = new VoidErrorConsumer();
@@ -280,18 +280,18 @@ public class TargetEncoderMojoModelTest {
     EncodingMap encodingMapForCat1 = new EncodingMap();
     int factorForLevelA = 0;
     int factorForLevelB = 1;
-    encodingMapForCat1.put(factorForLevelA, new int[]{2, 5});
-    encodingMapForCat1.put(factorForLevelB, new int[]{3, 7});
+    encodingMapForCat1.put(factorForLevelA, new double[]{2, 5});
+    encodingMapForCat1.put(factorForLevelB, new double[]{3, 7});
 
     encodingMap.put(predictorName, encodingMapForCat1);
 
     targetEncoderMojoModel._targetEncodingMap = encodingMap;
     targetEncoderMojoModel._withBlending = false;
 
-    targetEncoderMojoModel._teColumnNameToIdx = new HashMap<>();
-    targetEncoderMojoModel._teColumnNameToIdx.put(predictorName, 1);
-    targetEncoderMojoModel._teColumnNameToMissingValuesPresence = new HashMap<>();
-    targetEncoderMojoModel._teColumnNameToMissingValuesPresence.put(predictorName, 0);
+    targetEncoderMojoModel._columnNameToIdx = new HashMap<>();
+    targetEncoderMojoModel._columnNameToIdx.put(predictorName, 1);
+    targetEncoderMojoModel._teColumn2HasNAs = new HashMap<>();
+    targetEncoderMojoModel._teColumn2HasNAs.put(predictorName, false);
     targetEncoderMojoModel._priorMean = (2.0 + 3) / (5 + 7);
 
 
@@ -342,8 +342,8 @@ public class TargetEncoderMojoModelTest {
     EncodingMap encodingMapForCat1 = new EncodingMap();
     int factorValueForA = 0;
     int factorValueForB = 1;
-    encodingMapForCat1.put(factorValueForA, new int[]{2,5});
-    encodingMapForCat1.put(factorValueForB, new int[]{3,7});
+    encodingMapForCat1.put(factorValueForA, new double[]{2,5});
+    encodingMapForCat1.put(factorValueForB, new double[]{3,7});
 
     String predictorName = "categ_var1";
     encodingMaps.put(predictorName, encodingMapForCat1);
@@ -359,9 +359,9 @@ public class TargetEncoderMojoModelTest {
     teColumnNameToIdx.put(predictorName2, 100);
     teColumnNameToIdx.put(predictorName3, 7);
 
-    targetEncoderMojoModel._teColumnNameToIdx = teColumnNameToIdx;
+    targetEncoderMojoModel._columnNameToIdx = teColumnNameToIdx;
 
-    LinkedHashMap<String, EncodingMap> sortedByColumnIndex = targetEncoderMojoModel.sortByColumnIndex(encodingMaps.encodingMap());
+    Map<String, EncodingMap> sortedByColumnIndex = targetEncoderMojoModel.sortByColumnIndex(encodingMaps.encodingMap());
 
     ArrayList<String> sortedTeColumns = new ArrayList<>();
     for (Iterator<Map.Entry<String, EncodingMap>> it = sortedByColumnIndex.entrySet().iterator(); it.hasNext(); ) {

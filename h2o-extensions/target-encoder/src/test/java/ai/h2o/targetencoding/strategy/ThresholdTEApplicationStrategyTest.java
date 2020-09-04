@@ -1,11 +1,11 @@
 package ai.h2o.targetencoding.strategy;
 
-import ai.h2o.targetencoding.TargetEncoderFrameHelper;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Scope;
 import water.fvec.Frame;
 
+import static ai.h2o.targetencoding.TargetEncoderHelper.addKFoldColumn;
 import static org.junit.Assert.*;
 
 public class ThresholdTEApplicationStrategyTest extends water.TestUtil {
@@ -61,7 +61,7 @@ public class ThresholdTEApplicationStrategyTest extends water.TestUtil {
       String foldColumnName = "fold";
       int threshold = 187;
       int nfoldsHigherThanThreshold = 200;
-      TargetEncoderFrameHelper.addKFoldColumn(fr, foldColumnName, nfoldsHigherThanThreshold, 1234); 
+      addKFoldColumn(fr, foldColumnName, nfoldsHigherThanThreshold, 1234); 
       fr.replace(fr.find(foldColumnName), fr.vec(foldColumnName).toCategoricalVec());
       Scope.track(fr);
 

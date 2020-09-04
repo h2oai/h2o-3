@@ -24,7 +24,7 @@ smoothing <- 1
 
     sum_of_aucs <- 0
     for(current_seed in randomSeeds) {
-        ds = .split_data(frame, current_seed)
+        ds <- .split_data(frame, current_seed)
 
         predictors <- setdiff(colnames(ds$train), c("survived", "name", "ticket", "boat", "body"))
 
@@ -53,30 +53,22 @@ smoothing <- 1
 
     sum_of_aucs <- 0
     for(current_seed in randomSeeds) {
-        ds = .split_data(frame, current_seed)
+        ds <- .split_data(frame, current_seed)
 
         kfold_train <- ds$full_train
         kfold_valid <- ds$valid
         kfold_test <- ds$test
         kfold_train$fold <- h2o.kfold_column(kfold_train, nfolds = 5, seed = 1234)
 
-        encoding_map <- h2o.target_encode_fit(kfold_train, te_cols, "survived", "fold")
+        te <- h2o.targetencoder(x = te_cols, y = "survived", training_frame = kfold_train,
+                                fold_column = "fold", data_leakage_handling = "KFold",
+                                blending = TRUE, inflection_point = inflection_point, smoothing = smoothing,
+                                seed = 1234)        
 
         # Apply Encoding Map on Training, Validation, Testing Data
-        kfold_train <- h2o.target_encode_transform(frame=kfold_train, x = te_cols, y = "survived",
-        target_encode_map=encoding_map, holdout_type = "kfold", fold_column = "fold",
-        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-        noise=-1, seed = 1234)
-
-        kfold_valid <- h2o.target_encode_transform(frame=kfold_valid, x = te_cols, y = "survived",
-        target_encode_map=encoding_map, holdout_type = "none", fold_column = "fold",
-        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-        noise=0)
-
-        kfold_test <- h2o.target_encode_transform(frame=kfold_test, x = te_cols, y = "survived",
-        target_encode_map=encoding_map, holdout_type = "none", fold_column = "fold",
-        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-        noise=0)
+        kfold_train <- h2o.transform(te, kfold_train, as_training=TRUE)
+        kfold_valid <- h2o.transform(te, kfold_valid, noise=0)
+        kfold_test <- h2o.transform(te, kfold_test, noise=0)
 
         print("Run GBM with Cross Calculation Target Encoding")
 
@@ -108,31 +100,22 @@ smoothing <- 1
 
     sum_of_aucs <- 0
     for(current_seed in randomSeeds) {
-        ds = .split_data(frame, current_seed)
+        ds <- .split_data(frame, current_seed)
 
         
         loo_train <- ds$full_train
         loo_valid <- ds$valid
         loo_test <- ds$test
 
-        # Create Leave One Out Encoding Map
-        encoding_map <- h2o.target_encode_fit(loo_train, te_cols, "survived")
+        te <- h2o.targetencoder(x = te_cols, y = "survived", training_frame = loo_train,
+                                data_leakage_handling = "LeaveOneOut",
+                                blending = TRUE, inflection_point = inflection_point, smoothing = smoothing,
+                                seed = 1234)
 
-        # Apply Leave One Out Encoding Map on Training, Validation, Testing Data
-        loo_train <- h2o.target_encode_transform(frame=loo_train, x = te_cols, y = "survived",
-        target_encode_map=encoding_map, holdout_type = "loo",
-        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-        noise=-1, seed = 1234)
-
-        loo_valid <- h2o.target_encode_transform(frame=loo_valid, x = te_cols, y = "survived",
-        target_encode_map=encoding_map, holdout_type = "none",
-        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-        noise=0)
-
-        loo_test <- h2o.target_encode_transform(frame=loo_test, x = te_cols, y = "survived",
-        target_encode_map=encoding_map, holdout_type = "none",
-        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-        noise=0)
+        # Apply Encoding Map on Training, Validation, Testing Data
+        loo_train <- h2o.transform(te, loo_train, as_training=TRUE)
+        loo_valid <- h2o.transform(te, loo_valid, noise=0)
+        loo_test <- h2o.transform(te, loo_test, noise=0)
 
         print("Run GBM with Leave One Out Target Encoding")
         predictors <- setdiff(colnames(loo_test), c(te_cols, "survived", "name", "ticket", "boat", "body"))
@@ -162,30 +145,22 @@ smoothing <- 1
 
     sum_of_aucs <- 0
     for(current_seed in randomSeeds) {
-        ds = .split_data(frame, current_seed)
+        ds <- .split_data(frame, current_seed)
         
         holdout_train <- ds$train
         holdout_valid <- ds$valid
         holdout_test <- ds$test
         te_holdout <- ds$te_holdout
 
-        encoding_map <- h2o.target_encode_fit(te_holdout, te_cols, "survived")
+        te <- h2o.targetencoder(x = te_cols, y = "survived", training_frame = holdout_train,
+                                data_leakage_handling = "None",
+                                blending = TRUE, inflection_point = inflection_point, smoothing = smoothing,
+                                noise=0, seed = 1234)
 
-        # Apply Encoding Map on Training, Validation, and Testing Data
-        holdout_train <- h2o.target_encode_transform(frame=holdout_train, x = te_cols, y = "survived",
-        target_encode_map=encoding_map, holdout_type = "none",
-        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-        noise=0)
-
-        holdout_valid <- h2o.target_encode_transform(frame=holdout_valid, x = te_cols, y = "survived",
-        target_encode_map=encoding_map, holdout_type = "none",
-        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-        noise=0)
-
-        holdout_test <- h2o.target_encode_transform(frame=holdout_test, x = te_cols, y = "survived",
-        target_encode_map=encoding_map, holdout_type = "none",
-        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-        noise=0)
+        # Apply Encoding Map on Training, Validation, Testing Data
+        holdout_train <- h2o.transform(te, holdout_train, as_training=TRUE)
+        holdout_valid <- h2o.transform(te, holdout_valid)
+        holdout_test <- h2o.transform(te, holdout_test)
 
         predictors <- setdiff(colnames(holdout_test), c(te_cols, "survived", "name", "ticket", "boat", "body"))
 

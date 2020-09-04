@@ -1,14 +1,18 @@
 package ai.h2o.targetencoding;
 
+import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
 import java.util.Map;
+
+import static org.junit.Assert.*;
 
 public class TargetEncodingNoneStrategyTest extends TestUtil {
 
@@ -18,167 +22,295 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
     stall_till_cloudsize(1);
   }
 
-  private Frame fr = null;
-
   @Test
-  public void targetEncoderNoneHoldoutApplyingTest() {
-    String teColumnName = "ColA";
-    String targetColumnName = "ColC";
-    String foldColumn = "fold_column";
-    fr = new TestFrameBuilder()
-            .withName("testFrame")
-            .withColNames(teColumnName, "ColB", targetColumnName, foldColumn)
-            .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
-            .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-            .withDataForCol(1, ard(1, 1, 4, 7, 4))
-            .withDataForCol(2, ar("2", "6", "6", "6", "6"))
-            .withDataForCol(3, ar(1, 2, 2, 3, 2))
-            .build();
+  public void test_fold_column_is_ignored_with_None_strategy() {
+    try {
+      Scope.enter();
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("categorical", "numerical", "target", "foldc")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
+              .withDataForCol(3, ar(1, 2, 2, 3, 2))
+              .build();
 
-    String[] teColumns = {teColumnName};
-    TargetEncoder tec = new TargetEncoder(teColumns);
+      TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
+      teParams._data_leakage_handling = DataLeakageHandlingStrategy.None;
+      teParams._response_column = "target";
+      teParams._fold_column = "foldc";
+      teParams._train = fr._key;
+      teParams._seed = 42;
+      teParams._noise = 0;
 
-    Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumn);
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+      
+      Frame encoded = teModel.transformTraining(fr);
+      Scope.track(encoded);
 
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None,
-            foldColumn, false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
-
-    Vec vec = resultWithEncoding.vec(4);
-    printOutFrameAsTable(resultWithEncoding);
-    Vec expected = dvec(0.5, 1, 1, 1, 0.5);
-    assertVecEquals(expected, vec, 1e-5);
-
-    expected.remove();
-    encodingMapCleanUp(targetEncodingMap);
-    resultWithEncoding.delete();
+      Vec catEncoded = encoded.vec("categorical_te");
+      printOutFrameAsTable(encoded);
+      Vec expected = dvec(0.5, 1, 1, 1, 0.5);
+      assertVecEquals(expected, catEncoded, 1e-5);
+    } finally {
+      Scope.exit();
+    }
   }
 
   @Test
-  public void holdoutTypeNoneApplyWithNoiseTest() {
-    String teColumnName = "ColA";
-    String targetColumnName = "ColC";
-    String foldColumn = "fold_column";
-    fr = new TestFrameBuilder()
-            .withName("testFrame")
-            .withColNames(teColumnName, "ColB", targetColumnName, foldColumn)
-            .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
-            .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-            .withDataForCol(1, ard(1, 1, 4, 7, 4))
-            .withDataForCol(2, ar("2", "6", "6", "6", "6"))
-            .withDataForCol(3, ar(1, 2, 2, 3, 2))
-            .build();
+  public void test_default_noise_with_None_strategy() {
+    try {
+      Scope.enter();
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("categorical", "numerical", "target")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
+              .build();
 
-    String[] teColumns = {teColumnName};
-    TargetEncoder tec = new TargetEncoder(teColumns);
+      TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
+      teParams._data_leakage_handling = DataLeakageHandlingStrategy.None;
+      teParams._response_column = "target";
+      teParams._train = fr._key;
+      teParams._seed = 42;
+      teParams._noise = -1; // default noise
 
-    Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumn);
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
 
-    printOutFrameAsTable(targetEncodingMap.get(teColumnName));
-    //If we do not pass noise_level as parameter then it will be calculated according to the type of target column. For categorical target column it defaults to 1e-2
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None,
-            foldColumn, false, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+      Frame encoded = teModel.transformTraining(fr);
+      Scope.track(encoded);
 
-    printOutFrameAsTable(resultWithEncoding);
-    double expectedDifferenceDueToNoise = 1e-2;
-    Vec actualEncodings = resultWithEncoding.vec(4);
-
-    Vec expected = dvec(0.5, 1, 1, 1, 0.5);
-    assertVecEquals(expected, actualEncodings, expectedDifferenceDueToNoise);
-
-    expected.remove();
-    encodingMapCleanUp(targetEncodingMap);
-    resultWithEncoding.delete();
+      printOutFrameAsTable(encoded);
+      Vec catEncoded = encoded.vec("categorical_te");
+      Vec expected = dvec(0.5, 1, 1, 1, 0.5);
+      assertVecEquals(expected, catEncoded, 1e-2);
+      try {
+        assertVecEquals(expected, catEncoded, 1e-5);
+        fail("no noise detected");
+      } catch (AssertionError ae) {
+        assertFalse(ae.getMessage().contains("no noise detected"));
+      }
+    } finally {
+      Scope.exit();
+    }
   }
 
   @Test
   public void endToEndTest() {
-    String teColumnName = "ColA";
-    String targetColumnName = "ColC";
-    Frame training = new TestFrameBuilder()
-            .withName("trainingFrame")
-            .withColNames(teColumnName, targetColumnName)
-            .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-            .withDataForCol(0, ar("a", "b", "c", "d", "e", "b", "b"))
-            .withDataForCol(1, ar("2", "6", "6", "6", "6", "2", "2"))
-            .build();
+    try {
+      Scope.enter();
+      Frame fr = new TestFrameBuilder()
+              .withName("trainingFrame")
+              .withColNames("categorical", "target")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "c", "d", "e", "b", "b"))
+              .withDataForCol(1, ar("N", "Y", "Y", "Y", "Y", "N", "N"))
+              .build();
 
-    Frame holdout = new TestFrameBuilder()
-            .withName("holdoutFrame")
-            .withColNames(teColumnName, targetColumnName)
-            .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-            .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-            .withDataForCol(1, ar("2", "6", "6", "6", "6"))
-            .build();
+      Frame te_holdout = new TestFrameBuilder()
+              .withName("holdoutFrame")
+              .withColNames("categorical", "target")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ar("N", "Y", "Y", "Y", "Y"))
+              .build();
 
-    String[] teColumns = {teColumnName};
-    TargetEncoder tec = new TargetEncoder(teColumns);
+      TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
+      teParams._data_leakage_handling = DataLeakageHandlingStrategy.None;
+      teParams._response_column = "target";
+      teParams._train = te_holdout._key;
+      teParams._seed = 42;
+      teParams._noise = 0;
 
-    Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(holdout, targetColumnName, null);
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
 
-    Frame resultWithEncoding = tec.applyTargetEncoding(training, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None,
-            false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+      Frame encoded = teModel.transform(fr);
+      Scope.track(encoded);
 
-    printOutFrameAsTable(resultWithEncoding);
+      printOutFrameAsTable(encoded);
 
-    Vec vec = resultWithEncoding.vec(2);
-    Vec expected = dvec(0.5, 1 ,0.8, 0.8, 0.8, 1, 1);
-    assertVecEquals(expected, vec, 1e-5);
-
-    training.delete();
-    holdout.delete();
-    expected.remove();
-    encodingMapCleanUp(targetEncodingMap);
-    resultWithEncoding.delete();
-  }
-
-
-  // ------------------------ Multiple columns for target encoding -------------------------------------------------//
-
-  @Test
-  public void NoneHoldoutMultipleTEColumnsWithFoldColumnTest() {
-    String targetColumnName = "ColC";
-    String foldColumn = "fold_column";
-    fr = new TestFrameBuilder()
-            .withName("testFrame")
-            .withColNames("ColA", "ColB", targetColumnName, foldColumn)
-            .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
-            .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-            .withDataForCol(1, ar("d", "e", "d", "e", "e"))
-            .withDataForCol(2, ar("2", "6", "6", "6", "6"))
-            .withDataForCol(3, ar(1, 2, 2, 3, 2))
-            .build();
-
-    String[] teColumns = {"ColA", "ColB"};
-    TargetEncoder tec = new TargetEncoder(teColumns);
-
-    Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumn);
-
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None,
-            foldColumn, false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
-
-    Vec expectedColAEncodings = dvec(0.5, 1, 1, 1, 0.5);
-    printOutFrameAsTable(resultWithEncoding);
-    assertVecEquals(expectedColAEncodings, resultWithEncoding.vec(4), 1e-5);
-
-    Vec expectedColBEncodings = dvec(0.5, 1, 0.5, 1, 1);
-    assertVecEquals(expectedColBEncodings, resultWithEncoding.vec(5), 1e-5);
-
-    expectedColAEncodings.remove();
-    expectedColBEncodings.remove();
-    encodingMapCleanUp(targetEncodingMap);
-    resultWithEncoding.delete();
-  }
-
-
-  @After
-  public void afterEach() {
-    if (fr != null) fr.delete();
-  }
-
-  private void encodingMapCleanUp(Map<String, Frame> encodingMap) {
-    for (Map.Entry<String, Frame> map : encodingMap.entrySet()) {
-      map.getValue().delete();
+      Vec catEncoded = encoded.vec("categorical_te");
+      Vec expected = dvec(0.5, 1, 0.8, 0.8, 0.8, 1, 1);
+      assertVecEquals(expected, catEncoded, 1e-5);
+    } finally {
+      Scope.exit();
     }
   }
+
+
+  @Test
+  public void test_None_strategy_on_multiple_categorical_columns() {
+    try {
+      Scope.enter();
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("cat1", "cat2", "target")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ar("d", "e", "d", "e", "e"))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
+              .build();
+
+      TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
+      teParams._data_leakage_handling = DataLeakageHandlingStrategy.None;
+      teParams._response_column = "target";
+      teParams._train = fr._key;
+      teParams._seed = 42;
+      teParams._noise = 0;
+
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      Frame encoded = teModel.transformTraining(fr);
+      Scope.track(encoded);
+
+      Vec expectedCat1Enc = dvec(0.5, 1, 1, 1, 0.5);
+      printOutFrameAsTable(encoded);
+      assertVecEquals(expectedCat1Enc, encoded.vec("cat1_te"), 1e-5);
+
+      Vec expectedCat2Enc = dvec(0.5, 1, 0.5, 1, 1);
+      assertVecEquals(expectedCat2Enc, encoded.vec("cat2_te"), 1e-5);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  
+  @Test
+  public void test_None_strategy_produces_the_same_result_on_transform_and_transformTraining() {
+    try {
+      Scope.enter();
+      Frame fr = new TestFrameBuilder()
+              .withName("trainFrame")
+              .withColNames("categorical", "numerical", "target")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(2, ar("N", "N", "Y", "Y", "Y"))
+              .build();
+
+      TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
+      teParams._data_leakage_handling = DataLeakageHandlingStrategy.None;
+      teParams._response_column = "target";
+      teParams._train = fr._key;
+      teParams._seed = 42;
+      teParams._noise = 0;
+
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      Frame encodedAsTrain = teModel.transformTraining(fr);
+      Scope.track(encodedAsTrain);
+
+      Frame encodedAsNew = teModel.transform(fr);
+      Scope.track(encodedAsNew);
+
+      assert compareFrames(encodedAsTrain, encodedAsNew, 1e-5);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  
+  @Test
+  public void test_None_strategy_produces_the_same_result_on_transform_and_score() {
+    try {
+      Scope.enter();
+      Frame fr = new TestFrameBuilder()
+              .withName("trainFrame")
+              .withColNames("categorical", "numerical", "target")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "N"))
+              .build();
+
+      TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
+      teParams._data_leakage_handling = DataLeakageHandlingStrategy.None;
+      teParams._response_column = "target";
+      teParams._train = fr._key;
+      teParams._seed = 42;
+      teParams._noise = 0;
+
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      Frame encoded = teModel.transform(fr);
+      Scope.track(encoded);
+
+      Frame predictions = teModel.score(fr);
+      Scope.track(predictions);
+      
+      assert compareFrames(encoded, predictions, 1e-5);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void test_encoder_trained_with_None_strategy_can_be_used_to_transform_a_frame_without_target() {
+    try {
+      Scope.enter();
+      Frame train = new TestFrameBuilder()
+              .withName("trainFrame")
+              .withColNames("cat1", "cat2", "target")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ar("d", "e", "d", "e", "e"))
+              .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
+              .build();
+
+      Frame test = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("cat1", "cat2")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("c", "b", "a"))
+              .withDataForCol(1, ar("d", "e", "f"))
+              .build();
+      
+      TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
+      teParams._data_leakage_handling = DataLeakageHandlingStrategy.None;
+      teParams._response_column = "target";
+      teParams._train = train._key;
+      teParams._seed = 42;
+      teParams._noise = 0;
+
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+      assertEquals(0.8, teModel._output._prior_mean, 1e-6);
+
+      Frame encoded = teModel.transform(test);
+      Scope.track(encoded);
+
+      Frame predictions = teModel.score(test);
+      Scope.track(predictions);
+      
+      Vec expectCat1Enc = dvec(0.8, 1., 0.5);
+      assertVecEquals(expectCat1Enc, encoded.vec("cat1_te"), 1e-5);
+      assertVecEquals(expectCat1Enc, predictions.vec("cat1_te"), 1e-5);
+
+      Vec expectCat2Enc = dvec(0.5, 1., 0.8);
+      assertVecEquals(expectCat2Enc, encoded.vec("cat2_te"), 1e-5);
+      assertVecEquals(expectCat2Enc, predictions.vec("cat2_te"), 1e-5);
+      
+      assert compareFrames(encoded, predictions, 1e-5);
+    } finally {
+      Scope.exit();
+    }
+  }
+
 
 }

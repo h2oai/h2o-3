@@ -641,17 +641,25 @@ public class EasyPredictModelWrapper implements Serializable {
   }
 
   /**
+   * @deprecated Use {@link #predictTargetEncoding(RowData)} instead.
+   */
+  @Deprecated
+  public TargetEncoderPrediction transformWithTargetEncoding(RowData data) throws PredictException{
+    return predictTargetEncoding(data);
+  }
+
+  /**
    * Perform target encoding based on TargetEncoderMojoModel
    * @param data RowData structure with data for which we want to produce transformations
    * @return TargetEncoderPrediction with transformations ordered in accordance with corresponding categorical columns' indices in training data
    * @throws PredictException
    */
-  public TargetEncoderPrediction transformWithTargetEncoding(RowData data) throws PredictException{
+  public TargetEncoderPrediction predictTargetEncoding(RowData data) throws PredictException{
     if (! (m instanceof TargetEncoderMojoModel))
       throw new PredictException("Model is not of the expected type, class = " + m.getClass().getSimpleName());
 
     TargetEncoderMojoModel tem = (TargetEncoderMojoModel) this.m;
-    Set<String> teColumnNames = tem._teColumnNameToIdx.keySet();
+    Set<String> teColumnNames = tem._columnNameToIdx.keySet();
 
     double[] preds = new double[teColumnNames.size()];
 

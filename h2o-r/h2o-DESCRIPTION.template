@@ -71,7 +71,6 @@ Collate:
          'communication.R'
          'kvstore.R'
          'frame.R'
-         'targetencoder_deprecated.R'
          'targetencoder.R'
          'import.R'
          'isolationforest.R'

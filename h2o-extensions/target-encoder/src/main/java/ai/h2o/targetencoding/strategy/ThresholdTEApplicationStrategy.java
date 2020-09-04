@@ -19,7 +19,7 @@ public class ThresholdTEApplicationStrategy extends TEApplicationStrategy {
    *                            ( i.e. response column for classification tasks , fold column in case it is categorical etc.)
    * @param threshold categorical columns with higher cardinality than {@code threshold} value will be selected
    */
-  public ThresholdTEApplicationStrategy(Frame frame,  long threshold, String[] excludedColumnNames) {
+  public ThresholdTEApplicationStrategy(Frame frame, long threshold, String[] excludedColumnNames) {
     _frame = frame;
     _excludedColumnNames = excludedColumnNames; 
     _threshold = threshold;
@@ -28,9 +28,9 @@ public class ThresholdTEApplicationStrategy extends TEApplicationStrategy {
   public String[] getColumnsToEncode() {
     return Arrays.stream(_frame.names())
             .filter(columnName ->
-                    _frame.vec(columnName).isCategorical() &&
-                    ! Arrays.asList(_excludedColumnNames).contains(columnName) && 
-                    _frame.vec(columnName).cardinality() >= _threshold
+                    _frame.vec(columnName).isCategorical() 
+                    && ! Arrays.asList(_excludedColumnNames).contains(columnName) 
+                    && _frame.vec(columnName).cardinality() >= _threshold
             )
             .toArray(String[]::new);
   }

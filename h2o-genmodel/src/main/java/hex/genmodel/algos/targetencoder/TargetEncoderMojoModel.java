@@ -6,18 +6,17 @@ import java.util.*;
 
 public class TargetEncoderMojoModel extends MojoModel {
 
-  public TargetEncoderMojoModel(String[] columns, String[][] domains, String responseName) {
-    super(columns, domains, responseName);
+  public static double computeLambda(long nrows, double inflectionPoint, double smoothing) {
+    return 1.0 / (1 + Math.exp((inflectionPoint - nrows) / smoothing));
+  }
 
-    _teColumnNameToIdx = new HashMap<>(columns.length);
-    for (int i = 0; i < columns.length - 1; i++) {
-      _teColumnNameToIdx.put(columns[i], i);
-    }
+  public static double computeBlendedEncoding(double lambda, double posteriorMean, double priorMean) {
+    return lambda * posteriorMean + (1 - lambda) * priorMean;
   }
 
   public EncodingMaps _targetEncodingMap;
-  public Map<String, Integer> _teColumnNameToIdx = new HashMap<>();
-  public Map<String, Integer> _teColumnNameToMissingValuesPresence;
+  public Map<String, Integer> _columnNameToIdx;
+  public Map<String, Boolean> _teColumn2HasNAs; // tells if a given encoded column has NAs
   public boolean _withBlending;
   public double _inflectionPoint;
   public double _smoothing;
@@ -28,51 +27,50 @@ public class TargetEncoderMojoModel extends MojoModel {
    * It will determine whether we are using posterior probability of NA level or prior probability when substitution didn't take place.
    * TODO Default value is hardcoded to `true` as we need to investigate PUBDEV-6704
    */
-  private final boolean _imputationOfUnknownLevelsIsEnabled = true;
+  private final boolean _imputeUnknownLevels = true;
 
-  public static double computeLambda(int nrows, double inflectionPoint, double smoothing) {
-    return 1.0 / (1 + Math.exp((inflectionPoint - nrows) / smoothing));
+  public TargetEncoderMojoModel(String[] columns, String[][] domains, String responseName) {
+    super(columns, domains, responseName);
+
+    _columnNameToIdx = new HashMap<>(columns.length);
+    for (int i = 0; i < columns.length - 1; i++) {
+      _columnNameToIdx.put(columns[i], i);
+    }
   }
-  
-  public static double computeBlendedEncoding(double lambda, double posteriorMean, double priorMean) {
-    return lambda * posteriorMean + (1 - lambda) * priorMean;
-  }
-  
+
   @Override
   public double[] score0(double[] row, double[] preds) {
-    if(_targetEncodingMap != null) {
+    if (_targetEncodingMap != null) {
       
-      int predictionIndex = 0;
+      int predsIdx = 0;
       // Order of entries is not defined in sets(hash map). So we need some source of consistency.
       // Following will guarantee order of transformations. Ascending order based on index of te column in the input
-      LinkedHashMap<String, EncodingMap> sortedByColumnIndex = sortByColumnIndex(_targetEncodingMap.encodingMap());
+      Map<String, EncodingMap> sortedByColumnIndex = sortByColumnIndex(_targetEncodingMap.encodingMap());
 
       for (Map.Entry<String, EncodingMap> columnToEncodingsMap : sortedByColumnIndex.entrySet() ) {
         EncodingMap encodings = columnToEncodingsMap.getValue();
 
         String teColumn = columnToEncodingsMap.getKey();
-        int indexOfColumnInRow = _teColumnNameToIdx.get(teColumn);
+        int colIdx = _columnNameToIdx.get(teColumn);
         
-        double categoricalLevelIndex = row[indexOfColumnInRow]; 
+        double categoricalLevel = row[colIdx]; 
         
-        if (Double.isNaN(categoricalLevelIndex)) {
-          if(_imputationOfUnknownLevelsIsEnabled) {
-            if(_teColumnNameToMissingValuesPresence.get(teColumn) == 1) {
-              int indexOfNALevel = encodings._encodingMap.size() - 1;
-              computeEncodings(preds, predictionIndex, encodings, indexOfNALevel);
+        if (Double.isNaN(categoricalLevel)) {
+          if (_imputeUnknownLevels) {
+            if (_teColumn2HasNAs.get(teColumn)) {
+              int naLevel = encodings._encodingMap.size() - 1;
+              computeEncodings(preds, predsIdx, encodings, naLevel);
             } else { // imputation was enabled but we didn't encounter missing values in training data so using `_priorMean`
-              preds[predictionIndex] = _priorMean;
+              preds[predsIdx] = _priorMean;
             }
           } else {
-            preds[predictionIndex] = _priorMean;
+            preds[predsIdx] = _priorMean;
           }
         } else {
           //It is assumed that categorical levels are only represented with int values
-          int categoricalLevelIndexAsInt = (int) categoricalLevelIndex;
-          computeEncodings(preds, predictionIndex, encodings, categoricalLevelIndexAsInt);
-
+          computeEncodings(preds, predsIdx, encodings, (int)categoricalLevel);
         }
-        predictionIndex++;
+        predsIdx++;
       }
     } else {
       throw new IllegalStateException("Encoding map is missing.");
@@ -81,25 +79,23 @@ public class TargetEncoderMojoModel extends MojoModel {
     return preds;
   }
 
-  private void computeEncodings(double[] preds, int predictionIndex, EncodingMap encodings, int originalValueAsInt) {
-    int[] correspondingNumAndDen = encodings._encodingMap.get(originalValueAsInt);
-
-    double posteriorMean = (double) correspondingNumAndDen[0] / correspondingNumAndDen[1];
+  private void computeEncodings(double[] preds, int idx, EncodingMap encodings, int categoryLevel) {
+    double[] numDen = encodings._encodingMap.get(categoryLevel);
+    double posteriorMean = numDen[0] / numDen[1];
 
     if (_withBlending) {
-      int numberOfRowsInCurrentCategory = correspondingNumAndDen[1];
-      double lambda = computeLambda(numberOfRowsInCurrentCategory, _inflectionPoint, _smoothing);
+      long rowsCountWithCategory = (long)numDen[1];
+      double lambda = computeLambda(rowsCountWithCategory, _inflectionPoint, _smoothing);
       double blendedValue = computeBlendedEncoding(lambda, posteriorMean, _priorMean);
-
-      preds[predictionIndex] = blendedValue;
+      preds[idx] = blendedValue;
     } else {
-      preds[predictionIndex] = posteriorMean;
+      preds[idx] = posteriorMean;
     }
   }
 
-  public static class SortByKeyAssociatedIndex < K extends String, V > implements  Comparator<Map.Entry<K, V>>
+  private static class SortByKeyAssociatedIndex < K extends String, V > implements  Comparator<Map.Entry<K, V>>
   {
-    public Map<String, Integer> _teColumnNameToIdx;
+    private final Map<String, Integer> _teColumnNameToIdx;
     
     public SortByKeyAssociatedIndex(Map<String, Integer> teColumnNameToIdx) {
       _teColumnNameToIdx = teColumnNameToIdx;
@@ -115,12 +111,11 @@ public class TargetEncoderMojoModel extends MojoModel {
     }
   }
 
-  //Note: We don't have IcedLinkedHashMap so that we can avoid this conversion
-  <K, V > LinkedHashMap<K, V> sortByColumnIndex(Map<K, V> map) {
+  <K, V > Map<K, V> sortByColumnIndex(Map<K, V> map) {
     ArrayList<Map.Entry<K, V>> list = new ArrayList<>(map.entrySet());
-    Collections.sort(list, new SortByKeyAssociatedIndex(_teColumnNameToIdx));
+    Collections.sort(list, new SortByKeyAssociatedIndex(_columnNameToIdx));
 
-    LinkedHashMap<K, V> result = new LinkedHashMap<>();
+    Map<K, V> result = new LinkedHashMap<>();
     for (Map.Entry<K, V> entry : list) {
       result.put(entry.getKey(), entry.getValue());
     }

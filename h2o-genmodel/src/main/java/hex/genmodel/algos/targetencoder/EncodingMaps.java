@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+// XXX: what's the point of this class? why not just Map<String, EncodingMap>?
 public class EncodingMaps implements Serializable {
 
   /**

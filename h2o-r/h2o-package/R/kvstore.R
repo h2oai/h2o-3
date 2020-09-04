@@ -216,8 +216,8 @@ h2o.getModel <- function(model_id) {
       name <- param$name
       value <- param$actual_value
       mapping <- .type.map[param$type,]
-      type    <- mapping[1L, 1L]
-      scalar  <- mapping[1L, 2L]
+      type    <- mapping$type
+      scalar  <- mapping$scalar
 
       if(type == "numeric" && class(value) == "list" && length(value) == 0) #Special case when using deep learning with 0 hidden units
         value <- 0
@@ -252,8 +252,8 @@ h2o.getModel <- function(model_id) {
   }
     
   # get name, value pairs
-  allparams_key_val = lapply(json$parameters, fill_pairs, all=TRUE)
-  parameters_key_val = lapply(json$parameters, fill_pairs, all=FALSE)
+  allparams_key_val <- lapply(json$parameters, fill_pairs, all=TRUE)
+  parameters_key_val <- lapply(json$parameters, fill_pairs, all=FALSE)
     
   # remove NULLs
   allparams_key_val[sapply(allparams_key_val, is.null)] <- NULL

@@ -80,14 +80,14 @@ public class EasyPredictModelWrapperWithTargetEncodingTest {
       super(new String[]{"embarked", "age"}, DOMAINS, null);
       EncodingMaps encodingMaps = new EncodingMaps();
       EncodingMap encodingMapForEmbarked = new EncodingMap();
-      encodingMapForEmbarked.put(0, new int[]{3,5});
+      encodingMapForEmbarked.put(0, new double[]{3,5});
       encodingMaps.put("embarked", encodingMapForEmbarked);
       
       Map<String, Integer> teColumnNameToIdx = new HashMap<>();
       teColumnNameToIdx.put("embarked", 0);
 
       _targetEncodingMap = encodingMaps;
-      _teColumnNameToIdx = teColumnNameToIdx;
+      _columnNameToIdx = teColumnNameToIdx;
     }
   }
 

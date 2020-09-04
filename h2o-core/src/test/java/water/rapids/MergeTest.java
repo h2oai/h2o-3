@@ -12,10 +12,10 @@ import water.fvec.Vec;
 public class MergeTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
-  @Test public void testMergeIsChangingOrderOfRecordsBasedOnRightFrame() {
+  @Test public void test_merge_on_categorical_column_orders_rows_according_to_right_domain() {
     Scope.enter();
     try {
-      Frame fr = new TestFrameBuilder()
+      Frame left = new TestFrameBuilder()
               .withName("leftFrame")
               .withColNames("ColA", "ColB")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM)
@@ -23,24 +23,25 @@ public class MergeTest extends TestUtil {
               .withDataForCol(1, ard(-1, 2, 3, 4))
               .build();
 
-      Frame holdoutEncodingMap = new TestFrameBuilder()
-              .withName("holdoutEncodingMap")
-              .withColNames("ColB", "ColC")
+      Frame right = new TestFrameBuilder()
+              .withName("rightFrame")
+              .withColNames("ColA", "ColC")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM)
-              .withDataForCol(0, ar("c", "a", "e"))
-              .withDataForCol(1, ard(2, 3, 4))
+              .withDataForCol(0, ar("a", "c", "e", "c"))
+              .withDataForCol(1, ard(2, 3, 4, 5))
+              .withDomain(0, ar("c", "a", "e"))
               .build();
 
-      //Note: we end up with the order from the `right` frame
-      int[][] levelMaps = {CategoricalWrappedVec.computeMap(fr.vec(0).domain(), holdoutEncodingMap.vec(0).domain())};
-      Frame res = Merge.merge(fr, holdoutEncodingMap, new int[]{0}, new int[]{0}, false, levelMaps);
-      printOutFrameAsTable(res, false, res.numRows());
-      Vec expected = cvec("c", "a", "e");
-      assertStringVecEquals(expected, res.vec("ColA"));
-      Scope.track(expected);
+      int[][] levelMaps = {CategoricalWrappedVec.computeMap(left.vec(0).domain(), right.vec(0).domain())};
+      // merging according to "colA" (left) and "colA" (right)
+      Frame res = Merge.merge(left, right, new int[]{0}, new int[]{0}, false, levelMaps);
       Scope.track(res);
+      printOutFrameAsTable(res, false, res.numRows());
+      assertStringVecEquals(cvec("c", "c", "a", "e"), res.vec("ColA"));  // all entries from right "colA" sorted according to the column domain 
+      assertVecEquals(vec(3, 3, -1, 4), res.vec("ColB"), 0);  // all entries from right "colA" mapped to value from left "colB"
+      assertVecEquals(vec(3, 5, 2, 4), res.vec("ColC"), 0);  // all entries from right "colA" mapped to value from right "colC"
     } finally {
       Scope.exit();
     }
-    } 
+  } 
 }
