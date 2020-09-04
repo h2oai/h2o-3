@@ -13,6 +13,7 @@ import water.logging.LoggerFactory;
 import water.udf.CFuncRef;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;
+import water.util.StringUtils;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
@@ -394,7 +395,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
           appliedEncodings = encodings;
         } else {
           String targetClassName = encodings.vec(tcIdx).domain()[targetClass];
-          encodedColumn = columnToEncode + "_" + targetClassName + ENCODED_COLUMN_POSTFIX;
+          encodedColumn = columnToEncode + "_" + StringUtils.sanitizeIdentifier(targetClassName) + ENCODED_COLUMN_POSTFIX;
           appliedEncodings = filterByValue(encodings, tcIdx, targetClass);
           Scope.track(appliedEncodings);
           appliedEncodings.remove(TARGETCLASS_COL);

@@ -33,12 +33,13 @@ def test_multinomial_with_none():
     encoded = te.transform(ds.train, as_training=True)
     print(encoded)
     col_te_golden = [0.22747, 0.20285, 0.22747, 0.20285, 0.22747]
-    col_te = encoded['sex_Class 2_te'].head(5).as_data_frame().values.reshape(-1).tolist()
+    col_te = encoded['sex_Class_2_te'].head(5).as_data_frame().values.reshape(-1).tolist()
     assert_allclose(col_te, col_te_golden, atol=1e-5)
 
     # with open("./golden/multinomial_none.csv", "w") as f:
     #     f.write(encoded.get_frame_data())
     golden = h2o.import_file("./golden/multinomial_none.csv")
+    assert golden.names == encoded.names
     assert pu.compare_frames(golden, encoded, 0, tol_numeric=1e-5)
 
 
@@ -49,12 +50,13 @@ def test_multinomial_with_kfold():
     encoded = te.transform(ds.train, as_training=True)
     print(encoded)
     col_te_golden = [0.22300, 0.20857, 0.23127, 0.19478, 0.23127]
-    col_te = encoded['sex_Class 2_te'].head(5).as_data_frame().values.reshape(-1).tolist()
+    col_te = encoded['sex_Class_2_te'].head(5).as_data_frame().values.reshape(-1).tolist()
     assert_allclose(col_te, col_te_golden, atol=1e-5)
     
     # with open("./golden/multinomial_kfold.csv", "w") as f:
     #     f.write(encoded.get_frame_data())
     golden = h2o.import_file("./golden/multinomial_kfold.csv")
+    assert golden.names == encoded.names
     assert pu.compare_frames(golden, encoded, 0, tol_numeric=1e-5)
 
 
@@ -65,12 +67,13 @@ def test_multinomial_with_loo():
     encoded = te.transform(ds.train, as_training=True)
     print(encoded)
     col_te_golden = [0.22796, 0.20309, 0.22796, 0.20309, 0.22796]
-    col_te = encoded['sex_Class 2_te'].head(5).as_data_frame().values.reshape(-1).tolist()
+    col_te = encoded['sex_Class_2_te'].head(5).as_data_frame().values.reshape(-1).tolist()
     assert_allclose(col_te, col_te_golden, atol=1e-5)
     
     # with open("./golden/multinomial_loo.csv", "w") as f:
     #     f.write(encoded.get_frame_data())
     golden = h2o.import_file("./golden/multinomial_loo.csv")
+    assert golden.names == encoded.names
     assert pu.compare_frames(golden, encoded, 0, tol_numeric=1e-5)
 
 
