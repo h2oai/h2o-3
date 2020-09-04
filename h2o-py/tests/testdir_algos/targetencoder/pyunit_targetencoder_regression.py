@@ -39,6 +39,7 @@ def test_regression_with_none():
     # with open("./golden/regression_none.csv", "w") as f:
     #     f.write(encoded.get_frame_data())
     golden = h2o.import_file("./golden/regression_none.csv")
+    assert golden.names == encoded.names
     assert pu.compare_frames(golden, encoded, 0, tol_numeric=1e-5)
 
 
@@ -55,6 +56,7 @@ def test_regression_with_kfold():
     # with open("./golden/regression_kfold.csv", "w") as f:
     #     f.write(encoded.get_frame_data())
     golden = h2o.import_file("./golden/regression_kfold.csv")
+    assert golden.names == encoded.names
     assert pu.compare_frames(golden, encoded, 0, tol_numeric=1e-5)
 
 
@@ -71,6 +73,7 @@ def test_regression_with_loo():
     # with open("./golden/regression_loo.csv", "w") as f:
     #     f.write(encoded.get_frame_data())
     golden = h2o.import_file("./golden/regression_loo.csv")
+    assert golden.names == encoded.names
     assert pu.compare_frames(golden, encoded, 0, tol_numeric=1e-5)
 
 
