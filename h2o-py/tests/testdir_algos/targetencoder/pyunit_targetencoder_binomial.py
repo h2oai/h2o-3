@@ -39,6 +39,7 @@ def test_binomial_with_none():
     # with open("./golden/binomial_none.csv", "w") as f:
     #     f.write(encoded.get_frame_data())
     golden = h2o.import_file("./golden/binomial_none.csv")
+    assert golden.names == encoded.names
     assert pu.compare_frames(golden, encoded, 0, tol_numeric=1e-5)
 
 
@@ -55,6 +56,7 @@ def test_binomial_with_kfold():
     # with open("./golden/binomial_kfold.csv", "w") as f:
     #     f.write(encoded.get_frame_data())
     golden = h2o.import_file("./golden/binomial_kfold.csv")
+    assert golden.names == encoded.names
     assert pu.compare_frames(golden, encoded, 0, tol_numeric=1e-5)
     
     
@@ -71,6 +73,7 @@ def test_binomial_with_loo():
     # with open("./golden/binomial_loo.csv", "w") as f:
     #     f.write(encoded.get_frame_data())
     golden = h2o.import_file("./golden/binomial_loo.csv")
+    assert golden.names == encoded.names
     assert pu.compare_frames(golden, encoded, 0, tol_numeric=1e-5)
 
 
