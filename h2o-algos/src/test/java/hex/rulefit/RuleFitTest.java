@@ -9,6 +9,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
@@ -128,7 +129,6 @@ public class RuleFitTest extends TestUtil {
         try {
             Scope.enter();
             fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-            Scope.track(fr);
 
             String responseColumnName = "survived";
             asFactor(fr, responseColumnName);
@@ -144,6 +144,7 @@ public class RuleFitTest extends TestUtil {
             final Vec weightsVector = Vec.makeOne(fr.numRows());
             final String weightsColumnName = "weights";
             fr.add(weightsColumnName, weightsVector);
+            DKV.put(fr);
 
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
@@ -512,11 +513,11 @@ public class RuleFitTest extends TestUtil {
         try {
             Scope.enter();
             fr = parse_test_file("./smalldata/diabetes/diabetes_text_train.csv");
-            Scope.track(fr);
 
             final Vec weightsVector = createRandomBinaryWeightsVec(fr.numRows(), 10);
             final String weightsColumnName = "weights";
             fr.add(weightsColumnName, weightsVector);
+            DKV.put(fr);
             
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 12345;
