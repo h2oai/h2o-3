@@ -38,7 +38,7 @@ The following tutorials are available that describe how to use Extended Isolatio
 
 
 Defining an Extended Isolation Forest Model
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -  `model_id <algo-params/model_id.html>`__: (Optional) Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
 
@@ -69,7 +69,7 @@ Defining an Extended Isolation Forest Model
   - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
   - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. Note that this requires a specified response column.
 
-- **extension_level**: (Required) The number in range :math:`[0, P-1]`; where P is the number of features. The minimum value of the hyperparameter is 0, which corresponds to Isolation Forest behavior. The maximum is :math:`P-1` and stands for a full extension.
+- `extension_level <algo-params/extension_level.rst>`__: The number in range :math:`[0, P-1]`; where P is the number of features. The minimum value of the hyperparameter is 0, which corresponds to Isolation Forest behavior. The maximum is :math:`P-1` and stands for a full extension. As the extension_level is increased the bias of standard Isolation Forest is reduced.
 
 
 Examples
@@ -93,7 +93,7 @@ Below is a simple example showing how to build an Extended Isolation Forest mode
                                      extension_level = 8)
 
         # Calculate score
-        score <- h2o.predict(model, test)
+        score <- h2o.predict(model, prostate)
         anomaly_score <- score$anomaly_score
 
    .. code-tab:: python
