@@ -351,6 +351,15 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
         Isolation Forest.
 
         Type: ``int``  (default: ``0``).
+
+        :examples:
+
+        >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/single_blob.csv")
+        >>> isofor_model = H2OExtendedIsolationForestEstimator(extension_level = 1,
+        ...                                            ntrees=7)
+        >>> isofor_model.train(training_frame = train)
+        >>> isofor_model.model_performance()
+        >>> isofor_model.model_performance(test)
         """
         return self._parms.get("extension_level")
 
