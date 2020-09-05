@@ -150,6 +150,16 @@ examples = dict(
 >>> isofor_model.model_performance()
 >>> isofor_model.model_performance(test)
 """,
+
+    extension_level="""
+>>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/single_blob.csv")
+>>> isofor_model = H2OExtendedIsolationForestEstimator(extension_level = 1,
+...                                            ntrees=7)
+>>> isofor_model.train(training_frame = train)
+>>> isofor_model.model_performance()
+>>> isofor_model.model_performance(test)
+""",
+
     score_each_iteration="""
 >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 >>> predictors = ["displacement","power","weight","acceleration","year"]
