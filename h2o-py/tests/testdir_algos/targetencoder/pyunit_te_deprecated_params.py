@@ -139,7 +139,6 @@ def test_transform_data_leakage_handling_param_raise_warning():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         transformed_2 = te.transform(ds.test, data_leakage_handling="none")
-        print(w)
         assert len(w) == 1
         assert issubclass(w[0].category, H2ODeprecationWarning)
         assert "`data_leakage_handling` is deprecated in `transform` method and will be ignored" in str(w[0].message)
@@ -148,7 +147,6 @@ def test_transform_data_leakage_handling_param_raise_warning():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         transformed_3 = te.transform(ds.test, data_leakage_handling="leave_one_out")
-        print(w)
         assert len(w) == 2
         assert issubclass(w[1].category, H2ODeprecationWarning)
         assert "as_training=True" in str(w[1].message)
