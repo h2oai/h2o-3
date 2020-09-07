@@ -237,7 +237,7 @@ public class ModelJsonReader {
      * used.
      */
     private enum TypeHint {
-        INT, FLOAT, DOUBLE, LONG, DOUBLE_ARR, FLOAT_ARR, STRING_ARR;
+        INT, FLOAT, DOUBLE, LONG, DOUBLE_ARR, FLOAT_ARR, STRING_ARR, INT_ARR, LONG_ARR;
 
         private static TypeHint fromStringIgnoreCase(final String from) {
             try {
@@ -289,6 +289,20 @@ public class ModelJsonReader {
                             arrS[i] = array.get(i).getAsString();
                         }
                         convertTo = arrS;
+                        break;
+                    case INT_ARR:
+                        final int[] arrI = new int[array.size()];
+                        for (int i = 0; i < array.size(); i++) {
+                            arrI[i] = array.get(i).getAsInt();
+                        }
+                        convertTo = arrI;
+                        break;
+                    case LONG_ARR:
+                        final long[] arrL = new long[array.size()];
+                        for (int i = 0; i < array.size(); i++) {
+                            arrL[i] = array.get(i).getAsLong();
+                        }
+                        convertTo = arrL;
                         break;
                     default:
                         convertTo = null;
