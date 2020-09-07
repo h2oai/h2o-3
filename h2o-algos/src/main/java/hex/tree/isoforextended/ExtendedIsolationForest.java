@@ -134,7 +134,6 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             }
             for (int t = 0; t < _parms._ntrees; t++) {
                 _iTrees[t] = iTreeTasks[t].getResult();
-                _job.update(1);
             }
             addCustomInfo(_model._output);
         }
@@ -365,7 +364,7 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
 
         @Override
         public void onCompletion(CountedCompleter caller) {
-            // nothing to do
+            _job.update(1);
         }
 
         @Override
