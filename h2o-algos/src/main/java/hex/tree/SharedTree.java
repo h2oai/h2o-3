@@ -165,25 +165,7 @@ public abstract class SharedTree<
 
     PlattScalingHelper.initCalibration(this, _parms, expensive);
 
-    if (expensive) {
-      if (_origTrain != null && _origTrain != _train) {
-        List<Double> projections = new ArrayList<>();
-        for (int i = 0; i < _origTrain.numCols(); i++) {
-          Vec currentCol = _origTrain.vec(i);
-          if (currentCol.isCategorical()) {
-            double[] actProjection = toEigenArray(currentCol);
-            for (double v : actProjection) {
-              projections.add(v);
-            }
-          }
-        }
-        double[] primitive_projections = new double[projections.size()];
-        for (int i = 0; i < projections.size(); i++) {
-          primitive_projections[i] = projections.get(i);
-        }
-        _orig_projection_array = primitive_projections;
-      }
-    }
+    _orig_projection_array = LinearAlgebraUtils.toEigenProjectionArray(_origTrain, _train, expensive);
   }
 
   protected void validateRowSampleRate() {

@@ -967,7 +967,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
               encoding.name() + "; }").nl();
     }
     if (encoding == CategoricalEncoding.Eigen) {
-      sb.ip("public double[] getOrigProjectionArray() { return " + ArrayUtils.toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
+      sb.ip("public double[] getOrigProjectionArray() { return " + PojoUtils.toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
     }
     if (model_info().data_info()._nums > 0) {
       sb.i(0).p("// Thread-local storage for input neuron activation values.").nl();

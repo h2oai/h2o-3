@@ -2010,21 +2010,4 @@ public class ArrayUtils {
 
     return cnt;
   }
-
-  public static String toJavaDoubleArray(double[] array) {
-    if (array == null) {
-      return "null";
-    }
-
-    SB sb = new SB();
-    sb.p("new double[] {");
-    for (int i = 0; i < array.length; i++) {
-      sb.p(" ");
-      sb.p(array[i]);
-      if (i < array.length - 1)
-        sb.p(",");
-    }
-    sb.p("}");
-    return sb.getContent();
-  }
 }

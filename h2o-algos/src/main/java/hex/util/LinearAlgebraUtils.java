@@ -18,7 +18,9 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static java.util.Arrays.sort;
 import static org.apache.commons.lang.ArrayUtils.reverse;
@@ -825,6 +827,27 @@ public class LinearAlgebraUtils {
   public static ToEigenVec toEigen = new ToEigenVec() {
     @Override public Vec toEigenVec(Vec src) { return toEigen(src); }
   };
+  
+  public static double[] toEigenProjectionArray(Frame _origTrain, Frame _train, boolean expensive) {
+    if (expensive && _origTrain != null && _origTrain != _train) {
+        List<Double> projections = new ArrayList<>();
+        for (int i = 0; i < _origTrain.numCols(); i++) {
+          Vec currentCol = _origTrain.vec(i);
+          if (currentCol.isCategorical()) {
+            double[] actProjection = toEigenArray(currentCol);
+            for (double v : actProjection) {
+              projections.add(v);
+            }
+          }
+        }
+        double[] primitive_projections = new double[projections.size()];
+        for (int i = 0; i < projections.size(); i++) {
+          primitive_projections[i] = projections.get(i);
+        }
+        return primitive_projections;
+    }
+    return null;
+  }
 
   public static String getMatrixInString(double[][] matrix) {
     int dimX = matrix.length;

@@ -696,7 +696,7 @@ public abstract class SharedTreeModel<
     sb.ip("public int nfeatures() { return " + _output.nfeatures() + "; }").nl();
     sb.ip("public int nclasses() { return " + _output.nclasses() + "; }").nl();
     if (encoding == CategoricalEncoding.Eigen) {
-      sb.ip("public double[] getOrigProjectionArray() { return " + ArrayUtils.toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
+      sb.ip("public double[] getOrigProjectionArray() { return " + PojoUtils.toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
     }
     if (encoding != CategoricalEncoding.AUTO) {
       sb.ip("public hex.genmodel.CategoricalEncoding getCategoricalEncoding() { return hex.genmodel.CategoricalEncoding." + 
