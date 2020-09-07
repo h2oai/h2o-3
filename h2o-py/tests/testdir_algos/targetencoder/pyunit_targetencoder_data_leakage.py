@@ -57,7 +57,7 @@ def test_kfold_requires_fold_column():
         assert "Fold column is required when using KFold leakage handling strategy" in str(e)
         
     te.train(y=ds.target, training_frame=ds.train, fold_column="foldc")
-    assert te.predict(ds.train)
+    assert te.predict(ds.train) is not None
 
 
 def test_loo_requires_target_to_encode_training_frame():
@@ -73,7 +73,7 @@ def test_loo_requires_target_to_encode_training_frame():
     except Exception as e:
         assert "LeaveOneOut strategy requires a response column" in str(e)
         
-    assert te.predict(train_no_target)
+    assert te.predict(train_no_target) is not None
 
 
 def test_strategies_produce_different_results_for_training():

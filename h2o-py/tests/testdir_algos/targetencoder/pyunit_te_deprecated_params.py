@@ -33,6 +33,7 @@ def test_deprecated_k_param_is_alias_for_inflection_point():
     encoded = te.predict(ds.test)
     # print(encoded)
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
         te_k = H2OTargetEncoderEstimator(noise=0, k=5, blending=True)
         assert len(w) == 1
         assert issubclass(w[0].category, H2ODeprecationWarning)
@@ -60,6 +61,7 @@ def test_deprecated_f_param_is_alias_for_smoothing():
     encoded = te.predict(ds.test)
     # print(encoded)
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
         te_f = H2OTargetEncoderEstimator(noise=0, f=25, blending=True)
         assert len(w) == 1
         assert issubclass(w[0].category, H2ODeprecationWarning)
@@ -87,6 +89,7 @@ def test_deprecated_noise_level_param_is_alias_for_noise():
     encoded = te.predict(ds.test)
     # print(encoded)
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
         te_nl = H2OTargetEncoderEstimator(noise_level=0)
         assert len(w) == 1
         assert issubclass(w[0].category, H2ODeprecationWarning)
@@ -115,6 +118,7 @@ def test_transform_seed_param_raise_warning():
     
     transformed_1 = te.transform(ds.test)
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
         transformed_2 = te.transform(ds.test, seed=24)
         assert len(w) == 1
         assert issubclass(w[0].category, H2ODeprecationWarning)
@@ -133,14 +137,18 @@ def test_transform_data_leakage_handling_param_raise_warning():
 
     transformed_1 = te.transform(ds.test)
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
         transformed_2 = te.transform(ds.test, data_leakage_handling="none")
+        print(w)
         assert len(w) == 1
         assert issubclass(w[0].category, H2ODeprecationWarning)
         assert "`data_leakage_handling` is deprecated in `transform` method and will be ignored" in str(w[0].message)
 
     # if data_leakage_handling is specified and not "none", this is interpreted as `as_training=True`
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
         transformed_3 = te.transform(ds.test, data_leakage_handling="leave_one_out")
+        print(w)
         assert len(w) == 2
         assert issubclass(w[1].category, H2ODeprecationWarning)
         assert "as_training=True" in str(w[1].message)
