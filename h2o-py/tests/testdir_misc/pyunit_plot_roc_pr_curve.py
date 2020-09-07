@@ -51,6 +51,7 @@ def plot_test():
     (recalls, precisions) = perf_test.plot(type="pr", server=True, plot=False)
     assert len(recalls) == len(precisions), "Expected recall and precision to have the same shape but they are not."
 
+
 if __name__ == "__main__":
     pyunit_utils.standalone_test(plot_test)
 else:

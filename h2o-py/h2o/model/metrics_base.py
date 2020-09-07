@@ -1330,7 +1330,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param plot True to plot curve, False to get a tuple of values at axis x and y of the plot 
                 (tprs and fprs for AUC, recall and precision for PR)
         
-        :returns: None or values at axis x and y of the plot 
+        :returns: None or values of x and y axis of the plot 
 
         :examples:
 
@@ -1345,18 +1345,10 @@ class H2OBinomialModelMetrics(MetricsBase):
         ...                y = response,
         ...                training_frame = train,
         ...                validation_frame = valid)
-        >>> cars_gbm.plot()
+        >>> cars_gbm.plot(type="roc")
+        >>> cars_gbm.plot(type="pr")
         
         """
-        # check for matplotlib. exit if absent.
-        assert type == "roc" or type == "pr", "Currently, only ROC curve ('roc') and Precision Recall curve ('pr') types are supported"
-        try:
-            import matplotlib
-            if server: matplotlib.use('Agg', warn=False)
-            import matplotlib.pyplot as plt
-        except ImportError:
-            print("matplotlib is required for this function!")
-            return
 
         if type == "roc":
             return self._plot_roc(server, save_to_file, plot)
@@ -1388,9 +1380,9 @@ class H2OBinomialModelMetrics(MetricsBase):
             return self.fprs, self.tprs
 
     def _plot_pr(self, server=False, save_to_file=None, plot=True):
-        precision = self.tprs
-        recall = [x[0] for x in self.recall(thresholds='all')]
-        assert len(precision) == len(recall), "Precision and recall arrays must have the same length"
+        recalls = [x[0] for x in self.recall(thresholds='all')]
+        precisions = self.tprs
+        assert len(precisions) == len(recalls), "Precision and recall arrays must have the same length"
         if plot:
             try:
                 import matplotlib
@@ -1403,7 +1395,7 @@ class H2OBinomialModelMetrics(MetricsBase):
             plt.ylabel('Precision (TPR)')
             plt.title('Precision Recall Curve')
             plt.text(0.75, 0.95, r'auc_pr={0:.4f}'.format(self._metric_json["pr_auc"]))
-            plt.plot(recall, precision, 'b--')
+            plt.plot(recalls, precisions, 'b--')
             plt.axis([0, 1, 0, 1])
             plt.grid(True)
             plt.tight_layout()
@@ -1412,7 +1404,7 @@ class H2OBinomialModelMetrics(MetricsBase):
             if save_to_file is not None:  # only save when a figure is actually plotted
                 plt.savefig(save_to_file)
         else:
-            return recall, precision
+            return recalls, precisions
 
 
     @property
