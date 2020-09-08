@@ -448,7 +448,7 @@ public class RuleFitTest extends TestUtil {
             final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
             Scope.track_generic(glmModel);
 
-            final Frame fr3 = Scope.track(glmModel.score(fr));
+            Scope.track(glmModel.score(fr));
 
             ScoringInfo RuleFitScoringInfo = rfModel.glmModel.getScoringInfo()[0];
             ScoringInfo GLMScoringInfo = glmModel.getScoringInfo()[0];
