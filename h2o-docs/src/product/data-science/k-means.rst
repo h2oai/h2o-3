@@ -26,18 +26,18 @@ Defining a K-Means Model
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns are used.
 
--  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation.
+-  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. This value defaults to 0.
 
 -  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
 
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the
-   cross-validation predictions.
+   cross-validation predictions. This option defaults to FALSE.
 
--  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment.
+-  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. This option defaults to FALSE.
 
 -  **parallelize_cross_validation**: Specify whether to enable parallel training of cross-validation models.
 
--  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for **nfolds** is specified and **fold_column** is not specified) Specify the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__.
+-  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for **nfolds** is specified and **fold_column** is not specified) Specify the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__. This value defaults to AUTO.
 
 -  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the cross-validation fold index assignment per observation.
 
@@ -45,23 +45,23 @@ Defining a K-Means Model
 
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: (Optional) Specify whether to ignore constant training columns, since no information can be gained from them. This option is enabled by default.
 
--  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training.
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training. This option is disabled by default.
 
--  `k <algo-params/k.html>`__: Specify the number of clusters (groups of data) in a dataset that are similar to one another.
+-  `k <algo-params/k.html>`__: Specify the number of clusters (groups of data) in a dataset that are similar to one another. This value defaults to 1.
 
 -  `estimate_k <algo-params/estimate_k.html>`__: Specify whether to estimate the number of clusters (<=k) iteratively (independent of the seed) and deterministically (beginning with ``k=1,2,3...``). If enabled, for each **k** that, the estimate will go up to **max_iteration**. This option is disabled by default.
 
 -  `user_points <algo-params/user_points.html>`__: Specify a dataframe, where each row represents an initial cluster center.
 
--  `max_iterations <algo-params/max_iterations.html>`__: Specify the maximum number of training iterations. The range is 0 to 1e6.
+-  `max_iterations <algo-params/max_iterations.html>`__: Specify the maximum number of training iterations. The range is 0 to 1e6, and the default value is 10.
 
 -  `standardize <algo-params/standardize.html>`__: Enable this option to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to  have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is enabled by default.
 
     **Note**: If standardization is enabled, each column of numeric data is centered and scaled so that its mean is zero and its standard deviation is one before the algorithm is used. At the end of the process, the cluster centers on both the standardized scale (``centers_std``) and the de-standardized scale (``centers``). To de-standardize the centers, the algorithm multiplies by the original standard deviation of the corresponding column and adds the original mean. Enabling standardization is mathematically equivalent to using ``h2o.scale`` in R with ``center`` = TRUE and ``scale`` = TRUE on the numeric columns. Therefore, there will be no discernible difference if standardization is enabled or not for K-Means, since H2O calculates unstandardized centroids.
 
--  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This value defaults to -1 (time-based random number).
 
--  `init <algo-params/init.html>`__: Specify the initialization mode. The options are Random, Furthest, PlusPlus, or User.
+-  `init <algo-params/init.html>`__: Specify the initialization mode. The options are Random, Furthest (default), PlusPlus, or User.
 
  - Random initialization randomly samples the k-specified value of the rows of the training data as cluster centers.
  - PlusPlus initialization chooses one initial center at random and weights the random selection of subsequent centers so that points furthest from the first center are more likely to be chosen.
@@ -70,7 +70,7 @@ Defining a K-Means Model
 
  **Note**: If PlusPlus is specified, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
 
-- `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+- `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. This value is set to 0 (disabled) by default.
 
 - **max_categorical_levels**: For each categorical feature, specify a limit on the number of most frequent categorical levels used for model training.
 
