@@ -112,7 +112,7 @@ public class RuleFitTest extends TestUtil {
         // the same as above but uses rules + linear terms
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file("/Users/zuzanaolajcova/IdeaProjects/h2o-3/smalldata/gbm_test/titanic.csv"));
+            final Frame fr = Scope.track(parse_test_file("./smalldata/gbm_test/titanic.csv"));
             String responseColumnName = "survived";
             asFactor(fr, responseColumnName);
             asFactor(fr, "pclass");
@@ -198,7 +198,7 @@ public class RuleFitTest extends TestUtil {
     public void testCarsRules() {
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file("smalldata/junit/cars.csv"));
+            final Frame fr = Scope.track(parse_test_file("./smalldata/junit/cars.csv"));
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
             params._response_column = "power (hp)";
@@ -257,7 +257,7 @@ public class RuleFitTest extends TestUtil {
         // only linear variables are important in this case
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file( "smalldata/junit/cars.csv"));
+            final Frame fr = Scope.track(parse_test_file( "./smalldata/junit/cars.csv"));
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
             params._response_column = "power (hp)";
@@ -315,7 +315,7 @@ public class RuleFitTest extends TestUtil {
     public void testCarsLongRules() {
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file("smalldata/junit/cars.csv"));
+            final Frame fr = Scope.track(parse_test_file("./smalldata/junit/cars.csv"));
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
             params._response_column = "power (hp)";
@@ -416,7 +416,7 @@ public class RuleFitTest extends TestUtil {
     public void testDiabetesWithWeights() {
         try {
             Scope.enter();
-            final Frame fr = parse_test_file("/Users/zuzanaolajcova/IdeaProjects/h2o-3/smalldata/diabetes/diabetes_text_train.csv");
+            final Frame fr = parse_test_file("./smalldata/diabetes/diabetes_text_train.csv");
             Scope.track(fr);
             final Vec weightsVector = createRandomBinaryWeightsVec(fr.numRows(), 10);
             final String weightsColumnName = "weights";
