@@ -92,11 +92,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if (hasOffsetCol() && isClassifier() && (_parms._distribution == DistributionFamily.multinomial || _parms._distribution == DistributionFamily.custom)) {
         error("_offset_column", "Offset is not supported for "+_parms._distribution+" distribution.");
       }
-      if (_parms._monotone_constraints != null && _parms._monotone_constraints.length > 0 &&
-              !(DistributionFamily.gaussian.equals(_parms._distribution) ||
-                      DistributionFamily.bernoulli.equals(_parms._distribution) ||
-                      DistributionFamily.tweedie.equals(_parms._distribution) ||
-                      DistributionFamily.quantile.equals(_parms._distribution))) {
+      if (_parms._monotone_constraints != null && _parms._monotone_constraints.length > 0 && !supportMonotoneConstraints(_parms._distribution)) {
         error("_monotone_constraints", "Monotone constraints are only supported for Gaussian, Bernoulli, Tweedie and Quantile distributions, your distribution: " + _parms._distribution + ".");
       }
 
@@ -180,6 +176,18 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     if ((_train != null) && (_parms._monotone_constraints != null)) {
       TreeUtils.checkMonotoneConstraints(this, _train, _parms._monotone_constraints);
+    }
+  }
+  
+  private boolean supportMonotoneConstraints(DistributionFamily distributionFamily){
+    switch (distributionFamily) {
+      case gaussian:
+      case bernoulli:
+      case tweedie:
+      case quantile:
+        return true;
+      default:
+        return false;
     }
   }
 
@@ -655,11 +663,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
                 canBeReplaced = false;
                 break;
               }
-            } else {
-              if (leafQuantile < maxs[parent._nids[0]] || leafQuantile > mins[parent._nids[1]]) {
+            } else if (leafQuantile < maxs[parent._nids[0]] || leafQuantile > mins[parent._nids[1]]) {
                 canBeReplaced = false;
                 break;
-              }
             }
             tmpNode = parent;
           }

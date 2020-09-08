@@ -477,6 +477,7 @@ public final class DHistogram extends Iced {
   void updateHisto(double[] ws, double resp[], double[] cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, wY and sum-squares.
+    
     for(int r = lo; r< hi; ++r) {
       final int k = rows[r];
       final double weight = ws[k];
@@ -490,21 +491,22 @@ public final class DHistogram extends Iced {
       double wy = weight * y;
       double wyy = wy * y;
       int b = bin(col_data);
-      _vals[_vals_dim*b + 0] += weight;
-      _vals[_vals_dim*b + 1] += wy;
-      _vals[_vals_dim*b + 2] += wyy;
+      int binDimStart = _vals_dim*b;
+      _vals[binDimStart + 0] += weight;
+      _vals[binDimStart + 1] += wy;
+      _vals[binDimStart + 2] += wyy;
       if (_vals_dim >= 5 && !Double.isNaN(resp[k])) { // FIXME (PUBDEV-7553): This needs to be applied even with monotone constraints disabled
         if (_dist._family.equals(DistributionFamily.quantile)) {
-          _vals[_vals_dim * b + 3] += _dist.deviance(weight, y, _pred1);
-          _vals[_vals_dim * b + 4] += _dist.deviance(weight, y, _pred2);
+          _vals[binDimStart + 3] += _dist.deviance(weight, y, _pred1);
+          _vals[binDimStart + 4] += _dist.deviance(weight, y, _pred2);
         } else {
-          _vals[_vals_dim * b + 3] += weight * (_pred1 - y) * (_pred1 - y);
-          _vals[_vals_dim * b + 4] += weight * (_pred2 - y) * (_pred2 - y);
+          _vals[binDimStart + 3] += weight * (_pred1 - y) * (_pred1 - y);
+          _vals[binDimStart + 4] += weight * (_pred2 - y) * (_pred2 - y);
         }
         if (_vals_dim >= 6) {
-          _vals[_vals_dim * b + 5] += _dist.gammaDenom(weight, resp[k], y, preds[k]);
+          _vals[binDimStart + 5] += _dist.gammaDenom(weight, resp[k], y, preds[k]);
           if (_vals_dim == 7) {
-            _vals[_vals_dim * b + 6] += _dist.gammaNum(weight, resp[k], y, preds[k]);
+            _vals[binDimStart + 6] += _dist.gammaNum(weight, resp[k], y, preds[k]);
           }
         }
       }
@@ -554,16 +556,17 @@ public final class DHistogram extends Iced {
     setMaxIn(minmax[1]);
     final int len = _nbin;
     for( int b=0; b<len; b++ ) {
+      int binDimStart = _vals_dim*b;
       if (lh.w(b) != 0) {
-        AtomicUtils.DoubleArray.add(_vals, _vals_dim*b+0, lh.w(b));
+        AtomicUtils.DoubleArray.add(_vals, binDimStart, lh.w(b));
         lh.wClear(b);
       }
       if (lh.wY(b) != 0) {
-        AtomicUtils.DoubleArray.add(_vals, _vals_dim*b+1, (float) lh.wY(b));
+        AtomicUtils.DoubleArray.add(_vals, binDimStart+1, (float) lh.wY(b));
         lh.wYClear(b);
       }
       if (lh.wYY(b) != 0) {
-        AtomicUtils.DoubleArray.add(_vals, _vals_dim*b+2,(float)lh.wYY(b));
+        AtomicUtils.DoubleArray.add(_vals, binDimStart+2,(float)lh.wYY(b));
         lh.wYYClear(b);
       }
     }
