@@ -974,6 +974,7 @@ We strongly recommended running H2O as a `StatefulSet <https://kubernetes.io/doc
     namespace: h2o-statefulset
   spec:
     serviceName: h2o-service
+    podManagementPolicy: "Parallel"
     replicas: 3
     selector:
       matchLabels:
