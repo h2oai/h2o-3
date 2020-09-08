@@ -5,6 +5,7 @@ import os
 from tests import pyunit_utils
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 
+
 # checking pr_plot when we have cross-validation enabled.
 def glm_pr_plot_test():
     print("Testing glm cross-validation with alpha array, default lambda values for binomial models.")
@@ -23,13 +24,14 @@ def glm_pr_plot_test():
     cv_model = glm(family='binomial',alpha=[0.1,0.5,0.9], nfolds = 3, fold_assignment="modulo")
     cv_model.train(training_frame=training_data,x=myX,y=myY, validation_frame=test_data)
     fn = "pr_plot_train_valid_cx"
-    cv_model.pr_plot(train=True, valid=True, xval=True, save_to_file=fn)
-    
+    perf = cv_model.model_performance(xval=True)
+    perf.plot(type="pr", server=True, save_to_file=fn)
     if os.path.isfile(fn):
         os.remove(fn)
 
-    (precision, recall) = cv_model.pr_plot(train=True, valid=True, xval=True, plot=False)
-    assert len(precision)==len(recall), "Expected precision and recall to have the same shape but they are not."
+    (recall, precision) = perf.plot(type="pr", server=True, plot=False)
+    assert len(precision) == len(recall), "Expected precision and recall to have the same shape but they are not."
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(glm_pr_plot_test)
