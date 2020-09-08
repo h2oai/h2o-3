@@ -33,45 +33,45 @@ Defining a GLRM Model
 
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: (Optional) Specify whether to ignore constant training columns, since no information can be gained from them. This option is selected by default.
 
--  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training.
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training (disabled by default).
 
 -  **representation_name**: Specify the frame key to save the resulting X.
 
 -  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data: None, Standardize, Normalize, Demean, or Descale. The default is None.
 
--  `k <algo-params/k.html>`__: (Required) Specify the rank of matrix approximation.
+-  `k <algo-params/k.html>`__: (Required) Specify the rank of matrix approximation (defaults to 1).
 
--  **loss**: Specify the numeric loss function: Quadratic, Absolute, Huber, Poisson, Hinge, or Periodic.
+-  **loss**: Specify the numeric loss function: Quadratic (default), Absolute, Huber, Poisson, Hinge, or Periodic.
 
 -  **loss_by_col**: Specify the loss function by column override: Quadratic, Absolute, Huber, Poisson, Hinge, or Periodic, Categorical, or Ordinal.
 
 -  **loss_by_col_idx**: Specify the loss function by column index override.
 
--  **multi_loss**: Specify either **Categorical** or **Ordinal** for the categorical loss function.
+-  **multi_loss**: Specify either **Categorical** (default) or **Ordinal** for the categorical loss function.
 
--  **period**: When ``loss=periodic``, specify the length of the period.
+-  **period**: When ``loss=periodic``, specify the length of the period (defaults to 1).
 
--  **regularization_x**: Specify the regularization function for the X matrix: None, Quadratic, L2, L1, NonNegative, OneSparse, UnitOneSparse, or Simplex.
+-  **regularization_x**: Specify the regularization function for the X matrix: None (default), Quadratic, L2, L1, NonNegative, OneSparse, UnitOneSparse, or Simplex.
 
--  **regularization_y**: Specify the regularization function for the Y matrix: None, Quadratic, L2, L1, NonNegative, OneSparse, UnitOneSparse, or Simplex.
+-  **regularization_y**: Specify the regularization function for the Y matrix: None (default), Quadratic, L2, L1, NonNegative, OneSparse, UnitOneSparse, or Simplex.
 
--  **gamma_x**: Specify the regularization weight on the X matrix.
+-  **gamma_x**: Specify the regularization weight on the X matrix (defaults to 0).
 
--  **gamma_y**: Specify the regularization weight on the Y matrix.
+-  **gamma_y**: Specify the regularization weight on the Y matrix (defaults to 0).
 
--  `max_iterations <algo-params/max_iterations.html>`__: Specify the maximum number of training iterations. The range is 0 to 1e6.
+-  `max_iterations <algo-params/max_iterations.html>`__: Specify the maximum number of training iterations. The range is 0 to 1e6, and the value defaults to 1000.
 
--  **max_updates**: Specify the maximum number of updates.
+-  **max_updates**: Specify the maximum number of updates (defaults to 2000).
 
--  **init_step_size**: Specify the initial step size.
+-  **init_step_size**: Specify the initial step size (defaults to 1).
 
--  **min_step_size**: Specify the minimum step size.
+-  **min_step_size**: Specify the minimum step size (defaults to 0.0001).
 
--  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This value defaults to -1 (time-based random number).
 
--  `init <algo-params/init1.html>`__: Specify the initialization mode: Random, Furthest (Default), PlusPlus, or User.
+-  `init <algo-params/init1.html>`__: Specify the initialization mode: Random, Furthest, PlusPlus (default), or User.
 
--  **svd_method**: Specify the method for computing SVD during initialization: GramSVD, Power, Randomized.
+-  **svd_method**: Specify the method for computing SVD during initialization: GramSVD, Power, Randomized (default).
 
        **Caution**: Randomized is currently experimental.
 
@@ -79,13 +79,13 @@ Defining a GLRM Model
 
 -  **user_x**: (Optional) Specify the initial X value.
 
--  **expand_user_y**: Specify whether to expand categorical columns in the user-specified initial Y value.
+-  **expand_user_y**: Specify whether to expand categorical columns in the user-specified initial Y value. This value is enabled by default.
 
--  **impute_original**: Specify whether to reconstruct the original training data by reversing the data transform after projecting archetypes.
+-  **impute_original**: Specify whether to reconstruct the original training data by reversing the data transform after projecting archetypes. This option is disabled by default.
 
--  **recover_svd**: Specify whether to recover singular values and eigenvectors of XY.
+-  **recover_svd**: Specify whether to recover singular values and eigenvectors of XY. This option is disabled by default.
 
--  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Specify the maximum allowed runtime in seconds for model training. Use 0 to disable.
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Specify the maximum allowed runtime in seconds for model training. Set to 0 (disabled) by default.
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
