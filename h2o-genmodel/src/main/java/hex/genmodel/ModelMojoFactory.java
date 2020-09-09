@@ -14,6 +14,7 @@ import hex.genmodel.algos.pipeline.MojoPipelineReader;
 import hex.genmodel.algos.svm.SvmMojoReader;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoReader;
 import hex.genmodel.algos.word2vec.Word2VecMojoReader;
+import hex.genmodel.algos.klime.KLimeMojoReader;
 
 import java.util.ServiceLoader;
 
@@ -91,6 +92,9 @@ public class ModelMojoFactory {
       case "StackedEnsemble":
       case "Stacked Ensemble":
         return new StackedEnsembleMojoReader();
+      
+      case "k-LIME":
+        return new KLimeMojoReader();
 
       case "MOJO Pipeline":
         return new MojoPipelineReader();
