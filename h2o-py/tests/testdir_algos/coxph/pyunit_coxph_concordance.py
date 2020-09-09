@@ -2,26 +2,37 @@ from __future__ import print_function
 import sys
 sys.path.insert(1,"../../../")
 import h2o
+
+from lifelines import CoxPHFitter
+from lifelines.datasets import load_rossi
+
+
+
 from tests import pyunit_utils
 from h2o.estimators.coxph import H2OCoxProportionalHazardsEstimator
 
 
 def coxph_smoke():
-    heart = h2o.import_file(pyunit_utils.locate("smalldata/coxph_test/heart.csv"))
-    coxph = H2OCoxProportionalHazardsEstimator(start_column="start", stop_column="stop")
-    coxph.train(x="age", y="event", training_frame=heart)
+    rossi = load_rossi()
 
-    assert coxph.model_id != ""
-    assert coxph.formula() == "Surv(start, stop, event) ~ age", \
-        "Expected formula to be 'Surv(start, stop, event) ~ age' but it was " + coxph.formula()
+    cph = CoxPHFitter()
+    cph.fit(rossi, duration_col='week', event_col='arrest')
 
-    pred = coxph.predict(test_data=heart)
-    assert len(pred) == len(heart)
+    cph.print_summary()
 
-    metrics = coxph.model_performance(heart)
-    assert 0.581 > metrics.concordance() and 0.580 < metrics.concordance()
-    assert 3696 == metrics.concordant()
-    assert 10 == metrics.tied_y()
+    rossiH2O = h2o.H2OFrame(rossi)
+    cphH2O = H2OCoxProportionalHazardsEstimator(stop_column="week")
+    cphH2O.train(x=["age", "fin", "race", "wexp", "mar", "paro", "prio"], y="arrest", training_frame=rossiH2O)
+
+    assert cphH2O.model_id != ""
+    assert cphH2O.formula() == "Surv(week, arrest) ~ fin + age + race + wexp + mar + paro + prio", \
+        "Expected formula to be 'Surv(week, arrest) ~ fin + age + race + wexp + mar + paro + prio' but it was " + cphH2O.formula()
+
+    predH2O = cphH2O.predict(test_data=rossiH2O)
+    assert len(predH2O) == len(rossi)
+
+    metricsH2O = cphH2O.model_performance(rossiH2O)
+    assert abs(cph._model._concordance_index_ - metricsH2O.concordance()) < 0.001
 
 
 if __name__ == "__main__":
