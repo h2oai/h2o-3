@@ -37,8 +37,8 @@ public class MojoPipeline extends Iced<MojoPipeline> {
   private byte[] outputTypes() {
     MojoFrameMeta outputMeta = _mojoPipeline.getOutputMeta();
     for (Type type : outputMeta.getColumnTypes()) {
-      if (! type.isfloat) {
-        throw new UnsupportedOperationException("Output type " + type.name() + " is not supported.");
+      if (! type.isnumeric && type != Type.Bool) {
+        throw new UnsupportedOperationException("Output type `" + type.name() + "` is not supported.");
       }
     }
     byte[] types = new byte[outputMeta.size()];
@@ -129,8 +129,22 @@ public class MojoPipeline extends Iced<MojoPipeline> {
         NewChunk nc = ncs[col];
         MojoColumn column = transformed.getColumn(col);
         assert column.size() == cs[0].len();
-        // Note: will work fine with current MOJO because they only output floating point values
         switch (column.getType()) {
+          case Bool:
+            for (byte d : (byte[]) column.getData()) {
+              nc.addNum(d, 0);
+            }
+            break;
+          case Int32:
+            for (int d : (int[]) column.getData()) {
+              nc.addNum(d, 0);
+            }
+            break;
+          case Int64:
+            for (long d : (long[]) column.getData()) {
+              nc.addNum(d, 0);
+            }
+            break;
           case Float32:
             for (float d : (float[]) column.getData()) {
               nc.addNum(d);
