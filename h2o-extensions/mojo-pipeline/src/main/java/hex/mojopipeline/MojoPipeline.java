@@ -51,22 +51,22 @@ public class MojoPipeline extends Iced<MojoPipeline> {
   }
 
   private static Frame adaptFrame(Frame f, MojoFrameMeta inputMeta, boolean allowTimestamps) {
-    String[] colNames = inputMeta.getColumnNames();
     Frame adaptedFrame = new Frame();
-    for (String name : colNames) {
-      Vec v = f.vec(name);
+    for (int colIdx = 0; colIdx < inputMeta.size(); colIdx++) {
+      String colName = inputMeta.getColumnName(colIdx);
+      Vec v = f.vec(colName);
       if (v == null) {
-        throw new IllegalArgumentException("Input frame is missing a column: " + name);
+        throw new IllegalArgumentException("Input frame is missing a column: " + colName);
       }
       if (v.get_type() == Vec.T_BAD || v.get_type() == Vec.T_UUID) {
         throw new UnsupportedOperationException("Columns of type " + v.get_type_str() + " are currently not supported.");
       }
-      if (! allowTimestamps && v.get_type() == Vec.T_TIME && inputMeta.getColumnType(name) == Type.Str) {
+      if (! allowTimestamps && v.get_type() == Vec.T_TIME && inputMeta.getColumnType(colName) == Type.Str) {
         throw new IllegalArgumentException("MOJO Pipelines currently do not support datetime columns represented as timestamps. " +
-                "Please parse your dataset again and make sure column '" + name + "' is parsed as String instead of Timestamp. " +
+                "Please parse your dataset again and make sure column '" + colName + "' is parsed as String instead of Timestamp. " +
                 "You can also enable implicit timestamp conversion in your client. Please refer to documentation of the transform function.");
       }
-      adaptedFrame.add(name, v);
+      adaptedFrame.add(colName, v);
     }
     return adaptedFrame;
   }
@@ -104,9 +104,11 @@ public class MojoPipeline extends Iced<MojoPipeline> {
       MojoRowBuilder rowBuilder = frameBuilder.getMojoRowBuilder();
 
       MojoChunkConverter[] conv = new MojoChunkConverter[cs.length];
+      MojoFrameMeta meta = _pipeline.getInputMeta();
       for (int col = 0; col < cs.length; col++) {
-        final Type type = _pipeline.getInputMeta().getColumnType(col);
-        conv[col] = makeConverter(cs[col], col, type);
+        final Type type = meta.getColumnType(_fr.name(col));
+        final int idx = meta.getColumnIndex(_fr.name(col));
+        conv[col] = makeConverter(cs[col], idx, type);
       }
 
       // Convert chunks to a MojoFrame
@@ -174,11 +176,26 @@ public class MojoPipeline extends Iced<MojoPipeline> {
               target.setString(_col, String.valueOf(val));
             }
           };
-        else
+        else if (type == Type.Bool)
+          return new MojoChunkConverter(c, col) {
+            @Override
+            void convertValue(int i, MojoRowBuilder target) {
+              final long val = _c.at8(i);
+              target.setBool(_col, val == 1L);
+            }
+          };
+        else if (type.isfloat)
           return new MojoChunkConverter(c, col) {
             @Override
             void convertValue(int i, MojoRowBuilder target) {
               target.setDouble(_col, _c.atd(i));
+            }
+          };
+        else
+          return new MojoChunkConverter(c, col) {
+            @Override
+            void convertValue(int i, MojoRowBuilder target) {
+              target.setLong(_col, _c.at8(i));
             }
           };
       case Vec.T_CAT:
