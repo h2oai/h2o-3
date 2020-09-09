@@ -8,7 +8,6 @@ h2o -- module for using H2O services.
 from __future__ import absolute_import, division, print_function, unicode_literals
 from .utils.compatibility import *  # NOQA
 
-import logging
 import os
 import subprocess
 import tempfile
@@ -31,8 +30,6 @@ from .utils.metaclass import Deprecated as deprecated
 from .utils.config import H2OConfigReader
 from .utils.shared_utils import check_frame_id, gen_header, py_tmp_key, quoted
 from .utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
-
-logging.basicConfig()
 
 # enable h2o deprecation warnings by default to ensure that users get notified in interactive mode, without being too annoying
 warnings.filterwarnings("once", category=H2ODeprecationWarning)
