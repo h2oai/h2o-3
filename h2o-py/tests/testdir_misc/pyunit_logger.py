@@ -31,12 +31,12 @@ class LoggingContext:
  
 def _has_handlers(logger):
     if PY2:
-         l = logger
-         while l:
-             if l.handlers:
-                 return True
-             l = l.parent if l.propagate else None
-         return False
+        l = logger
+        while l:
+            if l.handlers:
+                return True
+            l = l.parent if l.propagate else None
+        return False
     else:
         return logger.hasHandlers()
 
