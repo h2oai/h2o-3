@@ -3,15 +3,16 @@ API-Related Changes
 
 H2O-3 does its best to keep backwards compatibility between major versions, but sometimes breaking changes are needed in order to improve code quality and to address issues. This section provides a list of current breaking changes between specific releases.
 
-From 3.32.0.1
-~~~~~~~~~~~~~
-
-The deprecated``h2o-scala`` module has been removed.
 
 From 3.30.1.2
 ~~~~~~~~~~~~~
 
 The ``max_hit_ratio_k`` param is deprecated in version 3.30.1.2 and will be completely removed in the next major version, 3.32.0.1.
+
+From 3.30.1.1
+~~~~~~~~~~~~~
+
+The deprecated ``h2o-scala`` module has been removed.
 
 From 3.30.0.5
 ~~~~~~~~~~~~~
