@@ -6,30 +6,29 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import water.Key;
+import org.junit.runner.RunWith;
+import water.DKV;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.test.util.ConfusionMatrixUtils;
 import static org.junit.Assert.*;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class RuleFitTest extends TestUtil {
-
-    @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
     @Test
     public void testBestPracticeExample() {
         // https://github.com/h2oai/h2o-tutorials/blob/8df6b492afa172095e2595922f0b67f8d715d1e0/best-practices/explainable-models/rulefit_analysis.ipynb
-        RuleFitModel rfModel = null;
-        GLMModel glmModel = null;
-        Frame fr = null, fr2 = null, fr3 = null;
         try {
             Scope.enter();
-            fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+            final Frame fr = Scope.track(parse_test_file("./smalldata/gbm_test/titanic.csv"));
             Scope.track(fr);
 
             String responseColumnName = "survived";
@@ -51,12 +50,13 @@ public class RuleFitTest extends TestUtil {
             params._model_type = RuleFitModel.ModelType.RULES;
             params._distribution = DistributionFamily.bernoulli;
 
-            rfModel = new RuleFit(params).trainModel().get();
+            final RuleFitModel rfModel = new RuleFit(params).trainModel().get();
+            Scope.track_generic(rfModel);
 
             System.out.println("Intercept: \n" + rfModel._output._intercept[0]);
             System.out.println(rfModel._output._rule_importance);
 
-            fr2 = rfModel.score(fr);
+            final Frame fr2 = Scope.track(rfModel.score(fr));
 
             Assert.assertTrue(rfModel.testJavaScoring(fr,fr2,1e-4));
 
@@ -69,9 +69,10 @@ public class RuleFitTest extends TestUtil {
 
             GLMModel.GLMParameters glmParameters = rfModel.glmModel._parms;
             glmParameters._train = fr._key;
-            glmModel = new GLM(glmParameters).trainModel().get();
+            final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
+            Scope.track_generic(glmModel);
 
-            fr3 = glmModel.score(fr);
+            final Frame fr3 = Scope.track(glmModel.score(fr));
             predictions = fr3.vec("predict");
 
             ConfusionMatrix glmConfusionMatrix = ConfusionMatrixUtils.buildCM(data, predictions);
@@ -102,19 +103,6 @@ public class RuleFitTest extends TestUtil {
             System.out.println("GLM r2: " + GLMScoringInfo.scored_train._r2);
             
         } finally {
-            if (fr != null) fr.remove();
-            if (fr2 != null) fr2.remove();
-            if (fr3 != null) fr3.remove();
-            if (rfModel != null) {
-                if (rfModel.glmModel != null) rfModel.glmModel.remove();
-                if (rfModel.treeModels != null) {
-                    for (int i = 0; i < rfModel.treeModels.length; i++) {
-                        rfModel.treeModels[i].remove();
-                    }
-                }
-                rfModel.remove();
-            }
-            if (glmModel != null) glmModel.remove();
             Scope.exit();
         }
     }
@@ -122,14 +110,9 @@ public class RuleFitTest extends TestUtil {
     @Test
     public void testBestPracticeExampleWithLinearVariables() {
         // the same as above but uses rules + linear terms
-        RuleFitModel rfModel = null;
-        GLMModel glmModel = null;
-        Frame fr = null, fr2 = null, fr3 = null;
         try {
             Scope.enter();
-            fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-            Scope.track(fr);
-
+            final Frame fr = Scope.track(parse_test_file("./smalldata/gbm_test/titanic.csv"));
             String responseColumnName = "survived";
             asFactor(fr, responseColumnName);
             asFactor(fr, "pclass");
@@ -144,6 +127,7 @@ public class RuleFitTest extends TestUtil {
             final Vec weightsVector = Vec.makeOne(fr.numRows());
             final String weightsColumnName = "weights";
             fr.add(weightsColumnName, weightsVector);
+            DKV.put(fr);
 
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
@@ -153,12 +137,13 @@ public class RuleFitTest extends TestUtil {
             params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
             params._weights_column = "weights";
 
-            rfModel = new RuleFit(params).trainModel().get();
+            final RuleFitModel rfModel = new RuleFit(params).trainModel().get();
+            Scope.track_generic(rfModel);
 
             System.out.println("Intercept: \n" + rfModel._output._intercept[0]);
             System.out.println(rfModel._output._rule_importance);
 
-            fr2 = rfModel.score(fr);
+            final Frame fr2 = Scope.track(rfModel.score(fr));
 
             Assert.assertTrue(rfModel.testJavaScoring(fr,fr2,1e-4));
 
@@ -171,9 +156,10 @@ public class RuleFitTest extends TestUtil {
 
             GLMModel.GLMParameters glmParameters = rfModel.glmModel._parms;
             glmParameters._train = fr._key;
-            glmModel = new GLM(glmParameters).trainModel().get();
+            final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
+            Scope.track_generic(glmModel);
 
-            fr3 = glmModel.score(fr);
+            final Frame fr3 = Scope.track(glmModel.score(fr));
             predictions = fr3.vec("predict");
 
             ConfusionMatrix glmConfusionMatrix = ConfusionMatrixUtils.buildCM(data, predictions);
@@ -204,48 +190,31 @@ public class RuleFitTest extends TestUtil {
             System.out.println("GLM r2: " + GLMScoringInfo.scored_train._r2);
 
         } finally {
-            if (fr != null) fr.remove();
-            if (fr2 != null) fr2.remove();
-            if (fr3 != null) fr3.remove();
-            if (rfModel != null) {
-                if (rfModel.glmModel != null) rfModel.glmModel.remove();
-                if (rfModel.treeModels != null) {
-                    for (int i = 0; i < rfModel.treeModels.length; i++) {
-                        rfModel.treeModels[i].remove();
-                    }
-                }
-                rfModel.remove();
-            }
-            if (glmModel != null) glmModel.remove();
             Scope.exit();
         }
     }
 
     @Test
     public void testCarsRules() {
-        Scope.enter();
-        Key parsed = Key.make("cars_parsed");
-        Frame fr = null, fr2 = null, fr3 = null;
-        RuleFitModel model = null;
-        GLMModel glmModel = null;
-        Frame score = null;
         try {
-            fr = parse_test_file(parsed, "smalldata/junit/cars.csv");
+            Scope.enter();
+            final Frame fr = Scope.track(parse_test_file("./smalldata/junit/cars.csv"));
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
             params._response_column = "power (hp)";
             params._ignored_columns = new String[]{"name"};
-            params._train = parsed;
+            params._train = fr._key;
             params._max_num_rules = 200;
             params._max_rule_length = 5;
             params._model_type = RuleFitModel.ModelType.RULES;
 
-            model = new RuleFit( params).trainModel().get();
+            RuleFitModel model = new RuleFit( params).trainModel().get();
+            Scope.track_generic(model);
 
             System.out.println("Intercept: \n" + model._output._intercept[0]);
             System.out.println(model._output._rule_importance);
             
-            fr2 = model.score(fr);
+            final Frame fr2 = Scope.track(model.score(fr));
             
             double[] expectedCoeffs = new double[] {13.54857, 8.37943,  8.33535, 7.78235, 7.62020, -7.57865, -5.59529, 5.54992, -4.04620, -3.73222, -3.66495,
                     -3.42013, -3.15808, -2.35471, -2.18179, 1.37956, -1.21565, -1.14398, -0.72780, -0.65794,  -0.60032, -0.51938, -0.24730, -0.21409, 0.16232,
@@ -264,8 +233,9 @@ public class RuleFitTest extends TestUtil {
 
             GLMModel.GLMParameters glmParameters = model.glmModel._parms;
             glmParameters._train = fr._key;
-            glmModel = new GLM(glmParameters).trainModel().get();
-            fr3 = glmModel.score(fr);
+            final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
+            Scope.track_generic(glmModel);
+            Scope.track(glmModel.score(fr));
 
             Assert.assertTrue(model.testJavaScoring(fr,fr2,1e-4));
 
@@ -277,20 +247,6 @@ public class RuleFitTest extends TestUtil {
             System.out.println("GLM r2: " + GLMScoringInfo.scored_train._r2);
 
         } finally {
-            if (fr != null) fr.delete();
-            if (fr2 != null) fr2.delete();
-            if (fr3 != null) fr3.delete();
-            if (score != null) score.delete();
-            if (model != null) {
-                if (model.glmModel != null) model.glmModel.remove();
-                if (model.treeModels != null) {
-                    for (int i = 0; i < model.treeModels.length; i++) {
-                        model.treeModels[i].remove();
-                    }
-                }
-                model.remove();
-            }
-            if (glmModel != null) glmModel.delete();
             Scope.exit();
         }
     }
@@ -299,25 +255,21 @@ public class RuleFitTest extends TestUtil {
     @Test
     public void testCarsRulesAndLinear() {
         // only linear variables are important in this case
-        Scope.enter();
-        Key parsed = Key.make("cars_parsed");
-        Frame fr = null, scoredByRF = null, scoredByGLM = null;
-        RuleFitModel model = null;
-        GLMModel glmModel = null;
-        Frame score = null;
         try {
-            fr = parse_test_file(parsed, "smalldata/junit/cars.csv");
+            Scope.enter();
+            final Frame fr = Scope.track(parse_test_file( "./smalldata/junit/cars.csv"));
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
             params._response_column = "power (hp)";
             params._ignored_columns = new String[]{"name"};
-            params._train = parsed;
+            params._train = fr._key;
             params._max_num_rules = 200;
             params._max_rule_length = 5;
             params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
             params._distribution = DistributionFamily.gaussian;
 
-            model = new RuleFit( params).trainModel().get();
+            final RuleFitModel model = new RuleFit(params).trainModel().get();
+            Scope.track_generic(model);
 
             System.out.println("Intercept: \n" + model._output._intercept[0]);
             System.out.println(model._output._rule_importance);
@@ -330,13 +282,14 @@ public class RuleFitTest extends TestUtil {
                 assertEquals(expectedVars[i], model._output._rule_importance.get(i,0));
             }
 
-            scoredByRF = model.score(fr);
+            final Frame scoredByRF = Scope.track(model.score(fr));
             Vec RFpredictions = scoredByRF.vec("predict");
 
             GLMModel.GLMParameters glmParameters = model.glmModel._parms;
             glmParameters._train = fr._key;
-            glmModel = new GLM(glmParameters).trainModel().get();
-            scoredByGLM = glmModel.score(fr);
+            final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
+            Scope.track_generic(glmModel);
+            final Frame scoredByGLM = Scope.track(glmModel.score(fr));
             Vec GLMpredictions = scoredByGLM.vec("predict");
             
             Assert.assertTrue(model.testJavaScoring(fr,scoredByRF,1e-4)); 
@@ -354,49 +307,31 @@ public class RuleFitTest extends TestUtil {
             System.out.println("GLM r2: " + GLMScoringInfo.scored_train._r2);
 
         } finally {
-            if (fr != null) fr.delete();
-            if (scoredByRF != null) scoredByRF.delete();
-            if (scoredByGLM != null) scoredByGLM.delete();
-            if (score != null) score.delete();
-            if (model != null) {
-                if (model.glmModel != null) model.glmModel.remove();
-                if (model.treeModels != null) {
-                    for (int i = 0; i < model.treeModels.length; i++) {
-                        model.treeModels[i].remove();
-                    }
-                }
-                model.remove();
-            }
-            if (glmModel != null) glmModel.delete();
             Scope.exit();
         }
     }
 
     @Test
     public void testCarsLongRules() {
-        Scope.enter();
-        Key parsed = Key.make("cars_parsed");
-        Frame fr = null, fr2 = null, fr3 = null;
-        RuleFitModel model = null;
-        GLMModel glmModel = null;
-        Frame score = null;
         try {
-            fr = parse_test_file(parsed, "smalldata/junit/cars.csv");
+            Scope.enter();
+            final Frame fr = Scope.track(parse_test_file("./smalldata/junit/cars.csv"));
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
             params._response_column = "power (hp)";
             params._ignored_columns = new String[]{"name"};
-            params._train = parsed;
+            params._train = fr._key;
             params._max_num_rules = 200;
             params._max_rule_length = 500;
             params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
 
-            model = new RuleFit(params).trainModel().get();
+            final RuleFitModel model = new RuleFit(params).trainModel().get();
+            Scope.track_generic(model);
 
             System.out.println("Intercept: \n" + model._output._intercept[0]);
             System.out.println(model._output._rule_importance);
 
-            fr2 = model.score(fr);
+            final Frame fr2 = Scope.track(model.score(fr));
 
             double[] expectedCoeffs = new double[] {-3.76824, -0.12718, 0.11265, -0.08923, 0.01601};
             String[] expectedVars = new String[] {"linear.0-60 mph (s)", "linear.economy (mpg)", "linear.displacement (cc)", "linear.year", "linear.weight (lb)"};
@@ -409,8 +344,9 @@ public class RuleFitTest extends TestUtil {
             
             GLMModel.GLMParameters glmParameters = model.glmModel._parms;
             glmParameters._train = fr._key;
-            glmModel = new GLM(glmParameters).trainModel().get();
-            fr3 = glmModel.score(fr);
+            final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
+            Scope.track_generic(glmModel);
+            Scope.track(glmModel.score(fr));
             
             ScoringInfo RuleFitScoringInfo = model.glmModel.getScoringInfo()[0];
             ScoringInfo GLMScoringInfo = glmModel.getScoringInfo()[0];
@@ -422,20 +358,6 @@ public class RuleFitTest extends TestUtil {
             System.out.println("GLM r2: " + GLMScoringInfo.scored_train._r2);
             
         } finally {
-            if (fr != null) fr.delete();
-            if (fr2 != null) fr2.delete();
-            if (fr3 != null) fr3.delete();
-            if (score != null) score.delete();
-            if (model != null) {
-                if (model.glmModel != null) model.glmModel.remove();
-                if (model.treeModels != null) {
-                    for (int i = 0; i < model.treeModels.length; i++) {
-                        model.treeModels[i].remove();
-                    }
-                }
-                model.remove();
-            }
-            if (glmModel != null) glmModel.delete();
             Scope.exit();
         }
     }
@@ -443,12 +365,9 @@ public class RuleFitTest extends TestUtil {
     @Test
     public void testBostonHousing() {
         // example from http://statweb.stanford.edu/~jhf/ftp/RuleFit.pdf but need to experiment with setup
-        RuleFitModel rfModel = null;
-        GLMModel glmModel = null;
-        Frame fr = null, fr2 = null, fr3 = null;
         try {
             Scope.enter();
-            fr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+            final Frame fr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
             Scope.track(fr);
 
             String responseColumnName = fr.lastVecName();
@@ -459,12 +378,13 @@ public class RuleFitTest extends TestUtil {
             params._model_type = RuleFitModel.ModelType.RULES;
             params._response_column = responseColumnName;
 
-            rfModel = new RuleFit(params).trainModel().get();
-
+            final RuleFitModel rfModel = new RuleFit(params).trainModel().get();
+            Scope.track_generic(rfModel);
+            
             System.out.println("Intercept: \n" + rfModel._output._intercept[0]);
             System.out.println(rfModel._output._rule_importance);
 
-            fr2 = rfModel.score(fr);
+            final Frame fr2 = Scope.track(rfModel.score(fr));
 
             Assert.assertTrue(rfModel.testJavaScoring(fr,fr2,1e-4));
 
@@ -472,9 +392,10 @@ public class RuleFitTest extends TestUtil {
 
             GLMModel.GLMParameters glmParameters = rfModel.glmModel._parms;
             glmParameters._train = fr._key;
-            glmModel = new GLM(glmParameters).trainModel().get();
-
-            fr3 = glmModel.score(fr);
+            final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
+            Scope.track_generic(glmModel);
+            
+            glmModel.score(fr);
 
             ScoringInfo RuleFitScoringInfo = rfModel.glmModel.getScoringInfo()[0];
             ScoringInfo GLMScoringInfo = glmModel.getScoringInfo()[0];
@@ -486,19 +407,6 @@ public class RuleFitTest extends TestUtil {
             System.out.println("GLM r2: " + GLMScoringInfo.scored_train._r2);
 
         } finally {
-            if (fr != null) fr.remove();
-            if (fr2 != null) fr2.remove();
-            if (fr3 != null) fr3.remove();
-            if (rfModel != null) {
-                if (rfModel.glmModel != null) rfModel.glmModel.remove();
-                if (rfModel.treeModels != null) {
-                    for (int i = 0; i < rfModel.treeModels.length; i++) {
-                        rfModel.treeModels[i].remove();
-                    }
-                }
-                rfModel.remove();
-            }
-            if (glmModel != null) glmModel.remove();
             Scope.exit();
         }
     }
@@ -506,17 +414,14 @@ public class RuleFitTest extends TestUtil {
 
     @Test
     public void testDiabetesWithWeights() {
-        RuleFitModel rfModel = null;
-        GLMModel glmModel = null;
-        Frame fr = null, fr2 = null, fr3 = null;
         try {
             Scope.enter();
-            fr = parse_test_file("./smalldata/diabetes/diabetes_text_train.csv");
+            final Frame fr = parse_test_file("./smalldata/diabetes/diabetes_text_train.csv");
             Scope.track(fr);
-
             final Vec weightsVector = createRandomBinaryWeightsVec(fr.numRows(), 10);
             final String weightsColumnName = "weights";
             fr.add(weightsColumnName, weightsVector);
+            DKV.put(fr);
             
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 12345;
@@ -526,12 +431,13 @@ public class RuleFitTest extends TestUtil {
             params._weights_column = "weights";
 
 
-            rfModel = new RuleFit(params).trainModel().get();
+            final RuleFitModel rfModel = new RuleFit(params).trainModel().get();
+            Scope.track_generic(rfModel);
 
             System.out.println("Intercept: \n" + rfModel._output._intercept[0]);
             System.out.println(rfModel._output._rule_importance);
 
-            fr2 = rfModel.score(fr);
+            final Frame fr2 = Scope.track(rfModel.score(fr));
 
             Assert.assertTrue(rfModel.testJavaScoring(fr,fr2,1e-4));
 
@@ -539,9 +445,10 @@ public class RuleFitTest extends TestUtil {
 
             GLMModel.GLMParameters glmParameters = rfModel.glmModel._parms;
             glmParameters._train = fr._key;
-            glmModel = new GLM(glmParameters).trainModel().get();
+            final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
+            Scope.track_generic(glmModel);
 
-            fr3 = glmModel.score(fr);
+            Scope.track(glmModel.score(fr));
 
             ScoringInfo RuleFitScoringInfo = rfModel.glmModel.getScoringInfo()[0];
             ScoringInfo GLMScoringInfo = glmModel.getScoringInfo()[0];
@@ -553,19 +460,6 @@ public class RuleFitTest extends TestUtil {
             System.out.println("GLM r2: " + GLMScoringInfo.scored_train._r2);
 
         } finally {
-            if (fr != null) fr.remove();
-            if (fr2 != null) fr2.remove();
-            if (fr3 != null) fr3.remove();
-            if (rfModel != null) {
-                if (rfModel.glmModel != null) rfModel.glmModel.remove();
-                if (rfModel.treeModels != null) {
-                    for (int i = 0; i < rfModel.treeModels.length; i++) {
-                        rfModel.treeModels[i].remove();
-                    }
-                }
-                rfModel.remove();
-            }
-            if (glmModel != null) glmModel.remove();
             Scope.exit();
         }
     }
