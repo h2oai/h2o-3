@@ -37,12 +37,14 @@
 #' library(h2o)
 #' h2o.init()
 #' 
-#' titanic = h2o.uploadFile(locate("smalldata/gbm_test/titanic.csv"))
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
+#' titanic <- h2o.importFile(f)
 #' response = "survived"
 #' predictors <- c("age", "sibsp", "parch", "fare", "sex", "pclass")
 #' titanic[,response] <- as.factor(titanic[,response])
 #' titanic[,"pclass"] <- as.factor(titanic[,"pclass"])
-#' rf_h2o = h2o.rulefit(y=response, x=predictors, training_frame = titanic, max_rule_length=10, max_num_rules=100, seed=1234, model_type="rules")
+#' rf_h2o = h2o.rulefit(y=response, x=predictors, training_frame = titanic, max_rule_length=10, 
+#' max_num_rules=100, seed=1234, model_type="rules")
 #' }
 #' @export
 h2o.rulefit <- function(x,
