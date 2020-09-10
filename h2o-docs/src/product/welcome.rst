@@ -373,10 +373,8 @@ Developers
 
 If you're looking to use H2O to help you develop your own apps, the following links will provide helpful references.
 
-H2O's build is completely managed by Gradle. Any IDE with Gradle support is sufficient for H2O-3 development. Latest versions of IntelliJ IDEA have been thoroughly tested and are proven to work well. 
-Just open the folder with H2O-3 in IntellliJ IDEA and it will automatically recognize Gradle is required and will import the project. The Gradle wrapper present in the repository itself may be used manually/directly to build and test if required.
-
-**Note**: This process will take longer, so we recommend using the first method if possible.
+H2O's build is completely managed by Gradle. Any IDEA with Gradle support is sufficient for H2O-3 development. The latest versions of IntelliJ IDEA have been thoroughly tested and are proven to work well. 
+Just open the folder with H2O-3 in IntellliJ IDEA, and it will automatically recognize that Gradle is required and will import the project. The Gradle wrapper present in the repository itself may be used manually/directly to build and test if required.
 
 For JUnit tests to pass, you may need multiple H2O nodes. Create a "Run/Debug" configuration with the following parameters:
 
