@@ -35,12 +35,11 @@ import static hex.glm.GLMModel.GLMParameters.Family.ordinal;
 
 
 public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel.GAMModelOutput> {
-  double[][] _knots;
-  boolean _cvOn = false; // set to true if cross-validation is enabled
-  boolean _doInit = true; // perform init inside computeImpl if true and false to skip during main model of cv on
-  double[] _cv_alpha = null;  // best alpha value found from cross-validation
-  double[] _cv_lambda = null; // bset lambda value found from cross-validation
-  // add future hyper-parameters that we want to find during cross-validation here
+  private double[][] _knots; // Knots for splines
+  private boolean _cvOn = false; // set to true if cross-validation is enabled
+  private boolean _doInit = true; // perform init inside computeImpl if true and false to skip during main model of cv on
+  private double[] _cv_alpha = null;  // best alpha value found from cross-validation
+  private double[] _cv_lambda = null; // bset lambda value found from cross-validation
   
   IcedHashSet<Key<Frame>> _validKeys = null;  // store validation frame keys from various folds
   
@@ -87,10 +86,11 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
   // and lambda values.  Future hyperparameters can be added for cross-validation to choose as well.
   @Override
   public void computeCrossValidation() {
+    if (error_count() > 0) {
+      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GAM.this);
+    }
     _cvOn = true;  // set cross-validation on to be true
     _validKeys = new IcedHashSet<>();
-    if (error_count() > 0)
-      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GAM.this);
     super.computeCrossValidation();
   }
 
@@ -518,7 +518,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           }
         }
         if ((_validKeys != null) && (!_cvOn)) {
-          model._validKeys = _validKeys.clone();  // copy valid keys here to model._validKeys to be removed later
+          model._validKeys = _validKeys;  // move valid keys here to model._validKeys to be removed later
           model.update(_job);
         }
         model.unlock(_job);

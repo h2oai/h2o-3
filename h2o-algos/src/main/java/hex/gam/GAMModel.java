@@ -568,8 +568,8 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     private boolean _classifier2class;
 
 
-    private GAMScore(Job j, GAMModel m, DataInfo dinfo, String[] domain, boolean computeMetrics, 
-                     boolean makePredictions) {
+    private GAMScore(final Job j, final GAMModel m, DataInfo dinfo, final String[] domain, final boolean computeMetrics, 
+                     final boolean makePredictions) {
       _j = j;
       _m = m;
       _computeMetrics = computeMetrics;
@@ -589,14 +589,15 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
         for(int i = 0; i < beta.length-1; ++i){ // pick out beta that is not zero in ids
           if(beta[i] != 0) ids[k++] = i;
         }
-        if(k < beta.length-1) {
-          ids = Arrays.copyOf(ids,k);
+        if (k < beta.length - 1) {
+          ids = Arrays.copyOf(ids, k);
           dinfo = dinfo.filterExpandedColumns(ids);
-          double [] beta2 = MemoryManager.malloc8d(ids.length+1);
+          double[] beta2 = MemoryManager.malloc8d(ids.length + 1);
           int l = 0;
-          for(int x:ids)
+          for (int x : ids) {
             beta2[l++] = beta[x];
-          beta2[l] = beta[beta.length-1];
+          }
+          beta2[l] = beta[beta.length - 1];
           beta = beta2;
         }
         _coeffs_multinomial = null;
@@ -738,11 +739,12 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
 
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
+    super.remove_impl(fs, cascade);
     Keyed.remove(_output._gamTransformedTrainCenter, fs, true);
     if (_validKeys != null)
-      for (Key oneKey:_validKeys)
-        Keyed.remove(oneKey, fs, true);
-    super.remove_impl(fs, cascade);
+      for (Key oneKey:_validKeys) {
+          Keyed.remove(oneKey, fs, true);
+      }
     return fs;
   }
 

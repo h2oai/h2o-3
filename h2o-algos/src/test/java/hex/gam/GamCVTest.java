@@ -70,14 +70,103 @@ public class GamCVTest extends TestUtil {
         cv_models[foldRun] = DKV.getGet(gam._output._cross_validation_models[foldRun]);
         Scope.track_generic(cv_models[foldRun]);
         predFrames[foldRun] = Scope.track(cv_models[foldRun].score(train));
-        cvModelPreds[foldRun] = Scope.track((Frame)DKV.getGet(gam._output._cross_validation_predictions[foldRun]));
+        cvModelPreds[foldRun] = Scope.track((Frame) DKV.getGet(gam._output._cross_validation_predictions[foldRun]));
       }
       // compare cv predictions and fresh predictions from cv models and they better be EQUAL
       for (int rind = 0; rind < train.numRows(); rind++) {
         if (rnd.nextDouble() > threshold) {
           int foldNum = (int) fold_assignment_frame.vec(0).at(rind);
-          assert predFrames[foldNum].vec(2).at(rind) == cvModelPreds[foldNum].vec(2).at(rind):"Frame contents differ.";
+          assert predFrames[foldNum].vec(2).at(rind) == cvModelPreds[foldNum].vec(2).at(rind) : "Frame contents differ.";
         }
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testCVMultinomial() {
+    try {
+      Scope.enter();
+      Frame train = parse_test_file("smalldata/iris/iris_train.csv");
+      DKV.put(train);
+      Scope.track(train);
+
+      GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+      params._family = GLMModel.GLMParameters.Family.multinomial;
+      params._response_column = "species";
+      params._max_iterations = 3;
+      params._gam_columns = new String[]{"petal_wid"};
+      params._train = train._key;
+      params._solver = GLMModel.GLMParameters.Solver.IRLSM;
+      params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Random;
+      params._nfolds = 3;
+      params._keep_cross_validation_fold_assignment = true;
+      params._keep_cross_validation_models = true;
+      params._keep_cross_validation_predictions = true;
+      GAMModel gam = new GAM(params).trainModel().get();
+      Scope.track_generic(gam);
+      GAMModel[] cv_models = new GAMModel[params._nfolds];
+      Frame[] cvModelPreds = new Frame[params._nfolds];
+      Frame[] predFrames = new Frame[params._nfolds];
+      Frame fold_assignment_frame = Scope.track((Frame) DKV.getGet(gam._output._cross_validation_fold_assignment_frame_id));
+
+
+      // generate prediction from different cv models
+      for (int foldRun = 0; foldRun < params._nfolds; foldRun++) {
+        cv_models[foldRun] = DKV.getGet(gam._output._cross_validation_models[foldRun]);
+        Scope.track_generic(cv_models[foldRun]);
+        predFrames[foldRun] = Scope.track(cv_models[foldRun].score(train));
+        cvModelPreds[foldRun] = Scope.track((Frame) DKV.getGet(gam._output._cross_validation_predictions[foldRun]));
+      }
+      
+      for (int row = 0; row < train.numRows(); row++) {
+        int foldNum = (int) fold_assignment_frame.vec(0).at(row);
+        assert predFrames[foldNum].vec(2).at(row) == cvModelPreds[foldNum].vec(2).at(row) : "Frame contents differ.";
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testCVRegression() {
+    try {
+      Scope.enter();
+      Frame train = parse_test_file("smalldata/iris/iris_train.csv");
+      DKV.put(train);
+      Scope.track(train);
+
+      GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+      params._family = GLMModel.GLMParameters.Family.gaussian;
+      params._response_column = "sepal_len";
+      params._max_iterations = 3;
+      params._gam_columns = new String[]{"petal_wid"};
+      params._train = train._key;
+      params._solver = GLMModel.GLMParameters.Solver.IRLSM;
+      params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Random;
+      params._nfolds = 3;
+      params._keep_cross_validation_fold_assignment = true;
+      params._keep_cross_validation_models = true;
+      params._keep_cross_validation_predictions = true;
+      GAMModel gam = new GAM(params).trainModel().get();
+      Scope.track_generic(gam);
+      GAMModel[] cv_models = new GAMModel[params._nfolds];
+      Frame[] cvModelPreds = new Frame[params._nfolds];
+      Frame[] predFrames = new Frame[params._nfolds];
+      Frame fold_assignment_frame = Scope.track((Frame) DKV.getGet(gam._output._cross_validation_fold_assignment_frame_id));
+
+
+      // generate prediction from different cv models
+      for (int foldRun = 0; foldRun < params._nfolds; foldRun++) {
+        cv_models[foldRun] = DKV.getGet(gam._output._cross_validation_models[foldRun]);
+        Scope.track_generic(cv_models[foldRun]);
+        predFrames[foldRun] = Scope.track(cv_models[foldRun].score(train));
+        cvModelPreds[foldRun] = Scope.track((Frame) DKV.getGet(gam._output._cross_validation_predictions[foldRun]));
+      }
+      for (int row = 0; row < train.numRows(); row++) {
+        int foldNum = (int) fold_assignment_frame.vec(0).at(row);
+        assert predFrames[foldNum].vec(0).at(row) == cvModelPreds[foldNum].vec(0).at(row) : "Frame contents differ.";
       }
     } finally {
       Scope.exit();
