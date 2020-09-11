@@ -1009,13 +1009,11 @@ def get_model(model_id):
     assert_is_type(model_id, str)
     model_json = api("GET /3/Models/%s" % model_id)["models"][0]
     algo = model_json["algo"]
-<<<<<<< HEAD
+
     # still some special handling for AutoEncoder: would be cleaner if we could get rid of this
     if algo == 'deeplearning' and model_json["output"]["model_category"] == "AutoEncoder":
         algo = 'autoencoder'
 
-    m = create_estimator(algo)
-=======
     if algo == "svd":            m = H2OSVD()
     elif algo == "pca":          m = H2OPrincipalComponentAnalysisEstimator()
     elif algo == "drf":          m = H2ORandomForestEstimator()
@@ -1038,7 +1036,7 @@ def get_model(model_id):
     elif algo == "extendedisolationforest": m = H2OExtendedIsolationForestEstimator()
     else:
         raise ValueError("Unknown algo type: " + algo)
->>>>>>> PUBDEV-7138 - test Extended Isolation Forest model saving in python
+    m = create_estimator(algo)
     m._resolve_model(model_id, model_json)
     return m
 
