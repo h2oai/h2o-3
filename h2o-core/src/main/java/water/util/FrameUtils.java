@@ -9,10 +9,7 @@ import water.fvec.*;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
@@ -441,12 +438,12 @@ public class FrameUtils {
       }
     }
 
-    private long copyCSVStream(Frame.CSVStream is, OutputStream os, int firstChkIdx, int buffer_size) throws IOException {
+    private long copyCSVStream(Frame.CSVStream is, OutputStream os, int firstChkIdx) throws IOException {
       long len = 0;
-      byte[] bytes = new byte[buffer_size];
+      byte[] bytes = new byte[BUFFER_SIZE];
       int curChkIdx = firstChkIdx;
       for (;;) {
-        int count = is.read(bytes, 0, buffer_size);
+        int count = is.read(bytes, 0, BUFFER_SIZE);
         if (count <= 0) {
           break;
         }
@@ -470,7 +467,7 @@ public class FrameUtils {
         if (_compressor != null) {
           os = _compressor.wrapOutputStream(os);
         }
-        written = copyCSVStream(is, os, firstChkIdx, BUFFER_SIZE);
+        written = copyCSVStream(is, os, firstChkIdx);
       } catch (IOException e) {
         throw new RuntimeException(e);
       } finally {

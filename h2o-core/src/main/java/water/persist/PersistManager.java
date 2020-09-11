@@ -690,7 +690,7 @@ public class PersistManager {
           throw new IllegalArgumentException("File already exists (" + path + ")");
         }
       }
-      return new FileOutputStream(path);
+      return new BufferedOutputStream(new FileOutputStream(path));
     }
     catch (Exception e) {
       throw new RuntimeException(e);
