@@ -373,11 +373,8 @@ Developers
 
 If you're looking to use H2O to help you develop your own apps, the following links will provide helpful references.
 
-For the latest version of IDEA IntelliJ, run ``./gradlew idea``, then click **File > Open** within IDEA. Select the ``.ipr`` file in the repository and click the **Choose** button.
-
-For older versions of IDEA IntelliJ, run ``./gradlew idea``, then **Import Project** within IDEA and point it to the `h2o-3 directory <https://github.com/h2oai/h2o-3>`_.
-
-**Note**: This process will take longer, so we recommend using the first method if possible.
+H2O's build is completely managed by Gradle. Any IDEA with Gradle support is sufficient for H2O-3 development. The latest versions of IntelliJ IDEA have been thoroughly tested and are proven to work well. 
+Just open the folder with H2O-3 in IntellliJ IDEA, and it will automatically recognize that Gradle is required and will import the project. The Gradle wrapper present in the repository itself may be used manually/directly to build and test if required.
 
 For JUnit tests to pass, you may need multiple H2O nodes. Create a "Run/Debug" configuration with the following parameters:
 
