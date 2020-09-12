@@ -109,7 +109,7 @@ public class XGBoostUtils {
      * @param weightsVector Vector with row weights, possibly null
      * @return A sum of chunk lengths. Possibly zero, if there are no chunks or the chunks are empty.
      */
-    private static long sumChunksLength(int[] chunkIds, Vec vec, Vec weightsVector, int[] chunkLengths) {
+    public static long sumChunksLength(int[] chunkIds, Vec vec, Vec weightsVector, int[] chunkLengths) {
         for (int i = 0; i < chunkIds.length; i++) {
             final int chunk = chunkIds[i];
             chunkLengths[i] = vec.chunkLen(chunk);

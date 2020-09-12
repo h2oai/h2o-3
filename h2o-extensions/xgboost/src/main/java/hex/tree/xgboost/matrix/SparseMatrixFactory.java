@@ -84,38 +84,33 @@ public class SparseMatrixFactory {
             this.nonZeroElementsCount = nonZeroElementsCount;
         }
 
-        public SparseDMatrixProvider() {}
-
         @Override
         public DMatrix makeDMatrix() throws XGBoostError {
             return new DMatrix(rowHeaders, colIndices, sparseData, csr, shape, (int) actualRows + 1, nonZeroElementsCount);
         }
 
         @Override
-        public void writeExternal(ObjectOutput out) throws IOException {
-            super.writeExternal(out);
-            out.writeObject(rowHeaders);
-            out.writeObject(colIndices);
-            out.writeObject(sparseData);
-            out.writeInt(csr.ordinal());
-            out.writeInt(shape);
-            out.writeLong(nonZeroElementsCount);
-        }
-
-        @Override
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            super.readExternal(in);
-            rowHeaders = (long[][]) in.readObject();
-            colIndices = (int[][]) in.readObject();
-            sparseData = (float[][]) in.readObject();
-            csr = DMatrix.SparseType.values()[in.readInt()];
-            shape = in.readInt();
-            nonZeroElementsCount = in.readLong();
+        public void print() {
+            NestedArrayPointer r = new NestedArrayPointer();
+            NestedArrayPointer d = new NestedArrayPointer();
+            long elemIndex = 0;
+            r.increment();
+            for (int i = 0; i < actualRows; i++) {
+                System.out.print(i + ":\t");
+                long rowEnd = r.get(rowHeaders);
+                r.increment();
+                for (; elemIndex < rowEnd; elemIndex++) {
+                    System.out.print(d.get(colIndices) + ":" + d.get(sparseData) + "\t");
+                    d.increment();
+                }
+                System.out.print(response[i]);
+                System.out.println();
+            }
         }
 
     }
 
-    private static SparseDMatrixProvider toDMatrix(
+    public static SparseDMatrixProvider toDMatrix(
         SparseMatrix sm, SparseMatrixDimensions smd, int actualRows, int shape, float[] resp, float[] weights, float[] offsets) {
         return new SparseDMatrixProvider(
             sm._rowHeaders, sm._colIndices, sm._sparseData, DMatrix.SparseType.CSR, shape, smd._nonZeroElementsCount, 
@@ -159,6 +154,17 @@ public class SparseMatrixFactory {
             increment();
         }
 
+        public long get(long[][] dest) {
+            return dest[_row][_col];
+        }
+
+        public int get(int[][] dest) {
+            return dest[_row][_col];
+        }
+
+        public float get(float[][] dest) {
+            return dest[_row][_col];
+        }
     }
 
     public static int initializeFromChunkIds(
@@ -174,7 +180,7 @@ public class SparseMatrixFactory {
         return ArrayUtils.sum(fun._actualRows);
     }
 
-    private static class InitializeCSRMatrixFromChunkIdsMrFun extends MrFun<CalculateCSRMatrixDimensionsMrFun> {
+    private static class InitializeCSRMatrixFromChunkIdsMrFun extends MrFun<InitializeCSRMatrixFromChunkIdsMrFun> {
 
         Frame _frame;
         int[] _chunks;

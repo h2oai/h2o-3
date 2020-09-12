@@ -51,8 +51,18 @@ public class DenseMatrixFactory {
             super(actualRows, response, weights, offsets);
             this.data = data;
         }
-
-        public DenseDMatrixProvider() {}
+        
+        @Override
+        public void print() {
+            for (int i = 0; i < data.nrow; i++) {
+                System.out.print(i + ":");
+                for (int j = 0; j < data.ncol; j++) {
+                    System.out.print(data.get(i, j) + ", ");
+                }
+                System.out.print(response[i]);
+                System.out.println();
+            }
+        }
 
         @Override
         public DMatrix makeDMatrix() throws XGBoostError {
@@ -67,29 +77,6 @@ public class DenseMatrixFactory {
             }
         }
 
-        @Override
-        public void writeExternal(ObjectOutput out) throws IOException {
-            super.writeExternal(out);
-            out.writeInt(data.nrow);
-            out.writeInt(data.ncol);
-            final long size = (long) data.nrow * data.ncol;
-            for (long i = 0; i < size; i++) {
-                out.writeFloat(data.get(i));
-            }
-        }
-
-        @Override
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            super.readExternal(in);
-            final int nrow = in.readInt();
-            final int ncol = in.readInt();
-            data = new BigDenseMatrix(nrow, ncol);
-            final long size = (long) nrow * ncol;
-            for (long i = 0; i < size; i++) {
-                data.set(i, in.readFloat());
-            }
-        }
-
     }
     
     public static DenseDMatrixProvider dense(
@@ -99,7 +86,7 @@ public class DenseMatrixFactory {
         BigDenseMatrix data = null;
         try {
             data = allocateDenseMatrix(nRows, di);
-            long actualRows = denseChunk(data, chunks, nRowsByChunk, f, weightVec, offsetVec, responseVec, di, resp, weights, offsets);
+            int actualRows = denseChunk(data, chunks, nRowsByChunk, f, weightVec, offsetVec, responseVec, di, resp, weights, offsets);
             assert data.nrow == actualRows;
             return new DenseDMatrixProvider(actualRows, resp, weights, offsets, data);
         } catch (Exception e) {
@@ -110,7 +97,7 @@ public class DenseMatrixFactory {
         }
     }
 
-    private static long denseChunk(
+    private static int denseChunk(
         BigDenseMatrix data,
         int[] chunks, int[] nRowsByChunk, Frame f, Vec weightsVec, Vec offsetVec, Vec respVec, DataInfo di,
         float[] resp, float[] weights, float[] offsets
@@ -140,7 +127,7 @@ public class DenseMatrixFactory {
         private final float[] _offsets;
 
         // OUT
-        private int[] _nRowsByChunk;
+        private final int[] _nRowsByChunk;
 
         private WriteDenseChunkFun(Frame f, int[] chunks, int[] rowOffsets, Vec weightsVec, Vec offsetsVec, Vec respVec, DataInfo di,
             BigDenseMatrix data, float[] resp, float[] weights, float[] offsets) {
@@ -188,8 +175,8 @@ public class DenseMatrixFactory {
             _nRowsByChunk[id] = actualRows;
         }
 
-        private long getTotalRows() {
-            long totalRows = 0;
+        private int getTotalRows() {
+            int totalRows = 0;
             for (int r : _nRowsByChunk) {
                 totalRows += r;
             }

@@ -8,7 +8,7 @@ import java.io.*;
 
 public abstract class MatrixLoader extends Iced<MatrixLoader> {
     
-    public static abstract class DMatrixProvider implements Externalizable {
+    public static abstract class DMatrixProvider {
 
         protected long actualRows;
         protected float[] response;
@@ -22,9 +22,10 @@ public abstract class MatrixLoader extends Iced<MatrixLoader> {
             this.offsets = offsets;
         }
         
-        public DMatrixProvider() {}
-
         protected abstract DMatrix makeDMatrix() throws XGBoostError;
+
+        @SuppressWarnings("unused") // used for debugging
+        public abstract void print();
         
         protected void dispose() {}
         
@@ -42,21 +43,6 @@ public abstract class MatrixLoader extends Iced<MatrixLoader> {
             return mat;
         }
 
-        @Override
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeLong(actualRows);
-            out.writeObject(response);
-            out.writeObject(weights);
-            out.writeObject(offsets);
-        }
-
-        @Override
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            actualRows = in.readLong();
-            response = (float[]) in.readObject();
-            weights = (float[]) in.readObject();
-            offsets = (float[]) in.readObject();
-        }
     }
     
     public abstract DMatrixProvider makeLocalMatrix();
