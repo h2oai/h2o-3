@@ -126,10 +126,6 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
     protected Futures remove_impl(Futures fs, boolean cascade) {
         super.remove_impl(fs, cascade);
         if(cascade) {
-            for (SharedTreeModel treeModel : treeModels) {
-                treeModel.remove(fs);
-            }
-
             glmModel.remove(fs);
         }
         
