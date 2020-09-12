@@ -65,6 +65,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
     protected void execute() {
         XGBoostHttpClient client = makeClient();
         LOG.info("Starting matrix upload for " + _modelKey);
+        long start = System.currentTimeMillis();
         assert modelInfo.dataInfo() != null;
         int[] chunks = VecUtils.getLocalChunkIds(train.anyVec());
         final Vec responseVec = train.vec(parms._response_column);
@@ -94,6 +95,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
             );
         }
         client.uploadObject(_modelKey, RemoteXGBoostUploadServlet.RequestType.matrixData, matrixData);
+        LOG.debug("Matrix upload finished in " + ((System.currentTimeMillis() - start) / 1000d));
     }
 
     public static class MatrixData implements Serializable {
