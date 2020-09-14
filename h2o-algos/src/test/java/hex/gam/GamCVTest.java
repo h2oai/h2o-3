@@ -14,9 +14,10 @@ import water.util.RandomUtils;
 
 import java.util.Random;
 
+import static org.junit.Assert.*;
+
 @RunWith(H2ORunner.class)
 @CloudSize(1)
-
 public class GamCVTest extends TestUtil {
   
 // In this test, I will test all the following cross-validation parameters:
@@ -60,6 +61,11 @@ public class GamCVTest extends TestUtil {
       params._nfolds = 3;
       GAMModel gam = new GAM(params).trainModel().get();
       Scope.track_generic(gam);
+
+      assertNotNull(gam._output._cross_validation_models);
+      assertNotNull(gam._output._cross_validation_metrics_summary);
+      assertEquals(params._nfolds, gam._output._cross_validation_models.length);
+      
       GAMModel[] cv_models = new GAMModel[params._nfolds];
       Frame[] cvModelPreds = new Frame[params._nfolds];
       Frame[] predFrames = new Frame[params._nfolds];
@@ -104,8 +110,14 @@ public class GamCVTest extends TestUtil {
       params._keep_cross_validation_fold_assignment = true;
       params._keep_cross_validation_models = true;
       params._keep_cross_validation_predictions = true;
+      params._keep_gam_cols = true;
       GAMModel gam = new GAM(params).trainModel().get();
       Scope.track_generic(gam);
+
+      assertNotNull(gam._output._cross_validation_models);
+      assertNotNull(gam._output._cross_validation_metrics_summary);
+      assertEquals(params._nfolds, gam._output._cross_validation_models.length);
+      
       GAMModel[] cv_models = new GAMModel[params._nfolds];
       Frame[] cvModelPreds = new Frame[params._nfolds];
       Frame[] predFrames = new Frame[params._nfolds];
@@ -151,6 +163,11 @@ public class GamCVTest extends TestUtil {
       params._keep_cross_validation_predictions = true;
       GAMModel gam = new GAM(params).trainModel().get();
       Scope.track_generic(gam);
+      
+      assertNotNull(gam._output._cross_validation_models);
+      assertNotNull(gam._output._cross_validation_metrics_summary);
+      assertEquals(params._nfolds, gam._output._cross_validation_models.length);
+      
       GAMModel[] cv_models = new GAMModel[params._nfolds];
       Frame[] cvModelPreds = new Frame[params._nfolds];
       Frame[] predFrames = new Frame[params._nfolds];

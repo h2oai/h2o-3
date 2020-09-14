@@ -190,7 +190,7 @@ public class GamUtils {
       return gamNumColStart;
   }
 
-  public static void addFrameKeys2Keep(List<Key<Vec>> keep, Key<Frame> ... keyNames) {
+  public static void keepFrameKeys(List<Key<Vec>> keep, Key<Frame> ... keyNames) {
     for (Key<Frame> keyName:keyNames) {
       Frame loadingFrm = DKV.getGet(keyName);
       if (loadingFrm != null) for (Vec vec : loadingFrm.vecs()) keep.add(vec._key);

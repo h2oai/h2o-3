@@ -36,8 +36,6 @@ import static hex.glm.GLMModel.GLMParameters.Family.ordinal;
 
 public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel.GAMModelOutput> {
   private double[][] _knots; // Knots for splines
-  private boolean _cvOn = false; // set to true if cross-validation is enabled
-  private boolean _doInit = true; // perform init inside computeImpl if true and false to skip during main model of cv on
   private double[] _cv_alpha = null;  // best alpha value found from cross-validation
   private double[] _cv_lambda = null; // bset lambda value found from cross-validation
   
@@ -89,7 +87,6 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     if (error_count() > 0) {
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GAM.this);
     }
-    _cvOn = true;  // set cross-validation on to be true
     _validKeys = new IcedHashSet<>();
     super.computeCrossValidation();
   }
@@ -106,15 +103,9 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         best_alpha= g._output._best_alpha;
         best_lambda = g._output._best_lambda;
       }
-      
-      g.write_lock(_job);
-      g.update(_job);
-      g.unlock(_job);
     }
     _cv_alpha = new double[]{best_alpha};
     _cv_lambda = new double[]{best_lambda};
-    _doInit = false;  // for main model, disable the init()
-    _cvOn = false;   // building main model now.  Set CV off.
   }
     /***
      * This method will look at the keys of knots stored in _parms._knot_ids and copy them over to double[][]
@@ -439,9 +430,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     
     @Override
     public void computeImpl() {
-      if (_doInit)                  // disable when in CV and building the main model
-        init(true);       //this can change the seed if it was set to -1
-      validateGamParameters();
+      init(true);
       if (error_count() > 0)   // if something goes wrong, let's throw a fit
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GAM.this);
       Frame newTFrame = new Frame(rebalance(adaptTrain(), false, _result+".temporary.train"));  // get frames with correct predictors and spline functions
@@ -501,7 +490,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         List<Key<Vec>> keep = new ArrayList<>();
         if (model != null) {
           if (_parms._keep_gam_cols) {
-            addFrameKeys2Keep(keep, newTFrame._key);
+            keepFrameKeys(keep, newTFrame._key);
           } else {
             DKV.remove(newTFrame._key);
           }
@@ -510,14 +499,10 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           dinfo.remove();
         
         if (newValidFrame != null) {
-          if (_cvOn) {
-            addFrameKeys2Keep(keep, newValidFrame._key);  // save valid frame keys for scoring later
-            _validKeys.addIfAbsent(newValidFrame._key);   // save valid frame keys from folds to remove later
-          } else {
-            DKV.remove(newValidFrame._key);
-          }
+          keepFrameKeys(keep, newValidFrame._key);  // save valid frame keys for scoring later
+          _validKeys.addIfAbsent(newValidFrame._key);   // save valid frame keys from folds to remove later
         }
-        if ((_validKeys != null) && (!_cvOn)) {
+        if (_validKeys != null) {
           model._validKeys = _validKeys;  // move valid keys here to model._validKeys to be removed later
           model.update(_job);
         }
