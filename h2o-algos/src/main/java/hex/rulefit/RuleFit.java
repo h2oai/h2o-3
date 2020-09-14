@@ -96,7 +96,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         treeParameters._seed = _parms._seed;
         treeParameters._weights_column = _parms._weights_column;
         treeParameters._distribution = _parms._distribution;
-        treeParameters._ntrees = 5;
+        treeParameters._ntrees = _parms._rule_generation_ntrees;
     }
 
     private void initGLMParameters() {
@@ -162,8 +162,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         public void computeImpl() {
             RuleFitModel model = null;
             GLMModel glmModel;
-            Set<Rule> rules = null;
-            ////List<Rule> rulesList = null;
+            List<Rule> rulesList;
             RuleEnsemble ruleEnsemble = null;
             init(true);
             if (error_count() > 0)
@@ -175,7 +174,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 // get paths from tree models
                 Frame pathsFrame = new Frame(Key.make("paths_frame" + _result));
                 int[] depths = range(_parms._min_rule_length, _parms._max_rule_length + 1);
-                List<SharedTreeModel> treeModels = new ArrayList<SharedTreeModel>();
+                List<SharedTreeModel> treeModels = new ArrayList<>();
 
                 pathsFrame.add(_parms._response_column, _response.makeCopy());
                 if (_parms._weights_column != null) {
@@ -183,18 +182,15 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 }
                 // prepare rules
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.RULES.equals(_parms._model_type)) {
-                    rules = new HashSet<>();
-                    ////rulesList = new ArrayList<>();
+                    rulesList = new ArrayList<>();
                     for (int modelId = 0; modelId < depths.length; modelId++) {
                         SharedTreeModel treeModel = trainTreeModel(_parms._algorithm, depths[modelId]);
-                       rules.addAll(Rule.extractRulesFromModel(treeModel, modelId));
-                        ////rulesList.addAll(Rule.extractRulesListFromModel(treeModel, modelId));
+                        rulesList.addAll(Rule.extractRulesListFromModel(treeModel, modelId));
                         treeModel.delete();
                     }
-                    ruleEnsemble = new RuleEnsemble(rules.toArray(new Rule[] {}));
-                    ////ruleEnsemble = new RuleEnsemble(rulesList.toArray(new Rule[] {}));
+                    ruleEnsemble = new RuleEnsemble(rulesList.toArray(new Rule[] {}));
                     
-                    pathsFrame.add(ruleEnsemble.transform(_train));
+                    pathsFrame.add(ruleEnsemble.createGLMTrainFrame(_train, depths.length, treeParameters._ntrees));
                 }
                 // prepare linear terms
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.LINEAR.equals(_parms._model_type)) {
@@ -345,8 +341,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             Rule rule;
             for (Map.Entry<String, Double> entry : filteredRules.entrySet()) {
                 if (!entry.getKey().startsWith("linear.")) {
-                    rule = ruleEnsemble.getRuleByLanguageRule(entry.getKey());
-                   // rule = ruleEnsemble.getRuleByVarName(entry.getKey());
+                    rule = ruleEnsemble.getRuleByVarName(entry.getKey().substring(entry.getKey().lastIndexOf(".") + 1));
                 } else {
                     rule = new Rule(null, entry.getValue(), entry.getKey());
                 }

@@ -2,7 +2,6 @@ package hex.rulefit;
 
 import hex.*;
 import hex.glm.GLMModel;
-import hex.tree.SharedTreeModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.fvec.Frame;
@@ -57,6 +56,9 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
 
         // specifies type of base learners in the ensemble. Options are RULES_AND_LINEAR (initial ensemble includes both rules and linear terms, default), RULES (prediction rules only), LINEAR (linear terms only)
         public ModelType _model_type = ModelType.RULES_AND_LINEAR;
+        
+        // specifies the number of trees to build in the tree model. Defaults to 50.
+        public int _rule_generation_ntrees = 50;
     }
 
     public static class RuleFitOutput extends Model.Output {
@@ -108,7 +110,14 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
     public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
         Frame pathsFrame = new Frame(Key.make("paths_frame" + destination_key));
         if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.RULES.equals(this._parms._model_type)) {
-            pathsFrame.add(ruleEnsemble.transform(fr));
+            Frame frame = fr.deepCopy(Key.make().toString());
+           // put response and weights last
+            if (frame.vec(_parms._response_column) != null)
+                frame.add(_parms._response_column, frame.remove(_parms._response_column));
+            if (_parms._weights_column != null && frame.vec(_parms._weights_column) != null)
+                frame.add(_parms._weights_column, frame.remove(_parms._weights_column));
+            pathsFrame.add(ruleEnsemble.createGLMTrainFrame(frame, _parms._max_rule_length - _parms._min_rule_length + 2, _parms._rule_generation_ntrees));
+            frame.remove();
         }
         if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.LINEAR.equals(this._parms._model_type)) {
             Frame adaptFrm = new Frame(fr.deepCopy(null));

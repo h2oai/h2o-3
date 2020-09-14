@@ -12,10 +12,7 @@ import org.junit.Test;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-
-
 import java.util.Set;
-
 import static hex.tree.TreeUtils.getResponseLevelIndex;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -33,7 +30,7 @@ public class RuleFitUtilsTest extends TestUtil {
             fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
             Scope.track(fr);
 
-            Condition condition = new Condition(0, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2, null, "pclass", false );
+            Condition condition = new Condition(0, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2, null, null, "pclass", false );
             fr2 = condition.transform(fr);
             
             assertEquals(1,fr2.numCols());
@@ -41,8 +38,7 @@ public class RuleFitUtilsTest extends TestUtil {
             assertEquals(0,fr2.vec(0).at8(322));
             assertEquals(1,fr2.vec(0).at8(323));
 
-
-            Condition condition2 = new Condition(13, Condition.Type.Categorical, Condition.Operator.In, 0, new String[] {"New York  NY", "St Louis  MO"}, "home.dest", false);
+            Condition condition2 = new Condition(13, Condition.Type.Categorical, Condition.Operator.In, 0, new String[] {fr.vec(13).stringAt(20)/*"New York  NY"*/, fr.vec(13).stringAt(0)/*"St Louis  MO"*/}, new int[] {(int)fr.vec(13).at(20)/*236*/, (int)fr.vec(13).at(0)/*308*/},"home.dest", false);
             fr3 = condition2.transform(fr);
 
             assertEquals(1,fr3.numCols());
@@ -52,7 +48,7 @@ public class RuleFitUtilsTest extends TestUtil {
             assertEquals(0,fr3.vec(0).at8(4));
             
             assertFalse(condition.equals(condition2));
-            Condition condition3 = new Condition(13, Condition.Type.Categorical, Condition.Operator.In, 0, new String[] {"New York  NY", "St Louis  MO"}, "home.dest", false);
+            Condition condition3 = new Condition(13, Condition.Type.Categorical, Condition.Operator.In, 0, new String[] {fr.vec(13).stringAt(20)/*"New York  NY"*/, fr.vec(13).stringAt(0)/*"St Louis  MO"*/}, new int[] {(int)fr.vec(13).at(20)/*236*/, (int)fr.vec(13).at(0)/*308*/},"home.dest", false);
             assertTrue(condition2.equals(condition3));
             
             Rule rule = new Rule(new Condition[]{condition, condition2}, 0.3456, "somevarname");
@@ -100,18 +96,18 @@ public class RuleFitUtilsTest extends TestUtil {
             Set<Rule> treeRules =  Rule.extractRulesFromTree(sharedTreeSubgraph, 0);
             assertEquals(treeRules.size(), 8);
 
-            Condition condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.5, null, "GLEASON", false);
-            Condition condition2 = new Condition(4, Condition.Type.Numerical, Condition.Operator.LessThan, 14.730077743530273, null, "PSA", false);
-            Condition condition3 = new Condition(2, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2.5, null, "DPROS", false);
+            Condition condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.5, null, null,"GLEASON", false);
+            Condition condition2 = new Condition(4, Condition.Type.Numerical, Condition.Operator.LessThan, 14.730077743530273, null, null, "PSA", false);
+            Condition condition3 = new Condition(2, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2.5, null, null,"DPROS", false);
             Condition[] conditions = new Condition[] {condition1, condition2, condition3};
 
             Rule rule = new Rule(conditions, 0.032236840575933456, "somevarname");
 
             assertEquals(treeRules.contains(rule),true);
 
-            condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 6.5, null, "GLEASON", true);
-            condition2 = new Condition(2, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2.5, null, "DPROS", false);
-            condition3 = new Condition(4, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.6455078125, null, "PSA", false);
+            condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 6.5, null, null,"GLEASON", true);
+            condition2 = new Condition(2, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2.5, null, null, "DPROS", false);
+            condition3 = new Condition(4, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.6455078125, null, null,"PSA", false);
             conditions = new Condition[] {condition1, condition2, condition3};
 
             rule = new Rule(conditions, 0.032236840575933456, "somevarname");
@@ -154,18 +150,19 @@ public class RuleFitUtilsTest extends TestUtil {
             Set<Rule> treeRules =  Rule.extractRulesFromTree(sharedTreeSubgraph, 0);
             assertEquals(treeRules.size(), 8);
 
-            Condition condition1 = new Condition(0, Condition.Type.Categorical, Condition.Operator.In, -1.0, new String[] {"f1995", "f1996", "f1997", "f1998", "f1999", "f2000"}, "fYear", false);
-            Condition condition2 = new Condition(5, Condition.Type.Numerical, Condition.Operator.LessThan, 228.5, null, "Distance", false);
-            Condition condition3 = new Condition(2, Condition.Type.Categorical, Condition.Operator.In, -1.0, new String[] {"f1", "f10", "f11", "f12", "f13", "f14", "f15", "f16", "f17", "f18", "f19", "f2", "f20", "f21", "f22", "f23"}, "fDayofMonth", false);
+            Condition condition1 = new Condition(0, Condition.Type.Categorical, Condition.Operator.In, -1.0, new String[] {"f1995", "f1996", "f1997", "f1998", "f1999", "f2000"}, new int[] {8, 9, 10, 11, 12, 13}, "fYear", false);
+            Condition condition2 = new Condition(5, Condition.Type.Numerical, Condition.Operator.LessThan, 228.5, null, null, "Distance", false);
+            Condition condition3 = new Condition(2, Condition.Type.Categorical, Condition.Operator.In, -1.0, new String[] {"f24", "f25", "f26", "f27", "f28", "f29", "f3", "f30", "f31", "f4", "f5", "f6", "f7", "f8", "f9"},
+                    new int[] {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30},"fDayofMonth", true);
             Condition[] conditions = new Condition[] {condition1, condition2, condition3};
 
             Rule rule = new Rule(conditions, 2.0, "whatever");
 
             assertEquals(treeRules.contains(rule),true);
 
-            condition1 = new Condition(0, Condition.Type.Categorical, Condition.Operator.In, -1.0, new String[] {"f1995", "f1996", "f1997", "f1998", "f1999", "f2000"}, "fYear", false);
-            condition2 = new Condition(5, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 228.5, null, "Distance", true);
-            condition3 = new Condition(5, Condition.Type.Numerical, Condition.Operator.LessThan, 362.5, null, "Distance", false);
+            condition1 = new Condition(0, Condition.Type.Categorical, Condition.Operator.In, -1.0, new String[] {"f1995", "f1996", "f1997", "f1998", "f1999", "f2000"}, new int[] {8, 9, 10, 11, 12, 13}, "fYear", false);
+            condition2 = new Condition(5, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 228.5, null, null,"Distance", true);
+            condition3 = new Condition(5, Condition.Type.Numerical, Condition.Operator.LessThan, 362.5, null, null,"Distance", false);
             conditions = new Condition[] {condition1, condition2, condition3};
 
             rule = new Rule(conditions, 2.0, "whatever");

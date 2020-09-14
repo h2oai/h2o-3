@@ -17,21 +17,23 @@ public class Condition extends Iced {
     public boolean NAsIncluded;
     public String languageCondition;
     public double numTreshold;
-    public String[] catTreshold;
+    public String[] languageCatTreshold;
+    public int[] catTreshold;
 
-    public Condition(int featureIndex, Type type, Operator operator, double numTreshold, String[] catTreshold, String featureName, boolean NAsIncluded) {
+    public Condition(int featureIndex, Type type, Operator operator, double numTreshold, String[] languageCatTreshold, int[] catTreshold, String featureName, boolean NAsIncluded) {
         this.featureIndex = featureIndex;
         this.type = type;
         this.operator = operator;
         this.featureName = featureName;
         this.NAsIncluded = NAsIncluded;
         this.numTreshold = numTreshold;
+        this.languageCatTreshold = languageCatTreshold;
         this.catTreshold = catTreshold;
         
-        this.languageCondition = constructLanguaageCondition();
+        this.languageCondition = constructLanguageCondition();
     }
     
-    String constructLanguaageCondition() {
+    String constructLanguageCondition() {
         String description = "(" + this.featureName;
         
         if (Operator.LessThan.equals(this.operator)) {
@@ -42,9 +44,9 @@ public class Condition extends Iced {
             description += this.numTreshold;
         } else if (Operator.In.equals(this.operator)) {
             description += " in {";
-            for (int i = 0; i < catTreshold.length; i++) {
-                description += catTreshold[i];
-                if (i != catTreshold.length - 1)
+            for (int i = 0; i < languageCatTreshold.length; i++) {
+                description += languageCatTreshold[i];
+                if (i != languageCatTreshold.length - 1)
                     description += ", ";
             }
             description += "}";
@@ -98,7 +100,7 @@ public class Condition extends Iced {
                     }
                 } else if (Condition.Type.Categorical.equals(_condition.type)) {
                     for (int i = 0; i < _condition.catTreshold.length; i++) {
-                        if (_condition.catTreshold[i].equals(col.vec().stringAt(iRow)))
+                        if (_condition.catTreshold[i] == col.atd(iRow))
                             newVal = 1;
                     }
                 }

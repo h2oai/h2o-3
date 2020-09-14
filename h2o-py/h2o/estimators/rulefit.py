@@ -22,7 +22,8 @@ class H2ORuleFitEstimator(H2OEstimator):
 
     algo = "rulefit"
     param_names = {"model_id", "training_frame", "seed", "response_column", "ignored_columns", "algorithm",
-                   "min_rule_length", "max_rule_length", "max_num_rules", "model_type", "weights_column", "distribution"}
+                   "min_rule_length", "max_rule_length", "max_num_rules", "model_type", "weights_column",
+                   "distribution", "rule_generation_ntrees"}
 
     def __init__(self, **kwargs):
         super(H2ORuleFitEstimator, self).__init__()
@@ -205,5 +206,20 @@ class H2ORuleFitEstimator(H2OEstimator):
     def distribution(self, distribution):
         assert_is_type(distribution, None, Enum("auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
         self._parms["distribution"] = distribution
+
+
+    @property
+    def rule_generation_ntrees(self):
+        """
+        specifies the number of trees to build in the tree model. Defaults to 50.
+
+        Type: ``int``  (default: ``50``).
+        """
+        return self._parms.get("rule_generation_ntrees")
+
+    @rule_generation_ntrees.setter
+    def rule_generation_ntrees(self, rule_generation_ntrees):
+        assert_is_type(rule_generation_ntrees, None, int)
+        self._parms["rule_generation_ntrees"] = rule_generation_ntrees
 
 

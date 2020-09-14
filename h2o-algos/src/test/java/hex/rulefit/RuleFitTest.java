@@ -81,9 +81,9 @@ public class RuleFitTest extends TestUtil {
             System.out.println("RuleFit specificity: \n" + ruleFitConfusionMatrix.specificity());
             System.out.println("RuleFit sensitivity: \n" + ruleFitConfusionMatrix.recall());
 
-            assertEquals(ruleFitConfusionMatrix.accuracy(),0.5905271199388846,1e-4);
-            assertEquals(ruleFitConfusionMatrix.specificity(),0.7194066749072929,1e-4);
-            assertEquals(ruleFitConfusionMatrix.recall(),0.382,1e-4);
+            assertEquals(ruleFitConfusionMatrix.accuracy(),0.7868601986249045,1e-4);
+            assertEquals(ruleFitConfusionMatrix.specificity(),0.8207663782447466,1e-4);
+            assertEquals(ruleFitConfusionMatrix.recall(),0.732,1e-4);
             
             System.out.println("pure GLM ACC: \n" + glmConfusionMatrix.accuracy());
             System.out.println("pure GLM specificity: \n" + glmConfusionMatrix.specificity());
@@ -168,9 +168,9 @@ public class RuleFitTest extends TestUtil {
             System.out.println("RuleFit specificity: \n" + ruleFitConfusionMatrix.specificity());
             System.out.println("RuleFit sensitivity: \n" + ruleFitConfusionMatrix.recall());
 
-            assertEquals(ruleFitConfusionMatrix.accuracy(),0.7799847211611918,1e-4);
-            assertEquals(ruleFitConfusionMatrix.specificity(),0.8430160692212608,1e-4);
-            assertEquals(ruleFitConfusionMatrix.recall(),0.678,1e-4);
+            assertEquals(ruleFitConfusionMatrix.accuracy(),0.7685255920550038,1e-4);
+            assertEquals(ruleFitConfusionMatrix.specificity(),0.761433868974042,1e-4);
+            assertEquals(ruleFitConfusionMatrix.recall(),0.78,1e-4);
 
             System.out.println("pure GLM ACC: \n" + glmConfusionMatrix.accuracy());
             System.out.println("pure GLM specificity: \n" + glmConfusionMatrix.specificity());
@@ -218,18 +218,17 @@ public class RuleFitTest extends TestUtil {
             
             double[] expectedCoeffs = new double[] {13.54857, 8.37943,  8.33535, 7.78235, 7.62020, -7.57865, -5.59529, 5.54992, -4.04620, -3.73222, -3.66495,
                     -3.42013, -3.15808, -2.35471, -2.18179, 1.37956, -1.21565, -1.14398, -0.72780, -0.65794,  -0.60032, -0.51938, -0.24730, -0.21409, 0.16232,
-                    0.15663, 0.11327, 0.09523, -0.02568, -0.02156, 0.00606, 0.00080,  -0.00059, 0.00000, 0.00000, -0.00000, -0.00000};
+                    0.15663, 0.11327, 0.09523, -0.02568, -0.02156, 0.00606, 0.00080,  -0.00059, 0.00000, 0.00000, -0.00000, -0.00000, 0.00000, 0.00000};
 
-            String[] expectedVars = new String[] {"tree_0.T1.R", "tree_1.T26.RL", "tree_1.T49.LR", "tree_1.T29.RL", "tree_1.T19.LR", "tree_1.T14.LR",
-            "tree_1.T7.LR", "tree_1.T27.LR", "tree_1.T5.RR", "tree_2.T31.LLL", "tree_1.T1.LL", "tree_2.T37.LLL", "tree_1.T37.LL", "tree_1.T15.LL", "tree_1.T2.RL",
-            "tree_0.T2.L", "tree_1.T3.RR", "tree_3.T14.LRRR", "tree_1.T27.RL", "tree_1.T21.RL", "tree_1.T34.RL", "tree_2.T39.LRL", "tree_1.T6.LL", "tree_0.T1.L",
-            "tree_0.T12.R", "tree_0.T19.L", "tree_0.T27.L", "tree_0.T23.R", "tree_0.T2.R", "tree_1.T8.LL", "tree_1.T4.RL", "tree_0.T28.R", "tree_0.T12.L",
-            "tree_1.T38.RL", "tree_0.T15.R", "tree_0.T5.R", "tree_1.T10.LL"};
+            String[] expectedVars = new String[] {"M0T0N4", "M1T25N9", "M1T48N8", "M1T28N9", "M1T18N8", "M1T13N8",
+            "M1T6N8", "M1T26N8", "M1T4N10", "M2T30N15", "M1T0N7", "M2T36N15", "M1T36N7", "M1T14N7", "M1T1N9",
+            "M0T1N3", "M1T2N10", "M3T13N36", "M1T26N9", "M1T20N9", "M1T33N9", "M2T38N17", "M1T5N7", "M0T0N3",
+            "M0T11N4", "M0T18N3", "M0T26N3", "M0T22N4", "M0T1N4", "M1T7N7", "M1T3N9", "M0T27N4", "M0T11N3",
+            "M1T37N9", "M1T7N9", "M0T4N3", "M1T10N9", "M0T14N4", "M0T8N3"};
 
             for (int i = 0; i < model._output._rule_importance.getRowDim(); i++) {
-                // TODO: adapt test to new calculation
-             //   assertEquals(expectedCoeffs[i], (double) model._output._rule_importance.get(i,1),1e-4);
-             //   assertEquals(expectedVars[i], model._output._rule_importance.get(i,0));
+                assertEquals(expectedCoeffs[i], (double) model._output._rule_importance.get(i,1),1e-4);
+                assertEquals(expectedVars[i], model._output._rule_importance.get(i,0));
             }
 
             GLMModel.GLMParameters glmParameters = model.glmModel._parms;
@@ -279,9 +278,8 @@ public class RuleFitTest extends TestUtil {
             double[] expectedCoeffs = new double[] {-3.76823, -0.12718, 0.11265, -0.08923, 0.01601};
             String[] expectedVars = new String[] {"linear.0-60 mph (s)", "linear.economy (mpg)", "linear.displacement (cc)", "linear.year", "linear.weight (lb)"};
             for (int i = 0; i < model._output._rule_importance.getRowDim(); i++) {
-                //TODO: adapt test to new calculation
-         //       assertEquals(expectedCoeffs[i], (double) model._output._rule_importance.get(i,1),1e-4);
-         //       assertEquals(expectedVars[i], model._output._rule_importance.get(i,0));
+                assertEquals(expectedCoeffs[i], (double) model._output._rule_importance.get(i,1),1e-4);
+                assertEquals(expectedVars[i], model._output._rule_importance.get(i,0));
             }
 
             final Frame scoredByRF = Scope.track(model.score(fr));
@@ -296,9 +294,8 @@ public class RuleFitTest extends TestUtil {
             
             Assert.assertTrue(model.testJavaScoring(fr,scoredByRF,1e-4)); 
 
-            // //TODO: adapt test to new calculation
             // should be equal because only linear terms were important during RF training
-            //assertVecEquals(GLMpredictions, RFpredictions, 1e-4);
+            assertVecEquals(GLMpredictions, RFpredictions, 1e-4);
 
             ScoringInfo RuleFitScoringInfo = model.glmModel.getScoringInfo()[0];
             ScoringInfo GLMScoringInfo = glmModel.getScoringInfo()[0];
@@ -338,10 +335,9 @@ public class RuleFitTest extends TestUtil {
 
             double[] expectedCoeffs = new double[] {-3.76824, -0.12718, 0.11265, -0.08923, 0.01601};
             String[] expectedVars = new String[] {"linear.0-60 mph (s)", "linear.economy (mpg)", "linear.displacement (cc)", "linear.year", "linear.weight (lb)"};
-            // //TODO: adapt test to new calculation
             for (int i = 0; i < model._output._rule_importance.getRowDim(); i++) {
-              //  assertEquals(expectedCoeffs[i], (double) model._output._rule_importance.get(i,1),1e-4);
-              //  assertEquals(expectedVars[i], model._output._rule_importance.get(i,0));
+                assertEquals(expectedCoeffs[i], (double) model._output._rule_importance.get(i,1),1e-4);
+                assertEquals(expectedVars[i], model._output._rule_importance.get(i,0));
             }
 
             Assert.assertTrue(model.testJavaScoring(fr, fr2,1e-4));
