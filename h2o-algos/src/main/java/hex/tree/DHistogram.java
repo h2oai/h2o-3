@@ -197,7 +197,7 @@ public final class DHistogram extends Iced {
       _pred2 = cs._max;
       if (!cs.needsGammaDenom() && !cs.needsGammaNom()) {
         _vals_dim = Double.isNaN(_pred1) && Double.isNaN(_pred2) ? 3 : 5;
-        _dist = cs._dist; // intentionally cause NPE if used incorrectly
+        _dist = cs._dist; 
       } else if (!cs.needsGammaNom()) {
         _vals_dim = 6;
         _dist = cs._dist;
@@ -491,7 +491,7 @@ public final class DHistogram extends Iced {
       double wy = weight * y;
       double wyy = wy * y;
       int b = bin(col_data);
-      int binDimStart = _vals_dim*b;
+      final int binDimStart = _vals_dim*b;
       _vals[binDimStart + 0] += weight;
       _vals[binDimStart + 1] += wy;
       _vals[binDimStart + 2] += wyy;

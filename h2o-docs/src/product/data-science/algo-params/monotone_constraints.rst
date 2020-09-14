@@ -9,7 +9,7 @@ Description
 
 A mapping that represents monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns. 
 
-**Note**: In GBM and XGBoost, this option can only be used when the distribution is ``gaussian``, ``bernoulli``, ``tweedie`` or ``quantile``.
+**Note**: In GBM and XGBoost, this option can only be used when the distribution is ``gaussian``, ``bernoulli``, ``tweedie``. In GBM also ``quantile`` distribution is supported.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

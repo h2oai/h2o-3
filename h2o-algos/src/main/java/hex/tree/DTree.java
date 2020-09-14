@@ -1089,6 +1089,7 @@ public class DTree extends Iced {
                   int quantileBinRight = 0;
                   double ratio = 1;
                   double delta = 1;
+                  double precision = 1e-4;
                   for (int bin = 1; bin <= nbins; bin++) {
                     // left tree prediction quantile
                     if (bin <= b) {
@@ -1096,7 +1097,7 @@ public class DTree extends Iced {
                         ratio = 100 / wlo[b];
                       }
                       double tmpQuantile = (wlo[bin] * ratio) / 100;
-                      assert tmpQuantile <= 1 + 10e-5 : "Calculated temporary quantile " + tmpQuantile + " cannot be higher than 1.";
+                      assert tmpQuantile <= 1 + precision : "Calculated temporary quantile " + tmpQuantile + " cannot be higher than 1.";
                       double tmpDelta = Math.abs(dist._quantileAlpha - tmpQuantile);
                       if (tmpDelta < delta) {
                         delta = tmpDelta;
@@ -1109,7 +1110,7 @@ public class DTree extends Iced {
                         ratio = 100 / (wlo[nbins] - wlo[b]);
                       }
                       double tmpQuantile = ((wlo[bin] - wlo[b]) * ratio) / 100;
-                      assert tmpQuantile <= 1 + 10e-5 : "Calculated temporary quantile " + tmpQuantile + " cannot be higher than 1.";
+                      assert tmpQuantile <= 1 + precision: "Calculated temporary quantile " + tmpQuantile + " cannot be higher than 1.";
                       double tmpDelta = Math.abs(dist._quantileAlpha - tmpQuantile);
                       if (tmpDelta < delta) {
                         delta = tmpDelta;
