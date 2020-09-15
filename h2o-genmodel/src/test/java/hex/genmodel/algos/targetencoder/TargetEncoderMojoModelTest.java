@@ -92,7 +92,7 @@ public class TargetEncoderMojoModelTest {
     modelColumnNameToIndexMap.put(numerical_col2, 2);
 
     Map<Integer, CategoricalEncoder> domainMap = CategoricalEncodings.AUTO.createCategoricalEncoders(targetEncoderMojoModel, modelColumnNameToIndexMap);
-    RowToRawDataConverter rowToRawDataConverter = new DefaultRowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
+    RowToRawDataConverter rowToRawDataConverter = new DefaultRowToRawDataConverter(modelColumnNameToIndexMap, domainMap, errorConsumer, config);
 
 
     // Case when number of training examples equal to inflection point. Encoding should be between prior and posterior
@@ -165,7 +165,7 @@ public class TargetEncoderMojoModelTest {
     modelColumnNameToIndexMap.put(numerical_col2, 2);
 
     Map<Integer, CategoricalEncoder> domainMap = CategoricalEncodings.AUTO.createCategoricalEncoders(targetEncoderMojoModel, modelColumnNameToIndexMap);
-    RowToRawDataConverter rowToRawDataConverter = new DefaultRowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, new EasyPredictModelWrapper.Config());
+    RowToRawDataConverter rowToRawDataConverter = new DefaultRowToRawDataConverter(modelColumnNameToIndexMap, domainMap, errorConsumer, new EasyPredictModelWrapper.Config());
 
     RowData rowToPredictFor = new RowData();
     rowToPredictFor.put(numerical_col1, 42.0);
@@ -226,7 +226,7 @@ public class TargetEncoderMojoModelTest {
     modelColumnNameToIndexMap.put(numerical_col2, 2);
 
     Map<Integer, CategoricalEncoder> domainMap = CategoricalEncodings.AUTO.createCategoricalEncoders(targetEncoderMojoModel, modelColumnNameToIndexMap);
-    RowToRawDataConverter rowToRawDataConverter = new DefaultRowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
+    RowToRawDataConverter rowToRawDataConverter = new DefaultRowToRawDataConverter(modelColumnNameToIndexMap, domainMap, errorConsumer, config);
 
     //Case 1:  Unexpected value `C`
     RowData rowToPredictFor = new RowData();
@@ -300,7 +300,7 @@ public class TargetEncoderMojoModelTest {
     modelColumnNameToIndexMap.put(numerical_col2, 2);
 
     Map<Integer, CategoricalEncoder> domainMap = CategoricalEncodings.AUTO.createCategoricalEncoders(targetEncoderMojoModel, modelColumnNameToIndexMap);
-    RowToRawDataConverter rowToRawDataConverter = new DefaultRowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
+    RowToRawDataConverter rowToRawDataConverter = new DefaultRowToRawDataConverter(modelColumnNameToIndexMap, domainMap, errorConsumer, config);
 
     //Case 1:  Unexpected value `C`
     RowData rowToPredictFor = new RowData();

@@ -31,7 +31,17 @@ public class TargetEncoderMojoReaderTest {
     @Override public String mojoVersion() { return null; }
     
     public void initModel() {
-      _model = makeModel(new String[0], new String[0][], "response");
+      _model = makeModel(
+              new String[]{"embarked", "sex", "foo", "bar", "response"}, 
+              new String[][]{
+                      new String[] {"n", "y"},
+                      new String[] {"f", "m"},
+                      null, 
+                      null,
+                      null
+              }, 
+              "response"
+      );
     }
     
     public TargetEncoderMojoModel getModel() {
