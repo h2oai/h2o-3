@@ -36,7 +36,7 @@ public class XGBoostUtils {
         assert(coefnames.length == di.fullN());
         int catCols = di._catOffsets[di._catOffsets.length-1];
 
-        for (int i = 0; i < di.fullN(); ++i) {
+        for (int i = 0; i < di.fullN(); i++) {
             sb.append(i).append(" ").append(coefnames[i].replaceAll("\\s*","")).append(" ");
             if (i < catCols || f.vec(i-catCols).isBinary())
                 sb.append("i");
@@ -176,7 +176,7 @@ public class XGBoostUtils {
 
         String[] featureNames = new String[di.fullN()];
         boolean[] oneHotEncoded = new boolean[di.fullN()];
-        for (int i = 0; i < di.fullN(); ++i) {
+        for (int i = 0; i < di.fullN(); i++) {
             featureNames[i] = coefnames[i];
             if (i < numCatCols) {
                 oneHotEncoded[i] = true;

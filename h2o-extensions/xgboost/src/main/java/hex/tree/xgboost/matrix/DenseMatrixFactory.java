@@ -207,7 +207,7 @@ public class DenseMatrixFactory {
         DataInfo di, Chunk[] chunks, int rowInChunk,
         BigDenseMatrix data, long idx
     ) {
-        for (int j = 0; j < di._cats; ++j) {
+        for (int j = 0; j < di._cats; j++) {
             int len = di._catOffsets[j+1] - di._catOffsets[j];
             double val = chunks[j].isNA(rowInChunk) ? Double.NaN : chunks[j].at8(rowInChunk);
             int pos = di.getCategoricalId(j, val) - di._catOffsets[j];
@@ -216,7 +216,7 @@ public class DenseMatrixFactory {
             data.set(idx + pos, 1f);
             idx += len;
         }
-        for (int j = 0; j < di._nums; ++j) {
+        for (int j = 0; j < di._nums; j++) {
             float val = chunks[di._cats + j].isNA(rowInChunk) ? Float.NaN : (float) chunks[di._cats + j].atd(rowInChunk);
             data.set(idx++, val);
         }

@@ -236,7 +236,7 @@ public class SparseMatrixFactory {
                 if (weightChunk != null && weightChunk.atd(i) == 0) continue;
                 rowHeaderPointer.setAndIncrement(_matrix._rowHeaders, nonZeroCount);
                 _actualRows[chunkIdx]++;
-                for (int j = 0; j < _di._cats; ++j) {
+                for (int j = 0; j < _di._cats; j++) {
                     dataPointer.set(_matrix._sparseData, 1);
                     if (featChunks[j].isNA(i)) {
                         dataPointer.set(_matrix._colIndices, _di.getCategoricalId(j, Float.NaN));
@@ -246,7 +246,7 @@ public class SparseMatrixFactory {
                     dataPointer.increment();
                     nonZeroCount++;
                 }
-                for (int j = 0; j < _di._nums; ++j) {
+                for (int j = 0; j < _di._nums; j++) {
                     float val = (float) featChunks[_di._cats + j].atd(i);
                     if (val != 0) {
                         dataPointer.set(_matrix._sparseData, val);
@@ -276,7 +276,7 @@ public class SparseMatrixFactory {
             if (weight != -1 && chunks[weight].atd(i) == 0) continue;
             actualRows++;
             rowHeaderPointer.setAndIncrement(rowHeaders, nonZeroCount);
-            for (int j = 0; j < di._cats; ++j) {
+            for (int j = 0; j < di._cats; j++) {
                 dataPointer.set(data, 1); //one-hot encoding
                 if (chunks[j].isNA(i)) {
                     dataPointer.set(colIndex, di.getCategoricalId(j, Float.NaN));
@@ -286,7 +286,7 @@ public class SparseMatrixFactory {
                 dataPointer.increment();
                 nonZeroCount++;
             }
-            for (int j = 0; j < di._nums; ++j) {
+            for (int j = 0; j < di._nums; j++) {
                 float val = (float) chunks[di._cats + j].atd(i);
                 if (val != 0) {
                     dataPointer.set(data, val);
@@ -362,10 +362,8 @@ public class SparseMatrixFactory {
             // Rows with zero weights are going to be ignored
             if (weightColIndex != -1 && chunks[weightColIndex].atd(i) == 0) continue;
             rowIndicesCounts[0]++;
-
             nonZeroElementsCounts[0] += di._cats;
-
-            for (int j = 0; j < di._nums; ++j) {
+            for (int j = 0; j < di._nums; j++) {
                 double val = chunks[di._cats + j].atd(i);
                 if (val != 0) {
                     nonZeroElementsCounts[0]++;

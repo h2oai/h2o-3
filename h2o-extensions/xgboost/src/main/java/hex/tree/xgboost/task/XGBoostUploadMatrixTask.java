@@ -227,7 +227,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
         private int writeDenseRow(
             DataInfo di, Chunk[] chunks, int rowInChunk, float[] data, int idx
         ) {
-            for (int j = 0; j < di._cats; ++j) {
+            for (int j = 0; j < di._cats; j++) {
                 int len = di._catOffsets[j+1] - di._catOffsets[j];
                 double val = chunks[j].isNA(rowInChunk) ? Double.NaN : chunks[j].at8(rowInChunk);
                 int pos = di.getCategoricalId(j, val) - di._catOffsets[j];
@@ -236,7 +236,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
                 data[idx + pos] = 1f;
                 idx += len;
             }
-            for (int j = 0; j < di._nums; ++j) {
+            for (int j = 0; j < di._nums; j++) {
                 float val = chunks[di._cats + j].isNA(rowInChunk) ? Float.NaN : (float) chunks[di._cats + j].atd(rowInChunk);
                 data[idx++] = val;
             }
@@ -346,7 +346,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
                 if (weightChunk != null && weightChunk.atd(i) == 0) continue;
                 chunkData.rowHeader[rowHeaderIndex++] = nonZeroCount;
                 _actualRows[chunkIdx]++;
-                for (int j = 0; j < _di._cats; ++j) {
+                for (int j = 0; j < _di._cats; j++) {
                     chunkData.data[dataIndex] = 1;
                     if (featChunks[j].isNA(i)) {
                         chunkData.colIndices[dataIndex] = _di.getCategoricalId(j, Float.NaN);
@@ -356,7 +356,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
                     dataIndex++;
                     nonZeroCount++;
                 }
-                for (int j = 0; j < _di._nums; ++j) {
+                for (int j = 0; j < _di._nums; j++) {
                     float val = (float) featChunks[_di._cats + j].atd(i);
                     if (val != 0) {
                         chunkData.data[dataIndex] = val;
