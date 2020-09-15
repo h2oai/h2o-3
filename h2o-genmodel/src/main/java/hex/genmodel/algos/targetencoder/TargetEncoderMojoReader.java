@@ -28,7 +28,7 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
       _model._inflectionPoint = readkv("inflection_point");
       _model._smoothing = readkv("smoothing");
     }
-    _model._nonPredictors = Arrays.asList(((String) readkv("non_predictors")).split(";"));
+    _model._nonPredictors = Arrays.asList((readkv("non_predictors", "")).split(";"));
     _model.setEncodings(parseEncodingMap());
     _model._teColumn2HasNAs = parseTEColumnsToHasNAs();
   }

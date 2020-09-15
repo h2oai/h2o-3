@@ -18,7 +18,7 @@ class TargetEncoderAsModelProcessor implements MojoPreprocessor.ModelProcessor {
     private final TargetEncoderMojoModel _teModel;
     private final Map<String, Integer> _teColumnsToOffset = new HashMap<>();
     private final Map<Integer, CategoricalEncoder> _teOffsetToEncoder = new HashMap<>();
-    private final Map<String, String[]> _columnsToDomainAfterTE = new LinkedHashMap<>();
+    private final Map<String, String[]> _columnsToDomainAfterTE = new LinkedHashMap<>(); //we need a guaranteed iteration order
 
     public TargetEncoderAsModelProcessor(TargetEncoderMojoModel teModel, GenModel model) {
         _teModel = teModel;
@@ -45,7 +45,7 @@ class TargetEncoderAsModelProcessor implements MojoPreprocessor.ModelProcessor {
         return new VirtualTargetEncodedModel(_model, newNames, newDomains, _model.getResponseName());
     }
 
-    public void fillMaps() {
+    private void fillMaps() {
         final String[] origNames = _model.getOrigNames();
         final String[][] origDomainValues = _model.getOrigDomainValues();
         final String[] namesAfterAllEnc = _model.getNames();
@@ -125,7 +125,7 @@ class TargetEncoderAsModelProcessor implements MojoPreprocessor.ModelProcessor {
         return new String(cs);
     }
 
-    public static class TargetEncoderAsCategoricalEncoder implements CategoricalEncoder {
+    private static class TargetEncoderAsCategoricalEncoder implements CategoricalEncoder {
     
         private final TargetEncoderMojoModel _teModel;
         private final EncodingMap _encodings;
@@ -161,7 +161,11 @@ class TargetEncoderAsModelProcessor implements MojoPreprocessor.ModelProcessor {
         
     }
 
-    public static class TargetEncoderRowToRawDataConverter extends DefaultRowToRawDataConverter<TargetEncoderMojoModel> {
+    /**
+     * A dedicated TE converter whose main role is to remove encoded columns from `RowData` in some conditions
+     * to avoid the column to be re-encoded later (e.g. by the categorical encoding) if it was not desired.
+     */
+    private static class TargetEncoderRowToRawDataConverter extends DefaultRowToRawDataConverter<TargetEncoderMojoModel> {
         
         private final TargetEncoderMojoModel _teModel;
         
@@ -171,7 +175,6 @@ class TargetEncoderAsModelProcessor implements MojoPreprocessor.ModelProcessor {
                                                   Map<Integer, CategoricalEncoder> offsetToEncoder,
                                                   EasyPredictModelWrapper.ErrorConsumer errorConsumer,
                                                   EasyPredictModelWrapper.Config config) {
-            // domainMap is ignored here, however we need the TE columns to be enum encoded to be able to apply TE.
             super(columnToOffsetIdx,
                   offsetToEncoder,
                   errorConsumer, 
@@ -189,7 +192,11 @@ class TargetEncoderAsModelProcessor implements MojoPreprocessor.ModelProcessor {
         }
     }
 
-    public static class VirtualTargetEncodedModel extends GenModel {
+    /**
+     *  This virtual model is used to "trick" further processors and especially Categoricalencoding
+     *  to provide it with a model/frame description that looks as if TE was already applied.
+     */
+    private static class VirtualTargetEncodedModel extends GenModel {
         
         GenModel _m;
         
@@ -211,7 +218,6 @@ class TargetEncoderAsModelProcessor implements MojoPreprocessor.ModelProcessor {
         @Override
         public double[] score0(double[] row, double[] preds) {
             throw new IllegalStateException("This virtual model should not be called for scoring");
-    //        return _m.score0(row, preds);
         }
     
         @Override

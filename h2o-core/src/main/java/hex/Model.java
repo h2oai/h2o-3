@@ -280,7 +280,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.AUTO;
     public CategoricalEncodingScheme _categorical_encoding = CategoricalEncodingScheme.AUTO;
-//    public String[] _categorical_encoding_skipped_columns; //internal use
     public int _max_categorical_levels = 10;
 
     public DistributionFamily _distribution = DistributionFamily.AUTO;

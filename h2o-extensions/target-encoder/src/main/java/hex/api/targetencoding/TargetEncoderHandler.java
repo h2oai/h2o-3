@@ -28,7 +28,8 @@ public class TargetEncoderHandler extends Handler {
     final Frame transformedFrame = model.transform(
             parameters._frame.get(),
             asTraining,
-            TargetEncoderModel.NO_FOLD, blendingParams,
+            TargetEncoderModel.NO_FOLD,
+            blendingParams,
             noise
     );
 
