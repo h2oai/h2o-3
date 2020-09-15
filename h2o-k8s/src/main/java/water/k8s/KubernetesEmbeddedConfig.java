@@ -2,10 +2,11 @@ package water.k8s;
 
 import water.H2O;
 import water.init.AbstractEmbeddedH2OConfig;
+import water.init.NetworkInit;
 import water.util.Log;
 
 import java.net.InetAddress;
-import java.util.Collection;
+import java.util.*;
 
 public class KubernetesEmbeddedConfig extends AbstractEmbeddedH2OConfig {
 
@@ -34,6 +35,9 @@ public class KubernetesEmbeddedConfig extends AbstractEmbeddedH2OConfig {
 
     @Override
     public void notifyAboutCloudSize(InetAddress ip, int port, InetAddress leaderIp, int leaderPort, int size) {
+        if (!H2O.SELF.isLeaderNode()) {
+            NetworkInit.h2oHttpView.setAcceptRequests(false);
+        }
         Log.info(String.format("Created cluster of size %d, leader node IP is '%s'", size, leaderIp.toString()));
     }
 

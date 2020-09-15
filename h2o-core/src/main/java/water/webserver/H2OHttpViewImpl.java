@@ -30,8 +30,8 @@ public class H2OHttpViewImpl implements H2OHttpView {
     this.config = config;
   }
 
-  public void acceptRequests() {
-    _acceptRequests = true;
+  public void setAcceptRequests(boolean acceptRequests) {
+    _acceptRequests = acceptRequests;
   }
 
   /**

@@ -1846,7 +1846,7 @@ final public class H2O {
    */
   public static void startServingRestApi() {
     if (!H2O.ARGS.disable_web) {
-      NetworkInit.h2oHttpView.acceptRequests();
+      NetworkInit.h2oHttpView.setAcceptRequests(true);
     }
   }
 

@@ -1,7 +1,5 @@
 package water.k8s;
 
-import fi.iki.elonen.NanoHTTPD;
-import water.H2O;
 import water.init.AbstractEmbeddedH2OConfig;
 import water.init.EmbeddedConfigProvider;
 import water.k8s.api.KubernetesRestApi;
@@ -14,7 +12,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * A configuration provider for H2O running in Kubernetes cluster. It is able to detected H2O is being ran in K8S
