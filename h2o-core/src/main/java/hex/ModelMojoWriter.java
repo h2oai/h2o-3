@@ -81,6 +81,14 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     }
   }
 
+  @Override
+  protected final void writeModelKV() throws IOException {
+    if (model._parms._preprocessors != null) {
+      writekv("preprocessors_count", model._parms._preprocessors.length);
+    }
+    writeModelData();
+  }
+  
   protected abstract void writeModelData() throws IOException;
 
   @Override
@@ -88,7 +96,18 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     super.writeExtraInfo();
     writeModelDetails();
     writeModelDetailsReadme();
+    writeModelPreprocessors();
   }
+  
+  protected void writeModelPreprocessors() throws IOException {
+    if (model._parms._preprocessors == null) return;
+    for (int i=0; i < model._parms._preprocessors.length; i++) {
+      Key<ModelPreprocessor> key = model._parms._preprocessors[i];
+      ModelPreprocessor mp = key.get();
+      writemodel("preprocessing/preprocessor_"+i+"/", mp.asModel().getMojo());
+    }
+  }
+
 
   /** Create file that contains model details in JSON format.
    * This information is pulled from the models schema.

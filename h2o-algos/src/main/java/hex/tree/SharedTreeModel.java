@@ -2,6 +2,7 @@ package hex.tree;
 
 import hex.*;
 import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.DefaultCategoricalEncoding;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
@@ -872,17 +873,17 @@ public abstract class SharedTreeModel<
       case AUTO:
       case Enum:
       case SortByResponse:
-        return CategoricalEncoding.AUTO;
+        return DefaultCategoricalEncoding.AUTO;
       case OneHotExplicit:
-        return CategoricalEncoding.OneHotExplicit;
+        return DefaultCategoricalEncoding.OneHotExplicit;
       case Binary:
-        return CategoricalEncoding.Binary;
+        return DefaultCategoricalEncoding.Binary;
       case EnumLimited:
-        return CategoricalEncoding.EnumLimited;
+        return DefaultCategoricalEncoding.EnumLimited;
       case Eigen:
-        return CategoricalEncoding.Eigen;
+        return DefaultCategoricalEncoding.Eigen;
       case LabelEncoder:
-        return CategoricalEncoding.LabelEncoder;
+        return DefaultCategoricalEncoding.LabelEncoder;
       default:
         return null;
     }

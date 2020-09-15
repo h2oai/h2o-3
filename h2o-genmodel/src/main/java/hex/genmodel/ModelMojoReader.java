@@ -236,7 +236,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     _model._offsetColumn = readkv("offset_column");
     _model._mojo_version = ((Number) readkv("mojo_version")).doubleValue();
     checkMaxSupportedMojoVersion();
-    readModelData();
+    readModelKV();
     if (readModelMetadata) {
       final String algoFullName = readkv("algorithm"); // The key'algo' contains the shortcut, 'algorithm' is the long version
       _model._modelAttributes = readModelSpecificAttributes();
@@ -259,6 +259,19 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       return new ModelAttributes(_model, modelJson);
     } else {
       return null;
+    }
+  }
+
+  protected final void readModelKV() throws IOException {
+    readModelPreprocessors(readkv("preprocessors_count", 0));
+    readModelData();
+  }
+
+  private void readModelPreprocessors(int count) throws IOException {
+    if (count <= 0) return;
+    _model._preprocessors = new MojoPreprocessor[count];
+    for (int i=0; i < count; i++) {
+      _model._preprocessors[i] = (MojoPreprocessor) ModelMojoReader.readFrom(new NestedMojoReaderBackend(_reader, "preprocessing/preprocessor_"+i+"/"));
     }
   }
 

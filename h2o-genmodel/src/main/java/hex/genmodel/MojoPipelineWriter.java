@@ -30,7 +30,7 @@ public class MojoPipelineWriter extends AbstractMojoWriter {
   }
 
   @Override
-  protected void writeModelData() throws IOException {
+  protected void writeModelKV() throws IOException {
     writekv("submodel_count", _models.size());
     int modelNum = 0;
     for (Map.Entry<String, MojoModel> model : _models.entrySet()) {
