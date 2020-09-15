@@ -2,6 +2,7 @@ package hex.genmodel.algos.deeplearning;
 
 import hex.ModelCategory;
 import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.DefaultCategoricalEncoding;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.utils.DistributionFamily;
@@ -197,13 +198,13 @@ public class DeeplearningMojoModel extends MojoModel {
       case "AUTO":
       case "SortByResponse":
       case "OneHotInternal":
-        return CategoricalEncoding.AUTO;
+        return DefaultCategoricalEncoding.AUTO;
       case "Binary":
-        return CategoricalEncoding.Binary;
+        return DefaultCategoricalEncoding.Binary;
       case "Eigen":
-        return CategoricalEncoding.Eigen;
+        return DefaultCategoricalEncoding.Eigen;
       case "LabelEncoder":
-        return CategoricalEncoding.LabelEncoder;
+        return DefaultCategoricalEncoding.LabelEncoder;
       default:
         return null;
     }

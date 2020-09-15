@@ -1544,6 +1544,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (_valid != null) {
         Frame newvalid = applyPreprocessors(_valid, false, scopeTrack);
         newvalid = encodeFrameCategoricals(newvalid, scopeTrack /* for CV, need to score one more time in outer loop */);
+//        newvalid = adaptFrameToTrain(newvalid, "Validation Frame", "_validation_frame", expensive, true);
         setValid(newvalid);
       }
       boolean restructured = false;

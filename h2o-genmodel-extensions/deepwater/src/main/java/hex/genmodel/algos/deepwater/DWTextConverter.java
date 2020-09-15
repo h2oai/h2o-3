@@ -2,17 +2,17 @@ package hex.genmodel.algos.deepwater;
 
 import hex.genmodel.GenModel;
 import hex.genmodel.easy.CategoricalEncoder;
+import hex.genmodel.easy.DefaultRowToRawDataConverter;
 import hex.genmodel.easy.EasyPredictModelWrapper;
-import hex.genmodel.easy.RowToRawDataConverter;
 import hex.genmodel.easy.exception.PredictException;
 
 import java.util.Map;
 
-public class DWTextConverter extends RowToRawDataConverter {
-
-  DWTextConverter(GenModel m, Map<String, Integer> modelColumnNameToIndexMap, Map<Integer, CategoricalEncoder> domainMap,
+public class DWTextConverter extends DefaultRowToRawDataConverter<GenModel> {
+  
+  DWTextConverter(Map<String, Integer> modelColumnNameToIndexMap, Map<Integer, CategoricalEncoder> domainMap,
                   EasyPredictModelWrapper.ErrorConsumer errorConsumer, EasyPredictModelWrapper.Config config) {
-    super(m, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
+    super(modelColumnNameToIndexMap, domainMap, errorConsumer, config);
   }
 
   @Override
