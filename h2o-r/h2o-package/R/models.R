@@ -3631,21 +3631,36 @@ h2o.std_coef_plot <- function(model, num_of_features = NULL){
 }
 
 #' @export
-plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
+plot.H2OBinomialMetrics <- function(perf, type = "roc", main, ...) {
   # TODO: add more types (i.e. cutoffs)
-  if(!type %in% c("roc")) stop("type must be 'roc'")
+  if(!type %in% c("roc", "pr")) stop("type must be 'roc' or 'pr'")
   if(type == "roc") {
     xaxis <- "False Positive Rate"; yaxis = "True Positive Rate"
     if(missing(main)) {
-      main <- paste(yaxis, "vs", xaxis)
-      if(x@on_train) {
+      main <- "Receiver Operating Characteristic curve"
+      if(perf@on_train) {
         main <- paste(main, "(on train)")
-      } else if (x@on_valid) {
+      } else if (perf@on_valid) {
         main <- paste(main, "(on valid)")
       }
     }
-    graphics::plot(x@metrics$thresholds_and_metric_scores$fpr, x@metrics$thresholds_and_metric_scores$tpr, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), ...)
+    x <- perf@metrics$thresholds_and_metric_scores$fpr
+    y <- perf@metrics$thresholds_and_metric_scores$tpr
+    graphics::plot(x, y, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1))
     graphics::abline(0, 1, lty = 2)
+  } else if(type=="pr"){
+    xaxis <- "Recall (TP/(TP+FP))"; yaxis = "Precision - True Positive Rate"
+    if(missing(main)) {
+      main <- "Precision Recall curve"
+      if(perf@on_train) {
+        main <- paste(main, "(on train)")
+      } else if (perf@on_valid) {
+        main <- paste(main, "(on valid)")
+      }
+    }
+    x <- rev(perf@metrics$thresholds_and_metric_scores$recall)
+    y <- rev(perf@metrics$thresholds_and_metric_scores$precision)
+    graphics::plot(x, y, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1))
   }
 }
 
