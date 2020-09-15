@@ -101,6 +101,12 @@ public class RuleFitTest extends TestUtil {
 
             System.out.println("RuleFit r2: " + RuleFitScoringInfo.scored_train._r2);
             System.out.println("GLM r2: " + GLMScoringInfo.scored_train._r2);
+
+            System.out.println("RuleFit AUC:" +  rfModel.auc());
+            System.out.println("GLM AUC:" + glmModel.auc());
+
+            System.out.println("RuleFit logloss:" +  rfModel.logloss());
+            System.out.println("GLM logloss:" + glmModel.logloss());
             
         } finally {
             Scope.exit();
@@ -189,6 +195,12 @@ public class RuleFitTest extends TestUtil {
             System.out.println("RuleFit r2: " + RuleFitScoringInfo.scored_train._r2);
             System.out.println("GLM r2: " + GLMScoringInfo.scored_train._r2);
 
+            System.out.println("RuleFit AUC:" +  rfModel.auc());
+            System.out.println("GLM AUC:" + glmModel.auc());
+
+            System.out.println("RuleFit logloss:" +  rfModel.logloss());
+            System.out.println("GLM logloss:" + glmModel.logloss());
+
         } finally {
             Scope.exit();
         }
@@ -245,6 +257,8 @@ public class RuleFitTest extends TestUtil {
             System.out.println("GLM MSE: " + GLMScoringInfo.scored_train._mse);
             System.out.println("RuleFit r2: " + RuleFitScoringInfo.scored_train._r2);
             System.out.println("GLM r2: " + GLMScoringInfo.scored_train._r2);
+            System.out.println("RuleFit RMSLE:" +  model.rmsle());
+            System.out.println("GLM RMSLE:" + glmModel.rmsle());
 
         } finally {
             Scope.exit();
