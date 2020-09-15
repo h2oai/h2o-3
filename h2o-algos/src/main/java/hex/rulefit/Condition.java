@@ -83,25 +83,26 @@ public class Condition extends Iced {
             Chunk col = cs[_condition.featureIndex];
             for (int iRow = 0; iRow < col._len; ++iRow) {
                 int newVal = 0;
+                boolean isNA = col.isNA(iRow);
                 // check whether condition is fulfilled:
-                if (_condition.NAsIncluded) {
-                    if (col.isNA(iRow))
-                        newVal = 1;
-                }
-                if (Condition.Type.Numerical.equals(_condition.type)) {
-                    if (Condition.Operator.LessThan.equals(_condition.operator)) {
-                        if (col.atd(iRow) < _condition.numTreshold) {
-                            newVal = 1;
+                if (_condition.NAsIncluded && isNA) {
+                    newVal = 1;
+                } else if (!isNA) {
+                    if (Condition.Type.Numerical.equals(_condition.type)) {
+                        if (Condition.Operator.LessThan.equals(_condition.operator)) {
+                            if (col.atd(iRow) < _condition.numTreshold) {
+                                newVal = 1;
+                            }
+                        } else if (Condition.Operator.GreaterThanOrEqual.equals(_condition.operator)) {
+                            if (col.atd(iRow) >= _condition.numTreshold) {
+                                newVal = 1;
+                            }
                         }
-                    } else if (Condition.Operator.GreaterThanOrEqual.equals(_condition.operator)) {
-                        if (col.atd(iRow) >= _condition.numTreshold) {
-                            newVal = 1;
+                    } else if (Condition.Type.Categorical.equals(_condition.type)) {
+                        for (int i = 0; i < _condition.catTreshold.length; i++) {
+                            if (_condition.catTreshold[i] == col.atd(iRow))
+                                newVal = 1;
                         }
-                    }
-                } else if (Condition.Type.Categorical.equals(_condition.type)) {
-                    for (int i = 0; i < _condition.catTreshold.length; i++) {
-                        if (_condition.catTreshold[i] == col.atd(iRow))
-                            newVal = 1;
                     }
                 }
                 ncs[0].addNum(newVal);

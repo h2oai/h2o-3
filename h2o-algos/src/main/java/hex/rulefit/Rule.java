@@ -55,7 +55,7 @@ public class Rule extends Iced {
         return mrtask.doAll(1, Vec.T_NUM, frameToReduce).outputFrame();
 
     }
-    /*-----comment when runing wth list*/
+
     @Override
     public int hashCode() {
         int hashCode = 0;
@@ -69,7 +69,6 @@ public class Rule extends Iced {
     public boolean equals(Object obj) {
         return this.hashCode() == obj.hashCode();
     }
-    /*-----comment when runing wth list*/
     
     public static Set<Rule> extractRulesFromModel(SharedTreeModel model, int modelId) {
         Set<Rule> rules = new HashSet<>();
@@ -101,13 +100,6 @@ public class Rule extends Iced {
         rules = traverseNodes(tree.rootNode, conditions, rules, null, modelId);
         return rules;
     }
-
-    public static List<Rule> extractRulesListFromTree(SharedTreeSubgraph tree, int modelId) {
-        List<Rule> rules = new ArrayList<>();
-        List<Condition> conditions = new ArrayList<>();
-        rules = new ArrayList(traverseNodes(tree.rootNode, conditions, new HashSet<Rule>(), null, modelId));
-        return rules;
-    }
     
     private static Set<Rule> traverseNodes(SharedTreeNode node, List<Condition> conditions, Set<Rule> rules, Condition conditionToAdd, int modelId) {
         if (conditionToAdd != null)
@@ -116,8 +108,8 @@ public class Rule extends Iced {
         // extract this node
         Condition.Type type;
         Condition.Operator operator;
-        String[] catTreshold;
-        int[] catTresholdNum;
+        String[] catThreshold;
+        int[] catThresholdNum;
         
         if (node.isLeaf()) {
             // create Rule to return
@@ -134,16 +126,16 @@ public class Rule extends Iced {
                 operator = Condition.Operator.In;
                 BitSet inclusiveLevels = node.getRightChild().getInclusiveLevels();
                 List<Integer> matchedDomainValues = new ArrayList<>();
-                catTreshold = new String[inclusiveLevels.cardinality()];
-                catTresholdNum = new int[inclusiveLevels.cardinality()];
+                catThreshold = new String[inclusiveLevels.cardinality()];
+                catThresholdNum = new int[inclusiveLevels.cardinality()];
                 for (int i = inclusiveLevels.nextSetBit(0); i >= 0; i = inclusiveLevels.nextSetBit(i+1)) {
                     matchedDomainValues.add(i);
                 }
-                for (int i = 0; i < catTreshold.length; i++) {
-                    catTreshold[i] = node.getDomainValues()[matchedDomainValues.get(i)];
-                    catTresholdNum[i] = matchedDomainValues.get(i);
+                for (int i = 0; i < catThreshold.length; i++) {
+                    catThreshold[i] = node.getDomainValues()[matchedDomainValues.get(i)];
+                    catThresholdNum[i] = matchedDomainValues.get(i);
                 }
-                rules.addAll(traverseNodes(node.getRightChild(), new ArrayList<>(conditions), rules, new Condition(node.getColId(), type, operator, -1, catTreshold, catTresholdNum, node.getColName(), node.getRightChild().isInclusiveNa()), modelId));
+                rules.addAll(traverseNodes(node.getRightChild(), new ArrayList<>(conditions), rules, new Condition(node.getColId(), type, operator, -1, catThreshold, catThresholdNum, node.getColName(), node.getRightChild().isInclusiveNa()), modelId));
             }
                
             // extract condition leading to the left and recurse there
@@ -156,16 +148,16 @@ public class Rule extends Iced {
                 operator = Condition.Operator.In;
                 BitSet inclusiveLevels = node.getLeftChild().getInclusiveLevels();
                 List<Integer> matchedDomainValues = new ArrayList<>();
-                catTreshold = new String[inclusiveLevels.cardinality()];
-                catTresholdNum = new int[inclusiveLevels.cardinality()];
+                catThreshold = new String[inclusiveLevels.cardinality()];
+                catThresholdNum = new int[inclusiveLevels.cardinality()];
                 for (int i = inclusiveLevels.nextSetBit(0); i >= 0; i = inclusiveLevels.nextSetBit(i+1)) {
                     matchedDomainValues.add(i);
                 }
-                for (int i = 0; i < catTreshold.length; i++) {
-                    catTreshold[i] = node.getDomainValues()[matchedDomainValues.get(i)];
-                    catTresholdNum[i] = matchedDomainValues.get(i);
+                for (int i = 0; i < catThreshold.length; i++) {
+                    catThreshold[i] = node.getDomainValues()[matchedDomainValues.get(i)];
+                    catThresholdNum[i] = matchedDomainValues.get(i);
                 }
-                rules.addAll(traverseNodes(node.getLeftChild(), new ArrayList<>(conditions), rules, new Condition(node.getColId(), type, operator, -1, catTreshold, catTresholdNum, node.getColName(), node.getLeftChild().isInclusiveNa()), modelId));
+                rules.addAll(traverseNodes(node.getLeftChild(), new ArrayList<>(conditions), rules, new Condition(node.getColId(), type, operator, -1, catThreshold, catThresholdNum, node.getColName(), node.getLeftChild().isInclusiveNa()), modelId));
             }
             
         }
