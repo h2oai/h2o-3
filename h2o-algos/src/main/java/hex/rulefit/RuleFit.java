@@ -239,6 +239,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
                 // TODO: add here coverage_count and coverage percent
                 model._output._rule_importance = convertRulesToTable(getRules(glmModel._parms._family, glmModel.coefficients(), treeModels, _parms._algorithm));
+                
+                fillModelMetrics(model, glmModel);
 
                 for (Key key : keys) {
                     DKV.remove(key);
@@ -254,6 +256,13 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             } finally {
                 if (model != null) model.unlock(_job);
             }
+        }
+        
+        void fillModelMetrics(RuleFitModel model, GLMModel glmModel){
+            model._output._validation_metrics = glmModel._output._validation_metrics;
+            model._output._training_metrics = glmModel._output._training_metrics;
+            model._output._cross_validation_metrics = glmModel._output._cross_validation_metrics;
+            model._output._cross_validation_metrics_summary = glmModel._output._cross_validation_metrics_summary;
         }
 
         int[] range(int min, int max) {
