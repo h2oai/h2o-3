@@ -2,6 +2,7 @@ package hex.deeplearning;
 
 import hex.*;
 import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.DefaultCategoricalEncoding;
 import hex.genmodel.utils.DistributionFamily;
 import hex.util.EffectiveParametersUtils;
 import hex.util.LinearAlgebraUtils;
@@ -959,11 +960,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();
     sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();
     sb.ip("public int nclasses() { return "+ (p._autoencoder ? neurons[neurons.length-1].units : _output.nclasses()) + "; }").nl();
-    if (encoding != CategoricalEncoding.AUTO) {
+    if (encoding != DefaultCategoricalEncoding.AUTO) {
       sb.ip("public hex.genmodel.CategoricalEncoding getCategoricalEncoding() { return hex.genmodel.CategoricalEncoding." +
               encoding.name() + "; }").nl();
     }
-    if (encoding == CategoricalEncoding.Eigen) {
+    if (encoding == DefaultCategoricalEncoding.Eigen) {
       sb.ip("public double[] getOrigProjectionArray() { return " + PojoUtils.toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
     }
     if (model_info().data_info()._nums > 0) {
@@ -2298,13 +2299,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       case AUTO:
       case SortByResponse:
       case OneHotInternal:
-        return CategoricalEncoding.AUTO;
+        return DefaultCategoricalEncoding.AUTO;
       case Binary:
-        return CategoricalEncoding.Binary;
+        return DefaultCategoricalEncoding.Binary;
       case Eigen:
-        return CategoricalEncoding.Eigen;
+        return DefaultCategoricalEncoding.Eigen;
       case LabelEncoder:
-        return CategoricalEncoding.LabelEncoder;
+        return DefaultCategoricalEncoding.LabelEncoder;
       default:
         return null;
     }

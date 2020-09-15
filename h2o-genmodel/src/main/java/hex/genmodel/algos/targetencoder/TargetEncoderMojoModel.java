@@ -1,11 +1,13 @@
 package hex.genmodel.algos.targetencoder;
 
+import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.MojoPreprocessor;
 
 import java.io.Serializable;
 import java.util.*;
 
-public class TargetEncoderMojoModel extends MojoModel {
+public class TargetEncoderMojoModel extends MojoModel implements MojoPreprocessor {
 
   public static double computeLambda(long nrows, double inflectionPoint, double smoothing) {
     return 1.0 / (1 + Math.exp((inflectionPoint - nrows) / smoothing));
@@ -201,4 +203,30 @@ public class TargetEncoderMojoModel extends MojoModel {
     }
   }
 
+  Map<String, EncodingMap> sortByColumnIndex(final EncodingMaps encodingMaps) {
+    Map<String, EncodingMap> sorted = new TreeMap<>(new ColumnComparator(_columnNameToIdx));
+    sorted.putAll(encodingMaps.encodingMap());
+    return sorted;
+  }
+  
+  private static class ColumnComparator implements Comparator<String>, Serializable {
+    
+    private Map<String, Integer> _columnToIdx;
+
+    public ColumnComparator(Map<String, Integer> _columnToIdx) {
+      this._columnToIdx = _columnToIdx;
+    }
+
+    @Override
+    public int compare(String lhs, String rhs) {
+      return Integer.compare(_columnToIdx.get(lhs), _columnToIdx.get(rhs));
+    }
+  }
+
+
+  @Override
+  public ModelProcessor makeProcessor(GenModel model) {
+    return new TargetEncoderAsModelProcessor(this, model);
+  }
+  
 }

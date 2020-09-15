@@ -1,10 +1,10 @@
 package hex.genmodel.algos.tree;
 
 import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.DefaultCategoricalEncoding;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
-import hex.genmodel.attributes.VariableImportances;
 import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.GenmodelBitSet;
 import water.logging.Logger;
@@ -253,17 +253,17 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
             case "AUTO":
             case "Enum":
             case "SortByResponse":
-                return CategoricalEncoding.AUTO;
+                return DefaultCategoricalEncoding.AUTO;
             case "OneHotExplicit":
-                return CategoricalEncoding.OneHotExplicit;
+                return DefaultCategoricalEncoding.OneHotExplicit;
             case "Binary":
-                return CategoricalEncoding.Binary;
+                return DefaultCategoricalEncoding.Binary;
             case "EnumLimited":
-                return CategoricalEncoding.EnumLimited;
+                return DefaultCategoricalEncoding.EnumLimited;
             case "Eigen":
-                return CategoricalEncoding.Eigen;
+                return DefaultCategoricalEncoding.Eigen;
             case "LabelEncoder":
-                return CategoricalEncoding.LabelEncoder;
+                return DefaultCategoricalEncoding.LabelEncoder;
             default:
                 return null;
         }

@@ -2,8 +2,8 @@ package hex.genmodel.algos.deepwater;
 
 import hex.genmodel.GenModel;
 import hex.genmodel.easy.CategoricalEncoder;
+import hex.genmodel.easy.DefaultRowToRawDataConverter;
 import hex.genmodel.easy.EasyPredictModelWrapper;
-import hex.genmodel.easy.RowToRawDataConverter;
 import hex.genmodel.easy.exception.PredictException;
 
 import javax.imageio.ImageIO;
@@ -15,14 +15,14 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Map;
 
-public class DWImageConverter extends RowToRawDataConverter {
-
-  private final DeepwaterMojoModel _dwm;
+public class DWImageConverter extends DefaultRowToRawDataConverter<DeepwaterMojoModel> {
   
+  private final DeepwaterMojoModel _model;
+
   DWImageConverter(DeepwaterMojoModel m, Map<String, Integer> modelColumnNameToIndexMap, Map<Integer, CategoricalEncoder> domainMap,
                    EasyPredictModelWrapper.ErrorConsumer errorConsumer, EasyPredictModelWrapper.Config config) {
-    super(m, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
-    _dwm = m;
+    super(modelColumnNameToIndexMap, domainMap, errorConsumer, config);
+    _model = m;
   }
 
   @Override
@@ -49,12 +49,12 @@ public class DWImageConverter extends RowToRawDataConverter {
     }
 
     if (img != null) {
-      int W = _dwm._width;
-      int H = _dwm._height;
-      int C = _dwm._channels;
+      int W = _model._width;
+      int H = _model._height;
+      int C = _model._channels;
       float[] _destData = new float[W * H * C];
       try {
-        GenModel.img2pixels(img, W, H, C, _destData, 0, _dwm._meanImageData);
+        GenModel.img2pixels(img, W, H, C, _destData, 0, _model._meanImageData);
       } catch (IOException e) {
         throw new PredictException("Couldn't vectorize image.", e);
       }
