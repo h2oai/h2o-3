@@ -119,7 +119,7 @@ def gen_module(schema, algo, module):
             if pname in required_params or not pname:  # skip schema params already added by required_params, and those explicitly removed
                 continue
             sig_pnames.append(pname)
-            sig_params.append("%s = %s" % (pname, get_sig_default_value(param)))
+            sig_params.append("%s = %s" % (pname, get_customizations_or_defaults_for(algo, 'doc.signatures.' + pname, get_sig_default_value(param))))
 
     for k, v in extra_params.items():
         sig_pnames.append(k)

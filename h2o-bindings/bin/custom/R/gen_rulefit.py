@@ -21,6 +21,13 @@ Build a RuleFit Model
 Builds a Distributed RuleFit model on a parsed dataset, for regression or 
 classification.
     """,
+    params=dict(
+        model_type="Specifies type of base learners in the ensemble. Must be one of: \"rules_and_linear\", \"rules\", \"linear\". "
+                   "Defaults to rules_and_linear.",
+    ),
+    signatures=dict(
+        model_type="c(\"rules_and_linear\", \"rules\", \"linear\")"
+    ),
     examples="""
 library(h2o)
 h2o.init()
