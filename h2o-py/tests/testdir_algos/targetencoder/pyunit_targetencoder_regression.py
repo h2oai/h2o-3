@@ -10,6 +10,7 @@ from h2o.estimators import H2OTargetEncoderEstimator
 from tests import pyunit_utils as pu
 
 seed = 42
+here = os.path.realpath(os.path.dirname(__file__))
 
 
 def load_dataset(incl_test=False, incl_foldc=False):
@@ -36,9 +37,9 @@ def test_regression_with_none():
     col_te = encoded['sex_te'].head(5).as_data_frame().values.reshape(-1).tolist()
     assert_allclose(col_te, col_te_golden, atol=1e-5)
     
-    # with open("./golden/regression_none.csv", "w") as f:
+    # with open("{}/golden/regression_none.csv".format(here), "w") as f:
     #     f.write(encoded.get_frame_data())
-    golden = h2o.import_file("./golden/regression_none.csv")
+    golden = h2o.import_file("{}/golden/regression_none.csv".format(here))
     assert golden.names == encoded.names
     assert pu.compare_frames(golden, encoded, 0, tol_numeric=1e-5)
 
@@ -53,9 +54,9 @@ def test_regression_with_kfold():
     col_te = encoded['sex_te'].head(5).as_data_frame().values.reshape(-1).tolist()
     assert_allclose(col_te, col_te_golden, atol=1e-5)
     
-    # with open("./golden/regression_kfold.csv", "w") as f:
+    # with open("{}/golden/regression_kfold.csv".format(here), "w") as f:
     #     f.write(encoded.get_frame_data())
-    golden = h2o.import_file("./golden/regression_kfold.csv")
+    golden = h2o.import_file("{}/golden/regression_kfold.csv".format(here))
     assert golden.names == encoded.names
     assert pu.compare_frames(golden, encoded, 0, tol_numeric=1e-5)
 
@@ -70,9 +71,9 @@ def test_regression_with_loo():
     col_te = encoded['sex_te'].head(5).as_data_frame().values.reshape(-1).tolist()
     assert_allclose(col_te, col_te_golden, atol=1e-5)
     
-    # with open("./golden/regression_loo.csv", "w") as f:
+    # with open("{}/golden/regression_loo.csv".format(here), "w") as f:
     #     f.write(encoded.get_frame_data())
-    golden = h2o.import_file("./golden/regression_loo.csv")
+    golden = h2o.import_file("{}/golden/regression_loo.csv".format(here))
     assert golden.names == encoded.names
     assert pu.compare_frames(golden, encoded, 0, tol_numeric=1e-5)
 

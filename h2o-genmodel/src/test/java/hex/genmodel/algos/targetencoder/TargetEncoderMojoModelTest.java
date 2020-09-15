@@ -1,6 +1,6 @@
 package hex.genmodel.algos.targetencoder;
 
-import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.CategoricalEncodings;
 import hex.genmodel.easy.*;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
@@ -75,7 +75,7 @@ public class TargetEncoderMojoModelTest {
     
     encodingMap.put(predictorName, encodingMapForCat1);
 
-    targetEncoderMojoModel._targetEncodingMap = encodingMap;
+    targetEncoderMojoModel.setEncodings(encodingMap);
     targetEncoderMojoModel._withBlending = true;
     targetEncoderMojoModel._inflectionPoint = 5;
     targetEncoderMojoModel._smoothing = 1;
@@ -91,8 +91,8 @@ public class TargetEncoderMojoModelTest {
     modelColumnNameToIndexMap.put(numerical_col1, 0);
     modelColumnNameToIndexMap.put(numerical_col2, 2);
 
-    Map<Integer, CategoricalEncoder> domainMap = CategoricalEncoding.AUTO.createCategoricalEncoders(targetEncoderMojoModel, modelColumnNameToIndexMap);
-    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
+    Map<Integer, CategoricalEncoder> domainMap = CategoricalEncodings.AUTO.createCategoricalEncoders(targetEncoderMojoModel, modelColumnNameToIndexMap);
+    RowToRawDataConverter rowToRawDataConverter = new DefaultRowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
 
 
     // Case when number of training examples equal to inflection point. Encoding should be between prior and posterior
@@ -151,7 +151,7 @@ public class TargetEncoderMojoModelTest {
 
     encodingMap.put(predictorName, encodingMapForCat1);
 
-    targetEncoderMojoModel._targetEncodingMap = encodingMap;
+    targetEncoderMojoModel.setEncodings(encodingMap);
     targetEncoderMojoModel._withBlending = false;
 
     targetEncoderMojoModel._columnNameToIdx.clear();
@@ -164,8 +164,8 @@ public class TargetEncoderMojoModelTest {
     modelColumnNameToIndexMap.put(numerical_col1, 0);
     modelColumnNameToIndexMap.put(numerical_col2, 2);
 
-    Map<Integer, CategoricalEncoder> domainMap = CategoricalEncoding.AUTO.createCategoricalEncoders(targetEncoderMojoModel, modelColumnNameToIndexMap);
-    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, new EasyPredictModelWrapper.Config());
+    Map<Integer, CategoricalEncoder> domainMap = CategoricalEncodings.AUTO.createCategoricalEncoders(targetEncoderMojoModel, modelColumnNameToIndexMap);
+    RowToRawDataConverter rowToRawDataConverter = new DefaultRowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, new EasyPredictModelWrapper.Config());
 
     RowData rowToPredictFor = new RowData();
     rowToPredictFor.put(numerical_col1, 42.0);
@@ -210,7 +210,7 @@ public class TargetEncoderMojoModelTest {
 
     encodingMap.put(predictorName, encodingMapForCat1);
 
-    targetEncoderMojoModel._targetEncodingMap = encodingMap;
+    targetEncoderMojoModel.setEncodings(encodingMap);
     targetEncoderMojoModel._withBlending = false;
 
     targetEncoderMojoModel._columnNameToIdx.clear();
@@ -225,8 +225,8 @@ public class TargetEncoderMojoModelTest {
     modelColumnNameToIndexMap.put(numerical_col1, 0);
     modelColumnNameToIndexMap.put(numerical_col2, 2);
 
-    Map<Integer, CategoricalEncoder> domainMap = CategoricalEncoding.AUTO.createCategoricalEncoders(targetEncoderMojoModel, modelColumnNameToIndexMap);
-    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
+    Map<Integer, CategoricalEncoder> domainMap = CategoricalEncodings.AUTO.createCategoricalEncoders(targetEncoderMojoModel, modelColumnNameToIndexMap);
+    RowToRawDataConverter rowToRawDataConverter = new DefaultRowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
 
     //Case 1:  Unexpected value `C`
     RowData rowToPredictFor = new RowData();
@@ -284,7 +284,7 @@ public class TargetEncoderMojoModelTest {
 
     encodingMap.put(predictorName, encodingMapForCat1);
 
-    targetEncoderMojoModel._targetEncodingMap = encodingMap;
+    targetEncoderMojoModel.setEncodings(encodingMap);
     targetEncoderMojoModel._withBlending = false;
 
     targetEncoderMojoModel._columnNameToIdx.clear();
@@ -299,8 +299,8 @@ public class TargetEncoderMojoModelTest {
     modelColumnNameToIndexMap.put(numerical_col1, 0);
     modelColumnNameToIndexMap.put(numerical_col2, 2);
 
-    Map<Integer, CategoricalEncoder> domainMap = CategoricalEncoding.AUTO.createCategoricalEncoders(targetEncoderMojoModel, modelColumnNameToIndexMap);
-    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
+    Map<Integer, CategoricalEncoder> domainMap = CategoricalEncodings.AUTO.createCategoricalEncoders(targetEncoderMojoModel, modelColumnNameToIndexMap);
+    RowToRawDataConverter rowToRawDataConverter = new DefaultRowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
 
     //Case 1:  Unexpected value `C`
     RowData rowToPredictFor = new RowData();
@@ -348,7 +348,7 @@ public class TargetEncoderMojoModelTest {
     encodingMaps.put(predictors[0], encodingMapForCat1);
     encodingMaps.put(predictors[1], encodingMapForCat1);
 
-    Map<String, EncodingMap> sortedByColumnIndex = targetEncoderMojoModel.sortByColumnIndex(encodingMaps.encodingMap());
+    Map<String, EncodingMap> sortedByColumnIndex = targetEncoderMojoModel.sortByColumnIndex(encodingMaps);
 
     ArrayList<String> sortedTeColumns = new ArrayList<>();
     for (Iterator<Map.Entry<String, EncodingMap>> it = sortedByColumnIndex.entrySet().iterator(); it.hasNext(); ) {

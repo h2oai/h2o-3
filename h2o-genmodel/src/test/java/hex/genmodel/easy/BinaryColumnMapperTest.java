@@ -1,6 +1,6 @@
 package hex.genmodel.easy;
 
-import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.CategoricalEncodings;
 import hex.genmodel.GenModel;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,7 +35,7 @@ public class BinaryColumnMapperTest {
     });
     when(mockModel.getOrigNumCols()).thenReturn(3);
 
-    Map<String, Integer> result = CategoricalEncoding.Binary.createColumnMapping(mockModel);
+    Map<String, Integer> result = CategoricalEncodings.Binary.createColumnMapping(mockModel);
     assertEquals(expected, result);
   }
 

@@ -1,6 +1,6 @@
 package hex.genmodel.easy;
 
-import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.CategoricalEncodings;
 import hex.genmodel.GenModel;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,7 +29,7 @@ public class LabelEncoderColumnMapperTest {
 
     when(mockModel.getNames()).thenReturn(new String[]{"col1", "col2", "col3", "response"});
 
-    Map<String, Integer> result = CategoricalEncoding.LabelEncoder.createColumnMapping(mockModel);
+    Map<String, Integer> result = CategoricalEncodings.LabelEncoder.createColumnMapping(mockModel);
     assertEquals(expected, result);
   }
 

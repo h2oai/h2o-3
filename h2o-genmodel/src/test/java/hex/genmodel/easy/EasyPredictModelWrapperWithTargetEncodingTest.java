@@ -21,8 +21,6 @@ public class EasyPredictModelWrapperWithTargetEncodingTest {
   public void targetEncodingIsDisabledWhenEncodingMapIsNotProvided() throws PredictException {
     MyTEModel model = new MyTEModel();
 
-    model._targetEncodingMap = null;
-
     EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(model);
 
     RowData row = new RowData();
@@ -86,7 +84,6 @@ public class EasyPredictModelWrapperWithTargetEncodingTest {
       Map<String, Integer> teColumnNameToIdx = new HashMap<>();
       teColumnNameToIdx.put("embarked", 0);
 
-      _targetEncodingMap = encodingMaps;
       _columnNameToIdx.clear();
       _columnNameToIdx.putAll(teColumnNameToIdx);
     }

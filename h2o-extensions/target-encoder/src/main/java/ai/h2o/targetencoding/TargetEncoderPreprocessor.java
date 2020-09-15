@@ -10,7 +10,7 @@ import java.util.Objects;
 
 import static ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy.*;
 
-public class TargetEncoderPreprocessor extends ModelPreprocessor {
+public class TargetEncoderPreprocessor extends ModelPreprocessor<TargetEncoderPreprocessor> {
     
     private TargetEncoderModel _targetEncoder;
 
@@ -41,5 +41,10 @@ public class TargetEncoderPreprocessor extends ModelPreprocessor {
     @Override
     public Frame processScoring(Frame fr, Model model) {
         return _targetEncoder.transform(fr);
+    }
+
+    @Override
+    public Model asModel() {
+        return _targetEncoder;
     }
 }

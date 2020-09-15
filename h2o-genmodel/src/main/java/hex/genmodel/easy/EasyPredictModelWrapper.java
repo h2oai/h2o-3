@@ -57,6 +57,7 @@ public class EasyPredictModelWrapper implements Serializable {
   // These private members are read-only after the constructor.
   public final GenModel m;
   private final RowToRawDataConverter rowDataConverter;
+  private final ErrorConsumer errorConsumer;
 
   private final boolean useExtendedOutput;
   private final boolean enableLeafAssignment;
@@ -283,7 +284,7 @@ public class EasyPredictModelWrapper implements Serializable {
   public EasyPredictModelWrapper(Config config) {
     m = config.getModel();
     // Ensure an error consumer is always instantiated to avoid missing null-check errors.
-    ErrorConsumer errorConsumer = config.getErrorConsumer() == null ? new VoidErrorConsumer() : config.getErrorConsumer();
+    errorConsumer = config.getErrorConsumer() == null ? new VoidErrorConsumer() : config.getErrorConsumer();
 
     // How to handle unknown categorical levels.
     useExtendedOutput = config.getUseExtendedOutput();
@@ -303,17 +304,8 @@ public class EasyPredictModelWrapper implements Serializable {
     } else {
       predictContributions = null;
     }
-
-    CategoricalEncoding categoricalEncoding = config.getUseExternalEncoding() ?
-            CategoricalEncoding.AUTO : m.getCategoricalEncoding();
-    Map<String, Integer> columnMapping = categoricalEncoding.createColumnMapping(m);
-    Map<Integer, CategoricalEncoder> domainMap = categoricalEncoding.createCategoricalEncoders(m, columnMapping);
-
-    if (m instanceof ConverterFactoryProvidingModel) {
-      rowDataConverter = ((ConverterFactoryProvidingModel) m).makeConverterFactory(columnMapping, domainMap, errorConsumer, config);
-    } else {
-      rowDataConverter = new RowToRawDataConverter(m, columnMapping, domainMap, errorConsumer, config);
-    }
+    
+    rowDataConverter = makeRowDataConverter(config, errorConsumer);
   }
 
 
@@ -376,9 +368,23 @@ public class EasyPredictModelWrapper implements Serializable {
   public AbstractPrediction predict(RowData data) throws PredictException {
     return predict(data, m.getModelCategory());
   }
+  
+  RowToRawDataConverter makeRowDataConverter(Config config, ErrorConsumer errorConsumer) {
+    CategoricalEncoding categoricalEncoding = config.getUseExternalEncoding() ? CategoricalEncodings.AUTO : m.getCategoricalEncoding();
+
+    RowToRawDataConverter rowDataConverter;
+    if (m instanceof RowConverterFactory) {
+      rowDataConverter = ((RowConverterFactory) m).makeRowConverter(categoricalEncoding, errorConsumer, config);
+    } else {
+      Map<String, Integer> columnToOffsetIdx = categoricalEncoding.createColumnMapping(m);
+      Map<Integer, CategoricalEncoder> offsetToEncoder = categoricalEncoding.createCategoricalEncoders(m, columnToOffsetIdx);
+      rowDataConverter = new DefaultRowToRawDataConverter<>(columnToOffsetIdx, offsetToEncoder, errorConsumer, config);
+    }
+    return rowDataConverter;
+  }
 
   ErrorConsumer getErrorConsumer() {
-    return rowDataConverter.getErrorConsumer();
+    return errorConsumer;
   }
 
   /**
@@ -659,12 +665,7 @@ public class EasyPredictModelWrapper implements Serializable {
       throw new PredictException("Model is not of the expected type, class = " + m.getClass().getSimpleName());
 
     TargetEncoderMojoModel tem = (TargetEncoderMojoModel) this.m;
-    Set<String> teColumnNames = tem._targetEncodingMap.getColumns();
-
-    double[] preds = tem.nclasses() > 1
-            ? new double[teColumnNames.size()*(tem.nclasses()-1)]   // for classification we need to encode only n-1 classes
-            : new double[teColumnNames.size()];                     // for regression
-
+    double[] preds = new double[tem.getPredsSize()];
     TargetEncoderPrediction prediction = new TargetEncoderPrediction();
     prediction.transformations = predict(data, 0, preds);
     return prediction;

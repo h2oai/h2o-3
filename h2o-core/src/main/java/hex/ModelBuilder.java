@@ -13,7 +13,6 @@ import water.udf.CFuncRef;
 import water.util.*;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -1374,7 +1373,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (isResponseOptional() && _parms._response_column != null && _response == null) {
         _vresponse = va.vec(_parms._response_column);
       }
-      _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive);
+      _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive, false);
       if (!isResponseOptional() || (_parms._response_column != null && _valid.find(_parms._response_column) >= 0)) {
         _vresponse = _valid.vec(_parms._response_column);
       }
@@ -1384,8 +1383,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     if (expensive) {
-      Frame newtrain = applyPreprocessors(_train, true);
-      newtrain = encodeFrameCategoricals(newtrain, ! _parms._is_cv_model); //we could turn this into a preprocessor later
+      boolean scopeTrack = !_parms._is_cv_model;
+      Frame newtrain = applyPreprocessors(_train, true, scopeTrack);
+      newtrain = encodeFrameCategoricals(newtrain, scopeTrack); //we could turn this into a preprocessor later
       if (newtrain != _train) {
         _origTrain = _train;
         _origNames = _train.names();
@@ -1396,8 +1396,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _origTrain = null;
       }
       if (_valid != null) {
-        Frame newvalid = applyPreprocessors(_valid, false);
-        newvalid = encodeFrameCategoricals(newvalid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
+        Frame newvalid = applyPreprocessors(_valid, false, scopeTrack);
+        newvalid = encodeFrameCategoricals(newvalid, scopeTrack /* for CV, need to score one more time in outer loop */);
+        newvalid = adaptFrameToTrain(newvalid, "Validation Frame", "_validation_frame", expensive, true);
         setValid(newvalid);
       }
       boolean restructured = false;
@@ -1506,13 +1507,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @return adapted frame
    */
   public Frame init_adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
-    Frame adapted = adaptFrameToTrain(fr, frDesc, field, expensive);
+    Frame adapted = adaptFrameToTrain(fr, frDesc, field, expensive, false);
     if (expensive)
       adapted = encodeFrameCategoricals(adapted, true);
     return adapted;
   }
 
-  private Frame adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
+  private Frame adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive, boolean catEncoded) {
     if (fr.numRows()==0) error(field, frDesc + " must have > 0 rows.");
     Frame adapted = new Frame(null /* not putting this into KV */, fr._names.clone(), fr.vecs().clone());
     try {
@@ -1528,7 +1529,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
               null, 
               getToEigenVec(), 
               _workspace.getToDelete(expensive), 
-              false
+              catEncoded
       );
       Vec response = adapted.vec(_parms._response_column);
       if (response == null && _parms._response_column != null && !isResponseOptional())
@@ -1545,35 +1546,36 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return adapted;
   }
 
-  private Frame applyPreprocessors(Frame fr, boolean isTraining) {
+  private Frame applyPreprocessors(Frame fr, boolean isTraining, boolean scopeTrack) {
     if (_parms._preprocessors == null) return fr;
 
     for (Key<ModelPreprocessor> key : _parms._preprocessors) {
       DKV.prefetch(key);
     }
     Frame result = fr;
+    Frame encoded;
     for (Key<ModelPreprocessor> key : _parms._preprocessors) {
       ModelPreprocessor preprocessor = key.get();
-      result = isTraining ? preprocessor.processTrain(result, _parms) : preprocessor.processValid(result, _parms);
+      encoded = isTraining ? preprocessor.processTrain(result, _parms) : preprocessor.processValid(result, _parms);
+      if (encoded != fr) trackEncoded(encoded, scopeTrack);
+      result = encoded;
     }
+    if (!scopeTrack) Scope.untrack(result); // otherwise encoded frame is fully removed on CV model completion, raising exception when computing CV scores.
     return result;
   }
 
   private Frame encodeFrameCategoricals(Frame fr, boolean scopeTrack) {
-    String[] alwaysSkippedCols = new String[]{_parms._weights_column, _parms._offset_column, _parms._fold_column, _parms._response_column};
-//    String[] skippedCols = _parms._categorical_encoding_skipped_columns == null 
-//            ? alwaysSkippedCols 
-//            : ArrayUtils.append(_parms._categorical_encoding_skipped_columns, alwaysSkippedCols);
-    String[] skippedCols = alwaysSkippedCols;
-    Frame encoded = FrameUtils.categoricalEncoder(fr, skippedCols, _parms._categorical_encoding, getToEigenVec(), _parms._max_categorical_levels);
-    if (encoded != fr) {
-      assert encoded._key != null;
-      if (scopeTrack)
-        Scope.track(encoded);
-      else
-        _workspace.getToDelete(true).put(encoded._key, Arrays.toString(Thread.currentThread().getStackTrace()));
-    }
+    Frame encoded = FrameUtils.categoricalEncoder(fr, _parms.getNonPredictors(), _parms._categorical_encoding, getToEigenVec(), _parms._max_categorical_levels);
+    if (encoded != fr) trackEncoded(encoded, scopeTrack);
     return encoded;
+  }
+  
+  private void trackEncoded(Frame fr, boolean scopeTrack) {
+    assert fr._key != null;
+    if (scopeTrack)
+      Scope.track(fr);
+    else
+      _workspace.getToDelete(true).put(fr._key, Arrays.toString(Thread.currentThread().getStackTrace()));
   }
 
   /**

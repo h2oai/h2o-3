@@ -7,8 +7,12 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static ai.h2o.targetencoding.TargetEncoderHelper.*;
 import static hex.genmodel.algos.targetencoder.TargetEncoderMojoReader.ENCODING_MAP_PATH;
@@ -35,23 +39,27 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter<TargetEncoderModel,
     writeTargetEncodingMap();
   }
 
-  @Override
-  protected void writeExtraInfo() {
-    // Do nothing
-  }
-
   /**
    * Writes target encoding's extra info
    */
   private void writeTargetEncodingInfo() throws IOException {
     TargetEncoderOutput output = model._output;
     TargetEncoderParameters teParams = output._parms;
+    writekv("keep_original_categorical_columns", teParams._keep_original_features);
     writekv("with_blending", teParams._blending);
     if (teParams._blending) {
       writekv("inflection_point", teParams._inflection_point);
       writekv("smoothing", teParams._smoothing);
     }
-    
+
+    List<String> nonPredictors =  Arrays.stream(new String[]{
+            model._output.weightsName(),
+            model._output.offsetName(),
+            model._output.foldName(),
+            model._output.responseName()
+    }).filter(Objects::nonNull).collect(Collectors.toList());
+    writekv("non_predictors", String.join(";", nonPredictors));
+
     //XXX: additional file unnecessary, we could just write the list/set of columns with NAs
     Map<String, Boolean> col2HasNAs = output._te_column_to_hasNAs;
     startWritingTextFile(MISSING_VALUES_PRESENCE_MAP_PATH);

@@ -400,6 +400,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** @return the validation frame instance, or null
      *  if a validation frame was not specified */
     public final Frame valid() { return _valid==null ? null : _valid.get(); }
+    
+    public String[] getNonPredictors() {
+        return Arrays.stream(new String[]{_weights_column, _offset_column, _fold_column, _response_column})
+                .filter(Objects::nonNull)
+                .toArray(String[]::new);
+    }
 
     /** Read-Lock both training and validation User frames. */
     public void read_lock_frames(Job job) {
@@ -1472,7 +1478,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       // check if we first need to expand categoricals before calling this method again
       if (hasCategoricalPredictors) {
-        Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, parms._categorical_encoding, tev, parms._max_categorical_levels);
+        Frame updated = categoricalEncoder(test, parms.getNonPredictors(), parms._categorical_encoding, tev, parms._max_categorical_levels);
         toDelete.put(updated._key, "categorically encoded frame");
         test.restructure(updated.names(), updated.vecs()); //updated in place
         String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactionBldr, tev, toDelete, true /*catEncoded*/);
@@ -2028,7 +2034,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @return instance of CategoricalEncoding supported by GenModel or null if encoding is not supported.
    */
   protected CategoricalEncoding getGenModelEncoding() {
-    return CategoricalEncoding.AUTO;
+    return CategoricalEncodings.AUTO;
   }
 
   // ==========================================================================
@@ -2124,7 +2130,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     toJavaNAMES(sb, fileCtx);
     CategoricalEncoding encoding = getGenModelEncoding();
     assert encoding != null;
-    boolean writeOrigs = encoding != CategoricalEncoding.AUTO; // export orig names & domains if POJO/MOJO doesn't handle encoding itself
+    boolean writeOrigs = encoding != CategoricalEncodings.AUTO; // export orig names & domains if POJO/MOJO doesn't handle encoding itself
     if (writeOrigs && _output._origNames != null)
       toJavaOrigNAMES(sb, fileCtx);
     toJavaNCLASSES(sb);

@@ -16,8 +16,7 @@ import water.util.IcedHashMap;
 import water.util.StringUtils;
 import water.util.TwoDimTable;
 
-import java.util.Arrays;
-import java.util.Map;
+import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
 import java.util.stream.IntStream;
 
@@ -323,7 +322,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       workingFrame = data.deepCopy(Key.make().toString());
       tmpKey = workingFrame._key;
 
-      final Map<String, Frame> columnToEncodings = _output._target_encoding_map;
+      final Map<String, Frame> columnToEncodings = sortByColumnIndex(_output._target_encoding_map); //ensures that new columns are added in a predictable way.
       
       for (Map.Entry<String, Frame> kv: columnToEncodings.entrySet()) { // TODO: parallelize this, should mainly require change in naming of num/den columns
         String columnToEncode = kv.getKey();
@@ -357,6 +356,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
       DKV.remove(tmpKey);
       workingFrame._key = resultKey;
+      reorderColumns(workingFrame);
       DKV.put(workingFrame);
       return workingFrame;
     } catch (Exception e) {
@@ -374,6 +374,40 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       noiseLevel = targetVec.isNumeric() ? defaultNoiseLevel * (targetVec.max() - targetVec.min()) : defaultNoiseLevel;
     }
     return noiseLevel;
+  }
+
+  Map<String, Frame> sortByColumnIndex(final Map<String, Frame> encodingMap) {
+    Map<String, Integer> nameToIdx = nameToIndex(_output._names);
+    Map<String, Frame> sorted = new TreeMap<>(Comparator.comparingInt(nameToIdx::get));
+    sorted.putAll(encodingMap);
+    return sorted;
+  }
+  
+  private void reorderColumns(Frame fr) {
+    // for model integration, we need to ensure that columns are offered to the model in a consistent order.
+    // we ensure that after TE encoding, columns are always in the following order:
+    //    non-categorical predictors, TE-encoded predictors, remaining categorical predictors, non-predictors
+    // this way, categorical encoder can later encode the remaining categorical predictors without changing the index of TE cols: somehow necessary when integrating TE in the model Mojo.
+    String[] toTheEnd = _parms.getNonPredictors();
+    Map<String, Integer> nameToIdx = nameToIndex(fr);
+    List<Integer> toAppendAfterNumericals = new ArrayList<>();
+    String[] columns = fr.names();
+    int[] newOrder = new int[columns.length];
+    int offset = 0;
+    for (int i=0; i<columns.length; i++) {
+      if (ArrayUtils.contains(toTheEnd, columns[i])) continue;
+      Vec vec = fr.vec(i);
+      if (vec.isCategorical()) {
+        toAppendAfterNumericals.add(i); //first appending categoricals
+      } else {
+        newOrder[offset++] = i; //adding all non-categoricals first
+      }
+    }
+    for (String col : toTheEnd) { // then appending the trailing columns
+      if (nameToIdx.containsKey(col)) toAppendAfterNumericals.add(nameToIdx.get(col));
+    }
+    for (int idx : toAppendAfterNumericals) newOrder[offset++] = idx;
+    fr.reOrder(newOrder);
   }
   
   @Override
@@ -411,11 +445,11 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
         Frame appliedEncodings;
         int tcIdx = encodings.find(TARGETCLASS_COL);
         if (tcIdx < 0) {
-          encodedColumn = columnToEncode+ENCODED_COLUMN_POSTFIX;
+          encodedColumn = columnToEncode+ENCODED_COLUMN_POSTFIX;  //note: this naming convention is also used for TE integration with algos Mojos.
           appliedEncodings = encodings;
         } else {
           String targetClassName = encodings.vec(tcIdx).domain()[targetClass];
-          encodedColumn = columnToEncode + "_" + StringUtils.sanitizeIdentifier(targetClassName) + ENCODED_COLUMN_POSTFIX;
+          encodedColumn = columnToEncode + "_" + StringUtils.sanitizeIdentifier(targetClassName) + ENCODED_COLUMN_POSTFIX;  //note: this naming convention is also used for TE integration with algos Mojos. 
           appliedEncodings = filterByValue(encodings, tcIdx, targetClass);
           Scope.track(appliedEncodings);
           appliedEncodings.remove(TARGETCLASS_COL);

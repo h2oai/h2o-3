@@ -4,6 +4,7 @@ import hex.genmodel.ModelMojoReader;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -21,12 +22,14 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
 
   @Override
   protected void readModelData() throws IOException {
+    _model._keepOriginalCategoricalColumns = readkv("keep_original_categorical_columns", false); // defaults to false for legacy TE Mojos
     _model._withBlending = readkv("with_blending");
     if(_model._withBlending) {
       _model._inflectionPoint = readkv("inflection_point");
       _model._smoothing = readkv("smoothing");
     }
-    _model._targetEncodingMap = parseEncodingMap();
+    _model._nonPredictors = Arrays.asList(((String) readkv("non_predictors")).split(";"));
+    _model.setEncodings(parseEncodingMap());
     _model._teColumn2HasNAs = parseTEColumnsToHasNAs();
   }
 

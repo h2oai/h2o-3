@@ -1,6 +1,6 @@
 package hex.genmodel.easy;
 
-import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.CategoricalEncodings;
 import hex.genmodel.GenModel;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,7 +38,7 @@ public class LabelEncoderDomainMapConstructorTest {
     });
     when(mockModel.getNumCols()).thenReturn(3);
     
-    Map<Integer, CategoricalEncoder> dm = CategoricalEncoding.LabelEncoder.createCategoricalEncoders(mockModel, columnNameToIndex);
+    Map<Integer, CategoricalEncoder> dm = CategoricalEncodings.LabelEncoder.createCategoricalEncoders(mockModel, columnNameToIndex);
     assertEquals(new HashSet<>(Arrays.asList(1, 3)), dm.keySet());
     for (CategoricalEncoder ce : dm.values()) {
       assertTrue(ce instanceof LabelEncoder);

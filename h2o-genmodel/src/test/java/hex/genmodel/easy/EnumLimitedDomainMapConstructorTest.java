@@ -1,6 +1,6 @@
 package hex.genmodel.easy;
 
-import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.CategoricalEncodings;
 import hex.genmodel.GenModel;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -58,7 +58,7 @@ public class EnumLimitedDomainMapConstructorTest {
    
     when(mockModel.getOrigNumCols()).thenReturn(7);
     
-    Map<Integer, CategoricalEncoder> dm = CategoricalEncoding.EnumLimited.createCategoricalEncoders(mockModel, columnNameToIndex);
+    Map<Integer, CategoricalEncoder> dm = CategoricalEncodings.EnumLimited.createCategoricalEncoders(mockModel, columnNameToIndex);
     assertEquals(new HashSet<>(Arrays.asList(1, 6)), dm.keySet());
     for (CategoricalEncoder ce : dm.values()) {
       assertTrue(ce instanceof EnumLimitedEncoder);

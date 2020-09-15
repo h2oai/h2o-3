@@ -1,12 +1,5 @@
 package water;
 
-import hex.Model;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.util.Log;
-
-import java.util.*;
-
 /** A Distributed Key/Value Store.
  *  <p>
  *  Functions to Get and Put Values into the K/V store by Key.

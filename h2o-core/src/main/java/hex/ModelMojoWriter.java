@@ -1,6 +1,8 @@
 package hex;
 
 import hex.genmodel.AbstractMojoWriter;
+import hex.genmodel.descriptor.ModelDescriptor;
+import water.Key;
 import water.api.SchemaServer;
 import water.api.StreamWriter;
 import water.api.schemas3.ModelSchemaV3;
@@ -81,10 +83,37 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   }
 
   @Override
+  protected void writeModelKV() throws IOException {
+    writeCommonModelData();
+    writeModelData();
+  }
+  
+  protected void writeCommonModelData() throws IOException {
+    if (model._parms._preprocessors != null) {
+      writekv("preprocessors_count", model._parms._preprocessors.length);
+    }
+  }
+  
+  protected abstract void writeModelData() throws IOException;
+
+  @Override
   protected void writeExtraInfo() throws IOException {
+    super.writeExtraInfo();
     writeModelDetails();
     writeModelDetailsReadme();
+    writeModelPreprocessors();
   }
+  
+  protected void writeModelPreprocessors() throws IOException {
+    if (model._parms._preprocessors == null) return;
+    for (int i=0; i < model._parms._preprocessors.length; i++) {
+      startWritingTextFile("experimental/preprocessor_"+i);
+      Key<ModelPreprocessor> key = model._parms._preprocessors[i];
+      ModelPreprocessor mp = key.get();
+      writemodel("experimental/preprocessor_"+i+"/", mp.asModel().getMojo());
+    }
+  }
+
 
   /** Create file that contains model details in JSON format.
    * This information is pulled from the models schema.

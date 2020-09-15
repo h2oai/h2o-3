@@ -1,6 +1,7 @@
 package hex.genmodel.algos.tree;
 
 import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.CategoricalEncodings;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
@@ -252,17 +253,17 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
             case "AUTO":
             case "Enum":
             case "SortByResponse":
-                return CategoricalEncoding.AUTO;
+                return CategoricalEncodings.AUTO;
             case "OneHotExplicit":
-                return CategoricalEncoding.OneHotExplicit;
+                return CategoricalEncodings.OneHotExplicit;
             case "Binary":
-                return CategoricalEncoding.Binary;
+                return CategoricalEncodings.Binary;
             case "EnumLimited":
-                return CategoricalEncoding.EnumLimited;
+                return CategoricalEncodings.EnumLimited;
             case "Eigen":
-                return CategoricalEncoding.Eigen;
+                return CategoricalEncodings.Eigen;
             case "LabelEncoder":
-                return CategoricalEncoding.LabelEncoder;
+                return CategoricalEncodings.LabelEncoder;
             default:
                 return null;
         }

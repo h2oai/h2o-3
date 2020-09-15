@@ -5,7 +5,6 @@ import deepwater.backends.BackendParams;
 import deepwater.backends.BackendTrain;
 import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
-import hex.genmodel.ConverterFactoryProvidingModel;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.deepwater.caffe.DeepwaterCaffeBackend;
@@ -16,7 +15,7 @@ import hex.genmodel.easy.RowToRawDataConverter;
 import java.io.File;
 import java.util.Map;
 
-public class DeepwaterMojoModel extends MojoModel implements ConverterFactoryProvidingModel {
+public class DeepwaterMojoModel extends MojoModel {
   public String _problem_type;
   public int _mini_batch_size;
   public int _height;
@@ -106,17 +105,16 @@ public class DeepwaterMojoModel extends MojoModel implements ConverterFactoryPro
   }
 
   @Override
-  public RowToRawDataConverter makeConverterFactory(Map<String, Integer> modelColumnNameToIndexMap,
-                                                    Map<Integer, CategoricalEncoder> domainMap,
-                                                    EasyPredictModelWrapper.ErrorConsumer errorConsumer,
-                                                    EasyPredictModelWrapper.Config config) {
+  public RowToRawDataConverter makeDefaultRowConverter(Map<String, Integer> columnToOffsetIdx,
+                                                       Map<Integer, CategoricalEncoder> offsetToEncoder,
+                                                       EasyPredictModelWrapper.ErrorConsumer errorConsumer,
+                                                       EasyPredictModelWrapper.Config config) {
     if (_problem_type.equals("image"))
-      return new DWImageConverter(this, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
+      return new DWImageConverter(this, columnToOffsetIdx, offsetToEncoder, errorConsumer, config);
     else if (_problem_type.equals("text")) {
-      return new DWTextConverter(this, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
+      return new DWTextConverter(columnToOffsetIdx, offsetToEncoder, errorConsumer, config);
     }
-    return new RowToRawDataConverter(this, modelColumnNameToIndexMap, domainMap,
-            errorConsumer, config);
-
+    //fallback to default
+    return super.makeDefaultRowConverter(columnToOffsetIdx, offsetToEncoder, errorConsumer, config);
   }
 }

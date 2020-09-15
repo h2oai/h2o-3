@@ -35,7 +35,7 @@ public class RowToRawDataConverterTest {
 
     // Indices for this map are based on `m.getDomainValues()` method
     Map<Integer, CategoricalEncoder> domainMap = new EnumEncoderDomainMapConstructor(testMojoModel, modelColumnNameToIndexMap).create();
-    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(testMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, new EasyPredictModelWrapper.Config());
+    RowToRawDataConverter rowToRawDataConverter = new DefaultRowToRawDataConverter(testMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, new EasyPredictModelWrapper.Config());
 
     double[] rawData = new double[rowToPredictFor.size()];
     rowToRawDataConverter.convert(rowToPredictFor, rawData);

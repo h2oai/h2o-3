@@ -1,6 +1,6 @@
 package hex.genmodel.easy;
 
-import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.CategoricalEncodings;
 import hex.genmodel.GenModel;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,7 +32,7 @@ public class EnumLimitedColumnMapperTest {
     
     when(mockModel.getOrigNames()).thenReturn(new String[]{"col1", "col2", "col3", "col4","col5", "col6", "col7"});
 
-    Map<String, Integer> result = CategoricalEncoding.EnumLimited.createColumnMapping(mockModel);
+    Map<String, Integer> result = CategoricalEncodings.EnumLimited.createColumnMapping(mockModel);
     assertEquals(expected, result);
   }
 

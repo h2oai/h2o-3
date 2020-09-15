@@ -1,6 +1,6 @@
 package hex.genmodel.easy;
 
-import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.CategoricalEncodings;
 import hex.genmodel.GenModel;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,7 +39,7 @@ public class EigenDomainMapConstructorTest {
     when(mockModel.getOrigNumCols()).thenReturn(3);
     when(mockModel.getOrigProjectionArray()).thenReturn(new double[]{1.1, 2.2, 3.3, 4.4});
     
-    Map<Integer, CategoricalEncoder> dm = CategoricalEncoding.Eigen.createCategoricalEncoders(mockModel, columnNameToIndex);
+    Map<Integer, CategoricalEncoder> dm = CategoricalEncodings.Eigen.createCategoricalEncoders(mockModel, columnNameToIndex);
     assertEquals(new HashSet<>(Arrays.asList(1, 3)), dm.keySet());
     for (CategoricalEncoder ce : dm.values()) {
       assertTrue(ce instanceof EigenEncoder);
