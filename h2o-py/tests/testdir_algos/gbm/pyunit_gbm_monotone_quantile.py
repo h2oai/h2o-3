@@ -27,7 +27,7 @@ def gbm_monotone_quantile_test():
 
     mono_pred = gbm_mono.predict(train).as_data_frame().iloc[:,0].tolist()
     x_sorted, mono_pred_sorted = zip(*sorted(zip(x, mono_pred)))
-    assert all(x <= y for x, y in zip(mono_pred_sorted, mono_pred_sorted[1:])), "The prediction should be monotone."
+    assert all(x <= y for x, y in zip(mono_pred_sorted, mono_pred_sorted[1:])), "The predictions should be monotone."
 
     # train a model with -1 constraint on x
     gbm_adverse = H2OGradientBoostingEstimator(seed=42, distribution="quantile", monotone_constraints={"x": -1})
@@ -36,7 +36,7 @@ def gbm_monotone_quantile_test():
     adverse_pred = gbm_adverse.predict(train).as_data_frame().iloc[:,0].tolist()
     x_sorted, adverse_pred_sorted = zip(*sorted(zip(x, adverse_pred)))
     assert all(x >= y for x, y in zip(adverse_pred_sorted, adverse_pred_sorted[1:])), \
-        "The prediction should be monotone."
+        "The predictions should be monotone."
 
 
 if __name__ == "__main__":
