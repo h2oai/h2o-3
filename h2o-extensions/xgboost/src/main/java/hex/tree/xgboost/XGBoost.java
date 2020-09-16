@@ -178,7 +178,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       if (! hasGPU(_parms._gpu_id))
         error("_backend", "GPU backend (gpu_id: " + _parms._gpu_id + ") is not functional. Check CUDA_PATH and/or GPU installation.");
 
-      if (H2O.getCloudSize() > 1)
+      if (H2O.getCloudSize() > 1 && !_parms._build_tree_one_node)
         error("_backend", "GPU backend is not supported in distributed mode.");
 
       Map<String, Object> incompats = _parms.gpuIncompatibleParams();
