@@ -5,6 +5,7 @@ import water.MRTask;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Vec;
+import water.util.Log;
 import water.util.fp.Function;
 
 import java.util.Arrays;

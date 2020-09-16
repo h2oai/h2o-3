@@ -8,6 +8,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.MathUtils;
 import water.util.TwoDimTable;
 
@@ -18,13 +19,28 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   public final ConfusionMatrix _cm;
   public final double _logloss;
   public double _mean_per_class_error;
+  public PairwiseAUC[] _aucs;
+  public double _multinomial_auc;
+  public double _multinomial_pr_auc;
 
-  public ModelMetricsMultinomial(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma, ConfusionMatrix cm, float[] hr, double logloss, CustomMetric customMetric) {
+  public ModelMetricsMultinomial(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma, ConfusionMatrix cm, float[] hr, double logloss, PairwiseAUC[] aucs, CustomMetric customMetric) {
     super(model, frame, nobs, mse, domain, sigma, customMetric);
     _cm = cm;
     _hit_ratios = hr;
     _logloss = logloss;
     _mean_per_class_error = cm==null || cm.tooLarge() ? Double.NaN : cm.mean_per_class_error();
+    _aucs = aucs;
+    if(_aucs != null) {
+      for (PairwiseAUC auc : aucs) {
+          _multinomial_auc += auc.getPairwiseAuc();
+          _multinomial_pr_auc += auc.getPairwisePrAuc();
+      }
+      _multinomial_auc /= aucs.length;
+      _multinomial_pr_auc /= aucs.length;
+    } else {
+      _multinomial_auc = -1;
+      _multinomial_pr_auc = -1;
+    }
   }
 
   @Override
@@ -34,6 +50,15 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     sb.append(" logloss: " + (float)_logloss + "\n");
     sb.append(" mean_per_class_error: " + (float)_mean_per_class_error + "\n");
     sb.append(" hit ratios: " + Arrays.toString(_hit_ratios) + "\n");
+    sb.append(" average multinomial_auc: "+ (float) _multinomial_auc + "\n");
+    sb.append(" average multinomial_auc_pr: "+ (float) _multinomial_pr_auc + "\n");
+    for(int i=0; i<_aucs.length; i++){
+      sb.append(" multinomial_auc class "+_aucs[i].getPairwiseAucString()+ "\n");
+    }
+    for(int i=0; i<_aucs.length; i++){
+      sb.append(" multinomial_pr_auc class "+_aucs[i].getPairwisePrAucString()+ "\n");
+    }
+    
     if (cm() != null) {
       if (cm().nclasses() <= 20)
         sb.append(" CM: " + cm().toASCII());
@@ -47,6 +72,44 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   public double mean_per_class_error() { return _mean_per_class_error; }
   @Override public ConfusionMatrix cm() { return _cm; }
   @Override public float[] hr() { return _hit_ratios; }
+  public double multinomial_auc(){ return _multinomial_auc; }
+  public double multinomial_auc_pr() { return _multinomial_pr_auc;}
+  
+  public double multinomial_auc(String firstDomain, String secondDomain) {
+    for(PairwiseAUC auc: _aucs){
+      if(auc.hasDomains(firstDomain, secondDomain)){
+        return auc.getPairwiseAuc();
+      }
+    }
+    return Double.NaN;
+  }
+  
+  public double multinomial_auc(int firstIndex, int secondIndex){
+    for(PairwiseAUC auc: _aucs){
+      if(auc.hasIndices(firstIndex, secondIndex)){
+        return auc.getPairwiseAuc();
+      }
+    }
+    return Double.NaN;
+  }
+
+  public double multinomial_auc_pr(String firstDomain, String secondDomain) {
+    for(PairwiseAUC auc: _aucs){
+      if(auc.hasDomains(firstDomain, secondDomain)){
+        return auc.getPairwisePrAuc();
+      }
+    }
+    return Double.NaN;
+  }
+
+  public double multinomial_auc_pr(int firstIndex, int secondIndex){
+    for(PairwiseAUC auc: _aucs){
+      if(auc.hasIndices(firstIndex, secondIndex)){
+        return auc.getPairwisePrAuc();
+      }
+    }
+    return Double.NaN;
+  }
 
   public static ModelMetricsMultinomial getFromDKV(Model model, Frame frame) {
     ModelMetrics mm = ModelMetrics.getFromDKV(model, frame);
@@ -191,12 +254,20 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     double[/*K*/] _hits;            // the number of hits for hitratio, length: K
     int _K;               // TODO: Let user set K
     double _logloss;
+    AUC2.AUCBuilder[][] _aucsMatrix;
 
     public MetricBuilderMultinomial( int nclasses, String[] domain ) {
       super(nclasses,domain);
       _cm = domain.length > ConfusionMatrix.maxClasses() ? null : new double[domain.length][domain.length];
       _K = Math.min(10,_nclasses);
       _hits = new double[_K];
+      _aucsMatrix = new AUC2.AUCBuilder[domain.length][domain.length];
+      for(int i=0; i < _aucsMatrix.length; i++){
+        for (int j=0; j < _aucsMatrix[0].length; j++)
+          if(i!=j) {
+            _aucsMatrix[i][j] = new AUC2.AUCBuilder(AUC2.NBINS);
+          }
+      }
     }
 
     public transient double [] _priorDistribution;
@@ -230,7 +301,22 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
 
       // Compute log loss
       _logloss += w*MathUtils.logloss(err);
+      
+      // compute multinomial AUC
+      calculateAucPerRow(ds, iact, w);
       return ds;                // Flow coding
+    }
+    
+    private void calculateAucPerRow(double ds[], int iact, double w){
+      for(int i=0; i<_nclasses; i++){
+        if(i != iact) {
+          if (iact >= _nclasses) {
+            iact = _nclasses - 1;
+          }
+          _aucsMatrix[iact][i].perRow(ds[i + 1], 0, w);
+          _aucsMatrix[i][iact].perRow(ds[iact + 1], 1, w);
+        }
+      }
     }
 
     @Override public void reduce( T mb ) {
@@ -240,6 +326,13 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       ArrayUtils.add(_cm, mb._cm);
       _hits = ArrayUtils.add(_hits, mb._hits);
       _logloss += mb._logloss;
+      for(int i=0; i<_aucsMatrix.length; i++){
+        for (int j=0;j<_aucsMatrix[0].length; i++) {
+          if(i!=j) {
+            _aucsMatrix[i][j].reduce(mb._aucsMatrix[i][j]);
+          }
+        }
+      }
     }
 
     @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
@@ -248,6 +341,8 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       float[] hr = new float[_K];
       ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
       double sigma = weightedSigma();
+      PairwiseAUC[] aucsPairs = new PairwiseAUC[((_domain.length * _domain.length)-_domain.length)/2];
+      int aucsIndex = 0;
       if (_wcount > 0) {
         if (_hits != null) {
           for (int i = 0; i < hr.length; i++) hr[i] = (float) (_hits[i] / _wcount);
@@ -255,9 +350,25 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         }
         mse = _sumsqe / _wcount;
         logloss = _logloss / _wcount;
+        for (int i=0; i<_aucsMatrix.length-1; i++){
+          for (int j=1; j<_aucsMatrix[0].length; j++){
+            if(i != j) {
+              aucsPairs[aucsIndex++] = new PairwiseAUC(new AUC2(_aucsMatrix[i][j]), new AUC2(_aucsMatrix[j][i]), i, j, _domain[i], _domain[j]);
+            }
+          }
+        }
+      } else {
+        for (int i=0; i<_aucsMatrix.length-1; i++){
+          for (int j=1; j<_aucsMatrix[0].length; j++){
+            if(i != j) {
+              aucsPairs[aucsIndex++] = new PairwiseAUC(new AUC2(), new AUC2(), i, j, _domain[i], _domain[j]);
+            }
+          }
+        }
       }
+      
       ModelMetricsMultinomial mm = new ModelMetricsMultinomial(m, f, _count, mse, _domain, sigma, cm,
-                                                               hr, logloss, _customMetric);
+                                                               hr, logloss, aucsPairs, _customMetric);
       if (m!=null) m.addModelMetrics(mm);
       return mm;
     }
