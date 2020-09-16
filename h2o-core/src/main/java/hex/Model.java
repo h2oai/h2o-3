@@ -1597,12 +1597,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
     List<Frame> tmpFrames = new ArrayList<>();
-    applyPreprocessors(adaptFr, tmpFrames);
-    encodeCategoricals(adaptFr, tmpFrames); //we need to apply encoding independently from adaptTestForTrain, otherwise previously encoded columns are removed during adaptation
     tmpFrames.add(adaptFr);
+    applyPreprocessors(adaptFr, tmpFrames);
+    //PUBDEV-7775: we need to apply encoding independently from adaptTestForTrain, otherwise previously encoded columns are removed during adaptation
+    //if enabling this, call to adaptTesttoTrain below should use catEncoded=true, however it breaks several tests currently: necessary only for TE in combination with encoders like OHE
+//    encodeCategoricals(adaptFr, tmpFrames); 
     computeMetrics = computeMetrics && 
             (!_output.hasResponse() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
-    String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics, true);   // Adapt
+    String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     // clean up the previous score warning messages
     _warningsP = new String[0];
     if (msg.length > 0) {

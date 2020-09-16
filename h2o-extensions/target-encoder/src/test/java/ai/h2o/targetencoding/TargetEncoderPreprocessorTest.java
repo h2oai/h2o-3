@@ -402,7 +402,7 @@ public class TargetEncoderPreprocessorTest {
         }
     }
 
-    @Test
+    @Test @Ignore("PUBDEV-7775")
     public void test_model_mojo_predictions_consistency_with_TE_None_encoding_only_some_categoricals_rest_is_one_hot_encoded() throws Exception {
         try {
             Scope.enter();
@@ -486,7 +486,7 @@ public class TargetEncoderPreprocessorTest {
         }
     }
 
-    @Test
+    @Test @Ignore("PUBDEV-7775")
     public void test_model_mojo_predictions_consistency_with_TE_None_not_removing_original_columns_then_one_hot_encoded() throws Exception {
         try {
             Scope.enter();
