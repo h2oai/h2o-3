@@ -104,7 +104,7 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
     private RabitTrackerH2O setupRabitTracker(int numNodes) {
         // XGBoost seems to manipulate its frames in case of a 1 node distributed version in a way 
         // the GPU plugin can't handle Therefore don't use RabitTracker envs for 1 node
-        if (H2O.CLOUD.size() > 1) {
+        if (numNodes > 1) {
             RabitTrackerH2O rt = new RabitTrackerH2O(numNodes);
             rt.start(0);
             return rt;
