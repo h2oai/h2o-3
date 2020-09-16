@@ -1,11 +1,9 @@
 package hex.genmodel;
 
-import hex.genmodel.easy.CategoricalEncoder;
 import hex.genmodel.easy.EasyPredictModelWrapper.Config;
 import hex.genmodel.easy.EasyPredictModelWrapper.ErrorConsumer;
 import hex.genmodel.easy.RowToRawDataConverter;
 
-import java.util.Map;
 
 public interface MojoPreprocessor {
     

@@ -80,9 +80,9 @@ public abstract class MojoModel extends GenModel implements RowConverterFactory 
   // RowConverterFactory
 
   @Override
-  public RowToRawDataConverter makeRowConverter(CategoricalEncoding categoricalEncoding,
-                                                ErrorConsumer errorConsumer,
-                                                Config config) {
+  public RowToRawDataConverter _makeRowConverter(CategoricalEncoding categoricalEncoding,
+                                                 ErrorConsumer errorConsumer,
+                                                 Config config) {
     if (_preprocessors != null) {
       RowToRawDataConverter[] converters = new RowToRawDataConverter[_preprocessors.length+1];
       int i = 0;

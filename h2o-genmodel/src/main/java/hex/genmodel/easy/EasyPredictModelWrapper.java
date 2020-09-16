@@ -374,7 +374,7 @@ public class EasyPredictModelWrapper implements Serializable {
 
     RowToRawDataConverter rowDataConverter;
     if (m instanceof RowConverterFactory) {
-      rowDataConverter = ((RowConverterFactory) m).makeRowConverter(categoricalEncoding, errorConsumer, config);
+      rowDataConverter = ((RowConverterFactory) m)._makeRowConverter(categoricalEncoding, errorConsumer, config);
     } else {
       Map<String, Integer> columnToOffsetIdx = categoricalEncoding.createColumnMapping(m);
       Map<Integer, CategoricalEncoder> offsetToEncoder = categoricalEncoding.createCategoricalEncoders(m, columnToOffsetIdx);
