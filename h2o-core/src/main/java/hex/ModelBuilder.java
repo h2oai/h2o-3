@@ -1373,7 +1373,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (isResponseOptional() && _parms._response_column != null && _response == null) {
         _vresponse = va.vec(_parms._response_column);
       }
-      _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive, false);
+      _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", false, false);
       if (!isResponseOptional() || (_parms._response_column != null && _valid.find(_parms._response_column) >= 0)) {
         _vresponse = _valid.vec(_parms._response_column);
       }

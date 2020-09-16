@@ -1306,6 +1306,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  if any factor column has no levels in common.
    */
   public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics) {
+    return adaptTestForTrain(test, expensive, computeMetrics, false);
+  }
+  
+  public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics, boolean catEncoded) {
     return adaptTestForTrain(
             test,
             _output._origNames,
@@ -1318,7 +1322,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             _output.interactionBuilder(),
             getToEigenVec(),
             _toDelete,
-            false
+            catEncoded
     );
   }
 
@@ -1592,10 +1596,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
-    adaptFr = applyPreprocessors(adaptFr);
+    List<Frame> tmpFrames = new ArrayList<>();
+    applyPreprocessors(adaptFr, tmpFrames);
+    encodeCategoricals(adaptFr, tmpFrames); //we need to apply encoding independently from adaptTestForTrain, otherwise previously encoded columns are removed during adaptation
+    tmpFrames.add(adaptFr);
     computeMetrics = computeMetrics && 
             (!_output.hasResponse() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
-    String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
+    String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics, true);   // Adapt
     // clean up the previous score warning messages
     _warningsP = new String[0];
     if (msg.length > 0) {
@@ -1635,12 +1642,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           CategoricalWrappedVec.updateDomain(output.vec(0), sdomain);
       }
     }
-    Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, fr);
+    for (Frame tmp : tmpFrames) Frame.deleteTempFrameAndItsNonSharedVecs(tmp, fr);
     return output;
   }
   
-  private Frame applyPreprocessors(Frame fr) {
-    if (_parms._preprocessors == null) return fr;
+  private void applyPreprocessors(Frame fr, List<Frame> tmpFrames) {
+    if (_parms._preprocessors == null) return;
     
     for (Key<ModelPreprocessor> key : _parms._preprocessors) {
       DKV.prefetch(key);
@@ -1649,8 +1656,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     for (Key<ModelPreprocessor> key : _parms._preprocessors) {
       ModelPreprocessor preprocessor = key.get();
       result = preprocessor.processScoring(result, this);
+      tmpFrames.add(result);
     }
-    return result;
+    fr.restructure(result.names(), result.vecs()); //inplace
+  }
+  
+  private void encodeCategoricals(Frame fr, List<Frame> tmpFrames) {
+    Frame encoded = FrameUtils.categoricalEncoder(fr, _parms.getNonPredictors(), _parms._categorical_encoding, getToEigenVec(), _parms._max_categorical_levels);
+    tmpFrames.add(encoded);
+    fr.restructure(encoded.names(), encoded.vecs()); //inplace
   }
 
   /**
