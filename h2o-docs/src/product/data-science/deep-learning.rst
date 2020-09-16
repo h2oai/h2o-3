@@ -70,7 +70,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  **max_confusion_matrix_size**: This option is deprecated and will be removed in a future release. 
 
--  `max_hit_ratio_k <algo-params/max_hit_ratio_k.html>`__: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. This option is disabled (0) by default.
+-  `max_hit_ratio_k <algo-params/max_hit_ratio_k.html>`__: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. This option is set equal to 0 (disabled) by default.
 
 -  `checkpoint <algo-params/checkpoint.html>`__: Enter a model key associated with a previously-trained Deep Learning model. Use this option to build a new model as a continuation of a previously-generated model.
    
@@ -96,7 +96,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  **target_ratio_comm_to_comp**: Specify the target ratio of communication overhead to computation. This option is only enabled for multi-node operation and if **train\_samples\_per\_iteration** equals -2 (auto-tuning). This option defaults to 0.05.
 
--  **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
+-  **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to -1 (time-based random number).
 
 -  **adaptive_rate**: Specify whether to enable the adaptive learning rate (ADADELTA). This option is enabled by default.
 
@@ -136,7 +136,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  **initial_biases**: Specify a list of H2OFrame IDs to initialize the bias vectors of this model with.
 
--  **loss**: Specify the loss function. The options are Automatic, CrossEntropy, Quadratic, Huber, or Absolute and the default value is Automatic.  This oprion defaults to Automatic.
+-  **loss**: Specify the loss function. The options are Automatic, CrossEntropy, Quadratic, Huber, or Absolute and the default value is Automatic.  This option defaults to Automatic.
    
     - Use **Absolute**, **Quadratic**, or **Huber** for regression 
     - Use **Absolute**, **Quadratic**, **Huber**, or **CrossEntropy** for classification
@@ -219,13 +219,13 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  **force_load_balance**: Specify whether to force extra load balancing to increase training speed for small datasets and use all cores. This option is enabled by default.
 
--  **variable_importances**: Specify whether to compute variable importance. This option is not enabled by default.
+-  **variable_importances**: Specify whether to compute variable importance. This option is disabled by default.
 
 -  **replicate_training_data**: Specify whether to replicate the entire training dataset onto every node for faster training on small datasets. This option is enabled by default.
 
 -  `single_node_mode <algo-params/single_node_mode.html>`__: Specify whether to run on a single node for fine-tuning of model parameters. This option defaults to false.
 
--  **shuffle_training_data**: Specify whether to shuffle the training data. This option is recommended if the training data is replicated and the value of **train_samples_per_iteration** is close to the number of nodes times the number of rows. This option is not enabled by default.
+-  **shuffle_training_data**: Specify whether to shuffle the training data. This option is recommended if the training data is replicated and the value of **train_samples_per_iteration** is close to the number of nodes times the number of rows. This option is disabled by default.
 
 -  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values (Skip or MeanImputation). This option defaults to MeanImputation.
 

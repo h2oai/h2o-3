@@ -258,7 +258,7 @@ Defining a GBM Model
 -  `nbins_top_level <algo-params/nbins_top_level.html>`__: (For numerical/real/int columns only) Specify
    the minimum number of bins at the root level to use to build the
    histogram. This number will then be decreased by a factor of two per
-   level. This value defaults to 1024).
+   level. This value defaults to 1024.
 
 -  `calibrate_model <algo-params/calibrate_model.html>`__: Use Platt scaling to calculate calibrated class probabilities. Defaults to False.
 
