@@ -43,8 +43,12 @@ getData <- function(algo, begin.date) {
     } else if ("numRows" %in% names(tests)) {
       result[["numRows"]] <- tests$numRows
       result[["numCols"]] <- tests$numCols
+    } else if ("model_type" %in% names(tests)) {
+        result[["model_type"]]] <- tests$model_type
+        result[["min_rule_length"]] <- tests$min_rule_length
+        result[["max_rule_length"]] <- tests$max_rule_length
     } else {
-      stop("neither tree, solver or size")
+      stop("neither tree, solver, size or model_type")
     }
     if ("backend" %in% names(tests)) {
       result[["backend"]] <- tests$backend
@@ -104,7 +108,8 @@ tests <- c(
     "xgb-dmlc",
     "gbm",
     "sort",
-    "merge"
+    "merge",
+    "rulefit"
 )
 
 for (t in tests) {
