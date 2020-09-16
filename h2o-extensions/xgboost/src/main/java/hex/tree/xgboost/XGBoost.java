@@ -315,7 +315,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
   @Override
   protected Frame rebalance(Frame original_fr, boolean local, String name) {
-    if (_parms._build_tree_one_node) {
+    if (original_fr == null) return null;
+    else if (_parms._build_tree_one_node) {
       int original_chunks = original_fr.anyVec().nChunks();
       if (original_chunks == 1)
         return original_fr;
