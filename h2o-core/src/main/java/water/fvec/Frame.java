@@ -1630,6 +1630,7 @@ public class Frame extends Lockable<Frame> {
     int _lastChkIdx;
     public volatile int _curChkIdx; // used only for progress reporting
     private transient final String[][] _escapedCategoricalVecDomains;
+    private transient final VecEncoder[] _encoders;
 
     public CSVStream(Frame fr, CSVStreamParams parms) {
       this(firstChunks(fr), parms._headers ? fr.names() : null, fr.anyVec().nChunks(), parms);
@@ -1659,6 +1660,24 @@ public class Frame extends Lockable<Frame> {
       _chkRow = -1; // first process the header line
       _curChks = chks;
       _escapedCategoricalVecDomains = escapeCategoricalVecDomains(_curChks);
+      if (_curChks != null) {
+        _encoders = new VecEncoder[_curChks.length];
+        for (int i = 0; i < _curChks.length; i++) {
+          Vec v = _curChks[i]._vec;
+          if (v.isCategorical()) {
+            _encoders[i] = VecEncoder.CAT;
+          } else if (v.isUUID()) {
+            _encoders[i] = VecEncoder.UUID;
+          } else if (v.isInt()) {
+            _encoders[i] = VecEncoder.INT;
+          } else if (v.isString()) {
+            _encoders[i] = VecEncoder.STRING;
+          } else {
+            _encoders[i] = VecEncoder.NUM;
+          }
+        }
+      } else
+        _encoders = null;
     }
 
     private void appendColumnName(StringBuilder sb, String name) {
@@ -1701,18 +1720,11 @@ public class Frame extends Lockable<Frame> {
         final String[] originalDomain = vec.domain();
         final String[] escapedDomain = new String[originalDomain.length];
 
-        boolean escapingRequired = false;
         for (int level = 0; level < originalDomain.length; level++) {
-          escapedDomain[level] = escapeQuotesForCsv(originalDomain[level]);
-          escapingRequired = escapingRequired || !escapedDomain[level].equals(originalDomain[level]);
+          escapedDomain[level] = '"' + escapeQuotesForCsv(originalDomain[level]) + '"';
         }
 
-        if (escapingRequired) {
-          localEscapedCategoricalVecDomains[i] = escapedDomain;
-        } else {
-          // If the domain does not need escaping, simply link to the original domain and drop the escaped array
-          localEscapedCategoricalVecDomains[i] = originalDomain;
-        }
+        localEscapedCategoricalVecDomains[i] = escapedDomain;
       }
 
       return localEscapedCategoricalVecDomains;
@@ -1724,35 +1736,45 @@ public class Frame extends Lockable<Frame> {
       return _line.length;
     }
 
+    enum VecEncoder {CAT, UUID, INT, STRING, NUM};
 
     byte[] getBytesForRow() {
       StringBuilder sb = new StringBuilder();
       final BufferedString unescapedTempStr = new BufferedString();
       for (int i = 0; i < _curChks.length; i++) {
-        Vec v = _curChks[i]._vec;
         if (i > 0) sb.append(_parms._separator);
         if (!_curChks[i].isNA(_chkRow)) {
-          if (v.isCategorical()) {
-            final String escapedString = _escapedCategoricalVecDomains[i][(int) _curChks[i].at8(_chkRow)];
-            sb.append('"').append(escapedString).append('"');
-          } else if (v.isUUID()) sb.append(PrettyPrint.UUID(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
-          else if (v.isInt()) sb.append(_curChks[i].at8(_chkRow));
-          else if (v.isString()) {
-            final String escapedString = escapeQuotesForCsv(_curChks[i].atStr(unescapedTempStr, _chkRow).toString());
-            sb.append('"').append(escapedString).append('"');
-          } else {
-            double d = _curChks[i].atd(_chkRow);
-            // R 3.1 unfortunately changed the behavior of read.csv().
-            // (Really type.convert()).
-            //
-            // Numeric values with too much precision now trigger a type conversion in R 3.1 into a factor.
-            //
-            // See these discussions:
-            //   https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15751
-            //   https://stat.ethz.ch/pipermail/r-devel/2014-April/068778.html
-            //   http://stackoverflow.com/questions/23072988/preserve-old-pre-3-1-0-type-convert-behavior
-            String s = _parms._hexString ? Double.toHexString(d) : Double.toString(d);
-            sb.append(s);
+          switch (_encoders[i]) {
+            case NUM:
+              // R 3.1 unfortunately changed the behavior of read.csv().
+              // (Really type.convert()).
+              //
+              // Numeric values with too much precision now trigger a type conversion in R 3.1 into a factor.
+              //
+              // See these discussions:
+              //   https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15751
+              //   https://stat.ethz.ch/pipermail/r-devel/2014-April/068778.html
+              //   http://stackoverflow.com/questions/23072988/preserve-old-pre-3-1-0-type-convert-behavior
+              double d = _curChks[i].atd(_chkRow);
+              String s = _parms._hexString ? Double.toHexString(d):Double.toString(d);
+              sb.append(s);
+              break;
+            case CAT:
+              final String escapedCat = _escapedCategoricalVecDomains[i][(int) _curChks[i].at8(_chkRow)];
+              sb.append(escapedCat);
+              break;
+            case INT:
+              sb.append(_curChks[i].at8(_chkRow));
+              break;
+            case STRING:
+              final String escapedString = escapeQuotesForCsv(_curChks[i].atStr(unescapedTempStr, _chkRow).toString());
+              sb.append('"').append(escapedString).append('"');
+              break;
+            case UUID:
+              sb.append(PrettyPrint.UUID(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
+              break;
+            default:
+              throw new IllegalStateException("Unknown encoder " + _encoders[i]);
           }
         }
       }
