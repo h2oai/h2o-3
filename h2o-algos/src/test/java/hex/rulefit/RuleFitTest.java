@@ -228,17 +228,18 @@ public class RuleFitTest extends TestUtil {
             
             final Frame fr2 = Scope.track(model.score(fr));
             
-            double[] expectedCoeffs = new double[] {13.54857, 8.37943,  8.33535, 7.78235, 7.62020, -7.57865, -5.59529, 5.54992, -4.04620, -3.73222, -3.66495,
-                    -3.42013, -3.15808, -2.35471, -2.18179, 1.37956, -1.21565, -1.14398, -0.72780, -0.65794,  -0.60032, -0.51938, -0.24730, -0.21409, 0.16232,
-                    0.15663, 0.11327, 0.09523, -0.02568, -0.02156, 0.00606, 0.00080,  -0.00059, 0.00000, 0.00000, -0.00000, -0.00000};
+            double[] expectedCoeffs = new double[] {13.50732, 8.37949, 8.33540, 7.78257, -7.57849, 7.51095, 5.65917, -5.59525, -4.04595, -3.73260, -3.66489,
+                    -3.42019, -3.15852, -2.35430, -2.21467, 1.44047, -1.21574, -1.14403, -0.69578, -0.65761, -0.60060, -0.51955, 0.31480, -0.24659, -0.19722,
+                    0.19242, -0.03043, -0.02091, 0.01179, 0.00583, 0.00102, 7.412075457645576E-4, -5.431219267171002E-4, 2.9864012497505935E-12, -2.5400188774894335E-13, 6.067795838432106E-14};
 
-            String[] expectedVars = new String[] {"tree_0.T1.R", "tree_1.T26.RL", "tree_1.T49.LR", "tree_1.T29.RL", "tree_1.T19.LR", "tree_1.T14.LR",
-            "tree_1.T7.LR", "tree_1.T27.LR", "tree_1.T5.RR", "tree_2.T31.LLL", "tree_1.T1.LL", "tree_2.T37.LLL", "tree_1.T37.LL", "tree_1.T15.LL", "tree_1.T2.RL",
-            "tree_0.T2.L", "tree_1.T3.RR", "tree_3.T14.LRRR", "tree_1.T27.RL", "tree_1.T21.RL", "tree_1.T34.RL", "tree_2.T39.LRL", "tree_1.T6.LL", "tree_0.T1.L",
-            "tree_0.T12.R", "tree_0.T19.L", "tree_0.T27.L", "tree_0.T23.R", "tree_0.T2.R", "tree_1.T8.LL", "tree_1.T4.RL", "tree_0.T28.R", "tree_0.T12.L",
-            "tree_1.T38.RL", "tree_0.T15.R", "tree_0.T5.R", "tree_1.T10.LL"};
+            String[] expectedVars = new String[] {"tree_0.T1.R", "tree_1.T26.RL", "tree_1.T49.LR", "tree_1.T29.RL", "tree_1.T14.LR", "tree_1.T19.LR", 
+            "tree_1.T27.LR", "tree_1.T7.LR", "tree_1.T5.RR", "tree_2.T31.LLL", "tree_1.T1.LL", "tree_2.T37.LLL", "tree_1.T37.LL", "tree_1.T15.LL", "tree_1.T2.RL",
+            "tree_0.T2.L", "tree_1.T3.RR", "tree_3.T14.LRRR", "tree_1.T27.RL", "tree_1.T21.RL", "tree_1.T34.RL", "tree_2.T39.LRL", "tree_0.T12.R",
+            "tree_1.T6.LL", "tree_0.T1.L", "tree_0.T19.L", "tree_0.T2.R", "tree_1.T8.LL", "tree_0.T27.L", "tree_1.T4.RL", "tree_0.T23.R", "tree_0.T28.R",
+            "tree_0.T12.L", "tree_1.T8.RL", "tree_0.T5.R", "tree_0.T15.R"};
 
             for (int i = 0; i < model._output._rule_importance.getRowDim(); i++) {
+
                 assertEquals(expectedCoeffs[i], (double) model._output._rule_importance.get(i,1),1e-4);
                 assertEquals(expectedVars[i], model._output._rule_importance.get(i,0));
             }
@@ -408,8 +409,8 @@ public class RuleFitTest extends TestUtil {
             glmParameters._train = fr._key;
             final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
             Scope.track_generic(glmModel);
-            
-            glmModel.score(fr);
+
+            Scope.track(glmModel.score(fr));
 
             ScoringInfo RuleFitScoringInfo = rfModel.glmModel.getScoringInfo()[0];
             ScoringInfo GLMScoringInfo = glmModel.getScoringInfo()[0];

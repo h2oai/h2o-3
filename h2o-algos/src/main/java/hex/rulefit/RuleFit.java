@@ -173,8 +173,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
                 // get paths from tree models
                 Frame pathsFrame = new Frame(Key.make("paths_frame" + _result));
-                int[] depths = range(_parms._min_rule_length, _parms._max_rule_length + 1);
-                List<SharedTreeModel> treeModels = new ArrayList<SharedTreeModel>();
+                int[] depths = range(_parms._min_rule_length, _parms._max_rule_length);
+                List<SharedTreeModel> treeModels = new ArrayList<>();
 
                 pathsFrame.add(_parms._response_column, _response.makeCopy());
                 if (_parms._weights_column != null) {
