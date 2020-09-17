@@ -21,6 +21,9 @@ import water.util.TwoDimTable;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static hex.genmodel.utils.ArrayUtils.difference;
+import static hex.genmodel.utils.ArrayUtils.signum;
+
 
 /**
  * Rule Fit<br>
@@ -320,7 +323,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         int getBestLambdaIndex(double[] deviance) {
             int bestLambdaIndex = deviance.length - 1;
             if (deviance.length >= 5) {
-                double[] array = differenceArray(signArray(differenceArray(differenceArray(deviance))));
+                double[] array = difference(signum(difference(difference(deviance))));
                 for (int i = 0; i < array.length; i++) {
                     if (array[i] != 0 && i > 0) {
                         bestLambdaIndex = 3 * i;
@@ -329,28 +332,6 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 }
             }
             return bestLambdaIndex;
-        }
-
-
-        double[] differenceArray(double[] array) {
-            double[] differenceArray = new double[array.length - 1];
-            for (int i = 0; i < array.length - 1; i++) {
-                differenceArray[i] = array[i+1] - array[i];
-            }
-            return differenceArray;
-        }
-
-        double[] signArray(double[] array) {
-            double[] signArray = new double[array.length];
-            for (int i = 0; i < array.length; i++) {
-                if (array[i] > 0)
-                    signArray[i] = 1;
-                else if (array[i] < 0)
-                    signArray[i] = -1;
-                else
-                    signArray[i] = 0;
-            }
-            return signArray;
         }
 
         int getBestLambdaIndexCornerCase(double[] deviance, double[] lambdas) {

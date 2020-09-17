@@ -148,4 +148,25 @@ public class ArrayUtils {
     return tmp;
   }
 
+  public static double[] signum(double[] array) {
+    double[] signArray = new double[array.length];
+    for (int i = 0; i < array.length; i++) {
+      if (array[i] > 0)
+        signArray[i] = 1;
+      else if (array[i] < 0)
+        signArray[i] = -1;
+      else
+        signArray[i] = 0;
+    }
+    return signArray;
+  }
+
+  public static double[] difference(double[] array) {
+    double[] difference = new double[array.length - 1];
+    for (int i = 0; i < array.length - 1; i++) {
+      difference[i] = array[i+1] - array[i];
+    }
+    return difference;
+  }
+
 }
