@@ -245,7 +245,6 @@ public class RuleFitTest extends TestUtil {
             "M0T11N3", "M1T37N9", "M0T14N4", "M1T38N9", "M1T7N9", "M0T4N3", "M1T43N9"};
 
             for (int i = 0; i < model._output._rule_importance.getRowDim(); i++) {
-
                 assertEquals(expectedCoeffs[i], (double) model._output._rule_importance.get(i,1),1e-4);
                 assertEquals(expectedVars[i], model._output._rule_importance.get(i,0));
             }
