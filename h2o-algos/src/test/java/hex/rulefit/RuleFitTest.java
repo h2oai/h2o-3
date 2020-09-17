@@ -337,7 +337,7 @@ public class RuleFitTest extends TestUtil {
             params._ignored_columns = new String[]{"name"};
             params._train = fr._key;
             params._max_num_rules = 200;
-            params._max_rule_length = 500;
+            params._max_rule_length = 10;
             params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
 
             final RuleFitModel model = new RuleFit(params).trainModel().get();
