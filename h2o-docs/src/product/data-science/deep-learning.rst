@@ -71,8 +71,6 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  **max_confusion_matrix_size**: This option is deprecated and will be removed in a future release. 
 
--  `max_hit_ratio_k <algo-params/max_hit_ratio_k.html>`__: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0.
-
 -  `checkpoint <algo-params/checkpoint.html>`__: Enter a model key associated with a previously-trained Deep Learning model. Use this option to build a new model as a continuation of a previously-generated model.
    
     **Note**: Cross-validation is not supported during checkpoint restarts.

@@ -41,7 +41,6 @@
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
-#' @param max_hit_ratio_k This argument is deprecated and has no use. Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable).
 #' @param ntrees Number of trees. Defaults to 50.
 #' @param max_depth Maximum tree depth (0 for unlimited). Defaults to 5.
 #' @param min_rows Fewest allowed (weighted) observations in a leaf. Defaults to 10.
@@ -137,7 +136,6 @@ h2o.gbm <- function(x,
                     balance_classes = FALSE,
                     class_sampling_factors = NULL,
                     max_after_balance_size = 5.0,
-                    max_hit_ratio_k = 0,
                     ntrees = 50,
                     max_depth = 5,
                     min_rows = 10,
@@ -239,8 +237,6 @@ h2o.gbm <- function(x,
     parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
-  if (!missing(max_hit_ratio_k))
-    parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(max_depth))
@@ -318,11 +314,6 @@ h2o.gbm <- function(x,
   if (!missing(gainslift_bins))
     parms$gainslift_bins <- gainslift_bins
 
-  if (!missing(max_hit_ratio_k)) {
-    warning("Argument max_hit_ratio_k is deprecated and has no use.")
-    parms$offset_column <- NULL
-  }
-
   # Error check and build model
   model <- .h2o.modelJob('gbm', parms, h2oRestApiVersion=3, verbose=verbose)
   return(model)
@@ -345,7 +336,6 @@ h2o.gbm <- function(x,
                                     balance_classes = FALSE,
                                     class_sampling_factors = NULL,
                                     max_after_balance_size = 5.0,
-                                    max_hit_ratio_k = 0,
                                     ntrees = 50,
                                     max_depth = 5,
                                     min_rows = 10,
@@ -451,8 +441,6 @@ h2o.gbm <- function(x,
     parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
-  if (!missing(max_hit_ratio_k))
-    parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(max_depth))
@@ -529,11 +517,6 @@ h2o.gbm <- function(x,
     parms$check_constant_response <- check_constant_response
   if (!missing(gainslift_bins))
     parms$gainslift_bins <- gainslift_bins
-
-  if (!missing(max_hit_ratio_k)) {
-    warning("Argument max_hit_ratio_k is deprecated and has no use.")
-    parms$offset_column <- NULL
-  }
 
   # Build segment-models specific parameters
   segment_parms <- list()

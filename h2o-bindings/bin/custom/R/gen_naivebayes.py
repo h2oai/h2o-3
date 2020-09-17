@@ -36,10 +36,6 @@ if (!missing(eps) && missing(eps_sdev)) {
   warning("argument 'eps' is deprecated; use 'eps_sdev' instead.")
   parms$eps_sdev <- eps
 }
-if (!missing(max_hit_ratio_k)) {
-  warning("argument max_hit_ratio_k is deprecated and has no use.")
-  parms$offset_column <- NULL
-}
 """
 )
 
@@ -85,6 +81,5 @@ h2o.init()
 votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
 votes <- h2o.uploadFile(path = votes_path, header = TRUE)
 h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes, laplace = 3)
-""",
-    max_hit_ratio_k="This argument is deprecated and has no use. Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)."
+"""
 )

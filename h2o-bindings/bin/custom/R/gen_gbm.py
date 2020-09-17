@@ -11,13 +11,7 @@ extensions = dict(
 # Required maps for different names params, including deprecated params
 .gbm.map <- c("x" = "ignored_columns",
               "y" = "response_column")
-""",
-    set_params="""
-if (!missing(max_hit_ratio_k)) {
-  warning("Argument max_hit_ratio_k is deprecated and has no use.")
-  parms$offset_column <- NULL
-}
-    """
+"""
 )
 
 
@@ -31,7 +25,6 @@ In order to run properly, the response column must be an numeric for "gaussian" 
 enum for "bernoulli" or "multinomial".
 """,
     params=dict(
-        max_hit_ratio_k="This argument is deprecated and has no use. Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable).",
         verbose="""
 \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 """

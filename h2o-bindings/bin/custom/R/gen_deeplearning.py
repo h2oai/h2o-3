@@ -43,12 +43,6 @@ h2o.anomaly <- function(object, data, per_feature=FALSE) {
   h2o.getFrame(key)
 }
 """,
-    set_params="""
-if (!missing(max_hit_ratio_k)) {
-  warning("argument max_hit_ratio_k is deprecated and has no use.")
-  parms$offset_column <- NULL
-}
-"""    
 )
 
 doc = dict(
@@ -78,6 +72,5 @@ iris_dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris_hf, seed=12345
 
 # now make a prediction
 predictions <- h2o.predict(iris_dl, iris_hf)
-""",
-    max_hit_ratio_k="This argument is deprecated and has no use. Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)."
+"""
 )

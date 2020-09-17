@@ -1,5 +1,3 @@
-deprecated = ['max_hit_ratio_k']
-
 def module_extensions():
     class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
         """
@@ -642,20 +640,6 @@ examples = dict(
 ...              training_frame=train,
 ...              validation_frame=valid)
 >>> cov_dl.logloss()
-""",
-    max_hit_ratio_k="""
->>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
->>> covtype[54] = covtype[54].asfactor()
->>> predictors = covtype.columns[0:54]
->>> response = 'C55'
->>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
->>> cov_dl = H2ODeepLearningEstimator(max_hit_ratio_k=3,
-...                                   seed=1234) 
->>> cov_dl.train(x=predictors,
-...              y=response,
-...              training_frame=train,
-...              validation_frame=valid)
->>> cov_dl.show()
 """,
     max_runtime_secs="""
 >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")

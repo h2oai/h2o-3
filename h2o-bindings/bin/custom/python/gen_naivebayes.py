@@ -1,5 +1,3 @@
-deprecated = ['max_hit_ratio_k']
-
 doc = dict(
     __class__="""
 The naive Bayes classifier assumes independence between predictor variables
@@ -200,20 +198,6 @@ examples = dict(
 ...              training_frame=train,
 ...              validation_frame=valid)
 >>> cars_nb.logloss()
-""",
-    max_hit_ratio_k="""
->>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
->>> covtype[54] = covtype[54].asfactor()
->>> predictors = covtype.columns[0:54]
->>> response = 'C55'
->>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
->>> cars_nb = H2ONaiveBayesEstimator(max_hit_ratio_k=3,
-...                                  seed=1234)
->>> cars_nb.train(x=predictors,
-...               y=response,
-...               training_frame=train,
-...               validation_frame=valid)
->>> cov_nb.mse()
 """,
     max_runtime_secs="""
 >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
