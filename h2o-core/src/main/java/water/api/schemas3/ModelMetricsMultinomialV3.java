@@ -24,6 +24,13 @@ public class ModelMetricsMultinomialV3<I extends ModelMetricsMultinomial, S exte
   @API(help="The mean misclassification error per class.", direction=API.Direction.OUTPUT)
   public double mean_per_class_error;
 
+  @API(help="The mean multinomial AUC.", direction=API.Direction.OUTPUT, level= API.Level.expert)
+  public double multinomial_auc;
+
+  @API(help="The mean multinomial PR AUC.", direction=API.Direction.OUTPUT, level= API.Level.expert)
+  public double multinomial_pr_auc;
+  
+
   @Override
   public S fillFromImpl(I modelMetrics) {
     super.fillFromImpl(modelMetrics);
@@ -40,6 +47,9 @@ public class ModelMetricsMultinomialV3<I extends ModelMetricsMultinomial, S exte
       cm = (ConfusionMatrixV3) SchemaServer.schema(this.getSchemaVersion(), modelMetrics._cm).fillFromImpl
           (modelMetrics._cm);
     }
+    
+    multinomial_auc = modelMetrics._multinomial_auc;
+    multinomial_pr_auc = modelMetrics._multinomial_pr_auc;
 
     return (S)this;
   }

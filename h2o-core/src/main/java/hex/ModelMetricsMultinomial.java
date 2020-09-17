@@ -354,7 +354,9 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         logloss = _logloss / _wcount;
         for (int i = 0; i < _aucsMatrix.length-1; i++){
           for (int j = i+1; j < _aucsMatrix[0].length; j++){
-              aucsPairs[aucsIndex++] = new PairwiseAUC(new AUC2(_aucsMatrix[i][j]), new AUC2(_aucsMatrix[j][i]), i, j, _domain[i], _domain[j]);
+            AUC2 first = _aucsMatrix[i][j]._n > 0 ? new AUC2(_aucsMatrix[i][j]) : new AUC2();
+            AUC2 second = _aucsMatrix[j][i]._n > 0 ? new AUC2(_aucsMatrix[j][i]) : new AUC2();
+            aucsPairs[aucsIndex++] = new PairwiseAUC(first, second, i, j, _domain[i], _domain[j]);
           }
         }
       } else {

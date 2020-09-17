@@ -54,7 +54,19 @@ test.gbm.mult.accessors <- function() {
   Log.info("Variable Importance...")
   print(h2o.varimp(iris.gbm))
 
+  Log.info("Multinomial AUC")
+  auc1 <- iris.gbm@model$training_metrics@metrics$multinomial_auc
+  auc2 <- h2o.multinomial_auc(iris.gbm@model$training_metrics)
+  print(auc1)
+  print(auc2)
+  expect_equal(auc1, auc2)
   
+  Log.info("Multinomial PR AUC")  
+  aucpr1 <- iris.gbm@model$training_metrics@metrics$multinomial_pr_auc
+  aucpr2 <- h2o.multinomial_aucpr(iris.gbm@model$training_metrics)  
+  print(aucpr1)
+  print(aucpr2)
+  expect_equal(aucpr1, aucpr2)  
 }
 
 doTest("Testing model accessors for GBM", test.gbm.mult.accessors)

@@ -1261,6 +1261,132 @@ h2o.mean_per_class_error <- function(object, train=FALSE, valid=FALSE, xval=FALS
   invisible(NULL)
 }
 
+#' Retrieve the multinomial AUC
+#'
+#' Retrieves the multinomial AUC from an \linkS4class{H2OMultinomialMetrics}.
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training multinomial AUC value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of multinomial AUC values are returned, where the names are "train", "valid"
+#' or "xval".
+#'
+#' @param object An \linkS4class{H2OBinomialMetrics} object.
+#' @param train Retrieve the training multinomial AUC
+#' @param valid Retrieve the validation multinomial AUC
+#' @param xval Retrieve the cross-validation multinomial AUC
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(prostate_path)
+#'
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
+#' perf <- h2o.performance(model, prostate)
+#' h2o.multinomial_auc(perf)
+#' h2o.multinomial_auc(model, train=TRUE)
+#' }
+#' @export
+h2o.multinomial_auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+    if( is(object, "H2OModelMetrics") ) return( object@metrics$multinomial_auc )
+    if( is(object, "H2OModel") ) {
+        model.parts <- .model.parts(object)
+        if ( !train && !valid && !xval ) {
+            metric <- model.parts$tm@metrics$multinomial_auc
+            if ( !is.null(metric) ) return(metric)
+        }
+        v <- c()
+        v_names <- c()
+        if ( train ) {
+            v <- c(v,model.parts$tm@metrics$multinomial_auc)
+            v_names <- c(v_names,"train")
+        }
+        if ( valid ) {
+            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+            else {
+                v <- c(v,model.parts$vm@metrics$multinomial_auc)
+                v_names <- c(v_names,"valid")
+            }
+        }
+        if ( xval ) {
+            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+            else {
+                v <- c(v,model.parts$xm@metrics$multinomial_auc)
+                v_names <- c(v_names,"xval")
+            }
+        }
+        if ( !is.null(v) ) {
+            names(v) <- v_names
+            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+        }
+    }
+    warning(paste0("No multinomial AUC for ", class(object)))
+    invisible(NULL)
+}
+
+#' Retrieve the multinomial PR AUC
+#'
+#' Retrieves the multinomial PR AUC from an \linkS4class{H2OMultinomialMetrics}.
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training multinomial AUC value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of multinomial AUC values are returned, where the names are "train", "valid"
+#' or "xval".
+#'
+#' @param object An \linkS4class{H2OBinomialMetrics} object.
+#' @param train Retrieve the training multinomial PR AUC
+#' @param valid Retrieve the validation multinomial PR AUC
+#' @param xval Retrieve the cross-validation multinomial PR AUC
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(prostate_path)
+#'
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
+#' perf <- h2o.performance(model, prostate)
+#' h2o.multinomial_aucpr(perf)
+#' h2o.multinomial_aucpr(model, train=TRUE)
+#' }
+#' @export
+h2o.multinomial_aucpr <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+    if( is(object, "H2OModelMetrics") ) return( object@metrics$multinomial_pr_auc )
+    if( is(object, "H2OModel") ) {
+        model.parts <- .model.parts(object)
+        if ( !train && !valid && !xval ) {
+            metric <- model.parts$tm@metrics$multinomial_pr_auc
+            if ( !is.null(metric) ) return(metric)
+        }
+        v <- c()
+        v_names <- c()
+        if ( train ) {
+            v <- c(v,model.parts$tm@metrics$multinomial_pr_auc)
+            v_names <- c(v_names,"train")
+        }
+        if ( valid ) {
+            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+            else {
+                v <- c(v,model.parts$vm@metrics$multinomial_pr_auc)
+                v_names <- c(v_names,"valid")
+            }
+        }
+        if ( xval ) {
+            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+            else {
+                v <- c(v,model.parts$xm@metrics$multinomial_pr_auc)
+                v_names <- c(v_names,"xval")
+            }
+        }
+        if ( !is.null(v) ) {
+            names(v) <- v_names
+            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+        }
+    }
+    warning(paste0("No multinomial RR AUC for ", class(object)))
+    invisible(NULL)
+}
+
 #'
 #' Retrieve the Akaike information criterion (AIC) value
 #'

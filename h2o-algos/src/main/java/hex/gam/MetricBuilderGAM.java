@@ -165,7 +165,7 @@ public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSuperv
       mm = new ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM(m, f, metricsMultinomial._nobs, 
               metricsMultinomial._MSE, metricsMultinomial._domain, metricsMultinomial._sigma, metricsMultinomial._cm, 
               metricsMultinomial._hit_ratios, metricsMultinomial._logloss, residualDeviance(),_null_deviance, _aic, 
-              nullDOF(), resDOF(), _customMetric);
+              nullDOF(), resDOF(), metricsMultinomial._aucs,  _customMetric);
     } else if (_glmf._family == GLMModel.GLMParameters.Family.ordinal) { // ordinal should have a different resDOF()
       ModelMetricsOrdinal metricsOrdinal = (ModelMetricsOrdinal) mm;
       mm = new ModelMetricsBinomialGLM.ModelMetricsOrdinalGLM(m, f, metricsOrdinal._nobs, metricsOrdinal._MSE, 

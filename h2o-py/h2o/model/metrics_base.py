@@ -170,6 +170,8 @@ class MetricsBase(h2o_meta()):
         if (metric_type in types_w_mult) or (metric_type in types_w_ord):
             self.confusion_matrix().show()
             self.hit_ratio_table().show()
+            print("Multinomial AUC: "+ str(self.multinomial_auc()))
+            print("Multinomial PR AUC:"+ str(self.multinomial_pr_auc()))
         if metric_type in types_w_clustering:
             print("Total Within Cluster Sum of Square Error: " + str(self.tot_withinss()))
             print("Total Sum of Square Error to Grand Mean: " + str(self.totss()))
@@ -724,6 +726,51 @@ class H2OMultinomialModelMetrics(MetricsBase):
         >>> gbm.hit_ratio_table()
         """
         return self._metric_json['hit_ratio_table']
+
+
+    def multinomial_auc(self):
+        """Retrieve the multinomial AUC.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> response_col = "cylinders"
+        >>> distribution = "multinomial"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution = distribution)
+        >>> gbm.train(x=predictors,
+        ...           y = response,
+        ...           training_frame = train,
+        ...           validation_frame = valid)
+        >>> gbm.multinomial_auc()
+        """
+        return self._metric_json['multinomial_auc']
+
+    def multinomial_aucpr(self):
+        """Retrieve the multinomial PR AUC.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> response_col = "cylinders"
+        >>> distribution = "multinomial"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution = distribution)
+        >>> gbm.train(x=predictors,
+        ...           y = response,
+        ...           training_frame = train,
+        ...           validation_frame = valid)
+        >>> gbm.multinomial_aucpr()
+        """
+        return self._metric_json['multinomial_pr_auc']
 
 
 
