@@ -166,8 +166,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
                 eventLog.info(Stage.ModelTraining, jobDescription + " cancelled");
             } else {
                 eventLog.debug(Stage.ModelTraining, jobDescription + " complete");
-                Model res = (Model)job.get();
-                this.addModel(res);
+                this.addModel((Model)job.get());
             }
         }
 
