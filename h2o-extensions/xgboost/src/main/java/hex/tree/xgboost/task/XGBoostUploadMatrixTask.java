@@ -219,7 +219,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
 
                 actualRows++;
             }
-            assert idx == (long) _rowOffsets[id + 1] * _di.fullN();
+            assert idx == chunkData.data.length : "idx should be " + chunkData.data.length + " but it is " + idx;
             _nRowsByChunk[id] = actualRows;
             makeClient().uploadObject(_modelKey, denseMatrixChunk, chunkData);
         }
@@ -231,8 +231,6 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
                 int len = di._catOffsets[j+1] - di._catOffsets[j];
                 double val = chunks[j].isNA(rowInChunk) ? Double.NaN : chunks[j].at8(rowInChunk);
                 int pos = di.getCategoricalId(j, val) - di._catOffsets[j];
-                for (int cat = 0; cat < len; cat++)
-                    data[idx + cat] = 0f; // native memory => explicit zero-ing is necessary
                 data[idx + pos] = 1f;
                 idx += len;
             }
