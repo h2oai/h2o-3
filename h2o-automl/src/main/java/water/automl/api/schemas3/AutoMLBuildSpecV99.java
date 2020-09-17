@@ -4,7 +4,6 @@ package water.automl.api.schemas3;
 import ai.h2o.automl.Algo;
 import ai.h2o.automl.AutoMLBuildSpec;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
-import ai.h2o.automl.IAlgo;
 import hex.KeyValue;
 import hex.ScoreKeeper.StoppingMetric;
 import water.Iced;
@@ -255,6 +254,10 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help="The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).",
             level = API.Level.expert)
     public StepDefinitionV99[] modeling_plan;
+    
+    @API(help="The list of preprocessing steps to run. Only 'targetencoding' is currently supported.",
+            level = API.Level.secondary)
+    public PreprocessingStepDefinitionV99[] preprocessing;
 
     @API(help="Custom algorithm parameters.",
             level = API.Level.expert)

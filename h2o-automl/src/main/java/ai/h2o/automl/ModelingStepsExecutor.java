@@ -16,7 +16,6 @@ import water.util.Countdown;
 import water.util.Log;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -76,11 +75,18 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
     boolean submit(ModelingStep step, Job parentJob) {
         if (step.canRun()) {
             Job job = step.startJob();
-            if (job == null) {
-                skip(step._description, step.getAllocatedWork(), parentJob);
-            } else {
-                monitor(job, step.getAllocatedWork(), parentJob, ArrayUtils.contains(step._ignoredConstraints, Constraint.TIMEOUT));
-                return true;
+            try {
+                if (job==null) {
+                    skip(step._description, step.getAllocatedWork(), parentJob);
+                } else {
+                    monitor(job,
+                            step.getAllocatedWork(),
+                            parentJob,
+                            ArrayUtils.contains(step._ignoredConstraints, Constraint.TIMEOUT));
+                    return true;
+                }
+            } finally {
+                step.onDone(job);
             }
         }
         return false;
@@ -145,13 +151,13 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
             } else if (job.get() == null) {
                 eventLog.info(Stage.ModelTraining, jobDescription + " cancelled");
             } else {
+                eventLog.debug(Stage.ModelTraining, jobDescription + " complete");
                 ModelContainer<?> container = (ModelContainer) job.get();
                 int totalModelsBuilt = container.getModelCount();
                 if (totalModelsBuilt > lastTotalModelsBuilt) {
                     eventLog.debug(Stage.ModelTraining, "Built: "+totalModelsBuilt+" models for "+work._type+" : "+jobDescription);
                     this.addModels(container);
                 }
-                eventLog.debug(Stage.ModelTraining, jobDescription + " complete");
             }
         } else if (JobType.ModelBuild == work._type) {
             if (job.isCrashed()) {
@@ -160,7 +166,8 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
                 eventLog.info(Stage.ModelTraining, jobDescription + " cancelled");
             } else {
                 eventLog.debug(Stage.ModelTraining, jobDescription + " complete");
-                this.addModel((Model) job.get());
+                Model res = (Model)job.get();
+                this.addModel(res);
             }
         }
 

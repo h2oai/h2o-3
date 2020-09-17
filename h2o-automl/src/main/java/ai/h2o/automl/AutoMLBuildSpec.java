@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.preprocessing.PreprocessingStepDefinition;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.grid.HyperSpaceSearchCriteria;
@@ -170,6 +171,7 @@ public class AutoMLBuildSpec extends Iced {
     public StepDefinition[] modeling_plan;
     public double exploitation_ratio = 0;
     public AutoMLCustomParameters algo_parameters = new AutoMLCustomParameters();
+    public PreprocessingStepDefinition[] preprocessing;
   }
 
   public static final class AutoMLCustomParameters extends Iced {

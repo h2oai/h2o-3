@@ -9,6 +9,7 @@ import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.leaderboard.Leaderboard;
+import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
@@ -27,9 +28,8 @@ import water.util.Countdown;
 import water.util.EnumUtils;
 import water.util.Log;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
@@ -46,6 +46,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         Incremental
     }
 
+    static Predicate<Work> isDefaultModel = w -> w._type == JobType.ModelBuild;
     static Predicate<Work> isExplorationWork = w -> w._type == JobType.ModelBuild || w._type == JobType.HyperparamSearch;
     static Predicate<Work> isExploitationWork = w -> w._type == JobType.Selection;
 
@@ -81,9 +82,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             return builder.trainModelOnH2ONode();
         } catch (H2OIllegalArgumentException exception) {
             aml().eventLog().warn(Stage.ModelTraining, "Skipping training of model "+resultKey+" due to exception: "+exception);
+            onDone(null);
             return null;
         }
-
     }
 
     private transient AutoML _aml;
@@ -93,6 +94,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     protected int _weight;
     protected AutoML.Constraint[] _ignoredConstraints = new AutoML.Constraint[0];  // whether or not to ignore the max_models/max_runtime constraints
     protected String _description;
+    private final transient List<Consumer<Job>> _onDone = new ArrayList<>();
 
     StepDefinition _fromDef;
 
@@ -111,6 +113,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     protected abstract Work makeWork();
 
     protected abstract Job startJob();
+
+    protected void onDone(Job job) {
+        for (Consumer<Job> exec : _onDone) {
+            exec.accept(job);
+        }
+        _onDone.clear();
+    };
 
     protected AutoML aml() {
         return _aml;
@@ -160,7 +169,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         setCrossValidationParams(params);
         setWeightingParams(params);
         setClassBalancingParams(params);
-        
+        applyPreprocessing(params);
+
         params._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
         params._keep_cross_validation_fold_assignment = buildSpec.build_control.nfolds != 0 && buildSpec.build_control.keep_cross_validation_fold_assignment;
         params._export_checkpoints_dir = buildSpec.build_control.export_checkpoints_dir;
@@ -199,7 +209,15 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         if (customParams == null) return;
         customParams.applyCustomParameters(_algo, params);
     }
-
+    
+    protected void applyPreprocessing(Model.Parameters params) {
+        if (aml().getPreprocessing() == null) return;
+        for (PreprocessingStep preprocessingStep : aml().getPreprocessing()) {
+            PreprocessingStep.Completer complete = preprocessingStep.apply(params);
+            _onDone.add(j -> complete.run());
+        }
+    }
+    
 
     /**
      * Configures early-stopping for the model or set of models to be built.
@@ -340,6 +358,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 Work work = getAllocatedWork();
 //                double maxAssignedTimeSecs = aml().timeRemainingMs() / 1e3; // legacy
                 double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3; //including default models in the distribution of the time budget.
+//                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, isDefaultModel) / 1e3; //PUBDEV-7595
                 parms._max_runtime_secs = parms._max_runtime_secs == 0
                         ? maxAssignedTimeSecs
                         : Math.min(parms._max_runtime_secs, maxAssignedTimeSecs);
@@ -350,7 +369,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     : "Time assigned for "+key+": "+parms._max_runtime_secs+"s");
             return startModel(key, parms);
         }
-
     }
 
     /**

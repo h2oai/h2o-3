@@ -9,6 +9,7 @@ import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.StepDefinition.Alias;
 import ai.h2o.automl.leaderboard.*;
+import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.splitframe.ShuffleSplitFrame;
@@ -183,6 +184,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private long[] _originalTrainingFrameChecksums;
   private transient NonBlockingHashMap<Key, String> _trackedKeys = new NonBlockingHashMap<>();
   private transient ModelingStep[] _executionPlan;
+  private transient PreprocessingStep[] _preprocessing;
 
   public AutoML() {
     super(null);
@@ -206,6 +208,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
       prepareData();
       initLeaderboard();
+      initPreprocessing();
       planWork();
       _modelingStepsExecutor = new ModelingStepsExecutor(_leaderboard, _eventLog, _runCountdown);
     } catch (Exception e) {
@@ -343,10 +346,22 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     _leaderboard.setExtensionsProvider(createLeaderboardExtensionProvider(this));
   }
 
+  private void initPreprocessing() {
+    _preprocessing = _buildSpec.build_models.preprocessing == null 
+            ? null 
+            : Arrays.stream(_buildSpec.build_models.preprocessing)
+                .map(def -> def.newPreprocessingStep(this))
+                .toArray(PreprocessingStep[]::new);
+  }
+  
+  PreprocessingStep[] getPreprocessing() {
+    return _preprocessing;
+  }
+
   ModelingStep[] getExecutionPlan() {
     return _executionPlan == null ? (_executionPlan = _modelingStepsRegistry.getOrderedSteps(_buildSpec.build_models.modeling_plan, this)) : _executionPlan;
   }
-
+  
   void planWork() {
     Set<IAlgo> skippedAlgos = new HashSet<>();
     if (_buildSpec.build_models.exclude_algos != null) {
@@ -480,7 +495,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return !_runCountdown.timedOut() && remainingModels() > 0;
   }
 
-  boolean isCVEnabled() {
+  public boolean isCVEnabled() {
     return _buildSpec.build_control.nfolds > 0 || _buildSpec.input_spec.fold_column != null;
   }
 
@@ -599,12 +614,18 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private void learn() {
     List<ModelingStep> executed = new ArrayList<>();
+    if (_preprocessing != null) {
+      for (PreprocessingStep preprocessingStep : _preprocessing) preprocessingStep.prepare();
+    }
     for (ModelingStep step : getExecutionPlan()) {
         if (!exceededSearchLimits(step)) {
           if (_modelingStepsExecutor.submit(step, job())) {
             executed.add(step);
           }
         }
+    }
+    if (_preprocessing != null) {
+      for (PreprocessingStep preprocessingStep : _preprocessing) preprocessingStep.dispose();
     }
     _actualModelingSteps = _modelingStepsRegistry.createDefinitionPlanFromSteps(executed.toArray(new ModelingStep[0]));
     eventLog().info(Stage.Workflow, "Actual modeling steps: "+Arrays.toString(_actualModelingSteps));

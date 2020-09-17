@@ -10,7 +10,7 @@ import water.Iced;
 public abstract class LeaderboardExtensionsProvider extends Iced<LeaderboardExtensionsProvider> {
 
     /**
-     * Alias for "all extensions" where a list of extensions names is required.
+     * Type for "all extensions" where a list of extensions names is required.
      */
     public static final String ALL = "ALL";
 
