@@ -79,13 +79,6 @@ public class FrameUtils {
             : ParseDataset.parse(okey, inKeys);
   }
 
-  public static ParseSetup guessParserSetup(ParseSetup userParserSetup, URI ...uris) throws IOException {
-    Key[] inKeys = new Key[uris.length];
-    for (int i=0; i<uris.length; i++)  inKeys[i] = H2O.getPM().anyURIToKey(uris[i]);
-
-    return ParseSetup.guessSetup(inKeys, userParserSetup);
-  }
-
   public static Frame categoricalEncoder(Frame dataset, String[] skipCols, Model.Parameters.CategoricalEncodingScheme scheme, ToEigenVec tev, int maxLevels) {
     switch (scheme) {
       case AUTO:
