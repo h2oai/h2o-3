@@ -792,7 +792,7 @@ h2o.clusterStatus <- function() {
     md5_url = paste(own_jar, ".md5", sep="")
   } else {
     base_url <- paste("s3.amazonaws.com/h2o-release/h2o", branch, version, "Rjar", sep = "/")
-    h2o_url <- paste("http:/", base_url, "h2o.jar", sep = "/")
+    h2o_url <- paste("https:/", base_url, "h2o.jar", sep = "/")
     # Get MD5 checksum
     md5_url <- paste("http:/", base_url, "h2o.jar.md5", sep = "/")
   }
