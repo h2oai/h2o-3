@@ -273,7 +273,7 @@ public class IsolationForestTest extends TestUtil {
     try { 
       Scope.enter();
       Frame train = new TestFrameBuilder()
-                      .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+                      .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
                       .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
                       .withDataForCol(1, ar("B", "C", "D", "E", "B", "C", "D", "E", "A", "B"))
                       .withDataForCol(2, ar("BB", "CA", "DD", "EF", "BA", "C", "D", "E", "AA", "B"))
