@@ -260,7 +260,8 @@ h2o.automl <- function(x, y, training_frame,
     build_models$modeling_plan <- modeling_plan
   }
     
-  if (!is.null(preprocessing)) {
+  if (!is.null(preprocessing)) { 
+    is.string <- function(s) is.character(s) && length(s) == 1
     preprocessing <- lapply(preprocessing, function(step) {
       if (is.string(step)) {
         list(type=step)  
