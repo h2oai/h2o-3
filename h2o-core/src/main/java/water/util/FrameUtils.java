@@ -325,7 +325,7 @@ public class FrameUtils {
   }
 
   public static class ExportTaskDriver extends H2O.H2OCountedCompleter<ExportTaskDriver> {
-    private static int BUFFER_SIZE = 4 * 1024 * 1024;
+    private static int BUFFER_SIZE = 8 * 1024 * 1024;
     private static long DEFAULT_TARGET_PART_SIZE = 134217728L; // 128MB, default HDFS block size
     private static int AUTO_PARTS_MAX = 128; // maximum number of parts if automatic determination is enabled
     final Frame _frame;
