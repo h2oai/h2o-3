@@ -1012,32 +1012,10 @@ def get_model(model_id):
     assert_is_type(model_id, str)
     model_json = api("GET /3/Models/%s" % model_id)["models"][0]
     algo = model_json["algo"]
-
     # still some special handling for AutoEncoder: would be cleaner if we could get rid of this
     if algo == 'deeplearning' and model_json["output"]["model_category"] == "AutoEncoder":
         algo = 'autoencoder'
 
-    if algo == "svd":            m = H2OSVD()
-    elif algo == "pca":          m = H2OPrincipalComponentAnalysisEstimator()
-    elif algo == "drf":          m = H2ORandomForestEstimator()
-    elif algo == "naivebayes":   m = H2ONaiveBayesEstimator()
-    elif algo == "kmeans":       m = H2OKMeansEstimator()
-    elif algo == "glrm":         m = H2OGeneralizedLowRankEstimator()
-    elif algo == "glm":          m = H2OGeneralizedLinearEstimator()
-    elif algo == "gbm":          m = H2OGradientBoostingEstimator()
-    elif algo == "xgboost":      m = H2OXGBoostEstimator()
-    elif algo == "word2vec":     m = H2OWord2vecEstimator()
-    elif algo == "generic": m = H2OGenericEstimator()
-    elif algo == "deeplearning":
-        if model_json["output"]["model_category"] == "AutoEncoder":
-            m = H2OAutoEncoderEstimator()
-        else:
-            m = H2ODeepLearningEstimator()
-    elif algo == "stackedensemble": m = H2OStackedEnsembleEstimator()
-    elif algo == "isolationforest": m = H2OIsolationForestEstimator()
-    elif algo == "extendedisolationforest": m = H2OExtendedIsolationForestEstimator()
-    else:
-        raise ValueError("Unknown algo type: " + algo)
     m = create_estimator(algo)
     m._resolve_model(model_id, model_json)
     return m
