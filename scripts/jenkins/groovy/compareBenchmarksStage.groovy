@@ -205,6 +205,10 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_min': 12,
                     'train_time_max': 35
                 ],
+                [100, "ext"]: [
+                    'train_time_min': 12,
+                    'train_time_max': 38
+                ],
                 [100, "gpu"]: [
                     'train_time_min': 11,
                     'train_time_max': 19
@@ -215,6 +219,10 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_min': 102,
                     'train_time_max': 175
                 ],
+                [100, "ext"]: [
+                    'train_time_min': 102,
+                    'train_time_max': 193
+                ],
                 [100, "gpu"]: [
                     'train_time_min': 31,
                     'train_time_max': 49
@@ -224,6 +232,10 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 [100, "cpu"]: [
                     'train_time_min': 153,
                     'train_time_max': 178
+                ],
+                [100, "ext"]: [
+                    'train_time_min': 153,
+                    'train_time_max': 197
                 ],
                 [100, "gpu"]: [
                     'train_time_min': 50,
@@ -240,6 +252,10 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 [10, "cpu"]: [
                     'train_time_min': 291,
                     'train_time_max': 310
+                ],
+                [10, "ext"]: [
+                    'train_time_min': 291,
+                    'train_time_max': 341
                 ]
             ]
         ],

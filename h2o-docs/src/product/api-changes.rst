@@ -38,11 +38,15 @@ Finally the following APIs, deprecated since 3.28, have been fully removed:
 - Python: ``h2o.targetencoder`` module.
 - R: ``h2o.target_encode_fit`` and ``h2o.target_encode_transform`` functions.
 
-
 From 3.30.1.2
 ~~~~~~~~~~~~~
 
 The ``max_hit_ratio_k`` param is deprecated in version 3.30.1.2 and will be completely removed in the next major version, 3.32.0.1.
+
+From 3.30.1.1
+~~~~~~~~~~~~~
+
+The deprecated ``h2o-scala`` module has been removed.
 
 From 3.30.0.5
 ~~~~~~~~~~~~~
