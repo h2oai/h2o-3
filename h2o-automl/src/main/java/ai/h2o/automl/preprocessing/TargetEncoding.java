@@ -35,7 +35,7 @@ public class TargetEncoding implements PreprocessingStep {
         TargetEncoderParameters params = new TargetEncoderParameters();
         params._train = _aml.getTrainingFrame()._key;
         params._response_column = _aml.getBuildSpec().input_spec.response_column;
-        params._keep_original_features = false;
+        params._keep_original_categorical_columns = false;
         params._blending = true;
         params._noise = 0;
         params._seed = _aml.getBuildSpec().build_control.stopping_criteria.seed();
