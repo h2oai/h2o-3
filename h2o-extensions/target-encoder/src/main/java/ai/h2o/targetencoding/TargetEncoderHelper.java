@@ -69,7 +69,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
     assert (targetClass == NO_TARGET_CLASS) == (tcIdx < 0);
     Frame fr = null;
     try {
-      fr = tcIdx < 0 ? encodings:filterByValue(encodings, tcIdx, targetClass);
+      fr = tcIdx < 0 ? encodings : filterByValue(encodings, tcIdx, targetClass);
       Vec numeratorVec = fr.vec(NUMERATOR_COL);
       Vec denominatorVec = fr.vec(DENOMINATOR_COL);
       assert numeratorVec!=null;

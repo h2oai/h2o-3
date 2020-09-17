@@ -81,7 +81,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     public final TargetEncoderParameters _parms;
     public final int _nclasses;
     public final IcedHashMap<String, Frame> _target_encoding_map;
-    public final IcedHashMap<String, Boolean> _te_column_to_hasNAs;
+    public final IcedHashMap<String, Boolean> _te_column_to_hasNAs; //XXX: Map is a wrong choice for this, IcedHashSet would be perfect though
     
     public TargetEncoderOutput(TargetEncoder b, IcedHashMap<String, Frame> teMap) {
       super(b);
@@ -90,7 +90,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       _target_encoding_map = teMap;
       _model_summary = constructSummary();
 
-      _te_column_to_hasNAs = buildCol2HasNAsMap();
+      _te_column_to_hasNAs = buildCol2HasNAsMap(); 
     }
 
     private IcedHashMap<String, Boolean> buildCol2HasNAsMap() {
@@ -98,7 +98,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       for (Map.Entry<String, Frame> entry : _target_encoding_map.entrySet()) {
         String teColumn = entry.getKey();
         Frame encodingsFrame = entry.getValue();
-        boolean hasNAs = _parms.train().vec(teColumn).cardinality() < encodingsFrame.vec(teColumn).cardinality();
+        boolean hasNAs = _parms.train().vec(teColumn).cardinality() < encodingsFrame.vec(teColumn).cardinality(); //XXX: _parms.train().vec(teColumn).naCnt() > 0 ?
         col2HasNAs.put(teColumn, hasNAs);
       }
       return col2HasNAs;

@@ -52,6 +52,7 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter<TargetEncoderModel,
       writekv("smoothing", teParams._smoothing);
     }
     
+    //XXX: additional file unnecessary, we could just write the list/set of columns with NAs
     Map<String, Boolean> col2HasNAs = output._te_column_to_hasNAs;
     startWritingTextFile(MISSING_VALUES_PRESENCE_MAP_PATH);
     for(Entry<String, Boolean> entry: col2HasNAs.entrySet()) {
