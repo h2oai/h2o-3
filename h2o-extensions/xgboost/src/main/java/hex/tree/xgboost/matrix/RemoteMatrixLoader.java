@@ -77,8 +77,8 @@ public class RemoteMatrixLoader extends MatrixLoader {
 
     public static void denseChunk(String key, XGBoostUploadMatrixTask.DenseMatrixChunk chunk) {
         RemoteDenseMatrix m = (RemoteDenseMatrix) REGISTRY.get(key);
-        for (int i = 0; i < chunk.data.length; i++) {
-            m.matrix.set(m.dims.rowOffsets[chunk.id] + i, chunk.data[i]);
+        for (long i = 0; i < chunk.data.length; i++) {
+            m.matrix.set(i + (m.dims.rowOffsets[chunk.id] * m.dims.cols), chunk.data[(int) i]);
         }
     }
 

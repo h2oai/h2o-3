@@ -203,7 +203,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
             Chunk offsetsChk = _offsetsVec != null ? _offsetsVec.chunkForChunkIdx(chunkIdx) : null;
             Chunk respChk = _respVec.chunkForChunkIdx(chunkIdx);
             int idx = 0;
-            DenseMatrixChunk chunkData = new DenseMatrixChunk(id, chks[0]._len * _di.fullN());
+            DenseMatrixChunk chunkData = new DenseMatrixChunk(id, (_rowOffsets[id+1] - _rowOffsets[id]) * _di.fullN());
             int actualRows = 0;
             for (int i = 0; i < chks[0]._len; i++) {
                 if (weightsChk != null && weightsChk.atd(i) == 0) continue;

@@ -11,7 +11,8 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 
-import java.io.*;
+import java.util.Arrays;
+import java.util.Objects;
 
 import static hex.tree.xgboost.matrix.MatrixFactoryUtils.setResponseAndWeightAndOffset;
 import static hex.tree.xgboost.matrix.MatrixFactoryUtils.setResponseWeightAndOffset;
@@ -90,12 +91,12 @@ public class SparseMatrixFactory {
         }
 
         @Override
-        public void print() {
+        public void print(int nrow) {
             NestedArrayPointer r = new NestedArrayPointer();
             NestedArrayPointer d = new NestedArrayPointer();
             long elemIndex = 0;
             r.increment();
-            for (int i = 0; i < actualRows; i++) {
+            for (int i = 0; i < (nrow > 0 ? nrow : actualRows); i++) {
                 System.out.print(i + ":\t");
                 long rowEnd = r.get(rowHeaders);
                 r.increment();
@@ -108,6 +109,28 @@ public class SparseMatrixFactory {
             }
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
+            SparseDMatrixProvider that = (SparseDMatrixProvider) o;
+            return shape == that.shape &&
+                nonZeroElementsCount == that.nonZeroElementsCount &&
+                Arrays.deepEquals(rowHeaders, that.rowHeaders) &&
+                Arrays.deepEquals(colIndices, that.colIndices) &&
+                Arrays.deepEquals(sparseData, that.sparseData) &&
+                csr == that.csr;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Objects.hash(super.hashCode(), csr, shape, nonZeroElementsCount);
+            result = 31 * result + Arrays.hashCode(rowHeaders);
+            result = 31 * result + Arrays.hashCode(colIndices);
+            result = 31 * result + Arrays.hashCode(sparseData);
+            return result;
+        }
     }
 
     public static SparseDMatrixProvider toDMatrix(

@@ -12,7 +12,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
-import java.io.*;
+import java.util.Objects;
 
 import static hex.tree.xgboost.matrix.MatrixFactoryUtils.setResponseAndWeightAndOffset;
 
@@ -53,8 +53,8 @@ public class DenseMatrixFactory {
         }
         
         @Override
-        public void print() {
-            for (int i = 0; i < data.nrow; i++) {
+        public void print(int nrow) {
+            for (int i = 0; i < (nrow > 0 ? nrow : data.nrow); i++) {
                 System.out.print(i + ":");
                 for (int j = 0; j < data.ncol; j++) {
                     System.out.print(data.get(i, j) + ", ");
@@ -62,6 +62,28 @@ public class DenseMatrixFactory {
                 System.out.print(response[i]);
                 System.out.println();
             }
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
+            DenseDMatrixProvider that = (DenseDMatrixProvider) o;
+            if (that.data.ncol != this.data.ncol || that.data.nrow != this.data.nrow) return false;
+            for (int i = 0; i < this.data.nrow; i++) {
+                for (int j = 0; j < this.data.ncol; j++) {
+                    if (this.data.get(i, j) != that.data.get(i, j)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return super.hashCode() + Objects.hash(data);
         }
 
         @Override
