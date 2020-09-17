@@ -67,14 +67,15 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
                  include_algos=None,
                  exploitation_ratio=0,
                  modeling_plan=None,
+                 preprocessing=None,
                  monotone_constraints=None,
-                 algo_parameters=None,
                  keep_cross_validation_predictions=False,
                  keep_cross_validation_models=False,
                  keep_cross_validation_fold_assignment=False,
                  sort_metric="AUTO",
                  export_checkpoints_dir=None,
-                 verbosity="warn"):
+                 verbosity="warn",
+                 **kwargs):
         """
         Create a new H2OAutoML instance.
         
@@ -117,11 +118,9 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         :param exploitation_ratio: The budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase. By default, the exploitation phase is disabled (exploitation_ratio=0) as this is still experimental; to activate it, it is recommended to try a ratio around 0.1. Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.
         :param modeling_plan: List of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).
           Defaults to None (Expert usage only).
+        :param preprocessing: List of preprocessing steps to run. Only 'targetencoding' is currently supported.
         :param monotone_constraints: Dict representing monotonic constraints.
           Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.
-        :param algo_parameters: Dict of ``param_name=param_value`` to be passed to internal models. Defaults to none (Expert usage only).
-          By default, params are set only to algorithms accepting them, and ignored by others.
-          Only following parameters are currently allowed: ``"monotone_constraints"``.
         :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions.
           This needs to be set to ``True`` if running the same AutoML object for repeated runs because CV predictions are required to build 
           additional Stacked Ensemble models in AutoML. This option defaults to ``False``.
@@ -137,6 +136,15 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         :param verbosity: Verbosity of the backend messages printed during training.
             Available options are None (live log disabled), 'debug', 'info' or 'warn'. Defaults to 'warn'.
         """
+        
+        # early validate kwargs:
+        algo_parameters = None
+        for k in kwargs:
+            if k == 'algo_parameters':
+                algo_parameters = kwargs[k]
+            else:
+                raise TypeError("H2OAutoML got an unexpected keyword argument '%s'" % k)
+        
         # Check if H2O jar contains AutoML
         try:
             h2o.api("GET /3/Metadata/schemas/AutoMLV99")
@@ -275,7 +283,14 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         else:
             self.modeling_plan = None
 
-        assert_is_type(algo_parameters, None, dict)
+        assert_is_type(preprocessing, None, [str])  # for now
+        if preprocessing is not None:
+            assert all(p in ['targetencoding'] for p in preprocessing)
+            self.preprocessing = self.build_models['preprocessing'] = [dict(type=p) for p in preprocessing]
+        else:
+            self.preprocessing = None
+
+        assert_is_type(monotone_constraints, None, dict)
         if monotone_constraints is not None:
             if algo_parameters is None:
                 algo_parameters = {}

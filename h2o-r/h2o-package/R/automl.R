@@ -48,11 +48,9 @@
 #'        Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @param exploitation_ratio The budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase. By default, the exploitation phase is disabled (exploitation_ratio=0) as this is still experimental; to activate it, it is recommended to try a ratio around 0.1. Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.
 #' @param modeling_plan List. The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints). Optional (Expert usage only).
+#' @param preprocessing List. The list of preprocessing steps to run. Only 'targetencoding' is currently supported.
 #' @param monotone_constraints List. A mapping representing monotonic constraints.
 #'        Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.
-#' @param algo_parameters List. A list of param_name=param_value to be passed to internal models. Defaults to none (Expert usage only).
-#'        By default, params are set only to algorithms accepting them, and ignored by others.
-#'        Only following parameters are currently allowed: "monotone_constraints".
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation predictions. This needs to be set to TRUE if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to FALSE.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep fold assignments in the models. Deleting them will save memory in the H2O cluster. Defaults to FALSE.
@@ -100,16 +98,26 @@ h2o.automl <- function(x, y, training_frame,
                        exclude_algos = NULL,
                        include_algos = NULL,
                        modeling_plan = NULL,
+                       preprocessing = NULL,
                        exploitation_ratio = 0.0,
                        monotone_constraints = NULL,
-                       algo_parameters = NULL,
                        keep_cross_validation_predictions = FALSE,
                        keep_cross_validation_models = FALSE,
                        keep_cross_validation_fold_assignment = FALSE,
                        sort_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "mean_per_class_error"),
                        export_checkpoints_dir = NULL,
-                       verbosity = "warn")
+                       verbosity = "warn",
+                       ...)
 {
+  dots <- list(...)
+  algo_parameters <- NULL  
+  for (arg in names(dots)) {
+    if (arg == 'algo_parameters') {
+      algo_parameters <- dots$algo_parameters  
+    } else {
+      stop(paste("unused argument", arg, "=", dots[[arg]]))
+    }
+  }
 
   tryCatch({
     .h2o.__remoteSend(h2oRestApiVersion = 3, method="GET", page = "Metadata/schemas/AutoMLV99")
@@ -250,6 +258,17 @@ h2o.automl <- function(x, y, training_frame,
       }
     })
     build_models$modeling_plan <- modeling_plan
+  }
+    
+  if (!is.null(preprocessing)) {
+    preprocessing <- lapply(preprocessing, function(step) {
+      if (is.string(step)) {
+        list(type=step)  
+      } else {
+        stop("preprocessing steps must be a string (only 'targetencoding' currently supported)")  
+      } 
+    })  
+    build_models$preprocessing <- preprocessing  
   }
 
   if (!is.null(monotone_constraints)) {
