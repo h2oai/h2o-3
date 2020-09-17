@@ -23,7 +23,7 @@ def import_dataset(seed=0, mode='binary'):
 def test_target_encoding():
     ds = import_dataset()
     aml = H2OAutoML(project_name="automl_with_te",
-                    max_models=1,
+                    max_models=3,
                     preprocessing=['targetencoding'],
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train, leaderboard_frame=ds.test)

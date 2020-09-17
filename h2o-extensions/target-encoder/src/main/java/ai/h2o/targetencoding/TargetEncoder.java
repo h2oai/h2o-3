@@ -5,6 +5,7 @@ import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderOutput;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import water.DKV;
 import water.Key;
 import water.Scope;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -144,7 +145,9 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
           );
           encodings.delete();
           encodings = finalEncodings;
-
+          DKV.remove(encodings._key);
+          encodings._key = Key.make(_result.toString()+"_encodings_"+columnToEncode);
+          DKV.put(encodings);
           columnToEncodings.put(columnToEncode, encodings);
         }
         
