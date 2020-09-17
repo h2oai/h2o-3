@@ -307,14 +307,53 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
            if (deviance.length < 5) {
                bestLambdaIndex = deviance.length - 1;
            } else {
-               bestLambdaIndex = getBestLambdaIndex(deviance, lambdas);
+               bestLambdaIndex = getBestLambdaIndex(deviance);
+               if (bestLambdaIndex >= lambdas.length) {
+                   bestLambdaIndex = getBestLambdaIndexCornerCase(deviance, lambdas);
+               }
            }
 
             lambdaModel.remove();
             return new double[]{lambdas[bestLambdaIndex]};
         }
 
-        int getBestLambdaIndex(double[] deviance, double[] lambdas) {
+        int getBestLambdaIndex(double[] deviance) {
+            int bestLambdaIndex = deviance.length - 1;
+            if (deviance.length >= 5) {
+                double[] array = differenceArray(signArray(differenceArray(differenceArray(deviance))));
+                for (int i = 0; i < array.length; i++) {
+                    if (array[i] != 0 && i > 0) {
+                        bestLambdaIndex = 3 * i;
+                        break;
+                    }
+                }
+            }
+            return bestLambdaIndex;
+        }
+
+
+        double[] differenceArray(double[] array) {
+            double[] differenceArray = new double[array.length - 1];
+            for (int i = 0; i < array.length - 1; i++) {
+                differenceArray[i] = array[i+1] - array[i];
+            }
+            return differenceArray;
+        }
+
+        double[] signArray(double[] array) {
+            double[] signArray = new double[array.length];
+            for (int i = 0; i < array.length; i++) {
+                if (array[i] > 0)
+                    signArray[i] = 1;
+                else if (array[i] < 0)
+                    signArray[i] = -1;
+                else
+                    signArray[i] = 0;
+            }
+            return signArray;
+        }
+
+        int getBestLambdaIndexCornerCase(double[] deviance, double[] lambdas) {
             double[] leftUpPoint = new double[] {deviance[0], lambdas[0]};
             double[] rightLowPoint = new double[] {deviance[deviance.length - 1], lambdas[lambdas.length - 1]};
             double[] leftActualPoint = new double[2];
