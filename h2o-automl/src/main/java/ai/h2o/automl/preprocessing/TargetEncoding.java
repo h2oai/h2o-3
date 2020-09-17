@@ -10,6 +10,7 @@ import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelPreprocessor;
 import water.DKV;
+import water.Iced;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -21,13 +22,20 @@ import java.util.List;
 
 public class TargetEncoding implements PreprocessingStep {
     
-    private transient AutoML _aml;
-    private transient TargetEncoderPreprocessor _tePreprocessor;
-    private transient TargetEncoderModel _teModel;
-    private final transient List<Completer> _disposables = new ArrayList<>();
+    static String TE_FOLD_COLUMN_SUFFIX = "_te_fold";
+    
+    private AutoML _aml;
+    private TargetEncoderPreprocessor _tePreprocessor;
+    private TargetEncoderModel _teModel;
+    private final List<Completer> _disposables = new ArrayList<>();
 
     public TargetEncoding(AutoML aml) {
         _aml = aml;
+    }
+
+    @Override
+    public String getType() {
+        return PreprocessingStepDefinition.Type.TargetEncoding.name();
     }
 
     @Override
@@ -54,7 +62,7 @@ public class TargetEncoding implements PreprocessingStep {
                         params._seed
                 );
                 DKV.put(foldColumn);
-                params._fold_column = params._response_column+"_te_fold";
+                params._fold_column = params._response_column+TE_FOLD_COLUMN_SUFFIX;
                 addFoldColumn(train, params._fold_column, foldColumn, params._train.toString());
                 params._train = train._key;
                 _disposables.add(() -> {
@@ -64,7 +72,7 @@ public class TargetEncoding implements PreprocessingStep {
             }
         }
 
-        TargetEncoder te = new TargetEncoder(params);
+        TargetEncoder te = new TargetEncoder(params, _aml.makeKey(getType(), null, false));
         _teModel = te.trainModel().get();
         _tePreprocessor = new TargetEncoderPreprocessor(_teModel);
     }
@@ -79,6 +87,9 @@ public class TargetEncoding implements PreprocessingStep {
         if (addFoldColumn) {
             addFoldColumn(train, foldColumn, _teModel._parms._train.get().vec(foldColumn), params._train.toString());
             params._train = train._key;
+            params._fold_column = foldColumn;
+            params._nfolds = 0; // to avoid confusion or errors
+            params._fold_assignment = FoldAssignmentScheme.AUTO; // to avoid confusion or errors
         }
         
         return () -> {
@@ -93,7 +104,24 @@ public class TargetEncoding implements PreprocessingStep {
     public void dispose() {
         for (Completer disposable : _disposables) disposable.run();
     }
-    
+
+    @Override
+    public void remove() {
+        if (_tePreprocessor != null) {
+            _tePreprocessor.remove(true);
+            _tePreprocessor = null;
+            _teModel = null;
+        }
+    }
+
+    TargetEncoderPreprocessor getTEPreprocessor() {
+        return _tePreprocessor;
+    }
+
+    TargetEncoderModel getTEModel() {
+        return _teModel;
+    }
+
     private static void addFoldColumn(Frame fr, String name, Vec foldColumn, String keyPrefix) {
         fr.add(name, foldColumn);
         if (fr._key == null) 

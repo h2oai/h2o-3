@@ -643,13 +643,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return _instanceCounters.get(key).incrementAndGet();
   }
 
-  Key makeKey(String algoName, String type, boolean with_counter) {
+  public Key makeKey(String algoName, String type, boolean with_counter) {
     String counterStr = with_counter ? "_" + nextInstanceCounter(algoName, type) : "";
     String prefix = StringUtils.isNullOrEmpty(type) ? algoName : algoName+"_"+type+"_";
     return Key.make(prefix + counterStr + "_AutoML_" + timestampFormatForKeys.get().format(_startTime));
   }
 
-  void trackKey(Key key) {
+  public void trackKey(Key key) {
     _trackedKeys.put(key, Arrays.toString(Thread.currentThread().getStackTrace()));
   }
 
@@ -674,7 +674,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   //*****************  Clean Up + other utility functions *****************//
 
   /**
-   * Delete the AutoML-related objects, but leave the grids and models that it built.
+   * Delete the AutoML-related objects, including the grids and models that it built if cascade=true
    */
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
@@ -696,7 +696,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       Frame.deleteTempFrameAndItsNonSharedVecs(_trainingFrame, _origTrainingFrame);
     if (leaderboard() != null) leaderboard().remove(fs, cascade);
     if (eventLog() != null) eventLog().remove(fs, cascade);
-
+    if (cascade && _preprocessing != null) {
+      for (PreprocessingStep preprocessingStep : _preprocessing) {
+        preprocessingStep.remove();
+      }
+    }
     for (Key key : _trackedKeys.keySet()) Keyed.remove(key, fs, true);
 
     return super.remove_impl(fs, cascade);

@@ -2,8 +2,10 @@ package ai.h2o.targetencoding;
 
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderOutput;
+import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import water.Key;
 import water.Scope;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
@@ -16,19 +18,24 @@ import java.util.*;
 
 import static ai.h2o.targetencoding.TargetEncoderHelper.*;
 
-public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderOutput> {
+public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncoderParameters, TargetEncoderOutput> {
 
   private static final Logger logger = LoggerFactory.getLogger(TargetEncoder.class);
   private TargetEncoderModel _targetEncoderModel;
   private String[] _columnsToEncode;
   
-  public TargetEncoder(TargetEncoderModel.TargetEncoderParameters parms) {
+  public TargetEncoder(TargetEncoderParameters parms) {
     super(parms);
     init(false);
   }
 
+  public TargetEncoder(TargetEncoderParameters parms, Key<TargetEncoderModel> key) {
+    super(parms, key);
+    init(false);
+  }
+
   public TargetEncoder(final boolean startupOnce) {
-    super(new TargetEncoderModel.TargetEncoderParameters(), startupOnce);
+    super(new TargetEncoderParameters(), startupOnce);
   }
 
   @Override

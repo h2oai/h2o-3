@@ -1,6 +1,5 @@
 from __future__ import print_function
 import sys, os
-import re
 
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
@@ -17,26 +16,25 @@ def import_dataset(seed=0, mode='binary'):
         regression='fare'
     )[mode]
     
-    # df = h2o.import_file(path=pu.locate("smalldata/prostate/prostate.csv"))
-    # target = "CAPSULE"
-    # df[target] = df[target].asfactor()
-    # for col in ["RACE", "DPROS", "DCAPS", "GLEASON"]:
-    #     df[col] = df[col].asfactor()
-    
     fr = df.split_frame(ratios=[.8,.1], seed=seed)
     return pu.ns(train=fr[0], valid=fr[1], test=fr[2], target=target)
 
 
-def test_target_encoding_with_nfolds_cv():
+def test_target_encoding():
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_target_encoding",
-                    max_models=10,
+    aml = H2OAutoML(project_name="automl_with_te",
+                    max_models=1,
                     preprocessing=['targetencoding'],
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train, leaderboard_frame=ds.test)
-    print(aml.leaderboard)
+    lb = aml.leaderboard
+    print(lb)
+    # we can't really verify from client if TE was correctly applied... so just using a poor man's check:
+    mem_keys = h2o.ls().key
+    # print(mem_keys)
+    assert any(k.startswith("TargetEncoding_AutoML") for k in mem_keys)
 
 
 pu.run_tests([
-    test_target_encoding_with_nfolds_cv,
+    test_target_encoding,
 ])

@@ -8,8 +8,14 @@ public class PreprocessingStepDefinition extends Iced<PreprocessingStepDefinitio
     public enum Type {
         TargetEncoding
     }
-    
+
     Type _type;
+
+    public PreprocessingStepDefinition() { /* for reflection */ }
+
+    public PreprocessingStepDefinition(Type type) { 
+        _type = type;
+    }
 
     public PreprocessingStep newPreprocessingStep(AutoML aml) {
         switch (_type) {

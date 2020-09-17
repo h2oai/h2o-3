@@ -3,6 +3,7 @@ package ai.h2o.automl.modeling;
 import ai.h2o.automl.*;
 import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.events.EventLogEntry;
+import ai.h2o.automl.preprocessing.PreprocessingStepDefinition;
 import hex.KeyValue;
 import hex.Model;
 import hex.ensemble.Metalearner;
@@ -48,6 +49,12 @@ public class StackedEnsembleStepsProvider
             @Override
             protected void setClassBalancingParams(Model.Parameters params) {
                 //Disabled
+            }
+
+            @Override
+            protected boolean acceptPreprocessing(PreprocessingStepDefinition.Type type) {
+                if (type == PreprocessingStepDefinition.Type.TargetEncoding) return false;  //SE should not have TE applied, the base models already do it.
+                return super.acceptPreprocessing(type);
             }
 
             @Override
