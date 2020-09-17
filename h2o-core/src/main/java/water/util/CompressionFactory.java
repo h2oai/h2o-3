@@ -19,6 +19,8 @@ public class CompressionFactory extends Iced<CompressionFactory> {
   OutputStream wrapOutputStream(OutputStream os) throws IOException {
     final String n = _name.toLowerCase();
     switch (n) {
+      case "none":
+        return os;
       case "gzip":
         return new GZIPOutputStream(os);
       case "bzip2":

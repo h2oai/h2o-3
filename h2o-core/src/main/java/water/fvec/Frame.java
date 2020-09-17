@@ -1530,7 +1530,12 @@ public class Frame extends Lockable<Frame> {
     return export(fr, path, frameName, overwrite, nParts, null, new CSVStreamParams());
   }
 
-  public static Job export(Frame fr, String path, String frameName, boolean overwrite, int nParts, 
+  public static Job export(Frame fr, String path, String frameName, boolean overwrite, int nParts,
+                           String compression, CSVStreamParams csvParms) {
+    return export(fr, path, frameName, overwrite, nParts, false, compression, csvParms);
+  }
+
+  public static Job export(Frame fr, String path, String frameName, boolean overwrite, int nParts, boolean parallel,
                            String compression, CSVStreamParams csvParms) {
     boolean forceSingle = nParts == 1;
     // Validate input
@@ -1550,7 +1555,7 @@ public class Frame extends Lockable<Frame> {
     CompressionFactory compressionFactory = compression != null ? CompressionFactory.make(compression) : null;
     Job job =  new Job<>(fr._key, "water.fvec.Frame", "Export dataset");
     FrameUtils.ExportTaskDriver t = new FrameUtils.ExportTaskDriver(
-            fr, path, frameName, overwrite, job, nParts, compressionFactory, csvParms);
+            fr, path, frameName, overwrite, job, nParts, parallel, compressionFactory, csvParms);
     return job.start(t, fr.anyVec().nChunks());
   }
 
