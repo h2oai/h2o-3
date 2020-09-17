@@ -11,9 +11,8 @@ import java.util.regex.Pattern;
 
 public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoModel> {
   
-  private static final String ENCODING_MAP_PATH = "feature_engineering/target_encoding/encoding_map.ini";
-  
-  private static final String MISSING_VALUES_PRESENCE_MAP_PATH = "feature_engineering/target_encoding/te_column_name_to_missing_values_presence.ini";
+  public static final String ENCODING_MAP_PATH = "feature_engineering/target_encoding/encoding_map.ini";
+  public static final String MISSING_VALUES_PRESENCE_MAP_PATH = "feature_engineering/target_encoding/te_column_name_to_missing_values_presence.ini";
 
   @Override
   public String getModelName() {
@@ -29,7 +28,6 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
     }
     _model._targetEncodingMap = parseEncodingMap();
     _model._teColumn2HasNAs = parseTEColumnsToHasNAs();
-    _model._priorMean = readkv("priorMean");
   }
 
   @Override
@@ -49,39 +47,32 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
     return cols2HasNAs;
   }
   
-  public EncodingMaps parseEncodingMap() throws IOException {
+  protected EncodingMaps parseEncodingMap() throws IOException {
     if (!exists(ENCODING_MAP_PATH)) {
       return null;
     }
-    Map<String, EncodingMap> encodingMaps;
+    Map<String, EncodingMap> encodingMaps = new HashMap<>();
     try (BufferedReader source = getMojoReaderBackend().getTextFile(ENCODING_MAP_PATH)) {
-      encodingMaps = new HashMap<>();
-      Map<Integer, double[]> encodingsForColumn = null;
+      EncodingMap colEncodingMap = new EncodingMap(_model.nclasses());
       String sectionName = null;
       String line;
 
       while (true) {
         line = source.readLine();
         if (line == null) { // EOF
-          encodingMaps.put(sectionName, new EncodingMap(encodingsForColumn));
+          encodingMaps.put(sectionName, colEncodingMap);
           break;
         }
         line = line.trim();
-        if (sectionName == null) {
-          sectionName = matchNewSection(line);
-          encodingsForColumn = new HashMap<>();
+        String matchSection = matchNewSection(line);
+        if (sectionName == null || matchSection != null) {
+          if (sectionName != null) encodingMaps.put(sectionName, colEncodingMap); // section completed
+          sectionName = matchSection;
+          colEncodingMap = new EncodingMap(_model.nclasses());
         } else {
-          String matchResult = matchNewSection(line);
-          if (matchResult != null) {
-            encodingMaps.put(sectionName, new EncodingMap(encodingsForColumn));
-            encodingsForColumn = new HashMap<>();
-            sectionName = matchResult;
-            continue;
-          }
-
           String[] res = line.split("\\s*=\\s*", 2);
-          double[] numDen = processNumeratorAndDenominator(res[1].split(" "));
-          encodingsForColumn.put(Integer.parseInt(res[0]), numDen);
+          double[] components = processEncodingsComponents(res[1].split(" "));
+          colEncodingMap.add(Integer.parseInt(res[0]), components);
         }
       }
     }
@@ -96,10 +87,12 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
     } else return null;
   }
 
-  private double[] processNumeratorAndDenominator(String[] numDenStr) {
-    double[] numDen = new double[numDenStr.length];
+  private double[] processEncodingsComponents(String[] componentsStr) {
+    // note that there may be additional entries in those arrays outside the numerator and denominator.
+    // for multiclass problems, the last entry correspond to the target class associated with the num/den values.
+    double[] numDen = new double[componentsStr.length];
     int i = 0;
-    for (String str : numDenStr) {
+    for (String str : componentsStr) {
       numDen[i] = Double.parseDouble(str);
       i++;
     }

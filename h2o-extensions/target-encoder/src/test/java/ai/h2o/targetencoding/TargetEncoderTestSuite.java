@@ -13,6 +13,8 @@ import org.junit.runners.Suite;
         TargetEncodingLeaveOneOutStrategyTest.class,
         TargetEncodingNoneStrategyTest.class,
         TargetEncodingOnBinaryTest.class,
+        TargetEncodingOnMulticlassTest.class,
+        TargetEncodingOnRegressionTest.class,
         TargetEncodingExceptionsHandlingTest.class,
         TargetEncodingHelperTest.class,
         TargetEncodingImmutabilityTest.class,

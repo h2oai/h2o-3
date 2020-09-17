@@ -1,17 +1,18 @@
 package ai.h2o.targetencoding.strategy;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import static ai.h2o.targetencoding.TargetEncoderHelper.addKFoldColumn;
 import static org.junit.Assert.*;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class ThresholdTEApplicationStrategyTest extends water.TestUtil {
-
-  @BeforeClass
-  public static void setup() { stall_till_cloudsize(1); }
 
   @Test
   public void shouldReturnCatColumnsWithCardinalityHigherThanThresholdTest() {

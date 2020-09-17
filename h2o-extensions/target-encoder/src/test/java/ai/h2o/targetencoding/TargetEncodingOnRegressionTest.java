@@ -5,23 +5,23 @@ import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import static ai.h2o.targetencoding.TargetEncoderHelper.DENOMINATOR_COL;
 import static ai.h2o.targetencoding.TargetEncoderHelper.NUMERATOR_COL;
 import static org.junit.Assert.assertEquals;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class TargetEncodingOnRegressionTest extends TestUtil {
   
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
-
   @Test
   public void test_encodings_with_continuous_target() {
     try {
@@ -53,6 +53,8 @@ public class TargetEncodingOnRegressionTest extends TestUtil {
       
       Frame trainEncoded = teModel.transformTraining(fr);
       Scope.track(trainEncoded);
+      Assert.assertEquals(3, trainEncoded.numCols()); // 2 original cols + 1 enc column for the categorical one
+        
       Vec trainEncodedCol = trainEncoded.vec("categorical_te");
       Assert.assertNotNull(trainEncodedCol);
       Vec expectedEncodedCol = dvec(2.5, 2.5, 2.5, 2.5, 5.5, 5.5);
@@ -84,7 +86,7 @@ public class TargetEncodingOnRegressionTest extends TestUtil {
       Scope.track_generic(teModel);
       Frame encodings = teModel._output._target_encoding_map.get("categorical");
       printOutFrameAsTable(encodings);
-      double priorMean = teModel._output._prior_mean;
+      double priorMean = TargetEncoderHelper.computePriorMean(encodings);
       assertEquals(5., priorMean, 1e-3); // == 45/9
 
       Vec expectedCatColumn = vec(ar("a", "b", "categorical_NA"), 0, 1, 2); //  we should have an entry per category
@@ -149,7 +151,7 @@ public class TargetEncodingOnRegressionTest extends TestUtil {
       Scope.track_generic(teModel);
       Frame encodings = teModel._output._target_encoding_map.get("categorical");
       printOutFrameAsTable(encodings);
-      double priorMean = teModel._output._prior_mean;
+      double priorMean = TargetEncoderHelper.computePriorMean(encodings);
       assertEquals(5.5, priorMean, 1e-3); // == 55/10
 
       Vec expectedCatColumn = vec(ar("a", "b", "c", "categorical_NA"), 0, 1, 2, 3); //  we should have an entry per category
@@ -222,7 +224,7 @@ public class TargetEncodingOnRegressionTest extends TestUtil {
       Scope.track_generic(teModel);
       Frame encodings = teModel._output._target_encoding_map.get("categorical");
       printOutFrameAsTable(encodings);
-      double priorMean = teModel._output._prior_mean;
+      double priorMean = TargetEncoderHelper.computePriorMean(encodings);
       assertEquals(5.5, priorMean, 1e-3); // == 55/10
 
       Vec expectedCatColumn = vec(ar("a", "b", "c", "categorical_NA"), 0, 1, 2, 3, 0, 1, 3); // for each fold value, we should have an entry per category (except for 'c', only in fold 0)

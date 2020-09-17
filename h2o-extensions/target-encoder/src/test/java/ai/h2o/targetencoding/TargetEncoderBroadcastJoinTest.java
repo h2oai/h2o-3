@@ -95,7 +95,7 @@ public class TargetEncoderBroadcastJoinTest extends TestUtil {
       addKFoldColumn(leftFr, foldColumnName, numberOfFolds, 1234L);
       Assume.assumeTrue(leftFr.vec(foldColumnName).clone().toCategoricalVec().cardinality() == numberOfFolds);
 
-      Frame colAEncodings = buildEncodingsFrame(leftFr, 0, 1, 2);
+      Frame colAEncodings = buildEncodingsFrame(leftFr, 0, 1, 2, 2);
       Scope.track(colAEncodings);
       
       Frame joined = TargetEncoderBroadcastJoin.join(

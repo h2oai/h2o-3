@@ -31,9 +31,9 @@ public class EasyPredictModelWrapperWithTargetEncodingTest {
 
     // It is expected that there will be an exception if encoding map is missing and encoding will not take place 
     try {
-      modelWrapper.transformWithTargetEncoding(row);
+      modelWrapper.predictTargetEncoding(row);
       fail();
-    } catch (IllegalStateException ex) {
+    } catch (NullPointerException ex) {
       assertEquals((String) row.get("embarked"), "S");
     }
   }
@@ -79,15 +79,16 @@ public class EasyPredictModelWrapperWithTargetEncodingTest {
     private MyTEModel() {
       super(new String[]{"embarked", "age"}, DOMAINS, null);
       EncodingMaps encodingMaps = new EncodingMaps();
-      EncodingMap encodingMapForEmbarked = new EncodingMap();
-      encodingMapForEmbarked.put(0, new double[]{3,5});
+      EncodingMap encodingMapForEmbarked = new EncodingMap(2);
+      encodingMapForEmbarked.add(0, new double[]{3,5});
       encodingMaps.put("embarked", encodingMapForEmbarked);
       
       Map<String, Integer> teColumnNameToIdx = new HashMap<>();
       teColumnNameToIdx.put("embarked", 0);
 
       _targetEncodingMap = encodingMaps;
-      _columnNameToIdx = teColumnNameToIdx;
+      _columnNameToIdx.clear();
+      _columnNameToIdx.putAll(teColumnNameToIdx);
     }
   }
 

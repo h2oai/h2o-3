@@ -1,6 +1,7 @@
 package ai.h2o.targetencoding;
 
 import water.*;
+import water.fvec.CategoricalWrappedVec;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -15,9 +16,18 @@ import water.rapids.Val;
 import water.rapids.ast.prims.advmath.AstKFold;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.rapids.ast.prims.mungers.AstGroup.NAHandling;
+import water.rapids.ast.prims.mungers.AstMelt;
+import water.rapids.vals.ValFrame;
+import water.rapids.vals.ValNum;
+import water.rapids.vals.ValStr;
+import water.rapids.vals.ValStrs;
 import water.util.ArrayUtils;
+import water.util.FrameUtils;
+import water.util.TwoDimTable;
 
 import java.util.Random;
+
+import static ai.h2o.targetencoding.EncodingsComponents.NO_TARGET_CLASS;
 
 /**
  * This is a helper class for target encoding related logic,
@@ -26,11 +36,9 @@ import java.util.Random;
  */
 public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
 
-  static final String ENCODED_COLUMN_POSTFIX = "_te";
-  static final BlendingParams DEFAULT_BLENDING_PARAMS = new BlendingParams(10, 20);
-
   static String NUMERATOR_COL = "numerator";
   static String DENOMINATOR_COL = "denominator";
+  static String TARGETCLASS_COL = "targetclass";
 
   static String NA_POSTFIX = "_NA";
   
@@ -51,14 +59,26 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
     return frame.numCols() - 1;
   }
 
-  static double calculatePriorMean(Frame encodings) {
-    Vec numeratorVec = encodings.vec(NUMERATOR_COL);
-    Vec denominatorVec = encodings.vec(DENOMINATOR_COL);
-    assert numeratorVec != null;
-    assert denominatorVec != null;
-    return numeratorVec.mean() / denominatorVec.mean();
+  static double computePriorMean(Frame encodings) {
+    assert encodings.find(TARGETCLASS_COL) < 0;
+    return computePriorMean(encodings, NO_TARGET_CLASS);
   }
-
+  
+  static double computePriorMean(Frame encodings, int targetClass) {
+    int tcIdx = encodings.find(TARGETCLASS_COL);
+    assert (targetClass == NO_TARGET_CLASS) == (tcIdx < 0);
+    Frame fr = null;
+    try {
+      fr = tcIdx < 0 ? encodings : filterByValue(encodings, tcIdx, targetClass);
+      Vec numeratorVec = fr.vec(NUMERATOR_COL);
+      Vec denominatorVec = fr.vec(DENOMINATOR_COL);
+      assert numeratorVec!=null;
+      assert denominatorVec!=null;
+      return numeratorVec.mean() / denominatorVec.mean();
+    } finally {
+      if (fr != null && fr != encodings) fr.delete();
+    }
+  }
 
   /**
    * If a fold column is provided, this produces a frame of shape
@@ -69,24 +89,81 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
    * @param columnToEncodeIdx
    * @param targetIdx
    * @param foldColumnIdx
+   * @param nclasses: 1 for regression, 2 for binary, N for multiclass.
    * @return the frame used to compute TE posteriors for a given column to encode.
    */
-  static Frame buildEncodingsFrame(Frame fr, int columnToEncodeIdx, int targetIdx, int foldColumnIdx) {
-    int[] groupBy = foldColumnIdx < 0
-            ? new int[]{columnToEncodeIdx}
-            : new int[]{columnToEncodeIdx, foldColumnIdx};
+  static Frame buildEncodingsFrame(Frame fr, int columnToEncodeIdx, int targetIdx, int foldColumnIdx, int nclasses) {
+    try {
+      Scope.enter();
 
-    AstGroup.AGG[] aggs = new AstGroup.AGG[2];
-    aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, targetIdx, NAHandling.ALL, -1);
-    aggs[1] = new AstGroup.AGG(AstGroup.FCN.nrow, targetIdx, NAHandling.ALL, -1);
+      Frame result;
+      AstGroup.AGG[] aggs;
+      int[] groupBy = foldColumnIdx < 0
+              ? new int[]{columnToEncodeIdx}
+              : new int[]{columnToEncodeIdx, foldColumnIdx};
 
-    Frame result = new AstGroup().performGroupingWithAggregations(fr, groupBy, aggs).getFrame();
-    //change the default column names assigned by the aggregation task
-    renameColumn(result, "sum_" + fr.name(targetIdx), NUMERATOR_COL);
-    renameColumn(result, "nrow", DENOMINATOR_COL);
-    return register(result);
+      if (nclasses > 2) { // multiclass
+        String targetName = fr.name(targetIdx);
+        Vec targetVec = fr.vec(targetIdx);
+        
+        // transform the target into multiple columns that each will be interpreted as a target
+        // used to generate the new {targetclass}_te features
+        Frame targetFr = new Frame(new String[]{targetName}, new Vec[]{targetVec});
+        Frame oheTarget = new FrameUtils.CategoricalOneHotEncoder(targetFr, new String[]{}).exec().get();
+        Scope.track(oheTarget);
+        Frame expandedFr = new Frame(fr).add(oheTarget);
+//        printFrame(expandedFr);
+        
+        // add one sum aggregator per targetclass -> this will produce a {targetclass} numerator.
+        // add one single nrow aggregator for the shared denominator.
+        aggs = new AstGroup.AGG[oheTarget.numCols() + 1];
+        for (int i = 0; i < oheTarget.numCols(); i++) {
+          int partialTargetIdx = fr.numCols() + i;
+          aggs[i] = new AstGroup.AGG(AstGroup.FCN.sum, partialTargetIdx, NAHandling.ALL, -1);
+        }
+        aggs[aggs.length - 1] = new AstGroup.AGG(AstGroup.FCN.nrow, targetIdx, NAHandling.ALL, -1);
+        result = new AstGroup().performGroupingWithAggregations(expandedFr, groupBy, aggs).getFrame();
+        Scope.track(result);
+        // renaming all those aggregation columns:
+        // targetclass numerators get temporarily renamed into just the targetclass.
+        // the denominator column gets its final name.
+        String[] targetVals = new String[oheTarget.numCols()];
+        for (int i = 0; i < oheTarget.names().length; i++) {
+          String oheCol = oheTarget.name(i);
+          String targetVal = oheCol.replaceFirst(targetName + ".", "");
+          renameColumn(result, "sum_" + oheCol, targetVal);
+          targetVals[i] = targetVal;
+        }
+        renameColumn(result, "nrow", DENOMINATOR_COL);
+
+        // we don't want to carry around all those numerator columns, 
+        // so, melting them into a single numerator column + a targetclass column holding the corresponding target values.
+        String[] idVars= foldColumnIdx < 0
+                ? new String[]{fr.name(columnToEncodeIdx), DENOMINATOR_COL}
+                : new String[]{fr.name(columnToEncodeIdx), fr.name(foldColumnIdx), DENOMINATOR_COL};
+        result = melt(result, idVars, targetVals, TARGETCLASS_COL, NUMERATOR_COL, true);
+        // convert targetclass column to ensure it has the same domain as target
+        CategoricalWrappedVec.updateDomain(result.vec(TARGETCLASS_COL), targetVec.domain());
+//        printFrame(result);
+        
+      } else { // works for both binary and regression
+        aggs = new AstGroup.AGG[2];
+        aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, targetIdx, NAHandling.ALL, -1);
+        aggs[1] = new AstGroup.AGG(AstGroup.FCN.nrow, targetIdx, NAHandling.ALL, -1);
+        result = new AstGroup().performGroupingWithAggregations(fr, groupBy, aggs).getFrame();
+        // change the default column names assigned by the aggregation task
+        renameColumn(result, "sum_" + fr.name(targetIdx), NUMERATOR_COL);
+        renameColumn(result, "nrow", DENOMINATOR_COL);
+//        printFrame(result);
+      }
+
+      Scope.untrack(result);
+      return result;
+    } finally {
+      Scope.exit();
+    }
   }
-
+  
   /**
    * Group encodings by category (summing on all folds present in the frame).
    * Produces a frame of shape (unique(col), 3) with columns [{col}, numerator, denominator].
@@ -97,9 +174,13 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
   static Frame groupEncodingsByCategory(Frame encodingsFrame, int teColumnIdx) {
     int numeratorIdx = encodingsFrame.find(NUMERATOR_COL);
     assert numeratorIdx >= 0;
-    int denominatorIdx = numeratorIdx + 1; //enforced by buildEncodingsFrame
+    int denominatorIdx = encodingsFrame.find(DENOMINATOR_COL);
+    assert denominatorIdx >= 0;
+    int classesIdx = encodingsFrame.find(TARGETCLASS_COL);
     
-    int [] groupBy = new int[] {teColumnIdx};
+    int [] groupBy = classesIdx < 0 
+            ? new int[]{teColumnIdx}
+            : new int[]{teColumnIdx, classesIdx};
     
     AstGroup.AGG[] aggs = new AstGroup.AGG[2];
     aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, numeratorIdx, NAHandling.ALL, -1);
@@ -109,16 +190,14 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
     //change the default column names assigned by the aggregation task
     renameColumn(result, "sum_"+ NUMERATOR_COL, NUMERATOR_COL);
     renameColumn(result, "sum_"+ DENOMINATOR_COL, DENOMINATOR_COL);
-    return register(result);
+    return result;
   }
   
   static Frame groupEncodingsByCategory(Frame encodingsFrame, int teColumnIdx, boolean hasFolds) {
     if (hasFolds) {
       return groupEncodingsByCategory(encodingsFrame, teColumnIdx);
     } else {
-      Frame result = encodingsFrame.deepCopy(Key.make().toString());  // XXX: is this really necessary? 
-      DKV.put(result);
-      return result;
+      return encodingsFrame.deepCopy(Key.make().toString());  // XXX: is this really necessary? 
     }
   }
 
@@ -197,7 +276,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
    * 
    * @param fr the frame
    * @param newEncodedColumnName the new encoded column to compute and append to the original frame.
-   * @param priorMean the global mean on .
+   * @param priorMean the global mean.
    * @param blendingParams if provided, those params are used to blend the prior and posterior values when calculating the encoded value.
    * @return the index of the new encoded column
    */
@@ -305,27 +384,36 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
     }
   }
 
-  /** FIXME: this method is modifying the original fr column in-place, one of the reasons why we currently need a complete deep-copy of the training frame... */
-  static void subtractTargetValueForLOO(Frame data, String targetColumnName) {
-    int numeratorIndex = data.find(NUMERATOR_COL);
-    int denominatorIndex = data.find(DENOMINATOR_COL);
-    int targetIndex = data.find(targetColumnName);
+  /** 
+   * FIXME: this method is modifying the original fr column in-place, one of the reasons why we currently need a complete deep-copy of the training frame...
+   * 
+   * @param fr the frame with a numerator and denominator columns, which will be modified based on the value in the target column.
+   * @param targetColumn the name of the target column.
+   * @param targetClass for regression use {@value EncodingsComponents#NO_TARGET_CLASS}, 
+   *                    for classification this is the target value to match in order to decrement the numerator.
+   */
+  static void subtractTargetValueForLOO(Frame fr, String targetColumn, int targetClass) {
+    int numeratorIndex = fr.find(NUMERATOR_COL);
+    int denominatorIndex = fr.find(DENOMINATOR_COL);
+    int targetIndex = fr.find(targetColumn);
     assert numeratorIndex >= 0;
     assert denominatorIndex >= 0;
     assert targetIndex >= 0;
 
-    new SubtractCurrentRowForLeaveOneOutTask(numeratorIndex, denominatorIndex, targetIndex).doAll(data);
+    new SubtractCurrentRowForLeaveOneOutTask(numeratorIndex, denominatorIndex, targetIndex, targetClass).doAll(fr);
   }
 
   private static class SubtractCurrentRowForLeaveOneOutTask extends MRTask<SubtractCurrentRowForLeaveOneOutTask> {
     private int _numeratorIdx;
     private int _denominatorIdx;
     private int _targetIdx;
+    private int _targetClass;
 
-    public SubtractCurrentRowForLeaveOneOutTask(int numeratorIdx, int denominatorIdx, int targetIdx) {
+    public SubtractCurrentRowForLeaveOneOutTask(int numeratorIdx, int denominatorIdx, int targetIdx, int targetClass) {
       _numeratorIdx = numeratorIdx;
       _denominatorIdx = denominatorIdx;
       _targetIdx = targetIdx;
+      _targetClass = targetClass;
     }
 
     @Override
@@ -335,11 +423,30 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
       Chunk target = cs[_targetIdx];
       for (int i = 0; i < num._len; i++) {
         if (!target.isNA(i)) {
-          num.set(i, num.atd(i) - target.atd(i));
+          double ti = target.atd(i);
+          
+          if (_targetClass == NO_TARGET_CLASS)  // regression
+            num.set(i, num.atd(i) - target.atd(i));
+          else if (_targetClass == ti)          // classification
+            num.set(i, num.atd(i) - 1);
+          
           den.set(i, den.atd(i) - 1);
         }
       }
     }
+  }
+  
+  static Frame melt(Frame fr, String[] idVars, String[] valueVars, String varCol, String valueCol, boolean skipNA) {
+    Frame melted = new AstMelt().exec(new Val[]{
+            null,
+            new ValFrame(fr),
+            new ValStrs(idVars),
+            new ValStrs(valueVars),
+            new ValStr(varCol),
+            new ValStr(valueCol),
+            new ValNum(skipNA ? 1 : 0)
+    }).getFrame();
+    return register(melted);
   }
 
   static Frame rBind(Frame a, Frame b) {
@@ -429,15 +536,14 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
     return new Frame(v);
   }
 
-  static Frame renameColumn(Frame fr, int colIndex, String newName) {
+  static void renameColumn(Frame fr, int colIndex, String newName) {
     String[] newNames = fr.names();
     newNames[colIndex] = newName;
     fr.setNames(newNames);
-    return fr;
   }
 
-  static Frame renameColumn(Frame fr, String oldName, String newName) {
-    return renameColumn(fr, fr.find(oldName), newName);
+  static void renameColumn(Frame fr, String oldName, String newName) {
+    renameColumn(fr, fr.find(oldName), newName);
   }
 
   /**
@@ -447,6 +553,11 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
     frame._key = Key.make();
     DKV.put(frame);
     return frame;
+  }
+  
+  static void printFrame(Frame fr) {
+    TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) fr.numRows(), false);
+    System.out.println(twoDimTable.toString(2, true));
   }
 
 }

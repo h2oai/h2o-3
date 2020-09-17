@@ -2,10 +2,10 @@ package ai.h2o.targetencoding;
 
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
 import water.exceptions.H2OIllegalArgumentException;
@@ -13,6 +13,8 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
 import java.util.Map;
@@ -21,12 +23,9 @@ import static ai.h2o.targetencoding.TargetEncoderHelper.*;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertTrue;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class TargetEncodingKFoldStrategyTest extends TestUtil {
-  
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
   
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -88,7 +87,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
 
       Frame scored = teModel.score(fr);
       Scope.track(scored);
-      Frame transformed = teModel.transform(fr, null, -1);
+      Frame transformed = teModel.transform(fr);
       Scope.track(transformed);
       assertBitIdentical(scored, transformed);
     } finally {
@@ -106,9 +105,9 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target", "foldc")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard( 1,   1,   4,   7,   4))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
-              .withDataForCol(3, ar(1, 2, 2, 3, 2))
+              .withDataForCol(3, ar(  1,   2,   2,   3,   2))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -135,7 +134,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard( 1,   1,   4,   7,   4))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
               .build();
 
@@ -164,9 +163,9 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target", "foldc")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard( 1,   1,   4,   7,   4))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
-              .withDataForCol(3, ar(1, 2, 2, 3, 2))
+              .withDataForCol(3, ar(  1,   2,   2,   3,   2))
               .build();
 
       Frame test = new TestFrameBuilder()
@@ -174,7 +173,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "c", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard( 1,   1,   4,   7,   4))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
               .build();
       
@@ -204,9 +203,9 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target", "foldc")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b"))
-              .withDataForCol(1, ard(1, 1, 4, 7))
+              .withDataForCol(1, ard( 1,   1,   4,   7))
               .withDataForCol(2, ar("N", "Y", "Y", "Y"))
-              .withDataForCol(3, ar(1, 2, 2, 3))
+              .withDataForCol(3, ar(  1,   2,   2,   3))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -244,9 +243,9 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
                 .withColNames("categorical", "numerical", "target", "foldc")
                 .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
                 .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-                .withDataForCol(1, ard(1, 1, 4, 7, 4))
+                .withDataForCol(1, ard( 1,   1,   4,   7,   4))
                 .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
-                .withDataForCol(3, ar(1, 2, 2, 3, 2))
+                .withDataForCol(3, ar(  1,   2,   2,   3,   2))
                 .build();
 
         Frame test = new TestFrameBuilder()
@@ -254,9 +253,9 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
                 .withColNames("categorical", "numerical", "target", "foldc")
                 .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
                 .withDataForCol(0, ar("a", "b", "c", "b", "a"))
-                .withDataForCol(1, ard(1, 1, 4, 7, 4))
+                .withDataForCol(1, ard( 1,   1,   4,   7,   4))
                 .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
-                .withDataForCol(3, ar(1, 2, 2, 3, 2))
+                .withDataForCol(3, ar(  1,   2,   2,   3,   2))
                 .build();
 
         TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -277,7 +276,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
         
         printOutFrameAsTable(encoded, false, encoded.numRows());
         Frame encodings = teModel._output._target_encoding_map.get("categorical");
-        double priorMean = calculatePriorMean(encodings);
+        double priorMean = TargetEncoderHelper.computePriorMean(encodings);
         assertEquals(.8, priorMean, 1e-6);
         // We expect that for `c` level we will get global priorMean. Maybe we should have instead priorMean on all folds but 3 -> 0.75
         Vec expected = dvec(1.0, 1.0, 0.8, 1, 0.0);
@@ -296,9 +295,9 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
                 .withColNames("categorical", "numerical", "target", "foldc")
                 .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
                 .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-                .withDataForCol(1, ard(1, 1, 4, 7, 4))
+                .withDataForCol(1, ard( 1,   1,   4,   7,   4))
                 .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
-                .withDataForCol(3, ar(1, 2, 2, 3, 2))
+                .withDataForCol(3, ar(  1,   2,   2,   3,   2))
                 .build();
 
         TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -339,9 +338,9 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target", "foldc")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b", "a", "c"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4, 9))
+              .withDataForCol(1, ard( 1,   1,   4,   7,   4,   9))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y", "N"))
-              .withDataForCol(3, ar(1, 2, 2, 3, 2, 2))
+              .withDataForCol(3, ar(  1,   2,   2,   3,   2,   2))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -362,7 +361,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
       Vec catEnc = encoded.vec("categorical_te");
       printOutFrameAsTable(encoded);
       
-      double priorMean = teModel._output._prior_mean;
+      double priorMean = TargetEncoderHelper.computePriorMean(teModel._output._target_encoding_map.get("categorical"));
       BlendingParams bp = teModel._parms.getBlendingParameters();
 
       // values below obtained empirically with default blending params (10, 20): should not change as soon as we don't change those default values. 
@@ -388,7 +387,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
                 .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
                 .withDataForCol(0, ar("a", "b", "b", "c", "c", "a", "d", "d", "d", "d", "e", "e", "a", "f", "f"))
                 .withDataForCol(1, ar("N", "Y", "Y", "Y", "Y", "Y", "N", "Y", "Y", "Y", "Y", "N", "N", "N", "N"))
-                .withDataForCol(2, ar(1, 2, 1, 2, 1, 3, 2, 2, 1, 3, 1, 2, 3, 3, 2))
+                .withDataForCol(2, ar(  1,   2,   1,   2,   1,   3,   2,   2,   1,   3,   1,   2,   3,   3,   2))
                 .build();
 
         TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -425,7 +424,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
                 .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
                 .withDataForCol(0, ar("a", "b", "c", "d", "e", "b", "b"))
                 .withDataForCol(1, ar("N", "Y", "Y", "Y", "Y", "N", "N"))
-                .withDataForCol(2, ar(1, 2, 2, 3, 1, 2, 1))
+                .withDataForCol(2, ar(  1,   2,   2,   3,   1,   2,   1))
                 .build();
 
         Frame test = new TestFrameBuilder()
@@ -434,7 +433,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
                 .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
                 .withDataForCol(0, ar("a", "b", "b", "b", "a"))
                 .withDataForCol(1, ar("N", "Y", "Y", "Y", "Y"))
-                .withDataForCol(2, ar(1, 2, 1, 2, 1))
+                .withDataForCol(2, ar(  1,   2,   1,   2,   1))
                 .build();
 
         TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -454,7 +453,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
         printOutFrameAsTable(encoded, false, 100);
         
         Frame encodings = teModel._output._target_encoding_map.get("categorical");
-        double priorMean = calculatePriorMean(encodings);
+        double priorMean = TargetEncoderHelper.computePriorMean(encodings);
         assertEquals(.571429, priorMean, 1e-6);
 
         Vec catEnc = encoded.vec("categorical_te");
@@ -476,7 +475,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
               .withDataForCol(1, ar("d", "e", "d", "e", "e"))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
-              .withDataForCol(3, ar(1, 2, 2, 3, 2))
+              .withDataForCol(3, ar(  1,   2,   2,   3,   2))
               .build();
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
@@ -541,9 +540,9 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target", "foldc")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard( 1,   1,   4,   7,   4))
               .withDataForCol(2, ar("N", "N", "Y", "Y", "Y"))
-              .withDataForCol(3, ar(1, 2, 2, 1, 2))
+              .withDataForCol(3, ar(  1,   2,   2,   1,   2))
               .build();
 
       TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
@@ -587,9 +586,9 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target", "foldc")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard( 1,   1,   4,   7,   4))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
-              .withDataForCol(3, ar(1, 2, 2, 3, 2))
+              .withDataForCol(3, ar(  1,   2,   2,   3,   2))
               .build();
 
       TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
@@ -627,7 +626,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
               .withDataForCol(1, ar("d", "e", "d", "e", "e"))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
-              .withDataForCol(3, ar(1, 2, 2, 3, 2))
+              .withDataForCol(3, ar(  1,   2,   2,   3,   2))
               .build();
 
       Frame test = new TestFrameBuilder()
@@ -649,7 +648,11 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
       TargetEncoder te = new TargetEncoder(teParams);
       TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
-      assertEquals(0.8, teModel._output._prior_mean, 1e-6);
+      
+      double priorMean1 = TargetEncoderHelper.computePriorMean(teModel._output._target_encoding_map.get("cat1"));
+      double priorMean2 = TargetEncoderHelper.computePriorMean(teModel._output._target_encoding_map.get("cat2"));
+      assertEquals(0.8, priorMean1, 1e-6);
+      assertEquals(0.8, priorMean2, 1e-6);
 
       Frame encoded = teModel.transform(test);
       Scope.track(encoded);

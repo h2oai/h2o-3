@@ -3,11 +3,13 @@ package ai.h2o.targetencoding;
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import org.apache.commons.lang.ArrayUtils;
-import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
 import water.rapids.Merge;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -19,12 +21,9 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.*;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class TargetEncoderModelTest extends TestUtil{
-
-  @Before
-  public void setUp() {
-    TestUtil.stall_till_cloudsize(1);
-  }
 
   @Test
   public void testTargetEncoderModel_nonDefault_blendingParameters() {
@@ -121,7 +120,7 @@ public class TargetEncoderModelTest extends TestUtil{
       TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
 
-      Frame encoded = teModel.score(fr);
+      Frame encoded = Scope.track(teModel.score(fr));
       Vec catEnc = encoded.vec("categorical_te");
 
       double globalMean = 2.0 / 3;
@@ -276,7 +275,7 @@ public class TargetEncoderModelTest extends TestUtil{
       TargetEncoder te1 = new TargetEncoder(teParams1);
       TargetEncoderModel teModel1 = te1.trainModel().get();
       Scope.track_generic(teModel1);
-      Frame encoded1 = teModel1.transformTraining(fr);
+      Frame encoded1 = Scope.track(teModel1.transformTraining(fr));
       Frame sortedEncoded1 = Scope.track(Merge.sort(encoded1, encoded1.find(RowIndexTask.ROW_INDEX_COL)));
 
       TargetEncoderParameters teParams2 = (TargetEncoderParameters) teParameters.clone();
@@ -286,7 +285,7 @@ public class TargetEncoderModelTest extends TestUtil{
       TargetEncoder te2 = new TargetEncoder(teParams2);
       TargetEncoderModel teModel2 = te2.trainModel().get();
       Scope.track_generic(teModel2);
-      Frame encoded2 = teModel2.transformTraining(fr);
+      Frame encoded2 = Scope.track(teModel2.transformTraining(fr));
       Frame sortedEncoded2 = Scope.track(Merge.sort(encoded2, encoded2.find(RowIndexTask.ROW_INDEX_COL)));
 
       assertThat(sortedEncoded1.names(), not(equalTo(sortedEncoded2.names())));

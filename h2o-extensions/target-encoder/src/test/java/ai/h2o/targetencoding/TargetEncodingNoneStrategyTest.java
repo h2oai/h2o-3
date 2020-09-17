@@ -1,26 +1,21 @@
 package ai.h2o.targetencoding;
 
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
-import org.junit.After;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-
-import java.util.Map;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import static org.junit.Assert.*;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class TargetEncodingNoneStrategyTest extends TestUtil {
-
-
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
 
   @Test
   public void test_fold_column_is_ignored_with_None_strategy() {
@@ -31,9 +26,9 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target", "foldc")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard(1,    1,   4,   7,   4))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
-              .withDataForCol(3, ar(1, 2, 2, 3, 2))
+              .withDataForCol(3, ar(1,     2,   2,   3,   2))
               .build();
 
       TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
@@ -69,7 +64,7 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard( 1,   1,   4,   7,   4))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "Y"))
               .build();
 
@@ -195,7 +190,7 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard( 1,   1,   4,   7,   4))
               .withDataForCol(2, ar("N", "N", "Y", "Y", "Y"))
               .build();
 
@@ -232,7 +227,7 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
               .withColNames("categorical", "numerical", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(1, ard( 1,   1,   4,   7,   4))
               .withDataForCol(2, ar("N", "Y", "Y", "Y", "N"))
               .build();
 
@@ -290,7 +285,11 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
       TargetEncoder te = new TargetEncoder(teParams);
       TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
-      assertEquals(0.8, teModel._output._prior_mean, 1e-6);
+
+      double priorMean1 = TargetEncoderHelper.computePriorMean(teModel._output._target_encoding_map.get("cat1"));
+      double priorMean2 = TargetEncoderHelper.computePriorMean(teModel._output._target_encoding_map.get("cat2"));
+      assertEquals(0.8, priorMean1, 1e-6);
+      assertEquals(0.8, priorMean2, 1e-6);
 
       Frame encoded = teModel.transform(test);
       Scope.track(encoded);

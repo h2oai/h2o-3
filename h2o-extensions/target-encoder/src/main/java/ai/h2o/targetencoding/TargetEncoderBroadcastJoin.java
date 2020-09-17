@@ -24,7 +24,7 @@ class TargetEncoderBroadcastJoin {
                     Frame rightFrame, int[] rightCatColumnsIdxs, int rightFoldColumnIdx,
                     int maxFoldValue) {
     int rightNumeratorIdx = rightFrame.find(TargetEncoderHelper.NUMERATOR_COL);
-    int rightDenominatorIdx = rightNumeratorIdx + 1; // enforced by 
+    int rightDenominatorIdx = rightFrame.find(TargetEncoderHelper.DENOMINATOR_COL);
     
     // currently supporting only one categorical column
     assert leftCatColumnsIdxs.length == 1;
@@ -108,7 +108,7 @@ class TargetEncoderBroadcastJoin {
         // We are allowed to do casting to `int` as we have validation before submitting this MRTask
         int foldValue = _foldColumnIdx != -1 ? (int) cs[_foldColumnIdx].at8(i) : 0;
         double[] numDenArray = _encodingDataPerNode[foldValue];
-        numDenArray[2*level] = numeratorChunk.at8(i);
+        numDenArray[2*level] = numeratorChunk.atd(i);
         numDenArray[2*level+1] = denominatorChunk.at8(i);
       }
     }

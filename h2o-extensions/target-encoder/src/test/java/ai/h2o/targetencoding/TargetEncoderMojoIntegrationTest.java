@@ -28,11 +28,12 @@ import water.util.Log;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import static ai.h2o.targetencoding.TargetEncoderHelper.addKFoldColumn;
-import static ai.h2o.targetencoding.TargetEncoderMojoWriter.convertEncodingMapValues;
 import static hex.genmodel.algos.targetencoder.TargetEncoderMojoModel.computeBlendedEncoding;
 import static hex.genmodel.algos.targetencoder.TargetEncoderMojoModel.computeLambda;
 import static org.junit.Assert.assertEquals;
@@ -49,7 +50,7 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
   public TemporaryFolder folder = new TemporaryFolder();
 
   @Test
-  public void withoutBlending() throws PredictException, IOException {
+  public void test_mojo_consistency_binary() throws PredictException, IOException {
     String mojoFileName = "mojo_te.zip";
     File mojoFile = folder.newFile(mojoFileName);
 
@@ -64,6 +65,7 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
       TargetEncoderParameters teParams = new TargetEncoderParameters();
       teParams._response_column = target;
       teParams._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", teParams._response_column);
+      teParams._noise = 0;
       teParams.setTrain(fr._key);
 
       TargetEncoder te = new TargetEncoder(teParams);
@@ -75,39 +77,180 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
         System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
       }
 
-      // Let's load model that we just have written and use it for prediction.
-      TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFile.getPath());
-      EasyPredictModelWrapper teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel);
-
-      // RowData that is not encoded yet
-      RowData row = new RowData();
-      String homeDestCat = "Montreal  PQ / Chesterville  ON";
+      // data that is not encoded yet
+      Map<String, Object> row = new HashMap();
+      String homeDestCat = "New York  NY";
       String embarkedCat = "S";
 
       row.put("home.dest", homeDestCat);
       row.put("sex", "female");
-      row.put("age", "2.0");
-      row.put("fare", "151.55");
+      row.put("age", 20);
+      row.put("fare", 151.55);
       row.put("cabin", "C22 C26");
       row.put("embarked", embarkedCat);
-      row.put("sibsp", "1");
+      row.put("sibsp", 1);
       row.put("parch", "N");
       row.put("name", "1111"); // somehow encoded name
       row.put("ticket", "12345");
       row.put("boat", "N");
-      row.put("body", "123");
+      row.put("body", 123);
       row.put("pclass", "1");
 
-      double[] predictions = teModelWrapper.predictTargetEncoding(row).transformations;
-      //Let's check that specified in the test categorical columns have been encoded in accordance with targetEncodingMap
-      EncodingMaps teMap = loadedMojoModel._targetEncodingMap;
-      double homeDestEnc = getEncodedCategory(fr, "home.dest", homeDestCat, teMap);
-      double homeEmbarkedEnc = getEncodedCategory(fr, "embarked", embarkedCat, teMap);
+      Frame transformations = Scope.track(teModel.transform(Scope.track(asFrame(row))));
+      printOutFrameAsTable(transformations);
+      double homeDestEnc = transformations.vec("home.dest_te").at(0);
+      double homeEmbarkedEnc = transformations.vec("embarked_te").at(0);
+
+      // Let's load model that we just have written and use it for prediction.
+      TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFile.getPath());
+      EasyPredictModelWrapper teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel);
+
+      double[] predictions = teModelWrapper.predictTargetEncoding(asRowData(row)).transformations;
+      assertEquals(2, predictions.length);
 
       // Because of the random swap we need to know which index is lower so that we know order of transformations/predictions
       int homeDestPredIdx = fr.find("home.dest") < fr.find("embarked") ? 0 : 1;
-      assertEquals(predictions[homeDestPredIdx], homeDestEnc, 1e-5);
-      assertEquals(predictions[1 - homeDestPredIdx], homeEmbarkedEnc, 1e-5);
+      assertEquals(homeDestEnc, predictions[homeDestPredIdx], 1e-5);
+      assertEquals(homeEmbarkedEnc, predictions[1 - homeDestPredIdx], 1e-5);
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void test_mojo_consistency_multiclass() throws PredictException, IOException {
+    String mojoFileName = "mojo_te.zip";
+    File mojoFile = folder.newFile(mojoFileName);
+
+    try {
+      Scope.enter();
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+
+      String target = "pclass";
+      asFactor(fr, target);
+      Scope.track(fr);
+
+      TargetEncoderParameters teParams = new TargetEncoderParameters();
+      teParams._response_column = target;
+      teParams._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", teParams._response_column);
+      teParams._noise = 0;
+      teParams.setTrain(fr._key);
+
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
+        teModel.getMojo().writeTo(modelOutput);
+        System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
+      }
+
+      // data that is not encoded yet
+      Map<String, Object> row = new HashMap();
+      String homeDestCat = "New York  NY";
+      String embarkedCat = "S";
+
+      row.put("home.dest", homeDestCat);
+      row.put("sex", "female");
+      row.put("age", 20);
+      row.put("fare", 151.55);
+      row.put("cabin", "C22 C26");
+      row.put("embarked", embarkedCat);
+      row.put("sibsp", 1);
+      row.put("parch", "N");
+      row.put("name", "1111"); // somehow encoded name
+      row.put("ticket", "12345");
+      row.put("boat", "N");
+      row.put("body", 123);
+
+      Frame transformations = Scope.track(teModel.transform(Scope.track(asFrame(row))));
+      printOutFrameAsTable(transformations);
+      double homeDest2Enc = transformations.vec("home.dest_2_te").at(0);
+      double homeDest3Enc = transformations.vec("home.dest_3_te").at(0);
+      double homeEmbarked2Enc = transformations.vec("embarked_2_te").at(0);
+      double homeEmbarked3Enc = transformations.vec("embarked_3_te").at(0);
+
+      // Let's load model that we just have written and use it for prediction.
+      TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFile.getPath());
+      EasyPredictModelWrapper teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel);
+
+      double[] predictions = teModelWrapper.predictTargetEncoding(asRowData(row)).transformations;
+      assertEquals(4, predictions.length); //2*2 as pclass has 3 classes, and we have 2 columns to encode
+
+      // Because of the random swap we need to know which index is lower so that we know order of transformations/predictions
+      int homeDestPredIdx = fr.find("home.dest") < fr.find("embarked") ? 0 : 2;
+      assertEquals(homeDest2Enc, predictions[homeDestPredIdx], 1e-5);
+      assertEquals(homeDest3Enc, predictions[homeDestPredIdx+1], 1e-5);
+      assertEquals(homeEmbarked2Enc, predictions[2-homeDestPredIdx], 1e-5);
+      assertEquals(homeEmbarked3Enc, predictions[2-homeDestPredIdx+1], 1e-5);
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void test_mojo_consistency_regression() throws PredictException, IOException {
+    String mojoFileName = "mojo_te.zip";
+    File mojoFile = folder.newFile(mojoFileName);
+
+    try {
+      Scope.enter();
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+
+      String target = "fare";
+      Scope.track(fr);
+
+      TargetEncoderParameters teParams = new TargetEncoderParameters();
+      teParams._response_column = target;
+      teParams._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", teParams._response_column);
+      teParams._noise = 0;
+      teParams.setTrain(fr._key);
+
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
+        teModel.getMojo().writeTo(modelOutput);
+        System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
+      }
+      
+      // data that is not encoded yet
+      Map<String, Object> row = new HashMap();
+      String homeDestCat = "New York  NY";
+      String embarkedCat = "S";
+
+      row.put("home.dest", homeDestCat);
+      row.put("sex", "female");
+      row.put("age", 20);
+      row.put("cabin", "C22 C26");
+      row.put("embarked", embarkedCat);
+      row.put("sibsp", 1);
+      row.put("parch", "N");
+      row.put("name", "1111"); // somehow encoded name
+      row.put("ticket", "12345");
+      row.put("boat", "N");
+      row.put("body", 123);
+      row.put("pclass", "1");
+      
+      Frame transformations = Scope.track(teModel.transform(Scope.track(asFrame(row))));
+      printOutFrameAsTable(transformations);
+      double homeDestEnc = transformations.vec("home.dest_te").at(0);
+      double homeEmbarkedEnc = transformations.vec("embarked_te").at(0);
+
+      // Let's load model that we just have written and use it for prediction.
+      TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFile.getPath());
+      EasyPredictModelWrapper teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel);
+
+      double[] predictions = teModelWrapper.predictTargetEncoding(asRowData(row)).transformations;
+      assertEquals(2, predictions.length);
+
+      // Because of the random swap we need to know which index is lower so that we know order of transformations/predictions
+      int homeDestPredIdx = fr.find("home.dest") < fr.find("embarked") ? 0 : 1;
+      assertEquals(homeDestEnc, predictions[homeDestPredIdx], 1e-5);
+      assertEquals(homeEmbarkedEnc, predictions[1 - homeDestPredIdx], 1e-5);
 
     } finally {
       Scope.exit();
@@ -199,9 +342,9 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
   }
 
   private double getEncodedCategory(Frame fr, String categoricalColumn, String category, EncodingMaps encodingMaps) {
-    int factorIndex = ArrayUtils.find(fr.vec(categoricalColumn).domain(), category);
-    double[] encodingComponents = encodingMaps.get(categoricalColumn).get(factorIndex);
-    return encodingComponents[0] / encodingComponents[1];
+    int catVal = ArrayUtils.find(fr.vec(categoricalColumn).domain(), category);
+    double[] numDen = encodingMaps.get(categoricalColumn).getNumDen( catVal);
+    return numDen[0] / numDen[1];
   }
 
   @Test
@@ -325,17 +468,16 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
       // Check that specified in the test categorical columns have been encoded in accordance with encoding map
       // We reusing static helper methods from TargetEncoderMojoModel as it is not the point of current test to check them.
       // We want to check here that proper blending params were being used during `.transformWithTargetEncoding()` transformation
-      EncodingMaps convertedEncodingMap = convertEncodingMapValues(teMap);
+      EncodingMaps loadedEncodingMap = loadedMojoModel._targetEncodingMap;
 
       String teColumn = "home.dest";
-      EncodingMap encodings = convertedEncodingMap.get(teColumn);
-
-      // Checking that priorMean was written and loaded properly
-      assertEquals(teModel._output._prior_mean, loadedMojoModel._priorMean, 1e-5);
-      double expectedPriorMean = loadedMojoModel._priorMean;
+      EncodingMap encodings = loadedEncodingMap.get(teColumn);
+      
+      double expectedPriorMean = TargetEncoderHelper.computePriorMean(teMap.get("embarked"));
+      assertEquals(expectedPriorMean, encodings.getPriorMean(), 1e-6);
       // Checking that predictions from Mojo model and manually computed ones are equal
       int homeDestIndex = ArrayUtils.find(fr.vec(teColumn).domain(), homeDestCat);
-      double[] homeDestEncComponents = encodings.get(homeDestIndex);
+      double[] homeDestEncComponents = encodings.getNumDen(homeDestIndex);
       double posteriorMean = homeDestEncComponents[0] / homeDestEncComponents[1];
       double expectedLambda = computeLambda((long)homeDestEncComponents[1], teParams._inflection_point, teParams._smoothing);
       double expectedBlendedEncoding = computeBlendedEncoding(expectedLambda, posteriorMean, expectedPriorMean);
@@ -615,5 +757,32 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
       Log.warn("encodings[embarked]:" + lhsEncodings[1 - lhsRefIdx] + " currentEncodings[embarked]: " + rhsEncodings[1 - rhsRefIdx]);
       return false;
     }
+  }
+  
+  private RowData asRowData(Map<String,?> data) {
+    RowData row = new RowData();
+    row.putAll(data);
+    return row;
+  }
+  
+  private Frame asFrame(Map<String,?> data) {
+    String[] columns = data.keySet().toArray(new String[0]);
+    int[] types = Stream.of(columns)
+            .mapToInt(c -> data.get(c) instanceof Number ? Vec.T_NUM : Vec.T_CAT)
+            .toArray();
+    
+    TestFrameBuilder builder = new TestFrameBuilder()
+            .withColNames(columns)
+            .withVecTypes(ArrayUtils.toByteArray(types));
+    for (int i=0; i<columns.length; i++) {
+        Object v = data.get(columns[i]);
+        if (v instanceof Number) {
+          builder.withDataForCol(i, new double[] {((Number)v).doubleValue()});
+        } else {
+          builder.withDataForCol(i, new String[] {(String)v});
+        }
+    }
+    
+    return builder.build();
   }
 }

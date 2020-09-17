@@ -32,13 +32,14 @@ def test_regression_with_none():
     te.train(y=ds.target, training_frame=ds.train)
     encoded = te.transform(ds.train, as_training=True)
     print(encoded)
-    col_te_golden = [46.19743, 26.14709, 46.19743, 26.14709, 46.19743]
+    col_te_golden = [46.19810, 26.14816, 46.19810, 26.14816, 46.19809]
     col_te = encoded['sex_te'].head(5).as_data_frame().values.reshape(-1).tolist()
     assert_allclose(col_te, col_te_golden, atol=1e-5)
     
     # with open("./golden/regression_none.csv", "w") as f:
     #     f.write(encoded.get_frame_data())
     golden = h2o.import_file("./golden/regression_none.csv")
+    assert golden.names == encoded.names
     assert pu.compare_frames(golden, encoded, 0, tol_numeric=1e-5)
 
 
@@ -48,13 +49,14 @@ def test_regression_with_kfold():
     te.train(y=ds.target, training_frame=ds.train, fold_column="foldc")
     encoded = te.transform(ds.train, as_training=True)
     print(encoded)
-    col_te_golden = [45.05575, 24.68343, 45.00326, 27.65044, 45.00326]
+    col_te_golden = [45.05591, 24.68419, 45.00650, 27.65130, 45.00650]
     col_te = encoded['sex_te'].head(5).as_data_frame().values.reshape(-1).tolist()
     assert_allclose(col_te, col_te_golden, atol=1e-5)
     
     # with open("./golden/regression_kfold.csv", "w") as f:
     #     f.write(encoded.get_frame_data())
     golden = h2o.import_file("./golden/regression_kfold.csv")
+    assert golden.names == encoded.names
     assert pu.compare_frames(golden, encoded, 0, tol_numeric=1e-5)
 
 
@@ -64,13 +66,14 @@ def test_regression_with_loo():
     te.train(y=ds.target, training_frame=ds.train)
     encoded = te.transform(ds.train, as_training=True)
     print(encoded)
-    col_te_golden = [45.84229, 25.99816, 45.97086, 25.99816, 45.97086]
+    col_te_golden = [45.84296, 25.99922, 45.97153, 25.99922, 45.97153]
     col_te = encoded['sex_te'].head(5).as_data_frame().values.reshape(-1).tolist()
     assert_allclose(col_te, col_te_golden, atol=1e-5)
     
     # with open("./golden/regression_loo.csv", "w") as f:
     #     f.write(encoded.get_frame_data())
     golden = h2o.import_file("./golden/regression_loo.csv")
+    assert golden.names == encoded.names
     assert pu.compare_frames(golden, encoded, 0, tol_numeric=1e-5)
 
 
