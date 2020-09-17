@@ -1599,9 +1599,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     List<Frame> tmpFrames = new ArrayList<>();
     tmpFrames.add(adaptFr);
     applyPreprocessors(adaptFr, tmpFrames);
-    //PUBDEV-7775: we need to apply encoding independently from adaptTestForTrain, otherwise previously encoded columns are removed during adaptation
-    //if enabling this, call to adaptTesttoTrain below should use catEncoded=true, however it breaks several tests currently: necessary only for TE in combination with encoders like OHE
-//    encodeCategoricals(adaptFr, tmpFrames); 
     computeMetrics = computeMetrics && 
             (!_output.hasResponse() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
@@ -1663,12 +1660,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     fr.restructure(result.names(), result.vecs()); //inplace
   }
   
-  private void encodeCategoricals(Frame fr, List<Frame> tmpFrames) {
-    Frame encoded = FrameUtils.categoricalEncoder(fr, _parms.getNonPredictors(), _parms._categorical_encoding, getToEigenVec(), _parms._max_categorical_levels);
-    tmpFrames.add(encoded);
-    fr.restructure(encoded.names(), encoded.vecs()); //inplace
-  }
-
   /**
    * Compute the deviances for each observation
    * @param valid Validation Frame (must contain the response)

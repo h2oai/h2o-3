@@ -45,7 +45,7 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter<TargetEncoderModel,
   private void writeTargetEncodingInfo() throws IOException {
     TargetEncoderOutput output = model._output;
     TargetEncoderParameters teParams = output._parms;
-    writekv("keep_original_categorical_columns", teParams._keep_original_features);
+    writekv("keep_original_categorical_columns", teParams._keep_original_categorical_columns);
     writekv("with_blending", teParams._blending);
     if (teParams._blending) {
       writekv("inflection_point", teParams._inflection_point);

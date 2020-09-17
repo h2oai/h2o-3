@@ -94,7 +94,6 @@ public abstract class MojoModel extends GenModel implements RowConverterFactory 
         i++;
       }
       converters[i] = new CategoricalEncodingAsModelProcessor(preprocessedModel, this, categoricalEncoding).makeRowConverter(errorConsumer, config);
-//      converters[i] = makeDefaultRowConverter(columnToOffsetIdx, offsetToEncoder, errorConsumer, config);
       return new CompositeRowToRawDataConverter<>(converters);
     }
     
