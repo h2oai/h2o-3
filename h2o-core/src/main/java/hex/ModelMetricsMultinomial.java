@@ -8,7 +8,6 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.MathUtils;
 import water.util.TwoDimTable;
 
@@ -261,10 +260,12 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       _cm = domain.length > ConfusionMatrix.maxClasses() ? null : new double[domain.length][domain.length];
       _K = Math.min(10,_nclasses);
       _hits = new double[_K];
+      // matrix for pairwise AUCs
       _aucsMatrix = new AUC2.AUCBuilder[domain.length][domain.length];
-      for(int i=0; i < _aucsMatrix.length; i++){
-        for (int j=0; j < _aucsMatrix[0].length; j++)
-          if(i!=j) {
+      for(int i = 0; i < _aucsMatrix.length; i++){
+        for(int j = 0; j < _aucsMatrix[0].length; j++)
+          // diagonal is not used
+          if(i != j) {
             _aucsMatrix[i][j] = new AUC2.AUCBuilder(AUC2.NBINS);
           }
       }
@@ -302,13 +303,14 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       // Compute log loss
       _logloss += w*MathUtils.logloss(err);
       
-      // compute multinomial AUC
-      calculateAucPerRow(ds, iact, w);
+      // compute multinomial pairwise AUCs
+      calculateAucsPerRow(ds, iact, w);
       return ds;                // Flow coding
     }
     
-    private void calculateAucPerRow(double ds[], int iact, double w){
+    private void calculateAucsPerRow(double ds[], int iact, double w){
       for(int i=0; i<_nclasses; i++){
+        // diagonal is empty
         if(i != iact) {
           if (iact >= _nclasses) {
             iact = _nclasses - 1;
@@ -326,9 +328,9 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       ArrayUtils.add(_cm, mb._cm);
       _hits = ArrayUtils.add(_hits, mb._hits);
       _logloss += mb._logloss;
-      for(int i=0; i<_aucsMatrix.length; i++){
-        for (int j=0;j<_aucsMatrix[0].length; i++) {
-          if(i!=j) {
+      for(int i = 0; i < _aucsMatrix.length; i++){
+        for (int j = 0; j < _aucsMatrix[0].length; j++) {
+          if(i != j) {
             _aucsMatrix[i][j].reduce(mb._aucsMatrix[i][j]);
           }
         }
@@ -350,11 +352,9 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         }
         mse = _sumsqe / _wcount;
         logloss = _logloss / _wcount;
-        for (int i=0; i<_aucsMatrix.length-1; i++){
-          for (int j=1; j<_aucsMatrix[0].length; j++){
-            if(i != j) {
+        for (int i = 0; i < _aucsMatrix.length-1; i++){
+          for (int j = i+1; j < _aucsMatrix[0].length; j++){
               aucsPairs[aucsIndex++] = new PairwiseAUC(new AUC2(_aucsMatrix[i][j]), new AUC2(_aucsMatrix[j][i]), i, j, _domain[i], _domain[j]);
-            }
           }
         }
       } else {
