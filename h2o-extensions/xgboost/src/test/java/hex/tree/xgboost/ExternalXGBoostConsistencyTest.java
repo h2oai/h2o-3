@@ -39,7 +39,8 @@ public class ExternalXGBoostConsistencyTest {
 
         printOutFrameAsTable(predsLocal, false, 10);
         printOutFrameAsTable(predsRemote, false, 20);
-        compareFrames(predsLocal, predsRemote);
+        double delta = XGBoostPredictImplComparisonTest.usesGpu(parms) ? 1e-4d : 0;
+        compareFrames(predsLocal, predsRemote, delta);
     }
     
     @Test
