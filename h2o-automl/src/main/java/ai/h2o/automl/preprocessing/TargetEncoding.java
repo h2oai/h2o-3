@@ -17,8 +17,7 @@ import water.fvec.Vec;
 import water.rapids.ast.prims.advmath.AstKFold;
 import water.util.ArrayUtils;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class TargetEncoding implements PreprocessingStep {
     
@@ -28,6 +27,7 @@ public class TargetEncoding implements PreprocessingStep {
     private TargetEncoderPreprocessor _tePreprocessor;
     private TargetEncoderModel _teModel;
     private final List<Completer> _disposables = new ArrayList<>();
+    private int _cardinalityThreshold = 0;  // the minimal cardinality for a column to be TE encoded. 
 
     public TargetEncoding(AutoML aml) {
         _aml = aml;
@@ -40,9 +40,12 @@ public class TargetEncoding implements PreprocessingStep {
 
     @Override
     public void prepare() {
+        Frame amlTrain = _aml.getTrainingFrame();
+        Set<String> teColumns = selectColumnsToEncode(amlTrain);
         TargetEncoderParameters params = new TargetEncoderParameters();
-        params._train = _aml.getTrainingFrame()._key;
+        params._train = amlTrain._key;
         params._response_column = _aml.getBuildSpec().input_spec.response_column;
+        params._ignored_columns = Arrays.stream(amlTrain.names()).filter(col -> !teColumns.contains(col)).toArray(String[]::new);
         params._keep_original_categorical_columns = false;
         params._blending = true;
         params._noise = 0;
@@ -112,6 +115,28 @@ public class TargetEncoding implements PreprocessingStep {
             _tePreprocessor = null;
             _teModel = null;
         }
+    }
+
+    public void setCardinalityThreshold(int cardinalityThreshold) {
+        _cardinalityThreshold = cardinalityThreshold;
+    }
+
+    private Set<String> selectColumnsToEncode(Frame fr) {
+        Set<String> encode = new HashSet<>();
+        if (_cardinalityThreshold > 0) {
+            for (int i = 0; i < fr.names().length; i++) {
+                if (fr.vec(i).cardinality() >= _cardinalityThreshold) encode.add(fr.name(i));
+            }
+        } else {
+            encode.addAll(Arrays.asList(fr.names()));
+        }
+        return encode;
+    }
+
+    public static final String[] ignoredColumns(final Frame frame, final String... keep) {
+        Set<String> ignored = new HashSet(Arrays.asList(frame.names()));
+        ignored.removeAll(Arrays.asList(keep));
+        return ignored.toArray(new String[ignored.size()]);
     }
 
     TargetEncoderPreprocessor getTEPreprocessor() {
