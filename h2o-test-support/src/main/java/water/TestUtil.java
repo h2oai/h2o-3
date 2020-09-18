@@ -1,6 +1,7 @@
 package water;
 
 import hex.CreateFrame;
+import hex.SplitFrame;
 import hex.genmodel.easy.RowData;
 import org.junit.AfterClass;
 import org.junit.Ignore;
@@ -598,7 +599,42 @@ public class TestUtil extends Iced {
 
   }
 
+  public static class Frames {
+    public final Frame train;
+    public final Frame test;
+    public final Frame valid;
 
+    public Frames(Frame train, Frame test, Frame valid) {
+      this.train = train;
+      this.test = test;
+      this.valid = valid;
+    }
+  }
+  
+  public static Frames split(Frame f) {
+    return split(f, 0.9, 0d);
+  }
+
+  public static Frames split(Frame f, double testFraction) {
+    return split(f, testFraction, 0);
+  }
+
+  public static Frames split(Frame f, double testFraction, double validFraction) {
+    double[] fractions;
+    double trainFraction = 1d - testFraction - validFraction;
+    if (validFraction > 0d) {
+      fractions = new double[] { trainFraction, testFraction, validFraction };
+    } else {
+      fractions = new double[] { trainFraction, testFraction };
+    }
+    SplitFrame sf = new SplitFrame(f, fractions, null);
+    sf.exec().get();
+    Key<Frame>[] splitKeys = sf._destination_frames;
+    Frame trainFrame = Scope.track(splitKeys[0].get());
+    Frame testFrame = Scope.track(splitKeys[1].get());
+    Frame validFrame = (validFraction > 0d) ? Scope.track(splitKeys[2].get()) : null;
+    return new Frames(trainFrame, testFrame, validFrame);
+  }
 
   /** A Numeric Vec from an array of ints
    *  @param rows Data

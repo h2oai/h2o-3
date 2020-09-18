@@ -4,11 +4,10 @@ import hex.DataInfo;
 import hex.genmodel.utils.IOUtils;
 import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostModel;
-import hex.tree.xgboost.matrix.FileMatrixLoader;
 import hex.tree.xgboost.matrix.FrameMatrixLoader;
 import hex.tree.xgboost.matrix.MatrixLoader;
+import hex.tree.xgboost.matrix.RemoteMatrixLoader;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
-import hex.tree.xgboost.remote.RemoteXGBoostUploadServlet;
 import hex.tree.xgboost.task.XGBoostCleanupTask;
 import hex.tree.xgboost.task.XGBoostSetupTask;
 import hex.tree.xgboost.task.XGBoostUpdateTask;
@@ -49,7 +48,7 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
         boosterParams = BoosterParms.fromMap(init.parms);
         nodes = new boolean[H2O.CLOUD.size()];
         for (int i = 0; i < init.num_nodes; i++) nodes[i] = init.nodes[i] != null;
-        loader = new FileMatrixLoader(modelKey);
+        loader = new RemoteMatrixLoader(modelKey);
         saveMatrixDirectory = init.save_matrix_path;
         checkpointProvider = () -> {
             if (!init.has_checkpoint) {
