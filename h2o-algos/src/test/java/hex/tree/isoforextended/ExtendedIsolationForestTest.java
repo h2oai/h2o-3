@@ -26,7 +26,6 @@ public class ExtendedIsolationForestTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
-
             ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
                     new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
             p._train = train._key;
@@ -196,6 +195,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
                     .build();
             Scope.track(m);
             Vec v = Vec.makeVec(ard(2.0, -1), Vec.newKey());
+            Scope.track(v);
 
             Frame res = new FilterLtTask(v, 0).doAll(m.types(), m).outputFrame(Key.make(), m._names, m.domains());
 
@@ -219,6 +219,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
                     .build();
             Scope.track(m);
             Vec v = Vec.makeVec(ard(2.0, 2.0, 0.0, -1.2, 5.5, -5.5, 6.5, 5.5, -5.5, 6.5), Vec.newKey());
+            Scope.track(v);
 
             Frame res = new FilterLtTask(v, 0).doAll(m.types(), m).outputFrame(Key.make(), m._names, m.domains());
 
@@ -244,6 +245,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
                     .build();
             Scope.track(m);
             Vec v = Vec.makeVec(ard(2.0, -1.0), Vec.newKey());
+            Scope.track(v);
 
             Frame res = new FilterGteTask(v, 0).doAll(m.types(), m).outputFrame(Key.make(), m._names, m.domains());
 
@@ -267,7 +269,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
                     .build();
             Scope.track(m);
             Vec v = Vec.makeVec(ard(2.0, 2.0, 0.0, -1.2, 5.5, -5.5, 6.5, 5.5, -5.5, -7.5), Vec.newKey());
-
+            Scope.track(v);
             Frame res = new FilterGteTask(v, 0).doAll(m.types(), m).outputFrame(Key.make(), m._names, m.domains());
 
             assertTrue("Column is not categorical", res.vec(1).isCategorical());;
