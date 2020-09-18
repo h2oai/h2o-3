@@ -3635,7 +3635,7 @@ plot.H2OBinomialMetrics <- function(perf, type = "roc", main, ...) {
   # TODO: add more types (i.e. cutoffs)
   if(!type %in% c("roc", "pr")) stop("type must be 'roc' or 'pr'")
   if(type == "roc") {
-    xaxis <- "False Positive Rate"; yaxis = "True Positive Rate"
+    xaxis <- "False Positive Rate (TPR)"; yaxis = "True Positive Rate (FPR)"
     if(missing(main)) {
       main <- "Receiver Operating Characteristic curve"
       if(perf@on_train) {
@@ -3646,10 +3646,10 @@ plot.H2OBinomialMetrics <- function(perf, type = "roc", main, ...) {
     }
     x <- perf@metrics$thresholds_and_metric_scores$fpr
     y <- perf@metrics$thresholds_and_metric_scores$tpr
-    graphics::plot(x, y, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1))
+    graphics::plot(x, y, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
     graphics::abline(0, 1, lty = 2)
   } else if(type=="pr"){
-    xaxis <- "Recall (TP/(TP+FP))"; yaxis = "Precision - True Positive Rate"
+    xaxis <- "Recall (TP/(TP+FP))"; yaxis = "Precision (TPR)"
     if(missing(main)) {
       main <- "Precision Recall curve"
       if(perf@on_train) {
@@ -3660,7 +3660,7 @@ plot.H2OBinomialMetrics <- function(perf, type = "roc", main, ...) {
     }
     x <- rev(perf@metrics$thresholds_and_metric_scores$recall)
     y <- rev(perf@metrics$thresholds_and_metric_scores$precision)
-    graphics::plot(x, y, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1))
+    graphics::plot(x, y, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
   }
 }
 

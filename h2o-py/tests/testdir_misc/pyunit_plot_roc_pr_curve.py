@@ -37,7 +37,7 @@ def plot_test():
     perf_test.plot(type="pr", server=True)
 
     # Test file saving
-    fn = "pr_plot.png"
+    fn = "curve_plot.png"
     perf_test.plot(type="roc", server=False, save_to_file=fn)
     if os.path.isfile(fn):
         os.remove(fn)

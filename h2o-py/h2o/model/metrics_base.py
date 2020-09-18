@@ -1366,7 +1366,7 @@ class H2OBinomialModelMetrics(MetricsBase):
                 return
             plt.xlabel('False Positive Rate (FPR)')
             plt.ylabel('True Positive Rate (TPR)')
-            plt.title('ROC Curve')
+            plt.title('Receiver Operating Characteristic Curve')
             plt.text(0.5, 0.5, r'AUC={0:.4f}'.format(self._metric_json["AUC"]))
             plt.plot(self.fprs, self.tprs, 'b--')
             plt.axis([0, 1, 0, 1])
