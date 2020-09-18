@@ -571,7 +571,7 @@ public class TargetEncoderPreprocessorTest {
 
     private TargetEncoderModel trainTE(Frame train, DataLeakageHandlingStrategy strategy, boolean encodeAll, boolean keepOriginalCategoricalPredictors) {
         TargetEncoderParameters params = new TargetEncoderParameters();
-        params._keep_original_features = keepOriginalCategoricalPredictors;
+        params._keep_original_categorical_columns = keepOriginalCategoricalPredictors;
         params._train = train._key;
         params._response_column = TARGET;
         params._fold_column = ArrayUtils.contains(train.names(), FOLDC) ? FOLDC : null;
