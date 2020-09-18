@@ -146,7 +146,6 @@ def make_tests(classifier):
 
 failing = [
     'H2OStackedEnsembleClassifier',  # needs a separate test (requires models as parameters)
-    'H2OExtendedIsolationForestClassifier'  # is not suitable for classification
 ]
 classifiers = [cls for name, cls in inspect.getmembers(h2o.sklearn, inspect.isclass)
                if name.endswith('Classifier') and name not in ['H2OAutoMLClassifier']+failing]
