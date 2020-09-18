@@ -13,7 +13,7 @@
 #' @param training_frame Id of the training data frame.
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
-#' @param keep_original_features \code{Logical}. If true, the original non-encoded categorical features will remain in the result frame.
+#' @param keep_original_categorical_columns \code{Logical}. If true, the original non-encoded categorical features will remain in the result frame.
 #'        Defaults to TRUE.
 #' @param blending \code{Logical}. If true, enables blending of posterior probabilities (computed for a given categorical value)
 #'        with prior probabilities (computed on the entire set). This allows to mitigate the effect of categorical
@@ -71,7 +71,7 @@ h2o.targetencoder <- function(x,
                               training_frame,
                               model_id = NULL,
                               fold_column = NULL,
-                              keep_original_features = TRUE,
+                              keep_original_categorical_columns = TRUE,
                               blending = FALSE,
                               inflection_point = 10,
                               smoothing = 20,
@@ -120,8 +120,8 @@ h2o.targetencoder <- function(x,
     parms$model_id <- model_id
   if (!missing(fold_column))
     parms$fold_column <- fold_column
-  if (!missing(keep_original_features))
-    parms$keep_original_features <- keep_original_features
+  if (!missing(keep_original_categorical_columns))
+    parms$keep_original_categorical_columns <- keep_original_categorical_columns
   if (!missing(blending))
     parms$blending <- blending
   if (!missing(inflection_point))
@@ -143,7 +143,7 @@ h2o.targetencoder <- function(x,
                                               y,
                                               training_frame,
                                               fold_column = NULL,
-                                              keep_original_features = TRUE,
+                                              keep_original_categorical_columns = TRUE,
                                               blending = FALSE,
                                               inflection_point = 10,
                                               smoothing = 20,
@@ -197,8 +197,8 @@ h2o.targetencoder <- function(x,
 
   if (!missing(fold_column))
     parms$fold_column <- fold_column
-  if (!missing(keep_original_features))
-    parms$keep_original_features <- keep_original_features
+  if (!missing(keep_original_categorical_columns))
+    parms$keep_original_categorical_columns <- keep_original_categorical_columns
   if (!missing(blending))
     parms$blending <- blending
   if (!missing(inflection_point))

@@ -338,7 +338,7 @@ public class TargetEncoderModelTest extends TestUtil{
   }
   
   @Test
-  public void test_original_features_are_all_removed_when_kept_original_features_is_disabled() {
+  public void test_original_features_are_all_removed_when_keep_original_categorical_columns_is_disabled() {
     try {
       Scope.enter();
       final Frame fr = new TestFrameBuilder()
@@ -353,7 +353,7 @@ public class TargetEncoderModelTest extends TestUtil{
       params._response_column = "target";
       params._noise = 0;
       params._seed = 0XFEED;
-      params._keep_original_features = false;
+      params._keep_original_categorical_columns = false;
 
 
       TargetEncoder te = new TargetEncoder(params);

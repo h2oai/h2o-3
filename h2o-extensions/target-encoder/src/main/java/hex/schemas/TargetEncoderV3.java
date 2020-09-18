@@ -13,8 +13,8 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoder, TargetEnc
   public static class TargetEncoderParametersV3 extends ModelParametersSchemaV3<TargetEncoderModel.TargetEncoderParameters, TargetEncoderParametersV3> {
 
     @API(help = "If true, the original non-encoded categorical features will remain in the result frame.",
-            level = API.Level.secondary)
-    public boolean keep_original_features;
+            level = API.Level.critical)
+    public boolean keep_original_categorical_columns;
 
     @API(help = "If true, enables blending of posterior probabilities (computed for a given categorical value) " +
             "with prior probabilities (computed on the entire set). " +

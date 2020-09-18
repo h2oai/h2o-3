@@ -24,8 +24,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
 
     algo = "targetencoder"
     param_names = {"model_id", "training_frame", "fold_column", "response_column", "ignored_columns",
-                   "keep_original_features", "blending", "inflection_point", "smoothing", "data_leakage_handling",
-                   "noise", "seed"}
+                   "keep_original_categorical_columns", "blending", "inflection_point", "smoothing",
+                   "data_leakage_handling", "noise", "seed"}
 
     def __init__(self, **kwargs):
         super(H2OTargetEncoderEstimator, self).__init__()
@@ -134,18 +134,18 @@ class H2OTargetEncoderEstimator(H2OEstimator):
 
 
     @property
-    def keep_original_features(self):
+    def keep_original_categorical_columns(self):
         """
         If true, the original non-encoded categorical features will remain in the result frame.
 
         Type: ``bool``  (default: ``True``).
         """
-        return self._parms.get("keep_original_features")
+        return self._parms.get("keep_original_categorical_columns")
 
-    @keep_original_features.setter
-    def keep_original_features(self, keep_original_features):
-        assert_is_type(keep_original_features, None, bool)
-        self._parms["keep_original_features"] = keep_original_features
+    @keep_original_categorical_columns.setter
+    def keep_original_categorical_columns(self, keep_original_categorical_columns):
+        assert_is_type(keep_original_categorical_columns, None, bool)
+        self._parms["keep_original_categorical_columns"] = keep_original_categorical_columns
 
 
     @property

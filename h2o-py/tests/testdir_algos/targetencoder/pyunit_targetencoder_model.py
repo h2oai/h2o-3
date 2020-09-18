@@ -137,7 +137,7 @@ def test_original_features_can_be_automatically_removed_from_result_frame():
 
     trainingFrame[target] = trainingFrame[target].asfactor()
 
-    te = H2OTargetEncoderEstimator(keep_original_features=False)
+    te = H2OTargetEncoderEstimator(keep_original_categorical_columns=False)
     te.train(training_frame=trainingFrame, x=teColumns, y=target)
 
     transformed = te.transform(trainingFrame)
