@@ -21,6 +21,9 @@ import water.util.TwoDimTable;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static hex.genmodel.utils.ArrayUtils.difference;
+import static hex.genmodel.utils.ArrayUtils.signum;
+
 
 /**
  * Rule Fit<br>
@@ -307,14 +310,31 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
            if (deviance.length < 5) {
                bestLambdaIndex = deviance.length - 1;
            } else {
-               bestLambdaIndex = getBestLambdaIndex(deviance, lambdas);
+               bestLambdaIndex = getBestLambdaIndex(deviance);
+               if (bestLambdaIndex >= lambdas.length) {
+                   bestLambdaIndex = getBestLambdaIndexCornerCase(deviance, lambdas);
+               }
            }
 
             lambdaModel.remove();
             return new double[]{lambdas[bestLambdaIndex]};
         }
 
-        int getBestLambdaIndex(double[] deviance, double[] lambdas) {
+        int getBestLambdaIndex(double[] deviance) {
+            int bestLambdaIndex = deviance.length - 1;
+            if (deviance.length >= 5) {
+                double[] array = difference(signum(difference(difference(deviance))));
+                for (int i = 0; i < array.length; i++) {
+                    if (array[i] != 0 && i > 0) {
+                        bestLambdaIndex = 3 * i;
+                        break;
+                    }
+                }
+            }
+            return bestLambdaIndex;
+        }
+
+        int getBestLambdaIndexCornerCase(double[] deviance, double[] lambdas) {
             double[] leftUpPoint = new double[] {deviance[0], lambdas[0]};
             double[] rightLowPoint = new double[] {deviance[deviance.length - 1], lambdas[lambdas.length - 1]};
             double[] leftActualPoint = new double[2];
