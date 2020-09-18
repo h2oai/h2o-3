@@ -27,11 +27,9 @@ def test_target_encoding_full_scenario():
     te.train(training_frame=trainingFrame, 
              x=teColumns, 
              y=targetColumnName)
-    print(te)
     transformed = te.transform(trainingFrame, as_training=True)
     
     assert transformed is not None
-    print(transformed.names)
     assert transformed.ncols == trainingFrame.ncols + len(teColumns)
     for te_col in teColumns:
         assert te_col + "_te" in transformed.names
@@ -101,11 +99,7 @@ def test_target_encoded_frame_does_not_contain_fold_column():
                                    fold_column=foldColumnName,
                                    seed=1234)
     te.train(training_frame=trainingFrame, x=teColumns, y=targetColumnName)
-    print(te)
-    print(trainingFrame)
-
     model_summary = te._model_json['output']['model_summary'].as_data_frame()
-    print(model_summary)
     encoded_column_names = model_summary['encoded_column_name']
 
     # Checking that we don't have empty entries in TwoDim table
@@ -120,7 +114,41 @@ def test_target_encoded_frame_does_not_contain_fold_column():
     assert foldColumnName+"_te" not in transformed.col_names
 
 
+def test_original_features_are_kept_by_default():
+    target = "survived"
+    teColumns = ["cabin", "embarked"]
+    trainingFrame = h2o.import_file(pu.locate("smalldata/gbm_test/titanic.csv"), header=1)
+
+    trainingFrame[target] = trainingFrame[target].asfactor()
+
+    te = H2OTargetEncoderEstimator()
+    te.train(training_frame=trainingFrame, x=teColumns, y=target)
+    
+    transformed = te.transform(trainingFrame)
+    for col in teColumns:
+        assert "{}_te".format(col) in transformed.names
+        assert col in transformed.names
+    
+
+def test_original_features_can_be_automatically_removed_from_result_frame():
+    target = "survived"
+    teColumns = ["cabin", "embarked"]
+    trainingFrame = h2o.import_file(pu.locate("smalldata/gbm_test/titanic.csv"), header=1)
+
+    trainingFrame[target] = trainingFrame[target].asfactor()
+
+    te = H2OTargetEncoderEstimator(keep_original_categorical_columns=False)
+    te.train(training_frame=trainingFrame, x=teColumns, y=target)
+
+    transformed = te.transform(trainingFrame)
+    for col in teColumns:
+        assert "{}_te".format(col) in transformed.names
+        assert col not in transformed.names
+
+
 pu.run_tests([
     test_target_encoding_full_scenario,
     test_target_encoded_frame_does_not_contain_fold_column,
+    test_original_features_are_kept_by_default,
+    test_original_features_can_be_automatically_removed_from_result_frame
 ])

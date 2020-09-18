@@ -43,6 +43,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     public double _smoothing =DEFAULT_BLENDING_PARAMS.getSmoothing();
     public DataLeakageHandlingStrategy _data_leakage_handling = DataLeakageHandlingStrategy.None;
     public double _noise = 0.01;
+    public boolean _keep_original_categorical_columns = true; // not a good default, but backwards compatible.
     
     @Override
     public String algoName() {
@@ -90,7 +91,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       _target_encoding_map = teMap;
       _model_summary = constructSummary();
 
-      _te_column_to_hasNAs = buildCol2HasNAsMap(); 
+      _te_column_to_hasNAs = buildCol2HasNAsMap();
     }
 
     private IcedHashMap<String, Boolean> buildCol2HasNAsMap() {
@@ -333,6 +334,9 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
             tmpKey = workingFrame._key;
           }
         } // end for each target 
+        
+        if (!_parms._keep_original_categorical_columns)
+          workingFrame.remove(colIdx);
       } // end for each columnToEncode
 
       DKV.remove(tmpKey);

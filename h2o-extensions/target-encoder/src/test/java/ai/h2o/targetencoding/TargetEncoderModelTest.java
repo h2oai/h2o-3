@@ -300,6 +300,81 @@ public class TargetEncoderModelTest extends TestUtil{
     }
   }
   
+  @Test
+  public void test_original_features_are_kept_by_default() {
+    try {
+      Scope.enter();
+      final Frame fr = new TestFrameBuilder()
+              .withColNames("categorical", "target")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b"))
+              .withDataForCol(1, ar("N", "Y", "Y", "N"))
+              .build();
+
+      TargetEncoderParameters params = new TargetEncoderParameters();
+      params._train = fr._key;
+      params._response_column = "target";
+      params._noise = 0;
+      params._seed = 0XFEED;
+
+
+      TargetEncoder te = new TargetEncoder(params);
+      final TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      Frame transformed = Scope.track(teModel.transformTraining(fr));
+      assertTrue(ArrayUtils.contains(transformed.names(), "categorical"));
+
+      transformed = Scope.track(teModel.transform(fr));
+      assertTrue(ArrayUtils.contains(transformed.names(), "categorical"));
+
+      transformed = Scope.track(teModel.score(fr));
+      assertTrue(ArrayUtils.contains(transformed.names(), "categorical"));
+
+      assertTrue(ArrayUtils.contains(fr.names(), "categorical"));
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  @Test
+  public void test_original_features_are_all_removed_when_keep_original_categorical_columns_is_disabled() {
+    try {
+      Scope.enter();
+      final Frame fr = new TestFrameBuilder()
+              .withColNames("categorical", "target")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b"))
+              .withDataForCol(1, ar("N", "Y", "Y", "N"))
+              .build();
+
+      TargetEncoderParameters params = new TargetEncoderParameters();
+      params._train = fr._key;
+      params._response_column = "target";
+      params._noise = 0;
+      params._seed = 0XFEED;
+      params._keep_original_categorical_columns = false;
+
+
+      TargetEncoder te = new TargetEncoder(params);
+      final TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      Frame transformed = Scope.track(teModel.transformTraining(fr));
+      assertFalse(ArrayUtils.contains(transformed.names(), "categorical"));
+
+      transformed = Scope.track(teModel.transform(fr));
+      assertFalse(ArrayUtils.contains(transformed.names(), "categorical"));
+
+      transformed = Scope.track(teModel.score(fr));
+      assertFalse(ArrayUtils.contains(transformed.names(), "categorical"));
+
+      assertTrue(ArrayUtils.contains(fr.names(), "categorical"));
+    } finally {
+      Scope.exit();
+    }
+  }
+  
   
   private static class RowIndexTask extends MRTask<RowIndexTask> {
     static String ROW_INDEX_COL = "__row_index";
