@@ -26,7 +26,6 @@ public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,Nai
         "class_sampling_factors",
         "max_after_balance_size",
         "max_confusion_matrix_size",
-        "max_hit_ratio_k",
         "laplace",
         "min_sdev",
         "eps_sdev",
@@ -66,13 +65,6 @@ public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,Nai
      *  avoid printing extremely large confusion matrices.  */
     @API(help = "[Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs", level = API.Level.secondary, direction = API.Direction.INOUT)
     public int max_confusion_matrix_size;
-
-    /**
-     * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-     */
-    @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT)
-    public int max_hit_ratio_k;
-
     //
 
     @API(help = "Laplace smoothing parameter", gridable = true)

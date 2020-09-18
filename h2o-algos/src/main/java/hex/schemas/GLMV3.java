@@ -79,7 +79,6 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "class_sampling_factors",
             "max_after_balance_size",
             "max_confusion_matrix_size",
-            "max_hit_ratio_k",
             "max_runtime_secs",
             "custom_metric_func"
     };
@@ -242,12 +241,6 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
      *  avoid printing extremely large confusion matrices.  */
     @API(help = "[Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs", level = API.Level.secondary, direction = API.Direction.INOUT)
     public int max_confusion_matrix_size;
-
-    /**
-     * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-     */
-    @API(help = "Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT)
-    public int max_hit_ratio_k;
 
     @API(help="Request p-values computation, p-values work only with IRLSM solver and no regularization", level = Level.secondary, direction = Direction.INPUT)
     public boolean compute_p_values; // _remove_collinear_columns

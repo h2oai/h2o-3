@@ -78,7 +78,6 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/max_active_predictors
    data-science/algo-params/max_after_balance_size
    data-science/algo-params/max_depth
-   data-science/algo-params/max_hit_ratio_k
    data-science/algo-params/max_iterations
    data-science/algo-params/max_models
    data-science/algo-params/max_runtime_secs

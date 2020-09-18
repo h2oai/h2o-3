@@ -40,8 +40,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                    "startval", "calc_like", "HGLM", "prior", "cold_start", "lambda_min_ratio", "beta_constraints",
                    "max_active_predictors", "interactions", "interaction_pairs", "obj_reg", "export_checkpoints_dir",
                    "stopping_rounds", "stopping_metric", "stopping_tolerance", "balance_classes",
-                   "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k",
-                   "max_runtime_secs", "custom_metric_func"}
+                   "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size", "max_runtime_secs",
+                   "custom_metric_func"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedLinearEstimator, self).__init__()
@@ -1726,36 +1726,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def max_confusion_matrix_size(self, max_confusion_matrix_size):
         assert_is_type(max_confusion_matrix_size, None, int)
         self._parms["max_confusion_matrix_size"] = max_confusion_matrix_size
-
-
-    @property
-    def max_hit_ratio_k(self):
-        """
-        [Deprecated] Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to
-        disable)
-
-        Type: ``int``  (default: ``0``).
-
-        :examples:
-
-        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> predictors = ["displacement","power","weight","year"]
-        >>> response = "acceleration"
-        >>> train, valid = cars.split_frame(ratios=[.8])
-        >>> cars_glm = H2OGeneralizedLinearEstimator(max_hit_ratio_k=3,
-        ...                                          seed=1234)
-        >>> cars_glm.train(x=predictors,
-        ...                y=response,
-        ...                training_frame=train,
-        ...                validation_frame=valid)
-        >>> cars_glm.mse()
-        """
-        return self._parms.get("max_hit_ratio_k")
-
-    @max_hit_ratio_k.setter
-    def max_hit_ratio_k(self, max_hit_ratio_k):
-        assert_is_type(max_hit_ratio_k, None, int)
-        self._parms["max_hit_ratio_k"] = max_hit_ratio_k
 
 
     @property

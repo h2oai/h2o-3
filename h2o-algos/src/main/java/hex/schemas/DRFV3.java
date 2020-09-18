@@ -28,7 +28,6 @@ public class DRFV3 extends SharedTreeV3<DRF, DRFV3, DRFV3.DRFParametersV3> {
                 "class_sampling_factors",
                 "max_after_balance_size",
                 "max_confusion_matrix_size",
-                "max_hit_ratio_k",
                 "ntrees",
                 "max_depth",
                 "min_rows",
