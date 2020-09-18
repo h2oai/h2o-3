@@ -621,8 +621,10 @@ def _factor_mapper(mapping):
     :param mapping: dictionary that maps factor names to floats (for NaN; other values are integers)
     :return: function to be applied on iterable
     """
+
     def _(column):
         return [mapping.get(entry, float("nan")) for entry in column]
+
     return _
 
 
@@ -749,15 +751,17 @@ def partial_dependences(
             else:
                 plt.axvline(test_frame[row_index, column], c="k", linestyle="dotted",
                             label="Instance value")
-        plt.title("Partial Dependence plot for \"{}\"{}".format(
-            column,
-            " with target = \"{}\"".format(target[0]) if target else ""
-        ) if row_index is None else
-                  "Individual Conditional Expectation for column \"{}\" and row {}{}".format(
-                      column,
-                      row_index,
-                      " with target = \"{}\"".format(target[0]) if target else ""
-                  ))
+        if row_index is None:
+            plt.title("Partial Dependence plot for \"{}\"{}".format(
+                column,
+                " with target = \"{}\"".format(target[0]) if target else ""
+            ))
+        else:
+            plt.title("Individual Conditional Expectation for column \"{}\" and row {}{}".format(
+                column,
+                row_index,
+                " with target = \"{}\"".format(target[0]) if target else ""
+            ))
         ax = plt.gca()
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
@@ -1683,7 +1687,11 @@ def explain_row(
                                 data=tf, figsize=figsize,
                                 nbins=20 if not is_factor
                                 else 1 + tf[column].nlevels()[0]))
-                    fig = plt.gcf()
+                    fig = plt.gcf()  # type: plt.Figure
+                    fig.gca().set_title("Individual Conditional Expectation for \"{}\" and row index {}".format(
+                        column,
+                        row_index
+                    ))
                     _add_histogram(tf, column, levels_order=[t.get_text() for t in fig.gca().get_xticklabels()])
                     if is_factor:
                         plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
