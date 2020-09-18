@@ -43,7 +43,8 @@ def _get_default_args(estimator_cls):
         H2OCoxProportionalHazardsRegressor=dict(),
         H2ODeepLearningRegressor=dict(seed=seed, reproducible=True),
         H2OGeneralizedLinearRegressor=dict(family='gaussian', seed=seed),
-        H2OGeneralizedAdditiveRegressor=dict(family='gaussian', seed=seed, gam_columns = ["C1"])
+        H2OGeneralizedAdditiveRegressor=dict(family='gaussian', seed=seed, gam_columns = ["C1"]),
+        H2OExtendedIsolationForestRegressor=dict(sample_size=75, seed=seed, ntrees=100)
     )
     return defaults.get(estimator_cls.__name__, dict(seed=seed))
 
@@ -51,6 +52,7 @@ def _get_default_args(estimator_cls):
 def _get_custom_behaviour(estimator_cls):
     custom = dict(
         # H2ODeepLearningRegressor=dict(scores_may_differ=True),
+        H2OExtendedIsolationForestRegressor=dict(scores_may_differ=True)  # result is not always the same for all runs
     )
     return custom.get(estimator_cls.__name__, dict())
 
