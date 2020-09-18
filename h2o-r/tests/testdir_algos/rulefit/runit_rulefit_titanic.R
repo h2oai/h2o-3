@@ -18,6 +18,9 @@ test.rulefit.titanic <- function() {
     rf_h2o = h2o.rulefit(y=response, x=predictors, training_frame = titanic, max_rule_length=10, max_num_rules=100, seed=1234, model_type="rules")
 
     print(rf_h2o@model$rule_importance)
+
+    expect_that(h2o.auc(h2o.performance(rf_h2o)), equals(h2o.auc(h2o.performance(rf_h2o, newdata =  titanic))))
+    expect_that(h2o.logloss(h2o.performance(rf_h2o)), equals(h2o.logloss(h2o.performance(rf_h2o, newdata =  titanic))))
   
 }
 
