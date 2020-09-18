@@ -23,8 +23,7 @@
 #' @param max_rule_length Maximum length of rules. Defaults to 10. Defaults to 10.
 #' @param max_num_rules The maximum number of rules to return. defaults to -1 which means the number of rules is selected  by
 #'        diminishing returns in model deviance. Defaults to -1.
-#' @param model_type Specifies type of base learners in the ensemble. Must be one of: "RULES_AND_LINEAR", "RULES", "LINEAR".
-#'        Defaults to RULES_AND_LINEAR.
+#' @param model_type Specifies type of base learners in the ensemble. Must be one of: "rules_and_linear", "rules", "linear". Defaults to rules_and_linear.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
 #'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
@@ -56,7 +55,7 @@ h2o.rulefit <- function(x,
                         min_rule_length = 1,
                         max_rule_length = 10,
                         max_num_rules = -1,
-                        model_type = c("RULES_AND_LINEAR", "RULES", "LINEAR"),
+                        model_type = c("rules_and_linear", "rules", "linear"),
                         weights_column = NULL,
                         distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
 {
@@ -111,7 +110,7 @@ h2o.rulefit <- function(x,
                                         min_rule_length = 1,
                                         max_rule_length = 10,
                                         max_num_rules = -1,
-                                        model_type = c("RULES_AND_LINEAR", "RULES", "LINEAR"),
+                                        model_type = c("rules_and_linear", "rules", "linear"),
                                         weights_column = NULL,
                                         distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                                         segment_columns = NULL,
