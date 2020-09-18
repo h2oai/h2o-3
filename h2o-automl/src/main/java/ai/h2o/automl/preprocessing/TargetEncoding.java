@@ -45,7 +45,6 @@ public class TargetEncoding implements PreprocessingStep {
         TargetEncoderParameters params = new TargetEncoderParameters();
         params._train = amlTrain._key;
         params._response_column = _aml.getBuildSpec().input_spec.response_column;
-        params._ignored_columns = Arrays.stream(amlTrain.names()).filter(col -> !teColumns.contains(col)).toArray(String[]::new);
         params._keep_original_categorical_columns = false;
         params._blending = true;
         params._noise = 0;
@@ -74,6 +73,10 @@ public class TargetEncoding implements PreprocessingStep {
                 });
             }
         }
+        String[] keep = params.getNonPredictors();
+        params._ignored_columns = Arrays.stream(amlTrain.names())
+                .filter(col -> !teColumns.contains(col) && !ArrayUtils.contains(keep, col))
+                .toArray(String[]::new);
 
         TargetEncoder te = new TargetEncoder(params, _aml.makeKey(getType(), null, false));
         _teModel = te.trainModel().get();
