@@ -154,13 +154,14 @@ public class TargetEncoderPreprocessorTest {
         try {
             Scope.enter();
             Frame train = makeTrainFrame(true);
+            Frame valid = makeValidFrame();
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.KFold, true, false);
             Scope.track_generic(teModel);
             TargetEncoderPreprocessor tePreproc = new TargetEncoderPreprocessor(teModel);
             Scope.track_generic(tePreproc);
 
-            Model model = buildModel(train, null, tePreproc, CategoricalEncodingScheme.AUTO);
+            Model model = buildModel(train, valid, tePreproc, CategoricalEncodingScheme.AUTO);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -631,6 +632,41 @@ public class TargetEncoderPreprocessorTest {
             }
         }
         return builder.build();
+    }
+    
+    
+    @Test @Ignore
+    public void test_pubdev_7775() throws Exception {
+        try {
+            Scope.enter();
+            Frame train = makeTrainFrame(true); //without the fold column, the test pass: reordering issue
+
+            Model model = buildModel(train, null, null, CategoricalEncodingScheme.OneHotExplicit);
+            Scope.track_generic(model);
+
+            File mojoFile = folder.newFile(model._key+".zip");
+            try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
+                model.getMojo().writeTo(modelOutput);
+            }
+            MojoModel mojoModel = MojoModel.load(mojoFile.getPath());
+
+            for(int i=0; i<50; i++) {
+                Map<String, ?> row = makeRow(i);
+                System.out.println(row);
+                Frame predictions = Scope.track(model.score(Scope.track(asFrame(row))));
+
+                EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
+                        .setConvertUnknownCategoricalLevelsToNa(true)
+                        .setModel(mojoModel));
+                BinomialModelPrediction mojoPredictions = modelWrapper.predictBinomial(asRowData(row));
+                assertEquals(predictions.numCols(), mojoPredictions.classProbabilities.length+1);
+                assertEquals(predictions.vec("predict").at(0), mojoPredictions.labelIndex, 1e-8);
+                assertEquals(predictions.vec(1).at(0), mojoPredictions.classProbabilities[0], 1e-8);
+                assertEquals(predictions.vec(2).at(0), mojoPredictions.classProbabilities[1], 1e-8);
+            }
+        } finally {
+            Scope.exit();
+        }
     }
 
 }

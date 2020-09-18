@@ -97,8 +97,6 @@ public abstract class MojoModel extends GenModel implements RowConverterFactory 
       return new CompositeRowToRawDataConverter<>(converters);
     }
     
-    //FIXME: currently some categoricalEncoding that create new columns (binary, onehot...) don't put the non-predictors columns (e.g. fold) to the end (wrong offset).
-    // contrary to what they do during training, therefore the mojo fails if the model was trained with a fold column for example.
     Map<String, Integer> columnToOffsetIdx = categoricalEncoding.createColumnMapping(this);
     Map<Integer, CategoricalEncoder> offsetToEncoder = categoricalEncoding.createCategoricalEncoders(this, columnToOffsetIdx);
     return makeDefaultRowConverter(columnToOffsetIdx, offsetToEncoder, errorConsumer, config);

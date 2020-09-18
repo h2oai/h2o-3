@@ -1373,7 +1373,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (isResponseOptional() && _parms._response_column != null && _response == null) {
         _vresponse = va.vec(_parms._response_column);
       }
-      _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive, false); //FIXME: this encodes validation frame BEFORE TE is applied
+      _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive, false);  //cf. PUBDEV-7785
       if (!isResponseOptional() || (_parms._response_column != null && _valid.find(_parms._response_column) >= 0)) {
         _vresponse = _valid.vec(_parms._response_column);
       }
@@ -1557,7 +1557,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for (Key<ModelPreprocessor> key : _parms._preprocessors) {
       ModelPreprocessor preprocessor = key.get();
       encoded = isTraining ? preprocessor.processTrain(result, _parms) : preprocessor.processValid(result, _parms);
-      if (encoded != fr) trackEncoded(encoded, scopeTrack);
+      if (encoded != result) trackEncoded(encoded, scopeTrack);
       result = encoded;
     }
     if (!scopeTrack) Scope.untrack(result); // otherwise encoded frame is fully removed on CV model completion, raising exception when computing CV scores.
