@@ -539,6 +539,11 @@ def shap_explain_row(
                                        key=lambda pair: pair[1])
             picked_features.extend(negative_features[:min(top_n, len(negative_features))])
         picked_features = sorted(picked_features, key=lambda pair: pair[1])
+        if len(picked_features) < len(contributions):
+            contribution_subset_note = " using {} out of {} contributions".format(
+                len(picked_features), len(contributions))
+        else:
+            contribution_subset_note = ""
         contributions = dict(
             feature=np.array(
                 ["{}={}".format(pair[0], str(row.get(pair[0])[0])) for pair in picked_features]),
@@ -550,9 +555,10 @@ def shap_explain_row(
         plt.axvline(0, c="black")
         plt.xlabel("SHAP value")
         plt.ylabel("Feature")
-        plt.title("SHAP explanation for {} on row {}\nprediction: {}".format(
+        plt.title("SHAP explanation for {} on row {}{}\nprediction: {}".format(
             model.model_id,
             row_index,
+            contribution_subset_note,
             prediction
         ))
         plt.gca().set_axisbelow(True)
@@ -682,6 +688,7 @@ def partial_dependences(
         max_factors=30,  # type: int
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="Dark2",  # type: str
+        markers=["o", "v", "s", "P", "*", "D", "X", "^", "<", ">", "."]  # type: List[str]
 ):  # type: (...) -> plt.Figure
     """
     Make a plot showing partial dependence / individual conditional expectation of multiple models.
@@ -696,11 +703,13 @@ def partial_dependences(
     :param max_factors: maximum number of factor levels to show
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name
+    :param markers: List of markers to use for factors, when it runs out of possible markers the last in
+                    this list will get reused
     :return: a matplotlib figure object
     """
     if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
         all_models = [model_id[0] for model_id in models.leaderboard[:, "model_id"]
-            .as_data_frame(use_pandas=False, header=False) if _has_varimp(model_id[0])]
+            .as_data_frame(use_pandas=False, header=False)]
     else:
         all_models = [model.model_id for model in models]
 
@@ -729,6 +738,7 @@ def partial_dependences(
         is_factor = test_frame[column].isfactor()[0]
         if is_factor:
             factor_map = _factor_mapper(NumpyFrame(test_frame[column]).from_factor_to_num(column))
+            marker_map = dict(zip(range(len(markers)-1), markers[:-1]))
         for i, model in enumerate(models):
             tmp = NumpyFrame(
                 h2o.get_model(model).partial_plot(test_frame, cols=[column], plot=False,
@@ -738,7 +748,7 @@ def partial_dependences(
             encoded_col = tmp.columns[0]
             if is_factor:
                 plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"],
-                            color=[colors[i]], label=model)
+                            color=[colors[i]], label=model, marker=marker_map.get(i, markers[-1]))
             else:
                 plt.plot(tmp[encoded_col], tmp["mean_response"], color=colors[i], label=model)
 

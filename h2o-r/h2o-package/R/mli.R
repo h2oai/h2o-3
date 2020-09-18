@@ -5,7 +5,9 @@
 #'
 #' @return result of \code{expr}
 with_no_h2o_progress <- function(expr) {
-  show_progress <- environment(h2o.no_progress)$.pkg.env$PROGRESS_BAR
+  show_progress <- environment(h2o.no_progress)$
+    .pkg.env$
+    PROGRESS_BAR
   if (length(show_progress) == 0L || show_progress) {
     on.exit(h2o.show_progress())
   } else {
@@ -43,8 +45,10 @@ with_no_h2o_progress <- function(expr) {
     return(FALSE)
   }
 
-  return(startsWith(model@model_id, "DRF") || startsWith(model@model_id, "GBM") ||
-           startsWith(model@model_id, "XGB") || startsWith(model@model_id, "XRT"))
+  return(startsWith(model@model_id, "DRF") ||
+           startsWith(model@model_id, "GBM") ||
+           startsWith(model@model_id, "XGB") ||
+           startsWith(model@model_id, "XRT"))
 }
 
 .interpretable <- function(model_id) {
@@ -133,14 +137,14 @@ with_no_h2o_progress <- function(expr) {
         family <- substr(model_id, 1, 3)
         if (!family %in% included_families || "Sta" == family) {
           included_families <- c(included_families, family)
-          selected_models <- c(new_models, model_id)
+          selected_models <- c(selected_models, model_id)
         }
       }
       object$models <- Filter(function(model) model@model_id %in% selected_models, object$models)
     }
 
     if (only_with_varimp) {
-      object@models <- Filter(function(model) .has_varimp(model@model_id), object$models)
+      object$models <- Filter(function(model) .has_varimp(model@model_id), object$models)
     }
 
     if (!is.na(top_n)) {
@@ -281,7 +285,7 @@ with_no_h2o_progress <- function(expr) {
             new_models <- c(new_models, model)
           }
         }
-        models <- new_models
+        object <- new_models
       }
 
       return(make_models_info(
@@ -370,7 +374,7 @@ with_no_h2o_progress <- function(expr) {
       )])
     })))
   row.names(leaderboard) <- sapply(models, function(m) m@model_id)
-  leaderboard <- leaderboard[order(leaderboard[[1]]), ]
+  leaderboard <- leaderboard[order(leaderboard[[1]]),]
   names(leaderboard) <- tolower(names(leaderboard))
   return(leaderboard)
 }
@@ -462,7 +466,7 @@ with_no_h2o_progress <- function(expr) {
   top_n <- min(top_n, nrow(leaderboard))
   indices <- which(!duplicated(substr(leaderboard$model_id, 1, 3)))
   indices <- c(seq_len(top_n), indices[indices > top_n])
-  leaderboard <- leaderboard[indices, ]
+  leaderboard <- leaderboard[indices,]
   with_no_h2o_progress({
     leaderboard <-
       cbind(leaderboard,
@@ -471,7 +475,7 @@ with_no_h2o_progress <- function(expr) {
               sapply(
                 leaderboard[["model_id"]],
                 function(model_id) {
-                  as.data.frame(stats::predict(h2o.getModel(model_id), test_frame[row_index, ])[["predict"]])
+                  as.data.frame(stats::predict(h2o.getModel(model_id), test_frame[row_index,])[["predict"]])
                 }
               )
             )
@@ -525,7 +529,7 @@ with_no_h2o_progress <- function(expr) {
   cat("\n")
   for (row in seq_len(nrow(df))) {
     cat("| **", row.names(df)[row], "** |", sep = "")
-    cat(unlist(df[row, ]), "", sep = " | ")
+    cat(unlist(df[row,]), "", sep = " | ")
     cat("\n")
   }
 }
@@ -566,8 +570,8 @@ with_no_h2o_progress <- function(expr) {
         data.frame = .render_df_to_md(object),
         H2OFrame = .render_df_to_md(as.data.frame(object)),
         H2OTable = .render_df_to_md(as.data.frame(object)),
-        explanation_header =  cat("\n\n", object, "\n", strrep("=", nchar(object)), "\n", sep = ""),
-        explanation_subsection =  cat("\n\n", object, "\n", strrep("-", nchar(object)), "\n", sep = ""),
+        explanation_header = cat("\n\n", object, "\n", strrep("=", nchar(object)), "\n", sep = ""),
+        explanation_subsection = cat("\n\n", object, "\n", strrep("-", nchar(object)), "\n", sep = ""),
         explanation_description = cat("\n> ", paste0(strsplit(object, "\\n\\s*")[[1]], collapse = "\n> "), "\n\n", sep = ""),
         print(object)
       )
@@ -609,7 +613,7 @@ with_no_h2o_progress <- function(expr) {
         switch(
           class(object)[[1]],
           explanation_header = cat("\n\n", object, "\n", strrep("=", nchar(object)), "\n", sep = ""),
-          explanation_subsection =  cat("\n\n", object, "\n", strrep("-", nchar(object)), "\n", sep = ""),
+          explanation_subsection = cat("\n\n", object, "\n", strrep("-", nchar(object)), "\n", sep = ""),
           explanation_description = cat("\n> ", paste0(strsplit(object, "\\n\\s*")[[1]], collapse = "\n> "), "\n\n", sep = ""),
           print(object)
         )
@@ -618,7 +622,7 @@ with_no_h2o_progress <- function(expr) {
       switch(
         class(object)[[1]],
         explanation_header = cat("\n\n", object, "\n", strrep("=", nchar(object)), "\n", sep = ""),
-        explanation_subsection =  cat("\n\n", object, "\n", strrep("-", nchar(object)), "\n", sep = ""),
+        explanation_subsection = cat("\n\n", object, "\n", strrep("-", nchar(object)), "\n", sep = ""),
         explanation_description = message(paste0(strsplit(object, "\\n\\s*")[[1]], collapse = "\n")),
         print(object)
       )
@@ -787,6 +791,7 @@ position_jitter_density <-
         trans_y <- NULL
 
         trans_xy <- function(X) {
+
           trans_single_group <- function(df) {
             d <- stats::density(
               df[, "y"],
@@ -799,6 +804,7 @@ position_jitter_density <-
             noise <- runif(nrow(df), min = -params$width, max = params$width)
             return(point_densities * noise)
           }
+
           return(X + unsplit(lapply(split(data, data[, "x"]), FUN = trans_single_group), data[, "x"]))
         }
 
@@ -817,7 +823,6 @@ position_jitter_density <-
       bandwidth = bandwidth
     )
   }
-
 
 
 geom_point_or_line <- function(draw_point, ...) {
@@ -864,7 +869,7 @@ h2o.shap_summary_plot <-
     indices <- row.names(newdata)
     if (nrow(newdata) > sample_size) {
       indices <- sort(sample(seq_len(nrow(newdata)), sample_size))
-      newdata <- newdata[indices, ]
+      newdata <- newdata[indices,]
     }
 
     with_no_h2o_progress({
@@ -946,15 +951,15 @@ h2o.shap_summary_plot <-
     features <- levels(contr[["feature"]])
     if (length(features) > top_n_features) {
       features <- features[seq(from = length(features), to = length(features) - top_n_features)]
-      contr <- contr[contr[["feature"]] %in% features, ]
+      contr <- contr[contr[["feature"]] %in% features,]
     }
 
     p <-
       ggplot2::ggplot(ggplot2::aes(.data$feature, .data$contribution,
-                                          color = .data$normalized_value,
-                                          text = .data$row
+                                   color = .data$normalized_value,
+                                   text = .data$row
       ),
-                      data = contr[sample(nrow(contr)), ]
+                      data = contr[sample(nrow(contr)),]
       ) +
         ggplot2::geom_hline(yintercept = 0, linetype = "dashed") +
         ggplot2::geom_point(position = position_jitter_density(), alpha = 0.5) +
@@ -1003,9 +1008,9 @@ h2o.shap_explain_row <-
 
     with_no_h2o_progress({
       contributions <-
-        as.data.frame(h2o.predict_contributions(model, newdata[row_index, ]))
-      prediction <- as.data.frame(h2o.predict(model, newdata[row_index, ]))
-      newdata_df <- as.data.frame(newdata[row_index, ])
+        as.data.frame(h2o.predict_contributions(model, newdata[row_index,]))
+      prediction <- as.data.frame(h2o.predict(model, newdata[row_index,]))
+      newdata_df <- as.data.frame(newdata[row_index,])
       for (fct in names(newdata[, x])[is.factor(newdata[, x])]) {
         newdata_df[[fct]] <- as.factor(newdata_df[[fct]])
         if (substr(model@model_id, 1, 3) == "XGB") {
@@ -1059,7 +1064,7 @@ h2o.shap_explain_row <-
         row.names(contributions), "=",
         as.list(newdata_df[, row.names(contributions)])
       )
-      contributions <- contributions[order(contributions$contribution), ]
+      contributions <- contributions[order(contributions$contribution),]
       contributions$text <- paste(
         "Feature:", row.names(contributions), "\n",
         "Feature Value:", unlist(newdata_df[, row.names(contributions)]), "\n",
@@ -1103,7 +1108,7 @@ h2o.shap_explain_row <-
       )
 
       newdata_df[["rest_of_the_features"]] <- NA
-      contributions$feature_value <- paste("Feature Value:", t(newdata_df)[contributions$feature, ])
+      contributions$feature_value <- paste("Feature Value:", t(newdata_df)[contributions$feature,])
       p <- ggplot2::ggplot(ggplot2::aes(
         x = .data$feature, fill = .data$color,
         xmin = .data$id - 0.4, xmax = .data$id + 0.4,
@@ -1166,11 +1171,11 @@ h2o.variable_importance_heatmap <- function(object, newdata, top_n = 20) {
   }
   results[["model_id"]] <- row.names(results)
   results <- stats::reshape(results,
-                     direction = "long",
-                     varying = Filter(function(col) col != "model_id", names(results)),
-                     times = Filter(function(col) col != "model_id", names(results)),
-                     v.names = "value",
-                     timevar = "feature"
+                            direction = "long",
+                            varying = Filter(function(col) col != "model_id", names(results)),
+                            times = Filter(function(col) col != "model_id", names(results)),
+                            v.names = "value",
+                            timevar = "feature"
   )
 
   results$text <- paste0(
@@ -1252,8 +1257,8 @@ h2o.model_correlation <- function(object, newdata, top_n = 20,
   res[["model_id_1"]] <- row.names(res)
 
   res <- na.omit(stats::reshape(res,
-                         direction = "long", varying = varying,
-                         v.names = "value", timevar = "model_id_2", times = varying
+                                direction = "long", varying = varying,
+                                v.names = "value", timevar = "model_id_2", times = varying
   ))
 
   res$text <- paste0(
@@ -1276,7 +1281,7 @@ h2o.model_correlation <- function(object, newdata, top_n = 20,
     ggplot2::theme(
       axis.text.x = ggplot2::element_text(
         angle = 45,
-        hjust = 1 ),
+        hjust = 1),
       aspect.ratio = 1
     )
 
@@ -1437,7 +1442,8 @@ h2o.partial_dependences <- function(object,
     for (model in models_info$models) {
       family <- substr(model@model_id, 0, 3)
       if (!best_of_family ||
-        !family %in% evaluated_models || "Sta" == family) {
+        !family %in% evaluated_models ||
+        "Sta" == family) {
         evaluated_models <- c(evaluated_models, family)
         pdp <-
           h2o.partialPlot(model, newdata, column,
@@ -1458,11 +1464,11 @@ h2o.partial_dependences <- function(object,
     }
 
     data <- stats::reshape(results,
-                    direction = "long",
-                    varying = names(results)[-1],
-                    times = names(results)[-1],
-                    v.names = "values",
-                    timevar = "model_id"
+                           direction = "long",
+                           varying = names(results)[-1],
+                           times = names(results)[-1],
+                           v.names = "values",
+                           timevar = "model_id"
     )
 
     col_name <- make.names(column)
@@ -1542,7 +1548,7 @@ h2o.individual_conditional_expectations <- function(model,
       newdata[[column]] <- ifelse(newdata[[column]] %in% factors_to_merge, NA_character_,
                                   newdata[[column]])
       message(length(factor_frequencies) - max_factors, " least common factor levels were omitted from \"",
-              column, "\" feature.")    }
+              column, "\" feature.") }
 
     margin <- ggplot2::margin(16.5, 5.5, 5.5, 5.5)
     if (h2o.isfactor(newdata[[column]]))
@@ -1832,14 +1838,18 @@ h2o.explain <- function(object,
       )
       top_n <- if (is.null(user_overrides$model_correlation$top_n)) 20
       else user_overrides$model_correlation$top_n
-      result$model_correlation_interpretable_models <- sprintf(
-        "Interpretable models: %s",
-        paste(unlist(Filter(.interpretable,
-                            .model_ids(
-                              head(models_info$models,
-                                   n = min(top_n, length(models_info$models))
-                              )))),sep = ", ")
-      )
+
+      interpretable_models <- unlist(Filter(.interpretable,
+                                            .model_ids(
+                                              head(models_info$models,
+                                                   n = min(top_n, length(models_info$models))
+                                              ))))
+      if (length(interpretable_models) > 0) {
+        result$model_correlation_interpretable_models <- sprintf(
+          "Interpretable models: %s",
+          paste(interpretable_models, collapse = ", ")
+        )
+      }
     }
   }
 
@@ -2083,8 +2093,8 @@ h2o.explain_row <- function(object,
 .onLoad <- function(...) {
   registerS3method("print", "explanation", "print.explanation")
   if ("repr" %in% loadedNamespaces()) {
-    registerS3method("repr_text", "explanation", "repr_text.explanation", envir=asNamespace("repr"))
-    registerS3method("repr_html", "explanation", "repr_html.explanation", envir=asNamespace("repr"))
+    registerS3method("repr_text", "explanation", "repr_text.explanation", envir = asNamespace("repr"))
+    registerS3method("repr_html", "explanation", "repr_html.explanation", envir = asNamespace("repr"))
   }
   invisible()
 }
