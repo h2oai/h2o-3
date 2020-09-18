@@ -410,7 +410,7 @@ class ModelBase(h2o_meta(Keyed)):
     
         Type: ``float``
         """
-        tree_algos = ['gbm', 'drf', 'isolationforest', 'xgboost']
+        tree_algos = ['gbm', 'drf', 'isolationforest', 'xgboost', 'extendedisolationforest']
         if self._model_json["algo"] in tree_algos:
             return self.summary()['number_of_trees'][0]
         print("No actual number of trees for this model")    
