@@ -145,7 +145,7 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
           );
           encodings.delete();
           encodings = finalEncodings;
-          DKV.remove(encodings._key);
+          if (encodings._key != null) DKV.remove(encodings._key);
           encodings._key = Key.make(_result.toString()+"_encodings_"+columnToEncode);
           DKV.put(encodings);
           columnToEncodings.put(columnToEncode, encodings);
