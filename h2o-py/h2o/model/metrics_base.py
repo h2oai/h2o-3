@@ -171,7 +171,7 @@ class MetricsBase(h2o_meta()):
             self.confusion_matrix().show()
             self.hit_ratio_table().show()
             print("Multinomial AUC: "+ str(self.multinomial_auc()))
-            print("Multinomial PR AUC:"+ str(self.multinomial_pr_auc()))
+            print("Multinomial PR AUC:"+ str(self.multinomial_aucpr()))
         if metric_type in types_w_clustering:
             print("Total Within Cluster Sum of Square Error: " + str(self.tot_withinss()))
             print("Total Sum of Square Error to Grand Mean: " + str(self.totss()))

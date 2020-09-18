@@ -361,8 +361,8 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         }
       } else {
         for (int i=0; i<_aucsMatrix.length-1; i++){
-          for (int j=1; j<_aucsMatrix[0].length; j++){
-            if(i != j) {
+          for (int j=i+1; j<_aucsMatrix[0].length; j++){
+            if(i < j) {
               aucsPairs[aucsIndex++] = new PairwiseAUC(new AUC2(), new AUC2(), i, j, _domain[i], _domain[j]);
             }
           }
