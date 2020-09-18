@@ -16,14 +16,44 @@ def import_dataset(seed=0, mode='binary'):
         regression='fare'
     )[mode]
     
-    fr = df.split_frame(ratios=[.8,.1], seed=seed)
-    return pu.ns(train=fr[0], valid=fr[1], test=fr[2], target=target)
+    fr = df.split_frame(ratios=[.8], seed=seed)
+    return pu.ns(train=fr[0], test=fr[1], target=target)
 
 
-def test_target_encoding():
-    ds = import_dataset()
-    aml = H2OAutoML(project_name="automl_with_te",
-                    max_models=3,
+def test_target_encoding_binary():
+    ds = import_dataset(mode='binary')
+    aml = H2OAutoML(project_name="automl_with_te_binary",
+                    max_models=5,
+                    preprocessing=['targetencoding'],
+                    seed=1)
+    aml.train(y=ds.target, training_frame=ds.train, leaderboard_frame=ds.test)
+    lb = aml.leaderboard
+    print(lb)
+    # we can't really verify from client if TE was correctly applied... so just using a poor man's check:
+    mem_keys = h2o.ls().key
+    # print(mem_keys)
+    assert any(k.startswith("TargetEncoding_AutoML") for k in mem_keys)
+
+
+def test_target_encoding_multiclass():
+    ds = import_dataset(mode='multiclass')
+    aml = H2OAutoML(project_name="automl_with_te_multiclass",
+                    max_models=5,
+                    preprocessing=['targetencoding'],
+                    seed=1)
+    aml.train(y=ds.target, training_frame=ds.train, leaderboard_frame=ds.test)
+    lb = aml.leaderboard
+    print(lb)
+    # we can't really verify from client if TE was correctly applied... so just using a poor man's check:
+    mem_keys = h2o.ls().key
+    # print(mem_keys)
+    assert any(k.startswith("TargetEncoding_AutoML") for k in mem_keys)
+    
+    
+def test_target_encoding_regression():
+    ds = import_dataset(mode='regression')
+    aml = H2OAutoML(project_name="automl_with_te_regression",
+                    max_models=5,
                     preprocessing=['targetencoding'],
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train, leaderboard_frame=ds.test)
@@ -36,5 +66,7 @@ def test_target_encoding():
 
 
 pu.run_tests([
-    test_target_encoding,
+    test_target_encoding_binary,
+    test_target_encoding_multiclass,
+    test_target_encoding_regression
 ])
