@@ -122,4 +122,5 @@ Examples
 References
 ~~~~~~~~~~
 
-FRIEDMAN, J. H., & POPESCU, B. E. (2008). Predictive learning via rule ensembles. The Annals of Applied Statistics, 2(3), 916-954.
+`Friedman, J. H., & Popescu, B. E. (2008). Predictive learning via rule ensembles. The Annals of Applied Statistics, 2(3), 916-954.  <https://arxiv.org/abs/0811.1679>`__
+
