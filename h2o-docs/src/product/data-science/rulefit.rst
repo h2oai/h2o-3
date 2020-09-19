@@ -113,7 +113,7 @@ Examples
 					     max_num_rules=100, 
 					     seed = 1234, 
 					     model_type="rules_and_linear")
-		rf_h2o.train(training_frame=df, x=x, y=y)
+		rfit.train(training_frame=df, x=x, y=y)
 
 		# Retrieve the rule importance:
 		print(rfit._model_json['output']['rule_importance'])
