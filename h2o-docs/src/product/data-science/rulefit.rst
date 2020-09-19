@@ -33,7 +33,7 @@ Defining a RuleFit Model (Beta API)
 
 - **max_num_rules**: The maximum number of rules to return. Defaults to -1, which means the number of rules are selected by diminishing returns in model deviance.
 
-- **model_type**: Specify the type of base learners in the ensemble. Must be one of: "RULES_AND_LINEAR", "RULES", or "LINEAR". Defaults to "RULES_AND_LINEAR".
+- **model_type**: Specify the type of base learners in the ensemble. Must be one of: "rules_and_linear", "rules", or "linear". Defaults to "rules_and_linear".
 
 - `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
 
