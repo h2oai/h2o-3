@@ -19,8 +19,8 @@
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @param algorithm The algorithm to use to generate rules. Must be one of: "AUTO", "DRF", "GBM". Defaults to AUTO.
-#' @param min_rule_length Minimum length of rules. Defaults to 1. Defaults to 1.
-#' @param max_rule_length Maximum length of rules. Defaults to 10. Defaults to 10.
+#' @param min_rule_length Minimum length of rules. Defaults to 1.
+#' @param max_rule_length Maximum length of rules. Defaults to 10.
 #' @param max_num_rules The maximum number of rules to return. defaults to -1 which means the number of rules is selected  by
 #'        diminishing returns in model deviance. Defaults to -1.
 #' @param model_type Specifies type of base learners in the ensemble. Must be one of: "rules_and_linear", "rules", "linear". Defaults to rules_and_linear.
@@ -42,7 +42,7 @@
 #' predictors <- c("age", "sibsp", "parch", "fare", "sex", "pclass")
 #' titanic[,response] <- as.factor(titanic[,response])
 #' titanic[,"pclass"] <- as.factor(titanic[,"pclass"])
-#' rf_h2o = h2o.rulefit(y=response, x=predictors, training_frame = titanic, max_rule_length=10, 
+#' rfit = h2o.rulefit(y=response, x=predictors, training_frame = titanic, max_rule_length=10, 
 #' max_num_rules=100, seed=1234, model_type="rules")
 #' }
 #' @export

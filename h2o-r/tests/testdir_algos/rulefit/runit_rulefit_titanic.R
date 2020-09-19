@@ -15,8 +15,16 @@ test.rulefit.titanic <- function() {
     titanic[,response] <- as.factor(titanic[,response])
     titanic[,"pclass"] <- as.factor(titanic[,"pclass"])
 
-    rf_h2o = h2o.rulefit(y=response, x=predictors, training_frame = titanic, max_rule_length=10, max_num_rules=100, seed=1234, model_type="rules")
+    # Split the dataset into train and test
+    splits <- h2o.splitFrame(data = titanic, ratios = .8, seed = 1234)
+    train <- splits[[1]]
+    test <- splits[[2]]
 
+    rfit = h2o.rulefit(y=response, x=predictors, training_frame = train, max_rule_length=10, max_num_rules=100, seed=1234, model_type="rules")
+
+    print(rfit@model$rule_importance)
+
+    h2o.predict(rfit, newdata=test)
     print(rf_h2o@model$rule_importance)
 
     expect_that(h2o.auc(h2o.performance(rf_h2o)), equals(h2o.auc(h2o.performance(rf_h2o, newdata =  titanic))))

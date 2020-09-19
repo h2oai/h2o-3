@@ -24,6 +24,8 @@ classification.
     params=dict(
         model_type="Specifies type of base learners in the ensemble. Must be one of: \"rules_and_linear\", \"rules\", \"linear\". "
                    "Defaults to rules_and_linear.",
+        min_rule_length="Minimum length of rules. Defaults to 1.",
+        max_rule_length="Maximum length of rules. Defaults to 10."
     ),
     signatures=dict(
         model_type="c(\"rules_and_linear\", \"rules\", \"linear\")"
@@ -38,7 +40,7 @@ response = "survived"
 predictors <- c("age", "sibsp", "parch", "fare", "sex", "pclass")
 titanic[,response] <- as.factor(titanic[,response])
 titanic[,"pclass"] <- as.factor(titanic[,"pclass"])
-rf_h2o = h2o.rulefit(y=response, x=predictors, training_frame = titanic, max_rule_length=10, 
+rfit = h2o.rulefit(y=response, x=predictors, training_frame = titanic, max_rule_length=10, 
 max_num_rules=100, seed=1234, model_type="rules")
 """
 )
