@@ -42,7 +42,7 @@ Defining a DRF Model
 -  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate
    the accuracy of the model.
 
--  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. This option defaults to 0.
+-  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. This option defaults to 0 (no cross-validation).
 
 -  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
@@ -50,12 +50,12 @@ Defining a DRF Model
 
 -  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option is enabled by default.
 
--  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation prediction. This option is disabled by default.
+-  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation prediction. This option is defaults to false (not enabled).
 
--  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. This option is disabled by default.
+-  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. This option is defaults to false (not enabled).
 
 -  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Enable this option to score
-   during each iteration of the model training. This option defaults to false.
+   during each iteration of the model training. This option is defaults to false (not enabled).
 
 -  `score_tree_interval <algo-params/score_tree_interval.html>`__: Score the model after every so many trees.
    Disabled if set to 0 (default).
@@ -82,8 +82,7 @@ Defining a DRF Model
    the **Select Visible** or **Deselect Visible** buttons.
 
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant
-   training columns, since no information can be gained from them. This
-   option is enabled by default.
+   training columns, since no information can be gained from them. This option is defaults to true (enabled).
 
 -  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation
    weights, which are used for bias correction. The specified
@@ -94,10 +93,7 @@ Defining a DRF Model
     
    | **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
--  `balance_classes <algo-params/balance_classes.html>`__: Oversample the minority classes to balance the
-   class distribution. This option is disabled by default and can
-   increase the data frame size. This option is only applicable for
-   classification.
+-  `balance_classes <algo-params/balance_classes.html>`__: Oversample the minority classes to balance the class distribution. This option is defaults to false (not enabled), and can increase the data frame size. This option is only applicable for classification.
 
 -  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. Note that this requires ``balance_classes=true``.
 
@@ -178,7 +174,7 @@ Defining a DRF Model
    consistent for each H2O instance so that you can create models with
    the same starting conditions in alternative configurations. This value defaults to -1 (time-based random number).
 
--  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. This option is disabled by default.
+-  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. This option is defaults to false (not enabled).
 
 -  `mtries <algo-params/mtries.html>`__: Specify the columns to randomly select at each level. If the default value of ``-1`` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors). If ``-2`` is specified, all features of DRF are used. Valid values for this option are -2, -1 (default), and any value >= 1.
 
@@ -189,7 +185,7 @@ Defining a DRF Model
 -  `binomial_double_trees <algo-params/binomial_double_trees.html>`__: (Binary classification only) Build twice
    as many trees (one per class). Enabling this option can lead to
    higher accuracy, while disabling can result in faster model building.
-   This option is disabled by default.
+   This option is defaults to false (not enabled).
 
 -  `checkpoint <algo-params/checkpoint.html>`__: Enter a model key associated with a
    previously trained model. Use this option to build a new model as a
@@ -234,7 +230,7 @@ Defining a DRF Model
 
 -  `calibration_frame <algo-params/calibration_frame.html>`__: Specifies the frame to be used for Platt scaling.
 
--  **verbose**: Print scoring history to the console. For DRF, metrics are per tree. This value defaults to FALSE.
+-  **verbose**: Print scoring history to the console. For DRF, metrics are per tree. This option is defaults to false (not enabled).
 
 -  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
 
@@ -242,7 +238,7 @@ Defining a DRF Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
--  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not. This option is disabled by default.
+-  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not. This option is defaults to false (not enabled).
 
 - `gainslift_bins <algo-params/gainslift_bins.html>`__: The number of bins for a Gains/Lift table. The default value is ``-1`` and makes the binning automatic. To disable this feature, set to ``0``.
 

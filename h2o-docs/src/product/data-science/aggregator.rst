@@ -35,9 +35,9 @@ Defining an Aggregator Model
 
 -  **rel_tol_num_exemplars**: Specify the relative tolerance for the number of exemplars (e.g, 0.5 is +/- 50 percent). This value defaults to 0.5.
 
--  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data: None, Standardize, Normalize (default), Demean, or Descale. 
+-  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data: None, Standardize, Normalize (default), Demean, or Descale.
 
--  `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
+-  `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features (defaults to AUTO):
 
   - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In Aggregator, the algorithm will automatically perform ``enum`` encoding.
   - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels 

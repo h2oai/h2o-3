@@ -28,7 +28,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate the accuracy of the model.
 
--  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. This option defaults to 0.
+-  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. This option defaults to 0 (no cross-validation).
    
     **Note**: Cross-validation is not supported when autoencoder is enabled.
 
@@ -213,31 +213,31 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  **score_validation_sampling**: Specify the method used to sample validation dataset for scoring. This value can be either  "Uniform" (default) or "Stratified".
 
--  **diagnostics**: Specify whether to compute the variable importances for input features (using the Gedeon method). For large networks, enabling this option can reduce speed. This option is enabled by default.
+-  **diagnostics**: Specify whether to compute the variable importances for input features (using the Gedeon method). For large networks, enabling this option can reduce speed. This option is defaults to true (enabled).
 
--  **fast_mode**: Specify whether to enable fast mode, a minor approximation in back-propagation. This option is enabled by default.
+-  **fast_mode**: Specify whether to enable fast mode, a minor approximation in back-propagation. This option is defaults to true (enabled).
 
--  **force_load_balance**: Specify whether to force extra load balancing to increase training speed for small datasets and use all cores. This option is enabled by default.
+-  **force_load_balance**: Specify whether to force extra load balancing to increase training speed for small datasets and use all cores. This option is defaults to true (enabled).
 
--  **variable_importances**: Specify whether to compute variable importance. This option is disabled by default.
+-  **variable_importances**: Specify whether to compute variable importance. This option is defaults to false (not enabled).
 
--  **replicate_training_data**: Specify whether to replicate the entire training dataset onto every node for faster training on small datasets. This option is enabled by default.
+-  **replicate_training_data**: Specify whether to replicate the entire training dataset onto every node for faster training on small datasets. This option is defaults to true (enabled).
 
--  `single_node_mode <algo-params/single_node_mode.html>`__: Specify whether to run on a single node for fine-tuning of model parameters. This option defaults to false.
+-  `single_node_mode <algo-params/single_node_mode.html>`__: Specify whether to run on a single node for fine-tuning of model parameters. This option is defaults to false (not enabled).
 
--  **shuffle_training_data**: Specify whether to shuffle the training data. This option is recommended if the training data is replicated and the value of **train_samples_per_iteration** is close to the number of nodes times the number of rows. This option is disabled by default.
+-  **shuffle_training_data**: Specify whether to shuffle the training data. This option is recommended if the training data is replicated and the value of **train_samples_per_iteration** is close to the number of nodes times the number of rows. This option is defaults to false (not enabled).
 
 -  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values (Skip or MeanImputation). This option defaults to MeanImputation.
 
--  **quiet_mode**: Specify whether to display less output in the standard output. This option is not enabled by default.
+-  **quiet_mode**: Specify whether to display less output in the standard output. This option is defaults to false (not enabled).
 
--  **autoencoder**: Specify whether to enable the Deep Learning autoencoder. This option is not enabled by default. 
+-  **autoencoder**: Specify whether to enable the Deep Learning autoencoder. This option is defaults to false (not enabled). 
    
     **Note**: Cross-validation is not supported when autoencoder is enabled.
 
--  **sparse**: Specify whether to enable sparse data handling, which is more efficient for data with many zero values. This option is not enabled by default.
+-  **sparse**: Specify whether to enable sparse data handling, which is more efficient for data with many zero values. This option is defaults to false (not enabled).
 
--  **col_major**: Specify whether to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not enabled by default.
+-  **col_major**: Specify whether to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is defaults to false (not enabled).
 
 -  **average_activation**: Specify the average activation for the sparse autoencoder. If **Rectifier** is used, the **average_activation** value must be positive. This option defaults to 0.
 
@@ -245,9 +245,9 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  **max_categorical_features**: Specify the maximum number of categorical features enforced via hashing. The value must be at least one. This option defaults to 2147483647.
 
--  **reproducible**: Specify whether to force reproducibility on small data. If this option is enabled, the model takes more time to generate because it uses only one thread. This option is not enabled by default.
+-  **reproducible**: Specify whether to force reproducibility on small data. If this option is enabled, the model takes more time to generate because it uses only one thread. This option is defaults to false (not enabled).
 
--  **export_weights_and_biases**: Specify whether to export the neural network weights and biases as H2O frames. This option is not enabled by default.
+-  **export_weights_and_biases**: Specify whether to export the neural network weights and biases as H2O frames. This option is defaults to false (not enabled).
 
 -  **mini_batch_size**: Specify a value for the mini-batch size. (Smaller values lead to a better fit; larger values can speed up and generalize better.) This option defaults to 1.
 
@@ -262,7 +262,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
   **Note**: This value defaults to ``one_hot_internal``. Similarly, if ``auto`` is specified, then the algorithm performs ``one_hot_internal`` encoding. 
 
--  **elastic_averaging**: Specify whether to enable elastic averaging between computing nodes, which can improve distributed model convergence. This option is not enabled by default.
+-  **elastic_averaging**: Specify whether to enable elastic averaging between computing nodes, which can improve distributed model convergence. This option is defaults to false (not enabled).
 
 -  **elastic_averaging_moving_rate**: Specify the moving rate for elastic averaging. This option is only available if ``elastic_averaging=True``. This option defaults to 0.9.
 
@@ -270,7 +270,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
--  **verbose**: Print scoring history to the console. For Deep Learning, metrics are per epoch. This value defaults to FALSE.
+-  **verbose**: Print scoring history to the console. For Deep Learning, metrics are per epoch. This option is defaults to false (not enabled).
 
 
 Interpreting a Deep Learning Model
