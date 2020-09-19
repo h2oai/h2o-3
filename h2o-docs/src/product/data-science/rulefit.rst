@@ -116,7 +116,7 @@ Examples
 		rf_h2o.train(training_frame=df, x=x, y=y)
 
 		# Retrieve the rule importance:
-		print(rf_h2o._model_json['output']['rule_importance'])
+		print(rfit._model_json['output']['rule_importance'])
 
 
 References
