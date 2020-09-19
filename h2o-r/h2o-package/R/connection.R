@@ -788,13 +788,13 @@ h2o.clusterStatus <- function() {
 
   # Download if h2o.jar doesn't already exist or user specifies force overwrite
   if (nzchar(own_jar) && is_url(own_jar)) {
-    h2o_url = own_jar # md5 must have same file name and .md5 suffix
-    md5_url = paste(own_jar, ".md5", sep="")
+    h2o_url <- own_jar # md5 must have same file name and .md5 suffix
+    md5_url <- paste(own_jar, ".md5", sep = "")
   } else {
     base_url <- paste("s3.amazonaws.com/h2o-release/h2o", branch, version, "Rjar", sep = "/")
     h2o_url <- paste("https:/", base_url, "h2o.jar", sep = "/")
     # Get MD5 checksum
-    md5_url <- paste("http:/", base_url, "h2o.jar.md5", sep = "/")
+    md5_url <- paste("https:/", base_url, "h2o.jar.md5", sep = "/")
   }
   # ttt <- getURLContent(md5_url, binary = FALSE)
   # tcon <- textConnection(ttt)
