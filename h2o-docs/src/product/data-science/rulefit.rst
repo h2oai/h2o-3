@@ -91,7 +91,7 @@ Examples
 		rf_h2o = h2o.rulefit(y = response, x = predictions, training_frame = titanic, max_rule_length = 10, max_num_rules = 100, seed = 1234)
 
 		# Retrieve the rule importance:
-		print(rf_h2o@model$rule_importance)
+		print(rfit@model$rule_importance)
 
 
 	.. code-tab:: python
