@@ -1,6 +1,9 @@
 package ai.h2o.automl.preprocessing;
 
 import ai.h2o.automl.AutoML;
+import ai.h2o.automl.AutoMLBuildSpec;
+import ai.h2o.automl.AutoMLBuildSpec.AutoMLBuildControl;
+import ai.h2o.automl.AutoMLBuildSpec.AutoMLInput;
 import ai.h2o.targetencoding.TargetEncoder;
 import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
@@ -22,6 +25,7 @@ import java.util.*;
 public class TargetEncoding implements PreprocessingStep {
     
     static String TE_FOLD_COLUMN_SUFFIX = "_te_fold";
+    private static final Completer NOOP = () -> {};
     
     private AutoML _aml;
     private TargetEncoderPreprocessor _tePreprocessor;
@@ -42,24 +46,28 @@ public class TargetEncoding implements PreprocessingStep {
     public void prepare() {
         Frame amlTrain = _aml.getTrainingFrame();
         Set<String> teColumns = selectColumnsToEncode(amlTrain);
+        if (teColumns.isEmpty()) return;
+
+        AutoMLInput amlInput = _aml.getBuildSpec().input_spec;
+        AutoMLBuildControl amlBuild = _aml.getBuildSpec().build_control;
         TargetEncoderParameters params = new TargetEncoderParameters();
         params._train = amlTrain._key;
-        params._response_column = _aml.getBuildSpec().input_spec.response_column;
+        params._response_column = amlInput.response_column;
         params._keep_original_categorical_columns = false;
         params._blending = true;
         params._noise = 0;
-        params._seed = _aml.getBuildSpec().build_control.stopping_criteria.seed();
+        params._seed = amlBuild.stopping_criteria.seed();
         
         if (_aml.isCVEnabled()) {
             params._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
-            params._fold_column = _aml.getBuildSpec().input_spec.fold_column;
+            params._fold_column = amlInput.fold_column;
             if (params._fold_column == null) {
                 //generate fold column
                 Frame train = new Frame(params.train());
                 Vec foldColumn = createFoldColumn(
                         params.train(), 
                         FoldAssignmentScheme.Modulo,
-                        _aml.getBuildSpec().build_control.nfolds,
+                        amlBuild.nfolds,
                         params._response_column,
                         params._seed
                 );
@@ -85,6 +93,8 @@ public class TargetEncoding implements PreprocessingStep {
 
     @Override
     public Completer apply(Model.Parameters params) {
+        if (_tePreprocessor == null) return NOOP;
+        
         params._preprocessors = (Key<ModelPreprocessor>[])ArrayUtils.append(params._preprocessors, _tePreprocessor._key);
         
         Frame train = new Frame(params.train());
@@ -126,20 +136,18 @@ public class TargetEncoding implements PreprocessingStep {
 
     private Set<String> selectColumnsToEncode(Frame fr) {
         Set<String> encode = new HashSet<>();
-        if (_cardinalityThreshold > 0) {
-            for (int i = 0; i < fr.names().length; i++) {
-                if (fr.vec(i).cardinality() >= _cardinalityThreshold) encode.add(fr.name(i));
-            }
-        } else {
-            encode.addAll(Arrays.asList(fr.names()));
+        for (int i = 0; i < fr.names().length; i++) {
+            if (fr.vec(i).cardinality() >= _cardinalityThreshold) encode.add(fr.name(i));
         }
-        return encode;
-    }
 
-    public static final String[] ignoredColumns(final Frame frame, final String... keep) {
-        Set<String> ignored = new HashSet(Arrays.asList(frame.names()));
-        ignored.removeAll(Arrays.asList(keep));
-        return ignored.toArray(new String[ignored.size()]);
+        AutoMLInput amlInput = _aml.getBuildSpec().input_spec;
+        List<String> nonPredictors = Arrays.asList(
+                amlInput.weights_column,
+                amlInput.fold_column,
+                amlInput.response_column
+        );
+        encode.removeAll(nonPredictors);
+        return encode;
     }
 
     TargetEncoderPreprocessor getTEPreprocessor() {

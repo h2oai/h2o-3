@@ -184,7 +184,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    * @return An instance of {@link Frame} with transformed fr, registered in DKV.
    */
   public Frame transform(Frame fr, boolean asTraining, int outOfFold, BlendingParams blendingParams, double noiseLevel) {
-    if (!canApplyTargetEncoding(fr)) return new Frame(fr);
+    if (!canApplyTargetEncoding(fr)) return fr;
     Frame adaptFr = null;
     try {
       adaptFr = adaptForEncoding(fr);
