@@ -33,7 +33,7 @@ test.grid.resume <- function() {
                                          seed = 1234,
                                          ntrees = 10,
                                          sample_size = 10)
-    predictions <- h2o::h2o.predict(model, test)
+    predictions <- h2o.predict(model, test)
     threshold <- h2o.quantile(probs = c(0.8), x = predictions)["predictQuantiles"]
     print(threshold)
     labels_test <- predictions > threshold
