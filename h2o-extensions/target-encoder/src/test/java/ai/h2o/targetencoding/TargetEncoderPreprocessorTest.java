@@ -135,7 +135,7 @@ public class TargetEncoderPreprocessorTest {
                 model.getMojo().writeTo(modelOutput);
             }
             try(ZipFile zf = new ZipFile(mojoFile)) { 
-                ZipEntry preprocessor = zf.getEntry("experimental/preprocessor_0/model.ini");
+                ZipEntry preprocessor = zf.getEntry("preprocessing/preprocessor_0/model.ini");
                 assertNotNull(preprocessor);
             }
 
