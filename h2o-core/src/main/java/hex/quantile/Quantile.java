@@ -131,7 +131,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
                                    double prob,
                                    Vec response, // response
                                    Vec weights,  // obs weights
-                                   Vec strata,   // stratification (can be null)
+                                   Vec strata,   // stratification
                                    QuantileModel.CombineMethod combine_method) {
       super(cc); _response = response; _prob=prob; _combine_method=combine_method; _weights=weights; _strata=strata;
     }
