@@ -8,6 +8,7 @@ import ai.h2o.targetencoding.TargetEncoderPreprocessor;
 import hex.Model;
 import hex.SplitFrame;
 import hex.ensemble.StackedEnsembleModel;
+import hex.glm.GLMModel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -184,8 +185,8 @@ public class TargetEncodingTest {
             autoMLBuildSpec.input_spec.leaderboard_frame = test._key;
             autoMLBuildSpec.input_spec.response_column = "survived";
             autoMLBuildSpec.build_control.stopping_criteria.set_max_models(15); // sth big enough to test all algos+grids with TE
+            autoMLBuildSpec.build_control.stopping_criteria.set_seed(42);
             autoMLBuildSpec.build_control.nfolds = 3;
-//            autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.GLM}; // one key leaking with GLM, investigating
             autoMLBuildSpec.build_models.preprocessing = new PreprocessingStepDefinition[] {
                     new PreprocessingStepDefinition(Type.TargetEncoding)
             };
@@ -194,7 +195,7 @@ public class TargetEncodingTest {
             aml.get();
             System.out.println(aml.leaderboard().toTwoDimTable());
             for (Model m : aml.leaderboard().getModels()) {
-                if (m instanceof StackedEnsembleModel) {
+                if (m instanceof StackedEnsembleModel || m instanceof GLMModel) {
                     assertNull(m._parms._preprocessors);
                 } else {
                     assertNotNull(m._parms._preprocessors);

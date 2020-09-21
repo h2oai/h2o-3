@@ -116,7 +116,8 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
             final Value keyValue = Value.STORE_get(key);
             if (keyValue != null && keyValue.isFrame()) {
                 Frame frame = (Frame) key.get();
-                Log.err(String.format("Leaked frame with key '%s'. This frame contains the following vectors:", frame._key.toString()));
+                Log.err(String.format("Leaked frame with key '%s' and columns '%s'. This frame contains the following vectors:", 
+                        frame._key.toString(), Arrays.toString(frame.names())));
 
                 for (Key vecKey : frame.keys()) {
                     if (!leakedKeysSet.contains(vecKey)) continue;

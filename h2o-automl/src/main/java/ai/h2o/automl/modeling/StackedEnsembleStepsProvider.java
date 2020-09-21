@@ -53,7 +53,8 @@ public class StackedEnsembleStepsProvider
 
             @Override
             protected boolean acceptPreprocessing(PreprocessingStepDefinition.Type type) {
-                if (type == PreprocessingStepDefinition.Type.TargetEncoding) return false;  //SE should not have TE applied, the base models already do it.
+                //SE should not have TE applied, the base models already do it.
+                if (type == PreprocessingStepDefinition.Type.TargetEncoding) return false;
                 return super.acceptPreprocessing(type);
             }
 

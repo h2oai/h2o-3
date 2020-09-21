@@ -73,7 +73,8 @@ public class TargetEncoding implements PreprocessingStep {
                 );
                 DKV.put(foldColumn);
                 params._fold_column = params._response_column+TE_FOLD_COLUMN_SUFFIX;
-                addFoldColumn(train, params._fold_column, foldColumn, params._train.toString());
+                train.add(params._fold_column, foldColumn);
+                register(train, params._train.toString(), true);
                 params._train = train._key;
                 _disposables.add(() -> {
                     foldColumn.remove();
@@ -101,7 +102,8 @@ public class TargetEncoding implements PreprocessingStep {
         String foldColumn = _teModel._parms._fold_column;
         boolean addFoldColumn = foldColumn != null && train.find(foldColumn) < 0;
         if (addFoldColumn) {
-            addFoldColumn(train, foldColumn, _teModel._parms._train.get().vec(foldColumn), params._train.toString());
+            train.add(foldColumn,  _teModel._parms._train.get().vec(foldColumn));
+            register(train, params._train.toString(), true);
             params._train = train._key;
             params._fold_column = foldColumn;
             params._nfolds = 0; // to avoid confusion or errors
@@ -158,14 +160,15 @@ public class TargetEncoding implements PreprocessingStep {
         return _teModel;
     }
 
-    private static void addFoldColumn(Frame fr, String name, Vec foldColumn, String keyPrefix) {
-        fr.add(name, foldColumn);
-        if (fr._key == null) 
+    private static void register(Frame fr, String keyPrefix, boolean force) {
+        Key<Frame> key = fr._key;
+        if (key == null || force)
             fr._key = keyPrefix == null ? Key.make() : Key.make(keyPrefix+"_"+Key.rand());
+        if (force) DKV.remove(key);
         DKV.put(fr);
     }
 
-    private static Vec createFoldColumn(Frame fr,
+    public static Vec createFoldColumn(Frame fr,
                                         FoldAssignmentScheme fold_assignment,
                                         int nfolds,
                                         String responseColumn,
