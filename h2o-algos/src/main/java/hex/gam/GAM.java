@@ -372,8 +372,12 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       for (int index = 0; index < numGamFrame; index++) {
         final Vec weights_column = (_parms._weights_column == null) ? Vec.makeOne(_parms.train().numRows()) 
                 : _parms.train().vec(_parms._weights_column);
-        final Frame predictVec = new Frame(new String[]{_parms._gam_columns[index], "weights_column"}, 
-                new Vec[]{_parms.train().vec(_parms._gam_columns[index]), weights_column});  // extract the vector to work on
+/*        final Frame predictVec = new Frame(new String[]{_parms._gam_columns[index], "weights_column"}, 
+                new Vec[]{_parms.train().vec(_parms._gam_columns[index]), weights_column});  // extract the vector to work on*/
+        final Frame predictVec = new Frame();
+        predictVec.add(_parms._gam_columns[index], _parms._train.get().vec(_parms._gam_columns[index]));
+        predictVec.add("weights_column", weights_column);
+        
         final int numKnots = _parms._num_knots[index];  // grab number of knots to generate
         final int numKnotsM1 = numKnots - 1;
         final int splineType = _parms._bs[index];
@@ -390,7 +394,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           @Override
           protected void compute() {
             GenerateGamMatrixOneColumn genOneGamCol = new GenerateGamMatrixOneColumn(splineType, numKnots, 
-                    _knots[frameIndex], predictVec).doAll(numKnots, Vec.T_NUM, predictVec);
+                    _knots[frameIndex], predictVec).doAll(numKnots, Vec .T_NUM,predictVec);
             if (_parms._savePenaltyMat)  // only save this for debugging
               GamUtils.copy2DArray(genOneGamCol._penaltyMat, _penalty_mat[frameIndex]); // copy penalty matrix
               // calculate z transpose
