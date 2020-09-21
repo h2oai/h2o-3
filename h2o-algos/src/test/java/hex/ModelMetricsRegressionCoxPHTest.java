@@ -1,12 +1,13 @@
 package hex;
 
-//import hex.ModelMetricsRegressionCoxPH.StatTree;
 import hex.ModelMetricsRegressionCoxPH.StatTree;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.RandomUtils;
 
 import java.util.Collections;
@@ -16,9 +17,10 @@ import static hex.ModelMetricsRegressionCoxPH.MetricBuilderRegressionCoxPH.conco
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class ModelMetricsRegressionCoxPHTest extends TestUtil {
     
-    @BeforeClass
     public static void setup() { stall_till_cloudsize(1); }
 
     @Test
@@ -173,6 +175,7 @@ public class ModelMetricsRegressionCoxPHTest extends TestUtil {
             final Vec starts = Scope.track(Vec.makeCon(0.0, len));
             final Vec times = Scope.track(Vec.makeCon(0.0, len).makeRand(0));
             final Vec status = Scope.track(Vec.makeOne(len, Vec.T_CAT));
+            status.setDomain(new String[]{"0", "1"});
 
             new MRTask() {
                 @Override
@@ -259,10 +262,6 @@ public class ModelMetricsRegressionCoxPHTest extends TestUtil {
             }
 
             final StatTree statTree = new StatTree(values);
-
-//            System.out.println("-----------------");
-//            System.out.println(statTree);
-//            System.out.println("-----------------");
 
             for (double value : values) {
                 statTree.insert(value);

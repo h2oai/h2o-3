@@ -1,14 +1,21 @@
 package hex;
 
+import water.DKV;
+import water.Key;
+import water.MRTask;
+import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 
 import java.util.*;
+
 import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
 
 import org.apache.commons.lang.ArrayUtils;
+import water.rapids.Merge;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.*;
@@ -163,48 +170,146 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
     static Stats concordance(final Vec startVec, final Vec stopVec, final Vec eventVec, List<Vec> strataVecs, final Vec estimateVec) {
       final long length = estimateVec.length();
 
-      final Stats stats = concordanceStats(null == startVec ? null : startVec.new Reader(), 
-              stopVec.new Reader(), eventVec.new Reader(),
-              strataVecs.stream().map(it -> it.new Reader()).collect(toList()),
-              estimateVec.new Reader(), length);
+      Scope.enter();
 
-      return stats;
+      try {
+        final Vec durations = durations(startVec, stopVec);
+        final Frame fr = prepareFrameForConcordanceComputation(eventVec, strataVecs, estimateVec, durations);
+        return concordanceStats(fr, length);
+      } finally {
+        Scope.exit();
+      }
     }
 
-    private static Stats concordanceStats(Vec.Reader startVec, Vec.Reader stopVec, Vec.Reader eventVec, List<Vec.Reader> strataVecs, Vec.Reader estimateVec, long length) {
-      assert 0 <= length && length <= Integer.MAX_VALUE;
-      
-      Collection<List<Integer>> byStrata =
-        IntStream.range(0, (int) length)
-                 .filter(i -> !estimateVec.isNA(i) && !stopVec.isNA(i) && (null == startVec || !startVec.isNA(i)))
-                 .boxed()
-                 .collect(groupingBy(
-                      i -> strataVecs.stream()
-                              .map(v -> v.at8(i))
-                              .collect(toList())
-                 )).values();
-
-      return byStrata.stream()
-        .map(
-          indexes -> statsForAStrata(startVec, stopVec, eventVec, estimateVec, indexes)
-        ).reduce(new Stats(), Stats::plus);
+    private static Frame prepareFrameForConcordanceComputation(Vec eventVec, List<Vec> strataVecs, Vec estimateVec, Vec durations) {
+      final Frame fr = new Frame(Key.make());
+      fr.add("duration", durations);
+      fr.add("event", eventVec);
+      fr.add("estimate", estimateVec);
+      for (int i = 0; i < strataVecs.size(); i++) {
+        fr.add("strata_" + i, strataVecs.get(i));
+      }
+      DKV.put(fr);
+      Scope.track(fr);
+      return fr;
     }
 
-    private static Stats statsForAStrata(Vec.Reader startVec, Vec.Reader stopVec, Vec.Reader eventVec, Vec.Reader estimateVec, List<Integer> indexes) {
-      int[] indexesOfDead = indexes.stream()
-                                   .filter(i -> 0 != eventVec.at(i))
-                                   .sorted(Comparator.<Integer>comparingDouble(i -> deadTime(startVec, stopVec, i)))
-                                   .mapToInt(Integer::intValue)
-                                   .toArray();
+    private static Vec durations(Vec startVec, Vec stopVec) {
+      Vec vec = null == startVec ? stopVec.makeZero() : startVec;
+      Frame fr1 = new Frame(Key.make(), new String[]{"start", "stop"}, new Vec[]{vec, stopVec});
+      DKV.put(fr1);
+
+      Scope.track(fr1);
+      Frame frame = Scope.track(new MRTask() {
+        @Override
+        public void map(Chunk c0, Chunk c1, NewChunk nc) {
+          for (int i = 0; i < c0._len; i++)
+            nc.addNum(c1.atd(i) - c0.atd(i));
+        }
+      }.doAll(1, Vec.T_NUM, fr1)
+              .outputFrame(Key.make("durations_" + fr1._key), new String[]{"durations"}, null));
+      Scope.track(frame);
+      return frame.vec(0);
+    }
+
+    private static Stats concordanceStats(Frame fr, long length){
+      final Frame withoutNas = removeNAs(fr);
+
+      final int[] stratasAndDuration = new int[withoutNas.numCols() - 2];
+        final int[] strataIndexes = new int[withoutNas.numCols() - 3];
+        for (int i = 0; i < strataIndexes.length; i++) {
+          stratasAndDuration[i] = i + 3;
+          strataIndexes[i] = i + 3;
+        }
+        stratasAndDuration[withoutNas.numCols() - 3] = 0;
+
+        if (0 == withoutNas.numRows()) {
+          return new Stats();
+        }
+
+        final Frame sorted = withoutNas.sort(stratasAndDuration);
+
+        final List<Vec.Reader> strataCols = stream(strataIndexes).boxed().map(i -> sorted.vec(i).new Reader()).collect(toList());
+
+        long lastStart = 0L;
+        List lastRow = new ArrayList(sorted.numCols() - 3);
+        Stats statsAcc = new Stats();
+
+        for (long i = 0; i < sorted.numRows(); i++) {
+          final List row = new ArrayList(sorted.numCols() - 3);
+          for (Vec.Reader strataCol : strataCols) {
+            row.add(strataCol.at(i));
+          }
+
+          if (!lastRow.equals(row)) {
+            lastRow = row;
+            Stats stats = statsForAStrata(sorted.vec("duration").new Reader()
+                    , sorted.vec("event").new Reader()
+                    , sorted.vec("estimate").new Reader()
+                    , lastStart
+                    , i);
+            lastStart = i;
+
+            statsAcc = statsAcc.plus(stats);
+          }
+        }
+
+      Stats stats = statsForAStrata( sorted.vec("duration").new Reader()
+                                   , sorted.vec("event").new Reader()
+                                   , sorted.vec("estimate").new Reader()
+                                   , lastStart
+                                   , sorted.numRows());
+
+
+      return statsAcc.plus(stats);
+    }
+
+    private static Frame removeNAs(Frame fr) {
+      final int[] iDontWantNAsInThisCols = new int[]{0, 2};
+
+      final Frame withoutNas = new Merge.RemoveNAsTask(iDontWantNAsInThisCols)
+                                        .doAll(fr.types(), fr)
+                                        .outputFrame(Key.make(), fr.names(), fr.domains());
+      DKV.put(withoutNas);
+
+      withoutNas.replace(1, withoutNas.vec("event").toNumericVec());
+
+      Scope.track(withoutNas);
+      return withoutNas;
+    }
+
+    private static Stats statsForAStrata(Vec.Reader duration, Vec.Reader eventVec, Vec.Reader estimateVec, long firstIndex, long lastIndex) {
+      if (lastIndex == firstIndex) {
+        return new Stats();
+      }
       
-      int[] indexesOfCensored = indexes.stream()
-                                       .filter(i -> 0 == eventVec.at(i))
-                                       .sorted(Comparator.<Integer>comparingDouble(i -> deadTime(startVec, stopVec, i)))
-                                       .mapToInt(Integer::intValue)
-                                       .toArray(); 
+      int countOfCensored = 0;
+      int countOfDead = 0;
+      
+      for (long i = firstIndex; i < lastIndex; i++) {
+        if (0 == eventVec.at(i)) {
+          countOfCensored++;
+        } else {
+          countOfDead++;
+        }
+      }
+      
+      long[] indexesOfDead = new long[countOfDead];
+      long[] indexesOfCensored = new long[countOfCensored];
 
-      assert indexesOfCensored.length + indexesOfDead.length == indexes.size();
-
+      countOfCensored = 0;
+      countOfDead = 0;
+      
+      for (long i = firstIndex; i < lastIndex; i++) {
+        if (0 == eventVec.at(i)) {
+          indexesOfCensored[countOfCensored++] = i;
+        } else {
+          indexesOfDead[countOfDead++] = i;
+        }
+      } 
+      
+      assert indexesOfCensored.length + indexesOfDead.length == lastIndex - firstIndex;
+      
       int diedIndex = 0;
       int censoredIndex = 0;
 
@@ -220,7 +325,7 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
         final boolean hasMoreDead = diedIndex < indexesOfDead.length;
 
         // Should we look at some censored indices next, or died indices?
-        if (hasMoreCensored && (!hasMoreDead || deadTime(startVec, stopVec, indexesOfDead[diedIndex]) > deadTime(startVec, stopVec,indexesOfCensored[censoredIndex]))) {
+        if (hasMoreCensored && (!hasMoreDead || deadTime(duration, indexesOfDead[diedIndex]) > deadTime(duration,indexesOfCensored[censoredIndex]))) {
           final PairStats pairStats = handlePairs(indexesOfCensored, estimateVec, censoredIndex, timesToCompare);
 
           nTotals += pairStats.pairs;
@@ -228,7 +333,7 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
           nTied += pairStats.tied;
 
           censoredIndex = pairStats.next_ix;
-        } else if (hasMoreDead && (!hasMoreCensored || deadTime(startVec, stopVec, indexesOfDead[diedIndex]) <= deadTime(startVec, stopVec, indexesOfCensored[censoredIndex]))) {
+        } else if (hasMoreDead && (!hasMoreCensored || deadTime(duration, indexesOfDead[diedIndex]) <= deadTime(duration, indexesOfCensored[censoredIndex]))) {
           final PairStats pairStats = handlePairs(indexesOfDead, estimateVec, diedIndex, timesToCompare);
 
           for (int i = diedIndex; i < pairStats.next_ix; i++) {
@@ -250,10 +355,10 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
       return new Stats(nTotals, nConcordant, nTied);
     }
 
-    private static double deadTime(Vec.Reader startVec, Vec.Reader stopVec, int i) {
-      return startVec == null ? stopVec.at(i) : stopVec.at(i) - startVec.at(i);
+    private static double deadTime(Vec.Reader duration, long i) {
+      return duration.at(i);
     }
-    private static double estimateTime(Vec.Reader estimateVec, int i) {
+    private static double estimateTime(Vec.Reader estimateVec, long i) {
       return -estimateVec.at(i);
     }
 
@@ -281,7 +386,7 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
       }
     }
 
-    static PairStats handlePairs(int[] truth, Vec.Reader estimateVec, int first_ix, StatTree statTree) {
+    static PairStats handlePairs(long[] truth, Vec.Reader estimateVec, int first_ix, StatTree statTree) {
       int next_ix = first_ix;
 
       while (next_ix < truth.length && truth[next_ix] == truth[first_ix]) {
@@ -442,7 +547,6 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
     }
     
     RankAndCount rankAndCount(double value) {
-//      System.out.println("v=" + value);
       int i = 0;
       int rank = 0;
       long count = 0;
