@@ -1,7 +1,9 @@
 package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
+import ai.h2o.automl.preprocessing.PreprocessingConfig;
 import ai.h2o.automl.preprocessing.PreprocessingStepDefinition;
+import ai.h2o.automl.preprocessing.TargetEncoding;
 import hex.Model;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
@@ -38,10 +40,11 @@ public class GLMStepsProvider
             }
             
             @Override
-            protected boolean acceptPreprocessing(PreprocessingStepDefinition.Type type) {
+            protected PreprocessingConfig getPreprocessingConfig() {
                 //GLM (the exception as usual) doesn't support preprocessing as it's initializing its lambdas + other params before CV (preventing changes in train frame during CV).
-                if (type == PreprocessingStepDefinition.Type.TargetEncoding) return false;  
-                return super.acceptPreprocessing(type);
+                PreprocessingConfig config = super.getPreprocessingConfig();
+                config.put(TargetEncoding.CONFIG_PREPARE_CV_ONLY, true);
+                return config;
             }
         }
 

@@ -1,5 +1,6 @@
 package ai.h2o.automl.preprocessing;
 
+import ai.h2o.automl.ModelingStep;
 import hex.Model;
 
 public interface PreprocessingStep<T> {
@@ -19,7 +20,7 @@ public interface PreprocessingStep<T> {
      * @return a function used to "complete" the preprocessing step: it is called by default at the end of the job creating model(s) from the given parms.
      * This can mean for example cleaning the temporary artifacts that may have been created to apply the preprocessing step.
      */
-    Completer apply(Model.Parameters params);
+    Completer apply(Model.Parameters params, PreprocessingConfig config);
 
     /**
      * preprocessing steps are disposed by default at the end of the AutoML training session.

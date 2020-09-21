@@ -9,6 +9,7 @@ import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.leaderboard.Leaderboard;
+import ai.h2o.automl.preprocessing.PreprocessingConfig;
 import ai.h2o.automl.preprocessing.PreprocessingStep;
 import ai.h2o.automl.preprocessing.PreprocessingStepDefinition;
 import hex.Model;
@@ -215,17 +216,14 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     protected void applyPreprocessing(Model.Parameters params) {
         if (aml().getPreprocessing() == null) return;
         for (PreprocessingStep preprocessingStep : aml().getPreprocessing()) {
-            if (acceptPreprocessing(PreprocessingStepDefinition.Type.valueOf(preprocessingStep.getType()))) {
-                PreprocessingStep.Completer complete = preprocessingStep.apply(params);
-                _onDone.add(j -> complete.run());
-            }
+            PreprocessingStep.Completer complete = preprocessingStep.apply(params, getPreprocessingConfig());
+            _onDone.add(j -> complete.run());
         }
     }
     
-    protected boolean acceptPreprocessing(PreprocessingStepDefinition.Type type) {
-        return true;
+    protected PreprocessingConfig getPreprocessingConfig() {
+        return new PreprocessingConfig();
     }
-    
 
     /**
      * Configures early-stopping for the model or set of models to be built.

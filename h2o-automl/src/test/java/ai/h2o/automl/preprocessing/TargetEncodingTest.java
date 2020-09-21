@@ -88,7 +88,7 @@ public class TargetEncodingTest {
             params._nfolds = 0;
             params._fold_column = null;
 
-            PreprocessingStep.Completer complete = te.apply(params);
+            PreprocessingStep.Completer complete = te.apply(params, new PreprocessingConfig());
             assertEquals(0, params._nfolds);
             assertNull(params._fold_column);
             complete.run();
@@ -120,7 +120,7 @@ public class TargetEncodingTest {
             params._nfolds = nfolds;
             params._fold_column = null;
 
-            PreprocessingStep.Completer complete = te.apply(params);
+            PreprocessingStep.Completer complete = te.apply(params, new PreprocessingConfig());
             assertEquals(0, params._nfolds);
             assertNotNull(params._fold_column);
             assertEquals(te.getTEModel()._parms._fold_column, params._fold_column);
@@ -156,7 +156,7 @@ public class TargetEncodingTest {
             params._nfolds = 0;
             params._fold_column = "foldc";
 
-            PreprocessingStep.Completer complete = te.apply(params);
+            PreprocessingStep.Completer complete = te.apply(params, new PreprocessingConfig());
             assertEquals(0, params._nfolds);
             assertNotNull(params._fold_column);
             assertEquals("foldc", params._fold_column);

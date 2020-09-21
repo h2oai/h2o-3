@@ -3,13 +3,13 @@ package ai.h2o.automl.modeling;
 import ai.h2o.automl.*;
 import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.events.EventLogEntry;
+import ai.h2o.automl.preprocessing.PreprocessingConfig;
 import ai.h2o.automl.preprocessing.PreprocessingStepDefinition;
+import ai.h2o.automl.preprocessing.TargetEncoding;
 import hex.KeyValue;
 import hex.Model;
-import hex.ensemble.Metalearner;
 import hex.ensemble.StackedEnsembleModel;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
-import hex.glm.GLMModel;
 import water.DKV;
 import water.Job;
 import water.Key;
@@ -52,10 +52,11 @@ public class StackedEnsembleStepsProvider
             }
 
             @Override
-            protected boolean acceptPreprocessing(PreprocessingStepDefinition.Type type) {
+            protected PreprocessingConfig getPreprocessingConfig() {
                 //SE should not have TE applied, the base models already do it.
-                if (type == PreprocessingStepDefinition.Type.TargetEncoding) return false;
-                return super.acceptPreprocessing(type);
+                PreprocessingConfig config = super.getPreprocessingConfig();
+                config.put(TargetEncoding.CONFIG_ENABLED, false);
+                return config;
             }
 
             @Override

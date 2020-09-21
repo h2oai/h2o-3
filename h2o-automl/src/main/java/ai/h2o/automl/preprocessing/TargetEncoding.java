@@ -4,6 +4,7 @@ import ai.h2o.automl.AutoML;
 import ai.h2o.automl.AutoMLBuildSpec;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLBuildControl;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLInput;
+import ai.h2o.automl.ModelingStep;
 import ai.h2o.targetencoding.TargetEncoder;
 import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
@@ -23,6 +24,9 @@ import water.util.ArrayUtils;
 import java.util.*;
 
 public class TargetEncoding implements PreprocessingStep {
+    
+    public static String CONFIG_ENABLED = "target_encoding_enabled";
+    public static String CONFIG_PREPARE_CV_ONLY = "target_encoding_prepare_cv_only";
     
     static String TE_FOLD_COLUMN_SUFFIX = "_te_fold";
     private static final Completer NOOP = () -> {};
@@ -93,10 +97,11 @@ public class TargetEncoding implements PreprocessingStep {
     }
 
     @Override
-    public Completer apply(Model.Parameters params) {
-        if (_tePreprocessor == null) return NOOP;
+    public Completer apply(Model.Parameters params, PreprocessingConfig config) {
+        if (_tePreprocessor == null || !config.getBoolean(CONFIG_ENABLED, true)) return NOOP;
         
-        params._preprocessors = (Key<ModelPreprocessor>[])ArrayUtils.append(params._preprocessors, _tePreprocessor._key);
+        if (!config.getBoolean(CONFIG_PREPARE_CV_ONLY, false))
+            params._preprocessors = (Key<ModelPreprocessor>[])ArrayUtils.append(params._preprocessors, _tePreprocessor._key);
         
         Frame train = new Frame(params.train());
         String foldColumn = _teModel._parms._fold_column;
