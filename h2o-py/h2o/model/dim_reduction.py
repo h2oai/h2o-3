@@ -107,7 +107,7 @@ class H2ODimReductionModel(ModelBase):
             raise ValueError("Unknown arguments %s to screeplot()" % ", ".join(kwargs.keys()))
         try:
             import matplotlib
-            if is_server: matplotlib.use('Agg', warn=False)
+            if is_server: matplotlib.use('Agg')
             import matplotlib.pyplot as plt
         except ImportError:
             print("matplotlib is required for this function!")

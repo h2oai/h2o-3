@@ -1720,7 +1720,7 @@ def _get_matplotlib_pyplot(server):
     try:
         # noinspection PyUnresolvedReferences
         import matplotlib
-        if server: matplotlib.use("Agg", warn=False)
+        if server: matplotlib.use("Agg")
         # noinspection PyUnresolvedReferences
         import matplotlib.pyplot as plt
         return plt
