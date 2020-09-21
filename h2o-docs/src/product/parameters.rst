@@ -43,6 +43,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/estimate_k
    data-science/algo-params/exclude_algos
    data-science/algo-params/export_checkpoints_dir
+   data-science/algo-params/extension_level
    data-science/algo-params/family
    data-science/algo-params/fold_assignment
    data-science/algo-params/fold_column
