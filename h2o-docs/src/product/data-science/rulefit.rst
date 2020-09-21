@@ -79,26 +79,25 @@ Examples
 
 		# Import the titanic dataset:
 		f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
-		titanic <- h2o.importFile(f)
+		coltypes <- list(by.col.name = c("pclass", "survived"), types=c("Enum", "Enum"))
+		df <- h2o.importFile(f, col.types = coltypes)
 
-	        # Split the dataset into train and test
-	        splits <- h2o.splitFrame(data = titanic, ratios = .8, seed = 1234)
-	        train <- splits[[1]]
-	        test <- splits[[2]]
+		# Split the dataset into train and test
+		splits <- h2o.splitFrame(data = df, ratios = 0.8, seed = 1)
+		train <- splits[[1]]
+		test <- splits[[2]]
 
 		# Set the predictors and response; set the factors:
-		response = "survived"
+		response <- "survived"
 		predictors <- c("age", "sibsp", "parch", "fare", "sex", "pclass")
-		titanic[,response] <- as.factor(titanic[,response])
-		titanic[,"pclass"] <- as.factor(titanic[,"pclass"])
 
 		# Build and train the model:
-		rfit = h2o.rulefit(y = response, 
-				   x = predictions, 
-				   training_frame = train, 
-				   max_rule_length = 10, 
-				   max_num_rules = 100, 
-				   seed = 1234)
+		rfit <- h2o.rulefit(y = response,
+		                    x = predictors,
+		                    training_frame = train,
+		                    max_rule_length = 10,
+		                    max_num_rules = 100,
+		                    seed = 1)
 
 		# Retrieve the rule importance:
 		print(rfit@model$rule_importance)
@@ -114,21 +113,20 @@ Examples
 		from h2o.estimators import H2ORuleFitEstimators
 
 		# Import the titanic dataset and set the column types:
-		df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv", 
-				     col_types={'pclass': "enum", 'survived': "enum"})
+		f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
+		df = h2o.import_file(path=f, col_types={'pclass': "enum", 'survived': "enum"})
 
-	        # Split the dataset into train and test
-	        train, test = df.split_frame(ratios=[.8], seed=1234)
+		# Split the dataset into train and test
+		train, test = df.split_frame(ratios=[0.8], seed=1)
 
 		# Set the predictors and response:
 		x = ["age", "sibsp", "parch", "fare", "sex", "pclass"]
 		y = "survived"
 
 		# Build and train the model:
-		rf_h2o = H2ORuleFitEstimator(max_rule_length=10, 
-					     max_num_rules=100, 
-					     seed = 1234, 
-					     model_type="rules_and_linear")
+		rfit = H2ORuleFitEstimator(max_rule_length=10, 
+		                           max_num_rules=100, 
+		                           seed=1)
 		rfit.train(training_frame=train, x=x, y=y)
 
 		# Retrieve the rule importance:
