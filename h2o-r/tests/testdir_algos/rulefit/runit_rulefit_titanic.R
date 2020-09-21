@@ -20,15 +20,15 @@ test.rulefit.titanic <- function() {
     train <- splits[[1]]
     test <- splits[[2]]
 
-    rfit = h2o.rulefit(y=response, x=predictors, training_frame = train, max_rule_length=10, max_num_rules=100, seed=1234, model_type="rules")
+    rf_h2o = h2o.rulefit(y=response, x=predictors, training_frame = train, max_rule_length=10, max_num_rules=100, seed=1234, model_type="rules")
 
-    print(rfit@model$rule_importance)
-
-    h2o.predict(rfit, newdata=test)
     print(rf_h2o@model$rule_importance)
 
-    expect_that(h2o.auc(h2o.performance(rf_h2o)), equals(h2o.auc(h2o.performance(rf_h2o, newdata =  titanic))))
-    expect_that(h2o.logloss(h2o.performance(rf_h2o)), equals(h2o.logloss(h2o.performance(rf_h2o, newdata =  titanic))))
+    h2o.predict(rf_h2o, newdata=test)
+    print(rf_h2o@model$rule_importance)
+
+    expect_that(h2o.auc(h2o.performance(rf_h2o)), equals(h2o.auc(h2o.performance(rf_h2o, newdata =  test))))
+    expect_that(h2o.logloss(h2o.performance(rf_h2o)), equals(h2o.logloss(h2o.performance(rf_h2o, newdata =  test))))
   
 }
 
