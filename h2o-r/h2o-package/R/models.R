@@ -5054,20 +5054,3 @@ h2o.reset_threshold <- function(object, threshold) {
     return(NULL)
   }
 }
-
-#'
-#' Retrieve rule importances for a Rulefit model
-#'
-#' @param object An \linkS4class{H2OTable} object.
-#' @export
-h2o.get_rule_importance <- function(object) {
-    o <- object
-    if( is(o, "H2OModel") & o@algorithm == "rulefit" ) {
-        sh <- o@model$rule_importance
-        if( is.null(sh) ) return(NULL)
-        sh
-    } else {
-        warning(paste0("This function is available for Rulefit models only"))
-        return(NULL)
-    }
-}
