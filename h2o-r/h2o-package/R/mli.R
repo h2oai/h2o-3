@@ -51,14 +51,22 @@ with_no_h2o_progress <- function(expr) {
            startsWith(model@model_id, "XRT"))
 }
 
+#' Is the model considered to be interpretable, i.e., simple enough.
+#'
+#' @param model_id string containing model id
+#' @return boolean
 .interpretable <- function(model_id) {
-  grepl("^(GLM|GAM)", model_id)
+  grepl("^(GLM|GAM|RuleFit)", model_id)
 }
 
-.get_feature_frequencies <- function(column) {
+#' Get feature count sorted by the count descending.
+#'
+#' @param column H2OFrame column
+#' @return named vector with feature counts
+.get_feature_count <- function(column) {
   desc <- Count <- NULL  # To keep R check as CRAN quiet
   tbl <- h2o.arrange(h2o.table(column), desc(Count))
-  unlist(stats::setNames(as.list(tbl[, 2]), as.list(tbl[, 1])))
+  return(unlist(stats::setNames(as.list(tbl[, 2]), as.list(tbl[, 1]))))
 }
 
 #' Get Model Ids
@@ -82,6 +90,9 @@ with_no_h2o_progress <- function(expr) {
   })
 }
 
+#' Has the model variable importance?
+#' @param model_id string containing model id
+#' @return boolean
 .has_varimp <- function(model_id) {
   !startsWith(model_id, "StackedEnsemble") && !startsWith(model_id, "Naive")
 }
@@ -438,6 +449,11 @@ with_no_h2o_progress <- function(expr) {
   }
 }
 
+#' Plot variable importances.
+#'
+#' @param model H2OModel
+#' @param newdata H2OFrame
+#' @return list of variable importance, groupped variable importance, and variable importance plot
 .plot_varimp <- function(model, newdata) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
@@ -461,6 +477,14 @@ with_no_h2o_progress <- function(expr) {
   })
 }
 
+#' Enhence leaderboard with per model predictions.
+#'
+#' @param models_info models_info object
+#' @param test_frame H2OFrame
+#' @param row_index index of the inspected row
+#' @param top_n leaderboard will contain top_n models
+#'
+#' @return H2OFrame
 .leaderboard_for_row <- function(models_info, test_frame, row_index, top_n = 10) {
   leaderboard <- .create_leaderboard(models_info, test_frame)
   top_n <- min(top_n, nrow(leaderboard))
@@ -485,6 +509,9 @@ with_no_h2o_progress <- function(expr) {
   return(leaderboard)
 }
 
+#' Min-max normalization.
+#' @param col numeric vector
+#' @return normalized numeric vector
 .min_max <- function(col) {
   rng <- range(col, na.rm = TRUE)
   if (rng[[2]] == rng[[1]]) {
@@ -493,6 +520,11 @@ with_no_h2o_progress <- function(expr) {
   return((col - rng[[1]]) / (rng[[2]] - rng[[1]]))
 }
 
+#' Convert to quantiles when provided with numeric vector.
+#' When col is a factor vector assign uniformly value between 0 and 1 to each level.
+#'
+#' @param col vector
+#' @return vector with values between 0 and 1
 .uniformize <- function(col) {
   if (is.factor(col)) {
     return(.min_max(as.numeric(col) / nlevels(col)))
@@ -537,10 +569,12 @@ with_no_h2o_progress <- function(expr) {
 .plotlyfy <- function(gg) {
   gp <- plotly::ggplotly(gg, width = 940, height = 700, tooltip = "text")
 
-  # Hack to fix plotly legend
+  # Hack to fix plotly legend - without this hack some legends are shown in
+  # a format of "(actual legend, 1)"
   for (i in seq_len(length(gp$x$data))) {
     if (!is.null(gp$x$data[[i]]$name))
-      gp$x$data[[i]]$name <- gsub("^\\((.*)\\s*,\\s*\\d+(?:,\\s*NA\\s*)?\\)$", "\\1", gp$x$data[[i]]$name)
+      gp$x$data[[i]]$name <- gsub("^\\((.*)\\s*,\\s*\\d+(?:,\\s*NA\\s*)?\\)$",
+                                  "\\1", gp$x$data[[i]]$name)
   }
   return(gp)
 }
@@ -632,8 +666,11 @@ with_no_h2o_progress <- function(expr) {
   }
 }
 
+#' Check if we are plotting in to r notebook.
+#' @return boolean
 .is_plotting_to_rnotebook <- function() {
   grDevices::graphics.off()
+  # dev.capabilities()$locator is T when chunk output is set to the console
   .Platform$GUI == "RStudio" && !grDevices::dev.capabilities()$locator
 }
 
@@ -655,42 +692,45 @@ with_no_h2o_progress <- function(expr) {
   return(string)
 }
 
-.describe <- function(func) {
-  if (!is.character(func)) {
-    func <- as.character(substitute(func, environment()))
-  }
+.describe <- function(explanation) {
   # TODO: make sure to put some meaningful descriptions
   .explanation_description(
-    switch(func,
-           h2o.shap_summary_plot =
-             "SHAP summary plot shows contribution of features for each instance.",
-           h2o.shap_explain_row =
-             "SHAP explain single instance shows contribution of features for a given instance.",
-           h2o.variable_importance_heatmap =
-             "Variable importance heatmap shows variable importances on multiple models.
-           By default, the models are ordered by their similarity.",
-           h2o.model_correlation =
-             "Model correlation matrix shows correlation between prediction of the models.
-           For classification, frequency of same predictions is used.",
-           h2o.residual_analysis =
-             "Residual analysis plot shows predicted vs fitted values.",
-           h2o.partial_dependences =
-             "Partial dependence plot gives a graphical depiction of the marginal effect
-           of a variable on the response. The effect of a variable is measured in change in
-           the mean response.",
-           h2o.individual_conditional_expectations =
-             "Individual conditional expectations plot gives a graphical depiction of the marginal
-             effect of a variable on the response for a given row.",
-           h2o.confusionMatrix =
-             "Confusion matrix shows a predicted class vs an actual class.",
-           h2o.varimp =
-             "Variable importance shows how much do the predictions depend on what variable.",
-           h2o.get_leaderboard =
-             "Leaderboard shows models with their metrics.",
-           .leaderboard_for_row =
-             "Leaderboard shows models with their metrics and their predictions for a given row.",
-
-           stop("Unknown function \"", func, "\".")
+    switch(explanation,
+           leaderboard="Leaderboard shows models with their metrics.",
+           leaderboard_row="Leaderboard shows models with their metrics and their predictions for a given row.",
+           confusion_matrix="Confusion matrix shows a predicted class vs an actual class.",
+           residual_analysis=paste0("Residual analysis plot shows residuals vs fitted values. ",
+           "Ideally, residuals should be randomly distributed. Patterns in this plot can indicate ",
+           "potential problems with the model selection, e.g., using simpler model than necessary, ",
+           "not accounting for heteroscedasticity, autocorrelation etc."),
+           variable_importance="Variable importance shows how much do the predictions depend on what variable.",
+           variable_importance_heatmap=paste0("Variable importance heatmap shows variable importances on multiple models. ",
+           "By default, the models and variables are ordered by their similarity."),
+           model_correlation_heatmap=paste0("Model correlation matrix shows correlation between prediction of the models. ",
+           "For classification, frequency of same predictions is used. By default, models ",
+           "are ordered by their similarity."),
+           shap_summary=paste0("SHAP summary plot shows contribution of features for each instance. The sum ",
+           "of the feature contributions and the bias term is equal to the raw prediction ",
+           "of the model, i.e., prediction before applying inverse link function."),
+           pdp=paste0("Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable ",
+           "on the response. The effect of a variable is measured in change in the mean response. ",
+           "PDP assumes independence between the feature for which is the PDP computed and the rest."),
+           ice=paste0("Individual conditional expectations (ICE) plot gives a graphical depiction of the marginal ",
+           "effect of a variable on the response. ICE plot is similar to partial dependence plot (PDP), ",
+           "PDP shows the average effect of a feature while ICE plot shows the effect for a single ",
+           "instance. The following plot shows the effect for each decile. ",
+           "In contrast to partial dependence plot, ICE plot can provide more insight especially when ",
+           "there is stronger feature interaction."),
+           ice_row=paste0("Individual conditional expectations (ICE) plot gives a graphical depiction of the marginal ",
+           "effect of a variable on the response for a given row. ICE plot is similar to partial ",
+           "dependence plot (PDP), PDP shows the average effect of a feature while ICE plot shows ",
+           "the effect for a single instance."),
+           shap_explanation=paste0("SHAP explanation shows contribution of features for a given instance. The sum ",
+           "of the feature contributions and the bias term is equal to the raw prediction ",
+           "of the model, i.e., prediction before applying inverse link function. H2O implements ",
+           "TreeSHAP which when the features are correlated, can increase contribution of a feature ",
+           "that had no influence on the prediction."),
+           stop("Unknown explanation \"", explanation, "\".")
     )
   )
 }
@@ -1347,7 +1387,7 @@ h2o.partial_dependences <- function(object,
   .data <- NULL
   models_info <- .process_models_or_automl(object, newdata, best_of_family = best_of_family)
   if (h2o.nlevels(newdata[[column]]) > max_factors) {
-    factor_frequencies <- .get_feature_frequencies(newdata[[column]])
+    factor_frequencies <- .get_feature_count(newdata[[column]])
     factors_to_merge <- tail(names(factor_frequencies), n = -max_factors)
     newdata[[column]] <- ifelse(newdata[[column]] %in% factors_to_merge, NA_character_,
                                 newdata[[column]])
@@ -1406,13 +1446,20 @@ h2o.partial_dependences <- function(object,
           ymax = .data$mean_response + .data$stddev_response,
           group = .data$target
         )) +
-        ggplot2::labs(
+        ggplot2::geom_rug(ggplot2::aes(x = .data[[make.names(column)]], y = NULL),
+                          sides = "b", alpha = 0.1, color = "black",
+                          data = rug_data
+        )
+      if (row_index > -1) {
+       p <- p + ggplot2::geom_vline(xintercept = newdata[row_index, column], linetype = "dashed")
+      }
+      p <- p + ggplot2::labs(
           title = sprintf(
             "%s on \"%s\"%s",
             if (row_index == -1) {
               "Partial Dependence"
             } else {
-              "Individual Conditional Expectation"
+              sprintf("Individual Conditional Expectation on row %d", row_index)
             },
             column,
             if (!is.null(target)) {
@@ -1493,13 +1540,17 @@ h2o.partial_dependences <- function(object,
       ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL),
                         sides = "b", alpha = 0.1, color = "black",
                         data = rug_data
-      ) +
+      )
+    if (row_index > -1) {
+      p <- p + ggplot2::geom_vline(xintercept = newdata[row_index, column], linetype = "dashed")
+    }
+    p <- p +
       ggplot2::labs(y = "Mean Response", title = sprintf(
         "%s on \"%s\"%s",
         if (row_index == -1) {
           "Partial Dependence"
         } else {
-          "Individual Conditional Expectation"
+          sprintf("Individual Conditional Expectation on row %d", row_index)
         },
         column,
         if (!is.null(target)) {
@@ -1543,7 +1594,7 @@ h2o.individual_conditional_expectations <- function(model,
 
   with_no_h2o_progress({
     if (h2o.nlevels(newdata[[column]]) > max_factors) {
-      factor_frequencies <- .get_feature_frequencies(newdata[[column]])
+      factor_frequencies <- .get_feature_count(newdata[[column]])
       factors_to_merge <- tail(names(factor_frequencies), n = -max_factors)
       newdata[[column]] <- ifelse(newdata[[column]] %in% factors_to_merge, NA_character_,
                                   newdata[[column]])
@@ -1689,7 +1740,7 @@ h2o.explain <- function(object,
     "residual_analysis",
     "variable_importance",
     "variable_importance_heatmap",
-    "model_correlation",
+    "model_correlation_heatmap",
     "shap_summary",
     "pdp",
     "ice"
@@ -1753,7 +1804,7 @@ h2o.explain <- function(object,
 
   if (models_info$has_leaderboard && !"leaderboard" %in% skip_explanations) {
     result <- append(result, .explanation_header("Leaderboard"))
-    result <- append(result, .describe("h2o.get_leaderboard"))
+    result <- append(result, .describe("leaderboard"))
     result$leaderboard <- .create_leaderboard(models_info, test_frame)
   }
 
@@ -1761,7 +1812,7 @@ h2o.explain <- function(object,
   if (models_info$is_classification) {
     if (!"confusion_matrix" %in% skip_explanations) {
       result <- append(result, .explanation_header("Confusion Matrix"))
-      result <- append(result, .describe("h2o.confusionMatrix"))
+      result <- append(result, .describe("confusion_matrix"))
       for (m in models_info$models) {
         result$confusion_matrix[[m@model_id]][[1]] <- .explanation_header(m@model_id, 2)
         result$confusion_matrix[[m@model_id]][[2]] <- .customized_call(
@@ -1776,7 +1827,7 @@ h2o.explain <- function(object,
   } else {
     if (!"residual_analysis" %in% skip_explanations) {
       result <- append(result, .explanation_header("Residual Analysis"))
-      result <- append(result, .describe("h2o.residual_analysis"))
+      result <- append(result, .describe("residual_analysis"))
 
       for (m in models_info$models) {
         result$residual_analysis[[m@model_id]] <- .customized_call(
@@ -1793,7 +1844,7 @@ h2o.explain <- function(object,
   # feature importance
   if (!"variable_importance" %in% skip_explanations) {
     result <- append(result, .explanation_header("Variable Importance"))
-    result <- append(result, .describe("h2o.varimp"))
+    result <- append(result, .describe("variable_importance"))
     varimp <- NULL
     for (m in models_info$models) {
       tmp <- .plot_varimp(m, test_frame)
@@ -1818,7 +1869,7 @@ h2o.explain <- function(object,
     if (!"variable_importance_heatmap" %in% skip_explanations) {
       if (length(Filter(function(m_id) !startsWith(m_id, "Stacked"), .model_ids(models_info$models))) > 1) {
         result <- append(result, .explanation_header("Variable Importance Heatmap"))
-        result <- append(result, .describe("h2o.variable_importance_heatmap"))
+        result <- append(result, .describe("variable_importance_heatmap"))
         result$variable_importance_heatmap <- .customized_call(h2o.variable_importance_heatmap,
                                                                object = models_info,
                                                                newdata = test_frame,
@@ -1828,9 +1879,9 @@ h2o.explain <- function(object,
     }
 
     # Model Correlation
-    if (!"model_correlation" %in% skip_explanations) {
+    if (!"model_correlation_heatmap" %in% skip_explanations) {
       result <- append(result, .explanation_header("Model Correlation"))
-      result <- append(result, .describe("h2o.model_correlation"))
+      result <- append(result, .describe("model_correlation_heatmap"))
       result$model_correlation <- .customized_call(h2o.model_correlation,
                                                    object = models_info,
                                                    newdata = test_frame,
@@ -1858,7 +1909,7 @@ h2o.explain <- function(object,
     num_of_tree_models <- sum(sapply(models_info$models, .is_h2o_tree_model))
     if (num_of_tree_models > 0) {
       result <- append(result, .explanation_header("SHAP Summary"))
-      result <- append(result, .describe("h2o.shap_summary_plot"))
+      result <- append(result, .describe("shap_summary"))
       for (m in Filter(.is_h2o_tree_model, models_info$models)) {
         result$shap_summary[[m@model_id]] <- .customized_call(
           h2o.shap_summary_plot,
@@ -1874,7 +1925,7 @@ h2o.explain <- function(object,
   # PDP
   if (!"pdp" %in% skip_explanations) {
     result <- append(result, .explanation_header("Partial Dependence Plots"))
-    result <- append(result, .describe("h2o.partial_dependences"))
+    result <- append(result, .describe("pdp"))
     for (col in columns_of_interrest) {
       if (!multiple_models) {
         result$partial_dependences[[col]] <- .customized_call(
@@ -1918,7 +1969,7 @@ h2o.explain <- function(object,
   # ICE quantiles
   if (!"ice" %in% skip_explanations) {
     result <- append(result, .explanation_header("Individual Conditional Expectations"))
-    result <- append(result, .describe("h2o.individual_conditional_expectations"))
+    result <- append(result, .describe("ice"))
     for (col in columns_of_interrest) {
       for (m in models_info$models) {
         if (models_info$is_multinomial_classification) {
@@ -2032,13 +2083,13 @@ h2o.explain_row <- function(object,
 
   if (models_info$has_leaderboard && !"leaderboard" %in% skip_explanations) {
     result <- append(result, .explanation_header("Leaderboard"))
-    result <- append(result, .describe(".leaderboard_for_row"))
+    result <- append(result, .describe("leaderboard_row"))
     result$leaderboard <- .leaderboard_for_row(models_info, test_frame, row_index)
   }
 
   if (!"shap_explanation" %in% skip_explanations && !models_info$is_multinomial_classification) {
     result <- append(result, .explanation_header("SHAP explanation"))
-    result <- append(result, .describe("h2o.shap_explain_row"))
+    result <- append(result, .describe("shap_explanation"))
     tree_models <- Filter(.is_h2o_tree_model, models_info$models)
     for (m in tree_models) {
       result$shap_explain_row[[m@model_id]] <- .customized_call(

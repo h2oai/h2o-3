@@ -70,20 +70,37 @@ class Description:
         leaderboard="Leaderboard shows models with their metrics.",
         leaderboard_row="Leaderboard shows models with their metrics and their predictions for a given row.",
         confusion_matrix="Confusion matrix shows a predicted class vs an actual class.",
-        residual_analysis="Residual analysis plot shows predicted vs fitted values.",
+        residual_analysis="Residual analysis plot shows residuals vs fitted values. "
+                          "Ideally, residuals should be randomly distributed. Patterns in this plot can indicate "
+                          "potential problems with the model selection, e.g., using simpler model than necessary, "
+                          "not accounting for heteroscedasticity, autocorrelation etc.",
         variable_importance="Variable importance shows how much do the predictions depend on what variable.",
-        variable_importance_heatmap="Variable importance heatmap shows variable importances on multiple models."
-                                    " By default, the models are ordered by their similarity.",
+        variable_importance_heatmap="Variable importance heatmap shows variable importances on multiple models. "
+                                    "By default, the models and variables are ordered by their similarity.",
         model_correlation_heatmap="Model correlation matrix shows correlation between prediction of the models. "
-                                  "For classification, frequency of same predictions is used.",
-        shap_summary="SHAP summary plot shows contribution of features for each instance.",
-        pdp="Partial dependence plot gives a graphical depiction of the marginal effect of a variable on the response. "
-            "The effect of a variable is measured in change in the mean response.",
-        ice="Individual conditional expectations plot gives a graphical depiction of the marginal "
-            "effect of a variable on the response for a given row.",
-        ice_row="Individual conditional expectations plot gives a graphical depiction of the marginal "
-                "effect of a variable on the response for a given row.",
-        shap_explanation="SHAP explain single instance shows contribution of features for a given instance.",
+                                  "For classification, frequency of same predictions is used. By default, models "
+                                  "are ordered by their similarity.",
+        shap_summary="SHAP summary plot shows contribution of features for each instance. The sum "
+                     "of the feature contributions and the bias term is equal to the raw prediction "
+                     "of the model, i.e., prediction before applying inverse link function.",
+        pdp="Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable "
+            "on the response. The effect of a variable is measured in change in the mean response. "
+            "PDP assumes independence between the feature for which is the PDP computed and the rest.",
+        ice="Individual conditional expectations (ICE) plot gives a graphical depiction of the marginal "
+            "effect of a variable on the response. ICE plot is similar to partial dependence plot (PDP), "
+            "PDP shows the average effect of a feature while ICE plot shows the effect for a single "
+            "instance. The following plot shows the effect for each decile. "
+            "In contrast to partial dependence plot, ICE plot can provide more insight especially when "
+            "there is stronger feature interaction.",
+        ice_row="Individual conditional expectations (ICE) plot gives a graphical depiction of the marginal "
+                "effect of a variable on the response for a given row. ICE plot is similar to partial "
+                "dependence plot (PDP), PDP shows the average effect of a feature while ICE plot shows "
+                "the effect for a single instance.",
+        shap_explanation="SHAP explanation shows contribution of features for a given instance. The sum "
+                         "of the feature contributions and the bias term is equal to the raw prediction "
+                         "of the model, i.e., prediction before applying inverse link function. H2O implements "
+                         "TreeSHAP which when the features are correlated, can increase contribution of a feature "
+                         "that had no influence on the prediction.",
     )
 
     def __init__(self, for_what):
@@ -374,6 +391,12 @@ class NumpyFrame:
 
 def _density(xs, bins=100):
     # type: (np.ndarray, int) -> np.ndarray
+    """
+    Make an approximate density estimation by blurring a histogram (used for shap summary plot).
+    :param xs: numpy vector
+    :param bins: number of bins
+    :return: density values
+    """
     hist = list(np.histogram(xs, bins=bins))
     # gaussian blur
     hist[0] = np.convolve(hist[0],
@@ -387,6 +410,12 @@ def _density(xs, bins=100):
 
 def _uniformize(data, col_name):
     # type: (NumpyFrame, str) -> np.ndarray
+    """
+    Convert to quantiles.
+    :param data: NumpyFrame
+    :param col_name: string containing a column name
+    :return: quantile values of individual points in the column
+    """
     if col_name not in data.columns or data.isfactor(col_name):
         res = data[col_name]
         diff = (np.nanmax(res) - np.nanmin(res))
@@ -754,19 +783,18 @@ def partial_dependences(
 
         _add_histogram(test_frame, column)
 
-        if row_index is not None:
-            if is_factor:
-                plt.axvline(factor_map([test_frame[row_index, column]]), c="k", linestyle="dotted",
-                            label="Instance value")
-            else:
-                plt.axvline(test_frame[row_index, column], c="k", linestyle="dotted",
-                            label="Instance value")
         if row_index is None:
             plt.title("Partial Dependence plot for \"{}\"{}".format(
                 column,
                 " with target = \"{}\"".format(target[0]) if target else ""
             ))
         else:
+            if is_factor:
+                plt.axvline(factor_map([test_frame[row_index, column]]), c="k", linestyle="dotted",
+                            label="Instance value")
+            else:
+                plt.axvline(test_frame[row_index, column], c="k", linestyle="dotted",
+                            label="Instance value")
             plt.title("Individual Conditional Expectation for column \"{}\" and row {}{}".format(
                 column,
                 row_index,
@@ -943,7 +971,7 @@ def _interpretable(model_id):
     :param model_id: string containing a model_id
     :return: bool
     """
-    return model_id.startswith("GLM") or model_id.startswith("GAM")
+    return model_id.startswith("GLM") or model_id.startswith("GAM") or model_id.startswith("RuleFit")
 
 
 def _flatten_list(items):
