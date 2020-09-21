@@ -29,7 +29,6 @@ public class RuleFitTest extends TestUtil {
         try {
             Scope.enter();
             final Frame fr = Scope.track(parse_test_file("./smalldata/gbm_test/titanic.csv"));
-            Scope.track(fr);
 
             String responseColumnName = "survived";
             asFactor(fr, responseColumnName);
