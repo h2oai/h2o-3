@@ -665,7 +665,7 @@ public abstract class SharedTreeModel<
 
   protected boolean binomialOpt() { return true; }
 
-  @Override public CategoricalEncoding getGenModelEncoding() {
+  @Override protected CategoricalEncoding getGenModelEncoding() {
     switch (_parms._categorical_encoding) {
       case AUTO:
       case Enum:

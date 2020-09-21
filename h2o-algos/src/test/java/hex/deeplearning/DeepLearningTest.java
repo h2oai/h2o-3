@@ -36,8 +36,8 @@ import static org.junit.Assert.*;
 public class DeepLearningTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
-    @Rule
-    public transient TemporaryFolder tmp = new TemporaryFolder();
+  @Rule
+  public transient TemporaryFolder tmp = new TemporaryFolder();
 
   abstract static class PrepData { abstract int prep(Frame fr); }
 
