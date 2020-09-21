@@ -261,11 +261,16 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             }
         }
         
-        void fillModelMetrics(RuleFitModel model, GLMModel glmModel){
+        void fillModelMetrics(RuleFitModel model, GLMModel glmModel) {
             model._output._validation_metrics = glmModel._output._validation_metrics;
             model._output._training_metrics = glmModel._output._training_metrics;
             model._output._cross_validation_metrics = glmModel._output._cross_validation_metrics;
             model._output._cross_validation_metrics_summary = glmModel._output._cross_validation_metrics_summary;
+
+            Frame inputTrain = model._parms._train.get();
+            for (Key<ModelMetrics> modelMetricsKey : glmModel._output.getModelMetrics()) {
+                model.addModelMetrics(modelMetricsKey.get().deepCloneWithDifferentModelAndFrame(model, inputTrain));
+            }
         }
 
         int[] range(int min, int max) {

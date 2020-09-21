@@ -126,6 +126,8 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         GLMModel glmModel = DKV.getGet(_output.glmModelKey);
         Frame destination = glmModel.score(pathsFrame, destination_key, null, true);
 
+        updateModelMetrics(glmModel, fr);
+        
         pathsFrame.remove();
         if (paths != null) {
             paths.remove();
@@ -148,5 +150,16 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         }
         
         return fs;
+    }
+
+    void updateModelMetrics( GLMModel glmModel, Frame fr){
+        this._output._validation_metrics = glmModel._output._validation_metrics;
+        this._output._training_metrics = glmModel._output._training_metrics;
+        this._output._cross_validation_metrics = glmModel._output._cross_validation_metrics;
+        this._output._cross_validation_metrics_summary = glmModel._output._cross_validation_metrics_summary;
+
+        for (Key<ModelMetrics> modelMetricsKey : glmModel._output.getModelMetrics()) {
+            this.addModelMetrics(modelMetricsKey.get().deepCloneWithDifferentModelAndFrame(this, fr));
+        }
     }
 }
