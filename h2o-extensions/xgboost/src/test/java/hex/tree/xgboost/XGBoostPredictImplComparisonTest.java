@@ -108,7 +108,7 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
         }
     }
 
-    private boolean usesGpu(XGBoostModel.XGBoostParameters parms) {
+    public static boolean usesGpu(XGBoostModel.XGBoostParameters parms) {
         return parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu ||
             (parms._backend == XGBoostModel.XGBoostParameters.Backend.auto &&
                 XGBoost.hasGPU(H2O.CLOUD.members()[0], 0));

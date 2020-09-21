@@ -12,7 +12,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
-import java.io.*;
+import java.util.Objects;
 
 import static hex.tree.xgboost.matrix.MatrixFactoryUtils.setResponseAndWeightAndOffset;
 
@@ -51,8 +51,40 @@ public class DenseMatrixFactory {
             super(actualRows, response, weights, offsets);
             this.data = data;
         }
+        
+        @Override
+        public void print(int nrow) {
+            for (int i = 0; i < (nrow > 0 ? nrow : data.nrow); i++) {
+                System.out.print(i + ":");
+                for (int j = 0; j < data.ncol; j++) {
+                    System.out.print(data.get(i, j) + ", ");
+                }
+                System.out.print(response[i]);
+                System.out.println();
+            }
+        }
 
-        public DenseDMatrixProvider() {}
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
+            DenseDMatrixProvider that = (DenseDMatrixProvider) o;
+            if (that.data.ncol != this.data.ncol || that.data.nrow != this.data.nrow) return false;
+            for (int i = 0; i < this.data.nrow; i++) {
+                for (int j = 0; j < this.data.ncol; j++) {
+                    if (this.data.get(i, j) != that.data.get(i, j)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return super.hashCode() + Objects.hash(data);
+        }
 
         @Override
         public DMatrix makeDMatrix() throws XGBoostError {
@@ -67,29 +99,6 @@ public class DenseMatrixFactory {
             }
         }
 
-        @Override
-        public void writeExternal(ObjectOutput out) throws IOException {
-            super.writeExternal(out);
-            out.writeInt(data.nrow);
-            out.writeInt(data.ncol);
-            final long size = (long) data.nrow * data.ncol;
-            for (long i = 0; i < size; i++) {
-                out.writeFloat(data.get(i));
-            }
-        }
-
-        @Override
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            super.readExternal(in);
-            final int nrow = in.readInt();
-            final int ncol = in.readInt();
-            data = new BigDenseMatrix(nrow, ncol);
-            final long size = (long) nrow * ncol;
-            for (long i = 0; i < size; i++) {
-                data.set(i, in.readFloat());
-            }
-        }
-
     }
     
     public static DenseDMatrixProvider dense(
@@ -99,7 +108,7 @@ public class DenseMatrixFactory {
         BigDenseMatrix data = null;
         try {
             data = allocateDenseMatrix(nRows, di);
-            long actualRows = denseChunk(data, chunks, nRowsByChunk, f, weightVec, offsetVec, responseVec, di, resp, weights, offsets);
+            int actualRows = denseChunk(data, chunks, nRowsByChunk, f, weightVec, offsetVec, responseVec, di, resp, weights, offsets);
             assert data.nrow == actualRows;
             return new DenseDMatrixProvider(actualRows, resp, weights, offsets, data);
         } catch (Exception e) {
@@ -110,7 +119,7 @@ public class DenseMatrixFactory {
         }
     }
 
-    private static long denseChunk(
+    private static int denseChunk(
         BigDenseMatrix data,
         int[] chunks, int[] nRowsByChunk, Frame f, Vec weightsVec, Vec offsetVec, Vec respVec, DataInfo di,
         float[] resp, float[] weights, float[] offsets
@@ -140,7 +149,7 @@ public class DenseMatrixFactory {
         private final float[] _offsets;
 
         // OUT
-        private int[] _nRowsByChunk;
+        private final int[] _nRowsByChunk;
 
         private WriteDenseChunkFun(Frame f, int[] chunks, int[] rowOffsets, Vec weightsVec, Vec offsetsVec, Vec respVec, DataInfo di,
             BigDenseMatrix data, float[] resp, float[] weights, float[] offsets) {
@@ -188,8 +197,8 @@ public class DenseMatrixFactory {
             _nRowsByChunk[id] = actualRows;
         }
 
-        private long getTotalRows() {
-            long totalRows = 0;
+        private int getTotalRows() {
+            int totalRows = 0;
             for (int r : _nRowsByChunk) {
                 totalRows += r;
             }
@@ -220,7 +229,7 @@ public class DenseMatrixFactory {
         DataInfo di, Chunk[] chunks, int rowInChunk,
         BigDenseMatrix data, long idx
     ) {
-        for (int j = 0; j < di._cats; ++j) {
+        for (int j = 0; j < di._cats; j++) {
             int len = di._catOffsets[j+1] - di._catOffsets[j];
             double val = chunks[j].isNA(rowInChunk) ? Double.NaN : chunks[j].at8(rowInChunk);
             int pos = di.getCategoricalId(j, val) - di._catOffsets[j];
@@ -229,7 +238,7 @@ public class DenseMatrixFactory {
             data.set(idx + pos, 1f);
             idx += len;
         }
-        for (int j = 0; j < di._nums; ++j) {
+        for (int j = 0; j < di._nums; j++) {
             float val = chunks[di._cats + j].isNA(rowInChunk) ? Float.NaN : (float) chunks[di._cats + j].atd(rowInChunk);
             data.set(idx++, val);
         }

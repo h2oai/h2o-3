@@ -447,7 +447,7 @@ public class XGBoostTest extends TestUtil {
     Rabit.shutdown();
   }
   
-  private Frame loadWeather(String response) {
+  public static Frame loadWeather(String response) {
     Frame df = parse_test_file("./smalldata/junit/weather.csv");
     int responseIdx = df.find(response);
     Scope.track(df.replace(responseIdx, df.vecs()[responseIdx].toCategoricalVec()));

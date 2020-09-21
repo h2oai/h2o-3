@@ -3,6 +3,7 @@ package hex.tree.xgboost.exec;
 import hex.genmodel.utils.IOUtils;
 import hex.schemas.XGBoostExecReqV3;
 import hex.schemas.XGBoostExecRespV3;
+import hex.tree.xgboost.remote.RemoteXGBoostUploadServlet;
 import org.apache.http.HttpEntity;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.AuthenticationException;
@@ -18,9 +19,6 @@ import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.entity.mime.FormBodyPart;
-import org.apache.http.entity.mime.HttpMultipartMode;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -120,18 +118,18 @@ public class XGBoostHttpClient {
         return executeRequestAndReturnResponse(httpReq, transformer);
     }
     
-    private HttpPost makeUploadRequest(Key key, String dataType) {
+    private HttpPost makeUploadRequest(Key key, RemoteXGBoostUploadServlet.RequestType dataType) {
         try {
             URIBuilder uri = new URIBuilder(baseUri + "upload");
             uri.setParameter("model_key", key.toString())
-                .setParameter("data_type", dataType);
+                .setParameter("data_type", dataType.toString());
             return new HttpPost(uri.build());
         } catch (URISyntaxException e) {
             throw new RuntimeException("Failed to build request URI.", e);
         }
     }
     
-    public void uploadBytes(Key key, String dataType, byte[] data) {
+    public void uploadBytes(Key key, RemoteXGBoostUploadServlet.RequestType dataType, byte[] data) {
         LOG.info("Request upload " + key + " " + dataType + " " + data.length + " bytes");
         HttpPost httpReq = makeUploadRequest(key, dataType);
         httpReq.setEntity(new InputStreamEntity(new ByteArrayInputStream(data)));
@@ -150,7 +148,7 @@ public class XGBoostHttpClient {
 
         @Override
         public void writeTo(OutputStream out) throws IOException {
-            LOG.debug("Sending matrix data");
+            LOG.debug("Sending " + object);
             ObjectOutputStream os = new ObjectOutputStream(out);
             os.writeObject(object);
             os.flush();
@@ -177,7 +175,7 @@ public class XGBoostHttpClient {
         }
     }
 
-    public void uploadObject(Key key, String dataType, Object data) {
+    public void uploadObject(Key key, RemoteXGBoostUploadServlet.RequestType dataType, Object data) {
         LOG.info("Request upload " + key + " " + dataType + " " + data.getClass().getSimpleName());
         HttpPost httpReq = makeUploadRequest(key, dataType);
         httpReq.setEntity(new ObjectEntity(data));

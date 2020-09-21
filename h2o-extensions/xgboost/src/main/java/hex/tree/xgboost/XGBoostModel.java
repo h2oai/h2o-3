@@ -12,11 +12,8 @@ import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.PlattScalingHelper;
 import hex.tree.xgboost.predict.*;
-import hex.tree.xgboost.util.BoosterHelper;
 import hex.tree.xgboost.util.PredictConfiguration;
 import hex.util.EffectiveParametersUtils;
-import ml.dmlc.xgboost4j.java.Booster;
-import hex.tree.xgboost.predict.PredictorFactory;
 import org.apache.log4j.Logger;
 import water.*;
 import water.codegen.CodeGeneratorPipeline;
@@ -26,9 +23,6 @@ import water.util.ArrayUtils;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -274,7 +268,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public static XGBoostParameters.Backend getActualBackend(XGBoostParameters p, boolean verbose) {
     Consumer<String> log = verbose ? LOG::info : LOG::debug;
     if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
-      if (H2O.getCloudSize() > 1) {
+      if (H2O.getCloudSize() > 1 && !p._build_tree_one_node) {
         log.accept("GPU backend not supported in distributed mode. Using CPU backend.");
         return XGBoostParameters.Backend.cpu;
       } else if (! p.gpuIncompatibleParams().isEmpty()) {
