@@ -1713,7 +1713,15 @@ class ModelBase(h2o_meta(Keyed)):
         """DEPRECATED. Use :meth:`scoring_history` instead."""
         return self.scoring_history()
 
+    def rule_importance(self):
+        """
+        Retrieve rule importances for a Rulefit model
 
+        :return: H2OTwoDimTable
+        """
+        if self._model_json["algo"] != "rulefit":
+            raise H2OValueError("This function is available for Rulefit models only")
+        return self._model_json["output"]['rule_importance']
 
 
 

@@ -13,7 +13,7 @@ def titanic():
     rf_h2o = H2ORuleFitEstimator(max_rule_length=10, max_num_rules=100, seed=1234, model_type="rules")
     rf_h2o.train(training_frame=df, x=x, y="survived")
 
-    print(rf_h2o._model_json['output']['rule_importance'])
+    print(rf_h2o.rule_importance())
 
 
 
