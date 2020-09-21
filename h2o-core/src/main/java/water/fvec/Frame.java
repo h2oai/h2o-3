@@ -132,7 +132,7 @@ public class Frame extends Lockable<Frame> {
 
   /** Creates an internal frame composed of the given Vecs and default names.  The frame has no key. */
   public Frame(Vec... vecs){
-    this(null, vecs);
+    this((String[]) null, vecs);
   }
 
   /** Creates an internal frame composed of the given Vecs and names.  The frame has no key. */
@@ -145,21 +145,9 @@ public class Frame extends Lockable<Frame> {
     this(key, null, new Vec[0]);
   }
 
-  /**
-   * Special constructor for data with unnamed columns (e.g. svmlight) bypassing *all* checks.
-   */
-  public Frame(Key<Frame> key, Vec vecs[], boolean noChecks) {
-    super(key);
-    assert noChecks;
-    _vecs = vecs;
-    String[] names = new String[vecs.length];
-    _keys = makeVecKeys(vecs.length);
-    for (int i = 0; i < vecs.length; i++) {
-      names[i] = defaultColName(i);
-      _keys[i] = vecs[i]._key;
-    }
-    
-    setNames(names);
+  /** Creates a frame with given key, default names and vectors. */
+  public Frame(Key<Frame> key, Vec vecs[]) {
+    this(key, null, vecs);
   }
 
   /** Creates a frame with given key, names and vectors. */

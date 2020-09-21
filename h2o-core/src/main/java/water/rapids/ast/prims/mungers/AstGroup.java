@@ -953,7 +953,7 @@ public class AstGroup extends AstPrimitive {
             if (totalRows == 0) {
               medianVal = Double.NaN;  // return NAN for empty frames.  Should not have happened!
             } else {
-              Frame myFrame = new Frame(Key.<Frame>make(), vgrps, true);
+              Frame myFrame = new Frame(Key.make(), vgrps);
               long midRow = totalRows / 2;
               Frame tempFrame = Merge.sort(myFrame, new int[]{0});
               medianVal = totalRows % 2 == 0 ? 0.5 * (tempFrame.vec(0).at(midRow - 1) +
