@@ -491,7 +491,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           scoreGenModelMetrics(model, valid(), false); // score validation dataset and generate model metrics
         }
       } finally {
-        List<Key<Vec>> keep = new ArrayList<>();
+        final List<Key<Vec>> keep = new ArrayList<>();
         if (model != null) {
           if (_parms._keep_gam_cols) {
             keepFrameKeys(keep, newTFrame._key);
@@ -502,14 +502,13 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         if (dinfo != null)
           dinfo.remove();
         
-        if (newValidFrame != null) {
+        if (newValidFrame != null && _validKeys != null) {
           keepFrameKeys(keep, newValidFrame._key);  // save valid frame keys for scoring later
           _validKeys.addIfAbsent(newValidFrame._key);   // save valid frame keys from folds to remove later
-        }
-        if (_validKeys != null) {
           model._validKeys = _validKeys;  // move valid keys here to model._validKeys to be removed later
           model.update(_job);
         }
+
         model.unlock(_job);
         Scope.untrack(keep);
       }
