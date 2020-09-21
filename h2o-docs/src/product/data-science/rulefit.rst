@@ -81,10 +81,10 @@ Examples
 		f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
 		titanic <- h2o.importFile(f)
 
-        # Split the dataset into train and test
-        splits <- h2o.splitFrame(data = titanic, ratios = .8, seed = 1234)
-        train <- splits[[1]]
-        test <- splits[[2]]
+	        # Split the dataset into train and test
+	        splits <- h2o.splitFrame(data = titanic, ratios = .8, seed = 1234)
+	        train <- splits[[1]]
+	        test <- splits[[2]]
 
 		# Set the predictors and response; set the factors:
 		response = "survived"
@@ -93,13 +93,18 @@ Examples
 		titanic[,"pclass"] <- as.factor(titanic[,"pclass"])
 
 		# Build and train the model:
-		rfit = h2o.rulefit(y = response, x = predictions, training_frame = train, max_rule_length = 10, max_num_rules = 100, seed = 1234)
+		rfit = h2o.rulefit(y = response, 
+				   x = predictions, 
+				   training_frame = train, 
+				   max_rule_length = 10, 
+				   max_num_rules = 100, 
+				   seed = 1234)
 
 		# Retrieve the rule importance:
 		print(rfit@model$rule_importance)
 
-        # Predict on test data:
-        h2o.predict(rfit, newdata=test)
+		# Predict on the test data:
+		h2o.predict(rfit, newdata = test)
 
 
 	.. code-tab:: python
@@ -112,8 +117,8 @@ Examples
 		df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv", 
 				     col_types={'pclass': "enum", 'survived': "enum"})
 
-         # Split the dataset into train and test
-        train, test = df.split_frame(ratios=[.8], seed=1234)
+	        # Split the dataset into train and test
+	        train, test = df.split_frame(ratios=[.8], seed=1234)
 
 		# Set the predictors and response:
 		x = ["age", "sibsp", "parch", "fare", "sex", "pclass"]
@@ -129,8 +134,8 @@ Examples
 		# Retrieve the rule importance:
 		print(rfit._model_json['output']['rule_importance'])
 
-        # Predict on test data:
-        rfit.predict(test)
+		# Predict on the test data:
+		rfit.predict()
 
 
 References
