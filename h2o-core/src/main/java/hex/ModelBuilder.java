@@ -1373,7 +1373,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (isResponseOptional() && _parms._response_column != null && _response == null) {
         _vresponse = va.vec(_parms._response_column);
       }
-      _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive, false);  //cf. PUBDEV-7785
+      _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive, false);  // see PUBDEV-7785
       if (!isResponseOptional() || (_parms._response_column != null && _valid.find(_parms._response_column) >= 0)) {
         _vresponse = _valid.vec(_parms._response_column);
       }
@@ -1398,7 +1398,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (_valid != null) {
         Frame newvalid = applyPreprocessors(_valid, false, scopeTrack);
         newvalid = encodeFrameCategoricals(newvalid, scopeTrack /* for CV, need to score one more time in outer loop */);
-        newvalid = adaptFrameToTrain(newvalid, "Validation Frame", "_validation_frame", expensive, true);
         setValid(newvalid);
       }
       boolean restructured = false;
@@ -1565,7 +1564,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   private Frame encodeFrameCategoricals(Frame fr, boolean scopeTrack) {
-    Frame encoded = FrameUtils.categoricalEncoder(fr, _parms.getNonPredictors(), _parms._categorical_encoding, getToEigenVec(), _parms._max_categorical_levels);
+    Frame encoded = FrameUtils.categoricalEncoder(
+            fr, 
+            _parms.getNonPredictors(),
+            _parms._categorical_encoding, 
+            getToEigenVec(), 
+            _parms._max_categorical_levels
+    );
     if (encoded != fr) trackEncoded(encoded, scopeTrack);
     return encoded;
   }

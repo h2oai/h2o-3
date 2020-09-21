@@ -22,7 +22,7 @@ public class TargetEncoderPreprocessor extends ModelPreprocessor<TargetEncoderPr
 
     @Override
     public Frame processTrain(Frame fr, Model.Parameters params) {
-        if (params._is_cv_model && _targetEncoder._parms._data_leakage_handling == KFold) {
+        if (useFoldTransform(params)) {
             return _targetEncoder.transformTraining(fr, params._cv_fold);
         } else {
             return _targetEncoder.transformTraining(fr);
@@ -31,7 +31,7 @@ public class TargetEncoderPreprocessor extends ModelPreprocessor<TargetEncoderPr
 
     @Override
     public Frame processValid(Frame fr, Model.Parameters params) {
-        if (params._is_cv_model && _targetEncoder._parms._data_leakage_handling == KFold) {
+        if (useFoldTransform(params)) {
             return _targetEncoder.transformTraining(fr);
         } else {
             return _targetEncoder.transform(fr);
@@ -46,5 +46,9 @@ public class TargetEncoderPreprocessor extends ModelPreprocessor<TargetEncoderPr
     @Override
     public Model asModel() {
         return _targetEncoder;
+    }
+    
+    private boolean useFoldTransform(Model.Parameters params) {
+        return params._is_cv_model && _targetEncoder._parms._data_leakage_handling == KFold;
     }
 }

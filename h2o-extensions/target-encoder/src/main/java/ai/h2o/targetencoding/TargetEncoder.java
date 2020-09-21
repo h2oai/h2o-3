@@ -4,7 +4,6 @@ import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderOutput;
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import water.DKV;
 import water.Scope;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;

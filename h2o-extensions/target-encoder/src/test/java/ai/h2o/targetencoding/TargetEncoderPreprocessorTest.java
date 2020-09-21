@@ -64,7 +64,6 @@ public class TargetEncoderPreprocessorTest {
             
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.KFold, false, false);
             Scope.track_generic(teModel);
-//            teModel = spy(teModel);
             TargetEncoderPreprocessor tePreproc = new TargetEncoderPreprocessor(teModel);
             Scope.track_generic(tePreproc);
             
@@ -77,14 +76,8 @@ public class TargetEncoderPreprocessorTest {
             assertFalse(ArrayUtils.contains(model._output._names, TO_ENCODE));
             assertTrue(ArrayUtils.contains(model._output._names, NOT_ENCODED));
             
-//            verify(teModel, times(expectedCVModels)).transformTraining(any(), anyInt());
-//            verify(teModel, times(1)).transformTraining(any(), 2); //the last CV model
-//            verify(teModel, times(expectedCVModels+1)).transformTraining(any()); //main model+3 valid
-//            verify(teModel, times(1)).transformTraining(train); //main model
-            
             Frame preds = model.score(valid);
             Scope.track(preds);
-//            verify(teModel, times(1)).transform(valid);
         } finally {
             Scope.exit();
         }

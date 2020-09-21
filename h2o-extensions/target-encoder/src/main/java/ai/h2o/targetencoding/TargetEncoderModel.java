@@ -382,12 +382,22 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     sorted.putAll(encodingMap);
     return sorted;
   }
-  
+
+  /**
+   * For model integration, we need to ensure that columns are offered to the model in a consistent order.
+   * After TE encoding, columns are always in the following order:
+   * <ol>
+   *     <li>non-categorical predictors</li>
+   *     <li>TE-encoded predictors</li>
+   *     <li>remaining categorical predictors</li>
+   *     <li>non-predictors</li>
+   * </ol>
+   * This way, categorical encoder can later encode the remaining categorical predictors 
+   * without changing the index of TE cols: somehow necessary when integrating TE in the model Mojo.
+   * 
+   * @param fr the frame whose columns need to be reordered.
+   */
   private void reorderColumns(Frame fr) {
-    // for model integration, we need to ensure that columns are offered to the model in a consistent order.
-    // we ensure that after TE encoding, columns are always in the following order:
-    //    non-categorical predictors, TE-encoded predictors, remaining categorical predictors, non-predictors
-    // this way, categorical encoder can later encode the remaining categorical predictors without changing the index of TE cols: somehow necessary when integrating TE in the model Mojo.
     String[] toTheEnd = _parms.getNonPredictors();
     Map<String, Integer> nameToIdx = nameToIndex(fr);
     List<Integer> toAppendAfterNumericals = new ArrayList<>();

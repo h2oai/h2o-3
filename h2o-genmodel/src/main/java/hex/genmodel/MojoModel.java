@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * Prediction model based on the persisted binary data.
  */
-public abstract class MojoModel extends GenModel implements RowConverterFactory {
+public abstract class MojoModel extends GenModel {
 
   public String _algoName;
   public String _h2oVersion;
@@ -77,12 +77,9 @@ public abstract class MojoModel extends GenModel implements RowConverterFactory 
     super(columns, domains, responseColumn);
   }
 
-  // RowConverterFactory
-
-  @Override
-  public RowToRawDataConverter _makeRowConverter(CategoricalEncoding categoricalEncoding,
-                                                 ErrorConsumer errorConsumer,
-                                                 Config config) {
+  public RowToRawDataConverter makeRowConverter(CategoricalEncoding categoricalEncoding,
+                                                ErrorConsumer errorConsumer,
+                                                Config config) {
     if (_preprocessors != null) {
       RowToRawDataConverter[] converters = new RowToRawDataConverter[_preprocessors.length+1];
       int i = 0;
