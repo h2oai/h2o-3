@@ -1,7 +1,7 @@
 #'
 #' H2O Model Related Functions
 #'
-#' @importFrom graphics strwidth par legend polygon arrows points
+#' @importFrom graphics strwidth par legend polygon arrows points grid
 #' @importFrom grDevices dev.copy dev.off png rainbow adjustcolor
 
 NULL
@@ -3633,19 +3633,34 @@ h2o.std_coef_plot <- function(model, num_of_features = NULL){
 #' @export
 plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
   # TODO: add more types (i.e. cutoffs)
-  if(!type %in% c("roc")) stop("type must be 'roc'")
+  if(!type %in% c("roc", "pr")) stop("type must be 'roc' or 'pr'")
   if(type == "roc") {
-    xaxis <- "False Positive Rate"; yaxis = "True Positive Rate"
+    xaxis <- "False Positive Rate (TPR)"; yaxis = "True Positive Rate (FPR)"
     if(missing(main)) {
-      main <- paste(yaxis, "vs", xaxis)
+      main <- "Receiver Operating Characteristic curve"
       if(x@on_train) {
         main <- paste(main, "(on train)")
       } else if (x@on_valid) {
         main <- paste(main, "(on valid)")
       }
     }
-    graphics::plot(x@metrics$thresholds_and_metric_scores$fpr, x@metrics$thresholds_and_metric_scores$tpr, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), ...)
+    xdata <- x@metrics$thresholds_and_metric_scores$fpr
+    ydata <- x@metrics$thresholds_and_metric_scores$tpr
+    graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
     graphics::abline(0, 1, lty = 2)
+  } else if(type=="pr"){
+    xaxis <- "Recall (TP/(TP+FP))"; yaxis = "Precision (TPR)"
+    if(missing(main)) {
+      main <- "Precision Recall curve"
+      if(x@on_train) {
+        main <- paste(main, "(on train)")
+      } else if (x@on_valid) {
+        main <- paste(main, "(on valid)")
+      }
+    }
+    xdata <- rev(x@metrics$thresholds_and_metric_scores$recall)
+    ydata <- rev(x@metrics$thresholds_and_metric_scores$precision)
+    graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
   }
 }
 

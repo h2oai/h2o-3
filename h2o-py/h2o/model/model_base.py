@@ -855,7 +855,8 @@ class ModelBase(h2o_meta(Keyed)):
         m = {}
         for k, v in viewitems(tm): m[k] = None if v is None else v.gini()
         return list(m.values())[0] if len(m) == 1 else m
-
+    
+    
     def aucpr(self, train=False, valid=False, xval=False):
         """
         Get the aucPR (Area Under PRECISION RECALL Curve).
@@ -1052,8 +1053,7 @@ class ModelBase(h2o_meta(Keyed)):
 
         else:  # algo is not glm, deeplearning, drf, gbm, xgboost
             raise H2OValueError("Plotting not implemented for this type of model")
-        if not server: plt.show()
-
+        if not server: plt.show()        
 
     def partial_plot(self, data, cols=None, destination_key=None, nbins=20, weight_column=None,
                      plot=True, plot_stddev = True, figsize=(7, 10), server=False, include_na=False, user_splits=None,
