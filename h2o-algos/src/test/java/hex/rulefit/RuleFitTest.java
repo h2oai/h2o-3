@@ -41,6 +41,7 @@ public class RuleFitTest extends TestUtil {
             fr.remove("boat").remove();
             fr.remove("body").remove();
             fr.remove("home.dest").remove();
+            DKV.put(fr);
             
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
