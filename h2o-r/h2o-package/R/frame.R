@@ -5101,7 +5101,8 @@ h2o.groupedPermute <- function(fr, permCol, permByCol, groupByCols, keepCol) {
 # TODO: Cleanup the cruft!
 #' Split H2O Dataset, Apply Function, and Return Results
 #'
-#' For each subset of an H2O data set, apply a user-specified function, then combine the results.  This is an experimental feature.
+#' For each subset of an H2O data set, apply a user-specified function, then combine the results.  
+#' This is an experimental feature based on plyr::ddply.
 #'
 #' @param X An H2OFrame object to be processed.
 #' @param .variables Variables to split \code{X} by, either the indices or names of a set of columns.
@@ -5110,7 +5111,6 @@ h2o.groupedPermute <- function(fr, permCol, permByCol, groupByCols, keepCol) {
 #' @param .progress Name of the progress bar to use. #TODO: (Currently unimplemented)
 #' @return Returns an H2OFrame object containing the results from the split/apply operation, arranged
 #          row-by-row
-#' @seealso \code{\link[plyr]{ddply}} for the plyr library implementation.
 #' @examples
 #' \dontrun{
 #' library(h2o)
