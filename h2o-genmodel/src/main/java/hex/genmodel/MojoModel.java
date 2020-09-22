@@ -77,9 +77,13 @@ public abstract class MojoModel extends GenModel {
     super(columns, domains, responseColumn);
   }
 
-  public RowToRawDataConverter makeRowConverter(CategoricalEncoding categoricalEncoding,
-                                                ErrorConsumer errorConsumer,
-                                                Config config) {
+  /**
+   * leading underscore required for MOJO compatibility 
+   * as this method is not part of API, but called directly by EasyPredictModelWRapper.
+   */
+  public RowToRawDataConverter _makeRowConverter(CategoricalEncoding categoricalEncoding,
+                                                 ErrorConsumer errorConsumer,
+                                                 Config config) {
     if (_preprocessors != null) {
       RowToRawDataConverter[] converters = new RowToRawDataConverter[_preprocessors.length+1];
       int i = 0;
