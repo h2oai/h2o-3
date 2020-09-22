@@ -3,6 +3,7 @@ package water.init;
 import water.util.Log;
 import water.util.NetworkUtils;
 import water.util.OSUtils;
+import water.util.StringUtils;
 
 import java.net.*;
 import java.util.*;
@@ -366,6 +367,22 @@ public class HostnameGuesser {
     }
     private HostnameGuessingException(Exception e) {
       super(e);
+    }
+  }
+
+  public static String localAddressToHostname(InetAddress address) {
+    String hostname = address.getHostName();
+    if (! address.getHostAddress().equals(hostname)) {
+      return hostname;
+    }
+    // we don't want to return IP address (because of a security policy of a particular customer, see PUBDEV-5680)
+    hostname = System.getenv("HOSTNAME");
+    if (!StringUtils.isNullOrEmpty(hostname)) {
+      Log.info("Machine hostname determined using environment variable HOSTNAME='" + hostname + "'.");
+      return hostname;
+    } else {
+      Log.warn("Machine hostname cannot be determined. Using `localhost` as a fallback.");
+      return "localhost";
     }
   }
 
