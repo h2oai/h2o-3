@@ -22,7 +22,7 @@ test.rulefit.titanic <- function() {
 
     rf_h2o = h2o.rulefit(y=response, x=predictors, training_frame = train, max_rule_length=10, max_num_rules=100, seed=1234, model_type="rules")
 
-    print(rf_h2o@model$rule_importance)
+    print(rfit@model$rule_importance)
 
     h2o.predict(rf_h2o, newdata=test)
     print(rf_h2o@model$rule_importance)
