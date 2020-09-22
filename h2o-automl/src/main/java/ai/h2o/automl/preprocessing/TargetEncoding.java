@@ -1,10 +1,8 @@
 package ai.h2o.automl.preprocessing;
 
 import ai.h2o.automl.AutoML;
-import ai.h2o.automl.AutoMLBuildSpec;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLBuildControl;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLInput;
-import ai.h2o.automl.ModelingStep;
 import ai.h2o.targetencoding.TargetEncoder;
 import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
@@ -14,7 +12,6 @@ import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelPreprocessor;
 import water.DKV;
-import water.Iced;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -98,9 +95,9 @@ public class TargetEncoding implements PreprocessingStep {
 
     @Override
     public Completer apply(Model.Parameters params, PreprocessingConfig config) {
-        if (_tePreprocessor == null || !config.getBoolean(CONFIG_ENABLED, true)) return NOOP;
+        if (_tePreprocessor == null || !config.get(CONFIG_ENABLED, true)) return NOOP;
         
-        if (!config.getBoolean(CONFIG_PREPARE_CV_ONLY, false))
+        if (!config.get(CONFIG_PREPARE_CV_ONLY, false))
             params._preprocessors = (Key<ModelPreprocessor>[])ArrayUtils.append(params._preprocessors, _tePreprocessor._key);
         
         Frame train = new Frame(params.train());

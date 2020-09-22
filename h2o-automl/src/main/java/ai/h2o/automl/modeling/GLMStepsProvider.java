@@ -41,9 +41,10 @@ public class GLMStepsProvider
             
             @Override
             protected PreprocessingConfig getPreprocessingConfig() {
-                //GLM (the exception as usual) doesn't support preprocessing as it's initializing its lambdas + other params before CV (preventing changes in train frame during CV).
+                //GLM (the exception as usual) doesn't support targetencoding if CV is enabled
+                // because it is initializing its lambdas + other params before CV (preventing changes in train frame during CV).
                 PreprocessingConfig config = super.getPreprocessingConfig();
-                config.put(TargetEncoding.CONFIG_PREPARE_CV_ONLY, true);
+                config.put(TargetEncoding.CONFIG_PREPARE_CV_ONLY, aml().isCVEnabled()); 
                 return config;
             }
         }

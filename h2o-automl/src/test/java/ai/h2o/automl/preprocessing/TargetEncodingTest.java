@@ -182,6 +182,7 @@ public class TargetEncodingTest {
             Frame test = sf._destination_frames[1].get(); Scope.track(test);
             
             autoMLBuildSpec.input_spec.training_frame = train._key;
+//            autoMLBuildSpec.input_spec.validation_frame = test._key;
             autoMLBuildSpec.input_spec.leaderboard_frame = test._key;
             autoMLBuildSpec.input_spec.response_column = "survived";
             autoMLBuildSpec.build_control.stopping_criteria.set_max_models(15); // sth big enough to test all algos+grids with TE
@@ -195,7 +196,7 @@ public class TargetEncodingTest {
             aml.get();
             System.out.println(aml.leaderboard().toTwoDimTable());
             for (Model m : aml.leaderboard().getModels()) {
-                if (m instanceof StackedEnsembleModel || m instanceof GLMModel) {
+                if (m instanceof StackedEnsembleModel || m instanceof GLMModel) { // disabled for GLM with CV, because GLM refuses to follow the same CV flow as other algos.
                     assertNull(m._parms._preprocessors);
                 } else {
                     assertNotNull(m._parms._preprocessors);
