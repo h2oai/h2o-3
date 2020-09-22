@@ -29,7 +29,6 @@ public class RuleFitTest extends TestUtil {
         try {
             Scope.enter();
             final Frame fr = Scope.track(parse_test_file("./smalldata/gbm_test/titanic.csv"));
-            Scope.track(fr);
 
             String responseColumnName = "survived";
             asFactor(fr, responseColumnName);
@@ -41,6 +40,7 @@ public class RuleFitTest extends TestUtil {
             fr.remove("boat").remove();
             fr.remove("body").remove();
             fr.remove("home.dest").remove();
+            DKV.put(fr);
             
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
