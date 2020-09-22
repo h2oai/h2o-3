@@ -444,17 +444,14 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
                 _numKnots), false, _result+".temporary.valid");
       }
       DKV.put(newTFrame); // This one will cause deleted vectors if add to Scope.track
-      try {
-        Frame newValidFrame = _valid == null ? null : new Frame(_valid);
-        if (newValidFrame != null) {
-          DKV.put(newValidFrame);
-        }
-
-        _job.update(0, "Initializing model training");
-        buildModel(newTFrame, newValidFrame); // build gam model
-      } finally {
-        Scope.exit();
+      Frame newValidFrame = _valid == null ? null : new Frame(_valid);
+      if (newValidFrame != null) {
+        DKV.put(newValidFrame);
       }
+
+      _job.update(0, "Initializing model training");
+      buildModel(newTFrame, newValidFrame); // build gam model
+
     }
 
     public final void buildModel(Frame newTFrame, Frame newValidFrame) {
@@ -472,7 +469,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
                 _parms.interactionSpec());
         DKV.put(dinfo._key, dinfo);
         model = new GAMModel(dest(), _parms, new GAMModel.GAMModelOutput(GAM.this, dinfo));
-        model.delete_and_lock(_job);
+        model.write_lock(_job);
         if (_parms._keep_gam_cols) {  // save gam column keys
           model._output._gamTransformedTrainCenter = newTFrame._key;
         }
