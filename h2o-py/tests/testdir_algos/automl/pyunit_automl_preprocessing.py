@@ -24,7 +24,7 @@ def test_target_encoding_binary():
     ds = import_dataset(mode='binary')
     aml = H2OAutoML(project_name="automl_with_te_binary",
                     max_models=5,
-                    preprocessing=['targetencoding'],
+                    preprocessing=['target_encoding'],
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train, leaderboard_frame=ds.test)
     lb = aml.leaderboard
@@ -39,7 +39,7 @@ def test_target_encoding_multiclass():
     ds = import_dataset(mode='multiclass')
     aml = H2OAutoML(project_name="automl_with_te_multiclass",
                     max_models=5,
-                    preprocessing=['targetencoding'],
+                    preprocessing=['target_encoding'],
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train, leaderboard_frame=ds.test)
     lb = aml.leaderboard
@@ -54,7 +54,7 @@ def test_target_encoding_regression():
     ds = import_dataset(mode='regression')
     aml = H2OAutoML(project_name="automl_with_te_regression",
                     max_models=5,
-                    preprocessing=['targetencoding'],
+                    preprocessing=['target_encoding'],
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train, leaderboard_frame=ds.test)
     lb = aml.leaderboard

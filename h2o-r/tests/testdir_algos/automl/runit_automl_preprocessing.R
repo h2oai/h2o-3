@@ -5,10 +5,13 @@ automl.preprocessing.suite <- function() {
 
   import_dataset <- function() {
     y <- "CAPSULE"
+    te_col <- "DPROS"  
     train <- h2o.importFile(locate("smalldata/testng/prostate_train.csv"), destination_frame = "prostate_full_train")
     train[,y] <- as.factor(train[,y])
+    train[,te_col] <- as.factor(train[,te_col])
     test <- h2o.importFile(locate("smalldata/testng/prostate_test.csv"), destination_frame = "prostate_full_test")
     test[,y] <- as.factor(test[,y])
+    test[,te_col] <- as.factor(test[,te_col])
     x <- setdiff(names(train), y)
     return(list(x=x, y=y, train=train, test=test))
   }
@@ -20,7 +23,7 @@ automl.preprocessing.suite <- function() {
                       leaderboard_frame = ds$test,
                       project_name="r_automl_targetencoding",
                       max_models = 6,
-                      preprocessing = list("targetencoding"),
+                      preprocessing = list("target_encoding"),
                       seed = 1
     )
     print(h2o.get_leaderboard(aml))  

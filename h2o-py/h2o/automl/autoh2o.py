@@ -118,7 +118,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         :param exploitation_ratio: The budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase. By default, the exploitation phase is disabled (exploitation_ratio=0) as this is still experimental; to activate it, it is recommended to try a ratio around 0.1. Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.
         :param modeling_plan: List of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).
           Defaults to None (Expert usage only).
-        :param preprocessing: List of preprocessing steps to run. Only 'targetencoding' is currently supported.
+        :param preprocessing: List of preprocessing steps to run. Only 'target_encoding' is currently supported.
         :param monotone_constraints: Dict representing monotonic constraints.
           Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.
         :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions.
@@ -285,8 +285,8 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
 
         assert_is_type(preprocessing, None, [str])  # for now
         if preprocessing is not None:
-            assert all(p in ['targetencoding'] for p in preprocessing)
-            self.preprocessing = self.build_models['preprocessing'] = [dict(type=p) for p in preprocessing]
+            assert all(p in ['target_encoding'] for p in preprocessing)
+            self.preprocessing = self.build_models['preprocessing'] = [dict(type=p.replace("_", "")) for p in preprocessing]
         else:
             self.preprocessing = None
 

@@ -52,7 +52,7 @@ public class TargetEncoding implements PreprocessingStep {
         if (teColumns.isEmpty()) return;
         
         _aml.eventLog().warn(Stage.FeatureCreation,
-                "Target Encoding integration in AutoML is in experimental stage, the models obtained with this feature can not be downloaded as MOJO for production yet.");
+                "Target Encoding integration in AutoML is in an experimental stage, the models obtained with this feature can not yet be downloaded as MOJO for production.");
 
         AutoMLInput amlInput = _aml.getBuildSpec().input_spec;
         AutoMLBuildControl amlBuild = _aml.getBuildSpec().build_control;

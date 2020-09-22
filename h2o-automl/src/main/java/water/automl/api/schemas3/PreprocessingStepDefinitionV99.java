@@ -15,7 +15,7 @@ public final class PreprocessingStepDefinitionV99 extends Schema<PreprocessingSt
     }
   }
 
-  @API(help="A type representing the preprocessing step to be executed.", valuesProvider= TypeProvider.class, direction=API.Direction.INOUT)
+  @API(help="A type representing the preprocessing step to be executed.", valuesProvider=TypeProvider.class, direction=API.Direction.INOUT)
   public Type type;
 
 }
