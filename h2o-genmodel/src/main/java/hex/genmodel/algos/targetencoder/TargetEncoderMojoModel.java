@@ -1,12 +1,10 @@
 package hex.genmodel.algos.targetencoder;
 
-import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
-import hex.genmodel.MojoPreprocessor;
 
 import java.util.*;
 
-public class TargetEncoderMojoModel extends MojoModel implements MojoPreprocessor {
+public class TargetEncoderMojoModel extends MojoModel {
 
   public static double computeLambda(long nrows, double inflectionPoint, double smoothing) {
     return 1.0 / (1 + Math.exp((inflectionPoint - nrows) / smoothing));
@@ -158,9 +156,4 @@ public class TargetEncoderMojoModel extends MojoModel implements MojoPreprocesso
     return sorted;
   }
 
-  @Override
-  public ModelProcessor makeProcessor(GenModel model) {
-    return new TargetEncoderAsModelProcessor(this, model);
-  }
-  
 }

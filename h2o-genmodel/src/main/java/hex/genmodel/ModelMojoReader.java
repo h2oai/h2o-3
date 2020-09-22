@@ -224,16 +224,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   }
 
   protected final void readModelKV() throws IOException {
-    readModelPreprocessors(readkv("preprocessors_count", 0));
     readModelData();
-  }
-
-  private void readModelPreprocessors(int count) throws IOException {
-    if (count <= 0) return;
-    _model._preprocessors = new MojoPreprocessor[count];
-    for (int i=0; i < count; i++) {
-      _model._preprocessors[i] = (MojoPreprocessor) ModelMojoReader.readFrom(new NestedMojoReaderBackend(_reader, "preprocessing/preprocessor_"+i+"/"));
-    }
   }
 
   private static Map<String, Object> parseModelInfo(MojoReaderBackend reader) throws IOException {

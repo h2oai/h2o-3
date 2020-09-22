@@ -30,7 +30,6 @@ public abstract class MojoModel extends GenModel {
   public ModelDescriptor _modelDescriptor = null;
   public ModelAttributes _modelAttributes = null;
   public Table[] _reproducibilityInformation;
-  public MojoPreprocessor[] _preprocessors;
 
   /**
    * Primary factory method for constructing MojoModel instances.
@@ -84,20 +83,6 @@ public abstract class MojoModel extends GenModel {
   public RowToRawDataConverter _makeRowConverter(CategoricalEncoding categoricalEncoding,
                                                  ErrorConsumer errorConsumer,
                                                  Config config) {
-    if (_preprocessors != null) {
-      RowToRawDataConverter[] converters = new RowToRawDataConverter[_preprocessors.length+1];
-      int i = 0;
-      GenModel preprocessedModel = this;
-      for (MojoPreprocessor preprocessor : _preprocessors) {
-        MojoPreprocessor.ModelProcessor processor = preprocessor.makeProcessor(preprocessedModel);
-        converters[i] = processor.makeRowConverter(errorConsumer, config);
-        preprocessedModel = processor.getProcessedModel();
-        i++;
-      }
-      converters[i] = new CategoricalEncodingAsModelProcessor(preprocessedModel, this, categoricalEncoding).makeRowConverter(errorConsumer, config);
-      return new CompositeRowToRawDataConverter<>(converters);
-    }
-    
     Map<String, Integer> columnToOffsetIdx = categoricalEncoding.createColumnMapping(this);
     Map<Integer, CategoricalEncoder> offsetToEncoder = categoricalEncoding.createCategoricalEncoders(this, columnToOffsetIdx);
     return makeDefaultRowConverter(columnToOffsetIdx, offsetToEncoder, errorConsumer, config);
