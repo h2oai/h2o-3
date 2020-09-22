@@ -34,13 +34,32 @@ classification.
 library(h2o)
 h2o.init()
 
+# Import the titanic dataset:
 f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
-titanic <- h2o.importFile(f)
-response = "survived"
+coltypes <- list(by.col.name = c("pclass", "survived"), types=c("Enum", "Enum"))
+df <- h2o.importFile(f, col.types = coltypes)
+
+# Split the dataset into train and test
+splits <- h2o.splitFrame(data = df, ratios = 0.8, seed = 1)
+train <- splits[[1]]
+test <- splits[[2]]
+
+# Set the predictors and response; set the factors:
+response <- "survived"
 predictors <- c("age", "sibsp", "parch", "fare", "sex", "pclass")
-titanic[,response] <- as.factor(titanic[,response])
-titanic[,"pclass"] <- as.factor(titanic[,"pclass"])
-rfit <- h2o.rulefit(y = response, x = predictors, training_frame = titanic, max_rule_length = 10, 
-max_num_rules = 100, seed = 1, model_type = "rules")
+
+# Build and train the model:
+rfit <- h2o.rulefit(y = response,
+                    x = predictors,
+                    training_frame = train,
+                    max_rule_length = 10,
+                    max_num_rules = 100,
+                    seed = 1)
+
+# Retrieve the rule importance:
+print(rfit@model$rule_importance)
+
+# Predict on the test data:
+h2o.predict(rfit, newdata = test)
 """
 )
