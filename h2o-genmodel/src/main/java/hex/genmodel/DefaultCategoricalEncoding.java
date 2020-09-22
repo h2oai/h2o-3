@@ -4,7 +4,7 @@ import hex.genmodel.easy.*;
 
 import java.util.Map;
 
-public enum CategoricalEncodings implements CategoricalEncoding {
+public enum DefaultCategoricalEncoding implements CategoricalEncoding {
     AUTO {
         @Override
         public Map<String, Integer> createColumnMapping(GenModel m) {

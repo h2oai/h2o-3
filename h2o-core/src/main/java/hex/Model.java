@@ -2040,7 +2040,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @return instance of CategoricalEncoding supported by GenModel or null if encoding is not supported.
    */
   protected CategoricalEncoding getGenModelEncoding() {
-    return CategoricalEncodings.AUTO;
+    return DefaultCategoricalEncoding.AUTO;
   }
 
   // ==========================================================================
@@ -2136,7 +2136,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     toJavaNAMES(sb, fileCtx);
     CategoricalEncoding encoding = getGenModelEncoding();
     assert encoding != null;
-    boolean writeOrigs = encoding != CategoricalEncodings.AUTO; // export orig names & domains if POJO/MOJO doesn't handle encoding itself
+    boolean writeOrigs = encoding != DefaultCategoricalEncoding.AUTO; // export orig names & domains if POJO/MOJO doesn't handle encoding itself
     if (writeOrigs && _output._origNames != null)
       toJavaOrigNAMES(sb, fileCtx);
     toJavaNCLASSES(sb);

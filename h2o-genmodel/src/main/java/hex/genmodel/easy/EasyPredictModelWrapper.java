@@ -370,7 +370,7 @@ public class EasyPredictModelWrapper implements Serializable {
   }
   
   RowToRawDataConverter makeRowDataConverter(Config config, ErrorConsumer errorConsumer) {
-    CategoricalEncoding categoricalEncoding = config.getUseExternalEncoding() ? CategoricalEncodings.AUTO : m.getCategoricalEncoding();
+    CategoricalEncoding categoricalEncoding = config.getUseExternalEncoding() ? DefaultCategoricalEncoding.AUTO : m.getCategoricalEncoding();
 
     RowToRawDataConverter rowDataConverter;
     if (m instanceof MojoModel) {

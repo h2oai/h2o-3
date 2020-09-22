@@ -6,7 +6,7 @@ import static hex.genmodel.GenModel.createAuxKey;
 import static hex.genmodel.algos.tree.SharedTreeMojoModel.__INTERNAL_MAX_TREE_DEPTH;
 
 import hex.genmodel.CategoricalEncoding;
-import hex.genmodel.CategoricalEncodings;
+import hex.genmodel.DefaultCategoricalEncoding;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
@@ -671,17 +671,17 @@ public abstract class SharedTreeModel<
       case AUTO:
       case Enum:
       case SortByResponse:
-        return CategoricalEncodings.AUTO;
+        return DefaultCategoricalEncoding.AUTO;
       case OneHotExplicit:
-        return CategoricalEncodings.OneHotExplicit;
+        return DefaultCategoricalEncoding.OneHotExplicit;
       case Binary:
-        return CategoricalEncodings.Binary;
+        return DefaultCategoricalEncoding.Binary;
       case EnumLimited:
-        return CategoricalEncodings.EnumLimited;
+        return DefaultCategoricalEncoding.EnumLimited;
       case Eigen:
-        return CategoricalEncodings.Eigen;
+        return DefaultCategoricalEncoding.Eigen;
       case LabelEncoder:
-        return CategoricalEncodings.LabelEncoder;
+        return DefaultCategoricalEncoding.LabelEncoder;
       default:
         return null;
     }
@@ -696,11 +696,11 @@ public abstract class SharedTreeModel<
     sb.ip("public boolean isSupervised() { return true; }").nl();
     sb.ip("public int nfeatures() { return " + _output.nfeatures() + "; }").nl();
     sb.ip("public int nclasses() { return " + _output.nclasses() + "; }").nl();
-    if (encoding == CategoricalEncodings.Eigen) {
+    if (encoding == DefaultCategoricalEncoding.Eigen) {
       sb.ip("public double[] getOrigProjectionArray() { return " + PojoUtils.toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
     }
-    if (encoding != CategoricalEncodings.AUTO) {
-      sb.ip("public hex.genmodel.CategoricalEncoding getCategoricalEncoding() { return hex.genmodel.CategoricalEncodings." + 
+    if (encoding != DefaultCategoricalEncoding.AUTO) {
+      sb.ip("public hex.genmodel.CategoricalEncoding getCategoricalEncoding() { return hex.genmodel.DefaultCategoricalEncoding." + 
               encoding.name() + "; }").nl();
     }
     return sb;

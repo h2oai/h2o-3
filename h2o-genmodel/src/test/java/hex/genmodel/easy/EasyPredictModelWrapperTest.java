@@ -1,8 +1,7 @@
 package hex.genmodel.easy;
 
 import hex.ModelCategory;
-import hex.genmodel.CategoricalEncoding;
-import hex.genmodel.CategoricalEncodings;
+import hex.genmodel.DefaultCategoricalEncoding;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
@@ -13,7 +12,6 @@ import hex.genmodel.easy.prediction.*;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentMatchers;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -46,7 +44,7 @@ public class EasyPredictModelWrapperTest {
     when(mockGenModel.getDomainValues(0)).thenReturn(domains[0]);
     when(mockGenModel.getDomainValues(1)).thenReturn(domains[1]);
     when(mockGenModel.getDomainValues(2)).thenReturn(domains[2]);
-    when(mockGenModel.getCategoricalEncoding()).thenReturn(CategoricalEncodings.AUTO);
+    when(mockGenModel.getCategoricalEncoding()).thenReturn(DefaultCategoricalEncoding.AUTO);
   }
 
   private static class SupervisedModel extends GenModel {
