@@ -16,6 +16,7 @@ import water.*;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
 import java.util.*;
@@ -179,9 +180,9 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 int[] depths = range(_parms._min_rule_length, _parms._max_rule_length);
                 List<SharedTreeModel> treeModels = new ArrayList<>();
 
-                pathsFrame.add(_parms._response_column, _response.makeCopy());
+                pathsFrame.add(_parms._response_column, _response);
                 if (_parms._weights_column != null) {
-                    pathsFrame.add(_parms._weights_column, _weights.makeCopy());
+                    pathsFrame.add(_parms._weights_column, _weights);
                 }
                 Frame paths = null;
                 Key[] keys = new Key[depths.length];
@@ -202,10 +203,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 }
                 // prepare linear terms
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.LINEAR.equals(_parms._model_type)) {
-                    Frame adaptFrm = new Frame(_train.deepCopy(null));
-                    adaptFrm.remove(_parms._response_column);
-                    adaptFrm.setNames(RuleFitUtils.getLinearNames(adaptFrm.numCols(), adaptFrm.names()));
-                    pathsFrame.add(adaptFrm);
+                    String[] names = ArrayUtils.remove(_train._names, _parms._response_column);
+                    pathsFrame.add(RuleFitUtils.getLinearNames(names.length, names), _train.vecs(names));
                 }
                 DKV.put(pathsFrame);
 
@@ -248,7 +247,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 for (Key key : keys) {
                     DKV.remove(key);
                 }
-                pathsFrame.remove();
+                DKV.remove(pathsFrame._key);
 
                 if (paths != null) {
                     paths.remove();
