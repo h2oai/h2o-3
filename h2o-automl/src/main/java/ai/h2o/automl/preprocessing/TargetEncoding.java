@@ -3,6 +3,8 @@ package ai.h2o.automl.preprocessing;
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLBuildControl;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLInput;
+import ai.h2o.automl.events.EventLogEntry;
+import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.targetencoding.TargetEncoder;
 import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
@@ -48,6 +50,9 @@ public class TargetEncoding implements PreprocessingStep {
         Frame amlTrain = _aml.getTrainingFrame();
         Set<String> teColumns = selectColumnsToEncode(amlTrain);
         if (teColumns.isEmpty()) return;
+        
+        _aml.eventLog().warn(Stage.FeatureCreation,
+                "Target Encoding integration in AutoML is in experimental stage, the models obtained with this feature can not be downloaded as MOJO for production yet.");
 
         AutoMLInput amlInput = _aml.getBuildSpec().input_spec;
         AutoMLBuildControl amlBuild = _aml.getBuildSpec().build_control;
