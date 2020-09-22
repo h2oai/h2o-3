@@ -3,12 +3,8 @@ package hex.genmodel;
 import hex.genmodel.attributes.ModelAttributes;
 import hex.genmodel.attributes.Table;
 import hex.genmodel.descriptor.ModelDescriptor;
-import hex.genmodel.easy.*;
-import hex.genmodel.easy.EasyPredictModelWrapper.Config;
-import hex.genmodel.easy.EasyPredictModelWrapper.ErrorConsumer;
 
 import java.io.*;
-import java.util.Map;
 
 /**
  * Prediction model based on the persisted binary data.
@@ -75,23 +71,5 @@ public abstract class MojoModel extends GenModel {
   protected MojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
   }
-
-  /**
-   * leading underscore required for MOJO compatibility 
-   * as this method is not part of API, but called directly by EasyPredictModelWRapper.
-   */
-  public RowToRawDataConverter _makeRowConverter(CategoricalEncoding categoricalEncoding,
-                                                 ErrorConsumer errorConsumer,
-                                                 Config config) {
-    Map<String, Integer> columnToOffsetIdx = categoricalEncoding.createColumnMapping(this);
-    Map<Integer, CategoricalEncoder> offsetToEncoder = categoricalEncoding.createCategoricalEncoders(this, columnToOffsetIdx);
-    return makeDefaultRowConverter(columnToOffsetIdx, offsetToEncoder, errorConsumer, config);
-  }
   
-  protected RowToRawDataConverter makeDefaultRowConverter(Map<String, Integer> columnToOffsetIdx,
-                                                          Map<Integer, CategoricalEncoder> offsetToEncoder,
-                                                          ErrorConsumer errorConsumer,
-                                                          Config config) {
-    return new DefaultRowToRawDataConverter<>(columnToOffsetIdx, offsetToEncoder, errorConsumer, config);
-  }
 }

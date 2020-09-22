@@ -45,7 +45,7 @@ public abstract class AbstractMojoWriter {
   /**
    * Override in subclasses to write the actual model data.
    */
-  protected abstract void writeModelKV() throws IOException;
+  protected abstract void writeModelData() throws IOException;
 
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -86,10 +86,6 @@ public abstract class AbstractMojoWriter {
     zos.putNextEntry(archiveEntry);
     zos.write(blob);
     zos.closeEntry();
-  }
-  
-  protected final void writemodel(String zipDirectory, AbstractMojoWriter mojoWriter) throws IOException {
-    mojoWriter.writeTo(zos, zipDirectory);
   }
 
   /**
@@ -150,7 +146,7 @@ public abstract class AbstractMojoWriter {
   public final void writeTo(ZipOutputStream zos, String zipDirectory) throws IOException {
     initWriting(zos, zipDirectory);
     addCommonModelInfo();
-    writeModelKV();
+    writeModelData();
     writeModelInfo();
     writeDomains();
     writeExtraInfo();

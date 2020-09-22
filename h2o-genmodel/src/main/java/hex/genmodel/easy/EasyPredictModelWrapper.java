@@ -57,7 +57,6 @@ public class EasyPredictModelWrapper implements Serializable {
   // These private members are read-only after the constructor.
   public final GenModel m;
   private final RowToRawDataConverter rowDataConverter;
-  private final ErrorConsumer errorConsumer;
 
   private final boolean useExtendedOutput;
   private final boolean enableLeafAssignment;
@@ -284,7 +283,7 @@ public class EasyPredictModelWrapper implements Serializable {
   public EasyPredictModelWrapper(Config config) {
     m = config.getModel();
     // Ensure an error consumer is always instantiated to avoid missing null-check errors.
-    errorConsumer = config.getErrorConsumer() == null ? new VoidErrorConsumer() : config.getErrorConsumer();
+    ErrorConsumer errorConsumer = config.getErrorConsumer() == null ? new VoidErrorConsumer() : config.getErrorConsumer();
 
     // How to handle unknown categorical levels.
     useExtendedOutput = config.getUseExtendedOutput();
@@ -304,8 +303,17 @@ public class EasyPredictModelWrapper implements Serializable {
     } else {
       predictContributions = null;
     }
-    
-    rowDataConverter = makeRowDataConverter(config, errorConsumer);
+
+    CategoricalEncoding categoricalEncoding = config.getUseExternalEncoding() ?
+            CategoricalEncoding.AUTO : m.getCategoricalEncoding();
+    Map<String, Integer> columnMapping = categoricalEncoding.createColumnMapping(m);
+    Map<Integer, CategoricalEncoder> domainMap = categoricalEncoding.createCategoricalEncoders(m, columnMapping);
+
+    if (m instanceof ConverterFactoryProvidingModel) {
+      rowDataConverter = ((ConverterFactoryProvidingModel) m).makeConverterFactory(columnMapping, domainMap, errorConsumer, config);
+    } else {
+      rowDataConverter = new RowToRawDataConverter(m, columnMapping, domainMap, errorConsumer, config);
+    }
   }
 
 
@@ -368,23 +376,9 @@ public class EasyPredictModelWrapper implements Serializable {
   public AbstractPrediction predict(RowData data) throws PredictException {
     return predict(data, m.getModelCategory());
   }
-  
-  RowToRawDataConverter makeRowDataConverter(Config config, ErrorConsumer errorConsumer) {
-    CategoricalEncoding categoricalEncoding = config.getUseExternalEncoding() ? DefaultCategoricalEncoding.AUTO : m.getCategoricalEncoding();
-
-    RowToRawDataConverter rowDataConverter;
-    if (m instanceof MojoModel) {
-      rowDataConverter = ((MojoModel) m)._makeRowConverter(categoricalEncoding, errorConsumer, config);
-    } else {
-      Map<String, Integer> columnToOffsetIdx = categoricalEncoding.createColumnMapping(m);
-      Map<Integer, CategoricalEncoder> offsetToEncoder = categoricalEncoding.createCategoricalEncoders(m, columnToOffsetIdx);
-      rowDataConverter = new DefaultRowToRawDataConverter<>(columnToOffsetIdx, offsetToEncoder, errorConsumer, config);
-    }
-    return rowDataConverter;
-  }
 
   ErrorConsumer getErrorConsumer() {
-    return errorConsumer;
+    return rowDataConverter.getErrorConsumer();
   }
 
   /**

@@ -1,8 +1,12 @@
 package hex.genmodel.algos.gam;
 
+import hex.genmodel.ConverterFactoryProvidingModel;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
-import hex.genmodel.easy.*;
+import hex.genmodel.easy.CategoricalEncoder;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.RowToRawDataConverter;
 import hex.genmodel.utils.ArrayUtils;
 import hex.genmodel.utils.DistributionFamily;
 import hex.genmodel.utils.LinkFunctionType;
@@ -11,7 +15,7 @@ import java.util.Map;
 
 import static hex.genmodel.utils.ArrayUtils.nanArray;
 
-public abstract class GamMojoModelBase extends MojoModel {
+public abstract class GamMojoModelBase extends MojoModel implements ConverterFactoryProvidingModel {
   public LinkFunctionType _link_function;
   boolean _useAllFactorLevels;
   int _cats;
@@ -163,10 +167,10 @@ public abstract class GamMojoModelBase extends MojoModel {
   }
 
   @Override
-  public RowToRawDataConverter makeDefaultRowConverter(Map<String, Integer> columnToOffsetIdx,
-                                                       Map<Integer, CategoricalEncoder> offsetToEncoder,
-                                                       EasyPredictModelWrapper.ErrorConsumer errorConsumer,
-                                                       EasyPredictModelWrapper.Config config) {
-    return new GamRowToRawDataConverter(this, columnToOffsetIdx, offsetToEncoder, errorConsumer, config);
+  public RowToRawDataConverter makeConverterFactory(Map<String, Integer> modelColumnNameToIndexMap,
+                                                    Map<Integer, CategoricalEncoder> domainMap,
+                                                    EasyPredictModelWrapper.ErrorConsumer errorConsumer,
+                                                    EasyPredictModelWrapper.Config config) {
+    return new GamRowToRawDataConverter(this, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
   }
 }

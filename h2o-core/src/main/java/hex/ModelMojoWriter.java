@@ -82,11 +82,6 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     }
   }
 
-  @Override
-  protected final void writeModelKV() throws IOException {
-    writeModelData();
-  }
-  
   protected abstract void writeModelData() throws IOException;
 
   @Override
