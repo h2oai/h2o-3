@@ -42,7 +42,7 @@
 #' predictors <- c("age", "sibsp", "parch", "fare", "sex", "pclass")
 #' titanic[,response] <- as.factor(titanic[,response])
 #' titanic[,"pclass"] <- as.factor(titanic[,"pclass"])
-#' rfit = h2o.rulefit(y=response, x=predictors, training_frame = titanic, max_rule_length=10, 
+#' rfit <- h2o.rulefit(y = response, x = predictors, training_frame = titanic, max_rule_length = 10, 
 #' max_num_rules = 100, seed=1, model_type = "rules")
 #' }
 #' @export
