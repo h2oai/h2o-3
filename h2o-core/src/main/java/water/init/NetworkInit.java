@@ -20,7 +20,6 @@ import java.io.InputStreamReader;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
-import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -183,7 +182,7 @@ public class NetworkInit {
     final H2OHttpConfig config = new H2OHttpConfig();
     config.jks = args.jks;
     config.jks_pass = args.jks_pass;
-    config.jks_alias = args.jks_alias;
+    config.jks_alias = getJksAlias(args);
     config.loginType = parseLoginType(args);
     configureLoginType(config.loginType, args.login_conf);
     config.login_conf = args.login_conf;
@@ -194,6 +193,21 @@ public class NetworkInit {
     config.context_path = args.context_path;
     config.ensure_daemon_threads = args.embedded;
     return config;
+  }
+
+  static String getJksAlias(H2O.OptArgs args) {
+    return getJksAlias(args, H2O.SELF_ADDRESS);
+  }
+
+  static String getJksAlias(H2O.OptArgs args, InetAddress self) {
+    final String alias;
+    if (args.hostname_as_jks_alias) {
+      alias = args.ip != null ? args.ip : HostnameGuesser.localAddressToHostname(self);
+    } else
+      alias = args.jks_alias;
+    if (alias != null)
+      Log.info("HTTPS will be secured using a certificate with alias `" + alias + "`");
+    return alias;
   }
 
   /**
