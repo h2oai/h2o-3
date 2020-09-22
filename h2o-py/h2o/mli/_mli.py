@@ -579,11 +579,12 @@ def shap_explain_row(
             value=np.array([pair[1][0] for pair in picked_features])
         )
         plt.figure(figsize=figsize)
-        plt.barh(contributions["feature"], contributions["value"], fc="#b3ddf2")
+        plt.barh(range(contributions["feature"].shape[0]), contributions["value"], fc="#b3ddf2")
         plt.grid(True)
         plt.axvline(0, c="black")
         plt.xlabel("SHAP value")
         plt.ylabel("Feature")
+        plt.yticks(range(contributions["feature"].shape[0]), contributions["feature"])
         plt.title("SHAP explanation for {} on row {}{}\nprediction: {}".format(
             model.model_id,
             row_index,
@@ -736,6 +737,12 @@ def partial_dependences(
                     this list will get reused
     :return: a matplotlib figure object
     """
+    if target is not None:
+        if isinstance(target, (list, tuple)):
+            if len(target) > 1:
+                raise ValueError("Only one target can be specified!")
+            target = target[0]
+        target = [target]
     if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
         all_models = [model_id[0] for model_id in models.leaderboard[:, "model_id"]
             .as_data_frame(use_pandas=False, header=False)]
@@ -832,6 +839,12 @@ def individual_conditional_expectations(
     :param colormap: colormap name
     :return: a matplotlib figure object
     """
+    if target is not None:
+        if isinstance(target, (list, tuple)):
+            if len(target) > 1:
+                raise ValueError("Only one target can be specified!")
+            target = target[0]
+        target = [target]
     with no_progress():
         test_frame = test_frame.sort(model.actual_params["response_column"])
         is_factor = test_frame[column].isfactor()[0]
@@ -1567,7 +1580,7 @@ def explain(
             result["pdp_description"] = display(Description("pdp"))
             for column in columns_of_interest:
                 for target in targets:
-                    t = "_{}".format(target[0]) if target else ""
+                    t = "_{}".format(target) if target else ""
                     result["pdp__{}{}".format(column, t)] = display(partial_dependences(
                         models, column=column, target=target,
                         **_custom_args(user_overrides.get("partial_dependences"),

@@ -1340,6 +1340,10 @@ h2o.model_correlation <- function(object, newdata, top_n = 20,
 h2o.residual_analysis <- function(model, newdata) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
+  if ("H2OAutoML" %in% class(model))
+    stop("Residual analysis works only on a single model!")
+  if (h2o.isfactor(newdata[[model@allparameters$y]]))
+    stop("Residual analysis is not implemented for classification.")
   if (is.character(model)) {
     model <- h2o.getModel(model)
   }
@@ -1385,6 +1389,10 @@ h2o.partial_dependences <- function(object,
                                     max_factors = 30) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
+  if (missing(column))
+    stop("Column has to be specified!")
+  if (!column %in% names(newdata))
+    stop("Column was not found in the provided data set!")
   models_info <- .process_models_or_automl(object, newdata, best_of_family = best_of_family)
   if (h2o.nlevels(newdata[[column]]) > max_factors) {
     factor_frequencies <- .get_feature_count(newdata[[column]])
@@ -1435,6 +1443,10 @@ h2o.partial_dependences <- function(object,
         "Target: ", pdp[["target"]]
       )
 
+      col_name <- make.names(column)
+      rug_data <- stats::setNames(as.data.frame(newdata[[column]]), col_name)
+      rug_data[["text"]] <- paste0("Feature Value: ", rug_data[[col_name]])
+
       p <- ggplot2::ggplot(ggplot2::aes(
         x = .data[[make.names(column)]],
         y = .data$mean_response,
@@ -1446,7 +1458,7 @@ h2o.partial_dependences <- function(object,
           ymax = .data$mean_response + .data$stddev_response,
           group = .data$target
         )) +
-        ggplot2::geom_rug(ggplot2::aes(x = .data[[make.names(column)]], y = NULL),
+        ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL, fill = NULL),
                           sides = "b", alpha = 0.1, color = "black",
                           data = rug_data
         )
@@ -1590,6 +1602,11 @@ h2o.individual_conditional_expectations <- function(model,
                                                     max_factors = 30) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
+  if (missing(column))
+    stop("Column has to be specified!")
+  if (!column %in% names(newdata))
+    stop("Column was not found in the provided data set!")
+
   models_info <- .process_models_or_automl(model, newdata, require_single_model = TRUE)
 
   with_no_h2o_progress({

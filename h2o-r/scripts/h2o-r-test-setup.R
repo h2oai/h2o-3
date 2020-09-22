@@ -186,7 +186,7 @@ function() {
                     "kvstore.R", "frame.R", "targetencoder.R", "astfun.R","automl.R", "import.R", "parse.R", "export.R", "models.R", "edicts.R",
                     "coxph.R", "coxphutils.R", "gbm.R", "glm.R", "gam.R", "glrm.R", "kmeans.R", "deeplearning.R", "randomforest.R", "generic.R",
                     "naivebayes.R", "pca.R", "svd.R", "locate.R", "grid.R", "word2vec.R", "w2vutils.R", "stackedensemble.R", "rulefit.R",
-                    "predict.R", "xgboost.R", "isolationforest.R", "psvm.R", "segment.R", "tf-idf.R")
+                    "predict.R", "xgboost.R", "isolationforest.R", "psvm.R", "segment.R", "tf-idf.R", "mli.R")
         src_path <- paste(h2oRDir,"h2o-package","R",sep=.Platform$file.sep)
         invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))
 

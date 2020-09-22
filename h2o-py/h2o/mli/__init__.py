@@ -27,6 +27,7 @@ def register_mli_methods():
     h2o.model.ModelBase.explain_row = explain_row
     h2o.model.ModelBase.individual_conditional_expectations = individual_conditional_expectations
 
+    h2o.automl._base.H2OAutoMLBaseMixin.partial_dependences = partial_dependences
     h2o.automl._base.H2OAutoMLBaseMixin.variable_importance_heatmap = variable_importance_heatmap
     h2o.automl._base.H2OAutoMLBaseMixin.model_correlation_heatmap = model_correlation_heatmap
     h2o.automl._base.H2OAutoMLBaseMixin.explain = explain
