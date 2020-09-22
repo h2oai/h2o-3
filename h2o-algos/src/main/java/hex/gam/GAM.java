@@ -39,7 +39,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
   private double[] _cv_alpha = null;  // best alpha value found from cross-validation
   private double[] _cv_lambda = null; // bset lambda value found from cross-validation
   
-  IcedHashSet<Key<Frame>> _validKeys = null;  // store validation frame keys from various folds
+  IcedHashSet<Key<Frame>> _validKeys = new IcedHashSet<>(); // store validation frame keys from various folds
   
   @Override
   public ModelCategory[] can_build() {
@@ -87,7 +87,6 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     if (error_count() > 0) {
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GAM.this);
     }
-    _validKeys = new IcedHashSet<>();
     super.computeCrossValidation();
   }
 
@@ -322,7 +321,6 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     Key<Frame>[] _gamFrameKeys;
     Key<Frame>[] _gamFrameKeysCenter;
     double[][] _gamColMeans; // store gam column means without centering.
-
     /***
      * This method will take the _train that contains the predictor columns and response columns only and add to it
      * the following:
@@ -445,13 +443,18 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         _valid = rebalance(cleanUpInputFrame(_parms.valid().clone(), _parms, _gamColNamesCenter, _binvD, _zTranspose, _knots,
                 _numKnots), false, _result+".temporary.valid");
       }
-      Frame newValidFrame = _valid==null?null:new Frame(_valid);
-      
       DKV.put(newTFrame); // This one will cause deleted vectors if add to Scope.track
-      if (newValidFrame != null)
-        DKV.put(newValidFrame);
-      _job.update(0, "Initializing model training");
-      buildModel(newTFrame, newValidFrame); // build gam model 
+      try {
+        Frame newValidFrame = _valid == null ? null : new Frame(_valid);
+        if (newValidFrame != null) {
+          DKV.put(newValidFrame);
+        }
+
+        _job.update(0, "Initializing model training");
+        buildModel(newTFrame, newValidFrame); // build gam model
+      } finally {
+        Scope.exit();
+      }
     }
 
     public final void buildModel(Frame newTFrame, Frame newValidFrame) {
@@ -504,11 +507,10 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           keepFrameKeys(keep, newValidFrame._key);  // save valid frame keys for scoring later
           _validKeys.addIfAbsent(newValidFrame._key);   // save valid frame keys from folds to remove later
           model._validKeys = _validKeys;  // move valid keys here to model._validKeys to be removed later
-          model.update(_job);
         }
-
+        model.update(_job);
         model.unlock(_job);
-        Scope.untrack(keep);
+        Scope.exit(keep.toArray(new Key[keep.size()]));
       }
     }
     

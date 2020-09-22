@@ -19,6 +19,7 @@ public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColum
   int _splineType;
   public int _numKnots;      // number of knots
   public double[][] _bInvD;  // store inv(B)*D
+  public int _initChunks;
   double[] _u; // store transpose(X)*1, sum across rows per column
   public double[][] _ZTransp;  // store Z matrix transpose
   public double[][] _penaltyMat;  // store penalty matrix
@@ -32,12 +33,13 @@ public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColum
      CubicRegressionSplines crSplines = new CubicRegressionSplines(numKnots, knots);
     _bInvD = crSplines.gen_BIndvD(crSplines._hj);
     _penaltyMat = crSplines.gen_penalty_matrix(crSplines._hj, _bInvD);
-    _maxAbsRowSum = new double[gamx.vec(0).nChunks()];
+    _initChunks = gamx.vec(0).nChunks();
     _knots = knots;
   }
 
   @Override
   public void map(Chunk[] chk, NewChunk[] newGamCols) {
+    _maxAbsRowSum = new double[_initChunks];
     int cIndex = chk[0].cidx();
     _maxAbsRowSum[cIndex] = Double.NEGATIVE_INFINITY;
     int chunkRows = chk[0].len(); // number of rows in chunk
