@@ -113,21 +113,6 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
       return concordance(startVec, stopVec, statusVec, strataVecs, estimateVec);
     }
 
-    static private boolean isValidComparison(double time1, double time2, boolean event1, boolean event2) {
-      if (time1 == time2) {
-        return event1 != event2;
-      }
-      if (event1 && event2) {
-        return true;
-      }
-      if (event1 && time1 < time2) {
-        return true;
-      }
-      if (event2 &&  time2 < time1) {
-        return true;
-      }
-      return false;
-    }
 
     static class Stats {
       final long ntotals;
@@ -168,16 +153,16 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
     }
     
     static Stats concordance(final Vec startVec, final Vec stopVec, final Vec eventVec, List<Vec> strataVecs, final Vec estimateVec) {
-      final long length = estimateVec.length();
-
       Scope.enter();
-
+      Frame fr = null;
+      
       try {
         final Vec durations = durations(startVec, stopVec);
-        final Frame fr = prepareFrameForConcordanceComputation(eventVec, strataVecs, estimateVec, durations);
-        return concordanceStats(fr, length);
+        fr = prepareFrameForConcordanceComputation(eventVec, strataVecs, estimateVec, durations);
+        return concordanceStats(fr);
       } finally {
         Scope.exit();
+        fr.delete(false);
       }
     }
 
@@ -190,7 +175,6 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
         fr.add("strata_" + i, strataVecs.get(i));
       }
       DKV.put(fr);
-      Scope.track(fr);
       return fr;
     }
 
@@ -199,7 +183,6 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
       Frame fr1 = new Frame(Key.make(), new String[]{"start", "stop"}, new Vec[]{vec, stopVec});
       DKV.put(fr1);
 
-      Scope.track(fr1);
       Frame frame = Scope.track(new MRTask() {
         @Override
         public void map(Chunk c0, Chunk c1, NewChunk nc) {
@@ -209,10 +192,12 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
       }.doAll(1, Vec.T_NUM, fr1)
               .outputFrame(Key.make("durations_" + fr1._key), new String[]{"durations"}, null));
       Scope.track(frame);
+      
+      fr1.delete(false);
       return frame.vec(0);
     }
 
-    private static Stats concordanceStats(Frame fr, long length){
+    private static Stats concordanceStats(Frame fr){
       final Frame withoutNas = removeNAs(fr);
 
       final int[] stratasAndDuration = new int[withoutNas.numCols() - 2];
@@ -228,6 +213,7 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
         }
 
         final Frame sorted = withoutNas.sort(stratasAndDuration);
+        Scope.track(sorted);
 
         final List<Vec.Reader> strataCols = stream(strataIndexes).boxed().map(i -> sorted.vec(i).new Reader()).collect(toList());
 
