@@ -1074,17 +1074,17 @@ h2o.shap_explain_row <-
     if (plot_type == "barplot") {
       contributions <- contributions[, names(contributions) != "BiasTerm"]
 
-      ordered_features <- names(contributions)[order(contributions)]
+      ordered_features <- contributions[order(contributions)]
       features <- character()
       if ("positive" %in% contribution_type) {
-        positive_features <- ordered_features[ordered_features > 0]
+        positive_features <- names(ordered_features)[ordered_features > 0]
         features <- c(features, tail(positive_features, n = min(
           top_n_features,
           length(positive_features)
         )))
       }
       if ("negative" %in% contribution_type) {
-        negative_features <- ordered_features[ordered_features < 0]
+        negative_features <- names(ordered_features)[ordered_features < 0]
         features <- c(features, head(negative_features, n = min(
           top_n_features,
           length(negative_features)
