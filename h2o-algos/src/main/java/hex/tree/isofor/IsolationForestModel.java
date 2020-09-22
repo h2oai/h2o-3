@@ -2,6 +2,7 @@ package hex.tree.isofor;
 
 import hex.ModelCategory;
 import hex.ModelMetrics;
+import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.utils.ArrayUtils;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
@@ -168,6 +169,10 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
     throw new UnsupportedOperationException("Isolation Forest support only MOJOs.");
   }
 
+  @Override protected CategoricalEncoding getGenModelEncoding() {
+    return super.getGenModelEncoding();
+  }
+  
   @Override
   public IsolationForestMojoWriter getMojo() {
     return new IsolationForestMojoWriter(this);

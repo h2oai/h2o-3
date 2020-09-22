@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import static hex.util.LinearAlgebraUtils.toEigenArray;
+
 public abstract class SharedTree<
     M extends SharedTreeModel<M,P,O>, 
     P extends SharedTreeModel.SharedTreeParameters, 
@@ -162,6 +164,8 @@ public abstract class SharedTree<
       _ncols = _train.numCols()-(isSupervised()?1:0)-numSpecialCols();
 
     PlattScalingHelper.initCalibration(this, _parms, expensive);
+
+    _orig_projection_array = LinearAlgebraUtils.toEigenProjectionArray(_origTrain, _train, expensive);
   }
 
   protected void validateRowSampleRate() {
