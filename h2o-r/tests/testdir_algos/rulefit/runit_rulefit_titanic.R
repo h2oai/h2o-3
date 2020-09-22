@@ -24,7 +24,7 @@ test.rulefit.titanic <- function() {
 
     print(rfit@model$rule_importance)
 
-    h2o.predict(rf_h2o, newdata=test)
+    h2o.predict(rfit, newdata = test)
     print(rf_h2o@model$rule_importance)
 
     expect_that(h2o.auc(h2o.performance(rf_h2o)), equals(h2o.auc(h2o.performance(rf_h2o, newdata =  test))))
