@@ -17,8 +17,7 @@ automl.multinomial.test <- function() {
                     training_frame = train,
                     project_name = "automl.multinomial.test",
                     seed = 1, 
-                    max_models = 3,
-                    stopping_rounds = 0)
+                    max_models = 3)
   
   # Check that there's a StackedEnsemble model in the leaderboard
   expect_true(sum(grepl("StackedEnsemble", as.vector(aml@leaderboard$model_id))) > 0)
