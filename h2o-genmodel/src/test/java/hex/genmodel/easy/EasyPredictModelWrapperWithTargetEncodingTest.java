@@ -19,7 +19,7 @@ public class EasyPredictModelWrapperWithTargetEncodingTest {
 
   @Test
   public void targetEncodingIsDisabledWhenEncodingMapIsNotProvided() throws PredictException {
-    MyTEModel model = new MyTEModel();
+    MyTEModel model = new MyTEModel(false);
 
     EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(model);
 
@@ -31,14 +31,14 @@ public class EasyPredictModelWrapperWithTargetEncodingTest {
     try {
       modelWrapper.predictTargetEncoding(row);
       fail();
-    } catch (NullPointerException ex) {
+    } catch (IllegalStateException ex) {
       assertEquals((String) row.get("embarked"), "S");
     }
   }
 
   @Test
   public void serializeWrapperTest() throws Exception {
-    TargetEncoderMojoModel teMojoModel = new MyTEModel();
+    TargetEncoderMojoModel teMojoModel = new MyTEModel(true);
 
     EasyPredictModelWrapper m = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
             .setModel(teMojoModel));
@@ -74,12 +74,16 @@ public class EasyPredictModelWrapperWithTargetEncodingTest {
             null //age
     };
 
-    private MyTEModel() {
+    private MyTEModel(boolean withEncodings) {
       super(new String[]{"embarked", "age"}, DOMAINS, null);
-      EncodingMaps encodingMaps = new EncodingMaps();
-      EncodingMap encodingMapForEmbarked = new EncodingMap(2);
-      encodingMapForEmbarked.add(0, new double[]{3,5});
-      encodingMaps.put("embarked", encodingMapForEmbarked);
+      
+      if (withEncodings) {
+        EncodingMaps encodingMaps = new EncodingMaps();
+        EncodingMap encodingMapForEmbarked = new EncodingMap(2);
+        encodingMapForEmbarked.add(0, new double[]{3, 5});
+        encodingMaps.put("embarked", encodingMapForEmbarked);
+        setEncodings(encodingMaps);
+      }
       
       Map<String, Integer> teColumnNameToIdx = new HashMap<>();
       teColumnNameToIdx.put("embarked", 0);
