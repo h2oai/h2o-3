@@ -34,7 +34,7 @@ public class TargetEncoding implements PreprocessingStep {
     private TargetEncoderPreprocessor _tePreprocessor;
     private TargetEncoderModel _teModel;
     private final List<Completer> _disposables = new ArrayList<>();
-    private int _cardinalityThreshold = 0;  // the minimal cardinality for a column to be TE encoded. 
+    private int _cardinalityThreshold = 10;  // the minimal cardinality for a column to be TE encoded. 
 
     public TargetEncoding(AutoML aml) {
         _aml = aml;
