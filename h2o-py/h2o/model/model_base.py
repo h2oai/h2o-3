@@ -1716,7 +1716,6 @@ class ModelBase(h2o_meta(Keyed)):
 
 
 
-
 def _get_matplotlib_pyplot(server):
     try:
         # noinspection PyUnresolvedReferences

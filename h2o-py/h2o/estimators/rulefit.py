@@ -207,3 +207,12 @@ class H2ORuleFitEstimator(H2OEstimator):
         self._parms["distribution"] = distribution
 
 
+    def rule_importance(self):
+        """
+        Retrieve rule importances for a Rulefit model
+
+        :return: H2OTwoDimTable
+        """
+        if self._model_json["algo"] != "rulefit":
+            raise H2OValueError("This function is available for Rulefit models only")
+        return self._model_json["output"]['rule_importance']
