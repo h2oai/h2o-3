@@ -4,7 +4,6 @@ import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderOutput;
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import water.DKV;
 import water.Scope;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
@@ -34,7 +33,7 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
 
   @Override
   public void init(boolean expensive) {
-    disableIgnoreConstColsFeature();
+    disableIgnoreConstColsFeature(expensive);
     super.init(expensive);
     assert _parms._nfolds == 0 : "nfolds usage forbidden in TargetEncoder";
     
@@ -64,9 +63,9 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
     }
   }
 
-  private void disableIgnoreConstColsFeature() {
+  private void disableIgnoreConstColsFeature(boolean expensive) {
     _parms._ignore_const_cols = false;
-    if (logger.isInfoEnabled())
+    if (expensive && logger.isInfoEnabled())
       logger.info("We don't want to ignore any columns during target encoding transformation " + 
               "therefore `_ignore_const_cols` parameter was set to `false`");
   }

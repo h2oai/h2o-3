@@ -33,7 +33,6 @@ import java.net.URI;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import static water.util.FrameUtils.categoricalEncoder;
 import static water.util.FrameUtils.cleanUp;
@@ -268,6 +267,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       final boolean _needResponse;
       boolean needsResponse() { return _needResponse; }
     }
+    
+    public Key<ModelPreprocessor>[] _preprocessors;
+    
     public long _seed = -1;
     public long getOrMakeRealSeed(){
       while (_seed==-1) {
@@ -298,6 +300,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean _check_constant_response = true;
 
     public boolean _is_cv_model; //internal helper
+    public int _cv_fold = -1; //internal use
 
     // Scoring a model on a dataset is not free; sometimes it is THE limiting
     // factor to model building.  By default, partially built models are only
@@ -396,6 +399,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** @return the validation frame instance, or null
      *  if a validation frame was not specified */
     public final Frame valid() { return _valid==null ? null : _valid.get(); }
+    
+    public String[] getNonPredictors() {
+        return Arrays.stream(new String[]{_weights_column, _offset_column, _fold_column, _response_column})
+                .filter(Objects::nonNull)
+                .toArray(String[]::new);
+    }
 
     /** Read-Lock both training and validation User frames. */
     public void read_lock_frames(Job job) {
@@ -1297,6 +1306,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  if any factor column has no levels in common.
    */
   public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics) {
+    return adaptTestForTrain(test, expensive, computeMetrics, false);
+  }
+  
+  public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics, boolean catEncoded) {
     return adaptTestForTrain(
             test,
             _output._origNames,
@@ -1309,7 +1322,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             _output.interactionBuilder(),
             getToEigenVec(),
             _toDelete,
-            false
+            catEncoded
     );
   }
 
@@ -1468,7 +1481,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       // check if we first need to expand categoricals before calling this method again
       if (hasCategoricalPredictors) {
-        Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, parms._categorical_encoding, tev, parms._max_categorical_levels);
+        Frame updated = categoricalEncoder(test, parms.getNonPredictors(), parms._categorical_encoding, tev, parms._max_categorical_levels);
         toDelete.put(updated._key, "categorically encoded frame");
         test.restructure(updated.names(), updated.vecs()); //updated in place
         String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactionBldr, tev, toDelete, true /*catEncoded*/);
@@ -1583,9 +1596,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
+    List<Frame> tmpFrames = new ArrayList<>();
+    applyPreprocessors(adaptFr, tmpFrames);
     computeMetrics = computeMetrics && 
             (!_output.hasResponse() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
+    tmpFrames.add(adaptFr);
     // clean up the previous score warning messages
     _warningsP = new String[0];
     if (msg.length > 0) {
@@ -1625,10 +1641,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           CategoricalWrappedVec.updateDomain(output.vec(0), sdomain);
       }
     }
-    Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, fr);
+    for (Frame tmp : tmpFrames) Frame.deleteTempFrameAndItsNonSharedVecs(tmp, fr);
     return output;
   }
-
+  
+  private void applyPreprocessors(Frame fr, List<Frame> tmpFrames) {
+    if (_parms._preprocessors == null) return;
+    
+    for (Key<ModelPreprocessor> key : _parms._preprocessors) {
+      DKV.prefetch(key);
+    }
+    Frame result = fr;
+    for (Key<ModelPreprocessor> key : _parms._preprocessors) {
+      ModelPreprocessor preprocessor = key.get();
+      result = preprocessor.processScoring(result, this);
+      tmpFrames.add(result);
+    }
+    fr.restructure(result.names(), result.vecs()); //inplace
+  }
+  
   /**
    * Compute the deviances for each observation
    * @param valid Validation Frame (must contain the response)

@@ -25,6 +25,8 @@ import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.TwoDimTable;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import static ai.h2o.targetencoding.EncodingsComponents.NO_TARGET_CLASS;
@@ -378,7 +380,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
       Chunk runifCol = cs[_runifIdx];
       for (int i = 0; i < column._len; i++) {
         if (!column.isNA(i)) {
-          column.set(i, column.atd(i) + (runifCol.atd(i) * 2 * _noiseLevel - _noiseLevel));
+          column.set(i, column.atd(i) + (runifCol.atd(i) * 2 - 1) * _noiseLevel);
         }
       }
     }
@@ -546,6 +548,18 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
     renameColumn(fr, fr.find(oldName), newName);
   }
 
+  static Map<String, Integer> nameToIndex(Frame fr) {
+    return nameToIndex(fr.names());
+  }
+
+  static Map<String, Integer> nameToIndex(String[] columns) {
+    Map<String, Integer> nameToIdx = new HashMap<>(columns.length);
+    for (int i = 0; i < columns.length; i++) {
+      nameToIdx.put(columns[i], i);
+    }
+    return nameToIdx;
+  }
+  
   /**
    * @return Frame that is registered in DKV
    */

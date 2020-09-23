@@ -674,5 +674,46 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     }
   }
 
+  @Test
+  public void test_force_encoding_using_a_specific_fold_for_CV() {
+    try {
+      Scope.enter();
+      Frame fr = new TestFrameBuilder()
+              .withName("trainFrame")
+              .withColNames("categorical", "target", "foldc")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ar("N", "N", "Y", "Y", "Y"))
+              .withDataForCol(2, ar(  1,   2,   2,   1,   2))
+              .build();
+
+      TargetEncoderModel.TargetEncoderParameters teParams = new TargetEncoderModel.TargetEncoderParameters();
+      teParams._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
+      teParams._response_column = "target";
+      teParams._fold_column = "foldc";
+      teParams._train = fr._key;
+      teParams._seed = 42;
+      teParams._noise = 0;
+
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      Frame encodedAsTrain = teModel.transformTraining(fr);
+      Scope.track(encodedAsTrain);
+      assertVecEquals(dvec(1, 1, 1, 0.5, 0), encodedAsTrain.vec("categorical_te"), 1e-5);
+
+      Frame encodedAsFold1 = teModel.transformTraining(fr, 1);
+      Scope.track(encodedAsFold1);
+      assertVecEquals(dvec(1, .5, .5, .5, 1), encodedAsFold1.vec("categorical_te"), 1e-3);
+      
+      Frame encodedAsFold2= teModel.transformTraining(fr, 2);
+      Scope.track(encodedAsFold2);
+      assertVecEquals(dvec(0, 1, 1, 1, 0), encodedAsFold2.vec("categorical_te"), 1e-3);
+
+    } finally {
+      Scope.exit();
+    }
+  }
 
 }

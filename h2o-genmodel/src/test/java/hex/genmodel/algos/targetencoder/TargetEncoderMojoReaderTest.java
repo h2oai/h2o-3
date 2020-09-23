@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -25,12 +26,22 @@ public class TargetEncoderMojoReaderTest {
     @Override public String getModelName() { return null; }
     @Override protected void readModelData() throws IOException {
       _model._nclasses = 2;
-      _model._targetEncodingMap = parseEncodingMap();
+      _model.setEncodings(parseEncodingMap());
     }
     @Override public String mojoVersion() { return null; }
     
     public void initModel() {
-      _model = makeModel(new String[0], new String[0][], "response");
+      _model = makeModel(
+              new String[]{"embarked", "sex", "foo", "bar", "response"}, 
+              new String[][]{
+                      new String[] {"n", "y"},
+                      new String[] {"f", "m"},
+                      null, 
+                      null,
+                      null
+              }, 
+              "response"
+      );
     }
     
     public TargetEncoderMojoModel getModel() {
@@ -66,7 +77,7 @@ public class TargetEncoderMojoReaderTest {
     TestMojoReader testMojoReader = new TestMojoReader(mojoReaderBackendMock);
     testMojoReader.initModel();
     testMojoReader.readModelData();
-    EncodingMaps parsedEncodings = testMojoReader.getModel()._targetEncodingMap;
+    Map<String, EncodingMap> parsedEncodings = testMojoReader.getModel()._encodingsByCol;
     assertArrayEquals(parsedEncodings.get("embarked").getNumDen(0), new double[]{2, 4}, 1e-8);
     assertArrayEquals(parsedEncodings.get("sex").getNumDen(0), new double[]{3, 42}, 1e-8);
 

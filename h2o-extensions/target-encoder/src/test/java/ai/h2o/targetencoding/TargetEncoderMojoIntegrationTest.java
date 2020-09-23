@@ -341,9 +341,9 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
     assertEquals("Transformation failed " + inconsistencyCounter + " times out of " + numberOfRuns + " runs",0, inconsistencyCounter);
   }
 
-  private double getEncodedCategory(Frame fr, String categoricalColumn, String category, EncodingMaps encodingMaps) {
+  private double getEncodedCategory(Frame fr, String categoricalColumn, String category, TargetEncoderMojoModel teModel) {
     int catVal = ArrayUtils.find(fr.vec(categoricalColumn).domain(), category);
-    double[] numDen = encodingMaps.get(categoricalColumn).getNumDen( catVal);
+    double[] numDen = teModel.getEncodings(categoricalColumn).getNumDen( catVal);
     return numDen[0] / numDen[1];
   }
 
@@ -401,10 +401,9 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
 
       double[] encodings = teModelWrapper.predictTargetEncoding(row).transformations;
       //Check that specified in the test categorical columns have been encoded in accordance with teMap
-      EncodingMaps teMap = loadedMojoModel._targetEncodingMap;
 
-      double homeDestEnc = getEncodedCategory(fr, "home.dest", homeDestCat, teMap);
-      double embarkedEnc = getEncodedCategory(fr, "embarked", embarkedCat, teMap);
+      double homeDestEnc = getEncodedCategory(fr, "home.dest", homeDestCat, loadedMojoModel);
+      double embarkedEnc = getEncodedCategory(fr, "embarked", embarkedCat, loadedMojoModel);
 
       assertEquals(encodings[1], homeDestEnc, 1e-5);
       assertEquals(encodings[0], embarkedEnc, 1e-5);
@@ -468,10 +467,9 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
       // Check that specified in the test categorical columns have been encoded in accordance with encoding map
       // We reusing static helper methods from TargetEncoderMojoModel as it is not the point of current test to check them.
       // We want to check here that proper blending params were being used during `.transformWithTargetEncoding()` transformation
-      EncodingMaps loadedEncodingMap = loadedMojoModel._targetEncodingMap;
 
       String teColumn = "home.dest";
-      EncodingMap encodings = loadedEncodingMap.get(teColumn);
+      EncodingMap encodings = loadedMojoModel.getEncodings(teColumn);
       
       double expectedPriorMean = TargetEncoderHelper.computePriorMean(teMap.get("embarked"));
       assertEquals(expectedPriorMean, encodings.getPriorMean(), 1e-6);
@@ -728,11 +726,9 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
       row.put("embarked", embarkedCat);
 
       double[] currentEncodings = teModelWrapper.predictTargetEncoding(row).transformations;
-      //Let's check that specified in the test categorical columns have been encoded in accordance with teMap
-      EncodingMaps teMap = loadedMojoModel._targetEncodingMap;
-
-      double encodingForHomeDest = getEncodedCategory(fr, "home.dest", homeDestCat, teMap);
-      double encodingForHomeEmbarked = getEncodedCategory(fr, "embarked", embarkedCat, teMap);
+      //Let's check that specified in the test categorical columns have been encoded in accordance with encodings
+      double encodingForHomeDest = getEncodedCategory(fr, "home.dest", homeDestCat, loadedMojoModel);
+      double encodingForHomeEmbarked = getEncodedCategory(fr, "embarked", embarkedCat, loadedMojoModel);
       // Because of the random swap we need to know which index is lower so that we know order of transformations/predictions
       int currentHomeDestPredIdx = fr.find("home.dest") < fr.find("embarked") ? 0 : 1;
 
