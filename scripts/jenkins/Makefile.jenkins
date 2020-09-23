@@ -495,8 +495,8 @@ test-mojo-compatibility:
 ifeq ($(wildcard ../mojoland),)
 	git clone https://github.com/h2oai/mojoland ../mojoland
 endif
-	cd ../mojoland && ./gradlew clean
-	cd ../mojoland && ./gradlew build
+	cd ../mojoland && JAVA_HOME="$$JAVA_HOME_8" ./gradlew clean
+	cd ../mojoland && JAVA_HOME="$$JAVA_HOME_8" ./gradlew build
 	cd ../mojoland/mojo-py && H2O_JAVA_HOME="$$JAVA_HOME_8" python in_mojo_veritas.py
 
 check-leaks:
