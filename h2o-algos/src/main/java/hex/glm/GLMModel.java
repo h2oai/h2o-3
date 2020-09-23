@@ -1418,6 +1418,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         }
       return null;
     }
+
+    public Submodel getSubmodel(int submodel_index) {
+      assert submodel_index < _submodels.length : "submodel_index specified exceeds the submodels length.";
+      return _submodels[submodel_index];
+    }
   }
 
 

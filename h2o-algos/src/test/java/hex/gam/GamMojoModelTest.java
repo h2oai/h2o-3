@@ -18,70 +18,13 @@ import java.util.ArrayList;
 import static hex.gam.GamTestPiping.getModel;
 import static hex.gam.GamTestPiping.massageFrame;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 import static water.TestUtil.parse_test_file;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
 public class GamMojoModelTest {
   public static final double _tol = 1e-6;
-
-  @Rule
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
-  
-  @Test
-  public void testNaN() {
-    Scope.enter();
-    try {
-      final Frame fr = Scope.track(createTrainFrameWithNaNs());
-      final GAMModel.GAMParameters params = new GAMModel.GAMParameters();
-      int cidx = 0;
-      String[] gam_columns = new String[3];
-      for (int i = 0; i < fr.numCols(); i++) {
-        if (!fr.name(i).equals("response")&& fr.vec(i).get_type() == Vec.T_NUM) {
-          gam_columns[cidx++] = fr.name(i);
-          if (cidx == gam_columns.length) break;
-        }
-      }
-      params._response_column = "response";
-      params._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.MeanImputation;
-      params._family = gaussian;
-      params._gam_columns = gam_columns;
-      params._scale = new double[] {0.001, 0.001, 0.001};
-      params._train = fr._key;
-      final GAMModel model = new GAM(params).trainModel().get();
-      Scope.track_generic(model);
-      Frame predictFrame = Scope.track(model.score(fr));
-      assertTrue(model.testJavaScoring(fr, predictFrame, _tol));
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  // test and make sure that tweedie mojo works.
-  @Test
-  public void testTweedie() {
-    Scope.enter();
-    try {
-      final Frame fr = Scope.track(parse_test_file("smalldata/glm_test/auto.csv"));
-      final GAMModel.GAMParameters params = new GAMModel.GAMParameters();
-      params._response_column = "y";
-      params._family = tweedie;
-      params._link = GLMModel.GLMParameters.Link.tweedie;
-      params._tweedie_variance_power = 1.5;
-      params._tweedie_link_power = 0.5;
-      params._ignored_columns = new String[]{"ID"};
-      params._gam_columns = new String[]{"x.TRAVTIME"};
-      params._num_knots = new int[]{5};
-      params._train = fr._key;
-      final GAMModel model = new GAM(params).trainModel().get();
-      Scope.track_generic(model);
-      Frame predictFrame = Scope.track(model.score(fr));
-      assertTrue(model.testJavaScoring(fr, predictFrame, _tol));
-    } finally {
-      Scope.exit();
-    }
-  }
 
   // test and make sure that quasibinomial mojo works
   @Test
@@ -183,6 +126,33 @@ public class GamMojoModelTest {
       Scope.exit();
     }
   }
+
+  // test and make sure that tweedie mojo works.
+  @Test
+  public void testTweedie() {
+    Scope.enter();
+    try {
+      final Frame fr = Scope.track(parse_test_file("smalldata/glm_test/auto.csv"));
+      final GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+      params._response_column = "y";
+      params._family = tweedie;
+      params._link = GLMModel.GLMParameters.Link.tweedie;
+      params._tweedie_variance_power = 1.5;
+      params._tweedie_link_power = 0.5;
+      params._ignored_columns = new String[]{"ID"};
+      params._gam_columns = new String[]{"x.TRAVTIME"};
+      params._num_knots = new int[]{5};
+      params._train = fr._key;
+      final GAMModel model = new GAM(params).trainModel().get();
+      Scope.track_generic(model);
+      Frame predictFrame = Scope.track(model.score(fr));
+      System.out.println("Starting gam tweedie mojo test...");
+      assertTrue(model.testJavaScoring(fr, predictFrame, _tol));
+      System.out.println("successfully completed gam tweedie mojo test...");
+    } finally {
+      Scope.exit();
+    }
+  }
   
   public GAMModel.GAMParameters buildGamParams(Frame train, GLMModel.GLMParameters.Family fam) {
     GAMModel.GAMParameters paramsO = new GAMModel.GAMParameters();
@@ -213,6 +183,37 @@ public class GamMojoModelTest {
     }
     String[] gam_columns = new String[numericCols.size()];
     return numericCols.toArray(gam_columns);
+  }
+
+  @Rule
+  public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Test
+  public void testNaN() {
+    Scope.enter();
+    try {
+      final Frame fr = Scope.track(createTrainFrameWithNaNs());
+      final GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+      int cidx = 0;
+      String[] gam_columns = new String[3];
+      for (int i = 0; i < fr.numCols(); i++) {
+        if (!fr.name(i).equals("response")&& fr.vec(i).get_type() == Vec.T_NUM) {
+          gam_columns[cidx++] = fr.name(i);
+          if (cidx == gam_columns.length) break;
+        }
+      }
+      params._response_column = "response";
+      params._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.MeanImputation;
+      params._family = gaussian;
+      params._gam_columns = gam_columns;
+      params._scale = new double[] {0.001, 0.001, 0.001};
+      params._train = fr._key;
+      final GAMModel model = new GAM(params).trainModel().get();
+      Scope.track_generic(model);
+      Frame predictFrame = Scope.track(model.score(fr));
+      assertTrue(model.testJavaScoring(fr, predictFrame, _tol));
+    } finally {
+      Scope.exit();
+    }
   }
   
   private Frame createTrainFrameWithNaNs() {
