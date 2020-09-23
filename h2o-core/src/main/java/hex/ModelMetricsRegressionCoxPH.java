@@ -1,9 +1,6 @@
 package hex;
 
-import water.DKV;
-import water.Key;
 import water.MRTask;
-import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -153,47 +150,35 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
     }
     
     static Stats concordance(final Vec startVec, final Vec stopVec, final Vec eventVec, List<Vec> strataVecs, final Vec estimateVec) {
-      Scope.enter();
-      Frame fr = null;
-      
-      try {
-        final Vec durations = durations(startVec, stopVec);
-        fr = prepareFrameForConcordanceComputation(eventVec, strataVecs, estimateVec, durations);
-        return concordanceStats(fr);
-      } finally {
-        Scope.exit();
-        fr.delete(false);
-      }
+      final Vec durations = durations(startVec, stopVec);
+      Frame fr = prepareFrameForConcordanceComputation(eventVec, strataVecs, estimateVec, durations);
+      return concordanceStats(fr);
     }
 
     private static Frame prepareFrameForConcordanceComputation(Vec eventVec, List<Vec> strataVecs, Vec estimateVec, Vec durations) {
-      final Frame fr = new Frame(Key.make());
+      final Frame fr = new Frame();
       fr.add("duration", durations);
       fr.add("event", eventVec);
       fr.add("estimate", estimateVec);
       for (int i = 0; i < strataVecs.size(); i++) {
         fr.add("strata_" + i, strataVecs.get(i));
       }
-      DKV.put(fr);
       return fr;
     }
 
     private static Vec durations(Vec startVec, Vec stopVec) {
       Vec vec = null == startVec ? stopVec.makeZero() : startVec;
-      Frame fr1 = new Frame(Key.make(), new String[]{"start", "stop"}, new Vec[]{vec, stopVec});
-      DKV.put(fr1);
+      Frame fr1 = new Frame(new String[]{"start", "stop"}, new Vec[]{vec, stopVec});
 
-      Frame frame = Scope.track(new MRTask() {
+      Frame frame = new MRTask() {
         @Override
         public void map(Chunk c0, Chunk c1, NewChunk nc) {
           for (int i = 0; i < c0._len; i++)
             nc.addNum(c1.atd(i) - c0.atd(i));
         }
       }.doAll(1, Vec.T_NUM, fr1)
-              .outputFrame(Key.make("durations_" + fr1._key), new String[]{"durations"}, null));
-      Scope.track(frame);
+              .outputFrame(new String[]{"durations"}, null);
       
-      fr1.delete(false);
       return frame.vec(0);
     }
 
@@ -213,7 +198,6 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
         }
 
         final Frame sorted = withoutNas.sort(stratasAndDuration);
-        Scope.track(sorted);
 
         final List<Vec.Reader> strataCols = stream(strataIndexes).boxed().map(i -> sorted.vec(i).new Reader()).collect(toList());
 
@@ -255,12 +239,10 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
 
       final Frame withoutNas = new Merge.RemoveNAsTask(iDontWantNAsInThisCols)
                                         .doAll(fr.types(), fr)
-                                        .outputFrame(Key.make(), fr.names(), fr.domains());
-      DKV.put(withoutNas);
+                                        .outputFrame(fr.names(), fr.domains());
 
       withoutNas.replace(1, withoutNas.vec("event").toNumericVec());
 
-      Scope.track(withoutNas);
       return withoutNas;
     }
 
