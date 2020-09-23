@@ -3,7 +3,6 @@ package ai.h2o.automl.preprocessing;
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLBuildControl;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLInput;
-import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.targetencoding.TargetEncoder;
 import ai.h2o.targetencoding.TargetEncoderModel;
@@ -21,6 +20,7 @@ import water.rapids.ast.prims.advmath.AstKFold;
 import water.util.ArrayUtils;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 public class TargetEncoding implements PreprocessingStep {
     
@@ -48,14 +48,9 @@ public class TargetEncoding implements PreprocessingStep {
     @Override
     public void prepare() {
         Frame amlTrain = _aml.getTrainingFrame();
-        Set<String> teColumns = selectColumnsToEncode(amlTrain);
-        if (teColumns.isEmpty()) return;
-        
-        _aml.eventLog().warn(Stage.FeatureCreation,
-                "Target Encoding integration in AutoML is in an experimental stage, the models obtained with this feature can not yet be downloaded as MOJO for production.");
-
         AutoMLInput amlInput = _aml.getBuildSpec().input_spec;
         AutoMLBuildControl amlBuild = _aml.getBuildSpec().build_control;
+        
         TargetEncoderParameters params = new TargetEncoderParameters();
         params._train = amlTrain._key;
         params._response_column = amlInput.response_column;
@@ -63,6 +58,13 @@ public class TargetEncoding implements PreprocessingStep {
         params._blending = true;
         params._noise = 0;
         params._seed = amlBuild.stopping_criteria.seed();
+        
+        Set<String> teColumns = selectColumnsToEncode(amlTrain, params);
+        if (teColumns.isEmpty()) return;
+        
+        _aml.eventLog().warn(Stage.FeatureCreation,
+                "Target Encoding integration in AutoML is in an experimental stage, the models obtained with this feature can not yet be downloaded as MOJO for production.");
+
         
         if (_aml.isCVEnabled()) {
             params._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
@@ -143,10 +145,18 @@ public class TargetEncoding implements PreprocessingStep {
         _cardinalityThreshold = cardinalityThreshold;
     }
 
-    private Set<String> selectColumnsToEncode(Frame fr) {
+    private Set<String> selectColumnsToEncode(Frame fr, TargetEncoderParameters params) {
         Set<String> encode = new HashSet<>();
+        Predicate<Vec> cardinalityLargeEnough = v -> v.cardinality() >= _cardinalityThreshold;
+        Predicate<Vec> cardinalityNotTooLarge = params._blending 
+                ? v -> (double)fr.numRows() / v.cardinality() > params._inflection_point
+                : v -> true
+                ;
+                
         for (int i = 0; i < fr.names().length; i++) {
-            if (fr.vec(i).cardinality() >= _cardinalityThreshold) encode.add(fr.name(i));
+            Vec v = fr.vec(i);
+            if (cardinalityLargeEnough.test(v) && cardinalityNotTooLarge.test(v)) 
+                encode.add(fr.name(i));
         }
 
         AutoMLInput amlInput = _aml.getBuildSpec().input_spec;
