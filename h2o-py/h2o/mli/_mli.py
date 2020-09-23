@@ -67,8 +67,13 @@ class Description:
     Class representing a Description with pretty printing for IPython.
     """
     DESCRIPTIONS = dict(
-        leaderboard="Leaderboard shows models with their metrics.",
-        leaderboard_row="Leaderboard shows models with their metrics and their predictions for a given row.",
+        leaderboard="Leaderboard shows models with their metrics. When provided with H2OAutoML object, "
+                    "the leaderboard shows 5-fold cross-validated metrics by default (depending on the "
+                    "H2OAutoML settings), otherwise it shows metrics computed on the test_frame.",
+        leaderboard_row="Leaderboard shows models with their metrics and their predictions for a given row. "
+                        "When provided with H2OAutoML object, the leaderboard shows 5-fold cross-validated "
+                        "metrics by default (depending on the H2OAutoML settings), otherwise it shows "
+                        "metrics computed on the test_frame.",
         confusion_matrix="Confusion matrix shows a predicted class vs an actual class.",
         residual_analysis="Residual analysis plot shows residuals vs fitted values. "
                           "Ideally, residuals should be randomly distributed. Patterns in this plot can indicate "

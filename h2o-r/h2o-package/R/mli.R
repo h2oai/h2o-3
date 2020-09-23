@@ -596,7 +596,8 @@ with_no_h2o_progress <- function(expr) {
         explanation_header = htmltools::tags$h1(object),
         explanation_subsection = htmltools::tags$h2(object),
         explanation_description = htmltools::tags$blockquote(object),
-        gg = .plotlyfy(object)
+        gg = .plotlyfy(object),
+        character = cat(object, "\n")
       )
     } else if (render == "markdown") {
       switch(
@@ -607,6 +608,7 @@ with_no_h2o_progress <- function(expr) {
         explanation_header = cat("\n\n", object, "\n", strrep("=", nchar(object)), "\n", sep = ""),
         explanation_subsection = cat("\n\n", object, "\n", strrep("-", nchar(object)), "\n", sep = ""),
         explanation_description = cat("\n> ", paste0(strsplit(object, "\\n\\s*")[[1]], collapse = "\n> "), "\n\n", sep = ""),
+        character = cat(object, "\n"),
         print(object)
       )
     } else if (render == "notebook") {
@@ -649,6 +651,7 @@ with_no_h2o_progress <- function(expr) {
           explanation_header = cat("\n\n", object, "\n", strrep("=", nchar(object)), "\n", sep = ""),
           explanation_subsection = cat("\n\n", object, "\n", strrep("-", nchar(object)), "\n", sep = ""),
           explanation_description = cat("\n> ", paste0(strsplit(object, "\\n\\s*")[[1]], collapse = "\n> "), "\n\n", sep = ""),
+          character = cat(object, "\n"),
           print(object)
         )
       }
@@ -658,6 +661,7 @@ with_no_h2o_progress <- function(expr) {
         explanation_header = cat("\n\n", object, "\n", strrep("=", nchar(object)), "\n", sep = ""),
         explanation_subsection = cat("\n\n", object, "\n", strrep("-", nchar(object)), "\n", sep = ""),
         explanation_description = message(paste0(strsplit(object, "\\n\\s*")[[1]], collapse = "\n")),
+        character = cat(object, "\n"),
         print(object)
       )
     } else {
@@ -693,11 +697,15 @@ with_no_h2o_progress <- function(expr) {
 }
 
 .describe <- function(explanation) {
-  # TODO: make sure to put some meaningful descriptions
   .explanation_description(
     switch(explanation,
-           leaderboard="Leaderboard shows models with their metrics.",
-           leaderboard_row="Leaderboard shows models with their metrics and their predictions for a given row.",
+           leaderboard=paste0("Leaderboard shows models with their metrics. When provided with H2OAutoML object, ",
+           "the leaderboard shows 5-fold cross-validated metrics by default (depending on the ",
+           "H2OAutoML settings), otherwise it shows metrics computed on the test_frame."),
+           leaderboard_row=paste0("Leaderboard shows models with their metrics and their predictions for a given row. ",
+           "When provided with H2OAutoML object, the leaderboard shows 5-fold cross-validated ",
+           "metrics by default (depending on the H2OAutoML settings), otherwise it shows ",
+           "metrics computed on the test_frame."),
            confusion_matrix="Confusion matrix shows a predicted class vs an actual class.",
            residual_analysis=paste0("Residual analysis plot shows residuals vs fitted values. ",
            "Ideally, residuals should be randomly distributed. Patterns in this plot can indicate ",
@@ -878,6 +886,15 @@ geom_pointrange_or_ribbon <- function(draw_point, ...) {
     ggplot2::geom_pointrange(..., alpha = 0.8)
   } else {
     ggplot2::geom_ribbon(..., alpha = 0.2)
+  }
+}
+
+stat_count_or_bin <- function(use_count, ...) {
+  if (use_count) {
+    ggplot2::stat_count(...)
+  } else {
+    # PDP uses 20 bins by default
+    ggplot2::stat_bin(..., bins = 20)
   }
 }
 
@@ -1446,12 +1463,17 @@ h2o.partial_dependences <- function(object,
       col_name <- make.names(column)
       rug_data <- stats::setNames(as.data.frame(newdata[[column]]), col_name)
       rug_data[["text"]] <- paste0("Feature Value: ", rug_data[[col_name]])
+      y_range <- c(min(pdp$mean_response - pdp$stddev_response), max(pdp$mean_response + pdp$stddev_response))
 
       p <- ggplot2::ggplot(ggplot2::aes(
         x = .data[[make.names(column)]],
         y = .data$mean_response,
         color = .data$target, fill = .data$target, text = .data$text
       ), data = pdp) +
+        stat_count_or_bin(!is.numeric(newdata[[column]]),
+          ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
+          position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
+          inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
         geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$target)) +
         geom_pointrange_or_ribbon(!is.numeric(newdata[[column]]), ggplot2::aes(
           ymin = .data$mean_response - .data$stddev_response,
@@ -1485,6 +1507,8 @@ h2o.partial_dependences <- function(object,
         ) +
         ggplot2::scale_color_brewer(type = "qual", palette = "Dark2") +
         ggplot2::scale_fill_brewer(type = "qual", palette = "Dark2") +
+        # make the histogram closer to the axis. (0.05 is the default value)
+        ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05))) +
         ggplot2::theme_bw() +
         ggplot2::theme(
           legend.title = ggplot2::element_blank(),
@@ -1540,6 +1564,7 @@ h2o.partial_dependences <- function(object,
 
     rug_data <- stats::setNames(as.data.frame(newdata[[column]]), col_name)
     rug_data[["text"]] <- paste0("Feature Value: ", rug_data[[col_name]])
+    y_range <- range(data$values)
 
     p <- ggplot2::ggplot(ggplot2::aes(
       x = .data[[col_name]],
@@ -1548,6 +1573,10 @@ h2o.partial_dependences <- function(object,
       text = .data$text),
                          data = data
     ) +
+      stat_count_or_bin(!is.numeric(newdata[[column]]),
+        ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
+        position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
+        inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
       geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$model_id)) +
       ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL),
                         sides = "b", alpha = 0.1, color = "black",
@@ -1572,6 +1601,8 @@ h2o.partial_dependences <- function(object,
         }
       )) +
       ggplot2::scale_color_brewer(type = "qual", palette = "Dark2") +
+      # make the histogram closer to the axis. (0.05 is the default value)
+      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05))) +
       ggplot2::theme_bw() +
       ggplot2::theme(
         axis.text.x = ggplot2::element_text(
@@ -1682,12 +1713,17 @@ h2o.individual_conditional_expectations <- function(model,
       "Feature Value: ", pdp[[col_name]], "\n",
       "Mean Response: ", pdp[["mean_response"]], "\n"
     )
+    y_range <- range(results$mean_response)
 
     p <- ggplot2::ggplot(ggplot2::aes(x = .data[[col_name]],
                                       y = .data$mean_response,
                                       color = .data$name,
                                       text = .data$text),
                          data = results) +
+      stat_count_or_bin(!is.numeric(newdata[[column]]),
+        ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
+        position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
+        inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
       geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$name)) +
       geom_point_or_line(!is.numeric(newdata[[column]]),
                          if (is.factor(pdp[[col_name]])) {
@@ -1712,6 +1748,8 @@ h2o.individual_conditional_expectations <- function(model,
       )) +
       ggplot2::scale_color_viridis_d(option = "plasma") +
       ggplot2::scale_linetype_manual(values = c("Partial Dependence" = "dashed")) +
+      # make the histogram closer to the axis. (0.05 is the default value)
+      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05))) +
       ggplot2::theme_bw() +
       ggplot2::theme(
         legend.title = ggplot2::element_blank(),
@@ -1860,15 +1898,17 @@ h2o.explain <- function(object,
 
   # feature importance
   if (!"variable_importance" %in% skip_explanations) {
-    result <- append(result, .explanation_header("Variable Importance"))
-    result <- append(result, .describe("variable_importance"))
-    varimp <- NULL
-    for (m in models_info$models) {
-      tmp <- .plot_varimp(m, test_frame)
-      if (!is.null(tmp$varimp)) {
-        result$feature_importance[[m@model_id]] <- tmp$p
-        if (is.null(varimp)) varimp <- names(tmp$grouped_varimp)
-        if (models_info$has_leaderboard) break
+    if (any(sapply(.model_ids(models_info$models), .has_varimp))) {
+      result <- append(result, .explanation_header("Variable Importance"))
+      result <- append(result, .describe("variable_importance"))
+      varimp <- NULL
+      for (m in models_info$models) {
+        tmp <- .plot_varimp(m, test_frame)
+        if (!is.null(tmp$varimp)) {
+          result$feature_importance[[m@model_id]] <- tmp$p
+          if (is.null(varimp)) varimp <- names(tmp$grouped_varimp)
+          if (models_info$has_leaderboard) break
+        }
       }
     }
   } else {
@@ -2105,18 +2145,21 @@ h2o.explain_row <- function(object,
   }
 
   if (!"shap_explanation" %in% skip_explanations && !models_info$is_multinomial_classification) {
-    result <- append(result, .explanation_header("SHAP explanation"))
-    result <- append(result, .describe("shap_explanation"))
-    tree_models <- Filter(.is_h2o_tree_model, models_info$models)
-    for (m in tree_models) {
-      result$shap_explain_row[[m@model_id]] <- .customized_call(
-        h2o.shap_explain_row,
-        model = m,
-        newdata = test_frame,
-        row_index = row_index,
-        overrides = user_overrides$shap_explain_row
-      )
-      if (models_info$has_leaderboard) break
+    num_of_tree_models <- sum(sapply(models_info$models, .is_h2o_tree_model))
+    if (num_of_tree_models > 0) {
+      result <- append(result, .explanation_header("SHAP explanation"))
+      result <- append(result, .describe("shap_explanation"))
+      tree_models <- Filter(.is_h2o_tree_model, models_info$models)
+      for (m in tree_models) {
+        result$shap_explain_row[[m@model_id]] <- .customized_call(
+          h2o.shap_explain_row,
+          model = m,
+          newdata = test_frame,
+          row_index = row_index,
+          overrides = user_overrides$shap_explain_row
+        )
+        if (models_info$has_leaderboard) break
+      }
     }
   }
 
@@ -2160,9 +2203,7 @@ h2o.explain_row <- function(object,
 #### On Load ####
 .onLoad <- function(...) {
   registerS3method("print", "explanation", "print.explanation")
-  if ("repr" %in% loadedNamespaces()) {
-    registerS3method("repr_text", "explanation", "repr_text.explanation", envir = asNamespace("repr"))
-    registerS3method("repr_html", "explanation", "repr_html.explanation", envir = asNamespace("repr"))
-  }
+  s3_register("repr::repr_text", "explanation")
+  s3_register("repr::repr_html", "explanation")
   invisible()
 }

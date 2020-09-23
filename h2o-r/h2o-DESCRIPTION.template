@@ -109,3 +109,4 @@ Collate:
          'tf-idf.R'
          'rulefit.R'
          'mli.R'
+         'register-s3.R'
