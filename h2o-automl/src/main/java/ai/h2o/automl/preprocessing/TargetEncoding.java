@@ -172,7 +172,7 @@ public class TargetEncoding implements PreprocessingStep {
             Predicate<Vec> cardinalityLargeEnough = v -> v.cardinality() >= _columnCardinalityThreshold;
             Predicate<Vec> cardinalityNotTooLarge = params._blending
                     ? v -> (double) fr.numRows() / v.cardinality() > params._inflection_point
-                    :v -> true;
+                    : v -> true;
 
             for (int i = 0; i < fr.names().length; i++) {
                 Vec v = fr.vec(i);
