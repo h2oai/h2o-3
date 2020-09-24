@@ -38,9 +38,7 @@ TO DO: This was created looking at the R interface, may need some updates for Py
 
 - **object**: (R only) One of the following: an H2O model, a list of models, an H2OAutoML object, or an H2OAutoML leaderboard slice.
 
-
 - **test_frame**: An H2OFrame of test data.
-
 
 - **columns_of_interest**: A vector of column names. If specified, create plots only with these columns (where applicable).
 
