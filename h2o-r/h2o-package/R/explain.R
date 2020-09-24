@@ -384,7 +384,7 @@ with_no_h2o_progress <- function(expr) {
         "logloss"
       )])
     })))
-  leaderboard <- cbind(data.frame(model_id=sapply(models, function(m) m@model_id)),
+  leaderboard <- cbind(data.frame(model_id=sapply(models, function(m) m@model_id), stringsAsFactors = FALSE),
                        leaderboard)
   leaderboard <- leaderboard[order(leaderboard[[2]]),]
   names(leaderboard) <- tolower(names(leaderboard))
