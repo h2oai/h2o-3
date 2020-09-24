@@ -23,7 +23,7 @@ NULL
 #' @format A data frame with 435 rows and 17 columns
 #' @source Congressional Quarterly Almanac, 98th Congress, 2nd session 1984, Volume XL: Congressional Quarterly Inc., Washington, D.C., 1985
 #' @references Newman, D.J. & Hettich, S. & Blake, C.L. & Merz, C.J. (1998). UCI Repository of machine 
-#' learning databases [http://www.ics.uci.edu/~mlearn/MLRepository.html]. Irvine, CA: University of 
+#' learning databases [https://www.ics.uci.edu/~mlearn/MLRepository.html]. Irvine, CA: University of 
 #' California, Department of Information and Computer Science.
 NULL
 

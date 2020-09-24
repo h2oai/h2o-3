@@ -1960,7 +1960,7 @@ h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip"
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip"
 #' pros <- h2o.importFile(f)
 #' response <- "GLEASON"
 #' predictors <- c("ID", "AGE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
@@ -2131,7 +2131,7 @@ h2o.weights <- function(object, matrix_id=1){
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/chicago/chicagoCensus.csv"
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/chicago/chicagoCensus.csv"
 #' census <- h2o.importFile(f)
 #' census[, 1] <- as.factor(census[, 1])
 #' 
@@ -2493,7 +2493,7 @@ h2o.find_row_by_threshold <- function(object, threshold) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' h2o.ceiling(fr[, 1])
 #' }
 #' @export
@@ -2507,7 +2507,7 @@ h2o.centers <- function(object) { as.data.frame(object@model$centers[,-1]) }
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.centersSTD(km)
@@ -2538,7 +2538,7 @@ h2o.withinss <- function(object) { h2o.mse(object) }
 #' library(h2o)
 #' h2o.init()
 #' 
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.tot_withinss(km, train = TRUE)
@@ -2586,7 +2586,7 @@ h2o.tot_withinss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.betweenss(km, train = TRUE)
@@ -2635,7 +2635,7 @@ h2o.betweenss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.totss(km, train = TRUE)
@@ -2705,7 +2705,7 @@ h2o.num_iterations <- function(object) { object@model$model_summary$number_of_it
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.centroid_stats(km, train = TRUE)
@@ -2754,7 +2754,7 @@ h2o.centroid_stats <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.cluster_sizes(km, train = TRUE)
@@ -4730,7 +4730,7 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
 #' iris <- h2o.importFile(f)
 #' gbm_model <- h2o.gbm(y = "species", training_frame = iris)
 #' tree <- h2o.getModelTree(gbm_model, 1, "Iris-setosa")
