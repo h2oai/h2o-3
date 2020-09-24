@@ -2,6 +2,7 @@ package hex.genmodel.algos.targetencoder;
 
 import hex.genmodel.MojoModel;
 
+import java.io.Serializable;
 import java.util.*;
 
 public class TargetEncoderMojoModel extends MojoModel {
@@ -44,7 +45,7 @@ public class TargetEncoderMojoModel extends MojoModel {
     return nameToIdx;
   }
   
-  void setEncodings(EncodingMaps encodingMaps) {
+  protected void setEncodings(EncodingMaps encodingMaps) {
     // Order of entries is not defined in sets(hash map). So we need some source of consistency.
     // Following will guarantee order of transformations. Ascending order based on index of te column in the input
     _encodingsByCol = sortByColumnIndex(encodingMaps);
@@ -52,7 +53,7 @@ public class TargetEncoderMojoModel extends MojoModel {
 
   @Override
   public int getPredsSize() {
-    return _encodingsByCol.size() * getNumEncColsPerPredictor();
+    return _encodingsByCol == null ? 0 : _encodingsByCol.size() * getNumEncColsPerPredictor();
   }
   
   int getNumEncColsPerPredictor() {
@@ -63,25 +64,23 @@ public class TargetEncoderMojoModel extends MojoModel {
 
   @Override
   public double[] score0(double[] row, double[] preds) {
-    if (_encodingsByCol!= null) {
-      int predsIdx = 0;
-      for (Map.Entry<String, EncodingMap> columnToEncodings : _encodingsByCol.entrySet() ) {
-        String teColumn = columnToEncodings.getKey();
-        EncodingMap encodings = columnToEncodings.getValue();
-        int colIdx = _columnNameToIdx.get(teColumn);
-        double category = row[colIdx]; 
-        
-        int filled;
-        if (Double.isNaN(category)) {
-          filled = encodeNA(preds, predsIdx, encodings, teColumn);
-        } else {
-          //It is assumed that categorical levels are only represented with int values
-          filled = encodeCategory(preds, predsIdx, encodings, (int)category);
-        }
-        predsIdx += filled;
+    if (_encodingsByCol == null) throw new IllegalStateException("Encoding map is missing.");
+      
+    int predsIdx = 0;
+    for (Map.Entry<String, EncodingMap> columnToEncodings : _encodingsByCol.entrySet() ) {
+      String teColumn = columnToEncodings.getKey();
+      EncodingMap encodings = columnToEncodings.getValue();
+      int colIdx = _columnNameToIdx.get(teColumn);
+      double category = row[colIdx]; 
+      
+      int filled;
+      if (Double.isNaN(category)) {
+        filled = encodeNA(preds, predsIdx, encodings, teColumn);
+      } else {
+        //It is assumed that categorical levels are only represented with int values
+        filled = encodeCategory(preds, predsIdx, encodings, (int)category);
       }
-    } else {
-      throw new IllegalStateException("Encoding map is missing.");
+      predsIdx += filled;
     }
     
     return preds;
@@ -146,14 +145,23 @@ public class TargetEncoderMojoModel extends MojoModel {
   }
 
   Map<String, EncodingMap> sortByColumnIndex(final EncodingMaps encodingMaps) {
-    Map<String, EncodingMap> sorted = new TreeMap<>(new Comparator<String>() {
-      @Override
-      public int compare(String lhs, String rhs) {
-        return Integer.compare(_columnNameToIdx.get(lhs), _columnNameToIdx.get(rhs));
-      }
-    });
+    Map<String, EncodingMap> sorted = new TreeMap<>(new ColumnComparator(_columnNameToIdx));
     sorted.putAll(encodingMaps.encodingMap());
     return sorted;
+  }
+  
+  private static class ColumnComparator implements Comparator<String>, Serializable {
+    
+    private Map<String, Integer> _columnToIdx;
+
+    public ColumnComparator(Map<String, Integer> _columnToIdx) {
+      this._columnToIdx = _columnToIdx;
+    }
+
+    @Override
+    public int compare(String lhs, String rhs) {
+      return Integer.compare(_columnToIdx.get(lhs), _columnToIdx.get(rhs));
+    }
   }
 
 }
