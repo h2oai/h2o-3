@@ -25,6 +25,8 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
@@ -36,8 +38,13 @@ public class PersistHTTP extends PersistEagerHTTP {
 
   private static final Logger LOG = Logger.getLogger(PersistHTTP.class);
   
-  private final static String ENABLE_LAZY_LOAD_KEY = SYSTEM_PROP_PREFIX + "persist.http.enableLazyLoad";
+  private static final String ENABLE_LAZY_LOAD_KEY = SYSTEM_PROP_PREFIX + "persist.http.enableLazyLoad";
 
+  private static final Set<String> COMPRESSED_CONTENT_TYPES = new HashSet<>(Arrays.asList(
+          "application/zip",
+          "application/gzip"
+  )); // only need to list the ones H2O actually supports
+  
   @Override
   public final byte[] load(Value v) throws IOException {
     final byte[] b = MemoryManager.malloc1(v._max);
@@ -93,35 +100,51 @@ public class PersistHTTP extends PersistEagerHTTP {
     String[] range = crParts[0].split("-");
     if (range.length != 2)
       throw new IllegalStateException("Invalid HTTP response. Cannot interpret range value in response header " + HttpHeaders.CONTENT_RANGE + ": " + contentRange.getValue());
-    return 1 + Long.valueOf(range[1]) - Long.valueOf(range[0]);
+    return 1 + Long.parseLong(range[1]) - Long.parseLong(range[0]);
   }
 
   private static URI decodeKey(Key k) {
     return URI.create(new String((k._kb[0] == Key.CHK) ? Arrays.copyOfRange(k._kb, Vec.KEY_PREFIX_LEN, k._kb.length) : k._kb));
   }
 
+  long useLazyLoad(URI uri) throws IOException {
+    HttpRequestBase req = createReq(uri, true);
+    try (CloseableHttpClient client = HttpClientBuilder.create().build();
+         CloseableHttpResponse response = client.execute(req)) {
+      if (isCompressed(response)) 
+        return -1L; // avoid lazy-loading of compressed resource that cannot be parsed in parallel
+      return checkRangeSupport(uri, response);
+    }
+  }
+
+  static boolean isCompressed(HttpResponse response) {
+    Header contentTypeHeader = response.getFirstHeader(HttpHeaders.CONTENT_TYPE);
+    if (contentTypeHeader == null)
+      return false; // assume not compressed
+    String contentType = contentTypeHeader.getValue();
+    if (contentType == null)
+      return false;
+    return COMPRESSED_CONTENT_TYPES.contains(contentType.toLowerCase());
+  }
+
   /**
    * Tests whether a given URI can be accessed using range-requests.
    *
    * @param uri resource identifier
+   * @param response HttpResponse retrieved by accessing the given uri
    * @return -1 if range-requests are not supported, otherwise content length of the requested resource
-   * @throws IOException when communication fails
    */
-  long checkRangeSupport(URI uri) throws IOException {
-    HttpRequestBase req = createReq(uri, true);
-    try (CloseableHttpClient client = HttpClientBuilder.create().build();
-         CloseableHttpResponse response = client.execute(req)) {
-      Header acceptRangesHeader = response.getFirstHeader(HttpHeaders.ACCEPT_RANGES);
-      Header contentLengthHeader = response.getFirstHeader(HttpHeaders.CONTENT_LENGTH);
-      boolean acceptByteRange = (acceptRangesHeader != null) && "bytes".equalsIgnoreCase(acceptRangesHeader.getValue());
-      if (!acceptByteRange || contentLengthHeader == null) {
-        LOG.debug(uri + " does not support range header");
-        return -1L;
-      }
-
-      LOG.debug("Range support confirmed for " + uri + " with length " + contentLengthHeader.getValue());
-      return Long.valueOf(contentLengthHeader.getValue());
+  long checkRangeSupport(URI uri, HttpResponse response) {
+    Header acceptRangesHeader = response.getFirstHeader(HttpHeaders.ACCEPT_RANGES);
+    Header contentLengthHeader = response.getFirstHeader(HttpHeaders.CONTENT_LENGTH);
+    boolean acceptByteRange = (acceptRangesHeader != null) && "bytes".equalsIgnoreCase(acceptRangesHeader.getValue());
+    if (!acceptByteRange || contentLengthHeader == null) {
+      LOG.debug(uri + " does not support range header");
+      return -1L;
     }
+
+    LOG.debug("Range support confirmed for " + uri + " with length " + contentLengthHeader.getValue());
+    return Long.parseLong(contentLengthHeader.getValue());
   }
 
   private HttpRequestBase createReq(URI uri, boolean isHead) {
@@ -138,7 +161,7 @@ public class PersistHTTP extends PersistEagerHTTP {
     if (lazyLoadEnabled) {
       try {
         URI source = URI.create(path);
-        long length = checkRangeSupport(source);
+        long length = useLazyLoad(source);
         if (length >= 0) {
           final Key destination_key = HTTPFileVec.make(path, length);
           files.add(path);
