@@ -139,7 +139,7 @@ class NumpyFrame:
     """
     Simple class that very vaguely emulates Pandas DataFrame.
     Main purpose is to keep parsing from the List of Lists format to numpy.
-    This class is meant to be used just in the MLI context.
+    This class is meant to be used just in the explain module.
     Due to that fact it encodes the factor variables similarly to R/pandas -
     factors are mapped to numeric column which in turn makes it easier to plot it.
     """
@@ -397,7 +397,7 @@ class NumpyFrame:
 def _density(xs, bins=100):
     # type: (np.ndarray, int) -> np.ndarray
     """
-    Make an approximate density estimation by blurring a histogram (used for shap summary plot).
+    Make an approximate density estimation by blurring a histogram (used for SHAP summary plot).
     :param xs: numpy vector
     :param bins: number of bins
     :return: density values
@@ -717,7 +717,7 @@ def partial_dependences(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.model_base]]
         test_frame,  # type: h2o.H2OFrame
         column,  # type: str
-        only_best_per_family=True,  # type: bool
+        best_of_family=True,  # type: bool
         row_index=None,  # type: Optional[int]
         target=None,  # type: Optional[str]
         max_factors=30,  # type: int
@@ -731,7 +731,7 @@ def partial_dependences(
     :param models: H2O AutoML object
     :param test_frame: H2OFrame
     :param column: string containing column name
-    :param only_best_per_family: if True, show only the best models per family
+    :param best_of_family: if True, show only the best models per family
     :param row_index: if None, do partial dependence, if integer, do individual
                       conditional expectation for the row specified by this integer
     :param target: (only for multinomial classification) for what target should the plot be done
@@ -764,7 +764,7 @@ def partial_dependences(
             # decrease the number of levels to the actual number of levels in the subset
             test_frame[column] = test_frame[column].ascharacter().asfactor()
     models = []
-    if only_best_per_family:
+    if best_of_family:
         used = set()
         for m in all_models:
             if m[:3] not in used or m.startswith("Stacked"):
@@ -1165,7 +1165,7 @@ def model_correlation_heatmap(
         corr = np.where(np.triu(np.ones_like(corr), k=1).astype(bool), float("nan"), corr)
 
     plt.figure(figsize=figsize)
-    plt.imshow(corr, cmap=plt.get_cmap(colormap), clim=(0, 1))
+    plt.imshow(corr, cmap=plt.get_cmap(colormap), clim=(0.5, 1))
     plt.xticks(range(len(models)), [model.model_id for model in models], rotation=45,
                rotation_mode="anchor", ha="right")
     plt.yticks(range(len(models)), [model.model_id for model in models])
@@ -1348,8 +1348,8 @@ def _process_explanation_lists(
     """
     Helper function to process explanation lists.
 
-    :param exclude_explanations: list of explanations to exclude
-    :param include_explanations: list of explanations to include
+    :param exclude_explanations: list of model explanations to exclude
+    :param include_explanations: list of model explanations to include
     :param possible_explanations: list of all possible explanations
     :return: list of actual explanations
     """
@@ -1433,7 +1433,7 @@ def explain(
         top_n_features=5,  # type: int
         include_explanations="ALL",  # type: Union[str, List[str]]
         exclude_explanations=[],  # type: Union[str, List[str]]
-        user_overrides=dict(),  # type: Dict
+        plot_overrides=dict(),  # type: Dict
         figsize=(16, 9),  # type: Tuple[float]
         render=True,  # type: bool
         qualitative_colormap="Dark2",  # type: str
@@ -1441,20 +1441,21 @@ def explain(
 ):
     # type: (...) -> OrderedDict
     """
-    Generate explanations on test_frame data set.
+    Generate model explanations on test_frame data set.
 
     :param models: H2OAutoML object or H2OModel
     :param test_frame: H2OFrame
-    :param columns_of_interest: (optional) columns to inspect
-    :param top_n_features: if columns_of_interest are not specified,
-                           pick top_n_features according to variable importance
-    :param include_explanations: if specified, do only the specified explanations
+    :param columns_of_interest: (optional) columns to inspect. If specified, create plots
+                                only with these columns (where applicable).
+    :param top_n_features: if columns_of_interest are not specified, create plots only
+                           with the top n columns (where applicable).  Defaults to 5.
+    :param include_explanations: if specified, return only the specified model explanations
                                  (Mutually exclusive with exclude_explanations)
-    :param exclude_explanations: exclude specified explanations
-    :param user_overrides: overrides for individual explanations
+    :param exclude_explanations: exclude specified model explanations
+    :param plot_overrides: overrides for individual model explanations
     :param figsize: figure size; passed directly to matplotlib
-    :param render: if True, render the explanations; otherwise explanations are just returned
-    :return: OrderedDict containing the explanations including headers and descriptions
+    :param render: if True, render the model explanations; otherwise model explanations are just returned
+    :return: OrderedDict containing the model explanations including headers and descriptions
     """
     is_aml, models_to_show, classification, multinomial_classification, multiple_models, \
     targets, tree_models_to_show = _process_models_input(models, test_frame)
@@ -1506,7 +1507,7 @@ def explain(
                 if multinomial_classification:
                     result["confusion_matrix__{}".format(model.model_id)] = display(
                         model.confusion_matrix(
-                            **_custom_args(user_overrides.get("confusion_matrix"),
+                            **_custom_args(plot_overrides.get("confusion_matrix"),
                                            data=test_frame)))
                 else:
                     result["confusion_matrix__{}".format(model.model_id)] = display(
@@ -1521,14 +1522,14 @@ def explain(
                 ] = display(residual_analysis(model,
                                               test_frame,
                                               **_custom_args(
-                                                  user_overrides.get("residual_analysis"),
+                                                  plot_overrides.get("residual_analysis"),
                                                   figsize=figsize)))
 
     if len(models_with_varimp) > 0 and "variable_importance" in explanations:
         result["variable_importance_header"] = Header("Variable Importance")
         result["variable_importance_description"] = Description("variable_importance")
         for model in models_with_varimp:
-            model.varimp_plot(server=True, **user_overrides.get("varimp_plot", dict()))
+            model.varimp_plot(server=True, **plot_overrides.get("varimp_plot", dict()))
             varimp_plot = plt.gcf()  # type: plt.Figure
             varimp_plot.set_figwidth(figsize[0])
             varimp_plot.set_figheight(figsize[1])
@@ -1550,7 +1551,7 @@ def explain(
                 Description("variable_importance_heatmap"))
             result["variable_importance_heatmap"] = display(variable_importance_heatmap(
                 models,
-                **_custom_args(user_overrides.get("variable_importance_heatmap"),
+                **_custom_args(plot_overrides.get("variable_importance_heatmap"),
                                colormap=sequential_colormap,
                                figsize=figsize)))
 
@@ -1559,7 +1560,7 @@ def explain(
             result["model_correlation_heatmap_description"] = display(Description(
                 "model_correlation_heatmap"))
             result["model_correlation_heatmap"] = display(model_correlation_heatmap(
-                models, **_custom_args(user_overrides.get("model_correlation_heatmap"),
+                models, **_custom_args(plot_overrides.get("model_correlation_heatmap"),
                                        test_frame=test_frame,
                                        colormap=sequential_colormap,
                                        figsize=figsize)))
@@ -1573,7 +1574,7 @@ def explain(
             result["shap_summary__{}".format(tree_model.model_id)] = display(shap_summary_plot(
                 tree_model,
                 **_custom_args(
-                    user_overrides.get("shap_summary_plot"),
+                    plot_overrides.get("shap_summary_plot"),
                     test_frame=test_frame,
                     figsize=figsize
                 )))
@@ -1588,7 +1589,7 @@ def explain(
                     t = "_{}".format(target) if target else ""
                     result["pdp__{}{}".format(column, t)] = display(partial_dependences(
                         models, column=column, target=target,
-                        **_custom_args(user_overrides.get("partial_dependences"),
+                        **_custom_args(plot_overrides.get("partial_dependences"),
                                        test_frame=test_frame,
                                        figsize=figsize,
                                        colormap=qualitative_colormap)))
@@ -1607,7 +1608,7 @@ def explain(
                         models_to_show[0].partial_plot(cols=[column], server=True,
                                                        targets=target,
                                                        **_custom_args(
-                                                           user_overrides.get("partial_plot"),
+                                                           plot_overrides.get("partial_plot"),
                                                            data=tf,
                                                            figsize=figsize,
                                                            nbins=20 if not is_factor
@@ -1631,7 +1632,7 @@ def explain(
                             model, column=column,
                             target=target,
                             **_custom_args(
-                                user_overrides.get("individual_conditional_expectations"),
+                                plot_overrides.get("individual_conditional_expectations"),
                                 test_frame=test_frame,
                                 figsize=figsize,
                                 colormap=sequential_colormap
@@ -1647,28 +1648,29 @@ def explain_row(
         columns_of_interest=None,  # type: Optional[List[str]]
         include_explanations="ALL",  # type: Union[str, List[str]]
         exclude_explanations=[],  # type: Union[str, List[str]]
-        user_overrides=dict(),  # type: Dict
+        plot_overrides=dict(),  # type: Dict
         qualitative_colormap="Dark2",  # type: str
         figsize=(16, 9),  # type: Tuple[float]
         render=True,  # type: bool
 ):
     # type: (...) -> OrderedDict
     """
-    Generate explanations on test_frame data set for a given instance.
+    Generate model explanations on test_frame data set for a given instance.
 
     :param models: H2OAutoML object or H2OModel
     :param test_frame: H2OFrame
     :param row_index: row index of the instance to inspect
-    :param columns_of_interest: (optional) columns to inspect
-    :param include_explanations: if specified, do only the specified explanations
+    :param columns_of_interest: (optional) columns to inspect. If specified, create plots
+                                only with these columns (where applicable).
+    :param include_explanations: if specified, return only the specified model explanations
                                  (Mutually exclusive with exclude_explanations)
-    :param exclude_explanations: exclude specified explanations
-    :param user_overrides: overrides for individual explanations
-    :param qualitative_colormap: a colormap
+    :param exclude_explanations: exclude specified model explanations
+    :param plot_overrides: overrides for individual model explanations
+    :param qualitative_colormap: a colormap name
     :param figsize: figure size; passed directly to matplotlib
-    :param render: if True, render the explanations; otherwise explanations are just returned
+    :param render: if True, render the model explanations; otherwise model explanations are just returned
 
-    :return: OrderedDict containing the explanations including headers and descriptions
+    :return: OrderedDict containing the model explanations including headers and descriptions
     """
     is_aml, models_to_show, _, multinomial_classification, multiple_models, \
     targets, tree_models_to_show = _process_models_input(models, test_frame)
@@ -1695,7 +1697,7 @@ def explain_row(
         result["leaderboard_description"] = display(Description("leaderboard_row"))
         result["leaderboard"] = display(_get_leaderboard(models, row_index=row_index,
                                                          **_custom_args(
-                                                             user_overrides.get("leaderboard"),
+                                                             plot_overrides.get("leaderboard"),
                                                              test_frame=test_frame)))
 
     if len(tree_models_to_show) > 0 and not multinomial_classification and \
@@ -1705,7 +1707,7 @@ def explain_row(
         for tree_model in tree_models_to_show:
             result["shap_explanation__{}".format(tree_model.model_id)] = display(shap_explain_row(
                 tree_model, row_index=row_index,
-                **_custom_args(user_overrides.get("shap_explanation"),
+                **_custom_args(plot_overrides.get("shap_explain_row"),
                                test_frame=test_frame, figsize=figsize)))
 
     if "ice" in explanations:
@@ -1720,10 +1722,10 @@ def explain_row(
                         row_index=row_index,
                         target=target,
                         **_custom_args(
-                            user_overrides.get("individual_conditional_expectations",
-                                               user_overrides.get("partial_dependences")),
+                            plot_overrides.get("individual_conditional_expectations",
+                                               plot_overrides.get("partial_dependences")),
                             test_frame=test_frame,
-                            only_best_per_family=is_aml,
+                            best_of_family=is_aml,
                             figsize=figsize,
                             colormap=qualitative_colormap
                         )))
@@ -1738,8 +1740,8 @@ def explain_row(
                             cols=[column], server=True,
                             row_index=row_index, targets=target,
                             **_custom_args(
-                                user_overrides.get("individual_conditional_expectations",
-                                                   user_overrides.get("partial_dependences")),
+                                plot_overrides.get("individual_conditional_expectations",
+                                                   plot_overrides.get("partial_dependences")),
                                 data=tf, figsize=figsize,
                                 nbins=20 if not is_factor
                                 else 1 + tf[column].nlevels()[0]))

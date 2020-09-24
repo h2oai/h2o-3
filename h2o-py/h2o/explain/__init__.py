@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 
-from ._mli import variable_importance_heatmap, model_correlation_heatmap, shap_explain_row, shap_summary_plot,\
+from ._explain import variable_importance_heatmap, model_correlation_heatmap, shap_explain_row, shap_summary_plot,\
     explain, explain_row, partial_dependences, individual_conditional_expectations, residual_analysis
 
 __all__ = [
@@ -16,7 +16,7 @@ __all__ = [
 ]
 
 
-def register_mli_methods():
+def register_explain_methods():
     import h2o.model
     import h2o.automl._base  # NOQA
 
