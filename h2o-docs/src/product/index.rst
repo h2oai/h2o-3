@@ -101,6 +101,11 @@ Additional Resources:
 .. toctree::
    :maxdepth: 2
 
+   explainability   
+
+.. toctree::
+   :maxdepth: 2
+
    save-and-load-model
 
 .. toctree::
