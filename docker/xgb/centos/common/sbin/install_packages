@@ -14,8 +14,7 @@ yum -y install gcc gcc-c++
 rpm --rebuilddb
 yum install -y shadow-utils.x86_64
 rpm --rebuilddb
-wget --no-check-certificate https://centos$(rpm -q --queryformat '%{VERSION}' centos-release).iuscommunity.org/ius-release.rpm
-yum -y install ius-release.rpm
+yum -y install https://repo.ius.io/ius-release-el$(rpm -q --queryformat '%{VERSION}' centos-release).rpm
 rm ius-release.rpm
 sed -i '/\[ius.*\]/a sslverify=0' /etc/yum.repos.d/ius.repo
 rpm --rebuilddb

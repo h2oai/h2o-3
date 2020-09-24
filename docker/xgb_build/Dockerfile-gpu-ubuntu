@@ -46,16 +46,18 @@ RUN \
 ENV PATH /opt/apache-maven-3.5.4/bin:${PATH}
 
 # Install CMake
+ENV CMAKE_VERSION '3.18'
+ENV CMAKE_PATCH '.2'
 RUN \
-    wget http://www.cmake.org/files/v3.12/cmake-3.12.3.tar.gz && \
-    tar -xvzf cmake-3.12.3.tar.gz && \
-    cd cmake-3.12.3/ && \
+    wget http://www.cmake.org/files/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.${CMAKE_PATCH}.tar.gz && \
+    tar -xvzf cmake-${CMAKE_VERSION}.${CMAKE_PATCH}.tar.gz && \
+    cd cmake-${CMAKE_VERSION}.${CMAKE_PATCH}/ && \
     ./configure && \
     make && \
     make install && \
     cd .. && \
-    rm -rf cmake-3.12.3 && \
-    if [ "$(cmake --version | head -1)" != 'cmake version 3.12.3' ]; then exit 1; fi
+    rm -rf cmake-${CMAKE_VERSION}.${CMAKE_PATCH} && \
+    if [ "$(cmake --version | head -1)" != 'cmake version ${CMAKE_VERSION}.${CMAKE_PATCH}' ]; then exit 1; fi
 
 # Install hub
 RUN \
