@@ -32,14 +32,15 @@ public class ExtendedIsolationForestTest extends TestUtil {
             p._seed = 0xDECAF;
             p._ntrees = 100;
             p.extension_level = train.numCols() - 1;
+            
+            DKV.put(train);
 
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
             ExtendedIsolationForestModel model = eif.trainModel().get();
             Scope.track_generic(model);
             assertNotNull(model);
-
-            Frame test = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
-            Frame out = model.score(test);
+            
+            Frame out = model.score(train);
             Scope.track_generic(out);
             assertArrayEquals(new String[]{"anomaly_score", "mean_length"}, out.names());
             assertEquals(train.numRows(), out.numRows());
