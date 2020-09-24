@@ -107,7 +107,7 @@ with_no_h2o_progress <- function(expr) {
 #' @param require_multiple_models If true, make sure we were provided at least two models
 #' @param top_n If set, don't return more than top_n models
 #' @param only_with_varimp If TRUE, return only models that have variable importance
-#' @param best_of_family If TRUE, return only best of family models
+#' @param best_of_family If TRUE, return only the best of family models
 #'
 #' @return a list with the following names \code{leader}, \code{has_leaderboard}, \code{models},
 #'   \code{is_classification}, \code{is_multinomial_classification}, \code{x}, \code{y}, \code{model}
@@ -453,8 +453,9 @@ with_no_h2o_progress <- function(expr) {
 #'
 #' @param model H2OModel
 #' @param newdata H2OFrame
+#' @param top_n Plot just top_n features
 #' @return list of variable importance, groupped variable importance, and variable importance plot
-.plot_varimp <- function(model, newdata) {
+.plot_varimp <- function(model, newdata, top_n = 10) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   with_no_h2o_progress({
@@ -466,6 +467,7 @@ with_no_h2o_progress <- function(expr) {
       return(NULL)
     } else {
       varimp <- as.data.frame(varimp)
+      varimp <- head(varimp, n = min(top_n, nrow(varimp)))
       p <- ggplot2::ggplot(ggplot2::aes(.data$variable, .data$scaled_importance), data = varimp) +
         ggplot2::geom_col(fill = "#1F77B4") +
         ggplot2::scale_x_discrete("Variable", limits = rev(varimp$variable)) +
@@ -738,7 +740,7 @@ with_no_h2o_progress <- function(expr) {
            "of the model, i.e., prediction before applying inverse link function. H2O implements ",
            "TreeSHAP which when the features are correlated, can increase contribution of a feature ",
            "that had no influence on the prediction."),
-           stop("Unknown explanation \"", explanation, "\".")
+           stop("Unknown model explanation \"", explanation, "\".")
     )
   )
 }
@@ -889,17 +891,19 @@ geom_pointrange_or_ribbon <- function(draw_point, ...) {
   }
 }
 
-stat_count_or_bin <- function(use_count, ...) {
+stat_count_or_bin <- function(use_count, ..., data) {
+  stopifnot("Expecting data frame with just one column." = ncol(data)==1)
+  data <- data[is.finite(data[[1]]),, drop = FALSE]
   if (use_count) {
-    ggplot2::stat_count(...)
+    ggplot2::stat_count(..., data = data)
   } else {
     # PDP uses 20 bins by default
-    ggplot2::stat_bin(..., bins = 20)
+    ggplot2::stat_bin(..., bins = 20, data = data)
   }
 }
 
 
-########################################## MLI PLOTS ###############################################
+########################################## Explanation PLOTS ###############################################
 
 #' SHAP Summary Plot
 #'
@@ -1332,7 +1336,7 @@ h2o.model_correlation <- function(object, newdata, top_n = 20,
     ggplot2::ggtitle("Model Correlation") +
     ggplot2::scale_x_discrete(limits = ordered) +
     ggplot2::scale_y_discrete(limits = rev(ordered)) +
-    ggplot2::scale_fill_distiller(limits = c(0, 1), palette = "RdYlBu") +
+    ggplot2::scale_fill_distiller(limits = c(0.5, 1), palette = "RdYlBu") +
     ggplot2::coord_fixed() +
     (if (triangular) ggplot2::theme_classic() else ggplot2::theme_bw()) +
     ggplot2::theme(
@@ -1390,7 +1394,7 @@ h2o.residual_analysis <- function(model, newdata) {
 #' @param object Either a list of models/model_ids or H2OAutoML.
 #' @param newdata An H2OFrame.
 #' @param column A feature column name to inspect.
-#' @param best_of_family If TRUE, plot only best model of each family
+#' @param best_of_family If TRUE, plot only the best model of each family; if FALSE, plot all models
 #' @param target If multinomial, plot PDP just for \code{target} category.
 #' @param row_index Calculate Individual Conditional Expectation for row \code{row_index}
 #' @param max_factors Maximum number of factor levels to show.
@@ -1762,29 +1766,29 @@ h2o.individual_conditional_expectations <- function(model,
 
 ######################################## Explain ###################################################
 
-#' Generate explanations for \code{object} on \code{test_frame}.
+#' Generate model explanations for \code{object} on \code{test_frame}.
 #'
 #' @param object One of the following: an H2OAutoML, an H2OAutoML Leaderboard slice, a model, a list of models.
 #' @param test_frame An H2OFrame.
-#' @param columns_of_interrest A vector of feature names. If specified, plot just these columns.
-#' @param include_explanations If specified, do only the specified explanations.
+#' @param columns_of_interest  A vector of column names. If specified, create plots only with these columns (where applicable).
+#' @param include_explanations If specified, return only the specified model explanations.
 #'   (Mutually exclusive with exclude_explanations)
-#' @param exclude_explanations Exclude specified explanations.
-#' @param top_n_features If \code{columns_of_interrest} is missing, use top n features.
-#' @param best_of_family If True, explain only best of family models
-#' @param user_overrides Overrides for individual explanations, e.g.,
+#' @param exclude_explanations Exclude specified model explanations.
+#' @param top_n_features If \code{columns_of_interest} is missing, create plots only with the top n columns (where applicable).  Defaults to 5.
+#' @param best_of_family If TRUE, explain only best of family models; if FALSE explain all the models
+#' @param plot_overrides Overrides for individual model explanations, e.g.,
 #'   list(shap_summary_plot = list(top_n_features = 50))
 #'
 #' @return List of outputs with class "explanation"
 #' @export
 h2o.explain <- function(object,
                         test_frame,
-                        columns_of_interrest = NULL,
+                        columns_of_interest = NULL,
                         include_explanations = "ALL",
                         exclude_explanations = character(),
                         top_n_features = 5,
                         best_of_family = TRUE,
-                        user_overrides = list()) {
+                        plot_overrides = list()) {
   models_info <- .process_models_or_automl(object, test_frame)
   multiple_models <- length(models_info$models) > 1
   result <- list()
@@ -1802,7 +1806,7 @@ h2o.explain <- function(object,
   )
 
   if (!missing(include_explanations) && !missing(exclude_explanations)) {
-    stop("You can't specify both include and exclude explanations. Use just one of them.")
+    stop("You can't specify both include and exclude model explanations. Use just one of them.")
   }
 
   skip_explanations <- c()
@@ -1814,7 +1818,7 @@ h2o.explain <- function(object,
     for (ex in include_explanations) {
       if (!ex %in% possible_explanations) {
         stop(sprintf(
-          "Unknown explanation \"%s\"! Possible explanations are: %s.",
+          "Unknown model explanation \"%s\"! Possible model explanations are: %s.",
           ex, paste0(possible_explanations, collapse = ", ")
         ))
       }
@@ -1828,7 +1832,7 @@ h2o.explain <- function(object,
     for (ex in exclude_explanations) {
       if (!ex %in% possible_explanations) {
         stop(sprintf(
-          "Unknown explanation \"%s\"! Possible explanations are: %s.",
+          "Unknown model explanation \"%s\"! Possible model explanations are: %s.",
           ex, paste0(possible_explanations, collapse = ", ")
         ))
       }
@@ -1836,23 +1840,23 @@ h2o.explain <- function(object,
     skip_explanations <- tolower(exclude_explanations)
   }
 
-  if (!is.null(columns_of_interrest)) {
-    for (col in columns_of_interrest) {
+  if (!is.null(columns_of_interest)) {
+    for (col in columns_of_interest) {
       if (!col %in% models_info$x) {
         stop(sprintf("Column \"%s\" is not in x.", col))
       }
     }
   } else {
-    columns_of_interrest <- models_info$x
+    columns_of_interest <- models_info$x
 
     if (all(startsWith(.model_ids(models_info$models), "StackedEnsemble"))) {
       warning(
         "StackedEnsemble does not have a variable importance. Picking all features. ",
-        "Set `columns_of_interrest` to explain just a subset of features.",
+        "Set `columns_of_interest` to explain just a subset of features.",
         call. = FALSE
       )
     } else if ("feature_importance" %in% skip_explanations) {
-      message("Either columns_of_interrest should be specified or feature importance must be enabled.",
+      message("Either columns_of_interest should be specified or feature importance must be enabled.",
               "Picking all features.")
     }
   }
@@ -1874,7 +1878,7 @@ h2o.explain <- function(object,
           h2o.confusionMatrix,
           object = m,
           overridable_defaults = list(newdata = test_frame),
-          overrides = user_overrides$confusion_matrix
+          overrides = plot_overrides$confusion_matrix
         )
         if (models_info$has_leaderboard) break
       }
@@ -1889,7 +1893,7 @@ h2o.explain <- function(object,
           h2o.residual_analysis,
           model = m,
           newdata = test_frame,
-          overrides = user_overrides$residual_analysis
+          overrides = plot_overrides$residual_analysis
         )
         if (models_info$has_leaderboard) break
       }
@@ -1915,10 +1919,10 @@ h2o.explain <- function(object,
     varimp <- models_info$x
   }
 
-  if (is.null(columns_of_interrest)) {
-    columns_of_interrest <- varimp[seq_len(min(length(varimp), top_n_features))]
+  if (is.null(columns_of_interest)) {
+    columns_of_interest <- varimp[seq_len(min(length(varimp), top_n_features))]
     # deal with encoded columns
-    columns_of_interrest <- sapply(columns_of_interrest, .find_appropriate_column_name, cols = models_info$x)
+    columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
   }
 
   if (multiple_models) {
@@ -1930,7 +1934,7 @@ h2o.explain <- function(object,
         result$variable_importance_heatmap <- .customized_call(h2o.variable_importance_heatmap,
                                                                object = models_info,
                                                                newdata = test_frame,
-                                                               overrides = user_overrides$variable_importance_heatmap
+                                                               overrides = plot_overrides$variable_importance_heatmap
         )
       }
     }
@@ -1942,10 +1946,10 @@ h2o.explain <- function(object,
       result$model_correlation <- .customized_call(h2o.model_correlation,
                                                    object = models_info,
                                                    newdata = test_frame,
-                                                   overrides = user_overrides$model_correlation
+                                                   overrides = plot_overrides$model_correlation
       )
-      top_n <- if (is.null(user_overrides$model_correlation$top_n)) 20
-      else user_overrides$model_correlation$top_n
+      top_n <- if (is.null(plot_overrides$model_correlation$top_n)) 20
+      else plot_overrides$model_correlation$top_n
 
       interpretable_models <- unlist(Filter(.interpretable,
                                             .model_ids(
@@ -1972,7 +1976,7 @@ h2o.explain <- function(object,
           h2o.shap_summary_plot,
           model = m,
           newdata = test_frame,
-          overrides = user_overrides$shap_summary_plot
+          overrides = plot_overrides$shap_summary_plot
         )
         if (models_info$has_leaderboard) break
       }
@@ -1983,20 +1987,20 @@ h2o.explain <- function(object,
   if (!"pdp" %in% skip_explanations) {
     result <- append(result, .explanation_header("Partial Dependence Plots"))
     result <- append(result, .describe("pdp"))
-    for (col in columns_of_interrest) {
+    for (col in columns_of_interest) {
       if (!multiple_models) {
         result$partial_dependences[[col]] <- .customized_call(
           h2o.partial_dependences,
           object = models_info$models,
           newdata = test_frame,
           column = col,
-          overrides = user_overrides$partial_dependences
+          overrides = plot_overrides$partial_dependences
         )
       } else {
         if (models_info$is_multinomial_classification) {
           targets <- h2o.levels(test_frame[[models_info$y]])
-          if (!is.null(user_overrides$partial_dependences[["target"]])) {
-            targets <- user_overrides$partial_dependences[["target"]]
+          if (!is.null(plot_overrides$partial_dependences[["target"]])) {
+            targets <- plot_overrides$partial_dependences[["target"]]
           }
           for (target in targets) {
             result$partial_dependeces[[col]][[target]] <- .customized_call(
@@ -2006,7 +2010,7 @@ h2o.explain <- function(object,
               column = col,
               target = target,
               overridable_defaults = list(best_of_family = best_of_family),
-              overrides = user_overrides$partial_dependences
+              overrides = plot_overrides$partial_dependences
             )
           }
         } else {
@@ -2016,7 +2020,7 @@ h2o.explain <- function(object,
             newdata = test_frame,
             column = col,
             overridable_defaults = list(best_of_family = best_of_family),
-            overrides = user_overrides$partial_dependences
+            overrides = plot_overrides$partial_dependences
           )
         }
       }
@@ -2027,12 +2031,12 @@ h2o.explain <- function(object,
   if (!"ice" %in% skip_explanations) {
     result <- append(result, .explanation_header("Individual Conditional Expectations"))
     result <- append(result, .describe("ice"))
-    for (col in columns_of_interrest) {
+    for (col in columns_of_interest) {
       for (m in models_info$models) {
         if (models_info$is_multinomial_classification) {
           targets <- h2o.levels(test_frame[[models_info$y]])
-          if (!is.null(user_overrides$individual_conditional_expectations[["target"]])) {
-            targets <- user_overrides$individual_conditional_expectations[["target"]]
+          if (!is.null(plot_overrides$individual_conditional_expectations[["target"]])) {
+            targets <- plot_overrides$individual_conditional_expectations[["target"]]
           }
 
           for (target in targets) {
@@ -2042,7 +2046,7 @@ h2o.explain <- function(object,
               newdata = test_frame,
               column = col,
               target = target,
-              overrides = user_overrides$individual_conditional_expectations
+              overrides = plot_overrides$individual_conditional_expectations
             )
           }
         } else {
@@ -2051,7 +2055,7 @@ h2o.explain <- function(object,
             model = m,
             newdata = test_frame,
             column = col,
-            overrides = user_overrides$individual_conditional_expectations
+            overrides = plot_overrides$individual_conditional_expectations
           )
         }
         if (models_info$has_leaderboard) break
@@ -2067,11 +2071,11 @@ h2o.explain <- function(object,
 #' @param object One of the following: an H2OAutoML, an H2OAutoML Leaderboard slice, a model, a list of models.
 #' @param test_frame An H2OFrame.
 #' @param row_index A row index of the instance to explain.
-#' @param columns_of_interrest A vector of feature names. If specified, plot just these columns.
-#' @param include_explanations If specified, do only the specified explanations.
+#' @param columns_of_interest A vector of column names. If specified, create plots only with these columns (where applicable).
+#' @param include_explanations If specified, return only the specified model explanations.
 #'   (Mutually exclusive with exclude_explanations)
-#' @param exclude_explanations Exclude specified explanations.
-#' @param user_overrides Overrides for individual explanations, e.g.,
+#' @param exclude_explanations Exclude specified model explanations.
+#' @param plot_overrides Overrides for individual model explanations, e.g.,
 #'   list(shap_explain_row=list(top_n_features=5))
 #'
 #' @return List of outputs with class "explanation"
@@ -2079,10 +2083,10 @@ h2o.explain <- function(object,
 h2o.explain_row <- function(object,
                             test_frame,
                             row_index,
-                            columns_of_interrest = NULL,
+                            columns_of_interest = NULL,
                             include_explanations = "ALL",
                             exclude_explanations = character(),
-                            user_overrides = list()) {
+                            plot_overrides = list()) {
   models_info <- .process_models_or_automl(object, test_frame)
   result <- list()
 
@@ -2105,7 +2109,7 @@ h2o.explain_row <- function(object,
     for (ex in include_explanations) {
       if (!ex %in% possible_explanations) {
         stop(sprintf(
-          "Unknown explanation \"%s\"! Possible explanations are: %s.",
+          "Unknown model explanation \"%s\"! Possible model explanations are: %s.",
           ex, paste0(possible_explanations, collapse = ", ")
         ))
       }
@@ -2119,7 +2123,7 @@ h2o.explain_row <- function(object,
     for (ex in exclude_explanations) {
       if (!ex %in% possible_explanations) {
         stop(sprintf(
-          "Unknown explanation \"%s\"! Possible explanations are: %s.",
+          "Unknown model explanation \"%s\"! Possible model explanations are: %s.",
           ex, paste0(possible_explanations, collapse = ", ")
         ))
       }
@@ -2128,14 +2132,14 @@ h2o.explain_row <- function(object,
   }
 
 
-  if (!is.null(columns_of_interrest)) {
-    for (col in columns_of_interrest) {
+  if (!is.null(columns_of_interest)) {
+    for (col in columns_of_interest) {
       if (!col %in% models_info$x) {
         stop(sprintf("Column \"%s\" is not in x.", col))
       }
     }
   } else {
-    columns_of_interrest <- models_info$x
+    columns_of_interest <- models_info$x
   }
 
   if (models_info$has_leaderboard && !"leaderboard" %in% skip_explanations) {
@@ -2156,7 +2160,7 @@ h2o.explain_row <- function(object,
           model = m,
           newdata = test_frame,
           row_index = row_index,
-          overrides = user_overrides$shap_explain_row
+          overrides = plot_overrides$shap_explain_row
         )
         if (models_info$has_leaderboard) break
       }
@@ -2165,11 +2169,11 @@ h2o.explain_row <- function(object,
 
   if (!"ice" %in% skip_explanations) {
     result <- append(result, .explanation_header("Individual Conditional Expectations"))
-    for (col in columns_of_interrest) {
+    for (col in columns_of_interest) {
       if (models_info$is_multinomial_classification) {
         targets <- h2o.levels(test_frame[[models_info$y]])
-        if (!is.null(user_overrides$partial_dependences[["target"]])) {
-          targets <- user_overrides$partial_dependences[["target"]]
+        if (!is.null(plot_overrides$partial_dependences[["target"]])) {
+          targets <- plot_overrides$partial_dependences[["target"]]
         }
         for (target in targets) {
           result$individual_conditional_expectations[[col]][[target]] <- .customized_call(
@@ -2179,7 +2183,7 @@ h2o.explain_row <- function(object,
             best_of_family = models_info$has_leaderboard,
             target = target,
             row_index = row_index,
-            overrides = user_overrides$partial_dependences
+            overrides = plot_overrides$partial_dependences
           )
         }
       } else {
@@ -2190,7 +2194,7 @@ h2o.explain_row <- function(object,
           column = col,
           best_of_family = models_info$has_leaderboard,
           row_index = row_index,
-          overrides = user_overrides$partial_dependences
+          overrides = plot_overrides$partial_dependences
         )
       }
     }
@@ -2201,9 +2205,34 @@ h2o.explain_row <- function(object,
 
 
 #### On Load ####
+# Inspired by vctrs' s3_register function for registering s3 methods for generics from suggested packages
+.s3_register <- function(package, generic, class) {
+  method_env <- if (isNamespace(topenv())) asNamespace(environmentName(topenv())) else parent.frame()
+  method <- get(paste(generic, class, sep="."), envir = method_env)
+
+  # Register hook in case package is unloaded & reloaded
+  setHook(packageEvent(package, "onLoad"),
+    function(...) {
+      registerS3method(generic, class, method, envir = asNamespace(package))
+    }
+  )
+
+  # Don't register if the package is not present
+  if (!isNamespaceLoaded(package)) {
+    return(invisible())
+  }
+
+  # Register iff generic exists in the package environment
+  if (exists(generic, asNamespace(package))) {
+    registerS3method(generic, class, method, envir = asNamespace(package))
+  }
+
+  invisible()
+}
+
 .onLoad <- function(...) {
   registerS3method("print", "explanation", "print.explanation")
-  s3_register("repr::repr_text", "explanation")
-  s3_register("repr::repr_html", "explanation")
+  .s3_register("repr", "repr_text", "explanation")
+  .s3_register("repr", "repr_html", "explanation")
   invisible()
 }
