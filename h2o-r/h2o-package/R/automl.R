@@ -61,6 +61,7 @@
 #' @param export_checkpoints_dir (Optional) Path to a directory where every model will be stored in binary form.
 #' @param verbosity Verbosity of the backend messages printed during training; Optional.
 #'        Must be one of NULL (live log disabled), "debug", "info", "warn". Defaults to "warn".
+#' @param ... Additional (experimental) arguments to be passed through; Optional.        
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.
 #' @return An \linkS4class{H2OAutoML} object.
