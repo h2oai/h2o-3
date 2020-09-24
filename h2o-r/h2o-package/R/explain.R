@@ -107,9 +107,9 @@ with_no_h2o_progress <- function(expr) {
 #' @param require_multiple_models If true, make sure we were provided at least two models
 #' @param top_n If set, don't return more than top_n models
 #' @param only_with_varimp If TRUE, return only models that have variable importance
-#' @param best_of_family If TRUE, return only the best of family models
+#' @param best_of_family If TRUE, return only the best of family models; if FALSE return all models in \code{object}
 #'
-#' @return a list with the following names \code{leader}, \code{has_leaderboard}, \code{models},
+#' @return a list with the following names \code{leader}, \code{is_automl}, \code{models},
 #'   \code{is_classification}, \code{is_multinomial_classification}, \code{x}, \code{y}, \code{model}
 .process_models_or_automl <- function(object, newdata,
                                       require_single_model = FALSE,
@@ -159,7 +159,7 @@ with_no_h2o_progress <- function(expr) {
     }
 
     if (!is.na(top_n)) {
-      if (object$has_leaderboard) {
+      if (object$is_automl) {
         object$models <- head(object$models, n = min(top_n, length(object$models)))
       } else {
         object$models <- head(object$models[order(unlist(sapply(object$models, .get_MSE)))],
@@ -203,7 +203,7 @@ with_no_h2o_progress <- function(expr) {
     }
     return(make_models_info(
       leader = object@leader,
-      has_leaderboard = TRUE,
+      is_automl = TRUE,
       leaderboard = as.data.frame(h2o.get_leaderboard(object, extra_columns = "ALL")),
       models = sapply(head(models, top_n), h2o.getModel),
       is_classification = is.factor(y_col),
@@ -232,7 +232,7 @@ with_no_h2o_progress <- function(expr) {
 
       return(make_models_info(
         leader = object,
-        has_leaderboard = FALSE,
+        is_automl = FALSE,
         models = list(object),
         is_classification = is.factor(y_col),
         is_multinomial_classification = is.factor(y_col) && h2o.nlevels(y_col) > 2,
@@ -301,7 +301,7 @@ with_no_h2o_progress <- function(expr) {
 
       return(make_models_info(
         leader = object[[1]],
-        has_leaderboard = FALSE,
+        is_automl = FALSE,
         models = object,
         is_classification = is.factor(newdata[[y]]),
         is_multinomial_classification = is.factor(newdata[[y]]) && h2o.nlevels(newdata[[y]]) > 2,
@@ -369,7 +369,7 @@ with_no_h2o_progress <- function(expr) {
 #'
 #' @return a data.frame
 .create_leaderboard <- function(models_info, leaderboard_frame) {
-  if (models_info$has_leaderboard) {
+  if (models_info$is_automl) {
     return(models_info$leaderboard)
   }
   models <- models_info$models
@@ -384,8 +384,9 @@ with_no_h2o_progress <- function(expr) {
         "logloss"
       )])
     })))
-  row.names(leaderboard) <- sapply(models, function(m) m@model_id)
-  leaderboard <- leaderboard[order(leaderboard[[1]]),]
+  leaderboard <- cbind(data.frame(model_id=sapply(models, function(m) m@model_id)),
+                       leaderboard)
+  leaderboard <- leaderboard[order(leaderboard[[2]]),]
   names(leaderboard) <- tolower(names(leaderboard))
   return(leaderboard)
 }
@@ -1775,7 +1776,6 @@ h2o.individual_conditional_expectations <- function(model,
 #'   (Mutually exclusive with exclude_explanations)
 #' @param exclude_explanations Exclude specified model explanations.
 #' @param top_n_features If \code{columns_of_interest} is missing, create plots only with the top n columns (where applicable).  Defaults to 5.
-#' @param best_of_family If TRUE, explain only best of family models; if FALSE explain all the models
 #' @param plot_overrides Overrides for individual model explanations, e.g.,
 #'   list(shap_summary_plot = list(top_n_features = 50))
 #'
@@ -1787,7 +1787,6 @@ h2o.explain <- function(object,
                         include_explanations = "ALL",
                         exclude_explanations = character(),
                         top_n_features = 5,
-                        best_of_family = TRUE,
                         plot_overrides = list()) {
   models_info <- .process_models_or_automl(object, test_frame)
   multiple_models <- length(models_info$models) > 1
@@ -1861,7 +1860,7 @@ h2o.explain <- function(object,
     }
   }
 
-  if (models_info$has_leaderboard && !"leaderboard" %in% skip_explanations) {
+  if (multiple_models && !"leaderboard" %in% skip_explanations) {
     result <- append(result, .explanation_header("Leaderboard"))
     result <- append(result, .describe("leaderboard"))
     result$leaderboard <- .create_leaderboard(models_info, test_frame)
@@ -1880,7 +1879,7 @@ h2o.explain <- function(object,
           overridable_defaults = list(newdata = test_frame),
           overrides = plot_overrides$confusion_matrix
         )
-        if (models_info$has_leaderboard) break
+        if (models_info$is_automl) break
       }
     }
   } else {
@@ -1895,7 +1894,7 @@ h2o.explain <- function(object,
           newdata = test_frame,
           overrides = plot_overrides$residual_analysis
         )
-        if (models_info$has_leaderboard) break
+        if (models_info$is_automl) break
       }
     }
   }
@@ -1911,7 +1910,7 @@ h2o.explain <- function(object,
         if (!is.null(tmp$varimp)) {
           result$feature_importance[[m@model_id]] <- tmp$p
           if (is.null(varimp)) varimp <- names(tmp$grouped_varimp)
-          if (models_info$has_leaderboard) break
+          if (models_info$is_automl) break
         }
       }
     }
@@ -1978,7 +1977,7 @@ h2o.explain <- function(object,
           newdata = test_frame,
           overrides = plot_overrides$shap_summary_plot
         )
-        if (models_info$has_leaderboard) break
+        if (models_info$is_automl) break
       }
     }
   }
@@ -2009,7 +2008,7 @@ h2o.explain <- function(object,
               newdata = test_frame,
               column = col,
               target = target,
-              overridable_defaults = list(best_of_family = best_of_family),
+              overridable_defaults = list(best_of_family = models_info$is_automl),
               overrides = plot_overrides$partial_dependences
             )
           }
@@ -2019,7 +2018,7 @@ h2o.explain <- function(object,
             object = models_info$models,
             newdata = test_frame,
             column = col,
-            overridable_defaults = list(best_of_family = best_of_family),
+            overridable_defaults = list(best_of_family = models_info$is_automl),
             overrides = plot_overrides$partial_dependences
           )
         }
@@ -2058,7 +2057,7 @@ h2o.explain <- function(object,
             overrides = plot_overrides$individual_conditional_expectations
           )
         }
-        if (models_info$has_leaderboard) break
+        if (models_info$is_automl) break
       }
     }
   }
@@ -2088,6 +2087,7 @@ h2o.explain_row <- function(object,
                             exclude_explanations = character(),
                             plot_overrides = list()) {
   models_info <- .process_models_or_automl(object, test_frame)
+  multiple_models <- length(models_info$models) > 1
   result <- list()
 
   possible_explanations <- c(
@@ -2142,7 +2142,7 @@ h2o.explain_row <- function(object,
     columns_of_interest <- models_info$x
   }
 
-  if (models_info$has_leaderboard && !"leaderboard" %in% skip_explanations) {
+  if (multiple_models && !"leaderboard" %in% skip_explanations) {
     result <- append(result, .explanation_header("Leaderboard"))
     result <- append(result, .describe("leaderboard_row"))
     result$leaderboard <- .leaderboard_for_row(models_info, test_frame, row_index)
@@ -2162,7 +2162,7 @@ h2o.explain_row <- function(object,
           row_index = row_index,
           overrides = plot_overrides$shap_explain_row
         )
-        if (models_info$has_leaderboard) break
+        if (models_info$is_automl) break
       }
     }
   }
@@ -2180,9 +2180,9 @@ h2o.explain_row <- function(object,
             h2o.partial_dependences,
             object = models_info, newdata = test_frame,
             column = col,
-            best_of_family = models_info$has_leaderboard,
             target = target,
             row_index = row_index,
+            overridable_defaults = list(best_of_family = models_info$is_automl),
             overrides = plot_overrides$partial_dependences
           )
         }
@@ -2192,8 +2192,8 @@ h2o.explain_row <- function(object,
           object = models_info,
           newdata = test_frame,
           column = col,
-          best_of_family = models_info$has_leaderboard,
           row_index = row_index,
+          overridable_defaults = list(best_of_family = models_info$is_automl),
           overrides = plot_overrides$partial_dependences
         )
       }
