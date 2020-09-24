@@ -34,7 +34,10 @@ public class TargetEncoding implements PreprocessingStep {
     private TargetEncoderPreprocessor _tePreprocessor;
     private TargetEncoderModel _teModel;
     private final List<Completer> _disposables = new ArrayList<>();
-    private int _cardinalityThreshold = 10;  // the minimal cardinality for a column to be TE encoded. 
+
+    private TargetEncoderParameters _defaultParams;
+    private boolean _encodeAllColumns = false; // if true, bypass all restrictions in columns selection.
+    private int _columnCardinalityThreshold = 10;  // the minimal cardinality for a column to be TE encoded. 
 
     public TargetEncoding(AutoML aml) {
         _aml = aml;
@@ -47,16 +50,13 @@ public class TargetEncoding implements PreprocessingStep {
 
     @Override
     public void prepare() {
-        Frame amlTrain = _aml.getTrainingFrame();
         AutoMLInput amlInput = _aml.getBuildSpec().input_spec;
         AutoMLBuildControl amlBuild = _aml.getBuildSpec().build_control;
+        Frame amlTrain = _aml.getTrainingFrame();
         
-        TargetEncoderParameters params = new TargetEncoderParameters();
+        TargetEncoderParameters params = (TargetEncoderParameters) getDefaultParams().clone();
         params._train = amlTrain._key;
         params._response_column = amlInput.response_column;
-        params._keep_original_categorical_columns = false;
-        params._blending = true;
-        params._noise = 0;
         params._seed = amlBuild.stopping_criteria.seed();
         
         Set<String> teColumns = selectColumnsToEncode(amlTrain, params);
@@ -141,22 +141,44 @@ public class TargetEncoding implements PreprocessingStep {
         }
     }
 
-    public void setCardinalityThreshold(int cardinalityThreshold) {
-        _cardinalityThreshold = cardinalityThreshold;
+    public void setDefaultParams(TargetEncoderParameters defaultParams) {
+        _defaultParams = defaultParams;
+    }
+
+    public void setEncodeAllColumns(boolean encodeAllColumns) {
+        _encodeAllColumns = encodeAllColumns;
+    }
+
+    public void setColumnCardinalityThreshold(int threshold) {
+        _columnCardinalityThreshold = threshold;
+    }
+
+    private TargetEncoderParameters getDefaultParams() {
+        if (_defaultParams != null) return _defaultParams;
+        
+        _defaultParams = new TargetEncoderParameters();
+        _defaultParams._keep_original_categorical_columns = false;
+        _defaultParams._blending = true;
+        _defaultParams._noise = 0;
+        
+        return _defaultParams;
     }
 
     private Set<String> selectColumnsToEncode(Frame fr, TargetEncoderParameters params) {
-        Set<String> encode = new HashSet<>();
-        Predicate<Vec> cardinalityLargeEnough = v -> v.cardinality() >= _cardinalityThreshold;
-        Predicate<Vec> cardinalityNotTooLarge = params._blending 
-                ? v -> (double)fr.numRows() / v.cardinality() > params._inflection_point
-                : v -> true
-                ;
-                
-        for (int i = 0; i < fr.names().length; i++) {
-            Vec v = fr.vec(i);
-            if (cardinalityLargeEnough.test(v) && cardinalityNotTooLarge.test(v)) 
-                encode.add(fr.name(i));
+        final Set<String> encode = new HashSet<>();
+        if (_encodeAllColumns) {
+            encode.addAll(Arrays.asList(fr.names()));
+        } else {
+            Predicate<Vec> cardinalityLargeEnough = v -> v.cardinality() >= _columnCardinalityThreshold;
+            Predicate<Vec> cardinalityNotTooLarge = params._blending
+                    ? v -> (double) fr.numRows() / v.cardinality() > params._inflection_point
+                    :v -> true;
+
+            for (int i = 0; i < fr.names().length; i++) {
+                Vec v = fr.vec(i);
+                if (cardinalityLargeEnough.test(v) && cardinalityNotTooLarge.test(v))
+                    encode.add(fr.name(i));
+            }
         }
 
         AutoMLInput amlInput = _aml.getBuildSpec().input_spec;

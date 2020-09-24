@@ -4,14 +4,11 @@ source("../../../scripts/h2o-r-test-setup.R")
 automl.preprocessing.suite <- function() {
 
   import_dataset <- function() {
-    y <- "CAPSULE"
-    te_col <- "DPROS"  
-    train <- h2o.importFile(locate("smalldata/testng/prostate_train.csv"), destination_frame = "prostate_full_train")
-    train[,y] <- as.factor(train[,y])
-    train[,te_col] <- as.factor(train[,te_col])
-    test <- h2o.importFile(locate("smalldata/testng/prostate_test.csv"), destination_frame = "prostate_full_test")
-    test[,y] <- as.factor(test[,y])
-    test[,te_col] <- as.factor(test[,te_col])
+    y <- "survived"
+    fr <- h2o.importFile(locate("smalldata/titanic/titanic_expanded.csv"))
+    splits <- h2o.splitFrame(fr, destination_frames=c("r_amlte_train", "r_amlte_test"), seed = 1)
+    train <- splits[[1]]
+    test <- splits[[2]]
     x <- setdiff(names(train), y)
     return(list(x=x, y=y, train=train, test=test))
   }

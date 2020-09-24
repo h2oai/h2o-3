@@ -3,7 +3,9 @@ package ai.h2o.automl.preprocessing;
 import ai.h2o.automl.*;
 import ai.h2o.automl.dummy.DummyModel;
 import ai.h2o.automl.preprocessing.PreprocessingStepDefinition.Type;
+import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
+import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import ai.h2o.targetencoding.TargetEncoderPreprocessor;
 import hex.Model;
 import hex.SplitFrame;
@@ -65,11 +67,36 @@ public class TargetEncodingTest {
         toDelete.forEach(Keyed::remove);
     }
 
+    @Test
+    public void test_default_params() {
+        aml.getBuildSpec().build_control.nfolds = 0; //disabling CV on AutoML
+        TargetEncoding te = new TargetEncoding(aml);
+        te.setEncodeAllColumns(true);
+        try {
+            Scope.enter();
+            te.prepare();
+            assertNotNull(te.getTEModel());
+            assertNotNull(te.getTEPreprocessor());
+            Scope.track_generic(te.getTEModel());
+            Scope.track_generic(te.getTEPreprocessor());
+            
+            TargetEncoderParameters teParams = te.getTEModel()._parms;
+            assertNull(teParams._fold_column);
+            assertEquals(DataLeakageHandlingStrategy.None, teParams._data_leakage_handling);
+            assertFalse(teParams._keep_original_categorical_columns);
+            assertTrue(teParams._blending);
+            assertEquals(0, teParams._noise, 0);
+        } finally {
+            te.dispose();
+            Scope.exit();
+        }
+    }
 
     @Test
     public void test_te_preprocessing_lifecycle_automl_no_cv() {
         aml.getBuildSpec().build_control.nfolds = 0; //disabling CV on AutoML
         TargetEncoding te = new TargetEncoding(aml);
+        te.setEncodeAllColumns(true);
         assertNull(te.getTEModel());
         assertNull(te.getTEPreprocessor());
         try {
@@ -81,7 +108,6 @@ public class TargetEncodingTest {
             Scope.track_generic(te.getTEPreprocessor());
             assertNull(te.getTEModel()._parms._fold_column);
             assertEquals(DataLeakageHandlingStrategy.None, te.getTEModel()._parms._data_leakage_handling);
-            assertFalse(te.getTEModel()._parms._keep_original_categorical_columns);
 
             Model.Parameters params = new DummyModel.DummyModelParameters();
             params._train = fr._key;
@@ -104,6 +130,7 @@ public class TargetEncodingTest {
         int nfolds = 3;
         aml.getBuildSpec().build_control.nfolds = nfolds;
         TargetEncoding te = new TargetEncoding(aml);
+        te.setEncodeAllColumns(true);
         try {
             Scope.enter();
             te.prepare();
@@ -140,6 +167,7 @@ public class TargetEncodingTest {
     public void test_te_preprocessing_lifecycle_with_automl_cv_foldcolumn() {
         aml.getBuildSpec().input_spec.fold_column = "foldc";
         TargetEncoding te = new TargetEncoding(aml);
+        te.setEncodeAllColumns(true);
         try {
             Scope.enter();
             te.prepare();
