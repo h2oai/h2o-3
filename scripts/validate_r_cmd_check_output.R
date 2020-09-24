@@ -25,7 +25,8 @@ whitelist = list(
                                "sub-directories of 1Mb or more",
                                "java .*Mb",
                                "R .*Mb"),
-  "Rd cross-references" = "Package unavailable to check Rd xrefs" # when linking documentation to optional deps not present at check time
+  "Rd cross-references" = "Package unavailable to check Rd xrefs", # when linking documentation to optional deps not present at check time
+  "checking for future file timestamps" = "unable to verify current time" # unable to verify time when worldclock is down
 )
 check_note <- function(details, whitelist, verbose=TRUE) {
   stopifnot(is.data.frame(details), is.list(whitelist))
