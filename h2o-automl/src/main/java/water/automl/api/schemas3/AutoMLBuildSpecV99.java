@@ -255,7 +255,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
             level = API.Level.expert)
     public StepDefinitionV99[] modeling_plan;
     
-    @API(help="The list of preprocessing steps to run. Only 'targetencoding' is currently supported.",
+    @API(help="The list of preprocessing steps to run. Only 'target_encoding' is currently supported.",
             level = API.Level.secondary)
     public PreprocessingStepDefinitionV99[] preprocessing;
 
