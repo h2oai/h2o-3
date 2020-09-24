@@ -28,7 +28,7 @@ from h2o.h2o import (connect, init, api, connection,
 # root h2o module, without exporting it explicitly. In the future this import may be removed entirely, so that
 # one would have to import it from h2o.frames.
 from h2o.frame import H2OFrame  # NOQA
-# Export mli functions that are useful for lists of models
+# Export explain functions that are useful for lists of models
 from h2o.explain import explain, explain_row, variable_importance_heatmap, model_correlation_heatmap, partial_dependences, \
     register_explain_methods
 from h2o.utils.shared_utils import mojo_predict_csv, mojo_predict_pandas
