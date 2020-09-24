@@ -9,7 +9,7 @@ from h2o.automl import H2OAutoML
 from h2o.estimators import H2OGradientBoostingEstimator
 
 
-def test_mli_single_model_regression():
+def test_explanation_single_model_regression():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
     y = "quality"
     # get at most one column from each type
@@ -44,7 +44,7 @@ def test_mli_single_model_regression():
     assert isinstance(gbm.explain_row(train, 1, render=False), collections.OrderedDict)
 
 
-def test_mli_automl_regression():
+def test_explanation_automl_regression():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
     y = "quality"
     # get at most one column from each type
@@ -76,7 +76,7 @@ def test_mli_automl_regression():
     assert isinstance(aml.explain_row(train, 1, render=False), collections.OrderedDict)
 
 
-def test_mli_list_of_models_regression():
+def test_explanation_list_of_models_regression():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
     y = "quality"
     # get at most one column from each type
@@ -111,7 +111,7 @@ def test_mli_list_of_models_regression():
     assert isinstance(h2o.explain_row(models, train, 1, render=False), collections.OrderedDict)
 
 
-def test_mli_single_model_binomial_classification():
+def test_explanation_single_model_binomial_classification():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     y = "CAPSULE"
     train[y] = train[y].asfactor()
@@ -144,7 +144,7 @@ def test_mli_single_model_binomial_classification():
     assert isinstance(gbm.explain_row(train, 1, render=False), collections.OrderedDict)
 
 
-def test_mli_automl_binomial_classification():
+def test_explanation_automl_binomial_classification():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     y = "CAPSULE"
     train[y] = train[y].asfactor()
@@ -177,7 +177,7 @@ def test_mli_automl_binomial_classification():
     assert isinstance(aml.explain_row(train, 1, render=False), collections.OrderedDict)
 
 
-def test_mli_list_of_models_binomial_classification():
+def test_explanation_list_of_models_binomial_classification():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     y = "CAPSULE"
     train[y] = train[y].asfactor()
@@ -213,7 +213,7 @@ def test_mli_list_of_models_binomial_classification():
     assert isinstance(h2o.explain_row(models, train, 1, render=False), collections.OrderedDict)
 
 
-def test_mli_single_model_multinomial_classification():
+def test_explanation_single_model_multinomial_classification():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/iris/iris2.csv"))
     y = "response"
     train[y] = train[y].asfactor()
@@ -255,7 +255,7 @@ def test_mli_single_model_multinomial_classification():
     assert isinstance(gbm.explain_row(train, 1, render=False), collections.OrderedDict)
 
 
-def test_mli_automl_multinomial_classification():
+def test_explanation_automl_multinomial_classification():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/iris/iris2.csv"))
     y = "response"
     train[y] = train[y].asfactor()
@@ -288,7 +288,7 @@ def test_mli_automl_multinomial_classification():
     assert isinstance(aml.explain_row(train, 1, render=False), collections.OrderedDict)
 
 
-def test_mli_list_of_models_multinomial_classification():
+def test_explanation_list_of_models_multinomial_classification():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/iris/iris2.csv"))
     y = "response"
     train[y] = train[y].asfactor()
@@ -326,13 +326,13 @@ def test_mli_list_of_models_multinomial_classification():
 
 
 pyunit_utils.run_tests([
-    test_mli_single_model_regression,
-    test_mli_automl_regression,
-    test_mli_list_of_models_regression,
-    test_mli_single_model_binomial_classification,
-    test_mli_automl_binomial_classification,
-    test_mli_list_of_models_binomial_classification,
-    test_mli_single_model_multinomial_classification,
-    test_mli_automl_multinomial_classification,
-    test_mli_list_of_models_multinomial_classification,
+    test_explanation_single_model_regression,
+    test_explanation_automl_regression,
+    test_explanation_list_of_models_regression,
+    test_explanation_single_model_binomial_classification,
+    test_explanation_automl_binomial_classification,
+    test_explanation_list_of_models_binomial_classification,
+    test_explanation_single_model_multinomial_classification,
+    test_explanation_automl_multinomial_classification,
+    test_explanation_list_of_models_multinomial_classification,
     ])

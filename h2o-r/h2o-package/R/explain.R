@@ -1270,8 +1270,8 @@ h2o.variable_importance_heatmap <- function(object, newdata, top_n = 20) {
 #'
 #' @return A ggplot2 object
 #' @export
-h2o.model_correlation <- function(object, newdata, top_n = 20,
-                                  cluster = TRUE, triangular = TRUE) {
+h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
+                                          cluster = TRUE, triangular = TRUE) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   models_info <- .process_models_or_automl(object, newdata, require_multiple_models = TRUE, top_n = top_n)
@@ -1361,7 +1361,7 @@ h2o.model_correlation <- function(object, newdata, top_n = 20,
 h2o.residual_analysis <- function(model, newdata) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
-  if ("H2OAutoML" %in% class(model))
+  if ("H2OAutoML" %in% class(model) || is.list(model))
     stop("Residual analysis works only on a single model!")
   if (h2o.isfactor(newdata[[model@allparameters$y]]))
     stop("Residual analysis is not implemented for classification.")
@@ -1943,7 +1943,7 @@ h2o.explain <- function(object,
     if (!"model_correlation_heatmap" %in% skip_explanations) {
       result <- append(result, .explanation_header("Model Correlation"))
       result <- append(result, .describe("model_correlation_heatmap"))
-      result$model_correlation <- .customized_call(h2o.model_correlation,
+      result$model_correlation <- .customized_call(h2o.model_correlation_heatmap,
                                                    object = models_info,
                                                    newdata = test_frame,
                                                    overrides = plot_overrides$model_correlation

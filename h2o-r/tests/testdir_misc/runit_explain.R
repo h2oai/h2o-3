@@ -9,7 +9,7 @@ expect_ggplot <- function(gg) {
   tryCatch({ggplot2::ggsave(file, plot = p)}, finally = unlink(file))
 }
 
-mli_test_single_model_regression <- function() {
+explanation_test_single_model_regression <- function() {
   train <- h2o.uploadFile(locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
   y <- "quality"
 
@@ -47,7 +47,7 @@ mli_test_single_model_regression <- function() {
   expect_true("explanation" %in% class(h2o.explain_row(gbm, train, 1)))
 }
 
-mli_test_automl_model_regression <- function() {
+explanation_test_automl_regression <- function() {
   train <- h2o.uploadFile(locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
   y <- "quality"
 
@@ -61,7 +61,7 @@ mli_test_automl_model_regression <- function() {
                     seed = 1234)
 
   # test model correlation
-  expect_ggplot(h2o.model_correlation(aml, train))
+  expect_ggplot(h2o.model_correlation_heatmap(aml, train))
 
   # test variable importance heatmap
   expect_ggplot(h2o.variable_importance_heatmap(aml, train))
@@ -89,7 +89,51 @@ mli_test_automl_model_regression <- function() {
   expect_true("explanation" %in% class(h2o.explain_row(aml, train, 1)))
 }
 
-mli_test_single_model_binomial_classification <- function() {
+explanation_test_list_of_models_regression <- function() {
+  train <- h2o.uploadFile(locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
+  y <- "quality"
+
+  col_types <- setNames(unlist(h2o.getTypes(train)), names(train))
+  col_types <- col_types[names(col_types) != y]
+  cols_to_test <- names(col_types[!duplicated(col_types)])
+
+  aml <- h2o.automl(y = y,
+                    max_models = 5,
+                    training_frame = train,
+                    seed = 1234)
+  models <- lapply(aml@leaderboard$model_id, h2o.getModel)
+
+  # test model correlation
+  expect_ggplot(h2o.model_correlation_heatmap(models, train))
+
+  # test variable importance heatmap
+  expect_ggplot(h2o.variable_importance_heatmap(models, train))
+
+  # test shap summary
+  expect_error(h2o.shap_summary_plot(models, train), "SHAP summary plot requires a tree-based model!")
+
+  # test shap explain row
+  expect_error(h2o.shap_explain_row(models, train, 1), "SHAP explain_row plot requires a tree-based model!")
+
+  # test residual analysis
+  expect_error(h2o.residual_analysis(models, train), "Residual analysis works only on a single model!")
+
+  # test partial dependences
+  for (col in cols_to_test) {
+    expect_ggplot(h2o.partial_dependences(models, train, col))
+  }
+  # test ice plot
+  expect_error(h2o.individual_conditional_expectations(models, train, cols_to_test[[1]]), "Only one model is allowed!")
+
+  # test explanation
+  expect_true("explanation" %in% class(h2o.explain(models, train)))
+
+  # test explanation
+  expect_true("explanation" %in% class(h2o.explain_row(models, train, 1)))
+}
+
+
+explanation_test_single_model_binomial_classification <- function() {
   train <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
   y <- "CAPSULE"
   train[, y] <- as.factor(train[, y])
@@ -128,7 +172,7 @@ mli_test_single_model_binomial_classification <- function() {
   expect_true("explanation" %in% class(h2o.explain_row(gbm, train, 1)))
 }
 
-mli_test_automl_model_binomial_classification <- function() {
+explanation_test_automl_binomial_classification <- function() {
   train <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
   y <- "CAPSULE"
   train[, y] <- as.factor(train[, y])
@@ -143,7 +187,7 @@ mli_test_automl_model_binomial_classification <- function() {
                     seed = 1234)
 
   # test model correlation
-  expect_ggplot(h2o.model_correlation(aml, train))
+  expect_ggplot(h2o.model_correlation_heatmap(aml, train))
 
   # test variable importance heatmap
   expect_ggplot(h2o.variable_importance_heatmap(aml, train))
@@ -171,8 +215,52 @@ mli_test_automl_model_binomial_classification <- function() {
   expect_true("explanation" %in% class(h2o.explain_row(aml, train, 1)))
 }
 
+explanation_test_list_of_models_binomial_classification <- function() {
+  train <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+  y <- "CAPSULE"
+  train[, y] <- as.factor(train[, y])
 
-mli_test_single_model_multinomial_classification <- function() {
+  col_types <- setNames(unlist(h2o.getTypes(train)), names(train))
+  col_types <- col_types[names(col_types) != y]
+  cols_to_test <- names(col_types[!duplicated(col_types)])
+
+  aml <- h2o.automl(y = y,
+                    max_models = 5,
+                    training_frame = train,
+                    seed = 1234)
+  models <- lapply(aml@leaderboard$model_id, h2o.getModel)
+
+  # test model correlation
+  expect_ggplot(h2o.model_correlation_heatmap(models, train))
+
+  # test variable importance heatmap
+  expect_ggplot(h2o.variable_importance_heatmap(models, train))
+
+  # test shap summary
+  expect_error(h2o.shap_summary_plot(models, train), "SHAP summary plot requires a tree-based model!")
+
+  # test shap explain row
+  expect_error(h2o.shap_explain_row(models, train, 1), "SHAP explain_row plot requires a tree-based model!")
+
+  # test residual analysis
+  expect_error(h2o.residual_analysis(models, train), "Residual analysis works only on a single model!")
+
+  # test partial dependences
+  for (col in cols_to_test) {
+    expect_ggplot(h2o.partial_dependences(models, train, col))
+  }
+  # test ice plot
+  expect_error(h2o.individual_conditional_expectations(models, train, cols_to_test[[1]]), "Only one model is allowed!")
+
+  # test explanation
+  expect_true("explanation" %in% class(h2o.explain(models, train)))
+
+  # test explanation
+  expect_true("explanation" %in% class(h2o.explain_row(models, train, 1)))
+}
+
+
+explanation_test_single_model_multinomial_classification <- function() {
   train <- h2o.uploadFile(locate("smalldata/iris/iris2.csv"))
   y <- "response"
   train[, y] <- as.factor(train[, y])
@@ -211,7 +299,7 @@ mli_test_single_model_multinomial_classification <- function() {
   expect_true("explanation" %in% class(h2o.explain_row(gbm, train, 1)))
 }
 
-mli_test_automl_model_multinomial_classification <- function() {
+explanation_test_automl_multinomial_classification <- function() {
   train <- h2o.uploadFile(locate("smalldata/iris/iris2.csv"))
   y <- "response"
   train[, y] <- as.factor(train[, y])
@@ -226,7 +314,7 @@ mli_test_automl_model_multinomial_classification <- function() {
                     seed = 1234)
 
   # test model correlation
-  expect_ggplot(h2o.model_correlation(aml, train))
+  expect_ggplot(h2o.model_correlation_heatmap(aml, train))
 
   # test variable importance heatmap
   expect_ggplot(h2o.variable_importance_heatmap(aml, train))
@@ -254,13 +342,59 @@ mli_test_automl_model_multinomial_classification <- function() {
   expect_true("explanation" %in% class(h2o.explain_row(aml, train, 1)))
 }
 
+explanation_test_list_of_models_multinomial_classification <- function() {
+  train <- h2o.uploadFile(locate("smalldata/iris/iris2.csv"))
+  y <- "response"
+  train[, y] <- as.factor(train[, y])
+
+  col_types <- setNames(unlist(h2o.getTypes(train)), names(train))
+  col_types <- col_types[names(col_types) != y]
+  cols_to_test <- names(col_types[!duplicated(col_types)])
+
+  aml <- h2o.automl(y = y,
+                    max_models = 5,
+                    training_frame = train,
+                    seed = 1234)
+  models <- lapply(aml@leaderboard$model_id, h2o.getModel)
+
+  # test model correlation
+  expect_ggplot(h2o.model_correlation_heatmap(models, train))
+
+  # test variable importance heatmap
+  expect_ggplot(h2o.variable_importance_heatmap(models, train))
+
+  # test shap summary
+  expect_error(h2o.shap_summary_plot(models, train), "SHAP summary plot requires a tree-based model!")
+
+  # test shap explain row
+  expect_error(h2o.shap_explain_row(models, train, 1), "SHAP explain_row plot requires a tree-based model!")
+
+  # test residual analysis
+  expect_error(h2o.residual_analysis(models, train), "Residual analysis works only on a single model!")
+
+  # test partial dependences
+  for (col in cols_to_test) {
+    expect_ggplot(h2o.partial_dependences(models, train, col, target = "versicolor"))
+  }
+  # test ice plot
+  expect_error(h2o.individual_conditional_expectations(models, train, cols_to_test[[1]]), "Only one model is allowed!")
+
+  # test explanation
+  expect_true("explanation" %in% class(h2o.explain(models, train)))
+
+  # test explanation
+  expect_true("explanation" %in% class(h2o.explain_row(models, train, 1)))
+}
 
 
-doSuite("MLI Tests", makeSuite(
-    mli_test_single_model_regression
-    , mli_test_automl_model_regression
-    , mli_test_single_model_binomial_classification
-    , mli_test_automl_model_binomial_classification
-    , mli_test_single_model_multinomial_classification
-    , mli_test_automl_model_multinomial_classification
+doSuite("Explanation Tests", makeSuite(
+  explanation_test_single_model_regression
+  , explanation_test_automl_regression
+  , explanation_test_list_of_models_regression
+  , explanation_test_single_model_binomial_classification
+  , explanation_test_automl_binomial_classification
+  , explanation_test_list_of_models_binomial_classification
+  , explanation_test_single_model_multinomial_classification
+  , explanation_test_automl_multinomial_classification
+  , explanation_test_list_of_models_multinomial_classification
 ))
