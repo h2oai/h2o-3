@@ -1771,11 +1771,11 @@ h2o.individual_conditional_expectations <- function(model,
 #'
 #' @param object One of the following: an H2OAutoML, an H2OAutoML Leaderboard slice, a model, a list of models.
 #' @param newdata An H2OFrame.
-#' @param columns_of_interest  A vector of column names. If specified, create plots only with these columns (where applicable).
+#' @param features A vector of column names to create plots only with or a number of columns to pick
+#'                 using variable importance (where applicable).
 #' @param include_explanations If specified, return only the specified model explanations.
 #'   (Mutually exclusive with exclude_explanations)
 #' @param exclude_explanations Exclude specified model explanations.
-#' @param top_n_features If \code{columns_of_interest} is missing, create plots only with the top n columns (where applicable).  Defaults to 5.
 #' @param plot_overrides Overrides for individual model explanations, e.g.,
 #'   list(shap_summary_plot = list(top_n_features = 50))
 #'
@@ -1783,10 +1783,9 @@ h2o.individual_conditional_expectations <- function(model,
 #' @export
 h2o.explain <- function(object,
                         newdata,
-                        columns_of_interest = NULL,
+                        features = 5,
                         include_explanations = "ALL",
                         exclude_explanations = character(),
-                        top_n_features = 5,
                         plot_overrides = list()) {
   models_info <- .process_models_or_automl(object, newdata)
   multiple_models <- length(models_info$models) > 1
@@ -1839,7 +1838,8 @@ h2o.explain <- function(object,
     skip_explanations <- tolower(exclude_explanations)
   }
 
-  if (!is.null(columns_of_interest)) {
+  if (is.character(features)){
+    columns_of_interest <- features
     for (col in columns_of_interest) {
       if (!col %in% models_info$x) {
         stop(sprintf("Column \"%s\" is not in x.", col))
@@ -1847,16 +1847,18 @@ h2o.explain <- function(object,
     }
   } else {
     columns_of_interest <- models_info$x
-
-    if (all(startsWith(.model_ids(models_info$models), "StackedEnsemble"))) {
+    if (!any(sapply(.model_ids(models_info$models), .has_varimp))) {
       warning(
         "StackedEnsemble does not have a variable importance. Picking all features. ",
-        "Set `columns_of_interest` to explain just a subset of features.",
+        "Set `features` to a vector of features to explain just a subset of features.",
         call. = FALSE
       )
-    } else if ("feature_importance" %in% skip_explanations) {
-      message("Either columns_of_interest should be specified or feature importance must be enabled.",
-              "Picking all features.")
+    } else {
+      models_with_varimp <- Filter(function(m) .has_varimp(m@model_id), models_info$models)
+      varimp <- names(.varimp(models_with_varimp[[1]],  newdata))
+      columns_of_interest <- varimp[seq_len(min(length(varimp), features))]
+      # deal with encoded columns
+      columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
     }
   }
 
@@ -1914,14 +1916,6 @@ h2o.explain <- function(object,
         }
       }
     }
-  } else {
-    varimp <- models_info$x
-  }
-
-  if (is.null(columns_of_interest)) {
-    columns_of_interest <- varimp[seq_len(min(length(varimp), top_n_features))]
-    # deal with encoded columns
-    columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
   }
 
   if (multiple_models) {
@@ -2070,7 +2064,8 @@ h2o.explain <- function(object,
 #' @param object One of the following: an H2OAutoML, an H2OAutoML Leaderboard slice, a model, a list of models.
 #' @param newdata An H2OFrame.
 #' @param row_index A row index of the instance to explain.
-#' @param columns_of_interest A vector of column names. If specified, create plots only with these columns (where applicable).
+#' @param features A vector of column names to create plots only with or a number of columns to pick
+#'                 using variable importance (where applicable).
 #' @param include_explanations If specified, return only the specified model explanations.
 #'   (Mutually exclusive with exclude_explanations)
 #' @param exclude_explanations Exclude specified model explanations.
@@ -2082,7 +2077,7 @@ h2o.explain <- function(object,
 h2o.explain_row <- function(object,
                             newdata,
                             row_index,
-                            columns_of_interest = NULL,
+                            features = 5,
                             include_explanations = "ALL",
                             exclude_explanations = character(),
                             plot_overrides = list()) {
@@ -2132,7 +2127,8 @@ h2o.explain_row <- function(object,
   }
 
 
-  if (!is.null(columns_of_interest)) {
+  if (is.character(features)){
+    columns_of_interest <- features
     for (col in columns_of_interest) {
       if (!col %in% models_info$x) {
         stop(sprintf("Column \"%s\" is not in x.", col))
@@ -2140,6 +2136,19 @@ h2o.explain_row <- function(object,
     }
   } else {
     columns_of_interest <- models_info$x
+    if (!any(sapply(.model_ids(models_info$models), .has_varimp))) {
+      warning(
+        "StackedEnsemble does not have a variable importance. Picking all features. ",
+        "Set `features` to a vector of features to explain just a subset of features.",
+        call. = FALSE
+      )
+    } else {
+      models_with_varimp <- Filter(function(m) .has_varimp(m@model_id), models_info$models)
+      varimp <- names(.varimp(models_with_varimp[[1]],  newdata))
+      columns_of_interest <- varimp[seq_len(min(length(varimp), features))]
+      # deal with encoded columns
+      columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
+    }
   }
 
   if (multiple_models && !"leaderboard" %in% skip_explanations) {
