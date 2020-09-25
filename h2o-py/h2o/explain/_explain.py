@@ -9,7 +9,12 @@ import numpy as np
 import matplotlib
 import matplotlib.colors
 import matplotlib.figure
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    # Possibly failed due to missing tkinter in old matplotlib in python 2.7
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
 
 
 def _display(object):
