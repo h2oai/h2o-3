@@ -74,7 +74,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public Metalearner.Algorithm _metalearner_algorithm = Metalearner.Algorithm.AUTO;
     public String _metalearner_params = new String(); //used for clients code-gen only.
     public Model.Parameters _metalearner_parameters;
-    public long _seed;
     public long _score_training_samples = 10_000;
 
     /**
