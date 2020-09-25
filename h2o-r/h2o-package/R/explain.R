@@ -480,16 +480,16 @@ with_no_h2o_progress <- function(expr) {
   })
 }
 
-#' Enhence leaderboard with per model predictions.
+#' Enhance leaderboard with per model predictions.
 #'
 #' @param models_info models_info object
-#' @param test_frame H2OFrame
+#' @param newdata H2OFrame
 #' @param row_index index of the inspected row
 #' @param top_n leaderboard will contain top_n models
 #'
 #' @return H2OFrame
-.leaderboard_for_row <- function(models_info, test_frame, row_index, top_n = 10) {
-  leaderboard <- .create_leaderboard(models_info, test_frame)
+.leaderboard_for_row <- function(models_info, newdata, row_index, top_n = 10) {
+  leaderboard <- .create_leaderboard(models_info, newdata)
   top_n <- min(top_n, nrow(leaderboard))
   indices <- which(!duplicated(substr(leaderboard$model_id, 1, 3)))
   indices <- c(seq_len(top_n), indices[indices > top_n])
@@ -502,7 +502,7 @@ with_no_h2o_progress <- function(expr) {
               sapply(
                 leaderboard[["model_id"]],
                 function(model_id) {
-                  as.data.frame(stats::predict(h2o.getModel(model_id), test_frame[row_index,])[["predict"]])
+                  as.data.frame(stats::predict(h2o.getModel(model_id), newdata[row_index,])[["predict"]])
                 }
               )
             )
@@ -704,11 +704,11 @@ with_no_h2o_progress <- function(expr) {
     switch(explanation,
            leaderboard=paste0("Leaderboard shows models with their metrics. When provided with H2OAutoML object, ",
            "the leaderboard shows 5-fold cross-validated metrics by default (depending on the ",
-           "H2OAutoML settings), otherwise it shows metrics computed on the test_frame."),
+           "H2OAutoML settings), otherwise it shows metrics computed on the newdata."),
            leaderboard_row=paste0("Leaderboard shows models with their metrics and their predictions for a given row. ",
            "When provided with H2OAutoML object, the leaderboard shows 5-fold cross-validated ",
            "metrics by default (depending on the H2OAutoML settings), otherwise it shows ",
-           "metrics computed on the test_frame."),
+           "metrics computed on the newdata."),
            confusion_matrix="Confusion matrix shows a predicted class vs an actual class.",
            residual_analysis=paste0("Residual analysis plot shows residuals vs fitted values. ",
            "Ideally, residuals should be randomly distributed. Patterns in this plot can indicate ",
@@ -1767,10 +1767,10 @@ h2o.individual_conditional_expectations <- function(model,
 
 ######################################## Explain ###################################################
 
-#' Generate model explanations for \code{object} on \code{test_frame}.
+#' Generate model explanations for \code{object} on \code{newdata}.
 #'
 #' @param object One of the following: an H2OAutoML, an H2OAutoML Leaderboard slice, a model, a list of models.
-#' @param test_frame An H2OFrame.
+#' @param newdata An H2OFrame.
 #' @param columns_of_interest  A vector of column names. If specified, create plots only with these columns (where applicable).
 #' @param include_explanations If specified, return only the specified model explanations.
 #'   (Mutually exclusive with exclude_explanations)
@@ -1782,13 +1782,13 @@ h2o.individual_conditional_expectations <- function(model,
 #' @return List of outputs with class "explanation"
 #' @export
 h2o.explain <- function(object,
-                        test_frame,
+                        newdata,
                         columns_of_interest = NULL,
                         include_explanations = "ALL",
                         exclude_explanations = character(),
                         top_n_features = 5,
                         plot_overrides = list()) {
-  models_info <- .process_models_or_automl(object, test_frame)
+  models_info <- .process_models_or_automl(object, newdata)
   multiple_models <- length(models_info$models) > 1
   result <- list()
 
@@ -1863,7 +1863,7 @@ h2o.explain <- function(object,
   if (multiple_models && !"leaderboard" %in% skip_explanations) {
     result <- append(result, .explanation_header("Leaderboard"))
     result <- append(result, .describe("leaderboard"))
-    result$leaderboard <- .create_leaderboard(models_info, test_frame)
+    result$leaderboard <- .create_leaderboard(models_info, newdata)
   }
 
   # residual analysis /  confusion matrix
@@ -1876,7 +1876,7 @@ h2o.explain <- function(object,
         result$confusion_matrix[[m@model_id]][[2]] <- .customized_call(
           h2o.confusionMatrix,
           object = m,
-          overridable_defaults = list(newdata = test_frame),
+          overridable_defaults = list(newdata = newdata),
           overrides = plot_overrides$confusion_matrix
         )
         if (models_info$is_automl) break
@@ -1891,7 +1891,7 @@ h2o.explain <- function(object,
         result$residual_analysis[[m@model_id]] <- .customized_call(
           h2o.residual_analysis,
           model = m,
-          newdata = test_frame,
+          newdata = newdata,
           overrides = plot_overrides$residual_analysis
         )
         if (models_info$is_automl) break
@@ -1906,7 +1906,7 @@ h2o.explain <- function(object,
       result <- append(result, .describe("variable_importance"))
       varimp <- NULL
       for (m in models_info$models) {
-        tmp <- .plot_varimp(m, test_frame)
+        tmp <- .plot_varimp(m, newdata)
         if (!is.null(tmp$varimp)) {
           result$feature_importance[[m@model_id]] <- tmp$p
           if (is.null(varimp)) varimp <- names(tmp$grouped_varimp)
@@ -1932,7 +1932,7 @@ h2o.explain <- function(object,
         result <- append(result, .describe("variable_importance_heatmap"))
         result$variable_importance_heatmap <- .customized_call(h2o.variable_importance_heatmap,
                                                                object = models_info,
-                                                               newdata = test_frame,
+                                                               newdata = newdata,
                                                                overrides = plot_overrides$variable_importance_heatmap
         )
       }
@@ -1944,7 +1944,7 @@ h2o.explain <- function(object,
       result <- append(result, .describe("model_correlation_heatmap"))
       result$model_correlation <- .customized_call(h2o.model_correlation_heatmap,
                                                    object = models_info,
-                                                   newdata = test_frame,
+                                                   newdata = newdata,
                                                    overrides = plot_overrides$model_correlation
       )
       top_n <- if (is.null(plot_overrides$model_correlation$top_n)) 20
@@ -1974,7 +1974,7 @@ h2o.explain <- function(object,
         result$shap_summary[[m@model_id]] <- .customized_call(
           h2o.shap_summary_plot,
           model = m,
-          newdata = test_frame,
+          newdata = newdata,
           overrides = plot_overrides$shap_summary_plot
         )
         if (models_info$is_automl) break
@@ -1991,13 +1991,13 @@ h2o.explain <- function(object,
         result$partial_dependences[[col]] <- .customized_call(
           h2o.partial_dependences,
           object = models_info$models,
-          newdata = test_frame,
+          newdata = newdata,
           column = col,
           overrides = plot_overrides$partial_dependences
         )
       } else {
         if (models_info$is_multinomial_classification) {
-          targets <- h2o.levels(test_frame[[models_info$y]])
+          targets <- h2o.levels(newdata[[models_info$y]])
           if (!is.null(plot_overrides$partial_dependences[["target"]])) {
             targets <- plot_overrides$partial_dependences[["target"]]
           }
@@ -2005,7 +2005,7 @@ h2o.explain <- function(object,
             result$partial_dependeces[[col]][[target]] <- .customized_call(
               h2o.partial_dependences,
               object = models_info$models,
-              newdata = test_frame,
+              newdata = newdata,
               column = col,
               target = target,
               overridable_defaults = list(best_of_family = models_info$is_automl),
@@ -2016,7 +2016,7 @@ h2o.explain <- function(object,
           result$partial_dependences[[col]] <- .customized_call(
             h2o.partial_dependences,
             object = models_info$models,
-            newdata = test_frame,
+            newdata = newdata,
             column = col,
             overridable_defaults = list(best_of_family = models_info$is_automl),
             overrides = plot_overrides$partial_dependences
@@ -2033,7 +2033,7 @@ h2o.explain <- function(object,
     for (col in columns_of_interest) {
       for (m in models_info$models) {
         if (models_info$is_multinomial_classification) {
-          targets <- h2o.levels(test_frame[[models_info$y]])
+          targets <- h2o.levels(newdata[[models_info$y]])
           if (!is.null(plot_overrides$individual_conditional_expectations[["target"]])) {
             targets <- plot_overrides$individual_conditional_expectations[["target"]]
           }
@@ -2042,7 +2042,7 @@ h2o.explain <- function(object,
             result$individual_conditional_expectations[[col]][[m@model_id]][[target]] <- .customized_call(
               h2o.individual_conditional_expectations,
               model = m,
-              newdata = test_frame,
+              newdata = newdata,
               column = col,
               target = target,
               overrides = plot_overrides$individual_conditional_expectations
@@ -2052,7 +2052,7 @@ h2o.explain <- function(object,
           result$individual_conditional_expectations[[col]][[m@model_id]] <- .customized_call(
             h2o.individual_conditional_expectations,
             model = m,
-            newdata = test_frame,
+            newdata = newdata,
             column = col,
             overrides = plot_overrides$individual_conditional_expectations
           )
@@ -2068,7 +2068,7 @@ h2o.explain <- function(object,
 #' Explain models' behavior on a single row.
 #'
 #' @param object One of the following: an H2OAutoML, an H2OAutoML Leaderboard slice, a model, a list of models.
-#' @param test_frame An H2OFrame.
+#' @param newdata An H2OFrame.
 #' @param row_index A row index of the instance to explain.
 #' @param columns_of_interest A vector of column names. If specified, create plots only with these columns (where applicable).
 #' @param include_explanations If specified, return only the specified model explanations.
@@ -2080,13 +2080,13 @@ h2o.explain <- function(object,
 #' @return List of outputs with class "explanation"
 #' @export
 h2o.explain_row <- function(object,
-                            test_frame,
+                            newdata,
                             row_index,
                             columns_of_interest = NULL,
                             include_explanations = "ALL",
                             exclude_explanations = character(),
                             plot_overrides = list()) {
-  models_info <- .process_models_or_automl(object, test_frame)
+  models_info <- .process_models_or_automl(object, newdata)
   multiple_models <- length(models_info$models) > 1
   result <- list()
 
@@ -2145,7 +2145,7 @@ h2o.explain_row <- function(object,
   if (multiple_models && !"leaderboard" %in% skip_explanations) {
     result <- append(result, .explanation_header("Leaderboard"))
     result <- append(result, .describe("leaderboard_row"))
-    result$leaderboard <- .leaderboard_for_row(models_info, test_frame, row_index)
+    result$leaderboard <- .leaderboard_for_row(models_info, newdata, row_index)
   }
 
   if (!"shap_explanation" %in% skip_explanations && !models_info$is_multinomial_classification) {
@@ -2158,7 +2158,7 @@ h2o.explain_row <- function(object,
         result$shap_explain_row[[m@model_id]] <- .customized_call(
           h2o.shap_explain_row,
           model = m,
-          newdata = test_frame,
+          newdata = newdata,
           row_index = row_index,
           overrides = plot_overrides$shap_explain_row
         )
@@ -2171,14 +2171,14 @@ h2o.explain_row <- function(object,
     result <- append(result, .explanation_header("Individual Conditional Expectations"))
     for (col in columns_of_interest) {
       if (models_info$is_multinomial_classification) {
-        targets <- h2o.levels(test_frame[[models_info$y]])
+        targets <- h2o.levels(newdata[[models_info$y]])
         if (!is.null(plot_overrides$partial_dependences[["target"]])) {
           targets <- plot_overrides$partial_dependences[["target"]]
         }
         for (target in targets) {
           result$individual_conditional_expectations[[col]][[target]] <- .customized_call(
             h2o.partial_dependences,
-            object = models_info, newdata = test_frame,
+            object = models_info, newdata = newdata,
             column = col,
             target = target,
             row_index = row_index,
@@ -2190,7 +2190,7 @@ h2o.explain_row <- function(object,
         result$individual_conditional_expectations[[col]] <- .customized_call(
           h2o.partial_dependences,
           object = models_info,
-          newdata = test_frame,
+          newdata = newdata,
           column = col,
           row_index = row_index,
           overridable_defaults = list(best_of_family = models_info$is_automl),
