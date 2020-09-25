@@ -373,6 +373,9 @@ test-junit-14-smoke-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-12-smoke
 
+test-rest-smoke:
+	cd h2o-py/tests_rest_smoke && ../../scripts/run.py --wipeall --geterrs --wipeall --numclouds 2 --jvm.xmx 2g
+
 test-xgb-smoke-minimal-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-xgb-smoke-minimal
