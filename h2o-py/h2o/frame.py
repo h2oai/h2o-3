@@ -3776,7 +3776,7 @@ class H2OFrame(Keyed):
             try:
                 import matplotlib
                 if server:
-                    matplotlib.use("Agg", warn=False)
+                    matplotlib.use("Agg")
                 import matplotlib.pyplot as plt
             except ImportError:
                 print("ERROR: matplotlib is required to make the histogram plot. "

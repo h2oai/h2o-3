@@ -1359,7 +1359,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         if plot:
             try:
                 import matplotlib
-                if server: matplotlib.use('Agg', warn=False)
+                if server: matplotlib.use('Agg')
                 import matplotlib.pyplot as plt
             except ImportError:
                 print("matplotlib is required for this function!")
@@ -1386,7 +1386,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         if plot:
             try:
                 import matplotlib
-                if server: matplotlib.use('Agg', warn=False)
+                if server: matplotlib.use('Agg')
                 import matplotlib.pyplot as plt
             except ImportError:
                 print("matplotlib is required for this function!")
