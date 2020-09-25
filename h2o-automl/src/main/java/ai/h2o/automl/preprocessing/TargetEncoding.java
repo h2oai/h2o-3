@@ -159,6 +159,8 @@ public class TargetEncoding implements PreprocessingStep {
         _defaultParams = new TargetEncoderParameters();
         _defaultParams._keep_original_categorical_columns = false;
         _defaultParams._blending = true;
+        _defaultParams._inflection_point = 5;
+        _defaultParams._smoothing = 10;
         _defaultParams._noise = 0;
         
         return _defaultParams;
