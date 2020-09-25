@@ -63,7 +63,7 @@ class Header:
     def _repr_markdown_(self):
         return "\n\n{} {}".format("#" * self.level, self.content)
 
-    def __repr__(self):
+    def __str__(self):
         return self._repr_markdown_()
 
 
@@ -122,7 +122,7 @@ class Description:
     def _repr_markdown_(self):
         return "\n> {}".format(self.content)
 
-    def __repr__(self):
+    def __str__(self):
         return self._repr_markdown_()
 
 
