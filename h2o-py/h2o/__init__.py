@@ -28,9 +28,15 @@ from h2o.h2o import (connect, init, api, connection,
 # root h2o module, without exporting it explicitly. In the future this import may be removed entirely, so that
 # one would have to import it from h2o.frames.
 from h2o.frame import H2OFrame  # NOQA
-# Export explain functions that are useful for lists of models
-from h2o.explain import explain, explain_row, variable_importance_heatmap, model_correlation_heatmap, partial_dependences, \
-    register_explain_methods
+
+try:
+    # Export explain functions that are useful for lists of models
+    from h2o.explain import explain, explain_row, variable_importance_heatmap, model_correlation_heatmap, partial_dependences, \
+        register_explain_methods
+    matplotlib_present = True
+except:
+    matplotlib_present = False
+
 from h2o.utils.shared_utils import mojo_predict_csv, mojo_predict_pandas
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -65,9 +71,7 @@ if (__version__.endswith("99999")):
     print(__buildinfo__)
 
 
-register_explain_methods()
-
-__all__ = ("connect", "init", "api", "connection", "upload_file", "lazy_import", "import_file", "import_sql_table",
+__all__ = ["connect", "init", "api", "connection", "upload_file", "lazy_import", "import_file", "import_sql_table",
            "import_sql_select", "parse_setup", "parse_raw", "assign", "deep_copy", "get_model", "get_grid", "get_frame",
            "show_progress", "no_progress", "enable_expr_optimizations", "is_expr_optimizations_enabled", "log_and_echo",
            "remove", "remove_all", "rapids", "ls", "frame", "import_hive_table",
@@ -75,5 +79,15 @@ __all__ = ("connect", "init", "api", "connection", "upload_file", "lazy_import",
            "cluster_status", "cluster_info", "shutdown", "create_frame", "interaction", "as_list", "network_test",
            "set_timezone", "get_timezone", "list_timezones", "demo", "make_metrics", "cluster", "load_dataset", "flow",
            "upload_custom_metric", "upload_custom_distribution",  "mojo_predict_csv", "mojo_predict_pandas", "import_mojo", 
-           "upload_mojo", "print_mojo", "load_grid", "save_grid", "variable_importance_heatmap", "model_correlation_heatmap",
-           "explain", "explain_row", "partial_dependences",)
+           "upload_mojo", "print_mojo", "load_grid", "save_grid"]
+
+if matplotlib_present:
+    __all__ += [
+        "explain",
+        "explain_row",
+        "variable_importance_heatmap",
+        "model_correlation_heatmap",
+        "partial_dependences"
+    ]
+    register_explain_methods()
+
