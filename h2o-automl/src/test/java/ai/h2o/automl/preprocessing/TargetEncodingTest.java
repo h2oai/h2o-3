@@ -9,6 +9,7 @@ import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import ai.h2o.targetencoding.TargetEncoderPreprocessor;
 import hex.Model;
 import hex.SplitFrame;
+import hex.deeplearning.DeepLearningModel;
 import hex.ensemble.StackedEnsembleModel;
 import hex.glm.GLMModel;
 import org.junit.After;
@@ -224,7 +225,10 @@ public class TargetEncodingTest {
             aml.get();
             System.out.println(aml.leaderboard().toTwoDimTable());
             for (Model m : aml.leaderboard().getModels()) {
-                if (m instanceof StackedEnsembleModel || m instanceof GLMModel) { // disabled for GLM with CV, because GLM refuses to follow the same CV flow as other algos.
+                if (m instanceof StackedEnsembleModel 
+                        || m instanceof GLMModel
+                        || m instanceof DeepLearningModel
+                        ) { // disabled for GLM with CV, because GLM refuses to follow the same CV flow as other algos.
                     assertNull(m._parms._preprocessors);
                 } else {
                     assertNotNull(m._parms._preprocessors);
