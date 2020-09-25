@@ -15,18 +15,22 @@ The H2O explainability interface is designed to be automatic -- all of the expla
 
         # Explain a model
         exm <- h2o.explain(model, test)
+        print(exm)
 
         # Explain an AutoML object
         exa <- h2o.explain(aml, test)
+        print(exa)
 
 
    .. code-tab:: python
 
         # Explain a model
         exm = model.explain(test)
+        print(exm)
 
         # Explain an AutoML object
         exa = aml.explain(test)
+        print(exa)
 
 
 
@@ -60,9 +64,7 @@ The available options (explainations) for ``include_explanations`` and ``exclude
 
 - **top_n_features**: If ``columns_of_interest`` is missing, create plots only with the top n columns (where applicable).  Defaults to 5.
 
-- **best_of_family**: If True, explain only best of family models.
-
-- **user_overrides**: Overrides for individual explanations, e.g. ``list(shap_summary_plot = list(top_n_features = 50))`` in R. 
+- **plot_overrides**: Overrides for individual explanations, e.g. ``list(shap_summary_plot = list(top_n_features = 50))`` in R. 
 
 Notes
 ~~~~~
@@ -104,11 +106,13 @@ Here’s an example showing basic usage of the ``h2o.explain()`` function in *R*
                           max_models = 20,
                           seed = 1)
 
-        # Explain all AutoML models                  
+        # Explain leader model & compare with all AutoML models                  
         exa <- h2o.explain(aml, test)
+        print(exa)
 
-        # Explain a single model (top AutoML model)                 
-        exm <- h2o.explain(aml@leader, test)         
+        # Explain a single H2O model (e.g. leader model from AutoML)
+        exm <- h2o.explain(aml@leader, test)
+        print(exm)
 
 
 
@@ -136,11 +140,15 @@ Here’s an example showing basic usage of the ``h2o.explain()`` function in *R*
         aml = H2OAutoML(max_models=20, seed=1)
         aml.train(x=x, y=y, training_frame=train)
 
-        # Explain all models
-        aml.explain(test)
+        # Explain leader model & compare with all AutoML models 
+        exa = aml.explain(test)
+        print(exa)
 
-        # Explain a single model
-        aml.leader.explain(test)
+        # Explain a single H2O model (e.g. leader model from AutoML)
+        exm = aml.leader.explain(test)
+        print(exm)
+
+
 
 
 The code above is the quickest way to get started. 
@@ -182,14 +190,14 @@ TO DO: Let's put examples of each function and the plot, in the order in which t
    .. code-tab:: r R
 
         # Residual analysis plot for an AutoML object
-        ra_plot <- h2o.residual_analysis(aml, test)
-        ra_plot
+        ra_plot <- h2o.residual_analysis(aml@leader, test)
+        print(ra_plot)
 
    .. code-tab:: python
 
         # Residual analysis plot for an AutoML object
-        ra_plot = aml.residual_analysis(test)
-        ra_plot
+        ra_plot = aml.leader.residual_analysis(test)
+        print(ra_plot)
 
 
 
