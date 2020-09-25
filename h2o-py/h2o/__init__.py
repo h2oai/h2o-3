@@ -28,15 +28,6 @@ from h2o.h2o import (connect, init, api, connection,
 # root h2o module, without exporting it explicitly. In the future this import may be removed entirely, so that
 # one would have to import it from h2o.frames.
 from h2o.frame import H2OFrame  # NOQA
-
-try:
-    # Export explain functions that are useful for lists of models
-    from h2o.explain import explain, explain_row, variable_importance_heatmap, model_correlation_heatmap, partial_dependences, \
-        register_explain_methods
-    matplotlib_present = True
-except:
-    matplotlib_present = False
-
 from h2o.utils.shared_utils import mojo_predict_csv, mojo_predict_pandas
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -81,7 +72,11 @@ __all__ = ["connect", "init", "api", "connection", "upload_file", "lazy_import",
            "upload_custom_metric", "upload_custom_distribution",  "mojo_predict_csv", "mojo_predict_pandas", "import_mojo", 
            "upload_mojo", "print_mojo", "load_grid", "save_grid"]
 
-if matplotlib_present:
+try:
+    # Export explain functions that are useful for lists of models
+    from h2o.explain import explain, explain_row, variable_importance_heatmap, model_correlation_heatmap, \
+        partial_dependences, register_explain_methods
+
     __all__ += [
         "explain",
         "explain_row",
@@ -89,5 +84,8 @@ if matplotlib_present:
         "model_correlation_heatmap",
         "partial_dependences"
     ]
+
     register_explain_methods()
+except ImportError:
+    pass
 
