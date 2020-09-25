@@ -1,6 +1,8 @@
 package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
+import ai.h2o.automl.preprocessing.PreprocessingConfig;
+import ai.h2o.automl.preprocessing.TargetEncoding;
 import hex.deeplearning.DeepLearningModel;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.grid.Grid;
@@ -22,6 +24,14 @@ public class DeepLearningStepsProvider
             public DeepLearningModelStep(String id, int weight, AutoML autoML) {
                 super(Algo.DeepLearning, id, weight, autoML);
             }
+            
+            @Override
+            protected PreprocessingConfig getPreprocessingConfig() {
+                //TE useless for DNN
+                PreprocessingConfig config = super.getPreprocessingConfig();
+                config.put(TargetEncoding.CONFIG_PREPARE_CV_ONLY, aml().isCVEnabled());
+                return config;
+            }
         }
 
         static abstract class DeepLearningGridStep extends ModelingStep.GridStep<DeepLearningModel> {
@@ -39,7 +49,14 @@ public class DeepLearningStepsProvider
 
                 return dlParameters;
             }
-
+            
+            @Override
+            protected PreprocessingConfig getPreprocessingConfig() {
+                //TE useless for DNN
+                PreprocessingConfig config = super.getPreprocessingConfig();
+                config.put(TargetEncoding.CONFIG_PREPARE_CV_ONLY, aml().isCVEnabled());
+                return config;
+            }
 
             Map<String, Object[]> prepareSearchParams() {
                 Map<String, Object[]> searchParams = new HashMap<>();

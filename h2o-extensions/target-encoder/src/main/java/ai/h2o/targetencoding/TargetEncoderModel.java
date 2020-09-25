@@ -184,6 +184,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    * @return An instance of {@link Frame} with transformed fr, registered in DKV.
    */
   public Frame transform(Frame fr, boolean asTraining, int outOfFold, BlendingParams blendingParams, double noiseLevel) {
+    if (!canApplyTargetEncoding(fr)) return fr;
     Frame adaptFr = null;
     try {
       adaptFr = adaptForEncoding(fr);
@@ -211,6 +212,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    */
   @Override
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
+    if (!canApplyTargetEncoding(fr)) return new Frame(fr);
     Frame adaptFr = null;
     try {
       adaptFr = adaptForEncoding(fr);
@@ -245,7 +247,17 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     return adaptFr;
   }
   
-  
+  private boolean canApplyTargetEncoding(Frame fr) {
+    String[] frColumns = fr.names();
+    Set<String> teColumns = _output._target_encoding_map.keySet();
+    boolean canApply = Arrays.stream(frColumns).anyMatch(teColumns::contains);
+    if (!canApply) {
+      logger.info("Frame "+fr._key+" has no columns to encode with TargetEncoder, skipping it: " +
+              "columns="+Arrays.toString(fr.names())+", target encoder columns="+_output._target_encoding_map.keySet());
+    }
+    return canApply;
+  }
+
   /**
    * Core method for applying pre-calculated encodings to the dataset. 
    *
@@ -312,6 +324,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
         break;
     }
 
+    List<Keyed> tmps = new ArrayList<>();
     Frame workingFrame = null;
     Key<Frame> tmpKey;
     try {
@@ -328,12 +341,18 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
         String columnToEncode = kv.getKey();
         Frame encodings = kv.getValue();
 
+        int colIdx = workingFrame.find(columnToEncode);
+        if (colIdx < 0) {
+          logger.warn("Column "+columnToEncode+" is missing in frame "+data._key);
+          continue;
+        }
+        
         // if not applying encodings to training data, then get rid of the foldColumn in encodings.
         if (dataLeakageHandlingStrategy != DataLeakageHandlingStrategy.KFold && encodings.find(foldColumn) >= 0) {
           encodings = groupEncodingsByCategory(encodings, encodings.find(columnToEncode));
+          tmps.add(encodings);
         }
         
-        int colIdx = workingFrame.find(columnToEncode);
         imputeCategoricalColumn(workingFrame, colIdx, columnToEncode + NA_POSTFIX);
 
         IntStream posTargetClasses = _output.nclasses() == 1 ? IntStream.of(NO_TARGET_CLASS) // regression
@@ -351,7 +370,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
         } // end for each target 
         
         if (!_parms._keep_original_categorical_columns)
-          workingFrame.remove(colIdx);
+          tmps.add(workingFrame.remove(colIdx));
       } // end for each columnToEncode
 
       DKV.remove(tmpKey);
@@ -362,6 +381,8 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     } catch (Exception e) {
       if (workingFrame != null) workingFrame.delete();
       throw e;
+    } finally {
+      for (Keyed tmp : tmps) tmp.remove();
     }
   }
 
@@ -512,10 +533,10 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     }
     
     protected void removeNumeratorAndDenominatorColumns(Frame fr) {
-      Vec removedNumeratorNone = fr.remove(NUMERATOR_COL);
-      removedNumeratorNone.remove();
-      Vec removedDenominatorNone = fr.remove(DENOMINATOR_COL);
-      removedDenominatorNone.remove();
+      Vec removedNumerator = fr.remove(NUMERATOR_COL);
+      removedNumerator.remove();
+      Vec removedDenominator = fr.remove(DENOMINATOR_COL);
+      removedDenominator.remove();
     }
 
   }

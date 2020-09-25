@@ -5,10 +5,12 @@ dependencies {
   compile project(":h2o-core")
   compile project(":h2o-algos")
   compileOnly project(":h2o-ext-xgboost")
+  compileOnly project(":h2o-ext-target-encoder")
 
   // Test dependencies only
   testCompile project(":h2o-test-support")
   testCompile project(":h2o-ext-xgboost")
+  testCompile project(":h2o-ext-target-encoder")
   testRuntimeOnly project(":${defaultWebserverModule}")
 }
 

@@ -12,3 +12,4 @@ water.automl.api.schemas3.EventLogEntryV99
 water.automl.api.schemas3.EventLogV99
 water.automl.api.schemas3.StepDefinitionV99
 water.automl.api.schemas3.StepDefinitionV99$StepV99
+water.automl.api.schemas3.PreprocessingStepDefinitionV99

@@ -3,6 +3,7 @@ package ai.h2o.targetencoding;
 import hex.Model;
 import hex.ModelPreprocessor;
 import water.DKV;
+import water.Futures;
 import water.Key;
 import water.fvec.Frame;
 
@@ -48,6 +49,12 @@ public class TargetEncoderPreprocessor extends ModelPreprocessor<TargetEncoderPr
         return _targetEncoder;
     }
     
+    @Override
+    protected Futures remove_impl(Futures fs, boolean cascade) {
+        if (cascade && _targetEncoder != null) _targetEncoder.remove();
+        return super.remove_impl(fs, cascade);
+    }
+
     private boolean useFoldTransform(Model.Parameters params) {
         return params._is_cv_model && _targetEncoder._parms._data_leakage_handling == KFold;
     }

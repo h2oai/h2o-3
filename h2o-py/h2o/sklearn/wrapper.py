@@ -18,7 +18,7 @@ from .. import h2o, H2OFrame
 from ..utils.shared_utils import can_use_numpy, can_use_pandas
 
 try:
-    from inspect import signature
+    from inspect import Parameter, signature
 except ImportError:
     from sklearn.utils.fixes import signature
 
@@ -114,9 +114,11 @@ def wrap_estimator(cls,
     if default_params is None:
         # obtain the default params from signature of the estimator class constructor
         sig = signature(cls.__init__)
+        ignored_names = ['self']
+        ignored_kind = [Parameter.VAR_KEYWORD, Parameter.VAR_POSITIONAL]
         default_params = OrderedDict((p.name, p.default if p.default is not p.empty else None)
-                                     for p in sig.parameters.values())
-        del default_params['self']
+                                     for p in sig.parameters.values() 
+                                     if p.name not in ignored_names and p.kind not in ignored_kind)
 
     gen_class_name = name if name else cls.__name__+'Sklearn'
     gen_class_module = module if module else __name__
