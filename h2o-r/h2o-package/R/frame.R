@@ -639,13 +639,13 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #' will deviate from the expected value more than on big data, where they will be very
 #' close to exact.
 #'
-#' @param data An H2OFrame object representing the dataste to split.
+#' @param data An H2OFrame object, to be split.
 #' @param ratios A numeric value or array indicating the ratio of total rows
-#'        contained in each split. Must total up to less than 1.
-#' @param destination_frames An array of frame IDs equal to the number of ratios
-#'        specified plus one.
+#'        contained in each split. Must total up to less than 1. e.g. c(0.8) for 80/20 split.
+#' @param destination_frames An array of frame IDs equal to the number of values
+#'        specified in the ratios array, plus one.
 #' @param seed Random seed.
-#' @return Returns a list of split H2OFrame's
+#' @return Returns a list of split H2OFrames
 #' @examples
 #' \dontrun{
 #' library(h2o)
