@@ -587,8 +587,10 @@ with_no_h2o_progress <- function(expr) {
     return(lapply(object, .render, render = render))
   } else {
     if (render == "interactive" && any(class(object) == "gg")) {
-      input <- readline("Hit <Return> to see next plot, to quit press \"q\": ")
-      if (tolower(input) == "q") stop("Aborted by user.")
+      on.exit({
+        input <- readline("Hit <Return> to continue, to quit press \"q\": ")
+        if (tolower(input) == "q") stop("Aborted by user.")
+      })
     }
     if (render == "html") {
       switch(
