@@ -109,11 +109,13 @@ checkRInstallLog R.install.3.log
 " 2>&1 | tee R.install.4.log
 checkRInstallLog R.install.4.log
 # dependecies from GitHub
+R_REMOTES_UPGRADE=never
 /usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); library(devtools); \
+  install_version('systemfonts', version = '0.2.3'); \
   install_version('glmnet', version = '2.0-2'); \
   install_version('gbm', version = '2.1.3'); \
   install_version('MLmetrics', version = '1.0.0'); \
-  install_github('r-lib/pkgdown', version = '1.3.0'); \
+  install_version('pkgdown', version = '1.3.0'); \
   install_github('Zelazny7/isofor') \
 " 2>&1 | tee R.install.5.log
 checkRInstallLog R.install.5.log
