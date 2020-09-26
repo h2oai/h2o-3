@@ -1434,7 +1434,7 @@ def _custom_args(user_specified, **kwargs):
 def explain(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
         frame,  # type: h2o.H2OFrame
-        features=5,  # type: Union[int, List[str]]
+        columns=5,  # type: Union[int, List[str]]
         include_explanations="ALL",  # type: Union[str, List[str]]
         exclude_explanations=[],  # type: Union[str, List[str]]
         plot_overrides=dict(),  # type: Dict
@@ -1449,7 +1449,7 @@ def explain(
 
     :param models: H2OAutoML object or H2OModel
     :param frame: H2OFrame
-    :param features: either a list of features or a number of features to show
+    :param columns: either a list of features or a number of features to show
     :param include_explanations: if specified, return only the specified model explanations
                                  (Mutually exclusive with exclude_explanations)
     :param exclude_explanations: exclude specified model explanations
@@ -1461,10 +1461,10 @@ def explain(
     is_aml, models_to_show, classification, multinomial_classification, multiple_models, \
     targets, tree_models_to_show = _process_models_input(models, frame)
 
-    if isinstance(features, list):
-        columns_of_interest = features
+    if isinstance(columns, list):
+        columns_of_interest = columns
     else:
-        top_n_features = features
+        top_n_features = columns
         columns_of_interest = None
 
     models_with_varimp = [model for model in models_to_show if _has_varimp(model.model_id)]
@@ -1655,7 +1655,7 @@ def explain_row(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
         frame,  # type: h2o.H2OFrame
         row_index,  # type: int
-        features=5,  # type: Union[int, List[str]]
+        columns=5,  # type: Union[int, List[str]]
         include_explanations="ALL",  # type: Union[str, List[str]]
         exclude_explanations=[],  # type: Union[str, List[str]]
         plot_overrides=dict(),  # type: Dict
@@ -1670,7 +1670,7 @@ def explain_row(
     :param models: H2OAutoML object or H2OModel
     :param frame: H2OFrame
     :param row_index: row index of the instance to inspect
-    :param features: either a list of features or a number of features to show
+    :param columns: either a list of features or a number of features to show
     :param include_explanations: if specified, return only the specified model explanations
                                  (Mutually exclusive with exclude_explanations)
     :param exclude_explanations: exclude specified model explanations
@@ -1691,13 +1691,13 @@ def explain_row(
             .as_data_frame(use_pandas=False, header=False) if _has_varimp(model_id[0])]
         models_with_varimp = [h2o.get_model(models_with_varimp[0])]
 
-    if isinstance(features, list):
-        columns_of_interest = features
+    if isinstance(columns, list):
+        columns_of_interest = columns
     else:
         if len(models_with_varimp) > 0:
             varimps = _consolidate_varimps(models_with_varimp[0])
             columns_of_interest = sorted(varimps.keys(), key=lambda k: -varimps[k])[
-                                  :min(features, len(varimps))]
+                                  :min(columns, len(varimps))]
         else:
             import warnings
             warnings.warn("No model with variable importance. Selecting all features to explain.")
