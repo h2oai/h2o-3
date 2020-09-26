@@ -1,9 +1,7 @@
-# TODO: ugh:
 import sys, pprint, os
 
+sys.path.insert(1, '../..')
 sys.path.insert(1, '..')
-sys.path.insert(1, '.')
-sys.path.insert(1, os.path.join("..", "py"))
 
 import h2o
 import h2o_test_utils
@@ -95,9 +93,6 @@ test_predict_and_model_metrics.test(a_node, pp)
 import test_final_sanity
 test_final_sanity.test(a_node, pp)
 
-
-
-# TODO: use built_models
 if clean_up_after:
     h2o_test_utils.cleanup(models=[dl_airlines_model_name, 'deeplearning_prostate_binomial', 'kmeans_prostate'], frames=['prostate_binomial', 'airlines_binomial'])
 

@@ -1,6 +1,8 @@
 import sys, os, time, json, datetime, errno, stat, getpass, requests, pprint
-if sys.version_info[0] < 3: import urlparse
-else: import urllib.parse as urlparse
+if sys.version_info[0] < 3: 
+    import urlparse
+else: 
+    import urllib.parse as urlparse
 import h2o
 
 debug_rest = False

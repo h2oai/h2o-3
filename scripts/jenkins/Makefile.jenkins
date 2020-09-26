@@ -254,7 +254,7 @@ test-package-java:
 		h2o-k8s/src/ \
 		h2o-k8s/build/libs/h2o-k8s-*.jar \
 		h2o-k8s/tests/ \
-		scripts/run.py py/ scripts/test-xgb-gpu-smoke.sh \
+		scripts/run.py h2o-py/tests_rest_smoke scripts/test-xgb-gpu-smoke.sh \
 		sort_crash.csv tests/doOnlyJunitSmokeTestList \
 		jacoco/*.jar
 	find . -name "*.gradle" | zip -q -r test-package-java \
@@ -372,6 +372,9 @@ test-junit-14-smoke:
 test-junit-14-smoke-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-12-smoke
+
+test-rest-smoke:
+	cd h2o-py/tests_rest_smoke && ../../scripts/run.py --wipeall --geterrs --wipeall --numclouds 2 --jvm.xmx 2g
 
 test-xgb-smoke-minimal-jenkins:
 	$(call sed_test_scripts)
