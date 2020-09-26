@@ -73,7 +73,7 @@ echo "Installing dependencies for R ${R_VERSION}"
     'dplyr', 'text2vec', 'R.utils', 'AUC', 'mlbench', 'flexclust', 'randomForest', \
     'bit64', 'HDtweedie', 'jsonlite', 'statmod', 'devtools', 'roxygen2', 'testthat', 'Rcpp', 'fpc', 'RUnit', \
     'ade4', 'e1071', 'ggplot2', 'LiblineaR', 'optparse', 'uuid', 'usethis', 'rgl', 'plot3Drgl',  \
-    'IRdisplay', 'plotly', 'repr' \
+    'IRdisplay', 'plotly' \
   )) \
 " 2>&1 | tee R.install.1.log
 checkRInstallLog R.install.1.log
