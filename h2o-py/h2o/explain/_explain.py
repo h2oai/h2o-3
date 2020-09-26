@@ -1630,7 +1630,7 @@ def explain(
                     result["pdp__{}{}".format(column, target_string)] = display(fig)
 
     # ICE
-    if "ice" in explanations:
+    if "ice" in explanations and not classification:
         result["ice_header"] = display(Header("Individual Conditional Expectation"))
         result["ice_description"] = display(Description("ice"))
         for column in columns_of_interest:

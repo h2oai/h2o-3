@@ -2021,7 +2021,7 @@ h2o.explain <- function(object,
   }
 
   # ICE quantiles
-  if (!"ice" %in% skip_explanations) {
+  if (!"ice" %in% skip_explanations && !models_info$is_classification) {
     result <- append(result, .explanation_header("Individual Conditional Expectations"))
     result <- append(result, .describe("ice"))
     for (col in columns_of_interest) {
