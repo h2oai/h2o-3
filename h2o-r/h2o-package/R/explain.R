@@ -464,7 +464,6 @@ with_no_h2o_progress <- function(expr) {
       varimp <- h2o.varimp(model)
     })
     if (is.null(varimp)) {
-      warning("Variable importance is not available for: ", model@model_id, call. = FALSE)
       return(NULL)
     } else {
       varimp <- as.data.frame(varimp)
@@ -1909,12 +1908,18 @@ h2o.explain <- function(object,
       result <- append(result, .explanation_header("Variable Importance"))
       result <- append(result, .describe("variable_importance"))
       varimp <- NULL
+      warning_shown <- FALSE
       for (m in models_info$models) {
         tmp <- .plot_varimp(m, newdata)
         if (!is.null(tmp$varimp)) {
           result$feature_importance[[m@model_id]] <- tmp$p
           if (is.null(varimp)) varimp <- names(tmp$grouped_varimp)
           if (models_info$is_automl) break
+        } else {
+          if (!warning_shown && m@algorithm == "stackedensemble") {
+            result <- append(result,"Variable importance is not currently available for Stacked Ensemble models.")
+            warning_shown <- TRUE
+          }
         }
       }
     }
