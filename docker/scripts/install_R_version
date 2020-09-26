@@ -60,7 +60,7 @@ activate_R_${R_VERSION}
 
 function checkRInstallLog() {
   log_file=$1
-  if [ grep -E '(packages .* are not available)|(installation of package .* had non-zero exit status)' $log_file ]; then
+  if grep -E '(packages .* are not available)|(installation of package .* had non-zero exit status)' $log_file; then
     echo "Errors detected in R package installation."
     exit 1
   fi
