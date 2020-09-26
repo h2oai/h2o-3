@@ -1449,7 +1449,7 @@ def explain(
 
     :param models: H2OAutoML object or H2OModel
     :param frame: H2OFrame
-    :param columns: either a list of features or a number of features to show
+    :param columns: either a list of columns or a number of columns to show
     :param include_explanations: if specified, return only the specified model explanations
                                  (Mutually exclusive with exclude_explanations)
     :param exclude_explanations: exclude specified model explanations
@@ -1670,7 +1670,7 @@ def explain_row(
     :param models: H2OAutoML object or H2OModel
     :param frame: H2OFrame
     :param row_index: row index of the instance to inspect
-    :param columns: either a list of features or a number of features to show
+    :param columns: either a list of columns or a number of columns to show
     :param include_explanations: if specified, return only the specified model explanations
                                  (Mutually exclusive with exclude_explanations)
     :param exclude_explanations: exclude specified model explanations

@@ -10,7 +10,7 @@ build-h2o-3:
 	./gradlew clean $$ADDITIONAL_GRADLE_OPTS
 	@echo
 	@echo "+--Building--+"
-	./gradlew build -x test $$ADDITIONAL_GRADLE_OPTS
+	./gradlew build -x test --info $$ADDITIONAL_GRADLE_OPTS
 	@echo "+--Git Diff Check--+"
 	if [[ $$(git diff 2>&1) ]]; then \
 		echo "Non-zero git diff or git error after running gradlew build:"; \
