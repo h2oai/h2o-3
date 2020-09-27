@@ -1876,34 +1876,43 @@ h2o.explain <- function(object,
   }
 
   if (multiple_models && !"leaderboard" %in% skip_explanations) {
-    result <- append(result, .h2o_explanation_header("Leaderboard"))
-    result <- append(result, .describe("leaderboard"))
-    result$leaderboard <- .create_leaderboard(models_info, newdata)
+    result$leaderboard <- list(
+      header = .h2o_explanation_header("Leaderboard"),
+      description = .describe("leaderboard"),
+      data = .create_leaderboard(models_info, newdata)
+    )
   }
 
   # residual analysis /  confusion matrix
   if (models_info$is_classification) {
     if (!"confusion_matrix" %in% skip_explanations) {
-      result <- append(result, .h2o_explanation_header("Confusion Matrix"))
-      result <- append(result, .describe("confusion_matrix"))
+      result$confusion_matrix <- list(
+        header = .h2o_explanation_header("Confusion Matrix"),
+        description = .describe("confusion_matrix"),
+        subexplanations = list()
+      )
       for (m in models_info$models) {
-        result$confusion_matrix[[m@model_id]][[1]] <- .h2o_explanation_header(m@model_id, 2)
-        result$confusion_matrix[[m@model_id]][[2]] <- .customized_call(
-          h2o.confusionMatrix,
-          object = m,
-          overridable_defaults = list(newdata = newdata),
-          overrides = plot_overrides$confusion_matrix
+        result$confusion_matrix$subexplanations[[m@model_id]] <- list(
+          subheader = .h2o_explanation_header(m@model_id, 2),
+          data = .customized_call(
+            h2o.confusionMatrix,
+            object = m,
+            overridable_defaults = list(newdata = newdata),
+            overrides = plot_overrides$confusion_matrix
+          )
         )
         if (models_info$is_automl) break
       }
     }
   } else {
     if (!"residual_analysis" %in% skip_explanations) {
-      result <- append(result, .h2o_explanation_header("Residual Analysis"))
-      result <- append(result, .describe("residual_analysis"))
+      result$residual_analysis <- list(
+        header = .h2o_explanation_header("Residual Analysis"),
+        description = .describe("residual_analysis"),
+        plots = list())
 
       for (m in models_info$models) {
-        result$residual_analysis[[m@model_id]] <- .customized_call(
+        result$residual_analysis$plots[[m@model_id]] <- .customized_call(
           h2o.residual_analysis,
           model = m,
           newdata = newdata,
@@ -1917,14 +1926,16 @@ h2o.explain <- function(object,
   # feature importance
   if (!"variable_importance" %in% skip_explanations) {
     if (any(sapply(.model_ids(models_info$models), .has_varimp))) {
-      result <- append(result, .h2o_explanation_header("Variable Importance"))
-      result <- append(result, .describe("variable_importance"))
+      result$variable_importance <- list(
+        header = .h2o_explanation_header("Variable Importance"),
+        description = .describe("variable_importance"),
+        plots = list())
       varimp <- NULL
       warning_shown <- FALSE
       for (m in models_info$models) {
         tmp <- .plot_varimp(m, newdata)
         if (!is.null(tmp$varimp)) {
-          result$feature_importance[[m@model_id]] <- tmp$p
+          result$variable_importance$plots[[m@model_id]] <- tmp$plot
           if (is.null(varimp)) varimp <- names(tmp$grouped_varimp)
           if (models_info$is_automl) break
         } else {
@@ -1941,25 +1952,27 @@ h2o.explain <- function(object,
     # Variable Importance Heatmap
     if (!"variable_importance_heatmap" %in% skip_explanations) {
       if (length(Filter(function(m_id) !startsWith(m_id, "Stacked"), .model_ids(models_info$models))) > 1) {
-        result <- append(result, .h2o_explanation_header("Variable Importance Heatmap"))
-        result <- append(result, .describe("variable_importance_heatmap"))
-        result$variable_importance_heatmap <- .customized_call(h2o.variable_importance_heatmap,
+        result$variable_importance_heatmap <- list(
+          header = .h2o_explanation_header("Variable Importance Heatmap"),
+          description = .describe("variable_importance_heatmap"),
+          plots = list(.customized_call(h2o.variable_importance_heatmap,
                                                                object = models_info,
                                                                newdata = newdata,
                                                                overrides = plot_overrides$variable_importance_heatmap
-        )
+          )))
       }
     }
 
     # Model Correlation
     if (!"model_correlation_heatmap" %in% skip_explanations) {
-      result <- append(result, .h2o_explanation_header("Model Correlation"))
-      result <- append(result, .describe("model_correlation_heatmap"))
-      result$model_correlation <- .customized_call(h2o.model_correlation_heatmap,
+      result$model_correlation_heatmap <- list(
+        header = .h2o_explanation_header("Model Correlation"),
+        description = .describe("model_correlation_heatmap"),
+        plots = list(.customized_call(h2o.model_correlation_heatmap,
                                                    object = models_info,
                                                    newdata = newdata,
                                                    overrides = plot_overrides$model_correlation
-      )
+      )))
       top_n <- if (is.null(plot_overrides$model_correlation$top_n)) 20
       else plot_overrides$model_correlation$top_n
 
@@ -1969,7 +1982,7 @@ h2o.explain <- function(object,
                                                    n = min(top_n, length(models_info$models))
                                               ))))
       if (length(interpretable_models) > 0) {
-        result$model_correlation_interpretable_models <- sprintf(
+        result$model_correlation_heatmap$notes$interpretable_models <- sprintf(
           "Interpretable models: %s",
           paste(interpretable_models, collapse = ", ")
         )
@@ -1981,10 +1994,12 @@ h2o.explain <- function(object,
   if (!"shap_summary" %in% skip_explanations && !models_info$is_multinomial_classification) {
     num_of_tree_models <- sum(sapply(models_info$models, .is_h2o_tree_model))
     if (num_of_tree_models > 0) {
-      result <- append(result, .h2o_explanation_header("SHAP Summary"))
-      result <- append(result, .describe("shap_summary"))
+      result$shap_summary <- list(
+        header = .h2o_explanation_header("SHAP Summary"),
+        description = .describe("shap_summary"),
+        plots = list())
       for (m in Filter(.is_h2o_tree_model, models_info$models)) {
-        result$shap_summary[[m@model_id]] <- .customized_call(
+        result$shap_summary$plots[[m@model_id]] <- .customized_call(
           h2o.shap_summary_plot,
           model = m,
           newdata = newdata,
@@ -1997,11 +2012,13 @@ h2o.explain <- function(object,
 
   # PDP
   if (!"pdp" %in% skip_explanations) {
-    result <- append(result, .h2o_explanation_header("Partial Dependence Plots"))
-    result <- append(result, .describe("pdp"))
+    result$pdp <- list(
+      header = .h2o_explanation_header("Partial Dependence Plots"),
+      description = .describe("pdp"),
+      plots = list())
     for (col in columns_of_interest) {
       if (!multiple_models) {
-        result$partial_dependences[[col]] <- .customized_call(
+        result$pdp$plots[[col]] <- .customized_call(
           h2o.partial_dependences,
           object = models_info$models,
           newdata = newdata,
@@ -2015,7 +2032,7 @@ h2o.explain <- function(object,
             targets <- plot_overrides$partial_dependences[["target"]]
           }
           for (target in targets) {
-            result$partial_dependeces[[col]][[target]] <- .customized_call(
+            result$pdp$plots[[col]][[target]] <- .customized_call(
               h2o.partial_dependences,
               object = models_info$models,
               newdata = newdata,
@@ -2026,7 +2043,7 @@ h2o.explain <- function(object,
             )
           }
         } else {
-          result$partial_dependences[[col]] <- .customized_call(
+          result$pdp$plots[[col]] <- .customized_call(
             h2o.partial_dependences,
             object = models_info$models,
             newdata = newdata,
@@ -2041,8 +2058,10 @@ h2o.explain <- function(object,
 
   # ICE quantiles
   if (!"ice" %in% skip_explanations && !models_info$is_classification) {
-    result <- append(result, .h2o_explanation_header("Individual Conditional Expectations"))
-    result <- append(result, .describe("ice"))
+    result$ice <- list(
+      header = .h2o_explanation_header("Individual Conditional Expectations"),
+      description = .describe("ice"),
+      plots = list())
     for (col in columns_of_interest) {
       for (m in models_info$models) {
         if (models_info$is_multinomial_classification) {
@@ -2052,7 +2071,7 @@ h2o.explain <- function(object,
           }
 
           for (target in targets) {
-            result$individual_conditional_expectations[[col]][[m@model_id]][[target]] <- .customized_call(
+            result$ice$plots[[col]][[m@model_id]][[target]] <- .customized_call(
               h2o.individual_conditional_expectations,
               model = m,
               newdata = newdata,
@@ -2062,7 +2081,7 @@ h2o.explain <- function(object,
             )
           }
         } else {
-          result$individual_conditional_expectations[[col]][[m@model_id]] <- .customized_call(
+          result$ice$plots[[col]][[m@model_id]] <- .customized_call(
             h2o.individual_conditional_expectations,
             model = m,
             newdata = newdata,
@@ -2171,19 +2190,23 @@ h2o.explain_row <- function(object,
   }
 
   if (multiple_models && !"leaderboard" %in% skip_explanations) {
-    result <- append(result, .h2o_explanation_header("Leaderboard"))
-    result <- append(result, .describe("leaderboard_row"))
-    result$leaderboard <- .leaderboard_for_row(models_info, newdata, row_index)
+    result$leaderboard <- list(
+      header = .h2o_explanation_header("Leaderboard"),
+      description = .describe("leaderboard_row"),
+      data = .leaderboard_for_row(models_info, newdata, row_index))
   }
 
   if (!"shap_explanation" %in% skip_explanations && !models_info$is_multinomial_classification) {
     num_of_tree_models <- sum(sapply(models_info$models, .is_h2o_tree_model))
     if (num_of_tree_models > 0) {
-      result <- append(result, .h2o_explanation_header("SHAP explanation"))
-      result <- append(result, .describe("shap_explanation"))
+      result$shap_explanation <- list(
+        header = .h2o_explanation_header("SHAP explanation"),
+        description = .describe("shap_explanation"),
+        plots = list()
+      )
       tree_models <- Filter(.is_h2o_tree_model, models_info$models)
       for (m in tree_models) {
-        result$shap_explain_row[[m@model_id]] <- .customized_call(
+        result$shap_explanation$plots[[m@model_id]] <- .customized_call(
           h2o.shap_explain_row,
           model = m,
           newdata = newdata,
@@ -2196,7 +2219,11 @@ h2o.explain_row <- function(object,
   }
 
   if (!"ice" %in% skip_explanations) {
-    result <- append(result, .h2o_explanation_header("Individual Conditional Expectations"))
+    result$ice <- list(
+      header = .h2o_explanation_header("Individual Conditional Expectations"),
+      description = .describe("ice_row"),
+      plots = list()
+    )
     for (col in columns_of_interest) {
       if (models_info$is_multinomial_classification) {
         targets <- h2o.levels(newdata[[models_info$y]])
@@ -2204,7 +2231,7 @@ h2o.explain_row <- function(object,
           targets <- plot_overrides$partial_dependences[["target"]]
         }
         for (target in targets) {
-          result$individual_conditional_expectations[[col]][[target]] <- .customized_call(
+          result$ice$plots[[col]][[target]] <- .customized_call(
             h2o.partial_dependences,
             object = models_info, newdata = newdata,
             column = col,
@@ -2215,7 +2242,7 @@ h2o.explain_row <- function(object,
           )
         }
       } else {
-        result$individual_conditional_expectations[[col]] <- .customized_call(
+        result$ice$plots[[col]] <- .customized_call(
           h2o.partial_dependences,
           object = models_info,
           newdata = newdata,
