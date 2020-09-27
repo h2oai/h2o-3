@@ -37,7 +37,7 @@ public class TargetEncoding implements PreprocessingStep {
 
     private TargetEncoderParameters _defaultParams;
     private boolean _encodeAllColumns = false; // if true, bypass all restrictions in columns selection.
-    private int _columnCardinalityThreshold = 10;  // the minimal cardinality for a column to be TE encoded. 
+    private int _columnCardinalityThreshold = 25;  // the minimal cardinality for a column to be TE encoded. 
 
     public TargetEncoding(AutoML aml) {
         _aml = aml;
