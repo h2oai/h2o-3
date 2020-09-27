@@ -41,10 +41,10 @@ explanation_test_single_model_regression <- function() {
   }
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain(gbm, train)))
+  expect_true("H2OExplanation" %in% class(h2o.explain(gbm, train)))
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain_row(gbm, train, 1)))
+  expect_true("H2OExplanation" %in% class(h2o.explain_row(gbm, train, 1)))
 }
 
 explanation_test_automl_regression <- function() {
@@ -83,10 +83,10 @@ explanation_test_automl_regression <- function() {
   expect_error(h2o.individual_conditional_expectations(aml, train, cols_to_test[[1]]), "Only one model is allowed!")
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain(aml, train)))
+  expect_true("H2OExplanation" %in% class(h2o.explain(aml, train)))
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain_row(aml, train, 1)))
+  expect_true("H2OExplanation" %in% class(h2o.explain_row(aml, train, 1)))
 }
 
 explanation_test_list_of_models_regression <- function() {
@@ -126,10 +126,10 @@ explanation_test_list_of_models_regression <- function() {
   expect_error(h2o.individual_conditional_expectations(models, train, cols_to_test[[1]]), "Only one model is allowed!")
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain(models, train)))
+  expect_true("H2OExplanation" %in% class(h2o.explain(models, train)))
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain_row(models, train, 1)))
+  expect_true("H2OExplanation" %in% class(h2o.explain_row(models, train, 1)))
 }
 
 
@@ -166,10 +166,10 @@ explanation_test_single_model_binomial_classification <- function() {
   }
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain(gbm, train)))
+  expect_true("H2OExplanation" %in% class(h2o.explain(gbm, train)))
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain_row(gbm, train, 1)))
+  expect_true("H2OExplanation" %in% class(h2o.explain_row(gbm, train, 1)))
 }
 
 explanation_test_automl_binomial_classification <- function() {
@@ -209,10 +209,10 @@ explanation_test_automl_binomial_classification <- function() {
   expect_error(h2o.individual_conditional_expectations(aml, train, cols_to_test[[1]]), "Only one model is allowed!")
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain(aml, train)))
+  expect_true("H2OExplanation" %in% class(h2o.explain(aml, train)))
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain_row(aml, train, 1)))
+  expect_true("H2OExplanation" %in% class(h2o.explain_row(aml, train, 1)))
 }
 
 explanation_test_list_of_models_binomial_classification <- function() {
@@ -253,10 +253,10 @@ explanation_test_list_of_models_binomial_classification <- function() {
   expect_error(h2o.individual_conditional_expectations(models, train, cols_to_test[[1]]), "Only one model is allowed!")
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain(models, train)))
+  expect_true("H2OExplanation" %in% class(h2o.explain(models, train)))
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain_row(models, train, 1)))
+  expect_true("H2OExplanation" %in% class(h2o.explain_row(models, train, 1)))
 }
 
 
@@ -293,10 +293,10 @@ explanation_test_single_model_multinomial_classification <- function() {
   }
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain(gbm, train)))
+  expect_true("H2OExplanation" %in% class(h2o.explain(gbm, train)))
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain_row(gbm, train, 1)))
+  expect_true("H2OExplanation" %in% class(h2o.explain_row(gbm, train, 1)))
 }
 
 explanation_test_automl_multinomial_classification <- function() {
@@ -336,10 +336,10 @@ explanation_test_automl_multinomial_classification <- function() {
   expect_error(h2o.individual_conditional_expectations(aml, train, cols_to_test[[1]]), "Only one model is allowed!")
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain(aml, train)))
+  expect_true("H2OExplanation" %in% class(h2o.explain(aml, train)))
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain_row(aml, train, 1)))
+  expect_true("H2OExplanation" %in% class(h2o.explain_row(aml, train, 1)))
 }
 
 explanation_test_list_of_models_multinomial_classification <- function() {
@@ -380,10 +380,10 @@ explanation_test_list_of_models_multinomial_classification <- function() {
   expect_error(h2o.individual_conditional_expectations(models, train, cols_to_test[[1]]), "Only one model is allowed!")
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain(models, train)))
+  expect_true("H2OExplanation" %in% class(h2o.explain(models, train)))
 
   # test explanation
-  expect_true("explanation" %in% class(h2o.explain_row(models, train, 1)))
+  expect_true("H2OExplanation" %in% class(h2o.explain_row(models, train, 1)))
 }
 
 

@@ -583,7 +583,7 @@ with_no_h2o_progress <- function(expr) {
 }
 
 .render <- function(object, render) {
-  if (all(class(object) == "explanation" | class(object) == "list")) {
+  if (all(class(object) == "H2OExplanation" | class(object) == "list")) {
     return(lapply(object, .render, render = render))
   } else {
     if (render == "interactive" && any(class(object) == "gg")) {
@@ -598,9 +598,9 @@ with_no_h2o_progress <- function(expr) {
         data.frame = .render_df_to_html(object),
         H2OFrame = .render_df_to_html(as.data.frame(object)),
         H2OTable = .render_df_to_html(as.data.frame(object)),
-        explanation_header = htmltools::tags$h1(object),
-        explanation_subsection = htmltools::tags$h2(object),
-        explanation_description = htmltools::tags$blockquote(object),
+        H2OExplanationHeader = htmltools::tags$h1(object),
+        H2OExplanationSubsection = htmltools::tags$h2(object),
+        H2OExplanationDescription = htmltools::tags$blockquote(object),
         gg = .plotlyfy(object),
         character = cat(object, "\n")
       )
@@ -610,9 +610,9 @@ with_no_h2o_progress <- function(expr) {
         data.frame = .render_df_to_md(object),
         H2OFrame = .render_df_to_md(as.data.frame(object)),
         H2OTable = .render_df_to_md(as.data.frame(object)),
-        explanation_header = cat("\n\n", object, "\n", strrep("=", nchar(object)), "\n", sep = ""),
-        explanation_subsection = cat("\n\n", object, "\n", strrep("-", nchar(object)), "\n", sep = ""),
-        explanation_description = cat("\n> ", paste0(strsplit(object, "\\n\\s*")[[1]], collapse = "\n> "), "\n\n", sep = ""),
+        H2OExplanationHeader = cat("\n\n", object, "\n", strrep("=", nchar(object)), "\n", sep = ""),
+        H2OExplanationSubsection = cat("\n\n", object, "\n", strrep("-", nchar(object)), "\n", sep = ""),
+        H2OExplanationDescription = cat("\n> ", paste0(strsplit(object, "\\n\\s*")[[1]], collapse = "\n> "), "\n\n", sep = ""),
         character = cat(object, "\n"),
         print(object)
       )
@@ -623,9 +623,9 @@ with_no_h2o_progress <- function(expr) {
           data.frame = .render_df_to_jupyter(object),
           H2OFrame = .render_df_to_jupyter(object),
           H2OTable = .render_df_to_jupyter(object),
-          explanation_header = IRdisplay::display_html(sprintf("<h1>%s</h1>\n", object)),
-          explanation_subsection = IRdisplay::display_html(sprintf("<h2>%s</h2>\n", object)),
-          explanation_description = IRdisplay::display_html(
+          H2OExplanationHeader = IRdisplay::display_html(sprintf("<h1>%s</h1>\n", object)),
+          H2OExplanationSubsection = IRdisplay::display_html(sprintf("<h2>%s</h2>\n", object)),
+          H2OExplanationDescription = IRdisplay::display_html(
             sprintf(
               "<blockquote>%s</blockquote>\n",
               paste0(strsplit(object, "\\n\\s*")[[1]], collapse = "\n ")
@@ -653,9 +653,9 @@ with_no_h2o_progress <- function(expr) {
       } else {
         switch(
           class(object)[[1]],
-          explanation_header = cat("\n\n", object, "\n", strrep("=", nchar(object)), "\n", sep = ""),
-          explanation_subsection = cat("\n\n", object, "\n", strrep("-", nchar(object)), "\n", sep = ""),
-          explanation_description = cat("\n> ", paste0(strsplit(object, "\\n\\s*")[[1]], collapse = "\n> "), "\n\n", sep = ""),
+          H2OExplanationHeader = cat("\n\n", object, "\n", strrep("=", nchar(object)), "\n", sep = ""),
+          H2OExplanationSubsection = cat("\n\n", object, "\n", strrep("-", nchar(object)), "\n", sep = ""),
+          H2OExplanationDescription = cat("\n> ", paste0(strsplit(object, "\\n\\s*")[[1]], collapse = "\n> "), "\n\n", sep = ""),
           character = cat(object, "\n"),
           print(object)
         )
@@ -663,9 +663,9 @@ with_no_h2o_progress <- function(expr) {
     } else if (render == "interactive") {
       switch(
         class(object)[[1]],
-        explanation_header = cat("\n\n", object, "\n", strrep("=", nchar(object)), "\n", sep = ""),
-        explanation_subsection = cat("\n\n", object, "\n", strrep("-", nchar(object)), "\n", sep = ""),
-        explanation_description = message(paste0(strsplit(object, "\\n\\s*")[[1]], collapse = "\n")),
+        H2OExplanationHeader = cat("\n\n", object, "\n", strrep("=", nchar(object)), "\n", sep = ""),
+        H2OExplanationSubsection = cat("\n\n", object, "\n", strrep("-", nchar(object)), "\n", sep = ""),
+        H2OExplanationDescription = message(paste0(strsplit(object, "\\n\\s*")[[1]], collapse = "\n")),
         character = cat(object, "\n"),
         print(object)
       )
@@ -689,20 +689,20 @@ with_no_h2o_progress <- function(expr) {
     requireNamespace("IRdisplay", quietly = TRUE)
 }
 
-.explanation_header <- function(string, subsection = FALSE) {
-  class(string) <- if (subsection) "explanation_subsection" else "explanation_header"
+.h2o_explanation_header <- function(string, subsection = FALSE) {
+  class(string) <- if (subsection) "H2OExplanationSubsection" else "H2OExplanationHeader"
   string <- list(string)
   return(string)
 }
 
-.explanation_description <- function(string) {
-  class(string) <- "explanation_description"
+.h2o_explanation_description <- function(string) {
+  class(string) <- "H2OExplanationDescription"
   string <- list(string)
   return(string)
 }
 
 .describe <- function(explanation) {
-  .explanation_description(
+  .h2o_explanation_description(
     switch(explanation,
            leaderboard=paste0("Leaderboard shows models with their metrics. When provided with H2OAutoML object, ",
            "the leaderboard shows 5-fold cross-validated metrics by default (depending on the ",
@@ -748,7 +748,7 @@ with_no_h2o_progress <- function(expr) {
   )
 }
 
-print.explanation <- function(object, ..., render = "AUTO") {
+print.H2OExplanation <- function(object, ..., render = "AUTO") {
   if (render == "html") {
     if (!(requireNamespace("htmltools", quietly = TRUE) &&
       requireNamespace("plotly", quietly = TRUE) &&
@@ -795,11 +795,11 @@ print.explanation <- function(object, ..., render = "AUTO") {
 }
 
 # For Jupyter(IRkernel)
-repr_text.explanation <- function(object, ...) {
+repr_text.H2OExplanation <- function(object, ...) {
   return("Use print(explanation, render = \"notebook\")")
 }
 
-repr_html.explanation <- function(object, ...) {
+repr_html.H2OExplanation <- function(object, ...) {
   if (requireNamespace("htmltools", quietly = TRUE) &&
     requireNamespace("plotly", quietly = TRUE) &&
     requireNamespace("DT", quietly = TRUE)) {
@@ -1874,7 +1874,7 @@ h2o.explain <- function(object,
   }
 
   if (multiple_models && !"leaderboard" %in% skip_explanations) {
-    result <- append(result, .explanation_header("Leaderboard"))
+    result <- append(result, .h2o_explanation_header("Leaderboard"))
     result <- append(result, .describe("leaderboard"))
     result$leaderboard <- .create_leaderboard(models_info, newdata)
   }
@@ -1882,10 +1882,10 @@ h2o.explain <- function(object,
   # residual analysis /  confusion matrix
   if (models_info$is_classification) {
     if (!"confusion_matrix" %in% skip_explanations) {
-      result <- append(result, .explanation_header("Confusion Matrix"))
+      result <- append(result, .h2o_explanation_header("Confusion Matrix"))
       result <- append(result, .describe("confusion_matrix"))
       for (m in models_info$models) {
-        result$confusion_matrix[[m@model_id]][[1]] <- .explanation_header(m@model_id, 2)
+        result$confusion_matrix[[m@model_id]][[1]] <- .h2o_explanation_header(m@model_id, 2)
         result$confusion_matrix[[m@model_id]][[2]] <- .customized_call(
           h2o.confusionMatrix,
           object = m,
@@ -1897,7 +1897,7 @@ h2o.explain <- function(object,
     }
   } else {
     if (!"residual_analysis" %in% skip_explanations) {
-      result <- append(result, .explanation_header("Residual Analysis"))
+      result <- append(result, .h2o_explanation_header("Residual Analysis"))
       result <- append(result, .describe("residual_analysis"))
 
       for (m in models_info$models) {
@@ -1915,7 +1915,7 @@ h2o.explain <- function(object,
   # feature importance
   if (!"variable_importance" %in% skip_explanations) {
     if (any(sapply(.model_ids(models_info$models), .has_varimp))) {
-      result <- append(result, .explanation_header("Variable Importance"))
+      result <- append(result, .h2o_explanation_header("Variable Importance"))
       result <- append(result, .describe("variable_importance"))
       varimp <- NULL
       warning_shown <- FALSE
@@ -1939,7 +1939,7 @@ h2o.explain <- function(object,
     # Variable Importance Heatmap
     if (!"variable_importance_heatmap" %in% skip_explanations) {
       if (length(Filter(function(m_id) !startsWith(m_id, "Stacked"), .model_ids(models_info$models))) > 1) {
-        result <- append(result, .explanation_header("Variable Importance Heatmap"))
+        result <- append(result, .h2o_explanation_header("Variable Importance Heatmap"))
         result <- append(result, .describe("variable_importance_heatmap"))
         result$variable_importance_heatmap <- .customized_call(h2o.variable_importance_heatmap,
                                                                object = models_info,
@@ -1951,7 +1951,7 @@ h2o.explain <- function(object,
 
     # Model Correlation
     if (!"model_correlation_heatmap" %in% skip_explanations) {
-      result <- append(result, .explanation_header("Model Correlation"))
+      result <- append(result, .h2o_explanation_header("Model Correlation"))
       result <- append(result, .describe("model_correlation_heatmap"))
       result$model_correlation <- .customized_call(h2o.model_correlation_heatmap,
                                                    object = models_info,
@@ -1979,7 +1979,7 @@ h2o.explain <- function(object,
   if (!"shap_summary" %in% skip_explanations && !models_info$is_multinomial_classification) {
     num_of_tree_models <- sum(sapply(models_info$models, .is_h2o_tree_model))
     if (num_of_tree_models > 0) {
-      result <- append(result, .explanation_header("SHAP Summary"))
+      result <- append(result, .h2o_explanation_header("SHAP Summary"))
       result <- append(result, .describe("shap_summary"))
       for (m in Filter(.is_h2o_tree_model, models_info$models)) {
         result$shap_summary[[m@model_id]] <- .customized_call(
@@ -1995,7 +1995,7 @@ h2o.explain <- function(object,
 
   # PDP
   if (!"pdp" %in% skip_explanations) {
-    result <- append(result, .explanation_header("Partial Dependence Plots"))
+    result <- append(result, .h2o_explanation_header("Partial Dependence Plots"))
     result <- append(result, .describe("pdp"))
     for (col in columns_of_interest) {
       if (!multiple_models) {
@@ -2039,7 +2039,7 @@ h2o.explain <- function(object,
 
   # ICE quantiles
   if (!"ice" %in% skip_explanations && !models_info$is_classification) {
-    result <- append(result, .explanation_header("Individual Conditional Expectations"))
+    result <- append(result, .h2o_explanation_header("Individual Conditional Expectations"))
     result <- append(result, .describe("ice"))
     for (col in columns_of_interest) {
       for (m in models_info$models) {
@@ -2072,7 +2072,7 @@ h2o.explain <- function(object,
       }
     }
   }
-  class(result) <- "explanation"
+  class(result) <- "H2OExplanation"
   return(result)
 }
 
@@ -2169,7 +2169,7 @@ h2o.explain_row <- function(object,
   }
 
   if (multiple_models && !"leaderboard" %in% skip_explanations) {
-    result <- append(result, .explanation_header("Leaderboard"))
+    result <- append(result, .h2o_explanation_header("Leaderboard"))
     result <- append(result, .describe("leaderboard_row"))
     result$leaderboard <- .leaderboard_for_row(models_info, newdata, row_index)
   }
@@ -2177,7 +2177,7 @@ h2o.explain_row <- function(object,
   if (!"shap_explanation" %in% skip_explanations && !models_info$is_multinomial_classification) {
     num_of_tree_models <- sum(sapply(models_info$models, .is_h2o_tree_model))
     if (num_of_tree_models > 0) {
-      result <- append(result, .explanation_header("SHAP explanation"))
+      result <- append(result, .h2o_explanation_header("SHAP explanation"))
       result <- append(result, .describe("shap_explanation"))
       tree_models <- Filter(.is_h2o_tree_model, models_info$models)
       for (m in tree_models) {
@@ -2194,7 +2194,7 @@ h2o.explain_row <- function(object,
   }
 
   if (!"ice" %in% skip_explanations) {
-    result <- append(result, .explanation_header("Individual Conditional Expectations"))
+    result <- append(result, .h2o_explanation_header("Individual Conditional Expectations"))
     for (col in columns_of_interest) {
       if (models_info$is_multinomial_classification) {
         targets <- h2o.levels(newdata[[models_info$y]])
@@ -2225,7 +2225,7 @@ h2o.explain_row <- function(object,
       }
     }
   }
-  class(result) <- "explanation"
+  class(result) <- "H2OExplanation"
   return(result)
 }
 
@@ -2257,8 +2257,8 @@ h2o.explain_row <- function(object,
 }
 
 .onLoad <- function(...) {
-  registerS3method("print", "explanation", "print.explanation")
-  .s3_register("repr", "repr_text", "explanation")
-  .s3_register("repr", "repr_html", "explanation")
+  registerS3method("print", "H2OExplanation", "print.H2OExplanation")
+  .s3_register("repr", "repr_text", "H2OExplanation")
+  .s3_register("repr", "repr_html", "H2OExplanation")
   invisible()
 }
