@@ -20,7 +20,10 @@ from ..utils.shared_utils import can_use_numpy, can_use_pandas
 try:
     from inspect import Parameter, signature
 except ImportError:
-    from sklearn.utils.fixes import signature
+    try:
+        from sklearn.externals.funcsigs import Parameter, signature
+    except ImportError:
+        raise ImportError("on Python 2.7, H2O integration with ScikitLearn requires sklearn version < 0.21")
 
 if can_use_numpy():
     import numpy as np
