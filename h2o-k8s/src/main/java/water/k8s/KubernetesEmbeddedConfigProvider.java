@@ -40,6 +40,7 @@ public class KubernetesEmbeddedConfigProvider implements EmbeddedConfigProvider 
 
         try {
             final Integer timeoutSeconds = Integer.parseInt(System.getenv(K8S_NODE_LOOKUP_TIMEOUT_KEY));
+            Log.info(String.format("Timeout contraint: %d seconds.", timeoutSeconds));
             lookupConstraintsBuilder.withTimeoutSeconds(timeoutSeconds);
         } catch (NumberFormatException e) {
             Log.info(String.format("'%s' environment variable not set.", K8S_NODE_LOOKUP_TIMEOUT_KEY));
@@ -47,6 +48,7 @@ public class KubernetesEmbeddedConfigProvider implements EmbeddedConfigProvider 
 
         try {
             final Integer desiredClusterSize = Integer.parseInt(System.getenv(K8S_DESIRED_CLUSTER_SIZE_KEY));
+            Log.info(String.format("Cluster size constraint: %d nodes.", desiredClusterSize));
             lookupConstraintsBuilder.withDesiredClusterSize(desiredClusterSize);
         } catch (NumberFormatException e) {
             Log.info(String.format("'%s' environment variable not set.", K8S_DESIRED_CLUSTER_SIZE_KEY));
