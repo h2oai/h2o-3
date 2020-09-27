@@ -494,6 +494,8 @@ with_no_h2o_progress <- function(expr) {
   indices <- which(!duplicated(substr(leaderboard$model_id, 1, 3)))
   indices <- c(seq_len(top_n), indices[indices > top_n])
   leaderboard <- leaderboard[indices,]
+  models <- models_info$models
+  names(models) <- .model_ids(models)
   with_no_h2o_progress({
     leaderboard <-
       cbind(leaderboard,
@@ -502,7 +504,7 @@ with_no_h2o_progress <- function(expr) {
               sapply(
                 leaderboard[["model_id"]],
                 function(model_id) {
-                  as.data.frame(stats::predict(h2o.getModel(model_id), newdata[row_index,])[["predict"]])
+                  as.data.frame(stats::predict(models[[model_id]], newdata[row_index,])[["predict"]])
                 }
               )
             )
