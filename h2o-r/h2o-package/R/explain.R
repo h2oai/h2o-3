@@ -473,7 +473,8 @@ with_no_h2o_progress <- function(expr) {
         ggplot2::scale_x_discrete("Variable", limits = rev(varimp$variable)) +
         ggplot2::labs(y = "Variable Importance", title = sprintf("Variable importance for %s", model@model_id)) +
         ggplot2::coord_flip() +
-        ggplot2::theme_bw()
+        ggplot2::theme_bw() +
+        ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
       return(list(varimp = varimp, grouped_varimp = .varimp(model, newdata), plot = p))
     }
   })
@@ -1148,7 +1149,8 @@ h2o.shap_explain_row <-
           )
         ) +
         ggplot2::theme_bw() +
-        ggplot2::theme(plot.margin = ggplot2::margin(16.5, 5.5, 5.5, 5.5))
+        ggplot2::theme(plot.margin = ggplot2::margin(16.5, 5.5, 5.5, 5.5),
+                       plot.title = ggplot2::element_text(hjust = 0.5))
       return(p)
     } else if (plot_type == "breakdown") {
       contributions <- contributions[, names(contributions)[order(abs(t(contributions)))]]
@@ -1196,7 +1198,7 @@ h2o.shap_explain_row <-
         ggplot2::ylab("SHAP value") +
         ggplot2::ggtitle(sprintf("SHAP Explanation of \"%s\" on row %d", model@model_id, row_index)) +
         ggplot2::theme_bw() +
-        ggplot2::theme(legend.title = ggplot2::element_blank())
+        ggplot2::theme(legend.title = ggplot2::element_blank(), plot.title = ggplot2::element_text(hjust = 0.5))
       return(p)
     } else {
       stop("Unknown plot_type=", plot_type)
@@ -1257,7 +1259,9 @@ h2o.variable_importance_heatmap <- function(object, newdata, top_n = 20) {
     ggplot2::theme_bw() +
     ggplot2::theme(
       axis.text.x = ggplot2::element_text(angle = 45, hjust = 1),
-      plot.margin = ggplot2::margin(1, 1, 1, 7, "lines")
+      plot.margin = ggplot2::margin(1, 1, 1, 7, "lines"),
+      legend.title = ggplot2::element_blank(),
+      plot.title = ggplot2::element_text(hjust = 0.5)
     )
   return(p)
 }
@@ -1345,7 +1349,9 @@ h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
       axis.text.x = ggplot2::element_text(
         angle = 45,
         hjust = 1),
-      aspect.ratio = 1
+      aspect.ratio = 1,
+      legend.title = ggplot2::element_blank(),
+      plot.title = ggplot2::element_text(hjust = 0.5)
     )
 
   return(p)
@@ -1386,7 +1392,8 @@ h2o.residual_analysis <- function(model, newdata) {
       ggplot2::geom_rug(alpha = 0.2) +
       ggplot2::geom_abline(intercept = 0, slope = 0) +
       ggplot2::labs(x = "Fitted", y = "Residuals", title = sprintf("Residual Analysis for \"%s\"", model@model_id)) +
-      ggplot2::theme_bw()
+      ggplot2::theme_bw() +
+      ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
   })
   return(p)
 }
@@ -1519,7 +1526,8 @@ h2o.partial_dependences <- function(object,
         ggplot2::theme(
           legend.title = ggplot2::element_blank(),
           axis.text.x = ggplot2::element_text(angle = if (h2o.isfactor(newdata[[column]])) 45 else 0, hjust = 1),
-          plot.margin = margin
+          plot.margin = margin,
+          plot.title = ggplot2::element_text(hjust = 0.5)
         )
       return(p)
     })
@@ -1616,7 +1624,8 @@ h2o.partial_dependences <- function(object,
           hjust = 1
         ),
         plot.margin = margin,
-        legend.title = ggplot2::element_blank()
+        legend.title = ggplot2::element_blank(),
+        plot.title = ggplot2::element_text(hjust = 0.5)
       )
     return(p)
   })
@@ -1760,7 +1769,8 @@ h2o.individual_conditional_expectations <- function(model,
       ggplot2::theme(
         legend.title = ggplot2::element_blank(),
         axis.text.x = ggplot2::element_text(angle = if (h2o.isfactor(newdata[[col_name]])) 45 else 0, hjust = 1),
-        plot.margin = margin
+        plot.margin = margin,
+        plot.title = ggplot2::element_text(hjust = 0.5)
       )
     return(p)
   })
