@@ -39,8 +39,6 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
   private double[] _cv_alpha = null;  // best alpha value found from cross-validation
   private double[] _cv_lambda = null; // bset lambda value found from cross-validation
   
-  IcedHashSet<Key<Frame>> _validKeys = new IcedHashSet<>(); // store validation frame keys from various folds
-  
   @Override
   public ModelCategory[] can_build() {
     return new ModelCategory[]{ModelCategory.Regression};
@@ -454,9 +452,11 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
 
     }
 
+
     public final void buildModel(Frame newTFrame, Frame newValidFrame) {
       GAMModel model = null;
       DataInfo dinfo = null;
+      final IcedHashSet<Key<Frame>> validKeys = new IcedHashSet<>();
       try {
         _job.update(0, "Adding GAM columns to training dataset...");
         dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels 
@@ -489,28 +489,32 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           scoreGenModelMetrics(model, valid(), false); // score validation dataset and generate model metrics
         }
       } finally {
-        final List<Key<Vec>> keep = new ArrayList<>();
-        if (model != null) {
-          if (_parms._keep_gam_cols) {
-            keepFrameKeys(keep, newTFrame._key);
-          } else {
-            DKV.remove(newTFrame._key);
+        try {
+          final List<Key<Vec>> keep = new ArrayList<>();
+          if (model != null) {
+            if (_parms._keep_gam_cols) {
+              keepFrameKeys(keep, newTFrame._key);
+            } else {
+              DKV.remove(newTFrame._key);
+            }
           }
+          if (dinfo != null)
+            dinfo.remove();
+
+          if (newValidFrame != null && validKeys != null) {
+            keepFrameKeys(keep, newValidFrame._key);  // save valid frame keys for scoring later
+            validKeys.addIfAbsent(newValidFrame._key);   // save valid frame keys from folds to remove later
+            model._validKeys = validKeys;  // move valid keys here to model._validKeys to be removed later
+          }
+          Scope.exit(keep.toArray(new Key[keep.size()]));
+        } finally {
+          // Make sure Model is unlocked, as if an exception is thrown, the `ModelBuilder` expects the underlying model to be unlocked.
+          model.update(_job);
+          model.unlock(_job);
         }
-        if (dinfo != null)
-          dinfo.remove();
-        
-        if (newValidFrame != null && _validKeys != null) {
-          keepFrameKeys(keep, newValidFrame._key);  // save valid frame keys for scoring later
-          _validKeys.addIfAbsent(newValidFrame._key);   // save valid frame keys from folds to remove later
-          model._validKeys = _validKeys;  // move valid keys here to model._validKeys to be removed later
-        }
-        model.update(_job);
-        model.unlock(_job);
-        Scope.exit(keep.toArray(new Key[keep.size()]));
       }
     }
-    
+
     /**
      * This part will perform scoring and generate the model metrics for training data and validation data if 
      * provided by user.
