@@ -18,22 +18,22 @@ The H2O explainability interface is designed to be automatic -- all of the expla
 
         # Explain a model
         exm <- h2o.explain(model, test)
-        print(exm)
+        exm
 
         # Explain an AutoML object
         exa <- h2o.explain(aml, test)
-        print(exa)
+        exa
 
 
    .. code-tab:: python
 
         # Explain a model
         exm = model.explain(test)
-        print(exm)
+        exm
 
         # Explain an AutoML object
         exa = aml.explain(test)
-        print(exa)
+        exa
 
 
 
@@ -116,11 +116,11 @@ Here’s an example showing basic usage of the ``h2o.explain()`` function in *R*
 
         # Explain leader model & compare with all AutoML models                  
         exa <- h2o.explain(aml, test)
-        print(exa)
+        exa
 
         # Explain a single H2O model (e.g. leader model from AutoML)
         exm <- h2o.explain(aml@leader, test)
-        print(exm)
+        exm
 
 
 
@@ -201,13 +201,13 @@ TO DO: Let's put examples of each function and the plot, in the order in which t
 
         # Residual analysis plot for an AutoML object
         ra_plot <- h2o.residual_analysis(aml@leader, test)
-        print(ra_plot)
+        ra_plot
 
    .. code-tab:: python
 
         # Residual analysis plot for an AutoML object
         ra_plot = aml.leader.residual_analysis(test)
-        print(ra_plot)
+        ra_plot
 
 
 
