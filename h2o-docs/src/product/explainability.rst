@@ -1,7 +1,10 @@
 Model Explainability
 ====================
 
-H2O offers a convenient interface to many explainabilty methods in H2O.  The functions work for individual models, as well a list of models or an `H2O AutoML object <automl.html>`__
+H2O offers a convenient interface to many explainabilty methods in H2O.  The main functions, `explain()` and `explain_row()` work for individual models, as well a list of models or an `H2O AutoML object <automl.html>`__.  The `explain()` function generates a list of "explanations" -- individual units of explaination such as a Partial Dependence Plot or a Variable Importance plot.  All the explanations are visual objects that can also be individually created by utility functions.  
+
+The visualization engine used in the R interface is the [ggplot2](https://ggplot2.tidyverse.org/) package and in Python, we use [matplotlib](https://matplotlib.org/).
+
 
 
 Explainability Interface
@@ -62,25 +65,30 @@ The available options (explainations) for ``include_explanations`` and ``exclude
     - ``"pdp"``
     - ``"ice"``
 
-- **top_n_features**: If ``columns_of_interest`` is missing, create plots only with the top n columns (where applicable).  Defaults to 5.
+- **columns**: If ``columns`` is missing, create plots only with the top n columns (where applicable).  Defaults to 5.
 
 - **plot_overrides**: Overrides for individual explanations, e.g. ``list(shap_summary_plot = list(top_n_features = 50))`` in R. 
 
 Notes
 ~~~~~
 
-TO DO.
+Our roadmap for improving the explainability interface is [here](https://0xdata.atlassian.net/jira/software/c/projects/PUBDEV/issues/PUBDEV-7806?filter=allissues).
+
+We are looking for feedback from users.  If you have any feature requests, please file a 
+
 
 
 Code Examples
 -------------
 
-TO DO.
+See below for code examples in R and Python.  We are working on some longer explainability tutorials that we will link here soon.
+
 
 Explain models
 ~~~~~~~~~~~~~~
 
-Here’s an example showing basic usage of the ``h2o.explain()`` function in *R* and the ``explain()`` method in *Python*.  
+Here’s an example showing basic usage of the ``h2o.explain()`` function in *R* and the ``explain()`` method in *Python*.  Keep in mind that this code should be run in an environment that can support plots.  We recommend Jypyter notebooks in Python and RStudio IDE in R (either in the console or in R Markdown file or notebook).
+
 
 .. tabs::
    .. code-tab:: r R
@@ -103,7 +111,7 @@ Here’s an example showing basic usage of the ``h2o.explain()`` function in *R*
         # Run AutoML for 20 base models
         aml <- h2o.automl(x = x, y = y, 
                           training_frame = train,
-                          max_models = 20,
+                          max_models = 10,
                           seed = 1)
 
         # Explain leader model & compare with all AutoML models                  
@@ -120,6 +128,8 @@ Here’s an example showing basic usage of the ``h2o.explain()`` function in *R*
 
         import h2o
         from h2o.automl import H2OAutoML
+        from h2o.explain import explain, explain_row
+        from IPython.core.display import display
 
         h2o.init()
 
@@ -137,16 +147,16 @@ Here’s an example showing basic usage of the ``h2o.explain()`` function in *R*
         test[y] = test[y].asfactor()
         
         # Run AutoML for 20 base models
-        aml = H2OAutoML(max_models=20, seed=1)
+        aml = H2OAutoML(max_models=10, seed=1)
         aml.train(x=x, y=y, training_frame=train)
 
         # Explain leader model & compare with all AutoML models 
         exa = aml.explain(test)
-        print(exa)
+        display(exa)
 
         # Explain a single H2O model (e.g. leader model from AutoML)
         exm = aml.leader.explain(test)
-        print(exm)
+        display(exm)
 
 
 
