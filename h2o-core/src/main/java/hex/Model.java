@@ -1310,7 +1310,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   
   public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics, boolean catEncoded) {
-    return adaptTestForTrain(
+    final IcedHashMap<Key, String> toDelete = new IcedHashMap<>();
+    String[] warnings = adaptTestForTrain(
             test,
             _output._origNames,
             _output._origDomains,
@@ -1321,9 +1322,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             computeMetrics,
             _output.interactionBuilder(),
             getToEigenVec(),
-            _toDelete,
+            toDelete,
             catEncoded
     );
+    for (Map.Entry<Key, String> entry: _toDelete.entrySet())
+      toDelete.putIfAbsent(entry.getKey(), entry.getValue());
+
+    _toDelete = toDelete;
+    return warnings;
   }
 
   /**
