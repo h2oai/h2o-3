@@ -4,12 +4,11 @@ import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.Iced;
 
-import java.util.Arrays;
-import java.util.Objects;
+import java.io.*;
 
 public abstract class MatrixLoader extends Iced<MatrixLoader> {
     
-    public static abstract class DMatrixProvider {
+    public static abstract class DMatrixProvider implements Externalizable {
 
         protected long actualRows;
         protected float[] response;
@@ -23,10 +22,9 @@ public abstract class MatrixLoader extends Iced<MatrixLoader> {
             this.offsets = offsets;
         }
         
-        protected abstract DMatrix makeDMatrix() throws XGBoostError;
+        public DMatrixProvider() {}
 
-        @SuppressWarnings("unused") // used for debugging
-        public abstract void print(int nrow);
+        protected abstract DMatrix makeDMatrix() throws XGBoostError;
         
         protected void dispose() {}
         
@@ -45,23 +43,19 @@ public abstract class MatrixLoader extends Iced<MatrixLoader> {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof DMatrixProvider)) return false;
-            DMatrixProvider that = (DMatrixProvider) o;
-            return actualRows == that.actualRows &&
-                Arrays.equals(response, that.response) &&
-                Arrays.equals(weights, that.weights) &&
-                Arrays.equals(offsets, that.offsets);
+        public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeLong(actualRows);
+            out.writeObject(response);
+            out.writeObject(weights);
+            out.writeObject(offsets);
         }
 
         @Override
-        public int hashCode() {
-            int result = Objects.hash(actualRows);
-            result = 31 * result + Arrays.hashCode(response);
-            result = 31 * result + Arrays.hashCode(weights);
-            result = 31 * result + Arrays.hashCode(offsets);
-            return result;
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            actualRows = in.readLong();
+            response = (float[]) in.readObject();
+            weights = (float[]) in.readObject();
+            offsets = (float[]) in.readObject();
         }
     }
     
