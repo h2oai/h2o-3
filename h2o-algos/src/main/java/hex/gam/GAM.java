@@ -12,7 +12,6 @@ import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
-import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
 import water.*;
