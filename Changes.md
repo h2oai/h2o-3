@@ -2,6 +2,17 @@
 
 ## H2O
 
+### Zeno (3.30.1.3) - 9/28/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/3/index.html</a>
+
+<h4>Bug</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7779'>PUBDEV-7779</a>] -         CRAN - Use HTTPS for all downloads within the R package.
+</li>
+</ul>
+
+
 ### Zeno (3.30.1.2) - 9/3/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/2/index.html</a>
