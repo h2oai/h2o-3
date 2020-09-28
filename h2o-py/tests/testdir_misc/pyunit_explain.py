@@ -7,7 +7,7 @@ import matplotlib.pyplot
 from tests import pyunit_utils
 from h2o.automl import H2OAutoML
 from h2o.estimators import H2OGradientBoostingEstimator
-
+from h2o.explain._explain import H2OExplanation
 
 def test_explanation_single_model_regression():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
@@ -42,10 +42,10 @@ def test_explanation_single_model_regression():
         matplotlib.pyplot.close()
 
     # test explain
-    assert isinstance(gbm.explain(train, render=False), collections.OrderedDict)
+    assert isinstance(gbm.explain(train, render=False), H2OExplanation)
 
     # test explain row
-    assert isinstance(gbm.explain_row(train, 1, render=False), collections.OrderedDict)
+    assert isinstance(gbm.explain_row(train, 1, render=False), H2OExplanation)
 
 
 def test_explanation_automl_regression():
@@ -77,10 +77,10 @@ def test_explanation_automl_regression():
         matplotlib.pyplot.close()
 
     # test explain
-    assert isinstance(aml.explain(train, render=False), collections.OrderedDict)
+    assert isinstance(aml.explain(train, render=False), H2OExplanation)
 
     # test explain row
-    assert isinstance(aml.explain_row(train, 1, render=False), collections.OrderedDict)
+    assert isinstance(aml.explain_row(train, 1, render=False), H2OExplanation)
 
 
 def test_explanation_list_of_models_regression():
@@ -115,10 +115,10 @@ def test_explanation_list_of_models_regression():
         matplotlib.pyplot.close()
 
     # test explain
-    assert isinstance(h2o.explain(models, train, render=False), collections.OrderedDict)
+    assert isinstance(h2o.explain(models, train, render=False), H2OExplanation)
 
     # test explain row
-    assert isinstance(h2o.explain_row(models, train, 1, render=False), collections.OrderedDict)
+    assert isinstance(h2o.explain_row(models, train, 1, render=False), H2OExplanation)
 
 
 def test_explanation_single_model_binomial_classification():
@@ -151,10 +151,10 @@ def test_explanation_single_model_binomial_classification():
         matplotlib.pyplot.close()
 
     # test explain
-    assert isinstance(gbm.explain(train, render=False), collections.OrderedDict)
+    assert isinstance(gbm.explain(train, render=False), H2OExplanation)
 
     # test explain row
-    assert isinstance(gbm.explain_row(train, 1, render=False), collections.OrderedDict)
+    assert isinstance(gbm.explain_row(train, 1, render=False), H2OExplanation)
 
 
 def test_explanation_automl_binomial_classification():
@@ -187,10 +187,10 @@ def test_explanation_automl_binomial_classification():
         matplotlib.pyplot.close()
 
     # test explain
-    assert isinstance(aml.explain(train, render=False), collections.OrderedDict)
+    assert isinstance(aml.explain(train, render=False), H2OExplanation)
 
     # test explain row
-    assert isinstance(aml.explain_row(train, 1, render=False), collections.OrderedDict)
+    assert isinstance(aml.explain_row(train, 1, render=False), H2OExplanation)
 
 
 def test_explanation_list_of_models_binomial_classification():
@@ -226,10 +226,10 @@ def test_explanation_list_of_models_binomial_classification():
         matplotlib.pyplot.close()
 
     # test explain
-    assert isinstance(h2o.explain(models, train, render=False), collections.OrderedDict)
+    assert isinstance(h2o.explain(models, train, render=False), H2OExplanation)
 
     # test explain row
-    assert isinstance(h2o.explain_row(models, train, 1, render=False), collections.OrderedDict)
+    assert isinstance(h2o.explain_row(models, train, 1, render=False), H2OExplanation)
 
 
 def test_explanation_single_model_multinomial_classification():
@@ -271,10 +271,10 @@ def test_explanation_single_model_multinomial_classification():
         matplotlib.pyplot.close()
 
     # test explain
-    assert isinstance(gbm.explain(train, render=False), collections.OrderedDict)
+    assert isinstance(gbm.explain(train, render=False), H2OExplanation)
 
     # test explain row
-    assert isinstance(gbm.explain_row(train, 1, render=False), collections.OrderedDict)
+    assert isinstance(gbm.explain_row(train, 1, render=False), H2OExplanation)
 
 
 def test_explanation_automl_multinomial_classification():
@@ -307,10 +307,10 @@ def test_explanation_automl_multinomial_classification():
         matplotlib.pyplot.close()
 
     # test explain
-    assert isinstance(aml.explain(train, render=False), collections.OrderedDict)
+    assert isinstance(aml.explain(train, render=False), H2OExplanation)
 
     # test explain row
-    assert isinstance(aml.explain_row(train, 1, render=False), collections.OrderedDict)
+    assert isinstance(aml.explain_row(train, 1, render=False), H2OExplanation)
 
 
 def test_explanation_list_of_models_multinomial_classification():
@@ -347,10 +347,10 @@ def test_explanation_list_of_models_multinomial_classification():
         matplotlib.pyplot.close()
 
     # test explain
-    assert isinstance(h2o.explain(models, train, render=False), collections.OrderedDict)
+    assert isinstance(h2o.explain(models, train, render=False), H2OExplanation)
 
     # test explain row
-    assert isinstance(h2o.explain_row(models, train, 1, render=False), collections.OrderedDict)
+    assert isinstance(h2o.explain_row(models, train, 1, render=False), H2OExplanation)
 
 
 pyunit_utils.run_tests([

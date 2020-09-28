@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib
 import matplotlib.colors
 import matplotlib.figure
+
 try:
     import matplotlib.pyplot as plt
 except ImportError:
@@ -23,13 +24,13 @@ def _display(object):
     :param object: An object to be displayed.
     :return: the input
     """
-    try:
-        import IPython.display
-        IPython.display.display(object)
-    except ImportError:
-        if isinstance(object, matplotlib.figure.Figure):
-            plt.show()
-        else:
+    if isinstance(object, matplotlib.figure.Figure) and matplotlib.get_backend().lower() != "agg":
+        plt.show()
+    else:
+        try:
+            import IPython.display
+            IPython.display.display(object)
+        except ImportError:
             print(object)
     if isinstance(object, matplotlib.figure.Figure):
         plt.close(object)
@@ -62,6 +63,9 @@ class Header:
 
     def _repr_markdown_(self):
         return "\n\n{} {}".format("#" * self.level, self.content)
+
+    def _repr_pretty_(self, p, cycle):
+        p.text(str(self))
 
     def __str__(self):
         return self._repr_markdown_()
@@ -122,8 +126,19 @@ class Description:
     def _repr_markdown_(self):
         return "\n> {}".format(self.content)
 
+    def _repr_pretty_(self, p, cycle):
+        p.text(str(self))
+
     def __str__(self):
         return self._repr_markdown_()
+
+
+class H2OExplanation(OrderedDict):
+    def _ipython_display_(self):
+        from IPython.display import display
+        for v in self.values():
+            display(v)
+
 
 
 @contextmanager
@@ -701,13 +716,14 @@ def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order
     if add_histogram:
         if nf.isfactor(column):
             cnt = Counter(nf[column][np.isfinite(nf[column])])
-            hist_x = np.array(list(cnt.keys()))
-            hist_y = np.array(list(cnt.values()))
+            hist_x = np.array(list(cnt.keys()), dtype=float)
+            hist_y = np.array(list(cnt.values()), dtype=float)
         else:
             hist_y, hist_x = np.histogram(
                 mapping(nf[column][np.isfinite(nf[column])]),
                 bins=20)
-            hist_x = hist_x[:-1]
+            hist_x = hist_x[:-1].astype(float)
+            hist_y = hist_y.astype(float)
         plt.bar(mapping(hist_x),
                 hist_y / hist_y.max() * ((ylims[1] - ylims[0]) / 1.618),  # ~ golden ratio
                 bottom=ylims[0],
@@ -784,7 +800,7 @@ def partial_dependences(
         is_factor = frame[column].isfactor()[0]
         if is_factor:
             factor_map = _factor_mapper(NumpyFrame(frame[column]).from_factor_to_num(column))
-            marker_map = dict(zip(range(len(markers)-1), markers[:-1]))
+            marker_map = dict(zip(range(len(markers) - 1), markers[:-1]))
         for i, model in enumerate(models):
             tmp = NumpyFrame(
                 h2o.get_model(model).partial_plot(frame, cols=[column], plot=False,
@@ -1443,7 +1459,7 @@ def explain(
         qualitative_colormap="Dark2",  # type: str
         sequential_colormap="RdYlBu_r"  # type: str
 ):
-    # type: (...) -> OrderedDict
+    # type: (...) -> H2OExplanation
     """
     Generate model explanations on frame data set.
 
@@ -1456,7 +1472,7 @@ def explain(
     :param plot_overrides: overrides for individual model explanations
     :param figsize: figure size; passed directly to matplotlib
     :param render: if True, render the model explanations; otherwise model explanations are just returned
-    :return: OrderedDict containing the model explanations including headers and descriptions
+    :return: H2OExplanation containing the model explanations including headers and descriptions
     """
     is_aml, models_to_show, classification, multinomial_classification, multiple_models, \
     targets, tree_models_to_show = _process_models_input(models, frame)
@@ -1497,52 +1513,59 @@ def explain(
     else:
         display = _dont_display
 
-    result = OrderedDict()
+    result = H2OExplanation()
     if multiple_models and "leaderboard" in explanations:
-        result["leaderboard_header"] = display(Header("Leaderboard"))
-        result["leaderboard_description"] = display(Description("leaderboard"))
-        result["leaderboard"] = display(_get_leaderboard(models, frame))
+        result["leaderboard"] = H2OExplanation()
+        result["leaderboard"]["header"] = display(Header("Leaderboard"))
+        result["leaderboard"]["description"] = display(Description("leaderboard"))
+        result["leaderboard"]["data"] = display(_get_leaderboard(models, frame))
 
     if classification:
         if "confusion_matrix" in explanations:
-            result["confusion_matrix_header"] = display(Header("Confusion Matrix"))
-            result["confusion_matrix_description"] = display(Description("confusion_matrix"))
+            result["confusion_matrix"] = H2OExplanation()
+            result["confusion_matrix"]["header"] = display(Header("Confusion Matrix"))
+            result["confusion_matrix"]["description"] = display(Description("confusion_matrix"))
+            result["confusion_matrix"]["subexplanations"] = H2OExplanation()
             for model in models_to_show:
-                result[
-                    "confusion_matrix_subheader__{}".format(
-                        model.model_id
-                    )] = display(Header(model.model_id, 2))
+                result["confusion_matrix"]["subexplanations"][model.model_id] = H2OExplanation()
+                result["confusion_matrix"]["subexplanations"][model.model_id]["header"] = display(
+                    Header(model.model_id, 2))
+                result["confusion_matrix"]["subexplanations"][model.model_id]["plots"] = H2OExplanation()
                 if multinomial_classification:
-                    result["confusion_matrix__{}".format(model.model_id)] = display(
+                    result["confusion_matrix"]["subexplanations"][model.model_id]["plots"][model.model_id] = display(
                         model.confusion_matrix(
                             **_custom_args(plot_overrides.get("confusion_matrix"),
                                            data=frame)))
                 else:
-                    result["confusion_matrix__{}".format(model.model_id)] = display(
+                    result["confusion_matrix"]["subexplanations"][model.model_id]["plots"][model.model_id] = display(
                         model.confusion_matrix())
     else:
         if "residual_analysis" in explanations:
-            result["residual_analysis_header"] = display(Header("Residual Analysis"))
-            result["residual_analysis_description"] = display(Description("residual_analysis"))
+            result["residual_analysis"] = H2OExplanation()
+            result["residual_analysis"]["header"] = display(Header("Residual Analysis"))
+            result["residual_analysis"]["description"] = display(Description("residual_analysis"))
+            result["residual_analysis"]["plots"] = H2OExplanation()
             for model in models_to_show:
-                result[
-                    "residual_analysis__{}".format(model.model_id)
-                ] = display(residual_analysis(model,
-                                              frame,
-                                              **_custom_args(
-                                                  plot_overrides.get("residual_analysis"),
-                                                  figsize=figsize)))
+                result["residual_analysis"]["plots"][model.model_id] = display(
+                    residual_analysis(model,
+                                      frame,
+                                      **_custom_args(
+                                          plot_overrides.get(
+                                              "residual_analysis"),
+                                          figsize=figsize)))
 
     if len(models_with_varimp) > 0 and "variable_importance" in explanations:
-        result["variable_importance_header"] = Header("Variable Importance")
-        result["variable_importance_description"] = Description("variable_importance")
+        result["variable_importance"] = H2OExplanation()
+        result["variable_importance"]["header"] = Header("Variable Importance")
+        result["variable_importance"]["description"] = Description("variable_importance")
+        result["variable_importance"]["plots"] = H2OExplanation()
         for model in models_with_varimp:
             model.varimp_plot(server=True, **plot_overrides.get("varimp_plot", dict()))
             varimp_plot = plt.gcf()  # type: plt.Figure
             varimp_plot.set_figwidth(figsize[0])
             varimp_plot.set_figheight(figsize[1])
             varimp_plot.gca().set_title("Variable Importance for \"{}\"".format(model.model_id))
-            result["variable_importance__{}".format(model.model_id)] = display(varimp_plot)
+            result["variable_importance"]["plots"][model.model_id] = display(varimp_plot)
         if columns_of_interest is None:
             varimps = _consolidate_varimps(models_with_varimp[0])
             columns_of_interest = sorted(varimps.keys(), key=lambda k: -varimps[k])[
@@ -1555,21 +1578,23 @@ def explain(
 
     if is_aml or len(models_to_show) > 1:
         if "variable_importance_heatmap" in explanations:
-            result["variable_importance_heatmap_header"] = display(
+            result["variable_importance_heatmap"] = H2OExplanation()
+            result["variable_importance_heatmap"]["header"] = display(
                 Header("Variable Importance Heatmap"))
-            result["variable_importance_heatmap_description"] = display(
+            result["variable_importance_heatmap"]["description"] = display(
                 Description("variable_importance_heatmap"))
-            result["variable_importance_heatmap"] = display(variable_importance_heatmap(
+            result["variable_importance_heatmap"]["plots"] = display(variable_importance_heatmap(
                 models,
                 **_custom_args(plot_overrides.get("variable_importance_heatmap"),
                                colormap=sequential_colormap,
                                figsize=figsize)))
 
         if "model_correlation_heatmap" in explanations:
-            result["model_correlation_heatmap_header"] = display(Header("Model Correlation"))
-            result["model_correlation_heatmap_description"] = display(Description(
+            result["model_correlation_heatmap"] = H2OExplanation()
+            result["model_correlation_heatmap"]["header"] = display(Header("Model Correlation"))
+            result["model_correlation_heatmap"]["description"] = display(Description(
                 "model_correlation_heatmap"))
-            result["model_correlation_heatmap"] = display(model_correlation_heatmap(
+            result["model_correlation_heatmap"]["plots"] = display(model_correlation_heatmap(
                 models, **_custom_args(plot_overrides.get("model_correlation_heatmap"),
                                        frame=frame,
                                        colormap=sequential_colormap,
@@ -1578,10 +1603,12 @@ def explain(
     # SHAP Summary
     if len(tree_models_to_show) > 0 and not multinomial_classification \
             and "shap_summary" in explanations:
-        result["shap_summary_header"] = display(Header("SHAP Summary"))
-        result["shap_summary_description"] = display(Description("shap_summary"))
+        result["shap_summary"] = H2OExplanation()
+        result["shap_summary"]["header"] = display(Header("SHAP Summary"))
+        result["shap_summary"]["description"] = display(Description("shap_summary"))
+        result["shap_summary"]["plots"] = H2OExplanation()
         for tree_model in tree_models_to_show:
-            result["shap_summary__{}".format(tree_model.model_id)] = display(shap_summary_plot(
+            result["shap_summary"]["plots"][tree_model.model_id] = display(shap_summary_plot(
                 tree_model,
                 **_custom_args(
                     plot_overrides.get("shap_summary_plot"),
@@ -1592,28 +1619,37 @@ def explain(
     # PDP
     if "pdp" in explanations:
         if is_aml or multiple_models:
-            result["pdp_header"] = display(Header("Partial Dependence Plots"))
-            result["pdp_description"] = display(Description("pdp"))
+            result["pdp"] = H2OExplanation()
+            result["pdp"]["header"] = display(Header("Partial Dependence Plots"))
+            result["pdp"]["description"] = display(Description("pdp"))
+            result["pdp"]["plots"] = H2OExplanation()
             for column in columns_of_interest:
+                result["pdp"]["plots"][column] = H2OExplanation()
                 for target in targets:
-                    t = "_{}".format(target) if target else ""
-                    result["pdp__{}{}".format(column, t)] = display(partial_dependences(
+                    pdp = display(partial_dependences(
                         models, column=column, target=target,
                         **_custom_args(plot_overrides.get("partial_dependences"),
                                        frame=frame,
                                        figsize=figsize,
                                        colormap=qualitative_colormap)))
+                    if target is None:
+                        result["pdp"]["plots"][column] = pdp
+                    else:
+                        result["pdp"]["plots"][column][target[0]] = pdp
         else:
-            result["pdp_header"] = display(Header("Partial Dependence Plots"))
-            result["pdp_description"] = display(Description("pdp"))
+            result["pdp"] = H2OExplanation()
+            result["pdp"]["header"] = display(Header("Partial Dependence Plots"))
+            result["pdp"]["description"] = display(Description("pdp"))
+            result["pdp"]["plots"] = H2OExplanation()
             for column in columns_of_interest:
+                result["pdp"]["plots"][column] = H2OExplanation()
                 for target in targets:
                     reduced_frame = frame
                     is_factor = reduced_frame[column].isfactor()[0]
                     if is_factor:
-                        reduced_frame = reduced_frame[reduced_frame[column].isin(_get_top_n_levels(reduced_frame[column], 30)), :]
+                        reduced_frame = reduced_frame[
+                                        reduced_frame[column].isin(_get_top_n_levels(reduced_frame[column], 30)), :]
                         reduced_frame[column] = reduced_frame[column].ascharacter().asfactor()
-                    target_string = "_{}".format(target[0]) if target else ""
                     with no_progress():
                         models_to_show[0].partial_plot(cols=[column], server=True,
                                                        targets=target,
@@ -1624,20 +1660,27 @@ def explain(
                                                            nbins=20 if not is_factor
                                                            else 1 + reduced_frame[column].nlevels()[0]))
                     fig = plt.gcf()  # type: plt.Figure
-                    _add_histogram(reduced_frame, column, levels_order=[t.get_text() for t in fig.gca().get_xticklabels()])
+                    _add_histogram(reduced_frame, column,
+                                   levels_order=[t.get_text() for t in fig.gca().get_xticklabels()])
                     if is_factor:
                         plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
-                    result["pdp__{}{}".format(column, target_string)] = display(fig)
+                    if target is None:
+                        result["pdp"]["plots"][column] = display(fig)
+                    else:
+                        result["pdp"]["plots"][column][target[0]] = display(fig)
 
     # ICE
     if "ice" in explanations and not classification:
-        result["ice_header"] = display(Header("Individual Conditional Expectation"))
-        result["ice_description"] = display(Description("ice"))
+        result["ice"] = H2OExplanation()
+        result["ice"]["header"] = display(Header("Individual Conditional Expectation"))
+        result["ice"]["description"] = display(Description("ice"))
+        result["ice"]["plots"] = H2OExplanation()
         for column in columns_of_interest:
+            result["ice"]["plots"][columns] = H2OExplanation()
             for model in models_to_show:
+                result["ice"]["plots"][columns][model] = H2OExplanation()
                 for target in targets:
-                    t = "_{}".format(target[0]) if target else ""
-                    result["ice__{}{}".format(column, t)] = display(
+                    ice = display(
                         individual_conditional_expectations(
                             model, column=column,
                             target=target,
@@ -1647,6 +1690,10 @@ def explain(
                                 figsize=figsize,
                                 colormap=sequential_colormap
                             )))
+                    if target is None:
+                        result["ice"]["plots"][columns][model] = ice
+                    else:
+                        result["ice"]["plots"][columns][model][target[0]] = ice
 
     return result
 
@@ -1663,7 +1710,7 @@ def explain_row(
         figsize=(16, 9),  # type: Tuple[float]
         render=True,  # type: bool
 ):
-    # type: (...) -> OrderedDict
+    # type: (...) -> H2OExplanation
     """
     Generate model explanations on frame data set for a given instance.
 
@@ -1679,7 +1726,7 @@ def explain_row(
     :param figsize: figure size; passed directly to matplotlib
     :param render: if True, render the model explanations; otherwise model explanations are just returned
 
-    :return: OrderedDict containing the model explanations including headers and descriptions
+    :return: H2OExplanation containing the model explanations including headers and descriptions
     """
     is_aml, models_to_show, _, multinomial_classification, multiple_models, \
     targets, tree_models_to_show = _process_models_input(models, frame)
@@ -1716,33 +1763,37 @@ def explain_row(
     else:
         display = _dont_display
 
-    result = OrderedDict()
+    result = H2OExplanation()
     if multiple_models and "leaderboard" in explanations:
-        result["leaderboard_header"] = display(Header("Leaderboard"))
-        result["leaderboard_description"] = display(Description("leaderboard_row"))
-        result["leaderboard"] = display(_get_leaderboard(models, row_index=row_index,
+        result["leaderboard"] = H2OExplanation()
+        result["leaderboard"]["header"] = display(Header("Leaderboard"))
+        result["leaderboard"]["description"] = display(Description("leaderboard_row"))
+        result["leaderboard"]["data"] = display(_get_leaderboard(models, row_index=row_index,
                                                          **_custom_args(
                                                              plot_overrides.get("leaderboard"),
                                                              frame=frame)))
 
     if len(tree_models_to_show) > 0 and not multinomial_classification and \
             "shap_explanation" in explanations:
-        result["shap_explanation_header"] = display(Header("SHAP Explanation"))
-        result["shap_explanation_description"] = display(Description("shap_explanation"))
+        result["shap_explanation"] = H2OExplanation()
+        result["shap_explanation"]["header"] = display(Header("SHAP Explanation"))
+        result["shap_explanation"]["description"] = display(Description("shap_explanation"))
         for tree_model in tree_models_to_show:
-            result["shap_explanation__{}".format(tree_model.model_id)] = display(shap_explain_row(
+            result["shap_explanation"][tree_model.model_id] = display(shap_explain_row(
                 tree_model, row_index=row_index,
                 **_custom_args(plot_overrides.get("shap_explain_row"),
                                frame=frame, figsize=figsize)))
 
     if "ice" in explanations:
-        result["ice_header"] = display(Header("Individual Conditional Expectation"))
-        result["ice_description"] = display(Description("ice_row"))
+        result["ice"] = H2OExplanation()
+        result["ice"]["header"] = display(Header("Individual Conditional Expectation"))
+        result["ice"]["description"] = display(Description("ice_row"))
+        result["ice"]["plots"] = H2OExplanation()
         for column in columns_of_interest:
+            result["ice"]["plots"][column] = H2OExplanation()
             for target in targets:
-                target_string = "_{}".format(target[0]) if target else ""
                 if multiple_models:
-                    result["ice__{}{}".format(column, target_string)] = display(partial_dependences(
+                    ice = display(partial_dependences(
                         models, column=column,
                         row_index=row_index,
                         target=target,
@@ -1754,11 +1805,16 @@ def explain_row(
                             figsize=figsize,
                             colormap=qualitative_colormap
                         )))
+                    if target is None:
+                        result["ice"]["plots"][column] = ice
+                    else:
+                        result["ice"]["plots"][column][target[0]] = ice
                 else:
                     reduced_frame = frame
                     is_factor = reduced_frame[column].isfactor()[0]
                     if is_factor:
-                        reduced_frame = reduced_frame[reduced_frame[column].isin(_get_top_n_levels(reduced_frame[column], 30)), :]
+                        reduced_frame = reduced_frame[
+                                        reduced_frame[column].isin(_get_top_n_levels(reduced_frame[column], 30)), :]
                         reduced_frame[column] = reduced_frame[column].ascharacter().asfactor()
                     with no_progress():
                         models_to_show[0].partial_plot(
@@ -1775,9 +1831,13 @@ def explain_row(
                         column,
                         row_index
                     ))
-                    _add_histogram(reduced_frame, column, levels_order=[t.get_text() for t in fig.gca().get_xticklabels()])
+                    _add_histogram(reduced_frame, column,
+                                   levels_order=[t.get_text() for t in fig.gca().get_xticklabels()])
                     if is_factor:
                         plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
-                    result["ice__{}{}".format(column, target_string)] = display(fig)
+                    if target is None:
+                        result["ice"]["plots"][column] = display(fig)
+                    else:
+                        result["ice"]["plots"][column][target[0]] = display(fig)
 
     return result
