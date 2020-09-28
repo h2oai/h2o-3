@@ -11,8 +11,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 
-import java.util.Arrays;
-import java.util.Objects;
+import java.io.*;
 
 import static hex.tree.xgboost.matrix.MatrixFactoryUtils.setResponseAndWeightAndOffset;
 import static hex.tree.xgboost.matrix.MatrixFactoryUtils.setResponseWeightAndOffset;
@@ -85,55 +84,38 @@ public class SparseMatrixFactory {
             this.nonZeroElementsCount = nonZeroElementsCount;
         }
 
+        public SparseDMatrixProvider() {}
+
         @Override
         public DMatrix makeDMatrix() throws XGBoostError {
             return new DMatrix(rowHeaders, colIndices, sparseData, csr, shape, (int) actualRows + 1, nonZeroElementsCount);
         }
 
         @Override
-        public void print(int nrow) {
-            NestedArrayPointer r = new NestedArrayPointer();
-            NestedArrayPointer d = new NestedArrayPointer();
-            long elemIndex = 0;
-            r.increment();
-            for (int i = 0; i < (nrow > 0 ? nrow : actualRows); i++) {
-                System.out.print(i + ":\t");
-                long rowEnd = r.get(rowHeaders);
-                r.increment();
-                for (; elemIndex < rowEnd; elemIndex++) {
-                    System.out.print(d.get(colIndices) + ":" + d.get(sparseData) + "\t");
-                    d.increment();
-                }
-                System.out.print(response[i]);
-                System.out.println();
-            }
+        public void writeExternal(ObjectOutput out) throws IOException {
+            super.writeExternal(out);
+            out.writeObject(rowHeaders);
+            out.writeObject(colIndices);
+            out.writeObject(sparseData);
+            out.writeInt(csr.ordinal());
+            out.writeInt(shape);
+            out.writeLong(nonZeroElementsCount);
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            if (!super.equals(o)) return false;
-            SparseDMatrixProvider that = (SparseDMatrixProvider) o;
-            return shape == that.shape &&
-                nonZeroElementsCount == that.nonZeroElementsCount &&
-                Arrays.deepEquals(rowHeaders, that.rowHeaders) &&
-                Arrays.deepEquals(colIndices, that.colIndices) &&
-                Arrays.deepEquals(sparseData, that.sparseData) &&
-                csr == that.csr;
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            super.readExternal(in);
+            rowHeaders = (long[][]) in.readObject();
+            colIndices = (int[][]) in.readObject();
+            sparseData = (float[][]) in.readObject();
+            csr = DMatrix.SparseType.values()[in.readInt()];
+            shape = in.readInt();
+            nonZeroElementsCount = in.readLong();
         }
 
-        @Override
-        public int hashCode() {
-            int result = Objects.hash(super.hashCode(), csr, shape, nonZeroElementsCount);
-            result = 31 * result + Arrays.hashCode(rowHeaders);
-            result = 31 * result + Arrays.hashCode(colIndices);
-            result = 31 * result + Arrays.hashCode(sparseData);
-            return result;
-        }
     }
 
-    public static SparseDMatrixProvider toDMatrix(
+    private static SparseDMatrixProvider toDMatrix(
         SparseMatrix sm, SparseMatrixDimensions smd, int actualRows, int shape, float[] resp, float[] weights, float[] offsets) {
         return new SparseDMatrixProvider(
             sm._rowHeaders, sm._colIndices, sm._sparseData, DMatrix.SparseType.CSR, shape, smd._nonZeroElementsCount, 
@@ -177,17 +159,6 @@ public class SparseMatrixFactory {
             increment();
         }
 
-        public long get(long[][] dest) {
-            return dest[_row][_col];
-        }
-
-        public int get(int[][] dest) {
-            return dest[_row][_col];
-        }
-
-        public float get(float[][] dest) {
-            return dest[_row][_col];
-        }
     }
 
     public static int initializeFromChunkIds(
@@ -203,7 +174,7 @@ public class SparseMatrixFactory {
         return ArrayUtils.sum(fun._actualRows);
     }
 
-    private static class InitializeCSRMatrixFromChunkIdsMrFun extends MrFun<InitializeCSRMatrixFromChunkIdsMrFun> {
+    private static class InitializeCSRMatrixFromChunkIdsMrFun extends MrFun<CalculateCSRMatrixDimensionsMrFun> {
 
         Frame _frame;
         int[] _chunks;
@@ -259,7 +230,7 @@ public class SparseMatrixFactory {
                 if (weightChunk != null && weightChunk.atd(i) == 0) continue;
                 rowHeaderPointer.setAndIncrement(_matrix._rowHeaders, nonZeroCount);
                 _actualRows[chunkIdx]++;
-                for (int j = 0; j < _di._cats; j++) {
+                for (int j = 0; j < _di._cats; ++j) {
                     dataPointer.set(_matrix._sparseData, 1);
                     if (featChunks[j].isNA(i)) {
                         dataPointer.set(_matrix._colIndices, _di.getCategoricalId(j, Float.NaN));
@@ -269,7 +240,7 @@ public class SparseMatrixFactory {
                     dataPointer.increment();
                     nonZeroCount++;
                 }
-                for (int j = 0; j < _di._nums; j++) {
+                for (int j = 0; j < _di._nums; ++j) {
                     float val = (float) featChunks[_di._cats + j].atd(i);
                     if (val != 0) {
                         dataPointer.set(_matrix._sparseData, val);
@@ -299,7 +270,7 @@ public class SparseMatrixFactory {
             if (weight != -1 && chunks[weight].atd(i) == 0) continue;
             actualRows++;
             rowHeaderPointer.setAndIncrement(rowHeaders, nonZeroCount);
-            for (int j = 0; j < di._cats; j++) {
+            for (int j = 0; j < di._cats; ++j) {
                 dataPointer.set(data, 1); //one-hot encoding
                 if (chunks[j].isNA(i)) {
                     dataPointer.set(colIndex, di.getCategoricalId(j, Float.NaN));
@@ -309,7 +280,7 @@ public class SparseMatrixFactory {
                 dataPointer.increment();
                 nonZeroCount++;
             }
-            for (int j = 0; j < di._nums; j++) {
+            for (int j = 0; j < di._nums; ++j) {
                 float val = (float) chunks[di._cats + j].atd(i);
                 if (val != 0) {
                     dataPointer.set(data, val);
@@ -385,8 +356,10 @@ public class SparseMatrixFactory {
             // Rows with zero weights are going to be ignored
             if (weightColIndex != -1 && chunks[weightColIndex].atd(i) == 0) continue;
             rowIndicesCounts[0]++;
+
             nonZeroElementsCounts[0] += di._cats;
-            for (int j = 0; j < di._nums; j++) {
+
+            for (int j = 0; j < di._nums; ++j) {
                 double val = chunks[di._cats + j].atd(i);
                 if (val != 0) {
                     nonZeroElementsCounts[0]++;

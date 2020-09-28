@@ -58,7 +58,7 @@ fi
 #   build/classes/test - Test h2o core classes
 #   build/resources/main - Main resources (e.g. page.html)
 
-MAX_MEM=${H2O_JVM_XMX:-4g}
+MAX_MEM=${H2O_JVM_XMX:-2500m}
 
 # Check if coverage should be run
 if [ $JACOCO_ENABLED = true ]
