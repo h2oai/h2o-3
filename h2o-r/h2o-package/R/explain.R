@@ -787,12 +787,10 @@ print.H2OExplanation <- function(object, ..., render = "AUTO") {
     result <- htmltools::browsable(htmltools::tagList(.render(object, render = render)))
     if (.is_plotting_to_rnotebook()) {
       return(invisible(print(result)))
-    } else if (.is_using_jupyter()) {
-      return(result)
     }
     return(result)
   } else {
-    invisible(.render(object, render = render))
+    invisible(tryCatch(.render(object, render = render), error = function(e) message(e$message)))
   }
 }
 
