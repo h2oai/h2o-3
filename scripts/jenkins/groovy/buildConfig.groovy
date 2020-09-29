@@ -62,7 +62,6 @@ class BuildConfig {
   private String commitMessage
   private boolean buildHadoop
   private List hadoopDistributionsToBuild
-  private JenkinsMaster master
   private NodeLabels nodeLabels
   private LinkedHashMap changesMap = [
     (COMPONENT_PY): false,
@@ -93,7 +92,7 @@ class BuildConfig {
     }
     changesMap[COMPONENT_HADOOP] = buildHadoop
 
-    nodeLabels = NodeLabels.findByBuildURL(master)
+    nodeLabels = NodeLabels.findByBuildURL(context.env.BUILD_URL)
     supportedXGBEnvironments = [
       'centos7.3': [
         [name: 'CentOS 7.3 Minimal', dockerfile: 'xgb/centos/Dockerfile-centos-minimal', fromImage: 'centos:7.3.1611', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel()],
@@ -371,7 +370,7 @@ class BuildConfig {
       return gpuBenchmarkNodeLabel
     }
 
-    private static JenkinsMaster findByBuildURL(final String buildURL) {
+    private static NodeLabels findByBuildURL(final String buildURL) {
       final String name = buildURL.replaceAll('http://mr-0x', '').replaceAll(':8080.*', '')
 
       if (LABELS_MAP.containsKey(name)) {
