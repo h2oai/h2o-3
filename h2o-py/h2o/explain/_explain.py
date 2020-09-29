@@ -470,7 +470,11 @@ def shap_summary_plot(
         jitter=0.35  # type: float
 ):  # type: (...) -> plt.Figure
     """
-    Make a SHAP summary plot.
+    SHAP summary plot
+
+    SHAP summary plot shows contribution of features for each instance. The sum
+    of the feature contributions and the bias term is equal to the raw prediction
+    of the model, i.e., prediction before applying inverse link function.
 
     :param model: h2o tree model, such as DRF, XRT, GBM, XGBoost
     :param frame: H2OFrame
@@ -552,10 +556,16 @@ def shap_explain_row(
         top_n=10,  # type: int
         figsize=(16, 9),  # type: Union[List[float], Tuple[float]]
         plot_type="barplot",  # type: str
-        contribution_type=("positive", "negative")  # type: Union[Tuple[str], List[str]]
+        contribution_type="both"  # type: str
 ):  # type: (...) -> plt.Figure
     """
-    Make a SHAP row explanation.
+    SHAP local explanation
+
+    SHAP explanation shows contribution of features for a given instance. The sum
+    of the feature contributions and the bias term is equal to the raw prediction
+    of the model, i.e., prediction before applying inverse link function. H2O implements
+    TreeSHAP which when the features are correlated, can increase contribution of a feature
+    that had no influence on the prediction.
 
     :param model: h2o tree model, such as DRF, XRT, GBM, XGBoost
     :param frame: H2OFrame
@@ -565,7 +575,7 @@ def shap_explain_row(
                   for each contribution_type.
     :param figsize: figure size; passed directly to matplotlib
     :param plot_type: either "barplot" or "breakdown"
-    :param contribution_type: One of ["positive"], ["negative"], or ["positive", "negative"].
+    :param contribution_type: One of "positive", "negative", or "both".
                               Used only for plot_type="barplot".
     :return: a matplotlib figure object
     """
@@ -582,6 +592,11 @@ def shap_explain_row(
         with no_progress():
             prediction = model.predict(row)[0, "predict"]
         row = NumpyFrame(row)
+
+        if contribution_type == "both":
+            contribution_type = ["positive", "negative"]
+        else:
+            contribution_type = [contribution_type]
 
         picked_features = []
         if "positive" in contribution_type:
@@ -747,7 +762,11 @@ def partial_dependences(
         markers=["o", "v", "s", "P", "*", "D", "X", "^", "<", ">", "."]  # type: List[str]
 ):  # type: (...) -> plt.Figure
     """
-    Make a plot showing partial dependence / individual conditional expectation of multiple models.
+    Plot partial dependences of a variable across multiple models.
+
+    Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable
+    on the response. The effect of a variable is measured in change in the mean response.
+    PDP assumes independence between the feature for which is the PDP computed and the rest.
 
     :param models: H2O AutoML object
     :param frame: H2OFrame
@@ -854,7 +873,13 @@ def individual_conditional_expectations(
         colormap="plasma",  # type: str
 ):  # type: (...) -> plt.Figure
     """
-    Make a plot showing individual conditional expectations for deciles of the response_column.
+    Plot Individual Conditional Expectations (ICE) for each decile
+
+    Individual conditional expectations (ICE) plot gives a graphical depiction of the marginal
+    effect of a variable on the response. ICE plot is similar to partial dependence plot (PDP),
+    PDP shows the average effect of a feature while ICE plot shows the effect for a single
+    instance. The following plot shows the effect for each decile. In contrast to partial
+    dependence plot, ICE plot can provide more insight especially when there is stronger feature interaction.
 
     :param model: H2OModel
     :param frame: H2OFrame
@@ -1072,7 +1097,10 @@ def variable_importance_heatmap(
 ):
     # type: (...) -> plt.Figure
     """
-    Make a variable importance heatmap.
+    Variable Importance Heatmap across a group of models
+
+    Variable importance heatmap shows variable importances on multiple models.
+    By default, the models and variables are ordered by their similarity.
 
     :param models: H2O AutoML object
     :param top_n: use just top n models
@@ -1136,7 +1164,11 @@ def model_correlation_heatmap(
 ):
     # type: (...) -> plt.Figure
     """
-    Make a model correlation heatmap.
+    Model Prediction Correlation Heatmap
+
+    Model correlation matrix shows correlation between prediction of the models.
+    For classification, frequency of same predictions is used. By default, models
+    are ordered by their similarity.
 
     :param models: H2OAutoML object
     :param frame: H2OFrame
@@ -1212,7 +1244,12 @@ def residual_analysis(
 ):
     # type: (...) -> plt.Figure
     """
-    Make a residual analysis plot.
+    Residual Analysis
+
+    Do Residual Analysis and creates a plot "Fitted vs Residuals".
+    Ideally, residuals should be randomly distributed. Patterns in this plot can indicate
+    potential problems with the model selection, e.g., using simpler model than necessary,
+    not accounting for heteroscedasticity, autocorrelation, etc.
 
     :param model: H2OModel
     :param frame: H2OFrame
@@ -1556,8 +1593,8 @@ def explain(
 
     if len(models_with_varimp) > 0 and "variable_importance" in explanations:
         result["variable_importance"] = H2OExplanation()
-        result["variable_importance"]["header"] = Header("Variable Importance")
-        result["variable_importance"]["description"] = Description("variable_importance")
+        result["variable_importance"]["header"] = display(Header("Variable Importance"))
+        result["variable_importance"]["description"] = display(Description("variable_importance"))
         result["variable_importance"]["plots"] = H2OExplanation()
         for model in models_with_varimp:
             model.varimp_plot(server=True, **plot_overrides.get("varimp_plot", dict()))

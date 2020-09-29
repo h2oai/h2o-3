@@ -910,6 +910,10 @@ stat_count_or_bin <- function(use_count, ..., data) {
 
 #' SHAP Summary Plot
 #'
+#' SHAP summary plot shows contribution of features for each instance. The sum
+#' of the feature contributions and the bias term is equal to the raw prediction
+#' of the model, i.e., prediction before applying inverse link function.
+#'
 #' @param model An H2O model
 #' @param newdata An H2O Frame
 #' @param top_n_features Plot only top_n features
@@ -1037,24 +1041,26 @@ h2o.shap_summary_plot <-
   }
 
 #' SHAP Local Explanation
-#' 
-#' SHAP summary plot shows contribution of features for each instance. The sum
+#'
+#' SHAP explanation shows contribution of features for a given instance. The sum
 #' of the feature contributions and the bias term is equal to the raw prediction
-#' of the model, i.e., prediction before applying inverse link function.
+#' of the model, i.e., prediction before applying inverse link function. H2O implements
+#' TreeSHAP which when the features are correlated, can increase contribution of a feature
+#' that had no influence on the prediction..
 #'
 #' @param model An H2O model
 #' @param newdata An H2O Frame
 #' @param row_index Instance row index
 #' @param top_n_features Maximum number of features to show.
 #' @param plot_type Either "barplot" or "breakdown".
-#' @param contribution_type When plot_type == "barplot", plot one of "negative", "positive", c("negative", "positive")
+#' @param contribution_type When plot_type == "barplot", plot one of "negative", "positive", or "both" contributions
 #' @return A ggplot2 object
 #'
 #' @export
 h2o.shap_explain_row <-
   function(model, newdata, row_index, top_n_features = 10,
            plot_type = c("barplot", "breakdown"),
-           contribution_type = c("positive", "negative")) {
+           contribution_type = c("both", "positive", "negative")) {
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
     if (!.is_h2o_tree_model(model)) {
@@ -1063,15 +1069,9 @@ h2o.shap_explain_row <-
 
     plot_type <- match.arg(plot_type)
     if (plot_type == "barplot") {
-      if (length(contribution_type) == 0) {
-        stop("contribution_type must be specified for plot_type=\"barplot\"")
-      }
-      if (any(!contribution_type %in% c("positive", "negative"))) {
-        stop(
-          "Unknown contribution type(s): ",
-          contribution_type[!contribution_type %in% c("positive", "negative")]
-        )
-      }
+      contribution_type <- match.arg(contribution_type)
+      if (contribution_type == "both")
+        contribution_type <- c("positive", "negative")
     }
 
     x <- model@allparameters$x
