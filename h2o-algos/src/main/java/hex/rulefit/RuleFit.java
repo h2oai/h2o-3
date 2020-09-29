@@ -17,6 +17,7 @@ import water.api.schemas3.KeyV3;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.util.*;
@@ -188,8 +189,12 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 Key[] keys = new Key[depths.length];
                 // prepare rules
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.RULES.equals(_parms._model_type)) {
+                    long startAllTreesTime = System.nanoTime();
                     for (int modelId = 0; modelId < depths.length; modelId++) {
+                        long startModelTime = System.nanoTime();
                         SharedTreeModel treeModel = trainTreeModel(_parms._algorithm, depths[modelId]);
+                        long endModelTime = System.nanoTime() - startModelTime;
+                        Log.debug("Tree model n." + modelId + " trained in " + ((double)endModelTime) / 1E9 + "s.");
                         treeModels.add(treeModel);
     
                         paths = treeModel.scoreLeafNodeAssignment(_train, Model.LeafNodeAssignment.LeafNodeAssignmentType.Path, Key.make("path_" + modelId + _result));
@@ -200,6 +205,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                         DKV.put(paths);
                         DKV.put(treeModel);
                     }
+                    long endAllTreesTime = System.nanoTime() - startAllTreesTime;
+                    Log.debug("All tree models trained in " + ((double)endAllTreesTime) / 1E9 + "s.");
                 }
                 // prepare linear terms
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.LINEAR.equals(_parms._model_type)) {
@@ -219,8 +226,11 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                     glmParameters._lambda = getOptimalLambda();
                 }
 
+                long startGLMTime = System.nanoTime();
                 GLM job = new GLM(glmParameters);
                 glmModel = job.trainModel().get();
+                long endGLMTime = System.nanoTime() - startGLMTime;
+                Log.debug("GLM trained in " + ((double)endGLMTime) / 1E9 + "s.");
                 DKV.put(glmModel);
 
                 SharedTreeModel[] treeModelsArray = new SharedTreeModel[treeModels.size()];
