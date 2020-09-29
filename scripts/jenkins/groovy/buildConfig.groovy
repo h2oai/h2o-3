@@ -93,8 +93,7 @@ class BuildConfig {
     }
     changesMap[COMPONENT_HADOOP] = buildHadoop
 
-    master = JenkinsMaster.findByBuildURL(context.env.BUILD_URL)
-    nodeLabels = NodeLabels.findByJenkinsMaster(master)
+    nodeLabels = NodeLabels.findByBuildURL(master)
     supportedXGBEnvironments = [
       'centos7.3': [
         [name: 'CentOS 7.3 Minimal', dockerfile: 'xgb/centos/Dockerfile-centos-minimal', fromImage: 'centos:7.3.1611', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel()],
@@ -334,30 +333,15 @@ class BuildConfig {
     return "${DOCKER_REGISTRY}/opsh2oai/${HADOOP_IMAGE_NAME_PREFIX}-${distribution}-${version}${suffix}:${HADOOP_IMAGE_VERSION_TAG}".toString()
   }
 
-  static enum JenkinsMaster {
-    C1, // indicates we are running under mr-0xc1 master - master or nightly build
-    B4  // indicates we are running under mr-0xb4 master - PR build
-
-    private static JenkinsMaster findByName(final String name) {
-      switch(name.toLowerCase()) {
-        case 'c1':
-          return C1
-        case 'b4':
-          return B4
-        default:
-          throw new IllegalArgumentException(String.format("Master %s is unknown", name))
-      }
-    }
-
-    private static JenkinsMaster findByBuildURL(final String buildURL) {
-      final String name = buildURL.replaceAll('http://mr-0x', '').replaceAll(':8080.*', '')
-      return findByName(name)
-    }
-  }
-
   static enum NodeLabels {
-    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'mr-dl3'),
-    LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'docker')
+    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'mr-dl3'), //master or nightly build
+    LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'docker')  //PR build
+    
+    static Map<String, NodeLabels> LABELS_MAP = [
+            "c1": LABELS_C1,
+            "g1": LABELS_C1, //mr-0xg1 was set as alias to mr-0xc1
+            "b4": LABELS_B4
+    ]
 
     private final String defaultNodeLabel
     private final String benchmarkNodeLabel
@@ -387,15 +371,13 @@ class BuildConfig {
       return gpuBenchmarkNodeLabel
     }
 
-    private static findByJenkinsMaster(final JenkinsMaster master) {
-      switch (master) {
-        case JenkinsMaster.C1:
-          return LABELS_C1
-        case JenkinsMaster.B4:
-          return LABELS_B4
-        default:
-          throw new IllegalArgumentException(String.format("Master %s is unknown", master))
-      }
+  private static JenkinsMaster findByBuildURL(final String buildURL) {
+    final String name = buildURL.replaceAll('http://mr-0x', '').replaceAll(':8080.*', '')
+    
+    if (LABELS_MAP.containsKey(name)) {
+      return LABELS_MAP.get(name)
+    } else {
+      throw new IllegalArgumentException(String.format("Master %s (%s) is unknown", name, buildURL))
     }
   }
 
