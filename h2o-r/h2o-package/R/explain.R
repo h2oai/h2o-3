@@ -1037,18 +1037,23 @@ h2o.shap_summary_plot <-
   }
 
 #' SHAP Local Explanation
+#' 
+#' SHAP summary plot shows contribution of features for each instance. The sum
+#' of the feature contributions and the bias term is equal to the raw prediction
+#' of the model, i.e., prediction before applying inverse link function.
 #'
 #' @param model An H2O model
 #' @param newdata An H2O Frame
 #' @param row_index Instance row index
 #' @param top_n_features Maximum number of features to show.
 #' @param plot_type Either "barplot" or "breakdown".
-#' @param contribution_type When plot_type=="barplot", plot one of "negative", "positive", c("negative", "positive")
+#' @param contribution_type When plot_type == "barplot", plot one of "negative", "positive", c("negative", "positive")
 #' @return A ggplot2 object
 #'
 #' @export
 h2o.shap_explain_row <-
-  function(model, newdata, row_index, top_n_features = 10, plot_type = "barplot",
+  function(model, newdata, row_index, top_n_features = 10,
+           plot_type = c("barplot", "breakdown"),
            contribution_type = c("positive", "negative")) {
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
@@ -1056,6 +1061,7 @@ h2o.shap_explain_row <-
       stop("SHAP explain_row plot requires a tree-based model!")
     }
 
+    plot_type <- match.arg(plot_type)
     if (plot_type == "barplot") {
       if (length(contribution_type) == 0) {
         stop("contribution_type must be specified for plot_type=\"barplot\"")
@@ -1206,7 +1212,10 @@ h2o.shap_explain_row <-
   }
 
 
-#' Variable Importance Heatmap of Individual Models Created by H2OAutoML
+#' Variable Importance Heatmap across a group of models
+#' 
+#' Variable importance heatmap shows variable importances on multiple models.
+#' By default, the models and variables are ordered by their similarity.
 #'
 #' @param object An H2OAutoML object or list of models
 #' @param newdata An H2O Frame
@@ -1266,7 +1275,11 @@ h2o.variable_importance_heatmap <- function(object, newdata, top_n = 20) {
   return(p)
 }
 
-#' Model Prediction Correlation
+#' Model Prediction Correlation Heatmap
+#' 
+#' Model correlation matrix shows correlation between prediction of the models. "
+#' For classification, frequency of same predictions is used. By default, models "
+#' are ordered by their similarity.
 #'
 #' @param object An H2OAutoML object or list of models
 #' @param newdata An H2O Frame
@@ -1357,9 +1370,13 @@ h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
   return(p)
 }
 
-#' Do Residual Analysis.
-#' This create a plot "Fitted vs Residuals" and tries to fit a surrogate model
-#' if \code{use_surrogate_tree} is TRUE.
+#' Residual Analysis
+#'
+#' Do Residual Analysis and creates a plot "Fitted vs Residuals". 
+#' Ideally, residuals should be randomly distributed. Patterns in this plot can indicate 
+#' potential problems with the model selection, e.g., using simpler model than necessary, 
+#' not accounting for heteroscedasticity, autocorrelation, etc.
+#' 
 #'
 #' @param model An H2OModel
 #' @param newdata An H2OFrame
@@ -1398,12 +1415,17 @@ h2o.residual_analysis <- function(model, newdata) {
   return(p)
 }
 
-#' Make a plot of partial dependences of multiple models.
+#' Plot partial dependences of a variable across multiple models.
+#' 
+#' Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable
+#' on the response. The effect of a variable is measured in change in the mean response.
+#' PDP assumes independence between the feature for which is the PDP computed and the rest.
 #'
-#' @param object Either a list of models/model_ids or H2OAutoML.
+#' @param object Either a list of models/model_ids or an H2OAutoML object.
 #' @param newdata An H2OFrame.
 #' @param column A feature column name to inspect.
-#' @param best_of_family If TRUE, plot only the best model of each family; if FALSE, plot all models
+#' @param best_of_family If TRUE, plot only the best model of each algorithm family; 
+#' if FALSE, plot all models. Defaults to TRUE.
 #' @param target If multinomial, plot PDP just for \code{target} category.
 #' @param row_index Calculate Individual Conditional Expectation for row \code{row_index}
 #' @param max_factors Maximum number of factor levels to show.
@@ -1631,7 +1653,13 @@ h2o.partial_dependences <- function(object,
   })
 }
 
-#' Make a plot of Individual Conditional Expectations for each decile.
+#' Plot Individual Conditional Expectations (ICE) for each decile
+#' 
+#' Individual conditional expectations (ICE) plot gives a graphical depiction of the marginal 
+#' effect of a variable on the response. ICE plot is similar to partial dependence plot (PDP), 
+#' PDP shows the average effect of a feature while ICE plot shows the effect for a single 
+#' instance. The following plot shows the effect for each decile. In contrast to partial 
+#' dependence plot, ICE plot can provide more insight especially when there is stronger feature interaction.
 #'
 #' @param model An H2OModel.
 #' @param newdata An H2OFrame.
