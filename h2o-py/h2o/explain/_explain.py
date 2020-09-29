@@ -1142,8 +1142,8 @@ def variable_importance_heatmap(
     Variable importance heatmap shows variable importances on multiple models.
     By default, the models and variables are ordered by their similarity.
 
-    :param models: H2O AutoML object
-    :param top_n: use just top n models
+    :param models: H2O AutoML object or list of models
+    :param top_n: use just top n models (applies only when used with H2OAutoML)
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param cluster: if True, cluster the models and variables
     :param colormap: colormap to use
@@ -1156,6 +1156,8 @@ def variable_importance_heatmap(
             h2o.get_model(model_id)
             for model_id in model_ids[:min(top_n, len(model_ids))]
         ]
+    else:
+        top_n = len(models)
     # Filter out models that don't have varimp
     models = [model for model in models if _has_varimp(model.model_id)]
     models = models[:min(len(models), top_n)]
@@ -1210,9 +1212,9 @@ def model_correlation_heatmap(
     For classification, frequency of same predictions is used. By default, models
     are ordered by their similarity.
 
-    :param models: H2OAutoML object
+    :param models: H2OAutoML object or a list of models
     :param frame: H2OFrame
-    :param top_n: show just top n models
+    :param top_n: show just top n models (applies only when used with H2OAutoML)
     :param cluster: if True, cluster the models
     :param triangular: make the heatmap triangular
     :param figsize: figsize: figure size; passed directly to matplotlib
@@ -1226,6 +1228,8 @@ def model_correlation_heatmap(
             h2o.get_model(model_id)
             for model_id in model_ids[:min(top_n, len(model_ids))]
         ]
+    else:
+        top_n = len(models)
 
     is_classification = frame[models[0].actual_params["response_column"]].isfactor()[0]
 

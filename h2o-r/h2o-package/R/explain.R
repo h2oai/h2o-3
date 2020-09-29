@@ -105,7 +105,7 @@ with_no_h2o_progress <- function(expr) {
 #' @param newdata An H2OFrame with the same format as training frame
 #' @param require_single_model If true, make sure we were provided only one model
 #' @param require_multiple_models If true, make sure we were provided at least two models
-#' @param top_n If set, don't return more than top_n models
+#' @param top_n_from_AutoML If set, don't return more than top_n models (applies only for AutoML object)
 #' @param only_with_varimp If TRUE, return only models that have variable importance
 #' @param best_of_family If TRUE, return only the best of family models; if FALSE return all models in \code{object}
 #'
@@ -114,7 +114,7 @@ with_no_h2o_progress <- function(expr) {
 .process_models_or_automl <- function(object, newdata,
                                       require_single_model = FALSE,
                                       require_multiple_models = FALSE,
-                                      top_n = NA,
+                                      top_n_from_AutoML = NA,
                                       only_with_varimp = FALSE,
                                       best_of_family = FALSE) {
   if ("H2OFrame" %in% class(object)) {
@@ -158,13 +158,9 @@ with_no_h2o_progress <- function(expr) {
       object$models <- Filter(function(model) .has_varimp(model@model_id), object$models)
     }
 
-    if (!is.na(top_n)) {
+    if (!is.na(top_n_from_AutoML)) {
       if (object$is_automl) {
-        object$models <- head(object$models, n = min(top_n, length(object$models)))
-      } else {
-        object$models <- head(object$models[order(unlist(sapply(object$models, .get_MSE)))],
-                              n = min(top_n, length(object$models))
-        )
+        object$models <- head(object$models, n = min(top_n_from_AutoML, length(object$models)))
       }
     }
 
@@ -196,16 +192,16 @@ with_no_h2o_progress <- function(expr) {
       }
       models <- new_models
     }
-    if (is.na(top_n)) {
-      top_n <- length(models)
+    if (is.na(top_n_from_AutoML)) {
+      top_n_from_AutoML <- length(models)
     } else {
-      top_n <- min(top_n, length(models))
+      top_n_from_AutoML <- min(top_n_from_AutoML, length(models))
     }
     return(make_models_info(
       leader = object@leader,
       is_automl = TRUE,
       leaderboard = as.data.frame(h2o.get_leaderboard(object, extra_columns = "ALL")),
-      models = sapply(head(models, top_n), h2o.getModel),
+      models = sapply(head(models, top_n_from_AutoML), h2o.getModel),
       is_classification = is.factor(y_col),
       is_multinomial_classification = is.factor(y_col) && h2o.nlevels(y_col) > 2,
       x = object@leader@allparameters$x,
@@ -249,13 +245,7 @@ with_no_h2o_progress <- function(expr) {
         object <- Filter(function(model) .has_varimp(model), .model_ids(object))
       }
 
-      if (is.na(top_n)) {
-        top_n <- length(object)
-      } else {
-        top_n <- min(top_n, length(object))
-      }
-
-      object <- sapply(head(object, n = top_n), function(m) {
+      object <- sapply(object, function(m) {
         if (is.character(m)) {
           h2o.getModel(m)
         } else {
@@ -1310,7 +1300,7 @@ h2o.variable_importance_heatmap <- function(object, newdata, top_n = 20) {
   .data <- NULL
   models_info <- .process_models_or_automl(object, newdata,
                                            require_multiple_models = TRUE,
-                                           top_n = 20, only_with_varimp = TRUE
+                                           top_n_from_AutoML = top_n, only_with_varimp = TRUE
   )
   models <- Filter(function(m) .has_varimp(m@model_id), models_info$models)
   varimps <- lapply(models, .varimp, newdata)
@@ -1375,12 +1365,8 @@ h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
                                           cluster = TRUE, triangular = TRUE) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
-  models_info <- .process_models_or_automl(object, newdata, require_multiple_models = TRUE, top_n = top_n)
-
-  if (is.finite(top_n)) {
-    models <- head(models_info$models, n = min(length(models_info$models), top_n))
-  }
-
+  models_info <- .process_models_or_automl(object, newdata, require_multiple_models = TRUE, top_n_from_AutoML = top_n)
+  models <- models_info$models
   with_no_h2o_progress({
     preds <-
       sapply(models, function(m, df) {
