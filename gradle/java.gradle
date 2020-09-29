@@ -14,6 +14,10 @@ java {
     withJavadocJar()
 }
 
+javadoc {
+    options.encoding = 'UTF-8'
+}
+
 task testJar(type: Jar, dependsOn: testClasses, group: "build") {
     classifier = 'test'
     from sourceSets.test.output
