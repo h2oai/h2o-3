@@ -8,7 +8,7 @@ metadata:
 spec:
   serviceName: h2o-service
   podManagementPolicy: "Parallel"
-  replicas: {{ .Values.nodeCount }}
+  replicas: {{ .Values.h2o.nodeCount }}
   selector:
     matchLabels:
   {{- include "h2o-helm.selectorLabels" . | nindent 6 }}
@@ -42,7 +42,7 @@ spec:
             - name: H2O_NODE_LOOKUP_TIMEOUT
               value: '{{ .Values.h2o.lookupTimeout }}'
             - name: H2O_NODE_EXPECTED_COUNT
-              value: '{{ .Values.nodeCount }}'
+              value: '{{ .Values.h2o.nodeCount }}'
             - name: H2O_KUBERNETES_API_PORT
               value: '{{ .Values.h2o.kubernetesApiPort }}'
       {{- with .Values.nodeSelector }}

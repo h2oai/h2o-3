@@ -2,8 +2,6 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-nodeCount: 1
-
 image:
   repository: ""
   name: h2oai/h2o-open-source-k8s
@@ -12,6 +10,7 @@ image:
   tag: ""
   
 h2o:
+  nodeCount: 1
   memoryPercentage: 50
   lookupTimeout: 180 # Three minutes by default are very generous amount of time for clustering with parallel pod management
   kubernetesApiPort: 8080
