@@ -129,7 +129,7 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         protected void scoreAndBuildTrees(boolean oob) {
             IsolationTreeForkJoinTask [] iTreeTasks = new IsolationTreeForkJoinTask[_parms._ntrees];
             for (int t = 0; t < _parms._ntrees; t++) {
-                iTreeTasks[t] = new IsolationTreeForkJoinTask();
+                iTreeTasks[t] = new IsolationTreeForkJoinTask(t);
                 H2O.submitTask(iTreeTasks[t]);
             }
             for (int t = 0; t < _parms._ntrees; t++) {
@@ -166,12 +166,14 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         private int _heightLimit;
         private long _seed;
         private int _extensionLevel;
+        private int _treeNum;
 
-        public IsolationTree(Key<Frame> frame, int _heightLimit, long _seed, int _extensionLevel) {
+        public IsolationTree(Key<Frame> frame, int _heightLimit, long _seed, int _extensionLevel, int _treeNum) {
             this._frameKey = frame;
             this._heightLimit = _heightLimit;
             this._seed = _seed;
             this._extensionLevel = _extensionLevel;
+            this._treeNum = _treeNum;
 
             int maxNumNodesInTree = (int) Math.pow(2, _heightLimit) - 1;
             this._nodes = new Node[maxNumNodesInTree]; 
@@ -183,44 +185,50 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
          * Therefore nodeFrames are removed from DKV after filtering.
          */
         public void buildTree() {
-            Frame frame = DKV.get(_frameKey).get();
-            _nodes[0] = new Node(frame._key, frame.numRows(), 0);
-            for (int i = 0; i < _nodes.length; i++) {
-                Node node = _nodes[i];
-                if (node == null || node._external) {
-                    continue;
-                }
-                Frame nodeFrame = node.getFrame();
-                int currentHeight = node._height;
-                if (node._height >= _heightLimit || nodeFrame.numRows() <= 1) {
-                    node._external = true;
-                    node._numRows = nodeFrame.numRows();
-                    node._height = currentHeight;
-                    DKV.remove(node._frameKey);
-                } else {
-                    currentHeight++;
-
-                    node._p = VecUtils.uniformDistrFromFrame(nodeFrame, _seed + i);
-                    node._n = ArrayUtils.gaussianVector(
-                            nodeFrame.numCols(), _seed + i, nodeFrame.numCols() - _extensionLevel - 1);
-                    Frame sub = MatrixUtils.subtractionMtv(nodeFrame, node._p);
-                    Vec mul = MatrixUtils.productMtvMath(sub, node._n);
-                    Frame left = new FilterLtTask(mul, 0)
-                            .doAll(nodeFrame.types(), nodeFrame)
-                            .outputFrame(Key.make(), nodeFrame._names, nodeFrame.domains());
-                    Frame right = new FilterGteTask(mul, 0)
-                            .doAll(nodeFrame.types(), nodeFrame)
-                            .outputFrame(Key.make(), nodeFrame._names, nodeFrame.domains());
-                    DKV.remove(nodeFrame._key);
-
-                    if (rightChildIndex(i) < _nodes.length) {
-                        _nodes[leftChildIndex(i)] = new Node(left._key, left.numRows(), currentHeight);
-                        _nodes[rightChildIndex(i)] = new Node(right._key, right.numRows(), currentHeight);
+            try {
+                Scope.enter();
+                Log.info("building tree");
+                Frame frame = DKV.get(_frameKey).get();
+                Scope.track(frame);
+                _nodes[0] = new Node(frame._key, frame.numRows(), 0);
+                for (int i = 0; i < _nodes.length; i++) {
+                    Log.info(i, " from ", _nodes.length, " is being prepared on tree ", _treeNum);
+                    Node node = _nodes[i];
+                    if (node == null || node._external) {
+                        continue;
+                    }
+                    Frame nodeFrame = node.getFrame();
+                    Scope.track(nodeFrame);
+                    int currentHeight = node._height;
+                    if (node._height >= _heightLimit || nodeFrame.numRows() <= 1) {
+                        node._external = true;
+                        node._numRows = nodeFrame.numRows();
+                        node._height = currentHeight;
                     } else {
-                        DKV.remove(left._key);
-                        DKV.remove(right._key);
+                        currentHeight++;
+
+                        node._p = VecUtils.uniformDistrFromFrame(nodeFrame, _seed + i);
+                        node._n = ArrayUtils.gaussianVector(
+                                nodeFrame.numCols(), _seed + i, nodeFrame.numCols() - _extensionLevel - 1);
+                        Frame sub = MatrixUtils.subtractionMtv(nodeFrame, node._p);
+                        Vec mul = MatrixUtils.productMtvMath(sub, node._n);
+                        Frame left = new FilterLtTask(mul, 0)
+                                .doAll(nodeFrame.types(), nodeFrame)
+                                .outputFrame(Key.make(), nodeFrame._names, nodeFrame.domains());
+                        Frame right = new FilterGteTask(mul, 0)
+                                .doAll(nodeFrame.types(), nodeFrame)
+                                .outputFrame(Key.make(), nodeFrame._names, nodeFrame.domains());
+                        Scope.track(left, right);
+
+                        if (rightChildIndex(i) < _nodes.length) {
+                            _nodes[leftChildIndex(i)] = new Node(left._key, left.numRows(), currentHeight);
+                            _nodes[rightChildIndex(i)] = new Node(right._key, right.numRows(), currentHeight);
+                        } 
                     }
                 }
+            }
+            finally {
+                Scope.exit();
             }
         }
         
@@ -325,6 +333,12 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
     private class IsolationTreeForkJoinTask extends H2O.H2OCountedCompleter<IsolationTreeForkJoinTask> {
 
         private ExtendedIsolationForest.IsolationTree iTree;
+        private int treeNum;
+        
+        public IsolationTreeForkJoinTask(int treeNum) {
+            super();
+            this.treeNum = treeNum;     
+        }
 
         @Override
         public void compute2() {
@@ -341,8 +355,9 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
 
                 Frame subSample = new SubSampleTask(_parms._sample_size, _parms._seed + randomUnit)
                         .doAll(subTypes, subFrame).outputFrame(Key.make(), subNames, subDomains);
-
-                iTree = new IsolationTree(subSample._key, heightLimit, _parms._seed + randomUnit, _parms.extension_level);
+                Scope.track(subSample);
+                Log.info("subsample prepared");
+                iTree = new IsolationTree(subSample._key, heightLimit, _parms._seed + randomUnit, _parms.extension_level, treeNum);
                 iTree.buildTree();
                 if (Log.isLoggingFor(Log.DEBUG)) {
                     iTree.print();
@@ -365,6 +380,7 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         @Override
         public void onCompletion(CountedCompleter caller) {
             _job.update(1);
+            Log.info("Tree ", treeNum, " is done.");
         }
 
         @Override
