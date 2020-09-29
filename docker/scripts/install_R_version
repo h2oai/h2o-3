@@ -77,7 +77,7 @@ echo "Installing dependencies for R ${R_VERSION}"
   )) \
 " 2>&1 | tee R.install.1.log
 checkRInstallLog R.install.1.log
-# Latest XGBoost (from source) requires c++14, possibly causing troubles
+# Latest XGBoost (from source) does not compile; see https://0xdata.atlassian.net/browse/PUBDEV-7812
 #/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); \
 #  install.packages(c('xgboost'), type='source') \
 #" 2>&1 | tee R.install.2.log
@@ -108,7 +108,12 @@ checkRInstallLog R.install.3.log
   install_version('Hmisc', version = '4.3-0'); \
 " 2>&1 | tee R.install.4.log
 checkRInstallLog R.install.4.log
+
 # dependecies from GitHub
+# The R_REMOTES_UPGRADE=never disables automatic upgrade of dependencies.
+# mainly because of systemfonts that is not supported in newer versions by R 3.3
+# is also a dependency of pkgdown which would try otherwise to upgrade it to a version
+# which doesn't support R < 3.6
 R_REMOTES_UPGRADE=never
 /usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); library(devtools); \
   install_version('systemfonts', version = '0.2.3'); \
