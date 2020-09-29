@@ -336,7 +336,7 @@ class BuildConfig {
   static enum NodeLabels {
     LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'mr-dl3'), //master or nightly build
     LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'docker')  //PR build
-    
+
     static Map<String, NodeLabels> LABELS_MAP = [
             "c1": LABELS_C1,
             "g1": LABELS_C1, //mr-0xg1 was set as alias to mr-0xc1
@@ -371,16 +371,16 @@ class BuildConfig {
       return gpuBenchmarkNodeLabel
     }
 
-  private static JenkinsMaster findByBuildURL(final String buildURL) {
-    final String name = buildURL.replaceAll('http://mr-0x', '').replaceAll(':8080.*', '')
-    
-    if (LABELS_MAP.containsKey(name)) {
-      return LABELS_MAP.get(name)
-    } else {
-      throw new IllegalArgumentException(String.format("Master %s (%s) is unknown", name, buildURL))
+    private static JenkinsMaster findByBuildURL(final String buildURL) {
+      final String name = buildURL.replaceAll('http://mr-0x', '').replaceAll(':8080.*', '')
+
+      if (LABELS_MAP.containsKey(name)) {
+        return LABELS_MAP.get(name)
+      } else {
+        throw new IllegalArgumentException(String.format("Master %s (%s) is unknown", name, buildURL))
+      }
     }
   }
-
 }
 
 return this
