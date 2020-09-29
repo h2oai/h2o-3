@@ -110,7 +110,7 @@ class Description:
                 "effect of a variable on the response for a given row. ICE plot is similar to partial "
                 "dependence plot (PDP), PDP shows the average effect of a feature while ICE plot shows "
                 "the effect for a single instance.",
-        shap_explanation="SHAP explanation shows contribution of features for a given instance. The sum "
+        shap_explain_row="SHAP explanation shows contribution of features for a given instance. The sum "
                          "of the feature contributions and the bias term is equal to the raw prediction "
                          "of the model, i.e., prediction before applying inverse link function. H2O implements "
                          "TreeSHAP which when the features are correlated, can increase contribution of a feature "
@@ -1787,7 +1787,7 @@ def explain_row(
             warnings.warn("No model with variable importance. Selecting all features to explain.")
             columns_of_interest = _get_xy(models_to_show[0])[0]
 
-    possible_explanations = ["leaderboard", "shap_explanation", "ice"]
+    possible_explanations = ["leaderboard", "shap_explain_row", "ice"]
 
     explanations = _process_explanation_lists(
         exclude_explanations=exclude_explanations,
@@ -1811,12 +1811,12 @@ def explain_row(
                                                              frame=frame)))
 
     if len(tree_models_to_show) > 0 and not multinomial_classification and \
-            "shap_explanation" in explanations:
-        result["shap_explanation"] = H2OExplanation()
-        result["shap_explanation"]["header"] = display(Header("SHAP Explanation"))
-        result["shap_explanation"]["description"] = display(Description("shap_explanation"))
+            "shap_explain_row" in explanations:
+        result["shap_explain_row"] = H2OExplanation()
+        result["shap_explain_row"]["header"] = display(Header("SHAP Explanation"))
+        result["shap_explain_row"]["description"] = display(Description("shap_explain_row"))
         for tree_model in tree_models_to_show:
-            result["shap_explanation"][tree_model.model_id] = display(shap_explain_row(
+            result["shap_explain_row"][tree_model.model_id] = display(shap_explain_row(
                 tree_model, row_index=row_index,
                 **_custom_args(plot_overrides.get("shap_explain_row"),
                                frame=frame, figsize=figsize)))

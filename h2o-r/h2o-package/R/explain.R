@@ -740,7 +740,7 @@ with_no_h2o_progress <- function(expr) {
            "effect of a variable on the response for a given row. ICE plot is similar to partial ",
            "dependence plot (PDP), PDP shows the average effect of a feature while ICE plot shows ",
            "the effect for a single instance."),
-           shap_explanation=paste0("SHAP explanation shows contribution of features for a given instance. The sum ",
+           shap_explain_row=paste0("SHAP explanation shows contribution of features for a given instance. The sum ",
            "of the feature contributions and the bias term is equal to the raw prediction ",
            "of the model, i.e., prediction before applying inverse link function. H2O implements ",
            "TreeSHAP which when the features are correlated, can increase contribution of a feature ",
@@ -2151,7 +2151,7 @@ h2o.explain_row <- function(object,
 
   possible_explanations <- c(
     "leaderboard",
-    "shap_explanation",
+    "shap_explain_row",
     "ice"
   )
 
@@ -2222,17 +2222,17 @@ h2o.explain_row <- function(object,
       data = .leaderboard_for_row(models_info, newdata, row_index))
   }
 
-  if (!"shap_explanation" %in% skip_explanations && !models_info$is_multinomial_classification) {
+  if (!"shap_explain_row" %in% skip_explanations && !models_info$is_multinomial_classification) {
     num_of_tree_models <- sum(sapply(models_info$models, .is_h2o_tree_model))
     if (num_of_tree_models > 0) {
-      result$shap_explanation <- list(
+      result$shap_explain_row <- list(
         header = .h2o_explanation_header("SHAP explanation"),
-        description = .describe("shap_explanation"),
+        description = .describe("shap_explain_row"),
         plots = list()
       )
       tree_models <- Filter(.is_h2o_tree_model, models_info$models)
       for (m in tree_models) {
-        result$shap_explanation$plots[[m@model_id]] <- .customized_call(
+        result$shap_explain_row$plots[[m@model_id]] <- .customized_call(
           h2o.shap_explain_row,
           model = m,
           newdata = newdata,
