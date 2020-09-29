@@ -916,7 +916,7 @@ stat_count_or_bin <- function(use_count, ..., data) {
 #'
 #' @param model An H2O model
 #' @param newdata An H2O Frame
-#' @param top_n_features Plot only top_n features
+#' @param columns Either a vector of columns or maximum number of columns to plot
 #' @param sample_size Maximum number of observations to be plotted
 #'
 #' @return A ggplot2 object
@@ -924,7 +924,7 @@ stat_count_or_bin <- function(use_count, ..., data) {
 h2o.shap_summary_plot <-
   function(model,
            newdata,
-           top_n_features = 20,
+           columns = 20,
            sample_size = 1000) {
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
@@ -1017,8 +1017,34 @@ h2o.shap_summary_plot <-
     )
 
     features <- levels(contr[["feature"]])
-    if (length(features) > top_n_features) {
-      features <- features[seq(from = length(features), to = length(features) - top_n_features)]
+    if (is.numeric(columns)) {
+      if (length(features) > columns) {
+        features <- features[seq(from = length(features), to = length(features) - columns)]
+        contr <- contr[contr[["feature"]] %in% features,]
+      }
+    } else {
+      encoded_columns <- features
+      features <- c()
+      for (col in columns) {
+        possible_column_name <- c(col, make.names(col),  make.names(gsub(" ", "", col)))
+        found <- FALSE
+        for (pcol in possible_column_name){
+          if (pcol %in% encoded_columns) {
+            features <- c(features, pcol)
+            found <- TRUE
+            break
+          }
+        }
+        if (!found) {  # possibly contains a category name as well
+          for (pcol in possible_column_name) {
+            prefix_matches <- startsWith(encoded_columns, paste0(pcol, "."))
+            if (any(prefix_matches)) {
+              features <- c(features, encoded_columns[prefix_matches])
+              break
+            }
+          }
+        }
+      }
       contr <- contr[contr[["feature"]] %in% features,]
     }
 
@@ -1051,14 +1077,16 @@ h2o.shap_summary_plot <-
 #' @param model An H2O model
 #' @param newdata An H2O Frame
 #' @param row_index Instance row index
-#' @param top_n_features Maximum number of features to show.
+#' @param columns: list of columns or integer specifying the maximum number of columns to show.
+#'                 When plot_type="barplot" and columns is an integer, then `columns` features will be chosen
+#'                 for each contribution_type
 #' @param plot_type Either "barplot" or "breakdown".
 #' @param contribution_type When plot_type == "barplot", plot one of "negative", "positive", or "both" contributions
 #' @return A ggplot2 object
 #'
 #' @export
 h2o.shap_explain_row <-
-  function(model, newdata, row_index, top_n_features = 10,
+  function(model, newdata, row_index, columns = 10,
            plot_type = c("barplot", "breakdown"),
            contribution_type = c("both", "positive", "negative")) {
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
@@ -1106,19 +1134,44 @@ h2o.shap_explain_row <-
 
       ordered_features <- contributions[order(contributions)]
       features <- character()
-      if ("positive" %in% contribution_type) {
-        positive_features <- names(ordered_features)[ordered_features > 0]
-        features <- c(features, tail(positive_features, n = min(
-          top_n_features,
-          length(positive_features)
-        )))
-      }
-      if ("negative" %in% contribution_type) {
-        negative_features <- names(ordered_features)[ordered_features < 0]
-        features <- c(features, head(negative_features, n = min(
-          top_n_features,
-          length(negative_features)
-        )))
+      if (is.numeric(columns)) {
+        if ("positive" %in% contribution_type) {
+          positive_features <- names(ordered_features)[ordered_features > 0]
+          features <- c(features, tail(positive_features, n = min(
+            columns,
+            length(positive_features)
+          )))
+        }
+        if ("negative" %in% contribution_type) {
+          negative_features <- names(ordered_features)[ordered_features < 0]
+          features <- c(features, head(negative_features, n = min(
+            columns,
+            length(negative_features)
+          )))
+        }
+      } else {
+        encoded_columns <- names(ordered_features)
+        features <- c()
+        for (col in columns) {
+          possible_column_name <- c(col, make.names(col),  make.names(gsub(" ", "", col)))
+          found <- FALSE
+          for (pcol in possible_column_name){
+            if (pcol %in% encoded_columns) {
+              features <- c(features, pcol)
+              found <- TRUE
+              break
+            }
+          }
+          if (!found) {  # possibly contains a category name as well
+            for (pcol in possible_column_name) {
+              prefix_matches <- startsWith(encoded_columns, paste0(pcol, "."))
+              if (any(prefix_matches)) {
+                features <- c(features, encoded_columns[prefix_matches])
+                break
+              }
+            }
+          }
+        }
       }
 
       if (length(features) == 0) {
@@ -1128,7 +1181,7 @@ h2o.shap_explain_row <-
           ""
         })
       }
-      contributions <- contributions[, features]
+      contributions <- contributions[, features, drop = FALSE]
       contributions <- data.frame(contribution = t(contributions))
       contributions$feature <- paste0(
         row.names(contributions), "=",
@@ -1162,13 +1215,42 @@ h2o.shap_explain_row <-
       contributions <- contributions[, names(contributions)[order(abs(t(contributions)))]]
       bias_term <- contributions$BiasTerm
       contributions <- contributions[, names(contributions) != "BiasTerm"]
-      if (ncol(contributions) > top_n_features) {
-        rest <- rowSums(contributions[, names(contributions)[seq(from = 1, to = ncol(contributions) - top_n_features, by = 1)]])
-        contributions <- contributions[, tail(names(contributions), n = top_n_features)]
+      if (is.numeric(columns)) {
+        if (ncol(contributions) > columns) {
+          rest <- rowSums(contributions[, names(contributions)[seq(from = 1, to = ncol(contributions) - columns, by = 1)]])
+          contributions <- contributions[, tail(names(contributions), n = columns), drop = FALSE]
+          contributions[["rest_of_the_features"]] <- rest
+        }
+      } else {
+        encoded_columns <- names(contributions)
+        features <- c()
+        for (col in columns) {
+          possible_column_name <- c(col, make.names(col), make.names(gsub(" ", "", col)))
+          found <- FALSE
+          for (pcol in possible_column_name) {
+            if (pcol %in% encoded_columns) {
+              features <- c(features, pcol)
+              found <- TRUE
+              break
+            }
+          }
+          if (!found) {  # possible contains a category name as well
+            for (pcol in possible_column_name) {
+              prefix_matches <- startsWith(encoded_columns, paste0(pcol, "."))
+              if (any(prefix_matches)) {
+                features <- c(features, encoded_columns[prefix_matches])
+                break
+              }
+            }
+          }
+        }
+        rest <- rowSums(contributions[, !names(contributions) %in% features])
+        contributions <- contributions[, features, drop = FALSE]
         contributions[["rest_of_the_features"]] <- rest
       }
-      contributions <- t(contributions)
 
+      contributions <- t(contributions)
+      contributions <- as.matrix(contributions[order(contributions[,1]),])
       contributions <- data.frame(
         id = seq_along(contributions),
         id_next = c(seq_len(length(contributions) - 1) + 1, length(contributions)),
@@ -1816,7 +1898,7 @@ h2o.individual_conditional_expectations <- function(model,
 #'   (Mutually exclusive with exclude_explanations)
 #' @param exclude_explanations Exclude specified model explanations.
 #' @param plot_overrides Overrides for individual model explanations, e.g.,
-#'   list(shap_summary_plot = list(top_n_features = 50))
+#'   list(shap_summary_plot = list(columns = 50))
 #'
 #' @return List of outputs with class "explanation"
 #' @export
@@ -2134,7 +2216,7 @@ h2o.explain <- function(object,
 #'   (Mutually exclusive with exclude_explanations)
 #' @param exclude_explanations Exclude specified model explanations.
 #' @param plot_overrides Overrides for individual model explanations, e.g.,
-#'   list(shap_explain_row=list(top_n_features=5))
+#'   list(shap_explain_row=list(columns=5))
 #'
 #' @return List of outputs with class "explanation"
 #' @export

@@ -461,8 +461,8 @@ def _uniformize(data, col_name):
 def shap_summary_plot(
         model,  # type: h2o.model.ModelBase
         frame,  # type: h2o.H2OFrame
-        top_n=15,  # type: int
-        max_obs=5000,  # type: int
+        columns=20,  # type: Union[int, List[str]]
+        samples=1000,  # type: int
         colorize_factors=True,  # type: bool
         alpha=1,  # type: float
         colormap=None,  # type: str
@@ -478,8 +478,8 @@ def shap_summary_plot(
 
     :param model: h2o tree model, such as DRF, XRT, GBM, XGBoost
     :param frame: H2OFrame
-    :param top_n: maximum number of features to plot
-    :param max_obs: maximum number of observations to use; if lower than number of rows in the
+    :param columns: either a list of columns or a number of columns to plot
+    :param samples: maximum number of observations to use; if lower than number of rows in the
                     frame, take a random sample
     :param colorize_factors: if True, use colors from the colormap to colorize the factors;
                              otherwise all levels will have same color
@@ -503,8 +503,8 @@ def shap_summary_plot(
     # then the rest of the data in a given region)
     permutation = list(range(frame.nrow))
     random.shuffle(permutation)
-    if max_obs is not None:
-        permutation = sorted(permutation[:min(len(permutation), max_obs)])
+    if samples is not None:
+        permutation = sorted(permutation[:min(len(permutation), samples)])
         frame = frame[permutation, :]
         permutation = list(range(frame.nrow))
         random.shuffle(permutation)
@@ -512,12 +512,24 @@ def shap_summary_plot(
     with no_progress():
         contributions = NumpyFrame(model.predict_contributions(frame))
     frame = NumpyFrame(frame)
+    contribution_names = frame.columns
 
     feature_importance = sorted(
         {k: np.abs(v).mean() for k, v in contributions.items() if "BiasTerm" != k}.items(),
         key=lambda kv: kv[1])
-    top_n = min(top_n, len(feature_importance))
-    top_n_features = [fi[0] for fi in feature_importance[-top_n:]]
+    if isinstance(columns, int):
+        top_n = min(columns, len(feature_importance))
+        top_n_features = [fi[0] for fi in feature_importance[-top_n:]]
+    else:
+        picked_cols = []
+        for feature in columns:
+            if feature in contribution_names:
+                picked_cols.append(feature)
+            else:
+                for contrib in contribution_names:
+                    if contrib.startswith(feature + "."):
+                        picked_cols.append(contrib)
+        top_n_features = picked_cols
 
     plt.figure(figsize=figsize)
     plt.grid(True)
@@ -553,7 +565,7 @@ def shap_explain_row(
         model,  # type: h2o.model.ModelBase
         frame,  # type: h2o.H2OFrame
         row_index,  # type: int
-        top_n=10,  # type: int
+        columns=10,  # type: Union[int, List[str]]
         figsize=(16, 9),  # type: Union[List[float], Tuple[float]]
         plot_type="barplot",  # type: str
         contribution_type="both"  # type: str
@@ -570,8 +582,8 @@ def shap_explain_row(
     :param model: h2o tree model, such as DRF, XRT, GBM, XGBoost
     :param frame: H2OFrame
     :param row_index: row index of the instance to inspect
-    :param top_n: maximum number of features to show.
-                  When plot_type="barplot", top_n features will be chosen
+    :param columns: list of columns or integer specifying the maximum number of columns to show.
+                  When plot_type="barplot" and columns is an integer, then `columns` features will be chosen
                   for each contribution_type.
     :param figsize: figure size; passed directly to matplotlib
     :param plot_type: either "barplot" or "breakdown"
@@ -583,6 +595,7 @@ def shap_explain_row(
     row = frame[row_index, :]
     with no_progress():
         contributions = NumpyFrame(model.predict_contributions(row))
+    contribution_names = contributions.columns
     prediction = float(contributions.sum(axis=1))
     bias = float(contributions["BiasTerm"])
     contributions = sorted(filter(lambda pair: pair[0] != "BiasTerm", contributions.items()),
@@ -598,16 +611,29 @@ def shap_explain_row(
         else:
             contribution_type = [contribution_type]
 
-        picked_features = []
-        if "positive" in contribution_type:
-            positive_features = sorted(filter(lambda pair: pair[1] >= 0, contributions),
-                                       key=lambda pair: pair[1])
-            picked_features.extend(positive_features[-min(top_n, len(positive_features)):])
-        if "negative" in contribution_type:
-            negative_features = sorted(filter(lambda pair: pair[1] < 0, contributions),
-                                       key=lambda pair: pair[1])
-            picked_features.extend(negative_features[:min(top_n, len(negative_features))])
+        if isinstance(columns, int):
+            picked_features = []
+            if "positive" in contribution_type:
+                positive_features = sorted(filter(lambda pair: pair[1] >= 0, contributions),
+                                           key=lambda pair: pair[1])
+                picked_features.extend(positive_features[-min(columns, len(positive_features)):])
+            if "negative" in contribution_type:
+                negative_features = sorted(filter(lambda pair: pair[1] < 0, contributions),
+                                           key=lambda pair: pair[1])
+                picked_features.extend(negative_features[:min(columns, len(negative_features))])
+        else:
+            picked_cols = []
+            for feature in columns:
+                if feature in contribution_names:
+                    picked_cols.append(feature)
+                else:
+                    for contrib in contribution_names:
+                        if contrib.startswith(feature + "."):
+                            picked_cols.append(contrib)
+            picked_features = [pair for pair in contributions if pair[0] in picked_cols]
+
         picked_features = sorted(picked_features, key=lambda pair: pair[1])
+
         if len(picked_features) < len(contributions):
             contribution_subset_note = " using {} out of {} contributions".format(
                 len(picked_features), len(contributions))
@@ -636,9 +662,23 @@ def shap_explain_row(
         return fig
 
     elif plot_type == "breakdown":
-        if top_n + 1 < len(contributions):
-            contributions = contributions[:top_n] + [
-                ("Remaining Features", sum(map(lambda pair: pair[1], contributions[top_n:])))]
+        if isinstance(columns, int):
+            if columns + 1 < len(contributions):
+                contributions = contributions[:columns] + [
+                    ("Remaining Features", sum(map(lambda pair: pair[1], contributions[columns:])))]
+        else:
+            picked_cols = []
+            for feature in columns:
+                if feature in contribution_names:
+                    picked_cols.append(feature)
+                else:
+                    for contrib in contribution_names:
+                        if contrib.startswith(feature + "."):
+                            picked_cols.append(contrib)
+            rest = np.array(sum(pair[1] for pair in contributions if pair[0] not in picked_cols))
+            contributions = [pair for pair in contributions if pair[0] in picked_cols]
+            if len(contribution_names) - 1 > len(picked_cols):  # Contribution names contain "BiasTerm" as well
+                contributions += [("Remaining Features", rest)]
 
         contributions = contributions[::-1]
         contributions = dict(
