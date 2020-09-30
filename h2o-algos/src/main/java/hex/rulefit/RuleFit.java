@@ -5,6 +5,7 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.schemas.TreeV3;
+import hex.tree.SharedTree;
 import hex.tree.SharedTreeModel;
 import hex.tree.TreeHandler;
 import hex.tree.drf.DRF;
@@ -191,10 +192,12 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 Key[] keys = new Key[depths.length];
                 // prepare rules
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.RULES.equals(_parms._model_type)) {
+                    SharedTree<?, ?, ?>[] builders = ModelBuilderHelper.trainModelsParallel(
+                            makeTreeModelBuilders(_parms._algorithm, depths), 2);
                     long startAllTreesTime = System.nanoTime();
-                    for (int modelId = 0; modelId < depths.length; modelId++) {
+                    for (int modelId = 0; modelId < builders.length; modelId++) {
                         long startModelTime = System.nanoTime();
-                        SharedTreeModel treeModel = trainTreeModel(_parms._algorithm, depths[modelId]);
+                        SharedTreeModel<?, ?, ?> treeModel = builders[modelId].get();
                         long endModelTime = System.nanoTime() - startModelTime;
                         LOG.info("Tree model n." + modelId + " trained in " + ((double)endModelTime) / 1E9 + "s.");
                         treeModels.add(treeModel);
@@ -292,23 +295,29 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             return array;
         }
 
-        SharedTreeModel trainTreeModel(RuleFitModel.Algorithm algorithm, int maxDepth) {
-            SharedTreeModel treeModel;
-            treeParameters._max_depth = maxDepth;
+        SharedTree<?, ?, ?> makeTreeModelBuilder(RuleFitModel.Algorithm algorithm, int maxDepth) {
+            SharedTreeModel.SharedTreeParameters p = (SharedTreeModel.SharedTreeParameters) treeParameters.clone();
+            p._max_depth = maxDepth;
 
+            final SharedTree<?, ?, ?> builder;
             if (algorithm.equals(RuleFitModel.Algorithm.DRF)) {
-                DRF job = new DRF((DRFModel.DRFParameters) treeParameters);
-                treeModel = job.trainModel().get();
-
+                builder = new DRF((DRFModel.DRFParameters) p);
             } else if (algorithm.equals(RuleFitModel.Algorithm.GBM)) {
-                GBM job = new GBM((GBMModel.GBMParameters) treeParameters);
-                treeModel = job.trainModel().get();
+                builder = new GBM((GBMModel.GBMParameters) p);
             } else {
                 // TODO XGB
                 throw new RuntimeException("Unsupported algorithm for tree building: " + _parms._algorithm);
             }
+            
+            return builder;
+        }
 
-            return treeModel;
+        SharedTree<?, ?, ?>[] makeTreeModelBuilders(RuleFitModel.Algorithm algorithm, int[] depths) {
+            SharedTree<?, ?, ?>[] builders = new SharedTree[depths.length];
+            for (int i = 0; i < depths.length; i++) {
+                builders[i] = makeTreeModelBuilder(algorithm, depths[i]);
+            }
+            return builders;
         }
 
         double[] getOptimalLambda() {
