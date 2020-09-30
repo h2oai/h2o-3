@@ -192,7 +192,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                     SharedTree[] builders = getBuilders(_parms._algorithm, depths);
                     builders[0].bulkBuildModels("rulefit-tree-ensemble", _job, builders, builders[0].nModelsInParallel(1), 0  /*no job updates*/);
                     for (int modelId = 0; modelId < depths.length; modelId++) {
-                        SharedTreeModel treeModel = DKV.getGet(builders[modelId].dest()  /* _job._result*/);
+                        SharedTreeModel treeModel = DKV.getGet(builders[modelId].dest());
                         treeModels.add(treeModel);
     
                         paths = treeModel.scoreLeafNodeAssignment(_train, Model.LeafNodeAssignment.LeafNodeAssignmentType.Path, Key.make("path_" + modelId + _result));
@@ -305,7 +305,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                     throw new RuntimeException("Unsupported algorithm for tree building: " + _parms._algorithm);
                 }
             }
-           return builders;
+            return builders;
         }
 
         double[] getOptimalLambda() {
