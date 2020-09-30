@@ -194,7 +194,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.RULES.equals(_parms._model_type)) {
                     long startAllTreesTime = System.nanoTime();
                     SharedTree[] builders = getBuilders(_parms._algorithm, depths);
-                    builders[0].bulkBuildModels("rulefit-tree-ensemble", _job, builders, builders[0].nModelsInParallel(1), 0  /*no job updates*/);
+                    builders[0].bulkBuildModels("rulefit-tree-ensemble", _job, builders, builders[0].nModelsInParallel(depths.length), 0  /*no job updates*/);
                     for (int modelId = 0; modelId < depths.length; modelId++) {
                         long startModelTime = System.nanoTime();
                         SharedTreeModel treeModel = DKV.getGet(builders[modelId].dest());
