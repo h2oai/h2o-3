@@ -6,7 +6,7 @@ public class PredictConfiguration {
 
   public static final String PREDICT_JAVA_PROP = SYSTEM_PROP_PREFIX + "xgboost.predict.java.enable";
   public static final String PREDICT_NATIVE_PROP = SYSTEM_PROP_PREFIX + "xgboost.predict.native.enable";
-  public static final String PREDICT_NATIVE_PREDICTOR_TYPE_PROP = "xgboost.predict.native.type";
+  public static final String PREDICT_NATIVE_PREDICTOR_TYPE_PROP = SYSTEM_PROP_PREFIX + "xgboost.predict.native.type";
 
   public static String getNativePredictorType() {
     String propValue = System.getProperty(PREDICT_NATIVE_PREDICTOR_TYPE_PROP);
