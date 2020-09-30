@@ -193,7 +193,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 // prepare rules
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.RULES.equals(_parms._model_type)) {
                     SharedTree<?, ?, ?>[] builders = ModelBuilderHelper.trainModelsParallel(
-                            makeTreeModelBuilders(_parms._algorithm, depths), 2);
+                            makeTreeModelBuilders(_parms._algorithm, depths), nTreeEnsemblesInParallel(depths.length));
                     long startAllTreesTime = System.nanoTime();
                     for (int modelId = 0; modelId < builders.length; modelId++) {
                         long startModelTime = System.nanoTime();
@@ -569,6 +569,14 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
         double getAbsCoefficient() {
             return Math.abs(coefficient);
+        }
+    }
+
+    protected int nTreeEnsemblesInParallel(int numDepths) {
+        if (_parms._algorithm == RuleFitModel.Algorithm.GBM) {
+            return nModelsInParallel(numDepths, 2);
+        } else {
+            return nModelsInParallel(numDepths, 1);
         }
     }
 }
