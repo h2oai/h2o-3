@@ -83,7 +83,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   // Calibration frame for Platt scaling
   private transient Frame _calib;
 
-  @Override protected int nModelsInParallel(int folds) {
+  @Override public int nModelsInParallel(int folds) {
     if (XGBoostModel.getActualBackend(_parms, false) == XGBoostModel.XGBoostParameters.Backend.gpu) {
       return 1;
     } else {

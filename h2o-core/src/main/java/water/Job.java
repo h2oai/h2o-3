@@ -97,7 +97,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   private boolean stopped() { return   _end_time != 0; }
 
   // Simple state accessors; public ones do a DKV update check
-  public long start_time()   { update_from_remote(); assert !created(); return _start_time; }
+  public long start_time()   { update_from_remote();/* assert !created()*/; return _start_time; }
   public long   end_time()   { update_from_remote(); assert  stopped(); return   _end_time; }
   public boolean isRunning() {
     update_from_remote();
