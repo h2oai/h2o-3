@@ -9,6 +9,7 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
+
 h2o:
   nodeCount: 1
   memoryPercentage: 50
@@ -49,7 +50,9 @@ resources:
 
 nodeSelector: { }
 
-volumes: [ ]
+volumes:
+  
+volumeMounts:
 
 tolerations: [ ]
 
