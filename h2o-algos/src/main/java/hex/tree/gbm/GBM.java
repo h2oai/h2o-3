@@ -38,7 +38,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   public GBM( GBMModel.GBMParameters parms, Key<GBMModel> key) { super(parms, key); init(false); }
   public GBM(boolean startup_once) { super(new GBMModel.GBMParameters(),startup_once); }
 
-  @Override protected int nModelsInParallel(int folds) {
+  @Override public int nModelsInParallel(int folds) {
     return nModelsInParallel(folds, 2);
   }
 
