@@ -461,7 +461,8 @@ def _uniformize(data, col_name):
 def shap_summary_plot(
         model,  # type: h2o.model.ModelBase
         frame,  # type: h2o.H2OFrame
-        columns=20,  # type: Union[int, List[str]]
+        columns=None,  # type: Optional[Union[List[int], List[str]]]
+        top_n_features=20,  # type: int
         samples=1000,  # type: int
         colorize_factors=True,  # type: bool
         alpha=1,  # type: float
@@ -478,7 +479,9 @@ def shap_summary_plot(
 
     :param model: h2o tree model, such as DRF, XRT, GBM, XGBoost
     :param frame: H2OFrame
-    :param columns: either a list of columns or a number of columns to plot
+    :param columns: either a list of columns or column indices to show. If specified
+                    parameter top_n_features will be ignored.
+    :param top_n_features: a number of columns to pick using variable importance (where applicable).
     :param samples: maximum number of observations to use; if lower than number of rows in the
                     frame, take a random sample
     :param colorize_factors: if True, use colors from the colormap to colorize the factors;
@@ -517,8 +520,8 @@ def shap_summary_plot(
     feature_importance = sorted(
         {k: np.abs(v).mean() for k, v in contributions.items() if "BiasTerm" != k}.items(),
         key=lambda kv: kv[1])
-    if isinstance(columns, int):
-        top_n = min(columns, len(feature_importance))
+    if columns is None:
+        top_n = min(top_n_features, len(feature_importance))
         top_n_features = [fi[0] for fi in feature_importance[-top_n:]]
     else:
         picked_cols = []
@@ -565,7 +568,8 @@ def shap_explain_row(
         model,  # type: h2o.model.ModelBase
         frame,  # type: h2o.H2OFrame
         row_index,  # type: int
-        columns=10,  # type: Union[int, List[str]]
+        columns=None,  # type: Optional[Union[List[int], List[str]]]
+        top_n_features=10,  # type: int
         figsize=(16, 9),  # type: Union[List[float], Tuple[float]]
         plot_type="barplot",  # type: str
         contribution_type="both"  # type: str
@@ -582,9 +586,10 @@ def shap_explain_row(
     :param model: h2o tree model, such as DRF, XRT, GBM, XGBoost
     :param frame: H2OFrame
     :param row_index: row index of the instance to inspect
-    :param columns: list of columns or integer specifying the maximum number of columns to show.
-                  When plot_type="barplot" and columns is an integer, then `columns` features will be chosen
-                  for each contribution_type.
+    :param columns: either a list of columns or column indices to show. If specified
+                    parameter top_n_features will be ignored.
+    :param top_n_features: a number of columns to pick using variable importance (where applicable).
+                  When plot_type="barplot", then top_n_features will be chosen for each contribution_type.
     :param figsize: figure size; passed directly to matplotlib
     :param plot_type: either "barplot" or "breakdown"
     :param contribution_type: One of "positive", "negative", or "both".
@@ -611,17 +616,18 @@ def shap_explain_row(
         else:
             contribution_type = [contribution_type]
 
-        if isinstance(columns, int):
+        if columns is None:
             picked_features = []
             if "positive" in contribution_type:
                 positive_features = sorted(filter(lambda pair: pair[1] >= 0, contributions),
                                            key=lambda pair: pair[1])
-                picked_features.extend(positive_features[-min(columns, len(positive_features)):])
+                picked_features.extend(positive_features[-min(top_n_features, len(positive_features)):])
             if "negative" in contribution_type:
                 negative_features = sorted(filter(lambda pair: pair[1] < 0, contributions),
                                            key=lambda pair: pair[1])
-                picked_features.extend(negative_features[:min(columns, len(negative_features))])
+                picked_features.extend(negative_features[:min(top_n_features, len(negative_features))])
         else:
+            columns = [frame.columns[col] if isinstance(col, int) else col for col in columns]
             picked_cols = []
             for feature in columns:
                 if feature in contribution_names:
@@ -1531,7 +1537,8 @@ def _custom_args(user_specified, **kwargs):
 def explain(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
         frame,  # type: h2o.H2OFrame
-        columns=5,  # type: Union[int, List[str]]
+        columns=None,  # type: Optional[Union[List[int], List[str]]]
+        top_n_features=5,  # type: int
         include_explanations="ALL",  # type: Union[str, List[str]]
         exclude_explanations=[],  # type: Union[str, List[str]]
         plot_overrides=dict(),  # type: Dict
@@ -1546,7 +1553,9 @@ def explain(
 
     :param models: H2OAutoML object or H2OModel
     :param frame: H2OFrame
-    :param columns: either a list of columns or a number of columns to show
+    :param columns: either a list of columns or column indices to show. If specified
+                    parameter top_n_features will be ignored.
+    :param top_n_features: a number of columns to pick using variable importance (where applicable).
     :param include_explanations: if specified, return only the specified model explanations
                                  (Mutually exclusive with exclude_explanations)
     :param exclude_explanations: exclude specified model explanations
@@ -1558,10 +1567,9 @@ def explain(
     is_aml, models_to_show, classification, multinomial_classification, multiple_models, \
     targets, tree_models_to_show = _process_models_input(models, frame)
 
-    if isinstance(columns, list):
-        columns_of_interest = columns
+    if columns is not None and isinstance(columns, list):
+        columns_of_interest = [frame.columns[col] if isinstance(col, int) else col for col in columns]
     else:
-        top_n_features = columns
         columns_of_interest = None
 
     models_with_varimp = [model for model in models_to_show if _has_varimp(model.model_id)]
@@ -1783,7 +1791,8 @@ def explain_row(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
         frame,  # type: h2o.H2OFrame
         row_index,  # type: int
-        columns=5,  # type: Union[int, List[str]]
+        columns=None,  # type: Optional[Union[List[int], List[str]]]
+        top_n_features=5,  # type: int
         include_explanations="ALL",  # type: Union[str, List[str]]
         exclude_explanations=[],  # type: Union[str, List[str]]
         plot_overrides=dict(),  # type: Dict
@@ -1798,7 +1807,9 @@ def explain_row(
     :param models: H2OAutoML object or H2OModel
     :param frame: H2OFrame
     :param row_index: row index of the instance to inspect
-    :param columns: either a list of columns or a number of columns to show
+    :param columns: either a list of columns or column indices to show. If specified
+                    parameter top_n_features will be ignored.
+    :param top_n_features: a number of columns to pick using variable importance (where applicable).
     :param include_explanations: if specified, return only the specified model explanations
                                  (Mutually exclusive with exclude_explanations)
     :param exclude_explanations: exclude specified model explanations
@@ -1819,13 +1830,13 @@ def explain_row(
             .as_data_frame(use_pandas=False, header=False) if _has_varimp(model_id[0])]
         models_with_varimp = [h2o.get_model(models_with_varimp[0])]
 
-    if isinstance(columns, list):
-        columns_of_interest = columns
+    if columns is not None and isinstance(columns, list):
+        columns_of_interest = [frame.columns[col] if isinstance(col, int) else col for col in columns]
     else:
         if len(models_with_varimp) > 0:
             varimps = _consolidate_varimps(models_with_varimp[0])
             columns_of_interest = sorted(varimps.keys(), key=lambda k: -varimps[k])[
-                                  :min(columns, len(varimps))]
+                                  :min(top_n_features, len(varimps))]
         else:
             import warnings
             warnings.warn("No model with variable importance. Selecting all features to explain.")

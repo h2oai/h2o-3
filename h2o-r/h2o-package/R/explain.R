@@ -906,7 +906,9 @@ stat_count_or_bin <- function(use_count, ..., data) {
 #'
 #' @param model An H2O model
 #' @param newdata An H2O Frame
-#' @param columns Either a vector of columns or maximum number of columns to plot
+#' @param columns List of columns or list of indices of columns to show. If specified
+#'                parameter top_n_features will be ignored.
+#' @param top_n_features Integer specifying the maximum number of columns to show.
 #' @param sample_size Maximum number of observations to be plotted
 #'
 #' @return A ggplot2 object
@@ -914,12 +916,19 @@ stat_count_or_bin <- function(use_count, ..., data) {
 h2o.shap_summary_plot <-
   function(model,
            newdata,
-           columns = 20,
+           columns = NULL,
+           top_n_features = 20,
            sample_size = 1000) {
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
     if (!.is_h2o_tree_model(model)) {
       stop("SHAP summary plot requires a tree-based model!")
+    }
+    if (!missing(columns) && !missing(top_n_features)) {
+      warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
+    }
+    if (!(is.null(columns) || is.character(columns) || is.numeric(columns))) {
+      stop("Parameter columns must be either a character or numeric vector or NULL.")
     }
     x <- model@allparameters$x
 
@@ -1007,15 +1016,17 @@ h2o.shap_summary_plot <-
     )
 
     features <- levels(contr[["feature"]])
-    if (is.numeric(columns)) {
-      if (length(features) > columns) {
-        features <- features[seq(from = length(features), to = length(features) - columns)]
+    if (is.null(columns)) {
+      if (length(features) > top_n_features) {
+        features <- features[seq(from = length(features), to = length(features) - top_n_features)]
         contr <- contr[contr[["feature"]] %in% features,]
       }
     } else {
       encoded_columns <- features
       features <- c()
       for (col in columns) {
+        if (is.numeric(col))
+          col <- names(newdata)[[col]]
         possible_column_name <- c(col, make.names(col),  make.names(gsub(" ", "", col)))
         found <- FALSE
         for (pcol in possible_column_name){
@@ -1067,22 +1078,31 @@ h2o.shap_summary_plot <-
 #' @param model An H2O model
 #' @param newdata An H2O Frame
 #' @param row_index Instance row index
-#' @param columns: list of columns or integer specifying the maximum number of columns to show.
-#'                 When plot_type="barplot" and columns is an integer, then `columns` features will be chosen
-#'                 for each contribution_type
+#' @param columns List of columns or list of indices of columns to show.  If specified
+#'                parameter top_n_features will be ignored.
+#' @param top_n_features Integer specifying the maximum number of columns to show.
+#'                       When plot_type="barplot", then `top_n_features` features will be chosen
+#'                       for each contribution_type.
 #' @param plot_type Either "barplot" or "breakdown".
 #' @param contribution_type When plot_type == "barplot", plot one of "negative", "positive", or "both" contributions
 #' @return A ggplot2 object
 #'
 #' @export
 h2o.shap_explain_row <-
-  function(model, newdata, row_index, columns = 10,
+  function(model, newdata, row_index, columns = NULL, top_n_features = 10,
            plot_type = c("barplot", "breakdown"),
            contribution_type = c("both", "positive", "negative")) {
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
     if (!.is_h2o_tree_model(model)) {
       stop("SHAP explain_row plot requires a tree-based model!")
+    }
+
+    if (!missing(columns) && !missing(top_n_features)) {
+      warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
+    }
+    if (!(is.null(columns) || is.character(columns) || is.numeric(columns))) {
+      stop("Parameter columns must be either a character or numeric vector or NULL.")
     }
 
     plot_type <- match.arg(plot_type)
@@ -1124,18 +1144,18 @@ h2o.shap_explain_row <-
 
       ordered_features <- contributions[order(contributions)]
       features <- character()
-      if (is.numeric(columns)) {
+      if (is.null(columns)) {
         if ("positive" %in% contribution_type) {
           positive_features <- names(ordered_features)[ordered_features > 0]
           features <- c(features, tail(positive_features, n = min(
-            columns,
+            top_n_features,
             length(positive_features)
           )))
         }
         if ("negative" %in% contribution_type) {
           negative_features <- names(ordered_features)[ordered_features < 0]
           features <- c(features, head(negative_features, n = min(
-            columns,
+            top_n_features,
             length(negative_features)
           )))
         }
@@ -1143,6 +1163,8 @@ h2o.shap_explain_row <-
         encoded_columns <- names(ordered_features)
         features <- c()
         for (col in columns) {
+          if (is.numeric(col))
+            col <- names(newdata)[[col]]
           possible_column_name <- c(col, make.names(col),  make.names(gsub(" ", "", col)))
           found <- FALSE
           for (pcol in possible_column_name){
@@ -1205,16 +1227,18 @@ h2o.shap_explain_row <-
       contributions <- contributions[, names(contributions)[order(abs(t(contributions)))]]
       bias_term <- contributions$BiasTerm
       contributions <- contributions[, names(contributions) != "BiasTerm"]
-      if (is.numeric(columns)) {
-        if (ncol(contributions) > columns) {
-          rest <- rowSums(contributions[, names(contributions)[seq(from = 1, to = ncol(contributions) - columns, by = 1)]])
-          contributions <- contributions[, tail(names(contributions), n = columns), drop = FALSE]
+      if (is.null(columns)) {
+        if (ncol(contributions) > top_n_features) {
+          rest <- rowSums(contributions[, names(contributions)[seq(from = 1, to = ncol(contributions) - top_n_features, by = 1)]])
+          contributions <- contributions[, tail(names(contributions), n = top_n_features), drop = FALSE]
           contributions[["rest_of_the_features"]] <- rest
         }
       } else {
         encoded_columns <- names(contributions)
         features <- c()
         for (col in columns) {
+          if (is.numeric(col))
+            col <- names(newdata)[[col]]
           possible_column_name <- c(col, make.names(col), make.names(gsub(" ", "", col)))
           found <- FALSE
           for (pcol in possible_column_name) {
@@ -1878,8 +1902,9 @@ h2o.individual_conditional_expectations <- function(model,
 #'
 #' @param object One of the following: an H2OAutoML, an H2OAutoML Leaderboard slice, a model, a list of models.
 #' @param newdata An H2OFrame.
-#' @param columns A vector of column names to create plots only with or a number of columns to pick
-#'                 using variable importance (where applicable).
+#' @param columns A vector of column names or column indices to create plots with. If specified
+#'                parameter top_n_features will be ignored.
+#' @param top_n_features A number of columns to pick using variable importance (where applicable).
 #' @param include_explanations If specified, return only the specified model explanations.
 #'   (Mutually exclusive with exclude_explanations)
 #' @param exclude_explanations Exclude specified model explanations.
@@ -1890,7 +1915,8 @@ h2o.individual_conditional_expectations <- function(model,
 #' @export
 h2o.explain <- function(object,
                         newdata,
-                        columns = 5,
+                        columns = NULL,
+                        top_n_features = 5,
                         include_explanations = "ALL",
                         exclude_explanations = character(),
                         plot_overrides = list()) {
@@ -1914,6 +1940,12 @@ h2o.explain <- function(object,
     stop("You can't specify both include and exclude model explanations. Use just one of them.")
   }
 
+  if (!missing(columns) && !missing(top_n_features)) {
+    warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
+  }
+  if (!(is.null(columns) || is.character(columns) || is.numeric(columns))) {
+    stop("Parameter columns must be either a character or numeric vector or NULL.")
+  }
   skip_explanations <- c()
 
   if (!missing(include_explanations)) {
@@ -1945,8 +1977,14 @@ h2o.explain <- function(object,
     skip_explanations <- tolower(exclude_explanations)
   }
 
-  if (is.character(columns)){
-    columns_of_interest <- columns
+  if (!is.null(columns)){
+    columns_of_interest <- sapply(columns, function (col) {
+      if (is.character(col)) {
+        col
+      } else {
+        names(newdata)[[col]]
+      }
+    })
     for (col in columns_of_interest) {
       if (!col %in% models_info$x) {
         stop(sprintf("Column \"%s\" is not in x.", col))
@@ -1963,7 +2001,7 @@ h2o.explain <- function(object,
     } else {
       models_with_varimp <- Filter(function(m) .has_varimp(m@model_id), models_info$models)
       varimp <- names(.varimp(models_with_varimp[[1]],  newdata))
-      columns_of_interest <- varimp[seq_len(min(length(varimp), columns))]
+      columns_of_interest <- varimp[seq_len(min(length(varimp), top_n_features))]
       # deal with encoded columns
       columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
     }
@@ -2197,8 +2235,9 @@ h2o.explain <- function(object,
 #' @param object One of the following: an H2OAutoML, an H2OAutoML Leaderboard slice, a model, a list of models.
 #' @param newdata An H2OFrame.
 #' @param row_index A row index of the instance to explain.
-#' @param columns A vector of column names to create plots only with or a number of columns to pick
-#'                 using variable importance (where applicable).
+#' @param columns A vector of column names or column indices to create plots with. If specified
+#'                parameter top_n_features will be ignored.
+#' @param top_n_features A number of columns to pick using variable importance (where applicable).
 #' @param include_explanations If specified, return only the specified model explanations.
 #'   (Mutually exclusive with exclude_explanations)
 #' @param exclude_explanations Exclude specified model explanations.
@@ -2210,7 +2249,8 @@ h2o.explain <- function(object,
 h2o.explain_row <- function(object,
                             newdata,
                             row_index,
-                            columns = 5,
+                            columns = NULL,
+                            top_n_features = 5,
                             include_explanations = "ALL",
                             exclude_explanations = character(),
                             plot_overrides = list()) {
@@ -2227,7 +2267,12 @@ h2o.explain_row <- function(object,
   if (!missing(include_explanations) && !missing(exclude_explanations)) {
     stop("You can't specify both include and exclude explanations. Use just one of them.")
   }
-
+  if (!missing(columns) && !missing(top_n_features)) {
+    warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
+  }
+  if (!(is.null(columns) || is.character(columns) || is.numeric(columns))) {
+    stop("Parameter columns must be either a character or numeric vector or NULL.")
+  }
   skip_explanations <- c()
 
   if (!missing(include_explanations)) {
@@ -2260,8 +2305,14 @@ h2o.explain_row <- function(object,
   }
 
 
-  if (is.character(columns)){
-    columns_of_interest <- columns
+  if (!is.null(columns)){
+    columns_of_interest <- sapply(columns, function (col) {
+      if (is.character(col)) {
+        col
+      } else {
+        names(newdata)[[col]]
+      }
+    })
     for (col in columns_of_interest) {
       if (!col %in% models_info$x) {
         stop(sprintf("Column \"%s\" is not in x.", col))
@@ -2278,7 +2329,7 @@ h2o.explain_row <- function(object,
     } else {
       models_with_varimp <- Filter(function(m) .has_varimp(m@model_id), models_info$models)
       varimp <- names(.varimp(models_with_varimp[[1]],  newdata))
-      columns_of_interest <- varimp[seq_len(min(length(varimp), columns))]
+      columns_of_interest <- varimp[seq_len(min(length(varimp), top_n_features))]
       # deal with encoded columns
       columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
     }
