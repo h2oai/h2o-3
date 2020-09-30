@@ -16,8 +16,8 @@ h2o:
   kubernetesApiPort: 8080
   
 
-imagePullSecrets: []
 nameOverride: ""
+
 fullnameOverride: ""
 
 podAnnotations: {}
@@ -51,6 +51,8 @@ resources:
     memory: 256Mi
 
 nodeSelector: {}
+
+volumes: []
 
 tolerations: []
 
