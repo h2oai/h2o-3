@@ -2,6 +2,7 @@ package hex.tree.xgboost;
 
 import hex.SplitFrame;
 import hex.genmodel.utils.DistributionFamily;
+import hex.genmodel.utils.IOUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -9,6 +10,9 @@ import org.junit.runners.Parameterized;
 import water.*;
 import water.fvec.Frame;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -72,6 +76,21 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
             Key[] splits = sf._destination_frames;
             Frame trainFrame = Scope.track((Frame) splits[0].get());
             Frame testFrame = Scope.track((Frame) splits[1].get());
+
+            Frame.CSVStreamParams csvStreamParams = new Frame.CSVStreamParams();
+            try {
+                IOUtils.copyStream(trainFrame.toCSV(csvStreamParams), new FileOutputStream("xgb_train.csv"));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            try {
+                IOUtils.copyStream(testFrame.toCSV(csvStreamParams), new FileOutputStream("xgb_test.csv"));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            System.out.println("DONE WRITING FRAMES ---------------");
+            System.out.println("---------------------------------");
+
 
             XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
             parms._booster = XGBoostModel.XGBoostParameters.Booster.valueOf(booster);
