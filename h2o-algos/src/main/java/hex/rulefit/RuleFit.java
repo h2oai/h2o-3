@@ -294,14 +294,15 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
         SharedTreeModel trainTreeModel(RuleFitModel.Algorithm algorithm, int maxDepth) {
             SharedTreeModel treeModel;
-            treeParameters._max_depth = maxDepth;
+            SharedTreeModel.SharedTreeParameters p = (SharedTreeModel.SharedTreeParameters) treeParameters.clone();
+            p._max_depth = maxDepth;
 
             if (algorithm.equals(RuleFitModel.Algorithm.DRF)) {
-                DRF job = new DRF((DRFModel.DRFParameters) treeParameters);
+                DRF job = new DRF((DRFModel.DRFParameters) p);
                 treeModel = job.trainModel().get();
 
             } else if (algorithm.equals(RuleFitModel.Algorithm.GBM)) {
-                GBM job = new GBM((GBMModel.GBMParameters) treeParameters);
+                GBM job = new GBM((GBMModel.GBMParameters) p);
                 treeModel = job.trainModel().get();
             } else {
                 // TODO XGB
