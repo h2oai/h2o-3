@@ -17,6 +17,47 @@ with_no_h2o_progress <- function(expr) {
   force(expr)
 }
 
+#' Get the algoritm used by the model_or_model_id
+#'
+#' @param model_or_model_id Model object or a string containing model id
+#' @param treat_xrt_as_algorithm Try to find out if a model is XRT and if so report it as xrt
+#' @return algoritm name
+.get_algorithm <- function(model_or_model_id, treat_xrt_as_algorithm = FALSE) {
+  known_algos <- c("deeplearning", "drf", "glm", "gam", "gbm", "naivebayes", "stackedensemble", "rulefit", "xgboost", "xrt")
+  if (is.character(model_or_model_id)) {
+    algorithm <- sub("^(DeepLearning|DRF|GAM|GBM|GLM|NaiveBayes|StackedEnsemble|RuleFit|XGBoost|XRT)_.*",
+                     "\\L\\1", model_or_model_id, perl = TRUE)
+    if (algorithm == "xrt" && ! treat_xrt_as_algorithm)
+      algorithm <- "drf"
+    if (algorithm %in% known_algos) {
+      return(algorithm)
+    }
+    model_or_model_id <- h2o.getModel(model_or_model_id)
+  }
+  if (treat_xrt_as_algorithm && model_or_model_id@algorithm == "drf") {
+    if (model_or_model_id@parameters$histogram_type == "Random")
+      return("xrt")
+  }
+  return(model_or_model_id@algorithm)
+}
+
+#' Get first of family models
+#'
+#' @param models models or model ids
+#' @param all_stackedensembles if true, select all stacked ensembles
+.get_first_of_family <- function(models, all_stackedensembles = TRUE) {
+  selected_models <- character()
+  included_families <- character()
+  for (model in models) {
+    family <- .get_algorithm(model, treat_xrt_as_algorithm = TRUE)
+    if (!family %in% included_families || ("stackedensemble" == family && all_stackedensembles)) {
+      included_families <- c(included_families, family)
+      selected_models <- c(selected_models, model)
+    }
+  }
+  return(selected_models)
+}
+
 #' Is the \code{model} an H2O model?
 #'
 #' @param model Either H2O model/model id => TRUE, or something else => FALSE
@@ -45,18 +86,15 @@ with_no_h2o_progress <- function(expr) {
     return(FALSE)
   }
 
-  return(startsWith(model@model_id, "DRF") ||
-           startsWith(model@model_id, "GBM") ||
-           startsWith(model@model_id, "XGB") ||
-           startsWith(model@model_id, "XRT"))
+  return(.get_algorithm(model) %in% c("drf", "gbm", "xgboost"))
 }
 
 #' Is the model considered to be interpretable, i.e., simple enough.
 #'
-#' @param model_id string containing model id
+#' @param model model or a string containing model id
 #' @return boolean
-.interpretable <- function(model_id) {
-  grepl("^(GLM|GAM|RuleFit)", model_id)
+.interpretable <- function(model) {
+  return(.get_algorithm(model) %in% c("gam", "glm", "rulefit"))
 }
 
 #' Get feature count sorted by the count descending.
@@ -91,12 +129,11 @@ with_no_h2o_progress <- function(expr) {
 }
 
 #' Has the model variable importance?
-#' @param model_id string containing model id
+#' @param model model or a string containing model id
 #' @return boolean
-.has_varimp <- function(model_id) {
-  !startsWith(model_id, "StackedEnsemble") && !startsWith(model_id, "Naive")
+.has_varimp <- function(model) {
+  return(!.get_algorithm(model) %in% c("stackedensemble", "naivebayes"))
 }
-
 
 #' Do basic validation and transform \code{object} to a "standardized" list containing models, and
 #' their properties such as \code{x}, \code{y}, whether it is a (multinomial) clasification or not etc.
@@ -142,20 +179,11 @@ with_no_h2o_progress <- function(expr) {
 
   if ("models_info" %in% class(object)) {
     if (best_of_family) {
-      selected_models <- character()
-      included_families <- character()
-      for (model_id in .model_ids(object$models)) {
-        family <- substr(model_id, 1, 3)
-        if (!family %in% included_families || "Sta" == family) {
-          included_families <- c(included_families, family)
-          selected_models <- c(selected_models, model_id)
-        }
-      }
-      object$models <- Filter(function(model) model@model_id %in% selected_models, object$models)
+      object$models <- .get_first_of_family(object$models)
     }
 
     if (only_with_varimp) {
-      object$models <- Filter(function(model) .has_varimp(model@model_id), object$models)
+      object$models <- Filter(.has_varimp, object$models)
     }
 
     if (!is.na(top_n_from_AutoML)) {
@@ -178,19 +206,10 @@ with_no_h2o_progress <- function(expr) {
     }
     models <- unlist(as.list(object@leaderboard$model_id))
     if (only_with_varimp) {
-      models <- Filter(function(m_id) .has_varimp(m_id), models)
+      models <- Filter(.has_varimp, models)
     }
     if (best_of_family) {
-      new_models <- character()
-      included_families <- character()
-      for (model_id in models) {
-        family <- substr(model_id, 1, 3)
-        if (!family %in% included_families || "Sta" == family) {
-          included_families <- c(included_families, family)
-          new_models <- c(new_models, model_id)
-        }
-      }
-      models <- new_models
+      models <- .get_first_of_family(models)
     }
     if (is.na(top_n_from_AutoML)) {
       top_n_from_AutoML <- length(models)
@@ -198,7 +217,6 @@ with_no_h2o_progress <- function(expr) {
       top_n_from_AutoML <- min(top_n_from_AutoML, length(models))
     }
     return(make_models_info(
-      leader = object@leader,
       is_automl = TRUE,
       leaderboard = as.data.frame(h2o.get_leaderboard(object, extra_columns = "ALL")),
       models = sapply(head(models, top_n_from_AutoML), h2o.getModel),
@@ -216,18 +234,17 @@ with_no_h2o_progress <- function(expr) {
       if (class(object) == "list") {
         object <- object[[1]]
       }
-      if (!.is_h2o_model(object)) {
+      if (is.character(object)) {
         object <- h2o.getModel(object)
       }
 
-      if (only_with_varimp && !.has_varimp(object@model_id)) {
+      if (only_with_varimp && !.has_varimp(object)) {
         stop(object@model_id, " doesn't have variable importance!")
       }
 
       y_col <- newdata[[object@allparameters$y]]
 
       return(make_models_info(
-        leader = object,
         is_automl = FALSE,
         models = list(object),
         is_classification = is.factor(y_col),
@@ -242,7 +259,7 @@ with_no_h2o_progress <- function(expr) {
       }
 
       if (only_with_varimp) {
-        object <- Filter(function(model) .has_varimp(model), .model_ids(object))
+        object <- Filter(.has_varimp, object)
       }
 
       object <- sapply(object, function(m) {
@@ -277,20 +294,10 @@ with_no_h2o_progress <- function(expr) {
 
       if (best_of_family) {
         object <- object[order(sapply(object, .get_MSE))]
-        new_models <- list()
-        included_families <- character()
-        for (model in object) {
-          family <- substr(model@model_id, 1, 3)
-          if (!family %in% included_families || "Sta" == family) {
-            included_families <- c(included_families, family)
-            new_models <- c(new_models, model)
-          }
-        }
-        object <- new_models
+        object <- .get_first_of_family(object)
       }
 
       return(make_models_info(
-        leader = object[[1]],
         is_automl = FALSE,
         models = object,
         is_classification = is.factor(newdata[[y]]),
@@ -374,7 +381,7 @@ with_no_h2o_progress <- function(expr) {
         "logloss"
       )])
     })))
-  leaderboard <- cbind(data.frame(model_id=sapply(models, function(m) m@model_id), stringsAsFactors = FALSE),
+  leaderboard <- cbind(data.frame(model_id=.model_ids(models), stringsAsFactors = FALSE),
                        leaderboard)
   leaderboard <- leaderboard[order(leaderboard[[2]]),]
   names(leaderboard) <- tolower(names(leaderboard))
@@ -389,7 +396,7 @@ with_no_h2o_progress <- function(expr) {
 #'
 #' @return A named vector
 .varimp <- function(model, newdata) {
-  if (!.has_varimp(model@model_id)) {
+  if (!.has_varimp(model)) {
     stop("Can't get variable importance from: ", model@model_id)
   } else {
     varimp <- h2o.varimp(model)
@@ -944,7 +951,7 @@ h2o.shap_summary_plot <-
 
       for (fct in names(newdata[, x])[is.factor(newdata[, x])]) {
         newdata_df[[fct]] <- as.factor(newdata_df[[fct]])
-        if (substr(model@model_id, 1, 3) == "XGB") {
+        if (.get_algorithm(model) == "xgboost") {
           # encode categoricals for xgboost
           for (cat in c(NA, h2o.levels(newdata[[fct]]))) {
             cat_name <- cat
@@ -1121,7 +1128,7 @@ h2o.shap_explain_row <-
       newdata_df <- as.data.frame(newdata[row_index,])
       for (fct in names(newdata[, x])[is.factor(newdata[, x])]) {
         newdata_df[[fct]] <- as.factor(newdata_df[[fct]])
-        if (substr(model@model_id, 1, 3) == "XGB") {
+        if (.get_algorithm(model) == "xgboost") {
           # encode categoricals for xgboost
           for (cat in c(NA, h2o.levels(newdata[[fct]]))) {
             cat_name <- cat
@@ -1326,7 +1333,7 @@ h2o.variable_importance_heatmap <- function(object, newdata, top_n = 20) {
                                            require_multiple_models = TRUE,
                                            top_n_from_AutoML = top_n, only_with_varimp = TRUE
   )
-  models <- Filter(function(m) .has_varimp(m@model_id), models_info$models)
+  models <- Filter(.has_varimp, models_info$models)
   varimps <- lapply(models, .varimp, newdata)
   names(varimps) <- .model_ids(models)
   varimps <- lapply(varimps, function(varimp) {
@@ -1397,7 +1404,7 @@ h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
         list(predict = as.numeric(as.data.frame(stats::predict(m, df)[["predict"]])[["predict"]]))
       }, newdata)
     preds <- as.data.frame(do.call(cbind, preds))
-    names(preds) <- unlist(sapply(models, function(m) m@model_id))
+    names(preds) <- unlist(.model_ids(models))
   })
 
   if (models_info$is_classification) {
@@ -1478,16 +1485,13 @@ h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
 h2o.residual_analysis <- function(model, newdata) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
+  if (is.character(model))
+    model <- h2o.getModel(model)
   if ("H2OAutoML" %in% class(model) || is.list(model))
     stop("Residual analysis works only on a single model!")
   if (h2o.isfactor(newdata[[model@allparameters$y]]))
     stop("Residual analysis is not implemented for classification.")
-  if (is.character(model)) {
-    model <- h2o.getModel(model)
-  }
-  if (any(class(model) == "H2OAutoML")) {
-    model <- model@leader
-  }
+
   with_no_h2o_progress({
     y <- model@allparameters$y
 
@@ -1648,30 +1652,26 @@ h2o.partial_dependences <- function(object,
   }
 
   with_no_h2o_progress({
-    evaluated_models <- c()
     results <- NULL
-    for (model in models_info$models) {
-      family <- substr(model@model_id, 0, 3)
-      if (!best_of_family ||
-        !family %in% evaluated_models ||
-        "Sta" == family) {
-        evaluated_models <- c(evaluated_models, family)
-        pdp <-
-          h2o.partialPlot(model, newdata, column,
-                          plot = FALSE, targets = target,
-                          nbins = if (is.factor(newdata[[column]])) {
-                            h2o.nlevels(newdata[[column]]) + 1
-                          } else {
-                            20
-                          },
-                          row_index = row_index
-          )
-        if (is.null(results)) {
-          results <- pdp[column]
-          names(results) <- make.names(names(results))
-        }
-        results[[model@model_id]] <- pdp$mean_response
+    models_to_plot <- models_info$models
+    if (best_of_family)
+      models_to_plot <- .get_first_of_family(models_to_plot)
+    for (model in models_to_plot) {
+      pdp <-
+        h2o.partialPlot(model, newdata, column,
+                        plot = FALSE, targets = target,
+                        nbins = if (is.factor(newdata[[column]])) {
+                          h2o.nlevels(newdata[[column]]) + 1
+                        } else {
+                          20
+                        },
+                        row_index = row_index
+        )
+      if (is.null(results)) {
+        results <- pdp[column]
+        names(results) <- make.names(names(results))
       }
+      results[[model@model_id]] <- pdp$mean_response
     }
 
     data <- stats::reshape(results,
@@ -1992,14 +1992,14 @@ h2o.explain <- function(object,
     }
   } else {
     columns_of_interest <- models_info$x
-    if (!any(sapply(.model_ids(models_info$models), .has_varimp))) {
+    if (!any(sapply(models_info$models, .has_varimp))) {
       warning(
         "StackedEnsemble does not have a variable importance. Picking all columns. ",
         "Set `columns` to a vector of columns to explain just a subset of columns.",
         call. = FALSE
       )
     } else {
-      models_with_varimp <- Filter(function(m) .has_varimp(m@model_id), models_info$models)
+      models_with_varimp <- Filter(.has_varimp, models_info$models)
       varimp <- names(.varimp(models_with_varimp[[1]],  newdata))
       columns_of_interest <- varimp[seq_len(min(length(varimp), top_n_features))]
       # deal with encoded columns
@@ -2057,7 +2057,7 @@ h2o.explain <- function(object,
 
   # feature importance
   if (!"variable_importance" %in% skip_explanations) {
-    if (any(sapply(.model_ids(models_info$models), .has_varimp))) {
+    if (any(sapply(models_info$models, .has_varimp))) {
       result$variable_importance <- list(
         header = .h2o_explanation_header("Variable Importance"),
         description = .describe("variable_importance"),
@@ -2083,7 +2083,7 @@ h2o.explain <- function(object,
   if (multiple_models) {
     # Variable Importance Heatmap
     if (!"variable_importance_heatmap" %in% skip_explanations) {
-      if (length(Filter(function(m_id) !startsWith(m_id, "Stacked"), .model_ids(models_info$models))) > 1) {
+      if (length(Filter(.has_varimp, models_info$models)) > 1) {
         result$variable_importance_heatmap <- list(
           header = .h2o_explanation_header("Variable Importance Heatmap"),
           description = .describe("variable_importance_heatmap"),
@@ -2320,14 +2320,14 @@ h2o.explain_row <- function(object,
     }
   } else {
     columns_of_interest <- models_info$x
-    if (!any(sapply(.model_ids(models_info$models), .has_varimp))) {
+    if (!any(sapply(models_info$models, .has_varimp))) {
       warning(
         "StackedEnsemble does not have a variable importance. Picking all columns. ",
         "Set `columns` to a vector of columns to explain just a subset of columns.",
         call. = FALSE
       )
     } else {
-      models_with_varimp <- Filter(function(m) .has_varimp(m@model_id), models_info$models)
+      models_with_varimp <- Filter(.has_varimp, models_info$models)
       varimp <- names(.varimp(models_with_varimp[[1]],  newdata))
       columns_of_interest <- varimp[seq_len(min(length(varimp), top_n_features))]
       # deal with encoded columns

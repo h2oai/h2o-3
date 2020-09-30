@@ -140,7 +140,6 @@ class H2OExplanation(OrderedDict):
             display(v)
 
 
-
 @contextmanager
 def no_progress():
     """
@@ -412,6 +411,48 @@ class NumpyFrame:
         """
         for col in self.columns:
             yield col, self.get(col, with_categorical_names)
+
+
+def _get_algorithm(model,  treat_xrt_as_algorithm=False):
+    # type: (Union[str, h2o.model.ModelBase], bool) -> str
+    """
+    Get algorithm type. Use model id to infer it if possible.
+    :param model: model or a model_id
+    :param treat_xrt_as_algorithm: boolean used for best_of_family
+    :return: string containing algorithm name
+    """
+    if not isinstance(model, h2o.model.ModelBase):
+        import re
+        algo = re.search("^(DeepLearning|DRF|GAM|GBM|GLM|NaiveBayes|StackedEnsemble|RuleFit|XGBoost|XRT)(?=_)", model)
+        if algo is not None:
+            algo = algo.group(0).lower()
+            if algo == "xrt" and not treat_xrt_as_algorithm:
+                algo = "drf"
+            return algo
+        else:
+            model = h2o.get_model()
+    if treat_xrt_as_algorithm and model.algo == "drf":
+        if model.actual_params.get("histogram_type") == "Random":
+            return "xrt"
+    return model.algo
+
+
+def _first_of_family(models, all_stackedensembles=True):
+    # type: (Union[str, h2o.model.ModelBase], bool) -> Union[str, h2o.model.ModelBase]
+    """
+    Get first of family models
+    :param models: models or model ids
+    :param all_stackedensembles: if True return all stacked ensembles
+    :return: list of models or model ids (the same type as on input)
+    """
+    selected_models = []
+    included_families = set()
+    for model in models:
+        family = _get_algorithm(model, treat_xrt_as_algorithm=True)
+        if family not in included_families or (all_stackedensembles and "stackedensemble" == family):
+            selected_models.append(model)
+            included_families.add(family)
+    return selected_models
 
 
 def _density(xs, bins=100):
@@ -838,7 +879,7 @@ def partial_dependences(
         all_models = [model_id[0] for model_id in models.leaderboard[:, "model_id"]
             .as_data_frame(use_pandas=False, header=False)]
     else:
-        all_models = [model.model_id for model in models]
+        all_models = models
 
     is_factor = frame[column].isfactor()[0]
     if is_factor:
@@ -849,15 +890,12 @@ def partial_dependences(
             frame = frame[(frame[column].isin(levels)), :]
             # decrease the number of levels to the actual number of levels in the subset
             frame[column] = frame[column].ascharacter().asfactor()
-    models = []
     if best_of_family:
-        used = set()
-        for m in all_models:
-            if m[:3] not in used or m.startswith("Stacked"):
-                used.add(m[:3])
-                models.append(m)
+        models = _first_of_family(all_models)
     else:
         models = all_models
+
+    models = [m if isinstance(m, h2o.model.ModelBase) else h2o.get_model(m) for m in models]
 
     colors = plt.get_cmap(colormap, len(models))(list(range(len(models))))
     with no_progress():
@@ -868,16 +906,16 @@ def partial_dependences(
             marker_map = dict(zip(range(len(markers) - 1), markers[:-1]))
         for i, model in enumerate(models):
             tmp = NumpyFrame(
-                h2o.get_model(model).partial_plot(frame, cols=[column], plot=False,
+                model.partial_plot(frame, cols=[column], plot=False,
                                                   row_index=row_index, targets=target,
                                                   nbins=20 if not is_factor else 1 + frame[
                                                       column].nlevels()[0])[0])
             encoded_col = tmp.columns[0]
             if is_factor:
                 plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"],
-                            color=[colors[i]], label=model, marker=marker_map.get(i, markers[-1]))
+                            color=[colors[i]], label=model.model_id, marker=marker_map.get(i, markers[-1]))
             else:
-                plt.plot(tmp[encoded_col], tmp["mean_response"], color=colors[i], label=model)
+                plt.plot(tmp[encoded_col], tmp["mean_response"], color=colors[i], label=model.model_id)
 
         _add_histogram(frame, column)
 
@@ -1011,14 +1049,14 @@ def individual_conditional_expectations(
         return fig
 
 
-def _has_varimp(model_id):
-    # type: (str) -> bool
+def _has_varimp(model):
+    # type: (Union[str, h2o.model.ModelBase]) -> bool
     """
-    Does model_id have varimp?
-    :param model_id: string containing model_id
+    Does model have varimp?
+    :param model: model or a string containing model_id
     :return: bool
     """
-    return not (model_id.startswith("Stacked") or model_id.startswith("Naive"))
+    return _get_algorithm(model) not in ["stackedensemble", "naivebayes"]
 
 
 def _get_xy(model):
@@ -1074,14 +1112,14 @@ def _consolidate_varimps(model):
     return consolidated_varimps
 
 
-def _interpretable(model_id):
-    # type: (str) -> bool
+def _interpretable(model):
+    # type: (Union[str, h2o.model.ModelBase]) -> bool
     """
     Returns True if model_id is easily interpretable.
-    :param model_id: string containing a model_id
+    :param model: model or a string containing a model_id
     :return: bool
     """
-    return model_id.startswith("GLM") or model_id.startswith("GAM") or model_id.startswith("RuleFit")
+    return _get_algorithm(model) in ["glm", "gam", "rulefit"]
 
 
 def _flatten_list(items):
@@ -1165,7 +1203,7 @@ def variable_importance_heatmap(
     else:
         top_n = len(models)
     # Filter out models that don't have varimp
-    models = [model for model in models if _has_varimp(model.model_id)]
+    models = [model for model in models if _has_varimp(model)]
     models = models[:min(len(models), top_n)]
     if len(models) == 0:
         raise RuntimeError("No model with variable importance")
@@ -1343,17 +1381,14 @@ def residual_analysis(
     return fig
 
 
-def _is_tree_model_id(model_id):
-    # type: (str) -> bool
+def _is_tree_model(model):
+    # type: (Union[str, h2o.model.ModelBase]) -> bool
     """
-    Is the model_id a tree model id?
-    :param model_id: string containing a model_id
+    Is the model a tree model id?
+    :param model: model or astring containing a model_id
     :return: bool
     """
-    return (model_id.startswith("DRF") or
-            model_id.startswith("XRT") or
-            model_id.startswith("XGBoost") or
-            model_id.startswith("GBM"))
+    return _get_algorithm(model) in ["drf", "gbm", "xgboost"]
 
 
 def _get_tree_models(
@@ -1371,21 +1406,21 @@ def _get_tree_models(
     if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
         model_ids = [model_id[0] for model_id in models.leaderboard[:, "model_id"]
             .as_data_frame(use_pandas=False, header=False)
-                     if _is_tree_model_id(model_id[0])
+                     if _is_tree_model(model_id[0])
                      ]
         return [
             h2o.get_model(model_id)
             for model_id in model_ids[:min(top_n, len(model_ids))]
         ]
     elif isinstance(models, h2o.model.ModelBase):
-        if _is_tree_model_id(models.model_id):
+        if _is_tree_model(models):
             return [models]
         else:
             return []
     models = [
         model
         for model in models
-        if _is_tree_model_id(model.model_id)
+        if _is_tree_model(model)
     ]
     return models[:min(len(models), top_n)]
 
@@ -1572,7 +1607,7 @@ def explain(
     else:
         columns_of_interest = None
 
-    models_with_varimp = [model for model in models_to_show if _has_varimp(model.model_id)]
+    models_with_varimp = [model for model in models_to_show if _has_varimp(model)]
 
     if len(models_with_varimp) == 0 and is_aml:
         models_with_varimp = [model_id[0] for model_id in models.leaderboard["model_id"]
@@ -1823,7 +1858,7 @@ def explain_row(
     is_aml, models_to_show, _, multinomial_classification, multiple_models, \
     targets, tree_models_to_show = _process_models_input(models, frame)
 
-    models_with_varimp = [model for model in models_to_show if _has_varimp(model.model_id)]
+    models_with_varimp = [model for model in models_to_show if _has_varimp(model)]
 
     if len(models_with_varimp) == 0 and is_aml:
         models_with_varimp = [model_id[0] for model_id in models.leaderboard["model_id"]
