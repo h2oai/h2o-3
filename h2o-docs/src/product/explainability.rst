@@ -46,9 +46,7 @@ Parameters
 
 - **include_explanations**: If specified, do only the specified explanations. Mutually exclusive with ``exclude_explanations``.
 
-- **exclude_explanations**: Exclude specified explanations.
-
-The available options (explainations) for ``include_explanations`` and ``exclude_explainations`` are:
+- **exclude_explanations**: Exclude specified explanations.  The available options (explainations) for ``include_explanations`` and ``exclude_explainations`` are:
     
     - ``"leaderboard"``  (AutoML and list of models only)
     - ``"residual_analysis"``  (regression only)
@@ -141,11 +139,12 @@ Here’s an example showing basic usage of the ``h2o.explain()`` function in *R*
         exm = aml.leader.explain(test)
 
 
-Notes: 
+Notes:
+''''''
 
 In R, the ``H2OExplanation`` object will not be printed if you save it to an object.  If you save the output to an object, you can access the plots and associated data for each explanation.  Then you can ``print(exa)`` to print the explaiation.
 
-In Python, the ``H2OExplanation`` will always be printed, even if you save it to an object.  Once you save it to an object, however, it can't be printed again, so you must ``from IPython.core.display import display`` and ``display(exa)`` instead.
+In Python, the ``H2OExplanation`` will always be printed, even if you save it to an object.  Once you save it to an object, however, if you want to print it again, you ``from IPython.core.display import display`` and ``display(exa)``.
 
 
 
@@ -194,9 +193,7 @@ Takes a list of models (including an AutoML object or leaderboard slice) as inpu
 
     variable_importance_heatmap          
     model_correlation_heatmap        
-    partial_dependences 
-    variable_importance_heatmap    
-    model_correlation_heatmap         
+    partial_dependences       
 
 
 Takes a single model as input:
