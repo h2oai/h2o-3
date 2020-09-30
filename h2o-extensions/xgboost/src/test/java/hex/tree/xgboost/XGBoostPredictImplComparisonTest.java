@@ -86,6 +86,7 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
             Scope.track_generic(model);
 
             System.setProperty("sys.ai.h2o.xgboost.predict.native.enable", "true");
+            System.setProperty("sys.ai.h2o.xgboost.predict.native.type", "cpu_predictor");
             Frame predsNative = Scope.track(model.score(testFrame));
             System.setProperty("sys.ai.h2o.xgboost.predict.native.enable", "false");
             Frame predsJava = Scope.track(model.score(testFrame));
@@ -93,6 +94,7 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
             assertFrameEquals(predsNative, predsJava, 1e-10, getRelDelta(parms));
         } finally {
             System.clearProperty("sys.ai.h2o.xgboost.predict.native.enable");
+            System.clearProperty("sys.ai.h2o.xgboost.predict.native.type");
             Scope.exit();
         }
     }
