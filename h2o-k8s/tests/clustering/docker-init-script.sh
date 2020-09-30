@@ -14,10 +14,9 @@ export KUBECONFIG="$(k3d get-kubeconfig --name='k3s-default')"
 kubectl cluster-info
 sleep 15 # Making sure the default namespace is initialized. The --wait flag does not guarantee this.
 kubectl get namespaces
-envsubst < h2o-service.yaml >> h2o-service-subst.yaml
-kubectl apply -f h2o-service-subst.yaml
-kubectl wait --for=condition=available --timeout=600s deployment.apps/h2o-deployment -n default
-rm h2o-service-subst.yaml
+envsubst < testvalues-template.yaml >> testvalues.yaml
+helm install -f testvalues.yaml h2o $H2O_BASE/h2o-helm/
+helm test h2o
 kubectl describe pods
 timeout 120s bash h2o-cluster-check.sh
 export EXIT_STATUS=$?

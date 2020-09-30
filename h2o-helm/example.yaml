@@ -1,0 +1,9 @@
+ingress:
+  enabled: true
+  annotations: {}
+  hosts:
+    - host: ""
+      paths: ["/"]
+  tls: []
+h2o:
+  nodeCount: 3
