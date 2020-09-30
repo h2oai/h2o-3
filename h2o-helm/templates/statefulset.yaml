@@ -35,7 +35,12 @@ spec:
             periodSeconds: 5
             failureThreshold: 1
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            limits:
+              cpu: {{.Values.resources.cpu}}
+              memory: {{.Values.resources.memory}}
+            requests:
+              cpu: {{.Values.resources.cpu}}
+              memory: {{.Values.resources.memory}}
           env:
             - name: H2O_KUBERNETES_SERVICE_DNS
               value: {{ .Release.Name }}.{{ .Release.Namespace }}.svc.cluster.local
