@@ -2,10 +2,9 @@ package hex.rulefit;
 
 import water.Iced;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
+import water.parser.BufferedString;
+import water.util.ArrayUtils;
 
 public class Condition extends Iced {
     public enum Type {Categorical, Numerical};
@@ -93,9 +92,17 @@ public class Condition extends Iced {
                             }
                         }
                     } else if (Condition.Type.Categorical.equals(Condition.this.type)) {
+                        BufferedString tmpStr = new BufferedString();
                         for (int i = 0; i < Condition.this.catTreshold.length; i++) {
-                            if (Condition.this.catTreshold[i] == col.atd(iRow))
+                            // for string vecs
+                            if (col instanceof CStrChunk) {
+                                if (ArrayUtils.contains(Condition.this.languageCatTreshold, col.atStr(tmpStr,iRow))) {
+                                    newVal = 1;
+                                }
+                            // for other categorical vecs
+                            } else if (Condition.this.catTreshold[i] == col.atd(iRow)) {
                                 newVal = 1;
+                            }
                         }
                     }
                 }
