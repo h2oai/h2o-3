@@ -304,7 +304,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
   }
 
   @Override
-  public int nModelsInParallel(int folds) {
+  protected int nModelsInParallel(int folds) {
     return nModelsInParallel(folds,2);
   }
 

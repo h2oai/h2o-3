@@ -454,7 +454,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * Each model can override this logic, based on parameters, dataset size, etc.
    * @return How many models to train in parallel during cross-validation
    */
-  public int nModelsInParallel(int folds) {
+  protected int nModelsInParallel(int folds) {
     int n = nModelsInParallel();
     if (n > 0) return n;
     return nModelsInParallel(folds, 1);
