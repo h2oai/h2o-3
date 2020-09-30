@@ -24,6 +24,10 @@ spec:
           image: "{{ .Values.image.name }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           command: ["/bin/bash", "-c", "java -XX:+UseContainerSupport -XX:MaxRAMPercentage={{ .Values.h2o.memoryPercentage }} -jar /opt/h2oai/h2o-3/h2o.jar"]
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.volumeMounts }}
+          volumeMounts:
+          {{- toYaml .Values.volumeMounts | nindent 12 }}
+          {{- end }}
           ports:
             - containerPort: 54321
               protocol: TCP
@@ -62,5 +66,6 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      volumes:
-      {{- toYaml .Values.volumes | nindent 8 }}
+      {{- if .Values.volumes }}
+        {{- toYaml .Values.volumes | nindent 8 }}
+      {{- end }}
