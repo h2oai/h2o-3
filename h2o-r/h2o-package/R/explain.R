@@ -2069,7 +2069,8 @@ h2o.explain <- function(object,
       )))
       top_n <- if (is.null(plot_overrides$model_correlation$top_n)) 20
       else plot_overrides$model_correlation$top_n
-
+      if (models_info$is_automl)
+        top_n <- Inf
       interpretable_models <- unlist(Filter(.interpretable,
                                             .model_ids(
                                               head(models_info$models,
