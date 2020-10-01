@@ -142,7 +142,7 @@ with_no_h2o_progress <- function(expr) {
       is_automl <<- is_automl
       leaderboard <<- leaderboard
       model_ids <<- model_ids
-      model <<- .self$get_model(model_ids[[1]])
+      model <<- model_ids[[1]]
       x <<- .self$get_model(model_ids[[1]])@allparameters$x
       y <<- .self$get_model(model_ids[[1]])@allparameters$y
       y_col <- newdata[[.self$y]]
@@ -228,7 +228,6 @@ with_no_h2o_progress <- function(expr) {
 
 
   if ("H2OAutoML" %in% class(object)) {
-    y_col <- newdata[[object@leader@allparameters$y]]
     if (require_single_model && nrow(object@leaderboard) > 1) {
       stop("Only one model is allowed!")
     }
@@ -261,7 +260,6 @@ with_no_h2o_progress <- function(expr) {
         object <- object[[1]]
       }
       if (!is.character(object)) {
-        memoised_models[[object@model_id]] <- object
         object <- object@model_id
       }
 
@@ -296,7 +294,15 @@ with_no_h2o_progress <- function(expr) {
       })
 
       if (best_of_family) {
-        object <- object[order(sapply(sapply(object, mi$get_model), .get_MSE))]
+        object <- object[order(sapply(sapply(object, function (m_id) {
+          if (m_id %in% memoised_models) {
+            return(memoised_models[[m_id]])
+          } else {
+            m <- h2o.getModel(m_id)
+            memoised_models[[m_id]] <- m
+            return(m)
+          }
+        }), .get_MSE))]
         object <- .get_first_of_family(object)
       }
 
@@ -951,8 +957,8 @@ h2o.shap_summary_plot <-
            sample_size = 1000) {
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
-    if (!.is_h2o_tree_model(model)) {
-      stop("SHAP summary plot requires an H2O tree-based model (DRF, GBM, XGBoost)!")
+    if (!.is_h2o_model(model) || !.is_h2o_tree_model(model)) {
+      stop("SHAP summary plot requires a tree-based model!")
     }
     if (!missing(columns) && !missing(top_n_features)) {
       warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
@@ -1124,7 +1130,7 @@ h2o.shap_explain_row <-
            contribution_type = c("both", "positive", "negative")) {
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
-    if (!.is_h2o_tree_model(model)) {
+    if (!.is_h2o_model(model) || !.is_h2o_tree_model(model)) {
       stop("SHAP explain_row plot requires a tree-based model!")
     }
 
