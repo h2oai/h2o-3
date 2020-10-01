@@ -101,7 +101,7 @@ Additional Resources:
 .. toctree::
    :maxdepth: 2
 
-   explainability   
+   explain   
 
 .. toctree::
    :maxdepth: 2
