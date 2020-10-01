@@ -64,10 +64,6 @@ with_no_h2o_progress <- function(expr) {
 #'
 #' @return boolean
 .is_h2o_model <- function(model) {
-  if (is.character(model)) {
-    model <- h2o.getModel(model)
-  }
-
   classes <- class(model)
   return(any(startsWith(classes, "H2O") & endsWith(classes, "Model")))
 }
@@ -78,14 +74,6 @@ with_no_h2o_progress <- function(expr) {
 #'
 #' @return boolean
 .is_h2o_tree_model <- function(model) {
-  if (is.character(model)) {
-    model <- h2o.getModel(model)
-  }
-
-  if (!.is_h2o_model(model)) {
-    return(FALSE)
-  }
-
   return(.get_algorithm(model) %in% c("drf", "gbm", "xgboost"))
 }
 
@@ -135,6 +123,47 @@ with_no_h2o_progress <- function(expr) {
   return(!.get_algorithm(model) %in% c("stackedensemble", "naivebayes"))
 }
 
+
+#' Needed to be able to memoise the models
+.models_info <- setRefClass(
+  "models_info",
+  fields = c("is_automl",
+             "leaderboard",
+             "model_ids",
+             "is_classification",
+             "is_multinomial_classification",
+             "x",
+             "y",
+             "model",
+             "memoised_models"),
+  methods = list(
+    initialize = function(newdata, is_automl, leaderboard, model_ids) {
+      memoised_models <<- list()
+      is_automl <<- is_automl
+      leaderboard <<- leaderboard
+      model_ids <<- model_ids
+      model <<- .self$get_model(model_ids[[1]])
+      x <<- .self$get_model(model_ids[[1]])@allparameters$x
+      y <<- .self$get_model(model_ids[[1]])@allparameters$y
+      y_col <- newdata[[.self$y]]
+
+      is_classification <<- is.factor(y_col)
+      is_multinomial_classification <<- is.factor(y_col) && h2o.nlevels(y_col) > 2
+      .self
+    },
+    get_model = function(model_id) {
+      if (model_id %in% names(memoised_models)) {
+        return(memoised_models[[model_id]])
+      } else {
+        mdl <- h2o.getModel(model_id)
+        memoised_models[[model_id]] <<- mdl
+        return(mdl)
+      }
+    }
+  )
+)
+
+
 #' Do basic validation and transform \code{object} to a "standardized" list containing models, and
 #' their properties such as \code{x}, \code{y}, whether it is a (multinomial) clasification or not etc.
 #'
@@ -162,10 +191,13 @@ with_no_h2o_progress <- function(expr) {
     stop(paste(newdata_name, "must be an H2OFrame!"))
   }
 
-  make_models_info <- function(...) {
-    result <- list(...)
-    class(result) <- c("models_info", "list")
-    return(result)
+  make_models_info <- function(is_automl, leaderboard, model_ids) {
+    return(.models_info$new(
+      newdata = newdata,
+      is_automl = is_automl,
+      leaderboard = leaderboard,
+      model_ids = model_ids
+    ))
   }
 
   .get_MSE <- function(model) {
@@ -176,19 +208,18 @@ with_no_h2o_progress <- function(expr) {
     }
   }
 
-
   if ("models_info" %in% class(object)) {
     if (best_of_family) {
-      object$models <- .get_first_of_family(object$models)
+      object$model_ids <- .get_first_of_family(object$model_ids)
     }
 
     if (only_with_varimp) {
-      object$models <- Filter(.has_varimp, object$models)
+      object$model_ids <- Filter(.has_varimp, object$model_ids)
     }
 
     if (!is.na(top_n_from_AutoML)) {
       if (object$is_automl) {
-        object$models <- head(object$models, n = min(top_n_from_AutoML, length(object$models)))
+        object$model_ids <- head(object$model_ids, n = min(top_n_from_AutoML, length(object$model_ids)))
       }
     }
 
@@ -204,27 +235,22 @@ with_no_h2o_progress <- function(expr) {
     if (require_multiple_models && nrow(object@leaderboard) <= 1) {
       stop("More than one model is needed!")
     }
-    models <- unlist(as.list(object@leaderboard$model_id))
+    model_ids <- unlist(as.list(object@leaderboard$model_id))
     if (only_with_varimp) {
-      models <- Filter(.has_varimp, models)
+      model_ids <- Filter(.has_varimp, model_ids)
     }
     if (best_of_family) {
-      models <- .get_first_of_family(models)
+      model_ids <- .get_first_of_family(model_ids)
     }
     if (is.na(top_n_from_AutoML)) {
-      top_n_from_AutoML <- length(models)
+      top_n_from_AutoML <- length(model_ids)
     } else {
-      top_n_from_AutoML <- min(top_n_from_AutoML, length(models))
+      top_n_from_AutoML <- min(top_n_from_AutoML, length(model_ids))
     }
     return(make_models_info(
       is_automl = TRUE,
       leaderboard = as.data.frame(h2o.get_leaderboard(object, extra_columns = "ALL")),
-      models = sapply(head(models, top_n_from_AutoML), h2o.getModel),
-      is_classification = is.factor(y_col),
-      is_multinomial_classification = is.factor(y_col) && h2o.nlevels(y_col) > 2,
-      x = object@leader@allparameters$x,
-      y = object@leader@allparameters$y,
-      model = if (require_single_model) object@leader
+      model_ids = head(model_ids, top_n_from_AutoML)
     ))
   } else {
     if (length(object) == 1) {
@@ -234,25 +260,22 @@ with_no_h2o_progress <- function(expr) {
       if (class(object) == "list") {
         object <- object[[1]]
       }
-      if (is.character(object)) {
-        object <- h2o.getModel(object)
+      if (!is.character(object)) {
+        memoised_models[[object@model_id]] <- object
+        object <- object@model_id
       }
 
       if (only_with_varimp && !.has_varimp(object)) {
-        stop(object@model_id, " doesn't have variable importance!")
+        stop(object, " doesn't have variable importance!")
       }
 
-      y_col <- newdata[[object@allparameters$y]]
 
-      return(make_models_info(
+      mi <- make_models_info(
         is_automl = FALSE,
-        models = list(object),
-        is_classification = is.factor(y_col),
-        is_multinomial_classification = is.factor(y_col) && h2o.nlevels(y_col) > 2,
-        x = object@allparameters$x,
-        y = object@allparameters$y,
-        model = if (require_single_model) object
-      ))
+        leaderboard = NULL,
+        model_ids = object
+      )
+      return(mi)
     } else {
       if (require_single_model) {
         stop("Only one model is allowed!")
@@ -262,17 +285,32 @@ with_no_h2o_progress <- function(expr) {
         object <- Filter(.has_varimp, object)
       }
 
+      memoised_models <- list()
       object <- sapply(object, function(m) {
         if (is.character(m)) {
-          h2o.getModel(m)
-        } else {
           m
+        } else {
+          memoised_models[[m@model_id]] <- m
+          m@model_id
         }
       })
-      x <- object[[1]]@allparameters$x
-      y <- object[[1]]@allparameters$y
+
+      if (best_of_family) {
+        object <- object[order(sapply(sapply(object, mi$get_model), .get_MSE))]
+        object <- .get_first_of_family(object)
+      }
+
+      mi <- make_models_info(
+        is_automl = FALSE,
+        model_ids = .model_ids(object),
+        leaderboard = NULL
+      )
+      mi$memoised_models <- memoised_models
+      x <- mi$x
+      y <- mi$y
 
       for (model in object) {
+        model <- mi$get_model(model)
         if (any(sort(model@allparameters$x) != sort(x))) {
           stop(sprintf(
             "Model \"%s\" has different x from model\"%s\"! (%s != %s)",
@@ -292,20 +330,7 @@ with_no_h2o_progress <- function(expr) {
         }
       }
 
-      if (best_of_family) {
-        object <- object[order(sapply(object, .get_MSE))]
-        object <- .get_first_of_family(object)
-      }
-
-      return(make_models_info(
-        is_automl = FALSE,
-        models = object,
-        is_classification = is.factor(newdata[[y]]),
-        is_multinomial_classification = is.factor(newdata[[y]]) && h2o.nlevels(newdata[[y]]) > 2,
-        x = x,
-        y = y,
-        model = NULL
-      ))
+      return(mi)
     }
   }
 }
@@ -369,9 +394,9 @@ with_no_h2o_progress <- function(expr) {
   if (models_info$is_automl) {
     return(models_info$leaderboard)
   }
-  models <- models_info$models
   leaderboard <-
-    as.data.frame(t(sapply(models, function(m) {
+    as.data.frame(t(sapply(models_info$model_ids, function(m) {
+      m <- models_info$get_model(m)
       unlist(h2o.performance(m, leaderboard_frame)@metrics[c(
         "MSE",
         "RMSE",
@@ -381,7 +406,7 @@ with_no_h2o_progress <- function(expr) {
         "logloss"
       )])
     })))
-  leaderboard <- cbind(data.frame(model_id=.model_ids(models), stringsAsFactors = FALSE),
+  leaderboard <- cbind(data.frame(model_id=.model_ids(models_info$model_ids), stringsAsFactors = FALSE),
                        leaderboard)
   leaderboard <- leaderboard[order(leaderboard[[2]]),]
   names(leaderboard) <- tolower(names(leaderboard))
@@ -491,8 +516,6 @@ with_no_h2o_progress <- function(expr) {
   indices <- which(!duplicated(substr(leaderboard$model_id, 1, 3)))
   indices <- c(seq_len(top_n), indices[indices > top_n])
   leaderboard <- leaderboard[indices,]
-  models <- models_info$models
-  names(models) <- .model_ids(models)
   with_no_h2o_progress({
     leaderboard <-
       cbind(leaderboard,
@@ -501,7 +524,7 @@ with_no_h2o_progress <- function(expr) {
               sapply(
                 leaderboard[["model_id"]],
                 function(model_id) {
-                  as.data.frame(stats::predict(models[[model_id]], newdata[row_index,])[["predict"]])
+                  as.data.frame(stats::predict(models_info$get_model(model_id), newdata[row_index,])[["predict"]])
                 }
               )
             )
@@ -929,7 +952,7 @@ h2o.shap_summary_plot <-
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
     if (!.is_h2o_tree_model(model)) {
-      stop("SHAP summary plot requires a tree-based model!")
+      stop("SHAP summary plot requires an H2O tree-based model (DRF, GBM, XGBoost)!")
     }
     if (!missing(columns) && !missing(top_n_features)) {
       warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
@@ -1333,8 +1356,8 @@ h2o.variable_importance_heatmap <- function(object, newdata, top_n = 20) {
                                            require_multiple_models = TRUE,
                                            top_n_from_AutoML = top_n, only_with_varimp = TRUE
   )
-  models <- Filter(.has_varimp, models_info$models)
-  varimps <- lapply(models, .varimp, newdata)
+  models <- Filter(.has_varimp, models_info$model_ids)
+  varimps <- lapply(lapply(models, models_info$get_model), .varimp, newdata)
   names(varimps) <- .model_ids(models)
   varimps <- lapply(varimps, function(varimp) {
     varimp[models_info$x[!models_info$x %in% names(varimp)]] <- 0
@@ -1397,10 +1420,11 @@ h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   models_info <- .process_models_or_automl(object, newdata, require_multiple_models = TRUE, top_n_from_AutoML = top_n)
-  models <- models_info$models
+  models <- models_info$model_ids
   with_no_h2o_progress({
     preds <-
       sapply(models, function(m, df) {
+        m <- models_info$get_model(m)
         list(predict = as.numeric(as.data.frame(stats::predict(m, df)[["predict"]])[["predict"]]))
       }, newdata)
     preds <- as.data.frame(do.call(cbind, preds))
@@ -1554,14 +1578,14 @@ h2o.partial_dependences <- function(object,
   if (h2o.isfactor(newdata[[column]]))
     margin <- ggplot2::margin(5.5, 5.5, 5.5, max(5.5, max(nchar(h2o.levels(newdata[[column]])))))
 
-  if (length(models_info$models) == 1) {
+  if (length(models_info$model_ids) == 1) {
     targets <- NULL
     if (models_info$is_multinomial_classification) {
       targets <- h2o.levels(newdata[[models_info$y]])
     }
     with_no_h2o_progress({
       pdps <-
-        h2o.partialPlot(models_info$models[[1]], newdata, column,
+        h2o.partialPlot(models_info$get_model(models_info$model_ids[[1]]), newdata, column,
                         plot = FALSE, targets = targets,
                         nbins = if (is.factor(newdata[[column]])) {
                           h2o.nlevels(newdata[[column]]) + 1
@@ -1653,12 +1677,12 @@ h2o.partial_dependences <- function(object,
 
   with_no_h2o_progress({
     results <- NULL
-    models_to_plot <- models_info$models
+    models_to_plot <- models_info$model_ids
     if (best_of_family)
       models_to_plot <- .get_first_of_family(models_to_plot)
     for (model in models_to_plot) {
       pdp <-
-        h2o.partialPlot(model, newdata, column,
+        h2o.partialPlot(models_info$get_model(model), newdata, column,
                         plot = FALSE, targets = target,
                         nbins = if (is.factor(newdata[[column]])) {
                           h2o.nlevels(newdata[[column]]) + 1
@@ -1671,7 +1695,7 @@ h2o.partial_dependences <- function(object,
         results <- pdp[column]
         names(results) <- make.names(names(results))
       }
-      results[[model@model_id]] <- pdp$mean_response
+      results[[model]] <- pdp$mean_response
     }
 
     data <- stats::reshape(results,
@@ -1795,7 +1819,7 @@ h2o.individual_conditional_expectations <- function(model,
     i <- 0
     for (idx in quantiles) {
       tmp <- as.data.frame(h2o.partialPlot(
-        models_info$model,
+        models_info$get_model(models_info$model),
         newdata,
         column,
         row_index = as.integer(idx),
@@ -1817,7 +1841,7 @@ h2o.individual_conditional_expectations <- function(model,
     )
     names(results) <- make.names(names(results))
     pdp <-
-      as.data.frame(h2o.partialPlot(models_info$model,
+      as.data.frame(h2o.partialPlot(models_info$get_model(models_info$model),
                                     newdata,
                                     column,
                                     plot = FALSE,
@@ -1921,7 +1945,7 @@ h2o.explain <- function(object,
                         exclude_explanations = character(),
                         plot_overrides = list()) {
   models_info <- .process_models_or_automl(object, newdata)
-  multiple_models <- length(models_info$models) > 1
+  multiple_models <- length(models_info$model_ids) > 1
   result <- list()
 
   possible_explanations <- c(
@@ -1992,15 +2016,15 @@ h2o.explain <- function(object,
     }
   } else {
     columns_of_interest <- models_info$x
-    if (!any(sapply(models_info$models, .has_varimp))) {
+    if (!any(sapply(models_info$model_ids, .has_varimp))) {
       warning(
         "StackedEnsemble does not have a variable importance. Picking all columns. ",
         "Set `columns` to a vector of columns to explain just a subset of columns.",
         call. = FALSE
       )
     } else {
-      models_with_varimp <- Filter(.has_varimp, models_info$models)
-      varimp <- names(.varimp(models_with_varimp[[1]],  newdata))
+      models_with_varimp <- Filter(.has_varimp, models_info$model_ids)
+      varimp <- names(.varimp(models_info$get_model(models_with_varimp[[1]]),  newdata))
       columns_of_interest <- varimp[seq_len(min(length(varimp), top_n_features))]
       # deal with encoded columns
       columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
@@ -2023,7 +2047,8 @@ h2o.explain <- function(object,
         description = .describe("confusion_matrix"),
         subexplanations = list()
       )
-      for (m in models_info$models) {
+      for (m in models_info$model_ids) {
+        m <- models_info$get_model(m)
         result$confusion_matrix$subexplanations[[m@model_id]] <- list(
           subheader = .h2o_explanation_header(m@model_id, 2),
           data = .customized_call(
@@ -2043,7 +2068,8 @@ h2o.explain <- function(object,
         description = .describe("residual_analysis"),
         plots = list())
 
-      for (m in models_info$models) {
+      for (m in models_info$model_ids) {
+        m <- models_info$get_model(m)
         result$residual_analysis$plots[[m@model_id]] <- .customized_call(
           h2o.residual_analysis,
           model = m,
@@ -2057,14 +2083,15 @@ h2o.explain <- function(object,
 
   # feature importance
   if (!"variable_importance" %in% skip_explanations) {
-    if (any(sapply(models_info$models, .has_varimp))) {
+    if (any(sapply(models_info$model_ids, .has_varimp))) {
       result$variable_importance <- list(
         header = .h2o_explanation_header("Variable Importance"),
         description = .describe("variable_importance"),
         plots = list())
       varimp <- NULL
       warning_shown <- FALSE
-      for (m in models_info$models) {
+      for (m in models_info$model_ids) {
+        m <- models_info$get_model(m)
         tmp <- .plot_varimp(m, newdata)
         if (!is.null(tmp$varimp)) {
           result$variable_importance$plots[[m@model_id]] <- tmp$plot
@@ -2083,7 +2110,7 @@ h2o.explain <- function(object,
   if (multiple_models) {
     # Variable Importance Heatmap
     if (!"variable_importance_heatmap" %in% skip_explanations) {
-      if (length(Filter(.has_varimp, models_info$models)) > 1) {
+      if (length(Filter(.has_varimp, models_info$model_ids)) > 1) {
         result$variable_importance_heatmap <- list(
           header = .h2o_explanation_header("Variable Importance Heatmap"),
           description = .describe("variable_importance_heatmap"),
@@ -2111,8 +2138,8 @@ h2o.explain <- function(object,
         top_n <- Inf
       interpretable_models <- unlist(Filter(.interpretable,
                                             .model_ids(
-                                              head(models_info$models,
-                                                   n = min(top_n, length(models_info$models))
+                                              head(models_info$model_ids,
+                                                   n = min(top_n, length(models_info$model_ids))
                                               ))))
       if (length(interpretable_models) > 0) {
         result$model_correlation_heatmap$notes$interpretable_models <- sprintf(
@@ -2125,13 +2152,14 @@ h2o.explain <- function(object,
 
   # SHAP summary
   if (!"shap_summary" %in% skip_explanations && !models_info$is_multinomial_classification) {
-    num_of_tree_models <- sum(sapply(models_info$models, .is_h2o_tree_model))
+    num_of_tree_models <- sum(sapply(models_info$model_ids, .is_h2o_tree_model))
     if (num_of_tree_models > 0) {
       result$shap_summary <- list(
         header = .h2o_explanation_header("SHAP Summary"),
         description = .describe("shap_summary"),
         plots = list())
-      for (m in Filter(.is_h2o_tree_model, models_info$models)) {
+      for (m in Filter(.is_h2o_tree_model, models_info$model_ids)) {
+        m <- models_info$get_model(m)
         result$shap_summary$plots[[m@model_id]] <- .customized_call(
           h2o.shap_summary_plot,
           model = m,
@@ -2153,7 +2181,7 @@ h2o.explain <- function(object,
       if (!multiple_models) {
         result$pdp$plots[[col]] <- .customized_call(
           h2o.partial_dependences,
-          object = models_info$models,
+          object = models_info,
           newdata = newdata,
           column = col,
           overrides = plot_overrides$partial_dependences
@@ -2167,7 +2195,7 @@ h2o.explain <- function(object,
           for (target in targets) {
             result$pdp$plots[[col]][[target]] <- .customized_call(
               h2o.partial_dependences,
-              object = models_info$models,
+              object = models_info,
               newdata = newdata,
               column = col,
               target = target,
@@ -2178,7 +2206,7 @@ h2o.explain <- function(object,
         } else {
           result$pdp$plots[[col]] <- .customized_call(
             h2o.partial_dependences,
-            object = models_info$models,
+            object = models_info,
             newdata = newdata,
             column = col,
             overridable_defaults = list(best_of_family = models_info$is_automl),
@@ -2196,7 +2224,8 @@ h2o.explain <- function(object,
       description = .describe("ice"),
       plots = list())
     for (col in columns_of_interest) {
-      for (m in models_info$models) {
+      for (m in models_info$model_ids) {
+        m <- models_info$get_model(m)
         if (models_info$is_multinomial_classification) {
           targets <- h2o.levels(newdata[[models_info$y]])
           if (!is.null(plot_overrides$individual_conditional_expectations[["target"]])) {
@@ -2255,7 +2284,7 @@ h2o.explain_row <- function(object,
                             exclude_explanations = character(),
                             plot_overrides = list()) {
   models_info <- .process_models_or_automl(object, newdata)
-  multiple_models <- length(models_info$models) > 1
+  multiple_models <- length(models_info$model_ids) > 1
   result <- list()
 
   possible_explanations <- c(
@@ -2320,15 +2349,15 @@ h2o.explain_row <- function(object,
     }
   } else {
     columns_of_interest <- models_info$x
-    if (!any(sapply(models_info$models, .has_varimp))) {
+    if (!any(sapply(models_info$model_ids, .has_varimp))) {
       warning(
         "StackedEnsemble does not have a variable importance. Picking all columns. ",
         "Set `columns` to a vector of columns to explain just a subset of columns.",
         call. = FALSE
       )
     } else {
-      models_with_varimp <- Filter(.has_varimp, models_info$models)
-      varimp <- names(.varimp(models_with_varimp[[1]],  newdata))
+      models_with_varimp <- Filter(.has_varimp, models_info$model_ids)
+      varimp <- names(.varimp(models_info$get_model(models_with_varimp[[1]]),  newdata))
       columns_of_interest <- varimp[seq_len(min(length(varimp), top_n_features))]
       # deal with encoded columns
       columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
@@ -2343,15 +2372,16 @@ h2o.explain_row <- function(object,
   }
 
   if (!"shap_explain_row" %in% skip_explanations && !models_info$is_multinomial_classification) {
-    num_of_tree_models <- sum(sapply(models_info$models, .is_h2o_tree_model))
+    num_of_tree_models <- sum(sapply(models_info$model_ids, .is_h2o_tree_model))
     if (num_of_tree_models > 0) {
       result$shap_explain_row <- list(
         header = .h2o_explanation_header("SHAP explanation"),
         description = .describe("shap_explain_row"),
         plots = list()
       )
-      tree_models <- Filter(.is_h2o_tree_model, models_info$models)
+      tree_models <- Filter(.is_h2o_tree_model, models_info$model_ids)
       for (m in tree_models) {
+        m <- models_info$get_model(m)
         result$shap_explain_row$plots[[m@model_id]] <- .customized_call(
           h2o.shap_explain_row,
           model = m,
