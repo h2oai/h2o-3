@@ -803,7 +803,6 @@ h2o.clusterStatus <- function() {
   md5_file <- tempfile(fileext = ".md5")
   .downloadFile(md5_url, dest = md5_file, mode = "w")
   md5_check <- readLines(md5_file, n = 1L)
-    cat(md5_check)
   if (nchar(md5_check) != 32) stop("md5 malformed, must be 32 characters (see ", md5_url, ")")
   unlink(md5_file)
 
