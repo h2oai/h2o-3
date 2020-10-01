@@ -378,7 +378,9 @@ public abstract class SharedTreeModel<
       }
       res.delete();
       res = new Frame(destKey, names, nvecs);
-      DKV.put(res);
+      if (destKey != null) {
+        DKV.put(res);
+      }
       if (hasInvalidPaths) {
         Log.warn("Some of the leaf node assignments were skipped (NA), " +
                 "only tree-paths up to length 64 are supported.");
