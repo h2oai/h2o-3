@@ -274,4 +274,17 @@ public class ArrayUtilsTest {
     final String outputString = toStringQuotedElements(names);
     assertEquals("[\"\", \"T16384\"]", outputString);
   }
+
+  @Test
+  public void testToStringQuotedElementsNullInput(){
+    final String outputString = toStringQuotedElements(null);
+    assertEquals("null", outputString);
+  }
+
+  @Test
+  public void testToStringQuotedElementsEmptyInput(){
+    final Object[] emptyNames = new String[0];
+    final String outputString = toStringQuotedElements(emptyNames);
+    assertEquals("[]", outputString);
+  }
 }
