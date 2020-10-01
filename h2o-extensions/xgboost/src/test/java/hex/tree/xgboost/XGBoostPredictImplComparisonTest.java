@@ -77,21 +77,6 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
             Frame trainFrame = Scope.track((Frame) splits[0].get());
             Frame testFrame = Scope.track((Frame) splits[1].get());
 
-            Frame.CSVStreamParams csvStreamParams = new Frame.CSVStreamParams();
-            try {
-                IOUtils.copyStream(trainFrame.toCSV(csvStreamParams), new FileOutputStream("xgb_train.csv"));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            try {
-                IOUtils.copyStream(testFrame.toCSV(csvStreamParams), new FileOutputStream("xgb_test.csv"));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            System.out.println("DONE WRITING FRAMES ---------------");
-            System.out.println("---------------------------------");
-
-
             XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
             parms._booster = XGBoostModel.XGBoostParameters.Booster.valueOf(booster);
             parms._distribution = DistributionFamily.valueOf(distribution);
@@ -105,7 +90,6 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
             Scope.track_generic(model);
 
             System.setProperty("sys.ai.h2o.xgboost.predict.native.enable", "true");
-            System.setProperty("sys.ai.h2o.xgboost.predict.native.type", "cpu_predictor");
             Frame predsNative = Scope.track(model.score(testFrame));
             System.setProperty("sys.ai.h2o.xgboost.predict.native.enable", "false");
             Frame predsJava = Scope.track(model.score(testFrame));
