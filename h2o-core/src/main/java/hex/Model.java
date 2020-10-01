@@ -1310,8 +1310,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   
   public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics, boolean catEncoded) {
-    final IcedHashMap<Key, String> toDelete = new IcedHashMap<>();
-    String[] warnings = adaptTestForTrain(
+    return adaptTestForTrain(
             test,
             _output._origNames,
             _output._origDomains,
@@ -1322,14 +1321,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             computeMetrics,
             _output.interactionBuilder(),
             getToEigenVec(),
-            toDelete,
+            _toDelete,
             catEncoded
     );
-    for (Map.Entry<Key, String> entry: _toDelete.entrySet())
-      toDelete.putIfAbsent(entry.getKey(), entry.getValue());
-
-    _toDelete = toDelete;
-    return warnings;
   }
 
   /**
@@ -1428,7 +1422,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         else if (isWeights && computeMetrics) {
           if (expensive) {
             vec = test.anyVec().makeCon(1);
-            toDelete.put(vec._key, "adapted missing vectors");
+            toDelete.putIfAbsent(vec._key, "adapted missing vectors");
             msgs.add(H2O.technote(1, "Test/Validation dataset is missing weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
           }
         } else if (expensive) {   // generate warning even for response columns.  Other tests depended on this.
@@ -1440,7 +1434,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             convNaN++;
           }
           vec = test.anyVec().makeCon(defval);
-          toDelete.put(vec._key, "adapted missing vectors");
+          toDelete.putIfAbsent(vec._key, "adapted missing vectors");
           String str = "Test/Validation dataset is missing column '" + names[i] + "': substituting in a column of " + defval;
           if (isResponse || isWeights || isFold)
             Log.info(str); // we are doing a "pure" predict (computeMetrics is false), don't complain to the user
@@ -1456,7 +1450,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             Vec evec;
             try {
               evec = vec.adaptTo(domains[i]); // Convert to categorical or throw IAE
-              toDelete.put(evec._key, "categorically adapted vec");
+              toDelete.putIfAbsent(evec._key, "categorically adapted vec");
             } catch( NumberFormatException nfe ) {
               throw new IllegalArgumentException("Test/Validation dataset has a non-categorical column '"+names[i]+"' which is categorical in the training data");
             }
@@ -1488,7 +1482,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       // check if we first need to expand categoricals before calling this method again
       if (hasCategoricalPredictors) {
         Frame updated = categoricalEncoder(test, parms.getNonPredictors(), parms._categorical_encoding, tev, parms._max_categorical_levels);
-        toDelete.put(updated._key, "categorically encoded frame");
+        toDelete.putIfAbsent(updated._key, "categorically encoded frame");
         test.restructure(updated.names(), updated.vecs()); //updated in place
         String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactionBldr, tev, toDelete, true /*catEncoded*/);
         msgs.addAll(Arrays.asList(msg2));
