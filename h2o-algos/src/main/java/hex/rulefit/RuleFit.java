@@ -180,16 +180,10 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 // 1. Rule generation
 
                 // get paths from tree models
-                Frame pathsFrame = new Frame(Key.make("paths_frame" + _result));
                 int[] depths = range(_parms._min_rule_length, _parms._max_rule_length);
                 List<SharedTreeModel> treeModels = new ArrayList<>();
 
-                pathsFrame.add(_parms._response_column, _response);
-                if (_parms._weights_column != null) {
-                    pathsFrame.add(_parms._weights_column, _weights);
-                }
-                Frame paths = null;
-                Key[] keys = new Key[depths.length];
+                Frame pathsFrame = new Frame();
                 // prepare rules
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.RULES.equals(_parms._model_type)) {
                     SharedTree<?, ?, ?>[] builders = ModelBuilderHelper.trainModelsParallel(
@@ -202,26 +196,28 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                         LOG.info("Tree model n." + modelId + " trained in " + ((double)endModelTime) / 1E9 + "s.");
                         treeModels.add(treeModel);
     
-                        paths = treeModel.scoreLeafNodeAssignment(_train, Model.LeafNodeAssignment.LeafNodeAssignmentType.Path, Key.make("path_" + modelId + _result));
-                        paths.setNames(RuleFitUtils.getPathNames(modelId, paths.numCols(), paths.names()));
-                        pathsFrame.add(paths);
-    
-                        keys[modelId] = paths._key;
-                        DKV.put(paths);
-                        DKV.put(treeModel);
+                        Frame paths = Scope.track(treeModel.scoreLeafNodeAssignment(_train, Model.LeafNodeAssignment.LeafNodeAssignmentType.Path, null));
+                        pathsFrame.add(RuleFitUtils.getPathNames(modelId, paths.numCols(), paths.names()), paths.vecs());
                     }
                     long endAllTreesTime = System.nanoTime() - startAllTreesTime;
                     LOG.info("All tree models trained in " + ((double)endAllTreesTime) / 1E9 + "s.");
                 }
+
                 // prepare linear terms
+                Frame linearTrain = new Frame(Key.make("paths_frame" + _result));
+                linearTrain.add(_parms._response_column, _response);
+                if (_parms._weights_column != null) {
+                    linearTrain.add(_parms._weights_column, _weights);
+                }
+                linearTrain.add(pathsFrame);
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.LINEAR.equals(_parms._model_type)) {
                     String[] names = ArrayUtils.remove(_train._names, _parms._response_column);
-                    pathsFrame.add(RuleFitUtils.getLinearNames(names.length, names), _train.vecs(names));
+                    linearTrain.add(RuleFitUtils.getLinearNames(names.length, names), _train.vecs(names));
                 }
-                DKV.put(pathsFrame);
+                DKV.put(linearTrain);
 
                 // 2. Sparse linear model with Lasso
-                glmParameters._train = pathsFrame._key;
+                glmParameters._train = linearTrain._key;
                 if (_parms._max_num_rules > 0) {
                     glmParameters._max_active_predictors = _parms._max_num_rules + 1;
                     if (_parms._distribution != DistributionFamily.multinomial) {
@@ -237,6 +233,9 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 long endGLMTime = System.nanoTime() - startGLMTime;
                 LOG.info("GLM trained in " + ((double)endGLMTime) / 1E9 + "s.");
                 DKV.put(glmModel);
+
+                DKV.remove(linearTrain._key);
+                pathsFrame.remove();
 
                 SharedTreeModel[] treeModelsArray = new SharedTreeModel[treeModels.size()];
                 for (int i = 0; i < treeModels.size(); i++) {
@@ -258,15 +257,6 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 model._output._rule_importance = convertRulesToTable(getRules(glmModel._parms._family, glmModel.coefficients(), treeModels, _parms._algorithm));
                 
                 fillModelMetrics(model, glmModel);
-
-                for (Key key : keys) {
-                    DKV.remove(key);
-                }
-                DKV.remove(pathsFrame._key);
-
-                if (paths != null) {
-                    paths.remove();
-                }
 
                 model.delete_and_lock(_job);
                 model.update(_job);
