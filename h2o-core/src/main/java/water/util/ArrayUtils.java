@@ -667,6 +667,26 @@ public class ArrayUtils {
     return result;
   }
 
+  public static String toStringQuotedElements(Object[] a) {
+    if (a == null)
+      return "null";
+
+    int iMax = a.length - 1;
+    if (iMax == -1)
+      return "[]";
+
+    StringBuilder b = new StringBuilder();
+    b.append('[');
+    for (int i = 0; ; i++) {
+      b.append('"');
+      b.append(a[i]);
+      b.append('"');
+      if (i == iMax)
+        return b.append(']').toString();
+      b.append(", ");
+    }
+  }
+
   public static <T> boolean contains(T[] arr, T target) {
     if (null == arr) return false;
     for (T t : arr) {
