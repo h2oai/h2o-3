@@ -11,7 +11,7 @@ dependencies {
     compile project(":h2o-genmodel-ext-xgboost")
     compile project(":h2o-ext-steam")
     compileOnly 'com.esotericsoftware.kryo:kryo:2.21'
-    compileOnly "javax.servlet:javax.servlet-api:3.0.1"
+    compileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
     compile "org.apache.httpcomponents:httpclient:${httpClientVersion}"
     compile "org.apache.httpcomponents:httpmime:${httpClientVersion}"
 

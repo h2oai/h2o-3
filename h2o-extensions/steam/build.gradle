@@ -3,7 +3,7 @@ description = "H2O Steam Integration"
 dependencies {
     compile project(":h2o-core")
     compile project(":h2o-webserver-iface")
-    compileOnly "javax.servlet:javax.servlet-api:3.0.1"
+    compileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
 
     testCompile project(":h2o-test-support")
     testRuntimeOnly project(":${defaultWebserverModule}")
