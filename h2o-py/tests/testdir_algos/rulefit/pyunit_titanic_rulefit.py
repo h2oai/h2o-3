@@ -13,7 +13,7 @@ def titanic():
     # Split the dataset into train and test
     train, test = df.split_frame(ratios=[.8], seed=1234)
 
-    rfit = H2ORuleFitEstimator(max_rule_length=10, max_num_rules=100, seed=1234, model_type="rules")
+    rfit = H2ORuleFitEstimator(min_rule_length=1, max_rule_length=10, max_num_rules=100, seed=1234, model_type="rules")
     rfit.train(training_frame=train, x=x, y="survived")
 
     print(rfit.rule_importance())

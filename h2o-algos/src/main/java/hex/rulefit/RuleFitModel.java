@@ -45,11 +45,11 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         // the algorithm to use to generate rules. Options are "DRF" (default), "GBM"
         public Algorithm _algorithm = Algorithm.AUTO;
 
-        // minimum length of rules. Defaults to 1.
-        public int _min_rule_length = 1;
+        // minimum length of rules. Defaults to 3.
+        public int _min_rule_length = 3;
 
-        // maximum length of rules. Defaults to 10.
-        public int _max_rule_length = 10;
+        // maximum length of rules. Defaults to 3.
+        public int _max_rule_length = 3;
 
         // the maximum number of rules to return. Defaults to -1 which means the number of rules is selected 
         // by diminishing returns in model deviance.

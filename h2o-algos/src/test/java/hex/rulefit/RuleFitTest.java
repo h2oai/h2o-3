@@ -49,6 +49,8 @@ public class RuleFitTest extends TestUtil {
             params._max_num_rules = 100;
             params._model_type = RuleFitModel.ModelType.RULES;
             params._distribution = DistributionFamily.bernoulli;
+            params._min_rule_length = 1;
+            params._max_rule_length = 10;
 
             final RuleFitModel rfModel = new RuleFit(params).trainModel().get();
             Scope.track_generic(rfModel);
@@ -142,6 +144,8 @@ public class RuleFitTest extends TestUtil {
             params._max_num_rules = 100;
             params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
             params._weights_column = "weights";
+            params._min_rule_length = 1;
+            params._max_rule_length = 10;
 
             final RuleFitModel rfModel = new RuleFit(params).trainModel().get();
             Scope.track_generic(rfModel);
@@ -219,6 +223,7 @@ public class RuleFitTest extends TestUtil {
             params._max_num_rules = 200;
             params._max_rule_length = 5;
             params._model_type = RuleFitModel.ModelType.RULES;
+            params._min_rule_length = 1;
 
             RuleFitModel model = new RuleFit( params).trainModel().get();
             Scope.track_generic(model);
@@ -282,6 +287,7 @@ public class RuleFitTest extends TestUtil {
             params._max_rule_length = 5;
             params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
             params._distribution = DistributionFamily.gaussian;
+            params._min_rule_length = 1;
 
             final RuleFitModel model = new RuleFit(params).trainModel().get();
             Scope.track_generic(model);
@@ -339,6 +345,7 @@ public class RuleFitTest extends TestUtil {
             params._max_num_rules = 200;
             params._max_rule_length = 10;
             params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
+            params._min_rule_length = 1;
 
             final RuleFitModel model = new RuleFit(params).trainModel().get();
             Scope.track_generic(model);
@@ -392,6 +399,8 @@ public class RuleFitTest extends TestUtil {
             params._train = fr._key;
             params._model_type = RuleFitModel.ModelType.RULES;
             params._response_column = responseColumnName;
+            params._min_rule_length = 1;
+            params._max_rule_length = 10;
 
             final RuleFitModel rfModel = new RuleFit(params).trainModel().get();
             Scope.track_generic(rfModel);
@@ -444,6 +453,8 @@ public class RuleFitTest extends TestUtil {
             params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
             params._response_column = "diabetesMed";
             params._weights_column = "weights";
+            params._min_rule_length = 1;
+            params._max_rule_length = 10;
 
 
             final RuleFitModel rfModel = new RuleFit(params).trainModel().get();

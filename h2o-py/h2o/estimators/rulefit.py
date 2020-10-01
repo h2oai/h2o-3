@@ -114,9 +114,9 @@ class H2ORuleFitEstimator(H2OEstimator):
     @property
     def min_rule_length(self):
         """
-        Minimum length of rules. Defaults to 1.
+        Minimum length of rules. Defaults to 3.
 
-        Type: ``int``  (default: ``1``).
+        Type: ``int``  (default: ``3``).
         """
         return self._parms.get("min_rule_length")
 
@@ -129,9 +129,9 @@ class H2ORuleFitEstimator(H2OEstimator):
     @property
     def max_rule_length(self):
         """
-        Maximum length of rules. Defaults to 10.
+        Maximum length of rules. Defaults to 3.
 
-        Type: ``int``  (default: ``10``).
+        Type: ``int``  (default: ``3``).
         """
         return self._parms.get("max_rule_length")
 
