@@ -440,10 +440,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
               "Training will use nthread=" + nthread + " instead of the user specified value.");
     }
     params.put("nthread", nthread);
-    String forcePredictorType = PredictConfiguration.getNativePredictorType();
-    if (forcePredictorType != null) {
-      params.put("predictor", forcePredictorType);
-    }
 
     Map<String, Integer> monotoneConstraints = p.monotoneConstraints();
     if (! monotoneConstraints.isEmpty()) {

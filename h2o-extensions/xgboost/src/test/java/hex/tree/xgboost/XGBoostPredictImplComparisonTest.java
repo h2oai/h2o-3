@@ -2,7 +2,6 @@ package hex.tree.xgboost;
 
 import hex.SplitFrame;
 import hex.genmodel.utils.DistributionFamily;
-import hex.genmodel.utils.IOUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,9 +9,6 @@ import org.junit.runners.Parameterized;
 import water.*;
 import water.fvec.Frame;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -94,10 +90,15 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
             System.setProperty("sys.ai.h2o.xgboost.predict.native.enable", "false");
             Frame predsJava = Scope.track(model.score(testFrame));
 
+            if (usesGpu(parms)) {
+                // for GPU only compare probabilities, actual class labels may be different due to precision
+                // differences
+                predsNative = Scope.track(predsNative.subframe(1, predsNative.numCols()));
+                predsJava = Scope.track(predsJava.subframe(1, predsJava.numCols()));
+            }
             assertFrameEquals(predsNative, predsJava, 1e-10, getRelDelta(parms));
         } finally {
             System.clearProperty("sys.ai.h2o.xgboost.predict.native.enable");
-            System.clearProperty("sys.ai.h2o.xgboost.predict.native.type");
             Scope.exit();
         }
     }
