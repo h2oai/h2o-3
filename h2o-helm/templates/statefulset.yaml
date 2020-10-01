@@ -22,7 +22,11 @@ spec:
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.name }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          {{- if .Values.image.command }}
+          command: {{ .Values.image.command }}
+          {{else}}
           command: ["/bin/bash", "-c", "java -XX:+UseContainerSupport -XX:MaxRAMPercentage={{ .Values.h2o.memoryPercentage }} -jar /opt/h2oai/h2o-3/h2o.jar"]
+          {{end -}}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- if .Values.volumeMounts }}
           volumeMounts:
@@ -67,5 +71,6 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- if .Values.volumes }}
+      volumes:
         {{- toYaml .Values.volumes | nindent 8 }}
       {{- end }}
