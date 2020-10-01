@@ -349,7 +349,7 @@ with_no_h2o_progress <- function(expr) {
 #' @param overrides Parameters to add/override.
 #'
 #' @return result of \code{fun}
-.customized_call <- function(fun, ..., overridable_defaults = list(), overrides = list()) {
+.customized_call <- function(fun, ..., overridable_defaults = NULL, overrides = NULL) {
   unchangeable_params <- list(...)
   if (any(names(overrides) %in% names(unchangeable_params))) {
     stop(sprintf(
@@ -361,6 +361,9 @@ with_no_h2o_progress <- function(expr) {
   }
   if (is.null(overrides)) {
     overrides <- list()
+  }
+  if (is.null(overridable_defaults)){
+    overridable_defaults <- list()
   }
   args <- utils::modifyList(
     utils::modifyList(overridable_defaults, overrides),
@@ -1948,8 +1951,8 @@ h2o.explain <- function(object,
                         columns = NULL,
                         top_n_features = 5,
                         include_explanations = "ALL",
-                        exclude_explanations = character(),
-                        plot_overrides = list()) {
+                        exclude_explanations = NULL,
+                        plot_overrides = NULL) {
   models_info <- .process_models_or_automl(object, newdata)
   multiple_models <- length(models_info$model_ids) > 1
   result <- list()
@@ -2287,8 +2290,8 @@ h2o.explain_row <- function(object,
                             columns = NULL,
                             top_n_features = 5,
                             include_explanations = "ALL",
-                            exclude_explanations = character(),
-                            plot_overrides = list()) {
+                            exclude_explanations = NULL,
+                            plot_overrides = NULL) {
   models_info <- .process_models_or_automl(object, newdata)
   multiple_models <- length(models_info$model_ids) > 1
   result <- list()

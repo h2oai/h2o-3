@@ -556,7 +556,7 @@ def shap_summary_plot(
     with no_progress():
         contributions = NumpyFrame(model.predict_contributions(frame))
     frame = NumpyFrame(frame)
-    contribution_names = frame.columns
+    contribution_names = contributions.columns
 
     feature_importance = sorted(
         {k: np.abs(v).mean() for k, v in contributions.items() if "BiasTerm" != k}.items(),
@@ -566,6 +566,7 @@ def shap_summary_plot(
         top_n_features = [fi[0] for fi in feature_importance[-top_n:]]
     else:
         picked_cols = []
+        columns = [frame.columns[col] if isinstance(col, int) else col for col in columns]
         for feature in columns:
             if feature in contribution_names:
                 picked_cols.append(feature)
@@ -579,7 +580,7 @@ def shap_summary_plot(
     plt.grid(True)
     plt.axvline(0, c="black")
 
-    for i in range(top_n):
+    for i in range(len(top_n_features)):
         col_name = top_n_features[i]
         col = contributions[permutation, col_name]
         dens = _density(col)
@@ -596,7 +597,7 @@ def shap_summary_plot(
     cbar = plt.colorbar()
     cbar.set_label('Normalized feature value', rotation=270)
     cbar.ax.get_yaxis().labelpad = 15
-    plt.yticks(range(top_n), top_n_features)
+    plt.yticks(range(len(top_n_features)), top_n_features)
     plt.xlabel("SHAP value")
     plt.ylabel("Feature")
     plt.title("SHAP Summary plot for \"{}\"".format(model.model_id))
@@ -709,12 +710,13 @@ def shap_explain_row(
         return fig
 
     elif plot_type == "breakdown":
-        if isinstance(columns, int):
-            if columns + 1 < len(contributions):
-                contributions = contributions[:columns] + [
-                    ("Remaining Features", sum(map(lambda pair: pair[1], contributions[columns:])))]
+        if columns is None:
+            if top_n_features + 1 < len(contributions):
+                contributions = contributions[:top_n_features] + [
+                    ("Remaining Features", sum(map(lambda pair: pair[1], contributions[top_n_features:])))]
         else:
             picked_cols = []
+            columns = [frame.columns[col] if isinstance(col, int) else col for col in columns]
             for feature in columns:
                 if feature in contribution_names:
                     picked_cols.append(feature)
