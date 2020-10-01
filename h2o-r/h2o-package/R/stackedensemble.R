@@ -319,20 +319,25 @@ h2o.stackedEnsemble <- function(x,
     stop(paste("Meta learner didn't get to be trained in time.",
                "Try increasing max_runtime_secs or setting it to 0 (unlimited)."))
   }
-  
-  # Get the actual models (that were potentially expanded from H2OGrid on the backend)
-  baselearners <- lapply(model$base_models, function(base_model) {
-    if (is.character(base_model))
-      base_model <- h2o.getModel(base_model)
-    base_model
-  })
+
+  .get_algorithm <- function(model_id) {
+    known_algos <- c("deeplearning", "drf", "glm", "gam", "gbm", "naivebayes", "stackedensemble", "rulefit", "xgboost", "xrt")
+    algorithm <- sub("^(DeepLearning|DRF|GAM|GBM|GLM|NaiveBayes|StackedEnsemble|RuleFit|XGBoost|XRT)_.*",
+                     "\\L\\1", model_id, perl = TRUE)
+    if (algorithm == "xrt")
+      algorithm <- "drf"
+    if (algorithm %in% known_algos) {
+      return(algorithm)
+    }
+    return(h2o.getModel(model_id)@algorithm)
+  }
 
   model$model_summary <- capture.output({
     print_ln <- function(...) cat(..., sep = "\n")
 
-    print_ln(paste0("Number of Base Models: ", length(baselearners)))
+    print_ln(paste0("Number of Base Models: ", length(model$base_models)))
     print_ln("\nBase Models (count by algorithm type):")
-    print(table(unlist(lapply(baselearners, function(baselearner) baselearner@algorithm))))
+    print(table(unlist(lapply(model$base_models, .get_algorithm))))
 
     print_ln("\nMetalearner:\n")
     print_ln(paste0(
