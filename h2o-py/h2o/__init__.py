@@ -74,18 +74,19 @@ __all__ = ["connect", "init", "api", "connection", "upload_file", "lazy_import",
 
 try:
     # Export explain functions that are useful for lists of models
-    from h2o.explain import explain, explain_row, variable_importance_heatmap, model_correlation_heatmap, \
-        partial_dependences, register_explain_methods
+    import h2o.explanation
+    from h2o.explanation import explain, explain_row, varimp_heatmap, model_correlation_heatmap, \
+        pd_multi_plot
 
     __all__ += [
         "explain",
         "explain_row",
-        "variable_importance_heatmap",
+        "varimp_heatmap",
         "model_correlation_heatmap",
-        "partial_dependences"
+        "pd_multi_plot"
     ]
 
-    register_explain_methods()
+    h2o.explanation.register_explain_methods()
 except ImportError:
     pass
 

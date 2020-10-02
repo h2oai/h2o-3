@@ -857,7 +857,6 @@ def pd_plot(
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="Dark2",  # type: str
 ):
-
     is_factor = frame[column].isfactor()[0]
     if is_factor:
         if frame[column].nlevels()[0] > max_levels:
@@ -868,7 +867,10 @@ def pd_plot(
             # decrease the number of levels to the actual number of levels in the subset
             frame[column] = frame[column].ascharacter().asfactor()
 
-    colors = plt.get_cmap(colormap, 1)(list(1))
+    if target is not None and not isinstance(target, list):
+        target = [target]
+
+    color = plt.get_cmap(colormap)(0)
     with no_progress():
         plt.figure(figsize=figsize)
         is_factor = frame[column].isfactor()[0]
@@ -881,12 +883,12 @@ def pd_plot(
         encoded_col = tmp.columns[0]
         if is_factor:
             plt.errorbar(factor_map(tmp.get(encoded_col)), tmp["mean_response"],
-                         yerr=tmp["stddev_response"], fmt='o', color=colors[0],
-                         ecolor=colors[0], elinewidth=3, capsize=0);
+                         yerr=tmp["stddev_response"], fmt='o', color=color,
+                         ecolor=color, elinewidth=3, capsize=0, markersize=10)
         else:
-            plt.plot(tmp[encoded_col], tmp["mean_response"], color=colors[0])
+            plt.plot(tmp[encoded_col], tmp["mean_response"], color=color)
             plt.fill_between(tmp[encoded_col], tmp["mean_response"] - tmp["stddev_response"],
-                             tmp["mean_response"] + tmp["stddev_response"], color=colors[0], alpha=0.2)
+                             tmp["mean_response"] + tmp["stddev_response"], color=color, alpha=0.2)
 
         _add_histogram(frame, column)
 
@@ -895,6 +897,7 @@ def pd_plot(
                 column,
                 " with target = \"{}\"".format(target[0]) if target else ""
             ))
+            plt.ylabel("Mean Response")
         else:
             if is_factor:
                 plt.axvline(factor_map([frame[row_index, column]]), c="k", linestyle="dotted",
@@ -907,10 +910,11 @@ def pd_plot(
                 row_index,
                 " with target = \"{}\"".format(target[0]) if target else ""
             ))
+            plt.ylabel("Response")
         ax = plt.gca()
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.xlabel(column)
         plt.grid(True)
         if is_factor:
             plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
@@ -1850,8 +1854,11 @@ def explain(
             for column in columns_of_interest:
                 result["pdp"]["plots"][column] = H2OExplanation()
                 for target in targets:
-                    reduced_frame = frame
-                    fig = pd_plot()
+                    fig = pd_plot(models_to_show[0], column=column, target=target,
+                        **_custom_args(plot_overrides.get("pdp"),
+                                       frame=frame,
+                                       figsize=figsize,
+                                       colormap=qualitative_colormap))
                     if target is None:
                         result["pdp"]["plots"][column] = display(fig)
                     else:
@@ -1985,7 +1992,7 @@ def explain_row(
             for target in targets:
                 if not multiple_models:
                     ice = display(pd_plot(
-                        models, column=column,
+                        models_to_show[0], column=column,
                         row_index=row_index,
                         target=target,
                         **_custom_args(

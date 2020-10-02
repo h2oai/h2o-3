@@ -16,7 +16,7 @@ def register_explain_methods():
     import h2o.model
     import h2o.automl._base  # NOQA
 
-    h2o.model.H2ORegressionModel.residual_analysis = residual_analysis_plot
+    h2o.model.H2ORegressionModel.residual_analysis_plot = residual_analysis_plot
     h2o.model.ModelBase.shap_summary_plot = shap_summary_plot
     h2o.model.ModelBase.shap_explain_row_plot = shap_explain_row_plot
     h2o.model.ModelBase.explain = explain
@@ -25,7 +25,7 @@ def register_explain_methods():
     h2o.model.ModelBase.ice_plot = ice_plot
 
     h2o.automl._base.H2OAutoMLBaseMixin.pd_multi_plot = pd_multi_plot
-    h2o.automl._base.H2OAutoMLBaseMixin.variable_importance_heatmap = varimp_heatmap
+    h2o.automl._base.H2OAutoMLBaseMixin.varimp_heatmap = varimp_heatmap
     h2o.automl._base.H2OAutoMLBaseMixin.model_correlation_heatmap = model_correlation_heatmap
     h2o.automl._base.H2OAutoMLBaseMixin.explain = explain
     h2o.automl._base.H2OAutoMLBaseMixin.explain_row = explain_row

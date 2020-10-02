@@ -9,7 +9,7 @@ import matplotlib.pyplot
 from tests import pyunit_utils
 from h2o.automl import H2OAutoML
 from h2o.estimators import H2OGradientBoostingEstimator
-from h2o.explain._explain import H2OExplanation
+from h2o.explanation._explain import H2OExplanation
 
 def test_explanation_single_model_regression():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
@@ -31,17 +31,21 @@ def test_explanation_single_model_regression():
     matplotlib.pyplot.close()
 
     # test shap explain row
-    assert isinstance(gbm.shap_explain_row(train, 1), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.shap_explain_row_plot(train, 1), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test residual analysis
-    assert isinstance(gbm.residual_analysis(train), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.residual_analysis_plot(train), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
+
+    # test pd_plot
+    for col in cols_to_test:
+        assert isinstance(gbm.pd_plot(train, col), matplotlib.pyplot.Figure)
 
     # test ICE plot
     for col in cols_to_test:
-        assert isinstance(gbm.individual_conditional_expectations(train, col), matplotlib.pyplot.Figure)
-        matplotlib.pyplot.close()
+        assert isinstance(gbm.ice_plot(train, col), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close("all")
 
     # test explain
     assert isinstance(gbm.explain(train, render=False), H2OExplanation)
@@ -66,7 +70,7 @@ def test_explanation_automl_regression():
     aml.train(y=y, training_frame=train)
 
     # test variable importance heatmap plot
-    assert isinstance(aml.variable_importance_heatmap(), matplotlib.pyplot.Figure)
+    assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test model correlation heatmap plot
@@ -75,8 +79,8 @@ def test_explanation_automl_regression():
 
     # test partial dependences
     for col in cols_to_test:
-        assert isinstance(aml.partial_dependences(train, col), matplotlib.pyplot.Figure)
-        matplotlib.pyplot.close()
+        assert isinstance(aml.pd_multi_plot(train, col), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close("all")
 
     # test explain
     assert isinstance(aml.explain(train, render=False), H2OExplanation)
@@ -104,7 +108,7 @@ def test_explanation_list_of_models_regression():
               aml.leaderboard["model_id"].as_data_frame(use_pandas=False, header=False)]
 
     # test variable importance heatmap plot
-    assert isinstance(h2o.variable_importance_heatmap(models), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.varimp_heatmap(models), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test model correlation heatmap plot
@@ -113,8 +117,8 @@ def test_explanation_list_of_models_regression():
 
     # test partial dependences
     for col in cols_to_test:
-        assert isinstance(h2o.partial_dependences(models, train, col), matplotlib.pyplot.Figure)
-        matplotlib.pyplot.close()
+        assert isinstance(h2o.pd_multi_plot(models, train, col), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close("all")
 
     # test explain
     assert isinstance(h2o.explain(models, train, render=False), H2OExplanation)
@@ -144,13 +148,17 @@ def test_explanation_single_model_binomial_classification():
     matplotlib.pyplot.close()
 
     # test shap explain row
-    assert isinstance(gbm.shap_explain_row(train, 1), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.shap_explain_row_plot(train, 1), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
+
+    # test pd_plot
+    for col in cols_to_test:
+        assert isinstance(gbm.pd_plot(train, col), matplotlib.pyplot.Figure)
 
     # test ICE plot
     for col in cols_to_test:
-        assert isinstance(gbm.individual_conditional_expectations(train, col), matplotlib.pyplot.Figure)
-        matplotlib.pyplot.close()
+        assert isinstance(gbm.ice_plot(train, col), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close("all")
 
     # test explain
     assert isinstance(gbm.explain(train, render=False), H2OExplanation)
@@ -176,7 +184,7 @@ def test_explanation_automl_binomial_classification():
     aml.train(y=y, training_frame=train)
 
     # test variable importance heatmap plot
-    assert isinstance(aml.variable_importance_heatmap(), matplotlib.pyplot.Figure)
+    assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test model correlation heatmap plot
@@ -185,7 +193,7 @@ def test_explanation_automl_binomial_classification():
 
     # test partial dependences
     for col in cols_to_test:
-        assert isinstance(aml.partial_dependences(train, col), matplotlib.pyplot.Figure)
+        assert isinstance(aml.pd_multi_plot(train, col), matplotlib.pyplot.Figure)
         matplotlib.pyplot.close()
 
     # test explain
@@ -215,7 +223,7 @@ def test_explanation_list_of_models_binomial_classification():
               aml.leaderboard["model_id"].as_data_frame(use_pandas=False, header=False)]
 
     # test variable importance heatmap plot
-    assert isinstance(h2o.variable_importance_heatmap(models), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.varimp_heatmap(models), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test model correlation heatmap plot
@@ -224,7 +232,7 @@ def test_explanation_list_of_models_binomial_classification():
 
     # test partial dependences
     for col in cols_to_test:
-        assert isinstance(h2o.partial_dependences(models, train, col), matplotlib.pyplot.Figure)
+        assert isinstance(h2o.pd_multi_plot(models, train, col), matplotlib.pyplot.Figure)
         matplotlib.pyplot.close()
 
     # test explain
@@ -260,17 +268,20 @@ def test_explanation_single_model_multinomial_classification():
 
     # test shap explain row
     try:
-        gbm.shap_explain_row(train, 1)
+        gbm.shap_explain_row_plot(train, 1)
         matplotlib.pyplot.close()
         assert False, "SHAP Contributions aren't implemented for multinomial classification => should fail"
     except EnvironmentError:
         pass
 
+    # test pd_plot
+    for col in cols_to_test:
+        assert isinstance(gbm.pd_plot(train, col, target="setosa"), matplotlib.pyplot.Figure)
+
     # test ICE plot
     for col in cols_to_test:
-        assert isinstance(gbm.individual_conditional_expectations(train, col, target="setosa"),
-                          matplotlib.pyplot.Figure)
-        matplotlib.pyplot.close()
+        assert isinstance(gbm.ice_plot(train, col, target="setosa"), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close("all")
 
     # test explain
     assert isinstance(gbm.explain(train, render=False), H2OExplanation)
@@ -296,7 +307,7 @@ def test_explanation_automl_multinomial_classification():
     aml.train(y=y, training_frame=train)
 
     # test variable importance heatmap plot
-    assert isinstance(aml.variable_importance_heatmap(), matplotlib.pyplot.Figure)
+    assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test model correlation heatmap plot
@@ -305,8 +316,8 @@ def test_explanation_automl_multinomial_classification():
 
     # test partial dependences
     for col in cols_to_test:
-        assert isinstance(aml.partial_dependences(train, col, target="setosa"), matplotlib.pyplot.Figure)
-        matplotlib.pyplot.close()
+        assert isinstance(aml.pd_multi_plot(train, col, target="setosa"), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close("all")
 
     # test explain
     assert isinstance(aml.explain(train, render=False), H2OExplanation)
@@ -336,7 +347,7 @@ def test_explanation_list_of_models_multinomial_classification():
 
 
     # test variable importance heatmap plot
-    assert isinstance(h2o.variable_importance_heatmap(models), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.varimp_heatmap(models), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test model correlation heatmap plot
@@ -345,8 +356,8 @@ def test_explanation_list_of_models_multinomial_classification():
 
     # test partial dependences
     for col in cols_to_test:
-        assert isinstance(h2o.partial_dependences(models, train, col, target="setosa"), matplotlib.pyplot.Figure)
-        matplotlib.pyplot.close()
+        assert isinstance(h2o.pd_multi_plot(models, train, col, target="setosa"), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close("all")
 
     # test explain
     assert isinstance(h2o.explain(models, train, render=False), H2OExplanation)
