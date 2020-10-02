@@ -34,6 +34,7 @@ def _display(object):
             print(object)
     if isinstance(object, matplotlib.figure.Figure):
         plt.close(object)
+        print("\n")
     return object
 
 
@@ -1012,6 +1013,7 @@ def pd_multi_plot(
                 column,
                 " with target = \"{}\"".format(target[0]) if target else ""
             ))
+            plt.ylabel("Mean Response")
         else:
             if is_factor:
                 plt.axvline(factor_map([frame[row_index, column]]), c="k", linestyle="dotted",
@@ -1024,10 +1026,13 @@ def pd_multi_plot(
                 row_index,
                 " with target = \"{}\"".format(target[0]) if target else ""
             ))
+            plt.ylabel("Response")
+
         ax = plt.gca()
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.xlabel(column)
         plt.grid(True)
         if is_factor:
             plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
@@ -1982,7 +1987,7 @@ def explain_row(
                 **_custom_args(plot_overrides.get("shap_explain_row"),
                                frame=frame, figsize=figsize)))
 
-    if "ice" in explanations:
+    if "ice" in explanations and not multiple_models:
         result["ice"] = H2OExplanation()
         result["ice"]["header"] = display(Header("Individual Conditional Expectation"))
         result["ice"]["description"] = display(Description("ice_row"))
@@ -1990,21 +1995,20 @@ def explain_row(
         for column in columns_of_interest:
             result["ice"]["plots"][column] = H2OExplanation()
             for target in targets:
-                if not multiple_models:
-                    ice = display(pd_plot(
-                        models_to_show[0], column=column,
-                        row_index=row_index,
-                        target=target,
-                        **_custom_args(
-                            plot_overrides.get("ice_plot",
-                                               plot_overrides.get("partial_dependences")),
-                            frame=frame,
-                            figsize=figsize,
-                            colormap=qualitative_colormap
-                        )))
-                    if target is None:
-                        result["ice"]["plots"][column] = ice
-                    else:
-                        result["ice"]["plots"][column][target[0]] = ice
+                ice = display(pd_plot(
+                    models_to_show[0], column=column,
+                    row_index=row_index,
+                    target=target,
+                    **_custom_args(
+                        plot_overrides.get("ice_plot",
+                                           plot_overrides.get("partial_dependences")),
+                        frame=frame,
+                        figsize=figsize,
+                        colormap=qualitative_colormap
+                    )))
+                if target is None:
+                    result["ice"]["plots"][column] = ice
+                else:
+                    result["ice"]["plots"][column][target[0]] = ice
 
     return result

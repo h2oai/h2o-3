@@ -2265,7 +2265,6 @@ h2o.explain <- function(object,
           if (is.null(varimp)) varimp <- names(tmp$grouped_varimp)
           if (models_info$is_automl) break
         }
-        }
       }
     }
   }
@@ -2574,7 +2573,7 @@ h2o.explain_row <- function(object,
     }
   }
 
-  if (!"ice" %in% skip_explanations) {
+  if (!"ice" %in% skip_explanations && !multiple_models) {
     result$ice <- list(
       header = .h2o_explanation_header("Individual Conditional Expectations"),
       description = .describe("ice_row"),
@@ -2587,28 +2586,24 @@ h2o.explain_row <- function(object,
           targets <- plot_overrides$ice[["target"]]
         }
         for (target in targets) {
-          if (!multiple_models) {
-            result$ice$plots[[col]][[target]] <- .customized_call(
-              h2o.pd_plot,
-              object = models_info, newdata = newdata,
-              column = col,
-              target = target,
-              row_index = row_index,
-              overrides = plot_overrides$ice
-            )
-          }
-        }
-      } else {
-        if (!multiple_models) {
-          result$ice$plots[[col]] <- .customized_call(
+          result$ice$plots[[col]][[target]] <- .customized_call(
             h2o.pd_plot,
-            object = models_info,
-            newdata = newdata,
+            object = models_info, newdata = newdata,
             column = col,
+            target = target,
             row_index = row_index,
             overrides = plot_overrides$ice
           )
         }
+      } else {
+        result$ice$plots[[col]] <- .customized_call(
+          h2o.pd_plot,
+          object = models_info,
+          newdata = newdata,
+          column = col,
+          row_index = row_index,
+          overrides = plot_overrides$ice
+        )
       }
     }
   }
