@@ -442,7 +442,7 @@ with_no_h2o_progress <- function(expr) {
 #'
 #' @param models_info H2OAutoML object or list of models
 #' @param leaderboard_frame when provided with list of models, use this frame to calculate metrics
-#'
+#' @param top_n create leaderboard with just top_n models
 #' @return a data.frame
 .create_leaderboard <- function(models_info, leaderboard_frame, top_n = 20) {
   if (models_info$is_automl) {
