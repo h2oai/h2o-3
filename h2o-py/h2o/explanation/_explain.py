@@ -709,7 +709,7 @@ def shap_explain_row_plot(
         plt.xlabel("SHAP value")
         plt.ylabel("Feature")
         plt.yticks(range(contributions["feature"].shape[0]), contributions["feature"])
-        plt.title("SHAP explanation for {} on row {}{}\nprediction: {}".format(
+        plt.title("SHAP explanation for \"{}\" on row {}{}\nprediction: {}".format(
             model.model_id,
             row_index,
             contribution_subset_note,

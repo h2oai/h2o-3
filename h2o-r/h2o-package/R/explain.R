@@ -136,6 +136,26 @@ with_no_h2o_progress <- function(expr) {
 
 
 #' Needed to be able to memoise the models
+.model_cache <- setRefClass(
+  "model_cache",
+        fields = "models",
+        methods = list(
+        init = function(){
+          models <<- list()
+        },
+        get_model = function(model_id) {
+            if (model_id %in% names(models)) {
+              return(models[[model_id]])
+            } else {
+              mdl <- h2o.getModel(model_id)
+              models[[model_id]] <<- mdl
+              return(mdl)
+            }
+        },
+        add_model = function(model) {
+          models[[model@model_id]] <<- model
+        })
+  )
 .models_info <- setRefClass(
   "models_info",
   fields = c("is_automl",
@@ -148,28 +168,32 @@ with_no_h2o_progress <- function(expr) {
              "model",
              "memoised_models"),
   methods = list(
-    initialize = function(newdata, is_automl, leaderboard, model_ids) {
-      memoised_models <<- list()
-      is_automl <<- is_automl
-      leaderboard <<- leaderboard
-      model_ids <<- model_ids
-      model <<- model_ids[[1]]
-      x <<- .self$get_model(model_ids[[1]])@allparameters$x
-      y <<- .self$get_model(model_ids[[1]])@allparameters$y
-      y_col <- newdata[[.self$y]]
+    initialize = function(newdata, is_automl, leaderboard, model_ids, models = NULL) {
+      if (!missing(newdata) && !missing(is_automl) && !missing(leaderboard) && !missing(model_ids)) {
+        memoised_models <<- .model_cache$new()
+        memoised_models$init()
+        is_automl <<- is_automl
+        leaderboard <<- leaderboard
+        model_ids <<- model_ids
+        model <<- model_ids[[1]]
+        if (is.null(models) || length(models) == 0) {
+          single_model <- .self$get_model(model_ids[[1]])
+        } else {
+          single_model <- models[[1]]
+          for (m in models)
+            memoised_models$add_model(m)
+        }
+        x <<- single_model@allparameters$x
+        y <<- single_model@allparameters$y
+        y_col <- newdata[[.self$y]]
 
-      is_classification <<- is.factor(y_col)
-      is_multinomial_classification <<- is.factor(y_col) && h2o.nlevels(y_col) > 2
+        is_classification <<- is.factor(y_col)
+        is_multinomial_classification <<- is.factor(y_col) && h2o.nlevels(y_col) > 2
+      }
       .self
     },
     get_model = function(model_id) {
-      if (model_id %in% names(memoised_models)) {
-        return(memoised_models[[model_id]])
-      } else {
-        mdl <- h2o.getModel(model_id)
-        memoised_models[[model_id]] <<- mdl
-        return(mdl)
-      }
+      return(memoised_models$get_model(model_id))
     }
   )
 )
@@ -206,12 +230,13 @@ with_no_h2o_progress <- function(expr) {
     stop(paste(newdata_name, "must be an H2OFrame!"))
   }
 
-  make_models_info <- function(is_automl, leaderboard, model_ids) {
+  make_models_info <- function(is_automl, leaderboard, model_ids, models = NULL) {
     return(.models_info$new(
       newdata = newdata,
       is_automl = is_automl,
       leaderboard = leaderboard,
-      model_ids = model_ids
+      model_ids = model_ids,
+      models = models
     ))
   }
 
@@ -224,6 +249,7 @@ with_no_h2o_progress <- function(expr) {
   }
 
   if ("models_info" %in% class(object)) {
+    object <- object$copy(shallow = TRUE)
     if (best_of_family) {
       object$model_ids <- .get_first_of_family(object$model_ids)
     }
@@ -275,18 +301,22 @@ with_no_h2o_progress <- function(expr) {
         object <- object[[1]]
       }
       if (!is.character(object)) {
-        object <- object@model_id
+        model <- object
+        model_id <- object@model_id
+      } else {
+        model_id <- object
+        model <- h2o.getModel(model_id)
       }
 
-      if (only_with_varimp && !.has_varimp(object)) {
-        stop(object, " doesn't have variable importance!")
+      if (only_with_varimp && !.has_varimp(model)) {
+        stop(model_id, " doesn't have variable importance!")
       }
-
 
       mi <- make_models_info(
-        is_automl = FALSE,
-        leaderboard = NULL,
-        model_ids = object
+          is_automl = FALSE,
+          leaderboard = NULL,
+          model_ids = model_id,
+          models = list(model)
       )
       return(mi)
     } else {
@@ -324,9 +354,9 @@ with_no_h2o_progress <- function(expr) {
       mi <- make_models_info(
         is_automl = FALSE,
         model_ids = .model_ids(object),
-        leaderboard = NULL
+        leaderboard = NULL,
+        models = memoised_models
       )
-      mi$memoised_models <- memoised_models
       x <- mi$x
       y <- mi$y
 
@@ -517,7 +547,7 @@ with_no_h2o_progress <- function(expr) {
       p <- ggplot2::ggplot(ggplot2::aes(.data$variable, .data$scaled_importance), data = varimp) +
         ggplot2::geom_col(fill = "#1F77B4") +
         ggplot2::scale_x_discrete("Variable", limits = rev(varimp$variable)) +
-        ggplot2::labs(y = "Variable Importance", title = sprintf("Variable importance\nfor %s", model@model_id)) +
+        ggplot2::labs(y = "Variable Importance", title = sprintf("Variable importance\nfor \"%s\"", model@model_id)) +
         ggplot2::coord_flip() +
         ggplot2::theme_bw() +
         ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
@@ -998,10 +1028,15 @@ h2o.shap_summary_plot <-
     with_no_h2o_progress({
       newdata_df <- as.data.frame(newdata)
 
+      contributions <- as.data.frame(h2o.predict_contributions(model, newdata))
+      contributions_names <- names(contributions)
+
+      encode_cols <- !all(contributions_names[contributions_names != "BiasTerm"] %in% names(newdata_df))
+
       for (fct in names(newdata[, x])[is.factor(newdata[, x])]) {
         newdata_df[[fct]] <- as.factor(newdata_df[[fct]])
-        if (.get_algorithm(model) == "xgboost") {
-          # encode categoricals for xgboost
+        if (encode_cols) {
+          # encode categoricals, e.g., for xgboost
           for (cat in c(NA, h2o.levels(newdata[[fct]]))) {
             cat_name <- cat
             if (is.na(cat_name)) {
@@ -1017,8 +1052,6 @@ h2o.shap_summary_plot <-
         }
       }
 
-      contributions <- as.data.frame(h2o.predict_contributions(model, newdata))
-      contributions_names <- names(contributions)
     })
     contr <-
       stats::reshape(
@@ -1175,12 +1208,15 @@ h2o.shap_explain_row_plot <-
     with_no_h2o_progress({
       contributions <-
         as.data.frame(h2o.predict_contributions(model, newdata[row_index,]))
+      contributions_names <- names(contributions)
       prediction <- as.data.frame(h2o.predict(model, newdata[row_index,]))
       newdata_df <- as.data.frame(newdata[row_index,])
+      encode_cols <- !all(contributions_names[contributions_names != "BiasTerm"] %in% names(newdata_df))
+
       for (fct in names(newdata[, x])[is.factor(newdata[, x])]) {
         newdata_df[[fct]] <- as.factor(newdata_df[[fct]])
-        if (.get_algorithm(model) == "xgboost") {
-          # encode categoricals for xgboost
+        if (encode_cols) {
+          # encode categoricals, e.g., for xgboost
           for (cat in c(NA, h2o.levels(newdata[[fct]]))) {
             cat_name <- cat
             if (is.na(cat_name)) {
@@ -2594,7 +2630,8 @@ h2o.explain_row <- function(object,
         for (target in targets) {
           result$ice$plots[[col]][[target]] <- .customized_call(
             h2o.pd_plot,
-            object = models_info, newdata = newdata,
+            object = models_info,
+            newdata = newdata,
             column = col,
             target = target,
             row_index = row_index,
