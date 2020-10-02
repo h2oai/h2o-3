@@ -1403,7 +1403,7 @@ h2o.shap_explain_row_plot <-
 
 
 #' Variable Importance Heatmap across a group of models
-#' 
+#'
 #' Variable importance heatmap shows variable importances on multiple models.
 #' By default, the models and variables are ordered by their similarity.
 #'
@@ -1448,6 +1448,9 @@ h2o.varimp_heatmap <- function(object, newdata, top_n = 20) {
     "Feature Importance: ", results$value
   )
 
+  margin <- ggplot2::margin(5.5, 5.5, 5.5, 5.5, "pt")
+  if (max(nchar(.shorten_model_ids(.model_ids(models)))) > 30)
+    margin <- ggplot2::margin(1, 1, 1, 7, "lines")
   p <- ggplot2::ggplot(ggplot2::aes(
     x = .shorten_model_ids(.data$model_id), y = .data$feature, fill = .data$value, text = .data$text
   ), data = results) +
@@ -1458,7 +1461,7 @@ h2o.varimp_heatmap <- function(object, newdata, top_n = 20) {
     ggplot2::theme_bw() +
     ggplot2::theme(
       axis.text.x = ggplot2::element_text(angle = 45, hjust = 1),
-      plot.margin = ggplot2::margin(1, 1, 1, 7, "lines"),
+      plot.margin = margin,
       legend.title = ggplot2::element_blank(),
       plot.title = ggplot2::element_text(hjust = 0.5)
     )
