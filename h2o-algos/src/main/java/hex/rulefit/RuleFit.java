@@ -206,7 +206,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                     }
                     long endAllTreesTime = System.nanoTime() - startAllTreesTime;
                     LOG.info("All tree models trained in " + ((double)endAllTreesTime) / 1E9 + "s.");
-                    
+
+                    LOG.info("Extracting rules from trees...");
                     ruleEnsemble = new RuleEnsemble(rulesList.toArray(new Rule[] {}));
 
                     linearTrain.add(ruleEnsemble.createGLMTrainFrame(_train, depths.length, treeParameters._ntrees));

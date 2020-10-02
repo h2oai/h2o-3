@@ -110,17 +110,21 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
     public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
         Frame pathsFrame = new Frame(Key.make("paths_frame" + destination_key));
         if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.RULES.equals(this._parms._model_type)) {
-            Frame frame = fr.deepCopy(Key.make().toString());
-           // put response and weights last
-            if (frame.vec(_parms._response_column) != null)
-                frame.add(_parms._response_column, frame.remove(_parms._response_column));
-            if (_parms._weights_column != null && frame.vec(_parms._weights_column) != null)
-                frame.add(_parms._weights_column, frame.remove(_parms._weights_column));
-            if (_parms._ignored_columns != null) {
-                frame.remove(_parms._ignored_columns);
+            Frame frame = new Frame(Key.make());
+            // put response and weights last
+            for (String name : fr.names()) {
+                if (!_parms._response_column.equals(name) &&  
+                        (_parms._weights_column == null || (_parms._weights_column != null && !_parms._weights_column.equals(name))) &&
+                        (_parms._ignored_columns == null || (_parms._ignored_columns != null && !_parms._ignored_columns.equals(name)))) {
+                    frame.add(name, fr.vec(name));
+                }
             }
+            if (fr.vec(_parms._response_column) != null)
+                frame.add(_parms._response_column,fr.vec(_parms._response_column));
+            if (_parms._weights_column != null && fr.vec(_parms._weights_column) != null)
+                frame.add(_parms._weights_column,fr.vec(_parms._weights_column));
+            
             pathsFrame.add(ruleEnsemble.createGLMTrainFrame(frame, _parms._max_rule_length - _parms._min_rule_length + 1, _parms._rule_generation_ntrees));
-            frame.remove();
         }
         if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.LINEAR.equals(this._parms._model_type)) {
             Frame adaptFrm = new Frame(fr.deepCopy(null));
