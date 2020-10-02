@@ -784,6 +784,7 @@ Michal Kurka
 Veronika Maurerova
 Jan Sterba
 Jan Jendrusak
+Sebastien Poirier
 Tomáš Frýda
 ```
 
