@@ -131,7 +131,7 @@ with_no_h2o_progress <- function(expr) {
   if (length(unique(shortened_model_ids)) == length(unique(model_ids))) {
     return(shortened_model_ids)
   }
-  return(models)
+  return(model_ids)
 }
 
 
@@ -194,6 +194,10 @@ with_no_h2o_progress <- function(expr) {
                                       top_n_from_AutoML = NA,
                                       only_with_varimp = FALSE,
                                       best_of_family = FALSE) {
+  if (missing(object))
+    stop("object must be specified!")
+  if (missing(newdata))
+    stop("newdata must be specified!")
   if ("H2OFrame" %in% class(object)) {
     object <- as.list(object[["model_id"]])
   }
@@ -2461,6 +2465,8 @@ h2o.explain_row <- function(object,
                             exclude_explanations = NULL,
                             plot_overrides = NULL) {
   models_info <- .process_models_or_automl(object, newdata)
+  if (missing(row_index))
+    stop("row_index must be specified!")
   multiple_models <- length(models_info$model_ids) > 1
   result <- list()
 
