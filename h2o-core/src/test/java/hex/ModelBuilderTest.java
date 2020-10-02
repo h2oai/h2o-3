@@ -4,10 +4,14 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
+import water.test.dummy.DummyModel;
 import water.util.ReflectionUtils;
 import water.test.dummy.DummyModelBuilder;
 import water.test.dummy.DummyModelParameters;
@@ -17,15 +21,14 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.ar;
 
-
-public class ModelBuilderTest extends TestUtil {
+@CloudSize(1)
+@RunWith(H2ORunner.class)
+public class ModelBuilderTest {
 
   @Rule
   public transient TemporaryFolder tmp = new TemporaryFolder();
-
-  @BeforeClass()
-  public static void setup() { stall_till_cloudsize(1); }
 
   @Test
   public void testRebalancePubDev5400() {
@@ -231,6 +234,58 @@ public class ModelBuilderTest extends TestUtil {
     }
   }
   
+  @Test
+  public void testToDeleteOK() {
+    testToDelete(false);
+  }
+
+  @Test
+  public void testToDeleteFailing() {
+    testToDelete(true);
+  }
+
+  private void testToDelete(boolean killLocalPOJO) {
+    final boolean multinode = H2O.getCloudSize() > 1;
+    Frame train = null, test = null;
+    Key<?> k = null;
+    try {
+      do {
+        k = Key.make();
+      } while (k.home() && multinode); // prefer the key to be homed elsewhere but make the test work in single-node too
+
+      train = TestFrameCatalog.oneChunkFewRows();
+
+      DummyModelParameters p = new DummyModelParameters();
+      p._makeModel = true;
+      p._train = train._key;
+      p._response_column = train.name(0);
+      
+      DummyModel m = new DummyModelBuilder(p, (Key) k).trainModel().get();
+
+      test = new TestFrameBuilder()
+              .withColNames(train.lastVecName())
+              .withVecTypes(Vec.T_CAT)
+              .withDomain(0, new String[] {"unseen"})
+              .withDataForCol(0, new String[] {"unseen"})
+              .build();
+
+      m.score(test).delete();
+
+      Value modelValue = H2O.STORE.get(m._key);
+      if (modelValue != null && killLocalPOJO) {
+        // kill the local POJO (and with it any state that was not propagated to DKV)
+        modelValue.freePOJO();
+      }
+    } finally {
+      if (train != null)
+        train.delete();
+      if (test != null)
+        test.delete();
+      Object m = k != null ? k.get() : null;
+      if (m instanceof Lockable)
+        ((Lockable<?>) m).delete();
+    }
+  }
   
   @Test
   @SuppressWarnings("unchecked")

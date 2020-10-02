@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import water.Job;
+import water.Key;
 
 public class DummyModelBuilder
     extends ModelBuilder<DummyModel, DummyModelParameters, DummyModelOutput> {
@@ -13,6 +14,11 @@ public class DummyModelBuilder
   }
 
   public DummyModelBuilder(DummyModelParameters parms, boolean startup_once ) { super(parms,startup_once); }
+
+  public DummyModelBuilder(DummyModelParameters parms, Key<DummyModel> key) { 
+    super(parms, key);
+    init(false);
+  }
 
   @Override
   protected Driver trainModelImpl() {
