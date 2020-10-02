@@ -684,15 +684,6 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 <a name="Roadmap"></a>
 ## 10. Roadmap
 
-### H2O 3.30.1.1 - July 2020
-
-* Hive Data Export
-* XGBoost Stability/Resource utilization: Scaling cluster up for XGBoost
-* Isolation Forest Improvements (contamination, validation frame, grid search)
-* NLP Improvements: TF-IDF
-* Generalized Additive Models (improvements, not a beta anymore)
-* CoxPH additions (new metrics, baseline hazard function, MOJO)
-
 ### H2O 3.32.0.1 - October 2020
 
 * RuleFit algorithm
