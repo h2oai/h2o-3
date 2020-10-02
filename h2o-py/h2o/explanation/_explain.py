@@ -1706,7 +1706,7 @@ def explain(
         "leaderboard",
         "confusion_matrix",
         "residual_analysis",
-        "variable_importance",
+        "varimp",
         "varimp_heatmap",
         "model_correlation_heatmap",
         "shap_summary",
@@ -1766,18 +1766,18 @@ def explain(
                                                    "residual_analysis"),
                                                figsize=figsize)))
 
-    if len(models_with_varimp) > 0 and "variable_importance" in explanations:
-        result["variable_importance"] = H2OExplanation()
-        result["variable_importance"]["header"] = display(Header("Variable Importance"))
-        result["variable_importance"]["description"] = display(Description("variable_importance"))
-        result["variable_importance"]["plots"] = H2OExplanation()
+    if len(models_with_varimp) > 0 and "varimp" in explanations:
+        result["varimp"] = H2OExplanation()
+        result["varimp"]["header"] = display(Header("Variable Importance"))
+        result["varimp"]["description"] = display(Description("variable_importance"))
+        result["varimp"]["plots"] = H2OExplanation()
         for model in models_with_varimp:
             model.varimp_plot(server=True, **plot_overrides.get("varimp_plot", dict()))
             varimp_plot = plt.gcf()  # type: plt.Figure
             varimp_plot.set_figwidth(figsize[0])
             varimp_plot.set_figheight(figsize[1])
             varimp_plot.gca().set_title("Variable Importance for \"{}\"".format(model.model_id))
-            result["variable_importance"]["plots"][model.model_id] = display(varimp_plot)
+            result["varimp"]["plots"][model.model_id] = display(varimp_plot)
         if columns_of_interest is None:
             varimps = _consolidate_varimps(models_with_varimp[0])
             columns_of_interest = sorted(varimps.keys(), key=lambda k: -varimps[k])[

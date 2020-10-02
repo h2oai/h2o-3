@@ -2118,7 +2118,7 @@ h2o.explain <- function(object,
     "leaderboard",
     "confusion_matrix",
     "residual_analysis",
-    "variable_importance",
+    "varimp",
     "varimp_heatmap",
     "model_correlation_heatmap",
     "shap_summary",
@@ -2250,26 +2250,21 @@ h2o.explain <- function(object,
   }
 
   # feature importance
-  if (!"variable_importance" %in% skip_explanations) {
+  if (!"varimp" %in% skip_explanations) {
     if (any(sapply(models_info$model_ids, .has_varimp))) {
-      result$variable_importance <- list(
+      result$varimp <- list(
         header = .h2o_explanation_header("Variable Importance"),
         description = .describe("variable_importance"),
         plots = list())
       varimp <- NULL
-      warning_shown <- FALSE
       for (m in models_info$model_ids) {
         m <- models_info$get_model(m)
         tmp <- .plot_varimp(m, newdata)
         if (!is.null(tmp$varimp)) {
-          result$variable_importance$plots[[m@model_id]] <- tmp$plot
+          result$varimp$plots[[m@model_id]] <- tmp$plot
           if (is.null(varimp)) varimp <- names(tmp$grouped_varimp)
           if (models_info$is_automl) break
-        } else {
-          if (!warning_shown && m@algorithm == "stackedensemble") {
-            result <- append(result, "Variable importance is not currently available for Stacked Ensemble models.")
-            warning_shown <- TRUE
-          }
+        }
         }
       }
     }
