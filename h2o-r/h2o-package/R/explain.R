@@ -444,9 +444,10 @@ with_no_h2o_progress <- function(expr) {
 #' @param leaderboard_frame when provided with list of models, use this frame to calculate metrics
 #'
 #' @return a data.frame
-.create_leaderboard <- function(models_info, leaderboard_frame) {
+.create_leaderboard <- function(models_info, leaderboard_frame, top_n = 20) {
   if (models_info$is_automl) {
-    return(models_info$leaderboard)
+    leaderboard <- models_info$leaderboard
+    return(head(leaderboard, n = min(top_n, nrow(leaderboard))))
   }
   leaderboard <-
     as.data.frame(t(sapply(models_info$model_ids, function(m) {
@@ -464,7 +465,7 @@ with_no_h2o_progress <- function(expr) {
                        leaderboard)
   leaderboard <- leaderboard[order(leaderboard[[2]]),]
   names(leaderboard) <- tolower(names(leaderboard))
-  return(leaderboard)
+  return(head(leaderboard, n = min(top_n, nrow(leaderboard))))
 }
 
 
@@ -564,7 +565,7 @@ with_no_h2o_progress <- function(expr) {
 #' @param top_n leaderboard will contain top_n models
 #'
 #' @return H2OFrame
-.leaderboard_for_row <- function(models_info, newdata, row_index, top_n = 10) {
+.leaderboard_for_row <- function(models_info, newdata, row_index, top_n = 20) {
   leaderboard <- .create_leaderboard(models_info, newdata)
   top_n <- min(top_n, nrow(leaderboard))
   indices <- which(!duplicated(substr(leaderboard$model_id, 1, 3)))
@@ -573,12 +574,12 @@ with_no_h2o_progress <- function(expr) {
   with_no_h2o_progress({
     leaderboard <-
       cbind(leaderboard,
-            prediction = do.call(
+            do.call(
               rbind,
-              sapply(
+              lapply(
                 leaderboard[["model_id"]],
                 function(model_id) {
-                  as.data.frame(stats::predict(models_info$get_model(model_id), newdata[row_index,])[["predict"]])
+                  as.data.frame(stats::predict(models_info$get_model(model_id), newdata[row_index,]))
                 }
               )
             )
@@ -782,11 +783,12 @@ with_no_h2o_progress <- function(expr) {
     switch(explanation,
            leaderboard = paste0("Leaderboard shows models with their metrics. When provided with H2OAutoML object, ",
                                 "the leaderboard shows 5-fold cross-validated metrics by default (depending on the ",
-                                "H2OAutoML settings), otherwise it shows metrics computed on the newdata."),
+                                "H2OAutoML settings), otherwise it shows metrics computed on the newdata. ",
+                                "At most 20 models are shown by default."),
            leaderboard_row = paste0("Leaderboard shows models with their metrics and their predictions for a given row. ",
                                     "When provided with H2OAutoML object, the leaderboard shows 5-fold cross-validated ",
                                     "metrics by default (depending on the H2OAutoML settings), otherwise it shows ",
-                                    "metrics computed on the newdata."),
+                                    "metrics computed on the newdata. ", "At most 20 models are shown by default."),
            confusion_matrix = "Confusion matrix shows a predicted class vs an actual class.",
            residual_analysis = paste0("Residual analysis plot shows residuals vs fitted values. ",
                                       "Ideally, residuals should be randomly distributed. Patterns in this plot can indicate ",

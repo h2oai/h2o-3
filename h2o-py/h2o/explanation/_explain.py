@@ -79,11 +79,12 @@ class Description:
     DESCRIPTIONS = dict(
         leaderboard="Leaderboard shows models with their metrics. When provided with H2OAutoML object, "
                     "the leaderboard shows 5-fold cross-validated metrics by default (depending on the "
-                    "H2OAutoML settings), otherwise it shows metrics computed on the frame.",
+                    "H2OAutoML settings), otherwise it shows metrics computed on the frame. "
+                    "At most 20 models are shown by default.",
         leaderboard_row="Leaderboard shows models with their metrics and their predictions for a given row. "
                         "When provided with H2OAutoML object, the leaderboard shows 5-fold cross-validated "
                         "metrics by default (depending on the H2OAutoML settings), otherwise it shows "
-                        "metrics computed on the frame.",
+                        "metrics computed on the frame. At most 20 models are shown by default.",
         confusion_matrix="Confusion matrix shows a predicted class vs an actual class.",
         residual_analysis="Residual analysis plot shows residuals vs fitted values. "
                           "Ideally, residuals should be randomly distributed. Patterns in this plot can indicate "
@@ -1521,7 +1522,8 @@ def _get_tree_models(
 def _get_leaderboard(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
         frame,  # type: h2o.H2OFrame
-        row_index=None  # type: Optional[int]
+        row_index=None,  # type: Optional[int]
+        top_n=20  # type: int
 ):
     # type: (...) -> h2o.H2OFrame
     """
@@ -1530,20 +1532,21 @@ def _get_leaderboard(
     :param models: H2OAutoML object or list of models
     :param frame: H2OFrame used for calculating prediction when row_index is specified
     :param row_index: if specified, calculated prediction for the given row
+    :param top_n: show just top n models in the leaderboard
     :return: H2OFrame
     """
     if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
         leaderboard = h2o.automl.get_leaderboard(models, extra_columns="ALL")
+        leaderboard = leaderboard.head(rows=min(leaderboard.nrow, top_n))
         if row_index is not None:
             model_ids = [m[0] for m in
                          leaderboard["model_id"].as_data_frame(use_pandas=False, header=False)]
             with no_progress():
-                leaderboard = leaderboard.cbind(
-                    h2o.H2OFrame.from_python(
-                        [h2o.get_model(model_id).predict(frame[row_index, :])[0, "predict"]
-                         for model_id in model_ids],
-                        column_names=["prediction"]
-                    ))
+                preds = h2o.get_model(model_ids[0]).predict(frame[row_index, :])
+                for model_id in model_ids[1:]:
+                    preds = preds.rbind(h2o.get_model(model_id).predict(frame[row_index, :]))
+
+                leaderboard = leaderboard.cbind(preds)
         return leaderboard
     else:
         METRICS = [
@@ -1557,6 +1560,7 @@ def _get_leaderboard(
         from collections import defaultdict
 
         result = defaultdict(list)
+        predictions = []
         with no_progress():
             for model in models:
                 result["model_id"].append(model.model_id)
@@ -1564,15 +1568,19 @@ def _get_leaderboard(
                 for metric in METRICS:
                     result[metric.lower()].append(perf._metric_json.get(metric))
                 if row_index is not None:
-                    result["prediction"].append(
-                        model.predict(frame[row_index, :])[0, "predict"])
+                    predictions.append(model.predict(frame[row_index, :]))
             for metric in METRICS:
                 if not any(result[metric]):
                     del result[metric]
             leaderboard = h2o.H2OFrame(result)[["model_id"] + [m.lower()
-                                                               for m in METRICS + ["prediction"]
+                                                               for m in METRICS
                                                                if m.lower() in result]]
-            return leaderboard.sort("mse")
+            if row_index is not None:
+                preds = predictions[0]
+                for pr in predictions[1:]:
+                    preds = preds.rbind(pr)
+                leaderboard = leaderboard.cbind(preds)
+            return leaderboard.sort("mse").head(rows=min(top_n, leaderboard.nrow))
 
 
 def _process_explanation_lists(
