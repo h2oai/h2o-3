@@ -1745,7 +1745,7 @@ h2o.pd_plot <- function(object,
 }
 
 
-#' Plot partial dependences of a variable across multiple models.
+#' Plot partial dependencies of a variable across multiple models.
 #' 
 #' Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable
 #' on the response. The effect of a variable is measured in change in the mean response.

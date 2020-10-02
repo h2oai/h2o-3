@@ -859,6 +859,25 @@ def pd_plot(
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="Dark2",  # type: str
 ):
+    """
+    Plot partial dependence plot.
+
+    Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable
+    on the response. The effect of a variable is measured in change in the mean response.
+    PDP assumes independence between the feature for which is the PDP computed and the rest.
+
+    :param model: H2O Model object
+    :param frame: H2OFrame
+    :param column: string containing column name
+    :param row_index: if None, do partial dependence, if integer, do individual
+                      conditional expectation for the row specified by this integer
+    :param target: (only for multinomial classification) for what target should the plot be done
+    :param max_levels: maximum number of factor levels to show
+    :param figsize: figure size; passed directly to matplotlib
+    :param colormap: colormap name; used to get just the first color to keep the api and color scheme similar with
+                     pd_multi_plot
+    :return: a matplotlib figure object
+    """
     is_factor = frame[column].isfactor()[0]
     if is_factor:
         if frame[column].nlevels()[0] > max_levels:
@@ -2008,8 +2027,7 @@ def explain_row(
                     row_index=row_index,
                     target=target,
                     **_custom_args(
-                        plot_overrides.get("ice_plot",
-                                           plot_overrides.get("partial_dependences")),
+                        plot_overrides.get("ice"),
                         frame=frame,
                         figsize=figsize,
                         colormap=qualitative_colormap
