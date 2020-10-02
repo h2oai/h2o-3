@@ -123,6 +123,17 @@ with_no_h2o_progress <- function(expr) {
   return(!.get_algorithm(model) %in% c("stackedensemble", "naivebayes"))
 }
 
+#' Shortens model ids if possible (iff there will be same amount of unique model_ids as before)
+#' @param model_ids character vector
+#' @return character vector
+.shorten_model_ids <- function(model_ids) {
+  shortened_model_ids <- gsub("(.*)_AutoML_\\d{8}_\\d{6}(.*)", "\\1\\2", model_ids)
+  if (length(unique(shortened_model_ids)) == length(unique(model_ids))) {
+    return(shortened_model_ids)
+  }
+  return(models)
+}
+
 
 #' Needed to be able to memoise the models
 .models_info <- setRefClass(
@@ -502,7 +513,7 @@ with_no_h2o_progress <- function(expr) {
       p <- ggplot2::ggplot(ggplot2::aes(.data$variable, .data$scaled_importance), data = varimp) +
         ggplot2::geom_col(fill = "#1F77B4") +
         ggplot2::scale_x_discrete("Variable", limits = rev(varimp$variable)) +
-        ggplot2::labs(y = "Variable Importance", title = sprintf("Variable importance for %s", model@model_id)) +
+        ggplot2::labs(y = "Variable Importance", title = sprintf("Variable importance\nfor %s", model@model_id)) +
         ggplot2::coord_flip() +
         ggplot2::theme_bw() +
         ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
@@ -1394,11 +1405,11 @@ h2o.variable_importance_heatmap <- function(object, newdata, top_n = 20) {
   )
 
   p <- ggplot2::ggplot(ggplot2::aes(
-    x = .data$model_id, y = .data$feature, fill = .data$value, text = .data$text
+    x = .shorten_model_ids(.data$model_id), y = .data$feature, fill = .data$value, text = .data$text
   ), data = results) +
     ggplot2::geom_tile() +
-    ggplot2::labs(fill = "Variable Importance", x = "Model Id", y = "Feature", title = "Variable Imporance") +
-    ggplot2::scale_x_discrete(limits = ordered) +
+    ggplot2::labs(fill = "Variable Importance", x = "Model Id", y = "Feature", title = "Variable Importance") +
+    ggplot2::scale_x_discrete(limits = .shorten_model_ids(ordered)) +
     ggplot2::scale_fill_distiller(palette = "RdYlBu") +
     ggplot2::theme_bw() +
     ggplot2::theme(
@@ -1479,25 +1490,28 @@ h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
     "Correlation: ", res$value
   )
 
-  p <- ggplot2::ggplot(ggplot2::aes(
-    x = .data$model_id_1, y = .data$model_id_2, fill = .data$value, text = .data$text
-  ), data = res) +
-    ggplot2::geom_tile() +
-    ggplot2::labs(fill = "Correlation", x = "Model Id", y = "Model Id") +
-    ggplot2::ggtitle("Model Correlation") +
-    ggplot2::scale_x_discrete(limits = ordered) +
-    ggplot2::scale_y_discrete(limits = rev(ordered)) +
-    ggplot2::scale_fill_distiller(limits = c(0.5, 1), palette = "RdYlBu") +
-    ggplot2::coord_fixed() +
-    (if (triangular) ggplot2::theme_classic() else ggplot2::theme_bw()) +
-    ggplot2::theme(
-      axis.text.x = ggplot2::element_text(
-        angle = 45,
-        hjust = 1),
-      aspect.ratio = 1,
-      legend.title = ggplot2::element_blank(),
-      plot.title = ggplot2::element_text(hjust = 0.5)
-    )
+  suppressWarnings({
+    p <- ggplot2::ggplot(ggplot2::aes(
+      x = .shorten_model_ids(.data$model_id_1), y = .shorten_model_ids(.data$model_id_2),
+      fill = .data$value, text = .data$text
+    ), data = res) +
+      ggplot2::geom_tile() +
+      ggplot2::labs(fill = "Correlation", x = "Model Id", y = "Model Id") +
+      ggplot2::ggtitle("Model Correlation") +
+      ggplot2::scale_x_discrete(limits = .shorten_model_ids(ordered)) +
+      ggplot2::scale_y_discrete(limits = .shorten_model_ids(rev(ordered))) +
+      ggplot2::scale_fill_distiller(limits = c(0.5, 1), palette = "RdYlBu") +
+      ggplot2::coord_fixed() +
+      (if (triangular) ggplot2::theme_classic() else ggplot2::theme_bw()) +
+      ggplot2::theme(
+        axis.text.x = ggplot2::element_text(
+          angle = 45,
+          hjust = 1),
+        aspect.ratio = 1,
+        legend.title = ggplot2::element_blank(),
+        plot.title = ggplot2::element_text(hjust = 0.5)
+      )
+  })
 
   return(p)
 }
@@ -1537,7 +1551,7 @@ h2o.residual_analysis <- function(model, newdata) {
       ggplot2::geom_smooth(method = "lm", formula = y ~ x) +
       ggplot2::geom_rug(alpha = 0.2) +
       ggplot2::geom_abline(intercept = 0, slope = 0) +
-      ggplot2::labs(x = "Fitted", y = "Residuals", title = sprintf("Residual Analysis for \"%s\"", model@model_id)) +
+      ggplot2::labs(x = "Fitted", y = "Residuals", title = sprintf("Residual Analysis\nfor \"%s\"", model@model_id)) +
       ggplot2::theme_bw() +
       ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
   })
@@ -1730,7 +1744,7 @@ h2o.partial_dependences <- function(object,
     p <- ggplot2::ggplot(ggplot2::aes(
       x = .data[[col_name]],
       y = .data$values,
-      color = .data$model_id,
+      color = .shorten_model_ids(.data$model_id),
       text = .data$text),
                          data = data
     ) +
@@ -1738,7 +1752,7 @@ h2o.partial_dependences <- function(object,
         ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
         position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
         inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
-      geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$model_id)) +
+      geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .shorten_model_ids(.data$model_id))) +
       ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL),
                         sides = "b", alpha = 0.1, color = "black",
                         data = rug_data

@@ -413,6 +413,15 @@ class NumpyFrame:
             yield col, self.get(col, with_categorical_names)
 
 
+def _shorten_model_ids(model_ids):
+    import re
+    regexp = re.compile("(.*)_AutoML_\\d{8}_\\d{6}(.*)")
+    shortened_model_ids = [regexp.sub("\\1\\2", model_id) for model_id in model_ids]
+    if len(set(shortened_model_ids)) == len(set(model_ids)):
+        return shortened_model_ids
+    return model_ids
+
+
 def _get_algorithm(model,  treat_xrt_as_algorithm=False):
     # type: (Union[str, h2o.model.ModelBase], bool) -> str
     """
@@ -906,18 +915,20 @@ def partial_dependences(
         if is_factor:
             factor_map = _factor_mapper(NumpyFrame(frame[column]).from_factor_to_num(column))
             marker_map = dict(zip(range(len(markers) - 1), markers[:-1]))
+        model_ids = _shorten_model_ids([model.model_id for model in models])
         for i, model in enumerate(models):
             tmp = NumpyFrame(
                 model.partial_plot(frame, cols=[column], plot=False,
-                                                  row_index=row_index, targets=target,
-                                                  nbins=20 if not is_factor else 1 + frame[
-                                                      column].nlevels()[0])[0])
+                                   row_index=row_index, targets=target,
+                                   nbins=20 if not is_factor else 1 + frame[column].nlevels()[0])[0])
             encoded_col = tmp.columns[0]
             if is_factor:
                 plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"],
-                            color=[colors[i]], label=model.model_id, marker=marker_map.get(i, markers[-1]))
+                            color=[colors[i]], label=model_ids[i],
+                            marker=marker_map.get(i, markers[-1]))
             else:
-                plt.plot(tmp[encoded_col], tmp["mean_response"], color=colors[i], label=model.model_id)
+                plt.plot(tmp[encoded_col], tmp["mean_response"], color=colors[i],
+                         label=model_ids[i])
 
         _add_histogram(frame, column)
 
@@ -1229,8 +1240,8 @@ def variable_importance_heatmap(
 
     plt.figure(figsize=figsize)
     plt.imshow(varimps, cmap=plt.get_cmap(colormap))
-    plt.xticks(range(len(models)), [model.model_id for model in models], rotation=45,
-               rotation_mode="anchor", ha="right")
+    plt.xticks(range(len(models)), _shorten_model_ids([model.model_id for model in models]),
+               rotation=45, rotation_mode="anchor", ha="right")
     plt.yticks(range(len(x)), x)
     plt.colorbar()
     plt.xlabel("Model Id")
@@ -1309,9 +1320,9 @@ def model_correlation_heatmap(
 
     plt.figure(figsize=figsize)
     plt.imshow(corr, cmap=plt.get_cmap(colormap), clim=(0.5, 1))
-    plt.xticks(range(len(models)), [model.model_id for model in models], rotation=45,
-               rotation_mode="anchor", ha="right")
-    plt.yticks(range(len(models)), [model.model_id for model in models])
+    plt.xticks(range(len(models)), _shorten_model_ids([model.model_id for model in models]),
+               rotation=45, rotation_mode="anchor", ha="right")
+    plt.yticks(range(len(models)), _shorten_model_ids([model.model_id for model in models]))
     plt.colorbar()
     plt.title("Model Correlation")
     plt.xlabel("Model Id")
@@ -1698,8 +1709,6 @@ def explain(
                                   :min(top_n_features, len(varimps))]
     else:
         if columns_of_interest is None:
-            import warnings
-            warnings.warn("No model with variable importance. Selecting all features to explain.")
             columns_of_interest = _get_xy(models_to_show[0])[0]
 
     if is_aml or len(models_to_show) > 1:

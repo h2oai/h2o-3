@@ -2,6 +2,8 @@ from __future__ import print_function
 import sys, os, collections
 
 sys.path.insert(1, os.path.join("..", "..", ".."))
+import matplotlib
+matplotlib.use("Agg")  # remove warning from python2 (missing TKinter)
 import h2o
 import matplotlib.pyplot
 from tests import pyunit_utils
