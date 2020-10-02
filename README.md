@@ -693,14 +693,16 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 * Generalized Additive Models (improvements, not a beta anymore)
 * CoxPH additions (new metrics, baseline hazard function, MOJO)
 
-### H2O 3.32.0.1 - September 2020
+### H2O 3.32.0.1 - October 2020
 
 * RuleFit algorithm
 * Extended Isolation Forest Algoritm
 * Target Encoding for Regression and Multinomial problems
+* Target Encoding minimal integration into AutoML
 * Kubernetes Improvements (REST API clustering, healthchecks)
 * GBM monotone constraints for quantile and laplace distributions
 * Performance optimizations (lower memory usage)
+* Model Explainability
 
 <a name="Community"></a>
 ## 11. Community
@@ -782,6 +784,7 @@ Michal Kurka
 Veronika Maurerova
 Jan Sterba
 Jan Jendrusak
+Tomáš Frýda
 ```
 
 <a name="Advisors"></a>
