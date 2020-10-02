@@ -1,16 +1,16 @@
 Model Explainability
 ====================
 
-H2O Explainability API is a convenient interface to many explainabilty methods and visualizations in H2O.  The main functions, ``h2o.explain()`` and ``h2o.explain_row()`` work for individual models, as well a list of models or an `H2O AutoML object <automl.html>`__.  The ``h2o.explain()`` function generates a list of "explanations" -- individual units of explanation such as a Partial Dependence Plot or a Variable Importance plot.  All the explanations are visual objects that can also be individually created by utility functions.  
+H2O Explainability Interface is a convenient wrapper to a number of explainabilty methods and visualizations in H2O.  The main functions, ``h2o.explain()`` and ``h2o.explain_row()`` work for individual models, as well a list of models or an `H2O AutoML object <automl.html>`__.  The ``h2o.explain()`` function generates a list of **explanations** -- individual units of explanation such as a Partial Dependence plot or a Variable Importance plot.  Most of the explanations are plots -- these can also be created by individual plotting functions outside the ``h2o.explain()`` function. 
 
 The visualization engine used in the R interface is the `ggplot2 <https://ggplot2.tidyverse.org/>`__ package and in Python, we use `matplotlib <https://matplotlib.org/>`__.
 
 
 
-Explainability Interface
-------------------------
+Model Explainability Interface
+------------------------------
 
-The H2O Explainability Interface is designed to be automatic -- all of the "explanations" are generated with a single function, ``h2o.explain()``.  The input can be any of the following: an H2O model, a list of H2O models, an ``H2OAutoML`` object or an ``H2OAutoML`` Leaderboard slice, and a holdout frame.  If you provide a list of models or an AutoML object, there will be additional plots that do multi-model comparisons.  
+The interface is designed to be simple and automatic -- all of the explanations are generated with a single function, ``h2o.explain()``.  The input can be any of the following: an H2O model, a list of H2O models, an ``H2OAutoML`` object or an ``H2OAutoML`` Leaderboard slice, and a holdout frame.  If you provide a list of models or an AutoML object, there will be additional plots that do multi-model comparisons.  
 
 
 .. tabs::
@@ -44,21 +44,21 @@ Parameters
 
 - **columns**: A vector of column names or an integer. If column names are specified, create plots only with these columns (where applicable).  If an integer, N, is given, then use the top N columns, ranked by variable importance.
 
-- **include_explanations**: If specified, do only the specified explanations. Mutually exclusive with ``exclude_explanations``.
+- **include_explanations**: If specified, do only the specified explanations. Mutually exclusive with ``exclude_explanations``.  Optional. See below for the possible explanations.
 
-- **exclude_explanations**: Exclude specified explanations.  The available options (explanations) for ``include_explanations`` and ``exclude_explanations`` are:
+- **exclude_explanations**: Exclude specified explanations.  Optional.  The available options (explanations) for ``include_explanations`` and ``exclude_explanations`` are:
     
     - ``"leaderboard"``  (AutoML and list of models only)
     - ``"residual_analysis"``  (regression only)
     - ``"confusion_matrix"``   (classification only)
-    - ``"variable_importance"``  (not currently available for Stacked Ensembles)
-    - ``"variable_importance_heatmap"``
+    - ``"varimp"``  (not currently available for Stacked Ensembles)
+    - ``"varimp_heatmap"``
     - ``"model_correlation_heatmap"``
     - ``"shap_summary"``
     - ``"pdp"``
     - ``"ice"``
 
-- **plot_overrides**: Overrides for individual explanations, e.g. ``list(shap_summary_plot = list(top_n_features = 50))``.
+- **plot_overrides**: Overrides for the individual explanation plots, e.g. ``list(shap_summary_plot = list(top_n_features = 50))``.  Optional.
 
 
 Code Examples
@@ -70,7 +70,9 @@ The R and Python code below is the quickest way to get started.  We are working 
 Explain Models
 ~~~~~~~~~~~~~~
 
-Here’s an example showing basic usage of the ``h2o.explain()`` function in *R* and the ``explain()`` method in *Python*.  Keep in mind that this code should be run in an environment that can support plots.  We recommend Jypyter notebooks in Python and RStudio IDE in R (either in the console or in R Markdown file or notebook).  There is also support for the `IRkernel <https://irkernel.github.io/installation/>`__ Jupyter notebook R kernel.
+Here’s an example showing basic usage of the ``h2o.explain()`` function in *R* and the ``explain()`` method in *Python*.  Keep in mind that this code should be run in an environment that can support plots.  We recommend Jypyter notebooks for Python and RStudio IDE in R (either in the console or in R Markdown file or notebook).  There is also support for the `IRkernel <https://irkernel.github.io/installation/>`__ Jupyter notebook R kernel.
+
+The example below uses the `Wine Quality <https://archive.ics.uci.edu/ml/datasets/Wine+Quality>`__ dataset, which associates wine quality from a number of measurable attributes about wine. 
 
 
 .. tabs::
@@ -79,23 +81,21 @@ Here’s an example showing basic usage of the ``h2o.explain()`` function in *R*
         library(h2o)
         h2o.init()
 
-        # Import a sample binary outcome train/test set into H2O
-        train <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
-        test <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+        
+        # Import wine quality dataset
+        f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+        df <- h2o.importFile(f)
 
-        # Identify predictors and response
-        y <- "response"
-        x <- setdiff(names(train), y)
+        # Response column
+        y <- "quality"
 
-        # For binary classification, response should be a factor
-        train[, y] <- as.factor(train[, y])
-        test[, y] <- as.factor(test[, y])
+        # Split into train & test
+        splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+        train <- splits[[1]]
+        test <- splits[[2]]
 
-        # Run AutoML
-        aml <- h2o.automl(x = x, y = y, 
-                          training_frame = train,
-                          max_models = 10,
-                          seed = 1)
+        # Run AutoML for 1 minute
+        aml <- h2o.automl(y = y, training_frame = train, max_runtime_secs = 60, seed = 1)
 
         # Explain leader model & compare with all AutoML models                  
         exa <- h2o.explain(aml, test)
@@ -115,22 +115,16 @@ Here’s an example showing basic usage of the ``h2o.explain()`` function in *R*
 
         h2o.init()
 
-        # Import a sample binary outcome train/test set into H2O
-        train = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
-        test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+        # Import wine quality dataset
+        f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+        train = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv")
 
-        # Identify predictors and response
-        x = train.columns
-        y = "response"
-        x.remove(y)
-
-        # For binary classification, response should be a factor
-        train[y] = train[y].asfactor()
-        test[y] = test[y].asfactor()
+        # Reponse column
+        y = "quality"
         
-        # Run AutoML
-        aml = H2OAutoML(max_models=10, seed=1)
-        aml.train(x=x, y=y, training_frame=train)
+        # Run AutoML for 1 minute
+        aml = H2OAutoML(max_runtime_secs=60, seed=1)
+        aml.train(y=y, training_frame=train)
 
         # Explain leader model & compare with all AutoML models 
         exa = aml.explain(test)
@@ -142,9 +136,9 @@ Here’s an example showing basic usage of the ``h2o.explain()`` function in *R*
 Notes:
 ''''''
 
-In R, the ``H2OExplanation`` object will not be printed if you save it to an object.  If you save the output to an object, you can access the plots and associated data for each explanation.  Then you can ``print(exa)`` to print the explaiation.
+In R, the ``H2OExplanation`` object will not be printed if you save it to an object.  If you save the object to a variable, you will be able to access the plots and associated metadata by inspecting the object.  Then you can ``print(exa)`` to print the explanation, or simply type ``exa`` and it will print as well.
 
-In Python, the ``H2OExplanation`` will always be printed, even if you save it to an object.  Once you save it to an object, however, if you want to print it again, you ``from IPython.core.display import display`` and ``display(exa)``.
+In Python, the ``H2OExplanation`` will always be printed, even if you save it to an object.  Once you save it to an object, however, if you want to print it again, you must do: ``from IPython.core.display import display`` and ``display(exa)``.
 
 
 
@@ -177,9 +171,9 @@ Output: Explanations
 TO DO: Overview of the output object.  Add some plots
 
 
-When `explain()` is provided a list of models, we get the following explanations:
+When ``h2o.explain()`` is provided a list of models, the following explanations will be generated by default:
 
-- Leaderboard
+- Leaderboard (compare all models)
 - Confusion Matrix for Leader Model (classification only)
 - Residual Analysis for Leader Model (regression only)
 - Variable Importance of Top Base Model 
@@ -188,45 +182,59 @@ When `explain()` is provided a list of models, we get the following explanations
 - SHAP Summary of Top Tree-based Model (TreeSHAP)
 - PD Plots (compare all models)
 
-When `explain()` is provided a single model, we get the following explanations:
-
-
+When ``explain()`` is provided a single model, we get the following explanations:
 
 - Individual Conditional Expectation (ICE) Plots
-
-
-
-
+- TO DO: Finish
 
 
 
 Explanation Plotting Functions 
 ------------------------------
 
-TO DO: Let's put examples of each function and the plot, in the order in which they appear in the ``h2o.explain()`` output.  Let's also show how to customize the plots.
+_TO DO: Let's put examples of each function and the plot, in the order in which they appear in the ``h2o.explain()`` output.  Let's also show how to customize the plots._
 
 
 
 There are a number of individual plotting functions that are used inside the ``explain()`` function.  Some of these functions 
 
 Takes a list of models (including an AutoML object or leaderboard slice) as input:
-::
 
-    varimp_heatmap          
-    model_correlation_heatmap        
-    pdp_multi_plot       
+.. tabs::
+   .. code-tab:: r R
+
+        h2o.varimp_plot()
+        h2o.varimp_heatmap()          
+        h2o.model_correlation_heatmap        
+        h2o.pdp_multi_plot
+
+   .. code-tab:: python
+
+        varimp_plot
+        varimp_heatmap          
+        model_correlation_heatmap        
+        pdp_multi_plot
+
 
 
 Takes a single model as input:
-::
-    residual_analysis_plot
-    shap_explain_row_plot
-    shap_summary_plot
-    pd_plot
-    ice_plot
 
-R has the same functions, but with the ``h2o.*`` prefix.
+.. tabs::
+   .. code-tab:: r R
 
+        h2o.residual_analysis_plot
+        h2o.shap_explain_row_plot
+        h2o.shap_summary_plot
+        h2o.pd_plot
+        h2o.ice_plot
+
+   .. code-tab:: python
+
+        residual_analysis_plot
+        shap_explain_row_plot
+        shap_summary_plot
+        pd_plot
+        ice_plot 
 
 
 Residual Analysis
@@ -237,25 +245,104 @@ The Residual Analysis plot function graphs "Fitted vs Residuals". Ideally, resid
 .. tabs::
    .. code-tab:: r R
 
-        # Residual analysis plot for the AutoML leader model
         ra_plot <- h2o.residual_analysis_plot(aml@leader, test)
         ra_plot
 
    .. code-tab:: python
 
-        # Residual analysis plot for the AutoML leader model
         ra_plot = aml.leader.residual_analysis_plot(test)
 
 
+Variable Importance
+~~~~~~~~~~~~~~~~~~~
+
+TO DO -- what model should we show here?
+need to grab top non-SE model, but the code to extract 
+that model is so overly complex & not user friendly (we need to fix that)...
+
+
+.. tabs::
+   .. code-tab:: r R
+
+        va_plot <- h2o.varimp_plot(aml@leader, test)
+        va_plot
+
+   .. code-tab:: python
+
+        # Residual analysis plot for the AutoML leader model
+        ra_plot = aml.leader.varimp_plot(test)
 
 
 
+Variable Importance Heatmap
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TO DO
+
+.. tabs::
+   .. code-tab:: r R
+
+        va_plot <- h2o.varimp_heatmap(aml, test)
+        va_plot
+
+   .. code-tab:: python
+
+        ra_plot = aml.leader.varimp_plot(test)
 
 
 
+Model Correlation Heatmap
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Notes
-~~~~~
+TO DO
+
+.. tabs::
+   .. code-tab:: r R
+
+        mc_plot <- h2o.model_correlation_heatmap(aml, test)
+        mc_plot
+
+   .. code-tab:: python
+
+        mc_plot = aml.model_correlation_heatmap(test)
+
+
+Partial Dependence (PD) Plots
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TO DO
+
+.. tabs::
+   .. code-tab:: r R
+
+        pd_plot <- h2o.pd_multi_plot(aml, test)
+        pd_plot
+
+   .. code-tab:: python
+
+        pd_plot = aml.pd_multi_plot(test)
+
+
+
+Individual Conditional Expectiation (ICE) Plots
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TO DO
+
+.. tabs::
+   .. code-tab:: r R
+
+        ice_plot <- h2o.ice_plot(aml.leader, test)
+        ice_plot
+
+   .. code-tab:: python
+
+        ice_plot = aml.leader.ice_plot(test)
+
+
+
+Additional Information
+----------------------
 
 The H2O Explainability interface is newly released and currently experimental.  From the initial release, we may evolve (and potentially break) the API, as we collect collect feedback from users and work to improve and expand the functionality.  We welcome feedback!  If you find bugs, or if you have any feature requests or suggested improvements, please create a ticket on the `H2O JIRA issue tracker <https://0xdata.atlassian.net/projects/PUBDEV>`__.
 
