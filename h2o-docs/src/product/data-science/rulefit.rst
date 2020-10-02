@@ -27,9 +27,9 @@ Defining a RuleFit Model (Beta API)
 
 - **algorithm**: The algorithm to use to fit a tree ensemble. Must be one of: "AUTO", "DRF", or "GBM". Defaults to "DRF".
 
-- **min_rule_length**: Specify the minimal depth of trees to be fit. Defaults to 1.
+- **min_rule_length**: Specify the minimal depth of trees to be fit. Defaults to 3.
 
-- **max_rule_length**: Specify the maximal  depth of trees to be fit. Defaults to 10.
+- **max_rule_length**: Specify the maximal  depth of trees to be fit. Defaults to 3.
 
 - **max_num_rules**: The maximum number of rules to return. Defaults to -1, which means the number of rules are selected by diminishing returns in model deviance.
 
