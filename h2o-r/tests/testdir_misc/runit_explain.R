@@ -25,19 +25,19 @@ explanation_test_single_model_regression <- function() {
   expect_ggplot(h2o.shap_summary_plot(gbm, train))
 
   # test shap explain row
-  expect_ggplot(h2o.shap_explain_row(gbm, train, 1))
+  expect_ggplot(h2o.shap_explain_row_plot(gbm, train, 1))
 
   # test residual analysis
-  expect_ggplot(h2o.residual_analysis(gbm, train))
+  expect_ggplot(h2o.residual_analysis_plot(gbm, train))
 
   # test partial dependences
   for (col in cols_to_test) {
-    expect_ggplot(h2o.partial_dependences(gbm, train, col))
+    expect_ggplot(h2o.pd_plot(gbm, train, col))
   }
 
   # test ice plot
   for (col in cols_to_test) {
-    expect_ggplot(h2o.individual_conditional_expectations(gbm, train, col))
+    expect_ggplot(h2o.ice_plot(gbm, train, col))
   }
 
   # test explanation
@@ -64,23 +64,23 @@ explanation_test_automl_regression <- function() {
   expect_ggplot(h2o.model_correlation_heatmap(aml, train))
 
   # test variable importance heatmap
-  expect_ggplot(h2o.variable_importance_heatmap(aml, train))
+  expect_ggplot(h2o.varimp_heatmap(aml, train))
 
   # test shap summary
   expect_error(h2o.shap_summary_plot(aml, train), "SHAP summary plot requires a tree-based model!")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row(aml, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "SHAP explain_row plot requires a tree-based model!")
 
   # test residual analysis
-  expect_error(h2o.residual_analysis(aml, train), "Residual analysis works only on a single model!")
+  expect_error(h2o.residual_analysis_plot(aml, train), "Residual analysis works only on a single model!")
 
   # test partial dependences
   for (col in cols_to_test) {
-    expect_ggplot(h2o.partial_dependences(aml, train, col))
+    expect_ggplot(h2o.pd_multi_plot(aml, train, col))
   }
   # test ice plot
-  expect_error(h2o.individual_conditional_expectations(aml, train, cols_to_test[[1]]), "Only one model is allowed!")
+  expect_error(h2o.ice_plot(aml, train, cols_to_test[[1]]), "Only one model is allowed!")
 
   # test explanation
   expect_true("H2OExplanation" %in% class(h2o.explain(aml, train)))
@@ -107,23 +107,23 @@ explanation_test_list_of_models_regression <- function() {
   expect_ggplot(h2o.model_correlation_heatmap(models, train))
 
   # test variable importance heatmap
-  expect_ggplot(h2o.variable_importance_heatmap(models, train))
+  expect_ggplot(h2o.varimp_heatmap(models, train))
 
   # test shap summary
   expect_error(h2o.shap_summary_plot(models, train), "SHAP summary plot requires a tree-based model!")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row(models, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(models, train, 1), "SHAP explain_row plot requires a tree-based model!")
 
   # test residual analysis
-  expect_error(h2o.residual_analysis(models, train), "Residual analysis works only on a single model!")
+  expect_error(h2o.residual_analysis_plot(models, train), "Residual analysis works only on a single model!")
 
   # test partial dependences
   for (col in cols_to_test) {
-    expect_ggplot(h2o.partial_dependences(models, train, col))
+    expect_ggplot(h2o.pd_multi_plot(models, train, col))
   }
   # test ice plot
-  expect_error(h2o.individual_conditional_expectations(models, train, cols_to_test[[1]]), "Only one model is allowed!")
+  expect_error(h2o.ice_plot(models, train, cols_to_test[[1]]), "Only one model is allowed!")
 
   # test explanation
   expect_true("H2OExplanation" %in% class(h2o.explain(models, train)))
@@ -150,19 +150,19 @@ explanation_test_single_model_binomial_classification <- function() {
   expect_ggplot(h2o.shap_summary_plot(gbm, train))
 
   # test shap explain row
-  expect_ggplot(h2o.shap_explain_row(gbm, train, 1))
+  expect_ggplot(h2o.shap_explain_row_plot(gbm, train, 1))
 
   # test residual analysis
-  expect_error(h2o.residual_analysis(gbm, train), "Residual analysis is not implemented for classification.")
+  expect_error(h2o.residual_analysis_plot(gbm, train), "Residual analysis is not implemented for classification.")
 
   # test partial dependences
   for (col in cols_to_test) {
-    expect_ggplot(h2o.partial_dependences(gbm, train, col))
+    expect_ggplot(h2o.pd_plot(gbm, train, col))
   }
 
   # test ice plot
   for (col in cols_to_test) {
-    expect_ggplot(h2o.individual_conditional_expectations(gbm, train, col))
+    expect_ggplot(h2o.ice_plot(gbm, train, col))
   }
 
   # test explanation
@@ -190,23 +190,23 @@ explanation_test_automl_binomial_classification <- function() {
   expect_ggplot(h2o.model_correlation_heatmap(aml, train))
 
   # test variable importance heatmap
-  expect_ggplot(h2o.variable_importance_heatmap(aml, train))
+  expect_ggplot(h2o.varimp_heatmap(aml, train))
 
   # test shap summary
   expect_error(h2o.shap_summary_plot(aml, train), "SHAP summary plot requires a tree-based model!")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row(aml, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "SHAP explain_row plot requires a tree-based model!")
 
   # test residual analysis
-  expect_error(h2o.residual_analysis(aml, train), "Residual analysis works only on a single model!")
+  expect_error(h2o.residual_analysis_plot(aml, train), "Residual analysis works only on a single model!")
 
   # test partial dependences
   for (col in cols_to_test) {
-    expect_ggplot(h2o.partial_dependences(aml, train, col))
+    expect_ggplot(h2o.pd_multi_plot(aml, train, col))
   }
   # test ice plot
-  expect_error(h2o.individual_conditional_expectations(aml, train, cols_to_test[[1]]), "Only one model is allowed!")
+  expect_error(h2o.ice_plot(aml, train, cols_to_test[[1]]), "Only one model is allowed!")
 
   # test explanation
   expect_true("H2OExplanation" %in% class(h2o.explain(aml, train)))
@@ -234,23 +234,23 @@ explanation_test_list_of_models_binomial_classification <- function() {
   expect_ggplot(h2o.model_correlation_heatmap(models, train))
 
   # test variable importance heatmap
-  expect_ggplot(h2o.variable_importance_heatmap(models, train))
+  expect_ggplot(h2o.varimp_heatmap(models, train))
 
   # test shap summary
   expect_error(h2o.shap_summary_plot(models, train), "SHAP summary plot requires a tree-based model!")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row(models, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(models, train, 1), "SHAP explain_row plot requires a tree-based model!")
 
   # test residual analysis
-  expect_error(h2o.residual_analysis(models, train), "Residual analysis works only on a single model!")
+  expect_error(h2o.residual_analysis_plot(models, train), "Residual analysis works only on a single model!")
 
   # test partial dependences
   for (col in cols_to_test) {
-    expect_ggplot(h2o.partial_dependences(models, train, col))
+    expect_ggplot(h2o.pd_multi_plot(models, train, col))
   }
   # test ice plot
-  expect_error(h2o.individual_conditional_expectations(models, train, cols_to_test[[1]]), "Only one model is allowed!")
+  expect_error(h2o.ice_plot(models, train, cols_to_test[[1]]), "Only one model is allowed!")
 
   # test explanation
   expect_true("H2OExplanation" %in% class(h2o.explain(models, train)))
@@ -277,19 +277,19 @@ explanation_test_single_model_multinomial_classification <- function() {
   expect_error(h2o.shap_summary_plot(gbm, train), "java.lang.UnsupportedOperationException: Calculating contributions is currently not supported for multinomial models.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row(gbm, train, 1), "java.lang.UnsupportedOperationException: Calculating contributions is currently not supported for multinomial models.")
+  expect_error(h2o.shap_explain_row_plot(gbm, train, 1), "java.lang.UnsupportedOperationException: Calculating contributions is currently not supported for multinomial models.")
 
   # test residual analysis
-  expect_error(h2o.residual_analysis(gbm, train), "Residual analysis is not implemented for classification.")
+  expect_error(h2o.residual_analysis_plot(gbm, train), "Residual analysis is not implemented for classification.")
 
   # test partial dependences
   for (col in cols_to_test) {
-    expect_ggplot(h2o.partial_dependences(gbm, train, col, target = "setosa"))
+    expect_ggplot(h2o.pd_plot(gbm, train, col, target = "setosa"))
   }
 
   # test ice plot
   for (col in cols_to_test) {
-    expect_ggplot(h2o.individual_conditional_expectations(gbm, train, col, target = "setosa"))
+    expect_ggplot(h2o.ice_plot(gbm, train, col, target = "setosa"))
   }
 
   # test explanation
@@ -317,23 +317,23 @@ explanation_test_automl_multinomial_classification <- function() {
   expect_ggplot(h2o.model_correlation_heatmap(aml, train))
 
   # test variable importance heatmap
-  expect_ggplot(h2o.variable_importance_heatmap(aml, train))
+  expect_ggplot(h2o.varimp_heatmap(aml, train))
 
   # test shap summary
   expect_error(h2o.shap_summary_plot(aml, train), "SHAP summary plot requires a tree-based model!")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row(aml, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "SHAP explain_row plot requires a tree-based model!")
 
   # test residual analysis
-  expect_error(h2o.residual_analysis(aml, train), "Residual analysis works only on a single model!")
+  expect_error(h2o.residual_analysis_plot(aml, train), "Residual analysis works only on a single model!")
 
   # test partial dependences
   for (col in cols_to_test) {
-    expect_ggplot(h2o.partial_dependences(aml, train, col, target = "versicolor"))
+    expect_ggplot(h2o.pd_multi_plot(aml, train, col, target = "versicolor"))
   }
   # test ice plot
-  expect_error(h2o.individual_conditional_expectations(aml, train, cols_to_test[[1]]), "Only one model is allowed!")
+  expect_error(h2o.ice_plot(aml, train, cols_to_test[[1]]), "Only one model is allowed!")
 
   # test explanation
   expect_true("H2OExplanation" %in% class(h2o.explain(aml, train)))
@@ -361,23 +361,23 @@ explanation_test_list_of_models_multinomial_classification <- function() {
   expect_ggplot(h2o.model_correlation_heatmap(models, train))
 
   # test variable importance heatmap
-  expect_ggplot(h2o.variable_importance_heatmap(models, train))
+  expect_ggplot(h2o.varimp_heatmap(models, train))
 
   # test shap summary
   expect_error(h2o.shap_summary_plot(models, train), "SHAP summary plot requires a tree-based model!")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row(models, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(models, train, 1), "SHAP explain_row plot requires a tree-based model!")
 
   # test residual analysis
-  expect_error(h2o.residual_analysis(models, train), "Residual analysis works only on a single model!")
+  expect_error(h2o.residual_analysis_plot(models, train), "Residual analysis works only on a single model!")
 
   # test partial dependences
   for (col in cols_to_test) {
-    expect_ggplot(h2o.partial_dependences(models, train, col, target = "versicolor"))
+    expect_ggplot(h2o.pd_multi_plot(models, train, col, target = "versicolor"))
   }
   # test ice plot
-  expect_error(h2o.individual_conditional_expectations(models, train, cols_to_test[[1]]), "Only one model is allowed!")
+  expect_error(h2o.ice_plot(models, train, cols_to_test[[1]]), "Only one model is allowed!")
 
   # test explanation
   expect_true("H2OExplanation" %in% class(h2o.explain(models, train)))

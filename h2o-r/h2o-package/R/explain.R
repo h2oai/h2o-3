@@ -27,7 +27,7 @@ with_no_h2o_progress <- function(expr) {
   if (is.character(model_or_model_id)) {
     algorithm <- sub("^(DeepLearning|DRF|GAM|GBM|GLM|NaiveBayes|StackedEnsemble|RuleFit|XGBoost|XRT)_.*",
                      "\\L\\1", model_or_model_id, perl = TRUE)
-    if (algorithm == "xrt" && ! treat_xrt_as_algorithm)
+    if (algorithm == "xrt" && !treat_xrt_as_algorithm)
       algorithm <- "drf"
     if (algorithm %in% known_algos) {
       return(algorithm)
@@ -305,7 +305,7 @@ with_no_h2o_progress <- function(expr) {
       })
 
       if (best_of_family) {
-        object <- object[order(sapply(sapply(object, function (m_id) {
+        object <- object[order(sapply(sapply(object, function(m_id) {
           if (m_id %in% memoised_models) {
             return(memoised_models[[m_id]])
           } else {
@@ -373,7 +373,7 @@ with_no_h2o_progress <- function(expr) {
   if (is.null(overrides)) {
     overrides <- list()
   }
-  if (is.null(overridable_defaults)){
+  if (is.null(overridable_defaults)) {
     overridable_defaults <- list()
   }
   args <- utils::modifyList(
@@ -426,7 +426,7 @@ with_no_h2o_progress <- function(expr) {
         "logloss"
       )])
     })))
-  leaderboard <- cbind(data.frame(model_id=.model_ids(models_info$model_ids), stringsAsFactors = FALSE),
+  leaderboard <- cbind(data.frame(model_id = .model_ids(models_info$model_ids), stringsAsFactors = FALSE),
                        leaderboard)
   leaderboard <- leaderboard[order(leaderboard[[2]]),]
   names(leaderboard) <- tolower(names(leaderboard))
@@ -746,45 +746,45 @@ with_no_h2o_progress <- function(expr) {
 .describe <- function(explanation) {
   .h2o_explanation_description(
     switch(explanation,
-           leaderboard=paste0("Leaderboard shows models with their metrics. When provided with H2OAutoML object, ",
-           "the leaderboard shows 5-fold cross-validated metrics by default (depending on the ",
-           "H2OAutoML settings), otherwise it shows metrics computed on the newdata."),
-           leaderboard_row=paste0("Leaderboard shows models with their metrics and their predictions for a given row. ",
-           "When provided with H2OAutoML object, the leaderboard shows 5-fold cross-validated ",
-           "metrics by default (depending on the H2OAutoML settings), otherwise it shows ",
-           "metrics computed on the newdata."),
-           confusion_matrix="Confusion matrix shows a predicted class vs an actual class.",
-           residual_analysis=paste0("Residual analysis plot shows residuals vs fitted values. ",
-           "Ideally, residuals should be randomly distributed. Patterns in this plot can indicate ",
-           "potential problems with the model selection, e.g., using simpler model than necessary, ",
-           "not accounting for heteroscedasticity, autocorrelation etc."),
-           variable_importance="Variable importance shows how much do the predictions depend on what variable.",
-           variable_importance_heatmap=paste0("Variable importance heatmap shows variable importances on multiple models. ",
-           "By default, the models and variables are ordered by their similarity."),
-           model_correlation_heatmap=paste0("Model correlation matrix shows correlation between prediction of the models. ",
-           "For classification, frequency of same predictions is used. By default, models ",
-           "are ordered by their similarity."),
-           shap_summary=paste0("SHAP summary plot shows contribution of features for each instance. The sum ",
-           "of the feature contributions and the bias term is equal to the raw prediction ",
-           "of the model, i.e., prediction before applying inverse link function."),
-           pdp=paste0("Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable ",
-           "on the response. The effect of a variable is measured in change in the mean response. ",
-           "PDP assumes independence between the feature for which is the PDP computed and the rest."),
-           ice=paste0("Individual conditional expectations (ICE) plot gives a graphical depiction of the marginal ",
-           "effect of a variable on the response. ICE plot is similar to partial dependence plot (PDP), ",
-           "PDP shows the average effect of a feature while ICE plot shows the effect for a single ",
-           "instance. The following plot shows the effect for each decile. ",
-           "In contrast to partial dependence plot, ICE plot can provide more insight especially when ",
-           "there is stronger feature interaction."),
-           ice_row=paste0("Individual conditional expectations (ICE) plot gives a graphical depiction of the marginal ",
-           "effect of a variable on the response for a given row. ICE plot is similar to partial ",
-           "dependence plot (PDP), PDP shows the average effect of a feature while ICE plot shows ",
-           "the effect for a single instance."),
-           shap_explain_row=paste0("SHAP explanation shows contribution of features for a given instance. The sum ",
-           "of the feature contributions and the bias term is equal to the raw prediction ",
-           "of the model, i.e., prediction before applying inverse link function. H2O implements ",
-           "TreeSHAP which when the features are correlated, can increase contribution of a feature ",
-           "that had no influence on the prediction."),
+           leaderboard = paste0("Leaderboard shows models with their metrics. When provided with H2OAutoML object, ",
+                                "the leaderboard shows 5-fold cross-validated metrics by default (depending on the ",
+                                "H2OAutoML settings), otherwise it shows metrics computed on the newdata."),
+           leaderboard_row = paste0("Leaderboard shows models with their metrics and their predictions for a given row. ",
+                                    "When provided with H2OAutoML object, the leaderboard shows 5-fold cross-validated ",
+                                    "metrics by default (depending on the H2OAutoML settings), otherwise it shows ",
+                                    "metrics computed on the newdata."),
+           confusion_matrix = "Confusion matrix shows a predicted class vs an actual class.",
+           residual_analysis = paste0("Residual analysis plot shows residuals vs fitted values. ",
+                                      "Ideally, residuals should be randomly distributed. Patterns in this plot can indicate ",
+                                      "potential problems with the model selection, e.g., using simpler model than necessary, ",
+                                      "not accounting for heteroscedasticity, autocorrelation etc."),
+           variable_importance = "Variable importance shows how much do the predictions depend on what variable.",
+           varimp_heatmap = paste0("Variable importance heatmap shows variable importances on multiple models. ",
+                                   "By default, the models and variables are ordered by their similarity."),
+           model_correlation_heatmap = paste0("Model correlation matrix shows correlation between prediction of the models. ",
+                                              "For classification, frequency of same predictions is used. By default, models ",
+                                              "are ordered by their similarity."),
+           shap_summary = paste0("SHAP summary plot shows contribution of features for each instance. The sum ",
+                                 "of the feature contributions and the bias term is equal to the raw prediction ",
+                                 "of the model, i.e., prediction before applying inverse link function."),
+           pdp = paste0("Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable ",
+                        "on the response. The effect of a variable is measured in change in the mean response. ",
+                        "PDP assumes independence between the feature for which is the PDP computed and the rest."),
+           ice = paste0("Individual conditional expectations (ICE) plot gives a graphical depiction of the marginal ",
+                        "effect of a variable on the response. ICE plot is similar to partial dependence plot (PDP), ",
+                        "PDP shows the average effect of a feature while ICE plot shows the effect for a single ",
+                        "instance. The following plot shows the effect for each decile. ",
+                        "In contrast to partial dependence plot, ICE plot can provide more insight especially when ",
+                        "there is stronger feature interaction."),
+           ice_row = paste0("Individual conditional expectations (ICE) plot gives a graphical depiction of the marginal ",
+                            "effect of a variable on the response for a given row. ICE plot is similar to partial ",
+                            "dependence plot (PDP), PDP shows the average effect of a feature while ICE plot shows ",
+                            "the effect for a single instance."),
+           shap_explain_row = paste0("SHAP explanation shows contribution of features for a given instance. The sum ",
+                                     "of the feature contributions and the bias term is equal to the raw prediction ",
+                                     "of the model, i.e., prediction before applying inverse link function. H2O implements ",
+                                     "TreeSHAP which when the features are correlated, can increase contribution of a feature ",
+                                     "that had no influence on the prediction."),
            stop("Unknown model explanation \"", explanation, "\".")
     )
   )
@@ -935,8 +935,8 @@ geom_pointrange_or_ribbon <- function(draw_point, ...) {
 }
 
 stat_count_or_bin <- function(use_count, ..., data) {
-  stopifnot("Expecting data frame with just one column." = ncol(data)==1)
-  data <- data[is.finite(data[[1]]),, drop = FALSE]
+  stopifnot("Expecting data frame with just one column." = ncol(data) == 1)
+  data <- data[is.finite(data[[1]]), , drop = FALSE]
   if (use_count) {
     ggplot2::stat_count(..., data = data)
   } else {
@@ -977,7 +977,9 @@ h2o.shap_summary_plot <-
     if (!missing(columns) && !missing(top_n_features)) {
       warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
     }
-    if (!(is.null(columns) || is.character(columns) || is.numeric(columns))) {
+    if (!(is.null(columns) ||
+      is.character(columns) ||
+      is.numeric(columns))) {
       stop("Parameter columns must be either a character or numeric vector or NULL.")
     }
     x <- model@allparameters$x
@@ -1077,9 +1079,9 @@ h2o.shap_summary_plot <-
       for (col in columns) {
         if (is.numeric(col))
           col <- names(newdata)[[col]]
-        possible_column_name <- c(col, make.names(col),  make.names(gsub(" ", "", col)))
+        possible_column_name <- c(col, make.names(col), make.names(gsub(" ", "", col)))
         found <- FALSE
-        for (pcol in possible_column_name){
+        for (pcol in possible_column_name) {
           if (pcol %in% encoded_columns) {
             features <- c(features, pcol)
             found <- TRUE
@@ -1138,7 +1140,7 @@ h2o.shap_summary_plot <-
 #' @return A ggplot2 object
 #'
 #' @export
-h2o.shap_explain_row <-
+h2o.shap_explain_row_plot <-
   function(model, newdata, row_index, columns = NULL, top_n_features = 10,
            plot_type = c("barplot", "breakdown"),
            contribution_type = c("both", "positive", "negative")) {
@@ -1151,7 +1153,9 @@ h2o.shap_explain_row <-
     if (!missing(columns) && !missing(top_n_features)) {
       warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
     }
-    if (!(is.null(columns) || is.character(columns) || is.numeric(columns))) {
+    if (!(is.null(columns) ||
+      is.character(columns) ||
+      is.numeric(columns))) {
       stop("Parameter columns must be either a character or numeric vector or NULL.")
     }
 
@@ -1215,9 +1219,9 @@ h2o.shap_explain_row <-
         for (col in columns) {
           if (is.numeric(col))
             col <- names(newdata)[[col]]
-          possible_column_name <- c(col, make.names(col),  make.names(gsub(" ", "", col)))
+          possible_column_name <- c(col, make.names(col), make.names(gsub(" ", "", col)))
           found <- FALSE
-          for (pcol in possible_column_name){
+          for (pcol in possible_column_name) {
             if (pcol %in% encoded_columns) {
               features <- c(features, pcol)
               found <- TRUE
@@ -1314,7 +1318,7 @@ h2o.shap_explain_row <-
       }
 
       contributions <- t(contributions)
-      contributions <- as.matrix(contributions[order(contributions[,1]),])
+      contributions <- as.matrix(contributions[order(contributions[, 1]),])
       contributions <- data.frame(
         id = seq_along(contributions),
         id_next = c(seq_len(length(contributions) - 1) + 1, length(contributions)),
@@ -1369,7 +1373,7 @@ h2o.shap_explain_row <-
 #'
 #' @return A ggplot2 object
 #' @export
-h2o.variable_importance_heatmap <- function(object, newdata, top_n = 20) {
+h2o.varimp_heatmap <- function(object, newdata, top_n = 20) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   models_info <- .process_models_or_automl(object, newdata,
@@ -1422,14 +1426,14 @@ h2o.variable_importance_heatmap <- function(object, newdata, top_n = 20) {
 }
 
 #' Model Prediction Correlation Heatmap
-#' 
-#' Model correlation matrix shows correlation between prediction of the models. "
-#' For classification, frequency of same predictions is used. By default, models "
+#'
+#' Model correlation matrix shows correlation between prediction of the models.
+#' For classification, frequency of same predictions is used. By default, models
 #' are ordered by their similarity.
 #'
 #' @param object An H2OAutoML object or list of models
 #' @param newdata An H2O Frame
-#' @param top_n How many models to include.
+#' @param top_n How many models to include (used only with H2OAutoML object)
 #' @param cluster Order models based on their similarity
 #' @param triangular Print just triangular part of correlation matrix
 #'
@@ -1529,7 +1533,7 @@ h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
 #'
 #' @return A ggplot2 object
 #' @export
-h2o.residual_analysis <- function(model, newdata) {
+h2o.residual_analysis_plot <- function(model, newdata) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   if (is.character(model))
@@ -1558,6 +1562,144 @@ h2o.residual_analysis <- function(model, newdata) {
   return(p)
 }
 
+#' Plot partial dependence.
+#' 
+#' Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable
+#' on the response. The effect of a variable is measured in change in the mean response.
+#' PDP assumes independence between the feature for which is the PDP computed and the rest.
+#'
+#' @param object An H2O model.
+#' @param newdata An H2OFrame.
+#' @param column A feature column name to inspect.
+#' @param target If multinomial, plot PDP just for \code{target} category.
+#' @param row_index Calculate Individual Conditional Expectation for row \code{row_index}
+#' @param max_levels Maximum number of factor levels to show.
+#'
+#' @return A ggplot2 object
+#' @export
+h2o.pd_plot <- function(object,
+                        newdata,
+                        column,
+                        target = NULL,
+                        row_index = -1,
+                        max_levels = 30) {
+  # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
+  .data <- NULL
+  if (missing(column))
+    stop("Column has to be specified!")
+  if (!column %in% names(newdata))
+    stop("Column was not found in the provided data set!")
+  models_info <- .process_models_or_automl(object, newdata, require_single_model = TRUE)
+  if (h2o.nlevels(newdata[[column]]) > max_levels) {
+    factor_frequencies <- .get_feature_count(newdata[[column]])
+    factors_to_merge <- tail(names(factor_frequencies), n = -max_levels)
+    newdata[[column]] <- ifelse(newdata[[column]] %in% factors_to_merge, NA_character_,
+                                newdata[[column]])
+    message(length(factor_frequencies) - max_levels, " least common factor levels were omitted from \"",
+            column, "\" feature.")
+  }
+  margin <- ggplot2::margin(5.5, 5.5, 5.5, 5.5)
+  if (h2o.isfactor(newdata[[column]]))
+    margin <- ggplot2::margin(5.5, 5.5, 5.5, max(5.5, max(nchar(h2o.levels(newdata[[column]])))))
+
+  targets <- NULL
+  if (models_info$is_multinomial_classification) {
+    targets <- h2o.levels(newdata[[models_info$y]])
+  }
+  with_no_h2o_progress({
+    pdps <-
+      h2o.partialPlot(models_info$get_model(models_info$model_ids[[1]]), newdata, column,
+                      plot = FALSE, targets = targets,
+                      nbins = if (is.factor(newdata[[column]])) {
+                        h2o.nlevels(newdata[[column]]) + 1
+                      } else {
+                        20
+                      },
+                      row_index = row_index
+      )
+
+    if (!is.null(targets)) {
+      for (idx in seq_along(pdps)) {
+        pdps[[idx]][["target"]] <- targets[[idx]]
+      }
+    } else {
+      pdps[["target"]] <- "Partial Depencence"
+    }
+    if (is(pdps, "H2OTable")) {
+      pdp <- as.data.frame(pdps)
+    } else {
+      pdp <- do.call(rbind, lapply(pdps, as.data.frame))
+    }
+    names(pdp) <- make.names(names(pdp))
+
+    pdp[["text"]] <- paste0(
+      "Feature Value: ", pdp[[make.names(column)]], "\n",
+      "Mean Response: ", pdp[["mean_response"]], "\n",
+      "Target: ", pdp[["target"]]
+    )
+
+    col_name <- make.names(column)
+    rug_data <- stats::setNames(as.data.frame(newdata[[column]]), col_name)
+    rug_data[["text"]] <- paste0("Feature Value: ", rug_data[[col_name]])
+    y_range <- c(min(pdp$mean_response - pdp$stddev_response), max(pdp$mean_response + pdp$stddev_response))
+
+    p <- ggplot2::ggplot(ggplot2::aes(
+      x = .data[[make.names(column)]],
+      y = .data$mean_response,
+      color = .data$target, fill = .data$target, text = .data$text
+    ), data = pdp) +
+      stat_count_or_bin(!is.numeric(newdata[[column]]),
+                        ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
+                        position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
+                        inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
+      geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$target)) +
+      geom_pointrange_or_ribbon(!is.numeric(newdata[[column]]), ggplot2::aes(
+        ymin = .data$mean_response - .data$stddev_response,
+        ymax = .data$mean_response + .data$stddev_response,
+        group = .data$target
+      )) +
+      ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL, fill = NULL),
+                        sides = "b", alpha = 0.1, color = "black",
+                        data = rug_data
+      )
+    if (row_index > -1) {
+      p <- p + ggplot2::geom_vline(xintercept = newdata[row_index, column], linetype = "dashed")
+    }
+    p <- p +
+      ggplot2::labs(
+        title = sprintf(
+          "%s on \"%s\"%s",
+          if (row_index == -1) {
+            "Partial Dependence"
+          } else {
+            sprintf("Individual Conditional Expectation on row %d", row_index)
+          },
+          column,
+          if (!is.null(target)) {
+            sprintf(" with target = \"%s\"", target)
+          } else {
+            ""
+          }
+        ),
+        x = column,
+        y = "Mean Response"
+      ) +
+      ggplot2::scale_color_brewer(type = "qual", palette = "Dark2") +
+      ggplot2::scale_fill_brewer(type = "qual", palette = "Dark2") +
+      # make the histogram closer to the axis. (0.05 is the default value)
+      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05))) +
+      ggplot2::theme_bw() +
+      ggplot2::theme(
+        legend.title = ggplot2::element_blank(),
+        axis.text.x = ggplot2::element_text(angle = if (h2o.isfactor(newdata[[column]])) 45 else 0, hjust = 1),
+        plot.margin = margin,
+        plot.title = ggplot2::element_text(hjust = 0.5)
+      )
+    return(p)
+  })
+}
+
+
 #' Plot partial dependences of a variable across multiple models.
 #' 
 #' Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable
@@ -1571,17 +1713,17 @@ h2o.residual_analysis <- function(model, newdata) {
 #' if FALSE, plot all models. Defaults to TRUE.
 #' @param target If multinomial, plot PDP just for \code{target} category.
 #' @param row_index Calculate Individual Conditional Expectation for row \code{row_index}
-#' @param max_factors Maximum number of factor levels to show.
+#' @param max_levels Maximum number of factor levels to show.
 #'
 #' @return A ggplot2 object
 #' @export
-h2o.partial_dependences <- function(object,
-                                    newdata,
-                                    column,
-                                    best_of_family = TRUE,
-                                    target = NULL,
-                                    row_index = -1,
-                                    max_factors = 30) {
+h2o.pd_multi_plot <- function(object,
+                              newdata,
+                              column,
+                              best_of_family = TRUE,
+                              target = NULL,
+                              row_index = -1,
+                              max_levels = 30) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   if (missing(column))
@@ -1589,12 +1731,12 @@ h2o.partial_dependences <- function(object,
   if (!column %in% names(newdata))
     stop("Column was not found in the provided data set!")
   models_info <- .process_models_or_automl(object, newdata, best_of_family = best_of_family)
-  if (h2o.nlevels(newdata[[column]]) > max_factors) {
+  if (h2o.nlevels(newdata[[column]]) > max_levels) {
     factor_frequencies <- .get_feature_count(newdata[[column]])
-    factors_to_merge <- tail(names(factor_frequencies), n = -max_factors)
+    factors_to_merge <- tail(names(factor_frequencies), n = -max_levels)
     newdata[[column]] <- ifelse(newdata[[column]] %in% factors_to_merge, NA_character_,
                                 newdata[[column]])
-    message(length(factor_frequencies) - max_factors, " least common factor levels were omitted from \"",
+    message(length(factor_frequencies) - max_levels, " least common factor levels were omitted from \"",
             column, "\" feature.")
   }
   margin <- ggplot2::margin(5.5, 5.5, 5.5, 5.5)
@@ -1649,9 +1791,9 @@ h2o.partial_dependences <- function(object,
         color = .data$target, fill = .data$target, text = .data$text
       ), data = pdp) +
         stat_count_or_bin(!is.numeric(newdata[[column]]),
-          ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
-          position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
-          inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
+                          ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
+                          position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
+                          inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
         geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$target)) +
         geom_pointrange_or_ribbon(!is.numeric(newdata[[column]]), ggplot2::aes(
           ymin = .data$mean_response - .data$stddev_response,
@@ -1663,9 +1805,10 @@ h2o.partial_dependences <- function(object,
                           data = rug_data
         )
       if (row_index > -1) {
-       p <- p + ggplot2::geom_vline(xintercept = newdata[row_index, column], linetype = "dashed")
+        p <- p + ggplot2::geom_vline(xintercept = newdata[row_index, column], linetype = "dashed")
       }
-      p <- p + ggplot2::labs(
+      p <- p +
+        ggplot2::labs(
           title = sprintf(
             "%s on \"%s\"%s",
             if (row_index == -1) {
@@ -1749,9 +1892,9 @@ h2o.partial_dependences <- function(object,
                          data = data
     ) +
       stat_count_or_bin(!is.numeric(newdata[[column]]),
-        ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
-        position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
-        inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
+                        ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
+                        position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
+                        inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
       geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .shorten_model_ids(.data$model_id))) +
       ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL),
                         sides = "b", alpha = 0.1, color = "black",
@@ -1804,15 +1947,15 @@ h2o.partial_dependences <- function(object,
 #' @param newdata An H2OFrame.
 #' @param column A feature column name to inspect.
 #' @param target If multinomial, plot PDP just for \code{target} category.
-#' @param max_factors Maximum number of factor levels to show.
+#' @param max_levels Maximum number of factor levels to show.
 #'
 #' @return A ggplot2 object
 #' @export
-h2o.individual_conditional_expectations <- function(model,
-                                                    newdata,
-                                                    column,
-                                                    target = NULL,
-                                                    max_factors = 30) {
+h2o.ice_plot <- function(model,
+                         newdata,
+                         column,
+                         target = NULL,
+                         max_levels = 30) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   if (missing(column))
@@ -1823,12 +1966,12 @@ h2o.individual_conditional_expectations <- function(model,
   models_info <- .process_models_or_automl(model, newdata, require_single_model = TRUE)
 
   with_no_h2o_progress({
-    if (h2o.nlevels(newdata[[column]]) > max_factors) {
+    if (h2o.nlevels(newdata[[column]]) > max_levels) {
       factor_frequencies <- .get_feature_count(newdata[[column]])
-      factors_to_merge <- tail(names(factor_frequencies), n = -max_factors)
+      factors_to_merge <- tail(names(factor_frequencies), n = -max_levels)
       newdata[[column]] <- ifelse(newdata[[column]] %in% factors_to_merge, NA_character_,
                                   newdata[[column]])
-      message(length(factor_frequencies) - max_factors, " least common factor levels were omitted from \"",
+      message(length(factor_frequencies) - max_levels, " least common factor levels were omitted from \"",
               column, "\" feature.") }
 
     margin <- ggplot2::margin(16.5, 5.5, 5.5, 5.5)
@@ -1903,9 +2046,9 @@ h2o.individual_conditional_expectations <- function(model,
                                       text = .data$text),
                          data = results) +
       stat_count_or_bin(!is.numeric(newdata[[column]]),
-        ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
-        position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
-        inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
+                        ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
+                        position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
+                        inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
       geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$name)) +
       geom_point_or_line(!is.numeric(newdata[[column]]),
                          if (is.factor(pdp[[col_name]])) {
@@ -1976,7 +2119,7 @@ h2o.explain <- function(object,
     "confusion_matrix",
     "residual_analysis",
     "variable_importance",
-    "variable_importance_heatmap",
+    "varimp_heatmap",
     "model_correlation_heatmap",
     "shap_summary",
     "pdp",
@@ -1990,7 +2133,9 @@ h2o.explain <- function(object,
   if (!missing(columns) && !missing(top_n_features)) {
     warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
   }
-  if (!(is.null(columns) || is.character(columns) || is.numeric(columns))) {
+  if (!(is.null(columns) ||
+    is.character(columns) ||
+    is.numeric(columns))) {
     stop("Parameter columns must be either a character or numeric vector or NULL.")
   }
   skip_explanations <- c()
@@ -2024,8 +2169,8 @@ h2o.explain <- function(object,
     skip_explanations <- tolower(exclude_explanations)
   }
 
-  if (!is.null(columns)){
-    columns_of_interest <- sapply(columns, function (col) {
+  if (!is.null(columns)) {
+    columns_of_interest <- sapply(columns, function(col) {
       if (is.character(col)) {
         col
       } else {
@@ -2047,7 +2192,7 @@ h2o.explain <- function(object,
       )
     } else {
       models_with_varimp <- Filter(.has_varimp, models_info$model_ids)
-      varimp <- names(.varimp(models_info$get_model(models_with_varimp[[1]]),  newdata))
+      varimp <- names(.varimp(models_info$get_model(models_with_varimp[[1]]), newdata))
       columns_of_interest <- varimp[seq_len(min(length(varimp), top_n_features))]
       # deal with encoded columns
       columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
@@ -2094,7 +2239,7 @@ h2o.explain <- function(object,
       for (m in models_info$model_ids) {
         m <- models_info$get_model(m)
         result$residual_analysis$plots[[m@model_id]] <- .customized_call(
-          h2o.residual_analysis,
+          h2o.residual_analysis_plot,
           model = m,
           newdata = newdata,
           overrides = plot_overrides$residual_analysis
@@ -2122,7 +2267,7 @@ h2o.explain <- function(object,
           if (models_info$is_automl) break
         } else {
           if (!warning_shown && m@algorithm == "stackedensemble") {
-            result <- append(result,"Variable importance is not currently available for Stacked Ensemble models.")
+            result <- append(result, "Variable importance is not currently available for Stacked Ensemble models.")
             warning_shown <- TRUE
           }
         }
@@ -2132,15 +2277,15 @@ h2o.explain <- function(object,
 
   if (multiple_models) {
     # Variable Importance Heatmap
-    if (!"variable_importance_heatmap" %in% skip_explanations) {
+    if (!"varimp_heatmap" %in% skip_explanations) {
       if (length(Filter(.has_varimp, models_info$model_ids)) > 1) {
-        result$variable_importance_heatmap <- list(
+        result$varimp_heatmap <- list(
           header = .h2o_explanation_header("Variable Importance Heatmap"),
-          description = .describe("variable_importance_heatmap"),
-          plots = list(.customized_call(h2o.variable_importance_heatmap,
-                                                               object = models_info,
-                                                               newdata = newdata,
-                                                               overrides = plot_overrides$variable_importance_heatmap
+          description = .describe("varimp_heatmap"),
+          plots = list(.customized_call(h2o.varimp_heatmap,
+                                        object = models_info,
+                                        newdata = newdata,
+                                        overrides = plot_overrides$varimp_heatmap
           )))
       }
     }
@@ -2151,12 +2296,12 @@ h2o.explain <- function(object,
         header = .h2o_explanation_header("Model Correlation"),
         description = .describe("model_correlation_heatmap"),
         plots = list(.customized_call(h2o.model_correlation_heatmap,
-                                                   object = models_info,
-                                                   newdata = newdata,
-                                                   overrides = plot_overrides$model_correlation
-      )))
-      top_n <- if (is.null(plot_overrides$model_correlation$top_n)) 20
-      else plot_overrides$model_correlation$top_n
+                                      object = models_info,
+                                      newdata = newdata,
+                                      overrides = plot_overrides$model_correlation_heatmap
+        )))
+      top_n <- if (is.null(plot_overrides$model_correlation_heatmap$top_n)) 20
+      else plot_overrides$model_correlation_heatmap$top_n
       if (models_info$is_automl)
         top_n <- Inf
       interpretable_models <- unlist(Filter(.interpretable,
@@ -2165,7 +2310,10 @@ h2o.explain <- function(object,
                                                    n = min(top_n, length(models_info$model_ids))
                                               ))))
       if (length(interpretable_models) > 0) {
-        result$model_correlation_heatmap$notes$interpretable_models <- sprintf(
+        result$
+          model_correlation_heatmap$
+          notes$
+          interpretable_models <- sprintf(
           "Interpretable models: %s",
           paste(interpretable_models, collapse = ", ")
         )
@@ -2187,7 +2335,7 @@ h2o.explain <- function(object,
           h2o.shap_summary_plot,
           model = m,
           newdata = newdata,
-          overrides = plot_overrides$shap_summary_plot
+          overrides = plot_overrides$shap_summary
         )
         if (models_info$is_automl) break
       }
@@ -2201,42 +2349,54 @@ h2o.explain <- function(object,
       description = .describe("pdp"),
       plots = list())
     for (col in columns_of_interest) {
-      if (!multiple_models) {
-        result$pdp$plots[[col]] <- .customized_call(
-          h2o.partial_dependences,
-          object = models_info,
-          newdata = newdata,
-          column = col,
-          overrides = plot_overrides$partial_dependences
-        )
-      } else {
-        if (models_info$is_multinomial_classification) {
-          targets <- h2o.levels(newdata[[models_info$y]])
-          if (!is.null(plot_overrides$partial_dependences[["target"]])) {
-            targets <- plot_overrides$partial_dependences[["target"]]
-          }
-          for (target in targets) {
+      if (models_info$is_multinomial_classification) {
+        targets <- h2o.levels(newdata[[models_info$y]])
+        if (!is.null(plot_overrides$pdp[["target"]])) {
+          targets <- plot_overrides$pdp[["target"]]
+        }
+        for (target in targets) {
+          if (multiple_models) {
             result$pdp$plots[[col]][[target]] <- .customized_call(
-              h2o.partial_dependences,
+              h2o.pd_multi_plot,
               object = models_info,
               newdata = newdata,
               column = col,
               target = target,
               overridable_defaults = list(best_of_family = models_info$is_automl),
-              overrides = plot_overrides$partial_dependences
+              overrides = plot_overrides$pdp
+            )
+          } else {
+            result$pdp$plots[[col]][[target]] <- .customized_call(
+              h2o.pd_plot,
+              object = models_info,
+              newdata = newdata,
+              column = col,
+              target = target,
+              overrides = plot_overrides$pdp
             )
           }
-        } else {
+        }
+      } else {
+        if (multiple_models) {
           result$pdp$plots[[col]] <- .customized_call(
-            h2o.partial_dependences,
+            h2o.pd_multi_plot,
             object = models_info,
             newdata = newdata,
             column = col,
             overridable_defaults = list(best_of_family = models_info$is_automl),
-            overrides = plot_overrides$partial_dependences
+            overrides = plot_overrides$pdp
+          )
+        } else {
+          result$pdp$plots[[col]] <- .customized_call(
+            h2o.pd_plot,
+            object = models_info,
+            newdata = newdata,
+            column = col,
+            overrides = plot_overrides$pdp
           )
         }
       }
+
     }
   }
 
@@ -2251,27 +2411,27 @@ h2o.explain <- function(object,
         m <- models_info$get_model(m)
         if (models_info$is_multinomial_classification) {
           targets <- h2o.levels(newdata[[models_info$y]])
-          if (!is.null(plot_overrides$individual_conditional_expectations[["target"]])) {
-            targets <- plot_overrides$individual_conditional_expectations[["target"]]
+          if (!is.null(plot_overrides$ice[["target"]])) {
+            targets <- plot_overrides$ice[["target"]]
           }
 
           for (target in targets) {
             result$ice$plots[[col]][[m@model_id]][[target]] <- .customized_call(
-              h2o.individual_conditional_expectations,
+              h2o.ice_plot,
               model = m,
               newdata = newdata,
               column = col,
               target = target,
-              overrides = plot_overrides$individual_conditional_expectations
+              overrides = plot_overrides$ice
             )
           }
         } else {
           result$ice$plots[[col]][[m@model_id]] <- .customized_call(
-            h2o.individual_conditional_expectations,
+            h2o.ice_plot,
             model = m,
             newdata = newdata,
             column = col,
-            overrides = plot_overrides$individual_conditional_expectations
+            overrides = plot_overrides$ice
           )
         }
         if (models_info$is_automl) break
@@ -2322,7 +2482,9 @@ h2o.explain_row <- function(object,
   if (!missing(columns) && !missing(top_n_features)) {
     warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
   }
-  if (!(is.null(columns) || is.character(columns) || is.numeric(columns))) {
+  if (!(is.null(columns) ||
+    is.character(columns) ||
+    is.numeric(columns))) {
     stop("Parameter columns must be either a character or numeric vector or NULL.")
   }
   skip_explanations <- c()
@@ -2357,8 +2519,8 @@ h2o.explain_row <- function(object,
   }
 
 
-  if (!is.null(columns)){
-    columns_of_interest <- sapply(columns, function (col) {
+  if (!is.null(columns)) {
+    columns_of_interest <- sapply(columns, function(col) {
       if (is.character(col)) {
         col
       } else {
@@ -2380,7 +2542,7 @@ h2o.explain_row <- function(object,
       )
     } else {
       models_with_varimp <- Filter(.has_varimp, models_info$model_ids)
-      varimp <- names(.varimp(models_info$get_model(models_with_varimp[[1]]),  newdata))
+      varimp <- names(.varimp(models_info$get_model(models_with_varimp[[1]]), newdata))
       columns_of_interest <- varimp[seq_len(min(length(varimp), top_n_features))]
       # deal with encoded columns
       columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
@@ -2406,7 +2568,7 @@ h2o.explain_row <- function(object,
       for (m in tree_models) {
         m <- models_info$get_model(m)
         result$shap_explain_row$plots[[m@model_id]] <- .customized_call(
-          h2o.shap_explain_row,
+          h2o.shap_explain_row_plot,
           model = m,
           newdata = newdata,
           row_index = row_index,
@@ -2426,30 +2588,32 @@ h2o.explain_row <- function(object,
     for (col in columns_of_interest) {
       if (models_info$is_multinomial_classification) {
         targets <- h2o.levels(newdata[[models_info$y]])
-        if (!is.null(plot_overrides$partial_dependences[["target"]])) {
-          targets <- plot_overrides$partial_dependences[["target"]]
+        if (!is.null(plot_overrides$ice[["target"]])) {
+          targets <- plot_overrides$ice[["target"]]
         }
         for (target in targets) {
-          result$ice$plots[[col]][[target]] <- .customized_call(
-            h2o.partial_dependences,
-            object = models_info, newdata = newdata,
-            column = col,
-            target = target,
-            row_index = row_index,
-            overridable_defaults = list(best_of_family = models_info$is_automl),
-            overrides = plot_overrides$partial_dependences
-          )
+          if (!multiple_models) {
+            result$ice$plots[[col]][[target]] <- .customized_call(
+              h2o.pd_plot,
+              object = models_info, newdata = newdata,
+              column = col,
+              target = target,
+              row_index = row_index,
+              overrides = plot_overrides$ice
+            )
+          }
         }
       } else {
-        result$ice$plots[[col]] <- .customized_call(
-          h2o.partial_dependences,
-          object = models_info,
-          newdata = newdata,
-          column = col,
-          row_index = row_index,
-          overridable_defaults = list(best_of_family = models_info$is_automl),
-          overrides = plot_overrides$partial_dependences
-        )
+        if (!multiple_models) {
+          result$ice$plots[[col]] <- .customized_call(
+            h2o.pd_plot,
+            object = models_info,
+            newdata = newdata,
+            column = col,
+            row_index = row_index,
+            overrides = plot_overrides$ice
+          )
+        }
       }
     }
   }
@@ -2462,13 +2626,13 @@ h2o.explain_row <- function(object,
 # Inspired by vctrs' s3_register function for registering s3 methods for generics from suggested packages
 .s3_register <- function(package, generic, class) {
   method_env <- if (isNamespace(topenv())) asNamespace(environmentName(topenv())) else parent.frame()
-  method <- get(paste(generic, class, sep="."), envir = method_env)
+  method <- get(paste(generic, class, sep = "."), envir = method_env)
 
   # Register hook in case package is unloaded & reloaded
   setHook(packageEvent(package, "onLoad"),
-    function(...) {
-      registerS3method(generic, class, method, envir = asNamespace(package))
-    }
+          function(...) {
+            registerS3method(generic, class, method, envir = asNamespace(package))
+          }
   )
 
   # Don't register if the package is not present

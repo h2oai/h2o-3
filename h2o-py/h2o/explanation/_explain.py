@@ -89,7 +89,7 @@ class Description:
                           "potential problems with the model selection, e.g., using simpler model than necessary, "
                           "not accounting for heteroscedasticity, autocorrelation etc.",
         variable_importance="Variable importance shows how much do the predictions depend on what variable.",
-        variable_importance_heatmap="Variable importance heatmap shows variable importances on multiple models. "
+        varimp_heatmap="Variable importance heatmap shows variable importances on multiple models. "
                                     "By default, the models and variables are ordered by their similarity.",
         model_correlation_heatmap="Model correlation matrix shows correlation between prediction of the models. "
                                   "For classification, frequency of same predictions is used. By default, models "
@@ -615,7 +615,7 @@ def shap_summary_plot(
     return fig
 
 
-def shap_explain_row(
+def shap_explain_row_plot(
         model,  # type: h2o.model.ModelBase
         frame,  # type: h2o.H2OFrame
         row_index,  # type: int
@@ -847,20 +847,91 @@ def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order
     plt.ylim(ylims)
 
 
-def partial_dependences(
+def pd_plot(
+        model,  # type: h2o.model.model_base.ModelBase
+        frame,  # type: h2o.H2OFrame
+        column,  # type: str
+        row_index=None,  # type: Optional[int]
+        target=None,  # type: Optional[str]
+        max_levels=30,  # type: int
+        figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
+        colormap="Dark2",  # type: str
+):
+
+    is_factor = frame[column].isfactor()[0]
+    if is_factor:
+        if frame[column].nlevels()[0] > max_levels:
+            levels = _get_top_n_levels(frame[column], max_levels)
+            if row_index is not None:
+                levels = list(set(levels + [frame[row_index, column]]))
+            frame = frame[(frame[column].isin(levels)), :]
+            # decrease the number of levels to the actual number of levels in the subset
+            frame[column] = frame[column].ascharacter().asfactor()
+
+    colors = plt.get_cmap(colormap, 1)(list(1))
+    with no_progress():
+        plt.figure(figsize=figsize)
+        is_factor = frame[column].isfactor()[0]
+        if is_factor:
+            factor_map = _factor_mapper(NumpyFrame(frame[column]).from_factor_to_num(column))
+        tmp = NumpyFrame(
+            model.partial_plot(frame, cols=[column], plot=False,
+                               row_index=row_index, targets=target,
+                               nbins=20 if not is_factor else 1 + frame[column].nlevels()[0])[0])
+        encoded_col = tmp.columns[0]
+        if is_factor:
+            plt.errorbar(factor_map(tmp.get(encoded_col)), tmp["mean_response"],
+                         yerr=tmp["stddev_response"], fmt='o', color=colors[0],
+                         ecolor=colors[0], elinewidth=3, capsize=0);
+        else:
+            plt.plot(tmp[encoded_col], tmp["mean_response"], color=colors[0])
+            plt.fill_between(tmp[encoded_col], tmp["mean_response"] - tmp["stddev_response"],
+                             tmp["mean_response"] + tmp["stddev_response"], color=colors[0], alpha=0.2)
+
+        _add_histogram(frame, column)
+
+        if row_index is None:
+            plt.title("Partial Dependence plot for \"{}\"{}".format(
+                column,
+                " with target = \"{}\"".format(target[0]) if target else ""
+            ))
+        else:
+            if is_factor:
+                plt.axvline(factor_map([frame[row_index, column]]), c="k", linestyle="dotted",
+                            label="Instance value")
+            else:
+                plt.axvline(frame[row_index, column], c="k", linestyle="dotted",
+                            label="Instance value")
+            plt.title("Individual Conditional Expectation for column \"{}\" and row {}{}".format(
+                column,
+                row_index,
+                " with target = \"{}\"".format(target[0]) if target else ""
+            ))
+        ax = plt.gca()
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.grid(True)
+        if is_factor:
+            plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
+        fig = plt.gcf()
+        return fig
+
+
+def pd_multi_plot(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.model_base]]
         frame,  # type: h2o.H2OFrame
         column,  # type: str
         best_of_family=True,  # type: bool
         row_index=None,  # type: Optional[int]
         target=None,  # type: Optional[str]
-        max_factors=30,  # type: int
+        max_levels=30,  # type: int
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="Dark2",  # type: str
         markers=["o", "v", "s", "P", "*", "D", "X", "^", "<", ">", "."]  # type: List[str]
 ):  # type: (...) -> plt.Figure
     """
-    Plot partial dependences of a variable across multiple models.
+    Plot partial dependencies of a variable across multiple models.
 
     Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable
     on the response. The effect of a variable is measured in change in the mean response.
@@ -873,7 +944,7 @@ def partial_dependences(
     :param row_index: if None, do partial dependence, if integer, do individual
                       conditional expectation for the row specified by this integer
     :param target: (only for multinomial classification) for what target should the plot be done
-    :param max_factors: maximum number of factor levels to show
+    :param max_levels: maximum number of factor levels to show
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name
     :param markers: List of markers to use for factors, when it runs out of possible markers the last in
@@ -894,8 +965,8 @@ def partial_dependences(
 
     is_factor = frame[column].isfactor()[0]
     if is_factor:
-        if frame[column].nlevels()[0] > max_factors:
-            levels = _get_top_n_levels(frame[column], max_factors)
+        if frame[column].nlevels()[0] > max_levels:
+            levels = _get_top_n_levels(frame[column], max_levels)
             if row_index is not None:
                 levels = list(set(levels + [frame[row_index, column]]))
             frame = frame[(frame[column].isin(levels)), :]
@@ -960,12 +1031,12 @@ def partial_dependences(
         return fig
 
 
-def individual_conditional_expectations(
+def ice_plot(
         model,  # type: h2o.model.ModelBase
         frame,  # type: h2o.H2OFrame
         column,  # type: str
         target=None,  # type: Optional[str]
-        max_factors=30,  # type: int
+        max_levels=30,  # type: int
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="plasma",  # type: str
 ):  # type: (...) -> plt.Figure
@@ -982,7 +1053,7 @@ def individual_conditional_expectations(
     :param frame: H2OFrame
     :param column: string containing column name
     :param target: (only for multinomial classification) for what target should the plot be done
-    :param max_factors: maximum number of factor levels to show
+    :param max_levels: maximum number of factor levels to show
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name
     :return: a matplotlib figure object
@@ -998,8 +1069,8 @@ def individual_conditional_expectations(
         is_factor = frame[column].isfactor()[0]
 
         if is_factor:
-            if frame[column].nlevels()[0] > max_factors:
-                levels = _get_top_n_levels(frame[column], max_factors)
+            if frame[column].nlevels()[0] > max_levels:
+                levels = _get_top_n_levels(frame[column], max_levels)
                 frame = frame[(frame[column].isin(levels)), :]
                 # decrease the number of levels to the actual number of levels in the subset
                 frame[column] = frame[column].ascharacter().asfactor()
@@ -1185,7 +1256,7 @@ def _calculate_clustering_indices(matrix):
     return result
 
 
-def variable_importance_heatmap(
+def varimp_heatmap(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
         top_n=20,  # type: int
         figsize=(16, 9),  # type: Tuple[float]
@@ -1338,7 +1409,7 @@ def model_correlation_heatmap(
     return fig
 
 
-def residual_analysis(
+def residual_analysis_plot(
         model,  # type: h2o.model.ModelBase
         frame,  # type: h2o.H2OFrame
         figsize=(16, 9)  # type: Tuple[float]
@@ -1632,7 +1703,7 @@ def explain(
         "confusion_matrix",
         "residual_analysis",
         "variable_importance",
-        "variable_importance_heatmap",
+        "varimp_heatmap",
         "model_correlation_heatmap",
         "shap_summary",
         "pdp",
@@ -1684,12 +1755,12 @@ def explain(
             result["residual_analysis"]["plots"] = H2OExplanation()
             for model in models_to_show:
                 result["residual_analysis"]["plots"][model.model_id] = display(
-                    residual_analysis(model,
-                                      frame,
-                                      **_custom_args(
-                                          plot_overrides.get(
-                                              "residual_analysis"),
-                                          figsize=figsize)))
+                    residual_analysis_plot(model,
+                                           frame,
+                                           **_custom_args(
+                                               plot_overrides.get(
+                                                   "residual_analysis"),
+                                               figsize=figsize)))
 
     if len(models_with_varimp) > 0 and "variable_importance" in explanations:
         result["variable_importance"] = H2OExplanation()
@@ -1712,15 +1783,15 @@ def explain(
             columns_of_interest = _get_xy(models_to_show[0])[0]
 
     if is_aml or len(models_to_show) > 1:
-        if "variable_importance_heatmap" in explanations:
-            result["variable_importance_heatmap"] = H2OExplanation()
-            result["variable_importance_heatmap"]["header"] = display(
+        if "varimp_heatmap" in explanations:
+            result["varimp_heatmap"] = H2OExplanation()
+            result["varimp_heatmap"]["header"] = display(
                 Header("Variable Importance Heatmap"))
-            result["variable_importance_heatmap"]["description"] = display(
-                Description("variable_importance_heatmap"))
-            result["variable_importance_heatmap"]["plots"] = display(variable_importance_heatmap(
+            result["varimp_heatmap"]["description"] = display(
+                Description("varimp_heatmap"))
+            result["varimp_heatmap"]["plots"] = display(varimp_heatmap(
                 models,
-                **_custom_args(plot_overrides.get("variable_importance_heatmap"),
+                **_custom_args(plot_overrides.get("varimp_heatmap"),
                                colormap=sequential_colormap,
                                figsize=figsize)))
 
@@ -1761,9 +1832,9 @@ def explain(
             for column in columns_of_interest:
                 result["pdp"]["plots"][column] = H2OExplanation()
                 for target in targets:
-                    pdp = display(partial_dependences(
+                    pdp = display(pd_multi_plot(
                         models, column=column, target=target,
-                        **_custom_args(plot_overrides.get("partial_dependences"),
+                        **_custom_args(plot_overrides.get("pdp"),
                                        frame=frame,
                                        figsize=figsize,
                                        colormap=qualitative_colormap)))
@@ -1780,25 +1851,7 @@ def explain(
                 result["pdp"]["plots"][column] = H2OExplanation()
                 for target in targets:
                     reduced_frame = frame
-                    is_factor = reduced_frame[column].isfactor()[0]
-                    if is_factor:
-                        reduced_frame = reduced_frame[
-                                        reduced_frame[column].isin(_get_top_n_levels(reduced_frame[column], 30)), :]
-                        reduced_frame[column] = reduced_frame[column].ascharacter().asfactor()
-                    with no_progress():
-                        models_to_show[0].partial_plot(cols=[column], server=True,
-                                                       targets=target,
-                                                       **_custom_args(
-                                                           plot_overrides.get("partial_plot"),
-                                                           data=reduced_frame,
-                                                           figsize=figsize,
-                                                           nbins=20 if not is_factor
-                                                           else 1 + reduced_frame[column].nlevels()[0]))
-                    fig = plt.gcf()  # type: plt.Figure
-                    _add_histogram(reduced_frame, column,
-                                   levels_order=[t.get_text() for t in fig.gca().get_xticklabels()])
-                    if is_factor:
-                        plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
+                    fig = pd_plot()
                     if target is None:
                         result["pdp"]["plots"][column] = display(fig)
                     else:
@@ -1816,11 +1869,11 @@ def explain(
                 result["ice"]["plots"][columns][model] = H2OExplanation()
                 for target in targets:
                     ice = display(
-                        individual_conditional_expectations(
+                        ice_plot(
                             model, column=column,
                             target=target,
                             **_custom_args(
-                                plot_overrides.get("individual_conditional_expectations"),
+                                plot_overrides.get("ice_plot"),
                                 frame=frame,
                                 figsize=figsize,
                                 colormap=sequential_colormap
@@ -1917,7 +1970,7 @@ def explain_row(
         result["shap_explain_row"]["header"] = display(Header("SHAP Explanation"))
         result["shap_explain_row"]["description"] = display(Description("shap_explain_row"))
         for tree_model in tree_models_to_show:
-            result["shap_explain_row"][tree_model.model_id] = display(shap_explain_row(
+            result["shap_explain_row"][tree_model.model_id] = display(shap_explain_row_plot(
                 tree_model, row_index=row_index,
                 **_custom_args(plot_overrides.get("shap_explain_row"),
                                frame=frame, figsize=figsize)))
@@ -1930,16 +1983,15 @@ def explain_row(
         for column in columns_of_interest:
             result["ice"]["plots"][column] = H2OExplanation()
             for target in targets:
-                if multiple_models:
-                    ice = display(partial_dependences(
+                if not multiple_models:
+                    ice = display(pd_plot(
                         models, column=column,
                         row_index=row_index,
                         target=target,
                         **_custom_args(
-                            plot_overrides.get("individual_conditional_expectations",
+                            plot_overrides.get("ice_plot",
                                                plot_overrides.get("partial_dependences")),
                             frame=frame,
-                            best_of_family=is_aml,
                             figsize=figsize,
                             colormap=qualitative_colormap
                         )))
@@ -1947,35 +1999,5 @@ def explain_row(
                         result["ice"]["plots"][column] = ice
                     else:
                         result["ice"]["plots"][column][target[0]] = ice
-                else:
-                    reduced_frame = frame
-                    is_factor = reduced_frame[column].isfactor()[0]
-                    if is_factor:
-                        reduced_frame = reduced_frame[
-                                        reduced_frame[column].isin(_get_top_n_levels(reduced_frame[column], 30)), :]
-                        reduced_frame[column] = reduced_frame[column].ascharacter().asfactor()
-                    with no_progress():
-                        models_to_show[0].partial_plot(
-                            cols=[column], server=True,
-                            row_index=row_index, targets=target,
-                            **_custom_args(
-                                plot_overrides.get("individual_conditional_expectations",
-                                                   plot_overrides.get("partial_dependences")),
-                                data=reduced_frame, figsize=figsize,
-                                nbins=20 if not is_factor
-                                else 1 + reduced_frame[column].nlevels()[0]))
-                    fig = plt.gcf()  # type: plt.Figure
-                    fig.gca().set_title("Individual Conditional Expectation for \"{}\" and row index {}".format(
-                        column,
-                        row_index
-                    ))
-                    _add_histogram(reduced_frame, column,
-                                   levels_order=[t.get_text() for t in fig.gca().get_xticklabels()])
-                    if is_factor:
-                        plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
-                    if target is None:
-                        result["ice"]["plots"][column] = display(fig)
-                    else:
-                        result["ice"]["plots"][column][target[0]] = display(fig)
 
     return result
