@@ -1,7 +1,6 @@
 #! /bin/bash -x
 
 pwd
-ls
 export H2O_BASE=$(pwd)
 if [[ $string == *"@"* ]]; then
   echo "H2O base path contains at sign. Unable to create K3S cluster."
@@ -16,6 +15,7 @@ kubectl cluster-info
 sleep 15 # Making sure the default namespace is initialized. The --wait flag does not guarantee this.
 kubectl get namespaces
 envsubst < testvalues-template.yaml >> testvalues.yaml
+helm install -f testvalues.yaml h2o $H2O_BASE/h2o-helm --kubeconfig $KUBECONFIG --dry-run # Shows resulting YAML
 helm install -f testvalues.yaml h2o $H2O_BASE/h2o-helm --kubeconfig $KUBECONFIG
 helm test h2o
 kubectl get ingresses
