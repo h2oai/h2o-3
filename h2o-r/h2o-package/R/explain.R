@@ -1020,7 +1020,7 @@ h2o.shap_summary_plot <-
     }
     x <- model@allparameters$x
 
-    title <- sprintf("Summary Plot for \"%s\"", model@model_id)
+    title <- sprintf("Summary Plot\nfor \"%s\"", model@model_id)
     indices <- row.names(newdata)
     if (nrow(newdata) > sample_size) {
       indices <- sort(sample(seq_len(nrow(newdata)), sample_size))
@@ -1311,7 +1311,7 @@ h2o.shap_explain_row_plot <-
         ggplot2::labs(
           y = "SHAP Contribution", x = "Feature",
           title = sprintf(
-            "SHAP explanation for %s on row %d\nprediction: %s",
+            "SHAP explanation\nfor \"%s\" on row %d\nprediction: %s",
             model@model_id, row_index, as.character(prediction$predict)
           )
         ) +
@@ -1394,7 +1394,7 @@ h2o.shap_explain_row_plot <-
         ggplot2::scale_fill_manual(values = c("firebrick2", "springgreen3")) +
         ggplot2::xlab("Feature") +
         ggplot2::ylab("SHAP value") +
-        ggplot2::ggtitle(sprintf("SHAP Explanation of \"%s\" on row %d", model@model_id, row_index)) +
+        ggplot2::ggtitle(sprintf("SHAP Explanation\nfor \"%s\" on row %d", model@model_id, row_index)) +
         ggplot2::theme_bw() +
         ggplot2::theme(legend.title = ggplot2::element_blank(), plot.title = ggplot2::element_text(hjust = 0.5))
       return(p)
