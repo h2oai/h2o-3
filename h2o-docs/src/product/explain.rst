@@ -1,7 +1,7 @@
 Model Explainability
 ====================
 
-H2O Model Explainer is a convenient interface to many explainabilty methods in H2O.  The main functions, ``h2o.explain()`` and ``h2o.explain_row()`` work for individual models, as well a list of models or an `H2O AutoML object <automl.html>`__.  The ``h2o.explain()`` function generates a list of "explanations" -- individual units of explaination such as a Partial Dependence Plot or a Variable Importance plot.  All the explanations are visual objects that can also be individually created by utility functions.  
+H2O Explainability API is a convenient interface to many explainabilty methods and visualizations in H2O.  The main functions, ``h2o.explain()`` and ``h2o.explain_row()`` work for individual models, as well a list of models or an `H2O AutoML object <automl.html>`__.  The ``h2o.explain()`` function generates a list of "explanations" -- individual units of explanation such as a Partial Dependence Plot or a Variable Importance plot.  All the explanations are visual objects that can also be individually created by utility functions.  
 
 The visualization engine used in the R interface is the `ggplot2 <https://ggplot2.tidyverse.org/>`__ package and in Python, we use `matplotlib <https://matplotlib.org/>`__.
 
@@ -10,7 +10,7 @@ The visualization engine used in the R interface is the `ggplot2 <https://ggplot
 Explainability Interface
 ------------------------
 
-The H2O Explainability Interface is designed to be automatic -- all of the "explainations" are generated with a single function, ``h2o.explain()``.  The input can be any of the following: an H2O model, a list of H2O models, an ``H2OAutoML`` object or an ``H2OAutoML`` Leaderboard slice, and a holdout frame.  If you provide a list of models or an AutoML object, there will be additional plots that do multi-model comparisons.  
+The H2O Explainability Interface is designed to be automatic -- all of the "explanations" are generated with a single function, ``h2o.explain()``.  The input can be any of the following: an H2O model, a list of H2O models, an ``H2OAutoML`` object or an ``H2OAutoML`` Leaderboard slice, and a holdout frame.  If you provide a list of models or an AutoML object, there will be additional plots that do multi-model comparisons.  
 
 
 .. tabs::
@@ -46,7 +46,7 @@ Parameters
 
 - **include_explanations**: If specified, do only the specified explanations. Mutually exclusive with ``exclude_explanations``.
 
-- **exclude_explanations**: Exclude specified explanations.  The available options (explainations) for ``include_explanations`` and ``exclude_explainations`` are:
+- **exclude_explanations**: Exclude specified explanations.  The available options (explanations) for ``include_explanations`` and ``exclude_explanations`` are:
     
     - ``"leaderboard"``  (AutoML and list of models only)
     - ``"residual_analysis"``  (regression only)
@@ -58,7 +58,7 @@ Parameters
     - ``"pdp"``
     - ``"ice"``
 
-- **plot_overrides**: Overrides for individual explanations, e.g. ``list(shap_summary_plot = list(top_n_features = 50))`` 
+- **plot_overrides**: Overrides for individual explanations, e.g. ``list(shap_summary_plot = list(top_n_features = 50))``.
 
 
 Code Examples
@@ -171,16 +171,37 @@ The ``h2o.explain_row()`` function provides model explanations for a single row 
         aml.leader.explain_row(test, row_index=1)
 
 
-Output: Explainations
----------------------
+Output: Explanations
+--------------------
 
 TO DO: Overview of the output object.  Add some plots
 
 
+When `explain()` is provided a list of models, we get the following explanations:
+
+- Leaderboard
+- Confusion Matrix for Leader Model (classification only)
+- Residual Analysis for Leader Model (regression only)
+- Variable Importance of Top Base Model 
+- Variable Importance Heatmap (compare all models)
+- Model Correlation Heatmap (compare all models)
+- SHAP Summary of Top Tree-based Model (TreeSHAP)
+- PD Plots (compare all models)
+
+When `explain()` is provided a single model, we get the following explanations:
 
 
-Explaination Plotting Functions 
--------------------------------
+
+- Individual Conditional Expectation (ICE) Plots
+
+
+
+
+
+
+
+Explanation Plotting Functions 
+------------------------------
 
 TO DO: Let's put examples of each function and the plot, in the order in which they appear in the ``h2o.explain()`` output.  Let's also show how to customize the plots.
 
@@ -191,35 +212,46 @@ There are a number of individual plotting functions that are used inside the ``e
 Takes a list of models (including an AutoML object or leaderboard slice) as input:
 ::
 
-    variable_importance_heatmap          
+    varimp_heatmap          
     model_correlation_heatmap        
-    partial_dependences       
+    pdp_multi_plot       
 
 
 Takes a single model as input:
 ::
-    shap_explain_row
+    residual_analysis_plot
+    shap_explain_row_plot
     shap_summary_plot
-    individual_conditional_expectations
-    residual_analysis
+    pd_plot
+    ice_plot
 
 R has the same functions, but with the ``h2o.*`` prefix.
 
 
-Here's an example:
+
+Residual Analysis
+~~~~~~~~~~~~~~~~~
+
+The Residual Analysis plot function graphs "Fitted vs Residuals". Ideally, residuals should be randomly distributed. Patterns in this plot can indicate potential problems with the model selection, e.g., using simpler model than necessary, not accounting for heteroscedasticity, autocorrelation, etc.
 
 .. tabs::
    .. code-tab:: r R
 
         # Residual analysis plot for the AutoML leader model
-        ra_plot <- h2o.residual_analysis(aml@leader, test)
+        ra_plot <- h2o.residual_analysis_plot(aml@leader, test)
         ra_plot
 
    .. code-tab:: python
 
         # Residual analysis plot for the AutoML leader model
-        ra_plot = aml.leader.residual_analysis(test)
-        ra_plot
+        ra_plot = aml.leader.residual_analysis_plot(test)
+
+
+
+
+
+
+
 
 
 Notes
@@ -234,6 +266,7 @@ Our roadmap for improving the the interface is `here <https://0xdata.atlassian.n
 References
 ----------
 
+- Insert Residual Analysis reference
 - Insert SHAP reference
 - Insert PDP reference
 - Insert ICE reference
