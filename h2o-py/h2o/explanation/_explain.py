@@ -1337,7 +1337,7 @@ def model_correlation_heatmap(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
         frame,  # type: h2o.H2OFrame
         top_n=20,  # type: int
-        cluster=True,  # type: bool
+        cluster_models=True,  # type: bool
         triangular=True,  # type: bool
         figsize=(13, 13),  # type: Tuple[float]
         colormap="RdYlBu_r"  # type: str
@@ -1353,7 +1353,7 @@ def model_correlation_heatmap(
     :param models: H2OAutoML object or a list of models
     :param frame: H2OFrame
     :param top_n: show just top n models (applies only when used with H2OAutoML)
-    :param cluster: if True, cluster the models
+    :param cluster_models: if True, cluster the models
     :param triangular: make the heatmap triangular
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
@@ -1390,7 +1390,7 @@ def model_correlation_heatmap(
     else:
         corr = np.corrcoef(predictions)
 
-    if cluster:
+    if cluster_models:
         order = _calculate_clustering_indices(corr)
         corr = corr[order, :]
         corr = corr[:, order]

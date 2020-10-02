@@ -1479,13 +1479,13 @@ h2o.varimp_heatmap <- function(object, newdata, top_n = 20) {
 #' @param object An H2OAutoML object or list of models
 #' @param newdata An H2O Frame
 #' @param top_n How many models to include (used only with H2OAutoML object)
-#' @param cluster Order models based on their similarity
+#' @param cluster_models Order models based on their similarity
 #' @param triangular Print just triangular part of correlation matrix
 #'
 #' @return A ggplot2 object
 #' @export
 h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
-                                          cluster = TRUE, triangular = TRUE) {
+                                          cluster_models = TRUE, triangular = TRUE) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   models_info <- .process_models_or_automl(object, newdata, require_multiple_models = TRUE, top_n_from_AutoML = top_n)
@@ -1517,7 +1517,7 @@ h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
     res <- as.data.frame(cor(preds))
   }
   ordered <- names(res)
-  if (cluster) {
+  if (cluster_models) {
     ordered <- names(res)[stats::hclust(stats::dist(replace(res, is.na(res), 0)))$order]
   }
   res <- res[ordered, ordered]
