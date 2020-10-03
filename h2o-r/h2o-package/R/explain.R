@@ -990,7 +990,8 @@ stat_count_or_bin <- function(use_count, ..., data) {
 #' The sum of the feature contributions and the bias term is equal to the raw prediction
 #' of the model, i.e., prediction before applying inverse link function.
 #'
-#' @param model An H2O model.
+#' @param model An H2O tree-based model. This includes Random Forest, GBM and XGboost
+#'              only. Must be a binary classification or regression model.
 #' @param newdata An H2O Frame, used to determine feature contributions.
 #' @param columns List of columns or list of indices of columns to show. 
 #'                If specified, then the \code{top_n_features} parameter will be ignored.
@@ -1164,9 +1165,10 @@ h2o.shap_summary_plot <-
 #' of the feature contributions and the bias term is equal to the raw prediction
 #' of the model, i.e., prediction before applying inverse link function. H2O implements
 #' TreeSHAP which when the features are correlated, can increase contribution of a feature
-#' that had no influence on the prediction..
+#' that had no influence on the prediction.
 #'
-#' @param model An H2O model.
+#' @param model An H2O tree-based model. This includes Random Forest, GBM and XGboost
+#'              only. Must be a binary classification or regression model.
 #' @param newdata An H2O Frame, used to determine feature contributions.
 #' @param row_index Instance row index.
 #' @param columns List of columns or list of indices of columns to show. 
@@ -1581,8 +1583,8 @@ h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
 #' Ideally, residuals should be randomly distributed. Patterns in this plot can indicate 
 #' potential problems with the model selection, e.g., using simpler model than necessary, 
 #' not accounting for heteroscedasticity, autocorrelation, etc.  If you notice "striped" 
-#' lines of residuals, that typically means that your numeric outcome was integer valued 
-#' instead of real valued.
+#' lines of residuals, that is just an indication that your response variable was integer 
+#' valued instead of real valued.
 #' 
 #'
 #' @param model An H2OModel.
@@ -1627,10 +1629,11 @@ h2o.residual_analysis_plot <- function(model, newdata) {
 #'
 #' @param object An H2O model.
 #' @param newdata An H2OFrame.  Used to generate predictions used in Partial Dependence calculations.
-#' @param column A feature column name to inspect.
-#' @param target If multinomial, plot PDP just for \code{target} category.
-#' @param row_index Calculate Individual Conditional Expectation (ICE) for row \code{row_index}.  Integer.
+#' @param column A feature column name to inspect.  Character string.
+#' @param target If multinomial, plot PDP just for \code{target} category.  Character string.
+#' @param row_index Optional. Calculate Individual Conditional Expectation (ICE) for row, \code{row_index}.  Integer.
 #' @param max_levels An integer specifying the maximum number of factor levels to show.
+#'                   Defaults to 30.
 #'
 #' @return A ggplot2 object
 #' @export
@@ -1765,12 +1768,13 @@ h2o.pd_plot <- function(object,
 #'
 #' @param object Either a list of H2O models/model_ids or an H2OAutoML object.
 #' @param newdata An H2OFrame.
-#' @param column A feature column name to inspect.
+#' @param column A feature column name to inspect.  Character string.
 #' @param best_of_family If TRUE, plot only the best model of each algorithm family; 
 #'                       if FALSE, plot all models. Defaults to TRUE.
 #' @param target If multinomial, plot PDP just for \code{target} category.
-#' @param row_index Calculate Individual Conditional Expectation (ICE) for row \code{row_index}
+#' @param row_index Optional. Calculate Individual Conditional Expectation (ICE) for row, \code{row_index}.  Integer.
 #' @param max_levels An integer specifying the maximum number of factor levels to show.
+#'                   Defaults to 30.
 #'
 #' @return A ggplot2 object
 #' @export
@@ -2003,9 +2007,10 @@ h2o.pd_multi_plot <- function(object,
 #' @param model An H2OModel.
 #' @param newdata An H2OFrame.
 #' @param column A feature column name to inspect.
-#' @param target If multinomial, plot PDP just for \code{target} category.
+#' @param target If multinomial, plot PDP just for \code{target} category.  Character string.
 #' @param max_levels An integer specifying the maximum number of factor levels to show.
-#'
+#'                   Defaults to 30.
+#'                   
 #' @return A ggplot2 object
 #' @export
 h2o.ice_plot <- function(model,
@@ -2145,7 +2150,14 @@ h2o.ice_plot <- function(model,
 
 ######################################## Explain ###################################################
 
-#' Generate model explanations for \code{object} on \code{newdata}.
+#' Generate Model Explanations
+#' 
+#' The H2O Explainability Interface is a convenient wrapper to a number of explainabilty 
+#' methods and visualizations in H2O.  The function can be applied to a single model or group 
+#' of models and returns a list of explanations, which are individual units of explanation 
+#' such as a partial dependence plot or a variable importance plot.  Most of the explanations 
+#' are visual (ggplot plots).  These plots can also be created by individual utility functions 
+#' as well.
 #'
 #' @param object One of the following: an H2O model, a list of H2O models, an H2OAutoML object or 
 #'               an H2OAutoML Leaderboard slice.
@@ -2157,8 +2169,8 @@ h2o.ice_plot <- function(model,
 #' @param include_explanations If specified, return only the specified model explanations.
 #'   (Mutually exclusive with exclude_explanations)
 #' @param exclude_explanations Exclude specified model explanations.
-#' @param plot_overrides Overrides for individual model explanations, e.g.,
-#'   list(shap_summary_plot = list(columns = 50))
+#' @param plot_overrides Overrides for individual model explanations, e.g. 
+#' \code{list(shap_summary_plot = list(columns = 50))}.
 #'
 #' @return List of outputs with class "H2OExplanation"
 #' @export
@@ -2495,8 +2507,14 @@ h2o.explain <- function(object,
   return(result)
 }
 
-#' Explain a model's or group of models' behavior on a single row
-#'
+#' Generate Model Explanations for a single row
+#' 
+#' Explain the behavior of a model or group of models with respect to a single row of data. 
+#' The function returns a list of explanations, which are individual units of explanation 
+#' such as a partial dependence plot or a variable importance plot.  Most of the explanations 
+#' are visual (ggplot plots).  These plots can also be created by individual utility functions 
+#' as well.
+#' 
 #' @param object One of the following: an H2O model, a list of H2O models, an H2OAutoML object 
 #'               or an H2OAutoML Leaderboard slice.
 #' @param newdata An H2OFrame.
