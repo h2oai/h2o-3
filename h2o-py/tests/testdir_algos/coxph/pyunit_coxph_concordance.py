@@ -32,7 +32,20 @@ def coxph_smoke():
     assert len(predH2O) == len(rossi)
 
     metricsH2O = cphH2O.model_performance(rossiH2O)
-    assert abs(cph._model._concordance_index_ - metricsH2O.concordance()) < 0.001
+    py_concordance = concordance_for_lifelines(cph)
+    
+    assert abs(py_concordance - metricsH2O.concordance()) < 0.001
+
+
+# There are different API versions for concordance in lifelines library
+def concordance_for_lifelines(cph):
+    if ("_model" in cph.__dict__.keys()):
+        py_concordance = cph._model._concordance_index_
+    elif ("_concordance_index_" in cph.__dict__.keys()):
+        py_concordance = cph._concordance_index_
+    else:
+        py_concordance = cph._concordance_score_
+    return py_concordance
 
 
 if __name__ == "__main__":
