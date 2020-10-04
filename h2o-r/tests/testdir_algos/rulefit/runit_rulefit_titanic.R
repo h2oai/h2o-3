@@ -26,8 +26,8 @@ test.rulefit.titanic <- function() {
 
     h2o.predict(rfit, newdata = test)
 
-    expect_that(h2o.auc(h2o.performance(rfit)), equals(h2o.auc(h2o.performance(rfit, newdata =  test))))
-    expect_that(h2o.logloss(h2o.performance(rfit)), equals(h2o.logloss(h2o.performance(rfit, newdata =  test))))
+    expect_that(h2o.auc(h2o.performance(rfit)), equals(h2o.auc(h2o.performance(rfit, newdata =  train))))
+    expect_that(h2o.logloss(h2o.performance(rfit)), equals(h2o.logloss(h2o.performance(rfit, newdata =  train))))
   
 }
 

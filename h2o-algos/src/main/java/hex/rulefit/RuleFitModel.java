@@ -108,38 +108,35 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
 
     @Override
     public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-        Frame adaptFr = new Frame(fr);
-        adaptTestForTrain(adaptFr, true, false);
-        Frame pathsFrame = new Frame(Key.make("paths_frame" + destination_key));
-        if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.RULES.equals(this._parms._model_type)) {
-            Frame frame = new Frame(Key.make());
-            // put response and weights last
-            for (String name : adaptFr.names()) {
-                if (!_parms._response_column.equals(name) &&  
-                        (_parms._weights_column == null || (_parms._weights_column != null && !_parms._weights_column.equals(name))) &&
-                        (_parms._ignored_columns == null || (_parms._ignored_columns != null && !_parms._ignored_columns.equals(name)))) {
-                    frame.add(name, adaptFr.vec(name));
-                }
+        Frame linearTest = new Frame(Key.make("paths_frame" + destination_key));
+        if (fr.vec(_parms._response_column) != null)
+            linearTest.add(_parms._response_column,fr.vec(_parms._response_column));
+        if (_parms._weights_column != null && fr.vec(_parms._weights_column) != null)
+            linearTest.add(_parms._weights_column,fr.vec(_parms._weights_column));
+        
+        Frame adaptFrm = new Frame(fr);//Key.make());
+        for (String name : fr.names()) {
+            if (!_parms._response_column.equals(name) &&
+                    (_parms._weights_column == null || (_parms._weights_column != null && !_parms._weights_column.equals(name))) &&
+                    (_parms._ignored_columns == null || (_parms._ignored_columns != null && !_parms._ignored_columns.equals(name)))) {
+                adaptFrm.add(name, fr.vec(name));
             }
-            if (adaptFr.vec(_parms._response_column) != null)
-                frame.add(_parms._response_column,fr.vec(_parms._response_column));
-            if (_parms._weights_column != null && fr.vec(_parms._weights_column) != null)
-                frame.add(_parms._weights_column,fr.vec(_parms._weights_column));
-            
-            pathsFrame.add(ruleEnsemble.createGLMTrainFrame(frame, _parms._max_rule_length - _parms._min_rule_length + 1, _parms._rule_generation_ntrees));
+        }
+        adaptTestForTrain(adaptFrm, true, false);
+        
+        if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.RULES.equals(this._parms._model_type)) {
+            linearTest.add(ruleEnsemble.createGLMTrainFrame(adaptFrm, _parms._max_rule_length - _parms._min_rule_length + 1, _parms._rule_generation_ntrees));
         }
         if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.LINEAR.equals(this._parms._model_type)) {
-            adaptFr = new Frame(fr.deepCopy(null));
-            adaptTestForTrain(adaptFr, true, false);
-            adaptFr.setNames(RuleFitUtils.getLinearNames(adaptFr.numCols(), adaptFr.names()));
-            pathsFrame.add(adaptFr);
+            linearTest.add(RuleFitUtils.getLinearNames(adaptFrm.numCols(), adaptFrm.names()), adaptFrm.vecs());
         }
+        DKV.put(linearTest);
+        Scope.track(linearTest);
         GLMModel glmModel = DKV.getGet(_output.glmModelKey);
-        Frame destination = glmModel.score(pathsFrame, destination_key, null, true);
+        Frame destination = glmModel.score(linearTest, destination_key, null, true);
 
         updateModelMetrics(glmModel, fr);
         
-        pathsFrame.remove();
         return destination;
     }
 

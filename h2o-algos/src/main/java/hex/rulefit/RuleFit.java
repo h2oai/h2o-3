@@ -216,6 +216,9 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 // prepare linear terms
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.LINEAR.equals(_parms._model_type)) {
                     String[] names = ArrayUtils.remove(_train._names, _parms._response_column);
+                    if (_parms._weights_column != null) {
+                        names = ArrayUtils.remove(names, _parms._weights_column);
+                    }
                     linearTrain.add(RuleFitUtils.getLinearNames(names.length, names), _train.vecs(names));
                 }
                 DKV.put(linearTrain);
