@@ -22,7 +22,7 @@ def _display(object):
     """
     Display the object.
     :param object: An object to be displayed.
-    :return: the input
+    :returns: the input
     """
     if isinstance(object, matplotlib.figure.Figure) and matplotlib.get_backend().lower() != "agg":
         plt.show()
@@ -42,7 +42,7 @@ def _dont_display(object):
     """
     Don't display the object
     :param object: that should not be displayed
-    :return: input
+    :returns: input
     """
     if isinstance(object, matplotlib.figure.Figure):
         plt.close()
@@ -221,7 +221,7 @@ class NumpyFrame:
         Is column a factor/categorical column?
 
         :param column: string containing the column name
-        :return: boolean
+        :returns: boolean
         """
         return column in self._factors or self._get_column_and_factor(column)[0] in self._factors
 
@@ -231,7 +231,7 @@ class NumpyFrame:
         Get a dictionary mapping a factor to its numerical representation in the NumpyFrame
 
         :param column: string containing the column name
-        :return: dictionary
+        :returns: dictionary
         """
         fact = self._factors[column]
         return dict(zip(fact, range(len(fact))))
@@ -242,7 +242,7 @@ class NumpyFrame:
         Get a dictionary mapping numerical representation of a factor to the category names.
 
         :param column: string containing the column name
-        :return: dictionary
+        :returns: dictionary
         """
         fact = self._factors[column]
         return dict(zip(range(len(fact)), fact))
@@ -256,7 +256,7 @@ class NumpyFrame:
         columns to "column_name.category_name".
 
         :param column: string containing the column name
-        :return: tuple (column_name: str, factor_name: Optional[str])
+        :returns: tuple (column_name: str, factor_name: Optional[str])
         """
         if column in self.columns:
             return column, None
@@ -281,7 +281,7 @@ class NumpyFrame:
         NOTE: Returns numeric representation even for factors.
 
         :param indexer: string for the whole column or a tuple (row_index, column_name)
-        :return: a column or a row within a column
+        :returns: a column or a row within a column
         """
         row = slice(None)
         if isinstance(indexer, tuple):
@@ -308,7 +308,7 @@ class NumpyFrame:
         :param column: string containing the column name
         :param as_factor: if True (default), factor column will contain string
                           representation; otherwise numerical representation
-        :return: A column represented as numpy ndarray
+        :returns: A column represented as numpy ndarray
         """
         if as_factor and self.isfactor(column):
             column, factor_idx = self._get_column_and_factor(column)
@@ -324,7 +324,7 @@ class NumpyFrame:
         Get levels/categories of a factor column.
 
         :param column: a string containing the column name
-        :return: list of levels
+        :returns: list of levels
         """
         return self._factors.get(column, [])
 
@@ -334,7 +334,7 @@ class NumpyFrame:
         Get number of levels/categories of a factor column.
 
         :param column: string containing the column name
-        :return: a number of levels within a factor
+        :returns: a number of levels within a factor
         """
         return len(self.levels(column))
 
@@ -344,7 +344,7 @@ class NumpyFrame:
         """
         Column within the NumpyFrame.
 
-        :return: list of columns
+        :returns: list of columns
         """
         return self._columns
 
@@ -354,7 +354,7 @@ class NumpyFrame:
         """
         Number of rows.
 
-        :return: number of rows
+        :returns: number of rows
         """
         return self._data.shape[0]
 
@@ -364,7 +364,7 @@ class NumpyFrame:
         """
         Number of columns.
 
-        :return: number of columns
+        :returns: number of columns
         """
         return self._data.shape[1]
 
@@ -374,7 +374,7 @@ class NumpyFrame:
         """
         Shape of the frame.
 
-        :return: tuple (number of rows, number of columns)
+        :returns: tuple (number of rows, number of columns)
         """
         return self._data.shape
 
@@ -386,7 +386,7 @@ class NumpyFrame:
         WARNING: This method doesn't care if the column is categorical or numeric. Use with care.
 
         :param axis: Axis along which a sum is performed.
-        :return: numpy.ndarray with shape same as NumpyFrame with the `axis` removed
+        :returns: numpy.ndarray with shape same as NumpyFrame with the `axis` removed
         """
         return self._data.sum(axis=axis)
 
@@ -398,7 +398,7 @@ class NumpyFrame:
         WARNING: This method doesn't care if the column is categorical or numeric. Use with care.
 
         :param axis: Axis along which a mean is performed.
-        :return: numpy.ndarray with shape same as NumpyFrame with the `axis` removed
+        :returns: numpy.ndarray with shape same as NumpyFrame with the `axis` removed
         """
         return self._data.mean(axis=axis)
 
@@ -409,7 +409,7 @@ class NumpyFrame:
 
         :params with_categorical_names: if True, factor columns are returned as string columns;
                                         otherwise numerical
-        :return: generator to be iterated upon
+        :returns: generator to be iterated upon
         """
         for col in self.columns:
             yield col, self.get(col, with_categorical_names)
@@ -430,7 +430,7 @@ def _get_algorithm(model,  treat_xrt_as_algorithm=False):
     Get algorithm type. Use model id to infer it if possible.
     :param model: model or a model_id
     :param treat_xrt_as_algorithm: boolean used for best_of_family
-    :return: string containing algorithm name
+    :returns: string containing algorithm name
     """
     if not isinstance(model, h2o.model.ModelBase):
         import re
@@ -454,7 +454,7 @@ def _first_of_family(models, all_stackedensembles=True):
     Get first of family models
     :param models: models or model ids
     :param all_stackedensembles: if True return all stacked ensembles
-    :return: list of models or model ids (the same type as on input)
+    :returns: list of models or model ids (the same type as on input)
     """
     selected_models = []
     included_families = set()
@@ -472,7 +472,7 @@ def _density(xs, bins=100):
     Make an approximate density estimation by blurring a histogram (used for SHAP summary plot).
     :param xs: numpy vector
     :param bins: number of bins
-    :return: density values
+    :returns: density values
     """
     hist = list(np.histogram(xs, bins=bins))
     # gaussian blur
@@ -491,7 +491,7 @@ def _uniformize(data, col_name):
     Convert to quantiles.
     :param data: NumpyFrame
     :param col_name: string containing a column name
-    :return: quantile values of individual points in the column
+    :returns: quantile values of individual points in the column
     """
     if col_name not in data.columns or data.isfactor(col_name):
         res = data[col_name]
@@ -542,7 +542,35 @@ def shap_summary_plot(
     :param colormap: colormap to use instead of the default blue to red colormap
     :param figsize: figure size; passed directly to matplotlib
     :param jitter: amount of jitter used to show the point density
-    :return: a matplotlib figure object
+    :returns: a matplotlib figure object
+
+    :examples:
+    >>> import h2o
+    >>> from h2o.estimators import H2OGradientBoostingEstimator
+    >>>
+    >>> h2o.init()
+    >>>
+    >>> # Import the titanic dataset into H2O:
+    >>> titanic = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/titanic/titanic_expanded.csv")
+    >>>
+    >>> # Set the predictors and the response
+    >>> predictors = [
+    >>>    "pclass", "sex", "age", "sibsp", "parch", "ticket",
+    >>>    "fare", "cabin", "embarked", "home.dest",
+    >>>    "cabin_type", "family_size", "family_type", "title"
+    >>> ]
+    >>> response = "survived"
+    >>> titanic[response] = titanic[response].asfactor()
+    >>>
+    >>> # Split the dataset into a train and test set:
+    >>> train, test = titanic.split_frame([.75])
+    >>>
+    >>> # Train a GBM
+    >>> gbm = H2OGradientBoostingEstimator()
+    >>> gbm.train(x=predictors, y=response, training_frame=train)
+    >>>
+    >>> # Create SHAP summary plot
+    >>> gbm.shap_summary_plot(test)
     """
 
     blue_to_red = matplotlib.colors.LinearSegmentedColormap.from_list("blue_to_red",
@@ -647,7 +675,35 @@ def shap_explain_row_plot(
     :param plot_type: either "barplot" or "breakdown"
     :param contribution_type: One of "positive", "negative", or "both".
                               Used only for plot_type="barplot".
-    :return: a matplotlib figure object
+    :returns: a matplotlib figure object
+
+    :examples:
+    >>> import h2o
+    >>> from h2o.estimators import H2OGradientBoostingEstimator
+    >>>
+    >>> h2o.init()
+    >>>
+    >>> # Import the titanic dataset into H2O:
+    >>> titanic = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/titanic/titanic_expanded.csv")
+    >>>
+    >>> # Set the predictors and the response
+    >>> predictors = [
+    >>>    "pclass", "sex", "age", "sibsp", "parch", "ticket",
+    >>>    "fare", "cabin", "embarked", "home.dest",
+    >>>    "cabin_type", "family_size", "family_type", "title"
+    >>> ]
+    >>> response = "survived"
+    >>> titanic[response] = titanic[response].asfactor()
+    >>>
+    >>> # Split the dataset into a train and test set:
+    >>> train, test = titanic.split_frame([.75])
+    >>>
+    >>> # Train a GBM
+    >>> gbm = H2OGradientBoostingEstimator()
+    >>> gbm.train(x=predictors, y=response, training_frame=train)
+    >>>
+    >>> # Create SHAP row explanation plot
+    >>> gbm.shap_explain_row_plot(test, row_index=0)
     """
 
     row = frame[row_index, :]
@@ -780,7 +836,7 @@ def _get_top_n_levels(column, top_n):
 
     :param column: string containing column name
     :param top_n: maximum number of levels to be returned
-    :return: list of levels
+    :returns: list of levels
     """
     counts = column.table().sort("Count", ascending=[False])[:, 0]
     return [
@@ -795,7 +851,7 @@ def _factor_mapper(mapping):
     """
     Helper higher order function returning function that applies mapping to each element.
     :param mapping: dictionary that maps factor names to floats (for NaN; other values are integers)
-    :return: function to be applied on iterable
+    :returns: function to be applied on iterable
     """
 
     def _(column):
@@ -812,7 +868,7 @@ def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order
     :param column: string containing column name
     :param add_rug: if True, adds rug
     :param add_histogram: if True, adds histogram
-    :return: None
+    :returns: None
     """
     ylims = plt.ylim()
     nf = NumpyFrame(frame[column])
@@ -876,7 +932,35 @@ def pd_plot(
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name; used to get just the first color to keep the api and color scheme similar with
                      pd_multi_plot
-    :return: a matplotlib figure object
+    :returns: a matplotlib figure object
+
+    :examples:
+    >>> import h2o
+    >>> from h2o.estimators import H2OGradientBoostingEstimator
+    >>>
+    >>> h2o.init()
+    >>>
+    >>> # Import the titanic dataset into H2O:
+    >>> titanic = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/titanic/titanic_expanded.csv")
+    >>>
+    >>> # Set the predictors and the response
+    >>> predictors = [
+    >>>    "pclass", "sex", "age", "sibsp", "parch", "ticket",
+    >>>    "fare", "cabin", "embarked", "home.dest",
+    >>>    "cabin_type", "family_size", "family_type", "title"
+    >>> ]
+    >>> response = "survived"
+    >>> titanic[response] = titanic[response].asfactor()
+    >>>
+    >>> # Split the dataset into a train and test set:
+    >>> train, test = titanic.split_frame([.75])
+    >>>
+    >>> # Train a GBM
+    >>> gbm = H2OGradientBoostingEstimator()
+    >>> gbm.train(x=predictors, y=response, training_frame=train)
+    >>>
+    >>> # Create partial dependence plot
+    >>> gbm.pd_plot(test, column="age")
     """
     is_factor = frame[column].isfactor()[0]
     if is_factor:
@@ -974,7 +1058,35 @@ def pd_multi_plot(
     :param colormap: colormap name
     :param markers: List of markers to use for factors, when it runs out of possible markers the last in
                     this list will get reused
-    :return: a matplotlib figure object
+    :returns: a matplotlib figure object
+
+    :examples:
+    >>> import h2o
+    >>> from h2o.automl import H2OAutoML
+    >>>
+    >>> h2o.init()
+    >>>
+    >>> # Import the titanic dataset into H2O:
+    >>> titanic = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/titanic/titanic_expanded.csv")
+    >>>
+    >>> # Set the predictors and the response
+    >>> predictors = [
+    >>>    "pclass", "sex", "age", "sibsp", "parch", "ticket",
+    >>>    "fare", "cabin", "embarked", "home.dest",
+    >>>    "cabin_type", "family_size", "family_type", "title"
+    >>> ]
+    >>> response = "survived"
+    >>> titanic[response] = titanic[response].asfactor()
+    >>>
+    >>> # Split the dataset into a train and test set:
+    >>> train, test = titanic.split_frame([.75])
+    >>>
+    >>> # Train an H2OAutoML
+    >>> aml = H2OAutoML(max_models=20)
+    >>> aml.train(x=predictors, y=response, training_frame=train)
+    >>>
+    >>> # Create a partial dependence plot
+    >>> aml.pd_multi_plot(test, column="age")
     """
     if target is not None:
         if isinstance(target, (list, tuple)):
@@ -1085,7 +1197,33 @@ def ice_plot(
     :param max_levels: maximum number of factor levels to show
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name
-    :return: a matplotlib figure object
+    :returns: a matplotlib figure object
+
+    :examples:
+    >>> import h2o
+    >>> from h2o.estimators import H2OGradientBoostingEstimator
+    >>>
+    >>> h2o.init()
+    >>>
+    >>> # Import the wine dataset into H2O:
+    >>> wine = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv")
+    >>>
+    >>> # Set the predictors and the response
+    >>> predictors = [
+    >>>   "fixed acidity", "volatile acidity", "citric acid", "residual sugar", "chlorides", "free sulfur dioxide",
+    >>>   "total sulfur dioxide", "density", "pH", "sulphates", "alcohol",  "type"
+    >>> ]
+    >>> response = "quality"
+    >>>
+    >>> # Split the dataset into a train and test set:
+    >>> train, test = wine.split_frame([.75])
+    >>>
+    >>> # Train a GBM
+    >>> gbm = H2OGradientBoostingEstimator()
+    >>> gbm.train(x=predictors, y=response, training_frame=train)
+    >>>
+    >>> # Create the individual conditional expectations plot
+    >>> gbm.ice_plot(test, column="alcohol")
     """
     if target is not None:
         if isinstance(target, (list, tuple)):
@@ -1167,7 +1305,7 @@ def _has_varimp(model):
     """
     Does model have varimp?
     :param model: model or a string containing model_id
-    :return: bool
+    :returns: bool
     """
     return _get_algorithm(model) not in ["stackedensemble", "naivebayes"]
 
@@ -1175,9 +1313,9 @@ def _has_varimp(model):
 def _get_xy(model):
     # type: (h2o.model.ModelBase) -> Tuple[List[str], str]
     """
-    Get features (x) and response column (y).
+    Get features (x) and the response column (y).
     :param model: H2O Model
-    :return: tuple (x, y)
+    :returns: tuple (x, y)
     """
     y = model.actual_params["response_column"]
     x = [feature for feature in model._model_json["output"]["names"]
@@ -1193,7 +1331,7 @@ def _consolidate_varimps(model):
     importances are summed to "column_name" variable.
 
     :param model: H2O Model
-    :return: dictionary with variable importances
+    :returns: dictionary with variable importances
     """
     x, y = _get_xy(model)
 
@@ -1230,7 +1368,7 @@ def _interpretable(model):
     """
     Returns True if model_id is easily interpretable.
     :param model: model or a string containing a model_id
-    :return: bool
+    :returns: bool
     """
     return _get_algorithm(model) in ["glm", "gam", "rulefit"]
 
@@ -1240,7 +1378,7 @@ def _flatten_list(items):
     """
     Flatten nested lists.
     :param items: a list potentionally containing other lists
-    :return: flattened list
+    :returns: flattened list
     """
     for x in items:
         if isinstance(x, list):
@@ -1255,7 +1393,7 @@ def _calculate_clustering_indices(matrix):
     """
     Get a hierarchical clustering leaves order calculated from the clustering of columns.
     :param matrix: numpy.ndarray
-    :return: list of indices of columns
+    :returns: list of indices of columns
     """
     cols = matrix.shape[1]
     dist = np.zeros((cols, cols))
@@ -1304,7 +1442,35 @@ def varimp_heatmap(
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param cluster: if True, cluster the models and variables
     :param colormap: colormap to use
-    :return: a matplotlib figure object
+    :returns: a matplotlib figure object
+
+    :examples:
+    >>> import h2o
+    >>> from h2o.automl import H2OAutoML
+    >>>
+    >>> h2o.init()
+    >>>
+    >>> # Import the titanic dataset into H2O:
+    >>> titanic = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/titanic/titanic_expanded.csv")
+    >>>
+    >>> # Set the predictors and the response
+    >>> predictors = [
+    >>>    "pclass", "sex", "age", "sibsp", "parch", "ticket",
+    >>>    "fare", "cabin", "embarked", "home.dest",
+    >>>    "cabin_type", "family_size", "family_type", "title"
+    >>> ]
+    >>> response = "survived"
+    >>> titanic[response] = titanic[response].asfactor()
+    >>>
+    >>> # Split the dataset into a train and test set:
+    >>> train, test = titanic.split_frame([.75])
+    >>>
+    >>> # Train an H2OAutoML
+    >>> aml = H2OAutoML(max_models=20)
+    >>> aml.train(x=predictors, y=response, training_frame=train)
+    >>>
+    >>> # Create the variable importance heatmap
+    >>> aml.varimp_heatmap()
     """
     if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
         model_ids = [model_id[0] for model_id in models.leaderboard[:, "model_id"]
@@ -1376,7 +1542,35 @@ def model_correlation_heatmap(
     :param triangular: make the heatmap triangular
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
-    :return: a matplotlib figure object
+    :returns: a matplotlib figure object
+
+    :examples:
+    >>> import h2o
+    >>> from h2o.automl import H2OAutoML
+    >>>
+    >>> h2o.init()
+    >>>
+    >>> # Import the titanic dataset into H2O:
+    >>> titanic = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/titanic/titanic_expanded.csv")
+    >>>
+    >>> # Set the predictors and the response
+    >>> predictors = [
+    >>>    "pclass", "sex", "age", "sibsp", "parch", "ticket",
+    >>>    "fare", "cabin", "embarked", "home.dest",
+    >>>    "cabin_type", "family_size", "family_type", "title"
+    >>> ]
+    >>> response = "survived"
+    >>> titanic[response] = titanic[response].asfactor()
+    >>>
+    >>> # Split the dataset into a train and test set:
+    >>> train, test = titanic.split_frame([.75])
+    >>>
+    >>> # Train an H2OAutoML
+    >>> aml = H2OAutoML(max_models=20)
+    >>> aml.train(x=predictors, y=response, training_frame=train)
+    >>>
+    >>> # Create the model correlation heatmap
+    >>> aml.model_correlation_heatmap(test)
     """
     if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
         model_ids = [model_id[0] for model_id in models.leaderboard[:, "model_id"]
@@ -1455,7 +1649,33 @@ def residual_analysis_plot(
     :param model: H2OModel
     :param frame: H2OFrame
     :param figsize: figsize: figure size; passed directly to matplotlib
-    :return: a matplotlib figure object
+    :returns: a matplotlib figure object
+
+    :examples:
+    >>> import h2o
+    >>> from h2o.estimators import H2OGradientBoostingEstimator
+    >>>
+    >>> h2o.init()
+    >>>
+    >>> # Import the wine dataset into H2O:
+    >>> wine = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv")
+    >>>
+    >>> # Set the predictors and the response
+    >>> predictors = [
+    >>>   "fixed acidity", "volatile acidity", "citric acid", "residual sugar", "chlorides", "free sulfur dioxide",
+    >>>   "total sulfur dioxide", "density", "pH", "sulphates", "alcohol",  "type"
+    >>> ]
+    >>> response = "quality"
+    >>>
+    >>> # Split the dataset into a train and test set:
+    >>> train, test = wine.split_frame([.75])
+    >>>
+    >>> # Train a GBM
+    >>> gbm = H2OGradientBoostingEstimator()
+    >>> gbm.train(x=predictors, y=response, training_frame=train)
+    >>>
+    >>> # Create the residual analysis plot
+    >>> gbm.residual_analysis_plot(test)
     """
     _, y = _get_xy(model)
 
@@ -1499,7 +1719,7 @@ def _is_tree_model(model):
     """
     Is the model a tree model id?
     :param model: model or astring containing a model_id
-    :return: bool
+    :returns: bool
     """
     return _get_algorithm(model) in ["drf", "gbm", "xgboost"]
 
@@ -1514,7 +1734,7 @@ def _get_tree_models(
 
     :param models: either H2OAutoML object or list of H2O Models
     :param top_n: maximum number of tree models to return
-    :return: list of tree models
+    :returns: list of tree models
     """
     if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
         model_ids = [model_id[0] for model_id in models.leaderboard[:, "model_id"]
@@ -1552,7 +1772,7 @@ def _get_leaderboard(
     :param frame: H2OFrame used for calculating prediction when row_index is specified
     :param row_index: if specified, calculated prediction for the given row
     :param top_n: show just top n models in the leaderboard
-    :return: H2OFrame
+    :returns: H2OFrame
     """
     if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
         leaderboard = h2o.automl.get_leaderboard(models, extra_columns="ALL")
@@ -1614,7 +1834,7 @@ def _process_explanation_lists(
     :param exclude_explanations: list of model explanations to exclude
     :param include_explanations: list of model explanations to include
     :param possible_explanations: list of all possible explanations
-    :return: list of actual explanations
+    :returns: list of actual explanations
     """
     if not isinstance(include_explanations, list):
         include_explanations = [include_explanations]
@@ -1647,7 +1867,7 @@ def _process_models_input(
 
     :param models: H2OAutoML/List of models/H2O Model
     :param frame: H2O Frame
-    :return: tuple (is_aml, models_to_show, classification, multinomial_classification,
+    :returns: tuple (is_aml, models_to_show, classification, multinomial_classification,
                     multiple_models, targets, tree_models_to_show)
     """
     is_aml = isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin)
@@ -1678,7 +1898,7 @@ def _custom_args(user_specified, **kwargs):
 
     :param user_specified: dictionary of user specified overrides or None
     :param kwargs: default values, such as, `top_n=5`
-    :return: dictionary of actual arguments to use
+    :returns: dictionary of actual arguments to use
     """
     if user_specified is None:
         user_specified = dict()
@@ -1717,7 +1937,38 @@ def explain(
     :param plot_overrides: overrides for individual model explanations
     :param figsize: figure size; passed directly to matplotlib
     :param render: if True, render the model explanations; otherwise model explanations are just returned
-    :return: H2OExplanation containing the model explanations including headers and descriptions
+    :returns: H2OExplanation containing the model explanations including headers and descriptions
+
+    :examples:
+    >>> import h2o
+    >>> from h2o.automl import H2OAutoML
+    >>>
+    >>> h2o.init()
+    >>>
+    >>> # Import the titanic dataset into H2O:
+    >>> titanic = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/titanic/titanic_expanded.csv")
+    >>>
+    >>> # Set the predictors and the response
+    >>> predictors = [
+    >>>    "pclass", "sex", "age", "sibsp", "parch", "ticket",
+    >>>    "fare", "cabin", "embarked", "home.dest",
+    >>>    "cabin_type", "family_size", "family_type", "title"
+    >>> ]
+    >>> response = "survived"
+    >>> titanic[response] = titanic[response].asfactor()
+    >>>
+    >>> # Split the dataset into a train and test set:
+    >>> train, test = titanic.split_frame([.75])
+    >>>
+    >>> # Train an H2OAutoML
+    >>> aml = H2OAutoML(max_models=20)
+    >>> aml.train(x=predictors, y=response, training_frame=train)
+    >>>
+    >>> # Create the H2OAutoML explanation
+    >>> aml.explain(test)
+    >>>
+    >>> # Create the leader model explanation
+    >>> aml.leader.explain(test)
     """
     is_aml, models_to_show, classification, multinomial_classification, multiple_models, \
     targets, tree_models_to_show = _process_models_input(models, frame)
@@ -1956,7 +2207,38 @@ def explain_row(
     :param figsize: figure size; passed directly to matplotlib
     :param render: if True, render the model explanations; otherwise model explanations are just returned
 
-    :return: H2OExplanation containing the model explanations including headers and descriptions
+    :returns: H2OExplanation containing the model explanations including headers and descriptions
+
+    :examples:
+    >>> import h2o
+    >>> from h2o.automl import H2OAutoML
+    >>>
+    >>> h2o.init()
+    >>>
+    >>> # Import the titanic dataset into H2O:
+    >>> titanic = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/titanic/titanic_expanded.csv")
+    >>>
+    >>> # Set the predictors and the response
+    >>> predictors = [
+    >>>    "pclass", "sex", "age", "sibsp", "parch", "ticket",
+    >>>    "fare", "cabin", "embarked", "home.dest",
+    >>>    "cabin_type", "family_size", "family_type", "title"
+    >>> ]
+    >>> response = "survived"
+    >>> titanic[response] = titanic[response].asfactor()
+    >>>
+    >>> # Split the dataset into a train and test set:
+    >>> train, test = titanic.split_frame([.75])
+    >>>
+    >>> # Train an H2OAutoML
+    >>> aml = H2OAutoML(max_models=20)
+    >>> aml.train(x=predictors, y=response, training_frame=train)
+    >>>
+    >>> # Create the H2OAutoML explanation
+    >>> aml.explain_row(test, row_index=0)
+    >>>
+    >>> # Create the leader model explanation
+    >>> aml.leader.explain_row(test, row_index=0)
     """
     is_aml, models_to_show, _, multinomial_classification, multiple_models, \
     targets, tree_models_to_show = _process_models_input(models, frame)
