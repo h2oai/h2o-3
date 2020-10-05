@@ -24,6 +24,192 @@ import static org.junit.Assert.*;
 public class RuleFitTest extends TestUtil {
 
     @Test
+    public void testBestPracticeExampleWithoutScope() {
+        // https://github.com/h2oai/h2o-tutorials/blob/8df6b492afa172095e2595922f0b67f8d715d1e0/best-practices/explainable-models/rulefit_analysis.ipynb
+        RuleFitModel rfModel = null;
+        GLMModel glmModel = null;
+        Frame fr = null, fr2 = null, fr3 = null;
+        try {
+            fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+
+            String responseColumnName = "survived";
+            asFactor(fr, responseColumnName);
+            asFactor(fr, "pclass");
+            fr.remove("name").remove();
+            fr.remove("ticket").remove();
+            fr.remove("cabin").remove();
+            fr.remove("embarked").remove();
+            fr.remove("boat").remove();
+            fr.remove("body").remove();
+            fr.remove("home.dest").remove();
+
+            RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
+            params._seed = 1234;
+            params._train = fr._key;
+            params._response_column = responseColumnName;
+            params._max_num_rules = 100;
+            params._model_type = RuleFitModel.ModelType.RULES;
+            params._distribution = DistributionFamily.bernoulli;
+            params._min_rule_length = 1;
+            params._max_rule_length = 10;
+
+            rfModel = new RuleFit(params).trainModel().get();
+
+            System.out.println("Intercept: \n" + rfModel._output._intercept[0]);
+            System.out.println(rfModel._output._rule_importance);
+
+            fr2 = rfModel.score(fr);
+
+            Assert.assertTrue(rfModel.testJavaScoring(fr,fr2,1e-4));
+
+            Vec predictions = fr2.vec("predict");
+            Vec data = fr.vec("survived");
+
+            ConfusionMatrix ruleFitConfusionMatrix = ConfusionMatrixUtils.buildCM(data, predictions);
+
+            // GLM to compare:
+
+            GLMModel.GLMParameters glmParameters = rfModel.glmModel._parms;
+            glmParameters._train = fr._key;
+            glmModel = new GLM(glmParameters).trainModel().get();
+
+            fr3 = glmModel.score(fr);
+            predictions = fr3.vec("predict");
+
+            ConfusionMatrix glmConfusionMatrix = ConfusionMatrixUtils.buildCM(data, predictions);
+
+            System.out.println("RuleFit ACC: \n" + ruleFitConfusionMatrix.accuracy());
+            System.out.println("RuleFit specificity: \n" + ruleFitConfusionMatrix.specificity());
+            System.out.println("RuleFit sensitivity: \n" + ruleFitConfusionMatrix.recall());
+
+            assertEquals(ruleFitConfusionMatrix.accuracy(),0.7868601986249045,1e-4);
+            assertEquals(ruleFitConfusionMatrix.specificity(),0.8207663782447466,1e-4);
+            assertEquals(ruleFitConfusionMatrix.recall(),0.732,1e-4);
+
+            System.out.println("pure GLM ACC: \n" + glmConfusionMatrix.accuracy());
+            System.out.println("pure GLM specificity: \n" + glmConfusionMatrix.specificity());
+            System.out.println("pure GLM sensitivity: \n" + glmConfusionMatrix.recall());
+
+            assertEquals(glmConfusionMatrix.accuracy(),0.7815126050420168,1e-4);
+            assertEquals(glmConfusionMatrix.specificity(),0.8145859085290482,1e-4);
+            assertEquals(glmConfusionMatrix.recall(),0.728,1e-4);
+
+            ScoringInfo RuleFitScoringInfo = rfModel.glmModel.getScoringInfo()[0];
+            ScoringInfo GLMScoringInfo = glmModel.getScoringInfo()[0];
+
+            System.out.println("RuleFit MSE: " + RuleFitScoringInfo.scored_train._mse);
+            System.out.println("GLM MSE: " + GLMScoringInfo.scored_train._mse);
+
+            System.out.println("RuleFit r2: " + RuleFitScoringInfo.scored_train._r2);
+            System.out.println("GLM r2: " + GLMScoringInfo.scored_train._r2);
+
+        } finally {
+            if (fr != null) fr.remove();
+            if (fr2 != null) fr2.remove();
+            if (fr3 != null) fr3.remove();
+            if (rfModel != null) {
+                rfModel.remove();
+            }
+            if (glmModel != null) glmModel.remove();
+        }
+    }
+
+    @Test
+    public void testBestPracticeExampleWithLinearVariablesWithoutScope() {
+        // the same as above but uses rules + linear terms
+        RuleFitModel rfModel = null;
+        GLMModel glmModel = null;
+        Frame fr = null, fr2 = null, fr3 = null;
+        try {
+            fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+
+            String responseColumnName = "survived";
+            asFactor(fr, responseColumnName);
+            asFactor(fr, "pclass");
+            fr.remove("name").remove();
+            fr.remove("ticket").remove();
+            fr.remove("cabin").remove();
+            fr.remove("embarked").remove();
+            fr.remove("boat").remove();
+            fr.remove("body").remove();
+            fr.remove("home.dest").remove();
+
+            final Vec weightsVector = Vec.makeOne(fr.numRows());
+            final String weightsColumnName = "weights";
+            fr.add(weightsColumnName, weightsVector);
+
+            RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
+            params._seed = 1234;
+            params._train = fr._key;
+            params._response_column = responseColumnName;
+            params._max_num_rules = 100;
+            params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
+            params._weights_column = "weights";
+            params._min_rule_length = 1;
+            params._max_rule_length = 7;
+
+            rfModel = new RuleFit(params).trainModel().get();
+
+            System.out.println("Intercept: \n" + rfModel._output._intercept[0]);
+            System.out.println(rfModel._output._rule_importance);
+
+            fr2 = rfModel.score(fr);
+
+            Assert.assertTrue(rfModel.testJavaScoring(fr,fr2,1e-4));
+
+            Vec predictions = fr2.vec("predict");
+            Vec data = fr.vec("survived");
+
+            ConfusionMatrix ruleFitConfusionMatrix = ConfusionMatrixUtils.buildCM(data, predictions);
+
+            // GLM to compare:
+
+            GLMModel.GLMParameters glmParameters = rfModel.glmModel._parms;
+            glmParameters._train = fr._key;
+            glmModel = new GLM(glmParameters).trainModel().get();
+
+            fr3 = glmModel.score(fr);
+            predictions = fr3.vec("predict");
+
+            ConfusionMatrix glmConfusionMatrix = ConfusionMatrixUtils.buildCM(data, predictions);
+
+            System.out.println("RuleFit ACC: \n" + ruleFitConfusionMatrix.accuracy());
+            System.out.println("RuleFit specificity: \n" + ruleFitConfusionMatrix.specificity());
+            System.out.println("RuleFit sensitivity: \n" + ruleFitConfusionMatrix.recall());
+
+            assertEquals(ruleFitConfusionMatrix.accuracy(),0.7685255920550038,1e-4);
+            assertEquals(ruleFitConfusionMatrix.specificity(),0.761433868974042,1e-4);
+            assertEquals(ruleFitConfusionMatrix.recall(),0.78,1e-4);
+
+            System.out.println("pure GLM ACC: \n" + glmConfusionMatrix.accuracy());
+            System.out.println("pure GLM specificity: \n" + glmConfusionMatrix.specificity());
+            System.out.println("pure GLM sensitivity: \n" + glmConfusionMatrix.recall());
+
+            assertEquals(glmConfusionMatrix.accuracy(),0.7815126050420168,1e-4);
+            assertEquals(glmConfusionMatrix.specificity(),0.8145859085290482,1e-4);
+            assertEquals(glmConfusionMatrix.recall(),0.728,1e-4);
+
+            ScoringInfo RuleFitScoringInfo = rfModel.glmModel.getScoringInfo()[0];
+            ScoringInfo GLMScoringInfo = glmModel.getScoringInfo()[0];
+
+            System.out.println("RuleFit MSE: " + RuleFitScoringInfo.scored_train._mse);
+            System.out.println("GLM MSE: " + GLMScoringInfo.scored_train._mse);
+
+            System.out.println("RuleFit r2: " + RuleFitScoringInfo.scored_train._r2);
+            System.out.println("GLM r2: " + GLMScoringInfo.scored_train._r2);
+
+        } finally {
+            if (fr != null) fr.remove();
+            if (fr2 != null) fr2.remove();
+            if (fr3 != null) fr3.remove();
+            if (rfModel != null) {
+                rfModel.remove();
+            }
+            if (glmModel != null) glmModel.remove();
+        }
+    }
+    
+    @Test
     public void testBestPracticeExample() {
         // https://github.com/h2oai/h2o-tutorials/blob/8df6b492afa172095e2595922f0b67f8d715d1e0/best-practices/explainable-models/rulefit_analysis.ipynb
         try {
