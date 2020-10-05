@@ -253,7 +253,7 @@ There are a number of individual plotting functions that are used inside the ``e
 
    .. code-tab:: python
 
-        # Mhese are methods for an AutoML object
+        # These are methods for an AutoML object
         # Use h2o.method_name(model_list, test) for a list of models        
         .varimp_heatmap()          
         .model_correlation_heatmap()        
