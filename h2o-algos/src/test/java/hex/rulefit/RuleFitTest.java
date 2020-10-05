@@ -134,7 +134,7 @@ public class RuleFitTest extends TestUtil {
             fr.remove("body").remove();
             fr.remove("home.dest").remove();
 
-            final Vec weightsVector = Vec.makeOne(fr.numRows());
+            final Vec weightsVector = fr.anyVec().makeOnes(1)[0];
             final String weightsColumnName = "weights";
             fr.add(weightsColumnName, weightsVector);
 
