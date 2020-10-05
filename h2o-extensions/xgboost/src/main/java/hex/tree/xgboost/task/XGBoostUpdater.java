@@ -2,6 +2,7 @@ package hex.tree.xgboost.task;
 
 import hex.tree.xgboost.BoosterParms;
 import ai.h2o.xgboost4j.java.*;
+import ai.h2o.xgboost4j.java.BoosterWrapper;
 import org.apache.log4j.Logger;
 import water.H2O;
 import water.Key;
