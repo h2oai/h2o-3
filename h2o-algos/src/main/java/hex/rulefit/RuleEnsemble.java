@@ -33,16 +33,13 @@ public class RuleEnsemble extends Iced {
                 
                 RuleEnsemble ruleEnsemble = new RuleEnsemble(filteredRules.toArray(new Rule[] {}));
                 Frame frameToMakeCategorical = ruleEnsemble.transform(frame);
-                Vec tmpCol = null;
                 try {
-                    Decoder mrtask = new Decoder(frameToMakeCategorical.names());
-                    tmpCol = mrtask.doAll(1, Vec.T_STR, frameToMakeCategorical).outputFrame().vec(0);
-                    Vec catCol = tmpCol.toCategoricalVec();
+                    Decoder mrtask = new Decoder();
+                    Vec catCol = mrtask.doAll(1, Vec.T_CAT, frameToMakeCategorical)
+                            .outputFrame(null, null, new String[][]{frameToMakeCategorical.names()}).vec(0);
                     glmTrainFrame.add("M" + i + "T" + j, catCol);
                 } finally {
                     frameToMakeCategorical.remove();
-                    if (tmpCol != null)
-                        tmpCol.remove();
                 }
             }
         }
@@ -76,22 +73,22 @@ public class RuleEnsemble extends Iced {
 }
 
 class Decoder extends MRTask<hex.rulefit.Decoder> {
-    final String[] _colNames;
-    
-    Decoder(String[] colNames) {
+    Decoder() {
         super();
-        _colNames = colNames;
     }
     
     @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-        String newValue = "";
+        int newValue = -1;
         for (int iRow = 0; iRow < cs[0].len(); iRow++) {
             for (int iCol = 0; iCol < cs.length; iCol++) {
                 if (cs[iCol].at8(iRow) == 1) {
-                    newValue = _colNames[iCol];
+                    newValue = iCol;
                 }
             }
-            ncs[0].addStr(newValue);
+            if (newValue >= 0)
+                ncs[0].addNum(newValue);
+            else
+                ncs[0].addNA();
         }
     }
 }
