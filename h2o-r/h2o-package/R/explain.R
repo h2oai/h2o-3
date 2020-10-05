@@ -1004,24 +1004,20 @@ stat_count_or_bin <- function(use_count, ..., data) {
 #' library(h2o)
 #' h2o.init()
 #'
-#' # Import the titanic dataset into H2O:
-#' titanic <- h2o.importFile(
-#'   "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
-#' )
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
 #'
-#' # Set the predictors and response; set the response as a factor:
-#' titanic['survived'] <- as.factor(titanic['survived'])
-#' predictors <- setdiff(colnames(titanic), colnames(titanic)[2:3])
-#' response <- "survived"
+#' # Set the response
+#' response <- "quality"
 #'
 #' # Split the dataset into a train and test set:
-#' titanic_splits <- h2o.splitFrame(data =  titanic, ratios = 0.8, seed = 1234)
-#' train <- titanic_splits[[1]]
-#' test <- titanic_splits[[2]]
+#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- df_splits[[1]]
+#' test <- df_splits[[2]]
 #'
 #' # Build and train the model:
-#' gbm <- h2o.gbm(x = predictors,
-#'                y = response,
+#' gbm <- h2o.gbm(y = response,
 #'                training_frame = train)
 #'
 #' # Create the SHAP summary plot
@@ -1214,24 +1210,20 @@ h2o.shap_summary_plot <-
 #' library(h2o)
 #' h2o.init()
 #'
-#' # Import the titanic dataset into H2O:
-#' titanic <- h2o.importFile(
-#'   "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
-#' )
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
 #'
-#' # Set the predictors and response; set the response as a factor:
-#' titanic['survived'] <- as.factor(titanic['survived'])
-#' predictors <- setdiff(colnames(titanic), colnames(titanic)[2:3])
-#' response <- "survived"
+#' # Set the response
+#' response <- "quality"
 #'
 #' # Split the dataset into a train and test set:
-#' titanic_splits <- h2o.splitFrame(data =  titanic, ratios = 0.8, seed = 1234)
-#' train <- titanic_splits[[1]]
-#' test <- titanic_splits[[2]]
+#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- df_splits[[1]]
+#' test <- df_splits[[2]]
 #'
 #' # Build and train the model:
-#' gbm <- h2o.gbm(x = predictors,
-#'                y = response,
+#' gbm <- h2o.gbm(y = response,
 #'                training_frame = train)
 #'
 #' # Create the SHAP row explanation plot
@@ -1486,21 +1478,22 @@ h2o.shap_explain_row_plot <-
 #' library(h2o)
 #' h2o.init()
 #'
-#' # Import the prostate dataset into H2O:
-#' prostate <- h2o.importFile(
-#'   "http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv"
-#' )
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
 #'
-#' # Set the predictors and response; set the factors:
-#' prostate$CAPSULE <- as.factor(prostate$CAPSULE)
-#' predictors <- c("ID", "AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
-#' response <- "CAPSULE"
+#' # Set the response
+#' response <- "quality"
+#'
+#' # Split the dataset into a train and test set:
+#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- df_splits[[1]]
+#' test <- df_splits[[2]]
 #'
 #' # Build and train the model:
-#' aml <- h2o.automl(x = predictors,
-#'                   y = response,
+#' aml <- h2o.automl(y = response,
 #'                   training_frame = prostate,
-#'                   max_models = 20,
+#'                   max_models = 7,
 #'                   seed = 1)
 #'
 #' # Create the variable importance heatmap
@@ -1583,26 +1576,22 @@ h2o.varimp_heatmap <- function(object, newdata, top_n = 20) {
 #' library(h2o)
 #' h2o.init()
 #'
-#' # Import the titanic dataset into H2O:
-#' titanic <- h2o.importFile(
-#'   "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
-#' )
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
 #'
-#' # Set the predictors and response; set the response as a factor:
-#' titanic['survived'] <- as.factor(titanic['survived'])
-#' predictors <- setdiff(colnames(titanic), colnames(titanic)[2:3])
-#' response <- "survived"
+#' # Set the response
+#' response <- "quality"
 #'
 #' # Split the dataset into a train and test set:
-#' titanic_splits <- h2o.splitFrame(data =  titanic, ratios = 0.8, seed = 1234)
-#' train <- titanic_splits[[1]]
-#' test <- titanic_splits[[2]]
+#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- df_splits[[1]]
+#' test <- df_splits[[2]]
 #'
 #' # Build and train the model:
-#' aml <- h2o.automl(x = predictors,
-#'                   y = response,
+#' aml <- h2o.automl(y = response,
 #'                   training_frame = train,
-#'                   max_models = 20,
+#'                   max_models = 7,
 #'                   seed = 1)
 #'
 #' # Create the model correlation heatmap
@@ -1710,26 +1699,19 @@ h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
 #' h2o.init()
 #'
 #' # Import the wine dataset into H2O:
-#' wine <-  h2o.importFile(
-#'   "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
-#' )
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
 #'
-#' # Set the predictors and response
-#' predictors <- c(
-#'   "fixed acidity", "volatile acidity", "citric acid", "residual sugar", "chlorides",
-#'   "free sulfur dioxide", "total sulfur dioxide", "density", "pH", "sulphates", "alcohol",
-#'   "type"
-#' )
+#' # Set the response
 #' response <- "quality"
 #'
 #' # Split the dataset into a train and test set:
-#' wine_splits <- h2o.splitFrame(wine, ratios = 0.8, seed = 1)
-#' train <- wine_splits[[1]]
-#' test <- wine_splits[[2]]
+#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- df_splits[[1]]
+#' test <- df_splits[[2]]
 #'
 #' # Build and train the model:
-#' gbm <- h2o.gbm(x = predictors,
-#'                y = response,
+#' gbm <- h2o.gbm(y = response,
 #'                training_frame = train)
 #'
 #' # Create the residual analysis plot
@@ -1786,24 +1768,20 @@ h2o.residual_analysis_plot <- function(model, newdata) {
 #' library(h2o)
 #' h2o.init()
 #'
-#' # Import the titanic dataset into H2O:
-#' titanic <- h2o.importFile(
-#'   "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
-#' )
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
 #'
-#' # Set the predictors and response; set the response as a factor:
-#' titanic['survived'] <- as.factor(titanic['survived'])
-#' predictors <- setdiff(colnames(titanic), colnames(titanic)[2:3])
-#' response <- "survived"
+#' # Set the response
+#' response <- "quality"
 #'
 #' # Split the dataset into a train and test set:
-#' titanic_splits <- h2o.splitFrame(data =  titanic, ratios = 0.8, seed = 1234)
-#' train <- titanic_splits[[1]]
-#' test <- titanic_splits[[2]]
+#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- df_splits[[1]]
+#' test <- df_splits[[2]]
 #'
 #' # Build and train the model:
-#' gbm <- h2o.gbm(x = predictors,
-#'                y = response,
+#' gbm <- h2o.gbm(y = response,
 #'                training_frame = train)
 #'
 #' # Create the partial dependence plot
@@ -1958,26 +1936,22 @@ h2o.pd_plot <- function(object,
 #' library(h2o)
 #' h2o.init()
 #'
-#' # Import the titanic dataset into H2O:
-#' titanic <- h2o.importFile(
-#'   "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
-#' )
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
 #'
-#' # Set the predictors and response; set the response as a factor:
-#' titanic['survived'] <- as.factor(titanic['survived'])
-#' predictors <- setdiff(colnames(titanic), colnames(titanic)[2:3])
-#' response <- "survived"
+#' # Set the response
+#' response <- "quality"
 #'
 #' # Split the dataset into a train and test set:
-#' titanic_splits <- h2o.splitFrame(data =  titanic, ratios = 0.8, seed = 1234)
-#' train <- titanic_splits[[1]]
-#' test <- titanic_splits[[2]]
+#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- df_splits[[1]]
+#' test <- df_splits[[2]]
 #'
 #' # Build and train the model:
-#' aml <- h2o.automl(x = predictors,
-#'                   y = response,
+#' aml <- h2o.automl(y = response,
 #'                   training_frame = train,
-#'                   max_models = 20,
+#'                   max_models = 7,
 #'                   seed = 1)
 #'
 #' # Create the partial dependence plot
@@ -2227,26 +2201,19 @@ h2o.pd_multi_plot <- function(object,
 #' h2o.init()
 #'
 #' # Import the wine dataset into H2O:
-#' wine <-  h2o.importFile(
-#'   "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
-#' )
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
 #'
-#' # Set the predictors and response
-#' predictors <- c(
-#'   "fixed acidity", "volatile acidity", "citric acid", "residual sugar", "chlorides",
-#'   "free sulfur dioxide", "total sulfur dioxide", "density", "pH", "sulphates", "alcohol",
-#'   "type"
-#' )
+#' # Set the response
 #' response <- "quality"
 #'
 #' # Split the dataset into a train and test set:
-#' wine_splits <- h2o.splitFrame(wine, ratios = 0.8, seed = 1)
-#' train <- wine_splits[[1]]
-#' test <- wine_splits[[2]]
+#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- df_splits[[1]]
+#' test <- df_splits[[2]]
 #'
 #' # Build and train the model:
-#' gbm <- h2o.gbm(x = predictors,
-#'                y = response,
+#' gbm <- h2o.gbm(y = response,
 #'                training_frame = train)
 #'
 #' # Create the individual conditional expectations plot
@@ -2419,26 +2386,22 @@ h2o.ice_plot <- function(model,
 #' library(h2o)
 #' h2o.init()
 #'
-#' # Import the titanic dataset into H2O:
-#' titanic <- h2o.importFile(
-#'   "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
-#' )
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
 #'
-#' # Set the predictors and response; set the response as a factor:
-#' titanic['survived'] <- as.factor(titanic['survived'])
-#' predictors <- setdiff(colnames(titanic), colnames(titanic)[2:3])
-#' response <- "survived"
+#' # Set the response
+#' response <- "quality"
 #'
-#' # Split the dataset into a train and valid set:
-#' titanic_splits <- h2o.splitFrame(data =  titanic, ratios = 0.8, seed = 1234)
-#' train <- titanic_splits[[1]]
-#' test <- titanic_splits[[2]]
+#' # Split the dataset into a train and test set:
+#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- df_splits[[1]]
+#' test <- df_splits[[2]]
 #'
 #' # Build and train the model:
-#' aml <- h2o.automl(x = predictors,
-#'                   y = response,
+#' aml <- h2o.automl(y = response,
 #'                   training_frame = train,
-#'                   max_models = 20,
+#'                   max_models = 7,
 #'                   seed = 1)
 #'
 #' # Create the explanation for whole H2OAutoML object
@@ -2811,26 +2774,22 @@ h2o.explain <- function(object,
 #' library(h2o)
 #' h2o.init()
 #'
-#' # Import the titanic dataset into H2O:
-#' titanic <- h2o.importFile(
-#'   "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
-#' )
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
 #'
-#' # Set the predictors and response; set the response as a factor:
-#' titanic['survived'] <- as.factor(titanic['survived'])
-#' predictors <- setdiff(colnames(titanic), colnames(titanic)[2:3])
-#' response <- "survived"
+#' # Set the response
+#' response <- "quality"
 #'
-#' # Split the dataset into a train and valid set:
-#' titanic_splits <- h2o.splitFrame(data =  titanic, ratios = 0.8, seed = 1234)
-#' train <- titanic_splits[[1]]
-#' test <- titanic_splits[[2]]
+#' # Split the dataset into a train and test set:
+#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- df_splits[[1]]
+#' test <- df_splits[[2]]
 #'
 #' # Build and train the model:
-#' aml <- h2o.automl(x = predictors,
-#'                   y = response,
+#' aml <- h2o.automl(y = response,
 #'                   training_frame = train,
-#'                   max_models = 20,
+#'                   max_models = 7,
 #'                   seed = 1)
 #'
 #' # Create the explanation for whole H2OAutoML object

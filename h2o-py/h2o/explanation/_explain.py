@@ -95,7 +95,8 @@ class Description:
                                     "By default, the models and variables are ordered by their similarity.",
         model_correlation_heatmap="Model correlation matrix shows correlation between prediction of the models. "
                                   "For classification, frequency of same predictions is used. By default, models "
-                                  "are ordered by their similarity.",
+                                  "are ordered by their similarity. Interpretable models, such as GAM, GLM, and RuleFit"
+                                  " are highlighted using red colored text.",
         shap_summary="SHAP summary plot shows contribution of features for each instance. The sum "
                      "of the feature contributions and the bias term is equal to the raw prediction "
                      "of the model, i.e., prediction before applying inverse link function.",
@@ -550,24 +551,19 @@ def shap_summary_plot(
     >>>
     >>> h2o.init()
     >>>
-    >>> # Import the titanic dataset into H2O:
-    >>> titanic = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/titanic/titanic_expanded.csv")
+    >>> # Import the wine dataset into H2O:
+    >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+    >>> df = h2o.import_file(f)
     >>>
-    >>> # Set the predictors and the response
-    >>> predictors = [
-    >>>    "pclass", "sex", "age", "sibsp", "parch", "ticket",
-    >>>    "fare", "cabin", "embarked", "home.dest",
-    >>>    "cabin_type", "family_size", "family_type", "title"
-    >>> ]
-    >>> response = "survived"
-    >>> titanic[response] = titanic[response].asfactor()
+    >>> # Set the response
+    >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = titanic.split_frame([.75])
+    >>> train, test = df.split_frame([.75])
     >>>
     >>> # Train a GBM
     >>> gbm = H2OGradientBoostingEstimator()
-    >>> gbm.train(x=predictors, y=response, training_frame=train)
+    >>> gbm.train(y=response, training_frame=train)
     >>>
     >>> # Create SHAP summary plot
     >>> gbm.shap_summary_plot(test)
@@ -683,24 +679,19 @@ def shap_explain_row_plot(
     >>>
     >>> h2o.init()
     >>>
-    >>> # Import the titanic dataset into H2O:
-    >>> titanic = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/titanic/titanic_expanded.csv")
+    >>> # Import the wine dataset into H2O:
+    >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+    >>> df = h2o.import_file(f)
     >>>
-    >>> # Set the predictors and the response
-    >>> predictors = [
-    >>>    "pclass", "sex", "age", "sibsp", "parch", "ticket",
-    >>>    "fare", "cabin", "embarked", "home.dest",
-    >>>    "cabin_type", "family_size", "family_type", "title"
-    >>> ]
-    >>> response = "survived"
-    >>> titanic[response] = titanic[response].asfactor()
+    >>> # Set the response
+    >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = titanic.split_frame([.75])
+    >>> train, test = df.split_frame([.75])
     >>>
     >>> # Train a GBM
     >>> gbm = H2OGradientBoostingEstimator()
-    >>> gbm.train(x=predictors, y=response, training_frame=train)
+    >>> gbm.train(y=response, training_frame=train)
     >>>
     >>> # Create SHAP row explanation plot
     >>> gbm.shap_explain_row_plot(test, row_index=0)
@@ -940,24 +931,19 @@ def pd_plot(
     >>>
     >>> h2o.init()
     >>>
-    >>> # Import the titanic dataset into H2O:
-    >>> titanic = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/titanic/titanic_expanded.csv")
+    >>> # Import the wine dataset into H2O:
+    >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+    >>> df = h2o.import_file(f)
     >>>
-    >>> # Set the predictors and the response
-    >>> predictors = [
-    >>>    "pclass", "sex", "age", "sibsp", "parch", "ticket",
-    >>>    "fare", "cabin", "embarked", "home.dest",
-    >>>    "cabin_type", "family_size", "family_type", "title"
-    >>> ]
-    >>> response = "survived"
-    >>> titanic[response] = titanic[response].asfactor()
+    >>> # Set the response
+    >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = titanic.split_frame([.75])
+    >>> train, test = df.split_frame([.75])
     >>>
     >>> # Train a GBM
     >>> gbm = H2OGradientBoostingEstimator()
-    >>> gbm.train(x=predictors, y=response, training_frame=train)
+    >>> gbm.train(y=response, training_frame=train)
     >>>
     >>> # Create partial dependence plot
     >>> gbm.pd_plot(test, column="age")
@@ -1046,7 +1032,7 @@ def pd_multi_plot(
     on the response. The effect of a variable is measured in change in the mean response.
     PDP assumes independence between the feature for which is the PDP computed and the rest.
 
-    :param models: H2O AutoML object
+    :param models: H2O AutoML object, or list of H2O models
     :param frame: H2OFrame
     :param column: string containing column name
     :param best_of_family: if True, show only the best models per family
@@ -1066,24 +1052,19 @@ def pd_multi_plot(
     >>>
     >>> h2o.init()
     >>>
-    >>> # Import the titanic dataset into H2O:
-    >>> titanic = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/titanic/titanic_expanded.csv")
+    >>> # Import the wine dataset into H2O:
+    >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+    >>> df = h2o.import_file(f)
     >>>
-    >>> # Set the predictors and the response
-    >>> predictors = [
-    >>>    "pclass", "sex", "age", "sibsp", "parch", "ticket",
-    >>>    "fare", "cabin", "embarked", "home.dest",
-    >>>    "cabin_type", "family_size", "family_type", "title"
-    >>> ]
-    >>> response = "survived"
-    >>> titanic[response] = titanic[response].asfactor()
+    >>> # Set the response
+    >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = titanic.split_frame([.75])
+    >>> train, test = df.split_frame([.75])
     >>>
     >>> # Train an H2OAutoML
-    >>> aml = H2OAutoML(max_models=20)
-    >>> aml.train(x=predictors, y=response, training_frame=train)
+    >>> aml = H2OAutoML(max_models=7)
+    >>> aml.train(y=response, training_frame=train)
     >>>
     >>> # Create a partial dependence plot
     >>> aml.pd_multi_plot(test, column="age")
@@ -1206,21 +1187,18 @@ def ice_plot(
     >>> h2o.init()
     >>>
     >>> # Import the wine dataset into H2O:
-    >>> wine = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv")
+    >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+    >>> df = h2o.import_file(f)
     >>>
-    >>> # Set the predictors and the response
-    >>> predictors = [
-    >>>   "fixed acidity", "volatile acidity", "citric acid", "residual sugar", "chlorides", "free sulfur dioxide",
-    >>>   "total sulfur dioxide", "density", "pH", "sulphates", "alcohol",  "type"
-    >>> ]
+    >>> # Set the response
     >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = wine.split_frame([.75])
+    >>> train, test = df.split_frame([.75])
     >>>
     >>> # Train a GBM
     >>> gbm = H2OGradientBoostingEstimator()
-    >>> gbm.train(x=predictors, y=response, training_frame=train)
+    >>> gbm.train(y=response, training_frame=train)
     >>>
     >>> # Create the individual conditional expectations plot
     >>> gbm.ice_plot(test, column="alcohol")
@@ -1442,7 +1420,7 @@ def varimp_heatmap(
     encoded features and return a single variable importance for the original categorical
     feature. By default, the models and variables are ordered by their similarity.
 
-    :param models: H2O AutoML object or list of models
+    :param models: H2O AutoML object or list of H2O models
     :param top_n: use just top n models (applies only when used with H2OAutoML)
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param cluster: if True, cluster the models and variables
@@ -1455,24 +1433,19 @@ def varimp_heatmap(
     >>>
     >>> h2o.init()
     >>>
-    >>> # Import the titanic dataset into H2O:
-    >>> titanic = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/titanic/titanic_expanded.csv")
+    >>> # Import the wine dataset into H2O:
+    >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+    >>> df = h2o.import_file(f)
     >>>
-    >>> # Set the predictors and the response
-    >>> predictors = [
-    >>>    "pclass", "sex", "age", "sibsp", "parch", "ticket",
-    >>>    "fare", "cabin", "embarked", "home.dest",
-    >>>    "cabin_type", "family_size", "family_type", "title"
-    >>> ]
-    >>> response = "survived"
-    >>> titanic[response] = titanic[response].asfactor()
+    >>> # Set the response
+    >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = titanic.split_frame([.75])
+    >>> train, test = df.split_frame([.75])
     >>>
     >>> # Train an H2OAutoML
-    >>> aml = H2OAutoML(max_models=20)
-    >>> aml.train(x=predictors, y=response, training_frame=train)
+    >>> aml = H2OAutoML(max_models=7)
+    >>> aml.train(y=response, training_frame=train)
     >>>
     >>> # Create the variable importance heatmap
     >>> aml.varimp_heatmap()
@@ -1540,7 +1513,7 @@ def model_correlation_heatmap(
     For classification, frequency of identical predictions is used. By default, models
     are ordered by their similarity (as computed by hierarchical clustering).
 
-    :param models: H2OAutoML object or a list of models
+    :param models: H2OAutoML object or a list of H2O models
     :param frame: H2OFrame
     :param top_n: show just top n models (applies only when used with H2OAutoML)
     :param cluster_models: if True, cluster the models
@@ -1555,24 +1528,19 @@ def model_correlation_heatmap(
     >>>
     >>> h2o.init()
     >>>
-    >>> # Import the titanic dataset into H2O:
-    >>> titanic = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/titanic/titanic_expanded.csv")
+    >>> # Import the wine dataset into H2O:
+    >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+    >>> df = h2o.import_file(f)
     >>>
-    >>> # Set the predictors and the response
-    >>> predictors = [
-    >>>    "pclass", "sex", "age", "sibsp", "parch", "ticket",
-    >>>    "fare", "cabin", "embarked", "home.dest",
-    >>>    "cabin_type", "family_size", "family_type", "title"
-    >>> ]
-    >>> response = "survived"
-    >>> titanic[response] = titanic[response].asfactor()
+    >>> # Set the response
+    >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = titanic.split_frame([.75])
+    >>> train, test = df.split_frame([.75])
     >>>
     >>> # Train an H2OAutoML
-    >>> aml = H2OAutoML(max_models=20)
-    >>> aml.train(x=predictors, y=response, training_frame=train)
+    >>> aml = H2OAutoML(max_models=7)
+    >>> aml.train(y=response, training_frame=train)
     >>>
     >>> # Create the model correlation heatmap
     >>> aml.model_correlation_heatmap(test)
@@ -1665,21 +1633,18 @@ def residual_analysis_plot(
     >>> h2o.init()
     >>>
     >>> # Import the wine dataset into H2O:
-    >>> wine = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv")
+    >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+    >>> df = h2o.import_file(f)
     >>>
-    >>> # Set the predictors and the response
-    >>> predictors = [
-    >>>   "fixed acidity", "volatile acidity", "citric acid", "residual sugar", "chlorides", "free sulfur dioxide",
-    >>>   "total sulfur dioxide", "density", "pH", "sulphates", "alcohol",  "type"
-    >>> ]
+    >>> # Set the response
     >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = wine.split_frame([.75])
+    >>> train, test = df.split_frame([.75])
     >>>
     >>> # Train a GBM
     >>> gbm = H2OGradientBoostingEstimator()
-    >>> gbm.train(x=predictors, y=response, training_frame=train)
+    >>> gbm.train(y=response, training_frame=train)
     >>>
     >>> # Create the residual analysis plot
     >>> gbm.residual_analysis_plot(test)
@@ -1939,7 +1904,7 @@ def explain(
     or a variable importance plot.  Most of the explanations are visual (plots).
     These plots can also be created by individual utility functions/methods as well.
 
-    :param models: H2OAutoML object or H2OModel
+    :param models: H2OAutoML object, H2OModel, or list of H2O models
     :param frame: H2OFrame
     :param columns: either a list of columns or column indices to show. If specified
                     parameter top_n_features will be ignored.
@@ -1958,24 +1923,19 @@ def explain(
     >>>
     >>> h2o.init()
     >>>
-    >>> # Import the titanic dataset into H2O:
-    >>> titanic = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/titanic/titanic_expanded.csv")
+    >>> # Import the wine dataset into H2O:
+    >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+    >>> df = h2o.import_file(f)
     >>>
-    >>> # Set the predictors and the response
-    >>> predictors = [
-    >>>    "pclass", "sex", "age", "sibsp", "parch", "ticket",
-    >>>    "fare", "cabin", "embarked", "home.dest",
-    >>>    "cabin_type", "family_size", "family_type", "title"
-    >>> ]
-    >>> response = "survived"
-    >>> titanic[response] = titanic[response].asfactor()
+    >>> # Set the response
+    >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = titanic.split_frame([.75])
+    >>> train, test = df.split_frame([.75])
     >>>
     >>> # Train an H2OAutoML
-    >>> aml = H2OAutoML(max_models=20)
-    >>> aml.train(x=predictors, y=response, training_frame=train)
+    >>> aml = H2OAutoML(max_models=7)
+    >>> aml.train(y=response, training_frame=train)
     >>>
     >>> # Create the H2OAutoML explanation
     >>> aml.explain(test)
@@ -2211,7 +2171,7 @@ def explain_row(
     or a variable importance plot.  Most of the explanations are visual (plots).
     These plots can also be created by individual utility functions/methods as well.
 
-    :param models: H2OAutoML object or H2OModel
+    :param models: H2OAutoML object, H2OModel, or list of H2O models
     :param frame: H2OFrame
     :param row_index: row index of the instance to inspect
     :param columns: either a list of columns or column indices to show. If specified
@@ -2233,24 +2193,19 @@ def explain_row(
     >>>
     >>> h2o.init()
     >>>
-    >>> # Import the titanic dataset into H2O:
-    >>> titanic = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/titanic/titanic_expanded.csv")
+    >>> # Import the wine dataset into H2O:
+    >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+    >>> df = h2o.import_file(f)
     >>>
-    >>> # Set the predictors and the response
-    >>> predictors = [
-    >>>    "pclass", "sex", "age", "sibsp", "parch", "ticket",
-    >>>    "fare", "cabin", "embarked", "home.dest",
-    >>>    "cabin_type", "family_size", "family_type", "title"
-    >>> ]
-    >>> response = "survived"
-    >>> titanic[response] = titanic[response].asfactor()
+    >>> # Set the response
+    >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = titanic.split_frame([.75])
+    >>> train, test = df.split_frame([.75])
     >>>
     >>> # Train an H2OAutoML
-    >>> aml = H2OAutoML(max_models=20)
-    >>> aml.train(x=predictors, y=response, training_frame=train)
+    >>> aml = H2OAutoML(max_models=7)
+    >>> aml.train(y=response, training_frame=train)
     >>>
     >>> # Create the H2OAutoML explanation
     >>> aml.explain_row(test, row_index=0)
