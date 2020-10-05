@@ -154,6 +154,11 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
       _strataMap = strataMap;
     }
 
+    @Override
+    public int nclasses() {
+      return 1;
+    }
+
     private static Frame fullFrame(CoxPH coxPH, Frame adaptFr, Frame train) {
       if (! coxPH._parms.isStratified())
         return adaptFr;
