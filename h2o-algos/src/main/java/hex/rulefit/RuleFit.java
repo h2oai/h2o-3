@@ -4,10 +4,8 @@ import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
-import hex.schemas.TreeV3;
 import hex.tree.SharedTree;
 import hex.tree.SharedTreeModel;
-import hex.tree.TreeHandler;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
@@ -15,7 +13,6 @@ import hex.tree.gbm.GBMModel;
 
 import org.apache.log4j.Logger;
 import water.*;
-import water.api.schemas3.KeyV3;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
@@ -107,6 +104,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         treeParameters._seed = _parms._seed;
         treeParameters._weights_column = _parms._weights_column;
         treeParameters._distribution = _parms._distribution;
+        treeParameters._ntrees = _parms._rule_generation_ntrees;
     }
 
     private void initGLMParameters() {
@@ -172,46 +170,55 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         public void computeImpl() {
             RuleFitModel model = null;
             GLMModel glmModel;
+            List<Rule> rulesList;
+            RuleEnsemble ruleEnsemble = null;
             init(true);
             if (error_count() > 0)
                 throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(RuleFit.this);
 
             try {
-                // 1. Rule generation
-
-                // get paths from tree models
-                int[] depths = range(_parms._min_rule_length, _parms._max_rule_length);
-                List<SharedTreeModel> treeModels = new ArrayList<>();
-
-                Frame pathsFrame = new Frame();
-                // prepare rules
-                if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.RULES.equals(_parms._model_type)) {
-                    SharedTree<?, ?, ?>[] builders = ModelBuilderHelper.trainModelsParallel(
-                            makeTreeModelBuilders(_parms._algorithm, depths), nTreeEnsemblesInParallel(depths.length));
-                    long startAllTreesTime = System.nanoTime();
-                    for (int modelId = 0; modelId < builders.length; modelId++) {
-                        long startModelTime = System.nanoTime();
-                        SharedTreeModel<?, ?, ?> treeModel = builders[modelId].get();
-                        long endModelTime = System.nanoTime() - startModelTime;
-                        LOG.info("Tree model n." + modelId + " trained in " + ((double)endModelTime) / 1E9 + "s.");
-                        treeModels.add(treeModel);
-    
-                        Frame paths = Scope.track(treeModel.scoreLeafNodeAssignment(_train, Model.LeafNodeAssignment.LeafNodeAssignmentType.Path, null));
-                        pathsFrame.add(RuleFitUtils.getPathNames(modelId, paths.numCols(), paths.names()), paths.vecs());
-                    }
-                    long endAllTreesTime = System.nanoTime() - startAllTreesTime;
-                    LOG.info("All tree models trained in " + ((double)endAllTreesTime) / 1E9 + "s.");
-                }
-
-                // prepare linear terms
+                // linearTrain = frame to be used as _train for GLM in 2., will be filled in 1.
                 Frame linearTrain = new Frame(Key.make("paths_frame" + _result));
                 linearTrain.add(_parms._response_column, _response);
                 if (_parms._weights_column != null) {
                     linearTrain.add(_parms._weights_column, _weights);
                 }
-                linearTrain.add(pathsFrame);
+                
+                // 1. Rule generation
+        
+                // get paths from tree models
+                int[] depths = range(_parms._min_rule_length, _parms._max_rule_length);
+                List<SharedTreeModel> treeModels = new ArrayList<>();
+                
+                // prepare rules
+                if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.RULES.equals(_parms._model_type)) {
+                    long startAllTreesTime = System.nanoTime();
+                    SharedTree<?, ?, ?>[] builders = ModelBuilderHelper.trainModelsParallel(
+                            makeTreeModelBuilders(_parms._algorithm, depths), nTreeEnsemblesInParallel(depths.length));
+                    rulesList = new ArrayList<>();
+                    for (int modelId = 0; modelId < builders.length; modelId++) {
+                        long startModelTime = System.nanoTime();
+                        SharedTreeModel<?, ?, ?> treeModel = builders[modelId].get();
+                        long endModelTime = System.nanoTime() - startModelTime;
+                        LOG.info("Tree model n." + modelId + " trained in " + ((double)endModelTime) / 1E9 + "s.");
+                        rulesList.addAll(Rule.extractRulesListFromModel(treeModel, modelId));
+                        treeModel.delete();
+                    }
+                    long endAllTreesTime = System.nanoTime() - startAllTreesTime;
+                    LOG.info("All tree models trained in " + ((double)endAllTreesTime) / 1E9 + "s.");
+
+                    LOG.info("Extracting rules from trees...");
+                    ruleEnsemble = new RuleEnsemble(rulesList.toArray(new Rule[] {}));
+
+                    linearTrain.add(ruleEnsemble.createGLMTrainFrame(_train, depths.length, treeParameters._ntrees));
+                }
+
+                // prepare linear terms
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.LINEAR.equals(_parms._model_type)) {
                     String[] names = ArrayUtils.remove(_train._names, _parms._response_column);
+                    if (_parms._weights_column != null) {
+                        names = ArrayUtils.remove(names, _parms._weights_column);
+                    }
                     linearTrain.add(RuleFitUtils.getLinearNames(names.length, names), _train.vecs(names));
                 }
                 DKV.put(linearTrain);
@@ -235,14 +242,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 DKV.put(glmModel);
 
                 DKV.remove(linearTrain._key);
-                pathsFrame.remove();
-
-                SharedTreeModel[] treeModelsArray = new SharedTreeModel[treeModels.size()];
-                for (int i = 0; i < treeModels.size(); i++) {
-                    treeModelsArray[i] = treeModels.get(i);
-                }
-
-                model = new RuleFitModel(dest(), _parms, new RuleFitModel.RuleFitOutput(RuleFit.this), treeModelsArray, glmModel);
+                
+                model = new RuleFitModel(dest(), _parms, new RuleFitModel.RuleFitOutput(RuleFit.this), glmModel, ruleEnsemble);
 
                 model._output.treeModelsKeys = new Key[treeModels.size()];
                 for (int modelId = 0; modelId < treeModels.size(); modelId++) {
@@ -254,8 +255,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 model._output._intercept = getIntercept(glmModel);
 
                 // TODO: add here coverage_count and coverage percent
-                model._output._rule_importance = convertRulesToTable(getRules(glmModel._parms._family, glmModel.coefficients(), treeModels, _parms._algorithm));
-                
+                model._output._rule_importance = convertRulesToTable(getRules(glmModel.coefficients(), ruleEnsemble));
+
                 fillModelMetrics(model, glmModel);
 
                 model.delete_and_lock(_job);
@@ -306,6 +307,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             SharedTree<?, ?, ?>[] builders = new SharedTree[depths.length];
             for (int i = 0; i < depths.length; i++) {
                 builders[i] = makeTreeModelBuilder(algorithm, depths[i]);
+                builders[i].init(true);
             }
             return builders;
         }
@@ -391,111 +393,32 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         }
 
 
-        List getRules(GLMModel.GLMParameters.Family family, HashMap<String, Double> glmCoefficients, List<SharedTreeModel> treeModels, RuleFitModel.Algorithm algorithm) {
+        Rule[] getRules(HashMap<String, Double> glmCoefficients, RuleEnsemble ruleEnsemble) {
             // extract variable-coefficient map (filter out intercept and zero betas)
             Map<String, Double> filteredRules = glmCoefficients.entrySet()
                     .stream()
                     .filter(e -> !"Intercept".equals(e.getKey()) && 0 != e.getValue())
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-            final TreeHandler treeHandler = new TreeHandler();
+            
             List<Rule> rules = new ArrayList<>();
-            TreeV3 args;
-            TreeV3 tree;
-
+            Rule rule;
             for (Map.Entry<String, Double> entry : filteredRules.entrySet()) {
-                Rule rule = mapColumnName(entry.getKey(), family);
-                
-                if (!rule.variable.startsWith("linear.")) {
-                    args = new TreeV3();
-                    args.model = new KeyV3.ModelKeyV3(treeModels.get(rule.modelIdx)._key);
-                    args.tree_class = rule.treeClass;
-                    args.tree_number = rule.treeNum;
-    
-                    tree = treeHandler.getTree(3, args);
-                    // TODO: make getting language rule not needing TreeV3. will be done during PUBDEV-7740
-                    rule.languageRule = treeTraverser(tree, rule.path);
+                if (!entry.getKey().startsWith("linear.")) {
+                    rule = ruleEnsemble.getRuleByVarName(entry.getKey().substring(entry.getKey().lastIndexOf(".") + 1));
+                } else {
+                    rule = new Rule(null, entry.getValue(), entry.getKey());
                 }
-                rule.coefficient = entry.getValue();
-
+                rule.setCoefficient(entry.getValue());
                 rules.add(rule);
             }
-
             Comparator<Rule> ruleAbsCoefficientComparator = Comparator.comparingDouble(Rule::getAbsCoefficient).reversed();
             rules.sort(ruleAbsCoefficientComparator);
-
-            return rules;
-        }
-
-
-        Rule mapColumnName(String columnName, GLMModel.GLMParameters.Family family) {
-            Rule rule;
-            if (GLMModel.GLMParameters.Family.binomial.equals(family)) {
-                String[] extractedFields = columnName.replace("tree_", "").replace("T", "").replace("C", "").split("\\.");
-                if ("linear".equals(extractedFields[0])) {
-                    rule = new Rule(columnName); 
-                } else {
-                    rule = new Rule(columnName, Integer.parseInt(extractedFields[0]), Integer.parseInt(extractedFields[1]) - 1, null, extractedFields[3]);
-                }
-            } else if (GLMModel.GLMParameters.Family.multinomial.equals(family)) {
-                String[] extractedFields = columnName.replace("tree_", "").replace("T", "").replace("C", "").split("\\.");
-                if ("linear".equals(extractedFields[0])) {
-                    rule = new Rule(columnName);
-                } else {
-                    rule = new Rule(columnName, Integer.parseInt(extractedFields[0]), Integer.parseInt(extractedFields[1]) - 1, String.valueOf(Integer.parseInt(extractedFields[2]) - 1), extractedFields[3]);
-                }
-            } else {
-                String[] extractedFields = columnName.replace("tree_", "").replace("T", "").split("\\.");
-                if ("linear".equals(extractedFields[0])) {
-                    rule = new Rule(columnName);
-                } else {
-                    rule = new Rule(columnName, Integer.parseInt(extractedFields[0]), Integer.parseInt(extractedFields[1]) - 1, null, extractedFields[2]);
-                }
-            }
-            return rule;
-        }
-
-        // Traverse the tree to get the rules for a specific split_path
-        String treeTraverser(TreeV3 tree, String splitPath) {
-            int node = tree.root_node_id;
-            String languageRule;
-
-            int[] normalized_left_child = new int[tree.left_children.length];
-            int[] normalized_right_child = new int[tree.right_children.length];
-
-            int nodeId = 0;
-            for (int i = 0; i < tree.left_children.length; i++) {
-                if (tree.left_children[i] != -1) {
-                    nodeId++;
-                    normalized_left_child[i] = nodeId;
-                } else {
-                    normalized_left_child[i] = -1;
-                }
-                if (tree.right_children[i] != -1) {
-                    nodeId++;
-                    normalized_right_child[i] = nodeId;
-                } else {
-                    normalized_right_child[i] = -1;
-                }
-            }
-
-            for (int i = 0; i < splitPath.length(); i++) {
-                char currChar = splitPath.charAt(i);
-                if ('R' == currChar) {
-                    node = normalized_right_child[node];
-                }
-                if ('L' == currChar) {
-                    node = normalized_left_child[node];
-                }
-            }
-
-            languageRule = tree.decision_paths[node];
-
-            return formattedRule(languageRule);
+            
+            return rules.toArray(new Rule[] {});
         }
     }
 
-    private TwoDimTable convertRulesToTable(List rules) {
+    private TwoDimTable convertRulesToTable(Rule[] rules) {
         List<String> colHeaders = new ArrayList<>();
         List<String> colTypes = new ArrayList<>();
         List<String> colFormat = new ArrayList<>();
@@ -510,56 +433,18 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         colTypes.add("string");
         colFormat.add("%s");
 
-        final int rows = rules.size();
+        final int rows = rules.length;
         TwoDimTable table = new TwoDimTable("Rule Importance", null, new String[rows],
                 colHeaders.toArray(new String[0]), colTypes.toArray(new String[0]), colFormat.toArray(new String[0]), "");
 
         for (int row = 0; row < rows; row++) {
             int col = 0;
-            table.set(row, col++, ((Rule) rules.get(row)).variable);
-            table.set(row, col++, ((Rule) rules.get(row)).coefficient);
-            table.set(row, col, ((Rule) rules.get(row)).languageRule);
+            table.set(row, col++, (rules[row]).varName);
+            table.set(row, col++, (rules[row]).coefficient);
+            table.set(row, col, (rules[row]).languageRule);
         }
 
         return table;
-    }
-
-    private String formattedRule(String rule) {
-        rule = rule.substring(rule.indexOf('\n') + 1); // remove line with Prediction value
-        rule = rule.replace("\n" + "^\n" + "|\n" + "|\n" + "|\n", " AND "); // replace parent to children darts by AND
-        rule = rule.replace("^\n" + "|\n" + "|\n" + "|\n", ""); // remove dart leadind to Prediction value
-        rule = rule.replace("If ", "");
-        rule = rule.replace("  ]", "]");
-        rule = rule.replace("( ", "(");
-        rule = rule.replace("\n", "");
-        return rule;
-    }
-
-    class Rule {
-        public String variable;
-        public int modelIdx;
-        public int treeNum;
-        public String treeClass;
-        public String path;
-        public String languageRule;
-        public double coefficient;
-
-        public Rule(String variable, int modelIdx, int treeNum, String treeClass, String path) {
-            this.variable = variable;
-            this.modelIdx = modelIdx;
-            this.treeNum = treeNum;
-            this.treeClass = treeClass;
-            this.path = path;
-            this.languageRule = null;
-        }
-
-        public Rule(String variable) {
-            this.variable = variable;
-        }
-
-        double getAbsCoefficient() {
-            return Math.abs(coefficient);
-        }
     }
 
     protected int nTreeEnsemblesInParallel(int numDepths) {

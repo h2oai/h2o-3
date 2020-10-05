@@ -21,7 +21,8 @@ public class RuleFitV3 extends ModelBuilderSchema<RuleFit, RuleFitV3, RuleFitV3.
             "max_num_rules",
             "model_type",
             "weights_column", 
-            "distribution"
+            "distribution",
+            "rule_generation_ntrees"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable).", gridable = true)
@@ -44,5 +45,8 @@ public class RuleFitV3 extends ModelBuilderSchema<RuleFit, RuleFitV3, RuleFitV3.
     
     @API(help = "Specifies type of base learners in the ensemble.", values = {"RULES_AND_LINEAR", "RULES", "LINEAR"})
     public RuleFitModel.ModelType model_type;
+
+    @API(help = "specifies the number of trees to build in the tree model. Defaults to 50.")
+    public int rule_generation_ntrees;
   }
 }

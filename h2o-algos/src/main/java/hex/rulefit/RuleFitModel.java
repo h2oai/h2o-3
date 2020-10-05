@@ -2,7 +2,6 @@ package hex.rulefit;
 
 import hex.*;
 import hex.glm.GLMModel;
-import hex.tree.SharedTreeModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.fvec.Frame;
@@ -20,10 +19,10 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         return LinearAlgebraUtils.toEigen;
     }
 
-    SharedTreeModel[] treeModels;
-
     GLMModel glmModel;
 
+    RuleEnsemble ruleEnsemble;
+    
     public static class RuleFitParameters extends Model.Parameters {
         public String algoName() {
             return "RuleFit";
@@ -57,6 +56,9 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
 
         // specifies type of base learners in the ensemble. Options are RULES_AND_LINEAR (initial ensemble includes both rules and linear terms, default), RULES (prediction rules only), LINEAR (linear terms only)
         public ModelType _model_type = ModelType.RULES_AND_LINEAR;
+        
+        // specifies the number of trees to build in the tree model. Defaults to 50.
+        public int _rule_generation_ntrees = 50;
     }
 
     public static class RuleFitOutput extends Model.Output {
@@ -78,10 +80,10 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         }
     }
 
-    public RuleFitModel(Key<RuleFitModel> selfKey, RuleFitParameters parms, RuleFitOutput output, SharedTreeModel[] treeModels, GLMModel glmModel) {
+    public RuleFitModel(Key<RuleFitModel> selfKey, RuleFitParameters parms, RuleFitOutput output, GLMModel glmModel, RuleEnsemble ruleEnsemble) {
         super(selfKey, parms, output);
-        this.treeModels = treeModels;
         this.glmModel = glmModel;
+        this.ruleEnsemble = ruleEnsemble;
     }
 
     @Override
@@ -106,35 +108,35 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
 
     @Override
     public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-        Frame pathsFrame = new Frame(Key.make("paths_frame" + destination_key));
-        Frame paths = null;
-        Key[] keys = new Key[_output.treeModelsKeys.length];
-        if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.RULES.equals(this._parms._model_type)) {
-            for (int i = 0; i < _output.treeModelsKeys.length; i++) {
-                SharedTreeModel treeModel = DKV.getGet(_output.treeModelsKeys[i]);
-                paths = treeModel.scoreLeafNodeAssignment(fr, Model.LeafNodeAssignment.LeafNodeAssignmentType.Path, Key.make("path_" + i + destination_key));
-                paths.setNames(RuleFitUtils.getPathNames(i, paths.numCols(), paths.names()));
-                pathsFrame.add(paths);
-                keys[i] = paths._key;
+        Frame linearTest = new Frame(Key.make("paths_frame" + destination_key));
+        if (fr.vec(_parms._response_column) != null)
+            linearTest.add(_parms._response_column,fr.vec(_parms._response_column));
+        if (_parms._weights_column != null && fr.vec(_parms._weights_column) != null)
+            linearTest.add(_parms._weights_column,fr.vec(_parms._weights_column));
+        
+        Frame adaptFrm = new Frame(fr);//Key.make());
+        for (String name : fr.names()) {
+            if (!_parms._response_column.equals(name) &&
+                    (_parms._weights_column == null || (_parms._weights_column != null && !_parms._weights_column.equals(name))) &&
+                    (_parms._ignored_columns == null || (_parms._ignored_columns != null && !_parms._ignored_columns.equals(name)))) {
+                adaptFrm.add(name, fr.vec(name));
             }
         }
-        if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.LINEAR.equals(this._parms._model_type)) {
-            Frame adaptFrm = new Frame(fr.deepCopy(null));
-            adaptFrm.setNames(RuleFitUtils.getLinearNames(adaptFrm.numCols(), adaptFrm.names()));
-            pathsFrame.add(adaptFrm);
+        adaptTestForTrain(adaptFrm, true, false);
+        
+        if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.RULES.equals(this._parms._model_type)) {
+            linearTest.add(ruleEnsemble.createGLMTrainFrame(adaptFrm, _parms._max_rule_length - _parms._min_rule_length + 1, _parms._rule_generation_ntrees));
         }
+        if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.LINEAR.equals(this._parms._model_type)) {
+            linearTest.add(RuleFitUtils.getLinearNames(adaptFrm.numCols(), adaptFrm.names()), adaptFrm.vecs());
+        }
+        DKV.put(linearTest);
+        Scope.track(linearTest);
         GLMModel glmModel = DKV.getGet(_output.glmModelKey);
-        Frame destination = glmModel.score(pathsFrame, destination_key, null, true);
+        Frame destination = glmModel.score(linearTest, destination_key, null, true);
 
         updateModelMetrics(glmModel, fr);
         
-        pathsFrame.remove();
-        if (paths != null) {
-            paths.remove();
-        }
-        for (int i = 0; i < _output.treeModelsKeys.length; i++) {
-            DKV.remove(keys[i]);
-        }
         return destination;
     }
 
@@ -142,10 +144,6 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
     protected Futures remove_impl(Futures fs, boolean cascade) {
         super.remove_impl(fs, cascade);
         if(cascade) {
-            for (SharedTreeModel treeModel : treeModels) {
-                treeModel.remove(fs);
-            }
-
             glmModel.remove(fs);
         }
         
