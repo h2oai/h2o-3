@@ -34,9 +34,9 @@ public class RuleEnsemble extends Iced {
                 RuleEnsemble ruleEnsemble = new RuleEnsemble(filteredRules.toArray(new Rule[] {}));
                 Frame frameToMakeCategorical = ruleEnsemble.transform(frame);
                 try {
-                    Decoder mrtask = new Decoder(frameToMakeCategorical.names());
+                    Decoder mrtask = new Decoder();
                     Vec catCol = mrtask.doAll(1, Vec.T_CAT, frameToMakeCategorical)
-                            .outputFrame(null, null, new String[][] {frameToMakeCategorical.names()}).vec(0);
+                            .outputFrame(null, null, new String[][]{frameToMakeCategorical.names()}).vec(0);
                     glmTrainFrame.add("M" + i + "T" + j, catCol);
                 } finally {
                     frameToMakeCategorical.remove();
@@ -96,11 +96,8 @@ class Transform extends MRTask<Transform> {
 
 
 class Decoder extends MRTask<hex.rulefit.Decoder> {
-    final String[] _colNames;
-    
-    Decoder(String[] colNames) {
+    Decoder() {
         super();
-        _colNames = colNames;
     }
     
     @Override public void map(Chunk[] cs, NewChunk[] ncs) {
