@@ -19,7 +19,7 @@ public class RuleEnsemble extends Iced {
     }
     
     public Frame createGLMTrainFrame(Frame frame, int depth, int ntrees) {
-        Frame glmTrainFrame = new Frame(Key.make());
+        Frame glmTrainFrame = new Frame();
         // filter rules and create a column for each tree
         for (int i = 0; i < depth; i++) {
             for (int j = 0; j < ntrees; j++) {
@@ -33,9 +33,17 @@ public class RuleEnsemble extends Iced {
                 
                 RuleEnsemble ruleEnsemble = new RuleEnsemble(filteredRules.toArray(new Rule[] {}));
                 Frame frameToMakeCategorical = ruleEnsemble.transform(frame);
-                Decoder mrtask = new Decoder(frameToMakeCategorical.names());
-                Vec column = mrtask.doAll(1, Vec.T_STR, frameToMakeCategorical).outputFrame().vec(0).toCategoricalVec();
-                glmTrainFrame.add("M" + i + "T" + j, column);
+                Vec tmpCol = null;
+                try {
+                    Decoder mrtask = new Decoder(frameToMakeCategorical.names());
+                    tmpCol = mrtask.doAll(1, Vec.T_STR, frameToMakeCategorical).outputFrame().vec(0);
+                    Vec catCol = tmpCol.toCategoricalVec();
+                    glmTrainFrame.add("M" + i + "T" + j, catCol);
+                } finally {
+                    frameToMakeCategorical.remove();
+                    if (tmpCol != null)
+                        tmpCol.remove();
+                }
             }
         }
         return glmTrainFrame;

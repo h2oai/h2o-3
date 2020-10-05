@@ -80,7 +80,8 @@ public class Frame extends Lockable<Frame> {
     for( int i=0; i<keys.length; i++ )
       if( baseFrame.find(keys[i]) == -1 ) //only delete vecs that aren't shared
         Keyed.remove(keys[i]);
-    DKV.remove(tempFrame._key); //delete the frame header
+    if (tempFrame._key != null)
+      DKV.remove(tempFrame._key); //delete the frame header
   }
 
   /**

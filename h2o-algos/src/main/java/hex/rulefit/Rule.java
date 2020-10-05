@@ -51,8 +51,11 @@ public class Rule extends Iced {
             frameToReduce.add(conditions[i].transform(frame));
         }
         RuleReducer mrtask = new RuleReducer();
-        return mrtask.doAll(1, Vec.T_NUM, frameToReduce).outputFrame();
-
+        try {
+            return mrtask.doAll(1, Vec.T_NUM, frameToReduce).outputFrame();
+        } finally {
+            frameToReduce.remove();
+        }
     }
 
     @Override

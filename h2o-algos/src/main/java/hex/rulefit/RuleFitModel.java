@@ -5,6 +5,7 @@ import hex.glm.GLMModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.TwoDimTable;
 
@@ -108,13 +109,13 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
 
     @Override
     public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-        Frame linearTest = new Frame(Key.make("paths_frame" + destination_key));
+        Frame linearTest = new Frame();
         if (fr.vec(_parms._response_column) != null)
             linearTest.add(_parms._response_column,fr.vec(_parms._response_column));
         if (_parms._weights_column != null && fr.vec(_parms._weights_column) != null)
             linearTest.add(_parms._weights_column,fr.vec(_parms._weights_column));
         
-        Frame adaptFrm = new Frame(fr);//Key.make());
+        Frame adaptFrm = new Frame(fr);
         for (String name : fr.names()) {
             if (!_parms._response_column.equals(name) &&
                     (_parms._weights_column == null || (_parms._weights_column != null && !_parms._weights_column.equals(name))) &&
@@ -124,20 +125,23 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         }
         adaptTestForTrain(adaptFrm, true, false);
         
-        if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.RULES.equals(this._parms._model_type)) {
-            linearTest.add(ruleEnsemble.createGLMTrainFrame(adaptFrm, _parms._max_rule_length - _parms._min_rule_length + 1, _parms._rule_generation_ntrees));
-        }
-        if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.LINEAR.equals(this._parms._model_type)) {
-            linearTest.add(RuleFitUtils.getLinearNames(adaptFrm.numCols(), adaptFrm.names()), adaptFrm.vecs());
-        }
-        DKV.put(linearTest);
-        Scope.track(linearTest);
-        GLMModel glmModel = DKV.getGet(_output.glmModelKey);
-        Frame destination = glmModel.score(linearTest, destination_key, null, true);
+        try {
+            if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.RULES.equals(this._parms._model_type)) {
+                linearTest.add(ruleEnsemble.createGLMTrainFrame(adaptFrm, _parms._max_rule_length - _parms._min_rule_length + 1, _parms._rule_generation_ntrees));
+            }
+            if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.LINEAR.equals(this._parms._model_type)) {
+                linearTest.add(RuleFitUtils.getLinearNames(adaptFrm.numCols(), adaptFrm.names()), adaptFrm.vecs());
+            }
 
-        updateModelMetrics(glmModel, fr);
-        
-        return destination;
+            GLMModel glmModel = DKV.getGet(_output.glmModelKey);
+            Frame scored = glmModel.score(linearTest, destination_key, null, true);
+
+            updateModelMetrics(glmModel, fr);
+
+            return scored;
+        } finally {
+            Frame.deleteTempFrameAndItsNonSharedVecs(linearTest, adaptFrm);
+        }
     }
 
     @Override
