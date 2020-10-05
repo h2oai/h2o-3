@@ -108,13 +108,15 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
 
     @Override
     public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-        Frame linearTest = new Frame(Key.make("paths_frame" + destination_key));
+        final Frame linearTest = new Frame(Key.make("paths_frame" + destination_key));
         if (fr.vec(_parms._response_column) != null)
             linearTest.add(_parms._response_column,fr.vec(_parms._response_column));
         if (_parms._weights_column != null && fr.vec(_parms._weights_column) != null)
             linearTest.add(_parms._weights_column,fr.vec(_parms._weights_column));
         
-        Frame adaptFrm = new Frame(fr);//Key.make());
+        final Frame adaptFrm = new Frame(fr);
+        DKV.put(adaptFrm);
+        Scope.track(adaptFrm);
         for (String name : fr.names()) {
             if (!_parms._response_column.equals(name) &&
                     (_parms._weights_column == null || (_parms._weights_column != null && !_parms._weights_column.equals(name))) &&
