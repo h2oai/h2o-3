@@ -189,15 +189,20 @@ try {
                         // Helm automatically installs latest chart if version is unspecified by the user, therefore there is no need for a latest tag
                         insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
                             if (!params.TEST_RELEASE) {
+                                THREE_DIGITS_VERSION = sh (
+                                    script: "echo ${env.PROJECT_VERSION} | sed 's/[0-9]*\.\([0-9]*\.[0-9]*\.[0-9]\)*/\1/g')",
+                                    returnStdout: true
+                                ).trim()
+                                
                                 sh """
                                     cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
                                     sed -i 's/version: [0-9]*\.[0-9]*\.[0-9]*/version: ${env.PROJECT_VERSION}/' Chart.yaml
                                     sed -i 's/appVersion: [0-9]*\.[0-9]*\.[0-9]*/version: ${env.PROJECT_VERSION}/' Chart.yaml
                                     helm package .
                                     mkdir h2o-3
-                                    cp h2o-${env.PROJECT_VERSION}.tgz h2o-3/
-                                    aws s3 cp h2o-${env.PROJECT_VERSION}.tgzs3://h2oai-charts/h2o-3/h2o-${env.PROJECT_VERSION} --acl public-read
-                                    rm h2o-${env.PROJECT_VERSION}.tgz
+                                    cp h2o-3-${THREE_DIGITS_VERSION}.tgz h2o-3/
+                                    aws s3 cp h2o-3-${THREE_DIGITS_VERSION}.tgz s3://h2oai-charts/h2o-3/h2o-3-${THREE_DIGITS_VERSION} --acl public-read
+                                    rm h2o-3-${THREE_DIGITS_VERSION}.tgz
                                     aws s3 cp s3://h2oai-charts/h2o-3 index.yaml
                                     helm repo index . --merge index.yaml
                                     aws s3 cp index.yaml s3://h2oai-charts/index.yaml --acl public-read

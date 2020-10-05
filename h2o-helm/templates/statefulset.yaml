@@ -21,7 +21,7 @@ spec:
       {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.name }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.name }}:{{ .Values.image.tag | default (printf "3.%s" .Chart.AppVersion) }}"
           {{- if .Values.image.command }}
           command: {{ .Values.image.command }}
           {{else}}
