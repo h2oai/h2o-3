@@ -1,6 +1,6 @@
 apiVersion: v2
 name: h2o
-description: H2O open source machine learning platform official Helm chart
+description: H2O open source machine learning platform
 
 type: application
 
