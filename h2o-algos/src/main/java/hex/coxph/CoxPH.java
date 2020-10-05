@@ -151,6 +151,11 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       error("max_iterations", "max_iterations must be a positive integer");
   }
 
+  @Override
+  protected int init_getNClass() {
+    return 1;
+  }
+
   static class DiscretizeTimeTask extends MRTask<DiscretizeTimeTask> {
     final double[] _time;
     final boolean _has_start_column;
