@@ -307,7 +307,6 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             SharedTree<?, ?, ?>[] builders = new SharedTree[depths.length];
             for (int i = 0; i < depths.length; i++) {
                 builders[i] = makeTreeModelBuilder(algorithm, depths[i]);
-                builders[i].init(true);
             }
             return builders;
         }
