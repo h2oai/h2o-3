@@ -2264,7 +2264,7 @@ h2o.explain <- function(object,
     } else {
       models_with_varimp <- Filter(.has_varimp, models_info$model_ids)
       varimp <- names(.varimp(models_info$get_model(models_with_varimp[[1]]), newdata))
-      columns_of_interest <- varimp[seq_len(min(length(varimp), top_n_features))]
+      columns_of_interest <- rev(varimp)[seq_len(min(length(varimp), top_n_features))]
       # deal with encoded columns
       columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
     }
@@ -2618,7 +2618,7 @@ h2o.explain_row <- function(object,
     } else {
       models_with_varimp <- Filter(.has_varimp, models_info$model_ids)
       varimp <- names(.varimp(models_info$get_model(models_with_varimp[[1]]), newdata))
-      columns_of_interest <- varimp[seq_len(min(length(varimp), top_n_features))]
+      columns_of_interest <- rev(varimp)[seq_len(min(length(varimp), top_n_features))]
       # deal with encoded columns
       columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
     }
