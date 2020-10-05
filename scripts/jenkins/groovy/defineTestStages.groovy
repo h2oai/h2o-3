@@ -88,20 +88,8 @@ def call(final pipelineContext) {
       timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.5 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.5.3',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.5 Small Client Mode Disconnect Attack', target: 'test-r-small-client-mode-attack', rVersion: '3.5.3',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
       stageName: 'R3.5 AutoML', target: 'test-r-automl', rVersion: '3.5.3',
       timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.5 Client Mode AutoML', target: 'test-r-client-mode-automl', rVersion: '3.5.3',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R3.5 CMD Check', target: 'test-r-cmd-check', rVersion: '3.5.3',
@@ -398,24 +386,20 @@ def call(final pipelineContext) {
       timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.3 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.3.3',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
       stageName: 'R3.3 AutoML', target: 'test-r-automl', rVersion: '3.3.3',
       timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.3 Client Mode AutoML', target: 'test-r-client-mode-automl', rVersion: '3.3.3',
+      stageName: 'R3.5 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.5.3',
       timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.3 CMD Check', target: 'test-r-cmd-check', rVersion: '3.3.3',
-      timeoutValue: 30, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
+      stageName: 'R3.5 Client Mode AutoML', target: 'test-r-client-mode-automl', rVersion: '3.5.3',
+      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.3 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.3.3',
-      timeoutValue: 20, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
+      stageName: 'R3.5 Small Client Mode Disconnect Attack', target: 'test-r-small-client-mode-attack', rVersion: '3.5.3',
+      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [ // These run with reduced number of file descriptors for early detection of FD leaks
       stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.5', timeoutValue: 40,
