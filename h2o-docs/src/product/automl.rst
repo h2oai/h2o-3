@@ -12,6 +12,8 @@ Although H2O has made it easy for non-experts to experiment with machine learnin
 
 H2O's AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit.  `Stacked Ensembles <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html>`__ – one based on all previously trained models, another one on the best model of each family – will be automatically trained on collections of individual models to produce highly predictive ensemble models which, in most cases, will be the top performing models in the AutoML Leaderboard.
 
+H2O offers a number of `model explainability <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/explain.html>`__ methods that apply to AutoML objects (groups of models), as well as individual models (e.g. leader model).  Explanations can be generated automatically with a single function call, providing a simple interface to exploring and explaining the AutoML models.
+
 
 AutoML Interface
 ----------------
@@ -67,15 +69,10 @@ Optional Miscellaneous Parameters
 
 - `class_sampling_factors <data-science/algo-params/class_sampling_factors.html>`__: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. Note that this requires ``balance_classes=true``.
 
-- **exploitation_ratio**: Specify the budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase. By default, the exploitation phase is disabled (exploitation_ratio=0) as this is still experimental; to activate it, it is recommended to try a ratio around 0.1. Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.
 
 - `max_after_balance_size <data-science/algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). Defaults to 5.0.  (The value can be less than 1.0).
 
 - `max_runtime_secs_per_model <data-science/algo-params/max_runtime_secs_per_model.html>`__: Specify the max amount of time dedicated to the training of each individual model in the AutoML run. Defaults to 0 (disabled). Note that setting this parameter can affect AutoML reproducibility.
-
-- **modeling_plan**: The list of modeling steps to be used by the AutoML engine. (They may not all get executed, depending on other constraints.)
-
-- `monotone_constraints <data-science/algo-params/monotone_constraints.html>`__: A mapping that represents monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. 
 
 -  `stopping_metric <data-science/algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. Defaults to ``AUTO``. The available options are:
     
@@ -113,14 +110,7 @@ Optional Miscellaneous Parameters
 
 - **project_name**: Character string to identify an AutoML project. Defaults to ``NULL/None``, which means a project name will be auto-generated based on the training frame ID.  More models can be trained and added to an existing AutoML project by specifying the same project name in multiple calls to the AutoML function (as long as the same training frame is used in subsequent runs).
 
-- `exclude_algos <data-science/algo-params/exclude_algos.html>`__: A list/vector of character strings naming the algorithms to skip during the model-building phase.  An example use is ``exclude_algos = ["GLM", "DeepLearning", "DRF"]`` in Python or ``exclude_algos = c("GLM", "DeepLearning", "DRF")`` in R.  Defaults to ``None/NULL``, which means that all appropriate H2O algorithms will be used if the search stopping criteria allows and if the ``include_algos`` option is not specified. This option is mutually exclusive with ``include_algos``. The available algorithms are:
-
-    - ``DRF`` (This includes both the Random Forest and Extremely Randomized Trees (XRT) models. Refer to the :ref:`xrt` section in the DRF chapter and the `histogram_type <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/algo-params/histogram_type.html>`__ parameter description for more information.)
-    - ``GLM``
-    - ``XGBoost``  (XGBoost GBM)
-    - ``GBM``  (H2O GBM)
-    - ``DeepLearning``  (Fully-connected multi-layer artificial neural network)
-    - ``StackedEnsemble``
+- `exclude_algos <data-science/algo-params/exclude_algos.html>`__: A list/vector of character strings naming the algorithms to skip during the model-building phase.  An example use is ``exclude_algos = ["GLM", "DeepLearning", "DRF"]`` in Python or ``exclude_algos = c("GLM", "DeepLearning", "DRF")`` in R.  Defaults to ``None/NULL``, which means that all appropriate H2O algorithms will be used if the search stopping criteria allows and if the ``include_algos`` option is not specified. This option is mutually exclusive with ``include_algos``. See ``include_algos`` below for the list of available options.
 
 - `include_algos <data-science/algo-params/include_algos.html>`__: A list/vector of character strings naming the algorithms to include during the model-building phase.  An example use is ``include_algos = ["GLM", "DeepLearning", "DRF"]`` in Python or ``include_algos = c("GLM", "DeepLearning", "DRF")`` in R.  Defaults to ``None/NULL``, which means that all appropriate H2O algorithms will be used if the search stopping criteria allows and if no algorithms are specified in ``exclude_algos``. This option is mutually exclusive with ``exclude_algos``. The available algorithms are:
 
@@ -130,6 +120,14 @@ Optional Miscellaneous Parameters
     - ``GBM``  (H2O GBM)
     - ``DeepLearning``  (Fully-connected multi-layer artificial neural network)
     - ``StackedEnsemble``
+
+- **modeling_plan**: The list of modeling steps to be used by the AutoML engine. (They may not all get executed, depending on other constraints.)
+
+- **preprocessing**: The list of preprocessing steps to run. Only ``["target_encoding"]`` is currently supported.  There is more information about how Target Encoding is automatically applied `here <https://0xdata.atlassian.net/browse/PUBDEV-7778>`__.  Experimental.
+
+- **exploitation_ratio**: Specify the budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase. By default, the exploitation phase is disabled (exploitation_ratio=0) as this is still experimental; to activate it, it is recommended to try a ratio around 0.1. Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.  Experimental.
+
+- `monotone_constraints <data-science/algo-params/monotone_constraints.html>`__: A mapping that represents monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. 
 
 - `keep_cross_validation_predictions <data-science/algo-params/keep_cross_validation_predictions.html>`__: Specify whether to keep the predictions of the cross-validation predictions. This needs to be set to TRUE if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to FALSE.
 
@@ -147,6 +145,12 @@ Notes
 If the user sets ``nfolds == 0``, then cross-validation metrics will not be available to populate the leaderboard.  In this case, we need to make sure there is a holdout frame (aka. the "leaderboard frame") to score the models on so that we can generate model performance metrics for the leaderboard.  Without cross-validation, we will also require a validation frame to be used for early stopping on the models.  Therefore, if either of these frames are not provided by the user, they will be automatically partitioned from the training data.  If either frame is missing, 10% of the training data will be used to create a missing frame (if both are missing then a total of 20% of the training data will be used to create a 10% validation and 10% leaderboard frame).
 
 ``H2OAutoML`` can interact with the ``h2o.sklearn`` module. The ``h2o.sklearn`` module exposes 2 wrappers for ``H2OAutoML`` (``H2OAutoMLClassifier`` and ``H2OAutoMLRegressor``), which expose the standard API familiar to ``sklearn`` users: ``fit``, ``predict``, ``fit_predict``, ``score``, ``get_params``, and ``set_params``. It accepts various formats as input data (H2OFrame, ``numpy`` array, ``pandas`` Dataframe) which allows them to be combined with pure ``sklearn`` components in pipelines. For an example using ``H2OAutoML`` with the ``h2o.sklearn`` module, click `here <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/sklearn-integration/H2OAutoML_as_sklearn_estimator.ipynb>`__.
+
+
+Explainability
+--------------
+
+AutoML objects are fully supported though the `H2O Model Explainability <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/explain.html>`__ interface.  A large number of multi-model comparison and single model (AutoML leader) plots can be generated automatically with a single call to ``h2o.explain()``.  We invite you to learn more at page linked above.
 
 
 Code Examples
@@ -308,7 +312,7 @@ AutoML Output
 -------------
 
 Leaderboard 
-~~~~~~~~~~~~
+~~~~~~~~~~~
 
 The AutoML object includes a "leaderboard" of models that were trained in the process, including the 5-fold cross-validated model performance (by default).  The number of folds used in the model evaluation process can be adjusted using the ``nfolds`` parameter.  If you would like to score the models on a specific dataset, you can specify the ``leaderboard_frame`` argument in the AutoML run, and then the leaderboard will show scores on that dataset instead. 
 
@@ -399,13 +403,11 @@ When using Python or R clients, you can also access meta information with the fo
 Experimental Features
 ---------------------
 
-XGBoost
-~~~~~~~
+Preprocessing
+~~~~~~~~~~~~~
 
-AutoML now includes `XGBoost <data-science/xgboost.html>`__ GBMs (Gradient Boosting Machines) among its set of algorithms. This feature is currently provided with the following restrictions:
+As of H2O 3.32.0.1, AutoML now has a ``preprocessing`` option with `minimal support <https://0xdata.atlassian.net/browse/PUBDEV-7778>`__ for automated Target Encoding of high cardinality categorical variables.  The only currently supported option is ``preprocessing = ["target_encoding"]``: we automatically tune a Target Encoder model and apply it to columns that meet certain cardinality requirements for the tree-based algorithms (XGBoost, H2O GBM and Random Forest).  Work to improve the automated preprocessing support (improved model performance as well as customization) is documented in this `ticket <https://0xdata.atlassian.net/browse/PUBDEV-7795>`__.
 
-- XGBoost is used only if it is available globally and if it hasn't been explicitly `disabled <data-science/xgboost.html#disabling-xgboost>`__.
-- You can check if XGBoost is available by using the ``h2o.xgboost.available()`` in R or ``h2o.estimators.xgboost.H2OXGBoostEstimator.available()`` in Python.
 
 
 FAQ
@@ -431,6 +433,14 @@ FAQ
   - CUDA 8
 
   You can monitor your GPU utilization via the ``nvidia-smi`` command. Refer to https://developer.nvidia.com/nvidia-system-management-interface for more information.
+
+
+-   **Why don't I see XGBoost models?** 
+
+  AutoML includes `XGBoost <data-science/xgboost.html>`__ GBMs (Gradient Boosting Machines) among its set of algorithms. This feature is currently provided with the following restrictions:
+
+  - XGBoost is not available on Windows machines.
+  - XGBoost is used only if it is available globally and if it hasn't been explicitly `disabled <data-science/xgboost.html#disabling-xgboost>`__. You can check if XGBoost is available by using the ``h2o.xgboost.available()`` in R or ``h2o.estimators.xgboost.H2OXGBoostEstimator.available()`` in Python.
 
 
 Resources
