@@ -1434,8 +1434,13 @@ def varimp_heatmap(
     """
     Variable Importance Heatmap across a group of models
 
-    Variable importance heatmap shows variable importances on multiple models.
-    By default, the models and variables are ordered by their similarity.
+    Variable importance heatmap shows variable importance across multiple models.
+    Some models in H2O return variable importance for one-hot (binary indicator)
+    encoded versions of categorical columns (e.g. Deep Learning, XGBoost).  In order
+    for the variable importance of categorical columns to be compared across all model
+    types we compute a summarization of the the variable importance across all one-hot
+    encoded features and return a single variable importance for the original categorical
+    feature. By default, the models and variables are ordered by their similarity.
 
     :param models: H2O AutoML object or list of models
     :param top_n: use just top n models (applies only when used with H2OAutoML)
@@ -1531,9 +1536,9 @@ def model_correlation_heatmap(
     """
     Model Prediction Correlation Heatmap
 
-    Model correlation matrix shows correlation between prediction of the models.
-    For classification, frequency of same predictions is used. By default, models
-    are ordered by their similarity.
+    This plot shows the correlation between the predictions of the models.
+    For classification, frequency of identical predictions is used. By default, models
+    are ordered by their similarity (as computed by hierarchical clustering).
 
     :param models: H2OAutoML object or a list of models
     :param frame: H2OFrame
@@ -1641,10 +1646,12 @@ def residual_analysis_plot(
     """
     Residual Analysis
 
-    Do Residual Analysis and creates a plot "Fitted vs Residuals".
+    Do Residual Analysis and plot the fitted values vs residuals on a test dataset.
     Ideally, residuals should be randomly distributed. Patterns in this plot can indicate
     potential problems with the model selection, e.g., using simpler model than necessary,
-    not accounting for heteroscedasticity, autocorrelation, etc.
+    not accounting for heteroscedasticity, autocorrelation, etc.  If you notice "striped"
+    lines of residuals, that is just an indication that your response variable was integer
+    valued instead of real valued.
 
     :param model: H2OModel
     :param frame: H2OFrame
@@ -1926,6 +1933,12 @@ def explain(
     """
     Generate model explanations on frame data set.
 
+    The H2O Explainability Interface is a convenient wrapper to a number of explainabilty
+    methods and visualizations in H2O.  The function can be applied to a single model or group
+    of models and returns an object containing explanations, such as a partial dependence plot
+    or a variable importance plot.  Most of the explanations are visual (plots).
+    These plots can also be created by individual utility functions/methods as well.
+
     :param models: H2OAutoML object or H2OModel
     :param frame: H2OFrame
     :param columns: either a list of columns or column indices to show. If specified
@@ -2192,6 +2205,11 @@ def explain_row(
     # type: (...) -> H2OExplanation
     """
     Generate model explanations on frame data set for a given instance.
+
+    Explain the behavior of a model or group of models with respect to a single row of data.
+    The function returns an object containing explanations, such as a partial dependence plot
+    or a variable importance plot.  Most of the explanations are visual (plots).
+    These plots can also be created by individual utility functions/methods as well.
 
     :param models: H2OAutoML object or H2OModel
     :param frame: H2OFrame
