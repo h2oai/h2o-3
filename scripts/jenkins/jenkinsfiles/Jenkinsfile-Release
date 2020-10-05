@@ -180,6 +180,31 @@ try {
                         }
                     }
                 }
+                
+             def HELM_STAGE_NAME = 'Publish HELM chart'
+                stage(HELM_STAGE_NAME) {
+                    try {
+                        pipelineContext.getBuildSummary().addStageSummary(this, HELM_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                        pipelineContext.getBuildSummary().setStageDetails(this, HELM_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                        // Helm automatically installs latest chart if version is unspecified by the user, therefore there is no need for a latest tag
+                        // Just add new releases
+                        insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
+                            if (!params.TEST_RELEASE) {
+                                sh """
+                                    cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
+                                    sed -i 's/version: [0-9]*\.[0-9]*\.[0-9]*/version: ${env.PROJECT_VERSION}/' Chart.yaml
+                                    sed -i 's/appVersion: [0-9]*\.[0-9]*\.[0-9]*/version: ${env.PROJECT_VERSION}/' Chart.yaml
+                                    helm package .
+                                    aws s3 sync h2o-${env.PROJECT_VERSION}.tgz ${env.S3_ROOT}/h2oai-charts/h2o-3 --acl public-read
+                                """
+                            }
+                        }
+                        pipelineContext.getBuildSummary().markStageSuccessful(this, HELM_STAGE_NAME)
+                    } catch (Exception e) {
+                        pipelineContext.getBuildSummary().markStageFailed(this, HELM_STAGE_NAME)
+                        throw e
+                    }
+                }
 
                 def PUBLISH_STAGE_NAME = 'Publish to S3'
                 stage(PUBLISH_STAGE_NAME) {
