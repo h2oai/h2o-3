@@ -1641,7 +1641,7 @@ h2o.pd_plot <- function(object,
                         newdata,
                         column,
                         target = NULL,
-                        row_index = -1,
+                        row_index = NULL,
                         max_levels = 30) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
@@ -1649,6 +1649,8 @@ h2o.pd_plot <- function(object,
     stop("Column has to be specified!")
   if (!column %in% names(newdata))
     stop("Column was not found in the provided data set!")
+  if (is.null(row_index))
+    row_index <- -1
   models_info <- .process_models_or_automl(object, newdata, require_single_model = TRUE)
   if (h2o.nlevels(newdata[[column]]) > max_levels) {
     factor_frequencies <- .get_feature_count(newdata[[column]])
@@ -1783,7 +1785,7 @@ h2o.pd_multi_plot <- function(object,
                               column,
                               best_of_family = TRUE,
                               target = NULL,
-                              row_index = -1,
+                              row_index = NULL,
                               max_levels = 30) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
@@ -1791,6 +1793,8 @@ h2o.pd_multi_plot <- function(object,
     stop("Column has to be specified!")
   if (!column %in% names(newdata))
     stop("Column was not found in the provided data set!")
+  if (is.null(row_index))
+    row_index <- -1
   models_info <- .process_models_or_automl(object, newdata, best_of_family = best_of_family)
   if (h2o.nlevels(newdata[[column]]) > max_levels) {
     factor_frequencies <- .get_feature_count(newdata[[column]])
