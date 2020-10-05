@@ -50,13 +50,11 @@ public class RuleEnsemble extends Iced {
     }
 
     public Frame transform(Frame frame) {
-        Frame transformedFrame = new Frame();
-        Frame actFrame;
-        for (Rule rule : rules) {
-            actFrame = rule.transform(frame);
-            actFrame.setNames(new String[] {String.valueOf(rule.varName)});
-            transformedFrame.add(actFrame);
-        }
+        String[] names = new String[rules.length];
+        Transform mrtask = new Transform(rules, names);
+        Frame transformedFrame = mrtask.doAll(rules.length, Vec.T_NUM, frame).outputFrame();
+        transformedFrame.setNames(mrtask._names); // or names?
+
         return transformedFrame;
     }
 
@@ -71,6 +69,28 @@ public class RuleEnsemble extends Iced {
             throw new RuntimeException("Multiple rules with the same varName in RuleEnsemble!");
         } else {
             throw new RuntimeException("No rule with varName " + code + " found!");
+        }
+    }
+}
+
+class Transform extends MRTask<Transform> {
+    Rule[] _rules;
+    String[] _names;
+
+    Transform(Rule[] rules, String[] names) {
+        _rules = rules;
+        _names = names;
+    }
+
+    @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+        NewChunk chunk[] = new NewChunk[_rules.length];
+        for (int i = 0; i < _rules.length; i++) {
+            chunk[i] = _rules[i].transform(cs);
+            _names[i] = _rules[i].varName;
+
+            // write result to NewChunk
+            for (int j = 0; j < chunk[i]._len; j++)
+                ncs[i].addNum(chunk[i].at8(j));
         }
     }
 }

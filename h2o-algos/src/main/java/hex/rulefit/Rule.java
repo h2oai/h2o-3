@@ -58,6 +58,14 @@ public class Rule extends Iced {
         }
     }
 
+    public NewChunk transform(Chunk[] chunk) {
+        NewChunk[] chunks = new NewChunk[conditions.length];
+        for(int i = 0; i < conditions.length; i++) {
+            chunks[i] = conditions[i].transform(chunk);
+        }
+        return ruleReducer(chunks);
+    }
+
     @Override
     public int hashCode() {
         int hashCode = 0;
@@ -148,6 +156,20 @@ public class Rule extends Iced {
 
     double getAbsCoefficient() {
         return Math.abs(coefficient);
+    }
+
+
+    NewChunk ruleReducer(Chunk[] cs) {
+        NewChunk ncs = new NewChunk(null, cs[0]._len);
+        int newVal;
+        for (int iRow = 0; iRow < cs[0].len(); iRow++) {
+            newVal = 1;
+            for (int iCol = 0; iCol < cs.length; iCol++) {
+                newVal *= cs[iCol].at8(iRow);
+            }
+            ncs.addNum(newVal);
+        }
+        return ncs;
     }
 
     static class RuleReducer extends MRTask<RuleReducer> {
