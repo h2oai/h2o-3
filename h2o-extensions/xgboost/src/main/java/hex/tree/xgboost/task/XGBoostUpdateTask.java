@@ -1,6 +1,6 @@
 package hex.tree.xgboost.task;
 
-import ml.dmlc.xgboost4j.java.Booster;
+import ai.h2o.xgboost4j.java.Booster;
 import org.apache.log4j.Logger;
 import water.*;
 

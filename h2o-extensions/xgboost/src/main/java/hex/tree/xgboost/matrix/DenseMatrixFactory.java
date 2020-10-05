@@ -1,9 +1,9 @@
 package hex.tree.xgboost.matrix;
 
 import hex.DataInfo;
-import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.XGBoostError;
-import ml.dmlc.xgboost4j.java.util.BigDenseMatrix;
+import ai.h2o.xgboost4j.java.DMatrix;
+import ai.h2o.xgboost4j.java.XGBoostError;
+import ai.h2o.xgboost4j.java.util.BigDenseMatrix;
 import org.apache.log4j.Logger;
 import water.H2O;
 import water.LocalMR;
