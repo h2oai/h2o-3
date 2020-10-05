@@ -1,5 +1,5 @@
 apiVersion: v2
-name: h2o
+name: h2o-3
 description: H2O open source machine learning platform
 
 type: application
