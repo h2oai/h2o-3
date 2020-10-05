@@ -1315,7 +1315,7 @@ class ModelBase(h2o_meta(Keyed)):
         cat = data[col].isfactor()[0]
         if cat:
             labels = pp[index]
-            uniqueL =list(set(labels))
+            uniqueL = list(set(labels))
             x = range(len(uniqueL))
             xlab = [None]*len(uniqueL)
             for ind in range(len(uniqueL)):
@@ -1331,9 +1331,8 @@ class ModelBase(h2o_meta(Keyed)):
                 axs.set_xticklabels(xlab)
             else:   # y-axis
                 axs.set_yticks(x)
-                axs.set_yticklabels(labels)
+                axs.set_yticklabels(xlab)
             axs.margins(0.2) 
-
             return xext
         else:
             return pp[index]
