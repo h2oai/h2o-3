@@ -17,14 +17,19 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     Automatic Machine Learning
 
     The Automatic Machine Learning (AutoML) function automates the supervised machine learning model training process.
-    The current version of AutoML trains and cross-validates 
-    a Random Forest (DRF), 
-    an Extremely-Randomized Forest (DRF/XRT),
-    a random grid of Generalized Linear Models (GLM)
-    a random grid of XGBoost (XGBoost),
-    a random grid of Gradient Boosting Machines (GBM), 
-    a random grid of Deep Neural Nets (DeepLearning), 
-    and 2 Stacked Ensembles, one of all the models, and one of only the best models of each kind.
+    The current version of AutoML trains and cross-validates the following algorithms (in the following order):
+    three pre-specified XGBoost GBM (Gradient Boosting Machine) models,
+    a fixed grid of GLMs,
+    a default Random Forest (DRF),
+    five pre-specified H2O GBMs,
+    a near-default Deep Neural Net,
+    an Extremely Randomized Forest (XRT),
+    a random grid of XGBoost GBMs,
+    a random grid of H2O GBMs,
+    and a random grid of Deep Neural Nets.
+    In some cases, there will not be enough time to complete all the algorithms, so some may be missing from the
+    leaderboard. AutoML then trains two Stacked Ensemble models, one of all the models, and one of only the best
+    models of each kind.
 
     :examples:
     >>> import h2o

@@ -1,9 +1,13 @@
 #' Automatic Machine Learning
 #'
 #' The Automatic Machine Learning (AutoML) function automates the supervised machine learning model training process.
-#' The current version of AutoML trains and cross-validates a Random Forest, an Extremely-Randomized Forest,
-#' a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, and then trains a
-#' Stacked Ensemble using all of the models.
+#' The current version of AutoML trains and cross-validates the following algorithms (in the following order):
+#' three pre-specified XGBoost GBM (Gradient Boosting Machine) models, a fixed grid of GLMs,
+#' a default Random Forest (DRF), five pre-specified H2O GBMs, a near-default Deep Neural Net,
+#' an Extremely Randomized Forest (XRT), a random grid of XGBoost GBMs, a random grid of H2O GBMs,
+#' and a random grid of Deep Neural Nets. In some cases, there will not be enough time to complete all the algorithms,
+#' so some may be missing from the leaderboard. AutoML then trains two Stacked Ensemble models, one of all the models,
+#' and one of only the best models of each kind.
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
