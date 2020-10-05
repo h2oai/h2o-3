@@ -221,9 +221,6 @@ subprojects {
                 url "${localNexusLocation}/public"
             }
         } else {
-            maven {
-                url "${localNexusLocation}/public"
-            }
             mavenCentral()
             jcenter()
             maven {
