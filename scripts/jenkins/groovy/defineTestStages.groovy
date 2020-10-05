@@ -58,6 +58,10 @@ def call(final pipelineContext) {
   // for Python, mainly test with latest supported version
   def PR_STAGES = [
     [
+      stageName: 'Java 8 RuleFit', target: 'test-junit-rulefit-jenkins', pythonVersion: '2.7', javaVersion: 8,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+    ],
+    [
       stageName: 'Py2.7 Booklets', target: 'test-py-booklets', pythonVersion: '2.7',
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
