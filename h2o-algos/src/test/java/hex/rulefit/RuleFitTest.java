@@ -17,6 +17,11 @@ import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.test.util.ConfusionMatrixUtils;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.junit.Assert.*;
 
 @RunWith(H2ORunner.class)
@@ -421,19 +426,23 @@ public class RuleFitTest extends TestUtil {
             
             double[] expectedCoeffs = new double[] {13.50732, 8.37949, 8.33540, 7.78257, -7.57849, 7.51095, 5.65917, -5.59525, -4.04595, -3.73260, -3.66489,
                     -3.42019, -3.15852, -2.35430, -2.21467, 1.44047, -1.21574, -1.14403, -0.69578, -0.65761, -0.60060, -0.51955, 0.31480, -0.24659, -0.19722,
-                    0.19242, -0.03043, -0.02091, 0.01179, 0.00583, 0.00102, 7.412075457645576E-4, -5.431219267171002E-4, 2.9864012497505935E-12, 
-                    -2.5400188774894335E-13, 6.067795838432106E-14, 7.111841979521059E-13, 5.989102933397036E-13, 2.9763845709061977E-13};
+                    0.19242, -0.03043, -0.02091, 0.01179, 0.00583, 0.00102, 7.412075457645576E-4, -5.431219267171002E-4};
 
             String[] expectedVars = new String[] {"M0T0N4", "M1T25N9", "M1T48N8", "M1T28N9", "M1T13N8", "M1T18N8", 
             "M1T26N8", "M1T6N8", "M1T4N10", "M2T30N15", "M1T0N7", "M2T36N15", "M1T36N7", "M1T14N7", "M1T1N9",
             "M0T1N3", "M1T2N10", "M3T13N36", "M1T26N9", "M1T20N9", "M1T33N9", "M2T38N17", "M0T11N4",
             "M1T5N7", "M0T0N3", "M0T18N3", "M0T1N4", "M1T7N7", "M0T26N3", "M1T3N9", "M0T22N4", "M0T27N4",
-            "M0T11N3", "M1T37N9", "M0T14N4", "M1T38N9", "M1T7N9", "M0T4N3", "M1T43N9"};
-
-            for (int i = 0; i < model._output._rule_importance.getRowDim(); i++) {
-
-                assertEquals(expectedCoeffs[i], (double) model._output._rule_importance.get(i,1),1e-4);
+            "M0T11N3"};
+            Set<String> zeroVars = new HashSet<>(Arrays.asList("M1T37N9", "M0T14N4", "M1T38N9", "M1T7N9", "M0T4N3", "M1T43N9"));
+            final double coefDelta = 1e-4;
+            for (int i = 0; i < expectedVars.length; i++) {
+                assertEquals(expectedCoeffs[i], (double) model._output._rule_importance.get(i,1),coefDelta);
                 assertEquals(expectedVars[i], model._output._rule_importance.get(i,0));
+            }
+            // zero-coef vars can be in any order (it doesn't make sense to compare order if it is bellow the delta precision)  
+            for (int i = expectedVars.length; i < model._output._rule_importance.getRowDim(); i++) {
+                assertEquals(0, (double) model._output._rule_importance.get(i,1),coefDelta);
+                assertTrue(zeroVars.contains((String) model._output._rule_importance.get(i,0)));
             }
 
             GLMModel.GLMParameters glmParameters = model.glmModel._parms;
