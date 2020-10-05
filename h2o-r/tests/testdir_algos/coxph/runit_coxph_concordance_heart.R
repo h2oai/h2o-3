@@ -40,6 +40,7 @@ test.CoxPH.predict <- function() {
     heart.hex <- as.h2o(heart.df)
     heart.hex$surgery <- as.factor(heart.hex$surgery)
     heart.hex$transplant <- as.factor(heart.hex$transplant)
+    heart.hex$event <- as.factor(heart.hex$event)
 
     # simple case
 
