@@ -96,14 +96,14 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
                 predsNative = Scope.track(predsNative.subframe(1, predsNative.numCols()));
                 predsJava = Scope.track(predsJava.subframe(1, predsJava.numCols()));
             }
-            assertFrameEquals(predsNative, predsJava, 1e-10, getRelDelta(parms));
+            assertFrameEquals(predsNative, predsJava, 1e-10, getRelDelta(parms, booster));
         } finally {
             System.clearProperty("sys.ai.h2o.xgboost.predict.native.enable");
             Scope.exit();
         }
     }
 
-    private Double getRelDelta(XGBoostModel.XGBoostParameters parms) {
+    public static Double getRelDelta(XGBoostModel.XGBoostParameters parms, String booster) {
         if (usesGpu(parms)) {
             // train/predict on gpu is non-deterministic
             return 1e-3;
