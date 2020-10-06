@@ -66,7 +66,7 @@ public class RuleEnsemble extends Iced {
             byte[] out = MemoryManager.malloc1(cs[0].len());
             for (int i = 0; i < rules.length; i++) {
                 Arrays.fill(out, (byte) 1);
-                rules[i].new RuleConverter().map(cs, out);
+                rules[i].map(cs, out);
                 _names[i] = rules[i].varName;
                 for (byte b : out) {
                     nc[i].addNum(b);
@@ -88,25 +88,25 @@ public class RuleEnsemble extends Iced {
             throw new RuntimeException("No rule with varName " + code + " found!");
         }
     }
-}
 
-class Decoder extends MRTask<hex.rulefit.Decoder> {
-    Decoder() {
-        super();
-    }
-    
-    @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-        int newValue = -1;
-        for (int iRow = 0; iRow < cs[0].len(); iRow++) {
-            for (int iCol = 0; iCol < cs.length; iCol++) {
-                if (cs[iCol].at8(iRow) == 1) {
-                    newValue = iCol;
+    static class Decoder extends MRTask<Decoder> {
+        Decoder() {
+            super();
+        }
+
+        @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+            int newValue = -1;
+            for (int iRow = 0; iRow < cs[0].len(); iRow++) {
+                for (int iCol = 0; iCol < cs.length; iCol++) {
+                    if (cs[iCol].at8(iRow) == 1) {
+                        newValue = iCol;
+                    }
                 }
+                if (newValue >= 0)
+                    ncs[0].addNum(newValue);
+                else
+                    ncs[0].addNA();
             }
-            if (newValue >= 0)
-                ncs[0].addNum(newValue);
-            else
-                ncs[0].addNA();
         }
     }
 }
