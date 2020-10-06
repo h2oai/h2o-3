@@ -687,13 +687,23 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 ### H2O 3.32.0.1 - October 2020
 
 * RuleFit algorithm
-* Extended Isolation Forest Algoritm
+* GAM Improvements (Cross Validation, MOJO support)
 * Target Encoding for Regression and Multinomial problems
 * Target Encoding minimal integration into AutoML
-* Kubernetes Improvements (REST API clustering, healthchecks)
+* Kubernetes Improvements (REST API clustering, healthchecks, Helm Chart)
 * GBM monotone constraints for quantile and laplace distributions
 * Performance optimizations (lower memory usage)
 * Model Explainability
+* Upgrade XGBoost to 1.2
+
+### H2O 3.34.0.1 - January 2021
+
+* Extended Isolation Forest Algoritm
+* Uplift Trees in GBM
+* Extracting & ranking feature interactions from GBM and XGBoost models
+* Externalized XGBoost on Kubernetes clusters
+* RuleFit MOJO
+* Support for MOJO2 Scoring
 
 <a name="Community"></a>
 ## 11. Community
