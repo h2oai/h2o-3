@@ -1492,12 +1492,12 @@ h2o.shap_explain_row_plot <-
 #'
 #' # Build and train the model:
 #' aml <- h2o.automl(y = response,
-#'                   training_frame = prostate,
+#'                   training_frame = train,
 #'                   max_models = 10,
 #'                   seed = 1)
 #'
 #' # Create the variable importance heatmap
-#' varimp_heatmap <- h2o.varimp_heatmap(aml, prostate)
+#' varimp_heatmap <- h2o.varimp_heatmap(aml, test)
 #' print(varimp_heatmap)
 #' }
 #' @export
