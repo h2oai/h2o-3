@@ -47,6 +47,7 @@ public class RuleFitTest extends TestUtil {
             fr.remove("boat").remove();
             fr.remove("body").remove();
             fr.remove("home.dest").remove();
+            DKV.put(fr);
 
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
@@ -142,6 +143,7 @@ public class RuleFitTest extends TestUtil {
             final Vec weightsVector = fr.anyVec().makeOnes(1)[0];
             final String weightsColumnName = "weights";
             fr.add(weightsColumnName, weightsVector);
+            DKV.put(fr);
 
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
