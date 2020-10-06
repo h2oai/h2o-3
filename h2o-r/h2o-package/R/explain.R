@@ -1345,12 +1345,12 @@ h2o.shap_explain_row_plot <-
       contributions <- data.frame(contribution = t(contributions))
       contributions$feature <- paste0(
         row.names(contributions), "=",
-        as.list(newdata_df[, row.names(contributions)])
+        sapply(newdata_df[, row.names(contributions)], as.character)
       )
       contributions <- contributions[order(contributions$contribution),]
       contributions$text <- paste(
         "Feature:", row.names(contributions), "\n",
-        "Feature Value:", unlist(newdata_df[, row.names(contributions)]), "\n",
+        "Feature Value:", unlist(sapply(newdata_df[, row.names(contributions)], as.character)), "\n",
         "Contribution:", contributions$contribution
       )
 
@@ -1423,7 +1423,7 @@ h2o.shap_explain_row_plot <-
       )
 
       newdata_df[["rest_of_the_features"]] <- NA
-      contributions$feature_value <- paste("Feature Value:", t(newdata_df)[contributions$feature,])
+      contributions$feature_value <- paste("Feature Value:", as.character(t(newdata_df)[contributions$feature,]))
       p <- ggplot2::ggplot(ggplot2::aes(
         x = .data$feature, fill = .data$color,
         xmin = .data$id - 0.4, xmax = .data$id + 0.4,
@@ -1444,6 +1444,7 @@ h2o.shap_explain_row_plot <-
         )) +
         ggplot2::coord_flip() +
         ggplot2::scale_fill_manual(values = c("firebrick2", "springgreen3")) +
+        ggplot2::scale_x_discrete(limits = contributions$feature) +
         ggplot2::xlab("Feature") +
         ggplot2::ylab("SHAP value") +
         ggplot2::ggtitle(sprintf("SHAP Explanation\nfor \"%s\" on row %d", model@model_id, row_index)) +
