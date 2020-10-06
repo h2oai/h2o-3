@@ -4,12 +4,7 @@ import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.tree.SharedTreeModel;
 import water.Iced;
-import water.MRTask;
-import water.MemoryManager;
 import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
 
 import java.util.*;
 
@@ -46,26 +41,9 @@ public class Rule extends Iced {
         return languageRule.toString();
     }
 
-    public Frame transform(Frame frame) {
-        RuleConverter rc = new RuleConverter();
-        return rc.doAll(1, Vec.T_NUM, frame).outputFrame();
-    }
-
     public void map(Chunk[] cs, byte[] out) {
         for (Condition c : conditions) {
             c.map(cs, out);
-        }
-    }
-
-    class RuleConverter extends MRTask<RuleConverter> {
-        @Override
-        public void map(Chunk[] cs, NewChunk nc) {
-            byte[] out = MemoryManager.malloc1(cs[0].len());
-            Arrays.fill(out, (byte) 1);
-            Rule.this.map(cs, out);
-            for (byte b : out) {
-                nc.addNum(b);
-            }
         }
     }
     

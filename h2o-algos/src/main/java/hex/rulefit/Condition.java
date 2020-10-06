@@ -1,13 +1,10 @@
 package hex.rulefit;
 
 import water.Iced;
-import water.MRTask;
-import water.MemoryManager;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.util.ArrayUtils;
 
-import java.util.Arrays;
 
 public class Condition extends Iced {
     public enum Type {Categorical, Numerical};
@@ -57,11 +54,6 @@ public class Condition extends Iced {
         description.append(")");
         return description.toString();
     }
-    
-    public Frame transform(Frame frame) {
-        ConditionConverter mrtask = new ConditionConverter();
-        return mrtask.doAll(1, Vec.T_NUM, frame).outputFrame();
-    }
 
     @Override
     public boolean equals(Object obj) {
@@ -110,20 +102,6 @@ public class Condition extends Iced {
                 }
             }
             out[iRow] = newVal;
-        }
-    }
-
-    public class ConditionConverter extends MRTask<ConditionConverter> {
-
-        @Override
-        public void map(Chunk[] cs, NewChunk nc) {
-            Chunk col = cs[Condition.this.featureIndex];
-            byte[] out = MemoryManager.malloc1(col.len());
-            Arrays.fill(out, (byte) 1);
-            Condition.this.map(cs, out);
-            for (byte b : out) {
-                nc.addNum(b);
-            }
         }
     }
 }
