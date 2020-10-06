@@ -64,7 +64,7 @@ explanation_test_automl_regression <- function() {
   expect_ggplot(h2o.model_correlation_heatmap(aml, train))
 
   # test variable importance heatmap
-  expect_ggplot(h2o.varimp_heatmap(aml, train))
+  expect_ggplot(h2o.varimp_heatmap(aml))
 
   # test shap summary
   expect_error(h2o.shap_summary_plot(aml, train), "SHAP summary plot requires a tree-based model!")
@@ -107,7 +107,7 @@ explanation_test_list_of_models_regression <- function() {
   expect_ggplot(h2o.model_correlation_heatmap(models, train))
 
   # test variable importance heatmap
-  expect_ggplot(h2o.varimp_heatmap(models, train))
+  expect_ggplot(h2o.varimp_heatmap(models))
 
   # test shap summary
   expect_error(h2o.shap_summary_plot(models, train), "SHAP summary plot requires a tree-based model!")
@@ -190,7 +190,7 @@ explanation_test_automl_binomial_classification <- function() {
   expect_ggplot(h2o.model_correlation_heatmap(aml, train))
 
   # test variable importance heatmap
-  expect_ggplot(h2o.varimp_heatmap(aml, train))
+  expect_ggplot(h2o.varimp_heatmap(aml))
 
   # test shap summary
   expect_error(h2o.shap_summary_plot(aml, train), "SHAP summary plot requires a tree-based model!")
@@ -234,7 +234,7 @@ explanation_test_list_of_models_binomial_classification <- function() {
   expect_ggplot(h2o.model_correlation_heatmap(models, train))
 
   # test variable importance heatmap
-  expect_ggplot(h2o.varimp_heatmap(models, train))
+  expect_ggplot(h2o.varimp_heatmap(models))
 
   # test shap summary
   expect_error(h2o.shap_summary_plot(models, train), "SHAP summary plot requires a tree-based model!")
@@ -317,7 +317,7 @@ explanation_test_automl_multinomial_classification <- function() {
   expect_ggplot(h2o.model_correlation_heatmap(aml, train))
 
   # test variable importance heatmap
-  expect_ggplot(h2o.varimp_heatmap(aml, train))
+  expect_ggplot(h2o.varimp_heatmap(aml))
 
   # test shap summary
   expect_error(h2o.shap_summary_plot(aml, train), "SHAP summary plot requires a tree-based model!")
@@ -361,7 +361,7 @@ explanation_test_list_of_models_multinomial_classification <- function() {
   expect_ggplot(h2o.model_correlation_heatmap(models, train))
 
   # test variable importance heatmap
-  expect_ggplot(h2o.varimp_heatmap(models, train))
+  expect_ggplot(h2o.varimp_heatmap(models))
 
   # test shap summary
   expect_error(h2o.shap_summary_plot(models, train), "SHAP summary plot requires a tree-based model!")
