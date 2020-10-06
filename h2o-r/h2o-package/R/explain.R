@@ -999,6 +999,31 @@ stat_count_or_bin <- function(use_count, ..., data) {
 #' @param sample_size Integer specifying the maximum number of observations to be plotted.
 #'
 #' @return A ggplot2 object
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
+#'
+#' # Set the response
+#' response <- "quality"
+#'
+#' # Split the dataset into a train and test set:
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#'
+#' # Build and train the model:
+#' gbm <- h2o.gbm(y = response,
+#'                training_frame = train)
+#'
+#' # Create the SHAP summary plot
+#' shap_summary_plot <- h2o.shap_summary_plot(gbm, test)
+#' print(shap_summary_plot)
+#' }
 #' @export
 h2o.shap_summary_plot <-
   function(model,
@@ -1180,7 +1205,31 @@ h2o.shap_summary_plot <-
 #' @param contribution_type When \code{plot_type == "barplot"}, plot one of "negative", 
 #'                          "positive", or "both" contributions.  Defaults to "both".
 #' @return A ggplot2 object.
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
 #'
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
+#'
+#' # Set the response
+#' response <- "quality"
+#'
+#' # Split the dataset into a train and test set:
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#'
+#' # Build and train the model:
+#' gbm <- h2o.gbm(y = response,
+#'                training_frame = train)
+#'
+#' # Create the SHAP row explanation plot
+#' shap_explain_row_plot <- h2o.shap_explain_row_plot(gbm, test, row_index = 1)
+#' print(shap_explain_row_plot)
+#' }
 #' @export
 h2o.shap_explain_row_plot <-
   function(model, newdata, row_index, columns = NULL, top_n_features = 10,
@@ -1424,8 +1473,37 @@ h2o.shap_explain_row_plot <-
 #'              (based on leaderboard ranking). Defaults to 20.
 #'
 #' @return A ggplot2 object.
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
+#'
+#' # Set the response
+#' response <- "quality"
+#'
+#' # Split the dataset into a train and test set:
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#'
+#' # Build and train the model:
+#' aml <- h2o.automl(y = response,
+#'                   training_frame = train,
+#'                   max_models = 10,
+#'                   seed = 1)
+#'
+#' # Create the variable importance heatmap
+#' varimp_heatmap <- h2o.varimp_heatmap(aml, test)
+#' print(varimp_heatmap)
+#' }
 #' @export
-h2o.varimp_heatmap <- function(object, newdata, top_n = 20) {
+h2o.varimp_heatmap <- function(object, 
+                               newdata, 
+                               top_n = 20) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   models_info <- .process_models_or_automl(object, newdata,
@@ -1495,6 +1573,33 @@ h2o.varimp_heatmap <- function(object, newdata, top_n = 20) {
 #' @param triangular Print just the lower triangular part of correlation matrix.  Defaults to TRUE.
 #'
 #' @return A ggplot2 object.
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
+#'
+#' # Set the response
+#' response <- "quality"
+#'
+#' # Split the dataset into a train and test set:
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#'
+#' # Build and train the model:
+#' aml <- h2o.automl(y = response,
+#'                   training_frame = train,
+#'                   max_models = 10,
+#'                   seed = 1)
+#'
+#' # Create the model correlation heatmap
+#' model_correlation_heatmap <- h2o.model_correlation_heatmap(aml, test)
+#' print(model_correlation_heatmap)
+#' }
 #' @export
 h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
                                           cluster_models = TRUE, triangular = TRUE) {
@@ -1585,12 +1690,36 @@ h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
 #' not accounting for heteroscedasticity, autocorrelation, etc.  If you notice "striped" 
 #' lines of residuals, that is just an indication that your response variable was integer 
 #' valued instead of real valued.
-#' 
 #'
 #' @param model An H2OModel.
 #' @param newdata An H2OFrame.  Used to calculate residuals.
 #'
 #' @return A ggplot2 object
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
+#'
+#' # Set the response
+#' response <- "quality"
+#'
+#' # Split the dataset into a train and test set:
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#'
+#' # Build and train the model:
+#' gbm <- h2o.gbm(y = response,
+#'                training_frame = train)
+#'
+#' # Create the residual analysis plot
+#' residual_analysis_plot <- h2o.residual_analysis_plot(gbm, test)
+#' print(residual_analysis_plot)
+#' }
 #' @export
 h2o.residual_analysis_plot <- function(model, newdata) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
@@ -1636,12 +1765,37 @@ h2o.residual_analysis_plot <- function(model, newdata) {
 #'                   Defaults to 30.
 #'
 #' @return A ggplot2 object
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
+#'
+#' # Set the response
+#' response <- "quality"
+#'
+#' # Split the dataset into a train and test set:
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#'
+#' # Build and train the model:
+#' gbm <- h2o.gbm(y = response,
+#'                training_frame = train)
+#'
+#' # Create the partial dependence plot
+#' pdp <- h2o.pd_plot(gbm, test, column = "alcohol")
+#' print(pdp)
+#' }
 #' @export
 h2o.pd_plot <- function(object,
                         newdata,
                         column,
                         target = NULL,
-                        row_index = -1,
+                        row_index = NULL,
                         max_levels = 30) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
@@ -1649,6 +1803,8 @@ h2o.pd_plot <- function(object,
     stop("Column has to be specified!")
   if (!column %in% names(newdata))
     stop("Column was not found in the provided data set!")
+  if (is.null(row_index))
+    row_index <- -1
   models_info <- .process_models_or_automl(object, newdata, require_single_model = TRUE)
   if (h2o.nlevels(newdata[[column]]) > max_levels) {
     factor_frequencies <- .get_feature_count(newdata[[column]])
@@ -1777,13 +1933,40 @@ h2o.pd_plot <- function(object,
 #'                   Defaults to 30.
 #'
 #' @return A ggplot2 object
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
+#'
+#' # Set the response
+#' response <- "quality"
+#'
+#' # Split the dataset into a train and test set:
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#'
+#' # Build and train the model:
+#' aml <- h2o.automl(y = response,
+#'                   training_frame = train,
+#'                   max_models = 10,
+#'                   seed = 1)
+#'
+#' # Create the partial dependence plot
+#' pdp <- h2o.pd_multi_plot(aml, test, column = "alcohol")
+#' print(pdp)
+#' }
 #' @export
 h2o.pd_multi_plot <- function(object,
                               newdata,
                               column,
                               best_of_family = TRUE,
                               target = NULL,
-                              row_index = -1,
+                              row_index = NULL,
                               max_levels = 30) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
@@ -1791,6 +1974,8 @@ h2o.pd_multi_plot <- function(object,
     stop("Column has to be specified!")
   if (!column %in% names(newdata))
     stop("Column was not found in the provided data set!")
+  if (is.null(row_index))
+    row_index <- -1
   models_info <- .process_models_or_automl(object, newdata, best_of_family = best_of_family)
   if (h2o.nlevels(newdata[[column]]) > max_levels) {
     factor_frequencies <- .get_feature_count(newdata[[column]])
@@ -2010,8 +2195,33 @@ h2o.pd_multi_plot <- function(object,
 #' @param target If multinomial, plot PDP just for \code{target} category.  Character string.
 #' @param max_levels An integer specifying the maximum number of factor levels to show.
 #'                   Defaults to 30.
-#'                   
+#'
 #' @return A ggplot2 object
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
+#'
+#' # Set the response
+#' response <- "quality"
+#'
+#' # Split the dataset into a train and test set:
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#'
+#' # Build and train the model:
+#' gbm <- h2o.gbm(y = response,
+#'                training_frame = train)
+#'
+#' # Create the individual conditional expectations plot
+#' ice <- h2o.ice_plot(gbm, test, column = "alcohol")
+#' print(ice)
+#' }
 #' @export
 h2o.ice_plot <- function(model,
                          newdata,
@@ -2164,7 +2374,7 @@ h2o.ice_plot <- function(model,
 #' @param newdata An H2OFrame.
 #' @param columns A vector of column names or column indices to create plots with. If specified
 #'                parameter top_n_features will be ignored.
-#' @param top_n_features In integer specifying the number of columns to use, ranked by variable importance
+#' @param top_n_features An integer specifying the number of columns to use, ranked by variable importance
 #'                       (where applicable).
 #' @param include_explanations If specified, return only the specified model explanations.
 #'   (Mutually exclusive with exclude_explanations)
@@ -2173,6 +2383,37 @@ h2o.ice_plot <- function(model,
 #' \code{list(shap_summary_plot = list(columns = 50))}.
 #'
 #' @return List of outputs with class "H2OExplanation"
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
+#'
+#' # Set the response
+#' response <- "quality"
+#'
+#' # Split the dataset into a train and test set:
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#'
+#' # Build and train the model:
+#' aml <- h2o.automl(y = response,
+#'                   training_frame = train,
+#'                   max_models = 10,
+#'                   seed = 1)
+#'
+#' # Create the explanation for whole H2OAutoML object
+#' exa <- h2o.explain(aml, test)
+#' print(exa)
+#'
+#' # Create the explanation for the leader model
+#' exm <- h2o.explain(aml@leader, test)
+#' print(exm)
+#' }
 #' @export
 h2o.explain <- function(object,
                         newdata,
@@ -2521,7 +2762,7 @@ h2o.explain <- function(object,
 #' @param row_index A row index of the instance to explain.
 #' @param columns A vector of column names or column indices to create plots with. If specified
 #'                parameter top_n_features will be ignored.
-#' @param top_n_features In integer specifying the number of columns to use, ranked by variable importance
+#' @param top_n_features An integer specifying the number of columns to use, ranked by variable importance
 #'                       (where applicable).
 #' @param include_explanations If specified, return only the specified model explanations. 
 #'                             (Mutually exclusive with exclude_explanations)
@@ -2529,7 +2770,38 @@ h2o.explain <- function(object,
 #' @param plot_overrides Overrides for individual model explanations, e.g.,
 #'                       \code{list(shap_explain_row = list(columns = 5))}
 #'
-#' @return List of outputs with class "explanation"
+#' @return List of outputs with class "H2OExplanation"
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
+#'
+#' # Set the response
+#' response <- "quality"
+#'
+#' # Split the dataset into a train and test set:
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#'
+#' # Build and train the model:
+#' aml <- h2o.automl(y = response,
+#'                   training_frame = train,
+#'                   max_models = 10,
+#'                   seed = 1)
+#'
+#' # Create the explanation for whole H2OAutoML object
+#' exa <- h2o.explain_row(aml, test, row_index = 1)
+#' print(exa)
+#'
+#' # Create the explanation for the leader model
+#' exm <- h2o.explain_row(aml@leader, test, row_index = 1)
+#' print(exm)
+#' }
 #' @export
 h2o.explain_row <- function(object,
                             newdata,
