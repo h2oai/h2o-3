@@ -698,7 +698,7 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 
 ### H2O 3.34.0.1 - January 2021
 
-* Extended Isolation Forest Algoritm
+* Extended Isolation Forest Algorithm
 * Uplift Trees in GBM
 * Extracting & ranking feature interactions from GBM and XGBoost models
 * Externalized XGBoost on Kubernetes clusters
