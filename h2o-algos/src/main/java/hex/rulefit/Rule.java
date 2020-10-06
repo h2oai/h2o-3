@@ -56,11 +56,15 @@ public class Rule extends Iced {
         public void map(Chunk[] cs, NewChunk nc) {
             byte[] out = MemoryManager.malloc1(cs[0].len());
             Arrays.fill(out, (byte) 1);
-            for (Condition c : conditions) {
-                c.new ConditionConverter().map(cs, out);
-            }
+            map(cs, out);
             for (byte b : out) {
                 nc.addNum(b);
+            }
+        }
+        
+        public void map(Chunk[] cs, byte[] out) {
+            for (Condition c : conditions) {
+                c.new ConditionConverter().map(cs, out);
             }
         }
     }

@@ -47,14 +47,22 @@ public class RuleEnsemble extends Iced {
     }
 
     public Frame transform(Frame frame) {
-        Frame transformedFrame = new Frame();
-        Frame actFrame;
-        for (Rule rule : rules) {
-            actFrame = rule.transform(frame);
-            actFrame.setNames(new String[] {String.valueOf(rule.varName)});
-            transformedFrame.add(actFrame);
+        RuleEnsembleConverter rc = new RuleEnsembleConverter();
+        return rc.doAll(rules.length, Vec.T_NUM, frame).outputFrame();
+    }
+
+    class RuleEnsembleConverter extends MRTask<RuleEnsembleConverter> {
+        @Override
+        public void map(Chunk[] cs, NewChunk[] nc) {
+            byte[] out = MemoryManager.malloc1(cs[0].len());
+            for (int i = 0; i < rules.length; i++) {
+                Arrays.fill(out, (byte) 1);
+                rules[i].new RuleConverter().map(cs, out);
+                for (byte b : out) {
+                    nc[i].addNum(b);
+                }
+            }
         }
-        return transformedFrame;
     }
 
     public Rule getRuleByVarName(String code) {
