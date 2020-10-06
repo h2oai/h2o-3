@@ -691,7 +691,7 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 * Target Encoding for Regression and Multinomial problems
 * Target Encoding minimal integration into AutoML
 * Kubernetes Improvements (REST API clustering, healthchecks, Helm Chart)
-* GBM monotone constraints for quantile and laplace distributions
+* GBM monotone constraints for quantile and tweedie distributions
 * Performance optimizations (lower memory usage)
 * Model Explainability
 * Upgrade XGBoost to 1.2
