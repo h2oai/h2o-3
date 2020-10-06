@@ -156,6 +156,7 @@ with_no_h2o_progress <- function(expr) {
           models[[model@model_id]] <<- model
         })
   )
+
 .models_info <- setRefClass(
   "models_info",
   fields = c("is_automl",
@@ -185,10 +186,14 @@ with_no_h2o_progress <- function(expr) {
         }
         x <<- single_model@allparameters$x
         y <<- single_model@allparameters$y
-        y_col <- newdata[[.self$y]]
-
-        is_classification <<- is.factor(y_col)
-        is_multinomial_classification <<- is.factor(y_col) && h2o.nlevels(y_col) > 2
+        if (is.null(newdata)) {
+          is_classification <<- NA
+          is_multinomial_classification <<- NA
+        } else {
+          y_col <- newdata[[.self$y]]
+          is_classification <<- is.factor(y_col)
+          is_multinomial_classification <<- is.factor(y_col) && h2o.nlevels(y_col) > 2
+        }
       }
       .self
     },
@@ -209,6 +214,8 @@ with_no_h2o_progress <- function(expr) {
 #' @param top_n_from_AutoML If set, don't return more than top_n models (applies only for AutoML object)
 #' @param only_with_varimp If TRUE, return only models that have variable importance
 #' @param best_of_family If TRUE, return only the best of family models; if FALSE return all models in \code{object}
+#' @param require_newdata If TRUE, require newdata to be specified; otherwise allow NULL instead, this can be used when
+#'                        there is no need to know if the problem is (multinomial) classification.
 #'
 #' @return a list with the following names \code{leader}, \code{is_automl}, \code{models},
 #'   \code{is_classification}, \code{is_multinomial_classification}, \code{x}, \code{y}, \code{model}
@@ -217,7 +224,8 @@ with_no_h2o_progress <- function(expr) {
                                       require_multiple_models = FALSE,
                                       top_n_from_AutoML = NA,
                                       only_with_varimp = FALSE,
-                                      best_of_family = FALSE) {
+                                      best_of_family = FALSE,
+                                      require_newdata = TRUE) {
   if (missing(object))
     stop("object must be specified!")
   if (missing(newdata))
@@ -226,11 +234,11 @@ with_no_h2o_progress <- function(expr) {
     object <- as.list(object[["model_id"]])
   }
   newdata_name <- deparse(substitute(newdata, environment()))
-  if (!"H2OFrame" %in% class(newdata)) {
+  if (!"H2OFrame" %in% class(newdata) && require_newdata) {
     stop(paste(newdata_name, "must be an H2OFrame!"))
   }
 
-  make_models_info <- function(is_automl, leaderboard, model_ids, models = NULL) {
+  make_models_info <- function(newdata, is_automl, leaderboard, model_ids, models = NULL) {
     return(.models_info$new(
       newdata = newdata,
       is_automl = is_automl,
@@ -288,6 +296,7 @@ with_no_h2o_progress <- function(expr) {
       top_n_from_AutoML <- min(top_n_from_AutoML, length(model_ids))
     }
     return(make_models_info(
+      newdata = newdata,
       is_automl = TRUE,
       leaderboard = as.data.frame(h2o.get_leaderboard(object, extra_columns = "ALL")),
       model_ids = head(model_ids, top_n_from_AutoML)
@@ -313,6 +322,7 @@ with_no_h2o_progress <- function(expr) {
       }
 
       mi <- make_models_info(
+          newdata = newdata,
           is_automl = FALSE,
           leaderboard = NULL,
           model_ids = model_id,
@@ -352,6 +362,7 @@ with_no_h2o_progress <- function(expr) {
       }
 
       mi <- make_models_info(
+        newdata = newdata,
         is_automl = FALSE,
         model_ids = .model_ids(object),
         leaderboard = NULL,
@@ -468,62 +479,70 @@ with_no_h2o_progress <- function(expr) {
   return(head(leaderboard, n = min(top_n, nrow(leaderboard))))
 }
 
+#' Consolidate variable importances
+#'
+#' Consolidation works in the following way:
+#' 1. if varimp variable is in x => add it to consolidated_varimps
+#' 2. for all remaining varimp variables:
+#'    1. find the longest prefix of varimp variable that is in x and add it to the consolidated varimp
+#'    2. if there was no match, throw an error
+#' 3. normalize the consolidated_varimps so they sum up to 1
+#'
+#' @param model H2OModel
+#' @return sorted named vector
+.consolidate_varimps <- function(model) {
+  varimps_hdf <- h2o.varimp(model)
+  varimps <- stats::setNames(varimps_hdf$percentage, varimps_hdf$variable)
+  x <- model@allparameters$x
+
+  consolidated_varimps <- varimps[names(varimps) %in% x]
+  to_process <- varimps[!names(varimps) %in% x]
+
+  for (col in x) {
+    if (!col %in% names(consolidated_varimps)) {
+      consolidated_varimps[[col]] <- 0
+    }
+  }
+
+  for (feature in names(to_process)) {
+    col_parts <- strsplit(feature, ".", fixed = TRUE)[[1]]
+    found <- FALSE
+    for (prefix_len in seq(from = length(col_parts), to = 1, by = -1)){
+      prefix <- paste0(head(col_parts, n = prefix_len), collapse = ".")
+      if (prefix %in% x) {
+        consolidated_varimps[[prefix]] <- consolidated_varimps[[prefix]] + varimps[[feature]]
+        found <- TRUE
+        break
+      }
+    }
+    if (!found)
+      stop(feature, " was not found in x!")
+  }
+
+  total_value <- sum(consolidated_varimps, na.rm = TRUE)
+  if (total_value != 1)
+    consolidated_varimps <- consolidated_varimps / total_value
+
+  names(consolidated_varimps) <- make.names(names(consolidated_varimps))
+  return(sort(consolidated_varimps))
+}
 
 #' Get variable importance in a standardized way.
 #'
 #' @param model H2OModel
-#' @param newdata H2OFrame
 #'
 #' @return A named vector
-.varimp <- function(model, newdata) {
+.varimp <- function(model) {
   if (!.has_varimp(model)) {
     stop("Can't get variable importance from: ", model@model_id)
   } else {
     varimp <- h2o.varimp(model)
     if (is.null(varimp)) {
       res <- rep_len(0, length(model@allparameters$x))
-      names(res) <- model@allparameters$x
+      names(res) <- make.names(model@allparameters$x)
       return(res)
     }
-
-    res <- as.list(varimp$scaled_importance)
-    names(res) <- varimp$variable
-    # sum one hot encoded variable importances
-    factorial_vars <- names(newdata[, is.factor(newdata)])
-    factorial_vars <- factorial_vars[factorial_vars %in% model@allparameters$x]
-    categoricals <- sapply(
-      factorial_vars,
-      function(col) {
-        Filter(
-          function(x) {
-            substr(x, 1, nchar(col) + 1) == paste0(col, ".")
-          },
-          names(res)
-        )
-      },
-      simplify = FALSE
-    )
-
-    for (cat in names(categoricals)) {
-      if (cat != model@allparameters$y) {
-        if (!cat %in% names(res)) {
-          res[[cat]] <- sum(unlist(res[categoricals[[cat]]]))
-          for (fct in categoricals[[cat]]) {
-            res[[fct]] <- NULL
-          }
-        }
-      }
-    }
-    results <- unlist(res)
-    names(results) <- sapply(names(results), .find_appropriate_column_name, names(newdata))
-
-    for (col in model@allparameters$x) {
-      if (!col %in% names(results)) {
-        results[col] <- 0
-      }
-    }
-
-    return(sort(results / sum(results, na.rm = TRUE)))
+    return(sort(.consolidate_varimps(model)))
   }
 }
 
@@ -552,7 +571,7 @@ with_no_h2o_progress <- function(expr) {
         ggplot2::coord_flip() +
         ggplot2::theme_bw() +
         ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
-      return(list(varimp = varimp, grouped_varimp = .varimp(model, newdata), plot = p))
+      return(list(varimp = varimp, grouped_varimp = .varimp(model), plot = p))
     }
   })
 }
@@ -1468,8 +1487,6 @@ h2o.shap_explain_row_plot <-
 #' feature. By default, the models and variables are ordered by their similarity.
 #'
 #' @param object An H2OAutoML object or list of H2O models.
-#' @param newdata An H2O Frame, currently only used to retrieve categorical metadata. 
-#'                Training data or test data is ok here.
 #' @param top_n Integer specifying the number models shown in the heatmap 
 #'              (based on leaderboard ranking). Defaults to 20.
 #'
@@ -1498,31 +1515,31 @@ h2o.shap_explain_row_plot <-
 #'                   seed = 1)
 #'
 #' # Create the variable importance heatmap
-#' varimp_heatmap <- h2o.varimp_heatmap(aml, test)
+#' varimp_heatmap <- h2o.varimp_heatmap(aml)
 #' print(varimp_heatmap)
 #' }
 #' @export
-h2o.varimp_heatmap <- function(object, 
-                               newdata, 
+h2o.varimp_heatmap <- function(object,
                                top_n = 20) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
-  models_info <- .process_models_or_automl(object, newdata,
+  models_info <- .process_models_or_automl(object, NULL,
                                            require_multiple_models = TRUE,
-                                           top_n_from_AutoML = top_n, only_with_varimp = TRUE
-  )
+                                           top_n_from_AutoML = top_n, only_with_varimp = TRUE,
+                                           require_newdata = FALSE)
   models <- Filter(.has_varimp, models_info$model_ids)
-  varimps <- lapply(lapply(models, models_info$get_model), .varimp, newdata)
+  varimps <- lapply(lapply(models, models_info$get_model), .varimp)
   names(varimps) <- .model_ids(models)
-  varimps <- lapply(varimps, function(varimp) {
-    varimp[models_info$x[!models_info$x %in% names(varimp)]] <- 0
-    varimp[models_info$x]
-  })
+
   res <- do.call(rbind, varimps)
   results <- as.data.frame(res)
   ordered <- row.names(results)
+  y_ordered <- make.names(names(results))
   if (length(ordered) > 2) {
     ordered <- ordered[stats::hclust(stats::dist(results))$order]
+  }
+  if (length(y_ordered) > 2) {
+    y_ordered <- y_ordered[stats::hclust(stats::dist(t(results)))$order]
   }
   results[["model_id"]] <- row.names(results)
   results <- stats::reshape(results,
@@ -1548,6 +1565,7 @@ h2o.varimp_heatmap <- function(object,
     ggplot2::geom_tile() +
     ggplot2::labs(fill = "Variable Importance", x = "Model Id", y = "Feature", title = "Variable Importance") +
     ggplot2::scale_x_discrete(limits = .shorten_model_ids(ordered)) +
+    ggplot2::scale_y_discrete(limits = y_ordered) +
     ggplot2::scale_fill_distiller(palette = "RdYlBu") +
     ggplot2::theme_bw() +
     ggplot2::theme(
@@ -2505,7 +2523,7 @@ h2o.explain <- function(object,
       )
     } else {
       models_with_varimp <- Filter(.has_varimp, models_info$model_ids)
-      varimp <- names(.varimp(models_info$get_model(models_with_varimp[[1]]), newdata))
+      varimp <- names(.varimp(models_info$get_model(models_with_varimp[[1]])))
       columns_of_interest <- rev(varimp)[seq_len(min(length(varimp), top_n_features))]
       # deal with encoded columns
       columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
@@ -2591,7 +2609,6 @@ h2o.explain <- function(object,
           description = .describe("varimp_heatmap"),
           plots = list(.customized_call(h2o.varimp_heatmap,
                                         object = models_info,
-                                        newdata = newdata,
                                         overrides = plot_overrides$varimp_heatmap
           )))
       }
@@ -2890,7 +2907,7 @@ h2o.explain_row <- function(object,
       )
     } else {
       models_with_varimp <- Filter(.has_varimp, models_info$model_ids)
-      varimp <- names(.varimp(models_info$get_model(models_with_varimp[[1]]), newdata))
+      varimp <- names(.varimp(models_info$get_model(models_with_varimp[[1]])))
       columns_of_interest <- rev(varimp)[seq_len(min(length(varimp), top_n_features))]
       # deal with encoded columns
       columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
