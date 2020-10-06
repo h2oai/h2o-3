@@ -86,36 +86,45 @@ class Description:
                         "metrics by default (depending on the H2OAutoML settings), otherwise it shows "
                         "metrics computed on the frame. At most 20 models are shown by default.",
         confusion_matrix="Confusion matrix shows a predicted class vs an actual class.",
-        residual_analysis="Residual analysis plot shows residuals vs fitted values. "
-                          "Ideally, residuals should be randomly distributed. Patterns in this plot can indicate "
-                          "potential problems with the model selection, e.g., using simpler model than necessary, "
-                          "not accounting for heteroscedasticity, autocorrelation etc.",
-        variable_importance="Variable importance shows how much do the predictions depend on what variable.",
-        varimp_heatmap="Variable importance heatmap shows variable importances on multiple models. "
-                                    "By default, the models and variables are ordered by their similarity.",
-        model_correlation_heatmap="Model correlation matrix shows correlation between prediction of the models. "
-                                  "For classification, frequency of same predictions is used. By default, models "
-                                  "are ordered by their similarity. Interpretable models, such as GAM, GLM, and RuleFit"
-                                  " are highlighted using red colored text.",
-        shap_summary="SHAP summary plot shows contribution of features for each instance. The sum "
-                     "of the feature contributions and the bias term is equal to the raw prediction "
-                     "of the model, i.e., prediction before applying inverse link function.",
-        pdp="Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable "
-            "on the response. The effect of a variable is measured in change in the mean response. "
-            "PDP assumes independence between the feature for which is the PDP computed and the rest.",
-        ice="Individual conditional expectations (ICE) plot gives a graphical depiction of the marginal "
-            "effect of a variable on the response. ICE plot is similar to partial dependence plot (PDP), "
-            "PDP shows the average effect of a feature while ICE plot shows the effect for a single "
-            "instance. The following plot shows the effect for each decile. "
-            "In contrast to partial dependence plot, ICE plot can provide more insight especially when "
-            "there is stronger feature interaction.",
+        residual_analysis="Residual Analysis plots the fitted values vs residuals on a test dataset. Ideally, "
+                          "residuals should be randomly distributed. Patterns in this plot can indicate potential "
+                          "problems with the model selection, e.g., using simpler model than necessary, not accounting "
+                          "for heteroscedasticity, autocorrelation, etc. Note that if you see \"striped\" lines of "
+                          "residuals, that is an artifact of having an integer valued (vs a real valued) "
+                          "response variable.",
+        variable_importance="The variable importance plot shows the relative importance of the most "
+                            "important variables in the model.",
+        varimp_heatmap="Variable importance heatmap shows variable importance across multiple models. "
+                       "Some models in H2O return variable importance for one-hot (binary indicator) "
+                       "encoded versions of categorical columns (e.g. Deep Learning, XGBoost). "
+                       "In order for the variable importance of categorical columns to be compared "
+                       "across all model types we compute a summarization of the the variable importance "
+                       "across all one-hot encoded features and return a single variable importance for the "
+                       "original categorical feature. By default, the models and variables are ordered by "
+                       "their similarity.",
+        model_correlation_heatmap="This plot shows the correlation between the predictions of the models. "
+                                  "For classification, frequency of identical predictions is used. By default, "
+                                  "models are ordered by their similarity (as computed by hierarchical clustering). "
+                                  "Interpretable models, such as GAM, GLM, and RuleFit are highlighted using "
+                                  "red colored text.",
+        shap_summary="SHAP summary plot shows the contribution of the features for each instance (row of data). "
+                     "The sum of the feature contributions and the bias term is equal to the raw prediction of "
+                     "the model, i.e., prediction before applying inverse link function.",
+        pdp="Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable on "
+            "the response. The effect of a variable is measured in change in the mean response. PDP assumes "
+            "independence between the feature for which is the PDP computed and the rest.",
+        ice="An Individual Conditional Expectation (ICE) plot gives a graphical depiction of the marginal effect "
+            "of a variable on the response. ICE plots are similar to partial dependence plots (PDP); PDP shows the "
+            "average effect of a feature while ICE plot shows the effect for a single instance. This function will "
+            "plot the effect for each decile. In contrast to the PDP, ICE plots can provide more insight, especially "
+            "when there is stronger feature interaction.",
         ice_row="Individual conditional expectations (ICE) plot gives a graphical depiction of the marginal "
                 "effect of a variable on the response for a given row. ICE plot is similar to partial "
                 "dependence plot (PDP), PDP shows the average effect of a feature while ICE plot shows "
                 "the effect for a single instance.",
         shap_explain_row="SHAP explanation shows contribution of features for a given instance. The sum "
-                         "of the feature contributions and the bias term is equal to the raw prediction "
-                         "of the model, i.e., prediction before applying inverse link function. H2O implements "
+                         "of the feature contributions and the bias term is equal to the raw prediction of "
+                         "the model, i.e., prediction before applying inverse link function. H2O implements "
                          "TreeSHAP which when the features are correlated, can increase contribution of a feature "
                          "that had no influence on the prediction.",
     )
