@@ -49,7 +49,8 @@ public class Rule extends Iced {
     public void transform(Chunk[] chunk, byte[] bytes) {
         Arrays.fill(bytes, (byte) 1);
         for (Condition c : conditions) {
-            c.new ConditionConverter().map(chunk, bytes);
+            //c.new ConditionConverter().map(chunk, bytes);
+            c.map(chunk, bytes);
         }
     }
     
