@@ -214,7 +214,7 @@ with_no_h2o_progress <- function(expr) {
 #' @param top_n_from_AutoML If set, don't return more than top_n models (applies only for AutoML object)
 #' @param only_with_varimp If TRUE, return only models that have variable importance
 #' @param best_of_family If TRUE, return only the best of family models; if FALSE return all models in \code{object}
-#' @param require_newdata If TRUE, require newdata to be specified; otherwise allow NA instead, this can be used when
+#' @param require_newdata If TRUE, require newdata to be specified; otherwise allow NULL instead, this can be used when
 #'                        there is no need to know if the problem is (multinomial) classification.
 #'
 #' @return a list with the following names \code{leader}, \code{is_automl}, \code{models},
