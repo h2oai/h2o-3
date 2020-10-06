@@ -155,11 +155,13 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) && _parms._ignored_columns != null) {
             glmParameters._ignored_columns = _parms._ignored_columns;
         }
-        glmParameters._response_column = _parms._response_column;
+        glmParameters._response_column = "linear." + _parms._response_column;
         glmParameters._seed = _parms._seed;
         // alpha ignored - set to 1 by rulefit (Lasso)
         glmParameters._alpha = new double[]{1};
-        glmParameters._weights_column = _parms._weights_column;
+        if (_parms._weights_column != null) {
+            glmParameters._weights_column = "linear." + _parms._weights_column;
+        }
     }
 
 
@@ -179,10 +181,6 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             try {
                 // linearTrain = frame to be used as _train for GLM in 2., will be filled in 1.
                 Frame linearTrain = new Frame(Key.make("paths_frame" + _result));
-                linearTrain.add(_parms._response_column, _response);
-                if (_parms._weights_column != null) {
-                    linearTrain.add(_parms._weights_column, _weights);
-                }
                 
                 // 1. Rule generation
         
@@ -214,11 +212,13 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
                 // prepare linear terms
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.LINEAR.equals(_parms._model_type)) {
-                    String[] names = ArrayUtils.remove(_train._names, _parms._response_column);
-                    if (_parms._weights_column != null) {
-                        names = ArrayUtils.remove(names, _parms._weights_column);
-                    }
+                    String[] names = _train._names;
                     linearTrain.add(RuleFitUtils.getLinearNames(names.length, names), _train.vecs(names));
+                } else {
+                    linearTrain.add(glmParameters._response_column, _train.vec(_parms._response_column));
+                    if (_parms._weights_column != null) {
+                        linearTrain.add(glmParameters._weights_column, _train.vec(_parms._weights_column));
+                    }
                 }
                 DKV.put(linearTrain);
 
