@@ -1,44 +1,25 @@
-FROM nvidia/cuda:9.0-devel-centos7
+FROM nvidia/cuda:10.0-devel-centos7
 MAINTAINER h2oai "h2o.ai"
 
 ARG JENKINS_UID='2117'
 ARG JENKINS_GID='2117'
 ARG H2O_BRANCH='h2o3'
-ARG PYTHON_VERSIONS='3.5,3.6,3.7,3.8'
+ARG PYTHON_VERSIONS='3.5,3.6'
 
 RUN \
-    curl -s https://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo | sed 's/\$releasever/6/g' > /etc/yum.repos.d/epel-apache-maven.repo && \
+    curl -s https://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo | sed 's/\$releasever/7/g' > /etc/yum.repos.d/epel-apache-maven.repo && \
     yum install -y centos-release-scl && \
-    yum install -y devtoolset-4-toolchain python27 python33-python-virtualenv zip java-1.8.0-openjdk-devel apache-maven wget git unzip make
+    yum install -y devtoolset-7-toolchain python3 zip java-1.8.0-openjdk-devel apache-maven wget git unzip make
 
-# Install all Python versions
+# Install Python versions above
 COPY xgb_build/scripts/install_python_version_centos /usr/sbin/
 RUN \
+    pip3 install virtualenv && \
     chmod a+x /usr/sbin/install_python_version_centos && \
     sync && \
     /usr/sbin/install_python_version_centos
 
-RUN \
-    # Check that gcc is of correct version
-    source scl_source enable devtoolset-4 && \
-    if [ "$(gcc --version | head -1)" != 'gcc (GCC) 5.3.1 20160406 (Red Hat 5.3.1-6)' ]; then exit 1; fi && \
-    # Install CMake
-    wget http://www.cmake.org/files/v3.12/cmake-3.12.3.tar.gz && \
-    tar -xvzf cmake-3.12.3.tar.gz && \
-    cd cmake-3.12.3/ && \
-    ./configure && \
-    make && \
-    make install && \
-    cd .. && \
-    rm -rf cmake-3.12.3 && \
-    if [ "$(cmake --version | head -1)" != 'cmake version 3.12.3' ]; then exit 1; fi
-
-# Add the Jenkins user
-RUN \
-    groupadd -g ${JENKINS_GID} jenkins && \
-    useradd jenkins -m -u ${JENKINS_UID} -g jenkins
-
-# Install deps and build Python 3.7
+# Install deps for pythons and cmake
 RUN \
     yum install -y xz libffi-devel bzip2-devel ncurses-devel gdbm-devel xz-devel sqlite-devel readline-devel zlib-devel libuuid-devel && \
     yum groupinstall -y 'Development Tools' && \
@@ -50,22 +31,36 @@ RUN \
     make && \
     make install && \
     cd .. && \
-    rm -rf openssl-1.1.0h* && \
-    curl -LO 'https://www.python.org/ftp/python/3.7.0/Python-3.7.0.tar.xz' && \
-    tar -xf Python-3.7.0.tar.xz
+    rm -rf openssl-1.1.0h*
 
-COPY xgb_build/scripts/Setup.dist.patched /usr/src/Python-3.7.0/Modules/Setup.dist
-
-# Install Python 3.7
+ENV CMAKE_VERSION '3.18'
+ENV CMAKE_PATCH '2'
 RUN \
-    cd /usr/src/Python-3.7.0 && \
-    LDFLAGS="-Wl,-rpath=/usr/local/openssl11/lib" ./configure --prefix=/usr/local/python37 --with-openssl=/usr/local/openssl11 --with-system-ffi && \
-    make altinstall && \
-    ln -s /usr/local/python37/bin/*3.7* /usr/local/bin && \
+    # Check that gcc is of correct version
+    source scl_source enable devtoolset-7 && \
+    if [ "$(gcc --version | head -1)" != 'gcc (GCC) 7.3.1 20180303 (Red Hat 7.3.1-5)' ]; then exit 1; fi && \
+    # Install CMake
+    cd /usr/src && \
+    wget http://www.cmake.org/files/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.${CMAKE_PATCH}.tar.gz && \
+    tar -xvzf cmake-${CMAKE_VERSION}.${CMAKE_PATCH}.tar.gz && \
+    cd cmake-${CMAKE_VERSION}.${CMAKE_PATCH}/ && \
+    OPENSSL_ROOT_DIR=/usr/local/openssl11 ./configure && \
+    make && \
+    make install && \
     cd .. && \
-    rm -rf Python-3.7.0* && \
-    source /opt/rh/python27/enable && \
-    virtualenv --python=python3.7 /envs/xgb-env-py3.7 && \
-    . /envs/xgb-env-py3.7/bin/activate && \
-    pip install pip wheel setuptools --upgrade && \
-    deactivate
+    rm -rf cmake-${CMAKE_VERSION}.${CMAKE_PATCH}* && \
+    if [ "$(cmake --version | head -1)" != "cmake version ${CMAKE_VERSION}.${CMAKE_PATCH}" ]; then exit 1; fi
+
+# Install Python 3.7 and 3.8
+COPY xgb_build/scripts/Setup.dist.patched /usr/src/
+COPY xgb_build/scripts/install_python_source_centos /usr/sbin/
+RUN \
+    chmod a+x /usr/sbin/install_python_source_centos && \
+    sync && \
+    /usr/sbin/install_python_source_centos 3.7.0 /usr/src/Setup.dist.patched && \
+    /usr/sbin/install_python_source_centos 3.8.0
+
+# Add the Jenkins user
+RUN \
+    groupadd -g ${JENKINS_GID} jenkins && \
+    useradd jenkins -m -u ${JENKINS_UID} -g jenkins

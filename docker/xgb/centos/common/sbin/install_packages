@@ -8,30 +8,9 @@ yum update -y curl
 rpm --rebuilddb
 yum update -y libcurl
 rpm --rebuilddb
-yum install -y wget
+yum install -y wget gcc gcc-c++ shadow-utils.x86_64
 rpm --rebuilddb
-yum -y install gcc gcc-c++
-rpm --rebuilddb
-yum install -y shadow-utils.x86_64
-rpm --rebuilddb
-wget --no-check-certificate https://centos$(rpm -q --queryformat '%{VERSION}' centos-release).iuscommunity.org/ius-release.rpm
-yum -y install ius-release.rpm
-rm ius-release.rpm
+yum -y install https://repo.ius.io/ius-release-el$(rpm -q --queryformat '%{VERSION}' centos-release).rpm
 sed -i '/\[ius.*\]/a sslverify=0' /etc/yum.repos.d/ius.repo
 rpm --rebuilddb
-yum -y install python35u-devel
-rpm --rebuilddb
-yum -y install python-pip
-rpm --rebuilddb
-yum -y install python-virtualenv
-rpm --rebuilddb
-yum -y install git
-rpm --rebuilddb
-yum -y install mysql-devel
-rpm --rebuilddb
-yum -y install unzip
-rpm --rebuilddb
-yum -y install make
-rpm --rebuilddb
-yum -y install tar
-rpm --rebuilddb
+yum -y install python35u-devel python-pip python-virtualenv git mysql-devel unzip make tar
