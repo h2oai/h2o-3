@@ -196,8 +196,8 @@ try {
                                 sh """
                                     cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
                                     sed -i 's/name: h2o-3/name: h2o-test-3/' Chart.yaml
-                                    sed -i 's/version: [0-9]*\.[0-9]*\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
-                                    sed -i 's/appVersion: [0-9]*\.[0-9]*\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
+                                    sed -i 's/version: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
+                                    sed -i 's/appVersion: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
                                     helm package .
                                     mkdir h2o-3
                                     cp h2o-3-test-${THREE_DIGITS_VERSION}.tgz h2o-3/
@@ -212,8 +212,8 @@ try {
                                     sh """
                                         cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
                                         sed -i 's/name: h2o-3/name: h2o-3-nightly/' Chart.yaml
-                                        sed -i 's/version: [0-9]*\.[0-9]*\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
-                                        sed -i 's/appVersion: [0-9]*\.[0-9]*\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
+                                        sed -i 's/version: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
+                                        sed -i 's/appVersion: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
                                         helm package .
                                         mkdir h2o-3
                                         cp h2o-3-${env.BUILD_NUMBER_DIR}-${THREE_DIGITS_VERSION}.tgz h2o-3/
@@ -227,8 +227,8 @@ try {
                                 } else{
                                     sh """
                                         cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
-                                        sed -i 's/version: [0-9]*\.[0-9]*\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
-                                        sed -i 's/appVersion: [0-9]*\.[0-9]*\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
+                                        sed -i 's/version: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
+                                        sed -i 's/appVersion: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
                                         helm package .
                                         mkdir h2o-3
                                         cp h2o-3-${THREE_DIGITS_VERSION}.tgz h2o-3/
