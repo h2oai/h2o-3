@@ -53,6 +53,9 @@ Downlaod at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/inde
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7730'>PUBDEV-7730</a>] -         Added function to plot a Precision Recall Curve.
 </li>
+<li>
+[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7740'>PUBDEV-7740</a>] -         RuleFit model represented by the set of rules obtained from trees during training.
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7765'>PUBDEV-7765</a>] -         Performance improved for exporting a Frame to CSV.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7769'>PUBDEV-7769</a>] -         GPU backend allowed in XGBoost when running multinode even when `build_tree_one_node` is enabled.
