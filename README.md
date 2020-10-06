@@ -690,7 +690,7 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 * GAM Improvements (Cross Validation, MOJO support)
 * Target Encoding for Regression and Multinomial problems
 * Target Encoding minimal integration into AutoML
-* Kubernetes Improvements (REST API clustering, healthchecks, Helm Chart)
+* Kubernetes Improvements (Helm Charts)
 * GBM monotone constraints for quantile and tweedie distributions
 * Performance optimizations (lower memory usage)
 * Model Explainability
