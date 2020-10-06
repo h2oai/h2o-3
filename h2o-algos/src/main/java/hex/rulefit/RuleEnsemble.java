@@ -33,16 +33,13 @@ public class RuleEnsemble extends Iced {
                 
                 RuleEnsemble ruleEnsemble = new RuleEnsemble(filteredRules.toArray(new Rule[] {}));
                 Frame frameToMakeCategorical = ruleEnsemble.transform(frame);
-                Vec tmpCol = null;
                 try {
                     Decoder mrtask = new Decoder(frameToMakeCategorical.names());
-                    tmpCol = mrtask.doAll(1, Vec.T_STR, frameToMakeCategorical).outputFrame().vec(0);
-                    Vec catCol = tmpCol.toCategoricalVec();
+                    Vec catCol = mrtask.doAll(1, Vec.T_CAT, frameToMakeCategorical)
+                            .outputFrame(null, null, new String[][] {frameToMakeCategorical.names()}).vec(0);
                     glmTrainFrame.add("M" + i + "T" + j, catCol);
                 } finally {
                     frameToMakeCategorical.remove();
-                    if (tmpCol != null)
-                        tmpCol.remove();
                 }
             }
         }
@@ -50,13 +47,11 @@ public class RuleEnsemble extends Iced {
     }
 
     public Frame transform(Frame frame) {
-        Frame transformedFrame = new Frame();
-        Frame actFrame;
-        for (Rule rule : rules) {
-            actFrame = rule.transform(frame);
-            actFrame.setNames(new String[] {String.valueOf(rule.varName)});
-            transformedFrame.add(actFrame);
-        }
+        String[] names = new String[rules.length];
+        Transform mrtask = new Transform(rules, names);
+        Frame transformedFrame = mrtask.doAll(rules.length, Vec.T_NUM, frame).outputFrame();
+        transformedFrame.setNames(mrtask._names);
+
         return transformedFrame;
     }
 
@@ -75,6 +70,31 @@ public class RuleEnsemble extends Iced {
     }
 }
 
+class Transform extends MRTask<Transform> {
+    Rule[] _rules;
+    String[] _names;
+
+    Transform(Rule[] rules, String[] names) {
+        _rules = rules;
+        _names = names;
+    }
+
+    @Override
+    public void map(Chunk[] cs, NewChunk[] ncs) {
+        byte[][] bytes = new byte[_rules.length][];
+        for (int i = 0; i < _rules.length; i++) {
+            bytes[i] = _rules[i].transform(cs);
+            _names[i] = _rules[i].varName;
+
+            // write result to NewChunk
+            for (int j = 0; j < bytes[i].length; j++)
+                ncs[i].addNum(bytes[i][j]);
+        }
+    }
+}
+
+
+
 class Decoder extends MRTask<hex.rulefit.Decoder> {
     final String[] _colNames;
     
@@ -84,14 +104,17 @@ class Decoder extends MRTask<hex.rulefit.Decoder> {
     }
     
     @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-        String newValue = "";
+        int newValue = -1;
         for (int iRow = 0; iRow < cs[0].len(); iRow++) {
             for (int iCol = 0; iCol < cs.length; iCol++) {
                 if (cs[iCol].at8(iRow) == 1) {
-                    newValue = _colNames[iCol];
+                    newValue = iCol;
                 }
             }
-            ncs[0].addStr(newValue);
+            if (newValue >= 0)
+                ncs[0].addNum(newValue);
+            else
+                ncs[0].addNA();
         }
     }
 }

@@ -5,6 +5,7 @@ import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.tree.SharedTreeModel;
 import water.Iced;
 import water.MRTask;
+import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -45,6 +46,14 @@ public class Rule extends Iced {
         return languageRule.toString();
     }
 
+    public byte[] transform(Chunk[] chunk) {
+        byte[][] bytes = new byte[conditions.length][];
+        for (int i = 0; i < conditions.length; i++) {
+            bytes[i] = conditions[i].transform(chunk);
+        }
+        return ruleReducer(bytes);
+    }
+    
     public Frame transform(Frame frame) {
         Frame frameToReduce = new Frame();
         for (int i = 0; i < conditions.length; i++) {
@@ -148,6 +157,19 @@ public class Rule extends Iced {
 
     double getAbsCoefficient() {
         return Math.abs(coefficient);
+    }
+
+    byte[] ruleReducer(byte[][] bytes) {
+        byte[] ncs = MemoryManager.malloc1(bytes[0].length);
+        byte newVal;
+        for (int iRow = 0; iRow < bytes[0].length; iRow++) {
+            newVal = 1;
+            for (int iCol = 0; iCol < bytes.length; iCol++) {
+                newVal *= bytes[iCol][iRow];
+            }
+            ncs[iRow] = newVal;
+        }
+        return ncs;
     }
 
     static class RuleReducer extends MRTask<RuleReducer> {

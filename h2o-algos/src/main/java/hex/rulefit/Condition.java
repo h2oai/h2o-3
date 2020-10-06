@@ -2,9 +2,11 @@ package hex.rulefit;
 
 import water.Iced;
 import water.MRTask;
+import water.MemoryManager;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.util.ArrayUtils;
+import java.util.Arrays;
 
 public class Condition extends Iced {
     public enum Type {Categorical, Numerical};
@@ -60,6 +62,54 @@ public class Condition extends Iced {
         return mrtask.doAll(1, Vec.T_NUM, frame).outputFrame();
     }
 
+    public byte[] transform(Chunk[] cs) {
+        Chunk col = cs[Condition.this.featureIndex];
+        byte[] bytes = MemoryManager.malloc1(col.len());
+        Arrays.fill(bytes, (byte) 1);
+        map(cs, bytes);
+        return bytes;
+    }
+
+    public void map(Chunk[] cs, byte[] out) {
+        Chunk col = cs[Condition.this.featureIndex];
+        for (int iRow = 0; iRow < col._len; ++iRow) {
+            if (out[iRow] == 0)
+                continue;
+            byte newVal = 0;
+            boolean isNA = col.isNA(iRow);
+            // check whether condition is fulfilled:
+            if (Condition.this.NAsIncluded && isNA) {
+                newVal = 1;
+            } else if (!isNA) {
+                if (Condition.Type.Numerical.equals(Condition.this.type)) {
+                    if (Condition.Operator.LessThan.equals(Condition.this.operator)) {
+                        if (col.atd(iRow) < Condition.this.numTreshold) {
+                            newVal = 1;
+                        }
+                    } else if (Condition.Operator.GreaterThanOrEqual.equals(Condition.this.operator)) {
+                        if (col.atd(iRow) >= Condition.this.numTreshold) {
+                            newVal = 1;
+                        }
+                    }
+                } else if (Condition.Type.Categorical.equals(Condition.this.type)) {
+                    BufferedString tmpStr = new BufferedString();
+                    for (int i = 0; i < Condition.this.catTreshold.length; i++) {
+                        // for string vecs
+                        if (col instanceof CStrChunk) {
+                            if (ArrayUtils.contains(Condition.this.languageCatTreshold, col.atStr(tmpStr,iRow))) {
+                                newVal = 1;
+                            }
+                            // for other categorical vecs
+                        } else if (Condition.this.catTreshold[i] == col.atd(iRow)) {
+                            newVal = 1;
+                        }
+                    }
+                }
+            }
+            out[iRow] = newVal;
+        }
+    }
+
     @Override
     public boolean equals(Object obj) {
         return this.hashCode() == obj.hashCode();
@@ -72,10 +122,23 @@ public class Condition extends Iced {
 
     class ConditionConverter extends MRTask<ConditionConverter> {
 
-        @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+        @Override
+        public void map(Chunk[] cs, NewChunk nc) {
+            Chunk col = cs[Condition.this.featureIndex];
+            byte[] out = MemoryManager.malloc1(col.len());
+            Arrays.fill(out, (byte) 1);
+            map(cs, out);
+            for (byte b : out) {
+                nc.addNum(b);
+            }
+        }
+
+        public void map(Chunk[] cs, byte[] out) {
             Chunk col = cs[Condition.this.featureIndex];
             for (int iRow = 0; iRow < col._len; ++iRow) {
-                int newVal = 0;
+                if (out[iRow] == 0)
+                    continue;
+                byte newVal = 0;
                 boolean isNA = col.isNA(iRow);
                 // check whether condition is fulfilled:
                 if (Condition.this.NAsIncluded && isNA) {
@@ -106,7 +169,7 @@ public class Condition extends Iced {
                         }
                     }
                 }
-                ncs[0].addNum(newVal);
+                out[iRow] = newVal;
             }
         }
     }
