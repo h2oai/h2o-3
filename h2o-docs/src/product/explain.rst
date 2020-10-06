@@ -343,12 +343,12 @@ Variable importance heatmap shows variable importance across multiple models. So
 .. tabs::
    .. code-tab:: r R
 
-        va_plot <- h2o.varimp_heatmap(aml, test)
+        va_plot <- h2o.varimp_heatmap(aml)
         va_plot
 
    .. code-tab:: python
 
-        ra_plot = aml.leader.varimp_plot(test)
+        ra_plot = aml.varimp_heatmap()
 
 
 .. figure:: images/explain_varimp_heatmap_wine.png
