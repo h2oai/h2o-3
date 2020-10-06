@@ -119,7 +119,6 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
                 linearTest.add(RuleFitUtils.getLinearNames(adaptFrm.numCols(), adaptFrm.names()), adaptFrm.vecs());
             }
 
-            GLMModel glmModel = DKV.getGet(_output.glmModelKey);
             Frame scored = glmModel.score(linearTest, destination_key, null, true);
 
             updateModelMetrics(glmModel, fr);

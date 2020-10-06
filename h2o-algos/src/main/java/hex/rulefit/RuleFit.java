@@ -188,7 +188,6 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         
                 // get paths from tree models
                 int[] depths = range(_parms._min_rule_length, _parms._max_rule_length);
-                List<SharedTreeModel> treeModels = new ArrayList<>();
                 
                 // prepare rules
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.RULES.equals(_parms._model_type)) {
