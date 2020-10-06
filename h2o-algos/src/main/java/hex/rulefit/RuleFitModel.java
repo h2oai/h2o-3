@@ -70,8 +70,6 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
 
         public TwoDimTable _rule_importance = null;
 
-        Key[] treeModelsKeys = null;
-
         Key glmModelKey = null;
 
         //  feature interactions ...

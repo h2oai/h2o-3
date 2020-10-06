@@ -47,10 +47,9 @@ public class RuleEnsemble extends Iced {
     }
 
     public Frame transform(Frame frame) {
-        String[] names = new String[rules.length];
-        RuleEnsembleConverter rc = new RuleEnsembleConverter(names);
+        RuleEnsembleConverter rc = new RuleEnsembleConverter(new String[rules.length]);
         Frame transformedFrame =  rc.doAll(rules.length, Vec.T_NUM, frame).outputFrame();
-        transformedFrame.setNames(names);
+        transformedFrame.setNames(rc._names);
         return transformedFrame;
     }
 

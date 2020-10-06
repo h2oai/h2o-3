@@ -244,11 +244,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 DKV.remove(linearTrain._key);
                 
                 model = new RuleFitModel(dest(), _parms, new RuleFitModel.RuleFitOutput(RuleFit.this), glmModel, ruleEnsemble);
-
-                model._output.treeModelsKeys = new Key[treeModels.size()];
-                for (int modelId = 0; modelId < treeModels.size(); modelId++) {
-                    model._output.treeModelsKeys[modelId] = treeModels.get(modelId)._key;
-                }
+                
                 model._output.glmModelKey = glmModel._key;
 
                 // 3. Step 3 (optional): Feature importance
