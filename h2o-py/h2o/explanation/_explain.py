@@ -1320,7 +1320,7 @@ def _consolidate_varimps(model):
 
     for feature in to_process.keys():
         col_parts = feature.split(".")
-        for i in range(1, len(col_parts) + 1):
+        for i in range(1, len(col_parts) + 1)[::-1]:
             if ".".join(col_parts[:i]) in x:
                 column = ".".join(col_parts[:i])
                 consolidated_varimps[column] = consolidated_varimps.get(column, 0) + to_process[

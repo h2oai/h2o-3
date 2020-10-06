@@ -33,16 +33,13 @@ public class RuleEnsemble extends Iced {
                 
                 RuleEnsemble ruleEnsemble = new RuleEnsemble(filteredRules.toArray(new Rule[] {}));
                 Frame frameToMakeCategorical = ruleEnsemble.transform(frame);
-                Vec tmpCol = null;
                 try {
-                    Decoder mrtask = new Decoder(frameToMakeCategorical.names());
-                    tmpCol = mrtask.doAll(1, Vec.T_STR, frameToMakeCategorical).outputFrame().vec(0);
-                    Vec catCol = tmpCol.toCategoricalVec();
+                    Decoder mrtask = new Decoder();
+                    Vec catCol = mrtask.doAll(1, Vec.T_CAT, frameToMakeCategorical)
+                            .outputFrame(null, null, new String[][]{frameToMakeCategorical.names()}).vec(0);
                     glmTrainFrame.add("M" + i + "T" + j, catCol);
                 } finally {
                     frameToMakeCategorical.remove();
-                    if (tmpCol != null)
-                        tmpCol.remove();
                 }
             }
         }
@@ -50,14 +47,31 @@ public class RuleEnsemble extends Iced {
     }
 
     public Frame transform(Frame frame) {
-        Frame transformedFrame = new Frame();
-        Frame actFrame;
-        for (Rule rule : rules) {
-            actFrame = rule.transform(frame);
-            actFrame.setNames(new String[] {String.valueOf(rule.varName)});
-            transformedFrame.add(actFrame);
-        }
+        RuleEnsembleConverter rc = new RuleEnsembleConverter(new String[rules.length]);
+        Frame transformedFrame =  rc.doAll(rules.length, Vec.T_NUM, frame).outputFrame();
+        transformedFrame.setNames(rc._names);
         return transformedFrame;
+    }
+
+    class RuleEnsembleConverter extends MRTask<RuleEnsembleConverter> {
+        String[] _names;
+        
+        RuleEnsembleConverter(String[] names) {
+            _names = names;
+        }
+        
+        @Override
+        public void map(Chunk[] cs, NewChunk[] nc) {
+            byte[] out = MemoryManager.malloc1(cs[0].len());
+            for (int i = 0; i < rules.length; i++) {
+                Arrays.fill(out, (byte) 1);
+                rules[i].map(cs, out);
+                _names[i] = rules[i].varName;
+                for (byte b : out) {
+                    nc[i].addNum(b);
+                }
+            }
+        }
     }
 
     public Rule getRuleByVarName(String code) {
@@ -73,25 +87,25 @@ public class RuleEnsemble extends Iced {
             throw new RuntimeException("No rule with varName " + code + " found!");
         }
     }
-}
 
-class Decoder extends MRTask<hex.rulefit.Decoder> {
-    final String[] _colNames;
-    
-    Decoder(String[] colNames) {
-        super();
-        _colNames = colNames;
-    }
-    
-    @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-        String newValue = "";
-        for (int iRow = 0; iRow < cs[0].len(); iRow++) {
-            for (int iCol = 0; iCol < cs.length; iCol++) {
-                if (cs[iCol].at8(iRow) == 1) {
-                    newValue = _colNames[iCol];
+    static class Decoder extends MRTask<Decoder> {
+        Decoder() {
+            super();
+        }
+
+        @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+            int newValue = -1;
+            for (int iRow = 0; iRow < cs[0].len(); iRow++) {
+                for (int iCol = 0; iCol < cs.length; iCol++) {
+                    if (cs[iCol].at8(iRow) == 1) {
+                        newValue = iCol;
+                    }
                 }
+                if (newValue >= 0)
+                    ncs[0].addNum(newValue);
+                else
+                    ncs[0].addNA();
             }
-            ncs[0].addStr(newValue);
         }
     }
 }

@@ -70,8 +70,6 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
 
         public TwoDimTable _rule_importance = null;
 
-        Key[] treeModelsKeys = null;
-
         Key glmModelKey = null;
 
         //  feature interactions ...
@@ -121,7 +119,6 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
                 linearTest.add(RuleFitUtils.getLinearNames(adaptFrm.numCols(), adaptFrm.names()), adaptFrm.vecs());
             }
 
-            GLMModel glmModel = DKV.getGet(_output.glmModelKey);
             Frame scored = glmModel.score(linearTest, destination_key, null, true);
 
             updateModelMetrics(glmModel, fr);
@@ -143,11 +140,6 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
     }
 
     void updateModelMetrics( GLMModel glmModel, Frame fr){
-        this._output._validation_metrics = glmModel._output._validation_metrics;
-        this._output._training_metrics = glmModel._output._training_metrics;
-        this._output._cross_validation_metrics = glmModel._output._cross_validation_metrics;
-        this._output._cross_validation_metrics_summary = glmModel._output._cross_validation_metrics_summary;
-
         for (Key<ModelMetrics> modelMetricsKey : glmModel._output.getModelMetrics()) {
             this.addModelMetrics(modelMetricsKey.get().deepCloneWithDifferentModelAndFrame(this, fr));
         }
