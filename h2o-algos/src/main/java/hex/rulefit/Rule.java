@@ -46,12 +46,11 @@ public class Rule extends Iced {
         return languageRule.toString();
     }
 
-    public byte[] transform(Chunk[] chunk) {
-        byte[][] bytes = new byte[conditions.length][];
-        for (int i = 0; i < conditions.length; i++) {
-            bytes[i] = conditions[i].transform(chunk);
+    public void transform(Chunk[] chunk, byte[] bytes) {
+        Arrays.fill(bytes, (byte) 1);
+        for (Condition c : conditions) {
+            c.new ConditionConverter().map(chunk, bytes);
         }
-        return ruleReducer(bytes);
     }
     
     public Frame transform(Frame frame) {
@@ -157,19 +156,6 @@ public class Rule extends Iced {
 
     double getAbsCoefficient() {
         return Math.abs(coefficient);
-    }
-
-    byte[] ruleReducer(byte[][] bytes) {
-        byte[] ncs = MemoryManager.malloc1(bytes[0].length);
-        byte newVal;
-        for (int iRow = 0; iRow < bytes[0].length; iRow++) {
-            newVal = 1;
-            for (int iCol = 0; iCol < bytes.length; iCol++) {
-                newVal *= bytes[iCol][iRow];
-            }
-            ncs[iRow] = newVal;
-        }
-        return ncs;
     }
 
     static class RuleReducer extends MRTask<RuleReducer> {

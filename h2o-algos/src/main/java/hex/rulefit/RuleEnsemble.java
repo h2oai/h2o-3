@@ -68,50 +68,48 @@ public class RuleEnsemble extends Iced {
             throw new RuntimeException("No rule with varName " + code + " found!");
         }
     }
-}
 
-class Transform extends MRTask<Transform> {
-    Rule[] _rules;
-    String[] _names;
+    class Transform extends MRTask<Transform> {
+        Rule[] _rules;
+        String[] _names;
 
-    Transform(Rule[] rules, String[] names) {
-        _rules = rules;
-        _names = names;
-    }
+        Transform(Rule[] rules, String[] names) {
+            _rules = rules;
+            _names = names;
+        }
 
-    @Override
-    public void map(Chunk[] cs, NewChunk[] ncs) {
-        byte[][] bytes = new byte[_rules.length][];
-        for (int i = 0; i < _rules.length; i++) {
-            bytes[i] = _rules[i].transform(cs);
-            _names[i] = _rules[i].varName;
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+            byte[] bytes = MemoryManager.malloc1(cs[0]._len);
+            for (int i = 0; i < _rules.length; i++) {
+                _rules[i].transform(cs, bytes);
+                _names[i] = _rules[i].varName;
 
-            // write result to NewChunk
-            for (int j = 0; j < bytes[i].length; j++)
-                ncs[i].addNum(bytes[i][j]);
+                // write result to NewChunk
+                for (int j = 0; j < bytes.length; j++)
+                    ncs[i].addNum(bytes[j]);
+            }
         }
     }
-}
 
+    class Decoder extends MRTask<Decoder> {
+        Decoder() {
+            super();
+        }
 
-
-class Decoder extends MRTask<hex.rulefit.Decoder> {
-    Decoder() {
-        super();
-    }
-    
-    @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-        int newValue = -1;
-        for (int iRow = 0; iRow < cs[0].len(); iRow++) {
-            for (int iCol = 0; iCol < cs.length; iCol++) {
-                if (cs[iCol].at8(iRow) == 1) {
-                    newValue = iCol;
+        @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+            int newValue = -1;
+            for (int iRow = 0; iRow < cs[0].len(); iRow++) {
+                for (int iCol = 0; iCol < cs.length; iCol++) {
+                    if (cs[iCol].at8(iRow) == 1) {
+                        newValue = iCol;
+                    }
                 }
+                if (newValue >= 0)
+                    ncs[0].addNum(newValue);
+                else
+                    ncs[0].addNA();
             }
-            if (newValue >= 0)
-                ncs[0].addNum(newValue);
-            else
-                ncs[0].addNA();
         }
     }
 }
