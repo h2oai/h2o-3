@@ -32,6 +32,9 @@ Downlaod at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/inde
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7796'>PUBDEV-7796</a>] -         Added the model explainability interface for H2O models and AutoML objects in both R & Python.
 </li>
+<li>
+[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7720'>PUBDEV-7720</a>] -         Added the RuleFit algorithm for interpretability.
+</li>
 </ul>
     
 #### Task
