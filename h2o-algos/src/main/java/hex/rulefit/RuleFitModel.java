@@ -143,11 +143,6 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
     }
 
     void updateModelMetrics( GLMModel glmModel, Frame fr){
-        this._output._validation_metrics = glmModel._output._validation_metrics;
-        this._output._training_metrics = glmModel._output._training_metrics;
-        this._output._cross_validation_metrics = glmModel._output._cross_validation_metrics;
-        this._output._cross_validation_metrics_summary = glmModel._output._cross_validation_metrics_summary;
-
         for (Key<ModelMetrics> modelMetricsKey : glmModel._output.getModelMetrics()) {
             this.addModelMetrics(modelMetricsKey.get().deepCloneWithDifferentModelAndFrame(this, fr));
         }
