@@ -188,27 +188,60 @@ try {
                         pipelineContext.getBuildSummary().setStageDetails(this, HELM_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
                         // Helm automatically installs latest chart if version is unspecified by the user, therefore there is no need for a latest tag
                         insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
-                            if (!params.TEST_RELEASE) {
-                                THREE_DIGITS_VERSION = sh (
-                                    script: "echo ${env.PROJECT_VERSION} | sed 's/[0-9]*\.\([0-9]*\.[0-9]*\.[0-9]\)*/\1/g')",
-                                    returnStdout: true
-                                ).trim()
-                                
+                            THREE_DIGITS_VERSION = sh (
+                                script: "echo ${env.PROJECT_VERSION} | sed 's/[0-9]*\.\([0-9]*\.[0-9]*\.[0-9]\)*/\1/g')",
+                                returnStdout: true
+                            ).trim()
+                            if (params.TEST_RELEASE) {
                                 sh """
                                     cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
-                                    sed -i 's/version: [0-9]*\.[0-9]*\.[0-9]*/version: ${env.PROJECT_VERSION}/' Chart.yaml
-                                    sed -i 's/appVersion: [0-9]*\.[0-9]*\.[0-9]*/version: ${env.PROJECT_VERSION}/' Chart.yaml
+                                    sed -i 's/name: h2o-3/name: h2o-test-3/' Chart.yaml
+                                    sed -i 's/version: [0-9]*\.[0-9]*\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
+                                    sed -i 's/appVersion: [0-9]*\.[0-9]*\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
                                     helm package .
                                     mkdir h2o-3
-                                    cp h2o-3-${THREE_DIGITS_VERSION}.tgz h2o-3/
-                                    aws s3 cp h2o-3-${THREE_DIGITS_VERSION}.tgz s3://h2oai-charts/h2o-3/h2o-3-${THREE_DIGITS_VERSION} --acl public-read
-                                    rm h2o-3-${THREE_DIGITS_VERSION}.tgz
-                                    aws s3 cp s3://h2oai-charts/h2o-3 index.yaml
+                                    cp h2o-3-test-${THREE_DIGITS_VERSION}.tgz h2o-3/
+                                    aws s3 cp h2o-3-test-${THREE_DIGITS_VERSION}.tgz s3://h2oai-test-charts/h2o-3/h2o-3-test-${THREE_DIGITS_VERSION}.tgz --acl public-read
+                                    rm h2o-3-test-${THREE_DIGITS_VERSION}.tgz
+                                    aws s3 cp s3://h2oai-test-charts/index.yaml index.yaml
                                     helm repo index . --merge index.yaml
-                                    aws s3 cp index.yaml s3://h2oai-charts/index.yaml --acl public-read
+                                    aws s3 cp index.yaml s3://h2oai-test-charts/index.yaml --acl public-read
                                 """
+                            } else {
+                                if(env.NIGHTLY_BUILD){
+                                    sh """
+                                        cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
+                                        sed -i 's/name: h2o-3/name: h2o-3-nightly/' Chart.yaml
+                                        sed -i 's/version: [0-9]*\.[0-9]*\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
+                                        sed -i 's/appVersion: [0-9]*\.[0-9]*\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
+                                        helm package .
+                                        mkdir h2o-3
+                                        cp h2o-3-${env.BUILD_NUMBER_DIR}-${THREE_DIGITS_VERSION}.tgz h2o-3/
+                                        aws s3 cp h2o-3-${env.BUILD_NUMBER_DIR}-${THREE_DIGITS_VERSION}.tgz s3://h2oai-nightly-charts/h2o-3/h2o-3-${env.BUILD_NUMBER_DIR}-${THREE_DIGITS_VERSION}.tgz --acl public-read
+                                        rm h2o-3-${env.BUILD_NUMBER_DIR}-${THREE_DIGITS_VERSION}.tgz
+                                        aws s3 cp s3://h2oai-nightly-charts/index.yaml index.yaml
+                                        helm repo index . --merge index.yaml
+                                        aws s3 cp index.yaml s3://h2oai-nightly-charts/index.yaml --acl public-read
+                                    """
+                                
+                                } else{
+                                    sh """
+                                        cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
+                                        sed -i 's/version: [0-9]*\.[0-9]*\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
+                                        sed -i 's/appVersion: [0-9]*\.[0-9]*\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
+                                        helm package .
+                                        mkdir h2o-3
+                                        cp h2o-3-${THREE_DIGITS_VERSION}.tgz h2o-3/
+                                        aws s3 cp h2o-3-${THREE_DIGITS_VERSION}.tgz s3://h2oai-charts/h2o-3/h2o-3-${THREE_DIGITS_VERSION}.tgz --acl public-read
+                                        rm h2o-3-${THREE_DIGITS_VERSION}.tgz
+                                        aws s3 cp s3://h2oai-charts/index.yaml index.yaml
+                                        helm repo index . --merge index.yaml
+                                        aws s3 cp index.yaml s3://h2oai-charts/index.yaml --acl public-read
+                                    """
+                                }
                             }
                         }
+
                         pipelineContext.getBuildSummary().markStageSuccessful(this, HELM_STAGE_NAME)
                     } catch (Exception e) {
                         pipelineContext.getBuildSummary().markStageFailed(this, HELM_STAGE_NAME)
