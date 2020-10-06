@@ -189,7 +189,7 @@ try {
                         // Helm automatically installs latest chart if version is unspecified by the user, therefore there is no need for a latest tag
                         insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
                             THREE_DIGITS_VERSION = sh (
-                                script: "echo ${env.PROJECT_VERSION} | sed 's/[0-9]*\\.\\([0-9]*\\.[0-9]*\\.[0-9]\\)*/\\1/g'\\)",
+                                script: "echo ${env.PROJECT_VERSION} | sed 's/[0-9]*\\.\\([0-9]*\\.[0-9]*\\.[0-9]\\)*/\\1/g'",
                                 returnStdout: true
                             ).trim()
                             if (params.TEST_RELEASE) {
