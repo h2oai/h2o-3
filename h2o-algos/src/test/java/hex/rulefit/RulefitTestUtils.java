@@ -1,5 +1,6 @@
 package hex.rulefit;
 
+import org.junit.Ignore;
 import water.MRTask;
 import water.MemoryManager;
 import water.fvec.Chunk;
@@ -9,6 +10,7 @@ import water.fvec.Vec;
 
 import java.util.Arrays;
 
+@Ignore
 public class RulefitTestUtils {
 
     public static Frame transform(Frame frame, Rule rule) {
