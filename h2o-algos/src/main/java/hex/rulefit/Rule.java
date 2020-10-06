@@ -5,6 +5,7 @@ import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.tree.SharedTreeModel;
 import water.Iced;
 import water.MRTask;
+import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -46,18 +47,24 @@ public class Rule extends Iced {
     }
 
     public Frame transform(Frame frame) {
-        Frame frameToReduce = new Frame();
-        for (int i = 0; i < conditions.length; i++) {
-            frameToReduce.add(conditions[i].transform(frame));
-        }
-        RuleReducer mrtask = new RuleReducer();
-        try {
-            return mrtask.doAll(1, Vec.T_NUM, frameToReduce).outputFrame();
-        } finally {
-            frameToReduce.remove();
-        }
+        RuleConverter rc = new RuleConverter();
+        return rc.doAll(1, Vec.T_NUM, frame).outputFrame();
     }
 
+    class RuleConverter extends MRTask<RuleConverter> {
+        @Override
+        public void map(Chunk[] cs, NewChunk nc) {
+            byte[] out = MemoryManager.malloc1(cs[0].len());
+            Arrays.fill(out, (byte) 1);
+            for (Condition c : conditions) {
+                c.new ConditionConverter().map(cs, out);
+            }
+            for (byte b : out) {
+                nc.addNum(b);
+            }
+        }
+    }
+    
     @Override
     public int hashCode() {
         int hashCode = 0;
@@ -150,16 +157,4 @@ public class Rule extends Iced {
         return Math.abs(coefficient);
     }
 
-    static class RuleReducer extends MRTask<RuleReducer> {
-        @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-            int newVal;
-            for (int iRow = 0; iRow < cs[0].len(); iRow++) {
-                newVal = 1;
-                for (int iCol = 0; iCol < cs.length; iCol++) {
-                    newVal *= cs[iCol].at8(iRow);
-                }
-                ncs[0].addNum(newVal);
-            }
-        }
-    }
 }
