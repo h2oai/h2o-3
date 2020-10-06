@@ -2,6 +2,88 @@
 
 ## H2O
 
+### Zermelo (3.32.0.1) - 10/xx/2020
+
+Downlaod at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/index.html</a>
+
+#### Bug
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5932'>PUBDEV-5932</a>] -         Added support for Python 3.7+.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7667'>PUBDEV-7667</a>] -         Fixed StackedEnsemble’s retrieval of the seed parameter value.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7746'>PUBDEV-7746</a>] -         Deserialization values of MOJO ModelParameter now work when the Value Type is int().
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7760'>PUBDEV-7760</a>] -         H2O no longer uses lazy-loading for sequential zip parse.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7762'>PUBDEV-7762</a>] -         Updated model_type argument names for Rulefit in R.
+</li>
+</ul>
+    
+#### New Feature
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7241'>PUBDEV-7241</a>] -         Quantile and Tweedie distributions added to monotone constraints.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7319'>PUBDEV-7319</a>] -          TargetEncoder integrated into ModelBuilder.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7755'>PUBDEV-7755</a>] -         Python client no longer instructs the user to declare a root handler in library mode.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7791'>PUBDEV-7791</a>] -         Hostname used as certificate alias to lookup machine-specific certificate allowing Hadoop users to connect to Flow over HTTPS.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7796'>PUBDEV-7796</a>] -         Added the model explainability interface for H2O models and AutoML objects in both R & Python.
+</li>
+</ul>
+    
+#### Task
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7763'>PUBDEV-7763</a>] -         Rulefit model added to algorithm section of UserGuide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7786'>PUBDEV-7786</a>] -         Added an Explainability page to the User Guide outlining the new `h2o.explain()` and `h2o.explain_row()` functions.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7804'>PUBDEV-7804</a>] -         Updated the AutoML User Guide page to include the new Explainability and Preprocessing sections.
+</li>
+</ul>
+    
+#### Improvement
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7717'>PUBDEV-7717</a>] -         Exposes names of score0 output values in MOJO.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7730'>PUBDEV-7730</a>] -         Added function to plot a Precision Recall Curve.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7765'>PUBDEV-7765</a>] -         Performance improved for exporting a Frame to CSV.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7769'>PUBDEV-7769</a>] -         GPU backend allowed in XGBoost when running multinode even when `build_tree_one_node` is enabled.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7787'>PUBDEV-7787</a>] -         Updated all URLs in R package to use HTTPS.
+</li>
+</ul>
+    
+#### Technical task
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7366'>PUBDEV-7366</a>] -         Added cross-validation to GAM allowing users to find the best alpha/lambda values when building a GAM model.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7672'>PUBDEV-7672</a>] -         Added TargetEncoder support for multiclass problems.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7743'>PUBDEV-7743</a>] -         Added new TargetEncoder parameter that allows users to remove original features automatically.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7778'>PUBDEV-7778</a>] -          Implemented minimal support for TargetEncoding in AutoML.
+</li>
+</ul>
+    
+#### Docs
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7541'>PUBDEV-7541</a>] -          Updated the descriptions of AutoML in R & Python packages.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7781'>PUBDEV-7781</a>] -         Made the default for `categorical_encoding` in XGBoost explicit in the documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7811'>PUBDEV-7811</a>] -         Updated the import datatype section of the Python FAQ in the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7815'>PUBDEV-7815</a>] -         Updated the default values for `min_rule_length` and `max_rule_length` on the RuleFit page of the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7816'>PUBDEV-7816</a>] -         Updated the `validation_frame` definition for unsupervised algorithms in the User Guide.
+</li>
+</ul>
+
 ### Zeno (3.30.1.3) - 9/28/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/3/index.html</a>
