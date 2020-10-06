@@ -559,7 +559,7 @@ def shap_summary_plot(
     >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = df.split_frame([.75])
+    >>> train, test = df.split_frame([0.8])
     >>>
     >>> # Train a GBM
     >>> gbm = H2OGradientBoostingEstimator()
@@ -687,7 +687,7 @@ def shap_explain_row_plot(
     >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = df.split_frame([.75])
+    >>> train, test = df.split_frame([0.8])
     >>>
     >>> # Train a GBM
     >>> gbm = H2OGradientBoostingEstimator()
@@ -939,14 +939,14 @@ def pd_plot(
     >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = df.split_frame([.75])
+    >>> train, test = df.split_frame([0.8])
     >>>
     >>> # Train a GBM
     >>> gbm = H2OGradientBoostingEstimator()
     >>> gbm.train(y=response, training_frame=train)
     >>>
     >>> # Create partial dependence plot
-    >>> gbm.pd_plot(test, column="age")
+    >>> gbm.pd_plot(test, column="alcohol")
     """
     is_factor = frame[column].isfactor()[0]
     if is_factor:
@@ -1060,14 +1060,14 @@ def pd_multi_plot(
     >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = df.split_frame([.75])
+    >>> train, test = df.split_frame([0.8])
     >>>
     >>> # Train an H2OAutoML
-    >>> aml = H2OAutoML(max_models=7)
+    >>> aml = H2OAutoML(max_models=10)
     >>> aml.train(y=response, training_frame=train)
     >>>
     >>> # Create a partial dependence plot
-    >>> aml.pd_multi_plot(test, column="age")
+    >>> aml.pd_multi_plot(test, column="alcohol")
     """
     if target is not None:
         if isinstance(target, (list, tuple)):
@@ -1194,7 +1194,7 @@ def ice_plot(
     >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = df.split_frame([.75])
+    >>> train, test = df.split_frame([0.8])
     >>>
     >>> # Train a GBM
     >>> gbm = H2OGradientBoostingEstimator()
@@ -1441,10 +1441,10 @@ def varimp_heatmap(
     >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = df.split_frame([.75])
+    >>> train, test = df.split_frame([0.8])
     >>>
     >>> # Train an H2OAutoML
-    >>> aml = H2OAutoML(max_models=7)
+    >>> aml = H2OAutoML(max_models=10)
     >>> aml.train(y=response, training_frame=train)
     >>>
     >>> # Create the variable importance heatmap
@@ -1536,10 +1536,10 @@ def model_correlation_heatmap(
     >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = df.split_frame([.75])
+    >>> train, test = df.split_frame([0.8])
     >>>
     >>> # Train an H2OAutoML
-    >>> aml = H2OAutoML(max_models=7)
+    >>> aml = H2OAutoML(max_models=10)
     >>> aml.train(y=response, training_frame=train)
     >>>
     >>> # Create the model correlation heatmap
@@ -1640,7 +1640,7 @@ def residual_analysis_plot(
     >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = df.split_frame([.75])
+    >>> train, test = df.split_frame([0.8])
     >>>
     >>> # Train a GBM
     >>> gbm = H2OGradientBoostingEstimator()
@@ -1931,10 +1931,10 @@ def explain(
     >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = df.split_frame([.75])
+    >>> train, test = df.split_frame([0.8])
     >>>
     >>> # Train an H2OAutoML
-    >>> aml = H2OAutoML(max_models=7)
+    >>> aml = H2OAutoML(max_models=10)
     >>> aml.train(y=response, training_frame=train)
     >>>
     >>> # Create the H2OAutoML explanation
@@ -2201,10 +2201,10 @@ def explain_row(
     >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
-    >>> train, test = df.split_frame([.75])
+    >>> train, test = df.split_frame([0.8])
     >>>
     >>> # Train an H2OAutoML
-    >>> aml = H2OAutoML(max_models=7)
+    >>> aml = H2OAutoML(max_models=10)
     >>> aml.train(y=response, training_frame=train)
     >>>
     >>> # Create the H2OAutoML explanation
