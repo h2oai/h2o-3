@@ -523,7 +523,7 @@ h2o-k8s-docker-push-latest: h2o-k8s-docker-push
 	docker push $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_LATEST_TAG)
 
 test-junit-rulefit:
-	DOONLY="hex.rulefit.RuleFitTest#testBestPracticeExample,hex.rulefit.RuleFitTest#testBestPracticeExampleWithLinearVariables,hex.rulefit.RuleFitTest#testCarsRules,hex.rulefit.RuleFitTest#testCarsRulesAndLinear,hex.rulefit.RuleFitTest#testCarsLongRules,hex.rulefit.RuleFitTest#testBostonHousing,hex.rulefit.RuleFitTest#testDiabetesWithWeights" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+	DOONLY="hex.rulefit.RuleFitTest#testBestPracticeExampleWithLinearVariablesWithoutScope,hex.rulefit.RuleFitTest#testBestPracticeExampleWithoutScope,hex.rulefit.RuleFitTest#testBestPracticeExample,hex.rulefit.RuleFitTest#testBestPracticeExampleWithLinearVariables,hex.rulefit.RuleFitTest#testCarsRules,hex.rulefit.RuleFitTest#testCarsRulesAndLinear,hex.rulefit.RuleFitTest#testCarsLongRules,hex.rulefit.RuleFitTest#testBostonHousing,hex.rulefit.RuleFitTest#testDiabetesWithWeights" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-rulefit-jenkins:
 	$(call sed_test_scripts)

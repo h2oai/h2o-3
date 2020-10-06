@@ -12,6 +12,7 @@ import org.junit.Test;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+
 import java.util.List;
 import java.util.Set;
 import static hex.tree.TreeUtils.getResponseLevelIndex;
@@ -31,7 +32,7 @@ public class RuleFitUtilsTest extends TestUtil {
             Scope.track(fr);
 
             Condition condition = new Condition(0, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2, null, null, "pclass", false );
-            final Frame fr2 = condition.transform(fr);
+            final Frame fr2 = RulefitTestUtils.transform(fr, condition);
             Scope.track(fr2);
             
             assertEquals(1,fr2.numCols());
@@ -40,7 +41,7 @@ public class RuleFitUtilsTest extends TestUtil {
             assertEquals(1,fr2.vec(0).at8(323));
 
             Condition condition2 = new Condition(13, Condition.Type.Categorical, Condition.Operator.In, 0, new String[] {fr.vec(13).stringAt(20)/*"New York  NY"*/, fr.vec(13).stringAt(0)/*"St Louis  MO"*/}, new int[] {(int)fr.vec(13).at(20)/*236*/, (int)fr.vec(13).at(0)/*308*/},"home.dest", false);
-            final Frame fr3 = condition2.transform(fr);
+            final Frame fr3 = RulefitTestUtils.transform(fr, condition2);
             Scope.track(fr3);
 
             assertEquals(1,fr3.numCols());
@@ -54,7 +55,7 @@ public class RuleFitUtilsTest extends TestUtil {
             assertTrue(condition2.equals(condition3));
             
             Rule rule = new Rule(new Condition[]{condition, condition2}, 0.3456, "somevarname");
-            final Frame fr4 = rule.transform(fr);
+            final Frame fr4 = RulefitTestUtils.transform(fr, rule);
             Scope.track(fr4);
             
             assertEquals(fr4.vec(0).at(0), fr2.vec(0).at(0)*fr3.vec(0).at(0), 1e-8);

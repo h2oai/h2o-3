@@ -1,10 +1,10 @@
 package hex.rulefit;
 
 import water.Iced;
-import water.MRTask;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.util.ArrayUtils;
+
 
 public class Condition extends Iced {
     public enum Type {Categorical, Numerical};
@@ -54,11 +54,6 @@ public class Condition extends Iced {
         description.append(")");
         return description.toString();
     }
-    
-    public Frame transform(Frame frame) {
-        ConditionConverter mrtask = new ConditionConverter();
-        return mrtask.doAll(1, Vec.T_NUM, frame).outputFrame();
-    }
 
     @Override
     public boolean equals(Object obj) {
@@ -70,44 +65,43 @@ public class Condition extends Iced {
         return this.languageCondition.hashCode();
     }
 
-    class ConditionConverter extends MRTask<ConditionConverter> {
-
-        @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-            Chunk col = cs[Condition.this.featureIndex];
-            for (int iRow = 0; iRow < col._len; ++iRow) {
-                int newVal = 0;
-                boolean isNA = col.isNA(iRow);
-                // check whether condition is fulfilled:
-                if (Condition.this.NAsIncluded && isNA) {
-                    newVal = 1;
-                } else if (!isNA) {
-                    if (Condition.Type.Numerical.equals(Condition.this.type)) {
-                        if (Condition.Operator.LessThan.equals(Condition.this.operator)) {
-                            if (col.atd(iRow) < Condition.this.numTreshold) {
-                                newVal = 1;
-                            }
-                        } else if (Condition.Operator.GreaterThanOrEqual.equals(Condition.this.operator)) {
-                            if (col.atd(iRow) >= Condition.this.numTreshold) {
-                                newVal = 1;
-                            }
+    public void map(Chunk[] cs, byte[] out) {
+        Chunk col = cs[Condition.this.featureIndex];
+        for (int iRow = 0; iRow < col._len; ++iRow) {
+            if (out[iRow] == 0)
+                continue;
+            byte newVal = 0;
+            boolean isNA = col.isNA(iRow);
+            // check whether condition is fulfilled:
+            if (Condition.this.NAsIncluded && isNA) {
+                newVal = 1;
+            } else if (!isNA) {
+                if (Condition.Type.Numerical.equals(Condition.this.type)) {
+                    if (Condition.Operator.LessThan.equals(Condition.this.operator)) {
+                        if (col.atd(iRow) < Condition.this.numTreshold) {
+                            newVal = 1;
                         }
-                    } else if (Condition.Type.Categorical.equals(Condition.this.type)) {
-                        BufferedString tmpStr = new BufferedString();
-                        for (int i = 0; i < Condition.this.catTreshold.length; i++) {
-                            // for string vecs
-                            if (col instanceof CStrChunk) {
-                                if (ArrayUtils.contains(Condition.this.languageCatTreshold, col.atStr(tmpStr,iRow))) {
-                                    newVal = 1;
-                                }
-                            // for other categorical vecs
-                            } else if (Condition.this.catTreshold[i] == col.atd(iRow)) {
+                    } else if (Condition.Operator.GreaterThanOrEqual.equals(Condition.this.operator)) {
+                        if (col.atd(iRow) >= Condition.this.numTreshold) {
+                            newVal = 1;
+                        }
+                    }
+                } else if (Condition.Type.Categorical.equals(Condition.this.type)) {
+                    BufferedString tmpStr = new BufferedString();
+                    for (int i = 0; i < Condition.this.catTreshold.length; i++) {
+                        // for string vecs
+                        if (col instanceof CStrChunk) {
+                            if (ArrayUtils.contains(Condition.this.languageCatTreshold, col.atStr(tmpStr,iRow))) {
                                 newVal = 1;
                             }
+                            // for other categorical vecs
+                        } else if (Condition.this.catTreshold[i] == col.atd(iRow)) {
+                            newVal = 1;
                         }
                     }
                 }
-                ncs[0].addNum(newVal);
             }
+            out[iRow] = newVal;
         }
     }
 }
