@@ -1012,9 +1012,9 @@ stat_count_or_bin <- function(use_count, ..., data) {
 #' response <- "quality"
 #'
 #' # Split the dataset into a train and test set:
-#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
-#' train <- df_splits[[1]]
-#' test <- df_splits[[2]]
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
 #'
 #' # Build and train the model:
 #' gbm <- h2o.gbm(y = response,
@@ -1218,9 +1218,9 @@ h2o.shap_summary_plot <-
 #' response <- "quality"
 #'
 #' # Split the dataset into a train and test set:
-#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
-#' train <- df_splits[[1]]
-#' test <- df_splits[[2]]
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
 #'
 #' # Build and train the model:
 #' gbm <- h2o.gbm(y = response,
@@ -1486,14 +1486,14 @@ h2o.shap_explain_row_plot <-
 #' response <- "quality"
 #'
 #' # Split the dataset into a train and test set:
-#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
-#' train <- df_splits[[1]]
-#' test <- df_splits[[2]]
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
 #'
 #' # Build and train the model:
 #' aml <- h2o.automl(y = response,
 #'                   training_frame = prostate,
-#'                   max_models = 7,
+#'                   max_models = 10,
 #'                   seed = 1)
 #'
 #' # Create the variable importance heatmap
@@ -1501,7 +1501,9 @@ h2o.shap_explain_row_plot <-
 #' print(varimp_heatmap)
 #' }
 #' @export
-h2o.varimp_heatmap <- function(object, newdata, top_n = 20) {
+h2o.varimp_heatmap <- function(object, 
+                               newdata, 
+                               top_n = 20) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   models_info <- .process_models_or_automl(object, newdata,
@@ -1584,14 +1586,14 @@ h2o.varimp_heatmap <- function(object, newdata, top_n = 20) {
 #' response <- "quality"
 #'
 #' # Split the dataset into a train and test set:
-#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
-#' train <- df_splits[[1]]
-#' test <- df_splits[[2]]
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
 #'
 #' # Build and train the model:
 #' aml <- h2o.automl(y = response,
 #'                   training_frame = train,
-#'                   max_models = 7,
+#'                   max_models = 10,
 #'                   seed = 1)
 #'
 #' # Create the model correlation heatmap
@@ -1706,9 +1708,9 @@ h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
 #' response <- "quality"
 #'
 #' # Split the dataset into a train and test set:
-#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
-#' train <- df_splits[[1]]
-#' test <- df_splits[[2]]
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
 #'
 #' # Build and train the model:
 #' gbm <- h2o.gbm(y = response,
@@ -1776,16 +1778,16 @@ h2o.residual_analysis_plot <- function(model, newdata) {
 #' response <- "quality"
 #'
 #' # Split the dataset into a train and test set:
-#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
-#' train <- df_splits[[1]]
-#' test <- df_splits[[2]]
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
 #'
 #' # Build and train the model:
 #' gbm <- h2o.gbm(y = response,
 #'                training_frame = train)
 #'
 #' # Create the partial dependence plot
-#' pdp <- h2o.pd_plot(gbm, test, column = "age")
+#' pdp <- h2o.pd_plot(gbm, test, column = "alcohol")
 #' print(pdp)
 #' }
 #' @export
@@ -1944,18 +1946,18 @@ h2o.pd_plot <- function(object,
 #' response <- "quality"
 #'
 #' # Split the dataset into a train and test set:
-#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
-#' train <- df_splits[[1]]
-#' test <- df_splits[[2]]
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
 #'
 #' # Build and train the model:
 #' aml <- h2o.automl(y = response,
 #'                   training_frame = train,
-#'                   max_models = 7,
+#'                   max_models = 10,
 #'                   seed = 1)
 #'
 #' # Create the partial dependence plot
-#' pdp <- h2o.pd_multi_plot(aml, test, column = "age")
+#' pdp <- h2o.pd_multi_plot(aml, test, column = "alcohol")
 #' print(pdp)
 #' }
 #' @export
@@ -2208,9 +2210,9 @@ h2o.pd_multi_plot <- function(object,
 #' response <- "quality"
 #'
 #' # Split the dataset into a train and test set:
-#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
-#' train <- df_splits[[1]]
-#' test <- df_splits[[2]]
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
 #'
 #' # Build and train the model:
 #' gbm <- h2o.gbm(y = response,
@@ -2372,7 +2374,7 @@ h2o.ice_plot <- function(model,
 #' @param newdata An H2OFrame.
 #' @param columns A vector of column names or column indices to create plots with. If specified
 #'                parameter top_n_features will be ignored.
-#' @param top_n_features In integer specifying the number of columns to use, ranked by variable importance
+#' @param top_n_features An integer specifying the number of columns to use, ranked by variable importance
 #'                       (where applicable).
 #' @param include_explanations If specified, return only the specified model explanations.
 #'   (Mutually exclusive with exclude_explanations)
@@ -2394,14 +2396,14 @@ h2o.ice_plot <- function(model,
 #' response <- "quality"
 #'
 #' # Split the dataset into a train and test set:
-#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
-#' train <- df_splits[[1]]
-#' test <- df_splits[[2]]
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
 #'
 #' # Build and train the model:
 #' aml <- h2o.automl(y = response,
 #'                   training_frame = train,
-#'                   max_models = 7,
+#'                   max_models = 10,
 #'                   seed = 1)
 #'
 #' # Create the explanation for whole H2OAutoML object
@@ -2760,7 +2762,7 @@ h2o.explain <- function(object,
 #' @param row_index A row index of the instance to explain.
 #' @param columns A vector of column names or column indices to create plots with. If specified
 #'                parameter top_n_features will be ignored.
-#' @param top_n_features In integer specifying the number of columns to use, ranked by variable importance
+#' @param top_n_features An integer specifying the number of columns to use, ranked by variable importance
 #'                       (where applicable).
 #' @param include_explanations If specified, return only the specified model explanations. 
 #'                             (Mutually exclusive with exclude_explanations)
@@ -2782,14 +2784,14 @@ h2o.explain <- function(object,
 #' response <- "quality"
 #'
 #' # Split the dataset into a train and test set:
-#' df_splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
-#' train <- df_splits[[1]]
-#' test <- df_splits[[2]]
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
 #'
 #' # Build and train the model:
 #' aml <- h2o.automl(y = response,
 #'                   training_frame = train,
-#'                   max_models = 7,
+#'                   max_models = 10,
 #'                   seed = 1)
 #'
 #' # Create the explanation for whole H2OAutoML object
