@@ -21,7 +21,8 @@ dependencies {
         exclude group: 'org.scala-lang', module: 'scala-compiler'
         exclude group: 'org.scala-lang', module: 'scala-reflect'
         exclude group: 'org.scala-lang', module: 'scala-library'
-        exclude group: 'com.typesafe.akka', module: 'akka-actor_2.11'
+        exclude group: 'com.typesafe.akka', module: 'akka-actor_2.12'
+        exclude group: 'org.scalatest', module: 'scalatest_2.12'
         exclude group: 'com.esotericsoftware.kryo', module: 'kryo'
     }
     compile "ai.h2o:xgboost4j-linux-gpuv4:${xgboost4jVersion}"
