@@ -97,7 +97,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.5 CMD Check', target: 'test-r-cmd-check', rVersion: '3.5.3',
-      timeoutValue: 30, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 60, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R3.5 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.5.3',
