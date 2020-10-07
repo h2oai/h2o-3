@@ -54,7 +54,7 @@ public class AstUnique extends AstPrimitive {
     } else {
       UniqTask t = new UniqTask().doAll(vec0);
       int nUniq = t._uniq.size();
-      final AstGroup.G[] uniq = t._uniq.keySet().toArray(new AstGroup.G[nUniq]);
+      final AstGroup.G[] uniq = t._uniq.toArray(new AstGroup.G[nUniq]);
       v = Vec.makeZero(nUniq, vec0.get_type());
       new MRTask() {
         @Override
