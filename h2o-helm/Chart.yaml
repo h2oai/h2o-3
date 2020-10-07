@@ -1,0 +1,9 @@
+apiVersion: v2
+name: h2o-3
+description: H2O open source machine learning platform
+
+type: application
+
+version: 1.0.0 # Only a placeholder - actually replaced by real H2O version on-release.
+
+appVersion: 1.0.0 # Only a placeholder - actually replaced by real H2O version on-release.

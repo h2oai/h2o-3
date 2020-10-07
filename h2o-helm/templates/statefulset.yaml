@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "h2o-helm.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{- include "h2o-helm.labels" . | nindent 4 }}
+spec:
+  serviceName: h2o-service
+  podManagementPolicy: "Parallel"
+  replicas: {{ .Values.h2o.nodeCount }}
+  selector:
+    matchLabels:
+  {{- include "h2o-helm.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+    {{- include "h2o-helm.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+      {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.name }}:{{ .Values.image.tag | default (printf "3.%s" .Chart.AppVersion) }}"
+          {{- if .Values.image.command }}
+          command: {{ .Values.image.command }}
+          {{else}}
+          command: ["/bin/bash", "-c", "java -XX:+UseContainerSupport -XX:MaxRAMPercentage={{ .Values.h2o.memoryPercentage }} -jar /opt/h2oai/h2o-3/h2o.jar"]
+          {{end -}}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.volumeMounts }}
+          volumeMounts:
+          {{- toYaml .Values.volumeMounts | nindent 12 }}
+          {{- end }}
+          ports:
+            - containerPort: 54321
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /kubernetes/isLeaderNode
+              port: {{ .Values.h2o.kubernetesApiPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 1
+          resources:
+            limits:
+              cpu: {{.Values.resources.cpu}}
+              memory: {{.Values.resources.memory}}
+            requests:
+              cpu: {{.Values.resources.cpu}}
+              memory: {{.Values.resources.memory}}
+          env:
+            - name: H2O_KUBERNETES_SERVICE_DNS
+              value: {{ .Release.Name }}.{{ .Release.Namespace }}.svc.cluster.local
+            - name: H2O_NODE_LOOKUP_TIMEOUT
+              value: '{{ .Values.h2o.lookupTimeout }}'
+            - name: H2O_NODE_EXPECTED_COUNT
+              value: '{{ .Values.h2o.nodeCount }}'
+            - name: H2O_KUBERNETES_API_PORT
+              value: '{{ .Values.h2o.kubernetesApiPort }}'
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.volumes }}
+      volumes:
+        {{- toYaml .Values.volumes | nindent 8 }}
+      {{- end }}

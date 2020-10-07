@@ -14,14 +14,14 @@ class BuildConfig {
   private static final String DEFAULT_HADOOP_IMAGE_NAME_PREFIX = 'dev-build-hadoop-gradle'
   private static final String DEFAULT_RELEASE_IMAGE_NAME_PREFIX = 'dev-release-gradle'
 
-  public static final int DEFAULT_IMAGE_VERSION_TAG = 32
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 33
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/opsh2oai/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/opsh2oai/s3cmd'
 
   private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
   private static final String HADOOP_IMAGE_VERSION_TAG = '81'
 
-  private static final String K8S_TEST_IMAGE_VERSION_TAG = '1'
+  private static final String K8S_TEST_IMAGE_VERSION_TAG = '3' // Change the new Docker image in the K8S YAML template as well
 
   public static final String XGB_TARGET_MINIMAL = 'minimal'
   public static final String XGB_TARGET_OMP = 'omp'

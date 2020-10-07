@@ -1,0 +1,53 @@
+# A test-only service with internal Cluster IP assigned (not a headless service) to enable the check from within the cluster.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "h2o-helm.fullname" . }}-test-service
+  labels:
+  {{- include "h2o-helm.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+  {{- include "h2o-helm.selectorLabels" . | nindent 4 }}
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 54321
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "h2o-helm.fullname" . }}-test-connection"
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: wget
+      image: everpeace/curl-jq
+      command:
+        - sh
+        - '-c'
+        - |
+          /bin/bash <<'EOF'
+      
+          clouded=false
+          while [ "$clouded" != true ]
+          do
+              sleep 1
+              cloud_size=$( curl '{{ include "h2o-helm.fullname" . }}-test-service:{{ .Values.service.port }}/3/Cloud' | jq '.cloud_size' )
+            if [ "$cloud_size" == {{.Values.h2o.nodeCount}} ]
+            then
+                echo "H2O Cluster size is ${cloud_size}"
+              clouded=true
+            fi
+          done
+          
+          if [ "$clouded" = true ]
+          then
+              exit 0
+          else
+              exit 1
+          fi
+      
+          EOF
+  restartPolicy: Never

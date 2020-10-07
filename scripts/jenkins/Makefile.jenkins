@@ -254,6 +254,7 @@ test-package-java:
 		h2o-k8s/src/ \
 		h2o-k8s/build/libs/h2o-k8s-*.jar \
 		h2o-k8s/tests/ \
+		h2o-helm/ \
 		scripts/run.py h2o-py/tests_rest_smoke scripts/test-xgb-gpu-smoke.sh \
 		sort_crash.csv tests/doOnlyJunitSmokeTestList \
 		jacoco/*.jar
