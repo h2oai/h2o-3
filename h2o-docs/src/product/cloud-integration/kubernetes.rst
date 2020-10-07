@@ -159,7 +159,6 @@ There are three key requiremnets to make sure actions invoked on H2O are reprodu
 2. Same number of CPUs,
 3. Client sends requests only to the H2O leader node.
 
-In Kubernetes environment, one common mistake is to set `requests` and `limits` resource quotas for a pod differently. If the underlying JVM running inside the docker image inside a pod uses certain percentage of memory available, that amount of memory might be different 
-each time H2O starts, as Kubernetes might actually allocate different amount of memory every time. Same rules apply to CPU limits and requests.
+In a Kubernetes environment, one common mistake is to set different resource quotas for ``requests`` and ``limits`` for a pod. If the underlying JVM running inside the docker image inside a pod uses certain percentage of memory available, that amount of memory might be different each time H2O starts, as Kubernetes might actually allocate different amount of memory every time. These same rules apply to CPU ``limits`` and ``requests``.
 
 The ``readinessProbe`` residing on ``/kubernetes/isLeaderNode`` makes sure only the leader node is exposed once the cluster is formed by making all nodes but the leader node "not available". Without the readiness probe, reproducibility is not guaranteed.
