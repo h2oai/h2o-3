@@ -153,7 +153,7 @@ In order to expose H2O and make it available from the outside of the Kubernetes 
 Reproducibility notes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are three key requiremnets to make sure actions invoked on H2O are reproducible:
+There are three key requirements to make sure actions invoked on H2O are reproducible:
 
 1. Same amount of memory,
 2. Same number of CPUs,
@@ -167,33 +167,35 @@ The ``readinessProbe`` residing on ``/kubernetes/isLeaderNode`` makes sure only 
 Installing H2O with Helm
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-`Helm <https://helm.sh/>`__ can be used to deploy H2O into a kubernetes cluster. Helm requires the KUBECONFIG environment variable to be set up properly, or stating the KUBECONFIG destination explicitly. There are three steps required in order to use the official H2O Helm chart:
+`Helm <https://helm.sh/>`__ can be used to deploy H2O into a kubernetes cluster. Helm requires setting up the KUBECONFIG environment variable properly or stating the KUBECONFIG destination explicitly. There are three steps required in order to use the official H2O Helm chart:
 
 1. Add H2O Helm chart repository,
-2. Use ``helm install` to install H2O Open source to Kubernetes,
+2. Use ``helm install`` to install H2O Open source to Kubernetes,
 3. (Optional) test the installation.
 
 .. code:: bash
-helm repo add h2o https://charts.h2o.ai --version |version|
-helm install basic-h2o h2o/h2o
-helm test basic-h2o
+
+  helm repo add h2o https://charts.h2o.ai --version |version|
+  helm install basic-h2o h2o/h2o
+  helm test basic-h2o
 
 
-The basic command ``helm install basic-h2o h2o/h2o`` only installs a minimal H2O cluster with little resources. There are various settings and modifications available. To inspect a complete list of the configuration options available, use the  ``helm inspect values h2o/h2o --version |version|` command.
+The basic command ``helm install basic-h2o h2o/h2o`` only installs a minimal H2O cluster with few resources. There are various settings and modifications available. To inspect a complete list of the configuration options available, use the  ``helm inspect values h2o/h2o --version |version|`` command.
 
-Among the most common settings are number of H2O nodes (there is one pod per each H2O node) spawned, memory and CPU resources for each H2O node and an ingress. Below is an example on how to configure these basic options.
+Among the most common settings are number of H2O nodes (there is one pod per each H2O node) spawned, memory and CPU resources for each H2O node, and an ingress. Below is an example on how to configure these basic options.
 
 .. code:: yaml
-h2o:
-  nodeCount: 3
-resources:
-  cpu: 12
-  memory: 32Gi
-ingress:
-  enabled: true
-  annotations: {}
-  hosts:
-    - host: ""
-      paths: ["/"]
-  tls: []
+
+  h2o:
+    nodeCount: 3
+  resources:
+    cpu: 12
+    memory: 32Gi
+  ingress:
+    enabled: true
+    annotations: {}
+    hosts:
+      - host: ""
+        paths: ["/"]
+    tls: []
 
