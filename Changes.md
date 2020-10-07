@@ -35,6 +35,8 @@ Downlaod at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/inde
 <li>
 [<a href='https://0xdata.atlassian.net/browse/PUBDEV-7720'>PUBDEV-7720</a>] -         Added the RuleFit algorithm for interpretability.
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7808'>PUBDEV-7808</a>] -         Implemented a basic HELM chart.
+</li>
 </ul>
     
 #### Task
@@ -61,6 +63,8 @@ Downlaod at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/inde
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7769'>PUBDEV-7769</a>] -         GPU backend allowed in XGBoost when running multinode even when `build_tree_one_node` is enabled.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7787'>PUBDEV-7787</a>] -         Updated all URLs in R package to use HTTPS.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7790'>PUBDEV-7790</a>] -         Uprgraded to XGBoost 1.2.0.
 </li>
 </ul>
     
