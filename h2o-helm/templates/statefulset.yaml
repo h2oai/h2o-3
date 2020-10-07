@@ -6,7 +6,7 @@ metadata:
   labels:
   {{- include "h2o-helm.labels" . | nindent 4 }}
 spec:
-  serviceName: h2o-service
+  serviceName: {{ include "h2o-helm.fullname" . }}
   podManagementPolicy: "Parallel"
   replicas: {{ .Values.h2o.nodeCount }}
   selector:
@@ -51,7 +51,7 @@ spec:
               memory: {{.Values.resources.memory}}
           env:
             - name: H2O_KUBERNETES_SERVICE_DNS
-              value: {{ .Release.Name }}.{{ .Release.Namespace }}.svc.cluster.local
+              value: {{ include "h2o-helm.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
             - name: H2O_NODE_LOOKUP_TIMEOUT
               value: '{{ .Values.h2o.lookupTimeout }}'
             - name: H2O_NODE_EXPECTED_COUNT
