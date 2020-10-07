@@ -3883,15 +3883,16 @@ def generatePandaEnumCols(pandaFtrain, cname, nrows):
     colLength = len(tempNames)
     newNames = ['a']*colLength
     newIndics = [0]*colLength
-    header = tempNames[0].split('.')[0]
-
-    for ind in range(colLength):
-        newIndics[ind] = int(tempNames[ind].split('.')[1][1:])
-    newIndics.sort()
-
-    for ind in range(colLength):
-        newNames[ind] = header+'.l'+str(newIndics[ind])  # generate correct order of names
-    ftemp = temp[newNames]
+    if "." in tempNames[0]:
+        header = tempNames[0].split('.')[0]
+        for ind in range(colLength):
+            newIndics[ind] = int(tempNames[ind].split('.')[1][1:])
+        newIndics.sort()
+        for ind in range(colLength):
+            newNames[ind] = header+'.l'+str(newIndics[ind])  # generate correct order of names
+        ftemp = temp[newNames]
+    else:
+        ftemp = temp
     ctemp = pd.concat([ftemp, zeroFrame], axis=1)
     return ctemp
 
