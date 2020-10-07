@@ -77,6 +77,7 @@ public class RuleFitTest extends TestUtil {
 
             GLMModel.GLMParameters glmParameters = rfModel.glmModel._parms;
             glmParameters._train = fr._key;
+            glmParameters._response_column = rfModel._parms._response_column;
             glmModel = new GLM(glmParameters).trainModel().get();
 
             fr3 = glmModel.score(fr);
@@ -173,6 +174,8 @@ public class RuleFitTest extends TestUtil {
 
             GLMModel.GLMParameters glmParameters = rfModel.glmModel._parms;
             glmParameters._train = fr._key;
+            glmParameters._weights_column = rfModel._parms._weights_column;
+            glmParameters._response_column = rfModel._parms._response_column;
             glmModel = new GLM(glmParameters).trainModel().get();
 
             fr3 = glmModel.score(fr);
@@ -264,6 +267,7 @@ public class RuleFitTest extends TestUtil {
 
             GLMModel.GLMParameters glmParameters = rfModel.glmModel._parms;
             glmParameters._train = fr._key;
+            glmParameters._response_column = rfModel._parms._response_column;
             final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
             Scope.track_generic(glmModel);
 
@@ -359,6 +363,8 @@ public class RuleFitTest extends TestUtil {
 
             GLMModel.GLMParameters glmParameters = rfModel.glmModel._parms;
             glmParameters._train = fr._key;
+            glmParameters._weights_column = rfModel._parms._weights_column;
+            glmParameters._response_column = rfModel._parms._response_column;
             final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
             Scope.track_generic(glmModel);
 
@@ -449,6 +455,7 @@ public class RuleFitTest extends TestUtil {
 
             GLMModel.GLMParameters glmParameters = model.glmModel._parms;
             glmParameters._train = fr._key;
+            glmParameters._response_column = model._parms._response_column;
             final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
             Scope.track_generic(glmModel);
             Scope.track(glmModel.score(fr));
@@ -506,6 +513,7 @@ public class RuleFitTest extends TestUtil {
 
             GLMModel.GLMParameters glmParameters = model.glmModel._parms;
             glmParameters._train = fr._key;
+            glmParameters._response_column = model._parms._response_column;
             final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
             Scope.track_generic(glmModel);
             final Frame scoredByGLM = Scope.track(glmModel.score(fr));
@@ -564,6 +572,7 @@ public class RuleFitTest extends TestUtil {
             
             GLMModel.GLMParameters glmParameters = model.glmModel._parms;
             glmParameters._train = fr._key;
+            glmParameters._response_column = model._parms._response_column;
             final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
             Scope.track_generic(glmModel);
             Scope.track(glmModel.score(fr));
@@ -614,6 +623,7 @@ public class RuleFitTest extends TestUtil {
 
             GLMModel.GLMParameters glmParameters = rfModel.glmModel._parms;
             glmParameters._train = fr._key;
+            glmParameters._response_column = rfModel._parms._response_column;
             final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
             Scope.track_generic(glmModel);
 
@@ -670,6 +680,8 @@ public class RuleFitTest extends TestUtil {
 
             GLMModel.GLMParameters glmParameters = rfModel.glmModel._parms;
             glmParameters._train = fr._key;
+            glmParameters._weights_column = rfModel._parms._weights_column;
+            glmParameters._response_column = rfModel._parms._response_column;
             final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
             Scope.track_generic(glmModel);
 
