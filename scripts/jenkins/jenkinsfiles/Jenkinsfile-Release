@@ -181,6 +181,42 @@ try {
                     }
                 }
                 
+                def PUBLISH_STAGE_NAME = 'Publish to S3'
+                stage(PUBLISH_STAGE_NAME) {
+                    try {
+                        pipelineContext.getBuildSummary().addStageSummary(this, PUBLISH_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                        pipelineContext.getBuildSummary().setStageDetails(this, PUBLISH_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                        insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
+                            sh """
+                                cd ${env.BUILD_NUMBER_DIR}
+                                # Publish the output to S3.
+                                aws s3 sync target/ ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/ --acl public-read
+                            """
+                            if (params.UPDATE_LATEST) {
+                                sh """
+                                    cd ${env.BUILD_NUMBER_DIR}
+                                    aws s3 sync target/R/ ${env.S3_ROOT}/latest_stable_R/ --acl public-read
+                                    aws s3 sync target/Python/ ${env.S3_ROOT}/latest_stable_Py/ --acl public-read
+                                """
+                            }
+                            sh """
+                                cd ${env.BUILD_NUMBER_DIR}
+                                echo UPDATE LATEST POINTER
+                                tmpdir=./buildh2odev.tmp
+                                mkdir -p \${tmpdir}
+                                echo ${currentBuild.number} > \${tmpdir}/latest
+                                echo "<head>" > \${tmpdir}/latest.html
+                                echo "<meta http-equiv=\\"refresh\\" content=\\"0; url=${currentBuild.number}/index.html\\" />" >> \${tmpdir}/latest.html
+                                echo "</head>" >> \${tmpdir}/latest.html
+                            """
+                        }
+                        pipelineContext.getBuildSummary().markStageSuccessful(this, PUBLISH_STAGE_NAME)
+                    } catch (Exception e) {
+                        pipelineContext.getBuildSummary().markStageFailed(this, PUBLISH_STAGE_NAME)
+                        throw e
+                    }
+                }
+
              def HELM_STAGE_NAME = 'Publish HELM to S3'
                 stage(HELM_STAGE_NAME) {
                     try {
@@ -242,42 +278,6 @@ try {
                         pipelineContext.getBuildSummary().markStageSuccessful(this, HELM_STAGE_NAME)
                     } catch (Exception e) {
                         pipelineContext.getBuildSummary().markStageFailed(this, HELM_STAGE_NAME)
-                        throw e
-                    }
-                }
-
-                def PUBLISH_STAGE_NAME = 'Publish to S3'
-                stage(PUBLISH_STAGE_NAME) {
-                    try {
-                        pipelineContext.getBuildSummary().addStageSummary(this, PUBLISH_STAGE_NAME, env.BUILD_NUMBER_DIR)
-                        pipelineContext.getBuildSummary().setStageDetails(this, PUBLISH_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
-                        insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
-                            sh """
-                                cd ${env.BUILD_NUMBER_DIR}
-                                # Publish the output to S3.
-                                aws s3 sync target/ ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/ --acl public-read
-                            """
-                            if (params.UPDATE_LATEST) {
-                                sh """
-                                    cd ${env.BUILD_NUMBER_DIR}
-                                    aws s3 sync target/R/ ${env.S3_ROOT}/latest_stable_R/ --acl public-read
-                                    aws s3 sync target/Python/ ${env.S3_ROOT}/latest_stable_Py/ --acl public-read
-                                """
-                            }
-                            sh """
-                                cd ${env.BUILD_NUMBER_DIR}
-                                echo UPDATE LATEST POINTER
-                                tmpdir=./buildh2odev.tmp
-                                mkdir -p \${tmpdir}
-                                echo ${currentBuild.number} > \${tmpdir}/latest
-                                echo "<head>" > \${tmpdir}/latest.html
-                                echo "<meta http-equiv=\\"refresh\\" content=\\"0; url=${currentBuild.number}/index.html\\" />" >> \${tmpdir}/latest.html
-                                echo "</head>" >> \${tmpdir}/latest.html
-                            """
-                        }
-                        pipelineContext.getBuildSummary().markStageSuccessful(this, PUBLISH_STAGE_NAME)
-                    } catch (Exception e) {
-                        pipelineContext.getBuildSummary().markStageFailed(this, PUBLISH_STAGE_NAME)
                         throw e
                     }
                 }
