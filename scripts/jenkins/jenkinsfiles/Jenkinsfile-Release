@@ -189,7 +189,7 @@ try {
                         
                         // Helm automatically installs latest chart if version is unspecified by the user, therefore there is no need for a latest tag
                         THREE_DIGITS_VERSION = sh (
-                            script: "echo ${env.PROJECT_VERSION} | sed 's/[0-9]*\\.\\([0-9]*\\.[0-9]*\\.[0-9]\\)*/\\1/g'\\)",
+                            script: "echo ${env.PROJECT_VERSION} | sed \"s/[0-9]*\\.\\([0-9]*\\.[0-9]*\\.[0-9]\\)*/\\1/g\"",
                             returnStdout: true
                         ).trim()
                         
@@ -220,9 +220,9 @@ try {
                             insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS', "-v ${GRADLE_PROPERTIES_PATH}:${GRADLE_PROPERTIES_PATH} -v ${RING_FILE_PATH}:${RING_FILE_PATH}") {
                             sh """
                                 cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
-                                sed -i 's/name: h2o-3/name: ${CHART_NAME}/' Chart.yaml
-                                sed -i 's/version: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${VERSION}/' Chart.yaml
-                                sed -i 's/appVersion: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${VERSION}/' Chart.yaml
+                                sed -i "s/name: h2o-3/name: ${CHART_NAME}/" Chart.yaml
+                                sed -i "s/version: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${VERSION}/" Chart.yaml
+                                sed -i "s/appVersion: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${VERSION}/" Chart.yaml
                                 helm package .
                                 mkdir h2o-3
                                 mv ${CHART_NAME}-${VERSION}.tgz h2o-3/
