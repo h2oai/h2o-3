@@ -801,9 +801,8 @@ h2o.clusterStatus <- function() {
   # md5_check <- readLines(tcon, n = 1)
   # close(tcon)
   md5_file <- tempfile(fileext = ".md5")
-  .downloadFile(md5_url, dest = md5_file, mode = "w")
+  download.file(md5_url, destfile = md5_file, mode = "w", cacheOK = FALSE, quiet = TRUE)
   md5_check <- readLines(md5_file, n = 1L)
-    cat(md5_check)
   if (nchar(md5_check) != 32) stop("md5 malformed, must be 32 characters (see ", md5_url, ")")
   unlink(md5_file)
 
@@ -812,7 +811,7 @@ h2o.clusterStatus <- function() {
   cat("Performing one-time download of h2o.jar from\n")
   cat("    ", h2o_url, "\n")
   cat("(This could take a few minutes, please be patient...)\n")
-  .downloadFile(h2o_url, dest = temp_file)
+  download.file(url = h2o_url, destfile = temp_file, mode = "wb", cacheOK = FALSE, quiet = TRUE)
 
   # Apply sanity checks
   if(!file.exists(temp_file))
@@ -829,20 +828,6 @@ h2o.clusterStatus <- function() {
   # Move good file into final position
   file.rename(temp_file, dest_file)
   return(dest_file[file.exists(dest_file)])
-}
-
-.downloadFile <- function(url, dest, mode = "wb") {
-    file.handle <- CFILE(dest, mode="wb")
-    opts <- list(
-        timeout = 600,
-        verbose = FALSE
-    )
-    curlPerform(
-        url = url,
-        writedata = file.handle@ref,
-        .opts = opts
-    )
-    close(file.handle)
 }
 
 #' View Network Traffic Speed
