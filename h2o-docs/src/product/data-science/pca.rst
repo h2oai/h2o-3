@@ -27,7 +27,7 @@ Defining a PCA Model
 
 -  `pca_method <algo-params/pca_method.html>`__: Specify the algorithm to use for computing the principal components:
 
-   -  **GramSVD**: Uses a distributed computation of the Gram matrix, followed by a local SVD using the JAMA package
+   -  **GramSVD**: Uses a distributed computation of the Gram matrix, followed by a local SVD using the JAMA package (default)
    -  **Power**: Computes the SVD using the power iteration method (experimental)
    -  **Randomized**: Uses randomized subspace iteration method
    -  **GLRM**: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra (experimental)
@@ -43,15 +43,15 @@ Defining a PCA Model
 
 -  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations. The value must be between 1 and 1e6 and the default is 1000.
 
--  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This value defaults to -1 (time-based random number).
 
--  `use_all_factor_levels <algo-params/use_all_factor_levels.html>`__: Specify whether to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For PCA models, this option ignores the first  factor level of each categorical column when expanding into indicator columns.
+-  `use_all_factor_levels <algo-params/use_all_factor_levels.html>`__: Specify whether to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For PCA models, this option ignores the first  factor level of each categorical column when expanding into indicator columns. This option is disabled by default.
 
--  `compute_metrics <algo-params/compute_metrics.html>`__: Enable metrics computations on the training  data.
+-  `compute_metrics <algo-params/compute_metrics.html>`__: Enable metrics computations on the training data. This option is enabled by default.
 
--  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training.
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training. This option is disabled by default.
 
--  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. This value is set to 0 (disabled) by default.
 
 -  `impute_missing <algo-params/impute_missing.html>`__: Specifies whether to impute missing entries with the column mean value. This value defaults to False.
 

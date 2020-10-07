@@ -23,25 +23,25 @@ Defining a Word2vec Model
 
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. This option defaults to 0 (disabled) by default.
 
-- **min_word_freq**: Specify an integer for the minimum word frequency. Word2vec will discard words that appear less than this number of times.
+- **min_word_freq**: Specify an integer for the minimum word frequency. Word2vec will discard words that appear less than this number of times. This value defaults to 5.
 
-- **word_model**: Specify "SkipGram" to use the Skip-Gram model when producing a distributed representation of words. When enabled, the model uses each word to predict the surrounding window of context words. The skip-gram architecture weighs close context words more heavily than more distant context words. Using Skip-Gram can increase model build time but performs better for infrequently used words. Specify "CBOW" to use continuous bag-of-words model, in which case the surrounding context words are used without taking the distance into account.
+- **word_model**: Specify "SkipGram" (default) to use the Skip-Gram model when producing a distributed representation of words. When enabled, the model uses each word to predict the surrounding window of context words. The skip-gram architecture weighs close context words more heavily than more distant context words. Using Skip-Gram can increase model build time but performs better for infrequently used words. Specify "CBOW" to use continuous bag-of-words model, in which case the surrounding context words are used without taking the distance into account.
 
 - **norm_model**: Specify "HSM" to use Hierarchical Softmax. When enabled, Word2vec uses a `Huffman tree <https://en.wikipedia.org/wiki/Huffman_coding>`__ to reduce calculations when approximating the conditional log-likelihood that the model is attempting to maximize. This option is useful for infrequent words, but this option becomes less useful as training epochs increase. **NOTE**: This option is specified by default and cannot be disabled. It is currently the only approach supported in H2O. 
 
-- **vec_size**: Specify the size of word vectors.
+- **vec_size**: Specify the size of word vectors (defaults to 100).
 
-- **window_size**: This specifies the size of the context window around a given word. For example, consider the following string:
+- **window_size**: This specifies the size of the context window around a given word (defaults to 5). For example, consider the following string:
 
    "Lorem ipsum (dolor sit amet, quot hendrerit) pri cu,..."
 
   For a target word, "amet" and ``window size=2``, the context is made of words: dolor, sit, quot, hendrerit.
 
-- **sent_sample_rate**: Set the threshold for the occurrence of words. Those words that appear with higher frequency in the training data will be randomly down-sampled. An ideal range for this option 0, 1e-5.
+- **sent_sample_rate**: Set the threshold for the occurrence of words. Those words that appear with higher frequency in the training data will be randomly down-sampled. An ideal range for this option 0, 1e-5. This value defaults to 0.001.
 
-- **init_learning_rate**: Set the starting learning rate.
+- **init_learning_rate**: Set the starting learning rate (defaults to 0.025).
 
-- **epochs**: Specify the number of training iterations to run.
+- **epochs**: Specify the number of training iterations to run (defaults to 5).
 
 - **pre_trained**: Specify the ID of a data frame that contains a pre-trained (external) Word2vec model.
 
