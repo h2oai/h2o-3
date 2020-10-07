@@ -186,60 +186,65 @@ try {
                     try {
                         pipelineContext.getBuildSummary().addStageSummary(this, HELM_STAGE_NAME, env.BUILD_NUMBER_DIR)
                         pipelineContext.getBuildSummary().setStageDetails(this, HELM_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                        
                         // Helm automatically installs latest chart if version is unspecified by the user, therefore there is no need for a latest tag
-                        insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
-                            THREE_DIGITS_VERSION = sh (
-                                script: "echo ${env.PROJECT_VERSION} | sed 's/[0-9]*\\.\\([0-9]*\\.[0-9]*\\.[0-9]\\)*/\\1/g'\\)",
-                                returnStdout: true
-                            ).trim()
-                            if (params.TEST_RELEASE) {
-                                sh """
-                                    cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
-                                    sed -i 's/name: h2o-3/name: h2o-test-3/' Chart.yaml
-                                    sed -i 's/version: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
-                                    sed -i 's/appVersion: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
-                                    helm package .
-                                    mkdir h2o-3
-                                    cp h2o-3-test-${THREE_DIGITS_VERSION}.tgz h2o-3/
-                                    aws s3 cp h2o-3-test-${THREE_DIGITS_VERSION}.tgz s3://h2oai-test-charts/h2o-3/h2o-3-test-${THREE_DIGITS_VERSION}.tgz --acl public-read
-                                    rm h2o-3-test-${THREE_DIGITS_VERSION}.tgz
-                                    aws s3 cp s3://h2oai-test-charts/index.yaml index.yaml
-                                    helm repo index . --merge index.yaml
-                                    aws s3 cp index.yaml s3://h2oai-test-charts/index.yaml --acl public-read
-                                """
+                        THREE_DIGITS_VERSION = sh (
+                            script: "echo ${env.PROJECT_VERSION} | sed 's/[0-9]*\\.\\([0-9]*\\.[0-9]*\\.[0-9]\\)*/\\1/g'\\)",
+                            returnStdout: true
+                        ).trim()
+                        
+                        if (params.TEST_RELEASE) {
+                        CHART_NAME = "h2o-test-3"
+                        BUCKET = "h2oai-test-charts"
+                        VERSION = THREE_DIGITS_VERSION
+                        } else{
+                            if(env.NIGHTLY_BUILD){
+                                CHART_NAME = "h2o-3-nightly"
+                                BUCKET = "h2oai-nightly-charts"
+                                VERSION = THREE_DIGITS_VERSION + "." + env.BUILD_NUMBER_DIR 
                             } else {
-                                if(env.NIGHTLY_BUILD){
-                                    sh """
-                                        cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
-                                        sed -i 's/name: h2o-3/name: h2o-3-nightly/' Chart.yaml
-                                        sed -i 's/version: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
-                                        sed -i 's/appVersion: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
-                                        helm package .
-                                        mkdir h2o-3
-                                        cp h2o-3-${env.BUILD_NUMBER_DIR}-${THREE_DIGITS_VERSION}.tgz h2o-3/
-                                        aws s3 cp h2o-3-${env.BUILD_NUMBER_DIR}-${THREE_DIGITS_VERSION}.tgz s3://h2oai-nightly-charts/h2o-3/h2o-3-${env.BUILD_NUMBER_DIR}-${THREE_DIGITS_VERSION}.tgz --acl public-read
-                                        rm h2o-3-${env.BUILD_NUMBER_DIR}-${THREE_DIGITS_VERSION}.tgz
-                                        aws s3 cp s3://h2oai-nightly-charts/index.yaml index.yaml
-                                        helm repo index . --merge index.yaml
-                                        aws s3 cp index.yaml s3://h2oai-nightly-charts/index.yaml --acl public-read
-                                    """
-                                
-                                } else{
-                                    sh """
-                                        cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
-                                        sed -i 's/version: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
-                                        sed -i 's/appVersion: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${THREE_DIGITS_VERSION}/' Chart.yaml
-                                        helm package .
-                                        mkdir h2o-3
-                                        cp h2o-3-${THREE_DIGITS_VERSION}.tgz h2o-3/
-                                        aws s3 cp h2o-3-${THREE_DIGITS_VERSION}.tgz s3://h2oai-charts/h2o-3/h2o-3-${THREE_DIGITS_VERSION}.tgz --acl public-read
-                                        rm h2o-3-${THREE_DIGITS_VERSION}.tgz
-                                        aws s3 cp s3://h2oai-charts/index.yaml index.yaml
-                                        helm repo index . --merge index.yaml
-                                        aws s3 cp index.yaml s3://h2oai-charts/index.yaml --acl public-read
-                                    """
-                                }
+                            CHART_NAME = "h2o-3"
+                            BUCKET = "h2oai-charts"
+                            VERSION = THREE_DIGITS_VERSION
                             }
+                        }
+                        
+                        withCredentials([file(credentialsId: 'release-gradle.properties', variable: 'GRADLE_PROPERTIES_PATH'), file(credentialsId: 'release-secret-key-ring-file', variable: 'RING_FILE_PATH')]) {
+                            insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS', "-v ${GRADLE_PROPERTIES_PATH}:${GRADLE_PROPERTIES_PATH} -v ${RING_FILE_PATH}:${RING_FILE_PATH}") {
+                            sh """
+                                cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
+                                sed -i 's/name: h2o-3/name: ${CHART_NAME}/' Chart.yaml
+                                sed -i 's/version: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${VERSION}/' Chart.yaml
+                                sed -i 's/appVersion: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${VERSION}/' Chart.yaml
+                                helm package .
+                                mkdir h2o-3
+                                cp ${CHART_NAME}-${VERSION}.tgz h2o-3/
+                            """
+                            }
+                        }
+                        insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
+                            sh """
+                                cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
+                                aws s3 cp ${CHART_NAME}-${VERSION}.tgz s3://${BUCKET}/h2o-3/${CHART_NAME}-${VERSION}.tgz --acl public-read
+                                rm ${CHART_NAME}-${VERSION}.tgz
+                                aws s3 cp s3://${BUCKET}/index.yaml index.yaml
+                            """
+                        }
+                        
+                        withCredentials([file(credentialsId: 'release-gradle.properties', variable: 'GRADLE_PROPERTIES_PATH'), file(credentialsId: 'release-secret-key-ring-file', variable: 'RING_FILE_PATH')]) {
+                            insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS', "-v ${GRADLE_PROPERTIES_PATH}:${GRADLE_PROPERTIES_PATH} -v ${RING_FILE_PATH}:${RING_FILE_PATH}") {
+                            sh """
+                                cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
+                                helm repo index . --merge index.yaml
+                            """
+                            }
+                        }
+                        
+                        insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
+                            sh """
+                                cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
+                                aws s3 cp index.yaml s3://${BUCKET}/index.yaml --acl public-read
+                            """
                         }
 
                         pipelineContext.getBuildSummary().markStageSuccessful(this, HELM_STAGE_NAME)
