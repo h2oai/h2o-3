@@ -24,6 +24,8 @@ In order to spawn a H2O cluster inside a Kubernetes cluster, the following list 
 
 After H2O is started, there must be a way for H2O nodes to "find" themselves and form a cluster. This is the role of the `headless service <https://kubernetes.io/docs/concepts/services-networking/service/#headless-services>`__. This approach works on all major Kubernetes clusters without any additional permissions required.
 
+For reproducibility, resource limits and requests should always be set to equal values.
+
 Headless Service
 ~~~~~~~~~~~~~~~~
 
@@ -147,3 +149,17 @@ In order to expose H2O and make it available from the outside of the Kubernetes 
           backend:
             serviceName: h2o-service
             servicePort: 80
+
+Reproducibility notes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are three key requiremnets to make sure actions invoked on H2O are reproducible:
+
+1. Same amount of memory,
+2. Same number of CPUs,
+3. Client sends requests only to the H2O leader node.
+
+In Kubernetes environment, one common mistake is to set `requests` and `limits` resource quotas for a pod differently. If the underlying JVM running inside the docker image inside a pod uses certain percentage of memory available, that amount of memory might be different 
+each time H2O starts, as Kubernetes might actually allocate different amount of memory every time. Same rules apply to CPU limits and requests.
+
+The ``readinessProbe`` residing on ``/kubernetes/isLeaderNode`` makes sure only the leader node is exposed once the cluster is formed by making all nodes but the leader node "not available". Without the readiness probe, reproducibility is not guaranteed.
