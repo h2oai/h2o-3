@@ -20,7 +20,7 @@ properties(
 // define list of OSs for which to build the docker image,
 // for each OS there must by a ci/docker/Dockerfile-gpu-<OS>
 final List<String> IMAGES_MAP = ['centos'] // ubuntu disabled for now since the build is failing and the images not used
-final String IMAGE_TAG = "3"
+final String IMAGE_TAG = "4"
 // base of the image name
 final String IMAGE_NAME = "${params.registry}/opsh2oai/h2o-3-xgboost-build"
 

@@ -57,7 +57,12 @@ Suggests: ggplot2,
           data.table (>= 1.9.8),
           rgl (>= 0.100.19),
           plot3Drgl (>= 1.0.1),
-          survival
+          survival,
+          DT,
+          IRdisplay,
+          htmltools,
+          plotly,
+          repr
 Collate:
          'aggregator.R'
          'astfun.R'
@@ -71,7 +76,6 @@ Collate:
          'communication.R'
          'kvstore.R'
          'frame.R'
-         'targetencoder_deprecated.R'
          'targetencoder.R'
          'import.R'
          'isolationforest.R'
@@ -101,5 +105,7 @@ Collate:
          'grid.R'
          'segment.R'
          'predict.R'
-         'zzz.R'
          'tf-idf.R'
+         'rulefit.R'
+         'explain.R'
+         'zzz.R'

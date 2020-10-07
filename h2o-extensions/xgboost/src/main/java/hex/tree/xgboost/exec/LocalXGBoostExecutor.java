@@ -4,11 +4,10 @@ import hex.DataInfo;
 import hex.genmodel.utils.IOUtils;
 import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostModel;
-import hex.tree.xgboost.matrix.FileMatrixLoader;
 import hex.tree.xgboost.matrix.FrameMatrixLoader;
 import hex.tree.xgboost.matrix.MatrixLoader;
+import hex.tree.xgboost.matrix.RemoteMatrixLoader;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
-import hex.tree.xgboost.remote.RemoteXGBoostUploadServlet;
 import hex.tree.xgboost.task.XGBoostCleanupTask;
 import hex.tree.xgboost.task.XGBoostSetupTask;
 import hex.tree.xgboost.task.XGBoostUpdateTask;
@@ -49,7 +48,7 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
         boosterParams = BoosterParms.fromMap(init.parms);
         nodes = new boolean[H2O.CLOUD.size()];
         for (int i = 0; i < init.num_nodes; i++) nodes[i] = init.nodes[i] != null;
-        loader = new FileMatrixLoader(modelKey);
+        loader = new RemoteMatrixLoader(modelKey);
         saveMatrixDirectory = init.save_matrix_path;
         checkpointProvider = () -> {
             if (!init.has_checkpoint) {
@@ -104,7 +103,7 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
     private RabitTrackerH2O setupRabitTracker(int numNodes) {
         // XGBoost seems to manipulate its frames in case of a 1 node distributed version in a way 
         // the GPU plugin can't handle Therefore don't use RabitTracker envs for 1 node
-        if (H2O.CLOUD.size() > 1) {
+        if (numNodes > 1) {
             RabitTrackerH2O rt = new RabitTrackerH2O(numNodes);
             rt.start(0);
             return rt;

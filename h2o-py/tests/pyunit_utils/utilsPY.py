@@ -549,9 +549,11 @@ def hadoop_namenode():
     return None
 
 def pyunit_exec(test_name):
-    with open(test_name, "r") as t: pyunit = t.read()
-    pyunit_c = compile(pyunit, os.path.abspath(test_name), 'exec')
-    exec(pyunit_c, dict(__name__='main'))  # forcing module name to ensure that the test behaves the same way as when executed using `python my_test.py`
+    with open(test_name, "r") as t: 
+        pyunit = t.read()
+    test_path = os.path.abspath(test_name)
+    pyunit_c = compile(pyunit, test_path, 'exec')
+    exec(pyunit_c, dict(__name__='main', __file__=test_path))  # forcing module name to ensure that the test behaves the same way as when executed using `python my_test.py`
 
 def standalone_test(test):
     if not h2o.connection() or not h2o.connection().connected:
@@ -2964,7 +2966,7 @@ def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, stric
     :param numElements: integer to denote number of rows to compare.  Done to reduce compare time.
         Set to 0 or negative number if you want to compare all elements.
     :param tol_time: optional parameter to limit time value difference.
-    :param tol_numerica: optional parameter to limit numeric value difference.
+    :param tol_numeric: optional parameter to limit numeric value difference.
     :param strict: optional parameter to enforce strict comparison or not.  If True, column type must
         match in order to pass the test.
     :param compare_NA: optional parameter to compare NA or not.  For csv file generated from orc file, the
@@ -2983,11 +2985,11 @@ def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, stric
 
     na_frame1 = frame1.isna().sum().sum(axis=1)[:,0]
     na_frame2 = frame2.isna().sum().sum(axis=1)[:,0]
-    probVal = numElements/rows1
+    probVal = numElements/rows1 if numElements > 0 else 1
 
     if compare_NA:      # check number of missing values
         assert na_frame1.flatten() == na_frame2.flatten(), "failed numbers of NA check!  Frame 1 NA number: {0}, frame 2 " \
-                                   "NA number: {1}".format(na_frame1, na_frame2)
+                                   "NA number: {1}".format(na_frame1.flatten(), na_frame2.flatten())
 
     # check column types are the same before proceeding to check each row content.
     for col_ind in range(cols1):

@@ -3717,14 +3717,70 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Test public void testMonotoneConstraintsBernoulli() {
+    Scope.enter();
+    try {
+      final Key<Frame> target = Key.make();
+      Frame train = Scope.track(parse_test_file("smalldata/gbm_test/ecology_model.csv"));
+      train.remove("Site").remove();     // Remove unique ID
+      int ci = train.find("Angaus");
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
+      DKV.put(train);                    // Update frame after hacking it
+      
+      String colName = "SegSumT";
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = train._key;
+      parms._response_column = "Angaus"; // Train on the outcome
+      parms._distribution = DistributionFamily.bernoulli;
+      parms._monotone_constraints = new KeyValue[]{new KeyValue(colName, 1)};
+      
+      GBMModel model = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+      Scope.track_generic(model);
+
+      String[] uniqueValues = Scope.track(train.vec(colName).toCategoricalVec()).domain();
+      Vec unchangedPreds = Scope.track(model.score(train)).anyVec();
+      Vec lastPreds = null;
+      for (String valueStr : uniqueValues) {
+        final double value = Double.parseDouble(valueStr);
+
+        new MRTask() {
+          @Override
+          public void map(Chunk c) {
+            for (int i = 0; i < c._len; i++)
+              c.set(i, value);
+          }
+        }.doAll(train.vec(colName));
+        assertEquals(value, train.vec(colName).min(), 0);
+        assertEquals(value, train.vec(colName).max(), 0);
+
+        Vec currentPreds = Scope.track(model.score(train)).anyVec();
+        if (lastPreds != null)
+          for (int i = 0; i < lastPreds.length(); i++) {
+            assertTrue("value=" + value + ", id=" + i, lastPreds.at(i) <= currentPreds.at(i));
+            System.out.println("value=" + value + ", id="+ i +" "+lastPreds.at(i) +" <= "+currentPreds.at(i)+" - "+unchangedPreds.at(i));
+          }
+        lastPreds = currentPreds;
+      }
+      
+    } finally {
+      Scope.exit();
+    }
+  }
+
   @Test
   public void testMonotoneConstraintsProstate() {
-    checkMonotoneConstraintsProstate(DistributionFamily.tweedie);
+    checkMonotoneConstraintsProstate(DistributionFamily.gaussian);
   }
 
   @Test
   public void testMonotoneConstraintsProstateTweedie() {
-    checkMonotoneConstraintsProstate(DistributionFamily.gaussian);
+    checkMonotoneConstraintsProstate(DistributionFamily.tweedie);
+  }
+
+  @Test
+  public void testMonotoneConstraintsProstateQuantile() {
+    checkMonotoneConstraintsProstate(DistributionFamily.quantile);
   }
 
   private void checkMonotoneConstraintsProstate(DistributionFamily distributionFamily) {
@@ -3742,6 +3798,9 @@ public class GBMTest extends TestUtil {
       parms._ntrees = 50;
       parms._seed = 42;
       parms._distribution = distributionFamily;
+      if (distributionFamily.equals(quantile)) {
+        parms._quantile_alpha = 0.1;
+      }
 
       String[] uniqueAges = Scope.track(f.vec("AGE").toCategoricalVec()).domain();
 
@@ -3786,10 +3845,10 @@ public class GBMTest extends TestUtil {
       parms._response_column = "CAPSULE";
       parms._train = f._key;
       parms._monotone_constraints = new KeyValue[]{new KeyValue("AGE", 1)};
-      parms._distribution = DistributionFamily.quantile;
+      parms._distribution = laplace;
 
       expectedException.expectMessage("ERRR on field: _monotone_constraints: " +
-              "Monotone constraints are only supported for Gaussian and Bernoulli distributions, your distribution: quantile.");
+              "Monotone constraints are only supported for Gaussian, Bernoulli, Tweedie and Quantile distributions, your distribution: laplace.");
       GBMModel model = new GBM(parms).trainModel().get();
       Scope.track_generic(model);
     } finally {

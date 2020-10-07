@@ -16,10 +16,7 @@ import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 import water.util.IcedInt;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
@@ -254,8 +251,8 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
   }
 
   @Override
-  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    return new ModelMetricsRegression.MetricBuilderRegression();
+  public ModelMetricsRegressionCoxPH.MetricBuilderRegressionCoxPH makeMetricBuilder(String[] domain) {
+    return new ModelMetricsRegressionCoxPH.MetricBuilderRegressionCoxPH(_input_parms._start_column, _input_parms._stop_column, _input_parms.isStratified(), _input_parms._stratify_by);
   }
 
   public ModelSchemaV3 schema() { return new CoxPHModelV3(); }
@@ -265,15 +262,24 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
   }
 
   @Override
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job job, boolean computeMetrics, CFuncRef customMetricFunc) {
     int nResponses = 0;
     for (String col : _parms.responseCols())
       if (adaptFrm.find(col) != -1)
         nResponses++;
+      
     DataInfo scoringInfo = _output.data_info.scoringInfo(_output._names, adaptFrm, nResponses, false);
-    return new CoxPHScore(scoringInfo, _output, _parms.isStratified())
-            .doAll(Vec.T_NUM, scoringInfo._adaptedFrame)
-            .outputFrame(Key.<Frame>make(destination_key), new String[]{"lp"}, null);
+
+    CoxPHScore score = new CoxPHScore(scoringInfo, _output, _parms.isStratified());
+    final Frame scored = score
+                         .doAll(Vec.T_NUM, scoringInfo._adaptedFrame)
+                         .outputFrame(Key.<Frame>make(destination_key), new String[]{"lp"}, null);
+    
+    if (computeMetrics) {
+      ModelMetricsRegressionCoxPH mm = makeMetricBuilder(null).makeModelMetrics(this, fr, adaptFrm, scored);
+    }
+
+    return scored;
   }
 
   @Override

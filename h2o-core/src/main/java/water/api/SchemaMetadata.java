@@ -222,7 +222,13 @@ public final class SchemaMetadata extends Iced {
       if (String.class.isAssignableFrom(clz))
         return "string"; // lower-case, to be less Java-centric
 
-      if (clz.equals(Boolean.TYPE) || clz.equals(Byte.TYPE) || clz.equals(Short.TYPE) || clz.equals(Integer.TYPE) || clz.equals(Long.TYPE) || clz.equals(Float.TYPE) || clz.equals(Double.TYPE))
+      if (clz.equals(Boolean.TYPE) 
+              || clz.equals(Byte.TYPE) 
+              || clz.equals(Short.TYPE) 
+              || clz.equals(Integer.TYPE) 
+              || clz.equals(Long.TYPE) 
+              || clz.equals(Float.TYPE)
+              || clz.equals(Double.TYPE))
         return clz.toString();
 
       if (is_array)

@@ -11,10 +11,6 @@ if (!missing(offset_column)) {
   warning("Argument offset_column is deprecated and has no use for Random Forest.")
   parms$offset_column <- NULL
 }
-if (!missing(max_hit_ratio_k)) {
-  warning("Argument max_hit_ratio_k is deprecated and has no use.")
-  parms$offset_column <- NULL
-}
 """
 )
 
@@ -28,7 +24,6 @@ Builds a Random Forest model on an H2OFrame.
     params=dict(
         distribution="Distribution. This argument is deprecated and has no use for Random Forest.",
         offset_column="Offset column. This argument is deprecated and has no use for Random Forest.",
-        max_hit_ratio_k="This argument is deprecated and has no use. Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable).",
         verbose="""
 \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 """

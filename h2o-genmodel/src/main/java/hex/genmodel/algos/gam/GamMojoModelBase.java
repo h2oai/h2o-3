@@ -81,8 +81,8 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
       if (Double.isNaN(data[ind])) data[ind] = _catNAFills[ind];
 
     if (data.length == nfeatures()) { // using centered gam cols, nfeatures denotes centered gam columns
-      for (int ind = _cats; ind < _numsCenter + _cats; ind++)
-        if (Double.isNaN(data[ind])) data[ind] = _numNAFillsCenter[ind - _cats];
+      for (int ind = 0; ind < _numsCenter; ind++)
+        if (Double.isNaN(data[ind + _cats])) data[ind + _cats] = _numNAFillsCenter[ind];
     } else {
       for (int ind = 0; ind < _nums; ind++) {
         int colInd = ind+_cats;
@@ -115,14 +115,16 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
   // this method will generate the beta*data+intercept
   double generateEta(double[] beta, double[] data) {
     double eta = 0.0;
-    for (int i = 0; i < _catOffsets.length - 1; ++i) {  // take care of contribution from categorical columns
+    int catOffsetLength = _catOffsets.length - 1;
+    for (int i = 0; i < catOffsetLength; ++i) {  // take care of contribution from categorical columns
       int ival = readCatVal(data[i], i);
       if ((ival < _catOffsets[i + 1]) && (ival >= 0))
         eta += beta[ival];
     }
 
     int noff = _catOffsets[_cats] - _cats;
-    for (int i = _cats; i < beta.length - 1 - noff; ++i)
+    int numColLen = beta.length - 1 - noff;
+    for (int i = _cats; i < numColLen; ++i)
       eta += beta[noff + i] * data[i];
     eta += beta[beta.length - 1]; // add intercept
     return eta;

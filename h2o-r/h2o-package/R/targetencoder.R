@@ -13,15 +13,27 @@
 #' @param training_frame Id of the training data frame.
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
-#' @param blending \code{Logical}. Blending enabled/disabled Defaults to FALSE.
-#' @param k Inflection point. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
-#'        parameter. Defaults to 10.
-#' @param f Smoothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
-#'        parameter. Defaults to 20.
-#' @param data_leakage_handling Data leakage handling strategy. Must be one of: "None", "KFold", "LeaveOneOut". Defaults to None.
-#' @param noise_level Noise level Defaults to 0.01.
+#' @param keep_original_categorical_columns \code{Logical}. If true, the original non-encoded categorical features will remain in the result frame.
+#'        Defaults to TRUE.
+#' @param blending \code{Logical}. If true, enables blending of posterior probabilities (computed for a given categorical value)
+#'        with prior probabilities (computed on the entire set). This allows to mitigate the effect of categorical
+#'        values with small cardinality. The blending effect can be tuned using the `inflection_point` and `smoothing`
+#'        parameters. Defaults to FALSE.
+#' @param inflection_point Inflection point of the sigmoid used to blend probabilities (see `blending` parameter). For a given
+#'        categorical value, if it appears less that `inflection_point` in a data sample, then the influence of the
+#'        posterior probability will be smaller than the prior. Defaults to 10.
+#' @param smoothing Smoothing factor corresponds to the inverse of the slope at the inflection point on the sigmoid used to blend
+#'        probabilities (see `blending` parameter). If smoothing tends towards 0, then the sigmoid used for blending
+#'        turns into a Heaviside step function. Defaults to 20.
+#' @param data_leakage_handling Data leakage handling strategy used to generate the encoding. Supported options are: 1) "none" (default) - no
+#'        holdout, using the entire training frame. 2) "leave_one_out" - current row's response value is subtracted from
+#'        the per-level frequencies pre-calculated on the entire training frame. 3) "k_fold" - encodings for a fold are
+#'        generated based on out-of-fold data.  Must be one of: "LeaveOneOut", "KFold", "None". Defaults to None.
+#' @param noise The amount of noise to add to the encoded column. Use 0 to disable noise, and -1 (=AUTO) to let the algorithm
+#'        determine a reasonable amount of noise. Defaults to 0.01.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
+#' @param ... Mainly used for backwards compatibility, to allow deprecated parameters.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -59,13 +71,30 @@ h2o.targetencoder <- function(x,
                               training_frame,
                               model_id = NULL,
                               fold_column = NULL,
+                              keep_original_categorical_columns = TRUE,
                               blending = FALSE,
-                              k = 10,
-                              f = 20,
-                              data_leakage_handling = c("None", "KFold", "LeaveOneOut"),
-                              noise_level = 0.01,
-                              seed = -1)
+                              inflection_point = 10,
+                              smoothing = 20,
+                              data_leakage_handling = c("LeaveOneOut", "KFold", "None"),
+                              noise = 0.01,
+                              seed = -1,
+                              ...)
 {
+  varargs <- list(...)
+  for (arg in names(varargs)) {
+     if (arg == 'k') {
+        warning("argument 'k' is deprecated; please use 'inflection_point' instead.")
+        if (missing(inflection_point)) inflection_point <- varargs$k else warning("ignoring 'k' as 'inflection_point' was also provided.")
+     } else if (arg == 'f') {
+        warning("argument 'f' is deprecated; please use 'smoothing' instead.")
+        if (missing(smoothing)) smoothing <- varargs$f else warning("ignoring 'f' as 'smoothing' was also provided.")
+     } else if (arg == 'noise_level') {
+        warning("argument 'noise_level' is deprecated; please use 'noise' instead.")
+        if (missing(noise)) noise <- varargs$noise_level else warning("ignoring 'noise_level' as 'noise' was also provided.")
+     } else {
+        stop(paste("unused argument", arg, "=", varargs[[arg]]))
+     }
+  }
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
 
@@ -91,16 +120,18 @@ h2o.targetencoder <- function(x,
     parms$model_id <- model_id
   if (!missing(fold_column))
     parms$fold_column <- fold_column
+  if (!missing(keep_original_categorical_columns))
+    parms$keep_original_categorical_columns <- keep_original_categorical_columns
   if (!missing(blending))
     parms$blending <- blending
-  if (!missing(k))
-    parms$k <- k
-  if (!missing(f))
-    parms$f <- f
+  if (!missing(inflection_point))
+    parms$inflection_point <- inflection_point
+  if (!missing(smoothing))
+    parms$smoothing <- smoothing
   if (!missing(data_leakage_handling))
     parms$data_leakage_handling <- data_leakage_handling
-  if (!missing(noise_level))
-    parms$noise_level <- noise_level
+  if (!missing(noise))
+    parms$noise <- noise
   if (!missing(seed))
     parms$seed <- seed
 
@@ -112,16 +143,33 @@ h2o.targetencoder <- function(x,
                                               y,
                                               training_frame,
                                               fold_column = NULL,
+                                              keep_original_categorical_columns = TRUE,
                                               blending = FALSE,
-                                              k = 10,
-                                              f = 20,
-                                              data_leakage_handling = c("None", "KFold", "LeaveOneOut"),
-                                              noise_level = 0.01,
+                                              inflection_point = 10,
+                                              smoothing = 20,
+                                              data_leakage_handling = c("LeaveOneOut", "KFold", "None"),
+                                              noise = 0.01,
                                               seed = -1,
                                               segment_columns = NULL,
                                               segment_models_id = NULL,
-                                              parallelism = 1)
+                                              parallelism = 1,
+                                              ...)
 {
+  varargs <- list(...)
+  for (arg in names(varargs)) {
+     if (arg == 'k') {
+        warning("argument 'k' is deprecated; please use 'inflection_point' instead.")
+        if (missing(inflection_point)) inflection_point <- varargs$k else warning("ignoring 'k' as 'inflection_point' was also provided.")
+     } else if (arg == 'f') {
+        warning("argument 'f' is deprecated; please use 'smoothing' instead.")
+        if (missing(smoothing)) smoothing <- varargs$f else warning("ignoring 'f' as 'smoothing' was also provided.")
+     } else if (arg == 'noise_level') {
+        warning("argument 'noise_level' is deprecated; please use 'noise' instead.")
+        if (missing(noise)) noise <- varargs$noise_level else warning("ignoring 'noise_level' as 'noise' was also provided.")
+     } else {
+        stop(paste("unused argument", arg, "=", varargs[[arg]]))
+     }
+  }
   # formally define variables that were excluded from function parameters
   model_id <- NULL
   verbose <- NULL
@@ -149,16 +197,18 @@ h2o.targetencoder <- function(x,
 
   if (!missing(fold_column))
     parms$fold_column <- fold_column
+  if (!missing(keep_original_categorical_columns))
+    parms$keep_original_categorical_columns <- keep_original_categorical_columns
   if (!missing(blending))
     parms$blending <- blending
-  if (!missing(k))
-    parms$k <- k
-  if (!missing(f))
-    parms$f <- f
+  if (!missing(inflection_point))
+    parms$inflection_point <- inflection_point
+  if (!missing(smoothing))
+    parms$smoothing <- smoothing
   if (!missing(data_leakage_handling))
     parms$data_leakage_handling <- data_leakage_handling
-  if (!missing(noise_level))
-    parms$noise_level <- noise_level
+  if (!missing(noise))
+    parms$noise <- noise
   if (!missing(seed))
     parms$seed <- seed
 

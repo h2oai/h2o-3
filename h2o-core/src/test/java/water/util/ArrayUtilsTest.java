@@ -267,4 +267,24 @@ public class ArrayUtilsTest {
     assertArrayEquals("Selected array elements mismatch.",
                       expectedSelectedElements, ArrayUtils.select(arr, idxs));
   }
+  
+  @Test
+  public void testToStringQuotedElements(){
+    final Object[] names = new String[]{"", "T16384"};
+    final String outputString = toStringQuotedElements(names);
+    assertEquals("[\"\", \"T16384\"]", outputString);
+  }
+
+  @Test
+  public void testToStringQuotedElementsNullInput(){
+    final String outputString = toStringQuotedElements(null);
+    assertEquals("null", outputString);
+  }
+
+  @Test
+  public void testToStringQuotedElementsEmptyInput(){
+    final Object[] emptyNames = new String[0];
+    final String outputString = toStringQuotedElements(emptyNames);
+    assertEquals("[]", outputString);
+  }
 }

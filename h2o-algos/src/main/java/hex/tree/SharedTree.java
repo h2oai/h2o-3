@@ -20,13 +20,12 @@ import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.*;
 
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+
+import static hex.util.LinearAlgebraUtils.toEigenArray;
 
 public abstract class SharedTree<
     M extends SharedTreeModel<M,P,O>, 
@@ -165,6 +164,8 @@ public abstract class SharedTree<
       _ncols = _train.numCols()-(isSupervised()?1:0)-numSpecialCols();
 
     PlattScalingHelper.initCalibration(this, _parms, expensive);
+
+    _orig_projection_array = LinearAlgebraUtils.toEigenProjectionArray(_origTrain, _train, expensive);
   }
 
   protected void validateRowSampleRate() {
@@ -610,7 +611,7 @@ public abstract class SharedTree<
         // Replace the Undecided with the Split decision
         DTree.DecidedNode dn = _st.makeDecided(udn, sbh._hcs[leaf - leafOffset], udn._cs);
 //        System.out.println(dn + "\n" + dn._split);
-        if (dn._split == null) udn.do_not_split();
+        if (dn._split == null) udn.doNotSplit();
         else {
           _did_split = true;
           DTree.Split s = dn._split; // Accumulate squared error improvements per variable

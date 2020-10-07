@@ -23,11 +23,11 @@ public class DTreeTest {
     hs.updateHisto(ws, null, cs, ys, null, rows, rows.length, 0);
 
     // 1. min_rows = #NAs
-    DTree.Split s1 = DTree.findBestSplitPoint(hs, 0, 20, 0, Double.NaN, Double.NaN, false);
+    DTree.Split s1 = DTree.findBestSplitPoint(hs, 0, 20, 0, Double.NaN, Double.NaN, false, null);
     assertNotNull(s1);
 
     // 2. min_rows = #NAs + 1
-    DTree.Split s2 = DTree.findBestSplitPoint(hs, 0, 21, 0, Double.NaN, Double.NaN, false);
+    DTree.Split s2 = DTree.findBestSplitPoint(hs, 0, 21, 0, Double.NaN, Double.NaN, false, null);
     assertNull(s2); // not enough improvement => no split
 
     // 3. allow negative (!!!) split improvement, min_rows = #NAs + 1
@@ -35,7 +35,7 @@ public class DTreeTest {
             SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 123, null, null);
     hsN.init();
     hsN.updateHisto(ws, null, cs, ys, null, rows, rows.length, 0);
-    DTree.Split s3 = DTree.findBestSplitPoint(hsN, 0, 21, 0, Double.NaN, Double.NaN, false);
+    DTree.Split s3 = DTree.findBestSplitPoint(hsN, 0, 21, 0, Double.NaN, Double.NaN, false, null);
     assertNotNull(s3); // split was made thanks to the negative split improvement
     assertEquals(s3._se, seNonNA(ws, cs, ys), 0); // SE is actually the non-NA SE
     assertTrue(s3._se < s1._se); // SE is different because the SE of NAs is not accounted for
@@ -50,7 +50,7 @@ public class DTreeTest {
     DHistogram hs = makeHisto(1, min_pred, max_pred);
     ExpectedSplitInfo expectedSplitInfo = updateHisto(hs, min_pred, max_pred, 1.0);
     
-    DTree.Split split = DTree.findBestSplitPoint(hs, 0, 0, 0, min_pred, max_pred, true);
+    DTree.Split split = DTree.findBestSplitPoint(hs, 0, 0, 0, min_pred, max_pred, true, null);
     
     expectedSplitInfo.checkSplit(split);
   }
@@ -63,7 +63,7 @@ public class DTreeTest {
     DHistogram hs = makeHisto(100, min_pred, max_pred);
     ExpectedSplitInfo expectedSplitInfo = updateHisto(hs, min_pred, max_pred,0.1);
 
-    DTree.Split split = DTree.findBestSplitPoint(hs, 0, 100, 0, min_pred, max_pred, true);
+    DTree.Split split = DTree.findBestSplitPoint(hs, 0, 100, 0, min_pred, max_pred, true, null);
 
     expectedSplitInfo.checkSplit(split);
   }

@@ -155,8 +155,8 @@ def mojo_predict_csv_test(target_dir):
     prediction_result = h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=mojo_zip_path,
                                              output_csv_path=output_csv)
 
-    mojo_prediction_0 = float(prediction_result[0]['0'])
-    mojo_prediction_1 = float(prediction_result[0]['1'])
+    mojo_prediction_0 = float(prediction_result[0]['p0'])
+    mojo_prediction_1 = float(prediction_result[0]['p1'])
     print("Binomial prediction: p0: " + str(mojo_prediction_0))
     print("Binomial prediction: p1: " + str(mojo_prediction_1))
 
@@ -241,10 +241,10 @@ def mojo_predict_pandas_test(sandbox_dir):
     mojo_prediction = h2o.mojo_predict_pandas(dataframe=pandas_frame, mojo_zip_path=model_zip_path, genmodel_jar_path=genmodel_path)
     print("Binomial Prediction (Binary) - p0: %f" % h2o_prediction[0,1])
     print("Binomial Prediction (Binary) - p1: %f" % h2o_prediction[0,2])
-    print("Binomial Prediction (MOJO) - p0: %f" % mojo_prediction['0'].iloc[0])
-    print("Binomial Prediction (MOJO) - p1: %f" % mojo_prediction['1'].iloc[0])
-    assert h2o_prediction[0,1] == mojo_prediction['0'].iloc[0], "expected predictions to be the same for binary and MOJO model - p0"
-    assert h2o_prediction[0,2] == mojo_prediction['1'].iloc[0], "expected predictions to be the same for binary and MOJO model - p0"
+    print("Binomial Prediction (MOJO) - p0: %f" % mojo_prediction['p0'].iloc[0])
+    print("Binomial Prediction (MOJO) - p1: %f" % mojo_prediction['p1'].iloc[0])
+    assert h2o_prediction[0,1] == mojo_prediction['p0'].iloc[0], "expected predictions to be the same for binary and MOJO model - p0"
+    assert h2o_prediction[0,2] == mojo_prediction['p1'].iloc[0], "expected predictions to be the same for binary and MOJO model - p0"
 
     mojo_contributions = h2o.mojo_predict_pandas(dataframe=pandas_frame, mojo_zip_path=model_zip_path,
                                                  genmodel_jar_path=genmodel_path, predict_contributions=True)

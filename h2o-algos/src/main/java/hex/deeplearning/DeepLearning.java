@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static hex.util.LinearAlgebraUtils.toEigenArray;
 import static water.util.MRUtils.sampleFrame;
 import static water.util.MRUtils.sampleFrameStratified;
 
@@ -68,6 +69,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
   @Override public void init(boolean expensive) {
     super.init(expensive);
     _parms.validate(this, expensive);
+    _orig_projection_array = LinearAlgebraUtils.toEigenProjectionArray(_origTrain, _train, expensive);
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
 

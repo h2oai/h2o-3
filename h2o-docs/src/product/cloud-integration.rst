@@ -9,6 +9,7 @@ H2O is supported on a number of cloud environments, including
 - Databricks
 - IBM DSX
 - Nimbix Cloud
+- Kubernetes
 
 Refer to the following topics:
 
@@ -21,4 +22,6 @@ Refer to the following topics:
    cloud-integration/ibm-dsx
    cloud-integration/nimbix
    cloud-integration/gcs
+   cloud-integration/kubernetes
    cloud-integration/google-compute
+

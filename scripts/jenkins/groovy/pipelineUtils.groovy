@@ -104,7 +104,7 @@ class PipelineUtils {
     }
 
     def readCurrentXGBVersion(final context, final h2o3Root) {
-        final def xgbVersion = context.sh(script: "cd ${h2o3Root} && cat h2o-extensions/xgboost/build.gradle | grep 'xgboost4jVersion =' | egrep -o '([0-9]+\\.+)+[-_a-zA-Z0-9]+'", returnStdout: true).trim()
+        final def xgbVersion = context.sh(script: "cd ${h2o3Root} && cat h2o-extensions/xgboost/build.gradle | grep 'xgboost4jVersion =' | egrep -o '([0-9]+\\.+)+[-_a-zA-Z0-9.]+'", returnStdout: true).trim()
         context.echo "XGBoost Version: ${xgbVersion}"
         if (xgbVersion == null || xgbVersion == '') {
             context.error("XGBoost version cannot be read")

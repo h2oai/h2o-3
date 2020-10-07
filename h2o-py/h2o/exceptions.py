@@ -149,3 +149,14 @@ class H2OJobCancelled(H2OError):
     By default, this exception will not trigger any output (as if it is caught and ignored), however the user still
     has an ability to catch this explicitly and perform a custom action.
     """
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Warnings 
+#-----------------------------------------------------------------------------------------------------------------------
+
+class H2ODeprecationWarning(DeprecationWarning):
+    """
+    Identifies deprecations in the h2o package.
+    """
+    pass

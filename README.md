@@ -2,9 +2,9 @@
 
 [![Join the chat at https://gitter.im/h2oai/h2o-3](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o-3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-H2O is an in-memory platform for distributed, scalable machine learning. H2O uses familiar interfaces like R, Python, Scala, Java, JSON and the Flow notebook/web interface, and works seamlessly with big data technologies like Hadoop and Spark. H2O provides implementations of many popular algorithms such as [GBM](https://en.wikipedia.org/wiki/Gradient_boosting), [Random Forest](https://en.wikipedia.org/wiki/Random_forest), [Deep Neural Networks](https://en.wikipedia.org/wiki/Deep_neural_networks), [Word2Vec](https://en.wikipedia.org/wiki/Word2vec) and [Stacked Ensembles](https://en.wikipedia.org/wiki/Ensemble_learning).  H2O is extensible so that developers can add data transformations and custom algorithms of their choice and access them through all of those clients.  
+H2O is an in-memory platform for distributed, scalable machine learning. H2O uses familiar interfaces like R, Python, Scala, Java, JSON and the Flow notebook/web interface, and works seamlessly with big data technologies like Hadoop and Spark. H2O provides implementations of many popular [algorithms](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science.html) such as Generalized Linear Models (GLM), Gradient Boosting Machines (including XGBoost), Random Forests, Deep Neural Networks, Stacked Ensembles, Naive Bayes, Generalized Additive Models (GAM), Cox Proportional Hazards, K-Means, PCA, Word2Vec, as well as a fully automatic machine learning algorithm ([H2O AutoML](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html)). 
 
-Data collection is easy. Decision making is hard. H2O makes it fast and easy to derive insights from your data through faster and better predictive modeling. H2O allows online scoring and modeling in a single platform.
+H2O is extensible so that developers can add data transformations and custom algorithms of their choice and access them through all of those clients.  H2O models can be [downloaded](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/save-and-load-model.html) and loaded into H2O memory for scoring, or exported into POJO or MOJO format for extemely fast scoring in [production](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/productionizing.html).  More information can be found in the [H2O User Guide](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html).
 
 H2O-3 (this repository) is the third incarnation of H2O, and the successor to [H2O-2](https://github.com/h2oai/h2o-2).  
 
@@ -684,23 +684,26 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 <a name="Roadmap"></a>
 ## 10. Roadmap
 
-### H2O 3.30.1.1 - July 2020
-
-* Hive Data Export
-* XGBoost Stability/Resource utilization: Scaling cluster up for XGBoost
-* Isolation Forest Improvements (contamination, validation frame, grid search)
-* NLP Improvements: TF-IDF
-* Generalized Additive Models (improvements, not a beta anymore)
-* CoxPH additions (new metrics, baseline hazard function, MOJO)
-
-### H2O 3.32.0.1 - September 2020
+### H2O 3.32.0.1 - October 2020
 
 * RuleFit algorithm
-* Extended Isolation Forest Algoritm
+* GAM Improvements (Cross Validation, MOJO support)
 * Target Encoding for Regression and Multinomial problems
-* Kubernetes Improvements (REST API clustering, healthchecks)
-* GBM monotone constraints for quantile and laplace distributions
+* Target Encoding minimal integration into AutoML
+* Kubernetes Improvements (Helm Charts)
+* GBM monotone constraints for quantile and tweedie distributions
 * Performance optimizations (lower memory usage)
+* Model Explainability
+* Upgrade XGBoost to 1.2
+
+### H2O 3.34.0.1 - January 2021
+
+* Extended Isolation Forest Algorithm
+* Uplift Trees in GBM
+* Extracting & ranking feature interactions from GBM and XGBoost models
+* Externalized XGBoost on Kubernetes clusters
+* RuleFit MOJO
+* Support for MOJO2 Scoring
 
 <a name="Community"></a>
 ## 11. Community
@@ -782,6 +785,8 @@ Michal Kurka
 Veronika Maurerova
 Jan Sterba
 Jan Jendrusak
+Sebastien Poirier
+Tomáš Frýda
 ```
 
 <a name="Advisors"></a>

@@ -855,7 +855,8 @@ class ModelBase(h2o_meta(Keyed)):
         m = {}
         for k, v in viewitems(tm): m[k] = None if v is None else v.gini()
         return list(m.values())[0] if len(m) == 1 else m
-
+    
+    
     def aucpr(self, train=False, valid=False, xval=False):
         """
         Get the aucPR (Area Under PRECISION RECALL Curve).
@@ -1052,8 +1053,7 @@ class ModelBase(h2o_meta(Keyed)):
 
         else:  # algo is not glm, deeplearning, drf, gbm, xgboost
             raise H2OValueError("Plotting not implemented for this type of model")
-        if not server: plt.show()
-
+        if not server: plt.show()        
 
     def partial_plot(self, data, cols=None, destination_key=None, nbins=20, weight_column=None,
                      plot=True, plot_stddev = True, figsize=(7, 10), server=False, include_na=False, user_splits=None,
@@ -1315,7 +1315,7 @@ class ModelBase(h2o_meta(Keyed)):
         cat = data[col].isfactor()[0]
         if cat:
             labels = pp[index]
-            uniqueL =list(set(labels))
+            uniqueL = list(set(labels))
             x = range(len(uniqueL))
             xlab = [None]*len(uniqueL)
             for ind in range(len(uniqueL)):
@@ -1331,9 +1331,8 @@ class ModelBase(h2o_meta(Keyed)):
                 axs.set_xticklabels(xlab)
             else:   # y-axis
                 axs.set_yticks(x)
-                axs.set_yticklabels(labels)
+                axs.set_yticklabels(xlab)
             axs.margins(0.2) 
-
             return xext
         else:
             return pp[index]
@@ -1716,12 +1715,11 @@ class ModelBase(h2o_meta(Keyed)):
 
 
 
-
 def _get_matplotlib_pyplot(server):
     try:
         # noinspection PyUnresolvedReferences
         import matplotlib
-        if server: matplotlib.use("Agg", warn=False)
+        if server: matplotlib.use("Agg")
         # noinspection PyUnresolvedReferences
         import matplotlib.pyplot as plt
         return plt

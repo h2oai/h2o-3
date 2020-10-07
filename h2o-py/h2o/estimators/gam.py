@@ -39,9 +39,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                    "gradient_epsilon", "link", "prior", "cold_start", "lambda_min_ratio", "beta_constraints",
                    "max_active_predictors", "interactions", "interaction_pairs", "obj_reg", "export_checkpoints_dir",
                    "stopping_rounds", "stopping_metric", "stopping_tolerance", "balance_classes",
-                   "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k",
-                   "max_runtime_secs", "custom_metric_func", "num_knots", "knot_ids", "gam_columns", "bs", "scale",
-                   "keep_gam_cols"}
+                   "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size", "max_runtime_secs",
+                   "custom_metric_func", "num_knots", "knot_ids", "gam_columns", "bs", "scale", "keep_gam_cols"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedAdditiveEstimator, self).__init__()
@@ -882,22 +881,6 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     def max_confusion_matrix_size(self, max_confusion_matrix_size):
         assert_is_type(max_confusion_matrix_size, None, int)
         self._parms["max_confusion_matrix_size"] = max_confusion_matrix_size
-
-
-    @property
-    def max_hit_ratio_k(self):
-        """
-        [Deprecated] Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to
-        disable)
-
-        Type: ``int``  (default: ``0``).
-        """
-        return self._parms.get("max_hit_ratio_k")
-
-    @max_hit_ratio_k.setter
-    def max_hit_ratio_k(self, max_hit_ratio_k):
-        assert_is_type(max_hit_ratio_k, None, int)
-        self._parms["max_hit_ratio_k"] = max_hit_ratio_k
 
 
     @property

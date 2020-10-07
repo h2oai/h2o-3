@@ -94,6 +94,11 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     }
 
     @Override
+    protected String[] makeScoringNames() {
+        return mojoModel().getOutputNames();
+    }
+
+    @Override
     protected boolean needsPostProcess() {
         return false; // MOJO scoring includes post-processing 
     }

@@ -65,10 +65,6 @@ extensions = dict(
       parms$beta_constraints <- beta_constraints
       if(!missing(missing_values_handling))
         parms$missing_values_handling <- missing_values_handling
-    if (!missing(max_hit_ratio_k)) {
-        warning("Argument max_hit_ratio_k is deprecated and has no use.")
-        parms$offset_column <- NULL
-    }    
     """,
 
 )
@@ -89,8 +85,5 @@ doc = dict(
     prostate$CAPSULE <- as.factor(prostate$CAPSULE)
     h2o.gam(y = "CAPSULE", x = c("RACE"), gam_columns = c("PSA"),
          training_frame = prostate, family = "binomial")
-    """,
-    params=dict(
-        max_hit_ratio_k="This argument is deprecated and has no use. Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)."
-    )
+    """
 )

@@ -25,13 +25,13 @@ class H2ORandomForestEstimator(H2OEstimator):
                    "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "score_each_iteration",
                    "score_tree_interval", "fold_assignment", "fold_column", "response_column", "ignored_columns",
                    "ignore_const_cols", "offset_column", "weights_column", "balance_classes", "class_sampling_factors",
-                   "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k", "ntrees", "max_depth",
-                   "min_rows", "nbins", "nbins_top_level", "nbins_cats", "r2_stopping", "stopping_rounds",
-                   "stopping_metric", "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node", "mtries",
-                   "sample_rate", "sample_rate_per_class", "binomial_double_trees", "checkpoint",
-                   "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
-                   "histogram_type", "categorical_encoding", "calibrate_model", "calibration_frame", "distribution",
-                   "custom_metric_func", "export_checkpoints_dir", "check_constant_response", "gainslift_bins"}
+                   "max_after_balance_size", "max_confusion_matrix_size", "ntrees", "max_depth", "min_rows", "nbins",
+                   "nbins_top_level", "nbins_cats", "r2_stopping", "stopping_rounds", "stopping_metric",
+                   "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node", "mtries", "sample_rate",
+                   "sample_rate_per_class", "binomial_double_trees", "checkpoint", "col_sample_rate_change_per_level",
+                   "col_sample_rate_per_tree", "min_split_improvement", "histogram_type", "categorical_encoding",
+                   "calibrate_model", "calibration_frame", "distribution", "custom_metric_func",
+                   "export_checkpoints_dir", "check_constant_response", "gainslift_bins"}
 
     def __init__(self, **kwargs):
         super(H2ORandomForestEstimator, self).__init__()
@@ -570,37 +570,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def max_confusion_matrix_size(self, max_confusion_matrix_size):
         assert_is_type(max_confusion_matrix_size, None, int)
         self._parms["max_confusion_matrix_size"] = max_confusion_matrix_size
-
-
-    @property
-    def max_hit_ratio_k(self):
-        """
-        [Deprecated] Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to
-        disable)
-
-        Type: ``int``  (default: ``0``).
-
-        :examples:
-
-        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
-        >>> covtype[54] = covtype[54].asfactor()
-        >>> predictors = covtype.columns[0:54]
-        >>> response = 'C55'
-        >>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
-        >>> cov_drf = H2ORandomForestEstimator(max_hit_ratio_k=3,
-        ...                                    seed=1234)
-        >>> cov_drf.train(x=predictors,
-        ...               y=response,
-        ...               training_frame=train,
-        ...               validation_frame=valid)
-        >>> cov_drf.show()
-        """
-        return self._parms.get("max_hit_ratio_k")
-
-    @max_hit_ratio_k.setter
-    def max_hit_ratio_k(self, max_hit_ratio_k):
-        assert_is_type(max_hit_ratio_k, None, int)
-        self._parms["max_hit_ratio_k"] = max_hit_ratio_k
 
 
     @property

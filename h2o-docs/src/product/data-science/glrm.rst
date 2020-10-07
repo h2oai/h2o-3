@@ -25,7 +25,7 @@ Defining a GLRM Model
 
 -  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the model. NOTE: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
--  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate the accuracy of the model.
+-  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset to calculate validation metrics.
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns are used.
 

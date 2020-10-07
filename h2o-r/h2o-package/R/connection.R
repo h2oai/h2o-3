@@ -195,7 +195,7 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
       if(isTRUE(https)){
         stop(paste0("Starting local server is not available with https enabled. ",
          "You may start local instance of H2O with https manually ",
-         "(http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#new-user-quick-start)."))
+         "(https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#new-user-quick-start)."))
       }
 
       if (nthreads == -2) {
@@ -259,18 +259,18 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
 
       if( is.null( build_number_H2O ) ){
         stop(sprintf("Version mismatch! H2O is running version %s but h2o-R package is version %s.
-        Upgrade H2O and R to latest stable version - http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html",
+        Upgrade H2O and R to latest stable version - https://h2o-release.s3.amazonaws.com/h2o/latest_stable.html",
         verH2O, toString(verPkg)))
       } else if (build_number_H2O =="unknown"){
         stop(sprintf("Version mismatch! H2O is running version %s but h2o-R package is version %s.
-        Upgrade H2O and R to latest stable version - http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html",
+        Upgrade H2O and R to latest stable version - https://h2o-release.s3.amazonaws.com/h2o/latest_stable.html",
         verH2O, toString(verPkg)))
       } else if (build_number_H2O =="99999"){
         stop((sprintf("Version mismatch! H2O is running version %s but h2o-R package is version %s.
         This is a developer build, please contact your developer",verH2O, toString(verPkg) )))
       } else {
          stop(sprintf("Version mismatch! H2O is running version %s but h2o-R package is version %s.
-         Install the matching h2o-R version from - http://h2o-release.s3.amazonaws.com/h2o/%s/%s/index.html",
+         Install the matching h2o-R version from - https://h2o-release.s3.amazonaws.com/h2o/%s/%s/index.html",
          verH2O, toString(verPkg),branch_name_H2O,build_number_H2O))
       }
     }
@@ -498,7 +498,7 @@ h2o.clusterStatus <- function() {
     "    > ??h2o\n",
     "\n",
     "After starting H2O, you can use the Web UI at http://localhost:54321\n",
-    "For more information visit http://docs.h2o.ai\n",
+    "For more information visit https://docs.h2o.ai\n",
     "\n",
     "----------------------------------------------------------------------\n")
   packageStartupMessage(msg)
@@ -721,7 +721,7 @@ h2o.clusterStatus <- function() {
     Sys.which("java")
   else
     stop("Cannot find Java. Please install the latest JRE from\n",
-         "http://www.oracle.com/technetwork/java/javase/downloads/index.html")
+         "https://www.oracle.com/technetwork/java/javase/downloads/index.html")
 }
 
 # This function returns a string to the valid path on the local filesystem of the h2o.jar file,
@@ -788,13 +788,13 @@ h2o.clusterStatus <- function() {
 
   # Download if h2o.jar doesn't already exist or user specifies force overwrite
   if (nzchar(own_jar) && is_url(own_jar)) {
-    h2o_url = own_jar # md5 must have same file name and .md5 suffix
-    md5_url = paste(own_jar, ".md5", sep="")
+    h2o_url <- own_jar # md5 must have same file name and .md5 suffix
+    md5_url <- paste(own_jar, ".md5", sep = "")
   } else {
     base_url <- paste("s3.amazonaws.com/h2o-release/h2o", branch, version, "Rjar", sep = "/")
-    h2o_url <- paste("http:/", base_url, "h2o.jar", sep = "/")
+    h2o_url <- paste("https:/", base_url, "h2o.jar", sep = "/")
     # Get MD5 checksum
-    md5_url <- paste("http:/", base_url, "h2o.jar.md5", sep = "/")
+    md5_url <- paste("https:/", base_url, "h2o.jar.md5", sep = "/")
   }
   # ttt <- getURLContent(md5_url, binary = FALSE)
   # tcon <- textConnection(ttt)

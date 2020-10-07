@@ -1,5 +1,7 @@
 package hex.tree;
 
+import hex.Distribution;
+import hex.genmodel.utils.DistributionFamily;
 import jsr166y.RecursiveAction;
 import water.*;
 import water.fvec.Chunk;
@@ -372,7 +374,7 @@ public class DTree extends Iced {
     // Make the parent of this Node use UNINTIALIZED NIDs for its children to prevent the split that this
     // node otherwise induces.  Happens if we find out too-late that we have a
     // perfect prediction here, and we want to turn into a leaf.
-    public void do_not_split( ) {
+    public void doNotSplit( ) {
       if( _pid == NO_PARENT) return; // skip root
       DecidedNode dn = _tree.decided(_pid);
       for( int i=0; i<dn._nids.length; i++ )
@@ -525,18 +527,21 @@ public class DTree extends Iced {
         final double min, max;
         final int constraint;
         final boolean useBounds;
+        final Distribution dist;
         if (_cs != null) {
           min = _cs._min;
           max = _cs._max;
           constraint = _cs.getColumnConstraint(_col);
           useBounds = _cs.useBounds();
+          dist = _cs._dist;
         } else {
           min = Double.NaN;
           max = Double.NaN;
           constraint = 0;
           useBounds = false;
+          dist = null;
         }
-        _s = findBestSplitPoint(_hs[_col], _col, _tree._parms._min_rows, constraint, min, max, useBounds);
+        _s = findBestSplitPoint(_hs[_col], _col, _tree._parms._min_rows, constraint, min, max, useBounds, dist);
         return _s;
       }
     }
@@ -788,7 +793,7 @@ public class DTree extends Iced {
       return isLeft ? parent._split._tree_p0 : parent._split._tree_p1;
     }
   }
-
+  
   final static public int NO_PARENT = -1;
   static public boolean isRootNode(Node n)   { return n._pid == NO_PARENT; }
 
@@ -805,12 +810,13 @@ public class DTree extends Iced {
     assert ab.position() == sz;
     return new CompressedTree(ab.buf(), _seed,tid,cls);
   }
+  
 
-  static Split findBestSplitPoint(DHistogram hs, int col, double min_rows,
-                                  int constraint, double min, double max, boolean useBounds) {
+  static Split findBestSplitPoint(DHistogram hs, int col, double min_rows, int constraint, double min, double max, 
+                                  boolean useBounds, Distribution dist) {
     if(hs._vals == null) {
       if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": histogram not filled yet.");
-      return null; // TODO: there are empty leafs?
+      return null;
     }
     final int nbins = hs.nbins();
     assert nbins >= 1;
@@ -958,10 +964,8 @@ public class DTree extends Iced {
     double nRight = 0;
     double predLeft = 0;
     double predRight = 0;
-    double denRight = 0;
-    double denLeft = 0;
-    double nomRight = 0;
-    double nomLeft = 0;
+    double tree_p0 = 0;
+    double tree_p1 = 0;
 
     // if there are any NAs, then try to split them from the non-NAs
     if (wNA>=min_rows) {
@@ -976,10 +980,13 @@ public class DTree extends Iced {
       predLeft = wYhi[0];
       nRight = wNA;
       predRight = wYNA;
-      denLeft = denhi[0];
-      denRight = denNA;
-      nomLeft = nomhi[0];
-      nomRight = nomNA;
+      if(hasDenom){
+        tree_p0 = nomhi[0] /denhi[0];
+        tree_p1 = denNA / nomNA;
+      } else {
+        tree_p0 = predLeft / nLeft;
+        tree_p1 = predRight / nRight;
+      }
     }
 
     // Now roll the split-point across the bins.  There are 2 ways to do this:
@@ -1010,7 +1017,37 @@ public class DTree extends Iced {
                 // Or tied MSE, then pick split towards middle bins
                 (selo + sehi == best_seL + best_seR &&
                         Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
-          if (constraint == 0 || (constraint * nomlo[b] / denlo[b] <= constraint * nomhi[b] / denhi[b])) {
+          double tmpPredLeft;
+          double tmpPredRight;
+          if(constraint != 0 && dist._family.equals(DistributionFamily.quantile)) { 
+            int quantileBinLeft = 0;
+            int quantileBinRight = 0;
+            for (int bin = 1; bin <= nbins; bin++) {
+              // left tree prediction quantile
+              if (bin <= b) {
+                double n = wlo[b];
+                double quantilePosition = dist._quantileAlpha * n;
+                if(quantilePosition < wlo[bin]){
+                  quantileBinLeft = bin;
+                  bin = b+1;
+                }
+                // right tree prediction quantile
+              } else {
+                double n = (wlo[nbins] - wlo[b]);
+                double quantilePosition = dist._quantileAlpha * n;
+                if (quantilePosition < wlo[bin] - wlo[b]) {
+                  quantileBinRight = bin;
+                  break;
+                }
+              }
+            }
+            tmpPredLeft = wYlo[quantileBinLeft];
+            tmpPredRight = wYlo[quantileBinRight] - wYlo[b]; 
+          } else {
+            tmpPredLeft = hasDenom ? nomlo[b] / denlo[b] : wYlo[b] / wlo[b];
+            tmpPredRight = hasDenom ? nomhi[b] / denhi[b] : wYhi[b] / whi[b];
+          }
+          if (constraint == 0 || (constraint * tmpPredLeft <= constraint * tmpPredRight)) {
             best_seL = selo;
             best_seR = sehi;
             best = b;
@@ -1018,10 +1055,8 @@ public class DTree extends Iced {
             nRight = whi[best];
             predLeft = wYlo[best];
             predRight = wYhi[best];
-            denLeft = denlo[best];
-            denRight = denhi[best];
-            nomLeft = nomlo[best];
-            nomRight = nomhi[best];
+            tree_p0 = tmpPredLeft;
+            tree_p1 = tmpPredRight;
           }
         }
       } else {
@@ -1035,8 +1070,38 @@ public class DTree extends Iced {
                   // Or tied SE, then pick split towards middle bins
                   (selo + sehi == best_seL + best_seR &&
                           Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
-            if( (wlo[b] + wNA) >= min_rows && whi[b] >= min_rows) {
-              if (constraint == 0 || (constraint * (nomlo[b] + nomNA) / (denlo[b] + denNA) <= constraint * nomhi[b] / denhi[b])) {
+            if((wlo[b] + wNA) >= min_rows && whi[b] >= min_rows) {
+              double tmpPredLeft;
+              double tmpPredRight;
+              if(constraint != 0 && dist._family.equals(DistributionFamily.quantile)) {
+                int quantileBinLeft = 0;
+                int quantileBinRight = 0;
+                for (int bin = 1; bin <= nbins; bin++) {
+                  // left tree prediction quantile
+                  if (bin <= b) {
+                    double n = wlo[b];
+                    double quantilePosition = dist._quantileAlpha * n;
+                    if(quantilePosition < wlo[bin]){
+                      quantileBinLeft = bin;
+                      bin = b+1;
+                    }
+                    // right tree prediction quantile
+                  } else {
+                    double n = (wlo[nbins] - wlo[b]);
+                    double quantilePosition = dist._quantileAlpha * n;
+                    if (quantilePosition < wlo[bin] - wlo[b]) {
+                      quantileBinRight = bin;
+                      break;
+                    }
+                  }
+                }
+                tmpPredLeft = wYlo[quantileBinLeft] + wYNA;
+                tmpPredRight = wYlo[quantileBinRight] - wYlo[b];
+              } else { 
+                tmpPredLeft = hasDenom ? (nomlo[b] + nomNA) / (denlo[b] + denNA) : (wYlo[b] + wYNA) / (wlo[b] + wNA);
+                tmpPredRight = hasDenom ? nomhi[b] / denhi[b] : wYhi[b] / whi[b];
+              }
+              if (constraint == 0 || (constraint * tmpPredLeft <= constraint * tmpPredRight)) {
                 best_seL = selo;
                 best_seR = sehi;
                 best = b;
@@ -1044,11 +1109,9 @@ public class DTree extends Iced {
                 nRight = whi[best];
                 predLeft = wYlo[best] + wYNA;
                 predRight = wYhi[best];
-                denLeft = denlo[best] + denNA;
-                denRight = denhi[best];
-                nomLeft = nomlo[best] + nomNA;
-                nomRight = nomhi[best];
                 nasplit = DHistogram.NASplitDir.NALeft;
+                tree_p0 = tmpPredLeft;
+                tree_p1 = tmpPredRight;
               }
             }
           }
@@ -1065,7 +1128,39 @@ public class DTree extends Iced {
                   (selo + sehi == best_seL + best_seR &&
                           Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
             if( wlo[b] >= min_rows && (whi[b] + wNA) >= min_rows ) {
-              if (constraint == 0 || (constraint * nomlo[b] / denlo[b] <= constraint * (nomhi[b] + nomNA) / (denhi[b] + denNA))) {
+              double tmpPredLeft;
+              double tmpPredRight;
+              if(constraint != 0 && dist._family.equals(DistributionFamily.quantile)) {
+                int quantileBinLeft = 0;
+                int quantileBinRight = 0;
+                double ratio = 1;
+                double delta = 1;
+                for (int bin = 1; bin <= nbins; bin++) {
+                  // left tree prediction quantile
+                  if (bin <= b) {
+                    double n = wlo[b];
+                    double quantilePosition = dist._quantileAlpha * n;
+                    if(quantilePosition < wlo[bin]){
+                      quantileBinLeft = bin;
+                      bin = b+1;
+                    }
+                    // right tree prediction quantile
+                  } else {
+                    double n = (wlo[nbins] - wlo[b]);
+                    double quantilePosition = dist._quantileAlpha * n;
+                    if (quantilePosition < wlo[bin] - wlo[b]) {
+                      quantileBinRight = bin;
+                      break;
+                    }
+                  }
+                }
+                tmpPredLeft = wYlo[quantileBinLeft];
+                tmpPredRight = wYlo[quantileBinRight] - wYlo[b] + wYNA;
+              } else {
+                tmpPredLeft = hasDenom ? nomlo[b] / denlo[b] : wYlo[b] / wlo[b];
+                tmpPredRight = hasDenom ? (nomhi[b] + nomNA) / (denhi[b] + denNA) : (wYhi[b] + wYNA) / (whi[b] + wNA);
+              }
+              if (constraint == 0 || (constraint * tmpPredLeft <= constraint * tmpPredRight)) {
                 best_seL = selo;
                 best_seR = sehi;
                 best = b;
@@ -1073,11 +1168,9 @@ public class DTree extends Iced {
                 nRight = whi[best] + wNA;
                 predLeft = wYlo[best];
                 predRight = wYhi[best] + wYNA;
-                denLeft = denlo[best];
-                denRight = denhi[best] + denNA;
-                nomLeft = nomlo[best];
-                nomRight = nomhi[best] + nomNA;
                 nasplit = DHistogram.NASplitDir.NARight;
+                tree_p0 = tmpPredLeft;
+                tree_p1 = tmpPredRight;
               }
             }
           }
@@ -1108,14 +1201,12 @@ public class DTree extends Iced {
       return null;
     }
 
-    final double node_p0 = predLeft / nLeft;
-    final double node_p1 = predRight / nRight;
-
     // FIXME (PUBDEV-7553): these asserts do not hold because histogram doesn't skip rows with NA response
     // assert hasNomin || nomLeft == predLeft;
     // assert hasNomin || nomRight == predRight;
-    double tree_p0 = hasDenom ? nomLeft / denLeft : node_p0;
-    double tree_p1 = hasDenom ? nomRight / denRight : node_p1;
+
+    final double node_p0 = predLeft / nLeft;
+    final double node_p1 = predRight / nRight;
 
     if (constraint != 0) {
       if (constraint * tree_p0 > constraint * tree_p1) {
@@ -1223,10 +1314,11 @@ public class DTree extends Iced {
     if (nasplit == DHistogram.NASplitDir.None) {
       nasplit = nLeft > nRight ? DHistogram.NASplitDir.Left : DHistogram.NASplitDir.Right;
     }
+    
     assert constraint == 0 || constraint * tree_p0 <= constraint * tree_p1;
     assert (Double.isNaN(min) || min <= tree_p0) && (Double.isNaN(max) || tree_p0 <= max);
     assert (Double.isNaN(min) || min <= tree_p1) && (Double.isNaN(max) || tree_p1 <= max);
-    Split split = new Split(col, best, nasplit, bs, equal, seBefore,best_seL, best_seR, nLeft, nRight, node_p0, node_p1, tree_p0, tree_p1);
+    Split split = new Split(col, best, nasplit, bs, equal, seBefore, best_seL, best_seR, nLeft, nRight, node_p0, node_p1, tree_p0, tree_p1);
     if (SharedTree.DEV_DEBUG) Log.info("splitting on " + hs._name + ": " + split);
     return split;
   }
@@ -1266,5 +1358,4 @@ public class DTree extends Iced {
 
     return (byte)(bs.max() <= 32 ? 2 : 3); // Flag for bitset split; also check max size
   }
-
 }

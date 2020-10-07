@@ -820,8 +820,6 @@ The available options vary depending on the selected model. If an option is only
 
 -  **max_confusion_matrix_size**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum size (in number of classes) for confusion matrices to be  printed in the Logs.
 
--  **max_hit_ratio_k**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multinomial only. To disable, enter 0.
-
 -  **stopping_metric**: (GBM, DRF, DL, XGBoost, AutoML, IF) Specify the metric to use for early stopping. The available options are:
 
     - AUTO: This defaults to logloss for classification, deviance for regression
@@ -978,8 +976,6 @@ The available options vary depending on the selected model. If an option is only
 -  **initial_weight_scale**: (DL) Specify the initial weight scale of the distribution function for Uniform or Normal distributions. For Uniform, the values are drawn uniformly from initial weight scale. For Normal, the values are drawn from a Normal distribution with the standard deviation of the initial weight scale. If Uniform Adaptive is selected as the **initial_weight_distribution**, the **initial_weight_scale** parameter is not applicable.
 
 -  **classification_stop**: (DL) (Applicable to discrete/categorical datasets only) Specify the stopping criterion for classification error fractions on training data. To disable this option, enter -1.
-
--  **max_hit_ratio_k**: (DL, GLM) (Classification only) Specify the maximum number (top K) of predictions to use for hit ratio computation (for multinomial only). To disable this option, enter 0.
 
 -  **regression_stop**: (DL) (Applicable to real value/continuous datasets only) Specify the stopping criterion for regression error (MSE) on the training data. To disable this option, enter -1.
 
@@ -1245,7 +1241,7 @@ The following parameters can be modified when restarting a model from a checkpoi
 +------------------------------------+--------------------------------------+---------------------------------+
 | ``score_validation_sampling``      | ``classification_stop``              | ``regression_stop``             |
 +------------------------------------+--------------------------------------+---------------------------------+
-| ``quiet_mode``                     | ``max_confusion_matrix_size``        | ``max_hit_ratio_k``             |
+| ``quiet_mode``                     | ``max_confusion_matrix_size``        | ``mini_batch_size``             |
 +------------------------------------+--------------------------------------+---------------------------------+
 | ``diagnostics``                    | ``variable_importances``             | ``initial_weight_distribution`` |
 +------------------------------------+--------------------------------------+---------------------------------+
@@ -1261,7 +1257,7 @@ The following parameters can be modified when restarting a model from a checkpoi
 +------------------------------------+--------------------------------------+---------------------------------+
 | ``reproducible``                   | ``export_weights_and_biases``        | ``elastic_averaging``           |
 +------------------------------------+--------------------------------------+---------------------------------+
-| ``elastic_averaging_moving_rate``  | ``elastic_averaging_regularization`` | ``mini_batch_size``             |
+| ``elastic_averaging_moving_rate``  | ``elastic_averaging_regularization`` |                                 |
 +------------------------------------+--------------------------------------+---------------------------------+
 
 1. After building your model, copy the ``model_id``. To view the ``model_id``, click the **Model** menu then click **List All Models**.

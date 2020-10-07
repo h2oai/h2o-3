@@ -58,6 +58,7 @@ metadata:
   namespace: <namespace-name>
 spec:
   serviceName: h2o-service
+  podManagementPolicy: "Parallel"
   replicas: 3
   selector:
     matchLabels:

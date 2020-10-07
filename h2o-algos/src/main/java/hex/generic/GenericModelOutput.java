@@ -13,12 +13,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class GenericModelOutput extends Model.Output {
-    final String _original_model_identifier;
-    final String _original_model_full_name;
-    final ModelCategory _modelCategory;
-    final int _nfeatures;
-    final double _defaultThreshold;
-    TwoDimTable _variable_importances;
+    public final String _original_model_identifier;
+    public final String _original_model_full_name;
+    public final ModelCategory _modelCategory;
+    public final int _nfeatures;
+    public final double _defaultThreshold;
+    public TwoDimTable _variable_importances;
 
 
     public GenericModelOutput(final ModelDescriptor modelDescriptor, final ModelAttributes modelAttributes, final Table[] reproducibilityInformation) {

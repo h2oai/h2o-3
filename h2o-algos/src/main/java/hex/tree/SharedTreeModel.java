@@ -378,7 +378,9 @@ public abstract class SharedTreeModel<
       }
       res.delete();
       res = new Frame(destKey, names, nvecs);
-      DKV.put(res);
+      if (destKey != null) {
+        DKV.put(res);
+      }
       if (hasInvalidPaths) {
         Log.warn("Some of the leaf node assignments were skipped (NA), " +
                 "only tree-paths up to length 64 are supported.");
@@ -696,30 +698,13 @@ public abstract class SharedTreeModel<
     sb.ip("public int nfeatures() { return " + _output.nfeatures() + "; }").nl();
     sb.ip("public int nclasses() { return " + _output.nclasses() + "; }").nl();
     if (encoding == CategoricalEncoding.Eigen) {
-      sb.ip("public double[] getOrigProjectionArray() { return " + toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
+      sb.ip("public double[] getOrigProjectionArray() { return " + PojoUtils.toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
     }
     if (encoding != CategoricalEncoding.AUTO) {
       sb.ip("public hex.genmodel.CategoricalEncoding getCategoricalEncoding() { return hex.genmodel.CategoricalEncoding." + 
               encoding.name() + "; }").nl();
     }
     return sb;
-  }
-  
-  String toJavaDoubleArray(double[] array) {
-    if (array == null) {
-      return "null";
-    }
-
-    SB sb = new SB();
-    sb.p("new double[] {");
-    for (int i = 0; i < array.length; i++) {
-      sb.p(" ");
-      sb.p(array[i]);
-      if (i < array.length - 1)
-        sb.p(",");
-    }
-    sb.p("}");
-    return sb.getContent();
   }
 
   @Override protected void toJavaPredictBody(SBPrintStream body,

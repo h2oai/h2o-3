@@ -142,6 +142,9 @@ final public class H2O {
             "    -jks_alias <alias>\n" +
             "          (Optional, use if the keystore has multiple certificates and you want to use a specific one.)\n" +
             "\n" +
+            "    -hostname_as_jks_alias\n" +
+            "          (Optional, use if you want to use the machine hostname as your certificate alias.)\n" +
+            "\n" +
             "    -hash_login\n" +
             "          Use Jetty HashLoginService\n" +
             "\n" +
@@ -220,8 +223,12 @@ final public class H2O {
     /** -jks_pass is Java KeyStore password; default is 'h2oh2o' */
     public String jks_pass = DEFAULT_JKS_PASS;
 
+    /** -jks_alias if the keystore has multiple certificates and you want to use a specific one */
     public String jks_alias = null;
-    
+
+    /** -hostname_as_jks_alias if you want to use the machine hostname as your certificate alias */
+    public boolean hostname_as_jks_alias = false;    
+
     /** -hash_login enables HashLoginService */
     public boolean hash_login = false;
 
@@ -668,6 +675,9 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         trgt.jks_alias = args[i];
       }
+      else if (s.matches("hostname_as_jks_alias")) {
+        trgt.hostname_as_jks_alias = true;
+      }
       else if (s.matches("hash_login")) {
         trgt.hash_login = true;
       }
@@ -767,6 +777,10 @@ final public class H2O {
       }
     }
 
+    if (ARGS.jks_alias != null && ARGS.hostname_as_jks_alias) {
+      parseFailed("Options -jks_alias and -hostname_as_jks_alias are mutually exclusive, specify only one of them");
+    }
+    
     if (ARGS.login_conf != null) {
       if (! new File(ARGS.login_conf).exists()) {
         parseFailed("File does not exist: " + ARGS.login_conf);

@@ -1,6 +1,8 @@
 package hex;
 
 import hex.genmodel.AbstractMojoWriter;
+import hex.genmodel.descriptor.ModelDescriptor;
+import water.Key;
 import water.api.SchemaServer;
 import water.api.StreamWriter;
 import water.api.schemas3.ModelSchemaV3;
@@ -80,8 +82,11 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     }
   }
 
+  protected abstract void writeModelData() throws IOException;
+
   @Override
   protected void writeExtraInfo() throws IOException {
+    super.writeExtraInfo();
     writeModelDetails();
     writeModelDetailsReadme();
   }

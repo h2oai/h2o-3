@@ -447,7 +447,7 @@ public class XGBoostTest extends TestUtil {
     Rabit.shutdown();
   }
   
-  private Frame loadWeather(String response) {
+  public static Frame loadWeather(String response) {
     Frame df = parse_test_file("./smalldata/junit/weather.csv");
     int responseIdx = df.find(response);
     Scope.track(df.replace(responseIdx, df.vecs()[responseIdx].toCategoricalVec()));
@@ -960,21 +960,6 @@ public class XGBoostTest extends TestUtil {
       if (noWeightsModel != null) noWeightsModel.delete();
     }
 
-  }
-
-  /**
-   * @param len        Length of the resulting vector
-   * @param randomSeed Seed for the random generator (for reproducibility)
-   * @return An instance of {@link Vec} with binary weights (either 0.0D or 1.0D, nothing in between).
-   */
-  private Vec createRandomBinaryWeightsVec(final long len, final int randomSeed) {
-    final Vec weightsVec = Vec.makeZero(len, Vec.T_NUM);
-    final Random random = new Random(randomSeed);
-    for (int i = 0; i < weightsVec.length(); i++) {
-      weightsVec.set(i, random.nextBoolean() ? 1.0D : 0D);
-    }
-
-    return weightsVec;
   }
 
   @Test
@@ -2013,5 +1998,6 @@ public class XGBoostTest extends TestUtil {
     }
   }
 
+  
 
 }

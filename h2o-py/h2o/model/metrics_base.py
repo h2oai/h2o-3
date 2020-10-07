@@ -101,6 +101,7 @@ class MetricsBase(h2o_meta()):
         types_w_logloss = types_w_bin + types_w_mult+types_w_ord
         types_w_dim = ["ModelMetricsGLRM"]
         types_w_anomaly = ['ModelMetricsAnomaly']
+        types_w_cox = ['ModelMetricsRegressionCoxPH']
 
         print()
         print(metric_type + ": " + self._algo)
@@ -178,6 +179,12 @@ class MetricsBase(h2o_meta()):
         if metric_type in types_w_dim:
             print("Sum of Squared Error (Numeric): " + str(self.num_err()))
             print("Misclassification Error (Categorical): " + str(self.cat_err()))
+            
+        if metric_type in types_w_cox:
+            print("Concordance score: " + str(self.concordance()))
+            print("Concordant count: " + str(self.concordance()))
+            print("Tied cout: " + str(self.concordance()))
+        
         if self.custom_metric_name():
             print("{}: {}".format(self.custom_metric_name(), self.custom_metric_value()))
 
@@ -1255,7 +1262,6 @@ class H2OBinomialModelMetrics(MetricsBase):
                 )
         return errors
 
-
     def metric(self, metric, thresholds=None):
         """
         :param str metric: A metric among :const:`maximizing_metrics`.
@@ -1314,14 +1320,17 @@ class H2OBinomialModelMetrics(MetricsBase):
                 )
         return metrics
 
-
-    def plot(self, type="roc", server=False):
+    def plot(self, type="roc", server=False, save_to_file=None, plot=True):
         """
         Produce the desired metric plot.
 
-        :param type: the type of metric plot (currently, only ROC supported).
+        :param type: the type of metric plot (currently, only ROC curve ('roc') and Precision Recall curve ('pr') are supported).
         :param server: if True, generate plot inline using matplotlib's "Agg" backend.
-        :returns: None
+        :param save_to_file filename to save the plot to
+        :param plot True to plot curve, False to get a tuple of values at axis x and y of the plot 
+                (tprs and fprs for AUC, recall and precision for PR)
+        
+        :returns: None or values of x and y axis of the plot 
 
         :examples:
 
@@ -1336,27 +1345,66 @@ class H2OBinomialModelMetrics(MetricsBase):
         ...                y = response,
         ...                training_frame = train,
         ...                validation_frame = valid)
-        >>> cars_gbm.plot()
+        >>> cars_gbm.plot(type="roc")
+        >>> cars_gbm.plot(type="pr")
+        
         """
-        # TODO: add more types (i.e. cutoffs)
-        assert_is_type(type, "roc")
-        # check for matplotlib. exit if absent.
-        try:
-            import matplotlib
-            if server: matplotlib.use('Agg', warn=False)
-            import matplotlib.pyplot as plt
-        except ImportError:
-            print("matplotlib is required for this function!")
-            return
 
         if type == "roc":
+            return self._plot_roc(server, save_to_file, plot)
+        elif type == "pr":
+            return self._plot_pr(server, save_to_file, plot)
+    
+    def _plot_roc(self, server=False, save_to_file=None, plot=True):
+        if plot:
+            try:
+                import matplotlib
+                if server: matplotlib.use('Agg')
+                import matplotlib.pyplot as plt
+            except ImportError:
+                print("matplotlib is required for this function!")
+                return
             plt.xlabel('False Positive Rate (FPR)')
             plt.ylabel('True Positive Rate (TPR)')
-            plt.title('ROC Curve')
+            plt.title('Receiver Operating Characteristic Curve')
             plt.text(0.5, 0.5, r'AUC={0:.4f}'.format(self._metric_json["AUC"]))
             plt.plot(self.fprs, self.tprs, 'b--')
             plt.axis([0, 1, 0, 1])
-            if not server: plt.show()
+            plt.grid(True)
+            plt.tight_layout()
+            if not server: 
+                plt.show()
+            if save_to_file is not None:  # only save when a figure is actually plotted
+                plt.savefig(save_to_file)
+        else:
+            return self.fprs, self.tprs
+
+    def _plot_pr(self, server=False, save_to_file=None, plot=True):
+        recalls = [x[0] for x in self.recall(thresholds='all')]
+        precisions = self.tprs
+        assert len(precisions) == len(recalls), "Precision and recall arrays must have the same length"
+        if plot:
+            try:
+                import matplotlib
+                if server: matplotlib.use('Agg')
+                import matplotlib.pyplot as plt
+            except ImportError:
+                print("matplotlib is required for this function!")
+                return
+            plt.xlabel('Recall (TP/(TP+FP))')
+            plt.ylabel('Precision (TPR)')
+            plt.title('Precision Recall Curve')
+            plt.text(0.75, 0.95, r'auc_pr={0:.4f}'.format(self._metric_json["pr_auc"]))
+            plt.plot(recalls, precisions, 'b--')
+            plt.axis([0, 1, 0, 1])
+            plt.grid(True)
+            plt.tight_layout()
+            if not server: 
+                plt.show()
+            if save_to_file is not None:  # only save when a figure is actually plotted
+                plt.savefig(save_to_file)
+        else:
+            return recalls, precisions
 
 
     @property
@@ -1733,7 +1781,7 @@ class H2OAnomalyDetectionModelMetrics(MetricsBase):
         return None
 
 
-class H2OCoxPHModelMetrics(MetricsBase):
+class H2OModelMetricsRegressionCoxPH(MetricsBase):
     """
     :examples:
 
@@ -1746,8 +1794,28 @@ class H2OCoxPHModelMetrics(MetricsBase):
     >>> coxph
     """
 
+    def concordance(self):
+        """Concordance metrics (c-index). 
+        Proportion of concordant pairs divided by the total number of possible evaluation pairs.
+        1.0 for perfect match, 0.5 for random results."""
+        if MetricsBase._has(self._metric_json, "concordance"):
+            return self._metric_json["concordance"]
+        return None
+        
+    def concordant(self):
+        """Count of concordant pairs."""
+        if MetricsBase._has(self._metric_json, "concordant"):
+            return self._metric_json["concordant"]
+        return None  
+    
+    def tied_y(self):
+        """Count of tied pairs."""
+        if MetricsBase._has(self._metric_json, "tied_y"):
+            return self._metric_json["tied_y"]
+        return None
+
     def __init__(self, metric_json, on=None, algo=""):
-        super(H2OCoxPHModelMetrics, self).__init__(metric_json, on, algo)
+        super(H2OModelMetricsRegressionCoxPH, self).__init__(metric_json, on, algo)
 
 
 class H2OTargetEncoderMetrics(MetricsBase):

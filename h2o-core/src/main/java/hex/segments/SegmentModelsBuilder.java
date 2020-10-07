@@ -147,7 +147,7 @@ public class SegmentModelsBuilder {
         _stats = Stream.<Callable<SegmentModelsStats>>generate(
                 () -> (() -> _builder.clone().buildModels(_segment_models)))
                 .limit(_parallelism)
-                .map(callable -> executor.submit(callable))
+                .map(executor::submit)
                 .map(future -> {
                   try {
                     return future.get();

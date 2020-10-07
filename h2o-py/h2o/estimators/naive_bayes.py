@@ -29,8 +29,8 @@ class H2ONaiveBayesEstimator(H2OEstimator):
                    "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "training_frame",
                    "validation_frame", "response_column", "ignored_columns", "ignore_const_cols",
                    "score_each_iteration", "balance_classes", "class_sampling_factors", "max_after_balance_size",
-                   "max_confusion_matrix_size", "max_hit_ratio_k", "laplace", "min_sdev", "eps_sdev", "min_prob",
-                   "eps_prob", "compute_metrics", "max_runtime_secs", "export_checkpoints_dir", "gainslift_bins"}
+                   "max_confusion_matrix_size", "laplace", "min_sdev", "eps_sdev", "min_prob", "eps_prob",
+                   "compute_metrics", "max_runtime_secs", "export_checkpoints_dir", "gainslift_bins"}
 
     def __init__(self, **kwargs):
         super(H2ONaiveBayesEstimator, self).__init__()
@@ -510,37 +510,6 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     def max_confusion_matrix_size(self, max_confusion_matrix_size):
         assert_is_type(max_confusion_matrix_size, None, int)
         self._parms["max_confusion_matrix_size"] = max_confusion_matrix_size
-
-
-    @property
-    def max_hit_ratio_k(self):
-        """
-        [Deprecated] Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to
-        disable)
-
-        Type: ``int``  (default: ``0``).
-
-        :examples:
-
-        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
-        >>> covtype[54] = covtype[54].asfactor()
-        >>> predictors = covtype.columns[0:54]
-        >>> response = 'C55'
-        >>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
-        >>> cars_nb = H2ONaiveBayesEstimator(max_hit_ratio_k=3,
-        ...                                  seed=1234)
-        >>> cars_nb.train(x=predictors,
-        ...               y=response,
-        ...               training_frame=train,
-        ...               validation_frame=valid)
-        >>> cov_nb.mse()
-        """
-        return self._parms.get("max_hit_ratio_k")
-
-    @max_hit_ratio_k.setter
-    def max_hit_ratio_k(self, max_hit_ratio_k):
-        assert_is_type(max_hit_ratio_k, None, int)
-        self._parms["max_hit_ratio_k"] = max_hit_ratio_k
 
 
     @property

@@ -54,7 +54,7 @@ library(h2o)
 h2o.init()
 
 # Import the heart dataset
-f <- "http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv"
+f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv"
 heart <- h2o.importFile(f)
 
 # Set the predictor and response

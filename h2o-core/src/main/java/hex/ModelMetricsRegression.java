@@ -163,7 +163,13 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     }
 
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
-    public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
+    public ModelMetricsRegression makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
+      ModelMetricsRegression mm = computeModelMetrics(m, f, adaptedFrame, preds);
+      if (m!=null) m.addModelMetrics(mm);
+      return mm;
+    }
+
+    ModelMetricsRegression computeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
       double mse = _sumsqe / _wcount;
       double mae = _abserror/_wcount; //Mean Absolute Error
       double rmsle = Math.sqrt(_rmslerror/_wcount); //Root Mean Squared Log Error
@@ -190,7 +196,6 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
         meanResDeviance = Double.NaN;
       }
       ModelMetricsRegression mm = new ModelMetricsRegression(m, f, _count, mse, weightedSigma(), mae, rmsle, meanResDeviance, _customMetric);
-      if (m!=null) m.addModelMetrics(mm);
       return mm;
     }
   }

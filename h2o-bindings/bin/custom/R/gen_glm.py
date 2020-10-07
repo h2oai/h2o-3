@@ -36,10 +36,6 @@ if(!missing(beta_constraints))
   parms$beta_constraints <- beta_constraints
   if(!missing(missing_values_handling))
     parms$missing_values_handling <- missing_values_handling
-if (!missing(max_hit_ratio_k)) {
-  warning("Argument max_hit_ratio_k is deprecated and has no use.")
-  parms$offset_column <- NULL
-}    
 """,
     set_required_params="""
 parms$training_frame <- training_frame
@@ -201,9 +197,6 @@ Fit a generalized linear model
 Fits a generalized linear model, specified by a response variable, a set of predictors, and a
 description of the error distribution.
 """,
-    params=dict(
-        max_hit_ratio_k="This argument is deprecated and has no use. Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)."
-    ),
     returns="""
 A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
 learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is

@@ -1,7 +1,7 @@
 #'
 #' H2O Model Related Functions
 #'
-#' @importFrom graphics strwidth par legend polygon arrows points
+#' @importFrom graphics strwidth par legend polygon arrows points grid
 #' @importFrom grDevices dev.copy dev.off png rainbow adjustcolor
 
 NULL
@@ -550,50 +550,66 @@ setGeneric("h2o.transform", function(model, ...) {
 #'
 #' @param model A trained model representing the transformation strategy
 #' @param data An H2OFrame with data to be transformed
-#' @param data_leakage_handling Handling of data leakage.
-#'  Available options are : ["None", "LeaveOneOut", "KFold"]. Defaults to "None".
-#' @param use_blending Use blending during the transformation. Respects model settings when not set.
+#' @param blending Use blending during the transformation. Respects model settings when not set.
 #' @param inflection_point Blending parameter. Only effective when blending is enabled.
 #'  By default, model settings are respected, if not overridden by this setting.
 #' @param smoothing Blending parameter. Only effective when blending is enabled.
 #'  By default, model settings are respected, if not overridden by this setting.
-#' @param noise An amount of random noise added to the encoding. This helps prevent overfitting. Defaults to 0.01 * range of response.
-#' @param seed A random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
+#' @param noise An amount of random noise added to the encoding, this helps prevent overfitting.
+#'  By default, model settings are respected, if not overridden by this setting.
+#' @param as_training Must be set to True when encoding the training frame. Defaults to False.
+#' @param ... Mainly used for backwards compatibility, to allow deprecated parameters.
 #' @return Returns an H2OFrame object with data transformed.
 #' @export
 setMethod("h2o.transform", signature("H2OTargetEncoderModel"), function(model, data,
-                                                                        data_leakage_handling = NULL,
-                                                                        use_blending = NULL,
+                                                                        blending = NULL,
                                                                         inflection_point = -1,
-                                                                        smoothing = -1, 
-                                                                        noise = -1, 
-                                                                        seed = -1) {
+                                                                        smoothing = -1,
+                                                                        noise = NULL,
+                                                                        as_training = FALSE,
+                                                                        ...) {
+    varargs <- list(...)
+    for (arg in names(varargs)) {
+        if (arg %in% c('data_leakage_handling', 'seed')) {
+            warning(paste0("argument '", arg, "' is deprecated and will be ignored; please define it instead on model creation using `h2o.targetencoder`."))
+            argval <- varargs[[arg]]
+            if (arg == 'data_leakage_handling' && argval != "None") {
+                warning(paste0("Deprecated `data_leakage_handling=",argval,"` is replaced by `as_training=True`. ",
+                        "Please update your code."))
+                as_training <- TRUE
+            }
+        } else if (arg == 'use_blending') {
+            warning("argument 'use_blending' is deprecated; please use 'blending' instead.")
+            if (missing(blending)) blending <- varargs$use_blending else warning("ignoring 'use_blending' as 'blending' was also provided.")
+        } else {
+            stop(paste("unused argument", arg, "=", varargs[[arg]]))
+        }
+    }
+
+    params <- list()
+    params$model <- model@model_id
+    params$frame <- h2o.getId(data)
+    if (is.null(blending)){
+        params$blending <- model@allparameters$blending
+    } else {
+        params$blending <- blending
+    }
+    if (params$blending) {
+        params$inflection_point <- inflection_point
+        params$smoothing <- smoothing
+    }
+    if (!is.null(noise)){
+        params$noise <- noise
+    }
+    params$as_training <- as_training
+    
+    res <- .h2o.__remoteSend(
+        "TargetEncoderTransform",
+        method = "GET",
+        h2oRestApiVersion = 3,.params = params
+    )
   
-  params <- list()
-  params[["model"]] <- model@model_id
-  params[["frame"]] <- h2o.getId(data)
-  if(!is.null(data_leakage_handling)){
-    params[["data_leakage_handling"]] <- data_leakage_handling
-  }
-  if(!is.null(use_blending)){
-    params[["use_blending"]] <- use_blending
-  }
-  if(!is.null(noise)){
-    params[["noise"]] <- noise
-  }
-  if(!is.null(seed)){
-    params[["seed"]] <- seed
-  }
-  
-  
-  res <- .h2o.__remoteSend(
-    "TargetEncoderTransform",
-    method = "GET",
-    h2oRestApiVersion = 3,.params = params
-  )
-  
-  h2o.getFrame(res$name)
-  
+    h2o.getFrame(res$name)
 })
 
 #'
@@ -1944,7 +1960,7 @@ h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip"
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip"
 #' pros <- h2o.importFile(f)
 #' response <- "GLEASON"
 #' predictors <- c("ID", "AGE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
@@ -2115,7 +2131,7 @@ h2o.weights <- function(object, matrix_id=1){
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/chicago/chicagoCensus.csv"
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/chicago/chicagoCensus.csv"
 #' census <- h2o.importFile(f)
 #' census[, 1] <- as.factor(census[, 1])
 #' 
@@ -2477,7 +2493,7 @@ h2o.find_row_by_threshold <- function(object, threshold) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' h2o.ceiling(fr[, 1])
 #' }
 #' @export
@@ -2491,7 +2507,7 @@ h2o.centers <- function(object) { as.data.frame(object@model$centers[,-1]) }
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.centersSTD(km)
@@ -2522,7 +2538,7 @@ h2o.withinss <- function(object) { h2o.mse(object) }
 #' library(h2o)
 #' h2o.init()
 #' 
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.tot_withinss(km, train = TRUE)
@@ -2570,7 +2586,7 @@ h2o.tot_withinss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.betweenss(km, train = TRUE)
@@ -2619,7 +2635,7 @@ h2o.betweenss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.totss(km, train = TRUE)
@@ -2689,7 +2705,7 @@ h2o.num_iterations <- function(object) { object@model$model_summary$number_of_it
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.centroid_stats(km, train = TRUE)
@@ -2738,7 +2754,7 @@ h2o.centroid_stats <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.cluster_sizes(km, train = TRUE)
@@ -3617,19 +3633,34 @@ h2o.std_coef_plot <- function(model, num_of_features = NULL){
 #' @export
 plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
   # TODO: add more types (i.e. cutoffs)
-  if(!type %in% c("roc")) stop("type must be 'roc'")
+  if(!type %in% c("roc", "pr")) stop("type must be 'roc' or 'pr'")
   if(type == "roc") {
-    xaxis <- "False Positive Rate"; yaxis = "True Positive Rate"
+    xaxis <- "False Positive Rate (TPR)"; yaxis = "True Positive Rate (FPR)"
     if(missing(main)) {
-      main <- paste(yaxis, "vs", xaxis)
+      main <- "Receiver Operating Characteristic curve"
       if(x@on_train) {
         main <- paste(main, "(on train)")
       } else if (x@on_valid) {
         main <- paste(main, "(on valid)")
       }
     }
-    graphics::plot(x@metrics$thresholds_and_metric_scores$fpr, x@metrics$thresholds_and_metric_scores$tpr, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), ...)
+    xdata <- x@metrics$thresholds_and_metric_scores$fpr
+    ydata <- x@metrics$thresholds_and_metric_scores$tpr
+    graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
     graphics::abline(0, 1, lty = 2)
+  } else if(type=="pr"){
+    xaxis <- "Recall (TP/(TP+FP))"; yaxis = "Precision (TPR)"
+    if(missing(main)) {
+      main <- "Precision Recall curve"
+      if(x@on_train) {
+        main <- paste(main, "(on train)")
+      } else if (x@on_valid) {
+        main <- paste(main, "(on valid)")
+      }
+    }
+    xdata <- rev(x@metrics$thresholds_and_metric_scores$recall)
+    ydata <- rev(x@metrics$thresholds_and_metric_scores$precision)
+    graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
   }
 }
 
@@ -4699,7 +4730,7 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
 #' iris <- h2o.importFile(f)
 #' gbm_model <- h2o.gbm(y = "species", training_frame = iris)
 #' tree <- h2o.getModelTree(gbm_model, 1, "Iris-setosa")

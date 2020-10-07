@@ -1,6 +1,7 @@
 package hex.genmodel.algos.deeplearning;
 
 import hex.ModelCategory;
+import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.utils.DistributionFamily;
@@ -25,6 +26,10 @@ public class DeeplearningMojoModel extends MojoModel {
   public int[] _catNAFill; // if mean imputation is true, mode imputation for categorical columns
   public int _numLayers;    // number of neural network layers.
   public DistributionFamily _family;
+  protected String _genmodel_encoding;
+  protected String[] _orig_names;
+  protected String[][] _orig_domain_values;
+  protected double[] _orig_projection_array;
 
   /***
    * Should set up the neuron network frame work here
@@ -184,5 +189,38 @@ public class DeeplearningMojoModel extends MojoModel {
       _wValues = wvalues;
       _bValues = bvalues;
     }
+  }
+  
+  @Override
+  public CategoricalEncoding getCategoricalEncoding() {
+    switch (_genmodel_encoding) {
+      case "AUTO":
+      case "SortByResponse":
+      case "OneHotInternal":
+        return CategoricalEncoding.AUTO;
+      case "Binary":
+        return CategoricalEncoding.Binary;
+      case "Eigen":
+        return CategoricalEncoding.Eigen;
+      case "LabelEncoder":
+        return CategoricalEncoding.LabelEncoder;
+      default:
+        return null;
+    }
+  }
+  
+  @Override
+  public String[] getOrigNames() {
+    return _orig_names;
+  }
+  
+  @Override
+  public double[] getOrigProjectionArray() {
+    return _orig_projection_array;
+  }
+  
+  @Override
+  public String[][] getOrigDomainValues() {
+    return _orig_domain_values;
   }
 }

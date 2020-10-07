@@ -4,13 +4,14 @@ import hex.DataInfo;
 import hex.schemas.XGBoostExecRespV3;
 import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostModel;
-import hex.tree.xgboost.matrix.FrameMatrixLoader;
 import hex.tree.xgboost.task.XGBoostUploadMatrixTask;
 import hex.tree.xgboost.task.XGBoostSetupTask;
 import org.apache.log4j.Logger;
 import water.H2O;
 import water.Key;
 import water.fvec.Frame;
+
+import static hex.tree.xgboost.remote.RemoteXGBoostUploadServlet.RequestType.checkpoint;
 
 public class RemoteXGBoostExecutor implements XGBoostExecutor {
     
@@ -45,10 +46,9 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
         XGBoostSetupTask.FrameNodes trainFrameNodes, String[] remoteNodes,
         boolean https, String leaderUri, String userName, String password
     ) {
-        FrameMatrixLoader loader = new FrameMatrixLoader(model, train);
         LOG.info("Starting matrix data upload.");
         new XGBoostUploadMatrixTask(
-                modelKey, trainFrameNodes._nodes, loader, remoteNodes, 
+                model, train, trainFrameNodes._nodes, remoteNodes, 
                 https, parseContextPath(leaderUri), userName, password
         ).run();
     }
@@ -67,7 +67,7 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
             return;
         }
         LOG.info("Uploading booster checkpoint.");
-        http.uploadBytes(modelKey, "checkpoint", model.model_info()._boosterBytes);
+        http.uploadBytes(modelKey, checkpoint, model.model_info()._boosterBytes);
     }
 
     private String[] collectNodes(XGBoostSetupTask.FrameNodes nodes) {

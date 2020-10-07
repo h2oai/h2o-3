@@ -32,7 +32,6 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "class_sampling_factors",
         "max_after_balance_size",
         "max_confusion_matrix_size",
-        "max_hit_ratio_k",
         "checkpoint",
         "pretrained_autoencoder",
         "overwrite_with_best_model",
@@ -141,14 +140,6 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = false,
         help = "[Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs.")
     public int max_confusion_matrix_size;
-
-    /**
-     * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-     */
-    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
-        help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to " +
-            "disable).")
-    public int max_hit_ratio_k;
 
 
     /* Neural Net Topology */

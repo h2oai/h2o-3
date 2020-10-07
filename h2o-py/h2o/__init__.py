@@ -61,12 +61,32 @@ except:
 if (__version__.endswith("99999")):
     print(__buildinfo__)
 
-__all__ = ("connect", "init", "api", "connection", "upload_file", "lazy_import", "import_file", "import_sql_table",
+
+__all__ = ["connect", "init", "api", "connection", "upload_file", "lazy_import", "import_file", "import_sql_table",
            "import_sql_select", "parse_setup", "parse_raw", "assign", "deep_copy", "get_model", "get_grid", "get_frame",
            "show_progress", "no_progress", "enable_expr_optimizations", "is_expr_optimizations_enabled", "log_and_echo",
            "remove", "remove_all", "rapids", "ls", "frame", "import_hive_table",
            "frames", "download_pojo", "download_csv", "download_all_logs", "save_model", "download_model", "upload_model", "load_model", "export_file",
            "cluster_status", "cluster_info", "shutdown", "create_frame", "interaction", "as_list", "network_test",
-           "set_timezone", "get_timezone", "list_timezones", "demo", "make_metrics", "cluster", "load_dataset","flow",
+           "set_timezone", "get_timezone", "list_timezones", "demo", "make_metrics", "cluster", "load_dataset", "flow",
            "upload_custom_metric", "upload_custom_distribution",  "mojo_predict_csv", "mojo_predict_pandas", "import_mojo", 
-           "upload_mojo", "print_mojo", "load_grid", "save_grid")
+           "upload_mojo", "print_mojo", "load_grid", "save_grid"]
+
+try:
+    # Export explain functions that are useful for lists of models
+    import h2o.explanation
+    from h2o.explanation import explain, explain_row, varimp_heatmap, model_correlation_heatmap, \
+        pd_multi_plot
+
+    __all__ += [
+        "explain",
+        "explain_row",
+        "varimp_heatmap",
+        "model_correlation_heatmap",
+        "pd_multi_plot"
+    ]
+
+    h2o.explanation.register_explain_methods()
+except ImportError:
+    pass
+

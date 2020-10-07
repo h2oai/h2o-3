@@ -1,6 +1,7 @@
 package water;
 
 import hex.CreateFrame;
+import hex.SplitFrame;
 import hex.genmodel.easy.RowData;
 import org.junit.AfterClass;
 import org.junit.Ignore;
@@ -598,7 +599,42 @@ public class TestUtil extends Iced {
 
   }
 
+  public static class Frames {
+    public final Frame train;
+    public final Frame test;
+    public final Frame valid;
 
+    public Frames(Frame train, Frame test, Frame valid) {
+      this.train = train;
+      this.test = test;
+      this.valid = valid;
+    }
+  }
+  
+  public static Frames split(Frame f) {
+    return split(f, 0.9, 0d);
+  }
+
+  public static Frames split(Frame f, double testFraction) {
+    return split(f, testFraction, 0);
+  }
+
+  public static Frames split(Frame f, double testFraction, double validFraction) {
+    double[] fractions;
+    double trainFraction = 1d - testFraction - validFraction;
+    if (validFraction > 0d) {
+      fractions = new double[] { trainFraction, testFraction, validFraction };
+    } else {
+      fractions = new double[] { trainFraction, testFraction };
+    }
+    SplitFrame sf = new SplitFrame(f, fractions, null);
+    sf.exec().get();
+    Key<Frame>[] splitKeys = sf._destination_frames;
+    Frame trainFrame = Scope.track(splitKeys[0].get());
+    Frame testFrame = Scope.track(splitKeys[1].get());
+    Frame validFrame = (validFraction > 0d) ? Scope.track(splitKeys[2].get()) : null;
+    return new Frames(trainFrame, testFrame, validFrame);
+  }
 
   /** A Numeric Vec from an array of ints
    *  @param rows Data
@@ -1171,7 +1207,7 @@ public class TestUtil extends Iced {
    * @param columnName column's name to be factorized
    * @return Frame with factorized column
    */
-  public Frame asFactor(Frame frame, String columnName) {
+  public static Frame asFactor(Frame frame, String columnName) {
     Vec vec = frame.vec(columnName);
     frame.replace(frame.find(columnName), vec.toCategoricalVec());
     vec.remove();
@@ -1318,6 +1354,21 @@ public class TestUtil extends Iced {
         outStream.write(buffer, 0, bytesRead);
       }
     }
+  }
+
+  /**
+   * @param len        Length of the resulting vector
+   * @param randomSeed Seed for the random generator (for reproducibility)
+   * @return An instance of {@link Vec} with binary weights (either 0.0D or 1.0D, nothing in between).
+   */
+  public Vec createRandomBinaryWeightsVec(final long len, final int randomSeed) {
+    final Vec weightsVec = Vec.makeZero(len, Vec.T_NUM);
+    final Random random = new Random(randomSeed);
+    for (int i = 0; i < weightsVec.length(); i++) {
+      weightsVec.set(i, random.nextBoolean() ? 1.0D : 0D);
+    }
+
+    return weightsVec;
   }
 
 }

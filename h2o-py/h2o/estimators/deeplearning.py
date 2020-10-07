@@ -36,21 +36,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
                    "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
                    "fold_column", "response_column", "ignored_columns", "ignore_const_cols", "score_each_iteration",
                    "weights_column", "offset_column", "balance_classes", "class_sampling_factors",
-                   "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k", "checkpoint",
-                   "pretrained_autoencoder", "overwrite_with_best_model", "use_all_factor_levels", "standardize",
-                   "activation", "hidden", "epochs", "train_samples_per_iteration", "target_ratio_comm_to_comp", "seed",
-                   "adaptive_rate", "rho", "epsilon", "rate", "rate_annealing", "rate_decay", "momentum_start",
-                   "momentum_ramp", "momentum_stable", "nesterov_accelerated_gradient", "input_dropout_ratio",
-                   "hidden_dropout_ratios", "l1", "l2", "max_w2", "initial_weight_distribution", "initial_weight_scale",
-                   "initial_weights", "initial_biases", "loss", "distribution", "quantile_alpha", "tweedie_power",
-                   "huber_alpha", "score_interval", "score_training_samples", "score_validation_samples",
-                   "score_duty_cycle", "classification_stop", "regression_stop", "stopping_rounds", "stopping_metric",
-                   "stopping_tolerance", "max_runtime_secs", "score_validation_sampling", "diagnostics", "fast_mode",
-                   "force_load_balance", "variable_importances", "replicate_training_data", "single_node_mode",
-                   "shuffle_training_data", "missing_values_handling", "quiet_mode", "autoencoder", "sparse",
-                   "col_major", "average_activation", "sparsity_beta", "max_categorical_features", "reproducible",
-                   "export_weights_and_biases", "mini_batch_size", "categorical_encoding", "elastic_averaging",
-                   "elastic_averaging_moving_rate", "elastic_averaging_regularization", "export_checkpoints_dir"}
+                   "max_after_balance_size", "max_confusion_matrix_size", "checkpoint", "pretrained_autoencoder",
+                   "overwrite_with_best_model", "use_all_factor_levels", "standardize", "activation", "hidden",
+                   "epochs", "train_samples_per_iteration", "target_ratio_comm_to_comp", "seed", "adaptive_rate", "rho",
+                   "epsilon", "rate", "rate_annealing", "rate_decay", "momentum_start", "momentum_ramp",
+                   "momentum_stable", "nesterov_accelerated_gradient", "input_dropout_ratio", "hidden_dropout_ratios",
+                   "l1", "l2", "max_w2", "initial_weight_distribution", "initial_weight_scale", "initial_weights",
+                   "initial_biases", "loss", "distribution", "quantile_alpha", "tweedie_power", "huber_alpha",
+                   "score_interval", "score_training_samples", "score_validation_samples", "score_duty_cycle",
+                   "classification_stop", "regression_stop", "stopping_rounds", "stopping_metric", "stopping_tolerance",
+                   "max_runtime_secs", "score_validation_sampling", "diagnostics", "fast_mode", "force_load_balance",
+                   "variable_importances", "replicate_training_data", "single_node_mode", "shuffle_training_data",
+                   "missing_values_handling", "quiet_mode", "autoencoder", "sparse", "col_major", "average_activation",
+                   "sparsity_beta", "max_categorical_features", "reproducible", "export_weights_and_biases",
+                   "mini_batch_size", "categorical_encoding", "elastic_averaging", "elastic_averaging_moving_rate",
+                   "elastic_averaging_regularization", "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2ODeepLearningEstimator, self).__init__()
@@ -570,37 +570,6 @@ class H2ODeepLearningEstimator(H2OEstimator):
     def max_confusion_matrix_size(self, max_confusion_matrix_size):
         assert_is_type(max_confusion_matrix_size, None, int)
         self._parms["max_confusion_matrix_size"] = max_confusion_matrix_size
-
-
-    @property
-    def max_hit_ratio_k(self):
-        """
-        [Deprecated] Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to
-        disable).
-
-        Type: ``int``  (default: ``0``).
-
-        :examples:
-
-        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
-        >>> covtype[54] = covtype[54].asfactor()
-        >>> predictors = covtype.columns[0:54]
-        >>> response = 'C55'
-        >>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
-        >>> cov_dl = H2ODeepLearningEstimator(max_hit_ratio_k=3,
-        ...                                   seed=1234) 
-        >>> cov_dl.train(x=predictors,
-        ...              y=response,
-        ...              training_frame=train,
-        ...              validation_frame=valid)
-        >>> cov_dl.show()
-        """
-        return self._parms.get("max_hit_ratio_k")
-
-    @max_hit_ratio_k.setter
-    def max_hit_ratio_k(self, max_hit_ratio_k):
-        assert_is_type(max_hit_ratio_k, None, int)
-        self._parms["max_hit_ratio_k"] = max_hit_ratio_k
 
 
     @property

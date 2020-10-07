@@ -13,7 +13,6 @@ import water.udf.CFuncRef;
 import water.util.*;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -199,6 +198,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void setTrain(Frame train) {
     _train = train;
   }
+  
+  public void setValid(Frame valid) {
+    _valid = valid;
+  }
+  
   /** Validation frame: derived from the parameter's validation frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
    *  response column to a Categorical, etc.  Is null if no validation key is set.  */
@@ -633,6 +637,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_mb._parms = (P) _parms.clone();
       // Fix up some parameters of the clone
       cv_mb._parms._is_cv_model = true;
+      cv_mb._parms._cv_fold = i;
       cv_mb._parms._weights_column = weightName;// All submodels have a weight column, which the main model does not
       cv_mb._parms.setTrain(cvTrain._key);       // All submodels have a weight column, which the main model does not
       cv_mb._parms._valid = cvValid._key;
@@ -1337,7 +1342,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         hide("_max_confusion_matrix_size", "Max confusion matrix size is only applicable to classification problems.");
       }
       if (_nclass <= 2) {
-        hide("_max_hit_ratio_k", "Max K-value for hit ratio is only applicable to multi-class classification problems.");
         hide("_max_confusion_matrix_size", "Only for multi-class classification problems.");
       }
       if( !_parms._balance_classes ) {
@@ -1369,7 +1373,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (isResponseOptional() && _parms._response_column != null && _response == null) {
         _vresponse = va.vec(_parms._response_column);
       }
-      _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive);
+      _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive, false);  // see PUBDEV-7785
       if (!isResponseOptional() || (_parms._response_column != null && _valid.find(_parms._response_column) >= 0)) {
         _vresponse = _valid.vec(_parms._response_column);
       }
@@ -1379,7 +1383,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     if (expensive) {
-      Frame newtrain = encodeFrameCategoricals(_train, ! _parms._is_cv_model);
+      boolean scopeTrack = !_parms._is_cv_model;
+      Frame newtrain = applyPreprocessors(_train, true, scopeTrack);
+      newtrain = encodeFrameCategoricals(newtrain, scopeTrack); //we could turn this into a preprocessor later
       if (newtrain != _train) {
         _origTrain = _train;
         _origNames = _train.names();
@@ -1390,7 +1396,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _origTrain = null;
       }
       if (_valid != null) {
-        _valid = encodeFrameCategoricals(_valid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
+        Frame newvalid = applyPreprocessors(_valid, false, scopeTrack);
+        newvalid = encodeFrameCategoricals(newvalid, scopeTrack /* for CV, need to score one more time in outer loop */);
+        setValid(newvalid);
       }
       boolean restructured = false;
       Vec[] vecs = _train.vecs();
@@ -1427,7 +1435,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _train.restructure(_train.names(), vecs);
     }
     boolean names_may_differ = _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary;
-    boolean names_differ = _valid !=null && !Arrays.equals(_train._names, _valid._names);
+    boolean names_differ = _valid !=null && ArrayUtils.difference(_train._names, _valid._names).length != 0;;
     assert (!expensive || names_may_differ || !names_differ);
     if (names_differ && names_may_differ) {
       for (String name : _train._names)
@@ -1498,17 +1506,30 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @return adapted frame
    */
   public Frame init_adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
-    Frame adapted = adaptFrameToTrain(fr, frDesc, field, expensive);
+    Frame adapted = adaptFrameToTrain(fr, frDesc, field, expensive, false);
     if (expensive)
       adapted = encodeFrameCategoricals(adapted, true);
     return adapted;
   }
 
-  private Frame adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
+  private Frame adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive, boolean catEncoded) {
     if (fr.numRows()==0) error(field, frDesc + " must have > 0 rows.");
     Frame adapted = new Frame(null /* not putting this into KV */, fr._names.clone(), fr.vecs().clone());
     try {
-      String[] msgs = Model.adaptTestForTrain(adapted, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _workspace.getToDelete(expensive), false);
+      String[] msgs = Model.adaptTestForTrain(
+              adapted, 
+              null, 
+              null, 
+              _train._names, 
+              _train.domains(),
+              _parms, 
+              expensive,
+              true, 
+              null, 
+              getToEigenVec(), 
+              _workspace.getToDelete(expensive), 
+              catEncoded
+      );
       Vec response = adapted.vec(_parms._response_column);
       if (response == null && _parms._response_column != null && !isResponseOptional())
         error(field, frDesc + " must have a response column '" + _parms._response_column + "'.");
@@ -1524,17 +1545,42 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return adapted;
   }
 
-  private Frame encodeFrameCategoricals(Frame fr, boolean scopeTrack) {
-    String[] skipCols = new String[]{_parms._weights_column, _parms._offset_column, _parms._fold_column, _parms._response_column};
-    Frame encoded = FrameUtils.categoricalEncoder(fr, skipCols, _parms._categorical_encoding, getToEigenVec(), _parms._max_categorical_levels);
-    if (encoded != fr) {
-      assert encoded._key != null;
-      if (scopeTrack)
-        Scope.track(encoded);
-      else
-        _workspace.getToDelete(true).put(encoded._key, Arrays.toString(Thread.currentThread().getStackTrace()));
+  private Frame applyPreprocessors(Frame fr, boolean isTraining, boolean scopeTrack) {
+    if (_parms._preprocessors == null) return fr;
+
+    for (Key<ModelPreprocessor> key : _parms._preprocessors) {
+      DKV.prefetch(key);
     }
+    Frame result = fr;
+    Frame encoded;
+    for (Key<ModelPreprocessor> key : _parms._preprocessors) {
+      ModelPreprocessor preprocessor = key.get();
+      encoded = isTraining ? preprocessor.processTrain(result, _parms) : preprocessor.processValid(result, _parms);
+      if (encoded != result) trackEncoded(encoded, scopeTrack);
+      result = encoded;
+    }
+    if (!scopeTrack) Scope.untrack(result); // otherwise encoded frame is fully removed on CV model completion, raising exception when computing CV scores.
+    return result;
+  }
+
+  private Frame encodeFrameCategoricals(Frame fr, boolean scopeTrack) {
+    Frame encoded = FrameUtils.categoricalEncoder(
+            fr, 
+            _parms.getNonPredictors(),
+            _parms._categorical_encoding, 
+            getToEigenVec(), 
+            _parms._max_categorical_levels
+    );
+    if (encoded != fr) trackEncoded(encoded, scopeTrack);
     return encoded;
+  }
+  
+  private void trackEncoded(Frame fr, boolean scopeTrack) {
+    assert fr._key != null;
+    if (scopeTrack)
+      Scope.track(fr);
+    else
+      _workspace.getToDelete(true).put(fr._key, Arrays.toString(Thread.currentThread().getStackTrace()));
   }
 
   /**

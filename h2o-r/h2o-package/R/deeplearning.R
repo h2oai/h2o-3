@@ -37,8 +37,6 @@
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
-#' @param max_hit_ratio_k Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable).
-#'        Defaults to 0.
 #' @param checkpoint Model checkpoint to resume training with.
 #' @param pretrained_autoencoder Pretrained autoencoder model to initialize this model with.
 #' @param overwrite_with_best_model \code{Logical}. If enabled, override the final model with the best model found during training. Defaults to
@@ -169,7 +167,6 @@ h2o.deeplearning <- function(x,
                              balance_classes = FALSE,
                              class_sampling_factors = NULL,
                              max_after_balance_size = 5.0,
-                             max_hit_ratio_k = 0,
                              checkpoint = NULL,
                              pretrained_autoencoder = NULL,
                              overwrite_with_best_model = TRUE,
@@ -295,8 +292,6 @@ h2o.deeplearning <- function(x,
     parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
-  if (!missing(max_hit_ratio_k))
-    parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(checkpoint))
     parms$checkpoint <- checkpoint
   if (!missing(pretrained_autoencoder))
@@ -441,11 +436,6 @@ h2o.deeplearning <- function(x,
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
 
-  if (!missing(max_hit_ratio_k)) {
-    warning("argument max_hit_ratio_k is deprecated and has no use.")
-    parms$offset_column <- NULL
-  }
-
   # Error check and build model
   model <- .h2o.modelJob('deeplearning', parms, h2oRestApiVersion=3, verbose=verbose)
   return(model)
@@ -467,7 +457,6 @@ h2o.deeplearning <- function(x,
                                              balance_classes = FALSE,
                                              class_sampling_factors = NULL,
                                              max_after_balance_size = 5.0,
-                                             max_hit_ratio_k = 0,
                                              checkpoint = NULL,
                                              pretrained_autoencoder = NULL,
                                              overwrite_with_best_model = TRUE,
@@ -597,8 +586,6 @@ h2o.deeplearning <- function(x,
     parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
-  if (!missing(max_hit_ratio_k))
-    parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(checkpoint))
     parms$checkpoint <- checkpoint
   if (!missing(pretrained_autoencoder))
@@ -742,11 +729,6 @@ h2o.deeplearning <- function(x,
     parms$elastic_averaging_regularization <- elastic_averaging_regularization
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
-
-  if (!missing(max_hit_ratio_k)) {
-    warning("argument max_hit_ratio_k is deprecated and has no use.")
-    parms$offset_column <- NULL
-  }
 
   # Build segment-models specific parameters
   segment_parms <- list()

@@ -4,11 +4,12 @@ import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.Iced;
 
-import java.io.*;
+import java.util.Arrays;
+import java.util.Objects;
 
 public abstract class MatrixLoader extends Iced<MatrixLoader> {
     
-    public static abstract class DMatrixProvider implements Externalizable {
+    public static abstract class DMatrixProvider {
 
         protected long actualRows;
         protected float[] response;
@@ -22,9 +23,10 @@ public abstract class MatrixLoader extends Iced<MatrixLoader> {
             this.offsets = offsets;
         }
         
-        public DMatrixProvider() {}
-
         protected abstract DMatrix makeDMatrix() throws XGBoostError;
+
+        @SuppressWarnings("unused") // used for debugging
+        public abstract void print(int nrow);
         
         protected void dispose() {}
         
@@ -43,19 +45,23 @@ public abstract class MatrixLoader extends Iced<MatrixLoader> {
         }
 
         @Override
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeLong(actualRows);
-            out.writeObject(response);
-            out.writeObject(weights);
-            out.writeObject(offsets);
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof DMatrixProvider)) return false;
+            DMatrixProvider that = (DMatrixProvider) o;
+            return actualRows == that.actualRows &&
+                Arrays.equals(response, that.response) &&
+                Arrays.equals(weights, that.weights) &&
+                Arrays.equals(offsets, that.offsets);
         }
 
         @Override
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            actualRows = in.readLong();
-            response = (float[]) in.readObject();
-            weights = (float[]) in.readObject();
-            offsets = (float[]) in.readObject();
+        public int hashCode() {
+            int result = Objects.hash(actualRows);
+            result = 31 * result + Arrays.hashCode(response);
+            result = 31 * result + Arrays.hashCode(weights);
+            result = 31 * result + Arrays.hashCode(offsets);
+            return result;
         }
     }
     
