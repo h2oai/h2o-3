@@ -32,7 +32,7 @@ import water.rapids.ast.params.AstNum;
 public class TransformWrappedVec extends WrappedVec {
 
   private final Key<Vec>[] _masterVecKeys;
-  private transient Vec[] _masterVecs;
+  private volatile transient Vec[] _masterVecs;
   private final TransformFactory<?> _tf;
 
   public TransformWrappedVec(Key<Vec> key, int rowLayout, TransformFactory<?> fact, Key<Vec>[] masterVecKeys) {
@@ -75,11 +75,24 @@ public class TransformWrappedVec extends WrappedVec {
   }
 
   @Override public Chunk chunkForChunkIdx(int cidx) {
-    Chunk[] cs = new Chunk[_masterVecKeys.length];
-    if( _masterVecs==null )
-      _masterVecs = new Vec[_masterVecKeys.length];
-    for(int i=0; i<cs.length;++i)
-      cs[i] = (_masterVecs[i]!=null?_masterVecs[i]:(_masterVecs[i] = _masterVecKeys[i].get())).chunkForChunkIdx(cidx);
+    Vec[] masterVecs = _masterVecs;
+    if (masterVecs == null) {
+      masterVecs = new Vec[_masterVecKeys.length];
+      for (int i = 0; i < masterVecs.length; i++) {
+        DKV.prefetch(_masterVecKeys[i]);
+      }
+      for (int i = 0; i < masterVecs.length; i++) {
+        masterVecs[i] = _masterVecKeys[i].get();
+      }
+      _masterVecs = masterVecs; // publish fetched Vecs
+    }
+    assert _masterVecs != null;
+    Chunk[] cs = new Chunk[_masterVecs.length];
+    for (int i = 0; i < cs.length; i++) {
+      assert _masterVecs[i] != null;
+      cs[i] = _masterVecs[i].chunkForChunkIdx(cidx);
+      assert cs[i] != null;
+    }
     return new TransformWrappedChunk(_tf, this, cs);
   }
 
