@@ -12,7 +12,8 @@ properties([
     parameters([
         booleanParam(defaultValue: false, description: 'Build even if the image is already present in the repository', name: 'forceBuild'),
         booleanParam(defaultValue: false, description: 'Publish built images', name: 'publish'),
-        string(defaultValue: 'master', description: 'H2O-3 Branch used to load dependencies.', name: 'h2oBranch')
+        string(defaultValue: 'master', description: 'H2O-3 Branch used to load dependencies.', name: 'h2oBranch'),
+        booleanParam(name: 'noCache', defaultValue: true, description: 'If set to true, the docker image is built from scratch, with no stages used from the cache.')
     ])
 ])
 
@@ -142,6 +143,7 @@ private Closure makeStage(final pipelineContext, String target, final boolean us
                                     GRADLE_VERSION=${gradleVersion} \
                                     GPU=${useGpu} \
                                     PUSH=${params.publish} \
+                                    NO_CACHE=${params.noCache} \
                                     ${target}
                             """
                 }
