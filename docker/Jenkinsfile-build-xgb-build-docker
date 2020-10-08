@@ -12,7 +12,7 @@ properties(
                 string(name: 'gitBranch', defaultValue: 'master', description: 'Branch to load the Dockerfile from.'),
                 string(name: 'registry', defaultValue: 'harbor.h2o.ai', description: 'Docker registry to push images to'),
                 booleanParam(name: 'publish', defaultValue: true, description: 'If true, publish the docker image'),
-                booleanParam(name: 'noCache', defaultValue: false, description: 'If true, build the docker image using the --no-cache flag')
+                booleanParam(name: 'noCache', defaultValue: false, description: 'If set to true, the docker image is built from scratch, with no stages used from the cache.')
         ])
     ]
 )
@@ -42,6 +42,7 @@ node (NODE_LABEL) {
             pipelineContext.getBuildSummary().addSection(this, 'docker-details', "<a href=\"${currentBuild.rawBuild.getAbsoluteUrl()}\" style=\"color: black;\">Details</a>", """
                 <ul>
                 <li><strong>Git Branch:</strong> ${env.BRANCH_NAME}</li>
+                <li><strong>No cache:</strong> ${params.noCache}</li>
                 </ul>
             """)
 
@@ -62,6 +63,8 @@ node (NODE_LABEL) {
     }
 }
 
+final String noCache = params.noCache ? "--no-cache" : ""
+
 parallel(IMAGES_MAP.collectEntries { image ->
     [
         "Build $image image", {
@@ -77,6 +80,7 @@ parallel(IMAGES_MAP.collectEntries { image ->
                         dir('docker') {
                             sh """                                
                                 docker build \
+                                    ${noCache} \
                                     -t ${IMAGE_NAME}-${image}:${IMAGE_TAG}  \
                                     -f xgb_build/Dockerfile-gpu-${image} \
                                     .
