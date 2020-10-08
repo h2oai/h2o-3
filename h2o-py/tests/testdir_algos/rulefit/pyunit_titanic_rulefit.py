@@ -6,7 +6,7 @@ from h2o.estimators.rulefit import H2ORuleFitEstimator
 
 
 def titanic():
-    df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv",
+    df = h2o.import_file(path=pyunit_utils.locate("./smalldata/gbm_test/titanic.csv"),
                        col_types={'pclass': "enum", 'survived': "enum"})
     x =  ["age", "sibsp", "parch", "fare", "sex", "pclass"]
 
