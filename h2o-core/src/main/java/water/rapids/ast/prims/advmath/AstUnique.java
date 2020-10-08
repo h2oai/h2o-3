@@ -1,16 +1,16 @@
 package water.rapids.ast.prims.advmath;
 
 import water.DKV;
-import water.MRTask;
-import water.fvec.Chunk;
+import water.H2O;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.task.UniqOldTask;
 import water.fvec.task.UniqTask;
 import water.rapids.Env;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
-import water.rapids.ast.prims.mungers.AstGroup;
 import water.rapids.vals.ValFrame;
+import water.util.Log;
 import water.util.VecUtils;
 
 public class AstUnique extends AstPrimitive {
@@ -38,8 +38,8 @@ public class AstUnique extends AstPrimitive {
 
   /** return a frame with unique values from the specified column */
   public static Frame uniqueValuesBy(final Frame fr, final int columnIndex, final boolean includeNAs) {
-    Vec vec0 = fr.vec(columnIndex);
-    Vec v;
+    final Vec vec0 = fr.vec(columnIndex);
+    final Vec v;
     if (vec0.isCategorical()) {
       // Vector domain might contain levels not actually present in the vector - collection of actual values is required.
       final String[] actualVecDomain = VecUtils.collectDomainFast(vec0);
@@ -52,17 +52,20 @@ public class AstUnique extends AstPrimitive {
       v.setDomain(actualVecDomain);
       DKV.put(v);
     } else {
-      UniqTask t = new UniqTask().doAll(vec0);
-      int nUniq = t._uniq.size();
-      final AstGroup.G[] uniq = t._uniq.toArray(new AstGroup.G[nUniq]);
-      v = Vec.makeZero(nUniq, vec0.get_type());
-      new MRTask() {
-        @Override
-        public void map(Chunk c) {
-          int start = (int) c.start();
-          for (int i = 0; i < c._len; ++i) c.set(i, uniq[i + start]._gs[0]);
-        }
-      }.doAll(v);
+      long start = System.currentTimeMillis();
+      String uniqImpl = H2O.getSysProperty("rapids.unique.impl", "IcedDouble");
+      switch (uniqImpl) {
+        case "IcedDouble":
+          v = new UniqTask().doAll(vec0).toVec();
+          break;
+        case "GroupBy":
+          v = new UniqOldTask().doAll(vec0).toVec();
+          break;
+        default:
+          throw new UnsupportedOperationException("Unknown unique implementation: " + uniqImpl);
+      }
+      Log.info("Unique on a numerical Vec (len=" + vec0.length() + ") took " + 
+              (System.currentTimeMillis() - start) + "ms and returned " + v.length() + " unique values (impl: " + uniqImpl + ").");
     }
     return new Frame(v);
   }
