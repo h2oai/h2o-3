@@ -112,20 +112,17 @@ public class XGBoostUtils {
     public static long sumChunksLength(int[] chunkIds, Vec vec, Vec weightsVector, int[] chunkLengths) {
         for (int i = 0; i < chunkIds.length; i++) {
             final int chunk = chunkIds[i];
-            chunkLengths[i] = vec.chunkLen(chunk);
-            if (weightsVector == null)
-                continue;
-
-            Chunk weightVecChunk = weightsVector.chunkForChunkIdx(chunk);
-            if (weightVecChunk.atd(0) == 0) chunkLengths[i]--;
-            int nzIndex = 0;
-            do {
-                nzIndex = weightVecChunk.nextNZ(nzIndex, true);
-                if (nzIndex < 0 || nzIndex >= weightVecChunk._len) break;
-                if (weightVecChunk.atd(nzIndex) == 0) chunkLengths[i]--;
-            } while (true);
+            if (weightsVector != null) {
+                Chunk weightVecChunk = weightsVector.chunkForChunkIdx(chunk);
+                int nzIndex = 0;
+                do {
+                    if (weightVecChunk.atd(nzIndex) != 0) chunkLengths[i]++;
+                    nzIndex = weightVecChunk.nextNZ(nzIndex, true);
+                } while (nzIndex > 0 && nzIndex < weightVecChunk._len);
+            } else {
+                chunkLengths[i] = vec.chunkLen(chunk);
+            }
         }
-
         long totalChunkLength = 0;
         for (int cl : chunkLengths) {
             totalChunkLength += cl;
