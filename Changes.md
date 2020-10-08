@@ -20,7 +20,7 @@ Downlaod at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/inde
     
 #### New Feature
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7241'>PUBDEV-7241</a>] -         Quantile and Tweedie distributions added to monotone constraints.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7241'>PUBDEV-7241</a>] -         Quantile distributions added to monotone constraints.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7319'>PUBDEV-7319</a>] -          TargetEncoder integrated into ModelBuilder.
 </li>
