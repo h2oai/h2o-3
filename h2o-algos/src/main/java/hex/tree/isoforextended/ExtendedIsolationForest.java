@@ -5,6 +5,7 @@ import hex.ModelCategory;
 import hex.ScoreKeeper;
 import hex.psvm.psvm.MatrixUtils;
 import hex.tree.SharedTree;
+import joptsimple.internal.Strings;
 import jsr166y.CountedCompleter;
 import water.*;
 import water.fvec.Chunk;
@@ -13,6 +14,7 @@ import water.fvec.Vec;
 import water.util.*;
 
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Extended isolation forest implementation. Algorithm comes from https://arxiv.org/pdf/1811.02141.pdf paper.
@@ -187,12 +189,11 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         public void buildTree() {
             try {
                 Scope.enter();
-                Log.info("building tree");
                 Frame frame = DKV.get(_frameKey).get();
                 Scope.track(frame);
                 _nodes[0] = new Node(frame._key, frame.numRows(), 0);
                 for (int i = 0; i < _nodes.length; i++) {
-                    Log.info(i, " from ", _nodes.length, " is being prepared on tree ", _treeNum);
+                    Log.debug(i, " from ", _nodes.length, " is being prepared on tree ", _treeNum);
                     Node node = _nodes[i];
                     if (node == null || node._external) {
                         continue;
@@ -356,7 +357,7 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
                 Frame subSample = new SubSampleTask(_parms._sample_size, _parms._seed + randomUnit)
                         .doAll(subTypes, subFrame).outputFrame(Key.make(), subNames, subDomains);
                 Scope.track(subSample);
-                Log.info("subsample prepared");
+
                 iTree = new IsolationTree(subSample._key, heightLimit, _parms._seed + randomUnit, _parms.extension_level, treeNum);
                 iTree.buildTree();
                 if (Log.isLoggingFor(Log.DEBUG)) {
