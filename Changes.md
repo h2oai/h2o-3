@@ -2,9 +2,9 @@
 
 ## H2O
 
-### Zermelo (3.32.0.1) - 10/xx/2020
+### Zermelo (3.32.0.1) - 10/8/2020
 
-Downlaod at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/index.html</a>
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/index.html</a>
 
 #### Bug
 <ul>
