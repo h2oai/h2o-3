@@ -523,17 +523,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
       v.setDomain(vec0.domain());
       DKV.put(v);
     } else {
-      UniqTask t = new UniqTask().doAll(vec0);
-      int nUniq = t._uniq.size();
-      final AstGroup.G[] uniq = t._uniq.toArray(new AstGroup.G[nUniq]);
-      v = Vec.makeZero(nUniq, vec0.get_type());
-      new MRTask() {
-        @Override
-        public void map(Chunk c) {
-          int start = (int) c.start();
-          for (int i = 0; i < c._len; ++i) c.set(i, uniq[i + start]._gs[0]);
-        }
-      }.doAll(v);
+      v = new UniqTask().doAll(vec0).toVec();
     }
     return new Frame(v);
   }
