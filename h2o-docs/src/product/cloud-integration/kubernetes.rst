@@ -24,6 +24,8 @@ In order to spawn a H2O cluster inside a Kubernetes cluster, the following list 
 
 After H2O is started, there must be a way for H2O nodes to "find" themselves and form a cluster. This is the role of the `headless service <https://kubernetes.io/docs/concepts/services-networking/service/#headless-services>`__. This approach works on all major Kubernetes clusters without any additional permissions required.
 
+For reproducibility, resource limits and requests should always be set to equal values.
+
 Headless Service
 ~~~~~~~~~~~~~~~~
 
@@ -147,3 +149,53 @@ In order to expose H2O and make it available from the outside of the Kubernetes 
           backend:
             serviceName: h2o-service
             servicePort: 80
+
+Reproducibility notes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are three key requirements to make sure actions invoked on H2O are reproducible:
+
+1. Same amount of memory,
+2. Same number of CPUs,
+3. Client sends requests only to the H2O leader node.
+
+In a Kubernetes environment, one common mistake is to set different resource quotas for ``requests`` and ``limits`` for a pod. If the underlying JVM running inside the docker image inside a pod uses certain percentage of memory available, that amount of memory might be different each time H2O starts, as Kubernetes might actually allocate different amount of memory every time. These same rules apply to CPU ``limits`` and ``requests``.
+
+The ``readinessProbe`` residing on ``/kubernetes/isLeaderNode`` makes sure only the leader node is exposed once the cluster is formed by making all nodes but the leader node "not available". Without the readiness probe, reproducibility is not guaranteed.
+
+
+Installing H2O with Helm
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+`Helm <https://helm.sh/>`__ can be used to deploy H2O into a kubernetes cluster. Helm requires setting up the KUBECONFIG environment variable properly or stating the KUBECONFIG destination explicitly. There are three steps required in order to use the official H2O Helm chart:
+
+1. Add H2O Helm chart repository,
+2. Use ``helm install`` to install H2O Open source to Kubernetes,
+3. (Optional) test the installation.
+
+.. code:: bash
+
+  helm repo add h2o https://charts.h2o.ai --version |version|
+  helm install basic-h2o h2o/h2o
+  helm test basic-h2o
+
+
+The basic command ``helm install basic-h2o h2o/h2o`` only installs a minimal H2O cluster with few resources. There are various settings and modifications available. To inspect a complete list of the configuration options available, use the  ``helm inspect values h2o/h2o --version |version|`` command.
+
+Among the most common settings are number of H2O nodes (there is one pod per each H2O node) spawned, memory and CPU resources for each H2O node, and an ingress. Below is an example on how to configure these basic options.
+
+.. code:: yaml
+
+  h2o:
+    nodeCount: 3
+  resources:
+    cpu: 12
+    memory: 32Gi
+  ingress:
+    enabled: true
+    annotations: {}
+    hosts:
+      - host: ""
+        paths: ["/"]
+    tls: []
+
