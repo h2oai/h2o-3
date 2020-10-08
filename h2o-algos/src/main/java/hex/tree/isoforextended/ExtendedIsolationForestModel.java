@@ -64,11 +64,6 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
     @Override protected void toJavaUnifyPreds(SBPrintStream body) {
         throw new UnsupportedOperationException("Extended Isolation Forest support only MOJOs.");
     }
-
-    @Override
-    public ExtendedIsolationForestMojoWriter getMojo() {
-        return new ExtendedIsolationForestMojoWriter(this);
-    }
     
     /**
      * Anomaly score computation comes from Equation 1 in paper

@@ -102,7 +102,7 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
 
     @Override
     public boolean haveMojo() {
-        return true;
+        return false;
     }
 
     @Override
