@@ -170,8 +170,7 @@ class MetricsBase(h2o_meta()):
         if (metric_type in types_w_mult) or (metric_type in types_w_ord):
             self.confusion_matrix().show()
             self.hit_ratio_table().show()
-            print("Multinomial AUC: "+ str(self.multinomial_auc()))
-            print("Multinomial PR AUC:"+ str(self.multinomial_aucpr()))
+            
         if metric_type in types_w_clustering:
             print("Total Within Cluster Sum of Square Error: " + str(self.tot_withinss()))
             print("Total Sum of Square Error to Grand Mean: " + str(self.totss()))
@@ -728,8 +727,8 @@ class H2OMultinomialModelMetrics(MetricsBase):
         return self._metric_json['hit_ratio_table']
 
 
-    def multinomial_auc(self):
-        """Retrieve the multinomial AUC.
+    def multinomial_auc_table(self):
+        """Retrieve the multinomial AUC values.
 
         :examples:
 
@@ -746,12 +745,12 @@ class H2OMultinomialModelMetrics(MetricsBase):
         ...           y = response,
         ...           training_frame = train,
         ...           validation_frame = valid)
-        >>> gbm.multinomial_auc()
+        >>> gbm.multinomial_auc_table()
         """
-        return self._metric_json['multinomial_auc']
+        return self._metric_json['multinomial_auc_table']
 
-    def multinomial_aucpr(self):
-        """Retrieve the multinomial PR AUC.
+    def multinomial_aucpr_table(self):
+        """Retrieve the multinomial PR AUC values.
 
         :examples:
 
@@ -768,10 +767,9 @@ class H2OMultinomialModelMetrics(MetricsBase):
         ...           y = response,
         ...           training_frame = train,
         ...           validation_frame = valid)
-        >>> gbm.multinomial_aucpr()
+        >>> gbm.multinomial_aucpr_table()
         """
-        return self._metric_json['multinomial_pr_auc']
-
+        return self._metric_json['multinomial_aucpr_table']
 
 
 class H2OOrdinalModelMetrics(MetricsBase):

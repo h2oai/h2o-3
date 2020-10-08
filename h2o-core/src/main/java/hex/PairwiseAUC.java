@@ -1,56 +1,80 @@
 package hex;
 
 import water.Iced;
-import water.Scope;
 
 public class PairwiseAUC extends Iced {
-    private AUC2 _aucFirst;
-    private AUC2 _aucSecond;
-    private int _indexFirst;
-    private int _indexSecond;
+    private double _aucFirst;
+    private double _aucSecond;
+    private double _praucFirst;
+    private double _praucSecond;
+    private double _tpFirst;
+    private double _tpSecond;
     private String _domainFirst;
     private String _domainSecond;
+    
 
-    public PairwiseAUC(AUC2 aucFirst, AUC2 aucSecond, int indexFirst, int indexSecond, String domainFirst, 
-                       String domainSecond) {
+    public PairwiseAUC(AUC2 aucFirst, AUC2 aucSecond, String domainFirst, String domainSecond) {
+        this._aucFirst = aucFirst._auc;
+        this._aucSecond = aucSecond._auc;
+        this._praucFirst = aucFirst._pr_auc;
+        this._praucSecond = aucSecond._pr_auc;
+        int firstMaxId = aucFirst._max_idx;
+        if(firstMaxId != -1) {
+            this._tpFirst = aucFirst.tp(firstMaxId);
+        } 
+        int secondMaxId = aucSecond._max_idx;
+        if(secondMaxId != -1) {
+            this._tpSecond = aucSecond.tp(secondMaxId);
+        }
+        this._domainFirst = domainFirst;
+        this._domainSecond = domainSecond;
+    }
+
+    public PairwiseAUC(Double aucFirst, double aucSecond, double praucFirst, double praucSecond, 
+                       double tpFirst, double tpSecond, String domainFirst, String domainSecond) {
         this._aucFirst = aucFirst;
         this._aucSecond = aucSecond;
-        this._indexFirst = indexFirst;
-        this._indexSecond = indexSecond;
+        this._praucFirst = praucFirst;
+        this._praucSecond = praucSecond;
+        this._tpFirst = tpFirst;
+        this._tpSecond = tpSecond;
         this._domainFirst = domainFirst;
         this._domainSecond = domainSecond;
     }
     
-    public double getPairwiseAuc(){
-        return (this._aucFirst._auc + this._aucSecond._auc)/2;
-    }
-
-    public double getPairwisePrAuc(){
-        return (this._aucFirst._pr_auc + this._aucSecond._pr_auc)/2;
-    }
-
-    public String getPairwiseAucString(){
-        return "AUC class "+_domainFirst+" vs "+_domainSecond+": "+getPairwiseAuc();
-    }
-
-    public String getPairwisePrAucString(){
-        return "AUC_PR class "+_domainFirst+" vs "+_domainSecond+": "+getPairwisePrAuc();
-    }
-
-    public int getIndexFirst() {
-        return _indexFirst;
-    }
-
-    public int getIndexSecond() {
-        return _indexSecond;
+    public double getSumTp(){
+        return _tpFirst + _tpSecond;
     }
     
-    public boolean hasIndices(int i, int j){
-        return (_indexFirst == i && _indexSecond == j) || (_indexFirst == j && _indexSecond == i);
+    public double getAuc(){ return (this._aucFirst + this._aucSecond) / 2; }
+    
+    public double getWeightedAuc() { return getAuc() * getSumTp(); }
+
+    public double getPrAuc(){ return (this._praucFirst + this._praucSecond) / 2; }
+
+    public double getWeightedPrAuc(){ return getPrAuc() * getSumTp(); }
+
+    public String getAucString(){
+        return "AUC class "+_domainFirst+" vs "+_domainSecond+": "+getAuc();
     }
 
-    public boolean hasDomains(String domainFirst, String domainSecond){
-        return (_domainFirst.equals(domainFirst) && _domainSecond.equals(domainSecond)) || 
-                (_domainFirst.equals(domainSecond) && _domainSecond.equals(domainFirst));
+    public String getPrAucString(){
+        return "AUC_PR class "+_domainFirst+" vs "+_domainSecond+": "+getPrAuc();
+    }
+
+    public String getDomainFirst() { return _domainFirst; }
+
+    public String getDomainSecond() { return _domainSecond; }
+
+    public String getWeightedAucString(){
+        return "AUC class "+_domainFirst+" vs "+_domainSecond+": "+getWeightedAuc();
+    }
+
+    public String getWeightedPrAucString(){
+        return "AUC_PR class "+_domainFirst+" vs "+_domainSecond+": "+getWeightedPrAuc();
+    }
+
+    public String getPairwiseDomainsString(){
+        return "Class "+_domainFirst+" vs. "+_domainSecond;
     }
 }

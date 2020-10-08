@@ -111,7 +111,10 @@ public class AUC2 extends Iced {
       int mx = -1;
       for( int i=0; i<auc._nBins; i++ ) {
         double d = exec(auc,i);
-        if( d > md ) { md = d; mx = i; }
+        if( d > md ) { 
+          md = d; 
+          mx = i; 
+        }
       }
       return mx;
     }
