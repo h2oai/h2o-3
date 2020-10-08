@@ -8,11 +8,9 @@ Downlaod at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/inde
 
 #### Bug
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5932'>PUBDEV-5932</a>] -         Added support for Python 3.7+.
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7667'>PUBDEV-7667</a>] -         Fixed StackedEnsemble’s retrieval of the seed parameter value.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7746'>PUBDEV-7746</a>] -         Deserialization values of MOJO ModelParameter now work when the Value Type is int().
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7746'>PUBDEV-7746</a>] -         Deserialization values of MOJO ModelParameter now work when the Value Type is int[].
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7760'>PUBDEV-7760</a>] -         H2O no longer uses lazy-loading for sequential zip parse.
 </li>
@@ -51,6 +49,8 @@ Downlaod at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/inde
     
 #### Improvement
 <ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5932'>PUBDEV-5932</a>] -         Added support for Python 3.7+.
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7717'>PUBDEV-7717</a>] -         Exposes names of score0 output values in MOJO.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7730'>PUBDEV-7730</a>] -         Added function to plot a Precision Recall Curve.
@@ -64,7 +64,7 @@ Downlaod at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/inde
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7787'>PUBDEV-7787</a>] -         Updated all URLs in R package to use HTTPS.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7790'>PUBDEV-7790</a>] -         Uprgraded to XGBoost 1.2.0.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7790'>PUBDEV-7790</a>] -         Upgraded to XGBoost 1.2.0.
 </li>
 </ul>
     
