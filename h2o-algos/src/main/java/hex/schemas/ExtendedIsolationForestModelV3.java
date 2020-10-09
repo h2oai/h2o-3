@@ -1,15 +1,17 @@
 package hex.schemas;
 
 import hex.tree.isoforextended.ExtendedIsolationForestModel;
+import water.api.schemas3.ModelOutputSchemaV3;
+import water.api.schemas3.ModelSchemaV3;
 
-public class ExtendedIsolationForestModelV3 extends SharedTreeModelV3<ExtendedIsolationForestModel,
+public class ExtendedIsolationForestModelV3 extends ModelSchemaV3<ExtendedIsolationForestModel,
         ExtendedIsolationForestModelV3,
         ExtendedIsolationForestModel.ExtendedIsolationForestParameters,
         ExtendedIsolationForestV3.ExtendedIsolationForestParametersV3,
         ExtendedIsolationForestModel.ExtendedIsolationForestOutput,
         ExtendedIsolationForestModelV3.ExtendedIsolationForestModelOutputV3> {
 
-  public static final class ExtendedIsolationForestModelOutputV3 extends SharedTreeModelV3.SharedTreeModelOutputV3<ExtendedIsolationForestModel.ExtendedIsolationForestOutput, ExtendedIsolationForestModelOutputV3> {
+  public static final class ExtendedIsolationForestModelOutputV3 extends ModelOutputSchemaV3<ExtendedIsolationForestModel.ExtendedIsolationForestOutput, ExtendedIsolationForestModelOutputV3> {
       // nothing
   }
 

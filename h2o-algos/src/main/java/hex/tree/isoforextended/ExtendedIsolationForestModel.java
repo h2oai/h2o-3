@@ -1,24 +1,20 @@
 package hex.tree.isoforextended;
 
+import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
-import hex.genmodel.utils.DistributionFamily;
-import hex.tree.SharedTree;
-import hex.tree.SharedTreeModel;
 import hex.tree.isofor.ModelMetricsAnomaly;
 import water.Key;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.Log;
-import water.util.SBPrintStream;
 
 /**
  * 
  * @author Adam Valenta
  */
-public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolationForestModel, ExtendedIsolationForestModel.ExtendedIsolationForestParameters, 
+public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestModel, ExtendedIsolationForestModel.ExtendedIsolationForestParameters, 
         ExtendedIsolationForestModel.ExtendedIsolationForestOutput> {
-    
+
     public ExtendedIsolationForestModel(Key<ExtendedIsolationForestModel> selfKey, ExtendedIsolationForestParameters parms,
                                         ExtendedIsolationForestOutput output) {
         super(selfKey, parms, output);
@@ -40,11 +36,10 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
         return new String[2][];
     }
 
-    @Override 
-    protected double[] score0(double[] data, double[] preds, double offset, int ntrees) {
-        super.score0(data, preds, offset, ntrees);
-        if (ntrees >= 1) preds[1] = preds[0] / ntrees;
-        
+    @Override
+    protected double[] score0(double[] data, double[] preds) {
+        if (_parms._ntrees >= 1) preds[1] = preds[0] / _parms._ntrees;
+
         // compute score for given point
         double pathLength = 0;
         for (ExtendedIsolationForest.IsolationTree iTree : _output.iTrees) {
@@ -61,10 +56,6 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
         return preds;
     }
 
-    @Override protected void toJavaUnifyPreds(SBPrintStream body) {
-        throw new UnsupportedOperationException("Extended Isolation Forest support only MOJOs.");
-    }
-    
     /**
      * Anomaly score computation comes from Equation 1 in paper
      *
@@ -76,7 +67,7 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
                 ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccesfullSearch(_parms._sample_size)));
     }
 
-    public static class ExtendedIsolationForestParameters extends SharedTreeModel.SharedTreeParameters {
+    public static class ExtendedIsolationForestParameters extends Model.Parameters {
 
         @Override
         public String algoName() {
@@ -93,6 +84,14 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
             return ExtendedIsolationForestModel.class.getName();
         }
 
+        @Override
+        public long progressUnits() {
+            return _ntrees;
+        }
+
+        // Number of trees in the forest
+        public int _ntrees;
+
         // Maximum is N - 1 (N = numCols). Minimum is 0. EIF with extension_level = 0 behaves like Isolation Forest.
         public int extension_level;
 
@@ -100,28 +99,20 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
 
         public ExtendedIsolationForestParameters() {
             super();
-            _max_depth = 8; // log2(_sample_size)
-            _min_rows = 1;
-            _min_split_improvement = 0;
-            _nbins = 2;
-            _nbins_cats = 2;
-            // _nbins_top_level = 2;
-            _histogram_type = HistogramType.Random;
-            _distribution = DistributionFamily.gaussian;
-
-            // early stopping
-            _stopping_tolerance = 0.01; // (default 0.001 is too low for the default criterion anomaly_score)
-
+            _ntrees = 100;
             _sample_size = 256;
             extension_level = 0;
         }        
     }
 
-    public static class ExtendedIsolationForestOutput extends SharedTreeModel.SharedTreeOutput {
+    public static class ExtendedIsolationForestOutput extends Model.Output {
+
+        /** Number of trees actually in the model (as opposed to requested) */
+        public int _ntrees;
         
         public ExtendedIsolationForest.IsolationTree[] iTrees;
         
-        public ExtendedIsolationForestOutput(SharedTree b) {
+        public ExtendedIsolationForestOutput(ExtendedIsolationForest b) {
             super(b);
         }
 

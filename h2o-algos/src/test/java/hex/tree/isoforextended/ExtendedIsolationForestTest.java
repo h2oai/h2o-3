@@ -1,15 +1,15 @@
 package hex.tree.isoforextended;
 
+import joptsimple.internal.Strings;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import water.*;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.util.Log;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertTrue;

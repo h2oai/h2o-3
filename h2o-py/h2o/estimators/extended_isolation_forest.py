@@ -24,11 +24,8 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
     """
 
     algo = "extendedisolationforest"
-    param_names = {"model_id", "training_frame", "score_each_iteration", "score_tree_interval", "ignored_columns",
-                   "ignore_const_cols", "ntrees", "max_depth", "min_rows", "max_runtime_secs", "seed",
-                   "build_tree_one_node", "sample_size", "extension_level", "col_sample_rate_change_per_level",
-                   "col_sample_rate_per_tree", "categorical_encoding", "stopping_rounds", "stopping_metric",
-                   "stopping_tolerance", "export_checkpoints_dir"}
+    param_names = {"model_id", "training_frame", "ignored_columns", "ignore_const_cols", "max_runtime_secs",
+                   "categorical_encoding", "export_checkpoints_dir", "ntrees", "sample_size", "extension_level", "seed"}
 
     def __init__(self, **kwargs):
         super(H2OExtendedIsolationForestEstimator, self).__init__()
@@ -64,57 +61,6 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
     @training_frame.setter
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
-
-
-    @property
-    def score_each_iteration(self):
-        """
-        Whether to score during each iteration of model training.
-
-        Type: ``bool``  (default: ``False``).
-
-        :examples:
-
-        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> predictors = ["displacement","power","weight","acceleration","year"]
-        >>> cars_if = H2OExtendedIsolationForestEstimator(score_each_iteration = True,
-        ...                                       ntrees = 55,
-        ...                                       seed = 1234)
-        >>> cars_if.train(x = predictors,
-        ...               training_frame = cars)
-        >>> cars_if.model_performance()
-        """
-        return self._parms.get("score_each_iteration")
-
-    @score_each_iteration.setter
-    def score_each_iteration(self, score_each_iteration):
-        assert_is_type(score_each_iteration, None, bool)
-        self._parms["score_each_iteration"] = score_each_iteration
-
-
-    @property
-    def score_tree_interval(self):
-        """
-        Score the model after every so many trees. Disabled if set to 0.
-
-        Type: ``int``  (default: ``0``).
-
-        :examples:
-
-        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> predictors = ["displacement","power","weight","acceleration","year"]
-        >>> cars_if = H2OExtendedIsolationForestEstimator(score_tree_interval = 5,
-        ...                                       seed = 1234)
-        >>> cars_if.train(x = predictors,
-        ...               training_frame = cars)
-        >>> cars_if.model_performance()
-        """
-        return self._parms.get("score_tree_interval")
-
-    @score_tree_interval.setter
-    def score_tree_interval(self, score_tree_interval):
-        assert_is_type(score_tree_interval, None, int)
-        self._parms["score_tree_interval"] = score_tree_interval
 
 
     @property
@@ -161,84 +107,6 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
 
 
     @property
-    def ntrees(self):
-        """
-        Number of trees.
-
-        Type: ``int``  (default: ``50``).
-
-        :examples:
-
-        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
-        >>> predictors = titanic.columns
-        >>> tree_num = [20, 50, 80, 110, 140, 170, 200]
-        >>> label = ["20", "50", "80", "110", "140", "170", "200"]
-        >>> for key, num in enumerate(tree_num):
-        ...     titanic_if = H2OExtendedIsolationForestEstimator(ntrees = num,
-        ...                                              seed = 1234)
-        ...     titanic_if.train(x = predictors,
-        ...                      training_frame = titanic) 
-        ...     print(label[key], 'training score', titanic_if.mse(train = True))
-        """
-        return self._parms.get("ntrees")
-
-    @ntrees.setter
-    def ntrees(self, ntrees):
-        assert_is_type(ntrees, None, int)
-        self._parms["ntrees"] = ntrees
-
-
-    @property
-    def max_depth(self):
-        """
-        Maximum tree depth (0 for unlimited).
-
-        Type: ``int``  (default: ``8``).
-
-        :examples:
-
-        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> predictors = ["displacement","power","weight","acceleration","year"]
-        >>> cars_if = H2OExtendedIsolationForestEstimator(max_depth = 2,
-        ...                                       seed = 1234)
-        >>> cars_if.train(x = predictors,
-        ...               training_frame = cars)
-        >>> cars_if.model_performance()
-        """
-        return self._parms.get("max_depth")
-
-    @max_depth.setter
-    def max_depth(self, max_depth):
-        assert_is_type(max_depth, None, int)
-        self._parms["max_depth"] = max_depth
-
-
-    @property
-    def min_rows(self):
-        """
-        Fewest allowed (weighted) observations in a leaf.
-
-        Type: ``float``  (default: ``1``).
-
-        :examples:
-
-        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> predictors = ["displacement","power","weight","acceleration","year"]
-        >>> cars_if = H2OExtendedIsolationForestEstimator(min_rows = 16,
-        ...                                       seed = 1234)
-        >>> cars_if.train(x = predictors,
-        ...               training_frame = cars)
-        >>> cars_if.model_performance()
-        """
-        return self._parms.get("min_rows")
-
-    @min_rows.setter
-    def min_rows(self, min_rows):
-        assert_is_type(min_rows, None, numeric)
-        self._parms["min_rows"] = min_rows
-
-
-    @property
     def max_runtime_secs(self):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
@@ -266,57 +134,88 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
 
 
     @property
-    def seed(self):
+    def categorical_encoding(self):
         """
-        Seed for pseudo random number generator (if applicable)
+        Encoding scheme for categorical features
 
-        Type: ``int``  (default: ``-1``).
+        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
+        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
 
         :examples:
 
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
-        >>> isofor_w_seed = H2OExtendedIsolationForestEstimator(seed = 1234) 
-        >>> isofor_w_seed.train(x = predictors,
-        ...                     training_frame = airlines)
-        >>> isofor_wo_seed = H2OExtendedIsolationForestEstimator()
-        >>> isofor_wo_seed.train(x = predictors,
-        ...                      training_frame = airlines)
-        >>> isofor_w_seed.model_performance()
-        >>> isofor_wo_seed.model_performance()
+        >>> encoding = "one_hot_explicit"
+        >>> airlines_if = H2OExtendedIsolationForestEstimator(categorical_encoding = encoding,
+        ...                                           seed = 1234)
+        >>> airlines_if.train(x = predictors,
+        ...                   training_frame = airlines)
+        >>> airlines_if.model_performance()
         """
-        return self._parms.get("seed")
+        return self._parms.get("categorical_encoding")
 
-    @seed.setter
-    def seed(self, seed):
-        assert_is_type(seed, None, int)
-        self._parms["seed"] = seed
+    @categorical_encoding.setter
+    def categorical_encoding(self, categorical_encoding):
+        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
+        self._parms["categorical_encoding"] = categorical_encoding
 
 
     @property
-    def build_tree_one_node(self):
+    def export_checkpoints_dir(self):
         """
-        Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.
+        Automatically export generated models to this directory.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``str``.
 
         :examples:
 
-        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> predictors = ["displacement","power","weight","acceleration","year"]
-        >>> cars_if = H2OExtendedIsolationForestEstimator(build_tree_one_node = True,
-        ...                                       seed = 1234)
-        >>> cars_if.train(x = predictors,
-        ...               training_frame = cars)
-        >>> cars_if.model_performance()
+        >>> import tempfile
+        >>> from os import listdir
+        >>> airlines = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip", destination_frame="air.hex")
+        >>> predictors = ["DayofMonth", "DayOfWeek"]
+        >>> checkpoints_dir = tempfile.mkdtemp()
+        >>> air_if = H2OExtendedIsolationForestEstimator(max_depth = 3,
+        ...                                      seed = 1234,
+        ...                                      export_checkpoints_dir = checkpoints_dir)
+        >>> air_if.train(x = predictors,
+        ...              training_frame = airlines)
+        >>> len(listdir(checkpoints_dir))
         """
-        return self._parms.get("build_tree_one_node")
+        return self._parms.get("export_checkpoints_dir")
 
-    @build_tree_one_node.setter
-    def build_tree_one_node(self, build_tree_one_node):
-        assert_is_type(build_tree_one_node, None, bool)
-        self._parms["build_tree_one_node"] = build_tree_one_node
+    @export_checkpoints_dir.setter
+    def export_checkpoints_dir(self, export_checkpoints_dir):
+        assert_is_type(export_checkpoints_dir, None, str)
+        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+    @property
+    def ntrees(self):
+        """
+        Number of Extended Isolation Forest trees.
+
+        Type: ``int``  (default: ``100``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> predictors = titanic.columns
+        >>> tree_num = [20, 50, 80, 110, 140, 170, 200]
+        >>> label = ["20", "50", "80", "110", "140", "170", "200"]
+        >>> for key, num in enumerate(tree_num):
+        ...     titanic_if = H2OExtendedIsolationForestEstimator(ntrees = num,
+        ...                                              seed = 1234)
+        ...     titanic_if.train(x = predictors,
+        ...                      training_frame = titanic) 
+        ...     print(label[key], 'training score', titanic_if.mse(train = True))
+        """
+        return self._parms.get("ntrees")
+
+    @ntrees.setter
+    def ntrees(self, ntrees):
+        assert_is_type(ntrees, None, int)
+        self._parms["ntrees"] = ntrees
 
 
     @property
@@ -370,198 +269,31 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
 
 
     @property
-    def col_sample_rate_change_per_level(self):
+    def seed(self):
         """
-        Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0)
+        Seed for pseudo random number generator (if applicable)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``int``  (default: ``-1``).
 
         :examples:
 
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
-        >>> airlines_if = H2OExtendedIsolationForestEstimator(col_sample_rate_change_per_level = .9,
-        ...                                           seed = 1234)
-        >>> airlines_if.train(x = predictors,
-        ...                   training_frame = airlines)
-        >>> airlines_if.model_performance()
+        >>> isofor_w_seed = H2OExtendedIsolationForestEstimator(seed = 1234) 
+        >>> isofor_w_seed.train(x = predictors,
+        ...                     training_frame = airlines)
+        >>> isofor_wo_seed = H2OExtendedIsolationForestEstimator()
+        >>> isofor_wo_seed.train(x = predictors,
+        ...                      training_frame = airlines)
+        >>> isofor_w_seed.model_performance()
+        >>> isofor_wo_seed.model_performance()
         """
-        return self._parms.get("col_sample_rate_change_per_level")
+        return self._parms.get("seed")
 
-    @col_sample_rate_change_per_level.setter
-    def col_sample_rate_change_per_level(self, col_sample_rate_change_per_level):
-        assert_is_type(col_sample_rate_change_per_level, None, numeric)
-        self._parms["col_sample_rate_change_per_level"] = col_sample_rate_change_per_level
-
-
-    @property
-    def col_sample_rate_per_tree(self):
-        """
-        Column sample rate per tree (from 0.0 to 1.0)
-
-        Type: ``float``  (default: ``1``).
-
-        :examples:
-
-        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
-        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
-        >>> airlines_if = H2OExtendedIsolationForestEstimator(col_sample_rate_per_tree = .7,
-        ...                                           seed = 1234)
-        >>> airlines_if.train(x = predictors,
-        ...                   training_frame = airlines)
-        >>> airlines_if.model_performance()
-        """
-        return self._parms.get("col_sample_rate_per_tree")
-
-    @col_sample_rate_per_tree.setter
-    def col_sample_rate_per_tree(self, col_sample_rate_per_tree):
-        assert_is_type(col_sample_rate_per_tree, None, numeric)
-        self._parms["col_sample_rate_per_tree"] = col_sample_rate_per_tree
-
-
-    @property
-    def categorical_encoding(self):
-        """
-        Encoding scheme for categorical features
-
-        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
-        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
-
-        :examples:
-
-        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
-        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
-        >>> encoding = "one_hot_explicit"
-        >>> airlines_if = H2OExtendedIsolationForestEstimator(categorical_encoding = encoding,
-        ...                                           seed = 1234)
-        >>> airlines_if.train(x = predictors,
-        ...                   training_frame = airlines)
-        >>> airlines_if.model_performance()
-        """
-        return self._parms.get("categorical_encoding")
-
-    @categorical_encoding.setter
-    def categorical_encoding(self, categorical_encoding):
-        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
-        self._parms["categorical_encoding"] = categorical_encoding
-
-
-    @property
-    def stopping_rounds(self):
-        """
-        Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
-        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
-
-        Type: ``int``  (default: ``0``).
-
-        :examples:
-
-        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
-        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
-        >>> airlines_if = H2OExtendedIsolationForestEstimator(stopping_metric = "auto",
-        ...                                           stopping_rounds = 3,
-        ...                                           stopping_tolerance = 1e-2,
-        ...                                           seed = 1234)
-        >>> airlines_if.train(x = predictors,
-        ...                   training_frame = airlines)
-        >>> airlines_if.model_performance()
-        """
-        return self._parms.get("stopping_rounds")
-
-    @stopping_rounds.setter
-    def stopping_rounds(self, stopping_rounds):
-        assert_is_type(stopping_rounds, None, int)
-        self._parms["stopping_rounds"] = stopping_rounds
-
-
-    @property
-    def stopping_metric(self):
-        """
-        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score
-        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
-        client.
-
-        One of: ``"auto"``, ``"anomaly_score"``  (default: ``"auto"``).
-
-        :examples:
-
-        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
-        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
-        >>> airlines_if = H2OExtendedIsolationForestEstimator(stopping_metric = "auto",
-        ...                                           stopping_rounds = 3,
-        ...                                           stopping_tolerance = 1e-2,
-        ...                                           seed = 1234)
-        >>> airlines_if.train(x = predictors,
-        ...                   training_frame = airlines)
-        >>> airlines_if.model_performance()
-        """
-        return self._parms.get("stopping_metric")
-
-    @stopping_metric.setter
-    def stopping_metric(self, stopping_metric):
-        assert_is_type(stopping_metric, None, Enum("auto", "anomaly_score"))
-        self._parms["stopping_metric"] = stopping_metric
-
-
-    @property
-    def stopping_tolerance(self):
-        """
-        Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
-
-        Type: ``float``  (default: ``0.01``).
-
-        :examples:
-
-        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
-        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
-        >>> airlines_if = H2OExtendedIsolationForestEstimator(stopping_metric = "auto",
-        ...                                           stopping_rounds = 3,
-        ...                                           stopping_tolerance = 1e-2,
-        ...                                           seed = 1234)
-        >>> airlines_if.train(x = predictors,
-        ...                   training_frame = airlines)
-        >>> airlines_if.model_performance()
-        """
-        return self._parms.get("stopping_tolerance")
-
-    @stopping_tolerance.setter
-    def stopping_tolerance(self, stopping_tolerance):
-        assert_is_type(stopping_tolerance, None, numeric)
-        self._parms["stopping_tolerance"] = stopping_tolerance
-
-
-    @property
-    def export_checkpoints_dir(self):
-        """
-        Automatically export generated models to this directory.
-
-        Type: ``str``.
-
-        :examples:
-
-        >>> import tempfile
-        >>> from os import listdir
-        >>> airlines = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip", destination_frame="air.hex")
-        >>> predictors = ["DayofMonth", "DayOfWeek"]
-        >>> checkpoints_dir = tempfile.mkdtemp()
-        >>> air_if = H2OExtendedIsolationForestEstimator(max_depth = 3,
-        ...                                      seed = 1234,
-        ...                                      export_checkpoints_dir = checkpoints_dir)
-        >>> air_if.train(x = predictors,
-        ...              training_frame = airlines)
-        >>> len(listdir(checkpoints_dir))
-        """
-        return self._parms.get("export_checkpoints_dir")
-
-    @export_checkpoints_dir.setter
-    def export_checkpoints_dir(self, export_checkpoints_dir):
-        assert_is_type(export_checkpoints_dir, None, str)
-        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+    @seed.setter
+    def seed(self, seed):
+        assert_is_type(seed, None, int)
+        self._parms["seed"] = seed
 
 

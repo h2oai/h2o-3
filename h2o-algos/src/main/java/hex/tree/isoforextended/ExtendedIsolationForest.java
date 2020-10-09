@@ -1,19 +1,14 @@
 package hex.tree.isoforextended;
 
-import hex.FrameSplitter;
+import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.ScoreKeeper;
 import hex.psvm.psvm.MatrixUtils;
-import hex.tree.SharedTree;
-import joptsimple.internal.Strings;
 import jsr166y.CountedCompleter;
 import water.*;
-import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
 
-import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -21,11 +16,12 @@ import java.util.Random;
  *
  * @author Adam Valenta
  */
-public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestModel,
+public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationForestModel,
         ExtendedIsolationForestModel.ExtendedIsolationForestParameters,
         ExtendedIsolationForestModel.ExtendedIsolationForestOutput> {
 
     transient IsolationTree[] _iTrees;
+    transient Random _rand;
 
     // Called from an http request
     public ExtendedIsolationForest(ExtendedIsolationForestModel.ExtendedIsolationForestParameters parms) {
@@ -65,12 +61,6 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
     }
 
     @Override
-    protected double score1(Chunk[] chks, double offset, double weight, double[] fs, int row) {
-        // not used in the current implementation of Extended Isolation Forest
-        throw H2O.unimpl();
-    }
-
-    @Override
     protected Driver trainModelImpl() {
         return new ExtendedIsolationForestDriver();
     }
@@ -80,16 +70,6 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         return new ModelCategory[]{
                 ModelCategory.AnomalyDetection
         };
-    }
-
-    @Override
-    protected ScoreKeeper.ProblemType getProblemType() {
-        return ScoreKeeper.ProblemType.anomaly_detection;
-    }
-
-    @Override
-    public boolean scoreZeroTrees() {
-        return false;
     }
 
     @Override
@@ -107,7 +87,6 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         return false;
     }
 
-    @Override
     protected void addCustomInfo(ExtendedIsolationForestModel.ExtendedIsolationForestOutput out) {
         if (_iTrees != null) {
             out.iTrees = _iTrees;
@@ -117,18 +96,12 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
     private class ExtendedIsolationForestDriver extends Driver {
 
         @Override
-        protected ExtendedIsolationForestModel makeModel(Key<ExtendedIsolationForestModel> modelKey,
-                                                         ExtendedIsolationForestModel.ExtendedIsolationForestParameters parms) {
-            return new ExtendedIsolationForestModel(modelKey, parms, new ExtendedIsolationForestModel.ExtendedIsolationForestOutput(ExtendedIsolationForest.this));
-        }
-
-        @Override
-        protected boolean doOOBScoring() {
-            return true;
-        }
-
-        @Override
-        protected void scoreAndBuildTrees(boolean oob) {
+        public void computeImpl() {
+            _rand = RandomUtils.getRNG(_parms._seed);
+            _iTrees = new IsolationTree[_parms._ntrees];
+            ExtendedIsolationForestModel model = new ExtendedIsolationForestModel(dest(), _parms,
+                    new ExtendedIsolationForestModel.ExtendedIsolationForestOutput(ExtendedIsolationForest.this));
+            model.delete_and_lock(_job);
             IsolationTreeForkJoinTask [] iTreeTasks = new IsolationTreeForkJoinTask[_parms._ntrees];
             for (int t = 0; t < _parms._ntrees; t++) {
                 iTreeTasks[t] = new IsolationTreeForkJoinTask(t);
@@ -137,21 +110,9 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             for (int t = 0; t < _parms._ntrees; t++) {
                 _iTrees[t] = iTreeTasks[t].getResult();
             }
-            addCustomInfo(_model._output);
+            model.unlock(_job);
+            addCustomInfo(model._output);
         }
-
-        @Override
-        protected boolean buildNextKTrees() {
-            // this method is not used in the current implementation
-            // tree building is implemented in scoreAndBuildTrees method
-            return false;
-        }
-
-        @Override
-        protected void initializeModelSpecifics() {
-            _iTrees = new IsolationTree[_parms._ntrees];
-        }
-
     }
 
     /**
@@ -348,14 +309,8 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
                 int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
                 int randomUnit = _rand.nextInt();
 
-                // remove auto generated features
-                byte[] subTypes = ArrayUtils.subarray(_train.types(), 0, _train.numCols() - 4);
-                Vec[] subFrame = ArrayUtils.subarray(_train.vecs(), 0, _train.numCols() - 4);
-                String[] subNames = ArrayUtils.subarray(_train.names(), 0, _train.numCols() - 4);
-                String[][] subDomains = ArrayUtils.subarray2DLazy(_train.domains(), 0, _train.numCols() - 4);
-
                 Frame subSample = new SubSampleTask(_parms._sample_size, _parms._seed + randomUnit)
-                        .doAll(subTypes, subFrame).outputFrame(Key.make(), subNames, subDomains);
+                        .doAll(_train.types(), _train.vecs()).outputFrame(Key.make(), _train.names(), _train.domains());
                 Scope.track(subSample);
 
                 iTree = new IsolationTree(subSample._key, heightLimit, _parms._seed + randomUnit, _parms.extension_level, treeNum);

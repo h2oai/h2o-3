@@ -53,8 +53,6 @@ Defining an Extended Isolation Forest Model
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to -1 (time-based random number).
 
--  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. This value is disabled by default.
-
 -  `sample_size <algo-params/sample_size.html>`__: The number of randomly sampled observations used to train each Extended Isolation Forest tree. This value defaults to 256.
 
 - `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
