@@ -30,7 +30,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                    "learn_rate", "eta", "sample_rate", "subsample", "col_sample_rate", "colsample_bylevel",
                    "col_sample_rate_per_tree", "colsample_bytree", "colsample_bynode", "max_abs_leafnode_pred",
                    "max_delta_step", "monotone_constraints", "interaction_constraints", "score_tree_interval",
-                   "min_split_improvement", "gamma", "nthread", "save_matrix_directory", "build_tree_one_node",
+                   "min_split_improvement", "gamma", "multinomial_auc_type", "nthread", "save_matrix_directory", "build_tree_one_node",
                    "calibrate_model", "calibration_frame", "max_bins", "max_leaves", "sample_type", "normalize_type",
                    "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy", "booster", "reg_lambda",
                    "reg_alpha", "dmatrix_type", "backend", "gpu_id", "gainslift_bins"}
@@ -1514,6 +1514,22 @@ class H2OXGBoostEstimator(H2OEstimator):
     def gamma(self, gamma):
         assert_is_type(gamma, None, float)
         self._parms["gamma"] = gamma
+
+
+    @property
+    def multinomial_auc_type(self):
+        """
+        Set default multinomial AUC type.
+
+        One of: ``"auto"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``  (default:
+        ``"auto"``).
+        """
+        return self._parms.get("multinomial_auc_type")
+
+    @multinomial_auc_type.setter
+    def multinomial_auc_type(self, multinomial_auc_type):
+        assert_is_type(multinomial_auc_type, None, Enum("auto", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
+        self._parms["multinomial_auc_type"] = multinomial_auc_type
 
 
     @property

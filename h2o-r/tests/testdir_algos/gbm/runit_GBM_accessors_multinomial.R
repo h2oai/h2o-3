@@ -66,7 +66,13 @@ test.gbm.mult.accessors <- function() {
   aucpr2 <- h2o.aucpr(iris.gbm@model$training_metrics)  
   print(aucpr1)
   print(aucpr2)
-  expect_equal(aucpr1, aucpr2)  
+  expect_equal(aucpr1, aucpr2)
+    
+  Log.info("Multinomial AUC table")  
+  print(h2o.multinomial_auc_table(iris.gbm@model$training_metrics))
+
+  Log.info("Multinomial PR AUC table")
+  print(h2o.multinomial_aucpr_table(iris.gbm@model$training_metrics))
 }
 
 doTest("Testing model accessors for GBM", test.gbm.mult.accessors)
