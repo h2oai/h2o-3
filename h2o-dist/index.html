@@ -681,11 +681,13 @@ dependencies {</br>
                 <h2>Setup H<sub>2</sub>O on Kubernetes using Helm</h2>
                     <p><a href="https://helm.sh/" target="_blank">Helm</a> can be used to deploy H2O into a kubernetes cluster. Helm requires the KUBECONFIG environment variable to be set up properly, or stating the kubeconfig destination explicitly. Please refer to Helm's documentation
                     for further information.</p>
-                <p class="terminal" id="to_copy11">
+                <pre>
+                    <p class="terminal" id="to_copy11">
 helm repo add h2o https://charts.h2o.ai
 helm install basic-h2o h2o/h2o
 helm test basic-h2o
-                </p>
+                    </p>
+                </pre>
 
                 <p>There are various settings and modifications available. To inspect the configuration options available, use the  "helm inspect values h2o/h2o --version SUBST_PROJECT_VERSION" command.</p>
                 
