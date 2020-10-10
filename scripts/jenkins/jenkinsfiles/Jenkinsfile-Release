@@ -257,9 +257,7 @@ try {
                             sh """
                                 cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
                                 sed -i "s/name: h2o-3/name: ${CHART_NAME}/" Chart.yaml
-                                sed -i "s/version: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${VERSION}/" Chart.yaml
-                                sed -i "s/appVersion: [0-9]*\\.[0-9]*\\.[0-9]*/version: ${VERSION}/" Chart.yaml
-                                helm package .
+                                helm package . --app-version ${VERSION} --version ${VERSION}
                                 mkdir h2o-3
                                 mv ${CHART_NAME}-${VERSION}.tgz h2o-3/
                                 helm repo index . --merge index.yaml
