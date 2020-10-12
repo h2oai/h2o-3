@@ -1135,7 +1135,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     String[] _random_column_names;
     public long _training_time_ms;
     int _lambda_array_size; // store number of lambdas to iterate over
-    public int _lambda_1se = -1; // lambda_best+sd(lambda) submodel index; applicable if running lambda search with cv 
+    public int _lambda_1se = -1; // lambda_best+sd(lambda) submodel index; applicable if running lambda search with cv
+    public double _lambda_min = -1; // starting lambda value when lambda search is enabled
+    public double _lambda_max = -1; // minimum lambda value calculated when lambda search is enabled
     public int _selected_lambda_idx; // lambda index with best deviance
     public int _selected_alpha_idx;     // alpha index with best deviance
     public int _selected_submodel_idx;  // submodel index with best deviance
@@ -1185,6 +1187,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _multinomial;
     public boolean _ordinal;
 
+    public void setLambdas(GLMParameters parms) {
+      if (parms._lambda_search) {
+        _lambda_max = parms._lambda[0];
+        _lambda_min = parms._lambda[parms._lambda.length-1];
+      }
+    }
+    
     public int rank() { return _submodels[_selected_submodel_idx].rank();}
 
     public boolean isStandardized() {
