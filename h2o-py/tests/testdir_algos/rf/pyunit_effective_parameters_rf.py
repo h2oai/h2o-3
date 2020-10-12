@@ -35,7 +35,7 @@ def test_random_forrest_effective_parameters():
 
     assert rf1.parms['stopping_metric']['input_value'] == 'AUTO'
     assert rf1.parms['stopping_metric']['actual_value'] ==  rf2.parms['stopping_metric']['actual_value']
-    assert rf1.logloss() == rf2.logloss()
+    assert pyunit_utils.equals(rf1.logloss(), rf2.logloss())
     assert rf1.parms['distribution']['input_value'] == 'bernoulli'
     assert rf1.parms['distribution']['actual_value'] == rf2.parms['distribution']['actual_value']
     assert rf1.parms['categorical_encoding']['input_value'] == 'AUTO'
@@ -54,7 +54,7 @@ def test_random_forrest_effective_parameters():
 
     assert rf1.parms['stopping_metric']['input_value'] == 'AUTO'
     assert rf1.parms['stopping_metric']['actual_value'] is None
-    assert rf1.logloss() == rf2.logloss()
+    assert pyunit_utils.equals(rf1.logloss(), rf2.logloss())
     assert rf1.parms['distribution']['input_value'] == 'bernoulli'
     assert rf1.parms['distribution']['actual_value'] == rf2.parms['distribution']['actual_value']
     assert rf1.parms['fold_assignment']['input_value'] == 'AUTO'
@@ -75,7 +75,7 @@ def test_random_forrest_effective_parameters():
 
         assert rf1.parms['stopping_metric']['input_value'] == 'AUTO'
         assert rf1.parms['stopping_metric']['actual_value'] == 'AUTO'
-        assert rf1.logloss() == rf2.logloss()
+        assert pyunit_utils.equals(rf1.logloss(), rf2.logloss())
         assert rf1.parms['distribution']['input_value'] == 'bernoulli'
         assert rf1.parms['distribution']['actual_value'] == rf2.parms['distribution']['actual_value']
         assert rf1.parms['fold_assignment']['input_value'] == 'AUTO'

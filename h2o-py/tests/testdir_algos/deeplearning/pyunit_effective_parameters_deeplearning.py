@@ -32,7 +32,7 @@ def test_deep_learning_effective_parameters():
 
     assert dl1.parms['distribution']['input_value'] == 'AUTO'
     assert dl1.parms['distribution']['actual_value'] == dl2.parms['distribution']['actual_value']
-    assert dl1.logloss() == dl2.logloss()
+    assert pyunit_utils.equals(dl1.logloss(), dl2.logloss())
     assert dl1.parms['stopping_metric']['input_value'] == 'AUTO'
     assert dl1.parms['stopping_metric']['actual_value'] == dl2.parms['stopping_metric']['actual_value']
     assert dl1.parms['categorical_encoding']['input_value'] == 'AUTO'
@@ -53,7 +53,7 @@ def test_deep_learning_effective_parameters():
 
         assert dl1.parms['distribution']['input_value'] == 'AUTO'
         assert dl1.parms['distribution']['actual_value'] == 'AUTO'
-        assert dl1.logloss() == dl2.logloss()
+        assert pyunit_utils.equals(dl1.logloss(), dl2.logloss())
         assert dl1.parms['stopping_metric']['input_value'] == 'AUTO'
         assert dl1.parms['stopping_metric']['actual_value'] == 'AUTO'
         assert dl1.parms['categorical_encoding']['input_value'] == 'AUTO'
@@ -72,7 +72,7 @@ def test_deep_learning_effective_parameters():
 
     assert dl1.parms['distribution']['input_value'] == 'AUTO'
     assert dl1.parms['distribution']['actual_value'] == dl2.parms['distribution']['actual_value']
-    assert dl1.logloss() == dl2.logloss()
+    assert pyunit_utils.equals(dl1.logloss(), dl2.logloss())
     assert dl1.parms['stopping_metric']['input_value'] == 'AUTO'
     assert dl1.parms['stopping_metric']['actual_value'] is None
     assert dl1.parms['categorical_encoding']['input_value'] == 'AUTO'
