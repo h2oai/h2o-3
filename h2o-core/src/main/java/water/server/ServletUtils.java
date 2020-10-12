@@ -41,6 +41,7 @@ public class ServletUtils {
    * Sets header that allows usage in i-frame. Off by default for security reasons.
    */
   private static final boolean ENABLE_XFRAME_SAMEORIGIN = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "enable.xframe.sameorigin");
+  private static final boolean ENABLE_XFRAME_ALLOW = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "enable.xframe.allow");
 
   private static final String TRACE_METHOD = "TRACE";
 
@@ -219,8 +220,12 @@ public class ServletUtils {
     response.setHeader("X-h2o-cluster-id", Long.toString(H2O.CLUSTER_ID));
     response.setHeader("X-h2o-cluster-good", Boolean.toString(H2O.CLOUD.healthy()));
     // Security headers
-    if (ENABLE_XFRAME_SAMEORIGIN) {
-      response.setHeader("X-Frame-Options", "sameorigin");
+    if (ENABLE_XFRAME_SAMEORIGIN || ENABLE_XFRAME_ALLOW) {
+      if (ENABLE_XFRAME_ALLOW) {
+        // don't set X-Frame-Options - same as 'allow'
+      } else {
+        response.setHeader("X-Frame-Options", "sameorigin");
+      }
     } else {
       response.setHeader("X-Frame-Options", "deny");
     }
