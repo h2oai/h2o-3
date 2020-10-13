@@ -306,37 +306,36 @@ public class XGBoostUtilsTest extends TestUtil {
         if (frame != null) frame.remove();
       }
     }
-    
+
     @Test
-    public void testSumChunksLength(){
-      try{
+    public void testSumChunksLength() {
+      try {
         Scope.enter();
-        final Frame frame = new TestFrameBuilder()
-                .withColNames("C1", "weights")
-                .withVecTypes(Vec.T_NUM, Vec.T_NUM)
-                .withDataForCol(0, ard(1, 0, 0, 1))
-                .withDataForCol(1, ard(1, 1, 1, 0))
-                .withChunkLayout(2, 2)
-                .build();
-        
-        final Vec dataVec = frame.vec("C1");
-        final Vec weightsVec = frame.vec("weights");
+
+        final Vec dataVec = Vec.makeCon(0d, 1000);
         final int[] localChunkIds = VecUtils.getLocalChunkIds(dataVec);
         int[] localChunksLengths = new int[localChunkIds.length];
 
         // With weights, all rows should be counted
         long nonZeroRows = XGBoostUtils.sumChunksLength(localChunkIds, dataVec, Optional.empty(), localChunksLengths);
-        assertEquals(4, nonZeroRows);
+        assertEquals(dataVec.length(), nonZeroRows);
 
-        // With weights, all rows should be counted
+        // With all weights as 1, all rows should be counted
+        final Vec allWeightsOne = Vec.makeCon(1d, 1000);
         localChunksLengths = new int[localChunksLengths.length];
-        long weightedNonZeroRows = XGBoostUtils.sumChunksLength(localChunkIds, dataVec, Optional.of(weightsVec), localChunksLengths);
-        assertEquals(3, weightedNonZeroRows);
+        long weightedNonZeroRows = XGBoostUtils.sumChunksLength(localChunkIds, dataVec, Optional.of(allWeightsOne), localChunksLengths);
+        assertEquals(dataVec.length(), weightedNonZeroRows);
+
+        // With all weights as zero, the resulting length should be 0
+        final Vec allWeightsAsZero = Vec.makeCon(0d, 1000);
+        localChunksLengths = new int[localChunksLengths.length];
+        long weightedNzRows = XGBoostUtils.sumChunksLength(localChunkIds, dataVec, Optional.of(allWeightsAsZero), localChunksLengths);
+        assertEquals(0, weightedNzRows);
 
       } finally {
         Scope.exit();
       }
-      
+
     }
 
     /**
