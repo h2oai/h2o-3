@@ -1359,9 +1359,9 @@ public class TestUtil extends Iced {
    * @param randomSeed Seed for the random generator (for reproducibility)
    * @return An instance of {@link Vec} with binary weights (either 0.0D or 1.0D, nothing in between).
    */
-  public static Vec createRandomBinaryWeightsVec(final long len, final int randomSeed) {
+  public static Vec createRandomBinaryWeightsVec(final long len, final long randomSeed) {
     final Vec weightsVec = Vec.makeZero(len, Vec.T_NUM);
-    final Random random = new RandomUtils.H2ORandomRNG(randomSeed);
+    final Random random = RandomUtils.getRNG(randomSeed);
     for (int i = 0; i < weightsVec.length(); i++) {
       weightsVec.set(i, random.nextBoolean() ? 1.0D : 0D);
     }
