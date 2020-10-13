@@ -4357,12 +4357,3 @@ def assertCoefEqual(regCoeff, coeff, coeffClassSet, tol=1e-6):
         diff = abs(val1-val2)
         print("val1: {0}, val2: {1}, tol: {2}".format(val1, val2, tol))
         assert diff < tol, "diff {0} exceeds tolerance {1}.".format(diff, tol)
-
-def equals(x, y, tol=1e-6):
-    if isinstance(x, (int, float)) & isinstance(y, (int, float)):
-        if abs(x-y) > tol:
-            assert False, "Value {0} and value {1} do not agree.".format(x, y)
-        else:
-            return True
-    else:
-        assert False, "Invalid input type. Use numeric input please."
