@@ -17,6 +17,7 @@ import org.junit.runners.Parameterized;
 import water.MRTask;
 import water.Scope;
 import water.TestUtil;
+import water.fvec.CXIChunk;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
@@ -24,6 +25,7 @@ import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.VecUtils;
 
+import javax.swing.text.html.Option;
 import java.io.*;
 import java.net.URL;
 import java.security.SecureRandom;
@@ -313,10 +315,11 @@ public class XGBoostUtilsTest extends TestUtil {
         Scope.enter();
 
         final Vec dataVec = Vec.makeCon(0d, 1000);
+        dataVec.set(0, 1);
         final int[] localChunkIds = VecUtils.getLocalChunkIds(dataVec);
         int[] localChunksLengths = new int[localChunkIds.length];
 
-        // With weights, all rows should be counted
+        // Without weights, all rows should be counted
         long nonZeroRows = XGBoostUtils.sumChunksLength(localChunkIds, dataVec, Optional.empty(), localChunksLengths);
         assertEquals(dataVec.length(), nonZeroRows);
 
@@ -325,12 +328,16 @@ public class XGBoostUtilsTest extends TestUtil {
         localChunksLengths = new int[localChunksLengths.length];
         long weightedNonZeroRows = XGBoostUtils.sumChunksLength(localChunkIds, dataVec, Optional.of(allWeightsOne), localChunksLengths);
         assertEquals(dataVec.length(), weightedNonZeroRows);
-
-        // With all weights as zero, the resulting length should be 0
-        final Vec allWeightsAsZero = Vec.makeCon(0d, 1000);
+        
+        // Mixed weights - only the non-zero weight rows should be counted
+        final Vec mixedWeights = Vec.makeCon(0d, 1000);
+        mixedWeights.set(10, 1);
+        // First chunk is not constant - it has one non-zero value. Therefore it is zero-sparse -> CXIChunk
+        // The tested code uses `nextNz` method call - to test these calls are used correctly, zero-sparse chunk is required, as it is the only one with implementation that does not iterate over all chunk values.
+        assertTrue(mixedWeights.chunkForChunkIdx(0) instanceof CXIChunk); 
         localChunksLengths = new int[localChunksLengths.length];
-        long weightedNzRows = XGBoostUtils.sumChunksLength(localChunkIds, dataVec, Optional.of(allWeightsAsZero), localChunksLengths);
-        assertEquals(0, weightedNzRows);
+        long weightedNzRows = XGBoostUtils.sumChunksLength(localChunkIds, dataVec, Optional.of(mixedWeights), localChunksLengths);
+        assertEquals(1, weightedNzRows);
 
       } finally {
         Scope.exit();
