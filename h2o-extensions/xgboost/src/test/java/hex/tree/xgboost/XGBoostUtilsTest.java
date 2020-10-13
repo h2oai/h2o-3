@@ -345,6 +345,26 @@ public class XGBoostUtilsTest extends TestUtil {
 
     }
 
+    @Test
+    public void testSumChunksLengthEmptyChunks() {
+      try {
+        Scope.enter();
+
+        final Vec data = Vec.makeCon(0d, 0);
+        final Vec weights = Vec.makeCon(0d, 0);
+        final int[] localChunkIds = VecUtils.getLocalChunkIds(data);
+        int[] localChunksLengths = new int[localChunkIds.length];
+
+        // Without weights, all rows should be counted
+        long nonZeroRows = XGBoostUtils.sumChunksLength(localChunkIds, data, Optional.of(weights), localChunksLengths);
+        assertEquals(data.length(), nonZeroRows);
+        
+      } finally {
+        Scope.exit();
+      }
+
+    }
+
     /**
      * Tests if dimensions of internal array representation of the data are handled correctly
      */
