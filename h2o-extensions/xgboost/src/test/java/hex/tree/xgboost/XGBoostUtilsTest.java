@@ -17,10 +17,7 @@ import org.junit.runners.Parameterized;
 import water.MRTask;
 import water.Scope;
 import water.TestUtil;
-import water.fvec.CXIChunk;
-import water.fvec.Frame;
-import water.fvec.TestFrameBuilder;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.VecUtils;
@@ -351,7 +348,7 @@ public class XGBoostUtilsTest extends TestUtil {
         Scope.enter();
 
         final Vec data = Vec.makeCon(0d, 0);
-        final Vec weights = Vec.makeCon(0d, 0);
+        final Vec weights = data.makeVolatileDoubles(1)[0];
         final int[] localChunkIds = VecUtils.getLocalChunkIds(data);
         int[] localChunksLengths = new int[localChunkIds.length];
 
