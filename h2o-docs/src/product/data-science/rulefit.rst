@@ -35,6 +35,8 @@ Defining a RuleFit Model (Beta API)
 
 - **model_type**: Specify the type of base learners in the ensemble. Must be one of: "rules_and_linear", "rules", or "linear". Defaults to "rules_and_linear".
 
+- **rule_generation_ntrees**: Specify the number of trees for tree ensemble. Defaults to 50.
+
 - `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
 
 	**Python only:** To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``.
