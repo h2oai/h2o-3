@@ -130,6 +130,7 @@ private Closure makeStage(final pipelineContext, String target, final boolean us
             buildImageStageName = "$buildImageStageName GPU"
         }
         buildSummary.stageWithSummary(buildImageStageName) {
+            final String noCache = params.noCache ? "--no-cache" : ""
             node (DEFAULT_LABEL) {
                 buildSummary.refreshStage(buildImageStageName)
                 dir (target) {
@@ -143,7 +144,7 @@ private Closure makeStage(final pipelineContext, String target, final boolean us
                                     GRADLE_VERSION=${gradleVersion} \
                                     GPU=${useGpu} \
                                     PUSH=${params.publish} \
-                                    NO_CACHE=${params.noCache} \
+                                    NO_CACHE=${noCache} \
                                     ${target}
                             """
                 }
