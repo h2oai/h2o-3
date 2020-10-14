@@ -167,19 +167,22 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
     }
 
     private static Vec durations(Vec startVec, Vec stopVec) {
-      Vec vec = null == startVec ? stopVec.makeZero() : startVec;
-      Frame fr1 = new Frame(new String[]{"start", "stop"}, new Vec[]{vec, stopVec});
+      if (null == startVec) {
+        return stopVec;
+      }
 
-      Frame frame = new MRTask() {
+      final Frame frame = new MRTask() {
         @Override
         public void map(Chunk c0, Chunk c1, NewChunk nc) {
           for (int i = 0; i < c0._len; i++)
             nc.addNum(c1.atd(i) - c0.atd(i));
         }
-      }.doAll(1, Vec.T_NUM, fr1)
-              .outputFrame(new String[]{"durations"}, null);
-      
-      return frame.vec(0);
+      }.doAll(Vec.T_NUM, startVec, stopVec)
+       .outputFrame(new String[]{"durations"}, null);
+
+      final Vec result = frame.vec(0);
+      frame.delete(false);
+      return result;
     }
 
     private static Stats concordanceStats(Frame fr){
@@ -241,7 +244,7 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
                                         .doAll(fr.types(), fr)
                                         .outputFrame(fr.names(), fr.domains());
 
-      withoutNas.replace(1, withoutNas.vec("event").toNumericVec());
+      withoutNas.replace(1, withoutNas.vec("event"));
 
       return withoutNas;
     }
