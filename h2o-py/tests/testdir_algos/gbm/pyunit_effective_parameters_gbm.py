@@ -4,6 +4,7 @@ import h2o
 sys.path.insert(1,"../../../")
 from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
+import numpy as np
 
 #testing default setup of following parameters:
 #distribution (available in Deep Learning, XGBoost, GBM):
@@ -28,7 +29,7 @@ def test_gbm_effective_parameters():
                                         histogram_type="UniformAdaptive", categorical_encoding="Enum")
     gbm2.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
 
-    assert pyunit_utils.equals(gbm1.logloss(), gbm2.logloss())
+    np.testing.assert_almost_equal(gbm1.logloss(), gbm2.logloss())
     assert gbm1.parms['distribution']['input_value'] == 'AUTO'
     assert gbm1.parms['distribution']['actual_value'] == gbm2.parms['distribution']['actual_value']
     assert gbm1.parms['stopping_metric']['input_value'] == 'AUTO'
@@ -45,7 +46,7 @@ def test_gbm_effective_parameters():
                                         histogram_type="UniformAdaptive", categorical_encoding="Enum")
     gbm2.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
 
-    assert pyunit_utils.equals(gbm1.logloss(), gbm2.logloss())
+    np.testing.assert_almost_equal(gbm1.logloss(), gbm2.logloss())
     assert gbm1.parms['distribution']['input_value'] == 'AUTO'
     assert gbm1.parms['distribution']['actual_value'] == gbm2.parms['distribution']['actual_value']
     assert gbm1.parms['stopping_metric']['input_value'] == 'AUTO'
@@ -67,7 +68,7 @@ def test_gbm_effective_parameters():
                                     histogram_type="UniformAdaptive", categorical_encoding="Enum")
         gbm2.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
 
-        assert pyunit_utils.equals(gbm1.logloss(), gbm2.logloss())
+        np.testing.assert_almost_equal(gbm1.logloss(), gbm2.logloss())
         assert gbm1.parms['distribution']['input_value'] == 'AUTO'
         # distribution value was being set before
         assert gbm1.parms['distribution']['actual_value'] == gbm2.parms['distribution']['actual_value']

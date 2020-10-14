@@ -6,6 +6,7 @@ import h2o
 from tests import pyunit_utils
 import tests
 from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+import numpy as np
 
 #testing default setup of following parameters:
 #distribution (available in Deep Learning, XGBoost, GBM):
@@ -32,7 +33,7 @@ def test_deep_learning_effective_parameters():
 
     assert dl1.parms['distribution']['input_value'] == 'AUTO'
     assert dl1.parms['distribution']['actual_value'] == dl2.parms['distribution']['actual_value']
-    assert pyunit_utils.equals(dl1.logloss(), dl2.logloss())
+    np.testing.assert_almost_equal(dl1.logloss(), dl2.logloss())
     assert dl1.parms['stopping_metric']['input_value'] == 'AUTO'
     assert dl1.parms['stopping_metric']['actual_value'] == dl2.parms['stopping_metric']['actual_value']
     assert dl1.parms['categorical_encoding']['input_value'] == 'AUTO'
@@ -53,7 +54,7 @@ def test_deep_learning_effective_parameters():
 
         assert dl1.parms['distribution']['input_value'] == 'AUTO'
         assert dl1.parms['distribution']['actual_value'] == 'AUTO'
-        assert pyunit_utils.equals(dl1.logloss(), dl2.logloss())
+        np.testing.assert_almost_equal(dl1.logloss(), dl2.logloss())
         assert dl1.parms['stopping_metric']['input_value'] == 'AUTO'
         assert dl1.parms['stopping_metric']['actual_value'] == 'AUTO'
         assert dl1.parms['categorical_encoding']['input_value'] == 'AUTO'
@@ -72,7 +73,7 @@ def test_deep_learning_effective_parameters():
 
     assert dl1.parms['distribution']['input_value'] == 'AUTO'
     assert dl1.parms['distribution']['actual_value'] == dl2.parms['distribution']['actual_value']
-    assert pyunit_utils.equals(dl1.logloss(), dl2.logloss())
+    np.testing.assert_almost_equal(dl1.logloss(), dl2.logloss())
     assert dl1.parms['stopping_metric']['input_value'] == 'AUTO'
     assert dl1.parms['stopping_metric']['actual_value'] is None
     assert dl1.parms['categorical_encoding']['input_value'] == 'AUTO'
