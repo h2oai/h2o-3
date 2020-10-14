@@ -114,11 +114,13 @@ public class XGBoostUtils {
      */
     public static long sumChunksLength(int[] chunkIds, Vec vec, Optional<Vec> weightsVector, int[] chunkLengths) {
         assert chunkLengths.length == chunkIds.length;
-        
         for (int i = 0; i < chunkIds.length; i++) {
             final int chunk = chunkIds[i];
             if (weightsVector.isPresent()) {
                 final Chunk weightVecChunk = weightsVector.get().chunkForChunkIdx(chunk);
+                assert weightVecChunk.len() == vec.chunkLen(chunk); // Chunk layout of both vectors must be the same
+                if (weightVecChunk.len() == 0) continue;
+
                 int nzIndex = 0;
                 do {
                     if (weightVecChunk.atd(nzIndex) != 0) chunkLengths[i]++;
