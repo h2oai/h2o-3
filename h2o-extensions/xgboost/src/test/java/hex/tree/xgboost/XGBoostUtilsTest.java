@@ -328,13 +328,26 @@ public class XGBoostUtilsTest extends TestUtil {
         
         // Mixed weights - only the non-zero weight rows should be counted
         final Vec mixedWeights = Vec.makeCon(0d, 1000);
-        mixedWeights.set(10, 1);
+        for (int i = 0; i < 100; i++) {
+          mixedWeights.set(i * 10, 1);
+        }
         // First chunk is not constant - it has one non-zero value. Therefore it is zero-sparse -> CXIChunk
         // The tested code uses `nextNz` method call - to test these calls are used correctly, zero-sparse chunk is required, as it is the only one with implementation that does not iterate over all chunk values.
-        assertTrue(mixedWeights.chunkForChunkIdx(0) instanceof CXIChunk); 
+        assertTrue(mixedWeights.chunkForChunkIdx(0) instanceof CXIChunk);
         localChunksLengths = new int[localChunksLengths.length];
         long weightedNzRows = XGBoostUtils.sumChunksLength(localChunkIds, dataVec, Optional.of(mixedWeights), localChunksLengths);
-        assertEquals(1, weightedNzRows);
+        assertEquals(100, weightedNzRows);
+
+
+        // Mixed weights - volatile vec
+        final Vec volatileWeights = mixedWeights.makeVolatileDoubles(1)[0];
+        for (int i = 0; i < volatileWeights.length(); i++) {
+          assertEquals(0,volatileWeights.at(i), 0);
+        }
+        assertTrue(volatileWeights.chunkForChunkIdx(0) instanceof C8DVolatileChunk);
+        localChunksLengths = new int[localChunksLengths.length];
+        long weightedNzRowsVolatile = XGBoostUtils.sumChunksLength(localChunkIds, dataVec, Optional.of(volatileWeights), localChunksLengths);
+        assertEquals(0, weightedNzRowsVolatile);
 
       } finally {
         Scope.exit();
