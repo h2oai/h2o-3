@@ -257,7 +257,6 @@ Random Grid Search Examples
 
    .. code-tab:: python
 
-
     # Use same data as previous example
 
     # GBM hyperparameters
