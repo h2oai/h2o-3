@@ -480,7 +480,8 @@ EOF
                                                 cd ${env.BUILD_NUMBER_DIR}/h2o-py/build/main/conda
                                                 # Create conda package for current platform
                                                 conda config --append channels conda-forge
-                                                conda build h2o --output-folder "." --no-anaconda-upload
+                                                conda build h2o --output-folder "." --no-anaconda-upload || find /home/jenkins/conda-bld/ > files 
+                                                cat files
 
                                                 s3cmd --acl-public put noarch/* ${condaS3Dir}/noarch/
 
