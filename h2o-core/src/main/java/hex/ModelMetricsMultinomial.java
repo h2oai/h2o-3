@@ -18,20 +18,15 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   public final ConfusionMatrix _cm;
   public final double _logloss;
   public double _mean_per_class_error;
-  public final PairwiseAUC[] _ovo_aucs;
-  public final AUC2[] _ovr_aucs;
-  public final MultinomialAucType _default_auc_type;
+  public final MultinomialAUC _auc;
   
-  public ModelMetricsMultinomial(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma, ConfusionMatrix cm, float[] hr, double logloss, AUC2[] ovrAucs, PairwiseAUC[] ovoAucs, CustomMetric customMetric) {
+  public ModelMetricsMultinomial(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma, ConfusionMatrix cm, float[] hr, double logloss, MultinomialAUC auc, CustomMetric customMetric) {
     super(model, frame, nobs, mse, domain, sigma, customMetric);
     _cm = cm;
     _hit_ratios = hr;
     _logloss = logloss;
     _mean_per_class_error = cm==null || cm.tooLarge() ? Double.NaN : cm.mean_per_class_error();
-    _ovr_aucs = ovrAucs;
-    _ovo_aucs = ovoAucs;
-    _default_auc_type = model._parms._multinomial_auc_type;
-    
+    _auc = auc;
   }
 
   @Override
@@ -40,20 +35,19 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     sb.append(super.toString());
     sb.append(" logloss: " + (float)_logloss + "\n");
     sb.append(" mean_per_class_error: " + (float)_mean_per_class_error + "\n");
-    sb.append(" hit ratios: " + Arrays.toString(_hit_ratios) + "\n");   
-    for(int i = 0; i< _ovr_aucs.length; i++) {
-      sb.append(" "+_domain[i]+" vs. Rest AUC "+_ovr_aucs[i]._auc);
+    sb.append(" hit ratios: " + Arrays.toString(_hit_ratios) + "\n");
+    sb.append(" AUC: "+auc()+ "\n");
+    sb.append(" auc_pr: "+ pr_auc()+ "\n");
+    if(_domain.length <= 20) {
+        sb.append(" AUC table: " + _auc.getAucTable());
+    } else {
+        sb.append(" AUC table: too large to print.\n");
     }
-    for(int i = 0; i< _ovr_aucs.length; i++) {
-      sb.append(" "+_domain[i]+" vs. Rest PR AUC "+_ovr_aucs[i]._pr_auc);
+    if(_domain.length <= 20) {
+        sb.append(" auc_pr table: " + _auc.getAucPrTable());
+    } else {
+        sb.append(" auc_pr table: too large to print.\n");
     }
-    for(int i = 0; i< _ovo_aucs.length; i++){
-      sb.append(" One vs. One "+ _ovo_aucs[i].getAucString()+ "\n");
-    }
-    for(int i = 0; i< _ovo_aucs.length; i++){
-      sb.append(" One vs. One "+ _ovo_aucs[i].getPrAucString()+ "\n");
-    }
-    
     if (cm() != null) {
       if (cm().nclasses() <= 20)
         sb.append(" CM: " + cm().toASCII());
@@ -69,70 +63,11 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   @Override public float[] hr() { return _hit_ratios; }
   
   public double auc() {
-    switch (_default_auc_type) {
-      case MACRO_OVR:
-        return getOvrMacroAuc(false);
-      case MACRO_OVO:
-        return getOvoMacroAuc(false);
-      case WEIGHTED_OVO:
-        return getOvoWeightedAuc(false);
-      default:
-        return getOvrWeightedAuc(false);
-    }
+    return _auc.auc();
   }
 
   public double pr_auc() {
-    switch (_default_auc_type) {
-      case MACRO_OVR:
-        return getOvrMacroAuc(true);
-      case MACRO_OVO:
-        return getOvoMacroAuc(true);
-      case WEIGHTED_OVO:
-        return getOvoWeightedAuc(true);
-      default:
-        return getOvrWeightedAuc(true);
-    }
-  }
-  
-  public double getOvrMacroAuc(boolean isPr){
-    double macroAuc = 0;
-    for(AUC2 ovrAuc : _ovr_aucs){
-      macroAuc += isPr ? ovrAuc._pr_auc : ovrAuc._auc;
-    }
-    return macroAuc/_ovr_aucs.length;
-  }
-
-  public double getOvrWeightedAuc(boolean isPr){
-    double weightedAuc = 0;
-    double sumWeights = 0;
-    for(AUC2 ovrAuc : _ovr_aucs){
-      int maxIndex = ovrAuc._max_idx;
-      double tp = 0;
-      if(maxIndex != -1){
-        tp = ovrAuc.tp(maxIndex);
-      }
-      sumWeights += tp;
-      weightedAuc += isPr ? ovrAuc._pr_auc * tp : ovrAuc._auc * tp;
-    }
-    return weightedAuc/sumWeights;
-  }
-  
-  public double getOvoMacroAuc(boolean isPr){
-    double macroAuc = 0;
-    for(PairwiseAUC ovoAuc : _ovo_aucs){
-      macroAuc += isPr ? ovoAuc.getPrAuc() : ovoAuc.getAuc();
-    }
-    return macroAuc/_ovo_aucs.length;
-  }
-
-  public double getOvoWeightedAuc(boolean isPr){
-    double weightedAuc = 0;
-    double sumWeights = 0;
-    for(PairwiseAUC ovoAuc : _ovo_aucs){
-      weightedAuc += isPr ? ovoAuc.getWeightedPrAuc() : ovoAuc.getWeightedAuc();
-      sumWeights += ovoAuc.getSumTp();
-    }
-    return weightedAuc/sumWeights;
+    return _auc.pr_auc();
   }
 
   public static ModelMetricsMultinomial getFromDKV(Model model, Frame frame) {
@@ -183,57 +118,6 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     TwoDimTable table = new TwoDimTable(tableHeader, null/*tableDescription*/, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
     for (int k=0; k<hits.length; ++k)
       table.set(k, 0, hits[k]);
-    return table;
-  }
-  
-  
-
-  public static TwoDimTable getAucsTable(AUC2[] ovrAucs, PairwiseAUC[] ovoAucs, String[] domains, boolean isPr) {
-    String metric = isPr ? "PR AUC" : "AUC";
-    String tableHeader = "Multinomial "+metric+" values";
-    int rows = ovrAucs.length + ovoAucs.length + 4 /*2 + 2 weighted aucs*/;
-    String[] rowHeaders = new String[rows];
-    for(int i = 0; i < ovrAucs.length; i++)
-      rowHeaders[i] = domains[i]+" vs Rest";
-    rowHeaders[ovrAucs.length] = "Macro OVR";
-    rowHeaders[ovrAucs.length + 1] = "Weighted OVR";
-    for(int i = 0; i < ovoAucs.length; i++)
-      rowHeaders[ovrAucs.length+2+i] = ovoAucs[i].getPairwiseDomainsString();
-    rowHeaders[rows - 2] = "Macro OVR";
-    rowHeaders[rows - 1] = "Weighted OVR";
-    String[] colHeaders = new String[]{"First class domain", "Second class domain", metric};
-    String[] colTypes = new String[]{"String", "String", "double"};
-    String[] colFormats = new String[]{"%s", "%s", "%d"};
-    String colHeaderForRowHeaders = "Type";
-    TwoDimTable table = new TwoDimTable(tableHeader, null, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
-    double macroOvr = 0, weightedOvr = 0, macroOvo = 0, weightedOvo = 0;
-    double sumWeights = 0;
-    for(int i = 0; i < ovrAucs.length; i++){
-      AUC2 auc = ovrAucs[i];
-      double aucValue = isPr ? auc._pr_auc : auc._auc;
-      table.set(i, 0, domains[i]);
-      table.set(i, 2, aucValue);
-      macroOvr += aucValue;
-      double weight = auc._max_idx != -1 ? auc.tp(auc._max_idx) : 0;
-      weightedOvr += aucValue * weight;
-      sumWeights += weight;
-    }
-    table.set(ovrAucs.length, 2, macroOvr/ovrAucs.length);
-    table.set(ovrAucs.length + 1, 2, weightedOvr/sumWeights);
-    sumWeights = 0;
-    for(int i = 0; i < ovoAucs.length; i++) {
-      PairwiseAUC auc = ovoAucs[i];
-      double aucValue = isPr ? auc.getPrAuc() : auc.getAuc();
-      table.set(ovrAucs.length+2+i, 0, auc.getDomainFirst());
-      table.set(ovrAucs.length+2+i, 1, auc.getDomainSecond());
-      table.set(ovrAucs.length+2+i, 2, aucValue);
-      double weight = auc.getSumTp();
-      macroOvo += aucValue;
-      weightedOvo += isPr ? auc.getWeightedPrAuc() : auc.getWeightedAuc();
-      sumWeights += weight;
-    }
-    table.set(rows-2, 2, macroOvo/ovoAucs.length);
-    table.set(rows-1, 2, weightedOvo/sumWeights);
     return table;
   }
 
@@ -389,19 +273,25 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     }
     
     private void calculateAucsPerRow(double ds[], int iact, double w){
-      if (iact >= _domain.length) {
-        iact = _domain.length - 1;
+      if (iact >= _domain.length) { 
+          iact = _domain.length - 1;
       }
       for(int i = 0; i < _domain.length; i++){
-        // diagonal is empty
-        if(i != iact) {
-          _ovoAucs[iact][i].perRow(ds[i + 1], 0, w);
-          _ovoAucs[i][iact].perRow(ds[iact + 1], 1, w);
-          _ovrAucs[i].perRow(ds[i + 1], 0, w);
-        } else {
-          _ovrAucs[iact].perRow(ds[iact + 1], 1, w);
+          // diagonal is empty
+          double p1 = 0, p2 = 0;
+          if(i < ds.length-2){
+              p1 = ds[i+1];
+          }
+          if(iact < ds.length-2){
+              p2 = ds[iact+1];
+          }
+          if(i != iact) { 
+              _ovoAucs[iact][i].perRow(p1, 0, w);
+              _ovoAucs[i][iact].perRow(p2, 1, w);
+              _ovrAucs[i].perRow(p1, 0, w); 
+          } else { 
+              _ovrAucs[iact].perRow(p2, 1, w); 
         }
-        
       }
     }
 
@@ -426,42 +316,10 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       double logloss = Double.NaN;
       float[] hr = new float[_K];
       ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
-      int domainLength = _domain.length;
       double sigma = weightedSigma();
-      PairwiseAUC[] ovoAucs = new PairwiseAUC[(domainLength * domainLength - domainLength)/2];
-      AUC2[] ovrAucs = new AUC2[domainLength];
-      int aucsIndex = 0;
-      if (_wcount > 0) {
-        if (_hits != null) {
-          for (int i = 0; i < hr.length; i++) hr[i] = (float) (_hits[i] / _wcount);
-          for (int i = 1; i < hr.length; i++) hr[i] += hr[i - 1];
-        }
-        mse = _sumsqe / _wcount;
-        logloss = _logloss / _wcount;
-        
-        for (int i = 0; i < domainLength-1; i++){
-          ovrAucs[i] = _ovrAucs[i]._n > 0 ? new AUC2(_ovrAucs[i]) : new AUC2();
-          for (int j = i+1; j < domainLength; j++){
-            AUC2 first = _ovoAucs[i][j]._n > 0 ? new AUC2(_ovoAucs[i][j]) : new AUC2();
-            AUC2 second = _ovoAucs[j][i]._n > 0 ? new AUC2(_ovoAucs[j][i]) : new AUC2();
-            ovoAucs[aucsIndex++] = new PairwiseAUC(first, second, _domain[i], _domain[j]);
-          }
-        }
-        ovrAucs[domainLength-1] = _ovrAucs[domainLength-1]._n > 0 ? new AUC2(_ovrAucs[domainLength-1]) : new AUC2();
-      } else {
-        for (int i = 0; i < _ovoAucs.length-1; i++){
-          ovrAucs[i] =  new AUC2();
-          for (int j = i+1; j< _ovoAucs[0].length; j++){
-            if(i < j) {
-              ovoAucs[aucsIndex++] = new PairwiseAUC(new AUC2(), new AUC2(), _domain[i], _domain[j]);
-            }
-          }
-        }
-        ovrAucs[domainLength-1] = new AUC2();
-      }
-      
+      MultinomialAUC auc = new MultinomialAUC(_ovrAucs,_ovoAucs, _domain, _wcount == 0, m._parms._multinomial_auc_type);
       ModelMetricsMultinomial mm = new ModelMetricsMultinomial(m, f, _count, mse, _domain, sigma, cm,
-                                                               hr, logloss, ovrAucs, ovoAucs, _customMetric);
+                                                               hr, logloss, auc, _customMetric);
       if (m!=null) m.addModelMetrics(mm);
       return mm;
     }

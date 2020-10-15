@@ -98,6 +98,8 @@ public class ScoreKeeper extends Iced {
       _mean_per_class_error = ((ModelMetricsMultinomial)m).mean_per_class_error();
       _hitratio = ((ModelMetricsMultinomial)m)._hit_ratios;
       _r2 = ((ModelMetricsMultinomial)m).r2();
+      _AUC = ((ModelMetricsMultinomial)m).auc();
+      _pr_auc = ((ModelMetricsMultinomial)m).pr_auc();
     } else if (m instanceof ModelMetricsOrdinal) {
       _logloss = ((ModelMetricsOrdinal)m)._logloss;
       _classError = ((ModelMetricsOrdinal)m)._cm.err();

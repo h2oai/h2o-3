@@ -53,11 +53,11 @@ public class ModelMetricsMultinomialV3<I extends ModelMetricsMultinomial, S exte
     AUC = modelMetrics.auc();
     pr_auc = modelMetrics.pr_auc();
     
-    if (modelMetrics._ovo_aucs != null && modelMetrics._ovr_aucs != null) {
-      TwoDimTable aucTable = getAucsTable(modelMetrics._ovr_aucs, modelMetrics._ovo_aucs, modelMetrics._domain, false);
+    if (modelMetrics._auc!= null) {
+      TwoDimTable aucTable = modelMetrics._auc.getTable(false);
       multinomial_auc_table = (TwoDimTableV3) SchemaServer.schema(this.getSchemaVersion(), aucTable).fillFromImpl(aucTable);
 
-      TwoDimTable aucprTable = getAucsTable(modelMetrics._ovr_aucs, modelMetrics._ovo_aucs, modelMetrics._domain, true);
+      TwoDimTable aucprTable = modelMetrics._auc.getTable(true);
       multinomial_aucpr_table = (TwoDimTableV3) SchemaServer.schema(this.getSchemaVersion(), aucprTable).fillFromImpl(aucprTable);
     }
 

@@ -117,14 +117,14 @@ public class GenericModelOutput extends Model.Output {
                             glmMultinomial._logloss, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),
                             glmMultinomial._mean_per_class_error, glmMultinomial._nullDegressOfFreedom, glmMultinomial._residualDegressOfFreedom,
                             glmMultinomial._resDev, glmMultinomial._nullDev, glmMultinomial._AIC, convertTable(modelAttributesGLM._coefficients_table),
-                            glmMultinomial._r2, null, null, glmMultinomial._description);
+                            glmMultinomial._r2, null, glmMultinomial._description);
                 } else {
                     final MojoModelMetricsMultinomial multinomial = (MojoModelMetricsMultinomial) mojoMetrics;
                     return new ModelMetricsMultinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
                             _domains[_domains.length - 1], multinomial._sigma,
                             convertTable(multinomial._confusion_matrix), convertTable(multinomial._hit_ratios),
                             multinomial._logloss, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),
-                            multinomial._mean_per_class_error, multinomial._r2, null, null, multinomial._description);
+                            multinomial._mean_per_class_error, multinomial._r2, null, multinomial._description);
                 }
             case Regression:
                 assert mojoMetrics instanceof MojoModelMetricsRegression;

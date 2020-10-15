@@ -853,8 +853,12 @@ public abstract class SharedTree<
       colHeaders.add("Training pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
       colHeaders.add("Training Lift"); colTypes.add("double"); colFormat.add("%.5f");
     }
-    if (_output.getModelCategory() == ModelCategory.Binomial || _output.getModelCategory() == ModelCategory.Multinomial) {
+    if(_output.isClassifier()){
       colHeaders.add("Training Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
+    }
+    if (_output.getModelCategory() == ModelCategory.Multinomial) {
+      colHeaders.add("Training AUC"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Training pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (hasCustomMetric) {
       colHeaders.add("Training Custom"); colTypes.add("double"); colFormat.add("%.5f");
@@ -878,8 +882,12 @@ public abstract class SharedTree<
         colHeaders.add("Validation pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
         colHeaders.add("Validation Lift"); colTypes.add("double"); colFormat.add("%.5f");
       }
-      if (_output.isClassifier()) {
+      if(_output.isClassifier()){
         colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
+      }
+      if (_output.getModelCategory() == ModelCategory.Multinomial) {
+        colHeaders.add("Validation AUC"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Validation pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (hasCustomMetric) {
         colHeaders.add("Validation Custom"); colTypes.add("double"); colFormat.add("%.5f");
@@ -921,6 +929,10 @@ public abstract class SharedTree<
         table.set(row, col++, st._lift);
       }
       if (_output.isClassifier()) table.set(row, col++, st._classError);
+      if (_output.getModelCategory() == ModelCategory.Multinomial) {
+        table.set(row, col++, st._AUC);
+        table.set(row, col++, st._pr_auc);
+      }
       if (hasCustomMetric) table.set(row, col++, st._custom_metric);
 
       if (_output._validation_metrics != null) {
@@ -939,6 +951,10 @@ public abstract class SharedTree<
           table.set(row, col++, st._lift);
         }
         if (_output.isClassifier()) table.set(row, col++, st._classError);
+        if (_output.getModelCategory() == ModelCategory.Multinomial) {
+          table.set(row, col++, st._AUC);
+          table.set(row, col++, st._pr_auc);
+        }
         if (hasCustomMetric) table.set(row, col++, st._custom_metric);
       }
       row++;
