@@ -33,17 +33,6 @@ def test_GLM_throws_ArrayOutOfBoundException():
             "expected number of cross_validation_model: {0}.  Actual number of cross_validation: " \
             "{1}".format(len(glm._model_json["output"]['cross_validation_models']), nFold)
 
-        # INFO water.default: Completing model GLM_model_python_1600368882855_5861_cv_5
-        # WARN water.default: Model training job GLM completed with exception: java.lang.ArrayIndexOutOfBoundsException: 14
-        # ERROR water.default:# java.lang.ArrayIndexOutOfBoundsException: 14
-        # at water.util.ArrayUtils.subtract(ArrayUtils.java:1459)# at hex.glm.GLM$GLMDriver.fitIRLSM(GLM.java:1462)
-        # at hex.glm.GLM$GLMDriver.fitModel(GLM.java:1726)# at hex.glm.GLM$GLMDriver.computeSubmodel(GLM.java:2095)
-        # at hex.glm.GLM$GLMDriver.computeImpl(GLM.java:2202)# at hex.ModelBuilder$Driver.compute2(ModelBuilder.java:238)
-        # at hex.glm.GLM$GLMDriver.compute2(GLM.java:890)# at water.H2O$H2OCountedCompleter.compute(H2O.java:1563)
-        # at jsr166y.CountedCompleter.exec(CountedCompleter.java:468)# at jsr166y.ForkJoinTask.doExec(ForkJoinTask.java:263)
-        # at jsr166y.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:974)# at jsr166y.ForkJoinPool.runWorker(ForkJoinPool.java:1477)
-        # at jsr166y.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:104)# 
-
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_GLM_throws_ArrayOutOfBoundException)
 else:
