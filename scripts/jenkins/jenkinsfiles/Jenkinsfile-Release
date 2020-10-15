@@ -502,7 +502,6 @@ EOF
                                     }
                                 }
                             }
-                        }
 
                         for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
                             def checkCondaOfflineStageName = "Check Py${pyVersion} Conda Package Offline"
