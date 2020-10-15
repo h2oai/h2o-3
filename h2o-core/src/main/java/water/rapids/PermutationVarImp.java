@@ -3,15 +3,17 @@ package water.rapids;
 import hex.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.*;
+import water.util.TwoDimTable;
+import water.util.VecUtils;
+
 import java.util.*;
 
 /**
- * Permutation feature importance measures the increase in the prediction error of the model after we permuted 
- * the feature's values, which breaks the relationship between the feature and the true outcome.
+ * Permutation Variable (feature) importance measures the increase in the prediction error of the model after we permuted 
+ * the variables's values, which breaks the relationship between the variables and the true outcome.
  * https://christophm.github.io/interpretable-ml-book/feature-importance.html
  *
- * Calculate permutation feature importance, by shuffling randomly each feature of the passed model
+ * Calculate permutation variables importance, by shuffling randomly each variables of the passed model
  * then scoring the model with the newly created frame using One At a Time approach
  * and Morris method; creating TwoDimTable with relative, scaled, and percentage value
  *                             TwoDimTable with mean of the absolute value, and standard deviation of all features importance
@@ -20,17 +22,27 @@ import java.util.*;
 
 public class PermutationVarImp {
 
-    public static final byte MM_MSE  =  0; 
-    public static final byte MM_LOGLOSS =  1; 
-    public static final byte MM_AUC  =  2; 
-
-    private double[] _pVarImp; // permutation feature (variable) importance, relative value      
+    public double[] _pVarImp; // permutation variables (feature) importance, relative value      
     
     private String _responseCol; 
     
     private String[] _features; 
     private String[] _featuresWithNoResCol; // features without response col
-    
+    public String[] _metrics;
+
+    /**
+     * Stores the metric to be used (loss function) original values and j-th variables's score metric values  
+     * */
+    public class LocalMetric{ // do it as a string to get the metric from the user
+
+        LocalMetric(String metric) {    m_selectedMetric = metric;  }
+        LocalMetric() {    m_selectedMetric = "mse";  } 
+        String m_selectedMetric;
+        double m_ogMetric;
+        double m_variablesMetric;
+    }
+
+    public LocalMetric _variImpMetric;
     TwoDimTable _permutationVarImp;
     private Model _model;
     private Frame _trainFr; // original dataset used to train model
@@ -53,6 +65,10 @@ public class PermutationVarImp {
     void init(){
         _responseCol = _model._parms._response_column;
         _features = _trainFr.names();
+
+        // regression: mse, R2, rmse, rmsele , mae
+        // classification gini, absolute_mcc, logloss, AUC, AUC_PR 
+        _metrics = new String[]{"r2", "mse", "rmse", "gini coefficient", "f1", "logloss", "auc"};
     }
     public String [] get_features_wo_res_test(){return _featuresWithNoResCol;}
     
@@ -76,94 +92,83 @@ public class PermutationVarImp {
 //        _train_fr._names
     }
 
-    /**
-     * Stores original values and j-th feature's score metric (loss function) values  
-     * */
-    private static class LocalMetric{
-        double og_mse;
-        double og_logloss;
-        double og_auc;
-        
-        double m_f_mse; 
-        double m_f_auc;
-        double m_f_logloss;
-    }
     
-    private static void getMetric(Object x){
-        
-    }
-    
-    /**
-     *  Set the original values of trained metrics to LocalMetric class
-     * */
-    private void setOriginalMetrics(LocalMetric m) {
-        Object og_mm = ModelMetrics.getFromDKV(_model, _model._parms.train());
-        
-//                ModelMetricsBinomial og_mm = (ModelMetricsBinomial)_model._output._training_metrics;
+    private double getMetric() throws MetricNotFoundExeption{
+//        ModelMetrics og_mm = ModelMetrics.getFromDKV(_model, _model._parms.train());
+        ModelMetrics og_mm = ModelMetrics.getFromDKV(_model, _trainFr);
+        double metric = Double.NaN;
+        assert og_mm != null;
         try{
-            if (_model._output.isBinomialClassifier()){ // binomial
-                if (((ModelMetricsBinomial) og_mm).auc_obj() != null && !Double.isNaN(((ModelMetricsBinomial) og_mm).auc_obj()._auc)){ // check properly if model has auc 
-                    m.og_auc = ((ModelMetricsBinomial)og_mm).auc_obj()._auc;
-                } else throw new MetricNotFoundExeption("Initial metric for binomial auc not found for model " + _model._key);
+            switch (_variImpMetric.m_selectedMetric){
+                case "r2":  metric = _model.r2();
+                    break;
+                case "mse": metric = og_mm.mse();
+                    break;
+                case "rmse": metric = og_mm.rmse();
+                    break;
+                case "gini coefficient": metric = og_mm.auc_obj()._gini;
+                    break;
+                case  "logloss": metric = _model.logloss();
+                    break;
+                case "auc": metric = og_mm.auc_obj()._auc;
+                default:
+                    throw new MetricNotFoundExeption("there was a metric not handled well! " + _variImpMetric.m_selectedMetric);
             }
-            else if (_model._output.isMultinomialClassifier()) { //   multinomial
-                if (!Double.isNaN(((ModelMetricsMultinomial)og_mm)._logloss)) m.og_logloss = ((ModelMetricsMultinomial)og_mm).mse();
-            }
-            else if (_model._output.isSupervised()){
-                m.og_mse = ((ModelMetrics)og_mm).mse();
-            } else throw new MetricNotFoundExeption("Unhandled model metric category for model " + _model._key);
-        } catch (MetricNotFoundExeption e){
+        } catch (NullPointerException e){ // or nullptrexpection
             System.err.println("ModelMetricCalculation threw an exception unchecked Classifier " + _model._key);
             e.printStackTrace();
         }
-    }
-     
-    /**
-     * Calculate loss function of scored model with shuffled feature and store it
-     * */
-    private LocalMetric addToFeatureToTable(LocalMetric lm, int id){
-        try{
-            Object sh_mm = ModelMetrics.getFromDKV(_model, _trainFr);
-//        ModelMetrics sh_mm = hex.ModelMetrics.getFromDKV(_model, _model._parms.train());
-            
-            switch (_model._output.getModelCategory()){
-                case Regression:
-                    lm.m_f_mse = ((ModelMetricsRegression)sh_mm).mse() / lm.og_mse;
-                    _pVarImp[id] = lm.m_f_mse;
-                    break;
-                case Binomial:
-                    if (((ModelMetricsBinomial)sh_mm).auc_obj() != null && !Double.isNaN(((ModelMetricsBinomial)sh_mm).auc_obj()._auc)) { // check properly if model has auc 
-                        lm.m_f_auc = ((ModelMetricsBinomial)sh_mm).auc_obj()._auc / lm.og_auc;
-                        _pVarImp[id] = lm.m_f_auc;
-                    } else throw new MetricNotFoundExeption("Binomial model doesnt have auc " + _model._key);
-                    break;
-                case Multinomial:
-                    if (!Double.isNaN(((ModelMetricsMultinomial) sh_mm)._logloss)) {
-                        lm.m_f_logloss = ((ModelMetricsMultinomial) sh_mm).logloss() / lm.og_logloss;
-                        _pVarImp[id] = lm.m_f_logloss;
-                    } else throw new MetricNotFoundExeption("Multinomial model doesnt have logloss " + _model._key);
-                    break;
-                default:
-                    throw new MetricNotFoundExeption("Model Category not supported for model" + _model._key);
-            }
-        } catch (MetricNotFoundExeption e) {
-            System.err.println("ModelMetricCalculation threw an exception unchecked Classifier " + _model._key);
-            e.printStackTrace();            
-        } 
-        return lm;
+        if(Double.isNaN(metric))
+            throw new MetricNotFoundExeption("Model doesn't support the metric following metric " + _variImpMetric.m_selectedMetric);
+        return metric;
     }
     
+    private void setOgModelMetric() {
+        try{
+            _variImpMetric.m_ogMetric = getMetric();
+        } catch (MetricNotFoundExeption e){
+            System.err.println("Metric " + _variImpMetric.m_selectedMetric + " not supported for ! " + _model._key);
+            e.printStackTrace();
+        }
+    }
+
+    private void setVariablesMetric(int var){
+        try{
+            _variImpMetric.m_variablesMetric = _variImpMetric.m_ogMetric / getMetric();
+        } catch (MetricNotFoundExeption e){
+            System.err.println("Metric " + _variImpMetric.m_selectedMetric + " not supported for ! " + _model._key);
+            e.printStackTrace();
+        }
+        _pVarImp[var] = _variImpMetric.m_variablesMetric;
+    }
+
+
+    /** If the user specifies a metric store it to the LocalMetric class otherwise uses the metric based on the model*/
+    public TwoDimTable getPermutationVarImp(String metric)  {
+        try {
+            if (!Arrays.asList(_metrics).contains(metric.toLowerCase()))
+                throw new MetricNotFoundExeption("Permutation Variable Importance doesnt support " + metric + " for model " + _model._key );
+            } catch (MetricNotFoundExeption e) {
+                e.printStackTrace();
+        }
+
+        _variImpMetric = new LocalMetric(metric.toLowerCase());
+        return PermutationVarimp();
+    }
+    public TwoDimTable getPermutationVarImp() {
+        // put all the metrics in a class for structure
+        _variImpMetric = new LocalMetric();
+        assert _variImpMetric.m_selectedMetric == "mse";  
+        return PermutationVarimp();
+    }
+
     /**
-     * Ee permute the feature's values breaking the relationship between the feature and the true outcome.
+     * permute the feature's values breaking the relationship between the feature and the true outcome.
      * Then we score the model again and calculate the loss function, and creating a TwoDimTable.
      * */
-    public TwoDimTable getPermutationVarImp() {
-        
-        // put all the metrics in a class for structure
-        LocalMetric pfi_m = new LocalMetric();
-        
-        removeResCol(); 
-        setOriginalMetrics(pfi_m);
+    public TwoDimTable PermutationVarimp(){
+        removeResCol();
+        setOgModelMetric();
         
         int id = 0;
         for (int f = 0; f < _trainFr.numCols(); f++)
@@ -175,20 +180,20 @@ public class PermutationVarImp {
             Vec shuffled_feature = VecUtils.ShuffleVec(_trainFr.vec(_features[f]), _trainFr.vec(_features[f]).makeCopy());
             Vec og_feature = _trainFr.replace(f, shuffled_feature);
 
-            // set and add new metrics ~ fills @param _p_var_imp needed for ModelMetrics.calcVarImp()
-            pfi_m = addToFeatureToTable(pfi_m, id++);
-
             // score the model again and compute diff
             Frame new_score = _model.score(_trainFr);
 
-            //return the original data
-            _trainFr.replace(f, og_feature); // TODO use .add .remove methods to fix leaks (I presume)
+            // set and add new metrics ~ fills @param _p_var_imp needed for ModelMetrics.calcVarImp()
+            setVariablesMetric(id++);
 
-            new_score.remove(); // clearing (some) leaks i think
+            //return the original data
+            _trainFr.replace(f, og_feature); 
+
+            new_score.remove();
             shuffled_feature.remove();
         }
         _permutationVarImp = ModelMetrics.calcVarImp(_pVarImp, _featuresWithNoResCol);
-        return _permutationVarImp; 
+        return _permutationVarImp;
     }
     
     public Map <String, Double> toMapScaled(){
@@ -258,7 +263,7 @@ public class PermutationVarImp {
         
         
         return new TwoDimTable("One At a Time", null, _featuresWithNoResCol, new String [] {"Mean of the absolute value", "standard deviation"},
-                    col_types, col_formats, "Feature Importance", new String[_featuresWithNoResCol.length][], response);
+                    col_types, col_formats, "Permutation Variable Importance", new String[_featuresWithNoResCol.length][], response);
 
     }
     
