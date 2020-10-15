@@ -40,7 +40,7 @@ public class StackedEnsembleTest extends TestUtil {
     @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   @Rule
-  public ExpectedException expectedException = ExpectedException.none();
+  public transient ExpectedException expectedException = ExpectedException.none();
 
     private abstract class PrepData { abstract int prep(Frame fr); }
 
@@ -761,6 +761,7 @@ public class StackedEnsembleTest extends TestUtil {
 
             Frame training_clone = new Frame(training_frame);
             DKV.put(training_clone);
+            Scope.track(training_clone);
             preds = stackedEnsembleModel.score(training_clone);
             final boolean predsTheSame = stackedEnsembleModel.testJavaScoring(training_clone, preds, 1e-15, 0.01);
             Assert.assertTrue(predsTheSame);
@@ -775,6 +776,7 @@ public class StackedEnsembleTest extends TestUtil {
                 ModelMetrics validation_metrics = stackedEnsembleModel._output._validation_metrics;
                 Frame validation_clone = new Frame(validation_frame);
                 DKV.put(validation_clone);
+                Scope.track(validation_clone);
                 stackedEnsembleModel.score(validation_clone).remove();
                 ModelMetrics validation_clone_metrics = ModelMetrics.getFromDKV(stackedEnsembleModel, validation_clone);
                 Assert.assertEquals(validation_metrics.mse(), validation_clone_metrics.mse(), 1e-15);
@@ -1406,4 +1408,28 @@ public class StackedEnsembleTest extends TestUtil {
       }
     }
   }
+
+  @Test
+  public void showEnsembleCannotAssumeSameColumnHandlingForBaseModelsAndOuterModel() {
+    expectedException.expectMessage("has non-standard number of columns"); // this is wrong => PUBDEV-7842
+    try {
+      Scope.enter();
+      basicEnsemble("./smalldata/junit/cars.csv",
+              null,
+              new StackedEnsembleTest.PrepData() {
+                int prep(Frame fr) {
+                  fr.remove("name").remove();
+                  Vec acVec = fr.anyVec().makeCon(Math.PI); // this is what breaks SE - SE will ignore this column, DRF not
+                  Scope.track(acVec);
+                  acVec.setNA(0);
+                  fr.insertVec(0, "almost_constant", acVec);
+                  return ~fr.find("economy (mpg)");
+                }
+              },
+              false, DistributionFamily.gaussian, Algorithm.glm, false);
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }
