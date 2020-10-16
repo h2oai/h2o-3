@@ -83,7 +83,7 @@ try {
                                 # Stop on error.
                                 set -e
 
-                                export BUILD_HADOOP=true
+                                export BUILD_HADOOP=false
                                 export JAVA_HOME=/usr/lib/jvm/java-8-oracle
                                 echo "Activating Python ${env.PYTHON_VERSION}"
                                 . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
@@ -181,6 +181,7 @@ try {
                     }
                 }
                 
+                if (false) {
                 def PUBLISH_STAGE_NAME = 'Publish to S3'
                 stage(PUBLISH_STAGE_NAME) {
                     try {
@@ -216,6 +217,7 @@ try {
                         throw e
                     }
                 }
+             }
 
              def HELM_STAGE_NAME = 'Publish HELM to S3'
                 stage(HELM_STAGE_NAME) {
