@@ -4,7 +4,6 @@ import hex.DataInfo;
 import hex.tree.xgboost.matrix.SparseMatrix;
 import hex.tree.xgboost.matrix.SparseMatrixDimensions;
 import hex.tree.xgboost.matrix.SparseMatrixFactory;
-import hex.tree.xgboost.util.FeatureScore;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.Rabit;
@@ -18,11 +17,12 @@ import org.junit.runners.Parameterized;
 import water.MRTask;
 import water.Scope;
 import water.TestUtil;
-import water.fvec.Frame;
-import water.fvec.TestFrameBuilder;
-import water.fvec.Vec;
+import water.fvec.*;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.VecUtils;
 
+import javax.swing.text.html.Option;
 import java.io.*;
 import java.net.URL;
 import java.security.SecureRandom;
@@ -38,16 +38,8 @@ public class XGBoostUtilsTest extends TestUtil {
   protected static final int DEFAULT_SPARSE_MATRIX_SIZE = SparseMatrix.MAX_DIM;
   protected static final int MAX_ARR_SIZE = Integer.MAX_VALUE - 10;
 
-  @BeforeClass
-  public static void beforeClass(){
-    TestUtil.stall_till_cloudsize(1);
-  }
-
-  @After
-  public void tearDown() {
-    revertDefaultSparseMatrixMaxSize();
-  }
-
+  @RunWith(H2ORunner.class)
+  @CloudSize(1)
   public static final class XGBoostUtilsTestSingleRun extends XGBoostUtilsTest {
 
     @Test
@@ -312,6 +304,75 @@ public class XGBoostUtilsTest extends TestUtil {
       } finally {
         if (frame != null) frame.remove();
       }
+    }
+
+    @Test
+    public void testSumChunksLength() {
+      try {
+        Scope.enter();
+
+        final Vec dataVec = Vec.makeCon(0d, 1000);
+        dataVec.set(0, 1);
+        final int[] localChunkIds = VecUtils.getLocalChunkIds(dataVec);
+        int[] localChunksLengths = new int[localChunkIds.length];
+
+        // Without weights, all rows should be counted
+        long nonZeroRows = XGBoostUtils.sumChunksLength(localChunkIds, dataVec, Optional.empty(), localChunksLengths);
+        assertEquals(dataVec.length(), nonZeroRows);
+
+        // With all weights as 1, all rows should be counted
+        final Vec allWeightsOne = Vec.makeCon(1d, 1000);
+        localChunksLengths = new int[localChunksLengths.length];
+        long weightedNonZeroRows = XGBoostUtils.sumChunksLength(localChunkIds, dataVec, Optional.of(allWeightsOne), localChunksLengths);
+        assertEquals(dataVec.length(), weightedNonZeroRows);
+        
+        // Mixed weights - only the non-zero weight rows should be counted
+        final Vec mixedWeights = Vec.makeCon(0d, 1000);
+        for (int i = 0; i < 100; i++) {
+          mixedWeights.set(i * 10, 1);
+        }
+        // First chunk is not constant - it has one non-zero value. Therefore it is zero-sparse -> CXIChunk
+        // The tested code uses `nextNz` method call - to test these calls are used correctly, zero-sparse chunk is required, as it is the only one with implementation that does not iterate over all chunk values.
+        assertTrue(mixedWeights.chunkForChunkIdx(0) instanceof CXIChunk);
+        localChunksLengths = new int[localChunksLengths.length];
+        long weightedNzRows = XGBoostUtils.sumChunksLength(localChunkIds, dataVec, Optional.of(mixedWeights), localChunksLengths);
+        assertEquals(100, weightedNzRows);
+
+
+        // Mixed weights - volatile vec
+        final Vec volatileWeights = mixedWeights.makeVolatileDoubles(1)[0];
+        for (int i = 0; i < volatileWeights.length(); i++) {
+          assertEquals(0,volatileWeights.at(i), 0);
+        }
+        assertTrue(volatileWeights.chunkForChunkIdx(0) instanceof C8DVolatileChunk);
+        localChunksLengths = new int[localChunksLengths.length];
+        long weightedNzRowsVolatile = XGBoostUtils.sumChunksLength(localChunkIds, dataVec, Optional.of(volatileWeights), localChunksLengths);
+        assertEquals(0, weightedNzRowsVolatile);
+
+      } finally {
+        Scope.exit();
+      }
+
+    }
+
+    @Test
+    public void testSumChunksLengthEmptyChunks() {
+      try {
+        Scope.enter();
+
+        final Vec data = Vec.makeCon(0d, 0);
+        final Vec weights = data.makeVolatileDoubles(1)[0];
+        final int[] localChunkIds = VecUtils.getLocalChunkIds(data);
+        int[] localChunksLengths = new int[localChunkIds.length];
+
+        // Without weights, all rows should be counted
+        long nonZeroRows = XGBoostUtils.sumChunksLength(localChunkIds, data, Optional.of(weights), localChunksLengths);
+        assertEquals(data.length(), nonZeroRows);
+        
+      } finally {
+        Scope.exit();
+      }
+
     }
 
     /**
@@ -687,6 +748,16 @@ public class XGBoostUtilsTest extends TestUtil {
 
   @RunWith(Parameterized.class)
   public static final class XGBoostSparseMatrixTest extends XGBoostUtilsTest {
+
+    @BeforeClass
+    public static void beforeClass(){
+      TestUtil.stall_till_cloudsize(1);
+    }
+
+    @After
+    public void tearDown() {
+      revertDefaultSparseMatrixMaxSize();
+    }
 
     @Parameterized.Parameters
     public static Collection<Object[]> data() {

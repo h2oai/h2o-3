@@ -671,6 +671,51 @@ h2o.makeGLMModel <- function(model,beta) {
   m
 }
 
+#' Extract best lambda value found from glm model.
+#'
+#' This function allows setting betas of an existing glm model.
+#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @export
+h2o.getLambdaBest <- function(model) {
+  model@model$lambda_best
+}
+
+#' Extract the maximum lambda value used during lambda search from glm model.
+#'
+#' This function allows setting betas of an existing glm model.
+#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @export
+h2o.getLambdaMax <- function(model) {
+  lambdaMax <- model@model$lambda_max
+  if (lambdaMax < 0) # -1 if lambda_search=FALSE
+    stop("getLambdaMax(model) can only be called when lambda_search=True or when you have multiple lambda values to try.")
+  else 
+    lambdaMax
+}
+
+#' Extract best alpha value found from glm model.
+#'
+#' This function allows setting betas of an existing glm model.
+#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @export
+h2o.getAlphaBest <- function(model) {
+  model@model$alpha_best
+}
+
+#' Extract the minimum lambda value calculated during lambda search from glm model.
+#' Note that due to early stop, this minimum lambda value may not be used in the actual lambda search.
+#'
+#' This function allows setting betas of an existing glm model.
+#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @export
+h2o.getLambdaMin <- function(model) {
+  lambdaMin <- model@model$lambda_min # will be -1 if lambda_search=FALSE
+  if (lambdaMin < 0)
+    stop("getLambdaMin(model) can only be called when lambda_search=True or when you have multiple lambda values to try.")
+  else 
+    lambdaMin
+}
+
 #' Extract full regularization path from a GLM model
 #'
 #' Extract the full regularization path from a GLM model (assuming it was run with the lambda search option).

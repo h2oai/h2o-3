@@ -689,6 +689,7 @@ public final class ComputationState {
   protected void setAllIn(boolean val) { _allIn = val; }
   protected void setGslvrNull() { _gslvr = null; }
   protected void setActiveDataMultinomialNull() { _activeDataMultinomial = null; }
+  protected void setActiveDataNull() { _activeData = null; }
   protected void setLambdaSimple(double lambda) { _lambda=lambda; }
 
   protected void setHGLMComputationState(double [] beta, double[] ubeta, double[] psi, double[] phi, 

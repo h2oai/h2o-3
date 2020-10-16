@@ -853,6 +853,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   //  ideally the model should be instantiated in the #computeImpl() method instead of init
   private void buildModel() {
     _model = new GLMModel(_result, _parms, this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
+    _model._output.setLambdas(_parms);  // set lambda_min and lambda_max if lambda_search is enabled
+    
     // clone2 so that I don't change instance which is in the DKV directly
     // (clone2 also shallow clones _output)
     _model.clone2().delete_and_lock(_job._key);
@@ -2067,6 +2069,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _state.setAllIn(false);
       _state.setGslvrNull();
       _state.setActiveDataMultinomialNull();
+      _state.setActiveDataNull();
       int histLen = devHistoryTrain.length;
       for (int ind=0; ind < histLen; ind++) {
         devHistoryTrain[ind]=0;

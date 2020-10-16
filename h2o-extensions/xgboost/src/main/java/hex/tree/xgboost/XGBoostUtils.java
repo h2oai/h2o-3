@@ -13,6 +13,7 @@ import water.fvec.Vec;
 import water.util.VecUtils;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 import static water.H2O.technote;
 import static water.MemoryManager.malloc4f;
@@ -70,7 +71,7 @@ public class XGBoostUtils {
         final Vec weightVec = frame.vec(weight);
         final Vec offsetsVec = frame.vec(offset);
         final int[] nRowsByChunk = new int[chunks.length];
-        final long nRowsL = sumChunksLength(chunks, responseVec, weightVec, nRowsByChunk);
+        final long nRowsL = sumChunksLength(chunks, responseVec, Optional.ofNullable(weightVec), nRowsByChunk);
         if (nRowsL > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("XGBoost currently doesn't support datasets with more than " +
                     Integer.MAX_VALUE + " per node. " +
@@ -102,30 +103,33 @@ public class XGBoostUtils {
     }
 
     /**
-     * Counts a total sum of chunks inside a vector. Only chunks present in chunkIds are considered.
+     * Counts a total sum of chunks inside a vector. Only chunks present in chunkIds are counted.
+     * If a weights vector is provided, only rows with non-zero weights are counted.
      *
-     * @param chunkIds Chunk identifier of a vector
+     * @param chunkIds Chunk ids to consider during the calculation. Chunks IDs not listed are not included.
      * @param vec      Vector containing given chunk identifiers
-     * @param weightsVector Vector with row weights, possibly null
+     * @param weightsVector Vector with row weights, possibly an empty optional
+     * @param chunkLengths Array of integers where the lengths of the individual chunks will be added. Initialization to an array of 0's is expected.
      * @return A sum of chunk lengths. Possibly zero, if there are no chunks or the chunks are empty.
      */
-    public static long sumChunksLength(int[] chunkIds, Vec vec, Vec weightsVector, int[] chunkLengths) {
+    public static long sumChunksLength(int[] chunkIds, Vec vec, Optional<Vec> weightsVector, int[] chunkLengths) {
+        assert chunkLengths.length == chunkIds.length;
         for (int i = 0; i < chunkIds.length; i++) {
             final int chunk = chunkIds[i];
-            chunkLengths[i] = vec.chunkLen(chunk);
-            if (weightsVector == null)
-                continue;
+            if (weightsVector.isPresent()) {
+                final Chunk weightVecChunk = weightsVector.get().chunkForChunkIdx(chunk);
+                assert weightVecChunk.len() == vec.chunkLen(chunk); // Chunk layout of both vectors must be the same
+                if (weightVecChunk.len() == 0) continue;
 
-            Chunk weightVecChunk = weightsVector.chunkForChunkIdx(chunk);
-            if (weightVecChunk.atd(0) == 0) chunkLengths[i]--;
-            int nzIndex = 0;
-            do {
-                nzIndex = weightVecChunk.nextNZ(nzIndex, true);
-                if (nzIndex < 0 || nzIndex >= weightVecChunk._len) break;
-                if (weightVecChunk.atd(nzIndex) == 0) chunkLengths[i]--;
-            } while (true);
+                int nzIndex = 0;
+                do {
+                    if (weightVecChunk.atd(nzIndex) != 0) chunkLengths[i]++;
+                    nzIndex = weightVecChunk.nextNZ(nzIndex, true);
+                } while (nzIndex > 0 && nzIndex < weightVecChunk._len);
+            } else {
+                chunkLengths[i] = vec.chunkLen(chunk);
+            }
         }
-
         long totalChunkLength = 0;
         for (int cl : chunkLengths) {
             totalChunkLength += cl;
