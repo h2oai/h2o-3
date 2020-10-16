@@ -1187,8 +1187,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
     if (mm == null) return Double.NaN;
-
-    return ((ModelMetricsBinomial)mm)._auc._auc;
+    if(mm instanceof ModelMetricsBinomial) {
+      return ((ModelMetricsBinomial) mm)._auc._auc;
+    } else if(mm instanceof ModelMetricsMultinomial) {
+      return ((ModelMetricsMultinomial) mm).auc();
+    }
+    return Double.NaN;
   }
 
   public double AUCPR() {
@@ -1197,8 +1201,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
     if (mm == null) return Double.NaN;
-
-    return ((ModelMetricsBinomial)mm)._auc._pr_auc;
+    if(mm instanceof ModelMetricsBinomial) {
+      return ((ModelMetricsBinomial) mm)._auc._pr_auc;
+    } else if(mm instanceof ModelMetricsMultinomial) {
+      return ((ModelMetricsMultinomial) mm).pr_auc();
+    }
+    return Double.NaN;
   }
 
   public double deviance() {

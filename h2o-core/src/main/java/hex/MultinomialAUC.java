@@ -148,11 +148,13 @@ public class MultinomialAUC extends Iced {
     }
 
     public double computeOvoWeightedAuc(boolean isPr){
+        double n = _ovrAucs[0]._n+_ovrAucs[0]._p;
         double weightedAuc = 0;
         double sumWeights = 0;
         for(PairwiseAUC ovoAuc : _ovoAucs){
-            weightedAuc += isPr ? ovoAuc.getWeightedPrAuc() : ovoAuc.getWeightedAuc();
-            sumWeights += ovoAuc.getSumTp();
+            double weight = ovoAuc.getSumTp() / n;
+            weightedAuc += isPr ? ovoAuc.getPrAuc() * weight : ovoAuc.getAuc() * weight;
+            sumWeights += weight;
         }
         return weightedAuc/sumWeights;
     }

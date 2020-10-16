@@ -279,10 +279,10 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       for(int i = 0; i < _domain.length; i++){
           // diagonal is empty
           double p1 = 0, p2 = 0;
-          if(i < ds.length-2){
+          if(i < ds.length-1){
               p1 = ds[i+1];
           }
-          if(iact < ds.length-2){
+          if(iact < ds.length-1){
               p2 = ds[iact+1];
           }
           if(i != iact) { 
@@ -303,6 +303,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       _hits = ArrayUtils.add(_hits, mb._hits);
       _logloss += mb._logloss;
       for(int i = 0; i < _ovoAucs.length; i++){
+        _ovrAucs[i].reduce(mb._ovrAucs[i]);
         for (int j = 0; j < _ovoAucs[0].length; j++) {
           if(i != j) {
             _ovoAucs[i][j].reduce(mb._ovoAucs[i][j]);
