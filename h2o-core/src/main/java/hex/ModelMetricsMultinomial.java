@@ -317,6 +317,14 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       float[] hr = new float[_K];
       ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
       double sigma = weightedSigma();
+      if(_wcount > 0){
+        if (_hits != null) {
+          for (int i = 0; i < hr.length; i++) hr[i] = (float) (_hits[i] / _wcount);
+          for (int i = 1; i < hr.length; i++) hr[i] += hr[i - 1];
+        }
+        mse = _sumsqe / _wcount;
+        logloss = _logloss / _wcount;
+      }
       MultinomialAUC auc = new MultinomialAUC(_ovrAucs,_ovoAucs, _domain, _wcount == 0, m._parms._multinomial_auc_type);
       ModelMetricsMultinomial mm = new ModelMetricsMultinomial(m, f, _count, mse, _domain, sigma, cm,
                                                                hr, logloss, auc, _customMetric);
