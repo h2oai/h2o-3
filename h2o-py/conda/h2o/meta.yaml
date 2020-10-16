@@ -8,7 +8,7 @@ package:
   version: {{ data.get("version") }}
 
 source:
-  path: ../
+  path: ../../..
 
 requirements:
   build:
