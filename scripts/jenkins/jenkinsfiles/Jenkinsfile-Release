@@ -509,7 +509,8 @@ EOF
 
                         for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
                             def checkCondaOfflineStageName = "Check Py${pyVersion} Conda Package Offline"
-                            def pkgName = "h2o-${env.PROJECT_VERSION}-py*.tar.bz2"
+                            def condaPkgPyVersion = pyVersion.replaceAll('\\.','')
+                            def pkgName = "h2o-${env.PROJECT_VERSION}-py${condaPkgPyVersion}*.tar.bz2"
                             stage(checkCondaOfflineStageName) {
                                 pipelineContext.getBuildSummary().addStageSummary(this, checkCondaOfflineStageName, env.BUILD_NUMBER_DIR)
                                 pipelineContext.getBuildSummary().setStageDetails(this, checkCondaOfflineStageName, env.NODE_NAME, env.WORKSPACE)
@@ -517,7 +518,7 @@ EOF
                                     insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                         echo "Check Conda package for Python ${pyVersion}"
                                         sh "conda create -y -n py${pyVersion} python=${pyVersion} tabulate future requests colorama"
-                                        sh "s3cmd get ${condaS3Dir}/noarch/${pkgName}"
+                                        sh "s3cmd get ${condaS3Dir}/linux-64/${pkgName}"
                                         sh """
                                                 bash -c \"\"\"
                                                     source activate py${pyVersion}
