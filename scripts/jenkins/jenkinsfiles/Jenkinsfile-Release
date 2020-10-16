@@ -464,7 +464,9 @@ EOF
 
                         final def condaS3Dir = "${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/Conda"
 
-                            def uploadToCondaStageName = "Build Conda Packages"
+                        // build for all Python versions
+                        for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
+                            def uploadToCondaStageName = "Build Py${pyVersion} Conda Packages"
                             stage(uploadToCondaStageName) {
                                 withCredentials([usernamePassword(credentialsId: 'anaconda-credentials', usernameVariable: 'ANACONDA_USERNAME', passwordVariable: 'ANACONDA_PASSWORD')]) {
                                     pipelineContext.getBuildSummary().addStageSummary(this, uploadToCondaStageName, env.BUILD_NUMBER_DIR)
@@ -472,13 +474,22 @@ EOF
                                     try {
                                         insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                             sh """
-                                                cp -r ${env.BUILD_NUMBER_DIR}/h2o-py/conda ${env.BUILD_NUMBER_DIR}/h2o-py/build/main
-                                                cd ${env.BUILD_NUMBER_DIR}/h2o-py/build/main/conda
+                                                cp -r ${env.BUILD_NUMBER_DIR}/h2o-py/conda ${env.BUILD_NUMBER_DIR}/h2o-py/build
+                                                cd ${env.BUILD_NUMBER_DIR}/h2o-py/build/conda
                                                 # Create conda package for current platform
                                                 conda config --append channels conda-forge
-                                                conda build h2o --output-folder "." --no-anaconda-upload
+                                                conda build h2o --output-folder "." --no-anaconda-upload --py ${pyVersion}
+                                                # Get name of the package
+                                                CONDA_PKG_CURRENT_ARCH_PATH=\$(conda build h2o --py ${pyVersion} --output-folder "." --output | tail -1)
+                                                PKG_NAME=\$(basename \$CONDA_PKG_CURRENT_ARCH_PATH)
+                                                # Convert conda package for all other platforms
+                                                conda convert \$CONDA_PKG_CURRENT_ARCH_PATH -p all
 
-                                                s3cmd --acl-public put noarch/* ${condaS3Dir}/noarch/
+                                                s3cmd --acl-public put osx-64/\${PKG_NAME} ${condaS3Dir}/osx-64/\${PKG_NAME}
+                                                s3cmd --acl-public put linux-32/\${PKG_NAME} ${condaS3Dir}/linux-32/\${PKG_NAME}
+                                                s3cmd --acl-public put linux-64/\${PKG_NAME} ${condaS3Dir}/linux-64/\${PKG_NAME}
+                                                s3cmd --acl-public put win-32/\${PKG_NAME} ${condaS3Dir}/win-32/\${PKG_NAME}
+                                                s3cmd --acl-public put win-64/\${PKG_NAME} ${condaS3Dir}/win-64/\${PKG_NAME}
 
                                                 if [ "\$UPLOAD_TO_ANACONDA" = true ]; then
                                                     if [ "\$TEST_RELEASE" = true ]; then
@@ -488,7 +499,11 @@ EOF
                                                         # Right now packages for all platforms are in the current directory
                                                         # upload all distribution packages
                                                         anaconda login --username ${ANACONDA_USERNAME} --password ${ANACONDA_PASSWORD}
-                                                        anaconda upload noarch/*
+                                                        anaconda upload osx-64/\${PKG_NAME}
+                                                        anaconda upload linux-32/\${PKG_NAME}
+                                                        anaconda upload linux-64/\${PKG_NAME}
+                                                        anaconda upload win-32/\${PKG_NAME}
+                                                        anaconda upload win-64/\${PKG_NAME}
                                                     fi
                                                 else
                                                     echo '****** WARNING! Upload to Conda suppressed ******'

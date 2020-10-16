@@ -1,14 +1,11 @@
 {% set data = load_setup_py_data() %}
 
-build:
-  noarch: python
-
 package:
   name: h2o
   version: {{ data.get("version") }}
 
 source:
-  path: ../../..
+  path: ../..
 
 requirements:
   build:
