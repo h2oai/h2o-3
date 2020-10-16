@@ -1412,6 +1412,7 @@ public class StackedEnsembleTest extends TestUtil {
     }
   }
 
+
   @Test
   public void showEnsembleCannotAssumeSameColumnHandlingForBaseModelsAndOuterModel() {
     expectedException.expectMessage("has non-standard number of columns"); // this is wrong => PUBDEV-7842
@@ -1458,6 +1459,7 @@ public class StackedEnsembleTest extends TestUtil {
             Scope.exit();
         }
   }
+
 
     @Test
     public void testMetalearnerTransformWorks() {
@@ -1529,4 +1531,31 @@ public class StackedEnsembleTest extends TestUtil {
             Scope.exit();
         }
     }
+
+  @Test
+  public void testStackedEnsembleDoesntIgnoreColumnIfAnyBaseModelUsesIt() {
+    try {
+        Scope.enter();
+        StackedEnsembleModel.StackedEnsembleOutput output = null;
+        try {
+            output = basicEnsemble("./smalldata/junit/cars.csv",
+                    null,
+                    new StackedEnsembleTest.PrepData() {
+                        int prep(Frame fr) {
+                            fr.remove("name").remove();
+                            Vec acVec = fr.anyVec().makeCon(Math.PI); // this is what use to break SE (SE ignored this column, DRF did not)
+                            Scope.track(acVec);
+                            acVec.setNA(0);
+                            fr.insertVec(0, "almost_constant", acVec);
+                            return ~fr.find("economy (mpg)");
+                        }
+                    },
+                    false, DistributionFamily.gaussian, Algorithm.glm, false);
+        } finally { }
+        Assert.assertNotNull(output);
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

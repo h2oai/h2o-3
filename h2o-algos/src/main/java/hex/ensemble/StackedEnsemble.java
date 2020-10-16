@@ -57,6 +57,25 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
   }
 
   @Override
+  protected boolean ignoreConstColumns() {
+    if (_parms._base_models == null)
+      return false; // To be safe
+
+    // Base models can be either models or grids => we need to expand the grids
+    validateAndExpandBaseModels();
+
+    // If all base models ignore const columns then stacked ensemble can safely ignore them too.
+    return Stream.of(_parms._base_models)
+            .map(Key::get)
+            .allMatch(model -> model._parms._ignore_const_cols);
+  }
+
+  @Override
+  protected boolean canLearnFromNAs() {
+    return true;
+  }
+
+  @Override
   protected StackedEnsembleDriver trainModelImpl() {
     return _driver = _parms._blending == null ? new StackedEnsembleCVStackingDriver() : new StackedEnsembleBlendingDriver();
   }
