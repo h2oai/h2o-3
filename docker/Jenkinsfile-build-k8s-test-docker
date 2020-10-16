@@ -15,7 +15,8 @@ properties(
             [
                 string(defaultValue: 'master', description: 'Branch to checkout', name: 'gitBranch'),
                 string(name: 'dockerRegistry', defaultValue: 'harbor.h2o.ai'),
-                booleanParam(name: 'force', defaultValue: false, description: 'If false and image with version specified by BuildConfig exists in repository, then the build fails.')
+                booleanParam(name: 'force', defaultValue: false, description: 'If false and image with version specified by BuildConfig exists in repository, then the build fails.'),
+                booleanParam(name: 'noCache', defaultValue: false, description: 'If set to true, the docker image is built from scratch, with no stages used from the cache.')
             ]
         )
     ]
@@ -44,6 +45,7 @@ node(NODE_LABEL) {
                 <li><strong>Git Branch:</strong> ${env.BRANCH_NAME}</li>
                 <li><strong>Version:</strong> ${version}</li>
                 <li><strong>Force Overwrite:</strong> ${params.force}</li>
+                <li><strong>No cache:</strong> ${params.noCache}</li>
                 </ul>
             """)
 
@@ -59,6 +61,8 @@ node(NODE_LABEL) {
     final String buildStageName = "Build [${IMAGE_NAME_PREFIX}, ${IMAGE_NAME_PREFIX_RUNNER}]"
     final String imageName = "${IMAGE_NAME_PREFIX}"
     final String imageNameRunner = "${IMAGE_NAME_PREFIX_RUNNER}"
+    final String noCache = params.noCache ? "--no-cache" : ""
+    
     stage(buildStageName) {
         try {
             pipelineContext.getBuildSummary().addStageSummary(this, buildStageName, '')
@@ -84,6 +88,7 @@ node(NODE_LABEL) {
                     ls
 
                     docker build \
+                        ${noCache} \
                         -t ${REGISTRY_PREFIX}/${imageName}:${version} \
                         -f jenkins-images/Dockerfile-k8s-test \
                     .
@@ -98,6 +103,7 @@ node(NODE_LABEL) {
                     ls
 
                     docker build \
+                        ${noCache} \
                         -t ${REGISTRY_PREFIX}/${imageNameRunner}:${version} \
                         -f jenkins-images/Dockerfile-k8s-test-h2o \
                     .
