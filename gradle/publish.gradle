@@ -23,6 +23,16 @@ artifacts {
     toPublish sourcesJar
 }
 
+if (project.ext.isRelease) {
+    java {
+        withJavadocJar()
+    }
+
+    javadoc {
+        options.encoding = 'UTF-8'
+    }
+}
+
 //
 // Record all generated POM files for given publishing task
 //
