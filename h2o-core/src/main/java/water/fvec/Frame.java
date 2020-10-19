@@ -1080,13 +1080,12 @@ public class Frame extends Lockable<Frame> {
   // Build real Vecs from loose Chunks, and finalize this Frame.  Called once
   // after any number of [create,close]NewChunks. This method also unlocks the frame.
   void finalizePartialFrame(long[] espc, String[][] domains, byte[] types) {
-    finalizePartialFrameAndLeaveLocked(espc, domains, types);
-    unlock();
+    finalizePartialFrame(espc, domains, types, false);
   }
   
   // Build real Vecs from loose Chunks, and finalize this Frame.  Called once
   // after any number of [create,close]NewChunks.
-  void finalizePartialFrameAndLeaveLocked(long[] espc, String[][] domains, byte[] types) {
+  void finalizePartialFrame(long[] espc, String[][] domains, byte[] types, boolean leaveLocked) {
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
     int nchunk = espc.length;
@@ -1118,6 +1117,10 @@ public class Frame extends Lockable<Frame> {
       DKV.put(_keys[i],vec,fs);
     }
     fs.blockForPending();
+    
+    if (!leaveLocked) {
+      unlock();
+    }
   }
 
   // --------------------------------------------------------------------------
