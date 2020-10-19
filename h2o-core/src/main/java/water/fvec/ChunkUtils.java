@@ -37,12 +37,12 @@ public class ChunkUtils {
     }
 
     public static Frame finalizeFrame(String keyName, long[] rowsPerChunk, byte[] colTypes, String[][] colDomains) {
-        return finalizeFrame(keyName, rowsPerChunk, colTypes, colDomains, false);
+        return finalizeFrame(keyName, rowsPerChunk, colTypes, colDomains, true);
     }
 
-    public static Frame finalizeFrame(String keyName, long[] rowsPerChunk, byte[] colTypes, String[][] colDomains, boolean leaveLocked) {
+    public static Frame finalizeFrame(String keyName, long[] rowsPerChunk, byte[] colTypes, String[][] colDomains, boolean unlock) {
         Frame fr = DKV.getGet(keyName);
-        fr.finalizePartialFrame(rowsPerChunk, colDomains, colTypes, leaveLocked);
+        fr.finalizePartialFrame(rowsPerChunk, colDomains, colTypes, unlock);
         return fr;
     }
 }
