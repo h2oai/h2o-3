@@ -17,6 +17,14 @@ with_no_h2o_progress <- function(expr) {
   force(expr)
 }
 
+#' Stop with a user friendly message if a user is missing the ggplot2 package or has an old version of it.
+.check_for_ggplot2 <- function(version = "3.3.0") {
+  if (!use.package("ggplot2", version, TRUE)) {
+    function_name <- as.character(sys.call(-1)[[1]])
+    stop("Function \"", function_name, "\" requires ggplot2 version ", version, " or higher.", call. = FALSE)
+  }
+}
+
 #' Get the algoritm used by the model_or_model_id
 #'
 #' @param model_or_model_id Model object or a string containing model id
@@ -552,6 +560,7 @@ with_no_h2o_progress <- function(expr) {
 #' @param top_n Plot just top_n features
 #' @return list of variable importance, groupped variable importance, and variable importance plot
 .plot_varimp <- function(model, top_n = 10) {
+  .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   with_no_h2o_progress({
@@ -1060,6 +1069,7 @@ h2o.shap_summary_plot <-
            columns = NULL,
            top_n_features = 20,
            sample_size = 1000) {
+    .check_for_ggplot2()
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
     if (!.is_h2o_model(model) || !.is_h2o_tree_model(model)) {
@@ -1264,6 +1274,7 @@ h2o.shap_explain_row_plot <-
   function(model, newdata, row_index, columns = NULL, top_n_features = 10,
            plot_type = c("barplot", "breakdown"),
            contribution_type = c("both", "positive", "negative")) {
+    .check_for_ggplot2()
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
     if (!.is_h2o_model(model) || !.is_h2o_tree_model(model)) {
@@ -1531,6 +1542,7 @@ h2o.shap_explain_row_plot <-
 #' @export
 h2o.varimp_heatmap <- function(object,
                                top_n = 20) {
+  .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   models_info <- .process_models_or_automl(object, NULL,
@@ -1632,6 +1644,7 @@ h2o.varimp_heatmap <- function(object,
 #' @export
 h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
                                           cluster_models = TRUE, triangular = TRUE) {
+  .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   models_info <- .process_models_or_automl(object, newdata, require_multiple_models = TRUE, top_n_from_AutoML = top_n)
@@ -1751,6 +1764,7 @@ h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
 #' }
 #' @export
 h2o.residual_analysis_plot <- function(model, newdata) {
+  .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   if (is.character(model))
@@ -1826,6 +1840,7 @@ h2o.pd_plot <- function(object,
                         target = NULL,
                         row_index = NULL,
                         max_levels = 30) {
+  .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   if (missing(column))
@@ -1997,6 +2012,7 @@ h2o.pd_multi_plot <- function(object,
                               target = NULL,
                               row_index = NULL,
                               max_levels = 30) {
+  .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   if (missing(column))
@@ -2257,6 +2273,7 @@ h2o.ice_plot <- function(model,
                          column,
                          target = NULL,
                          max_levels = 30) {
+  .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   if (missing(column))
@@ -2802,6 +2819,7 @@ h2o.explain <- function(object,
                         include_explanations = "ALL",
                         exclude_explanations = NULL,
                         plot_overrides = NULL) {
+  .check_for_ggplot2()
   models_info <- .process_models_or_automl(object, newdata)
   multiple_models <- length(models_info$model_ids) > 1
   result <- list()
@@ -3190,6 +3208,7 @@ h2o.explain_row <- function(object,
                             include_explanations = "ALL",
                             exclude_explanations = NULL,
                             plot_overrides = NULL) {
+  .check_for_ggplot2()
   models_info <- .process_models_or_automl(object, newdata)
   if (missing(row_index))
     stop("row_index must be specified!")
