@@ -1497,9 +1497,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, destination_key, j, true);
   }
   
-  public TwoDimTable getPermVarImpTable(Frame fr, Frame scored){
+  public TwoDimTable getPermVarImpTable(Frame fr, String metric){
     PermutationVarImp fi = new PermutationVarImp(this, fr);
-    return fi.getPermutationVarImp();
+    return fi.getPermutationVarImp(metric);
   }
   public TwoDimTable getPermVarImpTableOat(Frame fr, Frame scored){
     PermutationVarImp fi = new PermutationVarImp(this, fr);
