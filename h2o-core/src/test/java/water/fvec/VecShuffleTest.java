@@ -11,11 +11,12 @@ public class VecShuffleTest extends TestUtil{
 
 
     @BeforeClass
-    public static void stall()      { stall_till_cloudsize(1); }
+    public static void stall() {
+        stall_till_cloudsize(1);
+    } 
 
-    /**
-     * Create a frame with different Vec types to test MRTask for each type 
-     */
+
+    /** Create a frame with different Vec types to test MRTask for each type */
     private Frame makeTestFrame() {
         Frame fr = null;
         Vec v = ivec(1, 2, 3, 4, 5);
@@ -63,6 +64,7 @@ public class VecShuffleTest extends TestUtil{
             Scope.exit();
         }
     }
+    
     
     /**
      * Compares two vectors making sure the shuffling works and doesnt `lose` elements 
@@ -165,6 +167,29 @@ public class VecShuffleTest extends TestUtil{
             if (fr != null) fr.remove();
         }
     }
+    
+    @Test
+    public void testContainsAllElements(){
+        Frame fr = null;
+        Vec shuffled_feature = null;
+        try {
+            Scope.enter();
+            fr = new TestFrameBuilder()
+                    .withVecTypes(Vec.T_NUM, Vec.T_STR)
+                    .withColNames("first", "second")
+                    .withDataForCol(0, ard(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0))
+                    .withDataForCol(1, ar("a", "b", "c", "d", "e", "f","g", "h", "i", "j", "k"))
+                    .build();
+            Scope.track(fr);
+            DKV.put(fr._key, fr);
+
+            checkElements(fr.vec(0), VecUtils.ShuffleVec(fr.vec(0), fr.vec(0).makeCopy()));
+            
+        } finally {
+            Scope.exit();
+            fr.remove();
+        }
+    }            
 
     /**
      * Test Bigger frame with unique Double values
@@ -187,7 +212,6 @@ public class VecShuffleTest extends TestUtil{
                 double rndCoe = randomnessCoefficient(fr.vec(0), shuffledFeature);
                 Assert.assertEquals(1.0, rndCoe, 1e-2);
             }
-
         } finally {
             Scope.exit();
             if (shuffledFeature != null) shuffledFeature.remove();
