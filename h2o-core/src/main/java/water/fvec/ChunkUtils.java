@@ -42,4 +42,9 @@ public class ChunkUtils {
         return fr;
     }
 
+    public static Frame finalizeFrameAndLeaveLocked(String keyName, long[] rowsPerChunk, byte[] colTypes, String[][] colDomains){
+        Frame fr = DKV.getGet(keyName);
+        fr.finalizePartialFrameAndLeaveLocked(rowsPerChunk, colDomains, colTypes);
+        return fr;
+    }
 }
