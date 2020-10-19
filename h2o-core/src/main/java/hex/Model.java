@@ -1656,16 +1656,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @return TwoDimTable of Double values having the variables as columns
    * and as rows their relative, scaled and percentage importance
    */
-  public TwoDimTable getPermVarImpTable(Frame fr, String metric) {
-    if (this._output._scoring_history == null)
-      throw new IllegalArgumentException("Model " + this._key + "must be scored!");
-    PermutationVarImp pvi = new PermutationVarImp(this, fr);
-    return pvi.getPermutationVarImp(metric);
-  }
-  
-  public TwoDimTable getPermVarImpTable(Frame fr, Frame scored){
+  public TwoDimTable getPermVarImpTable(Frame fr, String metric){
     PermutationVarImp fi = new PermutationVarImp(this, fr);
-    return fi.getPermutationVarImp();
+    return fi.getPermutationVarImp(metric);
   }
   
   public TwoDimTable getPermVarImpTableOat(Frame fr, Frame scored){
