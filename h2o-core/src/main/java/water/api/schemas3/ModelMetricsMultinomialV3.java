@@ -53,7 +53,7 @@ public class ModelMetricsMultinomialV3<I extends ModelMetricsMultinomial, S exte
     AUC = modelMetrics.auc();
     pr_auc = modelMetrics.pr_auc();
     
-    if (modelMetrics._auc!= null) {
+    if (modelMetrics._auc != null && modelMetrics._auc._calculateAuc) {
       TwoDimTable aucTable = modelMetrics._auc.getTable(false);
       multinomial_auc_table = (TwoDimTableV3) SchemaServer.schema(this.getSchemaVersion(), aucTable).fillFromImpl(aucTable);
 

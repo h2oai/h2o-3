@@ -38,15 +38,15 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     sb.append(" hit ratios: " + Arrays.toString(_hit_ratios) + "\n");
     sb.append(" AUC: "+auc()+ "\n");
     sb.append(" auc_pr: "+ pr_auc()+ "\n");
-    if(_domain.length <= 20) {
-        sb.append(" AUC table: " + _auc.getAucTable());
+    if(_auc == null){
+      sb.append(" AUC table: too large to compute.\n");
+      sb.append(" auc_pr table: too large to compute.\n");
+    } else if(_domain.length <= 20) {
+      sb.append(" AUC table: " + _auc.getAucTable());
+      sb.append(" auc_pr table: " + _auc.getAucPrTable());
     } else {
-        sb.append(" AUC table: too large to print.\n");
-    }
-    if(_domain.length <= 20) {
-        sb.append(" auc_pr table: " + _auc.getAucPrTable());
-    } else {
-        sb.append(" auc_pr table: too large to print.\n");
+      sb.append(" AUC table: too large to print.\n");
+      sb.append(" auc_pr table: too large to print.\n");
     }
     if (cm() != null) {
       if (cm().nclasses() <= 20)
@@ -63,11 +63,19 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   @Override public float[] hr() { return _hit_ratios; }
   
   public double auc() {
-    return _auc.auc();
+    if(_auc != null) {
+      return _auc.auc();
+    } else {
+      return Double.NaN;
+    }
   }
 
   public double pr_auc() {
-    return _auc.pr_auc();
+    if(_auc != null) {
+      return _auc.pr_auc();
+    } else {
+      return Double.NaN;
+    }
   }
 
   public static ModelMetricsMultinomial getFromDKV(Model model, Frame frame) {
@@ -213,8 +221,9 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     double[/*K*/] _hits;            // the number of hits for hitratio, length: K
     int _K;               // TODO: Let user set K
     double _logloss;
-    AUC2.AUCBuilder[][] _ovoAucs;
-    AUC2.AUCBuilder[] _ovrAucs;
+    boolean _calculateAuc;
+    AUC2.AUCBuilder[/*nclasses*/][/*nclasses*/] _ovoAucs;
+    AUC2.AUCBuilder[/*nclasses*/] _ovrAucs;
 
     public MetricBuilderMultinomial( int nclasses, String[] domain ) {
       super(nclasses,domain);
@@ -223,15 +232,19 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       _K = Math.min(10,_nclasses);
       _hits = new double[_K];
       // matrix for pairwise AUCs
-      _ovoAucs = new AUC2.AUCBuilder[domainLength][domainLength];
-      _ovrAucs = new AUC2.AUCBuilder[domainLength];
-      for(int i = 0; i < domainLength; i++){
-        _ovrAucs[i] = new AUC2.AUCBuilder(AUC2.NBINS);
-        for(int j = 0; j < domainLength; j++)
-          // diagonal is not used
-          if(i != j) {
-            _ovoAucs[i][j] = new AUC2.AUCBuilder(AUC2.NBINS);
+      _calculateAuc = domainLength <= MultinomialAUC.MAX_DOMAIN_SIZE;
+      if(_calculateAuc) {
+        _ovoAucs = new AUC2.AUCBuilder[domainLength][domainLength];
+        _ovrAucs = new AUC2.AUCBuilder[domainLength];
+        for (int i = 0; i < domainLength; i++) {
+          _ovrAucs[i] = new AUC2.AUCBuilder(AUC2.NBINS);
+          for (int j = 0; j < domainLength; j++) {
+            // diagonal is not used
+            if (i != j) {
+              _ovoAucs[i][j] = new AUC2.AUCBuilder(AUC2.NBINS);
+            }
           }
+        }
       }
     }
 
@@ -268,7 +281,9 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       _logloss += w*MathUtils.logloss(err);
       
       // compute multinomial pairwise AUCs
-      calculateAucsPerRow(ds, iact, w);
+      if(_calculateAuc) {
+        calculateAucsPerRow(ds, iact, w);
+      }
       return ds;                // Flow coding
     }
     
@@ -302,11 +317,13 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       ArrayUtils.add(_cm, mb._cm);
       _hits = ArrayUtils.add(_hits, mb._hits);
       _logloss += mb._logloss;
-      for(int i = 0; i < _ovoAucs.length; i++){
-        _ovrAucs[i].reduce(mb._ovrAucs[i]);
-        for (int j = 0; j < _ovoAucs[0].length; j++) {
-          if(i != j) {
-            _ovoAucs[i][j].reduce(mb._ovoAucs[i][j]);
+      if(_calculateAuc) {
+        for (int i = 0; i < _ovoAucs.length; i++) {
+          _ovrAucs[i].reduce(mb._ovrAucs[i]);
+          for (int j = 0; j < _ovoAucs[0].length; j++) {
+            if (i != j) {
+              _ovoAucs[i][j].reduce(mb._ovoAucs[i][j]);
+            }
           }
         }
       }
@@ -326,7 +343,9 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         mse = _sumsqe / _wcount;
         logloss = _logloss / _wcount;
       }
-      MultinomialAUC auc = new MultinomialAUC(_ovrAucs,_ovoAucs, _domain, _wcount == 0, m._parms._multinomial_auc_type);
+      // TODO if model is null - add possibility to set type? 
+      MultinomialAucType type = m != null ? m._parms._multinomial_auc_type : MultinomialAucType.AUTO;
+      MultinomialAUC auc = new MultinomialAUC(_ovrAucs,_ovoAucs, _domain, _wcount == 0, type);
       ModelMetricsMultinomial mm = new ModelMetricsMultinomial(m, f, _count, mse, _domain, sigma, cm,
                                                                hr, logloss, auc, _customMetric);
       if (m!=null) m.addModelMetrics(mm);

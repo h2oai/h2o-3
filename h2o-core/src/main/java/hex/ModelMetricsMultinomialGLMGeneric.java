@@ -17,9 +17,9 @@ public class ModelMetricsMultinomialGLMGeneric extends ModelMetricsMultinomialGe
                                            TwoDimTable confusion_matrix, TwoDimTable hit_ratio_table, double logloss, CustomMetric customMetric,
                                            double mean_per_class_error, long nullDegressOfFreedom, long residualDegressOfFreedom,
                                            double resDev, double nullDev, double aic, TwoDimTable coefficients_table, double r2,
-                                           MultinomialAUC auc, final String description) {
+                                           TwoDimTable multinomial_auc_table, TwoDimTable multinomial_aucpr_table, final String description) {
     super(model, frame, nobs, mse, domain, sigma, confusion_matrix, hit_ratio_table, logloss, customMetric, mean_per_class_error, r2,
-            auc, description);
+            multinomial_auc_table, multinomial_aucpr_table, description);
     _nullDegressOfFreedom = nullDegressOfFreedom;
     _residualDegressOfFreedom = residualDegressOfFreedom;
     _resDev = resDev;
