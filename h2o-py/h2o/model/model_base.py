@@ -484,23 +484,9 @@ class ModelBase(h2o_meta(Keyed)):
         :returns: A list or Pandas DataFrame.
         """
         model = self._model_json["output"]
-        if self.algo=='glm' or self.algo=='gam' or "variable_importances" in list(model.keys()) and model["variable_importances"]:
-            if self.algo=='glm' or self.algo=='gam':
-                tempvals = model["standardized_coefficient_magnitudes"].cell_values
-                maxVal = 0
-                sum=0
-                for item in tempvals:
-                    sum=sum+item[1]
-                    if item[1]>maxVal:
-                        maxVal = item[1]
-                vals = []
-                for item in tempvals:
-                    tempT = (item[0], item[1], item[1]/maxVal, item[1]/sum)
-                    vals.append(tempT)
-                header = ["variable", "relative_importance", "scaled_importance", "percentage"]
-            else:
-                vals = model["variable_importances"].cell_values
-                header = model["variable_importances"].col_header
+        if "variable_importances" in list(model.keys()) and model["variable_importances"]:
+            vals = model["variable_importances"].cell_values
+            header = model["variable_importances"].col_header
                 
             if use_pandas and can_use_pandas():
                 import pandas

@@ -24,6 +24,9 @@ public class GAMModelV3 extends ModelSchemaV3<GAMModel, GAMModelV3, GAMModel.GAM
     @API(help="Table of Standardized Coefficients Magnitudes")
     TwoDimTableV3 standardized_coefficient_magnitudes;
 
+    @API(help="Variable Importances", direction=API.Direction.OUTPUT, level = API.Level.secondary)
+    TwoDimTableV3 variable_importances;
+
     @API(help="key storing gam columns and predictor columns.  For debugging purposes only")
     String gam_transformed_center_key;
     

@@ -1442,9 +1442,14 @@ public class ArrayUtils {
    * @param values values
    */
   public static void sort(final int[] idxs, final double[] values) {
-    sort(idxs, values, 500);
+    sort(idxs, values, 500, 1);
   }
+  
   public static void sort(final int[] idxs, final double[] values, int cutoff) {
+    sort(idxs, values, cutoff, 1);
+  }
+  // set increasing to 1 for ascending sort and -1 for descending sort
+  public static void sort(final int[] idxs, final double[] values, int cutoff, int increasing) {
     if (idxs.length < cutoff) {
       //hand-rolled insertion sort
       for (int i = 0; i < idxs.length; i++) {
@@ -1461,7 +1466,8 @@ public class ArrayUtils {
       Arrays.sort(d, new Comparator<Integer>() {
         @Override
         public int compare(Integer x, Integer y) {
-          return values[x] < values[y] ? -1 : (values[x] > values[y] ? 1 : 0);
+          return values[x]*increasing < values[y]*increasing ? -1 : 
+                  (values[x]*increasing > values[y]*increasing ? 1 : 0);
         }
       });
       for (int i = 0; i < idxs.length; ++i) idxs[i] = d[i];
