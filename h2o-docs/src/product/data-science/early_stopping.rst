@@ -10,6 +10,29 @@ Early Stopping in All Supervised Algorithms
 
 The ``max_runtime_secs`` option specifes the maximum runtime in seconds that you want to allot in order to complete the model. If this maximum runtime is exceeded before the model build is completed, then the model will fail. When performing a grid search, this option specifies the maximum runtime in seconds for the entire grid. This option can also be combined with ``max_runtime_secs`` in the model parameters. If ``max_runtime_secs`` is not set in the model parameters, then each model build is launched with a limit equal to the remainder of the grid time. On the other hand, if ``max_runtime_secs`` is set in the model parameters, then each build is launched with a limit equal to the minimum of the model time limit and the remaining time for the grid.
 
+Early stopping is on by default in DNN, but must be manually turned on for GBM/DRF by setting ``stopping_rounds`` > 0. This lets the model find the optimal moment to stop training. Early stopping can be done using only a ``training_frame`` (which is not recommended), using a ``validation_frame``, or using cross-validation data. 
+
+**Note:** When using cross-validation data and a ``validation_frame`` at the same time, only the cross-validation data will be used for early stopping in the final model.
+
+Current Protocol
+''''''''''''''''
+
+If you have provided:
+
+- only a ``training_frame``, then the training data will be used for early stopping;
+- a ``training_frame`` and a ``validation_frame``, then the validation data will be used for early stopping;
+- a ``training_frame``, a ``validation_frame``, and ``nfolds`` > 1, then the cross-validation data will be used for early stopping;
+- a ``training_frame`` and ``nfolds`` > 1, then the cross-validation data will be used for early stopping.
+
+Cross-Validation
+''''''''''''''''
+
+To clarify: when we say "cross-validation data is used for early stopping," we don't mean cross-validated metrics (vs validation metrics). The typical definition for "cross-validation-based early stopping" is that you simply use xval metrics instead of validation metrics. The way we do it, however, is slightly different:
+
+1. If a ``validation_frame`` is provided, then the xval models will use the ``validation_frame`` for early stopping (or the ``training_frame``, if the ``validation_frame`` is not provided). However, on the final model, we do not use ``validation_frame``-based early stopping. Actually, we do no early stopping at all. We just set ``ntrees`` equal to the average of the optimal ``ntrees`` found across all xval models.
+2. If a ``validation_frame`` is not provided, then the xval models will each use the holdout fold as a "validation set" for early stopping. Again, the final model just uses ``ntrees`` equal to the average of the optimal ``ntrees`` found across all xval models.
+
+
 Early Stopping in AutoML, Grid Search, Deep Learning, DRF, GBM, and XGBoost
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
