@@ -196,6 +196,7 @@ allprojects {
 
     ext {
         isRelease = rootProject.hasProperty("doRelease")
+        isMakeJavadoc = rootProject.hasProperty("makeJavadoc")
         isCi = isCi
     }
 }

@@ -69,9 +69,13 @@ if [ -n "$DO_RELEASE" ]; then
   DO_RELEASE="-PdoRelease"
 fi
 
+if [ -n "$MAKE_JAVADOC" ]; then
+  MAKE_JAVADOC="-PmakeJavadoc"
+fi
+
 # Run some required gradle tasks to produce final build output.
 ./gradlew booklets
-./gradlew $DO_RELEASE publish
+./gradlew $DO_RELEASE $MAKE_JAVADOC publish
 
 # Generate Py Docs
 (cd h2o-py && sphinx-build -b html docs/ docs/docs/)

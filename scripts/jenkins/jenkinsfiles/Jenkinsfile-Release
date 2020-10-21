@@ -659,6 +659,9 @@ private setReleaseJobProperties(final pipelineContext) {
             env.DO_RELEASE = true
         }
     }
+
+    env.MAKE_JAVADOC = true
+
     sh "printenv | sort"
 }
 
