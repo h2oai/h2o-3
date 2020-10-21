@@ -328,7 +328,7 @@ public final class ComputationState {
 
   public DataInfo activeDataMultinomial(int c) {return _activeDataMultinomial != null?_activeDataMultinomial[c]:_dinfo;}
 
-  private static double [] extractSubRange(int N, int c, int [] ids, double [] src) {
+  public static double [] extractSubRange(int N, int c, int [] ids, double [] src) {
     if(ids == null) return Arrays.copyOfRange(src,c*N,c*N+N);
     double [] res = MemoryManager.malloc8d(ids.length);
     int j = 0;
