@@ -1,5 +1,5 @@
 Early Stopping
---------------
+~~~~~~~~~~~~~~
 
 Most of the H2O supervised learning algorithms allow for early stopping during model building and scoring.   This lets the model find the optimal moment to stop training. Early stopping can be turned on/off in most algorithms via the ``stopping_rounds`` parameter.  Early stopping is turned on by default in Deep Learning (DNN), but must be manually turned on for the tree-based models (GBM/DRF/XGBoost) by setting ``stopping_rounds`` > 0.  In GLM and GAM, early stopping is turned on by default and can be disabled via the ``early_stopping`` parameter.
 
@@ -16,8 +16,7 @@ If you have provided:
 - ``training_frame``, ``validation_frame``, and ``nfolds`` > 1: cross-validation data will be used to estimate the optimal stopping point;
 - ``training_frame`` and ``nfolds`` > 1: cross-validation data will be used to estimate the optimal stopping point.
 
-Early Stopping via Cross-Validation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Early Stopping via Cross-Validation**
 
 When cross-validation is turned on, the cross-validation process is used to determine the optimimal early stopping point.  Above, *"cross-validation data will be used to estimate the optimal stopping point"* is defined as follows: 
 
