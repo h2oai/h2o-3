@@ -4,10 +4,10 @@ import hex.DataInfo;
 import hex.tree.xgboost.matrix.SparseMatrix;
 import hex.tree.xgboost.matrix.SparseMatrixDimensions;
 import hex.tree.xgboost.matrix.SparseMatrixFactory;
-import ml.dmlc.xgboost4j.java.Booster;
-import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.Rabit;
-import ml.dmlc.xgboost4j.java.XGBoostError;
+import ai.h2o.xgboost4j.java.Booster;
+import ai.h2o.xgboost4j.java.DMatrix;
+import ai.h2o.xgboost4j.java.Rabit;
+import ai.h2o.xgboost4j.java.XGBoostError;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -838,7 +838,7 @@ public class XGBoostUtilsTest extends TestUtil {
         };
 
 
-        booster = ml.dmlc.xgboost4j.java.XGBoost.train(train, nativeParms, nround, watches, null, null);
+        booster = ai.h2o.xgboost4j.java.XGBoost.train(train, nativeParms, nround, watches, null, null);
         assertNotNull(booster);
         final float[][] predict = booster.predict(train);
         assertNotNull(predict);

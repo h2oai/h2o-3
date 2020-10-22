@@ -2,8 +2,8 @@ package hex.tree.xgboost.task;
 
 import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.matrix.MatrixLoader;
-import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.XGBoostError;
+import ai.h2o.xgboost4j.java.DMatrix;
+import ai.h2o.xgboost4j.java.XGBoostError;
 import org.apache.log4j.Logger;
 import water.H2O;
 import water.Key;
