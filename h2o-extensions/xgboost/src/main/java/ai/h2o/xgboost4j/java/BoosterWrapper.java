@@ -1,4 +1,4 @@
-package ml.dmlc.xgboost4j.java;
+package ai.h2o.xgboost4j.java;
 
 import hex.tree.xgboost.util.BoosterHelper;
 
