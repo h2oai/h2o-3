@@ -18,7 +18,7 @@ with_no_h2o_progress <- function(expr) {
 }
 
 #' Stop with a user friendly message if a user is missing the ggplot2 package or has an old version of it.
-.check_for_ggplot2 <- function(version = "3.3.0") {
+.check_for_ggplot2 <- function(version = "3.0.0") {
   if (!use.package("ggplot2", version, TRUE)) {
     function_name <- as.character(sys.call(-1)[[1]])
     stop("Function \"", function_name, "\" requires ggplot2 version ", version, " or higher.", call. = FALSE)
@@ -1840,7 +1840,7 @@ h2o.pd_plot <- function(object,
                         target = NULL,
                         row_index = NULL,
                         max_levels = 30) {
-  .check_for_ggplot2()
+  .check_for_ggplot2("3.3.0")
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   if (missing(column))
@@ -2012,7 +2012,7 @@ h2o.pd_multi_plot <- function(object,
                               target = NULL,
                               row_index = NULL,
                               max_levels = 30) {
-  .check_for_ggplot2()
+  .check_for_ggplot2("3.3.0")
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   if (missing(column))
@@ -2273,7 +2273,7 @@ h2o.ice_plot <- function(model,
                          column,
                          target = NULL,
                          max_levels = 30) {
-  .check_for_ggplot2()
+  .check_for_ggplot2("3.3.0")
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   if (missing(column))
