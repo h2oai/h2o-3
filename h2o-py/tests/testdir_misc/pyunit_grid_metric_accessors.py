@@ -77,7 +77,7 @@ def grid_metric_accessors():
 
     # using list from http://docs.h2o.ai/h2o/latest-stable/h2o-docs/performance-and-prediction.html#classification
     # + common ones
-    for metric in ['logloss', 'mse', 'rmse', 'mean_per_class_error']:
+    for metric in ['logloss', 'mse', 'rmse', 'mean_per_class_error', 'auc', 'aucpr']:
         val = getattr(gbm_grid, metric)()
         assert isinstance(val, dict)
         for v in val.values():
