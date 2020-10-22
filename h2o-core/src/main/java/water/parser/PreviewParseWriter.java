@@ -6,6 +6,8 @@ import water.Iced;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;
+import java.util.Collection;
+import java.util.Collections;
 
 /** Class implementing ParseWriter, on behalf ParseSetup
  * to examine the contents of a file for guess the column types.
@@ -18,7 +20,7 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
   protected int _invalidLines;
   private   String []   _colNames;
   protected String [][] _data = new String[MAX_PREVIEW_LINES][];
-  private IcedHashMap<String,String>[] _domains;  //used in leiu of a HashSet
+  private Collection<String>[] _domains;
   int [] _nnums;
   int [] _nstrings;
   int [] _ndates;
@@ -30,6 +32,17 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
 
   protected PreviewParseWriter() {}
   protected PreviewParseWriter(int ncols) { setColumnCount(ncols); }
+  protected PreviewParseWriter(int ncols, Collection<String>[] domains) {
+    if (domains == null) {
+      throw new IllegalArgumentException("Domains can't be null.");
+    }
+    if (domains.length != ncols) {
+      String message = String.format("Number of domains (%d) must be the same as ncols (%d).", domains.length, ncols);
+      throw new IllegalArgumentException(message);
+    }
+    setColumnCount(ncols);
+    _domains = domains;
+  }
 
   String[] colNames() { return _colNames; }
 
@@ -49,9 +62,9 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
       _ndates = new int[n];
       _nnums = new int[n];
       _nempty = new int[n];
-      _domains = new IcedHashMap[n];
+      _domains = new Collection[n];
       for(int i = 0; i < n; ++i)
-        _domains[i] = new IcedHashMap<>();
+        _domains[i] = Collections.newSetFromMap(new IcedHashMap<>());
       for(int i =0; i < MAX_PREVIEW_LINES; i++)
         _data[i] = new String[n];
     } /*else if (n > _ncols) { // resize
@@ -120,7 +133,7 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
 
       //Add string to domains list for later determining string, NA, or categorical
       ++_nstrings[colIdx];
-      _domains[colIdx].put(str.toString(),"");
+      _domains[colIdx].add(str.toString());
 
       if (_nlines < MAX_PREVIEW_LINES)
         _data[_nlines][colIdx] = str.toString();
@@ -151,10 +164,10 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
       if( _domains[i].size() == 1 && _ndates[i]==0 ) {
         // Obvious NA, or few instances of the single string, declare numeric
         // else categorical
-        types[i] = (_domains[i].containsKey("NA") ||
-                    _domains[i].containsKey("na") ||
-                    _domains[i].containsKey("Na") ||
-                    _domains[i].containsKey("N/A") ||
+        types[i] = (_domains[i].contains("NA") ||
+                    _domains[i].contains("na") ||
+                    _domains[i].contains("Na") ||
+                    _domains[i].contains("N/A") ||
                     _nstrings[i] < _nnums[i]+_nzeros[i]) ? Vec.T_NUM : Vec.T_CAT;
         continue;
       }
@@ -250,8 +263,8 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
         prevA._nempty[i] += prevB._nempty[i];
         if (prevA._domains[i] != null) {
           if (prevB._domains[i] != null)
-            for(String s:prevB._domains[i].keySet())
-              prevA._domains[i].put(s,"");
+            for(String s:prevB._domains[i])
+              prevA._domains[i].add(s);
         } else if (prevB._domains[i] != null)
           prevA._domains = prevB._domains;
       }
