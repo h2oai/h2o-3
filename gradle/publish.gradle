@@ -23,7 +23,7 @@ artifacts {
     toPublish sourcesJar
 }
 
-if (project.ext.isRelease) {
+if (project.gradle.startParameter.taskNames.contains("publish")) {
     java {
         withJavadocJar()
     }
