@@ -42,6 +42,8 @@ dependencies {
   testCompile project(':h2o-test-support')
   testRuntimeOnly project(":${defaultWebserverModule}")
   testCompileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
+
+  testCompile group: 'com.h2database', name: 'h2', version: '1.4.200'
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
