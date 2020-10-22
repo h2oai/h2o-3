@@ -23,7 +23,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 
 @RunWith(H2ORunner.class)
-@CloudSize(5)
+@CloudSize(2)
 public class ImportSQLTest {
   public static final int ROW_COUNT = 20_000_000;
   //MySQL
