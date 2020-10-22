@@ -169,7 +169,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       if (! hasGPU(_parms._gpu_id))
         error("_backend", "GPU backend (gpu_id: " + _parms._gpu_id + ") is not functional. Check CUDA_PATH and/or GPU installation.");
 
-      if (H2O.getCloudSize() > 1 && !_parms._build_tree_one_node)
+      if (H2O.getCloudSize() > 1 && !_parms._build_tree_one_node && !allowMultiGPU())
         error("_backend", "GPU backend is not supported in distributed mode.");
 
       Map<String, Object> incompats = _parms.gpuIncompatibleParams();
@@ -252,6 +252,14 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     PlattScalingHelper.initCalibration(this, _parms, expensive);
   }
 
+  static boolean allowMultiGPU() {
+    return H2O.getSysBoolProperty("xgboost.multinode.gpu.enabled", false);
+  }
+
+  private static boolean gpuCheckEnabled() {
+    return H2O.getSysBoolProperty("xgboost.multinode.gpu.check.enabled", true);
+  }
+  
   @Override
   public XGBoost getModelBuilder() {
     return this;
@@ -337,7 +345,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
     final void buildModel() {
       if ((XGBoostModel.XGBoostParameters.Backend.auto.equals(_parms._backend) || XGBoostModel.XGBoostParameters.Backend.gpu.equals(_parms._backend)) &&
-              hasGPU(_parms._gpu_id) && H2O.getCloudSize() == 1 && _parms.gpuIncompatibleParams().isEmpty()) {
+              hasGPU(_parms._gpu_id) && (H2O.getCloudSize() == 1 || allowMultiGPU()) && _parms.gpuIncompatibleParams().isEmpty()) {
         synchronized (XGBoostGPULock.lock(_parms._gpu_id)) {
           buildModelImpl();
         }
@@ -653,6 +661,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   }
 
   private static boolean hasGPU(int gpu_id) {
+    if (!gpuCheckEnabled()) {
+      return true;
+    }
     if (gpu_id == 0 && DEFAULT_GPU_BLACKLISTED) // quick default path & no synchronization - if we already know we don't have the default GPU, let's not to find out again
       return false;
     boolean hasGPU = hasGPU_impl(gpu_id);
