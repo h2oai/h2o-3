@@ -1,8 +1,8 @@
 package hex.tree.xgboost;
 
-import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.Rabit;
-import ml.dmlc.xgboost4j.java.XGBoostError;
+import ai.h2o.xgboost4j.java.DMatrix;
+import ai.h2o.xgboost4j.java.Rabit;
+import ai.h2o.xgboost4j.java.XGBoostError;
 import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;

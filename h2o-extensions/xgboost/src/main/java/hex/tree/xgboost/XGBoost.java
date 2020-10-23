@@ -17,9 +17,9 @@ import hex.tree.xgboost.predict.XGBoostVariableImportance;
 import hex.tree.xgboost.remote.SteamExecutorStarter;
 import hex.tree.xgboost.util.FeatureScore;
 import hex.util.CheckpointUtils;
-import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.Rabit;
-import ml.dmlc.xgboost4j.java.XGBoostError;
+import ai.h2o.xgboost4j.java.DMatrix;
+import ai.h2o.xgboost4j.java.Rabit;
+import ai.h2o.xgboost4j.java.XGBoostError;
 import org.apache.log4j.Logger;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -690,7 +690,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     try {
       Map<String, String> localRabitEnv = new HashMap<>();
       Rabit.init(localRabitEnv);
-      ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, params, 1, watches, null, null);
+      ai.h2o.xgboost4j.java.XGBoost.train(trainMat, params, 1, watches, null, null);
       GPUS.add(gpu_id);
       return true;
     } catch (XGBoostError xgBoostError) {
