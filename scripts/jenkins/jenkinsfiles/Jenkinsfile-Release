@@ -237,7 +237,7 @@ try {
                             if(env.NIGHTLY_BUILD){
                                 CHART_NAME = "h2o-3-nightly"
                                 BUCKET = "h2oai-nightly-charts"
-                                VERSION = THREE_DIGITS_VERSION + "." + env.BUILD_NUMBER_DIR 
+                                VERSION = THREE_DIGITS_VERSION
                             } else {
                                 CHART_NAME = "h2o-3"
                                 BUCKET = "h2oai-charts"

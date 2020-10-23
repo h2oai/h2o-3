@@ -26,7 +26,8 @@ Authors@R: c(
     person("Jan", "Gorecki", role = c("ctb")),
     person("Matt", "Dowle", role = c("ctb")),
     person("Yuan", "Tang", role = c("ctb")),    
-    person("Lauren", "DiPerna", role = c("ctb")),    
+    person("Lauren", "DiPerna", role = c("ctb")), 
+    person("Tomas", "Fryda", role = c("ctb")),        
     person("H2O.ai", role = c("cph", "fnd"))
     )
 Description: R interface for 'H2O', the scalable open source machine learning
@@ -49,7 +50,7 @@ Imports: graphics,
          utils,
          RCurl,
          jsonlite
-Suggests: ggplot2,
+Suggests: ggplot2 (>= 3.3.0),
           mlbench,
           Matrix,
           slam,
