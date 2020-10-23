@@ -18,6 +18,8 @@ with_no_h2o_progress <- function(expr) {
 }
 
 #' Stop with a user friendly message if a user is missing the ggplot2 package or has an old version of it.
+#'
+#' @param version minimal required ggplot2 version
 .check_for_ggplot2 <- function(version = "3.0.0") {
   if (!use.package("ggplot2", version, TRUE)) {
     function_name <- as.character(sys.call(-1)[[1]])
