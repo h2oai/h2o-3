@@ -1022,7 +1022,7 @@ class ModelBase(h2o_meta(Keyed)):
         if self._model_json["algo"] == "glm":
             if self.actual_params.get("lambda_search"):
                 allowed_timesteps = ["iteration", "duration"]
-                allowed_metrics = ["deviance_train", "deviance_test"]
+                allowed_metrics = ["deviance_train", "deviance_test", "deviance_xval"]
                 # When provided with multiple alpha values, scoring history contains history of all...
                 scoring_history = scoring_history[scoring_history["alpha"] == self._model_json["output"]["alpha_best"]]
             elif self.actual_params["HGLM"]:
