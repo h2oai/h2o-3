@@ -474,8 +474,10 @@ EOF
                                     try {
                                         insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                             sh """
-                                                cp -r ${env.BUILD_NUMBER_DIR}/h2o-py/conda ${env.BUILD_NUMBER_DIR}/h2o-py/build
-                                                cd ${env.BUILD_NUMBER_DIR}/h2o-py/build/conda
+                                                export CONDA_PKGS_DIRS=${env.BUILD_NUMBER_DIR}/h2o-py/build/conda_cache
+                                                mkdir -p \$CONDA_PKGS_DIRS
+                                                cp -r ${env.BUILD_NUMBER_DIR}/h2o-py/conda ${env.BUILD_NUMBER_DIR}/h2o-py/build/main
+                                                cd ${env.BUILD_NUMBER_DIR}/h2o-py/build/main/conda
                                                 # Create conda package for current platform
                                                 conda config --append channels conda-forge
                                                 conda build h2o --output-folder "." --no-anaconda-upload --py ${pyVersion}
@@ -486,9 +488,7 @@ EOF
                                                 conda convert \$CONDA_PKG_CURRENT_ARCH_PATH -p all
 
                                                 s3cmd --acl-public put osx-64/\${PKG_NAME} ${condaS3Dir}/osx-64/\${PKG_NAME}
-                                                s3cmd --acl-public put linux-32/\${PKG_NAME} ${condaS3Dir}/linux-32/\${PKG_NAME}
                                                 s3cmd --acl-public put linux-64/\${PKG_NAME} ${condaS3Dir}/linux-64/\${PKG_NAME}
-                                                s3cmd --acl-public put win-32/\${PKG_NAME} ${condaS3Dir}/win-32/\${PKG_NAME}
                                                 s3cmd --acl-public put win-64/\${PKG_NAME} ${condaS3Dir}/win-64/\${PKG_NAME}
 
                                                 if [ "\$UPLOAD_TO_ANACONDA" = true ]; then
@@ -500,9 +500,7 @@ EOF
                                                         # upload all distribution packages
                                                         anaconda login --username ${ANACONDA_USERNAME} --password ${ANACONDA_PASSWORD}
                                                         anaconda upload osx-64/\${PKG_NAME}
-                                                        anaconda upload linux-32/\${PKG_NAME}
                                                         anaconda upload linux-64/\${PKG_NAME}
-                                                        anaconda upload win-32/\${PKG_NAME}
                                                         anaconda upload win-64/\${PKG_NAME}
                                                     fi
                                                 else
