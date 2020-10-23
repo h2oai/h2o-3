@@ -80,8 +80,9 @@ public final class PersistHdfs extends Persist {
   }
 
   // Loading HDFS files
+  @SuppressWarnings("unused") // called via reflection
   public PersistHdfs() { _iceRoot = null; }
-  public void cleanUp() { throw H2O.unimpl(); /** user-mode swapping not implemented */}
+  public void cleanUp() { throw H2O.unimpl(); /* user-mode swapping not implemented */}
 
   // Loading/Writing ice to HDFS
   public PersistHdfs(URI uri) {
@@ -187,47 +188,24 @@ public final class PersistHdfs extends Persist {
     // new library version.  Might make sense to go to straight to 's3a' which is a replacement
     // for 's3n'.
     //
-    long end, start = System.currentTimeMillis();
+    long start = System.currentTimeMillis();
     final byte[] b = MemoryManager.malloc1(max);
-    run(new Callable() {
-      @Override public Object call() throws Exception {
+    run(() -> {
         FileSystem fs = FileSystem.get(p.toUri(), CONF);
         FSDataInputStream s = null;
         try {
-//          fs.getDefaultBlockSize(p);
-
           s = fs.open(p);
-//          System.out.println("default block size = " + fs.getDefaultBlockSize(p));
-//          FileStatus f = fs.getFileStatus(p);
-//          BlockLocation [] bs = fs.getFileBlockLocations(f,0,f.getLen());
-//          System.out.println(Arrays.toString(bs));
-          if (p.toString().toLowerCase().startsWith("maprfs:")) {
-            // MapR behaves really horribly with the google ByteStreams code below.
-            // Instead of skipping by seeking, it skips by reading and dropping.  Very bad.
-            // Use the HDFS API here directly instead.
-
-            s.seek(skip);
-            s.readFully(b);
-          }
-          else {
-            // NOTE:
-            // The following line degrades performance of HDFS load from S3 API: s.readFully(skip,b,0,b.length);
-            // Google API's simple seek has better performance
-            // Load of 300MB file via Google API ~ 14sec, via s.readFully ~ 5min (under the same condition)
-//            ByteStreams.skipFully(s, skip_);
-//            ByteStreams.readFully(s, b);
-            s.seek(skip);
-            s.readFully(b);
-          }
+          s.seek(skip);
+          s.readFully(b);
         } finally {
           if (s != null) {
             FileUtils.close(s.getWrappedStream());
             FileUtils.closeSilently(s);
+          }
         }
         return null;
-      }
-    }, true, max);
-    end = System.currentTimeMillis();
+    });
+    long end = System.currentTimeMillis();
     if (end-start > 1000) // Only log read that took over 1 second to complete
       Log.debug("Slow Read: "+(end-start)+" millis to get bytes "+skip +"-"+(skip+b.length)+" in HDFS read.");
 
@@ -245,63 +223,42 @@ public final class PersistHdfs extends Persist {
   }
 
   public static void store(final Path path, final byte[] data) {
-    run(new Callable() {
-      @Override public Object call() throws Exception {
+    run(() -> {
         FileSystem fs = FileSystem.get(path.toUri(), CONF);
         fs.mkdirs(path.getParent());
-        FSDataOutputStream s = fs.create(path);
-        try {
+        try (FSDataOutputStream s = fs.create(path)) {
           s.write(data);
-        } finally {
-          s.close();
         }
         return null;
-      }
-    }, false, data.length);
+    });
   }
 
   @Override public void delete(final Value v) {
     assert this == H2O.getPM().getIce();
     assert !v.isPersisted();   // Upper layers already cleared out
 
-    run(new Callable() {
-      @Override public Object call() throws Exception {
+    run(() -> {
         Path p = new Path(_iceRoot, getIceName(v));
         FileSystem fs = FileSystem.get(p.toUri(), CONF);
         fs.delete(p, true);
         return null;
-      }
-    }, false, 0);
+    });
   }
 
-  private static class Size {
-    int _value;
-  }
-
-  private static void run(Callable c, boolean read, int size) {
-    // Count all i/o time from here, including all retry overheads
-    long start_io_ms = System.currentTimeMillis();
+  private static void run(Callable<?> c) {
     while( true ) {
       try {
-        long start_ns = System.nanoTime(); // Blocking i/o call timing - without counting repeats
         c.call();
-//        TimeLine.record_IOclose(start_ns, start_io_ms, read ? 1 : 0, size, Value.HDFS);
         break;
         // Explicitly ignore the following exceptions but
         // fail on the rest IOExceptions
       } catch( EOFException e ) {
-        e.printStackTrace();
-        System.out.println(e.getMessage());
         ignoreAndWait(e, true);
       } catch( SocketTimeoutException e ) {
         ignoreAndWait(e, false);
       } catch( IOException e ) {
         // Newer versions of Hadoop derive S3Exception from IOException
-        if (e.getClass().getName().contains("S3Exception")) {
-          ignoreAndWait(e, true);
-        } else {
-          ignoreAndWait(e, true);
-        }
+        ignoreAndWait(e, e.getClass().getName().contains("S3Exception"));
       } catch( RuntimeException e ) {
         // Older versions of Hadoop derive S3Exception from RuntimeException
         if (e.getClass().getName().contains("S3Exception")) {
@@ -340,7 +297,7 @@ public final class PersistHdfs extends Persist {
         if(file.isDirectory()) {
           addFolder(fs, pfs, keys, failed);
         } else if (file.getLen() > 0){
-          Key k = HDFSFileVec.make(pfs.toString(), file.getLen(), futures);
+          Key<?> k = HDFSFileVec.make(pfs.toString(), file.getLen(), futures);
           keys.add(k.toString());
           Log.debug("PersistHdfs: DKV.put(" + k + ")");
         }
@@ -365,17 +322,6 @@ public final class PersistHdfs extends Persist {
     return HDFSFileVec.make(fstatus[0].getPath().toString(), fstatus[0].getLen());
   }
 
-  public static FileSystem getFS(String path) throws IOException {
-    try {
-      return getFS(new URI(path));
-    } catch (URISyntaxException e) {
-      throw new RuntimeException(e);
-    }
-  }
-  public static FileSystem getFS(URI uri) throws IOException {
-    return FileSystem.get(uri, PersistHdfs.CONF);
-  }
-
   // Is there a bucket name without a trailing "/" ?
   private boolean isBareS3NBucketWithoutTrailingSlash(String s) {
     String s2 = s.toLowerCase();
@@ -392,19 +338,13 @@ public final class PersistHdfs extends Persist {
 
   @Override
   public ArrayList<String> calcTypeaheadMatches(String filter, int limit) {
-    // Get HDFS configuration
-    Configuration conf = PersistHdfs.CONF;
-
-    // Hack around s3://
-//    filter = convertS3toS3N(filter);
-
     // Handle S3N bare buckets - s3n://bucketname should be suffixed by '/'
     // or underlying Jets3n will throw NPE. filter name should be s3n://bucketname/
     if (isBareS3NBucketWithoutTrailingSlash(filter)) {
       filter += "/";
     }
     // Output matches
-    ArrayList<String> array = new ArrayList<String>();
+    ArrayList<String> array = new ArrayList<>();
     {
       // Filter out partials which are known to print out useless stack traces.
       String s = filter.toLowerCase();
@@ -415,7 +355,7 @@ public final class PersistHdfs extends Persist {
       Path p = new Path(filter);
       Path expand = p;
       if( !filter.endsWith("/") ) expand = p.getParent();
-      FileSystem fs = FileSystem.get(p.toUri(), conf);
+      FileSystem fs = FileSystem.get(p.toUri(), PersistHdfs.CONF);
       for( FileStatus file : fs.listStatus(expand) ) {
         Path fp = file.getPath();
         if( fp.toString().startsWith(p.toString()) ) {
