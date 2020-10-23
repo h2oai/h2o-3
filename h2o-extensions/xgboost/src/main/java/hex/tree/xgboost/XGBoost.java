@@ -257,7 +257,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   }
 
   private static boolean gpuCheckEnabled() {
-    return H2O.getSysBoolProperty("xgboost.multinode.gpu.check.enabled", true);
+    return H2O.getSysBoolProperty("xgboost.gpu.check.enabled", true);
   }
   
   @Override
