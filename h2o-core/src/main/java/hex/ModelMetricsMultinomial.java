@@ -18,7 +18,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   public final ConfusionMatrix _cm;
   public final double _logloss;
   public double _mean_per_class_error;
-  public final MultinomialAUC _auc;
+  public MultinomialAUC _auc;
   
   public ModelMetricsMultinomial(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma, ConfusionMatrix cm, float[] hr, double logloss, MultinomialAUC auc, CustomMetric customMetric) {
     super(model, frame, nobs, mse, domain, sigma, customMetric);

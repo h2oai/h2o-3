@@ -18,6 +18,7 @@ public class ModelMetricsMultinomialGeneric extends ModelMetricsMultinomial {
     super(model, frame, nobs, mse, domain, sigma, null, null, logloss, null, customMetric);
     _confusion_matrix_table = confusion_matrix; 
     _hit_ratio_table = hit_ratio_table;
+    _auc = new MultinomialAUC(multinomial_auc_table, multinomial_aucpr_table, domain, MultinomialAucType.AUTO);
     _multinomial_auc_table = multinomial_auc_table;
     _multinomial_aucpr_table = multinomial_aucpr_table;
     _mean_per_class_error = mean_per_class_error;
