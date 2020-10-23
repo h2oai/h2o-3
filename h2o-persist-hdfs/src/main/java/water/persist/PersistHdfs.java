@@ -220,8 +220,9 @@ public final class PersistHdfs extends Persist {
             s.readFully(b);
           }
         } finally {
-          s.getWrappedStream().close();
-          FileUtils.closeSilently(s);
+          if (s != null) {
+            FileUtils.close(s.getWrappedStream());
+            FileUtils.closeSilently(s);
         }
         return null;
       }
