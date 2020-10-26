@@ -98,7 +98,7 @@
 #'        Defaults to auto.
 #' @param backend Backend. By default (auto), a GPU is used if available. Must be one of: "auto", "gpu", "cpu". Defaults to
 #'        auto.
-#' @param gpu_id Which GPU to use.  Defaults to 0.
+#' @param gpu_id Which GPU(s) to use.
 #' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @examples
@@ -192,7 +192,7 @@ h2o.xgboost <- function(x,
                         reg_alpha = 0.0,
                         dmatrix_type = c("auto", "dense", "sparse"),
                         backend = c("auto", "gpu", "cpu"),
-                        gpu_id = 0,
+                        gpu_id = NULL,
                         gainslift_bins = -1,
                         verbose = FALSE)
 {
@@ -417,7 +417,7 @@ h2o.xgboost <- function(x,
                                         reg_alpha = 0.0,
                                         dmatrix_type = c("auto", "dense", "sparse"),
                                         backend = c("auto", "gpu", "cpu"),
-                                        gpu_id = 0,
+                                        gpu_id = NULL,
                                         gainslift_bins = -1,
                                         segment_columns = NULL,
                                         segment_models_id = NULL,
