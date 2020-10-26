@@ -268,7 +268,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public static XGBoostParameters.Backend getActualBackend(XGBoostParameters p, boolean verbose) {
     Consumer<String> log = verbose ? LOG::info : LOG::debug;
     if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
-      if (H2O.getCloudSize() > 1 && !p._build_tree_one_node) {
+      if (H2O.getCloudSize() > 1 && !p._build_tree_one_node && !XGBoost.allowMultiGPU()) {
         log.accept("GPU backend not supported in distributed mode. Using CPU backend.");
         return XGBoostParameters.Backend.cpu;
       } else if (! p.gpuIncompatibleParams().isEmpty()) {
