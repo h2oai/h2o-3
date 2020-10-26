@@ -1372,17 +1372,20 @@ public class TestUtil extends Iced {
     return weightsVec;
   }
 
+  @SuppressWarnings("rawtypes")
   public static GenModel toMojo(Model model, String testName, boolean readModelMetaData) {
     final String filename = testName + ".zip";
     StreamingSchema ss = new StreamingSchema(model.getMojo(), filename);
-    try {
-      FileOutputStream os = new FileOutputStream(ss.getFilename());
+    try (FileOutputStream os = new FileOutputStream(ss.getFilename())) {
       ss.getStreamWriter().writeTo(os);
-      os.close();
+    } catch (IOException e) {
+      throw new IllegalStateException("MOJO writing failed", e);
+    }
+    try {
       MojoReaderBackend cr = MojoReaderBackendFactory.createReaderBackend(filename);
       return ModelMojoReader.readFrom(cr, readModelMetaData);
-    } catch (IOException e1) {
-      throw new IllegalStateException("Internal MOJO loading failed", e1);
+    } catch (IOException e) {
+      throw new IllegalStateException("MOJO loading failed", e);
     } finally {
       boolean deleted = new File(filename).delete();
       if (!deleted) Log.warn("Failed to delete the file");
