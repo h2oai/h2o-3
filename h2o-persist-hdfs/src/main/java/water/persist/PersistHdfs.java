@@ -223,6 +223,7 @@ public final class PersistHdfs extends Persist {
           if (s != null) {
             FileUtils.close(s.getWrappedStream());
             FileUtils.closeSilently(s);
+          }
         }
         return null;
       }
