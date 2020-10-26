@@ -1,7 +1,7 @@
 package hex.tree.xgboost.matrix;
 
 import hex.tree.xgboost.task.XGBoostUploadMatrixTask;
-import ml.dmlc.xgboost4j.java.util.BigDenseMatrix;
+import ai.h2o.xgboost4j.java.util.BigDenseMatrix;
 import water.Key;
 
 import java.util.HashMap;

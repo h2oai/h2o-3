@@ -2,8 +2,8 @@ package hex.tree.xgboost.util;
 
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
-import ml.dmlc.xgboost4j.java.Booster;
-import ml.dmlc.xgboost4j.java.XGBoostError;
+import ai.h2o.xgboost4j.java.Booster;
+import ai.h2o.xgboost4j.java.XGBoostError;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
