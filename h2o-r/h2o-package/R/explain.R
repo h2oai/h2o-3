@@ -134,6 +134,16 @@ with_no_h2o_progress <- function(expr) {
   return(!.get_algorithm(model) %in% c("stackedensemble", "naivebayes"))
 }
 
+#' Get a mapping between columns and their domains
+#' @param model an h2o model
+#' @return list containing a mapping from column to its domains (levels)
+.get_domain_mapping <- function(model) {
+  domains <- model@model$domains
+  names(domains) <- model@model$names
+  return(domains)
+}
+
+
 #' Shortens model ids if possible (iff there will be same amount of unique model_ids as before)
 #' @param model_ids character vector
 #' @return character vector
@@ -519,19 +529,28 @@ with_no_h2o_progress <- function(expr) {
     }
   }
 
-  for (feature in names(to_process)) {
-    col_parts <- strsplit(feature, ".", fixed = TRUE)[[1]]
-    found <- FALSE
-    for (prefix_len in seq(from = length(col_parts), to = 1, by = -1)){
-      prefix <- paste0(head(col_parts, n = prefix_len), collapse = ".")
-      if (prefix %in% x) {
-        consolidated_varimps[[prefix]] <- consolidated_varimps[[prefix]] + varimps[[feature]]
-        found <- TRUE
-        break
+  domains <- .get_domain_mapping(model)
+  col_domain_mapping <- list()
+  for (col in names(domains)) {
+    if (!is.null(domains[[col]])) {
+      for (domain in c("missing(NA)", domains[[col]])) {
+        col_domain_mapping[[paste0(col, ".", domain)]] <- col
       }
     }
-    if (!found)
+  }
+
+  if (anyDuplicated(names(col_domain_mapping))) {
+    dups <- duplicated(names(col_domain_mapping)) | duplicated(names(col_domain_mapping), fromLast = TRUE)
+    stop("Ambiguous encoding of the column x category pairs: ", col_domain_mapping[dups])
+  }
+
+  for (feature in names(to_process)) {
+    if (feature %in% names(col_domain_mapping)) {
+      orig_col <- col_domain_mapping[[feature]]
+      consolidated_varimps[[orig_col]] <- consolidated_varimps[[orig_col]] + varimps[[feature]]
+    } else {
       stop(feature, " was not found in x!")
+    }
   }
 
   total_value <- sum(consolidated_varimps, na.rm = TRUE)

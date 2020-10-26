@@ -421,6 +421,17 @@ class NumpyFrame:
             yield col, self.get(col, with_categorical_names)
 
 
+
+def _get_domain_mapping(model):
+    """
+    Get a mapping between columns and their domains.
+
+    :return: Dictionary containing a mapping column -> factors
+    """
+    output = model._model_json["output"]
+    return dict(zip(output["names"], output["domains"]))
+
+
 def _shorten_model_ids(model_ids):
     import re
     regexp = re.compile(r"(.*)_AutoML_[\d_]+((?:_.*)?)$")  # nested group needed for Py2
@@ -1349,14 +1360,25 @@ def _consolidate_varimps(model):
     consolidated_varimps = {k: v for k, v in varimp.items() if k in x}
     to_process = {k: v for k, v in varimp.items() if k not in x}
 
+    domain_mapping = _get_domain_mapping(model)
+    encoded_cols = ["{}.{}".format(name, domain)
+                    for name, domains in domain_mapping.items()
+                    if domains is not None
+                    for domain in domains + ["missing(NA)"]]
+    if len(encoded_cols) > len(set(encoded_cols)):
+        for x in set(encoded_cols):
+            encoded_cols.remove(x)
+        raise RuntimeError("Ambiguous encoding of the column x category pairs: {}".format(set(encoded_cols)))
+
+    varimp_to_col = {"{}.{}".format(name, domain): name
+                     for name, domains in domain_mapping.items()
+                     if domains is not None
+                     for domain in domains + ["missing(NA)"]
+                     }
     for feature in to_process.keys():
-        col_parts = feature.split(".")
-        for i in range(1, len(col_parts) + 1)[::-1]:
-            if ".".join(col_parts[:i]) in x:
-                column = ".".join(col_parts[:i])
-                consolidated_varimps[column] = consolidated_varimps.get(column, 0) + to_process[
-                    feature]
-                break
+        if feature in varimp_to_col:
+            column = varimp_to_col[feature]
+            consolidated_varimps[column] = consolidated_varimps.get(column, 0) + to_process[feature]
         else:
             raise RuntimeError("Cannot find feature {}".format(feature))
 
