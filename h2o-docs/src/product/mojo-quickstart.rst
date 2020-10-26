@@ -748,14 +748,14 @@ Example
 Converting MOJOs to ONNX format
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To convert a H2O MOJO into the ONNX format use the `onnxmltools <https://github.com/onnx/onnxmltools>`__ python package. Currently only a subset of H2O MOJOs can be converted to the ONNX format:
+To convert a H2O MOJO into the ONNX format, use the `onnxmltools <https://github.com/onnx/onnxmltools>`__ python package. Currently, only a subset of H2O MOJOs can be converted to the ONNX format:
 
 - supported algorithms: GBM
-- poisson, gamma, tweedie distributions not supported
-- multinomial distribution supported with 3 or more classes (use binomial otherwise)
-- models with categorical splits not supported
+- supports multinomial distribution with 3 or more classes (use binomial otherwise)
+- does not support poisson, gamma, or tweedie distributions
+- does not support models with categorical splits
 
-For more documentation and examples check the onnxmltools project on `github <https://github.com/onnx/onnxmltools>`__.
+For examples and further documentation, check the onnxmltools project on `github <https://github.com/onnx/onnxmltools>`__.
 
 FAQ
 ~~~
