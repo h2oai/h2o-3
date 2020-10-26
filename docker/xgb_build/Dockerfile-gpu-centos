@@ -60,6 +60,11 @@ RUN \
     /usr/sbin/install_python_source_centos 3.7.0 /usr/src/Setup.dist.patched && \
     /usr/sbin/install_python_source_centos 3.8.0
 
+# Install the NCCL library
+RUN \
+    yum install -y libnccl libnccl-devel libnccl-static
+
+
 # Add the Jenkins user
 RUN \
     groupadd -g ${JENKINS_GID} jenkins && \
