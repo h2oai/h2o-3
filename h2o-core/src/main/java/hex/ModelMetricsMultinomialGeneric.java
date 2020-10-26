@@ -14,11 +14,12 @@ public class ModelMetricsMultinomialGeneric extends ModelMetricsMultinomial {
 
   public ModelMetricsMultinomialGeneric(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma,
                                         TwoDimTable confusion_matrix, TwoDimTable hit_ratio_table, double logloss, CustomMetric customMetric,
-                                        double mean_per_class_error, double r2, TwoDimTable multinomial_auc_table, TwoDimTable multinomial_aucpr_table, final String description) {
+                                        double mean_per_class_error, double r2, TwoDimTable multinomial_auc_table, TwoDimTable multinomial_aucpr_table, 
+                                        MultinomialAucType type, final String description) {
     super(model, frame, nobs, mse, domain, sigma, null, null, logloss, null, customMetric);
     _confusion_matrix_table = confusion_matrix; 
     _hit_ratio_table = hit_ratio_table;
-    _auc = new MultinomialAUC(multinomial_auc_table, multinomial_aucpr_table, domain, MultinomialAucType.AUTO);
+    _auc = new MultinomialAUC(multinomial_auc_table, multinomial_aucpr_table, domain, type);
     _multinomial_auc_table = multinomial_auc_table;
     _multinomial_aucpr_table = multinomial_aucpr_table;
     _mean_per_class_error = mean_per_class_error;

@@ -9,6 +9,7 @@ public class MojoModelMetricsMultinomial extends MojoModelMetricsSupervised {
   public Table _confusion_matrix;
   @SerializedName("hit_ratio_table")
   public Table _hit_ratios;
+  public String _multinomial_auc_type;
   @SerializedName("multinomial_auc_table")
   public Table _multinomial_auc;
   @SerializedName("multinomial_aucpr_table")
