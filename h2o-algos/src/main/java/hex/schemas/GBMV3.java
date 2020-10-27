@@ -69,11 +69,6 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "check_constant_response",
       "gainslift_bins", 
       "multinomial_auc_type",
-//      "use_new_histo_tsk",
-//      "col_block_sz",
-//      "min_threads",
-//      "shared_histo",
-//      "unordered"
     };
 
     // Input fields

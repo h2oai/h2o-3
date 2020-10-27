@@ -726,7 +726,7 @@ Using the previous example, run the following to retrieve the logloss value.
 AUC (Area Under the ROC Curve)
 ##############################
 
-This model metric is used to evaluate how well a binary classification model is able to distinguish between true positives and false positives. An AUC of 1 indicates a perfect classifier, while an AUC of .5 indicates a poor classifier, whose performance is no better than random guessing. H2O uses the trapezoidal rule to approximate the area under the ROC curve. 
+This model metric is used to evaluate how well a binary classification model is able to distinguish between true positives and false positives. An AUC of 1 indicates a perfect classifier, while an AUC of .5 indicates a poor classifier, whose performance is no better than random guessing.
 
 H2O uses the trapezoidal rule to approximate the area under the ROC curve. (**Tip**: AUC is usually not the best metric for an imbalanced binary target because a high number of True Negatives can cause the AUC to look inflated. For an imbalanced binary target, we recommend AUCPR or MCC.)
 
@@ -756,14 +756,13 @@ Using the previous example, run the following to retrieve the AUC.
         airlines_gbm.auc(train=True, valid=True, xval=False)
         {u'train': 0.7857920674306693, u'valid': 0.7414970113257631}
 
+
 AUCPR (Area Under the Precision-Recall Curve)
 #############################################
 
 This model metric is used to evaluate how well a binary classification model is able to distinguish between precision recall pairs or points. These values are obtained using different thresholds on a probabilistic or other continuous-output classifier. AUCPR is an average of the precision-recall weighted by the probability of a given threshold.
 
 The main difference between AUC and AUCPR is that AUC calculates the area under the ROC curve and AUCPR calculates the area under the Precision Recall curve. The Precision Recall curve does not care about True Negatives. For imbalanced data, a large quantity of True Negatives usually overshadows the effects of changes in other metrics like False Positives. The AUCPR will be much more sensitive to True Positives, False Positives, and False Negatives than AUC. As such, AUCPR is recommended over AUC for highly imbalanced data.
-
-**Note**: The metric function of AUCPR *only* runs with command ``model.pr_auc``. This is different than the ``stopping_metric`` which can be set equal to "AUCPR".
 
 **Example**
 
@@ -773,23 +772,34 @@ Using the previous example, run the following to retrieve the AUCPR.
    .. code-tab:: r R
 
         # retrieve the AUCPR for the performance object:
-        h2o.pr_auc(perf)
+        h2o.aucpr(perf)
         [1] 0.7609887
 
         # retrieve the AUCPR for both the training and validation data:
-        h2o.pr_auc(airlines_gbm, train = TRUE, valid = TRUE, xval = FALSE)
+        h2o.aucpr(airlines_gbm, train = TRUE, valid = TRUE, xval = FALSE)
             train     valid 
         0.8019599 0.7609887
 
    .. code-tab:: python
     
         # retrieve the AUCPR for the performance object:
-        perf.pr_auc()
+        perf.aucpr()
         0.7609887253334723
 
         # retrieve the AUCPR for both the training and validation data:
-        airlines_gbm.pr_auc(train=True, valid=True, xval=False)
+        airlines_gbm.aucpr(train=True, valid=True, xval=False)
         {u'train': 0.801959918132391, u'valid': 0.7609887253334723}
+
+
+Multinomial AUC (Area Under the ROC Curve)
+##########################################
+
+
+
+Multinomial AUCPR (Area Under the Precision-Recall Curve)
+#########################################################
+
+
 
 Kolmogorov-Smirnov (KS) Metric 
 ##############################
