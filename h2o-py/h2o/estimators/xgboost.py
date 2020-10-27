@@ -33,7 +33,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                    "min_split_improvement", "gamma", "multinomial_auc_type", "nthread", "save_matrix_directory", "build_tree_one_node",
                    "calibrate_model", "calibration_frame", "max_bins", "max_leaves", "sample_type", "normalize_type",
                    "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy", "booster", "reg_lambda",
-                   "reg_alpha", "dmatrix_type", "backend", "gpu_id", "gainslift_bins"}
+                   "reg_alpha", "dmatrix_type", "backend", "gpu_id", "gainslift_bins", "multinomial_auc_type"}
 
     def __init__(self, **kwargs):
         super(H2OXGBoostEstimator, self).__init__()
@@ -2126,6 +2126,22 @@ class H2OXGBoostEstimator(H2OEstimator):
     def gainslift_bins(self, gainslift_bins):
         assert_is_type(gainslift_bins, None, int)
         self._parms["gainslift_bins"] = gainslift_bins
+
+
+    @property
+    def multinomial_auc_type(self):
+        """
+        Set default multinomial AUC type.
+
+        One of: ``"auto"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``  (default:
+        ``"auto"``).
+        """
+        return self._parms.get("multinomial_auc_type")
+
+    @multinomial_auc_type.setter
+    def multinomial_auc_type(self, multinomial_auc_type):
+        assert_is_type(multinomial_auc_type, None, Enum("auto", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
+        self._parms["multinomial_auc_type"] = multinomial_auc_type
 
 
     @staticmethod

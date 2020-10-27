@@ -50,7 +50,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                    "missing_values_handling", "quiet_mode", "autoencoder", "sparse", "col_major", "average_activation",
                    "sparsity_beta", "max_categorical_features", "reproducible", "export_weights_and_biases",
                    "mini_batch_size", "categorical_encoding", "elastic_averaging", "elastic_averaging_moving_rate",
-                   "elastic_averaging_regularization", "export_checkpoints_dir"}
+                   "elastic_averaging_regularization", "export_checkpoints_dir", "multinomial_auc_type"}
 
     def __init__(self, **kwargs):
         super(H2ODeepLearningEstimator, self).__init__()
@@ -2829,6 +2829,22 @@ class H2ODeepLearningEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+    @property
+    def multinomial_auc_type(self):
+        """
+        Set default multinomial AUC type.
+
+        One of: ``"auto"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``  (default:
+        ``"auto"``).
+        """
+        return self._parms.get("multinomial_auc_type")
+
+    @multinomial_auc_type.setter
+    def multinomial_auc_type(self, multinomial_auc_type):
+        assert_is_type(multinomial_auc_type, None, Enum("auto", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
+        self._parms["multinomial_auc_type"] = multinomial_auc_type
 
 
 
