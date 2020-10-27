@@ -519,6 +519,7 @@ public class GenericModelTest extends TestUtil {
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = trainingFrame._key;
             parms._distribution = AUTO;
+            parms._monotone_constraints = new hex.KeyValue[] {new hex.KeyValue("a", -1d)};
             parms._response_column = trainingFrame._names[1];
             parms._ntrees = 1;
 

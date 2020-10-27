@@ -3,6 +3,7 @@ package hex.genmodel.attributes;
 import com.google.gson.*;
 import hex.genmodel.*;
 import hex.genmodel.attributes.parameters.ColumnSpecifier;
+import hex.genmodel.attributes.parameters.KeyValue;
 import hex.genmodel.attributes.parameters.ParameterKey;
 
 import java.io.BufferedReader;
@@ -200,9 +201,11 @@ public class ModelJsonReader {
                         // Especially useful for numeric types.
                         final JsonElement typeElement = jsonSourceObj.get("type");
                         final TypeHint typeHint;
-                        if (type != null && !typeElement.isJsonNull()) {
+                        if (!typeElement.isJsonNull()) {
                             typeHint = TypeHint.fromStringIgnoreCase(typeElement.getAsString());
-                        } else typeHint = null;
+                        } else {
+                            typeHint = null;
+                        }
                         value = convertBasedOnJsonType(jsonElement, typeHint);
                     }
                 } else if (type.isAssignableFrom(double.class) || type.isAssignableFrom(Double.class)) {
@@ -237,15 +240,20 @@ public class ModelJsonReader {
      * used.
      */
     private enum TypeHint {
-        INT, FLOAT, DOUBLE, LONG, DOUBLE_ARR, FLOAT_ARR, STRING_ARR, INT_ARR, LONG_ARR;
+        INT, FLOAT, DOUBLE, LONG, DOUBLE_ARR, FLOAT_ARR, STRING_ARR, INT_ARR, LONG_ARR, OBJECT_ARR;
 
         private static TypeHint fromStringIgnoreCase(final String from) {
+            final Matcher matcher = ARRAY_PATTERN.matcher(from);
+            final boolean isArray = matcher.find();
+            final String transformedType = matcher.replaceAll("_ARR");
             try {
-                final Matcher matcher = ARRAY_PATTERN.matcher(from);
-                final String transformedType = matcher.replaceAll("_ARR");
                 return valueOf(transformedType.toUpperCase());
             } catch (IllegalArgumentException e) {
-                return null;
+                if (isArray) {
+                    return OBJECT_ARR;
+                } else {
+                    return null;
+                }
             }
         }
     }
@@ -269,6 +277,13 @@ public class ModelJsonReader {
                 convertTo = null;
             } else {
                 switch (typeHint) {
+                    case OBJECT_ARR:
+                        final Object[] arrO = new Object[array.size()];
+                        for (int i = 0; i < array.size(); i++) {
+                            arrO[i] = convertJsonObject(array.get(i).getAsJsonObject());
+                        }
+                        convertTo = arrO;
+                        break;
                     case DOUBLE_ARR:
                         final double[] arrD = new double[array.size()];
                         for (int i = 0; i < array.size(); i++) {
@@ -360,7 +375,6 @@ public class ModelJsonReader {
             final String type = convertFrom.get("type").getAsString();
             final ParameterKey.Type convertedType = convertKeyType(type);
             final String url = convertFrom.get("URL").getAsString();
-
             return new ParameterKey(name, convertedType, url);
         } else if ("ColSpecifierV3".equals(schemaName)) {
             final String columnName = convertFrom.get("column_name").getAsString();
@@ -372,6 +386,11 @@ public class ModelJsonReader {
                 memberOfFrames = null;
             }
             return new ColumnSpecifier(columnName, memberOfFrames);
+        } else if ("KeyValueV3".equals(schemaName)) {
+            return new KeyValue(
+                convertFrom.get("key").getAsString(),
+                convertFrom.get("value").getAsDouble()
+            );
         } else {
             throw new UnsupportedOperationException(String.format("Object not supported: \n %s ", convertFrom.toString()));
         }
