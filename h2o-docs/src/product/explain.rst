@@ -393,7 +393,7 @@ SHAP summary plot shows the contribution of the features for each instance (row 
 
    .. code-tab:: python
 
-        shap_plot = model.ice_plot(test)
+        shap_plot = model.shap_summary_plot(test)
 
 .. figure:: images/explain_shap_summary_wine.png
    :alt: H2O AutoML
