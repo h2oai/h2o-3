@@ -1359,7 +1359,15 @@ class H2OBinomialModelMetrics(MetricsBase):
         if plot:
             try:
                 import matplotlib
-                if server: matplotlib.use('Agg')
+                if server:
+                    # Matplotlib version 3.1 and higher deprecates/doesn't have `warn` parameter
+                    version = matplotlib.__version__.split(".")
+                    if int(version[0]) < 3 or \
+                            (int(version[0]) == 3 and
+                             int(version[1]) < 1):
+                        matplotlib.use("Agg", warn=False)
+                    else:
+                        matplotlib.use("Agg")
                 import matplotlib.pyplot as plt
             except ImportError:
                 print("matplotlib is required for this function!")
