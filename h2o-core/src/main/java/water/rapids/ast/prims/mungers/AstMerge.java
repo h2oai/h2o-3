@@ -111,7 +111,7 @@ public class AstMerge extends AstPrimitive {
         Vec lv = l.vecs()[i];
         Vec rv = r.vecs()[i];
         if (lv.get_type() != rv.get_type())
-          throw new IllegalArgumentException("Merging columns must be the same type, column " + l._names[ncols] +
+          throw new IllegalArgumentException("Merging columns must be the same type, column " + l._names[i] +
               " found types " + lv.get_type_str() + " and " + rv.get_type_str());
         if (method.equals("hash") && lv.isString())
           throw new IllegalArgumentException("Cannot merge Strings with hash method; flip toCategoricalVec first" +
