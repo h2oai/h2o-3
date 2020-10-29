@@ -1,5 +1,4 @@
 import sys, os
-import tempfile
 
 sys.path.insert(1, os.path.join("..", "..", ".."))
 import h2o
@@ -37,7 +36,6 @@ def grid_resume():
     for model_id in grid.model_ids:
         model = h2o.get_model(model_id)
         assert model is not None
-    
 
 
 if __name__ == "__main__":

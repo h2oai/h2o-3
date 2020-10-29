@@ -22,8 +22,6 @@ def grid_parallel():
     assert gs is not None
     assert len(gs.model_ids) == len(ntrees_opts)
 
-    
-
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(grid_parallel)
