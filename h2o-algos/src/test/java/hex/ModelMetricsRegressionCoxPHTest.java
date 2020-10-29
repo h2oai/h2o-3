@@ -10,6 +10,7 @@ import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.RandomUtils;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Random;
 
@@ -19,44 +20,48 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
-public class ModelMetricsRegressionCoxPHTest extends TestUtil {
+public class ModelMetricsRegressionCoxPHTest {
     
-    public static void setup() { stall_till_cloudsize(1); }
-
+    static class PerfectEstimate extends MRTask<PerfectEstimate> {
+        @Override
+        public void map(Chunk c) {
+            for (int i = 0; i < c._len; ++i) {
+                c.set(i, c.atd(i) * -0.1);
+            }
+        }
+    } 
+    
     @Test
     public void concordanceOfAPerfectEstimateIsOne() {
-        checkConcordanceForEstimate(new MRTask() {
-            @Override
-            public void map(Chunk c) {
-                for (int i = 0; i < c._len; ++i) {
-                    c.set(i, c.atd(i) * -0.1);
-                }
+        checkConcordanceForEstimate(new PerfectEstimate(), 1.0d, 0.0001d);
+    }
+    
+    static class TerribleEstimate extends MRTask<PerfectEstimate> {
+        @Override
+        public void map(Chunk c) {
+            for (int i = 0; i < c._len; ++i) {
+                c.set(i, c.atd(i));
             }
-        }, 1.0d, 0.0001d);
+        }
     }
 
     @Test
     public void concordanceOfATerribleEstimateIsZero() {
-        checkConcordanceForEstimate(new MRTask() {
-            @Override
-            public void map(Chunk c) {
-                for (int i = 0; i < c._len; ++i) {
-                    c.set(i, c.atd(i));
-                }
-            }
-        }, 0.0d, 0.0001d);
+        checkConcordanceForEstimate(new TerribleEstimate(), 0.0d, 0.0001d);
     }
-    
+
+    static class RandomEstimate extends MRTask<PerfectEstimate> {
+        @Override
+        public void map(Chunk c) {
+            for (int i = 0; i < c._len; ++i) {
+                c.set(i, Math.random());
+            }
+        }
+    }
+
     @Test
     public void concordanceOfARandomEstimateIsOneHalf() {
-        checkConcordanceForEstimate(new MRTask() {
-            @Override public void map(Chunk c){
-                Random rng = new RandomUtils.PCGRNG(c.start(),1);
-                for(int i = 0; i < c._len; ++i) {
-                    c.set(i, rng.nextFloat());
-                }
-            }
-        }, 0.5d, 0.03d); 
+        checkConcordanceForEstimate(new RandomEstimate(), 0.5d, 0.03d); 
     }
 
     @Test
@@ -176,15 +181,6 @@ public class ModelMetricsRegressionCoxPHTest extends TestUtil {
             final Vec times = Scope.track(Vec.makeCon(0.0, len).makeRand(0));
             final Vec status = Scope.track(Vec.makeOne(len, Vec.T_CAT));
             status.setDomain(new String[]{"0", "1"});
-
-            new MRTask() {
-                @Override
-                public void map(Chunk c) {
-                    for (int i = 0; i < c._len; ++i) {
-                        c.set(i, 1L);
-                    }
-                }
-            }.doAll(status);
 
             final Vec estimates = prepareEstimates(estimateTask, times);
 
