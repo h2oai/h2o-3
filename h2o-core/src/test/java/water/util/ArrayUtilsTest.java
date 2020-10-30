@@ -1,6 +1,9 @@
 package water.util;
 
+import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.Random;
 
 import static org.junit.Assert.*;
 import static water.util.ArrayUtils.*;
@@ -169,6 +172,26 @@ public class ArrayUtilsTest {
     assertEquals(0, countNonzeros(threeZeroes));
     double[] somenz = {-1.0, Double.MIN_VALUE, 0.0, Double.MAX_VALUE, 0.001, 0.0, 42.0};
     assertEquals(5, countNonzeros(somenz));
+  }
+  
+  @Test
+  public void testSortIndices() {
+    Random randObj = new Random(12345);
+    int arrayLen = 100;
+    int[] indices = new int[arrayLen];
+    double[] values = new double[arrayLen];
+    for (int index = 0; index < arrayLen; index++)  // generate data array
+      values[index] = randObj.nextDouble();
+    
+    sort(indices, values, -1, 1); // sorting in ascending order
+    for (int index = 1; index < arrayLen; index++)  // check correct sorting in ascending order
+      Assert.assertTrue(values[indices[index-1]]+" should be <= "+values[indices[index]], 
+              values[indices[index-1]] <= values[indices[index]]); 
+    
+    sort(indices, values, -1, -1);  // sorting in descending order
+    for (int index = 1; index < arrayLen; index++)  // check correct sorting in descending order
+      Assert.assertTrue(values[indices[index-1]]+" should be >= "+values[indices[index]],
+              values[indices[index-1]] >= values[indices[index]]);  
   }
 
   @Test

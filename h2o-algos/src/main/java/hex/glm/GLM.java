@@ -40,6 +40,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.*;
 
+import static hex.ModelMetrics.calcVarImp;
 import static hex.glm.GLMUtils.*;
 
 /**
@@ -2272,6 +2273,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               (null != _parms._valid), false, _model._output.getModelCategory(), false);
       _model._output._scoring_history = combineScoringHistory(_model._output._scoring_history,
               scoring_history_early_stop, _scoreIterationList);
+      _model._output._varimp = _model._output.calculateVarimp();
+      _model._output._variable_importances = calcVarImp(_model._output._varimp);
       _model.update(_job._key);
 /*      if (_vcov != null) {
         _model.setVcov(_vcov);
