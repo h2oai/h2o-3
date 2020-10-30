@@ -181,6 +181,7 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
        .outputFrame(new String[]{"durations"}, null);
 
       final Vec result = frame.vec(0);
+      frame.delete(false);
       return result;
     }
 
