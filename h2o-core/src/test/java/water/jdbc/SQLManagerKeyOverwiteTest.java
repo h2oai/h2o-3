@@ -16,7 +16,7 @@ import static org.junit.Assert.*;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
-public class SqlManagerTest {
+public class SQLManagerKeyOverwiteTest {
   
   @Test public void nextKeyHasRightPrefixAndPostfix() {
     final String prefix = "foo";
