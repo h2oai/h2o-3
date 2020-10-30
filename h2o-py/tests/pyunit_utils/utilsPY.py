@@ -405,17 +405,10 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
         assert hc == pc, "Expected the same number of cols, but got {0} and {1}".format(hc, pc)
 
         # Value
-        for r in range(hr):
-            hp = predictions[r, 0]
-            if equality == "numeric":
-                pp = float.fromhex(predictions2[r, 0])
-                assert abs(hp - pp) < 1e-4, \
-                    "Expected predictions to be the same (within 1e-4) for row %d, but got %r and %r" % (r, hp, pp)
-            elif equality == "class":
-                pp = predictions2[r, 0]
-                assert hp == pp, "Expected predictions to be the same for row %d, but got %r and %r" % (r, hp, pp)
-            else:
-                raise ValueError
+        if not(equality == "class"or equality == "numeric"):
+            raise ValueError
+        compare_frames_local(predictions, predictions2, prob=1, tol=1e-4) # faster frame compare
+
 
 def javamunge(assembly, pojoname, test, compile_only=False):
     """

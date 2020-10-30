@@ -11,7 +11,7 @@ import random
 def test_csv_parser_column_skip():
     # generate a big frame with all datatypes and save it to csv.  Load it back with different skipped_columns settings
     nrow = 10000
-    ncol = 100
+    ncol = 20
     seed = 12345
     frac1 = 0.16
     frac2 = 0.2
