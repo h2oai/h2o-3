@@ -401,7 +401,7 @@ public class ModelJsonReader {
                 convertFrom.get("value").getAsDouble()
             );
         } else {
-            LOG.warn(String.format("Error reading MOJO JSON: Object not supported: \n %s ", convertFrom.toString()));
+            LOG.error(String.format("Error reading MOJO JSON: Object not supported: \n %s ", convertFrom.toString()));
             return null;
         }
 
