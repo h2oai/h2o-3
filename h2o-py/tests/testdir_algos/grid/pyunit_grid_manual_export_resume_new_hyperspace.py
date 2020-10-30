@@ -34,7 +34,7 @@ def grid_resume():
     assert grid is not None
     assert len(grid.model_ids) == old_grid_model_count
     # Modify the hyperspace - should add new models to the grid
-    hyper_parameters["ntrees"] = [2,5]
+    hyper_parameters["ntrees"] = [2, 5]
     grid = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters, grid_id = grid.grid_id)
     grid.train(x=list(range(4)), y=4, training_frame=train)
     print("Newly grained grid has %d models" % len(grid.model_ids))
