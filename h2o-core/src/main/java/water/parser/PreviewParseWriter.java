@@ -131,77 +131,102 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
 
   @Override public void setIsAllASCII(int colIdx, boolean b) {}
 
-
   public byte[] guessTypes() {
-    byte[] types = new byte[_ncols];
-    for (int i = 0; i < _ncols; ++i) {
-      int nonemptyLines = _nlines - _nempty[i] - 1; //During guess, some columns may be shorted one line based on 4M boundary
+    IDomain[] domains = new IDomain[_domains.length];
+    for (int i = 0; i < _domains.length; i++) {
+      IcedHashMap<String,String> sourceDomain = _domains[i];
+      domains[i] = new IDomain() {
+        public int size() { return sourceDomain.size(); }
+        public boolean contains(String value) { return sourceDomain.containsKey(value); }
+      };
+    }
+    return PreviewParseWriter.guessTypes(_ncols, _nlines, _nnums, _nstrings, _ndates, _nUUID, _nzeros, _nempty, domains);
+  }
+  
+  public interface IDomain {
+    int size();
+    boolean contains(String value);
+  }
+
+  public static byte[] guessTypes(
+      int ncols,
+      int nlines,
+      int[] nnums,
+      int[] nstrings,
+      int[] ndates,
+      int[] nUUID,
+      int[] nzeros,
+      int[] nempty,
+      IDomain[] domains) {
+    byte[] types = new byte[ncols];
+    for (int i = 0; i < ncols; ++i) {
+      int nonemptyLines = nlines - nempty[i] - 1; //During guess, some columns may be shorted one line based on 4M boundary
 
       //Very redundant tests, but clearer and not speed critical
 
       // is it clearly numeric?
-      if ((_nnums[i] + _nzeros[i]) >= _ndates[i]
-              && (_nnums[i] + _nzeros[i]) >= _nUUID[i]
-              && _nnums[i] >= _nstrings[i]) { // 0s can be an NA among categoricals, ignore
+      if ((nnums[i] + nzeros[i]) >= ndates[i]
+              && (nnums[i] + nzeros[i]) >= nUUID[i]
+              && nnums[i] >= nstrings[i]) { // 0s can be an NA among categoricals, ignore
         types[i] = Vec.T_NUM;
         continue;
       }
 
       // All same string or empty?
-      if( _domains[i].size() == 1 && _ndates[i]==0 ) {
+      if(domains[i].size() == 1 && ndates[i]==0 ) {
         // Obvious NA, or few instances of the single string, declare numeric
         // else categorical
-        types[i] = (_domains[i].containsKey("NA") ||
-                    _domains[i].containsKey("na") ||
-                    _domains[i].containsKey("Na") ||
-                    _domains[i].containsKey("N/A") ||
-                    _nstrings[i] < _nnums[i]+_nzeros[i]) ? Vec.T_NUM : Vec.T_CAT;
+        types[i] = (domains[i].contains("NA") ||
+                    domains[i].contains("na") ||
+                    domains[i].contains("Na") ||
+                    domains[i].contains("N/A") ||
+                    nstrings[i] < nnums[i]+nzeros[i]) ? Vec.T_NUM : Vec.T_CAT;
         continue;
       }
 
       // with NA, but likely numeric
-      if (_domains[i].size() <= 1
-              && (_nnums[i] + _nzeros[i]) > _ndates[i] + _nUUID[i]) {
+      if (domains[i].size() <= 1
+              && (nnums[i] + nzeros[i]) > ndates[i] + nUUID[i]) {
         types[i] = Vec.T_NUM;
         continue;
       }
 
       // Datetime
-      if (_ndates[i] > _nUUID[i]
-              && _ndates[i] > (_nnums[i] + _nzeros[i])
-              && (_ndates[i] > _nstrings[i] || _domains[i].size() <= 1)) {
+      if (ndates[i] > nUUID[i]
+              && ndates[i] > (nnums[i] + nzeros[i])
+              && (ndates[i] > nstrings[i] || domains[i].size() <= 1)) {
         types[i] = Vec.T_TIME;
         continue;
       }
 
       // UUID
-      if (_nUUID[i] > _ndates[i]
-              && _nUUID[i] > (_nnums[i] + _nzeros[i])
-              && (_nUUID[i] > _nstrings[i] || _domains[i].size() <= 1)) {
+      if (nUUID[i] > ndates[i]
+              && nUUID[i] > (nnums[i] + nzeros[i])
+              && (nUUID[i] > nstrings[i] || domains[i].size() <= 1)) {
         types[i] = Vec.T_UUID;
         continue;
       }
 
       // Strings, almost no dups
-      if (_nstrings[i] > _ndates[i]
-              && _nstrings[i] > _nUUID[i]
-              && _nstrings[i] > (_nnums[i] + _nzeros[i])
-              && _domains[i].size() >= 0.95 * _nstrings[i]) {
+      if (nstrings[i] > ndates[i]
+              && nstrings[i] > nUUID[i]
+              && nstrings[i] > (nnums[i] + nzeros[i])
+              && domains[i].size() >= 0.95 * nstrings[i]) {
         types[i] = Vec.T_STR;
         continue;
       }
 
       // categorical or string?
       // categorical with 0s for NAs
-      if(_nzeros[i] > 0
-              && ((_nzeros[i] + _nstrings[i]) >= nonemptyLines) //just strings and zeros for NA (thus no empty lines)
-              && (_domains[i].size() <= 0.95 * _nstrings[i]) ) { // not all unique strings
+      if(nzeros[i] > 0
+              && ((nzeros[i] + nstrings[i]) >= nonemptyLines) //just strings and zeros for NA (thus no empty lines)
+              && (domains[i].size() <= 0.95 * nstrings[i]) ) { // not all unique strings
         types[i] = Vec.T_CAT;
         continue;
       }
       // categorical mixed with numbers
-      if(_nstrings[i] >= (_nnums[i]+_nzeros[i]) // mostly strings
-              && (_domains[i].size() <= 0.95 * _nstrings[i]) ) { // but not all unique
+      if(nstrings[i] >= (nnums[i]+nzeros[i]) // mostly strings
+              && (domains[i].size() <= 0.95 * nstrings[i]) ) { // but not all unique
         types[i] = Vec.T_CAT;
         continue;
       }
