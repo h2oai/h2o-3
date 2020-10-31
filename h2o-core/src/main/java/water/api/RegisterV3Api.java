@@ -168,6 +168,14 @@ public class RegisterV3Api extends AbstractRegister {
             "POST /3/Frames/{frame_id}/export", FramesHandler.class, "export",
             "Export a Frame to the given path with optional overwrite.");
 
+    context.registerEndpoint("saveFrame",
+            "POST /3/Frames/{frame_id}/save", FramesHandler.class, "save",
+            "Save frame data to the given path.");
+
+    context.registerEndpoint("loadFrame",
+            "POST /3/Frames/load", FramesHandler.class, "load",
+            "Load a frame from data on given path.");
+
     context.registerEndpoint("frameColumnSummary",
             "GET /3/Frames/{frame_id}/columns/{column}/summary", FramesHandler.class, "columnSummary",
             "Return the summary metrics for a column, e.g. min, max, mean, sigma, percentiles, etc.");

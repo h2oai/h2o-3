@@ -3999,6 +3999,55 @@ h2o.range <- function(x,na.rm = FALSE,finite = FALSE) {
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
+# Persistence: save, load
+#-----------------------------------------------------------------------------------------------------------------------
+
+#'
+#' Store frame data in H2O's native format.
+#'
+#' @name h2o.saveFrame
+#' @param x An H2OFrame object
+#' @param path a filesystem location where to write frame data
+#' @param force \code{logical}. overwrite already existing files (defaults to true)
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+#' h2o.save_frame("hdfs://namenode/h2o_data")
+#' }
+#' @export
+h2o.saveFrame <- function(x, dir, force = TRUE) {
+    res <- .h2o.__remoteSend(.h2o.__SAVE_FRAME(x), dir = dir, force = force, method = "POST")
+    .h2o.__waitOnJob(res$job$key$name)
+}
+
+#'
+#' Load frame previously stored in H2O's native format.
+#'
+#' @name h2o.loadFrame
+#' @param frame_id the frame ID of the original frame
+#' @param path a filesystem location where to look for frame data
+#' @param force \code{logical}. overwrite an already existing frame (defaults to true)
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' h2o.load_frame("iris_weather.hex", "hdfs://namenode/h2o_data")
+#' }
+#' @export
+h2o.loadFrame <- function(frame_id, dir, force = TRUE) {
+    res <- .h2o.__remoteSend(.h2o.__LOAD_FRAME, frame_id = frame_id, dir = dir, force = force, method = "POST")
+    hex <- res$job$dest$name
+    .h2o.__waitOnJob(res$job$key$name)
+    x <- .newH2OFrame("Load", id=hex, -1, -1)
+    .fetch.data(x,1L) # Fill in nrow and ncol
+    x
+}
+
+#-----------------------------------------------------------------------------------------------------------------------
 # Casting Operations: as.data.frame, as.factor
 #-----------------------------------------------------------------------------------------------------------------------
 

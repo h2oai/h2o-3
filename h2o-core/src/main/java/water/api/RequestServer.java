@@ -446,11 +446,6 @@ public class RequestServer extends HttpServlet {
           parms.put("frame_id", url.substring(10, url.length()-8));
           route = findRouteByApiName("frameColumns");
         }
-        // /3/Frames/{frame_id}
-        else {
-          parms.put("frame_id", url.substring(10));
-          route = findRouteByApiName(method.equals("DELETE")? "deleteFrame" : "frame");
-        }
       } else if (url.startsWith("/3/ModelMetrics/predictions_frame/")){
         route = findRouteByApiName("makeMetrics");
       }
