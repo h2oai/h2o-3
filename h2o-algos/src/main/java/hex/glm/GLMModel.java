@@ -23,6 +23,8 @@ import java.io.Serializable;
 import java.util.*;
 
 import static hex.genmodel.utils.ArrayUtils.flat;
+import static hex.schemas.GLMModelV3.GLMModelOutputV3.calculateVarimpMultinomial;
+import static hex.schemas.GLMModelV3.calculateVarimpBase;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -1134,6 +1136,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     String[] _random_coefficient_names; // for HGLM
     String[] _random_column_names;
     public long _training_time_ms;
+    public TwoDimTable _variable_importances;
+    public VarImp _varimp;  // should contain the same content as standardized coefficients
     int _lambda_array_size; // store number of lambdas to iterate over
     public int _lambda_1se = -1; // lambda_best+sd(lambda) submodel index; applicable if running lambda search with cv
     public double _lambda_min = -1; // starting lambda value when lambda search is enabled
@@ -1203,6 +1207,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public String[] coefficientNames() {
       return _coefficient_names;
     }
+    
+    
 
     // This method is to take the coefficient names of one class and extend it to
     // coefficient names for all N classes.
@@ -1431,6 +1437,32 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public Submodel getSubmodel(int submodel_index) {
       assert submodel_index < _submodels.length : "submodel_index specified exceeds the submodels length.";
       return _submodels[submodel_index];
+    }
+    
+    // calculate variable importance which is derived from the standardized coefficients
+    public VarImp calculateVarimp() {
+      String[] names = coefficientNames();
+      final double [] magnitudes = new double[names.length];
+      int len = magnitudes.length - 1;
+      if (len == 0) // GLM model contains only intercepts and no predictor coefficients.
+        return null;
+      
+      int[] indices = new int[len];
+      for (int i = 0; i < indices.length; ++i)
+        indices[i] = i;
+      float[] magnitudesSort = new float[len];  // stored sorted coefficient magnitudes
+      String[] namesSort = new String[len];
+      
+      if (_nclasses > 2)
+        calculateVarimpMultinomial(magnitudes, indices, getNormBetaMultinomial());
+      else
+        calculateVarimpBase(magnitudes, indices, getNormBeta());
+      
+      for (int index = 0; index < len; index++) {
+        magnitudesSort[index] = (float) magnitudes[indices[index]];
+        namesSort[index] = names[indices[index]];
+      }
+      return new VarImp(magnitudesSort, namesSort);
     }
   }
 

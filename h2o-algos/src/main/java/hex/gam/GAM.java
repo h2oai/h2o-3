@@ -1,9 +1,6 @@
 package hex.gam;
 
-import hex.DataInfo;
-import hex.ModelBuilder;
-import hex.ModelCategory;
-import hex.ModelMetrics;
+import hex.*;
 import hex.gam.GAMModel.GAMParameters;
 import hex.gam.MatrixFrameUtils.GamUtils;
 import hex.gam.MatrixFrameUtils.GenerateGamMatrixOneColumn;
@@ -26,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static hex.ModelMetrics.calcVarImp;
 import static hex.gam.GAMModel.cleanUpInputFrame;
 import static hex.gam.MatrixFrameUtils.GamUtils.AllocateType.*;
 import static hex.gam.MatrixFrameUtils.GamUtils.*;
@@ -579,7 +577,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         model._output._penaltyMatrices_center = _penalty_mat_center;
         model._output._penaltyMatrices = _penalty_mat;
       }
-      copyGLMCoeffs(glm, model, dinfo);  // copy over coefficient names and generate coefficients as beta = z*GLM_beta
+      copyGLMCoeffs(glm, model);  // copy over coefficient names and generate coefficients as beta = z*GLM_beta
       copyGLMtoGAMModel(model, glm);  // copy over fields from glm model to gam model
     }
     
@@ -629,9 +627,11 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       if (model.evalAutoParamsEnabled && model._parms._solver == GLMParameters.Solver.AUTO) {
         model._parms._solver = glmModel._parms._solver;
       }
+      model._output._varimp = new VarImp(glmModel._output._varimp._varimp, glmModel._output._varimp._names);
+      model._output._variable_importances = calcVarImp(model._output._varimp);
     }
     
-    void copyGLMCoeffs(GLMModel glm, GAMModel model, DataInfo dinfo) {
+    void copyGLMCoeffs(GLMModel glm, GAMModel model) {
       boolean multiClass = _parms._family == multinomial || _parms._family == ordinal;
       int totCoefNumsNoCenter = (multiClass?glm.coefficients().size()/nclasses():glm.coefficients().size())
               +_parms._gam_columns.length;

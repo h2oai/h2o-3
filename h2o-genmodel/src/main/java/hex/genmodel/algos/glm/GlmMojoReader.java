@@ -2,8 +2,8 @@ package hex.genmodel.algos.glm;
 
 import com.google.gson.JsonObject;
 import hex.genmodel.ModelMojoReader;
-import hex.genmodel.attributes.ModelAttributesGLM;
 import hex.genmodel.attributes.ModelAttributes;
+import hex.genmodel.attributes.ModelAttributesGLM;
 import hex.genmodel.attributes.ModelJsonReader;
 
 import java.io.IOException;

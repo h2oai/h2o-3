@@ -100,7 +100,6 @@ public class GridImportExportHandler extends Handler {
   }
 
   private static void loadGridModels(final Grid grid, final String gridDirectory) throws IOException {
-
     for (Key<Model> k : grid.getModelKeys()) {
       final Model<?, ?, ?> model = Model.importBinaryModel(gridDirectory + "/" + k.toString());
       assert model != null;

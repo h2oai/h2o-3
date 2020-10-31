@@ -1972,18 +1972,6 @@ h2o.varimp <- function(object) {
   o <- object
   if( is(o, "H2OModel") ) {
     vi <- o@model$variable_importances
-    if( is.null(vi) && !is.null(object@model$standardized_coefficient_magnitudes)) { # may be glm
-      tvi <- object@model$standardized_coefficient_magnitudes
-      maxCoeff <- max(tvi$coefficients)
-      sumCoeff <- sum(tvi$coefficients)
-      scaledCoeff <- tvi$coefficients/maxCoeff
-      percentageC <- tvi$coefficients/sumCoeff
-      variable <- tvi$names
-      relative_importance <- tvi$coefficients
-      scaled_importance <- scaledCoeff
-      percentage <- percentageC
-      vi <- data.frame(variable, relative_importance, scaled_importance, percentage)
-      }  # no true variable importances, maybe glm coeffs? (return standardized table...)
     if( is.null(vi) ) {
       warning("This model doesn't have variable importances", call. = FALSE)
       return(invisible(NULL))
