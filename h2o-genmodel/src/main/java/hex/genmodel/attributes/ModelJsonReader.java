@@ -5,6 +5,8 @@ import hex.genmodel.*;
 import hex.genmodel.attributes.parameters.ColumnSpecifier;
 import hex.genmodel.attributes.parameters.KeyValue;
 import hex.genmodel.attributes.parameters.ParameterKey;
+import water.logging.Logger;
+import water.logging.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.lang.reflect.Field;
@@ -18,6 +20,8 @@ import java.util.regex.Pattern;
  * Utility class for extracting model details from JSON
  */
 public class ModelJsonReader {
+    
+    private static final Logger LOG = LoggerFactory.getLogger(ModelJsonReader.class);
 
     public static final String MODEL_DETAILS_FILE = "experimental/modelDetails.json";
 
@@ -145,7 +149,7 @@ public class ModelJsonReader {
         Objects.requireNonNull(modelJson);
         JsonElement potentialTableJson = findInJson(modelJson, tablePath);
         if (potentialTableJson.isJsonNull()) {
-            System.err.println(String.format("Failed to extract element '%s' MojoModel dump.",
+            LOG.warn(String.format("Failed to extract element '%s' MojoModel dump.",
                     tablePath));
             return null;
         }
@@ -166,7 +170,7 @@ public class ModelJsonReader {
         final JsonElement jsonSourceObject = findInJson(from, elementPath);
 
         if (jsonSourceObject instanceof JsonNull) {
-            System.err.println(String.format("Element '%s' not found in JSON. Skipping. Object '%s' is not populated by values.",
+            LOG.warn(String.format("Element '%s' not found in JSON. Skipping. Object '%s' is not populated by values.",
                     elementPath, object.getClass().getName()));
             return;
         }
@@ -280,7 +284,12 @@ public class ModelJsonReader {
                     case OBJECT_ARR:
                         final Object[] arrO = new Object[array.size()];
                         for (int i = 0; i < array.size(); i++) {
-                            arrO[i] = convertJsonObject(array.get(i).getAsJsonObject());
+                            JsonElement e = array.get(i);
+                            if (e.isJsonPrimitive()) {
+                                arrO[i] = convertBasedOnJsonType(e, null);
+                            } else {
+                                arrO[i] = convertJsonObject(e.getAsJsonObject());
+                            }
                         }
                         convertTo = arrO;
                         break;
@@ -392,7 +401,8 @@ public class ModelJsonReader {
                 convertFrom.get("value").getAsDouble()
             );
         } else {
-            throw new UnsupportedOperationException(String.format("Object not supported: \n %s ", convertFrom.toString()));
+            LOG.error(String.format("Error reading MOJO JSON: Object not supported: \n %s ", convertFrom.toString()));
+            return null;
         }
 
     }
