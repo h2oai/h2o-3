@@ -8,7 +8,7 @@ public class MultinomialAUC extends Iced {
     public PairwiseAUC[] _ovoAucs;
     public final MultinomialAucType _default_auc_type;
     public final String[] _domain;
-    public final static int MAX_DOMAIN_SIZE = 100;
+    public final static int MAX_DOMAIN_SIZE = 90;
     public final boolean _calculateAuc;
 
     // keep this final aggregate value outside to save time
@@ -77,7 +77,6 @@ public class MultinomialAUC extends Iced {
     }
 
     public MultinomialAUC(TwoDimTable aucTable, TwoDimTable aucprTable, String[] domain, MultinomialAucType type){
-        _default_auc_type = type;
         _domain = domain;
         if(_domain.length < MAX_DOMAIN_SIZE) {
             int domainLength = _domain.length;
