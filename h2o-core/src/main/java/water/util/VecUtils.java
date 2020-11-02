@@ -840,11 +840,10 @@ public class VecUtils {
   public static long seed(int cidx) {
     return (0xe031e74f321f7e29L + ((long) cidx << 32L));
   }
-
-
+  
   /**
-   * Randomly shuffle randomly a vector from a Frame
-   * */
+   * Randomly shuffle a Vec using Fisher Yates shuffle 
+   */
   
   public static class ShuffleVecTask extends MRTask<ShuffleVecTask> {
     @Override public void map(Chunk ic, Chunk nc) {
@@ -874,9 +873,9 @@ public class VecUtils {
     }
   }
   
-  public static Vec ShuffleVec(Vec ivec, Vec src_vec) {
-    new ShuffleVecTask().doAll(ivec, src_vec);
-    return src_vec;
+  public static Vec ShuffleVec(Vec iVec, Vec srcVec) {
+    new ShuffleVecTask().doAll(iVec, srcVec);
+    return srcVec;
   }
   
 

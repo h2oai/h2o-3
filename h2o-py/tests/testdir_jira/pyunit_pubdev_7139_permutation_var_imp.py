@@ -6,9 +6,11 @@ sys.path.insert(1, os.path.join("..", ".."))
 # sys.path.insert(1,"../../")
 import h2o
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
+from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+
 from tests import pyunit_utils
 
-from h2o.model.permutation_varimp import permutation_varimp
+from h2o.model.permutation_varimp import permutation_varimp, plot_permutation_var_imp
 
 
 def gbm_model_build():
@@ -44,8 +46,10 @@ def gbm_model_build():
     # model relies on each feature for making predictions (-> training data) or how much the feature contributes to 
     # the performance of the model on unseen data (-> test data). To the best of my knowledge, there is no research 
     # addressing the question of training vs. test data 
-    
-    return gbm_h2o, prostate_test
+
+    gbm_h2o.varimp_plot()
+
+    return gbm_h2o, prostate_train
 
 
 def metrics_testing():
@@ -58,7 +62,7 @@ def metrics_testing():
     # case pandas
     pm_pd_df = permutation_varimp(model, fr, use_pandas=True, metric="auc")
     for col in pm_pd_df.columns:
-        assert pm_pd_df.loc[0][col] > 0.0 
+        assert pm_pd_df.loc[0][col] > 0.0
 
     metrics = ["mse", "rmse", "auc", "logloss"]
     for metric in metrics:
@@ -67,7 +71,59 @@ def metrics_testing():
             assert pd_pfi[0, col] > 0.0
 
 
+def ez_dataset():
+    full = h2o.import_file(path=pyunit_utils.locate("smalldata/dummydata/full_testset.csv"))
+
+    predictors = ["meat (gr)", "price (eur)", "restaorant", "city", "gender"]
+    response_col = "full"
+
+    glm_model = H2OGeneralizedLinearEstimator(family="binomial", lambda_=0, seed=1234)
+    glm_model.train(predictors, response_col, training_frame=full)
+
+    permVarImp = permutation_varimp(glm_model, full, use_pandas=True, metric="auc")
+
+    import matplotlib.pyplot as plt
+    plt.rcdefaults()
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    y_pos = np.arange(len(predictors))
+    perf = []
+    for col in permVarImp.columns:
+        perf.append(permVarImp.loc[0][col])
+
+    plt.bar(y_pos, perf, align='center', alpha=0.5)
+    plt.xticks(y_pos, predictors)
+    plt.ylabel('Feature Importance based on criterion')
+    plt.title('Features')
+
+    plt.show()
+
+
+def perm_var_imp_plot_glm():
+    full = h2o.import_file(path=pyunit_utils.locate("smalldata/dummydata/full_testset.csv"))
+
+    predictors = ["meat (gr)", "price (eur)", "restaurant", "city", "gender"]
+    response_col = "full"
+
+    glm_model = H2OGeneralizedLinearEstimator(family="binomial", lambda_=0, seed=1234)
+    glm_model.train(predictors, response_col, training_frame=full)
+
+    # metric = "auc" -> doenst crash. It should
+    metric = "logloss"
+    permVarImp = permutation_varimp(glm_model, full, use_pandas=True, metric=metric)
+    plot_permutation_var_imp(permVarImp, glm_model.model_json["algo"], metric=metric)
+
+
+def perm_var_imp_plot_gbm():
+    model, fr = gbm_model_build()
+    metric = "auc"
+    pm_h2o_df = permutation_varimp(model, fr, use_pandas=True, metric=metric)
+
+    plot_permutation_var_imp(pm_h2o_df, model.model_json["algo"], metric)
+
+
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(metrics_testing)
+    pyunit_utils.standalone_test(perm_var_imp_plot_glm)
 else:
-    metrics_testing()
+    perm_var_imp_plot_glm()
