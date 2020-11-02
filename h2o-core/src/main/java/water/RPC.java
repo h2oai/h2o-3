@@ -244,14 +244,9 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   // Returns null for canceled tasks, including those where the target dies.
   // Throws a DException if the remote throws, wrapping the original exception.
   @Override public V get() {
-    // check priorities - FJ task can only block on a task with higher priority!
-    Thread cThr = Thread.currentThread();
-    int priority = (cThr instanceof FJWThr) ? ((FJWThr)cThr)._priority : -1;
-    assert _dt.priority() > priority || (_dt.priority() == priority && _dt instanceof MRTask)
-      : "*** Attempting to block on task (" + _dt.getClass() + ") with equal or lower priority. Can lead to deadlock! " + _dt.priority() + " <=  " + priority;
     if( _done ) return result(); // Fast-path shortcut, or throw if exception
-    // Use FJP ManagedBlock for this blocking-wait - so the FJP can spawn
-    // another thread if needed.
+    assert canBlock(): "*** Attempting to block on task (" + _dt.getClass() + ") with equal or lower priority. Can lead to deadlock! " + _dt.priority() + " <=  " + currentPriority();
+    // Use FJP ManagedBlock for this blocking-wait - so the FJP can spawn another thread if needed.
     try { ForkJoinPool.managedBlock(this); } catch( InterruptedException ignore ) { }
     if( _done ) return result(); // Fast-path shortcut or throw if exception
     assert isCancelled();
@@ -259,16 +254,23 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   }
   // Return true if blocking is unnecessary, which is true if the Task isDone.
   @Override public boolean isReleasable() {  return isDone();  }
+  
+  private int currentPriority() {
+    Thread cThr = Thread.currentThread();
+    return (cThr instanceof FJWThr) ? ((FJWThr)cThr)._priority : -1;
+  }
+  
+  public boolean canBlock() {
+    int priority = currentPriority();
+    // check priorities - FJ task can only block on a task with higher priority!
+    return _dt.priority() > priority || (_dt.priority() == priority && _dt instanceof MRTask);
+  }
+  
   // Possibly blocks the current thread.  Returns true if isReleasable would
   // return true.  Used by the FJ Pool management to spawn threads to prevent
   // deadlock is otherwise all threads would block on waits.
   @Override public synchronized boolean block() throws InterruptedException {
     while( !isDone() ) { wait(1000); }
-    return true;
-  }
-
-  public boolean await() {
-    while( !isDone() ) _dt.join();
     return true;
   }
 

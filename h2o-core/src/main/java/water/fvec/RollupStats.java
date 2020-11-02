@@ -355,8 +355,9 @@ final class RollupStats extends Iced {
         if(rpcOld == null) {  // no prior pending task, need to send this one
           rpcNew.call().get();
           _pendingRollups.remove(rskey);
-        } else if (rpcOld.await()) // rollups computation is already in progress, wait for it to finish
+        } else if (rpcOld.canBlock() || rpcOld.isDone()) {// rollups computation is already in progress, wait for it to finish
           rpcOld.get();
+        }
       } catch( Throwable t ) {
         System.err.println("Remote rollups failed with an exception, wrapping and rethrowing: "+t);
         throw new RuntimeException(t);
