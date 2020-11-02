@@ -21,7 +21,6 @@ def permutation_varimp_oat(model, frame):
     :param model: trained model
     :param frame: training frame
     """
-
     if type(frame) is not H2OFrame:
         raise ValueError("Frame is not H2OFrame")
 
@@ -49,7 +48,6 @@ def permutation_varimp_oat(model, frame):
         ax.annotate(annotation, (mean[index], std_dev[index]))
         
     plt.show()
-
 
 def permutation_varimp(model, frame, use_pandas=True, metric="mse"):
     """
