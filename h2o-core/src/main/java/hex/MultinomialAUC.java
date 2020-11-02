@@ -4,7 +4,7 @@ import water.Iced;
 import water.util.TwoDimTable;
 
 public class MultinomialAUC extends Iced {
-    public AUC2[] _ovrAucs;
+    public SimpleAUC[] _ovrAucs;
     public PairwiseAUC[] _ovoAucs;
     public final MultinomialAucType _default_auc_type;
     public final String[] _domain;
@@ -29,28 +29,40 @@ public class MultinomialAUC extends Iced {
         int domainLength = _domain.length;
         if(domainLength < MAX_DOMAIN_SIZE) {
             _ovoAucs = new PairwiseAUC[(domainLength * domainLength - domainLength) / 2];
-            _ovrAucs = new AUC2[domainLength];
+            _ovrAucs = new SimpleAUC[domainLength];
             int aucsIndex = 0;
             if (!zeroWeights) {
                 for (int i = 0; i < domainLength - 1; i++) {
-                    _ovrAucs[i] = ovrAucs[i]._n > 0 ? new AUC2(ovrAucs[i]) : new AUC2();
+                    AUC2 tmpAucObject = ovrAucs[i]._n > 0 ? new AUC2(ovrAucs[i]) : new AUC2();
+                    int maxIndex = tmpAucObject._max_idx;
+                    double tp = 0;
+                    if(maxIndex != -1){
+                        tp = tmpAucObject.tp(maxIndex);
+                    }
+                    _ovrAucs[i] = new SimpleAUC(tmpAucObject._auc, tmpAucObject._pr_auc, tp, tmpAucObject._n+tmpAucObject._p);
                     for (int j = i + 1; j < domainLength; j++) {
                         AUC2 first = ovoAucs[i][j]._n > 0 ? new AUC2(ovoAucs[i][j]) : new AUC2();
                         AUC2 second = ovoAucs[j][i]._n > 0 ? new AUC2(ovoAucs[j][i]) : new AUC2();
                         _ovoAucs[aucsIndex++] = new PairwiseAUC(first, second, _domain[i], _domain[j]);
                     }
                 }
-                _ovrAucs[domainLength - 1] = ovrAucs[domainLength - 1]._n > 0 ? new AUC2(ovrAucs[domainLength - 1]) : new AUC2();
+                AUC2 tmpAucObject = ovrAucs[domainLength - 1]._n > 0 ? new AUC2(ovrAucs[domainLength - 1]) : new AUC2();
+                int maxIndex = tmpAucObject._max_idx;
+                double tp = 0;
+                if(maxIndex != -1){
+                    tp = tmpAucObject.tp(maxIndex);
+                }
+                _ovrAucs[domainLength - 1] = new SimpleAUC(tmpAucObject._auc, tmpAucObject._pr_auc, tp, tmpAucObject._n+tmpAucObject._p);
             } else {
                 for (int i = 0; i < ovoAucs.length - 1; i++) {
-                    _ovrAucs[i] = new AUC2();
+                    _ovrAucs[i] = new SimpleAUC();
                     for (int j = i + 1; j < ovoAucs[0].length; j++) {
                         if (i < j) {
                             _ovoAucs[aucsIndex++] = new PairwiseAUC(new AUC2(), new AUC2(), _domain[i], _domain[j]);
                         }
                     }
                 }
-                _ovrAucs[domainLength - 1] = new AUC2();
+                _ovrAucs[domainLength - 1] = new SimpleAUC();
             }
             macroOvoAuc = computeOvoMacroAuc(false);
             weightedOvoAuc = computeOvoWeightedAuc(false);
@@ -82,13 +94,13 @@ public class MultinomialAUC extends Iced {
         if(_domain.length < MAX_DOMAIN_SIZE) {
             int domainLength = _domain.length;
             _ovoAucs = new PairwiseAUC[(domainLength * domainLength - domainLength) / 2];
-            _ovrAucs = new AUC2[domainLength];
+            _ovrAucs = new SimpleAUC[domainLength];
             int aucsIndex = 0;
             for (int i = 0; i < _ovrAucs.length; i++) {
                 AUC2 auc = new AUC2();
                 auc._auc = (double) aucTable.get(i,3);
                 auc._pr_auc = (double) aucprTable.get(i,3);
-                _ovrAucs[i] = auc;
+                _ovrAucs[i] = new SimpleAUC(auc._auc, auc._pr_auc, 0, 0);
             }
             macroOvrAuc = (double) aucTable.get(_ovrAucs.length,3);
             weightedOvrAuc = (double) aucTable.get(_ovrAucs.length + 1,3);
@@ -98,8 +110,8 @@ public class MultinomialAUC extends Iced {
 
             int lastOvoIndex = _ovrAucs.length + _ovoAucs.length + 2;
             for (int j = _ovrAucs.length + 2; j < lastOvoIndex; j++) {
-                _ovoAucs[aucsIndex++] = new PairwiseAUC((double)aucTable.get(j, 3),   /*AUC*/
-                                                        (double)aucprTable.get(j, 3), /*PR AUC*/
+                _ovoAucs[aucsIndex++] = new PairwiseAUC((double) aucTable.get(j, 3),   /*AUC*/
+                                                        (double) aucprTable.get(j, 3), /*PR AUC*/
                                                         (String) aucTable.get(j, 1)   /*first domain*/,
                                                         (String) aucTable.get(j, 2)   /*second domain*/);
             }
@@ -152,8 +164,8 @@ public class MultinomialAUC extends Iced {
 
     public double computeOvrMacroAuc(boolean isPr){
         double macroAuc = 0;
-        for(AUC2 ovrAuc : _ovrAucs){
-            macroAuc += isPr ? ovrAuc._pr_auc : ovrAuc._auc;
+        for(SimpleAUC ovrAuc : _ovrAucs){
+            macroAuc += isPr ? ovrAuc.aucpr() : ovrAuc.auc();
         }
         return macroAuc/_ovrAucs.length;
     }
@@ -161,14 +173,10 @@ public class MultinomialAUC extends Iced {
     public double computeOvrWeightedAuc(boolean isPr){
         double weightedAuc = 0;
         double sumWeights = 0;
-        for(AUC2 ovrAuc : _ovrAucs){
-            int maxIndex = ovrAuc._max_idx;
-            double tp = 0;
-            if(maxIndex != -1){
-                tp = ovrAuc.tp(maxIndex);
-            }
+        for(SimpleAUC ovrAuc : _ovrAucs){
+            double tp = ovrAuc.tp();
             sumWeights += tp;
-            weightedAuc += isPr ? ovrAuc._pr_auc * tp : ovrAuc._auc * tp;
+            weightedAuc += isPr ? ovrAuc.aucpr() * tp : ovrAuc.auc() * tp;
         }
         return weightedAuc/sumWeights;
     }
@@ -182,7 +190,7 @@ public class MultinomialAUC extends Iced {
     }
 
     public double computeOvoWeightedAuc(boolean isPr){
-        double n = _ovrAucs[0]._n+_ovrAucs[0]._p;
+        double n = _ovrAucs[0].ncases();
         double weightedAuc = 0;
         double sumWeights = 0;
         for(PairwiseAUC ovoAuc : _ovoAucs){
@@ -254,8 +262,8 @@ public class MultinomialAUC extends Iced {
             TwoDimTable table = new TwoDimTable(tableHeader, null, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
             double sumWeights = 0;
             for (int i = 0; i < _ovrAucs.length; i++) {
-                AUC2 auc = _ovrAucs[i];
-                double aucValue = isPr ? auc._pr_auc : auc._auc;
+                SimpleAUC auc = _ovrAucs[i];
+                double aucValue = isPr ? auc.aucpr() : auc.auc();
                 table.set(i, 0, _domain[i]);
                 table.set(i, 2, aucValue);
             }
@@ -275,5 +283,47 @@ public class MultinomialAUC extends Iced {
         } else {
             return null;
         }
+    }
+}
+
+/**
+ * Simple AUC object to store only auc and aucpr and other important values to save memory
+ */
+class SimpleAUC extends Iced {
+    private final double _auc;
+    private final double _aucpr;
+    private final double _tp;
+    private final double _ncases;
+
+    public SimpleAUC(double auc, double aucpr, double tp, double n) {
+        this._auc = auc;
+        this._aucpr = aucpr;
+        this._tp = tp;
+        this._ncases = n;
+    }
+
+    public SimpleAUC() {
+        this._auc = Double.NaN;
+        this._aucpr = Double.NaN;
+        this._tp = Double.NaN;
+        this._ncases = Double.NaN;
+    }
+
+
+    public double auc() {
+        return _auc;
+    }
+
+    public double aucpr() {
+        return _aucpr;
+    }
+
+
+    public double tp() {
+        return _tp;
+    }
+
+    public double ncases() {
+        return _ncases;
     }
 }
