@@ -18,38 +18,39 @@ import java.util.*;
  * and Morris method; creating TwoDimTable with relative, scaled, and percentage value
  *                             TwoDimTable with mean of the absolute value, and standard deviation of all features importance
  *                             
- * */
+ */
 
 public class PermutationVarImp {
 
-    public double[] _pVarImp; // permutation variables (feature) importance, relative value      
+    public double[] _pVarImp; // permutation variables importance, (relative)
     
     private String _responseCol; 
     
-    private String[] _features; 
-    private String[] _featuresWithNoResCol; // features without response col
+    private String[] _var; 
+    private String[] _featuresWithNoResCol;
     public String[] _metrics;
 
     /**
      * Stores the metric to be used (loss function) original values and j-th variables's score metric values  
-     * */
+     */
     public class LocalMetric{ // do it as a string to get the metric from the user
 
-        LocalMetric(String metric) {    m_selectedMetric = metric;  }
-        LocalMetric() {    m_selectedMetric = "mse";  } 
-        String m_selectedMetric;
-        double m_ogMetric;
-        double m_variablesMetric;
+        LocalMetric(String metric)  { mMetric = metric; }
+        LocalMetric()               { mMetric = "mse"; } 
+        String mMetric;
+        double mOgMetric;
+        double mVariablesMetric;
     }
 
-    public LocalMetric _variImpMetric;
+    public LocalMetric _varImpMetric;
+    public Map<String, Double> _varImpMap;
     TwoDimTable _permutationVarImp;
     private Model _model;
-    private Frame _trainFr; // original dataset used to train model
+    private Frame _trainFr; 
 
     /**
      * When passing only the Model without Frame (will use models frame)
-     * */
+     */
     public PermutationVarImp(Model model) {
         _model = model;
         _trainFr = _model._parms._train.get();
@@ -64,151 +65,172 @@ public class PermutationVarImp {
     
     void init(){
         _responseCol = _model._parms._response_column;
-        _features = _trainFr.names();
-
-        // regression: mse, R2, rmse, rmsele , mae
-        // classification gini, absolute_mcc, logloss, AUC, AUC_PR 
+        _var = _trainFr.names();
         _metrics = new String[]{"r2", "mse", "rmse", "gini coefficient", "f1", "logloss", "auc"};
     }
-    public String [] get_features_wo_res_test(){return _featuresWithNoResCol;}
     
     /**
-     * Creates a new array of Strings without the response column
-     * */
+     * Creates a new array of Strings without the response column and ignored columns
+     */
     public void removeResCol(){
-        // remove response col from array of string to be added to TwoDimTable
-        _featuresWithNoResCol = _trainFr.names();
-        if (_featuresWithNoResCol[0].equals(_responseCol)) {
-            _featuresWithNoResCol = Arrays.copyOfRange(_featuresWithNoResCol, 1, _featuresWithNoResCol.length);
-        } else { // scenario where the response_col isn't the first column 
-            List<String> list = new ArrayList<String>(Arrays.asList(_featuresWithNoResCol));
-            if (list.contains(_responseCol))   // paranoid if check
-                list.remove(_responseCol);
-            _featuresWithNoResCol = list.toArray(new String[0]);
-        }
-        _pVarImp = new double[_featuresWithNoResCol.length]; 
+        List<String> list = new ArrayList<String>(Arrays.asList(_trainFr.names()));
+        // remove ignored columns & response column
+        if (_model._parms._ignored_columns != null)
+            for (String s : _model._parms._ignored_columns) list.remove(s);
+        list.remove(_responseCol);
+        _featuresWithNoResCol = list.toArray(new String[0]);
         
-//        _train_fr.remove(_model._output.responseName());
-//        _train_fr._names
+        // alloc permutation variable importance array 
+        _pVarImp = new double[_featuresWithNoResCol.length];
     }
 
     
-    private double getMetric() throws MetricNotFoundExeption{
-//        ModelMetrics og_mm = ModelMetrics.getFromDKV(_model, _model._parms.train());
-        ModelMetrics og_mm = ModelMetrics.getFromDKV(_model, _trainFr);
+    /**
+     * Returns the metric (loss function) selected by the user (mse is default)
+     * @throws MetricNotFoundException if metric could not be loaded 
+     */
+    private double getMetric(ModelMetrics mm) throws MetricNotFoundException {
         double metric = Double.NaN;
-        assert og_mm != null;
+        assert mm != null;
         try{
-            switch (_variImpMetric.m_selectedMetric){
+            switch (_varImpMetric.mMetric){
                 case "r2":  metric = _model.r2();
                     break;
-                case "mse": metric = og_mm.mse();
+                case "mse": metric = mm.mse();
                     break;
-                case "rmse": metric = og_mm.rmse();
+                case "rmse": metric = mm.rmse();
                     break;
-                case "gini coefficient": metric = og_mm.auc_obj()._gini;
+                case "gini coefficient": metric = mm.auc_obj()._gini;
                     break;
                 case  "logloss": metric = _model.logloss();
+                    ModelCategory mc = _model._output.getModelCategory();
+                    if (mc == ModelCategory.Binomial)
+                        metric = ((ModelMetricsBinomial)mm).logloss();
+                    else if (mc == ModelCategory.Multinomial)
+                        metric = ((ModelMetricsMultinomial)mm).logloss();
+                    else throw new MetricNotFoundException( _model._output.getModelCategory().name() + " with " + _varImpMetric.mMetric + " not found ");
+                    break; 
+                case "auc": metric = mm.auc_obj()._auc;
                     break;
-                case "auc": metric = og_mm.auc_obj()._auc;
                 default:
-                    throw new MetricNotFoundExeption("there was a metric not handled well! " + _variImpMetric.m_selectedMetric);
+                    throw new MetricNotFoundException("Metric not supported " + _varImpMetric.mMetric);
             }
-        } catch (NullPointerException e){ // or nullptrexpection
-            System.err.println("ModelMetricCalculation threw an exception unchecked Classifier " + _model._key);
+        } catch (MetricNotFoundException |NullPointerException e){ 
+            System.err.println("ModelMetricCalculation  " + _model._key);
             e.printStackTrace();
         }
         if(Double.isNaN(metric))
-            throw new MetricNotFoundExeption("Model doesn't support the metric following metric " + _variImpMetric.m_selectedMetric);
+            throw new MetricNotFoundException("Model doesn't support the metric following metric " + _varImpMetric.mMetric);
         return metric;
     }
     
-    private void setOgModelMetric() {
+    /**
+     * Set the loss function upon training the model (original ~ Og)
+     */
+    public void setOgModelMetric() {
         try{
-            _variImpMetric.m_ogMetric = getMetric();
-        } catch (MetricNotFoundExeption e){
-            System.err.println("Metric " + _variImpMetric.m_selectedMetric + " not supported for ! " + _model._key);
+            _varImpMetric.mOgMetric = getMetric(ModelMetrics.getFromDKV(_model, _model._parms.train()));
+        } catch (MetricNotFoundException e){
+            System.err.println("Metric " + _varImpMetric.mMetric + " not supported for :" + _model._key);
             e.printStackTrace();
         }
     }
-
+    
+    /**
+     * Set the loss function of the feature that's permutated
+     */
     private void setVariablesMetric(int var){
         try{
-            _variImpMetric.m_variablesMetric = _variImpMetric.m_ogMetric / getMetric();
-        } catch (MetricNotFoundExeption e){
-            System.err.println("Metric " + _variImpMetric.m_selectedMetric + " not supported for ! " + _model._key);
+            // divide original metric (upon training) with metric value obtained from shuffled variable 
+            _varImpMetric.mVariablesMetric = getMetric(ModelMetrics.getFromDKV(_model, _trainFr)) - _varImpMetric.mOgMetric;
+        } catch (MetricNotFoundException e){
+            System.err.println("Metric " + _varImpMetric.mMetric + " not supported for :" + _model._key);
             e.printStackTrace();
         }
-        _pVarImp[var] = _variImpMetric.m_variablesMetric;
-    }
-
-
-    /** If the user specifies a metric store it to the LocalMetric class otherwise uses the metric based on the model*/
-    public TwoDimTable getPermutationVarImp(String metric)  {
-        try {
-            if (!Arrays.asList(_metrics).contains(metric.toLowerCase()))
-                throw new MetricNotFoundExeption("Permutation Variable Importance doesnt support " + metric + " for model " + _model._key );
-            } catch (MetricNotFoundExeption e) {
-                e.printStackTrace();
-        }
-
-        _variImpMetric = new LocalMetric(metric.toLowerCase());
-        return PermutationVarimp();
-    }
-    public TwoDimTable getPermutationVarImp() {
-        // put all the metrics in a class for structure
-        _variImpMetric = new LocalMetric();
-        assert _variImpMetric.m_selectedMetric == "mse";  
-        return PermutationVarimp();
+        _pVarImp[var] = _varImpMetric.mVariablesMetric;
     }
 
     /**
+     *  If the user specifies a metric store it to the LocalMetric class otherwise uses the metric based on the model*
+     */
+    public TwoDimTable getPermutationVarImp(String metric)  {
+        try {
+            if (!Arrays.asList(_metrics).contains(metric.toLowerCase()))
+                throw new MetricNotFoundException("Permutation Variable Importance doesnt support " + metric + " for model " + _model._key );
+            } catch (MetricNotFoundException e) {
+            System.err.println("Metric " + _varImpMetric.mMetric + " not supported for :" + _model._key);
+            e.printStackTrace();
+        }
+
+        _varImpMetric = new LocalMetric(metric.toLowerCase());
+        return PermutationVarImportance();
+    }
+    public TwoDimTable getPermutationVarImp() {
+        // put all the metrics in a class for structure
+        _varImpMetric = new LocalMetric();
+        assert _varImpMetric.mMetric.equals("mse");  
+        return PermutationVarImportance();
+    }
+
+    /**
+     * Check if variable was set to be ignored
+     * @param ignoredVars ignored variables
+     * @param var variable to be shuffled
+     */
+    public static boolean isIgnored(String[] ignoredVars, String var) {
+        return Arrays.asList(ignoredVars).contains(var);
+    }
+    
+    /**
      * permute the feature's values breaking the relationship between the feature and the true outcome.
      * Then we score the model again and calculate the loss function, and creating a TwoDimTable.
-     * */
-    public TwoDimTable PermutationVarimp(){
+     */
+    public TwoDimTable PermutationVarImportance(){
         removeResCol();
-        setOgModelMetric();
+        setOgModelMetric(); // get the metric value from the model
+         _varImpMap = new HashMap<>(_featuresWithNoResCol.length);
+        
+//        Vec vec = _trainFr.remove(_responseCol);
         
         int id = 0;
         for (int f = 0; f < _trainFr.numCols(); f++)
         {
             // skip for response column
-            if (_features[f].equals(_responseCol))  continue;
+            if (_var[f].equals(_responseCol) ||  
+                    (_model._parms._ignored_columns == null ? 
+                    false : 
+                    isIgnored(_model._parms._ignored_columns, _var[f]))) {
+                continue;
+            }
 
             //shuffle values of feature
-            Vec shuffled_feature = VecUtils.ShuffleVec(_trainFr.vec(_features[f]), _trainFr.vec(_features[f]).makeCopy());
+            Vec shuffled_feature = VecUtils.ShuffleVec(_trainFr.vec(_var[f]), _trainFr.vec(_var[f]).makeCopy());
             Vec og_feature = _trainFr.replace(f, shuffled_feature);
 
             // score the model again and compute diff
             Frame new_score = _model.score(_trainFr);
 
             // set and add new metrics ~ fills @param _p_var_imp needed for ModelMetrics.calcVarImp()
-            setVariablesMetric(id++);
+            setVariablesMetric(id);
+
 
             //return the original data
             _trainFr.replace(f, og_feature); 
 
+            // Create Map
+            _varImpMap.put(_var[f], _pVarImp[id++]);
+            
             new_score.remove();
             shuffled_feature.remove();
         }
+        // Create TwoDimTable having (Relative + Scaled + percentage) importance 
         _permutationVarImp = ModelMetrics.calcVarImp(_pVarImp, _featuresWithNoResCol);
         return _permutationVarImp;
     }
-    
-    public Map <String, Double> toMapScaled(){
-        assert _permutationVarImp != null;
-        Map<String, Double> varImpMap = new HashMap<>(_pVarImp.length);
-        for (int i = 0; i < _pVarImp.length; i++) {
-            varImpMap.put(_featuresWithNoResCol[i], (Double)_permutationVarImp.get(i, 1)); // col 1 is scaled values
-        }
-        return varImpMap;
-    }
-
 
     /**
      * Default is set to return the Relative value of the Permutation Feature Importance (PFI)
-     * */
+     */
     public TwoDimTable oat(){ return oat(0); } 
     
     /**
@@ -216,15 +238,13 @@ public class PermutationVarImp {
      * type 0: Relative value of PFI
      * type 1: Scaled value of PFI
      * type 2: Percentage value of PFI
-     * */
-    
+     */
     public TwoDimTable oat(int type) {
         int r = 4; // set 4 to 10 
         TwoDimTable[] morris_FI_arr = new TwoDimTable[r];
         
         // Generate r tables of Feature importance differently shuffled
-        for (int i = 0; i < r; i++) 
-        {
+        for (int i = 0; i < r; i++) {
             morris_FI_arr[i] = getPermutationVarImp();
             System.out.println(morris_FI_arr[i]);
         }
@@ -261,11 +281,8 @@ public class PermutationVarImp {
         Arrays.fill(col_types, "double");
         Arrays.fill(col_formats, "%5f");
         
-        
         return new TwoDimTable("One At a Time", null, _featuresWithNoResCol, new String [] {"Mean of the absolute value", "standard deviation"},
                     col_types, col_formats, "Permutation Variable Importance", new String[_featuresWithNoResCol.length][], response);
-
     }
-    
 }
 
