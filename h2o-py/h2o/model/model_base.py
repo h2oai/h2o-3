@@ -11,6 +11,7 @@ from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
 from h2o.utils.metaclass import BackwardsCompatible, Deprecated as deprecated, h2o_meta
 from h2o.utils.compatibility import viewitems
+from h2o.utils.ext_dependencies import get_matplotlib_pyplot
 from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.typechecks import I, assert_is_type, assert_satisfies, Enum, is_type
 
@@ -984,7 +985,7 @@ class ModelBase(h2o_meta(Keyed)):
     #   h2o.remove(self._id)
 
     def _plot(self, timestep, metric, server=False):
-        plt = _get_matplotlib_pyplot(server)
+        plt = get_matplotlib_pyplot(server)
         if not plt: return
 
         scoring_history = self.scoring_history()
@@ -1213,7 +1214,7 @@ class ModelBase(h2o_meta(Keyed)):
         # Plot partial dependence plots using matplotlib
         to_fig = num_1dpdp + num_2dpdp
         if plot and to_fig > 0:     # plot 1d pdp for now
-            plt = _get_matplotlib_pyplot(server)
+            plt = get_matplotlib_pyplot(server)
             cm = _get_matplotlib_cm("Partial dependency plots")
             if not plt: 
                 return pps
@@ -1443,7 +1444,7 @@ class ModelBase(h2o_meta(Keyed)):
         assert_is_type(num_of_features, None, int)
         assert_is_type(server, bool)
 
-        plt = _get_matplotlib_pyplot(server)
+        plt = get_matplotlib_pyplot(server)
         if not plt: return
 
         # get the variable importances as a list of tuples, do not use pandas dataframe
@@ -1532,7 +1533,7 @@ class ModelBase(h2o_meta(Keyed)):
         if self._model_json["algo"] != "glm":
             raise H2OValueError("This function is available for GLM models only")
 
-        plt = _get_matplotlib_pyplot(server)
+        plt = get_matplotlib_pyplot(server)
         if not plt: return
 
         # get unsorted tuple of labels and coefficients
@@ -1712,28 +1713,6 @@ class ModelBase(h2o_meta(Keyed)):
         """DEPRECATED. Use :meth:`scoring_history` instead."""
         return self.scoring_history()
 
-
-
-
-def _get_matplotlib_pyplot(server):
-    try:
-        # noinspection PyUnresolvedReferences
-        import matplotlib
-        if server:
-            # Matplotlib version 3.1 and higher deprecates/doesn't have `warn` parameter
-            version = matplotlib.__version__.split(".")
-            if int(version[0]) < 3 or \
-                    (int(version[0]) == 3 and
-                     int(version[1]) < 1):
-                matplotlib.use("Agg", warn=False)
-            else:
-                matplotlib.use("Agg")
-        # noinspection PyUnresolvedReferences
-        import matplotlib.pyplot as plt
-        return plt
-    except ImportError:
-        print("`matplotlib` library is required for this function!")
-        return None
 
 def _get_mplot3d_pyplot(functionName):
     try:
