@@ -77,6 +77,7 @@ public class MultinomialAUC extends Iced {
     }
 
     public MultinomialAUC(TwoDimTable aucTable, TwoDimTable aucprTable, String[] domain, MultinomialAucType type){
+        _default_auc_type = type;
         _domain = domain;
         if(_domain.length < MAX_DOMAIN_SIZE) {
             int domainLength = _domain.length;
