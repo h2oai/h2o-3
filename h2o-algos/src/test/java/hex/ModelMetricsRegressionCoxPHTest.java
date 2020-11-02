@@ -182,9 +182,13 @@ public class ModelMetricsRegressionCoxPHTest {
             final Vec status = Scope.track(Vec.makeOne(len, Vec.T_CAT));
             status.setDomain(new String[]{"0", "1"});
 
+            System.out.println("Prepare estimates...");
             final Vec estimates = prepareEstimates(estimateTask, times);
+            System.out.println("...estimates ready");
 
+            System.out.println("Compute concordance...");
             final double c = concordance(starts, times, status, Collections.emptyList(), estimates).c();
+            System.out.println("concordance = " + c);
 
             assertEquals(expected, c, delta);
         } finally {
