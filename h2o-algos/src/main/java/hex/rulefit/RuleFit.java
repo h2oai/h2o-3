@@ -198,7 +198,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                         SharedTreeModel<?, ?, ?> treeModel = builders[modelId].get();
                         long endModelTime = System.nanoTime() - startModelTime;
                         LOG.info("Tree model n." + modelId + " trained in " + ((double)endModelTime) / 1E9 + "s.");
-                        rulesList.addAll(Rule.extractRulesListFromModel(treeModel, modelId));
+                        rulesList.addAll(Rule.extractRulesListFromModel(treeModel, modelId, nclasses()));
                         treeModel.delete();
                     }
                     long endAllTreesTime = System.nanoTime() - startAllTreesTime;
@@ -379,11 +379,15 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
         double[] getIntercept(GLMModel glmModel) {
             HashMap<String, Double> glmCoefficients = glmModel.coefficients();
+            double[] intercept = nclasses() > 2 ? new double[nclasses()] : new double[1];
+            int i = 0;
             for (Map.Entry<String, Double> coefficient : glmCoefficients.entrySet()) {
-                if ("Intercept".equals(coefficient.getKey()))
-                    return new double[]{coefficient.getValue()};
+                if ("Intercept".equals(coefficient.getKey()) || coefficient.getKey().contains("Intercept_")) {
+                    intercept[i] = coefficient.getValue();
+                    i++;
+                }
             }
-            return new double[]{};
+            return intercept;
         }
 
 
@@ -391,7 +395,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             // extract variable-coefficient map (filter out intercept and zero betas)
             Map<String, Double> filteredRules = glmCoefficients.entrySet()
                     .stream()
-                    .filter(e -> !"Intercept".equals(e.getKey()) && 0 != e.getValue())
+                    .filter(e -> !("Intercept".equals(e.getKey()) || e.getKey().contains("Intercept_")) && 0 != e.getValue())
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             
             List<Rule> rules = new ArrayList<>();
