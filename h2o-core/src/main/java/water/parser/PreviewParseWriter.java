@@ -219,8 +219,8 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
       return Vec.T_CAT;
     }
     // categorical mixed with numbers
-    if (nstrings >= (nnums+nzeros) // mostly strings
-        && (domain.size() <= 0.95 * nstrings) ) { // but not all unique
+    if (nstrings >= (nnums + nzeros) // mostly strings
+        && (domain.size() <= 0.95 * nstrings)) { // but not all unique
       return Vec.T_CAT;
     }
     
