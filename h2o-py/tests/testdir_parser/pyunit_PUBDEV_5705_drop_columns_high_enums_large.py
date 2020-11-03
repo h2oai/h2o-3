@@ -21,11 +21,11 @@ def test_column_skip_high_cardinality():
 
     fwriteFile.close()
     try:
-        parseFile = h2o.upload_file(savefilenamewithpath, col_types=["enum","int"])
+        h2o.upload_file(savefilenamewithpath, col_types=["enum","int"])
         assert False, "Test should have thrown an exception due to all columns are skipped"  # should have failed here
     except Exception as ex:
         print(ex) # print out the error message
-        parseFile = h2o.upload_file(savefilenamewithpath, col_types=["int"], skipped_columns=[0]) # should pass here.
+        h2o.upload_file(savefilenamewithpath, col_types=["int"], skipped_columns=[0]) # should pass here.
         print("Test passed! Parsed with large enum columns skipped!")
         pass
 
