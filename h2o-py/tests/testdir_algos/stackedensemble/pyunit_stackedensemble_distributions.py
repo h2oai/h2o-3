@@ -509,12 +509,11 @@ def basic_inference_works_for_DRF_and_NB_test():
                                                se_class_5.metalearner().actual_params.get("family"))
 
 
-if __name__ == "__main__":
-    pyunit_utils.run_tests([
-        infer_distribution_test,
-        infer_family_test,
-        infer_mixed_family_and_dist_test,
-        metalearner_obeys_metalearner_params_test,
-        infer_uses_defaults_when_base_model_doesnt_support_distributions_test,
-        basic_inference_works_for_DRF_and_NB_test,
-    ])
+pyunit_utils.run_tests([
+    infer_distribution_test,
+    infer_family_test,
+    infer_mixed_family_and_dist_test,
+    metalearner_obeys_metalearner_params_test,
+    infer_uses_defaults_when_base_model_doesnt_support_distributions_test,
+    basic_inference_works_for_DRF_and_NB_test,
+])
