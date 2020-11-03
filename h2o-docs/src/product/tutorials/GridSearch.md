@@ -97,7 +97,7 @@ The following hyperparameters are supported by grid search.
 - `seed`
 - `init`
 
-### GLM Hyperparameters Supported by Grid Search
+### GLRM Hyperparameters Supported by Grid Search
 
 - `transform`
 - `k`
