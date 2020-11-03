@@ -11,7 +11,7 @@ import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.util.TwoDimTable;
 
-public class AstOneAtaTime_Morris extends AstPrimitive {
+public class AstOneAtaTimeMorris extends AstPrimitive {
 
     @Override
     public int nargs() {return 1 + 2;} // Perm_feature_importance + Frame + Model
