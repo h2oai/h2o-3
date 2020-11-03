@@ -41,7 +41,7 @@ try {
               pipelineContext = initPipelineContext(scmEnv, 'MODE_NIGHTLY', true)
               // Execute nightly for master at 22:XX
               // for rel- branches at 21:XX
-              String scheduleString = 'H 22,0,2,4,6 * * *'
+              String scheduleString = 'H 22 * * *'
               if (env.BRANCH_NAME.startsWith('rel-')) {
                 scheduleString = 'H 21 * * *'
               }
