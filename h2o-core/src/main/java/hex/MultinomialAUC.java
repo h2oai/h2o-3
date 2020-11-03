@@ -8,7 +8,7 @@ public class MultinomialAUC extends Iced {
     public PairwiseAUC[] _ovoAucs;
     public final MultinomialAucType _default_auc_type;
     public final String[] _domain;
-    public final static int MAX_DOMAIN_SIZE = 90;
+    public final static int MAX_DOMAIN_SIZE = 100;
     public final boolean _calculateAuc;
 
     // keep this final aggregate value outside to save time
