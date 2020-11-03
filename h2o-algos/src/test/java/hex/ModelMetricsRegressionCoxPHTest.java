@@ -187,10 +187,16 @@ public class ModelMetricsRegressionCoxPHTest {
             System.out.println("...estimates ready");
 
             System.out.println("Compute concordance...");
-            final double c = concordance(starts, times, status, Collections.emptyList(), estimates).c();
-            System.out.println("concordance = " + c);
+            try {
+                final double c = concordance(starts, times, status, Collections.emptyList(), estimates).c();
+                System.out.println("concordance = " + c);
 
-            assertEquals(expected, c, delta);
+                assertEquals(expected, c, delta);
+            } catch (Throwable t) {
+                System.out.println(t);
+                t.printStackTrace();
+                throw t;
+            }
         } finally {
             Scope.exit();
         }
