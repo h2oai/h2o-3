@@ -38,13 +38,9 @@ try {
 
             if (pipelineContext == null) {
               def initPipelineContext = load('h2o-3/scripts/jenkins/groovy/initPipelineContext.groovy')
-              pipelineContext = initPipelineContext(scmEnv, 'MODE_NIGHTLY', true)
-              // Execute nightly for master at 22:XX
-              // for rel- branches at 21:XX
-              String scheduleString = 'H 22,0,2,4,6 * * *'
-              if (env.BRANCH_NAME.startsWith('rel-')) {
-                scheduleString = 'H 21 * * *'
-              }
+              pipelineContext = initPipelineContext(scmEnv, 'MODE_NIGHTLY_REPEATED', true)
+              // Execute nightly for master at 0:XX, 2:XX, 4:XX and 6:XX
+              String scheduleString = 'H 0,2,4,6 * * *'
               pipelineContext.getBuildConfig().setJobProperties(this, pipelineTriggers([cron(scheduleString)]))
               // Load the defineTestStages script
               defineTestStages = load('h2o-3/scripts/jenkins/groovy/defineTestStages.groovy')
