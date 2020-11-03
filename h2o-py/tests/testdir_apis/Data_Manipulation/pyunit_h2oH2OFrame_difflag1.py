@@ -24,6 +24,6 @@ def h2o_H2OFrame_difflag1():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_difflag1())
+    pyunit_utils.standalone_test(h2o_H2OFrame_difflag1)
 else:
     h2o_H2OFrame_difflag1()

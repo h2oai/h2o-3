@@ -23,6 +23,6 @@ def h2o_H2OFrame_head():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_head())
+    pyunit_utils.standalone_test(h2o_H2OFrame_head)
 else:
     h2o_H2OFrame_head()

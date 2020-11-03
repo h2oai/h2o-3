@@ -23,6 +23,6 @@ def h2o_H2OFrame_entropy():
     assert strings.entropy()[0,0] == 0, "h2o.H2OFrame.entropy() command is not working."
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_entropy())
+    pyunit_utils.standalone_test(h2o_H2OFrame_entropy)
 else:
     h2o_H2OFrame_entropy()

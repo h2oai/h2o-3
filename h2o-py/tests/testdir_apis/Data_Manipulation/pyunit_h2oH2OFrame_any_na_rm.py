@@ -13,6 +13,6 @@ def h2o_H2OFrame_any_rm_na():
     assert h2oframe.any_na_rm(), "h2o.H2OFrame.any_rm_na() command is not working."
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_any_rm_na())
+    pyunit_utils.standalone_test(h2o_H2OFrame_any_rm_na)
 else:
     h2o_H2OFrame_any_rm_na()

@@ -34,6 +34,6 @@ def h2o_H2OFrame_stats():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_stats())
+    pyunit_utils.standalone_test(h2o_H2OFrame_stats)
 else:
     h2o_H2OFrame_stats()

@@ -45,6 +45,6 @@ def checkOpsCorrect(sourceFrame, resultFrame, op):
     pyunit_utils.compare_frames(resultFrame, tempFrame, numElements=9)
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_cummax())
+    pyunit_utils.standalone_test(h2o_H2OFrame_cummax)
 else:
     h2o_H2OFrame_cummax()

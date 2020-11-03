@@ -20,6 +20,6 @@ def h2o_H2OFrame_toupper():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_toupper())
+    pyunit_utils.standalone_test(h2o_H2OFrame_toupper)
 else:
     h2o_H2OFrame_toupper()

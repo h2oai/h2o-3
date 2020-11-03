@@ -24,6 +24,6 @@ def h2o_H2OFrame_logical_negation():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_logical_negation())
+    pyunit_utils.standalone_test(h2o_H2OFrame_logical_negation)
 else:
     h2o_H2OFrame_logical_negation()

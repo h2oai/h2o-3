@@ -36,6 +36,6 @@ def h2o_H2OFrame_columns_by_type():
     assert 5.0 in uuid_type, "h2o.H2OFrame.columns_by_type command is not working."
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_columns_by_type())
+    pyunit_utils.standalone_test(h2o_H2OFrame_columns_by_type)
 else:
     h2o_H2OFrame_columns_by_type()

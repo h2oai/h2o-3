@@ -18,6 +18,6 @@ def h2o_H2OFrame_na_omit():
     assert sum(newframe)==17,  "h2o.H2OFrame.nacnt() command is not working."  # check return result
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_na_omit())
+    pyunit_utils.standalone_test(h2o_H2OFrame_na_omit)
 else:
     h2o_H2OFrame_na_omit()

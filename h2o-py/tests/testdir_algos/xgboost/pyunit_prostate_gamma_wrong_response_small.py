@@ -25,7 +25,5 @@ class TestGammaWrongResponseType(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(unittest.main)
-else:
     suite = unittest.TestLoader().loadTestsFromTestCase(TestGammaWrongResponseType)
     unittest.TextTestRunner().run(suite)

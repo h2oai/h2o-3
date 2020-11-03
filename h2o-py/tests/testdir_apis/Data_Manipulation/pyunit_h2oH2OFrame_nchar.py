@@ -16,6 +16,6 @@ def h2o_H2OFrame_nchar():
     assert abs(newframe.sum().flatten()-(11+14+15)*50)< 1e-6, "h2o.H2OFrame.nchar() command is not working."
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_nchar())
+    pyunit_utils.standalone_test(h2o_H2OFrame_nchar)
 else:
     h2o_H2OFrame_nchar()

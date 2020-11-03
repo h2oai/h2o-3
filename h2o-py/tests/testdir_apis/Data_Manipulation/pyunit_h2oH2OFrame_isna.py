@@ -23,6 +23,6 @@ def h2o_H2OFrame_isna():
     assert temp_NA.any(), "h2o.H2OFrame.isna() command is not working."
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_isna())
+    pyunit_utils.standalone_test(h2o_H2OFrame_isna)
 else:
     h2o_H2OFrame_isna()

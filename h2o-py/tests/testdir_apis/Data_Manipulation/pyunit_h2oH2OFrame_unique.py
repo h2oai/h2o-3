@@ -25,6 +25,6 @@ def h2o_H2OFrame_unique():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_unique())
+    pyunit_utils.standalone_test(h2o_H2OFrame_unique)
 else:
     h2o_H2OFrame_unique()

@@ -92,7 +92,5 @@ class PUBDEV6416(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(unittest.main)
-else:
     suite = unittest.TestLoader().loadTestsFromTestCase(PUBDEV6416)
     unittest.TextTestRunner().run(suite)

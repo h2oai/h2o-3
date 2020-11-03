@@ -20,6 +20,6 @@ def h2o_H2OFrame_describe():
     h2oframe.describe(chunk_summary=True)
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_describe())
+    pyunit_utils.standalone_test(h2o_H2OFrame_describe)
 else:
     h2o_H2OFrame_describe()

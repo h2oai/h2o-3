@@ -25,6 +25,6 @@ def h2o_H2OFrame_tail():
     assert newFrame.shape==(new_row, new_col), "h2o.H2OFrame.tail() command is not working."  # check return result
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_tail())
+    pyunit_utils.standalone_test(h2o_H2OFrame_tail)
 else:
     h2o_H2OFrame_tail()

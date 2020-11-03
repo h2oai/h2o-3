@@ -29,6 +29,6 @@ def h2o_H2OFrame_as_data_frame():
     assert small_bike_pandas.shape == (smallbike.nrow, smallbike.ncol)
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_as_data_frame())
+    pyunit_utils.standalone_test(h2o_H2OFrame_as_data_frame)
 else:
     h2o_H2OFrame_as_data_frame()

@@ -71,6 +71,6 @@ def compareEvalOps(origFrame, newFrame, objType, operString):
     pyunit_utils.assert_correct_frame_operation(origFrame, newFrame, operString)
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrameAsin())
+    pyunit_utils.standalone_test(h2o_H2OFrameAsin)
 else:
     h2o_H2OFrameAsin()

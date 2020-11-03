@@ -30,6 +30,6 @@ def h2o_H2OFrame_refresh():
                                                                                          "after uniop operation"
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_refresh())
+    pyunit_utils.standalone_test(h2o_H2OFrame_refresh)
 else:
     h2o_H2OFrame_refresh()

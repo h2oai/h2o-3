@@ -25,6 +25,6 @@ def h2o_H2OFrame():
                                                                                  "not working."
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame())
+    pyunit_utils.standalone_test(h2o_H2OFrame)
 else:
     h2o_H2OFrame()

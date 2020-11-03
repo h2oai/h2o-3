@@ -33,6 +33,6 @@ def h2o_H2OFrame_rep_len():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_rep_len())
+    pyunit_utils.standalone_test(h2o_H2OFrame_rep_len)
 else:
     h2o_H2OFrame_rep_len()

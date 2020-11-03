@@ -19,6 +19,6 @@ def h2o_H2OFrame_runif():
     assert abs(h2oframe.sd()[0]-h2oRunif.sd()[0]) < 1e-2, "h2o.H2OFrame.runif() command is not working."
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_runif())
+    pyunit_utils.standalone_test(h2o_H2OFrame_runif)
 else:
     h2o_H2OFrame_runif()

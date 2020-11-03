@@ -46,6 +46,6 @@ def h2o_H2OFrame_interaction():
                                                                                                      levels3)
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_interaction())
+    pyunit_utils.standalone_test(h2o_H2OFrame_interaction)
 else:
     h2o_H2OFrame_interaction()

@@ -22,6 +22,6 @@ def h2o_H2OFrame_isax():
     assert answer == res[0,0], "expected isax index to be " + answer + " but got" + res[0,0] + " instead."
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_isax())
+    pyunit_utils.standalone_test(h2o_H2OFrame_isax)
 else:
     h2o_H2OFrame_isax()

@@ -11,7 +11,7 @@ def pyunit_mean_per_class_error():
     gbm = H2OGradientBoostingEstimator(nfolds=3, fold_assignment="Random", seed=1234)
 
     ## Binomial
-    cars = h2o.import_file("/users/arno/h2o-3/smalldata/junit/cars_20mpg.csv")
+    cars = h2o.import_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
     r = cars[0].runif(seed=1234)
     train = cars[r > .2]
@@ -31,7 +31,7 @@ def pyunit_mean_per_class_error():
 
 
     ## Multinomial
-    cars = h2o.import_file("/users/arno/h2o-3/smalldata/junit/cars_20mpg.csv")
+    cars = h2o.import_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     cars["cylinders"] = cars["cylinders"].asfactor()
     r = cars[0].runif(seed=1234)
     train = cars[r > .2]
@@ -96,5 +96,4 @@ def pyunit_mean_per_class_error():
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pyunit_mean_per_class_error)
-else:
-    pyunit_mean_per_class_error
+

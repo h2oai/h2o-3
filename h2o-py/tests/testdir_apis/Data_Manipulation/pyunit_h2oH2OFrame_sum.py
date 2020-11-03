@@ -33,6 +33,6 @@ def h2o_H2OFrame_sum():
     assert pyunit_utils.equal_two_arrays(numpsum, h2omean.values.T.tolist()[0], 1e-12, 1e-6), "h2o.H2OFrame.meansum()" \
                                                                                               " command is not working."
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_sum())
+    pyunit_utils.standalone_test(h2o_H2OFrame_sum)
 else:
     h2o_H2OFrame_sum()

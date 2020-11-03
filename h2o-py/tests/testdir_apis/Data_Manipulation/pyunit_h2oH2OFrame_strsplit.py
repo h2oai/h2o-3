@@ -20,6 +20,6 @@ def h2o_H2OFrame_strsplit():
                                                               "{1}".format(result[0,0], result[0,1])
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_strsplit())
+    pyunit_utils.standalone_test(h2o_H2OFrame_strsplit)
 else:
     h2o_H2OFrame_strsplit()

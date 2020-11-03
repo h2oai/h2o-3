@@ -19,6 +19,6 @@ def h2o_H2OFrame_asfactor():
     assert newFrame.isfactor()[0], "h2o.H2OFrame.asfactor() command is not working."
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_asfactor())
+    pyunit_utils.standalone_test(h2o_H2OFrame_asfactor)
 else:
     h2o_H2OFrame_asfactor()

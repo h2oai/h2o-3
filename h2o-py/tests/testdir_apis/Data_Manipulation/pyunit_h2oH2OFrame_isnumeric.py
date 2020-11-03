@@ -23,6 +23,6 @@ def h2o_H2OFrame_isnumeric():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_isnumeric())
+    pyunit_utils.standalone_test(h2o_H2OFrame_isnumeric)
 else:
     h2o_H2OFrame_isnumeric()

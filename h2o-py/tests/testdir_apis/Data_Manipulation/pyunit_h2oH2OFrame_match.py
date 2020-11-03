@@ -29,6 +29,6 @@ def h2o_H2OFrame_match():
     assert matchFrame.sum()[0,0]==150.0, "h2o.H2OFrame.match() command is not working."  # check return result
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_match())
+    pyunit_utils.standalone_test(h2o_H2OFrame_match)
 else:
     h2o_H2OFrame_match()

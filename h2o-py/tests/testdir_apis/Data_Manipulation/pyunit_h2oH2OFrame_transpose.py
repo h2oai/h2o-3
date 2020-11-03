@@ -27,6 +27,6 @@ def h2o_H2OFrame_transpose():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_transpose())
+    pyunit_utils.standalone_test(h2o_H2OFrame_transpose)
 else:
     h2o_H2OFrame_transpose()

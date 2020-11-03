@@ -20,6 +20,6 @@ def h2o_H2OFrame_table():
         "h2o.H2OFrame.table() command is not working."
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_table())
+    pyunit_utils.standalone_test(h2o_H2OFrame_table)
 else:
     h2o_H2OFrame_table()

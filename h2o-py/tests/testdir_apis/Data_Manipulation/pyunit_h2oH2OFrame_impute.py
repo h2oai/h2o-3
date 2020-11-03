@@ -78,6 +78,6 @@ def findModeNumber(python_list):
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_impute())
+    pyunit_utils.standalone_test(h2o_H2OFrame_impute)
 else:
     h2o_H2OFrame_impute()

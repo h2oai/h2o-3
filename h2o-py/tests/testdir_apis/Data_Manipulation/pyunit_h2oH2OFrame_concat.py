@@ -28,6 +28,6 @@ def h2o_H2OFrame_concat():
         "h2o.H2OFrame.concat command is not working."
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_concat())
+    pyunit_utils.standalone_test(h2o_H2OFrame_concat)
 else:
     h2o_H2OFrame_concat()
