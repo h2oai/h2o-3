@@ -1,6 +1,7 @@
 package hex;
 
 import water.MRTask;
+import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -151,8 +152,14 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
     
     static Stats concordance(final Vec startVec, final Vec stopVec, final Vec eventVec, List<Vec> strataVecs, final Vec estimateVec) {
       final Vec durations = durations(startVec, stopVec);
-      Frame fr = prepareFrameForConcordanceComputation(eventVec, strataVecs, estimateVec, durations);
-      return concordanceStats(fr);
+      try {
+        Scope.enter();
+        Scope.track(durations);
+        Frame fr = prepareFrameForConcordanceComputation(eventVec, strataVecs, estimateVec, durations);
+        return concordanceStats(fr);
+      } finally {
+        Scope.exit();
+      }
     }
 
     private static Frame prepareFrameForConcordanceComputation(Vec eventVec, List<Vec> strataVecs, Vec estimateVec, Vec durations) {
