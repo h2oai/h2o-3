@@ -1,5 +1,6 @@
 package hex;
 
+import water.DKV;
 import water.MRTask;
 import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
@@ -151,9 +152,9 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
     }
     
     static Stats concordance(final Vec startVec, final Vec stopVec, final Vec eventVec, List<Vec> strataVecs, final Vec estimateVec) {
-      final Vec durations = durations(startVec, stopVec);
       try {
         Scope.enter();
+        final Vec durations = durations(startVec, stopVec);
         Scope.track(durations);
         Frame fr = prepareFrameForConcordanceComputation(eventVec, strataVecs, estimateVec, durations);
         return concordanceStats(fr);
@@ -188,7 +189,7 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
        .outputFrame(new String[]{"durations"}, null);
 
       final Vec result = frame.vec(0);
-      frame.delete(false);
+      DKV.put(result);
       return result;
     }
 
