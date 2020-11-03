@@ -73,7 +73,7 @@ private GString startH2OScript(final config, final branch, final buildId, final 
     def xgbArgs = ""
     if (clusterName == "main") xgbArgs = "--use-external-xgb"
     return """
-            h2o-3/scripts/jenkins/hadoop/start.sh \\
+            scripts/jenkins/hadoop/start.sh \\
                 --cluster-name ${clusterName} \\
                 --name-node ${config.nameNode} \\
                 --clouding-dir ${cloudingDir} \\
@@ -103,7 +103,7 @@ private String getKillScript(final clusterName) {
     def notifyFile = "h2o_notify_${clusterName}"
     def driverLogFile = "h2odriver_${clusterName}.log"
     return """
-        h2o-3/scripts/jenkins/hadoop/kill.sh \\
+        scripts/jenkins/hadoop/kill.sh \\
             --notify-file ${notifyFile} \\
             --driver-log-file ${driverLogFile}
     """
