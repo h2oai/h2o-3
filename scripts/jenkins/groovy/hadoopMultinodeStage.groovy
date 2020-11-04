@@ -1,7 +1,7 @@
 def call(final pipelineContext, final stageConfig) {
     def branch = env.BRANCH_NAME.replaceAll("\\/", "-")
     def buildId = env.BUILD_ID
-    def workDir = "/user/jenkins/workspaces/$branch"
+    def workDir = "/user/jenkins/workspaces/multinode-$branch"
     withCredentials([
             usernamePassword(credentialsId: 'mr-0xd-admin-credentials', usernameVariable: 'ADMIN_USERNAME', passwordVariable: 'ADMIN_PASSWORD'),
             usernamePassword(credentialsId: 'kerberos-credentials', usernameVariable: 'KRB_USERNAME', passwordVariable: 'KRB_PASSWORD')
@@ -36,7 +36,9 @@ def call(final pipelineContext, final stageConfig) {
             hdfs dfs -rm -r -f $workDir
             hdfs dfs -mkdir -p $workDir
             export HDFS_WORKSPACE=$workDir
-    
+            export NAME_NODE=${stageConfig.customData.nameNode}.0xdata.loc
+            export HIVE_HOST=${stageConfig.customData.hiveHost}
+
             echo "Running Make"
             make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} ${stageConfig.target} check-leaks
         """
@@ -106,8 +108,6 @@ private GString startH2OScript(final config, final branch, final buildId) {
     return """
             rm -fv h2o_one_node h2odriver.log
             hdfs dfs -rm -r -f ${cloudingDir}
-            export NAME_NODE=${config.nameNode}.0xdata.loc
-            export HIVE_HOST=${config.hiveHost}
             HIVE_JDBC_JAR=\$(find /usr/hdp/current/hive-client/lib/ | grep -E 'jdbc.*standalone.*jar')
             export HADOOP_CLASSPATH=\$HIVE_JDBC_JAR
             hadoop jar h2o-hadoop-*/h2o-${config.distribution}${config.version}-assembly/build/libs/h2odriver.jar \\

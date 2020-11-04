@@ -573,7 +573,7 @@ def call(final pipelineContext) {
     ]
     HADOOP_MULTINODE_STAGES += [ stage ]
   }
-  HADOOP_MULTINODE_STAGES = [ // TODO revert
+  HADOOP_MULTINODE_STAGES = +[
       [
           stageName: "TEST External XGBoost on ${MULTINODE_CLUSTERS_CONFIGS[0].nameNode}",
           target: "test-steam-websocket", timeoutValue: 30,
