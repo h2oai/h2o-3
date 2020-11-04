@@ -52,6 +52,10 @@ while (( "$#" )); do
       enableLogin=yes
       shift
       ;;
+    --disown)
+      disown=yes
+      shift
+      ;;
     -*|--*=) # unsupported flags
       echo "Error: Unsupported flag $1" >&2
       exit 1
@@ -66,6 +70,9 @@ if [ "${enableLogin}" = "yes" ]; then
   echo "jenkins:${clusterName}" >> ${clusterName}.realm.properties
   loginArgs="-hash_login -login_conf ${clusterName}.realm.properties"
 fi
+if [ "${disown}" = "yes" ]; then 
+  disownArgs="-disown"
+fi
 
 rm -fv ${notifyFile} ${driverLogFile}
 hdfs dfs -rm -r -f ${cloudingDir}
@@ -76,6 +83,7 @@ hadoop jar h2o-hadoop-*/h2o-${hadoopVersion}-assembly/build/libs/h2odriver.jar \
     ${contextPathArgs} \
     ${loginArgs} \
     ${xgbArgs} \
+    ${disownArgs} \
     -notify ${notifyFile} \
     > ${driverLogFile} 2>&1 &
 for i in $(seq 24); do
