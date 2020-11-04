@@ -131,85 +131,101 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
 
   @Override public void setIsAllASCII(int colIdx, boolean b) {}
 
-
-  public byte[] guessTypes() {
+  public byte[] guessTypes() { 
     byte[] types = new byte[_ncols];
     for (int i = 0; i < _ncols; ++i) {
-      int nonemptyLines = _nlines - _nempty[i] - 1; //During guess, some columns may be shorted one line based on 4M boundary
-
-      //Very redundant tests, but clearer and not speed critical
-
-      // is it clearly numeric?
-      if ((_nnums[i] + _nzeros[i]) >= _ndates[i]
-              && (_nnums[i] + _nzeros[i]) >= _nUUID[i]
-              && _nnums[i] >= _nstrings[i]) { // 0s can be an NA among categoricals, ignore
-        types[i] = Vec.T_NUM;
-        continue;
-      }
-
-      // All same string or empty?
-      if( _domains[i].size() == 1 && _ndates[i]==0 ) {
-        // Obvious NA, or few instances of the single string, declare numeric
-        // else categorical
-        types[i] = (_domains[i].containsKey("NA") ||
-                    _domains[i].containsKey("na") ||
-                    _domains[i].containsKey("Na") ||
-                    _domains[i].containsKey("N/A") ||
-                    _nstrings[i] < _nnums[i]+_nzeros[i]) ? Vec.T_NUM : Vec.T_CAT;
-        continue;
-      }
-
-      // with NA, but likely numeric
-      if (_domains[i].size() <= 1
-              && (_nnums[i] + _nzeros[i]) > _ndates[i] + _nUUID[i]) {
-        types[i] = Vec.T_NUM;
-        continue;
-      }
-
-      // Datetime
-      if (_ndates[i] > _nUUID[i]
-              && _ndates[i] > (_nnums[i] + _nzeros[i])
-              && (_ndates[i] > _nstrings[i] || _domains[i].size() <= 1)) {
-        types[i] = Vec.T_TIME;
-        continue;
-      }
-
-      // UUID
-      if (_nUUID[i] > _ndates[i]
-              && _nUUID[i] > (_nnums[i] + _nzeros[i])
-              && (_nUUID[i] > _nstrings[i] || _domains[i].size() <= 1)) {
-        types[i] = Vec.T_UUID;
-        continue;
-      }
-
-      // Strings, almost no dups
-      if (_nstrings[i] > _ndates[i]
-              && _nstrings[i] > _nUUID[i]
-              && _nstrings[i] > (_nnums[i] + _nzeros[i])
-              && _domains[i].size() >= 0.95 * _nstrings[i]) {
-        types[i] = Vec.T_STR;
-        continue;
-      }
-
-      // categorical or string?
-      // categorical with 0s for NAs
-      if(_nzeros[i] > 0
-              && ((_nzeros[i] + _nstrings[i]) >= nonemptyLines) //just strings and zeros for NA (thus no empty lines)
-              && (_domains[i].size() <= 0.95 * _nstrings[i]) ) { // not all unique strings
-        types[i] = Vec.T_CAT;
-        continue;
-      }
-      // categorical mixed with numbers
-      if(_nstrings[i] >= (_nnums[i]+_nzeros[i]) // mostly strings
-              && (_domains[i].size() <= 0.95 * _nstrings[i]) ) { // but not all unique
-        types[i] = Vec.T_CAT;
-        continue;
-      }
-
-      // All guesses failed
-      types[i] = Vec.T_NUM;
+      IcedHashMap<String, String> sourceDomain = _domains[i];
+      IDomain domain = new IDomain() {
+        public int size() { return sourceDomain.size(); }
+        public boolean contains(String value) { return sourceDomain.containsKey(value); }
+      };
+      types[i] = PreviewParseWriter.guessType(
+        _nlines,
+        _nnums[i],
+        _nstrings[i],
+        _ndates[i],
+        _nUUID[i],
+        _nzeros[i],
+        _nempty[i],
+        domain);
     }
     return types;
+  }
+  
+  public interface IDomain {
+    int size();
+    boolean contains(String value);
+  }
+
+  public static byte guessType(
+      int nlines,
+      int nnums,
+      int nstrings,
+      int ndates,
+      int nUUID,
+      int nzeros,
+      int nempty,
+      IDomain domain) {
+    int nonemptyLines = nlines - nempty - 1; //During guess, some columns may be shorted one line based on 4M boundary
+    
+    //Very redundant tests, but clearer and not speed critical
+    
+    // is it clearly numeric?
+    if ((nnums + nzeros) >= ndates
+        && (nnums + nzeros) >= nUUID
+        && nnums >= nstrings) { // 0s can be an NA among categoricals, ignore
+          return Vec.T_NUM;
+    }
+    
+    // All same string or empty?
+    if (domain.size() == 1 && ndates==0 ) {
+      // Obvious NA, or few instances of the single string, declare numeric
+      // else categorical
+      return (domain.contains("NA") ||
+              domain.contains("na") ||
+              domain.contains("Na") ||
+              domain.contains("N/A") ||
+              nstrings < nnums+nzeros) ? Vec.T_NUM : Vec.T_CAT;
+    }
+    
+    // with NA, but likely numeric
+    if (domain.size() <= 1 && (nnums + nzeros) > ndates + nUUID) {
+      return Vec.T_NUM;
+    }
+    
+    // Datetime
+    if (ndates > nUUID && ndates > (nnums + nzeros) && (ndates > nstrings || domain.size() <= 1)) {
+      return Vec.T_TIME;
+    }
+    
+    // UUID
+    if (nUUID > ndates && nUUID > (nnums + nzeros) && (nUUID > nstrings || domain.size() <= 1)) {
+      return Vec.T_UUID;
+    }
+    
+    // Strings, almost no dups
+    if (nstrings > ndates
+        && nstrings > nUUID
+        && nstrings > (nnums + nzeros)
+        && domain.size() >= 0.95 * nstrings) {
+      return Vec.T_STR;
+    }
+    
+    // categorical or string?
+    // categorical with 0s for NAs
+    if (nzeros > 0
+        && ((nzeros + nstrings) >= nonemptyLines) //just strings and zeros for NA (thus no empty lines)
+        && (domain.size() <= 0.95 * nstrings)) { // not all unique strings
+      return Vec.T_CAT;
+    }
+    // categorical mixed with numbers
+    if (nstrings >= (nnums + nzeros) // mostly strings
+        && (domain.size() <= 0.95 * nstrings)) { // but not all unique
+      return Vec.T_CAT;
+    }
+    
+    // All guesses failed
+    return Vec.T_NUM;
   }
 
   public String[][] guessNAStrings(byte[] types) {
