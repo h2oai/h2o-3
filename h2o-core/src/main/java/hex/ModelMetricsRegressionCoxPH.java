@@ -252,6 +252,7 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
                                         .doAll(fr.types(), fr)
                                         .outputFrame(fr.names(), fr.domains());
       Scope.track(withoutNas);
+      stream(withoutNas.vecs()).forEach(Scope::track);
 
       withoutNas.replace(1, withoutNas.vec("event"));
 
