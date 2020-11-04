@@ -68,8 +68,8 @@ if [ "${enableLogin}" = "yes" ]; then
 fi
 
 rm -fv ${notifyFile} ${driverLogFile}
-echo hdfs dfs -rm -r -f ${cloudingDir}
-echo hadoop jar h2o-hadoop-*/h2o-${hadoopVersion}-assembly/build/libs/h2odriver.jar \
+hdfs dfs -rm -r -f ${cloudingDir}
+hadoop jar h2o-hadoop-*/h2o-${hadoopVersion}-assembly/build/libs/h2odriver.jar \
     -jobname ${jobName} -ea \
     -clouding_method filesystem -clouding_dir ${cloudingDir} \
     -n ${nodes} -mapperXmx ${xmx} -baseport 54445 -timeout 360 \
