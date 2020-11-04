@@ -8,8 +8,6 @@ import water.fvec.Chunk;
 
 import java.util.*;
 
-import static hex.tree.TreeUtils.getResponseLevelIndex;
-
 public class Rule extends Iced {
     
     Condition[] conditions;
@@ -61,13 +59,14 @@ public class Rule extends Iced {
         return this.hashCode() == obj.hashCode();
     }
 
-    public static List<Rule> extractRulesListFromModel(SharedTreeModel model, int modelId) {
+    public static List<Rule> extractRulesListFromModel(SharedTreeModel model, int modelId, int nclasses) {
         List<Rule> rules = new ArrayList<>();
-        final SharedTreeModel.SharedTreeOutput sharedTreeOutput = (SharedTreeModel.SharedTreeOutput) model._output;
-        final int treeClass = getResponseLevelIndex(null, sharedTreeOutput);
+        nclasses = nclasses > 2 ? nclasses : 1;
         for (int i = 0; i < ((SharedTreeModel.SharedTreeParameters) model._parms)._ntrees; i++) {
-            SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(i, treeClass);
-            rules.addAll(extractRulesFromTree(sharedTreeSubgraph, modelId));
+            for (int treeClass = 0; treeClass < nclasses; treeClass++) {
+                SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(i, treeClass);
+                rules.addAll(extractRulesFromTree(sharedTreeSubgraph, modelId));
+            }
         }
 
         return rules;
