@@ -59,18 +59,17 @@ while (( "$#" )); do
   esac
 done
 
-if ["$useExternalXGBoost" = "yes"]; then 
-  xgbArgs = "-use_external_xgboost"
+if [ "${useExternalXGBoost}" = "yes" ]; then 
+  xgbArgs="-use_external_xgboost"
 fi
-if ["$enableLogin" = "yes"]; then
+if [ "${enableLogin}" = "yes" ]; then
   echo "jenkins:${clusterName}" >> ${clusterName}.realm.properties
-  loginArgs = "-hash_login -login_conf ${clusterName}.realm.properties"
+  loginArgs="-hash_login -login_conf ${clusterName}.realm.properties"
 fi
 
 rm -fv ${notifyFile} ${driverLogFile}
-hdfs dfs -rm -r -f ${cloudingDir}
-echo "jenkins:${clusterName}" >> ${clusterName}.realm.properties
-hadoop jar h2o-hadoop-*/h2o-${hadoopVersion}-assembly/build/libs/h2odriver.jar \
+echo hdfs dfs -rm -r -f ${cloudingDir}
+echo hadoop jar h2o-hadoop-*/h2o-${hadoopVersion}-assembly/build/libs/h2odriver.jar \
     -jobname ${jobName} -ea \
     -clouding_method filesystem -clouding_dir ${cloudingDir} \
     -n ${nodes} -mapperXmx ${xmx} -baseport 54445 -timeout 360 \
