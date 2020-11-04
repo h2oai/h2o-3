@@ -155,7 +155,6 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
       try {
         Scope.enter();
         final Vec durations = durations(startVec, stopVec);
-        Scope.track(durations);
         Frame fr = prepareFrameForConcordanceComputation(eventVec, strataVecs, estimateVec, durations);
         return concordanceStats(fr);
       } finally {
@@ -190,6 +189,7 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
 
       final Vec result = frame.vec(0);
       DKV.put(result);
+      Scope.track(result);
       return result;
     }
 
@@ -251,6 +251,7 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
       final Frame withoutNas = new Merge.RemoveNAsTask(iDontWantNAsInThisCols)
                                         .doAll(fr.types(), fr)
                                         .outputFrame(fr.names(), fr.domains());
+      Scope.track(withoutNas);
 
       withoutNas.replace(1, withoutNas.vec("event"));
 
