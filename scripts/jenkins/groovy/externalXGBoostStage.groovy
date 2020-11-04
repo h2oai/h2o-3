@@ -81,7 +81,7 @@ private GString startH2OScript(final config, final branch, final buildId, final 
                 --driver-log-file ${driverLogFile} \\
                 --hadoop-version ${config.distribution}${config.version} \\
                 --job-name externalxgb_${branch}_${buildId}_${clusterName} \\
-                --nodes 3 -xmx 8G --extra-mem 20 \\
+                --nodes 3 --xmx 8G --extra-mem 20 \\
                 --context-path ${clusterName} \\
                 --enable-login \\
                 ${xgbArgs}
