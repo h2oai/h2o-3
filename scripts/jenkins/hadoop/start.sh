@@ -92,7 +92,7 @@ for i in $(seq 24); do
   echo "Waiting for H2O to come up ($i)..."
   sleep 5
 done
-if [ ! -f '${notifyFile}' ]; then
+if [ ! -f "${notifyFile}" ]; then
   echo 'H2O failed to start!'
   cat ${driverLogFile}
   exit 1
