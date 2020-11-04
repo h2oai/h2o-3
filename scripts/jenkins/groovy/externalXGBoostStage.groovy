@@ -24,9 +24,9 @@ def call(final pipelineContext, final stageConfig) {
             hdfs dfs -rm -r -f $workDir
             hdfs dfs -mkdir -p $workDir
             export HDFS_WORKSPACE=$workDir
+            export NAME_NODE=${stageConfig.customData.nameNode}.0xdata.loc
     
             echo "Running Test"
-            export NAME_NODE=${stageConfig.customData.nameNode}.0xdata.loc
             make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} ${stageConfig.target}
         """
 
