@@ -59,10 +59,10 @@ while (( "$#" )); do
   esac
 done
 
-if ["$useExternalXGBoost" == "yes"]; then 
+if ["$useExternalXGBoost" = "yes"]; then 
   xgbArgs = "-use_external_xgboost"
 fi
-if ["$enableLogin" == "yes"]; then
+if ["$enableLogin" = "yes"]; then
   echo "jenkins:${clusterName}" >> ${clusterName}.realm.properties
   loginArgs = "-hash_login -login_conf ${clusterName}.realm.properties"
 fi
