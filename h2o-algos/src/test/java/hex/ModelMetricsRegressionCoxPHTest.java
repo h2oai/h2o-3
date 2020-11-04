@@ -128,8 +128,8 @@ public class ModelMetricsRegressionCoxPHTest {
             final Vec estimates = Scope.track(Vec.makeVec(new double[] {6d, 5d, 4d, 3d, 0d, 1d, 2d}, Vec.newKey()));
 
             final double c = concordance(starts, stops, status, Collections.emptyList(), estimates).c();
-
             final double pairCount = stops.length() * (stops.length() - 1) / 2d;
+            
             assertEquals((pairCount - 3) / pairCount, c, 0.001);
         } finally {
             Scope.exit();
