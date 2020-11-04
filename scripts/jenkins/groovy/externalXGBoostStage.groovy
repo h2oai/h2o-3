@@ -26,6 +26,7 @@ def call(final pipelineContext, final stageConfig) {
             export HDFS_WORKSPACE=$workDir
     
             echo "Running Test"
+            export NAME_NODE=${stageConfig.customData.nameNode}.0xdata.loc
             make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} ${stageConfig.target}
         """
 
@@ -75,7 +76,6 @@ private GString startH2OScript(final config, final branch, final buildId, final 
     return """
             scripts/jenkins/hadoop/start.sh \\
                 --cluster-name ${clusterName} \\
-                --name-node ${config.nameNode} \\
                 --clouding-dir ${cloudingDir} \\
                 --notify-file ${notifyFile} \\
                 --driver-log-file ${driverLogFile} \\

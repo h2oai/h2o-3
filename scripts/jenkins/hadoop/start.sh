@@ -8,10 +8,6 @@ while (( "$#" )); do
       clusterName=$2
       shift 2
       ;;
-    --name-node)
-      nameNode=$2
-      shift 2
-      ;;
     --clouding-dir)
       cloudingDir=$2
       shift 2
@@ -74,7 +70,6 @@ fi
 rm -fv ${notifyFile} ${driverLogFile}
 hdfs dfs -rm -r -f ${cloudingDir}
 echo "jenkins:${clusterName}" >> ${clusterName}.realm.properties
-export NAME_NODE=${nameNode}.0xdata.loc
 hadoop jar h2o-hadoop-*/h2o-${hadoopVersion}-assembly/build/libs/h2odriver.jar \
     -jobname ${jobName} -ea \
     -clouding_method filesystem -clouding_dir ${cloudingDir} \
