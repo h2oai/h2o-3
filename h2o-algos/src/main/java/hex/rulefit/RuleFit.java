@@ -90,6 +90,11 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         // if (expensive && error_count() == 0) checkMemoryFootPrint();
     }
 
+    @Override
+    protected void ignoreBadColumns(int npredictors, boolean expensive) {
+        // Do not remove bad columns - we need them for correct GLM train frame creation
+    }
+
     private void initTreeParameters() {
         if (_parms._algorithm == RuleFitModel.Algorithm.GBM) {
             treeParameters = new GBMModel.GBMParameters();
