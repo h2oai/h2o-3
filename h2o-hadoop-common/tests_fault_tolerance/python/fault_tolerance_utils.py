@@ -34,7 +34,7 @@ def start_cluster(name):
     run_script(args)
     with open(notify_file_path) as f:
         cluster_url = f.readline()
-    return cluster_url.rstrip()
+    return "http://" + cluster_url.rstrip()
 
 
 def stop_cluster(name):
