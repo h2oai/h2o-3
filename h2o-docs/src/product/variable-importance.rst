@@ -123,8 +123,8 @@ Deep Learning
 ~~~~~~~~~~~~~
 Variable importance is calculated using the `Gedeon method <http://users.cecs.anu.edu.au/~Tom.Gedeon/pdfs/ContribDataMinv2.pdf>`__.
 
-GLM
-~~~
+GLM/GAM
+~~~~~~~
 
 Variable importance represents the coefficient magnitudes. The standardized coefficients are returned if the ``standardize`` option is enabled (which is the default). These are the predictor weights of the standardized data and are included only for informational purposes like comparing the relative variable importance.
 
