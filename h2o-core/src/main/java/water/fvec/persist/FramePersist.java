@@ -12,6 +12,11 @@ import java.net.URI;
 import static water.fvec.persist.PersistUtils.*;
 
 public class FramePersist {
+    
+    static {
+        // make sure FrameMeta is registered in TypeMap
+        TypeMap.onIce(FrameMeta.class.getName());
+    }
 
     private final Frame frame;
 
@@ -48,8 +53,9 @@ public class FramePersist {
         if (exists(metaUri) && !overwrite) {
             throw new IllegalArgumentException("File already exists at " + metaUri);
         }
+        FrameMeta frameMeta = new FrameMeta(frame);
         write(metaUri, ab -> {
-            ab.put(new FrameMeta(frame));
+            ab.put(frameMeta);
         });
         Job<Frame> job = new Job<>(frame._key, "water.fvec.Frame", "Save frame");
         return job.start(new SaveFrameDriver(job, frame, metaUri), 1);
