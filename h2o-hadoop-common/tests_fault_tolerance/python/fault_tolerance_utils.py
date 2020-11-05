@@ -28,10 +28,11 @@ def start_cluster(name):
         "--nodes", "3", "--xmx", "8G",
         "--disown"
     ]
-    if os.path.exists(notify_file):
-        os.remove(notify_file)
+    notify_file_path = os.getenv("H2O_HOME") + "/" + notify_file
+    if os.path.exists(notify_file_path):
+        os.remove(notify_file_path)
     run_script(args)
-    with open(notify_file) as f:
+    with open(notify_file_path) as f:
         cluster_url = f.readline()
     return cluster_url
 
