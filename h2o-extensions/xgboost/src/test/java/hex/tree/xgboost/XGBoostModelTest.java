@@ -1,5 +1,6 @@
 package hex.tree.xgboost;
 
+import hex.StringPair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
@@ -25,19 +26,19 @@ public class XGBoostModelTest {
     // default
     XGBoostModel.XGBoostParameters pDefault = new XGBoostModel.XGBoostParameters();
     pDefault._backend = XGBoostModel.XGBoostParameters.Backend.cpu; // to disable the GPU check
-    BoosterParms bpDefault = XGBoostModel.createParams(pDefault, 2, null);
+    BoosterParms bpDefault = XGBoostModel.createParams(pDefault, 2, null, null);
     assertEquals(maxNThreads, bpDefault.get().get("nthread"));
     // user specified
     XGBoostModel.XGBoostParameters pUser = new XGBoostModel.XGBoostParameters();
     pUser._backend = XGBoostModel.XGBoostParameters.Backend.cpu; // to disable the GPU check
     pUser._nthread = maxNThreads - 1;
-    BoosterParms bpUser = XGBoostModel.createParams(pUser, 2, null);
+    BoosterParms bpUser = XGBoostModel.createParams(pUser, 2, null, null);
     assertEquals(maxNThreads - 1, bpUser.get().get("nthread"));
     // user specified (over the limit)
     XGBoostModel.XGBoostParameters pOver = new XGBoostModel.XGBoostParameters();
     pOver._backend = XGBoostModel.XGBoostParameters.Backend.cpu; // to disable the GPU check
     pOver._nthread = H2O.ARGS.nthreads + 1;
-    BoosterParms bpOver = XGBoostModel.createParams(pOver, 2, null);
+    BoosterParms bpOver = XGBoostModel.createParams(pOver, 2, null, null);
     assertEquals(maxNThreads, bpOver.get().get("nthread"));
   }
 
@@ -98,4 +99,29 @@ public class XGBoostModelTest {
     }
   }
 
+  @Test
+  public void testAllowedInteractionConstraints() {
+    Scope.enter();
+    try {
+      final Frame airlinesFrame = Scope.track(TestUtil.parse_test_file("./smalldata/testng/airlines.csv"));
+      airlinesFrame.replace(0, airlinesFrame.vecs()[0].toCategoricalVec()).remove();
+      
+      DKV.put(airlinesFrame);
+
+      final XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "IsDepDelayed";
+      parms._train = airlinesFrame._key;
+      parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
+      parms._allowed_interaction_pairs = new StringPair[]{new StringPair("fYear","fMonth"), 
+                                                          new StringPair("fYear", "fDayofMonth"),
+                                                          new StringPair("fMonth", "fDayofMonth"),
+                                                          new StringPair("Origin", "UniqueCarrier")};
+
+      final XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
+    } finally {
+      Scope.exit();
+    }
+  }
 }

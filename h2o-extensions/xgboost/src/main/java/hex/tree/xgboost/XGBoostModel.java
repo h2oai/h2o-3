@@ -96,6 +96,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public double _colsample_bytree = 1.0;
 
     public KeyValue[] _monotone_constraints;
+    public StringPair[] _allowed_interaction_pairs;
 
     public float _max_abs_leafnode_pred = 0;
     public float _max_delta_step = 0;
@@ -287,7 +288,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
   }
   
-  public static Map<String, Object> createParamsMap(XGBoostParameters p, int nClasses, String[] coefNames) {
+  public static Map<String, Object> createParamsMap(XGBoostParameters p, int nClasses, String[] coefNames, String[] colNames) {
     Map<String, Object> params = new HashMap<>();
 
     // Common parameters with H2O GBM
@@ -462,6 +463,25 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       assert constraintsUsed == monotoneConstraints.size();
     }
 
+    StringPair[] allowedInteractionPairs = p._allowed_interaction_pairs;
+    if(allowedInteractionPairs != null && allowedInteractionPairs.length > 0){
+      StringBuilder sb = new StringBuilder();
+      sb.append("[");
+      for(StringPair pair: allowedInteractionPairs){
+        int indexA = ArrayUtils.find(colNames, pair._a);
+        int indexB = ArrayUtils.find(colNames, pair._b);
+        if(indexA == -1){
+          throw new IllegalArgumentException("'allowed_interaction_pairs': Column with name '"+pair._a+"' is not in the frame.");
+        }
+        if(indexB == -1){
+          throw new IllegalArgumentException("'allowed_interaction_pairs': Column with name '"+pair._b+"' is not in the frame.");
+        }
+        sb.append("[").append(indexA).append(",").append(indexB).append("],");
+      }
+      sb.replace(sb.length()-1, sb.length(), "]");
+      params.put("constraint_interaction", sb.toString());
+    }
+
     LOG.info("XGBoost Parameters:");
     for (Map.Entry<String,Object> s : params.entrySet()) {
       LOG.info(" " + s.getKey() + " = " + s.getValue());
@@ -470,8 +490,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return Collections.unmodifiableMap(params);
   }
 
-  public static BoosterParms createParams(XGBoostParameters p, int nClasses, String[] coefNames) {
-    return BoosterParms.fromMap(createParamsMap(p, nClasses, coefNames));
+  public static BoosterParms createParams(XGBoostParameters p, int nClasses, String[] coefNames, String[] colNames) {
+    return BoosterParms.fromMap(createParamsMap(p, nClasses, coefNames, colNames));
   }
 
   /** Performs deep clone of given model.  */
@@ -584,7 +604,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   private XGBoostBigScorePredict setupBigScorePredictNative(DataInfo di) {
-    BoosterParms boosterParms = XGBoostModel.createParams(_parms, _output.nclasses(), di.coefNames());
+    BoosterParms boosterParms = XGBoostModel.createParams(_parms, _output.nclasses(), di.coefNames(), di._adaptedFrame.names());
     return new XGBoostNativeBigScorePredict(model_info, _parms, _output, di, boosterParms, defaultThreshold());
   }
 

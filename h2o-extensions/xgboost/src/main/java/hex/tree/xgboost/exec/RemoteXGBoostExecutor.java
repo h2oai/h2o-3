@@ -28,7 +28,7 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(train);
         req.num_nodes = trainFrameNodes.getNumNodes();
         DataInfo dataInfo = model.model_info().dataInfo();
-        req.parms = XGBoostModel.createParamsMap(model._parms, model._output.nclasses(), dataInfo.coefNames());
+        req.parms = XGBoostModel.createParamsMap(model._parms, model._output.nclasses(), dataInfo.coefNames(), dataInfo._adaptedFrame.names());
         model._output._native_parameters = BoosterParms.fromMap(req.parms).toTwoDimTable();
         req.save_matrix_path = model._parms._save_matrix_directory;
         req.nodes = collectNodes(trainFrameNodes);

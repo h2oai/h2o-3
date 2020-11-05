@@ -76,7 +76,7 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(train);
         rt = setupRabitTracker(trainFrameNodes.getNumNodes());
         DataInfo dataInfo = model.model_info().dataInfo();
-        boosterParams = XGBoostModel.createParams(model._parms, model._output.nclasses(), dataInfo.coefNames());
+        boosterParams = XGBoostModel.createParams(model._parms, model._output.nclasses(), dataInfo.coefNames(), dataInfo._adaptedFrame.names());
         model._output._native_parameters = boosterParams.toTwoDimTable();
         loader = new FrameMatrixLoader(model, train);
         nodes = trainFrameNodes._nodes;
