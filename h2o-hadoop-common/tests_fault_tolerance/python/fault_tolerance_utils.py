@@ -1,14 +1,18 @@
 import os
 import subprocess
-from subprocess import PIPE, STDOUT
+from subprocess import PIPE, STDOUT, CalledProcessError
 
 
 def get_workdir():
     return os.getenv("HDFS_WORKSPACE")
 
 
+def get_script_path(env_var):
+    return os.getenv("H2O_HOME") + "/" + os.getenv(env_var)
+
+
 def start_cluster(name):
-    script = os.getenv("H2O_START_SCRIPT")
+    script = get_script_path("H2O_START_SCRIPT")
     notify_file = "notify_" + name
     driver_log_file = "driver_" + name + ".log"
     clouding_dir = get_workdir() + "_clouding_" + name
@@ -24,6 +28,8 @@ def start_cluster(name):
         "--nodes", "3", "--xmx", "8G",
         "--disown"
     ]
+    if os.path.exists(notify_file):
+        os.remove(notify_file)
     run_script(args)
     with open(notify_file) as f:
         cluster_url = f.readline()
@@ -31,7 +37,7 @@ def start_cluster(name):
 
 
 def stop_cluster(name):
-    script = os.getenv("H2O_KILL_SCRIPT")
+    script = get_script_path("H2O_KILL_SCRIPT")
     notify_file = "notify_" + name
     driver_log_file = "driver_" + name + ".log"
     args = [
@@ -43,8 +49,18 @@ def stop_cluster(name):
 
 
 def run_script(args):
-    result = subprocess.run(args, stdout=PIPE, stderr=STDOUT, text=True, check=True)
-    print(args[0] + " script output:")
-    print("--------------------")
-    print(result.stdout)
-    print("--------------------")
+    try:
+        result = subprocess.run(
+            args, cwd=os.getenv("H2O_HOME"), 
+            stdout=PIPE, stderr=STDOUT, 
+            check=True, universal_newlines=True
+        )
+        print(args[0] + " script output:")
+        print("--------------------")
+        print(result.stdout)
+        print("--------------------")
+    except CalledProcessError as err:
+        print(args[0] + " script failed:")
+        print("--------------------")
+        print(err.stdout)
+        print("--------------------")

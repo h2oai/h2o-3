@@ -11,7 +11,6 @@ def call(final pipelineContext, final stageConfig) {
     
             echo "Activating Python ${stageConfig.pythonVersion}"
             . /envs/h2o_env_python${stageConfig.pythonVersion}/bin/activate
-            pip install websocket_client
     
             echo 'Building H2O'
             BUILD_HADOOP=true H2O_TARGET=${stageConfig.customData.distribution}${stageConfig.customData.version} ./gradlew clean build -x test
@@ -21,6 +20,7 @@ def call(final pipelineContext, final stageConfig) {
             hdfs dfs -mkdir -p $workDir
             export HDFS_WORKSPACE=$workDir
             export NAME_NODE=${stageConfig.customData.nameNode}.0xdata.loc
+            export H2O_HOME=\$(pwd)
             export H2O_START_SCRIPT=scripts/jenkins/hadoop/start.sh
             export H2O_KILL_SCRIPT=scripts/jenkins/hadoop/kill.sh
             export H2O_HADOOP=${stageConfig.customData.distribution}${stageConfig.customData.version}
@@ -30,10 +30,6 @@ def call(final pipelineContext, final stageConfig) {
             make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} ${stageConfig.target}
         """
 
-        def killScript =  getKillScript("main") + getKillScript("xgb")
-        stageConfig.postFailedBuildAction = killScript
-        stageConfig.postSuccessfulBuildAction = killScript
-    
         def h2oFolder = stageConfig.stageDir + '/h2o-3'
         dir(h2oFolder) {
             retryWithTimeout(60, 3) {

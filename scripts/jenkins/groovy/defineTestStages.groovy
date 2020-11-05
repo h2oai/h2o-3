@@ -583,20 +583,20 @@ def call(final pipelineContext) {
     ]
     HADOOP_MULTINODE_STAGES += [ stage ]
   }
-  HADOOP_MULTINODE_STAGES += [
-      [
-          stageName: "TEST External XGBoost on ${MULTINODE_CLUSTERS_CONFIGS[0].nameNode}",
-          target: "test-steam-websocket", timeoutValue: 30,
-          component: pipelineContext.getBuildConfig().COMPONENT_ANY,
-          additionalTestPackages: [
-                  pipelineContext.getBuildConfig().COMPONENT_PY
-          ],
-          customData: MULTINODE_CLUSTERS_CONFIGS[0], pythonVersion: '3.6',
-          executionScript: 'h2o-3/scripts/jenkins/groovy/externalXGBoostStage.groovy',
-          image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(
-                  MULTINODE_CLUSTERS_CONFIGS[0].distribution, MULTINODE_CLUSTERS_CONFIGS[0].version, MULTINODE_CLUSTERS_CONFIGS[0].krb
-          )
-      ],
+  HADOOP_MULTINODE_STAGES = [
+//      [
+//          stageName: "TEST External XGBoost on ${MULTINODE_CLUSTERS_CONFIGS[0].nameNode}",
+//          target: "test-steam-websocket", timeoutValue: 30,
+//          component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+//          additionalTestPackages: [
+//                  pipelineContext.getBuildConfig().COMPONENT_PY
+//          ],
+//          customData: MULTINODE_CLUSTERS_CONFIGS[0], pythonVersion: '3.6',
+//          executionScript: 'h2o-3/scripts/jenkins/groovy/externalXGBoostStage.groovy',
+//          image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(
+//                  MULTINODE_CLUSTERS_CONFIGS[0].distribution, MULTINODE_CLUSTERS_CONFIGS[0].version, MULTINODE_CLUSTERS_CONFIGS[0].krb
+//          )
+//      ],
       [
           stageName: "TEST Fault Tolerance on ${MULTINODE_CLUSTERS_CONFIGS[0].nameNode}",
           target: "test-hadoop-fault-tolerance", timeoutValue: 30,
