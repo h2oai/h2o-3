@@ -33,19 +33,18 @@ public class FramePersistTest {
     public void testSaveAndLoadDouble() throws IOException {
         Scope.enter();
         try {
-            Vec v = Scope.track(createRandomDoubleVec(20, 42));
+            Vec v = Scope.track(createRandomDoubleVec(10_000, 42));
             DKV.put(v);
             Frame f = Scope.track(new Frame(Key.make(), new Vec[] { v }));
             DKV.put(f);
-            TwoDimTable origData = f.toTwoDimTable(0, (int) v.length(), false);
+            Frame copy = Scope.track(f.deepCopy("double_copy"));
             File dest = temp.newFolder();
             new FramePersist(f).saveTo(dest.getAbsolutePath(), false).get();
             f.remove(true);
             Frame returned = Scope.track(FramePersist.loadFrom(f._key, dest.getAbsolutePath()).get());
             Frame loaded = DKV.get(f._key).get();
             assertEquals(returned._key, loaded._key);
-            TwoDimTable loadedData = loaded.toTwoDimTable(0, (int) loaded.numRows(), false);
-            assertTwoDimTableEquals(origData, loadedData);
+            assertFrameEquals(copy, loaded, 0);
         } finally {
             Scope.exit();
         }
@@ -59,14 +58,14 @@ public class FramePersistTest {
             DKV.put(v);
             Frame f = Scope.track(new Frame(Key.make(), new Vec[] { v }));
             DKV.put(f);
-            TwoDimTable origData = f.toTwoDimTable(0, (int) v.length(), false);
+            Frame copy = Scope.track(f.deepCopy("cat_copy"));
             File dest = temp.newFolder();
             new FramePersist(f).saveTo(dest.getAbsolutePath(), false).get();
             f.remove(true);
-            Scope.track(FramePersist.loadFrom(f._key, dest.getAbsolutePath()).get());
+            Frame returned = Scope.track(FramePersist.loadFrom(f._key, dest.getAbsolutePath()).get());
             Frame loaded = DKV.get(f._key).get();
-            TwoDimTable loadedData = loaded.toTwoDimTable(0, (int) loaded.numRows(), false);
-            assertTwoDimTableEquals(origData, loadedData);
+            assertEquals(returned._key, loaded._key);
+            assertFrameEquals(copy, loaded, 0);
         } finally {
             Scope.exit();
         }
@@ -80,17 +79,17 @@ public class FramePersistTest {
             String[] origNames = f.names();
             Key[] origKeys = f.keys();
             long origNrow = f.numRows();
-            TwoDimTable origData = f.toTwoDimTable(0, (int) f.numRows(), false);
+            Frame copy = Scope.track(f.deepCopy("cat_copy"));
             File dest = temp.newFolder();
             new FramePersist(f).saveTo(dest.getAbsolutePath(), false).get();
             f.remove(true);
-            Scope.track(FramePersist.loadFrom(f._key, dest.getAbsolutePath()).get());
+            Frame returned = Scope.track(FramePersist.loadFrom(f._key, dest.getAbsolutePath()).get());
             Frame loaded = DKV.get(f._key).get();
-            TwoDimTable loadedData = loaded.toTwoDimTable(0, (int) loaded.numRows(), false);
             assertArrayEquals(origNames, loaded._names);
             assertArrayEquals(origKeys, loaded.keys());
             assertEquals(origNrow, loaded.numRows());
-            assertTwoDimTableEquals(origData, loadedData);
+            assertEquals(returned._key, loaded._key);
+            assertFrameEquals(copy, loaded, 0);
         } finally {
             Scope.exit();
         }
