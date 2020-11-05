@@ -1,0 +1,50 @@
+import os
+import subprocess
+from subprocess import PIPE, STDOUT
+
+
+def get_workdir():
+    return os.getenv("HDFS_WORKSPACE")
+
+
+def start_cluster(name):
+    script = os.getenv("H2O_START_SCRIPT")
+    notify_file = "notify_" + name
+    driver_log_file = "driver_" + name + ".log"
+    clouding_dir = get_workdir() + "_clouding_" + name
+    job_name = os.getenv("H2O_JOB_NAME") + "_" + name
+    args = [
+        script,
+        "--cluster-name", name,
+        "--clouding-dir", clouding_dir,
+        "--notify-file", notify_file,
+        "--driver-log-file", driver_log_file,
+        "--hadoop-version", os.getenv("H2O_HADOOP"),
+        "--job-name", job_name,
+        "--nodes", "3", "--xmx", "8G",
+        "--disown"
+    ]
+    run_script(args)
+    with open(notify_file) as f:
+        cluster_url = f.readline()
+    return cluster_url
+
+
+def stop_cluster(name):
+    script = os.getenv("H2O_KILL_SCRIPT")
+    notify_file = "notify_" + name
+    driver_log_file = "driver_" + name + ".log"
+    args = [
+        script,
+        "--notify-file", notify_file,
+        "--driver-log-file", driver_log_file
+    ]
+    run_script(args)
+
+
+def run_script(args):
+    result = subprocess.run(args, stdout=PIPE, stderr=STDOUT, text=True, check=True)
+    print(args[0] + " script output:")
+    print("--------------------")
+    print(result.stdout)
+    print("--------------------")
