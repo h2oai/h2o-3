@@ -21,12 +21,4 @@ public class VarImp extends Iced {
     }
     return varImpMap;
   }
-  public Map<String, Float> toMapScaled() {
-    Map<String, Float> varImpMap = new HashMap<>(_varimp.length);
-    float [] varImpScaled = scaled_values(); 
-    for (int i = 0; i < varImpScaled.length; i++) {
-      varImpMap.put(_names[i], varImpScaled[i]);
-    }
-    return varImpMap;
-  }
 }

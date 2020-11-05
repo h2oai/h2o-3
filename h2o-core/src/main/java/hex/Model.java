@@ -400,24 +400,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** @return the validation frame instance, or null
      *  if a validation frame was not specified */
     public final Frame valid() { return _valid==null ? null : _valid.get(); }
-    
-    public String[] getNonPredictors() {
-        return Arrays.stream(new String[]{_weights_column, _offset_column, _fold_column, _response_column})
-                .filter(Objects::nonNull)
-                .toArray(String[]::new);
-    }
-
-    /**
-     * Should be called after Model is scored, Otherwise no one can tell you what will happen bro
-     *
-     *
-     * */
-    public void permutationFeatureImportance(){
-      assert this._train.get() != null;
-      
-//      FeatureImportance4BBM Fi = new FeatureImportance4BBM(this, _train.get(), _parms._response_column);
-//      Fi.getFeatureImportance();
-    }
 
     /** Read-Lock both training and validation User frames. */
     public void read_lock_frames(Job job) {
@@ -756,31 +738,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   }
 
-  /**
-   * Should be called after Model is scored, Otherwise no one can tell you what will happen
-   *
-   *
-   *
-   * @return*/
-  public static TwoDimTable permutationVarImp(Model model){
-    return permutationVarImp(model, model._parms._train.get());
-  }
-  
-
-  public static TwoDimTable permutationVarImp(Model model, Frame fr){
-    if (hex.ModelMetrics.getFromDKV(model, fr) == null)
-      throw new IllegalArgumentException("Model must be scored before calculating Permutation Variable Importance");
-    
-    PermutationVarImp Fi = new PermutationVarImp(model, fr);
-    return Fi.getPermutationVarImp();
-  }
-
-
-    /** Model-specific output class.  Each model sub-class contains an instance
-     *  of one of these containing its "output": the pieces of the model needed
-     *  for scoring.  E.g. KMeansModel has a KMeansOutput extending Model.Output
-     *  which contains the cluster centers.  The output also includes the names,
-     *  domains and other fields which are determined at training time.  */
+  /** Model-specific output class.  Each model sub-class contains an instance
+   *  of one of these containing its "output": the pieces of the model needed
+   *  for scoring.  E.g. KMeansModel has a KMeansOutput extending Model.Output
+   *  which contains the cluster centers.  The output also includes the names,
+   *  domains and other fields which are determined at training time.  */
   public abstract static class Output extends Iced {
     /** Columns used in the model and are used to match up with scoring data
      *  columns.  The last name is the response column name (if any). */
@@ -1648,17 +1610,28 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   
   /**
+<<<<<<< HEAD
    * Calculate Permutation Variable Importance by shuffling one feature at a time
    * The user must call this method after training. 
+=======
+   * Calculate Permutation Variable Importance shuffling one feature at a time
+   * The user must call this after training. 
+>>>>>>> Undoing changes, small fixes
    * @param fr training frame
    * @param metric loss function metric 
    *               if metric not specified mse is default
    * @return TwoDimTable of Double values having the variables as columns
+<<<<<<< HEAD
    * and as rows their relative, scaled and percentage importance
+=======
+   * and as rows their Relative, Scaled and percentage importance
+>>>>>>> Undoing changes, small fixes
    */
   public TwoDimTable getPermVarImpTable(Frame fr, String metric){
-    PermutationVarImp fi = new PermutationVarImp(this, fr);
-    return fi.getPermutationVarImp(metric);
+    if (this.last_scored() == null )
+      throw new IllegalArgumentException("Model " + this._key + "must be scored!");
+    PermutationVarImp pvi = new PermutationVarImp(this, fr);
+    return pvi.getPermutationVarImp(metric);
   }
   
   public TwoDimTable getPermVarImpTableOat(Frame fr, Frame scored){

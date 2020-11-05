@@ -27,7 +27,6 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-import water.rapids.PermutationVarImp;
 import water.util.*;
 
 import java.io.File;
@@ -108,6 +107,7 @@ public class GBMTest extends TestUtil {
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
       Assert.assertTrue(job.isStopped()); //HEX-1817
+
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
       //job.response() can be used in place of fr.vecs()[1] but it has been rebalanced
@@ -253,7 +253,7 @@ public class GBMTest extends TestUtil {
     basicGBM("./smalldata/junit/cars.csv",
             new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
             false, gaussian);
-    
+
     basicGBM("./smalldata/junit/cars.csv",
             new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
             false, DistributionFamily.poisson);
@@ -372,7 +372,6 @@ public class GBMTest extends TestUtil {
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
 
-      new PermutationVarImp(gbm, fr).oat();
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(fr,fr2,1e-15));
 
@@ -885,7 +884,7 @@ public class GBMTest extends TestUtil {
 
 
   // Test uses big data and is too slow for a pre-push
-  @Test public void testMNIST() {
+  @Test @Ignore public void testMNIST() {
     Frame tfr=null, vfr=null;
     Scope.enter();
     try {
@@ -4158,8 +4157,6 @@ public class GBMTest extends TestUtil {
       Scope.exit();
     }
   }
-<<<<<<< HEAD
-<<<<<<< HEAD
 
   @Test
   public void testGBMFeatureInteractions() {
@@ -4221,9 +4218,9 @@ public class GBMTest extends TestUtil {
     }
   }
 
-      //PUBDEV-7139
+   //PUBDEV-7139
   @Test
-  public void testPermVarImp(){
+  public void testPermVarImp() {
     try {
       Scope.enter();
       final String response = "CAPSULE";
@@ -4269,11 +4266,11 @@ public class GBMTest extends TestUtil {
         PermutationVarImp PermVarImp = new PermutationVarImp(gbm, fr);
 
         TwoDimTable permVarImp = PermVarImp.getPermutationVarImp();
-                
+
         Map<String, Double> perVarImp = PermVarImp.toMapScaled();
         Map<String, Float> b_varImp = gbm._output._varimp.toMapScaled();
 
-        for (String name : perVarImp.keySet()){
+        for (String name : perVarImp.keySet()) {
           double pvi = perVarImp.get(name);
           double vi = (double) b_varImp.get(name); // VarImp stores floats, typecast needed
           Assert.assertEquals(pvi, vi, 0.2);
@@ -4282,50 +4279,5 @@ public class GBMTest extends TestUtil {
     } finally {
       Scope.exit();
     }
-<<<<<<< HEAD
   }
-
-  @Test
-  public void testGBMFeatureInteractionsCheckRanksVsVarimp() {
-    Scope.enter();
-    try {
-      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
-      
-      GBMModel.GBMParameters gbmParms = new GBMModel.GBMParameters();
-      gbmParms._train = tfr._key;
-      gbmParms._response_column = "AGE";
-      gbmParms._ignored_columns = new String[]{"ID"};
-      gbmParms._seed = 0xDECAF;
-      gbmParms._build_tree_one_node = true;
-
-      GBMModel gbmModel = new GBM(gbmParms).trainModel().get();
-      Scope.track_generic(gbmModel);
-      
-      FeatureInteractions featureInteractions = gbmModel.getFeatureInteractions(0, 100, -1);
-      VarImp gbmVarimp = gbmModel._output._varimp;
-      
-      List<KeyValue> varimpList = new ArrayList<>();
-      for (int i = 0; i < gbmVarimp._varimp.length; i++) {
-        varimpList.add(new KeyValue(gbmVarimp._names[i], gbmVarimp._varimp[i]));  
-      }
-      varimpList.sort((a,b) -> a.getValue() < b.getValue() ? -1 : a.getValue() == b.getValue() ? 0 : 1);
-
-      List<KeyValue> featureList = new ArrayList<>();
-      for (Map.Entry<String, FeatureInteraction> featureInteraction : featureInteractions.entrySet()) {
-        featureList.add(new KeyValue(featureInteraction.getKey(), featureInteraction.getValue().gain));
-      }
-      featureList.sort((a,b) -> a.getValue() < b.getValue() ? -1 : a.getValue() == b.getValue() ? 0 : 1);
-
-      for (int i= 0; i < featureList.size(); i++) {
-        assertEquals(featureList.get(i).getKey(), varimpList.get(i).getKey());
-      }
-    } finally {
-      Scope.exit();
-    }
-  }
-=======
-
-
-  }  
->>>>>>> Testing PermutationVarImp with existing VarImp
 }
