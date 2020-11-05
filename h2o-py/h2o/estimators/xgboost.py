@@ -1405,7 +1405,7 @@ class H2OXGBoostEstimator(H2OEstimator):
     @property
     def allowed_interaction_pairs(self):
         """
-        A list of pairwise column allowed interactions.
+        A list of allowed pairwise column interactions.
 
         Type: ``List[tuple]``.
         """
