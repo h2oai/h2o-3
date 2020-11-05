@@ -27,18 +27,22 @@ compress-huge-logfiles:
 	find * -type f -name 'java*.out.txt' -exec gzip {} \;
 
 test-package-py:
-	zip -q -r test-package-py.zip h2o-py/tests/ h2o-py/demos/ \
-	tests/leakCheckKeywords \
-	h2o-docs/src/booklets/v2_2015/source h2o-py/build/dist/*.whl \
-	h2o-genmodel/build/libs/h2o-genmodel.jar h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
-	$(JENKINS_MAKEFILE_PATH) tests/pyunit*List h2o-py/scripts/h2o-py-test-setup.py
+	zip -q -r test-package-py.zip \
+	    h2o-py/tests/ h2o-py/demos/ \
+	    tests/leakCheckKeywords \
+	    h2o-docs/src/booklets/v2_2015/source h2o-py/build/dist/*.whl \
+	    h2o-genmodel/build/libs/h2o-genmodel.jar h2o-assemblies/genmodel/build/libs/genmodel.jar \
+	    scripts/run.py scripts/jenkins/hadoop/ \
+	    $(JENKINS_MAKEFILE_PATH) tests/pyunit*List h2o-py/scripts/h2o-py-test-setup.py
 
 test-package-r:
 	zip -q -r test-package-r.zip h2o-r h2o-docs/src/booklets/v2_2015/source \
 		tests/leakCheckKeywords \
-		h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
+		h2o-assemblies/genmodel/build/libs/genmodel.jar \
+		scripts/run.py scripts/jenkins/hadoop/ \
 		$(JENKINS_MAKEFILE_PATH) tests/runitSmokeTestList tests/runitAutoMLList \
-		scripts/validate_r_cmd_check_output.R scripts/validate_r_cmd_check_output.py h2o-3-DESCRIPTION
+		scripts/validate_r_cmd_check_output.R scripts/validate_r_cmd_check_output.py \
+		h2o-3-DESCRIPTION
 
 init-lookup:
 	rm -f h2o-{r,py}/tests/.lookup.txt
@@ -256,6 +260,7 @@ test-package-java:
 		h2o-k8s/tests/ \
 		h2o-helm/ \
 		scripts/run.py h2o-py/tests_rest_smoke scripts/test-xgb-gpu-smoke.sh \
+		scripts/jenkins/hadoop/ \
 		sort_crash.csv tests/doOnlyJunitSmokeTestList \
 		jacoco/*.jar
 	find . -name "*.gradle" | zip -q -r test-package-java \

@@ -13,10 +13,6 @@ def call(final pipelineContext, final stageConfig) {
             . /envs/h2o_env_python${stageConfig.pythonVersion}/bin/activate
             pip install websocket_client
     
-            echo 'Generating SSL Certificate'
-            rm -f mykeystore.jks
-            keytool -genkey -dname "cn=Mr. Jenkins, ou=H2O-3, o=H2O.ai, c=US" -alias h2o -keystore mykeystore.jks -storepass h2oh2o -keypass h2oh2o -keyalg RSA -keysize 2048
-    
             echo 'Building H2O'
             BUILD_HADOOP=true H2O_TARGET=${stageConfig.customData.distribution}${stageConfig.customData.version} ./gradlew clean build -x test
     
@@ -28,6 +24,7 @@ def call(final pipelineContext, final stageConfig) {
             hdfs dfs -rm -r -f $workDir
             hdfs dfs -mkdir -p $workDir
             export HDFS_WORKSPACE=$workDir
+            export NAME_NODE=${stageConfig.customData.nameNode}.0xdata.loc
     
             echo "Running Test"
             make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} ${stageConfig.target}
@@ -75,32 +72,19 @@ private GString startH2OScript(final config, final branch, final buildId, final 
     def notifyFile = "h2o_notify_${clusterName}"
     def driverLogFile = "h2odriver_${clusterName}.log"
     def xgbArgs = ""
-    if (clusterName == "main") xgbArgs = "-use_external_xgboost"
+    if (clusterName == "main") xgbArgs = "--use-external-xgb"
     return """
-            rm -fv ${notifyFile} ${driverLogFile}
-            hdfs dfs -rm -r -f ${cloudingDir}
-            echo "jenkins:${clusterName}" >> ${clusterName}.realm.properties
-            export NAME_NODE=${config.nameNode}.0xdata.loc
-            hadoop jar h2o-hadoop-*/h2o-${config.distribution}${config.version}-assembly/build/libs/h2odriver.jar \\
-                -jobname externalxgb_${branch}_${buildId}_${clusterName} -ea \\
-                -clouding_method filesystem -clouding_dir ${cloudingDir} \\
-                -n 3 -mapperXmx 8G -baseport 54445 -timeout 360 \\
-                -context_path ${clusterName} -hash_login -login_conf ${clusterName}.realm.properties \\
-                ${xgbArgs} -notify ${notifyFile} \\
-                > ${driverLogFile} 2>&1 &
-            for i in \$(seq 24); do
-              if [ -f '${notifyFile}' ]; then
-                echo "H2O started on \$(cat ${notifyFile})"
-                break
-              fi
-              echo "Waiting for H2O to come up (\$i)..."
-              sleep 5
-            done
-            if [ ! -f '${notifyFile}' ]; then
-              echo 'H2O failed to start!'
-              cat ${driverLogFile}
-              exit 1
-            fi
+            scripts/jenkins/hadoop/start.sh \\
+                --cluster-name ${clusterName} \\
+                --clouding-dir ${cloudingDir} \\
+                --notify-file ${notifyFile} \\
+                --driver-log-file ${driverLogFile} \\
+                --hadoop-version ${config.distribution}${config.version} \\
+                --job-name externalxgb_${branch}_${buildId}_${clusterName} \\
+                --nodes 3 --xmx 8G --extra-mem 20 \\
+                --context-path ${clusterName} \\
+                --enable-login \\
+                ${xgbArgs}
             IFS=":" read CLOUD_IP CLOUD_PORT < ${notifyFile}
             if [ -z \${CLOUD_IP} ]; then
                 echo "CLOUD_IP must be set"
@@ -119,18 +103,9 @@ private String getKillScript(final clusterName) {
     def notifyFile = "h2o_notify_${clusterName}"
     def driverLogFile = "h2odriver_${clusterName}.log"
     return """
-        if [ -f ${notifyFile} ]; then
-            YARN_APPLICATION_ID=\$(cat ${notifyFile} | grep job | sed 's/job/application/g')
-        elif [ -f ${driverLogFile} ]; then
-            YARN_APPLICATION_ID=\$(cat ${driverLogFile} | grep 'yarn logs -applicationId' | sed -r 's/.*(application_[0-9]+_[0-9]+).*/\\1/')
-        fi
-        if [ "\$YARN_APPLICATION_ID" != "" ]; then
-            echo "YARN Application ID is \${YARN_APPLICATION_ID}"
-            yarn application -kill \${YARN_APPLICATION_ID}
-            yarn logs -applicationId \${YARN_APPLICATION_ID} > h2o_yarn.log
-        else
-            echo "No cleanup, did not find yarn application id."
-        fi        
+        scripts/jenkins/hadoop/kill.sh \\
+            --notify-file ${notifyFile} \\
+            --driver-log-file ${driverLogFile}
     """
 }
 
