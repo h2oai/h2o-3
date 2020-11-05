@@ -110,7 +110,7 @@ Examples
 
 		import h2o
 		h2o.init()
-		from h2o.estimators import H2ORuleFitEstimators
+		from h2o.estimators import H2ORuleFitEstimator
 
 		# Import the titanic dataset and set the column types:
 		f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
