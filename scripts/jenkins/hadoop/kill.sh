@@ -12,6 +12,10 @@ while (( "$#" )); do
       driverLogFile=$2
       shift 2
       ;;
+    --yarn-logs-file)
+      yarnLogsFile=$2
+      shift 2
+      ;;
     -*|--*=) # unsupported flags
       echo "Error: Unsupported flag $1" >&2
       exit 1
@@ -28,7 +32,9 @@ fi
 if [ "$YARN_APPLICATION_ID" != "" ]; then
     echo "YARN Application ID is ${YARN_APPLICATION_ID}"
     yarn application -kill ${YARN_APPLICATION_ID}
-    yarn logs -applicationId ${YARN_APPLICATION_ID} > h2o_yarn.log
+    if [ "$yarnLogsFile" != "" ]; then
+      yarn logs -applicationId ${YARN_APPLICATION_ID} > ${yarnLogsFile}
+    fi
 else
     echo "No cleanup, did not find yarn application id."
 fi        

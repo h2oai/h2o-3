@@ -102,10 +102,12 @@ private GString startH2OScript(final config, final branch, final buildId, final 
 private String getKillScript(final clusterName) {
     def notifyFile = "h2o_notify_${clusterName}"
     def driverLogFile = "h2odriver_${clusterName}.log"
+    def yarnLogsFile = "yarn_${clusterName}.log"
     return """
         scripts/jenkins/hadoop/kill.sh \\
             --notify-file ${notifyFile} \\
-            --driver-log-file ${driverLogFile}
+            --driver-log-file ${driverLogFile} \\
+            --yarn-logs-file ${yarnLogsFile}
     """
 }
 

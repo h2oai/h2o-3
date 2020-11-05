@@ -40,11 +40,13 @@ def start_cluster(name):
 def stop_cluster(name):
     script = get_script_path("H2O_KILL_SCRIPT")
     notify_file = "notify_" + name
-    driver_log_file = "driver_" + name + ".log"
+    driver_log_file = "driver_%s.log" % name
+    yarn_logs_file = "yarn_%s.log" % name
     args = [
         script,
         "--notify-file", notify_file,
-        "--driver-log-file", driver_log_file
+        "--driver-log-file", driver_log_file,
+        "--yarn-logs-file", yarn_logs_file
     ]
     run_script(args)
 
