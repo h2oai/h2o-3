@@ -11,7 +11,7 @@ import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.util.TwoDimTable;
 
-public class AstOneAtaTime_Morris extends AstPrimitive {
+public class AstOneAtaTimeMorris extends AstPrimitive {
 
     @Override
     public int nargs() {return 1 + 2;} // Perm_feature_importance + Frame + Model
@@ -51,7 +51,7 @@ public class AstOneAtaTime_Morris extends AstPrimitive {
             Scope.track(FiFrame);
         } finally {
             Key[] keysToKeep = FiFrame != null ? FiFrame.keys() : new Key[]{};
-            Key[] keysToKeep_ = pred_fr != null ? pred_fr.keys() : new Key[]{};
+            Key[] keysToKeepPred = pred_fr != null ? pred_fr.keys() : new Key[]{};
             Scope.exit(keysToKeep);
             Scope.exit(keysToKeep_);
         }

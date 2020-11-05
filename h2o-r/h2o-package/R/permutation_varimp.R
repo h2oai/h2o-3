@@ -2,7 +2,7 @@
 #' Calculate Permutation Feature Importance 
 #'
 
-h2o.permutation_varimp <- function(model, validation_frame){
+h2o.permutation_varimp <- function(model, frame){
     if (is.H2OFrame(validation_frame))
          tryCatch(permutation_varim_table <- .newExpr('Perm_Feature_importance', model, validation_frame), 
                 error = function(err) {
