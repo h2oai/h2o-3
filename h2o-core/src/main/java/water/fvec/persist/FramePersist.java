@@ -58,7 +58,7 @@ public class FramePersist {
             ab.put(frameMeta);
         });
         Job<Frame> job = new Job<>(frame._key, "water.fvec.Frame", "Save frame");
-        return job.start(new SaveFrameDriver(job, frame, metaUri), 1);
+        return job.start(new SaveFrameDriver(job, frame, metaUri), frame.anyVec().nChunks());
     }
 
     public static class SaveFrameDriver extends H2O.H2OCountedCompleter<LoadFrameDriver> {
@@ -68,7 +68,8 @@ public class FramePersist {
         private final URI metaUri;
 
         public SaveFrameDriver(
-            Job<Frame> job, Frame frame,
+            Job<Frame> job, 
+            Frame frame,
             URI metaUri
         ) {
             this.job = job;
@@ -79,7 +80,7 @@ public class FramePersist {
         @Override
         public void compute2() {
             frame.read_lock(job._key);
-            new SaveChunksTask(metaUri.toString()).doAll(frame).join();
+            new SaveChunksTask(job, metaUri.toString()).doAll(frame).join();
             tryComplete();
         }
 
@@ -97,15 +98,18 @@ public class FramePersist {
 
     static class SaveChunksTask extends MRTask<SaveChunksTask> {
 
+        private final Job<Frame> job;
         private final String metaUri;
 
-        SaveChunksTask(String metaUri) {
+        SaveChunksTask(Job<Frame> job, String metaUri) {
+            this.job = job;
             this.metaUri = metaUri;
         }
 
         @Override
         public void map(Chunk[] cs) {
             PersistUtils.write(getDataUri(metaUri, cs[0].cidx()), ab -> writeChunks(ab, cs));
+            job.update(1);
         }
 
         private void writeChunks(AutoBuffer autoBuffer, Chunk[] chunks) {
@@ -122,17 +126,21 @@ public class FramePersist {
             throw new IllegalArgumentException("To load this frame a cluster with " + meta.numNodes + " nodes is needed.");
         }
         Job<Frame> job = new Job<>(meta.key, "water.fvec.Frame", "Load frame");
-        return job.start(new LoadFrameDriver(metaUri.toString(), meta), 1);
+        return job.start(new LoadFrameDriver(job, metaUri.toString(), meta), meta.espc.length-1);
     }
 
     public static class LoadFrameDriver extends H2O.H2OCountedCompleter<LoadFrameDriver> {
 
+        private final Job<Frame> job;
         private final String metaUri;
         private final FrameMeta meta;
 
         public LoadFrameDriver(
-            String metaUri, FrameMeta meta
+            Job<Frame> job,
+            String metaUri, 
+            FrameMeta meta
         ) {
+            this.job = job;
             this.metaUri = metaUri;
             this.meta = meta;
         }
@@ -144,7 +152,7 @@ public class FramePersist {
                 long nrow = meta.espc[meta.espc.length-1];
                 int nchunk = meta.espc.length-1;
                 con = Vec.makeConN(nrow, nchunk);
-                new LoadChunksTask(metaUri, meta.vecs).doAll(con).join();
+                new LoadChunksTask(job, metaUri, meta.vecs).doAll(con).join();
             } finally {
                 if (con != null) con.remove();
             }
@@ -164,10 +172,12 @@ public class FramePersist {
 
     static class LoadChunksTask extends MRTask<LoadChunksTask> {
 
+        private final Job<Frame> job;
         private final String metaUri;
         private final Vec[] vecs;
 
-        LoadChunksTask(String metaUri, Vec[] vecs) {
+        LoadChunksTask(Job<Frame> job, String metaUri, Vec[] vecs) {
+            this.job = job;
             this.metaUri = metaUri;
             this.vecs = vecs;
         }
@@ -175,6 +185,8 @@ public class FramePersist {
         @Override
         public void map(Chunk c) {
             PersistUtils.read(getDataUri(metaUri, c.cidx()), ab -> readChunks(ab, c.cidx()));
+            job.update(1);
+            
         }
 
         private int readChunks(AutoBuffer autoBuffer, int cidx) {
