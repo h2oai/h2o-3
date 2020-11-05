@@ -21,6 +21,7 @@ class TestStringMethods(unittest.TestCase):
             df_key = df_orig.key
             df_pd_orig = df_orig.as_data_frame()
             df_orig.save(work_dir)
+            h2o.connection().close()
         finally:
             utils.stop_cluster("saver")
 
@@ -29,6 +30,7 @@ class TestStringMethods(unittest.TestCase):
             h2o.connect(url=cluster_2)
             df_loaded = h2o.load_frame(df_key, work_dir)
             df_pd_loaded = df_loaded.as_data_frame()
+            h2o.connection().close()
         finally:
             utils.stop_cluster("loader")
 
