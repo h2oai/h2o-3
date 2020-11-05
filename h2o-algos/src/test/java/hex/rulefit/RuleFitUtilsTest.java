@@ -113,7 +113,7 @@ public class RuleFitUtilsTest extends TestUtil {
 
             assertEquals(treeRules.contains(rule),true);
 
-            List<Rule> wholeModelRules = Rule.extractRulesListFromModel(gbm, 0);
+            List<Rule> wholeModelRules = Rule.extractRulesListFromModel(gbm, 0, 1);
             assertEquals(wholeModelRules.size(), 16);
 
         } finally {
@@ -163,7 +163,7 @@ public class RuleFitUtilsTest extends TestUtil {
             
             assertEquals(treeRules.contains(rule),true);
 
-            List<Rule> wholeModelRules = Rule.extractRulesListFromModel(isofor, 0);
+            List<Rule> wholeModelRules = Rule.extractRulesListFromModel(isofor, 0, 1);
             assertEquals(wholeModelRules.size(), 8);
 
         } finally {
