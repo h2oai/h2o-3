@@ -17,6 +17,6 @@ class TestXGBoostUnicode(unittest.TestCase):
         xg1 =  H2OXGBoostEstimator(model_id = 'xg1', ntrees = 3)
         xg1.train(x = [u'\xA5', 'x'], y = "y", training_frame=h2o_unic)
 
-if __name__ == "__main__":
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestXGBoostUnicode)
-    unittest.TextTestRunner().run(suite)
+
+suite = unittest.TestLoader().loadTestsFromTestCase(TestXGBoostUnicode)
+unittest.TextTestRunner().run(suite)

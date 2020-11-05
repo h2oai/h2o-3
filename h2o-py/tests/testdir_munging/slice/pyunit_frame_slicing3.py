@@ -39,5 +39,4 @@ def check_frame(actual, expected):
     assert data == expected, "Frames do not coincide:\nActual: %r\nExpected: %r\n" % (data, expected)
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_slice3)
+pyunit_utils.standalone_test(test_slice3)
