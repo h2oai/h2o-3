@@ -56,21 +56,6 @@ A split decision is made with respect to an impurity measurement. In H2O, since 
 
 The decision of which feature to split on is based on which feature reduces a node's squared error the most. The above image shows that splitting the 12 car-dataset observations, at the root node on the weights feature, reduces the squared error the most. Then dividing those observations that have a `weight` greater than or equal to 3,072 lbs, by year < or >= to 77.5 provides the next greatest squared error improvement. The reason this decision tree does not continue to grow is because its maximum depth was limited to two and its minimum number of row observations to split on, was limited to six. (This is also why the left-most node does not contain another split decision.)
 
-Tree-Based Algorithms
----------------------
-
-So far we've visualized how a single decision tree works. Next, we visualize tree-based ensemble methods like Gradient Boosting Machines and Random Forest. 
-
-.. figure:: images/gbm.png
-   :alt: Gradient Boosted Machine (GBM)
-
-The Gradient Boosted Machine is a model that sequentially trains decision trees. Each decision tree is built on the errors of the previous tree. (The first tree is built on the errors of an initialized prediction - based on the distribution of the response column - and the actual response value of each observation.)
-
-.. figure:: images/drf.png
-   :alt: Distributed Random Forest (DRF)
-
-Distributed Random Forest is a model that trains many decision trees in parallel and then averages their results.
-
 Feature Importance (aka Variable Importance) Plots
 --------------------------------------------------
 
@@ -101,6 +86,47 @@ Squared Error Equation:
 
 
 **Note**: For the sake of simplicity, we have omitted weights in the equations above. In reality, H2O includes weights in its calculation of squared error.
+
+Tree-Based Algorithms
+---------------------
+
+So far we've visualized how a single decision tree works. Next, we visualize tree-based ensemble methods. 
+
+GBM
+~~~
+
+.. figure:: images/gbm.png
+   :alt: Gradient Boosted Machine (GBM)
+
+The Gradient Boosted Machine is a model that sequentially trains decision trees. Each decision tree is built on the errors of the previous tree. (The first tree is built on the errors of an initialized prediction - based on the distribution of the response column - and the actual response value of each observation.)
+
+DRF
+~~~
+
+.. figure:: images/drf.png
+   :alt: Distributed Random Forest (DRF)
+
+Distributed Random Forest is a model that trains many decision trees in parallel and then averages their results.
+
+XGBoost
+~~~~~~~
+
+The variable importances are computed from the gains of their respective loss functions during tree construction. H2O uses squared error, and XGBoost uses a more complicated one based on gradient and hessian.
+
+
+Non-Tree-Based Algorithms
+-------------------------
+
+We'll now examine how non-tree-based algorithms calculate variable importance.
+
+Deep Learning
+~~~~~~~~~~~~~
+Variable importance is calculated using the `Gedeon method <http://users.cecs.anu.edu.au/~Tom.Gedeon/pdfs/ContribDataMinv2.pdf>`__.
+
+GLM
+~~~
+
+Variable importance represents the coefficient magnitudes. The standardized coefficients are returned if the ``standardize`` option is enabled (which is the default). These are the predictor weights of the standardized data and are included only for informational purposes like comparing the relative variable importance.
 
 
 References
