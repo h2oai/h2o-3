@@ -217,7 +217,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  WARNING: Model Parameters is not immutable object and ModelBuilder can modify
    *  them!
    */
-  
   public abstract static class Parameters extends Iced<Parameters> {
     /** Maximal number of supported levels in response. */
     public static final int MAX_SUPPORTED_LEVELS = 1<<20;
@@ -245,7 +244,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean _keep_cross_validation_fold_assignment = false;
     public boolean _parallelize_cross_validation = true;
     public boolean _auto_rebalance = true;
-    
 
     public void setTrain(Key<Frame> train) {
       this._train = train;
@@ -758,31 +756,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   }
 
-  /**
-   * Should be called after Model is scored, Otherwise no one can tell you what will happen
-   *
-   *
-   *
-   * @return*/
-  public static TwoDimTable permutationVarImp(Model model){
-    return permutationVarImp(model, model._parms._train.get());
-  }
-  
-
-  public static TwoDimTable permutationVarImp(Model model, Frame fr){
-    if (hex.ModelMetrics.getFromDKV(model, fr) == null)
-      throw new IllegalArgumentException("Model must be scored before calculating Permutation Variable Importance");
-    
-    PermutationVarImp Fi = new PermutationVarImp(model, fr);
-    return Fi.getPermutationVarImp();
-  }
-
-
-    /** Model-specific output class.  Each model sub-class contains an instance
-     *  of one of these containing its "output": the pieces of the model needed
-     *  for scoring.  E.g. KMeansModel has a KMeansOutput extending Model.Output
-     *  which contains the cluster centers.  The output also includes the names,
-     *  domains and other fields which are determined at training time.  */
+  /** Model-specific output class.  Each model sub-class contains an instance
+   *  of one of these containing its "output": the pieces of the model needed
+   *  for scoring.  E.g. KMeansModel has a KMeansOutput extending Model.Output
+   *  which contains the cluster centers.  The output also includes the names,
+   *  domains and other fields which are determined at training time.  */
   public abstract static class Output extends Iced {
     /** Columns used in the model and are used to match up with scoring data
      *  columns.  The last name is the response column name (if any). */
@@ -1406,7 +1384,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             catEncoded
     );
   }
-  
 
   /**
    * @param test Frame to be adapted
@@ -1524,7 +1501,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             msgs.add(str);
         }
       }
-      
       if( vec != null) {          // I have a column with a matching name
         if( domains[i] != null) { // Model expects an categorical
           if (vec.isString())
@@ -1651,9 +1627,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, destination_key, j, true);
   }
   
+  /**
+   * Calculate Permutation Variable Importance shuffling one feature at a time
+   * The user must call this after training. 
+   * @param fr training frame
+   * @param metric loss function metric 
+   *               if metric not specified mse is default
+   * @return TwoDimTable of Double values having the variables as columns
+   * and as rows their Relative, Scaled and percentage importance
+   */
   public TwoDimTable getPermVarImpTable(Frame fr, String metric){
-    PermutationVarImp fi = new PermutationVarImp(this, fr);
-    return fi.getPermutationVarImp(metric);
+    if (this.last_scored() == null )
+      throw new IllegalArgumentException("Model " + this._key + "must be scored!");
+    PermutationVarImp pvi = new PermutationVarImp(this, fr);
+    return pvi.getPermutationVarImp(metric);
   }
   
   /**
@@ -2121,7 +2108,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public ModelMojoWriter getMojo() {
     throw H2O.unimpl("MOJO format is not available for " + _parms.fullName() + " models.");
   }
-  
 
   /**
    * Specify categorical encoding that should be applied before running score0 method of POJO/MOJO.
