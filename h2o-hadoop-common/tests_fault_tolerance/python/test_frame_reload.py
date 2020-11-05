@@ -17,7 +17,7 @@ class TestStringMethods(unittest.TestCase):
         try:
             cluster_1 = utils.start_cluster("saver")
             h2o.connect(url=cluster_1)
-            df_orig = h2o.import_file(path=pyunit_utils.locate("bigdata/laptop/mnist/test.csv.gz"))
+            df_orig = h2o.import_file(path="hdfs://%s/%s" % (name_node, "datasets/mnist/train.csv.gz"))
             df_key = df_orig.key
             df_pd_orig = df_orig.as_data_frame()
             df_orig.save(work_dir)

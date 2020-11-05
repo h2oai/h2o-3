@@ -13,10 +13,6 @@ import static water.fvec.persist.PersistUtils.*;
 
 public class FramePersist {
 
-    static {
-        TypeMap.onIce(FrameMeta.class.getName());
-    }
-
     private final Frame frame;
 
     public FramePersist(Frame frame) {
