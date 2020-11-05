@@ -21,7 +21,7 @@ import static water.H2OConstants.MAX_STR_LEN;
 // An uncompressed chunk of data, supporting an append operation
 public class NewChunk extends Chunk {
 
-  private static final boolean DEBUG_SAFE_BUFX = H2O.getSysBoolProperty("debug.safe_bufx", true); 
+  private static final boolean DEBUG_SAFE_BUFX = H2O.getSysBoolProperty("debug.safe_bufx", false); 
 
   private static final int[] EXP10s = new int[Double.MAX_EXPONENT - Double.MIN_EXPONENT + 1];
   private static final double[] INV_POW10s = new double[EXP10s.length];
