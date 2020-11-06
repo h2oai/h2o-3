@@ -8,7 +8,7 @@ import h2o
 import unittest
 
 
-class TestStringMethods(unittest.TestCase):
+class FrameReloadTest(unittest.TestCase):
 
     def test_frame_reload(self):
         name_node = pyunit_utils.hadoop_namenode()

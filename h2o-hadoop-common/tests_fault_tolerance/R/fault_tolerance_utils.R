@@ -53,17 +53,20 @@ stop_cluster <- function(name) {
 
 
 run_script <- function(script, args) {
+    cwd <- getwd()
     tryCatch({
         setwd(Sys.getenv("H2O_HOME"))
         result <- system2(
             script, args, stdout=TRUE, stderr=TRUE
         )
-        print(paste(args[0], "script output:"))
-        print("--------------------")
-        print(result)
-        print("--------------------")
-        if (result$status != 0) {
+        cat(paste(args[0], "script output:\n"))
+        cat("--------------------\n")
+        cat(result)
+        cat("\n--------------------\n")
+        if (attr(result, "status") != 0) {
             stop(paste("Script", script, "failed, with exit status ", result$status))
         }
+    }, finally={
+        setwd(cwd)
     })
 }
