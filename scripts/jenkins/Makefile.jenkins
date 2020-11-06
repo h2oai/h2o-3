@@ -490,7 +490,7 @@ test-steam-websocket:
 
 test-hadoop-fault-tolerance:
 	cd h2o-hadoop-common/tests_fault_tolerance/python && python -m unittest test_*.py
-	cd h2o-hadoop-common/tests_fault_tolerance/R && R -f test.R
+	cd h2o-hadoop-common/tests_fault_tolerance/R && Rscript test-all.R
 
 test-h2o-k8s:
 	bash h2o-k8s/tests/clustering/docker-init-script.sh
