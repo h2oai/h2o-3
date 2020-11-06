@@ -12,7 +12,7 @@ class TestStringMethods(unittest.TestCase):
 
     def test_frame_reload(self):
         name_node = pyunit_utils.hadoop_namenode()
-        work_dir = "hdfs://" + name_node + "/user/jenkins/"
+        work_dir = utils.get_workdir()
     
         try:
             cluster_1 = utils.start_cluster("saver")
