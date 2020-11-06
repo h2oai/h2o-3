@@ -602,7 +602,8 @@ def call(final pipelineContext) {
           target: "test-hadoop-fault-tolerance", timeoutValue: 30,
           component: pipelineContext.getBuildConfig().COMPONENT_ANY,
           additionalTestPackages: [
-                  pipelineContext.getBuildConfig().COMPONENT_PY
+                  pipelineContext.getBuildConfig().COMPONENT_PY,
+                  pipelineContext.getBuildConfig().COMPONENT_R
           ],
           customData: MULTINODE_CLUSTERS_CONFIGS[0], pythonVersion: '3.6',
           executionScript: 'h2o-3/scripts/jenkins/groovy/faultToleranceStage.groovy',
