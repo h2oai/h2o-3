@@ -43,5 +43,22 @@ test <- function() {
     }
 }
 
-doTest("Test data frame", test)
+test_date_handling <- function() {
+  h2o_df <- h2o.uploadFile(locate("smalldata/timeSeries/CreditCard-ts_train.csv"))
+  r_df <- read.csv(locate("smalldata/timeSeries/CreditCard-ts_train.csv"),
+                   colClasses = list(MONTH = "POSIXct"))
+
+  str(as.numeric(r_df$MONTH[[1]]))
+  # => 1112306400
+  str(as.numeric(as.data.frame(h2o_df)$MONTH[[1]]))
+  # => 1112313600000
+
+  # "MONTH" contains date with first day of a month, e.g., 2015-05-01
+  expect_true(all(as.data.frame(h2o_df)$MONTH == r_df$MONTH))
+}
+
+doSuite("Test data frame", makeSuite(
+  test,
+  test_date_handling
+))
 
