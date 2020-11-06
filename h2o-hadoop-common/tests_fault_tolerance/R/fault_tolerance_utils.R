@@ -34,7 +34,9 @@ start_cluster <- function(name) {
     cluster_url <- readLines(con, n = 1)
     close(con)
     cluster_url <- sub("\\s+$", "", cluster_url)
-    return("http://" + cluster_url) 
+    print(paste("Cluster started at", cluster_url))
+    cluster_parts <- strsplit(cluster_url, ":")[[1]]
+    return(cluster_parts) 
 }
 
 
@@ -56,15 +58,17 @@ run_script <- function(script, args) {
     cwd <- getwd()
     tryCatch({
         setwd(Sys.getenv("H2O_HOME"))
+        print(paste("Executing script", script))
         result <- system2(
             script, args, stdout=TRUE, stderr=TRUE
         )
         cat(paste(args[0], "script output:\n"))
         cat("--------------------\n")
-        cat(result)
+        print(result)
         cat("\n--------------------\n")
-        if (attr(result, "status") != 0) {
-            stop(paste("Script", script, "failed, with exit status ", result$status))
+        status <- attr(result, "status")
+        if (!is.null(status)) {
+            stop(paste("Script", script, "failed, with exit status ", status))
         }
     }, finally={
         setwd(cwd)

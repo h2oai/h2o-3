@@ -4019,7 +4019,7 @@ h2o.range <- function(x,na.rm = FALSE,finite = FALSE) {
 #' }
 #' @export
 h2o.saveFrame <- function(x, dir, force = TRUE) {
-    res <- .h2o.__remoteSend(.h2o.__SAVE_FRAME(x), dir = dir, force = force, method = "POST")
+    res <- .h2o.__remoteSend(.h2o.__SAVE_FRAME(h2o.getId(x)), dir = dir, force = force, method = "POST")
     .h2o.__waitOnJob(res$job$key$name)
 }
 
