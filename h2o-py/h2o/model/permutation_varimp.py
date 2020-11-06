@@ -69,7 +69,6 @@ def permutation_varimp(model, frame, use_pandas=True, metric="mse"):
         raise H2OValueError("Metric doesn't exist for this model.")
 
     m_frame = H2OFrame._expr(ExprNode("PermutationVarImp", model, frame, metric))
-
     if use_pandas and can_use_pandas():
         import pandas
         pd = h2o.as_list(m_frame)
