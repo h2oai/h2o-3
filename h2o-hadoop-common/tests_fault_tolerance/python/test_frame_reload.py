@@ -12,13 +12,13 @@ class TestStringMethods(unittest.TestCase):
 
     def test_frame_reload(self):
         name_node = pyunit_utils.hadoop_namenode()
-        work_dir = utils.get_workdir()
-        dataset = "datasets/mnist/train.csv.gz"
+        work_dir = "hdfs://%s%s" % (name_node, utils.get_workdir())
+        dataset = "/datasets/mnist/train.csv.gz"
         
         try:
             cluster_1 = utils.start_cluster("saver")
             h2o.connect(url=cluster_1)
-            df_orig = h2o.import_file(path="hdfs://%s/%s" % (name_node, dataset))
+            df_orig = h2o.import_file(path="hdfs://%s%s" % (name_node, dataset))
             df_key = df_orig.key
             df_pd_orig = df_orig.as_data_frame()
             df_orig.save(work_dir)
