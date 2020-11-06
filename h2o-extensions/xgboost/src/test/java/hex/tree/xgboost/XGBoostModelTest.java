@@ -100,7 +100,7 @@ public class XGBoostModelTest {
   }
 
   @Test
-  public void testAllowedInteractionConstraints() {
+  public void testIncludeInteractionConstraints() {
     Scope.enter();
     try {
       final Frame airlinesFrame = Scope.track(TestUtil.parse_test_file("./smalldata/testng/airlines.csv"));
@@ -113,7 +113,7 @@ public class XGBoostModelTest {
       parms._response_column = "IsDepDelayed";
       parms._train = airlinesFrame._key;
       parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
-      parms._allowed_interaction_pairs = new StringPair[]{new StringPair("fYear","fMonth"), 
+      parms._include_interaction_pairs = new StringPair[]{new StringPair("fYear","fMonth"), 
                                                           new StringPair("fYear", "fDayofMonth"),
                                                           new StringPair("fMonth", "fDayofMonth"),
                                                           new StringPair("Origin", "UniqueCarrier")};
