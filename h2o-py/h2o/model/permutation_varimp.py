@@ -6,56 +6,51 @@ H2O Permutation Feature Importance.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 
+import h2o
 from h2o.frame import H2OFrame
 from h2o.expr import ExprNode
 from h2o.model.model_base import _get_matplotlib_pyplot
 from h2o.utils.shared_utils import can_use_pandas
 
-import h2o
 
-
-def H2OFrame_to_pandas(m_frame):
-    import pandas
-    pd = h2o.as_list(m_frame)
-
-    rel_imp = pd.loc[pd['ID'] == 'Relative Importance']
-    rel_imp = rel_imp.drop(columns=['ID'])
-
-    scaled_imp = pd.loc[pd['ID'] == 'Scaled Importance']
-    scaled_imp = scaled_imp.drop(columns=['ID'])
-
-    perc_imp = pd.loc[pd['ID'] == 'Percentage']
-    perc_imp = perc_imp.drop(columns=['ID'])
-
-    pd = pd.drop(columns=['ID'])
-    return pandas.DataFrame(pd, columns=pd.columns)
-
-
-def permutation_varimp(model, validation_frame, use_pandas=True, metric="mse"):
-    m_frame = H2OFrame._expr(ExprNode("PermutationVarImp", model, validation_frame, metric))
-
-    if type(m_frame) is not H2OFrame:
+def permutation_varimp(model, frame, use_pandas=True, metric="mse"):
+    """
+    Get Permutation Variable Importance Frame. 
+    :param model: model after training
+    :param frame: training frame
+    :param use_pandas: select true to return pandas data frame
+    :param metric: (str) loss function metrics to be used 
+    :return: H2OFrame or Pandas data frame
+    """
+    
+    if type(frame) is not H2OFrame:
         raise ValueError("Frame is not H2OFrame")
 
+    m_frame = H2OFrame._expr(ExprNode("PermutationVarImp", model, frame, metric))
+
     if use_pandas and can_use_pandas():
-        return H2OFrame_to_pandas(m_frame)
-
-    rel_imp = m_frame[1, :]
-    sc_imp = m_frame[2, :]
-    perc_imp = m_frame[3, :]
-
-    names = m_frame.names
-    names.pop()  # removing 'ID'
-    rel_imp_final = rel_imp[:, names]  # range(m_frame.ncols - 1)
-    sc_imp_final = sc_imp[:, names]
-    perc_imp_final = perc_imp[:, names]
-
-    return rel_imp_final
+        import pandas
+        pd = h2o.as_list(m_frame)
+        return pandas.DataFrame(pd, columns=pd.columns)
+    
+    return m_frame
 
 
 def plot_permutation_var_imp(importance, algo_name, metric="mse", server=False):
+    """
+    Plot Permutation Variable Importance, by default scaled importance is plotted
+    Inspired from model_base.varimp_plot() to stay consistent with the manner of plotting
+    :param importance: frame of variable importance
+    :param algo_name: algorithm of the model
+    :param metric: loss function metric that was used for calculation
+    :param Specify whether to activate matplotlib "server" mode. In this case, the plots are saved to a file instead of being rendered.
+    :return: 
+    """
+    
     importance_val = []
     for col in importance.columns:
+        if col == "importance":
+            continue    # has string values
         importance_val.append(importance.loc[2][col])
 
     # specify bar centers on the y axis, but flip the order so largest bar appears at top
@@ -77,7 +72,7 @@ def plot_permutation_var_imp(importance, algo_name, metric="mse", server=False):
     # Only show ticks on the left and bottom spines
     ax.yaxis.set_ticks_position("left")
     ax.xaxis.set_ticks_position("bottom")
-    plt.yticks(pos[0:num_of_features], importance.columns[0:num_of_features])
+    plt.yticks(pos[0:num_of_features], importance.columns[1:num_of_features + 1])   # col 0 is str: importance
     plt.ylim([min(pos[0:num_of_features]) - 1, max(pos[0:num_of_features]) + 1])
     # ax.margins(y=0.5)
     plt.title("Permutation Variable Importance: " + algo_name + " (" + metric + ")", fontsize=20)
