@@ -1,11 +1,10 @@
-library(h2o)
 source("fault_tolerance_utils.R")
 
-name_node <- Sys.get_env("NAME_NODE")
+name_node <- Sys.getenv("NAME_NODE")
 work_dir <- get_workdir()
 dataset <- "datasets/mnist/train.csv.gz"
 
-test_frame_reload <- function() {
+test_that("Can reload a Frame from hdfs", {
     print("Import and save...")
     tryCatch({
         cluster_1 <- start_cluster("saver")
@@ -15,7 +14,7 @@ test_frame_reload <- function() {
         df_orig_r <- as.data.frame(df_orig)
         h2o.save_frame(df_orig, work_dir)
     }, finally={
-        stop_cluster("saver") 
+        stop_cluster("saver")
     })
 
     print("Load saved...")
@@ -32,8 +31,6 @@ test_frame_reload <- function() {
     print("Comparing frames...")
     # just a basic comparison, more testing done in py
     expect_true(all(dim(df_orig_r) == dim(df_loaded_r)))
-    
-    print("Test passed.")
-}
 
-test_that("Can reload a Frame from hdfs", test_frame_reload)
+    print("Test passed.")
+})

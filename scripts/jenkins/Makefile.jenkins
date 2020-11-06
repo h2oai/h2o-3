@@ -489,8 +489,8 @@ test-steam-websocket:
 	cd h2o-extensions/steam/tests/python && mkdir -p results && python test.py
 
 test-hadoop-fault-tolerance:
-	cd h2o-hadoop-common/tests_fault_tolerance/python && mkdir -p results && python -m unittest test_*.py 
-	cd h2o-hadoop-common/tests_fault_tolerance/R && mkdir -p results && R -f test.R
+	cd h2o-hadoop-common/tests_fault_tolerance/python && python -m unittest test_*.py
+	cd h2o-hadoop-common/tests_fault_tolerance/R && R -f test.R
 
 test-h2o-k8s:
 	bash h2o-k8s/tests/clustering/docker-init-script.sh

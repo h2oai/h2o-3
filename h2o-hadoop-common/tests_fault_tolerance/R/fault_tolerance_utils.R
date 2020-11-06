@@ -1,3 +1,6 @@
+library(h2o)
+library(testthat)
+
 get_workdir <- function() {
     return(Sys.getenv("HDFS_WORKSPACE")) 
 }
@@ -51,7 +54,7 @@ stop_cluster <- function(name) {
 
 run_script <- function(script, args) {
     tryCatch({
-        setwd(os.getenv("H2O_HOME"))
+        setwd(Sys.getenv("H2O_HOME"))
         result <- system2(
             script, args, stdout=TRUE, stderr=TRUE
         )
