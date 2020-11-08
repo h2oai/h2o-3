@@ -156,7 +156,6 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
         Scope.enter();
         final Vec durations = durations(startVec, stopVec);
         Frame fr = prepareFrameForConcordanceComputation(eventVec, strataVecs, estimateVec, durations);
-        if (true) return new Stats();
         return concordanceStats(fr);
       } finally {
         Scope.exit();
@@ -197,6 +196,8 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
     private static Stats concordanceStats(Frame fr){
       final Frame withoutNas = removeNAs(fr);
 
+      if (true) return new Stats();
+      
       final int[] stratasAndDuration = new int[withoutNas.numCols() - 2];
         final int[] strataIndexes = new int[withoutNas.numCols() - 3];
         for (int i = 0; i < strataIndexes.length; i++) {
