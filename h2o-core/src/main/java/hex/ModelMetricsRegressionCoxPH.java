@@ -155,8 +155,8 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
       try {
         Scope.enter();
         final Vec durations = durations(startVec, stopVec);
-        if (true) return new Stats();
         Frame fr = prepareFrameForConcordanceComputation(eventVec, strataVecs, estimateVec, durations);
+        if (true) return new Stats();
         return concordanceStats(fr);
       } finally {
         Scope.exit();
