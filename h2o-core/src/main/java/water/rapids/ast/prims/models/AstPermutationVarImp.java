@@ -13,7 +13,6 @@ import water.util.TwoDimTable;
 
 /** 
  * Ast class for passing the model, frame and metric to calculate Permutation Variable Importance
- * 
  */
 public class AstPermutationVarImp extends AstPrimitive {
 

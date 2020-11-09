@@ -73,7 +73,7 @@ def perm_var_imp_plot_glm():
        Test that Permutation Feature Importance indicates that only one variable indicates the result
        Dummy test was created, result shows that only "meat (gr)" is an important variable.  
        """
-    full = h2o.import_file(path=pyunit_utils.locate("smalldata/dummydata/full_testset.csv"))
+    full = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/full_testset.csv"))
 
     predictors = ["meat (gr)", "price (eur)", "restaurant", "city", "gender"]
     response_col = "full"
