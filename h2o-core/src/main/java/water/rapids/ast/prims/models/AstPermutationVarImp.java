@@ -12,7 +12,7 @@ import water.rapids.vals.ValFrame;
 import water.util.TwoDimTable;
 
 /** 
- * 
+ * Ast class for passing the model, frame and metric to calculate Permutation Variable Importance
  */
 public class AstPermutationVarImp extends AstPrimitive {
 
@@ -37,8 +37,6 @@ public class AstPermutationVarImp extends AstPrimitive {
             // Calculate Permutation Variable Importance 
             TwoDimTable varImpTable = model.getPermVarImpTable(fr, metric);
             
-            System.out.println(varImpTable);
-            
             // Create Frame from TwoDimTable 
             pviFr = new Frame(Key.make(model._key + "permutationVarImp"));
             pviFr.add(headerToStrings(varImpTable.getRowHeaders()), rowsToVecs(varImpTable));
@@ -50,7 +48,11 @@ public class AstPermutationVarImp extends AstPrimitive {
         return new ValFrame(pviFr);
     }
 
-    // Rows of TwoDimTable to a Vec [] 
+    /**
+     * TwoDimTable rows to Vecs which will be used to create a Frame
+     * @param varImp_t TwoDimTable of PVI
+     * @return an array of Vecs
+     */
     Vec[] rowsToVecs(TwoDimTable varImp_t) {
         Vec[] vecs = new Vec[varImp_t.getRowDim() + 1];
         // Relative, scaled, and percentage importance
@@ -65,10 +67,14 @@ public class AstPermutationVarImp extends AstPrimitive {
         return vecs;
     }
 
-    // Features to String []
+    /**
+     * TwoDimTable headers to an array of strings with the first element being the importance 
+     * @param table_names TwoDimTable of PVI
+     * @return an array of Strings
+     */
     String[] headerToStrings(String[] table_names) {
         String[] varNames = new String[table_names.length + 1];
-        varNames[0] = "ID";
+        varNames[0] = "importance";
         System.arraycopy(table_names, 0, varNames, 1, table_names.length);
         // add column containing Strings: Relative importance, Scaled importance, percentage 
         return varNames;
