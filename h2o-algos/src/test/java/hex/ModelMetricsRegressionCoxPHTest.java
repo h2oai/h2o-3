@@ -130,7 +130,7 @@ public class ModelMetricsRegressionCoxPHTest {
             final double c = concordance(starts, stops, status, Collections.emptyList(), estimates).c();
             final double pairCount = stops.length() * (stops.length() - 1) / 2d;
             
-//            assertEquals((pairCount - 3) / pairCount, c, 0.001);
+            assertEquals((pairCount - 3) / pairCount, c, 0.001);
         } finally {
             Scope.exit();
         }
@@ -187,16 +187,10 @@ public class ModelMetricsRegressionCoxPHTest {
             System.out.println("...estimates ready");
 
             System.out.println("Compute concordance...");
-            try {
-                final double c = concordance(starts, times, status, Collections.emptyList(), estimates).c();
-                System.out.println("concordance = " + c);
+            final double c = concordance(starts, times, status, Collections.emptyList(), estimates).c();
+            System.out.println("concordance = " + c);
 
-//                assertEquals(expected, c, delta);
-            } catch (Throwable t) {
-                System.out.println(t);
-                t.printStackTrace();
-                throw t;
-            }
+            assertEquals(expected, c, delta);
         } finally {
             Scope.exit();
         }

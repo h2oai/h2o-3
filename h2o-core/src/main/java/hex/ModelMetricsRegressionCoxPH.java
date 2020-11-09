@@ -196,53 +196,52 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
     private static Stats concordanceStats(Frame fr){
       final Frame withoutNas = removeNAs(fr);
 
-      
       final int[] stratasAndDuration = new int[withoutNas.numCols() - 2];
-        final int[] strataIndexes = new int[withoutNas.numCols() - 3];
-        for (int i = 0; i < strataIndexes.length; i++) {
-          stratasAndDuration[i] = i + 3;
-          strataIndexes[i] = i + 3;
-        }
-        stratasAndDuration[withoutNas.numCols() - 3] = 0;
+      final int[] strataIndexes = new int[withoutNas.numCols() - 3];
+      for (int i = 0; i < strataIndexes.length; i++) {
+        stratasAndDuration[i] = i + 3;
+        strataIndexes[i] = i + 3;
+      }
+      stratasAndDuration[withoutNas.numCols() - 3] = 0;
 
-        if (0 == withoutNas.numRows()) {
-          return new Stats();
-        }
+      if (0 == withoutNas.numRows()) {
+        return new Stats();
+      }
 
-        final Frame sorted = withoutNas.sort(stratasAndDuration);
-        
-        Scope.track(sorted);
+      final Frame sorted = withoutNas.sort(stratasAndDuration);
 
-        final List<Vec.Reader> strataCols = stream(strataIndexes).boxed().map(i -> sorted.vec(i).new Reader()).collect(toList());
+      Scope.track(sorted);
 
-        long lastStart = 0L;
-        List lastRow = new ArrayList(sorted.numCols() - 3);
-        Stats statsAcc = new Stats();
+      final List<Vec.Reader> strataCols = stream(strataIndexes).boxed().map(i -> sorted.vec(i).new Reader()).collect(toList());
 
-        for (long i = 0; i < sorted.numRows(); i++) {
-          final List row = new ArrayList(sorted.numCols() - 3);
-          for (Vec.Reader strataCol : strataCols) {
-            row.add(strataCol.at(i));
-          }
+      long lastStart = 0L;
+      List lastRow = new ArrayList(sorted.numCols() - 3);
+      Stats statsAcc = new Stats();
 
-          if (!lastRow.equals(row)) {
-            lastRow = row;
-            Stats stats = statsForAStrata(sorted.vec("duration").new Reader()
-                    , sorted.vec("event").new Reader()
-                    , sorted.vec("estimate").new Reader()
-                    , lastStart
-                    , i);
-            lastStart = i;
-
-            statsAcc = statsAcc.plus(stats);
-          }
+      for (long i = 0; i < sorted.numRows(); i++) {
+        final List row = new ArrayList(sorted.numCols() - 3);
+        for (Vec.Reader strataCol : strataCols) {
+          row.add(strataCol.at(i));
         }
 
-      Stats stats = statsForAStrata( sorted.vec("duration").new Reader()
-                                   , sorted.vec("event").new Reader()
-                                   , sorted.vec("estimate").new Reader()
-                                   , lastStart
-                                   , sorted.numRows());
+        if (!lastRow.equals(row)) {
+          lastRow = row;
+          Stats stats = statsForAStrata(sorted.vec("duration").new Reader()
+                  , sorted.vec("event").new Reader()
+                  , sorted.vec("estimate").new Reader()
+                  , lastStart
+                  , i);
+          lastStart = i;
+
+          statsAcc = statsAcc.plus(stats);
+        }
+      }
+
+      Stats stats = statsForAStrata(sorted.vec("duration").new Reader()
+              , sorted.vec("event").new Reader()
+              , sorted.vec("estimate").new Reader()
+              , lastStart
+              , sorted.numRows());
 
 
       return statsAcc.plus(stats);
