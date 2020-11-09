@@ -31,6 +31,10 @@
 #'        Parameter path will be considered to be a path to a directory
 #'        if export to multiple part files is desired. Part files conform
 #'        to naming scheme 'part-m-?????'.
+#' @param header logical, indicates whether to write the header line.
+#'        Default is to include the header in the output file.
+#' @param quote_header logical, indicates whether column names should be
+#'        quoted. Default is to use quotes.
 #'        
 #' @examples
 #'\dontrun{
@@ -44,7 +48,8 @@
 #' # h2o.exportFile(iris_hf, path = "s3n://path/in/s3/iris.csv")
 #' }
 #' @export
-h2o.exportFile <- function(data, path, force = FALSE, sep = ",", compression = NULL, parts = 1) {
+h2o.exportFile <- function(data, path, force = FALSE, sep = ",", compression = NULL, parts = 1,
+                           header = TRUE, quote_header = TRUE) {
   if (!is.H2OFrame(data))
     stop("`data` must be an H2OFrame object")
 
@@ -57,8 +62,13 @@ h2o.exportFile <- function(data, path, force = FALSE, sep = ",", compression = N
   if(!is.numeric(parts) || length(parts) != 1L || is.na(parts) || (! all.equal(parts, as.integer(parts))))
     stop("`parts` must be -1, 1 or any other positive integer number")
 
+  if(!is.logical(header) || length(header) != 1L || is.na(header))
+    stop("`header` must be TRUE or FALSE")
+
+  if(!is.logical(quote_header) || length(quote_header) != 1L || is.na(quote_header))
+    stop("`quote_header` must be TRUE or FALSE")
     
-  params <- list(path=path, num_parts=parts, force=force, separator=.asc(sep))
+  params <- list(path=path, num_parts=parts, force=force, separator=.asc(sep), header=header, quote_header=quote_header)
   if (! is.null(compression)) {
     params$compression <- compression
   }
