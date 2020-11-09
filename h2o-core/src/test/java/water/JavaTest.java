@@ -14,11 +14,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses({JavaTest.SupportedJavasTest.class, JavaTest.UnsupportedJavasTest.class})
+@Suite.SuiteClasses({JavaTest.SupportedJavasTest.class, JavaTest.UnsupportedJavasTest.class, JavaTest.SupportedVersionsRangeTest.class})
 public class JavaTest {
 
     @RunWith(Parameterized.class)
@@ -110,4 +109,22 @@ public class JavaTest {
             assertFalse(supportedJavaVersions.contains(unsupportedJavaVersion));
         }
     }
+    
+    
+    public static class SupportedVersionsRangeTest{
+        @Test
+        public void testGetSupportedJavaVersions() {
+            final Set<Integer> supportedJavaVersions = Java.getSupportedJavaVersions();
+            assertEquals((Java.MAX_SUPPORTED_JAVA_VERSION  - Java.MIN_SUPPORTED_JAVA_VERSION + 1) - Java.UNSUPPORTED_VERSIONS.size(), supportedJavaVersions.size());
+            for (int version = Java.MIN_SUPPORTED_JAVA_VERSION; version <= Java.MAX_SUPPORTED_JAVA_VERSION ; version++) {
+                if(Java.UNSUPPORTED_VERSIONS.contains(version)){
+                    assertFalse(supportedJavaVersions.contains(version));
+                } else {
+                    supportedJavaVersions.contains(version);
+                }
+            }
+        }
+    }
+
+
 }
