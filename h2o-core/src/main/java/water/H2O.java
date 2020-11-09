@@ -2136,7 +2136,7 @@ final public class H2O {
       return false;
     }
 
-    if (Java.runningOnSupportedVersion()) {
+    if (!Java.runningOnSupportedVersion()) {
       final Set<Integer> supportedJavaVersions = Java.getSupportedJavaVersions();
       System.err.println(String.format("Only Java versions %s are supported, system version is %s",
               String.join(",", supportedJavaVersions.stream().map(version -> version.toString()).collect(Collectors.toList())),
