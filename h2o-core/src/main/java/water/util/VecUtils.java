@@ -346,7 +346,7 @@ public class VecUtils {
         } else {
           for (int i=0; i < chk._len; i++) {
             if (!chk.isNA(i))
-              newChk.addStr(PrettyPrint.number(chk, chk.atd(i), 4)); 
+              newChk.addStr(PrettyPrint.number(chk, chk.atd(i), 4));
             else
               newChk.addNA();
           }
