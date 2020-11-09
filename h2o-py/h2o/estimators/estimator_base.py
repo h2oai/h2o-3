@@ -33,7 +33,6 @@ from ..model.word_embedding import H2OWordEmbeddingModel
 from ..model.anomaly_detection import H2OAnomalyDetectionModel
 from ..model.coxph import H2OCoxPHModel
 from ..model.segment_models import H2OSegmentModels
-from ..model.PermutationFeatureImportance import permutation_featue_importance
 
 
 class EstimatorAttributeError(AttributeError):
