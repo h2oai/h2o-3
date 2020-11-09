@@ -180,10 +180,10 @@ h2o.getFrame <- function(id) {
 #'
 #' iris_hf <- as.h2o(iris)
 #' model_id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris_hf)@@model_id
-#' model_id_list <- h2o.listModels()
+#' model_id_list <- h2o.list_models()
 #' }
 #' @export
-h2o.listModels <- function() {
+h2o.list_models <- function() {
     models_json <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS))$models
     res <- NULL
     for (json in models_json) {
