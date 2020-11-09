@@ -1,6 +1,5 @@
 package water.rapids;
 
-import hex.ModelMetricsBinomialGLM;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.tree.gbm.GBM;
@@ -21,7 +20,8 @@ import water.util.TwoDimTable;
 import java.util.*;
 
 import static hex.genmodel.utils.DistributionFamily.gaussian;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 public class PermutationVarImpTest extends TestUtil {
@@ -71,11 +71,22 @@ public class PermutationVarImpTest extends TestUtil {
 
             // the first column contains the relative (Permutation Variable) importance
             for (int row = 0 ; row < pviTableAuc.getRowDim() ; row++){
-                Assert.assertTrue((Double) pviTableRmse.get(row, 0) > 0.0);
-                Assert.assertTrue((Double) pviTableMse.get(row, 0) > 0.0);
-                Assert.assertTrue((Double) pviTableR2.get(row, 0) > 0.0);
-                Assert.assertTrue((Double) pviTableAuc.get(row, 0) > 0.0);
-                Assert.assertTrue((Double) pviTableLogloss.get(row, 0) > 0.0);
+                String [] colTypes = pviTableRmse.getColTypes();
+                Assert.assertTrue( colTypes[0].equals("double"));
+                Assert.assertTrue( colTypes[1].equals("double"));
+                Assert.assertTrue( colTypes[2].equals("double"));
+
+                colTypes = pviTableMse.getColTypes();
+                Assert.assertTrue( colTypes[0].equals("double"));
+
+                colTypes = pviTableR2.getColTypes();
+                Assert.assertTrue( colTypes[0].equals("double"));
+
+                colTypes = pviTableAuc.getColTypes();
+                Assert.assertTrue( colTypes[0].equals("double"));
+
+                colTypes = pviTableLogloss.getColTypes();
+                Assert.assertTrue( colTypes[0].equals("double"));
             }
         } finally {
             fr.remove();
@@ -116,20 +127,19 @@ public class PermutationVarImpTest extends TestUtil {
             PermutationVarImp pvi =  new PermutationVarImp(gbm, fr);
 
             TwoDimTable pvi_table = pvi.getPermutationVarImp();
+            
+            String [] colTypes = pvi_table.getColTypes();
 
-            for (int row = 0 ; row < pvi_table.getRowDim() ; row++){
-                for (int col = 0 ; col < pvi_table.getColDim() ; col++){
-                    Assert.assertTrue((Double) pvi_table.get(row, col) > 0.0);
-                }
-            }
+            Assert.assertTrue( colTypes[0].equals("double"));
+            Assert.assertTrue( colTypes[1].equals("double"));
+            Assert.assertTrue( colTypes[2].equals("double"));
             
             TwoDimTable pvi_oat = pvi.oat();
+            colTypes = pvi_oat.getColTypes();
+
+            Assert.assertTrue( colTypes[0].equals("double"));
+            Assert.assertTrue( colTypes[1].equals("double"));
             
-            for (int row = 0 ; row < pvi_oat.getRowDim() ; row++){
-                for (int col = 0 ; col < pvi_oat.getColDim() ; col++){
-                    Assert.assertTrue((Double) pvi_oat.get(row, col) > 0.0);
-                }
-            }
             
         } finally {
             if (fr != null) fr.remove();
@@ -138,39 +148,6 @@ public class PermutationVarImpTest extends TestUtil {
             Scope.exit();
         }        
         
-    }
-    
-    /**
-     * Test MetricNotFoundException is thrown when selected metric is not available for the model
-     */
-    @Test(expected = MetricNotFoundException.class)
-    public void passMetric()  {
-
-        Scope.enter();
-        Key parsed = Key.make("cars_parsed");
-        Frame fr = null;
-        GLMModel model = null;
-        try {
-            fr = parse_test_file(parsed, "smalldata/junit/cars.csv");
-            GLMModel.GLMParameters params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.poisson, GLMModel.GLMParameters.Family.poisson.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
-            params._response_column = "power (hp)";
-            // params._response = fr.find(params._response_column);
-            params._ignored_columns = new String[]{"name"};
-            params._train = parsed;
-            params._lambda = new double[]{0};
-            params._alpha = new double[]{0};
-            params._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.Skip;
-
-            model = new GLM(params).trainModel().get();
-
-            PermutationVarImp pvi = new PermutationVarImp(model, fr);
-            TwoDimTable pviTableAuc = pvi.getPermutationVarImp("auc");
-
-        }finally {
-            if (fr != null) fr.delete();
-            if (model != null) model.delete();
-            Scope.exit();
-        }
     }
 
     /**
@@ -207,11 +184,12 @@ public class PermutationVarImpTest extends TestUtil {
             PermutationVarImp Fi = new PermutationVarImp(gbm, fr);
             TwoDimTable pvi = Fi.getPermutationVarImp();
 
-            for (int row = 0 ; row < pvi.getRowDim() ; row++){
-                for (int col = 0 ; col < pvi.getColDim() ; col++){
-                    Assert.assertTrue((Double) pvi.get(row, col) > 0.0);
-                }
-            }
+            String [] colTypes = pvi.getColTypes();
+
+            Assert.assertTrue( colTypes[0].equals("double"));
+            Assert.assertTrue( colTypes[1].equals("double"));
+            Assert.assertTrue( colTypes[2].equals("double"));
+
             
         } finally {
             if (fr != null) fr.remove();
@@ -252,20 +230,19 @@ public class PermutationVarImpTest extends TestUtil {
             GLM glm = new GLM(params, modelKey);
             model = glm.trainModel().get();
             assertTrue(glm.isStopped());
-            ModelMetricsBinomialGLM val = (ModelMetricsBinomialGLM) model._output._training_metrics;
 
             PermutationVarImp PermVarImp = new PermutationVarImp(model, fr);
             TwoDimTable table = PermVarImp.getPermutationVarImp();
 
             String ts = table.toString();
             assertTrue(ts.length() > 0);
+            
+            String [] colTypes = table.getColTypes();
 
-            System.out.println(table);
-            for (int i = 0; i < table.getRowDim(); i ++){
-                for (int j = 0; j < table.getColDim() ; j++) { // relative, scaled, percentage 
-                    assertFalse(table.get(i, j).equals(0.0));
-                }
-            }
+            Assert.assertTrue( colTypes[0].equals("double"));
+            Assert.assertTrue( colTypes[1].equals("double"));
+            Assert.assertTrue( colTypes[2].equals("double"));
+
 
         } finally {
             fr.delete();
@@ -331,7 +308,7 @@ public class PermutationVarImpTest extends TestUtil {
             Map<String, Double> sPvi = MapUtil.sortByValue(perVarImp);
             
             // Instead of comparing values compare positions (rank)
-            String [] coeff = new String[sCoefficients.size()];
+            String [] coeff = new String[sCoefficients.size() - 1];
             String [] pvi = new String[perVarImp.size()];
 
             int id = 0;
