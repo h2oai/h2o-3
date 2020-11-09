@@ -3,6 +3,7 @@ package water;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 import static water.util.JavaVersionUtils.JAVA_VERSION;
 
@@ -47,9 +48,9 @@ public class Java {
         }
         return false;
     }
-
+    
     public static Set<Integer> getSupportedJavaVersions() {
-        final Set<Integer> versions = new HashSet<>(MAX_SUPPORTED_JAVA_VERSION - MIN_SUPPORTED_JAVA_VERSION - UNSUPPORTED_VERSIONS.size());
+        final Set<Integer> versions = new TreeSet();
         for (int version = MIN_SUPPORTED_JAVA_VERSION; version <= MAX_SUPPORTED_JAVA_VERSION; version++) {
             if (!UNSUPPORTED_VERSIONS.contains(version)) {
                 versions.add(version);
