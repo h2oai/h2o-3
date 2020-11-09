@@ -27,7 +27,7 @@ public class PermutationVarImp {
     private String _responseCol; 
     
     private String[] _var; 
-    private String[] _featuresWithNoResCol;
+    private String[] _varsToShuffle;
     public String[] _metrics;
 
     /**
@@ -78,10 +78,10 @@ public class PermutationVarImp {
         if (_model._parms._ignored_columns != null)
             for (String s : _model._parms._ignored_columns) list.remove(s);
         list.remove(_responseCol);
-        _featuresWithNoResCol = list.toArray(new String[0]);
+        _varsToShuffle = list.toArray(new String[0]);
         
         // alloc permutation variable importance array 
-        _pVarImp = new double[_featuresWithNoResCol.length];
+        _pVarImp = new double[_varsToShuffle.length];
     }
 
     
@@ -127,7 +127,7 @@ public class PermutationVarImp {
     /**
      * Set the loss function upon training the model (original ~ Og)
      */
-    public void setOgModelMetric() {
+    public void setOgMetric() {
         try{
             _varImpMetric.mOgMetric = getMetric(ModelMetrics.getFromDKV(_model, _model._parms.train()));
         } catch (MetricNotFoundException e){
@@ -174,11 +174,23 @@ public class PermutationVarImp {
 
     /**
      * Check if variable was set to be ignored
-     * @param ignoredVars ignored variables
      * @param var variable to be shuffled
      */
-    public static boolean isIgnored(String[] ignoredVars, String var) {
-        return Arrays.asList(ignoredVars).contains(var);
+    Boolean inIgnoredParms(int var){
+        if (_model._parms._ignored_columns != null)
+            return  Arrays.asList(_model._parms._ignored_columns).contains(_var[var]);
+        return false;
+    }
+
+    /**
+     * Check If the variable is in ignored parameters on the model
+     * @param var Vec to be shuffled
+     * @return
+     */
+    public boolean isIgnored(String var) {
+        if (_model._parms._ignored_columns == null) 
+                return false;
+        return Arrays.asList(_model._parms._ignored_columns).contains(var);
     }
     
     /**
@@ -187,21 +199,15 @@ public class PermutationVarImp {
      */
     public TwoDimTable PermutationVarImportance(){
         removeResCol();
-        setOgModelMetric(); // get the metric value from the model
-         _varImpMap = new HashMap<>(_featuresWithNoResCol.length);
-        
-//        Vec vec = _trainFr.remove(_responseCol);
-        
+        setOgMetric(); // get the metric value from the model
+        _varImpMap = new HashMap<>(_varsToShuffle.length);
+
         int id = 0;
         for (int f = 0; f < _trainFr.numCols(); f++)
         {
             // skip for response column
-            if (_var[f].equals(_responseCol) ||  
-                    (_model._parms._ignored_columns == null ? 
-                    false : 
-                    isIgnored(_model._parms._ignored_columns, _var[f]))) {
+            if (_var[f].equals(_responseCol) || isIgnored(_var[f]))
                 continue;
-            }
 
             //shuffle values of feature
             Vec shuffled_feature = VecUtils.ShuffleVec(_trainFr.vec(_var[f]), _trainFr.vec(_var[f]).makeCopy());
@@ -212,21 +218,22 @@ public class PermutationVarImp {
 
             // set and add new metrics ~ fills @param _p_var_imp needed for ModelMetrics.calcVarImp()
             setVariablesMetric(id);
-
-
+            
+            
             //return the original data
-            _trainFr.replace(f, og_feature); 
+            _trainFr.replace(f, og_feature);
 
             // Create Map
             _varImpMap.put(_var[f], _pVarImp[id++]);
-            
+
             new_score.remove();
             shuffled_feature.remove();
         }
         // Create TwoDimTable having (Relative + Scaled + percentage) importance 
-        _permutationVarImp = ModelMetrics.calcVarImp(_pVarImp, _featuresWithNoResCol);
+        _permutationVarImp = ModelMetrics.calcVarImp(_pVarImp, _varsToShuffle);
         return _permutationVarImp;
     }
+
 
     /**
      * Default is set to return the Relative value of the Permutation Feature Importance (PFI)
@@ -241,48 +248,46 @@ public class PermutationVarImp {
      */
     public TwoDimTable oat(int type) {
         int r = 4; // set 4 to 10 
-        TwoDimTable[] morris_FI_arr = new TwoDimTable[r];
+        TwoDimTable[] morrisFis = new TwoDimTable[r];
         
         // Generate r tables of Feature importance differently shuffled
         for (int i = 0; i < r; i++) {
-            morris_FI_arr[i] = getPermutationVarImp();
-            System.out.println(morris_FI_arr[i]);
+            morrisFis[i] = getPermutationVarImp();
         }
 
-        double[] mean_FI = new double[_featuresWithNoResCol.length];
+        double[] meanFI = new double[_varsToShuffle.length];
 
         // Contains the mean of the absolute value and standard deviation of each feature's importance, hence the [2]
-        double [][] response = new double [_featuresWithNoResCol.length][2]; 
+        double [][] response = new double [_varsToShuffle.length][2]; 
 
         // Calculate the mean of the absolute value of each feature's importance (add link to thesis or paper)
-        for (int f = 0; f < _featuresWithNoResCol.length; f++) {
-            double acc_abs = 0;
+        for (int f = 0; f < morrisFis[0].getColDim(); f++) {
+            double accAbs = 0;
             double acc = 0;
             for (int i = 0; i < r; i++) {
-                acc_abs += Math.abs((Double) morris_FI_arr[i].get(f, type));
-                acc += (Double) morris_FI_arr[i].get(f, type);
+                accAbs += Math.abs((Double) morrisFis[i].get(f, type));
+                acc += (Double) morrisFis[i].get(f, type);
             }
-            response[f][0] = (1.0 / r) * acc_abs; // for TwoDimTable column 0
-            mean_FI[f] = (1.0 / r) * acc; // for the upcoming calculation
+            response[f][0] = accAbs / r; // for TwoDimTable column 0
+            meanFI[f] = acc / r; // for the upcoming calculation
         }
-
         // Calculate the standard deviation of each feature's importance 
-        for (int f = 0; f < _featuresWithNoResCol.length; f++) {
+        for (int f = 0; f < _varsToShuffle.length; f++) {
             double inner = 0;
             for (int i = 0 ; i < r ; i++){
-                inner += Math.pow((Double) morris_FI_arr[i].get(f, type) - mean_FI[f], 2);
+                inner += Math.pow((Double) morrisFis[i].get(f, type) - meanFI[f], 2);
             }
-            response[f][1] = Math.sqrt(1.0 / r * inner); // for TwoDimTable column 1
+            response[f][1] = Math.sqrt(inner / r); // for TwoDimTable column 1
         }
         
         // Necessary to create the TwoDimTable
-        String [] col_types = new String[2];
-        String [] col_formats = new String[2];
-        Arrays.fill(col_types, "double");
-        Arrays.fill(col_formats, "%5f");
+        String [] colTypes = new String[2];
+        String [] colFormats = new String[2];
+        Arrays.fill(colTypes, "double");
+        Arrays.fill(colFormats, "%5f");
         
-        return new TwoDimTable("One At a Time", null, _featuresWithNoResCol, new String [] {"Mean of the absolute value", "standard deviation"},
-                    col_types, col_formats, "Permutation Variable Importance", new String[_featuresWithNoResCol.length][], response);
+        return new TwoDimTable("One At a Time", null, _varsToShuffle, new String [] {"Mean of the absolute value", "standard deviation"},
+                    colTypes, colFormats, "Permutation Variable Importance", new String[_varsToShuffle.length][], response);
     }
 }
 
