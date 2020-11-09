@@ -513,8 +513,6 @@ public class GLMBasicTestRegression extends TestUtil {
         assertEquals(pvals_exp[id], pvals_actual[i], Math.max(1e-8,pvals_exp[id]) * 5e-3);
       }
       predict = model.score(parms._train.get());
-
-
       Vec.Reader r = predict.vec("StdErr").new Reader();
       for(int i = 0; i < 10; i++)
         System.out.println(tweedie_se_fit[i] + " ?=? " + r.at(i));
