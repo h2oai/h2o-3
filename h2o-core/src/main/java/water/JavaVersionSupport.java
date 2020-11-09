@@ -1,20 +1,15 @@
 package water;
 
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.TreeSet;
 
 import static water.util.JavaVersionUtils.JAVA_VERSION;
 
-public class Java {
+public class JavaVersionSupport {
     // Notes: 
     // Interval for supported Java versions, inclusive
     // - make sure that the following is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R
     // - upgrade of the javassist library should be considered when adding support for a new java version
     public static final int MIN_SUPPORTED_JAVA_VERSION = 8;
     public static final int MAX_SUPPORTED_JAVA_VERSION = 15;
-    public static final Set<Integer> UNSUPPORTED_VERSIONS = Collections.emptySet(); // Specific unsupported versions
 
 
     /**
@@ -27,8 +22,7 @@ public class Java {
     }
 
     private static boolean isSupportedVersion() {
-        return !UNSUPPORTED_VERSIONS.contains(JAVA_VERSION.getMajor())
-                && JAVA_VERSION.getMajor() >= MIN_SUPPORTED_JAVA_VERSION && JAVA_VERSION.getMajor() <= MAX_SUPPORTED_JAVA_VERSION;
+        return JAVA_VERSION.getMajor() >= MIN_SUPPORTED_JAVA_VERSION && JAVA_VERSION.getMajor() <= MAX_SUPPORTED_JAVA_VERSION;
     }
 
     /**
@@ -48,18 +42,4 @@ public class Java {
         }
         return false;
     }
-
-    /**
-     * @return A (possibly empty) list of supported Java versions, guaranteed to be sorted in ascending order.
-     */
-    public static Set<Integer> getSupportedJavaVersions() {
-        final LinkedHashSet<Integer> versions = new LinkedHashSet();
-        for (int version = MIN_SUPPORTED_JAVA_VERSION; version <= MAX_SUPPORTED_JAVA_VERSION; version++) {
-            if (!UNSUPPORTED_VERSIONS.contains(version)) {
-                versions.add(version);
-            }
-        }
-        return versions;
-    }
-
 }

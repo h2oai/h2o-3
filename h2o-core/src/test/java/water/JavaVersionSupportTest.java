@@ -15,8 +15,8 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses({JavaTest.SupportedJavasTest.class, JavaTest.UnsupportedJavasTest.class, JavaTest.SupportedVersionsRangeTest.class})
-public class JavaTest {
+@Suite.SuiteClasses({JavaVersionSupportTest.SupportedJavasTest.class, JavaVersionSupportTest.UnsupportedJavasTest.class})
+public class JavaVersionSupportTest {
 
     @RunWith(Parameterized.class)
     public static class SupportedJavasTest {
@@ -46,7 +46,7 @@ public class JavaTest {
             try {
                 majorVersion.setAccessible(true);
                 majorVersion.setInt(JavaVersionUtils.JAVA_VERSION, javaVersion);
-                assertTrue(Java.runningOnSupportedVersion());
+                assertTrue(JavaVersionSupport.runningOnSupportedVersion());
             } finally {
                 try {
                     majorVersion.setInt(JavaVersionUtils.JAVA_VERSION, originalJavaVersion);
@@ -54,12 +54,6 @@ public class JavaTest {
                     majorVersion.setAccessible(false);
                 }
             }
-        }
-
-        @Test
-        public void testGetSupportedJavaVersions() {
-            final Set<Integer> supportedJavaVersions = Java.getSupportedJavaVersions();
-            assertTrue(supportedJavaVersions.contains(javaVersion));
         }
     }
 
@@ -91,7 +85,7 @@ public class JavaTest {
             try {
                 majorVersion.setAccessible(true);
                 majorVersion.setInt(JavaVersionUtils.JAVA_VERSION, unsupportedJavaVersion);
-                assertFalse(Java.runningOnSupportedVersion());
+                assertFalse(JavaVersionSupport.runningOnSupportedVersion());
             } finally {
                 try {
                     majorVersion.setInt(JavaVersionUtils.JAVA_VERSION, originalJavaVersion);
@@ -100,39 +94,5 @@ public class JavaTest {
                 }
             }
         }
-
-        @Test
-        public void testGetSupportedJavaVersions() {
-            final Set<Integer> supportedJavaVersions = Java.getSupportedJavaVersions();
-            assertFalse(supportedJavaVersions.contains(unsupportedJavaVersion));
-        }
     }
-    
-    
-    public static class SupportedVersionsRangeTest{
-        @Test
-        public void testGetSupportedJavaVersions() {
-            final Set<Integer> supportedJavaVersions = Java.getSupportedJavaVersions();
-            assertEquals((Java.MAX_SUPPORTED_JAVA_VERSION  - Java.MIN_SUPPORTED_JAVA_VERSION + 1) - Java.UNSUPPORTED_VERSIONS.size(), supportedJavaVersions.size());
-            for (int version = Java.MIN_SUPPORTED_JAVA_VERSION; version <= Java.MAX_SUPPORTED_JAVA_VERSION ; version++) {
-                if(Java.UNSUPPORTED_VERSIONS.contains(version)){
-                    assertFalse(supportedJavaVersions.contains(version));
-                } else {
-                    supportedJavaVersions.contains(version);
-                }
-            }
-        }
-
-        @Test
-        public void testSupportedJavaVersionsAscendingOrder() {
-            final Set<Integer> supportedJavaVersions = Java.getSupportedJavaVersions();
-            int previousVersion = Integer.MIN_VALUE;
-            for (Integer version : supportedJavaVersions){
-                assertTrue(version > previousVersion);
-                previousVersion = version;
-            }
-        }
-    }
-
-
 }
