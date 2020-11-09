@@ -1,6 +1,7 @@
 package water;
 
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -47,9 +48,12 @@ public class Java {
         }
         return false;
     }
-    
+
+    /**
+     * @return A (possibly empty) list of supported Java versions, guaranteed to be sorted in ascending order.
+     */
     public static Set<Integer> getSupportedJavaVersions() {
-        final Set<Integer> versions = new TreeSet();
+        final LinkedHashSet<Integer> versions = new LinkedHashSet();
         for (int version = MIN_SUPPORTED_JAVA_VERSION; version <= MAX_SUPPORTED_JAVA_VERSION; version++) {
             if (!UNSUPPORTED_VERSIONS.contains(version)) {
                 versions.add(version);

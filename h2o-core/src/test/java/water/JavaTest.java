@@ -10,9 +10,7 @@ import org.junit.runners.Suite;
 import water.util.JavaVersionUtils;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -122,6 +120,16 @@ public class JavaTest {
                 } else {
                     supportedJavaVersions.contains(version);
                 }
+            }
+        }
+
+        @Test
+        public void testSupportedJavaVersionsAscendingOrder() {
+            final Set<Integer> supportedJavaVersions = Java.getSupportedJavaVersions();
+            int previousVersion = Integer.MIN_VALUE;
+            for (Integer version : supportedJavaVersions){
+                assertTrue(version > previousVersion);
+                previousVersion = version;
             }
         }
     }
