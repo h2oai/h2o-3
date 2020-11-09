@@ -196,7 +196,6 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
     private static Stats concordanceStats(Frame fr){
       final Frame withoutNas = removeNAs(fr);
 
-      if (true) return new Stats();
       
       final int[] stratasAndDuration = new int[withoutNas.numCols() - 2];
         final int[] strataIndexes = new int[withoutNas.numCols() - 3];
@@ -211,6 +210,8 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
         }
 
         final Frame sorted = withoutNas.sort(stratasAndDuration);
+        
+        Scope.track(sorted);
 
         final List<Vec.Reader> strataCols = stream(strataIndexes).boxed().map(i -> sorted.vec(i).new Reader()).collect(toList());
 
