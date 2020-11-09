@@ -1,5 +1,6 @@
 package water.fvec;
 
+import org.apache.commons.io.IOUtils;
 import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -10,8 +11,8 @@ import water.*;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -411,6 +412,40 @@ public class FrameTest {
       printOutFrameAsTable(fr, false, fr.numRows());
       assertCatVecEquals(cvec("d", "e", "f"), fr.vec(0));
       assertVecEquals(vec(3,1,2), fr.vec(1), 1e-5);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testToCSV_noHeader() throws IOException {
+    Scope.enter();
+    try {
+      Frame fr = TestFrameCatalog.oneChunkFewRows();
+      Frame.CSVStreamParams parms_no_header = new Frame.CSVStreamParams()
+              .noHeader();
+      assertFalse(parms_no_header._headers);
+      try (Frame.CSVStream stream = (Frame.CSVStream) fr.toCSV(parms_no_header)) {
+        String firstLine = IOUtils.lineIterator(stream, Charset.defaultCharset()).nextLine();
+        assertEquals("1.2,-1,\"a\",\"y\"", firstLine);
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testToCSV_noQuotesHeader() throws IOException {
+    Scope.enter();
+    try {
+      Frame fr = TestFrameCatalog.oneChunkFewRows();
+      Frame.CSVStreamParams parms_no_quotes = new Frame.CSVStreamParams()
+              .setQuoteColumnNames(false);
+      assertFalse(parms_no_quotes._quoteColumnNames);
+      try (Frame.CSVStream stream = (Frame.CSVStream) fr.toCSV(parms_no_quotes)) {
+        String firstLine = IOUtils.lineIterator(stream, Charset.defaultCharset()).nextLine();
+        assertEquals("col_0,col_1,col_2,col_3", firstLine);
+      }
     } finally {
       Scope.exit();
     }
