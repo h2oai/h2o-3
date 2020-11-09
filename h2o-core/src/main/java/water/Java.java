@@ -27,7 +27,7 @@ public class Java {
 
     private static boolean isSupportedVersion() {
         return !UNSUPPORTED_VERSIONS.contains(JAVA_VERSION.getMajor())
-                && JAVA_VERSION.getMajor() < MIN_SUPPORTED_JAVA_VERSION || JAVA_VERSION.getMajor() > MAX_SUPPORTED_JAVA_VERSION;
+                && JAVA_VERSION.getMajor() >= MIN_SUPPORTED_JAVA_VERSION && JAVA_VERSION.getMajor() <= MAX_SUPPORTED_JAVA_VERSION;
     }
 
     /**
