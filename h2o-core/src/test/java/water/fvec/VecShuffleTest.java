@@ -37,7 +37,6 @@ public class VecShuffleTest extends TestUtil{
                     new String[]{"v1", "v2", "v3", "v4", "v5"},
                     new String[][]{null, null, null, null, new String[]{"a", "b"}});
         } finally {
-            if (fr != null) fr.remove();
             v.remove();
         }
         assert fr != null;
@@ -122,7 +121,10 @@ public class VecShuffleTest extends TestUtil{
             case Vec.T_CAT:
             case Vec.T_TIME:
             default:
+                
                 for (long i = 0; i < nw.length(); ++i) {
+                    double l = og.at(i);
+                    double r = nw.at(i);
                     if (og.at(i) != nw.at(i))
                         changedPlaces++;
                 }
