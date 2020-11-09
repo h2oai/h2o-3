@@ -4005,7 +4005,7 @@ h2o.range <- function(x,na.rm = FALSE,finite = FALSE) {
 #'
 #' Store frame data in H2O's native format.
 #'
-#' @name h2o.saveFrame
+#' @name h2o.save_frame
 #' @param x An H2OFrame object
 #' @param path a filesystem location where to write frame data
 #' @param force \code{logical}. overwrite already existing files (defaults to true)
@@ -4018,7 +4018,7 @@ h2o.range <- function(x,na.rm = FALSE,finite = FALSE) {
 #' h2o.save_frame("hdfs://namenode/h2o_data")
 #' }
 #' @export
-h2o.saveFrame <- function(x, dir, force = TRUE) {
+h2o.save_frame <- function(x, dir, force = TRUE) {
     res <- .h2o.__remoteSend(.h2o.__SAVE_FRAME(h2o.getId(x)), dir = dir, force = force, method = "POST")
     .h2o.__waitOnJob(res$job$key$name)
 }
@@ -4038,7 +4038,7 @@ h2o.saveFrame <- function(x, dir, force = TRUE) {
 #' h2o.load_frame("iris_weather.hex", "hdfs://namenode/h2o_data")
 #' }
 #' @export
-h2o.loadFrame <- function(frame_id, dir, force = TRUE) {
+h2o.load_frame <- function(frame_id, dir, force = TRUE) {
     res <- .h2o.__remoteSend(.h2o.__LOAD_FRAME, frame_id = frame_id, dir = dir, force = force, method = "POST")
     hex <- res$job$dest$name
     .h2o.__waitOnJob(res$job$key$name)
