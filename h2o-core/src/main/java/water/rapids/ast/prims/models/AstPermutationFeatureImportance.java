@@ -51,7 +51,6 @@ public class AstPermutationFeatureImportance extends AstPrimitive{
             Key[] keysToKeep = FiFrame != null ? FiFrame.keys() : new Key[]{};
             Key[] keysToKeepPred = pred_fr != null ? pred_fr.keys() : new Key[]{};
             Scope.exit(keysToKeep);
-            Scope.exit(keysToKeep_);              
         }
         return new ValFrame(FiFrame);
     }
