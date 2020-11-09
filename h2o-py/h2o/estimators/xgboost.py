@@ -29,7 +29,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                    "checkpoint", "export_checkpoints_dir", "ntrees", "max_depth", "min_rows", "min_child_weight",
                    "learn_rate", "eta", "sample_rate", "subsample", "col_sample_rate", "colsample_bylevel",
                    "col_sample_rate_per_tree", "colsample_bytree", "colsample_bynode", "max_abs_leafnode_pred",
-                   "max_delta_step", "monotone_constraints", "include_interaction_pairs", "score_tree_interval",
+                   "max_delta_step", "monotone_constraints", "interaction_constraints", "score_tree_interval",
                    "min_split_improvement", "gamma", "nthread", "save_matrix_directory", "build_tree_one_node",
                    "calibrate_model", "calibration_frame", "max_bins", "max_leaves", "sample_type", "normalize_type",
                    "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy", "booster", "reg_lambda",
@@ -1403,18 +1403,18 @@ class H2OXGBoostEstimator(H2OEstimator):
 
 
     @property
-    def include_interaction_pairs(self):
+    def interaction_constraints(self):
         """
-        A list of allowed pairwise column interactions.
+        A set of allowed column interactions.
 
-        Type: ``List[tuple]``.
+        Type: ``List[List[str]]``.
         """
-        return self._parms.get("include_interaction_pairs")
+        return self._parms.get("interaction_constraints")
 
-    @include_interaction_pairs.setter
-    def include_interaction_pairs(self, include_interaction_pairs):
-        assert_is_type(include_interaction_pairs, None, [tuple])
-        self._parms["include_interaction_pairs"] = include_interaction_pairs
+    @interaction_constraints.setter
+    def interaction_constraints(self, interaction_constraints):
+        assert_is_type(interaction_constraints, None, [[str]])
+        self._parms["interaction_constraints"] = interaction_constraints
 
 
     @property

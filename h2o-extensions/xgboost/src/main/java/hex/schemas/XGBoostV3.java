@@ -51,7 +51,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "max_abs_leafnode_pred", "max_delta_step",
 
         "monotone_constraints",
-        "include_interaction_pairs",
+        "interaction_constraints",
 
         "score_tree_interval",
         "min_split_improvement", "gamma",
@@ -207,7 +207,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     @API(help="Which GPU to use. ", level = API.Level.expert, gridable = false)
     public int gpu_id;
 
-    @API(help="A list of allowed pairwise column interactions.", level= API.Level.expert)
-    public StringPairV3[] include_interaction_pairs;
+    @API(help="A set of allowed column interactions.", level= API.Level.expert)
+    public String[][]interaction_constraints;
   }
 }

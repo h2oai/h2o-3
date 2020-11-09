@@ -96,7 +96,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public double _colsample_bytree = 1.0;
 
     public KeyValue[] _monotone_constraints;
-    public StringPair[] _include_interaction_pairs;
+    public String[][] interaction_constraints;
 
     public float _max_abs_leafnode_pred = 0;
     public float _max_delta_step = 0;
@@ -463,23 +463,23 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       assert constraintsUsed == monotoneConstraints.size();
     }
 
-    StringPair[] includeInteractionPairs = p._include_interaction_pairs;
+    String[][] includeInteractionPairs = p.interaction_constraints;
     if(includeInteractionPairs != null && includeInteractionPairs.length > 0){
       StringBuilder sb = new StringBuilder();
       sb.append("[");
-      for(StringPair pair: includeInteractionPairs){
-        int indexA = ArrayUtils.find(colNames, pair._a);
-        int indexB = ArrayUtils.find(colNames, pair._b);
-        if(indexA == -1){
-          throw new IllegalArgumentException("'include_interaction_pairs': Column with name '"+pair._a+"' is not in the frame.");
+      for(String[] list: includeInteractionPairs) {
+        sb.append("[");
+        for (String item : list) {
+          int index = ArrayUtils.find(colNames, item);
+          if (index == -1) {
+            throw new IllegalArgumentException("'interaction_constraints': Column with name '" + item + "' is not in the frame.");
+          }
+          sb.append(index).append(",");
         }
-        if(indexB == -1){
-          throw new IllegalArgumentException("'include_interaction_pairs': Column with name '"+pair._b+"' is not in the frame.");
-        }
-        sb.append("[").append(indexA).append(",").append(indexB).append("],");
+        sb.replace(sb.length()-1, sb.length(), "],");
       }
       sb.replace(sb.length()-1, sb.length(), "]");
-      params.put("constraint_interaction", sb.toString());
+      params.put("interaction_constraints", sb.toString());
     }
 
     LOG.info("XGBoost Parameters:");

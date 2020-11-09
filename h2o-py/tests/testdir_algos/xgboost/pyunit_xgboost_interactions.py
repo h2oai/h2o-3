@@ -16,7 +16,7 @@ def interaction_constraint_test():
     y = 'response'
     myX.remove(y)
 
-    h2o_params["include_interaction_pairs"] = [("C1", "C2"), ("C3", "C4")]
+    h2o_params["interaction_constraints"] = [["C1", "C2"], ["C3", "C4", "C5"]]
 
     model = H2OXGBoostEstimator(**h2o_params)
     model.train(x=myX, y=y, training_frame=train)
@@ -24,9 +24,9 @@ def interaction_constraint_test():
     native_params = model._model_json["output"]["native_parameters"].as_data_frame()
     print(native_params)
 
-    constraints = (native_params[native_params['name'] == "constraint_interaction"])['value'].values[0]
+    constraints = (native_params[native_params['name'] == "interaction_constraints"])['value'].values[0]
 
-    assert constraints == u'[[0,1],[2,3]]', "Constraints should be [[0, 1], [2, 3]] but it is:"+constraints
+    assert constraints == u'[[0,1],[2,3,4]]', "Constraints should be [[0,1], [2,3,4]] but it is:"+constraints
 
 
 if __name__ == "__main__":
