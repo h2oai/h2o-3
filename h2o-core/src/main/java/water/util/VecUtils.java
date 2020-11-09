@@ -3,7 +3,10 @@ package water.util;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
-import water.fvec.*;
+import water.fvec.C0DChunk;
+import water.fvec.Chunk;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
 import water.parser.Categorical;
@@ -346,7 +349,7 @@ public class VecUtils {
         } else {
           for (int i=0; i < chk._len; i++) {
             if (!chk.isNA(i))
-              newChk.addStr(PrettyPrint.number(chk, chk.atd(i), 4)); 
+              newChk.addStr(PrettyPrint.number(chk, chk.atd(i), 4));
             else
               newChk.addNA();
           }
@@ -877,8 +880,4 @@ public class VecUtils {
     new ShuffleVecTask().doAll(iVec, srcVec);
     return srcVec;
   }
-  
-
-
 }
- 

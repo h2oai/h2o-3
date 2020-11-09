@@ -1473,8 +1473,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   
   /**
-   * Calculate Permutation Variable Importance shuffling one feature at a time
-   * The user must call this after training. 
+   * Calculate Permutation Variable Importance by shuffling one feature at a time
+   * The user must call this method after training. 
    * @param fr training frame
    * @param metric loss function metric 
    *               if metric not specified mse is default
@@ -1482,7 +1482,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * and as rows their Relative, Scaled and percentage importance
    */
   public TwoDimTable getPermVarImpTable(Frame fr, String metric){
-    if (this.last_scored() == null )
+    if (this._output._scoring_history == null )
       throw new IllegalArgumentException("Model " + this._key + "must be scored!");
     PermutationVarImp pvi = new PermutationVarImp(this, fr);
     return pvi.getPermutationVarImp(metric);

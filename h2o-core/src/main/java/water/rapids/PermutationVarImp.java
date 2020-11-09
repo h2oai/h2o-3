@@ -9,15 +9,14 @@ import water.util.VecUtils;
 import java.util.*;
 
 /**
- * Permutation Variable (feature) importance measures the increase in the prediction error of the model after we permuted 
+ * Permutation Variable (feature) importance measures the increase in the prediction error of the model after permuting 
  * the variables's values, which breaks the relationship between the variables and the true outcome.
  * https://christophm.github.io/interpretable-ml-book/feature-importance.html
  *
- * Calculate permutation variables importance, by shuffling randomly each variables of the passed model
- * then scoring the model with the newly created frame using One At a Time approach
+ * Calculate permutation variables importance, by shuffling randomly each variables of the training Frame,
+ * scoring the model with the newly created frame using One At a Time approach
  * and Morris method; creating TwoDimTable with relative, scaled, and percentage value
  *                             TwoDimTable with mean of the absolute value, and standard deviation of all features importance
- *                             
  */
 
 public class PermutationVarImp {
@@ -46,24 +45,17 @@ public class PermutationVarImp {
     public Map<String, Double> _varImpMap;
     TwoDimTable _permutationVarImp;
     private Model _model;
-    private Frame _trainFr; 
+    private Frame _trainFr;
 
     /**
-     * When passing only the Model without Frame (will use models frame)
+     * Constructor that stores the model, frame, response column, variable Strings and 
+     * sets the allowed metrics
+     * @param model trained model
+     * @param fr traiing frame
      */
-    public PermutationVarImp(Model model) {
+    public PermutationVarImp(Model model, Frame fr) {
         _model = model;
-        _trainFr = _model._parms._train.get();
-        init();
-    }
-
-    public PermutationVarImp(Model model, Frame data_set) {
-        _model = model;
-        _trainFr = data_set;
-        init();
-    }
-    
-    void init(){
+        _trainFr = fr;
         _responseCol = _model._parms._response_column;
         _var = _trainFr.names();
         _metrics = new String[]{"r2", "mse", "rmse", "gini coefficient", "f1", "logloss", "auc"};
@@ -73,7 +65,7 @@ public class PermutationVarImp {
      * Creates a new array of Strings without the response column and ignored columns
      */
     public void removeResCol(){
-        List<String> list = new ArrayList<String>(Arrays.asList(_trainFr.names()));
+        List<String> list = new ArrayList<>(Arrays.asList(_trainFr.names()));
         // remove ignored columns & response column
         if (_model._parms._ignored_columns != null)
             for (String s : _model._parms._ignored_columns) list.remove(s);
@@ -125,7 +117,7 @@ public class PermutationVarImp {
     }
     
     /**
-     * Set the loss function upon training the model (original ~ Og)
+     * Set the metric upon training the model (original ~ Og)
      */
     public void setOgMetric() {
         try{
@@ -137,11 +129,11 @@ public class PermutationVarImp {
     }
     
     /**
-     * Set the loss function of the feature that's permutated
+     * Set the metric of the feature that is permuted
      */
     private void setVariablesMetric(int var){
         try{
-            // divide original metric (upon training) with metric value obtained from shuffled variable 
+            // divide original metric with metric value obtained from shuffled variable 
             _varImpMetric.mVariablesMetric = getMetric(ModelMetrics.getFromDKV(_model, _trainFr)) - _varImpMetric.mOgMetric;
         } catch (MetricNotFoundException e){
             System.err.println("Metric " + _varImpMetric.mMetric + " not supported for :" + _model._key);
@@ -151,7 +143,8 @@ public class PermutationVarImp {
     }
 
     /**
-     *  If the user specifies a metric store it to the LocalMetric class otherwise uses the metric based on the model*
+     *  If the user specifies a metric store it to the LocalMetric class*
+     * @return TwoDimTable of Permutation Feature Importance scores
      */
     public TwoDimTable getPermutationVarImp(String metric)  {
         try {
@@ -165,6 +158,11 @@ public class PermutationVarImp {
         _varImpMetric = new LocalMetric(metric.toLowerCase());
         return PermutationVarImportance();
     }
+
+    /**
+     * No metric was selected by the user so MSE will be used 
+     * @return TwoDimTable of Permutation Feature Importance scores
+     */
     public TwoDimTable getPermutationVarImp() {
         // put all the metrics in a class for structure
         _varImpMetric = new LocalMetric();
@@ -172,15 +170,6 @@ public class PermutationVarImp {
         return PermutationVarImportance();
     }
 
-    /**
-     * Check if variable was set to be ignored
-     * @param var variable to be shuffled
-     */
-    Boolean inIgnoredParms(int var){
-        if (_model._parms._ignored_columns != null)
-            return  Arrays.asList(_model._parms._ignored_columns).contains(_var[var]);
-        return false;
-    }
 
     /**
      * Check If the variable is in ignored parameters on the model
@@ -198,7 +187,7 @@ public class PermutationVarImp {
      * Then we score the model again and calculate the loss function, and creating a TwoDimTable.
      */
     public TwoDimTable PermutationVarImportance(){
-        removeResCol();
+        removeResCol(); 
         setOgMetric(); // get the metric value from the model
         _varImpMap = new HashMap<>(_varsToShuffle.length);
 
@@ -218,7 +207,6 @@ public class PermutationVarImp {
 
             // set and add new metrics ~ fills @param _p_var_imp needed for ModelMetrics.calcVarImp()
             setVariablesMetric(id);
-            
             
             //return the original data
             _trainFr.replace(f, og_feature);
