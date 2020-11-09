@@ -12,9 +12,12 @@ import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.util.TwoDimTable;
 
+<<<<<<< HEAD
 /**
  * Ast class for passing the model and frame such that the OAT Morris table can be created
  */
+=======
+>>>>>>> AstOneAtaTimeMorris.java
 public class AstOneAtaTimeMorris extends AstPrimitive {
 
     @Override
@@ -34,9 +37,17 @@ public class AstOneAtaTimeMorris extends AstPrimitive {
         Scope.enter();
         Frame pviFr = null;
         try {
+<<<<<<< HEAD
             // Get OAT TwoDimTable 
             TwoDimTable oatTable = new PermutationVarImp(model, in_fr).oat(); 
             
+=======
+            PermutationVarImp fi = new PermutationVarImp(model, in_fr); 
+            TwoDimTable pvi_table = fi.getPermutationVarImp();
+            TwoDimTable oatTable = fi.oat(); // might be able to use AstPerfectAuc for calculation of AUC 
+            
+            System.out.println(oatTable);
+>>>>>>> AstOneAtaTimeMorris.java
             // Frame contains one row and n features 
             pviFr = new Frame(Key.make(model._key + "Oat_pfi"));
             pviFr.add(headerToStrings(oatTable.getRowHeaders()), rowsToVecs(oatTable));
@@ -50,11 +61,15 @@ public class AstOneAtaTimeMorris extends AstPrimitive {
         return new ValFrame(pviFr);
     }
 
+<<<<<<< HEAD
     /**
      * TwoDimTable rows to Vecs which will be used to create a Frame
      * @param varImp_t TwoDimTable of PVI
      * @return an array of Vecs
      */
+=======
+    // Rows of TwoDimTable to a Vec [] 
+>>>>>>> AstOneAtaTimeMorris.java
     Vec[] rowsToVecs(TwoDimTable varImp_t) {
         Vec[] vecs = new Vec[varImp_t.getRowDim() + 1];
         // Relative, scaled, and percentage importance
@@ -69,11 +84,15 @@ public class AstOneAtaTimeMorris extends AstPrimitive {
         return vecs;
     }
 
+<<<<<<< HEAD
     /**
      * TwoDimTable headers to an array of strings with the first element being the indices
      * @param table_names TwoDimTable of PVI
      * @return an array of Strings
      */
+=======
+    // Features to String []
+>>>>>>> AstOneAtaTimeMorris.java
     String[] headerToStrings(String[] table_names) {
         String[] varNames = new String[table_names.length + 1];
         varNames[0] = "indices";
