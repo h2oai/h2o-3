@@ -1,5 +1,6 @@
 package hex.tree.xgboost;
 
+import hex.Model;
 import hex.StringPair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,19 +27,19 @@ public class XGBoostModelTest {
     // default
     XGBoostModel.XGBoostParameters pDefault = new XGBoostModel.XGBoostParameters();
     pDefault._backend = XGBoostModel.XGBoostParameters.Backend.cpu; // to disable the GPU check
-    BoosterParms bpDefault = XGBoostModel.createParams(pDefault, 2, null, null);
+    BoosterParms bpDefault = XGBoostModel.createParams(pDefault, 2, null);
     assertEquals(maxNThreads, bpDefault.get().get("nthread"));
     // user specified
     XGBoostModel.XGBoostParameters pUser = new XGBoostModel.XGBoostParameters();
     pUser._backend = XGBoostModel.XGBoostParameters.Backend.cpu; // to disable the GPU check
     pUser._nthread = maxNThreads - 1;
-    BoosterParms bpUser = XGBoostModel.createParams(pUser, 2, null, null);
+    BoosterParms bpUser = XGBoostModel.createParams(pUser, 2, null);
     assertEquals(maxNThreads - 1, bpUser.get().get("nthread"));
     // user specified (over the limit)
     XGBoostModel.XGBoostParameters pOver = new XGBoostModel.XGBoostParameters();
     pOver._backend = XGBoostModel.XGBoostParameters.Backend.cpu; // to disable the GPU check
     pOver._nthread = H2O.ARGS.nthreads + 1;
-    BoosterParms bpOver = XGBoostModel.createParams(pOver, 2, null, null);
+    BoosterParms bpOver = XGBoostModel.createParams(pOver, 2, null);
     assertEquals(maxNThreads, bpOver.get().get("nthread"));
   }
 
@@ -113,7 +114,7 @@ public class XGBoostModelTest {
       parms._response_column = "IsDepDelayed";
       parms._train = airlinesFrame._key;
       parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
-      parms.interaction_constraints = new String[][]{new String[]{"fYear","fMonth"}, new String[]{"Origin", "UniqueCarrier"}};
+      parms.interaction_constraints = new String[][]{new String[]{"fYear","fMonth"}, new String[]{"Origin", "Distance"}};
 
       final XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Scope.track_generic(model);
