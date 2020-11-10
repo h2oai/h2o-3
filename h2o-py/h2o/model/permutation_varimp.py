@@ -13,6 +13,44 @@ from h2o.model.model_base import _get_matplotlib_pyplot
 from h2o.utils.shared_utils import can_use_pandas
 
 
+def permutation_varimp_oat(model, frame):
+    """
+    One At a time Morris method to analyse which variables are influential (non-linear and/or interacting),
+    influential (non-interacting), less influential, non-influential. This method plots the mean and standard
+    deviation of the Permutation Variable Importance.
+    :param model: trained model
+    :param frame: training frame
+    """
+
+    if type(frame) is not H2OFrame:
+        raise ValueError("Frame is not H2OFrame")
+
+    m_frame = H2OFrame._expr(ExprNode("PermutationVarImpOat", model, frame))
+
+    import matplotlib.pyplot as plt
+    mean = []
+    std_dev = []
+    annotations = []
+    for col in m_frame.col_names:
+        if col == "indices":
+            continue    # has string values
+        mean.append(m_frame[0, col])
+        std_dev.append(m_frame[1, col])
+        annotations.append(col)
+    
+    fig, ax = plt.subplots()
+    ax.scatter(mean, std_dev)
+    ax.set_xlim(left=0, right=0.05)  # x axis limits
+    ax.set_ylim(bottom=0, top=0.01)  # y axis limits
+    ax.set_xlabel('μ*')  # x axis label
+    ax.set_ylabel('σ')  # y axis label
+    
+    for index, annotation in enumerate(annotations):
+        ax.annotate(annotation, (mean[index], std_dev[index]))
+        
+    plt.show()
+
+
 def permutation_varimp(model, frame, use_pandas=True, metric="mse"):
     """
     Get Permutation Variable Importance Frame. 
