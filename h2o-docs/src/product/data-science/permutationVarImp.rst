@@ -64,7 +64,11 @@ A jupyter notebook with python demo is available at 'https://github.com/h2oai/h2
 	prostate.gbm <- h2o.gbm(x = setdiff(colnames(prostate.hex), "CAPSULE"), y = "CAPSULE", training_frame = prostate.hex, ntrees = 10, max_depth = 5, learn_rate = 0.1, distribution = "bernoulli")
 
 	# get pvi
+<<<<<<< HEAD
 	permutation_varimp <- h2o.permutation_varimp(prostate.gbm, prostate.hex)
+=======
+	permutation_varimp <- h2o.permutation_varimp(iris.gbm, prostate.hex)
+>>>>>>> Adding documentation
 
 
 
