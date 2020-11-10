@@ -97,7 +97,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public double _colsample_bytree = 1.0;
 
     public KeyValue[] _monotone_constraints;
-    public String[][] interaction_constraints;
+    public String[][] _interaction_constraints;
 
     public float _max_abs_leafnode_pred = 0;
     public float _max_delta_step = 0;
@@ -464,9 +464,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       assert constraintsUsed == monotoneConstraints.size();
     }
     
-    String[][] interactionConstraints = p.interaction_constraints;
+    String[][] interactionConstraints = p._interaction_constraints;
     if(interactionConstraints != null && interactionConstraints.length > 0) {
-      params.put("interaction_constraints", createInteractions(interactionConstraints, coefNames));
+      params.put("interaction_constraints", createInteractions(interactionConstraints, coefNames, p));
     }
     
     LOG.info("XGBoost Parameters:");
@@ -477,12 +477,24 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return Collections.unmodifiableMap(params);
   }
   
-  private static String createInteractions(String[][] includeInteractionPairs, String[] coefNames){
+  private static String createInteractions(String[][] includeInteractionPairs, String[] coefNames, XGBoostParameters params){
     StringBuilder sb = new StringBuilder();
     sb.append("[");
     for (String[] list : includeInteractionPairs) {
       sb.append("[");
       for (String item : list) {
+        if(item.equals(params._response_column)){
+          throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is used as response column and cannot be used in interaction.");
+        }
+        if(item.equals(params._weights_column)){
+          throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is used as weights column and cannot be used in interaction.");
+        }
+        if(item.equals(params._fold_column)){
+          throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is used as fold column and cannot be used in interaction.");
+        }
+        if(params._ignored_columns != null && ArrayUtils.find(params._ignored_columns, item) != -1){
+          throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is set in ignored columns and cannot be used in interaction.");
+        }
         // first find only name
         int start = ArrayUtils.findWithPrefix(coefNames, item);
         // find start index and add indices until end index

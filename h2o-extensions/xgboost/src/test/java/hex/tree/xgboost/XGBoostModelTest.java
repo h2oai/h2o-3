@@ -112,7 +112,7 @@ public class XGBoostModelTest {
       parms._response_column = "IsDepDelayed";
       parms._train = airlinesFrame._key;
       parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
-      parms.interaction_constraints = new String[][]{new String[]{"fYear","fMonth"}, new String[]{"Origin", "Distance"}};
+      parms._interaction_constraints = new String[][]{new String[]{"fYear","fMonth"}, new String[]{"Origin", "Distance"}};
 
       final XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Scope.track_generic(model);
