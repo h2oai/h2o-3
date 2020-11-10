@@ -1,6 +1,5 @@
 from __future__ import print_function
 import sys
-import traceback
 
 sys.path.insert(1, "../../")
 import h2o
@@ -19,10 +18,9 @@ def test_parser_svmlight_column_skip_not_supported():
     f1 = h2o.create_frame(rows=nrow, cols=ncol, real_fraction=0.5, integer_fraction=0.5, missing_fraction=0.2,
                           has_response=False, seed=seed)
 
-    tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results"))
-    if not (os.path.isdir(tmpdir)):
-        os.mkdir(tmpdir)
-    savefilenamewithpath = os.path.join(tmpdir, 'out.svm')
+    results_path = pyunit_utils.locate("results")
+
+    savefilenamewithpath = os.path.join(results_path, 'out.svm')
     pyunit_utils.write_H2OFrame_2_SVMLight(savefilenamewithpath, f1)  # write h2o frame to svm format
 
     try:
@@ -31,8 +29,8 @@ def test_parser_svmlight_column_skip_not_supported():
         h2o.upload_file(savefilenamewithpath, skipped_columns=[5])
         assert False, "Test should have thrown an exception due skipped_columns parameter is present"  # should have failed here
     except H2OResponseError as e:
-        print("Test OK, finished with H2OResponseError")
         assert "skipped_columns are not supported" in str(e.args[0].exception_msg), "Exception message is different"
+        print("Test OK, finished with H2OResponseError")
 
     try:
         print("Test import SVM file. "
@@ -40,8 +38,8 @@ def test_parser_svmlight_column_skip_not_supported():
         h2o.import_file(savefilenamewithpath, skipped_columns=[5])
         assert False, "Test should have thrown an exception due skipped_columns parameter is present"  # should have failed here
     except H2OResponseError as e:
-        print("Test OK, finished with H2OResponseError")
         assert "skipped_columns are not supported" in e.args[0].exception_msg
+        print("Test OK, finished with H2OResponseError")
 
 
 if __name__ == "__main__":
