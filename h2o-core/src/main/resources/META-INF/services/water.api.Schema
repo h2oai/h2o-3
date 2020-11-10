@@ -31,6 +31,8 @@ water.api.schemas3.FrameV3$ColSpecifierV3
 water.api.schemas3.FrameV3$ColV3
 water.api.schemas3.FramesV3
 water.api.schemas3.FramesListV3
+water.api.schemas3.FrameSaveV3
+water.api.schemas3.FrameLoadV3
 water.api.schemas3.GarbageCollectV3
 water.api.schemas3.H2OErrorV3
 water.api.schemas3.H2OModelBuilderErrorV3

@@ -139,6 +139,11 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__LOAD_MODEL <- "Models.bin/"
 .h2o.__UPLOAD_MODEL <- "Models.upload.bin/"
 
+# Export/Import Frame Endpoints
+.h2o.__SAVE_FRAME <- function(frame_id) paste0("Frames/", frame_id, "/save")
+.h2o.__LOAD_FRAME <- "Frames/load"
+
+
 # Grid search 
 .h2o.__GRID <- function(algo) paste0("Grid/", algo)
 .h2o.__GRIDS <- function(grid_id, sort_by, decreasing) {

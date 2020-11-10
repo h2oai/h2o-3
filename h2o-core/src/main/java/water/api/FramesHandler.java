@@ -6,6 +6,7 @@ import water.api.schemas3.*;
 import water.exceptions.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.persist.FramePersist;
 import water.util.Log;
 
 import java.util.*;
@@ -249,6 +250,26 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
             .setQuoteColumnNames(s.quote_header);
     s.job = new JobV3(Frame.export(fr, s.path, s.frame_id.key().toString(), s.force, s.num_parts, s.compression, csvParms));
     return s;
+  }
+
+  public FrameSaveV3 save(int version, FrameSaveV3 req) {
+    Frame fr = getFromDKV("frame_id", req.frame_id.key());
+    FramePersist persist = new FramePersist(fr);
+    req.job = new JobV3(persist.saveTo(req.dir, req.force));
+    return req;
+  }
+
+  public FrameLoadV3 load(int version, FrameLoadV3 req) {
+    Value v = DKV.get(req.frame_id.key());
+    if (v != null) {
+      if (req.force) {
+        ((Frame) v.get()).remove();
+      } else {
+        throw new IllegalArgumentException("Frame " + req.frame_id + " already exists.");
+      }
+    }
+    req.job = new JobV3(FramePersist.loadFrom(req.frame_id.key(), req.dir));
+    return req;
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer

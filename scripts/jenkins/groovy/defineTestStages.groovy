@@ -596,6 +596,20 @@ def call(final pipelineContext) {
           image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(
                   MULTINODE_CLUSTERS_CONFIGS[0].distribution, MULTINODE_CLUSTERS_CONFIGS[0].version, MULTINODE_CLUSTERS_CONFIGS[0].krb
           )
+      ],
+      [
+          stageName: "TEST Fault Tolerance on ${MULTINODE_CLUSTERS_CONFIGS[0].nameNode}",
+          target: "test-hadoop-fault-tolerance", timeoutValue: 30,
+          component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+          additionalTestPackages: [
+                  pipelineContext.getBuildConfig().COMPONENT_PY,
+                  pipelineContext.getBuildConfig().COMPONENT_R
+          ],
+          customData: MULTINODE_CLUSTERS_CONFIGS[0], pythonVersion: '3.6',
+          executionScript: 'h2o-3/scripts/jenkins/groovy/faultToleranceStage.groovy',
+          image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(
+                  MULTINODE_CLUSTERS_CONFIGS[0].distribution, MULTINODE_CLUSTERS_CONFIGS[0].version, MULTINODE_CLUSTERS_CONFIGS[0].krb
+          )
       ]
   ]
 

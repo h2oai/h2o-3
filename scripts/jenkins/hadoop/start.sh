@@ -86,13 +86,13 @@ hadoop jar h2o-hadoop-*/h2o-${hadoopVersion}-assembly/build/libs/h2odriver.jar \
     ${disownArgs} \
     -notify ${notifyFile} \
     > ${driverLogFile} 2>&1 &
-for i in $(seq 24); do
+for i in $(seq 36); do
   if [ -f "${notifyFile}" ]; then
     echo "H2O started on $(cat ${notifyFile})"
     break
   fi
   echo "Waiting for H2O to come up ($i)..."
-  sleep 5
+  sleep 10
 done
 if [ ! -f "${notifyFile}" ]; then
   echo 'H2O failed to start!'

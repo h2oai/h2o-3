@@ -321,6 +321,35 @@ h2o.import_hive_table <- function(database, table, partitions = NULL, allow_mult
 }
 
 #'
+#' Load frame previously stored in H2O's native format.
+#'
+#' @name h2o.load_frame
+#' @param frame_id the frame ID of the original frame
+#' @param dir a filesystem location where to look for frame data
+#' @param force \code{logical}. overwrite an already existing frame (defaults to true)
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate = h2o.importFile(path = prostate_path)
+#' h2o.save_frame(prostate, "/tmp/prostate")
+#' prostate.key <- h2o.getId(prostate)
+#' h2o.rm(prostate)
+#' prostate <- h2o.load_frame(prostate.key, "/tmp/prostate")
+#' }
+#' @export
+h2o.load_frame <- function(frame_id, dir, force = TRUE) {
+    res <- .h2o.__remoteSend(.h2o.__LOAD_FRAME, frame_id = frame_id, dir = dir, force = force, method = "POST")
+    hex <- res$job$dest$name
+    .h2o.__waitOnJob(res$job$key$name)
+    x <- .newH2OFrame("Load", id=hex, -1, -1)
+    .fetch.data(x,1L) # Fill in nrow and ncol
+    x
+}
+
+#'
 #' Load H2O Model from HDFS or Local Disk
 #'
 #' Load a saved H2O model from disk. (Note that ensemble binary models 

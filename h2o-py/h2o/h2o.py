@@ -1513,6 +1513,30 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1, he
                      "header": header, "quote_header": quote_header}), "Export File").poll()
 
 
+def load_frame(frame_id, path, force=True):
+    """
+    Load frame previously stored in H2O's native format.
+
+    This will load a data frame from file-system location. Stored data can be loaded only with a cluster of the same
+    size and same version the the one which wrote the data. The provided directory must be accessible from all nodes 
+    (HDFS, NFS). Provided frame_id must be the same as the one used when writing the data.
+    
+    :param frame_id: the frame ID of the original frame
+    :param path: a filesystem location where to look for frame data
+    :param force: overwrite an already existing frame (defaults to true)
+    :returns: A Frame object.
+    
+    :examples:
+    
+    >>> iris = h2o.load_frame("iris_weather.hex", "hdfs://namenode/h2o_data")
+    """
+    H2OJob(api(
+        "POST /3/Frames/load",
+        data={"frame_id": frame_id, "dir": path, "force": force}
+    ), "Load frame data").poll()
+    return get_frame(frame_id)
+
+
 def cluster():
     """Return :class:`H2OCluster` object describing the backend H2O cluster.
 

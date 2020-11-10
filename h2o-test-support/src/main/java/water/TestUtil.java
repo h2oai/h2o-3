@@ -858,6 +858,23 @@ public class TestUtil extends Iced {
       assertEquals(message, expected, actual);
     }
   }
+  
+  public static void assertTwoDimTableEquals(TwoDimTable expected, TwoDimTable actual) {
+    assertEquals("tableHeader different", expected.getTableHeader(), actual.getTableHeader());
+    assertEquals("tableDescriptionDifferent", expected.getTableDescription(), actual.getTableDescription());
+    assertArrayEquals("rowHeaders different", expected.getRowHeaders(), actual.getRowHeaders());
+    assertArrayEquals("colHeaders different", expected.getColHeaders(), actual.getColHeaders());
+    assertArrayEquals("colTypes different", expected.getColTypes(), actual.getColTypes());
+    assertArrayEquals("colFormats different", expected.getColFormats(), actual.getColFormats());
+    assertEquals("colHeaderForRowHeaders different", expected.getColHeaderForRowHeaders(), actual.getColHeaderForRowHeaders());
+    for (int r = 0; r < expected.getRowDim(); r++) {
+      for (int c = 0; c < expected.getColDim(); c++) {
+        Object ex = expected.get(r, c);
+        Object act = actual.get(r, c);
+        assertEquals("cellValues different at row " + r + ", col " + c, ex, act);
+      }
+    }
+  }
 
   public static void checkStddev(double[] expected, double[] actual, double threshold) {
     for(int i = 0; i < actual.length; i++)
@@ -1370,6 +1387,36 @@ public class TestUtil extends Iced {
     }
 
     return weightsVec;
+  }
+
+  /**
+   * @param len        Length of the resulting vector
+   * @param randomSeed Seed for the random generator (for reproducibility)
+   * @return An instance of {@link Vec} with random double values
+   */ 
+  public static Vec createRandomDoubleVec(final long len, final long randomSeed) {
+    final Vec vec = Vec.makeZero(len, Vec.T_NUM);
+    final Random random = RandomUtils.getRNG(randomSeed);
+    for (int i = 0; i < vec.length(); i++) {
+      vec.set(i, random.nextDouble());
+    }
+    return vec;
+  }
+
+  /**
+   * @param len        Length of the resulting vector
+   * @param randomSeed Seed for the random generator (for reproducibility)
+   * @return An instance of {@link Vec} with random categorical values
+   */  
+  public static Vec createRandomCategoricalVec(final long len, final long randomSeed) {
+    String[] domain = new String[100];
+    for (int i = 0; i < domain.length; i++) domain[i] = "CAT_" + i;
+    final Vec vec = Scope.track(Vec.makeZero(len, Vec.T_NUM)).makeZero(domain);
+    final Random random = RandomUtils.getRNG(randomSeed);
+    for (int i = 0; i < vec.length(); i++) {
+      vec.set(i, random.nextInt(domain.length));
+    }
+    return vec;
   }
 
   @SuppressWarnings("rawtypes")

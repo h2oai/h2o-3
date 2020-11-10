@@ -2184,8 +2184,32 @@ class H2OFrame(Keyed):
         >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
         >>> iris.get_frame_data()
         """
-        return h2o.api("GET /3/DownloadDataset", data={"frame_id": self.frame_id, "hex_string": False, "escape_quotes" : True})
+        return h2o.api(
+            "GET /3/DownloadDataset", 
+            data={"frame_id": self.frame_id, "hex_string": False, "escape_quotes": True}
+        )
 
+    def save(self, path, force=True):
+        """
+        Store frame data in H2O's native format.
+
+        This will store this frame's data to a file-system location in H2O's native binary format. Stored data can be
+        loaded only with a cluster of the same size and same version the the one which wrote the data. The provided
+        directory must be accessible from all nodes (HDFS, NFS). 
+        
+        :param path: a filesystem location where to write frame data
+        :param force: overwrite already existing files (defaults to true)
+        :returns: Frame data as a string in csv format.
+        
+        :examples:
+        
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> iris.save("hdfs://namenode/h2o_data")
+        """
+        H2OJob(h2o.api(
+            "POST /3/Frames/%s/save" % self.frame_id, 
+            data={"dir": path, "force": force}
+        ), "Save frame data").poll()
 
     def __getitem__(self, item):
         """

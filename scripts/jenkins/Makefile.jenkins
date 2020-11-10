@@ -488,6 +488,10 @@ test-hadoop-multinode:
 test-steam-websocket:
 	cd h2o-extensions/steam/tests/python && mkdir -p results && python test.py
 
+test-hadoop-fault-tolerance:
+	cd h2o-hadoop-common/tests_fault_tolerance/python && python -m unittest test_*.py
+	cd h2o-hadoop-common/tests_fault_tolerance/R && Rscript all-tests.R
+
 test-h2o-k8s:
 	bash h2o-k8s/tests/clustering/docker-init-script.sh
 
