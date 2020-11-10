@@ -190,8 +190,9 @@ h2o.save_to_hive <- function(data, jdbc_url, table_name, format="csv", table_pat
 #' library(h2o)
 #' h2o.init()
 #' 
-#' iris = h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-#' h2o.save_frame(iris, "/tmp/iris")
+#' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate = h2o.importFile(path = prostate_path)
+#' h2o.save_frame(prostate, "/tmp/prostate")
 #' }
 #' @export
 h2o.save_frame <- function(x, dir, force = TRUE) {

@@ -332,11 +332,12 @@ h2o.import_hive_table <- function(database, table, partitions = NULL, allow_mult
 #' library(h2o)
 #' h2o.init()
 #' 
-#' iris = h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-#' h2o.save_frame(iris, "/tmp/iris")
-#' iris.key <- h2o.getId(iris)
-#' h2o.rm(iris)
-#' iris <- h2o.load_frame(iris.key, "/tmp/iris")
+#' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate = h2o.importFile(path = prostate_path)
+#' h2o.save_frame(prostate, "/tmp/prostate")
+#' prostate.key <- h2o.getId(prostate)
+#' h2o.rm(prostate)
+#' prostate <- h2o.load_frame(prostate.key, "/tmp/prostate")
 #' }
 #' @export
 h2o.load_frame <- function(frame_id, dir, force = TRUE) {
