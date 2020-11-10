@@ -704,9 +704,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     sharedTreeNode.setPredValue(xgBoostNode.getLeafValue());
     sharedTreeNode.setInclusiveNa(inclusiveNA);
     sharedTreeNode.setNodeNumber(nodeIndex);
-    sharedTreeNode.setCover(xgBoostNodeStat.getCover());
-    sharedTreeNode.setGain(xgBoostNodeStat.getGain());  
-    sharedTreeNode.setWeight(xgBoostNodeStat.getWeight());
+    sharedTreeNode.setSquaredError(xgBoostNodeStat.getGain());
+    sharedTreeNode.setWeight(xgBoostNodeStat.getCover());
     
     if (!xgBoostNode.isLeaf()) {
       sharedTreeNode.setCol(xgBoostNode.getSplitIndex(), featureProperties._names[xgBoostNode.getSplitIndex()]);
@@ -807,98 +806,17 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       List<SharedTreeNode> interactionPath = new ArrayList<>();
       Set<String> memo = new HashSet<>();
       
-      collectFeatureInteractions(tree.rootNode, interactionPath, 0, 0, 1, 0, 0,
+      FeatureInteractions.collectFeatureInteractions(tree.rootNode, interactionPath, 0, 0, 1, 0, 0,
               currentTreeFeatureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, i);
       featureInteractions.mergeWith(currentTreeFeatureInteractions);
     }
     
     return featureInteractions;
   }
-  
-  public void collectFeatureInteractions(SharedTreeNode node, List<SharedTreeNode> interactionPath,
-                                         double currentGain, double currentCover, double pathProba, int depth, int deepening,
-                                         FeatureInteractions featureInteractions, Set<String> memo, int maxInteractionDepth, 
-                                         int maxTreeDepth, int maxDeepening, int treeIndex) {
 
-    if (node.isLeaf() || depth == maxTreeDepth) {
-      return;
-    }
-    
-    interactionPath.add(node);
-    currentGain += node.getGain();
-    currentCover += node.getCover();
-    
-    double ppl = pathProba * (node.getLeftChild().getCover() / node.getCover());
-    double ppr = pathProba * (node.getRightChild().getCover() / node.getCover());
-
-    FeatureInteraction featureInteraction = new FeatureInteraction(interactionPath, currentGain, currentCover, pathProba, depth, 1, treeIndex);
-
-    if ((depth < maxDeepening) || (maxDeepening < 0)) {
-      collectFeatureInteractions(node.getLeftChild(), new ArrayList<>(), 0, 0, ppl, depth + 1,
-              deepening + 1, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex);
-      collectFeatureInteractions(node.getRightChild(), new ArrayList<>(), 0, 0, ppr, depth + 1,
-              deepening + 1, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex);
-    }
-
-    String path = FeatureInteraction.interactionPathToStr(interactionPath, true, true);
-
-    FeatureInteraction foundFI = featureInteractions.get(featureInteraction.name);
-    if (foundFI == null) {
-      featureInteractions.put(featureInteraction.name, featureInteraction);
-      memo.add(path);
-    } else {
-      if (memo.contains(path)) {
-        return;
-      }
-      memo.add(path);
-      foundFI.gain += currentGain;
-      foundFI.cover += currentCover;
-      foundFI.fScore += 1;
-      foundFI.fScoreWeighted += pathProba;
-      foundFI.averageFScoreWeighted = foundFI.fScoreWeighted / foundFI.fScore;
-      foundFI.averageGain = foundFI.gain / foundFI.fScore;
-      foundFI.expectedGain += currentGain * pathProba;
-      foundFI.treeDepth += depth;
-      foundFI.averageTreeDepth = foundFI.treeDepth / foundFI.fScore;
-      foundFI.treeIndex += treeIndex;
-      foundFI.averageTreeIndex = foundFI.treeIndex / foundFI.fScore;
-      foundFI.splitValueHistogram.merge(featureInteraction.splitValueHistogram);
-    }
-    
-    if (interactionPath.size() - 1 == maxInteractionDepth)
-      return;
-    
-    foundFI = featureInteractions.get(featureInteraction.name);
-    SharedTreeNode leftChild = node.getLeftChild();
-    if (leftChild.isLeaf() && deepening == 0) {
-      foundFI.sumLeafValuesLeft += leftChild.getLeafValue();
-      foundFI.sumLeafCoversLeft += leftChild.getCover();
-      foundFI.hasLeafStatistics = true;
-    }
-
-    SharedTreeNode rightChild = node.getRightChild();
-    if (rightChild.isLeaf() && deepening == 0) {
-      foundFI.sumLeafValuesRight += rightChild.getLeafValue();
-      foundFI.sumLeafCoversRight += rightChild.getCover();
-      foundFI.hasLeafStatistics = true;
-    }
-    
-    collectFeatureInteractions(leftChild, new ArrayList<>(interactionPath), currentGain, currentGain, ppl,
-            depth + 1, deepening, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex);
-    collectFeatureInteractions(node.getRightChild(), new ArrayList<>(interactionPath), currentGain, currentGain, ppr,
-            depth + 1, deepening, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex);
-  }
-  
   @Override
   public TwoDimTable[][] getFeatureInteractionsTable(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
-    FeatureInteractions featureInteractionMap = this.getFeatureInteractions(maxInteractionDepth,maxTreeDepth,maxDeepening);
-    
-    TwoDimTable[][] table = new TwoDimTable[3][];
-    table[0] =  featureInteractionMap.getAsTable();
-    table[1] = new TwoDimTable[]{featureInteractionMap.getLeafStatisticsTable()};
-    table[2] = featureInteractionMap.getSplitValueHistograms();
-    
-    return table;
+    return FeatureInteractions.getFeatureInteractionsTable(this.getFeatureInteractions(maxInteractionDepth,maxTreeDepth,maxDeepening));
   }
 
 

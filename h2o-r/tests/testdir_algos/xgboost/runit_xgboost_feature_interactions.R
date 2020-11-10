@@ -11,7 +11,7 @@ test.XGBoost.bernoulli <- function() {
     
     prostate.h2o <- h2o.xgboost( y = response, x = features, training_frame = prostate.hex)
     
-    feature_interactions <- h2o.xgboost.feature_interaction(prostate.h2o, 2, 100, -1)
+    feature_interactions <- h2o.feature_interaction(prostate.h2o, 2, 100, -1)
     
     print(feature_interactions)
     expect_equal(length(feature_interactions), 11)

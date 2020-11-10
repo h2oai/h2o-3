@@ -4156,4 +4156,31 @@ public class GBMTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testGBMFeatureInteractions() {
+    Frame fr=null;
+    GBMModel model = null;
+    Scope.enter();
+    try {
+      Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
+      f.replace(f.find("CAPSULE"), f.vec("CAPSULE").toNumericVec());
+      DKV.put(f);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._response_column = "CAPSULE";
+      parms._train = f._key;
+
+      model = new GBM(parms).trainModel().get();
+
+      FeatureInteractions featureInteractions = model.getFeatureInteractions(2,100,-1);
+      assertEquals(featureInteractions.size(), 113);
+
+      DKV.remove(f._key);
+    } finally {
+      if( model != null ) model.delete();
+      if( fr  != null )   fr.remove();
+      Scope.exit();
+    }
+  }
 }

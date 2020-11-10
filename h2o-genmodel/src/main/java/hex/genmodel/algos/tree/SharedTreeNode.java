@@ -32,8 +32,6 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
   float squaredError = Float.NaN;
   SharedTreeNode leftChild;
   public SharedTreeNode rightChild;
-  float gain;
-  float cover;
 
   // Whether NA for this colId is reachable to this node.
   private boolean inclusiveNa;
@@ -113,14 +111,6 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
 
   public void setSquaredError(float v) {
     squaredError = v;
-  }
-
-  public void setGain(float gain) {
-    this.gain = gain;
-  }
-
-  public void setCover(float cover) {
-    this.cover = cover;
   }
 
   /**
@@ -541,14 +531,6 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
 
   public boolean isInclusiveNa() {
     return inclusiveNa;
-  }
-
-  public float getGain() {
-    return gain;
-  }
-
-  public float getCover() {
-    return cover;
   }
 
   @Override
