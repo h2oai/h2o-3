@@ -321,6 +321,34 @@ h2o.import_hive_table <- function(database, table, partitions = NULL, allow_mult
 }
 
 #'
+#' Load frame previously stored in H2O's native format.
+#'
+#' @name h2o.load_frame
+#' @param frame_id the frame ID of the original frame
+#' @param dir a filesystem location where to look for frame data
+#' @param force \code{logical}. overwrite an already existing frame (defaults to true)
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' iris = h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+#' h2o.save_frame(iris, "/tmp/iris")
+#' iris.key <- h2o.getId(iris)
+#' h2o.rm(iris)
+#' iris <- h2o.load_frame(iris.key, "/tmp/iris")
+#' }
+#' @export
+h2o.load_frame <- function(frame_id, dir, force = TRUE) {
+    res <- .h2o.__remoteSend(.h2o.__LOAD_FRAME, frame_id = frame_id, dir = dir, force = force, method = "POST")
+    hex <- res$job$dest$name
+    .h2o.__waitOnJob(res$job$key$name)
+    x <- .newH2OFrame("Load", id=hex, -1, -1)
+    .fetch.data(x,1L) # Fill in nrow and ncol
+    x
+}
+
+#'
 #' Load H2O Model from HDFS or Local Disk
 #'
 #' Load a saved H2O model from disk. (Note that ensemble binary models 

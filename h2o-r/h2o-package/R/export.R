@@ -178,6 +178,27 @@ h2o.save_to_hive <- function(data, jdbc_url, table_name, format="csv", table_pat
     .h2o.__remoteSend('SaveToHiveTable', method = "POST", .params = parms, h2oRestApiVersion = 3)
 }
 
+#'
+#' Store frame data in H2O's native format.
+#'
+#' @name h2o.save_frame
+#' @param x An H2OFrame object
+#' @param dir a filesystem location where to write frame data (hdfs, nfs)
+#' @param force \code{logical}. overwrite already existing files (defaults to true)
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' iris = h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+#' h2o.save_frame(iris, "/tmp/iris")
+#' }
+#' @export
+h2o.save_frame <- function(x, dir, force = TRUE) {
+    res <- .h2o.__remoteSend(.h2o.__SAVE_FRAME(h2o.getId(x)), dir = dir, force = force, method = "POST")
+    .h2o.__waitOnJob(res$job$key$name)
+}
+
 # ------------------- Save H2O Model to Disk ----------------------------------------------------
 #'
 #' Save an H2O Model Object to Disk
