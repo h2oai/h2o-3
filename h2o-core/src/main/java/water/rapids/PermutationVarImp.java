@@ -235,37 +235,77 @@ public class PermutationVarImp {
      * type 2: Percentage value of PFI
      */
     public TwoDimTable oat(int type) {
-        int r = 4; // set 4 to 10 
-        TwoDimTable[] morrisFis = new TwoDimTable[r];
+        int r = 4; // set 4 to 10
+        
+        // Using maps to not lose which Variable has Which score as to sometimes the ordering changes
+        List<Map<String, Double>> listOfMaps = new ArrayList<Map<String, Double>>();
+        Map<String, Double> meanOfInfluence = new HashMap<>();
+        Map<String, Double> meanOfInfluenceAbsVal = new HashMap<>();
         
         // Generate r tables of Feature importance differently shuffled
         for (int i = 0; i < r; i++) {
-            morrisFis[i] = getPermutationVarImp();
+            // Get permutationVarImp table
+            TwoDimTable morrisFis = getPermutationVarImp();
+            
+            // On first iteration fill values
+            if (meanOfInfluence.isEmpty()) {
+                // _varImpMap "variable" -> Importance <String, Double> map
+                meanOfInfluence.putAll(_varImpMap);
+                // First iteration the maps are empty so just "copying" the values
+                for (Map.Entry<String, Double> var : meanOfInfluence.entrySet()) {
+                    meanOfInfluenceAbsVal.put(var.getKey(), Math.abs(var.getValue()));
+                    meanOfInfluence.put(var.getKey(), Math.abs(var.getValue()));
+                }
+            }   else    {
+                // The formula is: 1 / r * (Sum_{i=0}^r | PVI values |)  
+                for (Map.Entry<String, Double> var : meanOfInfluence.entrySet()) {
+                    // replace the value with the previous one + this iterations one
+                    meanOfInfluence.replace(var.getKey(), var.getValue(), var.getValue() + _varImpMap.get(var.getKey()));
+                    meanOfInfluenceAbsVal.replace(var.getKey(), var.getValue(), var.getValue() + Math.abs(_varImpMap.get(var.getKey())));
+                }
+            }
+            // creating a list of VarImps to calculate standard deviation
+            listOfMaps.add(_varImpMap);
+        }
+        
+        // divide values of the Map by r
+        for (Map.Entry<String, Double> var : meanOfInfluence.entrySet()) {
+            meanOfInfluence.replace(var.getKey(), var.getValue(), var.getValue() / r);
+        }
+        for (Map.Entry<String, Double> var : meanOfInfluenceAbsVal.entrySet()) {
+            meanOfInfluenceAbsVal.replace(var.getKey(), var.getValue(), var.getValue() / r);
         }
 
-        double[] meanFI = new double[_varsToShuffle.length];
-
-        // Contains the mean of the absolute value and standard deviation of each feature's importance, hence the [2]
-        double [][] response = new double [_varsToShuffle.length][2]; 
-
-        // Calculate the mean of the absolute value of each feature's importance (add link to thesis or paper)
-        for (int f = 0; f < morrisFis[0].getColDim(); f++) {
-            double accAbs = 0;
-            double acc = 0;
-            for (int i = 0; i < r; i++) {
-                accAbs += Math.abs((Double) morrisFis[i].get(f, type));
-                acc += (Double) morrisFis[i].get(f, type);
+        // Calculate the meanOfInfluence of the absolute value of each feature's importance 
+        Map<String, Double> standardDevFI = new HashMap<>();
+        // Similrarly as before there's a sum hence the for loop for r
+        for (int i = 0 ; i < r ; i++){
+            // initialy just "copy" data
+            if (standardDevFI.isEmpty()){
+                for (Map.Entry<String, Double> var : listOfMaps.get(i).entrySet()) {
+                    standardDevFI.put(var.getKey(), Math.pow(var.getValue() - meanOfInfluence.get(var.getKey()), 2));
+                }
+            } else {
+                // Go through r calculations of PVI and apply the formula
+                for (Map.Entry<String, Double> var : listOfMaps.get(i).entrySet()) {
+                    standardDevFI.replace(var.getKey(), var.getValue(), var.getValue() + Math.pow(var.getValue() - meanOfInfluence.get(var.getKey()), 2));
+                }
             }
-            response[f][0] = accAbs / r; // for TwoDimTable column 0
-            meanFI[f] = acc / r; // for the upcoming calculation
         }
-        // Calculate the standard deviation of each feature's importance 
-        for (int f = 0; f < _varsToShuffle.length; f++) {
-            double inner = 0;
-            for (int i = 0 ; i < r ; i++){
-                inner += Math.pow((Double) morrisFis[i].get(f, type) - meanFI[f], 2);
-            }
-            response[f][1] = Math.sqrt(inner / r); // for TwoDimTable column 1
+        
+        // Divide every value by r
+        for (Map.Entry<String, Double> var : standardDevFI.entrySet()) {
+            standardDevFI.replace(var.getKey(), var.getValue(), Math.sqrt(var.getValue() / r));
+        }
+
+        // Contains the meanOfInfluence of the absolute value and standard deviation of each feature's importance, hence the [2]
+        double [][] response = new double [meanOfInfluenceAbsVal.size()][2];
+        
+        // Create a matrix to fill the TwoDimTable
+        int i = 0;
+        for (String var : _varsToShuffle) {
+            response[i][0] = meanOfInfluenceAbsVal.get(var); 
+            response[i++][1] = standardDevFI.get(var);
         }
         
         // Necessary to create the TwoDimTable
