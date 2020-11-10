@@ -38,7 +38,7 @@ def test_parser_svmlight_column_skip_not_supported():
         h2o.import_file(savefilenamewithpath, skipped_columns=[5])
         assert False, "Test should have thrown an exception due skipped_columns parameter is present"  # should have failed here
     except H2OResponseError as e:
-        assert "skipped_columns are not supported" in e.args[0].exception_msg
+        assert "skipped_columns are not supported" in e.args[0].exception_msg, "Exception message is different"
         print("Test OK, finished with H2OResponseError")
 
 
