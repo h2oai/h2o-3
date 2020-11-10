@@ -18,10 +18,6 @@ def test_parser_svmlight_column_skip_not_supported():
 
     f1 = h2o.create_frame(rows=nrow, cols=ncol, real_fraction=0.5, integer_fraction=0.5, missing_fraction=0.2,
                           has_response=False, seed=seed)
-    f2 = h2o.create_frame(rows=nrow, cols=1, real_fraction=1, integer_fraction=0, missing_fraction=0,
-                          has_response=False, seed=seed)
-    f1.set_name(0, "target")
-    f1 = f2.cbind(f1)
 
     tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results"))
     if not (os.path.isdir(tmpdir)):
@@ -30,23 +26,22 @@ def test_parser_svmlight_column_skip_not_supported():
     pyunit_utils.write_H2OFrame_2_SVMLight(savefilenamewithpath, f1)  # write h2o frame to svm format
 
     try:
-        print("Test upload SVM file")
+        print("Test upload SVM file. "
+              "Expected result is Java exception error: skipped_columns not supported for AVRO and SVMlight")
         h2o.upload_file(savefilenamewithpath, skipped_columns=[5])
         assert False, "Test should have thrown an exception due skipped_columns parameter is present"  # should have failed here
-    except H2OResponseError:
+    except H2OResponseError as e:
         print("Test OK, finished with H2OResponseError")
-        pass
-    except Exception as e:
-        assert False, "Test finish with unexpected exception." + str(e)
+        assert "skipped_columns are not supported" in str(e.args[0].exception_msg), "Exception message is different"
 
     try:
-        print("Test import SVM file")
+        print("Test import SVM file. "
+              "Expected result is Java exception error: skipped_columns not supported for AVRO and SVMlight")
         h2o.import_file(savefilenamewithpath, skipped_columns=[5])
         assert False, "Test should have thrown an exception due skipped_columns parameter is present"  # should have failed here
-    except H2OResponseError:
+    except H2OResponseError as e:
         print("Test OK, finished with H2OResponseError")
-    except Exception as e:
-        assert False, "Test finish with unexpected exception." + str(e)
+        assert "skipped_columns are not supported" in e.args[0].exception_msg
 
 
 if __name__ == "__main__":
