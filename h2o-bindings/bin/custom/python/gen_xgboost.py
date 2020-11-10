@@ -19,7 +19,7 @@ def class_extensions():
             print("Cannot build an XGBoost model - no backend found.")
             return False
         else:
-            return True 
+            return True
 
 
 extensions = dict(

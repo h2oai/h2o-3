@@ -3,7 +3,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 
-test.XGBoost.bernoulli <- function() {
+test.XGBoost.feature_interactions <- function() {
     prostate.hex <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), destination_frame="prostate.hex")
     response <- "RACE"
     ignored_columns=c("ID")
@@ -18,4 +18,4 @@ test.XGBoost.bernoulli <- function() {
 
 }
 
-doTest("XGBoost Test: prostate.csv with Bernoulli distribution", test.XGBoost.bernoulli)
+doTest("XGBoost Test: prostate.csv for feature interactions", test.XGBoost.feature_interactions)

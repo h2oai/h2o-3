@@ -2117,4 +2117,4 @@ class H2OXGBoostEstimator(H2OEstimator):
             print("Cannot build an XGBoost model - no backend found.")
             return False
         else:
-            return True 
+            return True
