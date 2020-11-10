@@ -1466,13 +1466,14 @@ def load_model(path):
     return get_model(res["models"][0]["model_id"]["name"])
 
 
-def export_file(frame, path, force=False, sep=",", compression=None, parts=1):
+def export_file(frame, path, force=False, sep=",", compression=None, parts=1, header=True, quote_header=True):
     """
     Export a given H2OFrame to a path on the machine this python session is currently connected to.
 
     :param frame: the Frame to save to disk.
     :param path: the path to the save point on disk.
-    :param force: if True, overwrite any preexisting file with the same path
+    :param force: if True, overwrite any preexisting file with the same path.
+    :param sep: field delimiter for the output file.
     :param compression: how to compress the exported dataset (default none; gzip, bzip2 and snappy available)
     :param parts: enables export to multiple 'part' files instead of just a single file.
         Convenient for large datasets that take too long to store in a single file.
@@ -1480,6 +1481,8 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1):
         specify your desired maximum number of part files. Path needs to be a directory
         when exporting to multiple files, also that directory must be empty.
         Default is ``parts = 1``, which is to export to a single file.
+    :param header: if True, write out column names in the header line.
+    :param quote_header: if True, quote column names in the header.
 
     :examples:
 
@@ -1502,9 +1505,12 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1):
     assert_is_type(force, bool)
     assert_is_type(parts, int)
     assert_is_type(compression, str, None)
+    assert_is_type(header, bool)
+    assert_is_type(quote_header, bool)
     H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id), 
-               data={"path": path, "num_parts": parts, "force": force, "compression": compression, "separator": ord(sep)}),
-           "Export File").poll()
+               data={"path": path, "num_parts": parts, "force": force, 
+                     "compression": compression, "separator": ord(sep),
+                     "header": header, "quote_header": quote_header}), "Export File").poll()
 
 
 def cluster():

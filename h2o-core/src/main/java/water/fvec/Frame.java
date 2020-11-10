@@ -1558,6 +1558,7 @@ public class Frame extends Lockable<Frame> {
     public static final char DEFAULT_ESCAPE = '"';
 
     boolean _headers = true;
+    boolean _quoteColumnNames = true; 
     boolean _hexString = false;
     boolean _escapeQuotes = false;
     char _separator = DEFAULT_SEPARATOR;
@@ -1565,6 +1566,16 @@ public class Frame extends Lockable<Frame> {
 
     public CSVStreamParams setHeaders(boolean headers) {
       _headers = headers;
+      return this;
+    }
+
+    public CSVStreamParams noHeader() {
+      setHeaders(false);
+      return this;
+    }
+    
+    public CSVStreamParams setQuoteColumnNames(boolean quoteColumnNames) {
+      _quoteColumnNames = quoteColumnNames;
       return this;
     }
 
@@ -1627,9 +1638,9 @@ public class Frame extends Lockable<Frame> {
       }
       StringBuilder sb = new StringBuilder();
       if (names != null) {
-        sb.append('"').append(names[0]).append('"');
+        appendColumnName(sb, names[0]);
         for (int i = 1; i < names.length; i++)
-          sb.append(_parms._separator).append('"').append(names[i]).append('"');
+          appendColumnName(sb.append(_parms._separator), names[i]);
         sb.append('\n');
       }
       _line = StringUtils.bytesOf(sb);
@@ -1638,6 +1649,14 @@ public class Frame extends Lockable<Frame> {
       _escapedCategoricalVecDomains = escapeCategoricalVecDomains(_curChks);
     }
 
+    private void appendColumnName(StringBuilder sb, String name) {
+      if (_parms._quoteColumnNames)
+        sb.append('"');
+      sb.append(name);
+      if (_parms._quoteColumnNames)
+        sb.append('"');
+    }
+    
     private static Chunk[] firstChunks(Frame fr) {
       Vec anyvec = fr.anyVec();
       if (anyvec == null || anyvec.nChunks() == 0 || anyvec.length() == 0) {
