@@ -1,7 +1,5 @@
 package hex.tree.xgboost;
 
-import hex.Model;
-import hex.StringPair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;

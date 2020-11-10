@@ -424,8 +424,6 @@ NULL
   paste0("{", paste0(r, collapse = ","), "}")
 }
 
-
-
 # Validate a given set of hyper parameters
 # against algorithm definition.
 # Transform all parameters in the same way as normal algorithm

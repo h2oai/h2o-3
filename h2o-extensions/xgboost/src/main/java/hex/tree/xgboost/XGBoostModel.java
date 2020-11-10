@@ -500,7 +500,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
             end++;
           }
         }
-        
       }
       sb.replace(sb.length() - 1, sb.length(), "],");
     }
