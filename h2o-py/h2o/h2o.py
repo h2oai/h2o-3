@@ -967,6 +967,29 @@ def deep_copy(data, xid):
     return duplicate
 
 
+def models():
+    """
+    Retrieve the IDs all the Models.
+
+    :returns: Handles of all the models present in the cluster
+
+    :examples:
+
+    >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+    >>> airlines["Year"]= airlines["Year"].asfactor()
+    >>> airlines["Month"]= airlines["Month"].asfactor()
+    >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+    >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+    >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+    >>> model1 = H2OGeneralizedLinearEstimator(family="binomial")
+    >>> model1.train(y=response, training_frame=airlines)
+    >>> model2 = H2OXGBoostEstimator(family="binomial")
+    >>> model2.train(y=response, training_frame=airlines)
+    >>> model_list = h2o.get_models()
+    """
+    return [json["model_id"]["name"] for json in api("GET /3/Models")["models"]]
+
+
 def get_model(model_id):
     """
     Load a model from the server.

@@ -170,6 +170,28 @@ h2o.getFrame <- function(id) {
   fr
 }
 
+#' Get an list of all model ids present in the cluster
+#'
+#' @return Returns a vector of model ids.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' iris_hf <- as.h2o(iris)
+#' model_id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris_hf)@@model_id
+#' model_id_list <- h2o.list_models()
+#' }
+#' @export
+h2o.list_models <- function() {
+    models_json <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS))$models
+    res <- NULL
+    for (json in models_json) {
+        res <- c(res, json$model_id$name)
+    }
+    res
+}
+
 #' Get an R reference to an H2O model
 #'
 #' Returns a reference to an existing model in the H2O instance.
