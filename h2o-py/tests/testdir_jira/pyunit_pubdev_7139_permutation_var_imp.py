@@ -103,6 +103,7 @@ def perm_var_imp_plot_gbm():
     metric = "auc"
     pm_h2o_df = permutation_varimp(model, fr, use_pandas=True, metric=metric)
     plot_permutation_var_imp(pm_h2o_df, model._model_json["algo"], metric)
+    permutation_varimp_oat(model, fr)
 
     # plot existing varimp 
     model.varimp_plot()
