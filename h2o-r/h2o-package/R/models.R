@@ -2104,7 +2104,7 @@ h2o.get_ntrees_actual <- function(object) {
 #'         destination_frame="boston"
 #'         )
 #' boston_xgb <- h2o.xgboost(training_frame = boston, y = "medv", seed = 1234)
-#' feature_interactions <- h2o.xgboost.feature_interaction(boston_xgb)
+#' feature_interactions <- h2o.feature_interaction(boston_xgb)
 #' }
 #' @export
 h2o.feature_interaction <- function(model, max_interaction_depth = 100, max_tree_depth = 100, max_deepening = -1) {
