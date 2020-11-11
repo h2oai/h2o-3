@@ -91,7 +91,6 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         // if (expensive && error_count() == 0) checkMemoryFootPrint();
     }
 
-
     private void initTreeParameters() {
         if (_parms._algorithm == RuleFitModel.Algorithm.GBM) {
             treeParameters = new GBMModel.GBMParameters();
