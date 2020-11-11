@@ -1634,13 +1634,23 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param metric loss function metric 
    *               if metric not specified mse is default
    * @return TwoDimTable of Double values having the variables as columns
-   * and as rows their Relative, Scaled and percentage importance
+   * and as rows their relative, scaled and percentage importance
    */
-  public TwoDimTable getPermVarImpTable(Frame fr, String metric){
-    if (this._output._scoring_history == null )
+  public TwoDimTable getPermVarImpTable(Frame fr, String metric) {
+    if (this._output._scoring_history == null)
       throw new IllegalArgumentException("Model " + this._key + "must be scored!");
     PermutationVarImp pvi = new PermutationVarImp(this, fr);
     return pvi.getPermutationVarImp(metric);
+  }
+  
+  public TwoDimTable getPermVarImpTable(Frame fr, Frame scored){
+    PermutationFeatureImportance fi = new PermutationFeatureImportance(this, fr, scored);
+    return fi.getFeatureImportance();
+  }
+  
+  public TwoDimTable getPermVarImpTableOat(Frame fr, Frame scored){
+    PermutationFeatureImportance fi = new PermutationFeatureImportance(this, fr, scored);
+    return fi.oat();
   }
   
   /**
