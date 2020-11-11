@@ -311,16 +311,17 @@ XGBoost Feature Interactions
 
 Ranks of features and feature interactions by various metrics implemented in `XGBFI <https://github.com/Far0n/xgbfi>`__ style.
 
-**Metrics:**
+Metrics
+'''''''
 
-- Gain: Total gain of each feature or feature interaction
-- FScore: Amount of possible splits taken on a feature or feature interaction
-- wFScore: Amount of possible splits taken on a feature or feature interaction weighted by the probability of the splits to take place
-- Average wFScore: wFScore divided by FScore
-- Average Gain: Gain divided by FScore
-- Expected Gain: Total gain of each feature or feature interaction weighted by the probability to gather the gain
-- Average Tree Index
-- Average Tree Depth
+- **Gain:** Total gain of each feature or feature interaction
+- **FScore:** Amount of possible splits taken on a feature or feature interaction
+- **wFScore:** Amount of possible splits taken on a feature or feature interaction weighted by the probability of the splits to take place
+- **Average wFScore:** wFScore divided by FScore
+- **Average Gain:** Gain divided by FScore
+- **Expected Gain:** Total gain of each feature or feature interaction weighted by the probability to gather the gain
+- **Average Tree Index**
+- **Average Tree Depth**
 
 **Additional features:**
 
