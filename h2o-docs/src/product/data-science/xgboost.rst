@@ -306,6 +306,29 @@ Some environments may required disabling XGBoost. This can be done by setting ``
 
 Setting ``-Dsys.ai.h2o.ext.core.toggle.XGBoost`` to ``False`` can be done on any H2O version that supports XGBoost and removes XGBoost from the list of available algorithms. 
 
+XGBoost Feature Interactions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Ranks of features and feature interactions by various metrics implemented in `XGBFI <https://github.com/Far0n/xgbfi>`__ style.
+
+**Metrics:**
+
+- Gain: Total gain of each feature or feature interaction
+- FScore: Amount of possible splits taken on a feature or feature interaction
+- wFScore: Amount of possible splits taken on a feature or feature interaction weighted by the probability of the splits to take place
+- Average wFScore: wFScore divided by FScore
+- Average Gain: Gain divided by FScore
+- Expected Gain: Total gain of each feature or feature interaction weighted by the probability to gather the gain
+- Average Tree Index
+- Average Tree Depth
+
+**Additional features:**
+
+- Leaf Statistics
+- Split Value Histograms
+
+Usage is illustrated in the Examples section.
+
 Examples
 ~~~~~~~~
 
@@ -345,6 +368,9 @@ Below is a simple example showing how to build a XGBoost model.
     # Generate predictions on a test set (if necessary):
     pred <- h2o.predict(titanic_xgb, newdata = valid)
 
+    # Extract feature interactions:
+    feature_interactions = h2o.feature_interaction(titanic_xgb)
+
 
    .. code-tab:: python
    
@@ -377,6 +403,9 @@ Below is a simple example showing how to build a XGBoost model.
 
     # Generate predictions on a test set (if necessary):
     pred = titanic_xgb.predict(valid)
+
+    # Extract feature interactions:
+    feature_interactions = titanic_xgb.feature_interaction()
   
 
 FAQs
