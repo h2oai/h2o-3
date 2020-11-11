@@ -11,6 +11,8 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
+import hex.FeatureInteraction;
+import hex.FeatureInteractions;
 import hex.tree.xgboost.predict.XGBoostNativeVariableImportance;
 import hex.tree.xgboost.util.BoosterDump;
 import hex.tree.xgboost.util.BoosterHelper;
@@ -1993,6 +1995,163 @@ public class XGBoostTest extends TestUtil {
       Scope.track_generic(model);
       assertEquals(Integer.MAX_VALUE, model._parms._max_depth);
 
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testXGBoostFeatureInteractions() {
+    Scope.enter();
+    try {
+      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = tfr._key;
+      parms._response_column = "AGE";
+      parms._ignored_columns = new String[]{"ID"};
+      parms._seed = 0xDECAF;
+      parms._build_tree_one_node = true;
+      parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.exact;
+
+      XGBoostModel model = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      FeatureInteractions featureInteractionMap = model.getFeatureInteractions(2,100,-1);
+
+      assertEquals(featureInteractionMap.size(), 85);
+      
+      double epsilon = 1e-4;
+      // check some interactions of depth 0:
+      FeatureInteraction capsuleInteraction = featureInteractionMap.get("CAPSULE");
+      assertEquals(capsuleInteraction.gain, 768.988530628086, epsilon);
+      assertEquals(capsuleInteraction.fScore, 82.0, epsilon);
+      assertEquals(capsuleInteraction.fScoreWeighted, 5.21315789473684, epsilon);
+      assertEquals(capsuleInteraction.averageFScoreWeighted, 0.0635750962772786, epsilon);
+      assertEquals(capsuleInteraction.averageGain, 9.37790891009861, epsilon);
+      assertEquals(capsuleInteraction.expectedGain, 43.0394271689104, epsilon);
+      assertEquals(capsuleInteraction.averageTreeDepth, 4.2, 1e-1);
+      assertEquals(capsuleInteraction.averageTreeIndex, 25.78, 1e-2);
+
+      FeatureInteraction psaInteraction = featureInteractionMap.get("PSA");
+      assertEquals(psaInteraction.gain, 11264.2880798631, epsilon);
+      assertEquals(psaInteraction.fScore, 572.0, epsilon);
+      assertEquals(psaInteraction.fScoreWeighted, 148.452631578947, epsilon);
+      assertEquals(psaInteraction.averageFScoreWeighted, 0.259532572690467, epsilon);
+      assertEquals(psaInteraction.averageGain, 19.692811328432, epsilon);
+      assertEquals(psaInteraction.expectedGain, 2323.51525060787, epsilon);
+      assertEquals(psaInteraction.averageTreeDepth, 3.55, 1e-2);
+      assertEquals(psaInteraction.averageTreeIndex, 27.29, 1e-2);
+
+      // check some interactions of depth 1:
+      FeatureInteraction psaPsaInteraction = featureInteractionMap.get("PSA|PSA");
+      assertEquals(psaPsaInteraction.gain, 13584.7678359787, epsilon);
+      assertEquals(psaPsaInteraction.fScore, 326.0, epsilon);
+      assertEquals(psaPsaInteraction.fScoreWeighted, 101.189473684211, epsilon);
+      assertEquals(psaPsaInteraction.averageFScoreWeighted, 0.310397158540523, epsilon);
+      assertEquals(psaPsaInteraction.averageGain, 41.6710669815298, epsilon);
+      assertEquals(psaPsaInteraction.expectedGain, 2906.05613890999, epsilon);
+      assertEquals(psaPsaInteraction.averageTreeDepth, 3.66, 1e-2);
+      assertEquals(psaPsaInteraction.averageTreeIndex, 27.78, 1e-2);
+
+      FeatureInteraction gleasonRaceInteraction = featureInteractionMap.get("GLEASON|RACE");
+      assertEquals(gleasonRaceInteraction.gain, 2028.03059237, epsilon);
+      assertEquals(gleasonRaceInteraction.fScore, 14.0, epsilon);
+      assertEquals(gleasonRaceInteraction.fScoreWeighted, 4.61052631578947, epsilon);
+      assertEquals(gleasonRaceInteraction.averageFScoreWeighted, 0.329323308270677, epsilon);
+      assertEquals(gleasonRaceInteraction.averageGain, 144.859328026429, epsilon);
+      assertEquals(gleasonRaceInteraction.expectedGain, 815.892524956053, epsilon);
+      assertEquals(gleasonRaceInteraction.averageTreeDepth, 3.14, 1e-2);
+      assertEquals(gleasonRaceInteraction.averageTreeIndex, 14.5, 1e-1);
+
+      // check some interactions of depth 2:
+      FeatureInteraction volVolVolInteraction = featureInteractionMap.get("VOL|VOL|VOL");
+      assertEquals(volVolVolInteraction.gain, 3197.648769331, epsilon);
+      assertEquals(volVolVolInteraction.fScore, 37.0, epsilon);
+      assertEquals(volVolVolInteraction.fScoreWeighted, 12.5947368421053, epsilon);
+      assertEquals(volVolVolInteraction.averageFScoreWeighted, 0.340398293029872, epsilon);
+      assertEquals(volVolVolInteraction.averageGain, 86.4229397116487, epsilon);
+      assertEquals(volVolVolInteraction.expectedGain, 740.075555944026, epsilon);
+      assertEquals(volVolVolInteraction.averageTreeDepth, 3.7, 1e-1);
+      assertEquals(volVolVolInteraction.averageTreeIndex, 22.03, 1e-2);
+
+      FeatureInteraction capsuleDprosGleasonInteraction = featureInteractionMap.get("CAPSULE|DPROS|GLEASON");
+      assertEquals(capsuleDprosGleasonInteraction.gain, 227.14370899, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.fScore, 4.0, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.fScoreWeighted, 0.347368421052632, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.averageFScoreWeighted, 0.0868421052631579, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.averageGain, 56.7859272475, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.expectedGain, 17.2918210555789, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.averageTreeDepth, 4.0, 1e-1);
+      assertEquals(capsuleDprosGleasonInteraction.averageTreeIndex, 28.5, 1e-1);
+
+      // check leaf statistics
+      FeatureInteraction psaVolInteraction = featureInteractionMap.get("PSA|VOL");
+      assertEquals(psaVolInteraction.sumLeafValuesLeft, -0.467761263, epsilon);
+      assertEquals(psaVolInteraction.sumLeafValuesRight, 0.56550011, epsilon);
+      assertEquals(psaVolInteraction.sumLeafCoversLeft, 2.0, 1e-1);
+      assertEquals(psaVolInteraction.sumLeafCoversRight, 2.0, 1e-1);
+
+      // check split value histograms
+      // CAPSULE
+      assertEquals(capsuleInteraction.splitValueHistogram.get(0.5).toInteger(), 82.0, 1e-1);
+      assertEquals(capsuleInteraction.splitValueHistogram.entrySet().size(), 1);
+      // DCAPS
+      assertEquals(featureInteractionMap.get("DCAPS").splitValueHistogram.get(1.5).toInteger(), 42.0, 1e-1);
+      assertEquals(featureInteractionMap.get("DCAPS").splitValueHistogram.entrySet().size(), 1);
+      // RACE
+      assertEquals(featureInteractionMap.get("RACE").splitValueHistogram.get(0.5).toInteger(), 18.0, 1e-1);
+      assertEquals(featureInteractionMap.get("RACE").splitValueHistogram.get(1.5).toInteger(), 62.0, 1e-1);
+      assertEquals(featureInteractionMap.get("RACE").splitValueHistogram.entrySet().size(), 2);
+      // GLEASON
+      double[] expectedKeys = new double[]{2.5, 3.0, 5.5, 6.5, 7, 7.5, 8.5};
+      double[] expectedValues = new double[]{2.0, 3.0, 44.0, 31.0, 1.0, 21.0, 14.0};
+      for (int i = 0; i < expectedKeys.length; i++) {
+        assertEquals(featureInteractionMap.get("GLEASON").splitValueHistogram.get(expectedKeys[i]).toInteger(), expectedValues[i], 1e-1);
+      }
+      assertEquals(featureInteractionMap.get("GLEASON").splitValueHistogram.entrySet().size(), 7);
+      // DPROS
+      expectedKeys = new double[]{1.5, 2.0, 2.5, 3.0, 3.5};
+      expectedValues = new double[]{67.0, 3.0, 63.0, 12.0, 36.0};
+      for (int i = 0; i < expectedKeys.length; i++) {
+        assertEquals(featureInteractionMap.get("DPROS").splitValueHistogram.get(expectedKeys[i]).toInteger(), expectedValues[i], 1e-1);
+      }
+      assertEquals(featureInteractionMap.get("DPROS").splitValueHistogram.entrySet().size(), 5);
+      // VOL
+      expectedKeys = new double[]{5.75, 11.25, 13.75, 14.5, 15.75};
+      expectedValues = new double[]{1.0, 1.0, 1.0, 2.0, 1.0};
+      for (int i = 0; i < expectedKeys.length; i++) {
+        assertEquals(featureInteractionMap.get("VOL").splitValueHistogram.get(expectedKeys[i]).toInteger(), expectedValues[i], 1e-1);
+      }
+      assertEquals(featureInteractionMap.get("VOL").splitValueHistogram.entrySet().size(), 180);
+      // PSA
+      expectedKeys = new double[]{1.5, 1.75, 3.25, 5.25, 8.75};
+      expectedValues = new double[]{1.0, 4.0, 4.0, 3.0, 2.0};
+      for (int i = 0; i < expectedKeys.length; i++) {
+        assertEquals(psaInteraction.splitValueHistogram.get(expectedKeys[i]).toInteger(), expectedValues[i], 1e-1);
+      }
+      assertEquals(psaInteraction.splitValueHistogram.entrySet().size(), 261);
+
+      TwoDimTable[] featureInteractionsTables = featureInteractionMap.getAsTable();
+      TwoDimTable leafStatisticsTable = featureInteractionMap.getLeafStatisticsTable();
+      TwoDimTable[] getSplitValuesHistograms = featureInteractionMap.getSplitValueHistograms();
+
+      assertEquals(featureInteractionsTables.length, 3);
+      assertEquals(featureInteractionsTables[0].getRowDim(), 7);
+      assertEquals(featureInteractionsTables[1].getRowDim(), 25);
+      assertEquals(featureInteractionsTables[2].getRowDim(), 53);
+      assertEquals(leafStatisticsTable.getRowDim(), 1);
+      assertEquals(getSplitValuesHistograms[0].getRowDim(), 261);
+      assertEquals(getSplitValuesHistograms[1].getRowDim(), 180);
+      assertEquals(getSplitValuesHistograms[2].getRowDim(), 1);
+      assertEquals(getSplitValuesHistograms[3].getRowDim(), 5);
+      assertEquals(getSplitValuesHistograms[4].getRowDim(), 7);
+      assertEquals(getSplitValuesHistograms[5].getRowDim(), 2);
+      assertEquals(getSplitValuesHistograms[6].getRowDim(), 1);
+      
+      TwoDimTable[][] overallFeatureInteractionsTable = model.getFeatureInteractionsTable(2,100,-1);
+      assertEquals(overallFeatureInteractionsTable[0].length, 3);
+      assertEquals(overallFeatureInteractionsTable[1].length, 1);
+      assertEquals(overallFeatureInteractionsTable[2].length, 7);
+      
     } finally {
       Scope.exit();
     }
