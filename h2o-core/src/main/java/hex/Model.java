@@ -1585,7 +1585,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param metric loss function metric 
    *               if metric not specified mse is default
    * @return TwoDimTable of Double values having the variables as columns
-   * and as rows their Relative, Scaled and percentage importance
+   * and as rows their relative, scaled and percentage importance
    */
   public TwoDimTable getPermVarImpTable(Frame fr, String metric){
     if (this._output._scoring_history == null )
