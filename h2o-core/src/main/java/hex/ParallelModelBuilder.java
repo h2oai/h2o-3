@@ -25,7 +25,6 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
 
   private final transient ParallelModelBuilderCallback _callback;
   private final transient IcedAtomicInt _modelInProgressCounter = new IcedAtomicInt();
-  private final transient AtomicBoolean _completed = new AtomicBoolean(false);
   private final transient ParallelModelBuiltListener _parallelModelBuiltListener;
 
   public ParallelModelBuilder(final ParallelModelBuilderCallback callback) {
@@ -99,16 +98,9 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
       return _parameters;
     }
   }
-
-  /**
-   * Indicate this builder there will be no more models.
-   */
-  public void noMoreModels() {
-    _completed.set(true);
-  }
   
   private void attemptComplete(){
-    if(!_completed.get() || _modelInProgressCounter.get() != 0) return;
+    if(_modelInProgressCounter.get() != 0) return;
     complete(this);
   }
 
