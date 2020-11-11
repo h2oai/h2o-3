@@ -438,7 +438,7 @@ Below is a simple example showing how to build a Gradient Boosting Machine model
     # Generate predictions on a test set (if necessary):
     pred = pros_gbm.predict(prostate)
 
-    Extract feature interactions:
+    # Extract feature interactions:
     feature_interactions = pros_gbm.feature_interaction()
 
 
