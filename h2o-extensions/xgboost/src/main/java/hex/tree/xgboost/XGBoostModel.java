@@ -492,7 +492,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         if(item.equals(params._fold_column)){
           throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is used as fold column and cannot be used in interaction.");
         }
-        if(params._ignored_columns != null && ArrayUtils.find(params._ignored_columns, item) != -1){
+        if(params._ignored_columns != null && ArrayUtils.find(params._ignored_columns, item) != -1) {
           throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is set in ignored columns and cannot be used in interaction.");
         }
         // first find only name
