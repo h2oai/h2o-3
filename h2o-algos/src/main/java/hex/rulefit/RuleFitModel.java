@@ -69,6 +69,8 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         public double[] _intercept;
 
         public TwoDimTable _rule_importance = null;
+        
+        public TwoDimTable _input_variable_importance = null;
 
         Key glmModelKey = null;
 

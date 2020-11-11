@@ -250,7 +250,9 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 model._output._intercept = getIntercept(glmModel);
 
                 // TODO: add here coverage_count and coverage percent
-                model._output._rule_importance = convertRulesToTable(getRules(glmModel.coefficients(), ruleEnsemble));
+                Rule[] important_rules = getRules(glmModel.coefficients(), ruleEnsemble);
+                model._output._rule_importance = convertRulesToTable(important_rules);
+                model._output._input_variable_importance = convertInputVariablesToTable(getInputVariableImportance(important_rules));
 
                 fillModelMetrics(model, glmModel);
 
@@ -451,6 +453,69 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         } else {
             return nModelsInParallel(numDepths, 1);
         }
+    }
+
+    private Map<String, Double> getInputVariableImportance(Rule[] rules) {
+        Map<String, Double> variableImportanceMap = createCleanInputVariableImportanceMap();
+        for (int i = 0; i < rules.length; i++) {
+            Rule actRule = rules[i];
+            // add linear part
+            if (actRule.varName.startsWith("linear.")) {
+                String key = actRule.varName.substring("linear.".length());
+                variableImportanceMap.put(key, variableImportanceMap.get(key) + actRule.coefficient);
+            // add rule part    
+            } else { 
+                int numOfConditions = actRule.conditions.length;
+                for (int j = 0; j < numOfConditions; j++) {
+                    Condition actCondition = actRule.conditions[j];
+                    String key = actCondition.featureName;
+                    variableImportanceMap.put(key, variableImportanceMap.get(key) + actRule.coefficient/numOfConditions);
+                }
+            }
+        }
+        
+        return variableImportanceMap.entrySet().stream()
+                .sorted((o1, o2) -> -Double.compare(Math.abs(o1.getValue()), Math.abs(o2.getValue())))
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+    }
+    
+    private Map<String, Double> createCleanInputVariableImportanceMap() {
+        Map<String, Double> variableImportanceMap = new HashMap();
+        String[] names = _train.names();
+        for (int i = 0; i < names.length; i++) {
+            if (!names[i].equals(_parms._response_column) && !names[i].equals(_parms._weights_column) &&
+                    !ArrayUtils.contains(_parms._ignored_columns, names[i])) {
+                variableImportanceMap.put(names[i], 0.0);
+            }
+        }
+        
+        return variableImportanceMap;
+    }
+
+    private TwoDimTable convertInputVariablesToTable(Map<String, Double> inputVariablesImportances) {
+        List<String> colHeaders = new ArrayList<>();
+        List<String> colTypes = new ArrayList<>();
+        List<String> colFormat = new ArrayList<>();
+
+        colHeaders.add("variable");
+        colTypes.add("string");
+        colFormat.add("%s");
+        colHeaders.add("coefficient");
+        colTypes.add("double");
+        colFormat.add("%.5f");
+
+        final int rows = inputVariablesImportances.entrySet().size();
+        TwoDimTable table = new TwoDimTable("Input Variable Importance", null, new String[rows],
+                colHeaders.toArray(new String[0]), colTypes.toArray(new String[0]), colFormat.toArray(new String[0]), "");
+        int row = 0;
+        for (Map.Entry<String,Double> entry : inputVariablesImportances.entrySet()) {
+           int col = 0;
+           table.set(row, col++, entry.getKey());
+           table.set(row++, col, entry.getValue());
+       }
+
+        return table;
     }
 }
 
