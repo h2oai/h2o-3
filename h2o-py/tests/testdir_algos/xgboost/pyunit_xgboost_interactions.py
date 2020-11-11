@@ -26,7 +26,7 @@ def interaction_constraint_test():
 
     constraints = (native_params[native_params['name'] == "interaction_constraints"])['value'].values[0]
 
-    assert constraints == u'[[0,1],[2,3,4]]', "Constraints should be [[0,1], [2,3,4]] but it is:"+constraints
+    assert constraints == u'[[0,1],[2,3,4]]', "Constraints should be [[0,1],[2,3,4]] but it is:"+constraints
 
 
 if __name__ == "__main__":

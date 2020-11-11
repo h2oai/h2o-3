@@ -32,10 +32,7 @@ import water.util.Timer;
 import water.util.TwoDimTable;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
 import static hex.tree.SharedTree.createScoringHistoryTable;
@@ -460,11 +457,19 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       Map<String, Integer> monotoneConstraints = _parms.monotoneConstraints();
       if (!monotoneConstraints.isEmpty() &&
           _parms._booster != XGBoostModel.XGBoostParameters.Booster.gblinear &&
-          constraintCheckEnabled()
+          monotonicityConstraintCheckEnabled()
       ) {
         _job.update(0, "Checking monotonicity constraints on the final model");
         model.model_info().updateBoosterBytes(exec.updateBooster());
-        checkConstraints(model.model_info(), monotoneConstraints);
+        checkMonotonicityConstraints(model.model_info(), monotoneConstraints);
+      }
+
+      if (_parms._interaction_constraints != null &&
+              interactionConstraintCheckEnabled()
+      ) {
+        _job.update(0, "Checking interaction constraints on the final model");
+        model.model_info().updateBoosterBytes(exec.updateBooster());
+        checkInteractionConstraints(model.model_info(), _parms._interaction_constraints);
       }
       
       _job.update(0, "Scoring the final model");
@@ -474,11 +479,15 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       _job.update(_parms._ntrees-model._output._ntrees);
     }
 
-    private boolean constraintCheckEnabled() {
+    private boolean monotonicityConstraintCheckEnabled() {
       return Boolean.parseBoolean(getSysProperty("xgboost.monotonicity.checkEnabled", "true"));
     }
 
-    private void checkConstraints(XGBoostModelInfo model_info, Map<String, Integer> monotoneConstraints) {
+    private boolean interactionConstraintCheckEnabled() {
+      return Boolean.parseBoolean(getSysProperty("xgboost.interactions.checkEnabled", "true"));
+    }
+
+    private void checkMonotonicityConstraints(XGBoostModelInfo model_info, Map<String, Integer> monotoneConstraints) {
       GradBooster booster = XGBoostJavaMojoModel.makePredictor(model_info._boosterBytes).getBooster();
       if (!(booster instanceof GBTree)) {
         throw new IllegalStateException("Expected booster object to be GBTree instead it is " + booster.getClass().getName());
@@ -489,12 +498,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       for (RegTree[] classTrees : groupedTrees) {
         for (RegTree tree : classTrees) {
           if (tree == null) continue;
-          checkConstraints(tree.getNodes(), monotoneConstraints, featureProperties);
+          checkMonotonicityConstraints(tree.getNodes(), monotoneConstraints, featureProperties);
         }
       }
     }
 
-    private void checkConstraints(RegTreeNode[] tree, Map<String, Integer> monotoneConstraints, XGBoostUtils.FeatureProperties featureProperties) {
+    private void checkMonotonicityConstraints(RegTreeNode[] tree, Map<String, Integer> monotoneConstraints, XGBoostUtils.FeatureProperties featureProperties) {
       float[] mins = new float[tree.length];
       int[] min_ids = new int[tree.length];
       float[] maxs = new float[tree.length];
@@ -546,6 +555,81 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       final int max_id = maxs[left] > maxs[right] ? left : right;
       maxs[nid] = maxs[max_id];
       max_ids[nid] = max_ids[max_id];
+    }
+
+    private void checkInteractionConstraints(XGBoostModelInfo model_info, String[][] interactionConstraints) {
+      GradBooster booster = XGBoostJavaMojoModel.makePredictor(model_info._boosterBytes).getBooster();
+      if (!(booster instanceof GBTree)) {
+        throw new IllegalStateException("Expected booster object to be GBTree instead it is " + booster.getClass().getName());
+      }
+      final RegTree[][] groupedTrees = ((GBTree) booster).getGroupedTrees();
+      final XGBoostUtils.FeatureProperties featureProperties = XGBoostUtils.assembleFeatureNames(model_info.dataInfo()); // XGBoost's usage of one-hot encoding assumed
+
+      for (RegTree[] classTrees : groupedTrees) {
+        for (RegTree tree : classTrees) {
+          if (tree == null) continue;
+          checkInteractionConstraints(tree.getNodes(), interactionConstraints, featureProperties);
+        }
+      }
+    }
+    
+    private void checkInteractionConstraints(RegTreeNode[] tree, String[][] interactionConstraints, XGBoostUtils.FeatureProperties featureProperties){
+      // create map of constraint unions
+      Map<String, Set<String>> interactionUnions = new HashMap<>();
+      for(String[] interaction : interactionConstraints){
+        for(String columnName : interaction){
+          if(!interactionUnions.containsKey(columnName)) {
+            interactionUnions.put(columnName, new HashSet<>());
+          } 
+          interactionUnions.get(columnName).addAll(Arrays.asList(interaction));
+        }
+      }
+      // traversal tree and check all splits
+      checkInteractionConstraints(tree, tree[0], interactionUnions, featureProperties);
+    }
+    
+    private void checkInteractionConstraints(RegTreeNode[] tree, RegTreeNode node, Map<String, Set<String>> interactionUnions, XGBoostUtils.FeatureProperties featureProperties){
+      if (node.isLeaf()) {
+        return;
+      }
+      int splitIndex = node.getSplitIndex();
+      String splitColumn = featureProperties._names[splitIndex];
+      if(featureProperties._oneHotEncoded[splitIndex]){
+        splitColumn = splitColumn.split("[.]")[0];
+      }
+      // check column is in constrained map - if not violate constraint
+      if(!interactionUnions.containsKey(splitColumn)){
+        throw new IllegalStateException("Interaction constraint violated on column '" + splitColumn+ ": This column is not set in any interaction and cannot be used for splitting.");
+      }
+      // check left child split column is in parent constrained union - if not violate constraint
+      RegTreeNode leftChildNode = tree[node.getLeftChildIndex()];
+      // if left child node is leaf, also right child should be leaf and than no other checks are needed
+      if(leftChildNode.isLeaf()){
+        return;
+      }
+      int leftChildSplitIndex = leftChildNode.getSplitIndex();
+      String leftChildSplitColumn = featureProperties._names[leftChildSplitIndex];
+      if(featureProperties._oneHotEncoded[leftChildSplitIndex]){
+        leftChildSplitColumn = splitColumn.split("[.]")[0];
+      }
+      Set<String> interactionUnion = interactionUnions.get(splitColumn);
+      if(!interactionUnion.contains(leftChildSplitColumn)){
+        throw new IllegalStateException("Interaction constraint violated on column '" + leftChildSplitColumn+ ": The parent column "+splitColumn+" can interact only with "+String.join(",", interactionUnion)+" columns.");
+      }
+      // check right child split column is in parent constrained union - if not violate constraint
+      RegTreeNode rightChildNode = tree[node.getRightChildIndex()];
+      int rightChildSplitIndex = rightChildNode.getSplitIndex();
+      String rightChildSplitColumn = featureProperties._names[rightChildSplitIndex];
+      if(featureProperties._oneHotEncoded[rightChildSplitIndex]){
+        rightChildSplitColumn = splitColumn.split("[.]")[0];
+      }
+      
+      if(!interactionUnion.contains(leftChildSplitColumn)){
+        throw new IllegalStateException("Interaction constraint violated on column '" + rightChildSplitColumn+ ": The parent column "+splitColumn+" can interact only with "+String.join(",", interactionUnion)+" columns.");
+      }
+      
+      checkInteractionConstraints(tree, leftChildNode, interactionUnions, featureProperties);
+      checkInteractionConstraints(tree, rightChildNode, interactionUnions, featureProperties);
     }
 
     long _firstScore = 0;

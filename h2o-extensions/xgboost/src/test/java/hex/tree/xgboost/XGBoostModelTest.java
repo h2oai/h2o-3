@@ -113,6 +113,7 @@ public class XGBoostModelTest {
       parms._train = airlinesFrame._key;
       parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
       parms._interaction_constraints = new String[][]{new String[]{"fYear","fMonth"}, new String[]{"Origin", "Distance"}};
+      parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist;
 
       final XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Scope.track_generic(model);

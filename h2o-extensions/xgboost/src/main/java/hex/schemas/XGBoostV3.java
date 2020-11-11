@@ -208,6 +208,6 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     public int gpu_id;
 
     @API(help="A set of allowed column interactions.", level= API.Level.expert)
-    public String[][]interaction_constraints;
+    public String[][] interaction_constraints;
   }
 }
