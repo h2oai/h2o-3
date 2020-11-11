@@ -15,7 +15,7 @@ def test_parser_svmlight_column_skip_not_supported():
     ncol = 10
     seed = 12345
 
-    f1 = h2o.create_frame(rows=nrow, cols=ncol, real_fraction=0.5, integer_fraction=0.5, missing_fraction=0.2,
+    f1 = h2o.create_frame(rows=nrow, cols=ncol, real_fraction=0.5, integer_fraction=0.5, missing_fraction=0,
                           has_response=False, seed=seed)
 
     results_path = pyunit_utils.locate("results")
