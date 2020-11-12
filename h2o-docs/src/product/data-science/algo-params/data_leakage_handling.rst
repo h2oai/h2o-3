@@ -9,14 +9,17 @@ The ``data_leakage_handling`` parameter defines the strategy used to compute the
 
 The following strategies can be specified:
 
--  ``none``: no holdout. The mean is calculated on all rows of data \*\*. This should be used for validation or test data.
--  ``leave_one_out``: mean is calculated on all rows of data excluding the row itself.
+- ``none``: The mean is calculated on all rows of data (no holdout). 
 
-   -  This can be used for the training data. The target of the row itself is not included in the average to prevent overfitting.
+	- This should be used for validation or test data.
+	
+- ``leave_one_out``: The mean is calculated on all rows of data excluding the row itself.
+	
+	- This can be used for the training data. The target of the row itself is not included in the average to prevent overfitting.
 
--  ``k_fold``: mean is calculated on out-of-fold data only (**note:** this options requires a fold column).
+- ``k_fold``: The mean is calculated on out-of-fold data only. This options requires a fold column.
 
-   -  This can be used for the training data. The target average is calculated on the out-of-fold data to prevent overfitting.
+	- This can be used for the training data. The target average is calculated on the out-of-fold data to prevent overfitting.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
