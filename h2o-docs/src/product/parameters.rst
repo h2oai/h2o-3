@@ -19,7 +19,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/beta_constraints
    data-science/algo-params/beta_epsilon
    data-science/algo-params/binomial_double_trees
-   data-science/algo-params/blended_avg
+   data-science/algo-params/blending
    data-science/algo-params/blending_frame
    data-science/algo-params/build_tree_one_node
    data-science/algo-params/calibrate_model
@@ -36,6 +36,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/compute_p_values
    data-science/algo-params/custom_distribution_func
    data-science/algo-params/custom_metric_func
+   data-science/algo-params/data_leakage_handling
    data-science/algo-params/distribution
    data-science/algo-params/early_stopping
    data-science/algo-params/eps_prob
@@ -50,7 +51,6 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/gradient_epsilon
    data-science/algo-params/hglm
    data-science/algo-params/histogram_type
-   data-science/algo-params/holdout_type
    data-science/algo-params/huber_alpha
    data-science/algo-params/ignore_const_cols
    data-science/algo-params/ignored_columns
