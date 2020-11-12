@@ -21,6 +21,7 @@ public class PCAMojoWriter extends ModelMojoWriter<PCAModel, PCAModel.PCAParamet
   @Override
   protected void writeModelData() throws IOException {
     writekv("pcaMethod", model._parms._pca_method.toString()); // for reference
+    writekv("pca_impl", model._parms._pca_implementation.toString());
     writekv("k", model._parms._k);
     writekv("use_all_factor_levels", model._parms._use_all_factor_levels);
     writekv("permutation", model._output._permutation);
