@@ -351,6 +351,30 @@ GBM Tuning Guide
 * `H2O Flow <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.flow>`__
 * `Blog <http://www.h2o.ai/blog/h2o-gbm-tuning-tutorial-for-r/>`__
 
+GBM Feature Interactions
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Ranks of features and feature interactions by various metrics implemented in `XGBFI <https://github.com/Far0n/xgbfi>`__ style.
+
+Metrics
+'''''''
+
+- **Gain:** Total gain of each feature or feature interaction
+- **FScore:** Amount of possible splits taken  on a feature or feature interaction
+- **wFScore:** Amount of possible splits taken on a feature or feature interaction weighted by the probability of the splits to take place
+- **Average wFScore:** wFScore divided by FScore
+- **Average Gain:** Gain divided by FScore
+- **Expected Gain:** Total gain of each feature or feature interaction weighted by the probability to gather the gain
+- **Average Tree Index**
+- **Average Tree Depth**
+
+**Additional features:**
+
+- Leaf Statistics
+- Split Value Histograms
+
+Usage is illustrated in the Examples section.
+
 Examples
 ~~~~~~~~
 
@@ -384,6 +408,9 @@ Below is a simple example showing how to build a Gradient Boosting Machine model
     # Generate predictions on a validation set (if necessary):
     pred <- h2o.predict(pros_gbm, newdata = prostate)
 
+    # Extract feature interactions:
+    feature_interactions <- h2o.feature_interaction(pros_gbm)
+
 
    .. code-tab:: python
    
@@ -410,6 +437,9 @@ Below is a simple example showing how to build a Gradient Boosting Machine model
 
     # Generate predictions on a test set (if necessary):
     pred = pros_gbm.predict(prostate)
+
+    # Extract feature interactions:
+    feature_interactions = pros_gbm.feature_interaction()
 
 
    .. code-tab:: scala
