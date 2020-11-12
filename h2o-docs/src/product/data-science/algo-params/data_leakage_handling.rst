@@ -9,7 +9,8 @@ The ``data_leakage_handling`` parameter defines the strategy used to compute the
 
 The following strategies can be specified:
 
--  ``none``: no holdout. The mean is calculated on all rows of data \*\*. This should be used for validation or test data.
+-  ``none``: no holdout. The mean is calculated on all rows. This should be used for validation or test data.
+
 -  ``leave_one_out``: mean is calculated on all rows of data excluding the row itself.
 
    -  This can be used for the training data. The target of the row itself is not included in the average to prevent overfitting.
