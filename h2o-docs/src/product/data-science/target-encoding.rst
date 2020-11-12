@@ -17,7 +17,7 @@ Target Encoding Parameters
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the categorical columns that will be target encoded. If ``x`` is missing, then all **categorical** columns except ``y`` are encoded.
 
--  `data_leakage_handling <algo-params/data_leakage_handling.html>`__: Specify one of the following data leakage handling strategy:
+-  `data_leakage_handling <algo-params/data_leakage_handling.html>`__: Specify one of the following data leakage handling strategies:
 
     - ``none``: Do not holdout anything. Using whole frame for training. This is the default value.
     - ``k_fold``: Encodings for a fold are generated based on out-of-fold data.
@@ -27,13 +27,13 @@ Target Encoding Parameters
 
 -  **keep_original_categorical_columns**: Specify if the original categorical columns that are being encoded should be included in the result frame. This value defaults to True/TRUE.
 
--  `blending <algo-params/inflection_point.html>`__: Specify whether the target average should be weighted based on the count of the group. It is often the case, that some groups may have a small number of records and the target average will be unreliable. To prevent this, the blended average takes a weighted average of the group’s target value and the global target value. This value defaults to False/FALSE.
+-  `blending <algo-params/inflection_point.html>`__: Specify whether the target average should be weighted based on the count of the group. It is often the case that some groups may have a small number of records and the target average will be unreliable. To prevent this, the blended average takes a weighted average of the group’s target value and the global target value. This value defaults to False/FALSE.
 
--  `inflection_point <algo-params/inflection_point.html>`__: Specify the inflection point value. This value is used for blending when ``blending=True`` and to calculate lambda. This determines half of the minimal sample size for which we completely trust the estimate based on the sample in the particular level of the categorical variable. This value defaults value to 10.
+-  `inflection_point <algo-params/inflection_point.html>`__: Specify the inflection point value. This value is used for blending when ``blending=True`` and to calculate lambda. This determines half of the minimal sample size for which we completely trust the estimate based on the sample in the particular level of the categorical variable. This value defaults to 10.
 
 -  `smoothing <algo-params/smoothing.html>`__: The smoothing value is used for blending when ``blending=True`` and to calculate lambda. Smoothing controls the rate of transition between the particular level’s posterior probability and the prior probability. For smoothing values approaching infinity, it becomes a hard threshold between the posterior and the prior probability. This value defaults to 20.
 
--  **noise**: Specify the amount of random noise that should be added to the target average in order to prevent overfitting. Set to 0 to disable noise. This value defaults to 0.01 times the range of :math:`y`.
+-  `noise <algo-params/noise.html>`__: Specify the amount of random noise that should be added to the target average in order to prevent overfitting. Set to 0 to disable noise. This value defaults to 0.01 times the range of :math:`y`.
 
 -  `seed <algo-params/seed.html>`__: The seed for the pseudorandom number generator, mainly used to generate draws from the uniform distribution for random noise. Defaults to -1 (random seed).
 
