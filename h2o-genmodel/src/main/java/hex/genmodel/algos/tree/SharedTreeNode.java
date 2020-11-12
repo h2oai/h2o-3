@@ -70,7 +70,7 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
     nodeNumber = id;
   }
 
-  void setWeight(float w) {
+  public void setWeight(float w) {
     weight = w;
   }
 

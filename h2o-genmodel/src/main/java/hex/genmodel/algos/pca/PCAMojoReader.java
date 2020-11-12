@@ -16,6 +16,7 @@ public class PCAMojoReader extends ModelMojoReader<PCAMojoModel>{
   protected void readModelData() throws IOException {
     _model._use_all_factor_levels = readkv("use_all_factor_levels");
     _model._pca_method = readkv("pca_methods");
+    _model._pca_impl = readkv("pca_impl");
     _model._k = readkv("k");
     _model._permutation = readkv("permutation");
     _model._ncats = readkv("ncats");
