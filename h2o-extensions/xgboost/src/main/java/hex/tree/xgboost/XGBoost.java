@@ -298,7 +298,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         dinfo.updateWeightedSigmaAndMeanForResponse(ymt.responseSDs(), ymt.responseMeans());
     }
     dinfo.coefNames(); // cache the coefficient names
-    assert dinfo._coefNames != null;
+    dinfo.coefOriginalColumnIndices(); // cache the original column indices
+    assert dinfo._coefNames != null && dinfo._coefOriginalIndices != null;
     return dinfo;
   }
 
@@ -565,76 +566,75 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       final RegTree[][] groupedTrees = ((GBTree) booster).getGroupedTrees();
       final XGBoostUtils.FeatureProperties featureProperties = XGBoostUtils.assembleFeatureNames(model_info.dataInfo()); // XGBoost's usage of one-hot encoding assumed
 
+      // create map of constraint unions
+      Map<Integer, Set<Integer>> interactionUnions = new HashMap<>();
+      for(String[] interaction : interactionConstraints){
+        Integer[] mapOfIndices = featureProperties.mapOriginalNamesToIndices(interaction);
+        for(int index : mapOfIndices){
+          if(!interactionUnions.containsKey(index)) {
+            interactionUnions.put(index, new HashSet<>());
+          }
+          interactionUnions.get(index).addAll(Arrays.asList(mapOfIndices));
+        }
+      }
+      
       for (RegTree[] classTrees : groupedTrees) {
         for (RegTree tree : classTrees) {
           if (tree == null) continue;
-          checkInteractionConstraints(tree.getNodes(), interactionConstraints, featureProperties);
+          RegTreeNode[] treeNodes = tree.getNodes(); 
+          checkInteractionConstraints(treeNodes, treeNodes[0], interactionUnions, featureProperties);
         }
       }
     }
     
-    private void checkInteractionConstraints(RegTreeNode[] tree, String[][] interactionConstraints, XGBoostUtils.FeatureProperties featureProperties){
-      // create map of constraint unions
-      Map<String, Set<String>> interactionUnions = new HashMap<>();
-      for(String[] interaction : interactionConstraints){
-        for(String columnName : interaction){
-          if(!interactionUnions.containsKey(columnName)) {
-            interactionUnions.put(columnName, new HashSet<>());
-          } 
-          interactionUnions.get(columnName).addAll(Arrays.asList(interaction));
-        }
-      }
-      // traversal tree and check all splits
-      checkInteractionConstraints(tree, tree[0], interactionUnions, featureProperties);
-    }
-    
-    private void checkInteractionConstraints(RegTreeNode[] tree, RegTreeNode node, Map<String, Set<String>> interactionUnions, XGBoostUtils.FeatureProperties featureProperties){
+    private void checkInteractionConstraints(RegTreeNode[] tree, RegTreeNode node, Map<Integer, Set<Integer>> interactionUnions, XGBoostUtils.FeatureProperties featureProperties){
       if (node.isLeaf()) {
         return;
       }
       int splitIndex = node.getSplitIndex();
-      String splitColumn = featureProperties._names[splitIndex];
-      if(featureProperties._oneHotEncoded[splitIndex]){
-        splitColumn = splitColumn.split("[.]")[0];
-      }
-      
-      Set<String> interactionUnion = interactionUnions.get(splitColumn);
+      int splitIndexOriginal = featureProperties._originalColumnIndices[splitIndex];
+      Set<Integer> interactionUnion = interactionUnions.get(splitIndexOriginal);
       RegTreeNode leftChildNode = tree[node.getLeftChildIndex()];
       // if left child node is not leaf - check left child
       if(!leftChildNode.isLeaf()) {
         int leftChildSplitIndex = leftChildNode.getSplitIndex();
-        String leftChildSplitColumn = featureProperties._names[leftChildSplitIndex];
-        if (featureProperties._oneHotEncoded[leftChildSplitIndex]) {
-          leftChildSplitColumn = splitColumn.split("[.]")[0];
-        }
+        int leftChildSplitIndexOriginal =  featureProperties._originalColumnIndices[leftChildSplitIndex];
         // check left child split column is the same as parent or is in parent constrained union - if not violate constraint
-        if (!leftChildSplitColumn.equals(splitColumn) && (interactionUnion == null || !interactionUnion.contains(leftChildSplitColumn))) {
-          String interaction = "['" + splitColumn + "']";
-          if (interactionUnion != null) {
-            interaction = String.join(",", interactionUnion);
-          }
-          throw new IllegalStateException("Interaction constraint violated on column '" + leftChildSplitColumn+ ": The parent column '"+splitColumn+"' can interact only with "+interaction+" columns.");
-          }
+        if (leftChildSplitIndex != splitIndex && (interactionUnion == null || !interactionUnion.contains(leftChildSplitIndexOriginal))) {
+          String parentOriginalName = featureProperties._originalNames[splitIndexOriginal];
+          String interactionString = generateInteractionConstraintUnionString(featureProperties._originalNames, splitIndexOriginal, interactionUnion);
+          String leftOriginalName = featureProperties._originalNames[leftChildSplitIndexOriginal];
+          throw new IllegalStateException("Interaction constraint violated on column '" + leftOriginalName+ ": The parent column '"+parentOriginalName+"' can interact only with "+interactionString+" columns.");
+        }
       }
-      // if right child node is not leaf - check right child
       RegTreeNode rightChildNode = tree[node.getRightChildIndex()];
+      // if right child node is not leaf - check right child
       if(!rightChildNode.isLeaf()) {
         int rightChildSplitIndex = rightChildNode.getSplitIndex();
-        String rightChildSplitColumn = featureProperties._names[rightChildSplitIndex];
-        if (featureProperties._oneHotEncoded[rightChildSplitIndex]) {
-          rightChildSplitColumn = splitColumn.split("[.]")[0];
-        }
+        int rightChildSplitIndexOriginal =  featureProperties._originalColumnIndices[rightChildSplitIndex];
         // check right child split column is the same as parent or is in parent constrained union - if not violate constraint
-        if (!rightChildSplitColumn.equals(splitColumn) && (interactionUnion == null || !interactionUnion.contains(rightChildSplitColumn))) {
-          String interaction = "[" + splitColumn + "]";
-          if (interactionUnion != null) {
-            interaction = String.join(",", interactionUnion);
-          }
-          throw new IllegalStateException("Interaction constraint violated on column '" + rightChildSplitColumn+ ": The parent column "+splitColumn+" can interact only with "+interaction+" columns.");
+        if (rightChildSplitIndex != splitIndex && (interactionUnion == null || !interactionUnion.contains(rightChildSplitIndexOriginal))) {
+          String parentOriginalName = featureProperties._originalNames[splitIndexOriginal];
+          String interactionString = generateInteractionConstraintUnionString(featureProperties._originalNames, splitIndexOriginal, interactionUnion);
+          String rightOriginalName = featureProperties._originalNames[rightChildSplitIndexOriginal];
+          throw new IllegalStateException("Interaction constraint violated on column '" + rightOriginalName+ ": The parent column '"+parentOriginalName+"' can interact only with "+interactionString+" columns.");
         }
       }
       checkInteractionConstraints(tree, leftChildNode, interactionUnions, featureProperties);
       checkInteractionConstraints(tree, rightChildNode, interactionUnions, featureProperties);
+    }
+    
+    private String generateInteractionConstraintUnionString(String[] originalNames, int splitIndexOriginal, Set<Integer> interactionUnion){
+      String parentOriginalName = originalNames[splitIndexOriginal];
+      String interaction = "['" + parentOriginalName + "']";
+      if (interactionUnion != null) {
+        StringBuilder sb = new StringBuilder("[");
+        for(Integer i: interactionUnion){
+          sb.append(originalNames[i]).append(",");
+        }
+        interaction = sb.replace(interactionUnion.size()-1, interactionUnion.size(), "]").toString();
+      }
+      return interaction;
     }
 
     long _firstScore = 0;

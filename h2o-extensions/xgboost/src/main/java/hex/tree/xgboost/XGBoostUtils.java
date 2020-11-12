@@ -13,6 +13,8 @@ import water.fvec.Vec;
 import water.util.VecUtils;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import static water.H2O.technote;
@@ -180,22 +182,44 @@ public class XGBoostUtils {
 
         String[] featureNames = new String[di.fullN()];
         boolean[] oneHotEncoded = new boolean[di.fullN()];
+        int[] originalColumnIndices = di.coefOriginalColumnIndices();
         for (int i = 0; i < di.fullN(); i++) {
             featureNames[i] = coefnames[i];
             if (i < numCatCols) {
                 oneHotEncoded[i] = true;
             }
         }
-        return new FeatureProperties(featureNames, oneHotEncoded);
+        return new FeatureProperties(di._adaptedFrame._names, featureNames, oneHotEncoded, originalColumnIndices);
     }
 
     public static class FeatureProperties {
+        public String[] _originalNames;
+        public Map<String, Integer> _originalNamesMap;
         public String[] _names;
         public boolean[] _oneHotEncoded;
+        public int[] _originalColumnIndices;
 
-        public FeatureProperties(String[] names, boolean[] oneHotEncoded) {
+        public FeatureProperties(String[] originalNames, String[] names, boolean[] oneHotEncoded, int[] originalColumnIndices) {
+            _originalNames = originalNames;
+            _originalNamesMap = new HashMap<>();
+            for(int i = 0; i < originalNames.length; i++){
+                _originalNamesMap.put(originalNames[i], i);
+            }
             _names = names;
             _oneHotEncoded = oneHotEncoded;
+            _originalColumnIndices = originalColumnIndices;
+        }
+        
+        public int getOriginalIndex(String originalName){
+            return _originalNamesMap.get(originalName);
+        }
+        
+        public Integer[] mapOriginalNamesToIndices(String[] names){
+            Integer[] res = new Integer[names.length];
+            for(int i = 0; i<names.length; i++){
+                res[i] = getOriginalIndex(names[i]);
+            }
+            return res;
         }
     }
 

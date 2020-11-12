@@ -466,6 +466,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     
     String[][] interactionConstraints = p._interaction_constraints;
     if(interactionConstraints != null && interactionConstraints.length > 0) {
+      if(!p._categorical_encoding.equals(Parameters.CategoricalEncodingScheme.OneHotInternal)){
+        throw new IllegalArgumentException("No support interaction constraint for categorical encoding = " + p._categorical_encoding.toString()+". Constraint interactions are available only for ``AUTO`` (``one_hot_internal`` or ``OneHotInternal``) categorical encoding.");
+      }
       params.put("interaction_constraints", createInteractions(interactionConstraints, coefNames, p));
     }
     
