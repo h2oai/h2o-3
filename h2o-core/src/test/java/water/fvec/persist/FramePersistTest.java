@@ -75,7 +75,6 @@ public class FramePersistTest {
         try {
             Frame f = Scope.track(createTestFrame());
             String[] origNames = f.names();
-            Key[] origKeys = f.keys();
             long origNrow = f.numRows();
             Frame copy = Scope.track(f.deepCopy("cat_copy"));
             File dest = temp.newFolder();
@@ -84,7 +83,6 @@ public class FramePersistTest {
             Frame returned = Scope.track(FramePersist.loadFrom(f._key, dest.getAbsolutePath()).get());
             Frame loaded = DKV.get(f._key).get();
             assertArrayEquals(origNames, loaded._names);
-            assertArrayEquals(origKeys, loaded.keys());
             assertEquals(origNrow, loaded.numRows());
             assertEquals(returned._key, loaded._key);
             assertFrameEquals(copy, loaded, 0);

@@ -148,18 +148,21 @@ public class FramePersist {
         @Override
         public void compute2() {
             Vec con = null;
+            Key<Vec>[] vecKeys = new Vec.VectorGroup().addVecs(meta.vecs.length);
             try {
                 long nrow = meta.espc[meta.espc.length-1];
                 int nchunk = meta.espc.length-1;
                 con = Vec.makeConN(nrow, nchunk);
-                new LoadChunksTask(job, metaUri, meta.vecs).doAll(con).join();
+                new LoadChunksTask(job, metaUri, vecKeys).doAll(con).join();
             } finally {
                 if (con != null) con.remove();
             }
+            int rowLayout = Vec.ESPC.rowLayout(vecKeys[0], meta.espc);
             Futures fs = new Futures();
-            int rowLayout = Vec.ESPC.rowLayout(meta.vecs[0]._key, meta.espc);
-            for (Vec v : meta.vecs) {
+            for (int i = 0; i < meta.vecs.length; i++) {
+                Vec v = meta.vecs[i];
                 v._rowLayout = rowLayout;
+                v._key = vecKeys[i];
                 DKV.put(v, fs);
             }
             fs.blockForPending();
@@ -174,12 +177,12 @@ public class FramePersist {
 
         private final Job<Frame> job;
         private final String metaUri;
-        private final Vec[] vecs;
+        private final Key[] vecKeys;
 
-        LoadChunksTask(Job<Frame> job, String metaUri, Vec[] vecs) {
+        LoadChunksTask(Job<Frame> job, String metaUri, Key[] vecKeys) {
             this.job = job;
             this.metaUri = metaUri;
-            this.vecs = vecs;
+            this.vecKeys = vecKeys;
         }
 
         @Override
@@ -189,13 +192,14 @@ public class FramePersist {
             
         }
 
+        @SuppressWarnings("rawtypes")
         private int readChunks(AutoBuffer autoBuffer, int cidx) {
-            for (Vec v : vecs) {
-                Key chunkKey = v.chunkKey(cidx);
+            for (Key k : vecKeys) {
+                Key chunkKey = Vec.chunkKey(k, cidx);
                 Chunk chunk = autoBuffer.get();
                 DKV.put(chunkKey, new Value(chunkKey, chunk));
             }
-            return vecs.length;
+            return vecKeys.length;
         }
 
     }
