@@ -6,6 +6,7 @@ FROM ${FROM_IMAGE}${GPU_SUFFIX}:${FROM_VERSION}
 ARG INSTALL_JAVA_VERSION
 ENV JAVA_VERSION=${INSTALL_JAVA_VERSION}
 COPY scripts/install_java_version scripts/install_java_version_local scripts/java-${JAVA_VERSION}-vars.sh \
+     jdk-15.0.2_linux-x64_bin.tar.gz \
      jdk-14.0.2_linux-x64_bin.tar.gz \
      jdk-13.0.2_linux-x64_bin.tar.gz \
      jdk-12.0.2_linux-x64_bin.tar.gz \
@@ -25,6 +26,7 @@ RUN \
     rm /tmp/install_java_version \
         /tmp/install_java_version_local \
         /tmp/java-${JAVA_VERSION}-vars.sh \
+        /tmp/jdk-15.0.2_linux-x64_bin.tar.gz \
         /tmp/jdk-14.0.2_linux-x64_bin.tar.gz \
         /tmp/jdk-13.0.2_linux-x64_bin.tar.gz \
         /tmp/jdk-12.0.2_linux-x64_bin.tar.gz \
