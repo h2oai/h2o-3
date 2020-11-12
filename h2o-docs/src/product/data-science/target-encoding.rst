@@ -11,55 +11,31 @@ Target encoding is the process of replacing a categorical value with the mean of
 Target Encoding Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``training_frame``
-''''''''''''''''''
+-  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset that you want to use when you are ready to build a Target Encoding model.
 
-Specify the dataset that you want to use when you are ready to build a Target Encoding model.
+-  `y <algo-params/y.html>`__: (Required) Specify the target column that you are attempting to predict. The data can be numeric or categorical.
 
-``response_column``
-'''''''''''''''''''
+-  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the categorical columns that will be target encoded. If ``x`` is missing, then all **categorical** columns except ``y`` are encoded.
 
-Use ``response_column`` to specify the response column is the column that you are attempting to predict (y-axis). 
+-  `data_leakage_handling <algo-params/data_leakage_handling.html>`__: Specify one of the following data leakage handling strategies:
 
-``data_leakage_handling``
-'''''''''''''''''''''''''
+    - ``none``: Do not holdout anything. Using whole frame for training. This is the default value.
+    - ``k_fold``: Encodings for a fold are generated based on out-of-fold data.
+    - ``leave_one_out``: The current row's response value is subtracted from the pre-calculated per-level frequencies.
 
-To control data leakage, specify one of the following data leakage handling strategies:
+-  `fold_column <algo-params/fold_column.html>`__: Specify the name or column index of the fold column in the data. Applicable only if ``data_leakage_handling="k_fold"``. This defaults to None/NULL (no fold_column).
 
-- ``none`` (Python)/``None`` (R): Do not holdout anything. Using whole frame for training
-- ``k_fold`` (Python)/``KFold`` (R): Encodings for a fold are generated based on out-of-fold data.
-- ``leave_one_out`` (Python)/``LeaveOneOut`` (R): The current row's response value is subtracted from the pre-calculated per-level frequencies.
+-  **keep_original_categorical_columns**: Specify if the original categorical columns that are being encoded should be included in the result frame. This value defaults to True/TRUE.
 
-``fold_column``
-'''''''''''''''
+-  `blending <algo-params/inflection_point.html>`__: Specify whether the target average should be weighted based on the count of the group. It is often the case that some groups may have a small number of records and the target average will be unreliable. To prevent this, the blended average takes a weighted average of the group’s target value and the global target value. This value defaults to False/FALSE.
 
-Specify the name or column index of the fold column in the data. This defaults to NULL (no fold_column).
+-  `inflection_point <algo-params/inflection_point.html>`__: Specify the inflection point value. This value is used for blending when ``blending=True`` and to calculate lambda. This determines half of the minimal sample size for which we completely trust the estimate based on the sample in the particular level of the categorical variable. This value defaults to 10.
 
-``blending``
-''''''''''''
+-  `smoothing <algo-params/smoothing.html>`__: The smoothing value is used for blending when ``blending=True`` and to calculate lambda. Smoothing controls the rate of transition between the particular level’s posterior probability and the prior probability. For smoothing values approaching infinity, it becomes a hard threshold between the posterior and the prior probability. This value defaults to 20.
 
-The ``blending`` parameter defines whether the target average should be weighted based on the count of the group. It is often the case, that some groups may have a small number of records and the target average will be unreliable. To prevent this, the blended average takes a weighted average of the group’s target value and the global target value.
+-  `noise <algo-params/noise.html>`__: Specify the amount of random noise that should be added to the target average in order to prevent overfitting. Set to 0 to disable noise. This value defaults to 0.01 times the range of :math:`y`.
 
-``inflection_point``
-''''''''''''''''''''
-
-Use ``inflection_point`` to specify the inflection point value. This value is used for blending when ``blending=True`` and to calculate lambda. This determines half of the minimal sample size for which we completely trust the estimate based on the sample in the particular level of the categorical variable. This value defaults value to 10.
-
-``smoothing``
-'''''''''''''
-
-The smoothing value is used for blending when ``blending=True`` and to calculate lambda. Smoothing controls the rate of transition between the particular level’s posterior probability and the prior probability. For smoothing values approaching infinity, it becomes a hard threshold between the posterior and the prior probability. This value defaults to 20.
-
-
-``noise``
-'''''''''''''''
-
-Use the ``noise`` parameter to specify the amount of random noise that should be added to the target average in order to prevent overfitting. This value defaults to 0.01 times the range of :math:`y`.
-
-``seed``
-'''''''''
-
-A random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
+-  `seed <algo-params/seed.html>`__: The seed for the pseudorandom number generator, mainly used to generate draws from the uniform distribution for random noise. Defaults to -1 (random seed).
 
 Target Encoding Model Methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -74,7 +50,7 @@ Apply transformation to target encoded columns based on the encoding maps genera
 - ``inflection_point``: User can override the ``inflection_point`` value defined on the model.
 - ``smoothing``: User can override the ``smoothing`` value defined on the model.
 - ``noise``: User can override the ``noise`` value defined on the model.
-- ``as_training``: User should set this parameter to True/TRUE when transforming the training dataset. Defaults to False/FALSE.
+- ``as_training``: User should set this parameter to True/TRUE when transforming the training dataset, and leave it to False/FALSE when applying to non-training data. Defaults to False/FALSE.
 
 
 Example
@@ -115,7 +91,7 @@ In this example, we will be trying to predict ``survived`` using the popular tit
                                         x = encoded_columns, 
                                         y = "survived", 
                                         fold_column = "fold", 
-                                        data_leakage_handling = "KFold", 
+                                        data_leakage_handling = "k_fold", 
                                         blending = TRUE, 
                                         inflection_point = 3, 
                                         smoothing = 10, 

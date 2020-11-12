@@ -28,5 +28,4 @@ This section provides examples of common tasks performed when preparing data for
    data-munging/slicing-rows
    data-munging/sortcolumn
    data-munging/splitting-datasets
-   data-munging/target-encoding
    data-munging/tokenize
