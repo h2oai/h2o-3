@@ -28,6 +28,7 @@ import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.Timer;
 import water.util.TwoDimTable;
 
@@ -465,8 +466,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
 
       if (_parms._interaction_constraints != null &&
-              interactionConstraintCheckEnabled()
-      ) {
+              interactionConstraintCheckEnabled()) {
         _job.update(0, "Checking interaction constraints on the final model");
         model.model_info().updateBoosterBytes(exec.updateBooster());
         checkInteractionConstraints(model.model_info(), _parms._interaction_constraints);
@@ -597,37 +597,42 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       if(featureProperties._oneHotEncoded[splitIndex]){
         splitColumn = splitColumn.split("[.]")[0];
       }
-      // check column is in constrained map - if not violate constraint
-      if(!interactionUnions.containsKey(splitColumn)){
-        throw new IllegalStateException("Interaction constraint violated on column '" + splitColumn+ ": This column is not set in any interaction and cannot be used for splitting.");
-      }
-      // check left child split column is in parent constrained union - if not violate constraint
-      RegTreeNode leftChildNode = tree[node.getLeftChildIndex()];
-      // if left child node is leaf, also right child should be leaf and than no other checks are needed
-      if(leftChildNode.isLeaf()){
-        return;
-      }
-      int leftChildSplitIndex = leftChildNode.getSplitIndex();
-      String leftChildSplitColumn = featureProperties._names[leftChildSplitIndex];
-      if(featureProperties._oneHotEncoded[leftChildSplitIndex]){
-        leftChildSplitColumn = splitColumn.split("[.]")[0];
-      }
+      
       Set<String> interactionUnion = interactionUnions.get(splitColumn);
-      if(!interactionUnion.contains(leftChildSplitColumn)){
-        throw new IllegalStateException("Interaction constraint violated on column '" + leftChildSplitColumn+ ": The parent column "+splitColumn+" can interact only with "+String.join(",", interactionUnion)+" columns.");
+      RegTreeNode leftChildNode = tree[node.getLeftChildIndex()];
+      // if left child node is not leaf - check left child
+      if(!leftChildNode.isLeaf()) {
+        int leftChildSplitIndex = leftChildNode.getSplitIndex();
+        String leftChildSplitColumn = featureProperties._names[leftChildSplitIndex];
+        if (featureProperties._oneHotEncoded[leftChildSplitIndex]) {
+          leftChildSplitColumn = splitColumn.split("[.]")[0];
+        }
+        // check left child split column is the same as parent or is in parent constrained union - if not violate constraint
+        if (!leftChildSplitColumn.equals(splitColumn) && (interactionUnion == null || !interactionUnion.contains(leftChildSplitColumn))) {
+          String interaction = "['" + splitColumn + "']";
+          if (interactionUnion != null) {
+            interaction = String.join(",", interactionUnion);
+          }
+          throw new IllegalStateException("Interaction constraint violated on column '" + leftChildSplitColumn+ ": The parent column '"+splitColumn+"' can interact only with "+interaction+" columns.");
+          }
       }
-      // check right child split column is in parent constrained union - if not violate constraint
+      // if right child node is not leaf - check right child
       RegTreeNode rightChildNode = tree[node.getRightChildIndex()];
-      int rightChildSplitIndex = rightChildNode.getSplitIndex();
-      String rightChildSplitColumn = featureProperties._names[rightChildSplitIndex];
-      if(featureProperties._oneHotEncoded[rightChildSplitIndex]){
-        rightChildSplitColumn = splitColumn.split("[.]")[0];
+      if(!rightChildNode.isLeaf()) {
+        int rightChildSplitIndex = rightChildNode.getSplitIndex();
+        String rightChildSplitColumn = featureProperties._names[rightChildSplitIndex];
+        if (featureProperties._oneHotEncoded[rightChildSplitIndex]) {
+          rightChildSplitColumn = splitColumn.split("[.]")[0];
+        }
+        // check right child split column is the same as parent or is in parent constrained union - if not violate constraint
+        if (!rightChildSplitColumn.equals(splitColumn) && (interactionUnion == null || !interactionUnion.contains(rightChildSplitColumn))) {
+          String interaction = "[" + splitColumn + "]";
+          if (interactionUnion != null) {
+            interaction = String.join(",", interactionUnion);
+          }
+          throw new IllegalStateException("Interaction constraint violated on column '" + rightChildSplitColumn+ ": The parent column "+splitColumn+" can interact only with "+interaction+" columns.");
+        }
       }
-      
-      if(!interactionUnion.contains(leftChildSplitColumn)){
-        throw new IllegalStateException("Interaction constraint violated on column '" + rightChildSplitColumn+ ": The parent column "+splitColumn+" can interact only with "+String.join(",", interactionUnion)+" columns.");
-      }
-      
       checkInteractionConstraints(tree, leftChildNode, interactionUnions, featureProperties);
       checkInteractionConstraints(tree, rightChildNode, interactionUnions, featureProperties);
     }

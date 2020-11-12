@@ -12,14 +12,14 @@ def interaction_constraint_test():
 
     train = pyunit_utils.genTrainFrame(100, 10, enumCols=0, randseed=17)
     print(train)
-    myX = train.names
+    x = train.names
     y = 'response'
-    myX.remove(y)
+    x.remove(y)
 
     h2o_params["interaction_constraints"] = [["C1", "C2"], ["C3", "C4", "C5"]]
 
     model = H2OXGBoostEstimator(**h2o_params)
-    model.train(x=myX, y=y, training_frame=train)
+    model.train(x=x, y=y, training_frame=train)
 
     native_params = model._model_json["output"]["native_parameters"].as_data_frame()
     print(native_params)

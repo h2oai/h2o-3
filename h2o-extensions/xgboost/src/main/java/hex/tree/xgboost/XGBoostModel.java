@@ -477,10 +477,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return Collections.unmodifiableMap(params);
   }
   
-  private static String createInteractions(String[][] includeInteractionPairs, String[] coefNames, XGBoostParameters params){
+  private static String createInteractions(String[][] interaction_constraints, String[] coefNames, XGBoostParameters params){
     StringBuilder sb = new StringBuilder();
     sb.append("[");
-    for (String[] list : includeInteractionPairs) {
+    for (String[] list : interaction_constraints) {
       sb.append("[");
       for (String item : list) {
         if(item.equals(params._response_column)){
