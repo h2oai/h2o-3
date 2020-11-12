@@ -39,13 +39,11 @@ public class MojoPipeline extends Iced<MojoPipeline> {
 
   private byte[] outputTypes() {
     MojoFrameMeta outputMeta = _mojoPipelineMeta.outputFrameMeta;
-    for (Type type : outputMeta.getColumnTypes()) {
-      if (! type.isnumeric && type != Type.Bool) {
-        throw new UnsupportedOperationException("Output type `" + type.name() + "` is not supported.");
-      }
-    }
     byte[] types = new byte[outputMeta.size()];
-    Arrays.fill(types, Vec.T_NUM);
+    int i = 0;
+    for (Type type : outputMeta.getColumnTypes()) {
+      types[i++] = type.isnumeric || type == Type.Bool ? Vec.T_NUM : Vec.T_STR;
+    }
     return types;
   }
 
@@ -159,6 +157,11 @@ public class MojoPipeline extends Iced<MojoPipeline> {
         MojoColumn column = transformed.getColumn(col);
         assert column.size() == cs[0].len();
         switch (column.getType()) {
+          case Str:
+            for (String s : (String[]) column.getData()) {
+              nc.addStr(s);
+            }
+            break;
           case Bool:
             for (byte d : (byte[]) column.getData()) {
               nc.addNum(d, 0);
