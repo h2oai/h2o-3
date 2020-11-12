@@ -18,7 +18,8 @@ test.XGBoost.interaction <- function() {
                                 ntrees = 5,
                                 max_depth = 2,
                                 min_rows = 10,
-                                interaction_constraints = list(list("AGE", "DPROS"), list("RACE", "PSA", "VOL")))
+                                interaction_constraints = list(list("AGE", "DPROS"), list("RACE", "PSA", "VOL")),
+                                categorical_encoding="AUTO")
     
 }
 

@@ -836,9 +836,8 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     // now loop over the numerical columns, collecting up any expanded InteractionVec names
     if( _interactions == null ) {
-      final int nums = n-k;
-      int index = 0;
-      for(int i = k; i<nums; i++) {
+      int index = _cats;
+      for(int i = k; i < n; i++) {
         res[i] = index++;
       }
     } else {

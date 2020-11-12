@@ -604,7 +604,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           String parentOriginalName = featureProperties._originalNames[splitIndexOriginal];
           String interactionString = generateInteractionConstraintUnionString(featureProperties._originalNames, splitIndexOriginal, interactionUnion);
           String leftOriginalName = featureProperties._originalNames[leftChildSplitIndexOriginal];
-          throw new IllegalStateException("Interaction constraint violated on column '" + leftOriginalName+ ": The parent column '"+parentOriginalName+"' can interact only with "+interactionString+" columns.");
+          throw new IllegalStateException("Interaction constraint violated on column '" + leftOriginalName+ "': The parent column '"+parentOriginalName+"' can interact only with "+interactionString+" columns.");
         }
       }
       RegTreeNode rightChildNode = tree[node.getRightChildIndex()];
@@ -617,7 +617,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           String parentOriginalName = featureProperties._originalNames[splitIndexOriginal];
           String interactionString = generateInteractionConstraintUnionString(featureProperties._originalNames, splitIndexOriginal, interactionUnion);
           String rightOriginalName = featureProperties._originalNames[rightChildSplitIndexOriginal];
-          throw new IllegalStateException("Interaction constraint violated on column '" + rightOriginalName+ ": The parent column '"+parentOriginalName+"' can interact only with "+interactionString+" columns.");
+          throw new IllegalStateException("Interaction constraint violated on column '" + rightOriginalName+ "': The parent column '"+parentOriginalName+"' can interact only with "+interactionString+" columns.");
         }
       }
       checkInteractionConstraints(tree, leftChildNode, interactionUnions, featureProperties);
@@ -632,7 +632,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         for(Integer i: interactionUnion){
           sb.append(originalNames[i]).append(",");
         }
-        interaction = sb.replace(interactionUnion.size()-1, interactionUnion.size(), "]").toString();
+        interaction = sb.replace(sb.length()-1, sb.length(), "]").toString();
       }
       return interaction;
     }
