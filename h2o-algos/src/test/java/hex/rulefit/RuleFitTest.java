@@ -731,7 +731,7 @@ public class RuleFitTest extends TestUtil {
     public void testBadColsBug() {
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file("smalldata/rulefit/repro_bad_cols_bug.csv"));
+            final Frame fr = Scope.track(parse_test_file("./smalldata/rulefit/repro_bad_cols_bug.csv"));
 
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 42;
