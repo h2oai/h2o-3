@@ -314,16 +314,16 @@ test-junit-12:
 test-junit-13-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-13
-
-test-junit-14:
-	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode $$ADDITIONAL_GRADLE_OPTS
-
-test-junit-14-jenkins:
-	$(call sed_test_scripts)
-	@$(MAKE) -f $(THIS_FILE) test-junit-14
-
+	
 test-junit-13:
 	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-15:
+	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-15-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-15
 
 test-junit-smoke-jenkins:
 	$(call sed_test_scripts)
@@ -371,6 +371,13 @@ test-junit-14-smoke:
 	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-14-smoke-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-12-smoke
+	
+test-junit-15-smoke:
+	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-15-smoke-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-12-smoke
 
