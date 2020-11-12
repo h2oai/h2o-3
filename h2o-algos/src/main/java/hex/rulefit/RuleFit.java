@@ -85,6 +85,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
             initTreeParameters();
             initGLMParameters();
+            ignoreBadColumns(separateFeatureVecs(), true);
         }
         //   if (_train == null) return;
         // if (expensive && error_count() == 0) checkMemoryFootPrint();
@@ -181,7 +182,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             try {
                 // linearTrain = frame to be used as _train for GLM in 2., will be filled in 1.
                 Frame linearTrain = new Frame(Key.make("paths_frame" + _result));
-                
+                // store train frame without bad columns to pass it to tree model builders
+                Frame trainAdapted = new Frame(_train);
                 // 1. Rule generation
         
                 // get paths from tree models
@@ -189,6 +191,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 
                 // prepare rules
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.RULES.equals(_parms._model_type)) {
+                    DKV.put(trainAdapted._key, trainAdapted);
+                    treeParameters._train = trainAdapted._key;
                     long startAllTreesTime = System.nanoTime();
                     SharedTree<?, ?, ?>[] builders = ModelBuilderHelper.trainModelsParallel(
                             makeTreeModelBuilders(_parms._algorithm, depths), nTreeEnsemblesInParallel(depths.length));
@@ -241,6 +245,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 DKV.put(glmModel);
 
                 DKV.remove(linearTrain._key);
+                DKV.remove(trainAdapted._key);
                 
                 model = new RuleFitModel(dest(), _parms, new RuleFitModel.RuleFitOutput(RuleFit.this), glmModel, ruleEnsemble);
                 

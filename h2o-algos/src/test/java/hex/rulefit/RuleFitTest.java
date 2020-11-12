@@ -727,4 +727,33 @@ public class RuleFitTest extends TestUtil {
         }
     }
     
+    @Test
+    public void testBadColsBug() {
+        try {
+            Scope.enter();
+            final Frame fr = Scope.track(parse_test_file("./smalldata/rulefit/repro_bad_cols_bug.csv"));
+
+            RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
+            params._seed = 42;
+            params._train = fr._key;
+            params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
+            params._response_column = "target";
+            params._max_num_rules = 1000;
+
+            asFactor(fr, "target");
+
+            final RuleFitModel rfModel = new RuleFit(params).trainModel().get();
+            Scope.track_generic(rfModel);
+
+            System.out.println("Intercept: \n" + rfModel._output._intercept[0]);
+            System.out.println(rfModel._output._rule_importance);
+
+            final Frame fr2 = Scope.track(rfModel.score(fr));
+
+            Assert.assertTrue(rfModel.testJavaScoring(fr,fr2,1e-4));
+        } finally {
+            Scope.exit();
+        }
+    }
+    
 }
