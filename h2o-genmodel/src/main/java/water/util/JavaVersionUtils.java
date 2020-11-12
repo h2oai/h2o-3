@@ -25,10 +25,11 @@ public enum JavaVersionUtils {
 
     public int parseMajor(String version) {
         if(version!=null) {
-            final Pattern pattern = Pattern.compile("1\\.([0-9]*).*|([0-9][0-9]*).*");
-            final Matcher matcher = pattern.matcher(version);
-            if(matcher.matches()) {
-                return Integer.parseInt(matcher.group(matcher.group(1)!=null?1:2));
+            Pattern p = Pattern.compile("1\\.([0-9]*).*|([0-9][0-9]*).*");
+            Matcher m = p.matcher(version);
+            boolean b = m.matches();
+            if(b) {
+                return Integer.parseInt(m.group(m.group(1)!=null?1:2));
             }
         }
         return UNKNOWN;
