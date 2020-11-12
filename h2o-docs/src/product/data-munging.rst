@@ -30,3 +30,11 @@ This section provides examples of common tasks performed when preparing data for
    data-munging/splitting-datasets
    data-munging/target-encoding
    data-munging/tokenize
+
+Feature Engineering
+-------------------
+
+This section links to feature engineering processes. Target Encoding allows the user to replace a categorical value with the mean of the target variable, while Word2vec allows the user to convert an inputted body of text into an output of word vectors.
+
+- `Target Encoding <data-science/target-encoding.html>`__
+- `Word2vec <data-science/word2vec.html>`__
