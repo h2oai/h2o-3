@@ -1,21 +1,18 @@
 package hex.grid;
 
 import hex.*;
+import hex.faulttolerance.Recoverable;
 import water.*;
 import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
-import water.persist.Persist;
+import water.fvec.persist.PersistUtils;
 import water.util.*;
 import water.util.PojoUtils.FieldNaming;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static hex.grid.GridSearch.IGNORED_FIELDS_PARAM_HASH;
 
@@ -26,7 +23,7 @@ import static hex.grid.GridSearch.IGNORED_FIELDS_PARAM_HASH;
  *
  * @param <MP> type of model build parameters
  */
-public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implements ModelContainer<Model> {
+public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implements ModelContainer<Model>, Recoverable<Grid<MP>> {
 
   /**
    * Publicly available Grid prototype - used by REST API.
@@ -512,19 +509,16 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * Exports this Grid in a binary format using {@link AutoBuffer}. Related models are not saved.
    *
    * @param gridExportDir Full path to the folder this {@link Grid} should be saved to
+   * @return Path of the file written
    * @throws IOException Error serializing the grid.
    */
-  public void exportBinary(final String gridExportDir) throws IOException {
+  public String exportBinary(final String gridExportDir) {
     Objects.requireNonNull(gridExportDir);
-    final String gridFilePath = gridExportDir + "/" + _key.toString();
     assert _key != null;
+    final String gridFilePath = gridExportDir + "/" + _key;
     final URI gridUri = FileUtils.getURI(gridFilePath);
-    final Persist persist = H2O.getPM().getPersistForURI(gridUri);
-    try (final OutputStream outputStream = persist.create(gridUri.toString(), true)) {
-      final AutoBuffer autoBuffer = new AutoBuffer(outputStream, true);
-      writeWithoutModels(autoBuffer);
-      autoBuffer.close();
-    }
+    PersistUtils.write(gridUri, this::writeWithoutModels);
+    return gridFilePath;
   }
 
   /**
@@ -540,7 +534,26 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     }
   }
 
+  /**
+   * Imports models referenced by this grid from given directory.
+   *
+   * @param exportDir Directory to import the models from.
+   * @throws IOException Error importing the models
+   */
+  public void importModelsBinary(final String exportDir) throws IOException {
+    for (Key<Model> k : _models.values()) {
+      final Model<?, ?, ?> model = Model.importBinaryModel(exportDir + "/" + k.toString());
+      assert model != null;
+    }
+  }
+
+  @Override
+  public Set<Key<?>> getDependentKeys() {
+    return _params.getDependentKeys();
+  }
+
   public MP getParams() {
     return _params;
   }
+
 }

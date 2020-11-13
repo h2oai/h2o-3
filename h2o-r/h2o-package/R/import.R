@@ -455,6 +455,9 @@ h2o.set_s3_credentials <- function(secretKeyId, secretAccessKey, sessionToken = 
 #' Returns a reference to the loaded Grid.
 #'
 #' @param grid_path A character string containing the path to the file with the grid saved.
+#' @param load_params_references A logical which if true will attemt to reload saved objects referenced by 
+#'                    grid parameters (e.g. training frame, calibration frame), will fail if grid was saved 
+#'                    without referenced objects.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -475,15 +478,15 @@ h2o.set_s3_credentials <- function(secretKeyId, secretAccessKey, sessionToken = 
 #'grid <- h2o.loadGrid(paste0(tempdir(),"/",baseline_grid@grid_id))
 #' }
 #' @export
-h2o.loadGrid <- function(grid_path){
+h2o.loadGrid <- function(grid_path, load_params_references=FALSE){
   params <- list()
   params[["grid_path"]] <- grid_path
-  
+  params[["load_params_references"]] <- load_params_references
   
   res <- .h2o.__remoteSend(
     "Grid.bin/import",
     method = "POST",
-    h2oRestApiVersion = 3,.params = params
+    h2oRestApiVersion = 3, .params = params
   )
   
   h2o.getGrid(grid_id = res$name)

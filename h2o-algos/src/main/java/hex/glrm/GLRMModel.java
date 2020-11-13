@@ -94,6 +94,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
     public boolean _impute_original = false;      // Reconstruct original training data by reversing _transform?
     public boolean _verbose = true;               // Log when objective increases each iteration?
+
   }
 
 

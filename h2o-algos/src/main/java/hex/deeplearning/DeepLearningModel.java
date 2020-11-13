@@ -3,8 +3,6 @@ package hex.deeplearning;
 import hex.*;
 import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.utils.DistributionFamily;
-import hex.quantile.Quantile;
-import hex.quantile.QuantileModel;
 import hex.util.EffectiveParametersUtils;
 import hex.util.LinearAlgebraUtils;
 import water.*;

@@ -2,7 +2,7 @@ package water;
 
 import water.api.schemas3.*;
 import water.nbhm.NonBlockingHashMap;
-import water.util.Log;
+import water.util.*;
 
 import java.util.Arrays;
 
@@ -57,6 +57,11 @@ public class TypeMap {
     NodePersistentStorageV3.NodePersistentStorageEntryV3.class.getName(),
 
     // Beginning to hunt for files
+    water.util.IcedLong.class.getName(),
+    water.util.IcedAtomicInt.class.getName(),
+    water.util.IcedDouble.class.getName(),
+    water.util.IcedBitSet.class.getName(),
+    water.util.IcedHashSet.class.getName(),
     water.util.IcedHashMap.class.getName(),
     water.util.IcedHashMapBase.class.getName(),
     water.util.IcedHashMapGeneric.class.getName(),

@@ -599,7 +599,7 @@ def call(final pipelineContext) {
       ],
       [
           stageName: "TEST Fault Tolerance on ${MULTINODE_CLUSTERS_CONFIGS[0].nameNode}",
-          target: "test-hadoop-fault-tolerance", timeoutValue: 30,
+          target: "test-hadoop-fault-tolerance", timeoutValue: 45,
           component: pipelineContext.getBuildConfig().COMPONENT_ANY,
           additionalTestPackages: [
                   pipelineContext.getBuildConfig().COMPONENT_PY,

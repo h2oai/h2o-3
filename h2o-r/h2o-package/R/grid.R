@@ -37,7 +37,10 @@
 #'        max_models = 42, max_runtime_secs = 28800)} or \code{list(strategy = "RandomDiscrete", stopping_metric = "AUTO", 
 #'        stopping_tolerance = 0.001, stopping_rounds = 10)} or \code{list(strategy = "RandomDiscrete", stopping_metric = 
 #'        "misclassification", stopping_tolerance = 0.00001, stopping_rounds = 5)}.
-#' @param export_checkpoints_dir Directory to automatically export grid in binary form to.
+#' @param export_checkpoints_dir Directory to automatically export grid and its models to.
+#' @param recovery_dir When specified the grid and all necessary data (frames, models) will be saved to this
+#'        directory (use HDFS or other distributed file-system). Should the cluster crash during training, the grid
+#'        can be reloaded from this directory via \code{h2o.loadGrid} and training can be resumed
 #' @param parallelism Level of Parallelism during grid model building. 1 = sequential building (default).
 #'        Use the value of 0 for adaptive parallelism - decided by H2O. Any number > 1 sets the exact number of models built in parallel.
 #' @importFrom jsonlite toJSON
@@ -67,6 +70,7 @@ h2o.grid <- function(algorithm,
                      do_hyper_params_check = FALSE,
                      search_criteria = NULL,
                      export_checkpoints_dir = NULL,
+                     recovery_dir = NULL,
                      parallelism = 1)
 {
   #Unsupervised algos to account for in grid (these algos do not need response)
@@ -149,19 +153,20 @@ h2o.grid <- function(algorithm,
   params$hyper_parameters <- toJSON(hyper_values, digits=99)
   
   # Set directory for checkpoints export
-  if(!is.null(export_checkpoints_dir)){
-    params$export_checkpoints_dir = export_checkpoints_dir
+  if(!is.null(export_checkpoints_dir)) {
+    params$export_checkpoints_dir <- export_checkpoints_dir
   }
-  
-  # Set directory for checkpoints export
-  if(!is.null(parallelism)){
-    params$parallelism = parallelism
+  if(!is.null(recovery_dir)) {
+    params$recovery_dir <- recovery_dir
+  }
+  if(!is.null(parallelism)) {
+    params$parallelism <- parallelism
   }
 
   if( !is.null(search_criteria)) {
       # Append grid search criteria in JSON form. 
       # jsonlite unfortunately doesn't handle scalar values so we need to serialize ourselves.
-      keys = paste0("\"", names(search_criteria), "\"", "=")
+      keys <- paste0("\"", names(search_criteria), "\"", "=")
       vals <- lapply(search_criteria, function(val) { if(is.numeric(val)) val else paste0("\"", val, "\"") })
       body <- paste0(paste0(keys, vals), collapse=",")
       js <- paste0("{", body, "}", collapse="")

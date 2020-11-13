@@ -1,9 +1,12 @@
 package hex.grid;
 
 import hex.Model;
+import hex.faulttolerance.Recovery;
 import hex.genmodel.utils.DistributionFamily;
+import hex.glm.GLMModel;
 import hex.tree.gbm.GBMModel;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -16,6 +19,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,10 +60,11 @@ public class GridTest extends TestUtil {
       HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
       searchCriteria.set_max_runtime_secs(1d);
 
-      Job<Grid> gridSearch = GridSearch.startGridSearch(null, params,
-              hyperParms,
-              new GridSearch.SimpleParametersBuilderFactory(),
-              searchCriteria, 2);
+      Job<Grid> gridSearch = GridSearch.startGridSearch(
+          null, params, hyperParms,
+            new GridSearch.SimpleParametersBuilderFactory(),
+            searchCriteria, 2
+      );
 
       Scope.track_generic(gridSearch);
       final Grid grid = gridSearch.get();
@@ -92,10 +97,12 @@ public class GridTest extends TestUtil {
       params._response_column = "IsDepDelayed";
       params._seed = 42;
 
-      Job<Grid> gridSearch = GridSearch.startGridSearch(null, params,
-              hyperParms,
-              new GridSearch.SimpleParametersBuilderFactory(),
-              new HyperSpaceSearchCriteria.CartesianSearchCriteria(), 2);
+      Job<Grid> gridSearch = GridSearch.startGridSearch(           
+          null, params, hyperParms,
+          new GridSearch.SimpleParametersBuilderFactory(),
+          new HyperSpaceSearchCriteria.CartesianSearchCriteria(), 
+          2
+      );
       Scope.track_generic(gridSearch);
       gridSearch.stop();
       final Grid grid = gridSearch.get();
@@ -133,8 +140,7 @@ public class GridTest extends TestUtil {
       params._response_column = "IsDepDelayed";
       params._seed = 42;
 
-      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms,
-              5);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, 5);
       Scope.track_generic(gs);
       final Grid grid = gs.get();
       Scope.track_generic(grid);
@@ -277,6 +283,168 @@ public class GridTest extends TestUtil {
   }
 
   @Test
+  public void gridSearchWithRecoverySuccess() throws IOException, InterruptedException {
+    try {
+      Scope.enter();
+
+      final Frame trainingFrame = parse_test_file("smalldata/iris/iris_train.csv");
+      Scope.track(trainingFrame);
+
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_ntrees", new Integer[]{5, 50, 100, 200});
+        put("_max_depth", new Integer[]{2, 4, 6});
+      }};
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = "species";
+      String recoveryDir = temporaryFolder.newFolder().getAbsolutePath();
+      Recovery<Grid> recovery = new Recovery<>(recoveryDir);
+      Key gridKey = Key.make("gridSearchWithRecovery_GRID");
+      Job<Grid> gs = GridSearch.startGridSearch(
+          gridKey, params, hyperParms,
+          new GridSearch.SimpleParametersBuilderFactory<>(),
+          new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
+          recovery, GridSearch.SEQUENTIAL_MODEL_BUILDING
+      );
+      Scope.track_generic(gs);
+      Grid gridInProgress = DKV.getGet(gridKey);
+      Scope.track_generic(gridInProgress);
+      while (gs.isRunning() && gridInProgress.getModelKeys().length == 0) {
+        System.out.println("sleeping...");
+        Thread.sleep(100);
+        gridInProgress = DKV.getGet(gridKey);
+      }
+      assertTrue(
+          "Some files should be in the recovery directory (grid in progress)", 
+          new File(recoveryDir).listFiles().length > 0
+      );
+          
+      // wait for grid to finish and check cleanup was done
+      gs.get();
+      assertEquals(
+          "Recovery directory should be empty after successful grid. " +
+              Arrays.toString(new File(recoveryDir).list()), 
+          new File(recoveryDir).listFiles().length, 0
+      );
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  private void testGridRecovery(Key gridKey, Job gs, Frame train, String recoveryDir) throws IOException, InterruptedException {
+    Grid originalGrid = DKV.getGet(gridKey);
+    Scope.track_generic(originalGrid);
+    while (gs.isRunning() && originalGrid.getModelKeys().length == 0) {
+      Thread.sleep(100);
+    }
+    assertTrue("Some files should be in the recovery directory", new File(recoveryDir).listFiles().length > 0);
+    gs.stop();
+
+    // wait for grid to finish and check cleanup was done
+    while (gs.isRunning()) {
+      Thread.sleep(100);
+    }
+    assertNotEquals(
+        "Recovery directory should not be empty after canceled grid.",
+        new File(recoveryDir).listFiles().length, 0
+    );
+    
+    Key<Model>[] originalKeys = originalGrid.getModelKeys();
+    originalGrid.remove();
+    train.remove();
+    assertNull("models should be removed from dkv as well", originalKeys[0].get());
+
+    final File serializedGridFile = new File(recoveryDir, originalGrid._key.toString());
+    assertTrue(serializedGridFile.isFile());
+
+    final Grid grid = loadGridFromFile(serializedGridFile);
+    DKV.put(grid);
+    grid.importModelsBinary(recoveryDir);
+    new Recovery<Grid>(recoveryDir).loadReferences(grid);
+    assertArrayEquals("models are not reloaded with the grid", originalKeys, grid.getModelKeys());
+    assertNotNull("training frame was not reloaded with the grid", train._key.get());
+    assertNotNull("models should loaded back into dkv", originalKeys[0].get());
+    Scope.track_generic(grid);
+  }
+
+  @Test
+  @Ignore // GBM leaks keys when canceled
+  public void gridSearchWithRecoveryCancelGBM() throws IOException, InterruptedException {
+    try {
+      Scope.enter();
+
+      final Frame trainingFrame = parse_test_file("smalldata/iris/iris_train.csv");
+      Scope.track(trainingFrame);
+
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_ntrees", new Integer[]{5, 50, 100});
+        put("_max_depth", new Integer[]{2});
+      }};
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = "species";
+      String recoveryDir = temporaryFolder.newFolder().getAbsolutePath();
+      Recovery<Grid> recovery = new Recovery<>(recoveryDir);
+      Key gridKey = Key.make("gridSearchWithRecovery_GRID");
+      Job<Grid> gs = GridSearch.startGridSearch(
+          gridKey, params, hyperParms,
+          new GridSearch.SimpleParametersBuilderFactory<>(),
+          new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
+          recovery, GridSearch.SEQUENTIAL_MODEL_BUILDING
+      );
+      Scope.track_generic(gs);
+      testGridRecovery(gridKey, gs, trainingFrame, recoveryDir);
+
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  private Object[] toArrayOfArrays(double[] arr) {
+    Object[] res = new Object[arr.length];
+    for (int i = 0; i < arr.length; i++) {
+      res[i] = new double[] { arr[i] };
+    }
+    return res;
+  }
+
+  @Test
+  @Ignore // fails on multi node
+  public void gridSearchWithRecoveryCancelGLM() throws IOException, InterruptedException {
+    try {
+      Scope.enter();
+
+      final Frame trainingFrame = parse_test_file("smalldata/junit/cars_20mpg.csv");
+      Scope.track(trainingFrame);
+      trainingFrame.remove(0);
+
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_alpha", toArrayOfArrays(new double[]{ 0.01, 0.3, 0.5, 0.7, 0.9}));
+        put("_lambda", toArrayOfArrays(new double[]{ 1e-5, 1e-6, 1e-7, 1e-8, 5e-5, 5e-6, 5e-7, 5e-8}));
+      }};
+
+      GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = "cylinders";
+      String recoveryDir = temporaryFolder.newFolder().getAbsolutePath();
+      Recovery<Grid> recovery = new Recovery<>(recoveryDir);
+      Key gridKey = Key.make("gridSearchWithRecoveryGlm");
+      Job<Grid> gs = GridSearch.startGridSearch(
+          gridKey, params, hyperParms,
+          new GridSearch.SimpleParametersBuilderFactory<>(),
+          new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
+          recovery, GridSearch.SEQUENTIAL_MODEL_BUILDING
+      );
+      Scope.track_generic(gs);
+      testGridRecovery(gridKey, gs, trainingFrame, recoveryDir);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
   public void gridSearchManualExport() throws IOException {
     try {
       Scope.enter();
@@ -348,8 +516,6 @@ public class GridTest extends TestUtil {
       final Grid grid = loadGridFromFile(serializedGridFile);
       assertArrayEquals(originalGrid.getModelKeys(), grid.getModelKeys());
       Scope.track_generic(grid);
-      
-      
     } finally {
       Scope.exit();
     }

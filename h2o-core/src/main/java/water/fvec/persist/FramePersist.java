@@ -8,6 +8,8 @@ import water.fvec.Vec;
 import water.util.FileUtils;
 
 import java.net.URI;
+import java.util.HashSet;
+import java.util.Set;
 
 import static water.fvec.persist.PersistUtils.*;
 
@@ -48,24 +50,38 @@ public class FramePersist {
         return FileUtils.getURI(metaUri + "_n" + H2O.SELF.index() + "_c" + cidx);
     }
 
-    public Job<Frame> saveTo(String uri, boolean overwrite) {
+    private SaveFrameDriver setupDriver(String uri, boolean overwrite) {
         URI metaUri = getMetaUri(frame._key, sanitizeUri(uri));
         if (exists(metaUri) && !overwrite) {
             throw new IllegalArgumentException("File already exists at " + metaUri);
         }
         FrameMeta frameMeta = new FrameMeta(frame);
-        write(metaUri, ab -> {
-            ab.put(frameMeta);
-        });
+        write(metaUri, ab -> ab.put(frameMeta));
         Job<Frame> job = new Job<>(frame._key, "water.fvec.Frame", "Save frame");
-        return job.start(new SaveFrameDriver(job, frame, metaUri), frame.anyVec().nChunks());
+        return new SaveFrameDriver(job, frame, metaUri);
+    }
+    
+    public Job<Frame> saveTo(String uri, boolean overwrite) {
+        SaveFrameDriver driver = setupDriver(uri, overwrite);
+        return driver.job.start(driver, frame.anyVec().nChunks());
+    }
+    
+    public String[] saveToAndWait(String uri, boolean overwrite) {
+        SaveFrameDriver driver = setupDriver(uri, overwrite);
+        driver.job.start(driver, frame.anyVec().nChunks());
+        driver.job.get();
+        String[] allWrittenFiles = new String[driver.task.writtenFiles.length+1];
+        allWrittenFiles[0] = driver.metaUri.toString();
+        System.arraycopy(driver.task.writtenFiles, 0, allWrittenFiles, 1, driver.task.writtenFiles.length);
+        return allWrittenFiles;
     }
 
     public static class SaveFrameDriver extends H2O.H2OCountedCompleter<LoadFrameDriver> {
 
         private final Job<Frame> job;
         private final Frame frame;
-        private final URI metaUri;
+        public final URI metaUri;
+        public final SaveChunksTask task;
 
         public SaveFrameDriver(
             Job<Frame> job, 
@@ -75,12 +91,13 @@ public class FramePersist {
             this.job = job;
             this.frame = frame;
             this.metaUri = metaUri;
+            this.task = new SaveChunksTask(job, frame, metaUri.toString());
         }
 
         @Override
         public void compute2() {
             frame.read_lock(job._key);
-            new SaveChunksTask(job, metaUri.toString()).doAll(frame).join();
+            task.doAll(frame).join();
             tryComplete();
         }
 
@@ -100,21 +117,37 @@ public class FramePersist {
 
         private final Job<Frame> job;
         private final String metaUri;
-
-        SaveChunksTask(Job<Frame> job, String metaUri) {
+        public String[] writtenFiles;
+        
+        SaveChunksTask(Job<Frame> job, Frame frame, String metaUri) {
             this.job = job;
             this.metaUri = metaUri;
+            this.writtenFiles = new String[frame.anyVec().nChunks()];
         }
 
         @Override
         public void map(Chunk[] cs) {
-            PersistUtils.write(getDataUri(metaUri, cs[0].cidx()), ab -> writeChunks(ab, cs));
+            URI dataUri = getDataUri(metaUri, cs[0].cidx());
+            writtenFiles[cs[0].cidx()] = dataUri.toString();
+            PersistUtils.write(dataUri, ab -> writeChunks(ab, cs));
             job.update(1);
         }
 
         private void writeChunks(AutoBuffer autoBuffer, Chunk[] chunks) {
             for (Chunk c : chunks) {
                 autoBuffer.put(c);
+            }
+        }
+
+        @Override
+        public void reduce(SaveChunksTask mrt) {
+            for (int i = 0; i < writtenFiles.length; i++) {
+                if (mrt.writtenFiles[i] != null) {
+                    assert writtenFiles[i] == null || writtenFiles[i].equals(mrt.writtenFiles[i]) :
+                        "When merging written files expecting " + writtenFiles[i] + " to be null or equal to " +
+                            mrt.writtenFiles[i];
+                    writtenFiles[i] = mrt.writtenFiles[i];
+                }
             }
         }
     }
