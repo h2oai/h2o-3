@@ -1,5 +1,6 @@
 package hex.tree.xgboost;
 
+import hex.Model;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
@@ -18,7 +19,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(H2ORunner.class)
 @CloudSize(1)
 public class XGBoostModelTest {
-
+  
   @Test
   public void testCreateParamsNThreads() {
     int maxNThreads = XGBoostModel.getMaxNThread();
@@ -98,4 +99,29 @@ public class XGBoostModelTest {
     }
   }
 
+  @Test
+  public void testIncludeInteractionConstraints() {
+    Scope.enter();
+    try {
+      final Frame airlinesFrame = Scope.track(TestUtil.parse_test_file("./smalldata/testng/airlines.csv"));
+      airlinesFrame.replace(0, airlinesFrame.vecs()[0].toCategoricalVec()).remove();
+      
+      DKV.put(airlinesFrame);
+      final XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "IsDepDelayed";
+      parms._train = airlinesFrame._key;
+      parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
+      parms._interaction_constraints = new String[][]{new String[]{"fYear", "fMonth"}, new String[]{"Origin", "Distance"}};
+      parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist;
+      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.AUTO;
+      parms._ntrees = 5;
+
+      final XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
+
+    } finally {
+      Scope.exit();
+    }
+  }
 }

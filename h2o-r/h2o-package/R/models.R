@@ -373,7 +373,9 @@ NULL
                             else if (all(is.na(x))) NA
                             else paste0('"',h2o.getId(x),'"')
                           })
-      if (type == "character")
+      if (paramDef$type == "string[][]"){
+        paramValue <- .collapse.list.of.list.string(paramValue)
+      } else if (type == "character")
         paramValue <- .collapse.char(paramValue)
       else if (paramDef$type == "StringPair[]")
         paramValue <- .collapse(sapply(paramValue, .collapse.tuple.string))
@@ -393,6 +395,14 @@ NULL
 
 .collapse.tuple.string <- function(x) {
   .collapse.tuple(x, .escape.string)
+}
+
+.collapse.list.of.list.string <- function(x){
+  parts <- c()
+  for (i in x) {
+    parts <- c(parts, paste0("[", paste0(i, collapse = ","), "]"))
+  }
+  paste0("[", paste0(parts, collapse = ","), "]")
 }
 
 .collapse.tuple.key_value <- function(x) {
