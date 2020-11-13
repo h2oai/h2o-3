@@ -34,7 +34,7 @@ This section provides examples of common tasks performed when preparing data for
 Feature Engineering
 -------------------
 
-This section links to feature engineering processes. Target Encoding allows the user to replace a categorical value with the mean of the target variable, while Word2vec allows the user to convert an inputted body of text into an output of word vectors.
+H2O also has methods for feature engineering. Target Encoding is a categorical encoding technique which replaces a categorical value with the mean of the target variable (especially useful for high-cardinality features).  Word2vec is a text processing method which converts a corpus of text into an output of word vectors.
 
 - `Target Encoding <data-science/target-encoding.html>`__
 - `Word2vec <data-science/word2vec.html>`__
