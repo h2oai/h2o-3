@@ -68,5 +68,6 @@ Miscellaneous
 .. toctree::
    :maxdepth: 1
 
-   data-science/word2vec
+   data-science/target-encoding
    data-science/tf-idf
+   data-science/word2vec
