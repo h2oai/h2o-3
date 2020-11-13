@@ -15,7 +15,7 @@ CONT_DIR=$(echo $LOG_FILE | sed 's/.log$//')
 
 mkdir $CONT_DIR
 
-CONT_NUM=$(grep '^Container: container' application_1596880493584_110418.log | wc -l | tr -d ' ')
+CONT_NUM=$(grep '^Container: container' "$LOG_FILE" | wc -l | tr -d ' ')
 
 echo "INFO: Found $CONT_NUM containers"
 cd $CONT_DIR
