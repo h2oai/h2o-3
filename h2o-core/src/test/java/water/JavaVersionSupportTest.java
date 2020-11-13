@@ -3,6 +3,7 @@ package water;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.ClearSystemProperties;
 import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -61,6 +62,9 @@ public class JavaVersionSupportTest {
     public static class UnsupportedJavasTest {
         private static int originalJavaVersion;
 
+        @Rule
+        public RestoreSystemProperties systemProperties = new RestoreSystemProperties();
+
         @BeforeClass
         public static void beforeClass() throws Exception {
             originalJavaVersion = JavaVersionUtils.JAVA_VERSION.getMajor();
@@ -86,6 +90,27 @@ public class JavaVersionSupportTest {
                 majorVersion.setAccessible(true);
                 majorVersion.setInt(JavaVersionUtils.JAVA_VERSION, unsupportedJavaVersion);
                 assertFalse(JavaVersionSupport.runningOnSupportedVersion());
+            } finally {
+                try {
+                    majorVersion.setInt(JavaVersionUtils.JAVA_VERSION, originalJavaVersion);
+                } finally {
+                    majorVersion.setAccessible(false);
+                }
+            }
+        }
+
+
+        /**
+         * Unsupported Javas, explicitly enabled by the user are tested here
+         */
+        @Test
+        public void testUnsupportedUserEnabled() throws Exception{
+            final Field majorVersion = JavaVersionUtils.class.getDeclaredField("majorVersion");
+            try {
+                majorVersion.setAccessible(true);
+                majorVersion.setInt(JavaVersionUtils.JAVA_VERSION, unsupportedJavaVersion);
+                System.setProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.allowJavaVersions", String.valueOf(unsupportedJavaVersion));
+                assertTrue(JavaVersionSupport.runningOnSupportedVersion());
             } finally {
                 try {
                     majorVersion.setInt(JavaVersionUtils.JAVA_VERSION, originalJavaVersion);

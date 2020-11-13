@@ -1,6 +1,5 @@
 package water;
 
-
 import static water.util.JavaVersionUtils.JAVA_VERSION;
 
 public class JavaVersionSupport {
@@ -17,7 +16,7 @@ public class JavaVersionSupport {
      * @return True if the instance of H2O is running on supported JVM, otherwise false.
      */
     public static boolean runningOnSupportedVersion() {
-        return JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && isSupportedVersion();
+        return JAVA_VERSION.isKnown() && (isUserEnabledJavaVersion() || isSupportedVersion());
     }
 
     private static boolean isSupportedVersion() {
