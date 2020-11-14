@@ -877,6 +877,32 @@ public class ArrayUtils {
         return i;
     return -1;
   }
+
+
+  /**
+   * Find an element with prefix with linear search & return it's index if find exactly, 
+   *  -index-2 if find first occurrence with prefix or -1
+   */
+  public static int findWithPrefix(String[] array, String prefix) {
+    return findWithPrefix(array, prefix, 0);
+  }
+
+  /**
+   * Find an element with prefix with linear search & return it's index if find exactly, 
+   *  -index-2 if find first occurrence with prefix or -1
+   */
+  public static int findWithPrefix(String[] array, String prefix, int off) {
+    for (int i = off; i < array.length; i++) {
+      if(array[i].equals(prefix)){
+        return i;
+      }
+      if (array[i].startsWith(prefix)) {
+        return -i - 2;
+      }
+    }
+    return -1;
+  }
+  
   public static int find(long[] ls, long elem) {
     for(int i=0; i<ls.length; ++i )
       if( elem==ls[i] ) return i;

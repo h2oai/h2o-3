@@ -1,6 +1,5 @@
 import os,sys
 sys.path.insert(1, os.path.join("..",".."))
-from tests import pyunit_utils
 import h2o
 
 from h2o.tree import H2OTree

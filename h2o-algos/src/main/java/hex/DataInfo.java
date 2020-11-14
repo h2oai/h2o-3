@@ -21,7 +21,6 @@ public class DataInfo extends Keyed<DataInfo> {
   public int [] _activeCols;
   public Frame _adaptedFrame;  // the modified DataInfo frame (columns sorted by largest categorical -> least then all numerical columns)
   public int _responses;   // number of responses
-  public int _outpus; // number of outputs
 
   public Vec setWeights(String name, Vec vec) {
     if(_weights)
@@ -151,6 +150,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
   private DataInfo() {  _intLvls=null; _catLvls = null; _skipMissing = true; _imputeMissing = false; _valid = false; _offset = false; _weights = false; _fold = false; }
   public String[] _coefNames;
+  public int[] _coefOriginalIndices; // 
   @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
 
   // Modify the train & valid frames directly; sort the categorical columns
@@ -761,6 +761,7 @@ public class DataInfo extends Keyed<DataInfo> {
     if( currentColIdx+1 >= _numOffsets.length ) return fullN() - _numOffsets[currentColIdx];
     return _numOffsets[currentColIdx+1] - _numOffsets[currentColIdx];
   }
+  
   public final String[] coefNames() {
     if (_coefNames != null) return _coefNames; // already computed
     int k = 0;
@@ -807,6 +808,56 @@ public class DataInfo extends Keyed<DataInfo> {
     _coefNames = res;
     return res;
   }
+
+  public final int[] coefOriginalColumnIndices() {
+    if (_coefOriginalIndices != null) return _coefOriginalIndices; // already computed
+    int k = 0;
+    final int n = fullN(); // total number of columns to compute
+    int[] res = new int[n];
+    final Vec [] vecs = _adaptedFrame.vecs();
+
+    // first do all of the expanded categorical names
+    for(int i = 0; i < _cats; ++i) {
+      for (int j = (_useAllFactorLevels || vecs[i] instanceof InteractionWrappedVec) ? 0 : 1; j < vecs[i].domain().length; ++j) {
+        int jj = getCategoricalId(i, j);
+        if(jj < 0)
+          continue;
+        res[k++] = i;
+      }
+      if (_catMissing[i] && getCategoricalId(i, -1) >=0)
+        res[k++] = i;
+      if( vecs[i] instanceof InteractionWrappedVec ) {
+        InteractionWrappedVec iwv = (InteractionWrappedVec)vecs[i];
+        if( null != iwv.missingDomains() ) {
+          for(String s: iwv.missingDomains() )
+            res[k++] = i;
+        }
+      }
+    }
+    // now loop over the numerical columns, collecting up any expanded InteractionVec names
+    if( _interactions == null ) {
+      int index = _cats;
+      for(int i = k; i < n; i++) {
+        res[i] = index++;
+      }
+    } else {
+      for (int i = 0; i <= _nums; i++) {
+        InteractionWrappedVec v;
+        if( i+_cats >= n || k >=n ) break;
+        if (vecs[i+_cats] instanceof InteractionWrappedVec && ((v = (InteractionWrappedVec) vecs[i+_cats]).domain() != null)) { // in this case, get the categoricalOffset
+          for (int j = v._useAllFactorLevels?0:1; j < v.domain().length; ++j) {
+            if (getCategoricalIdFromInteraction(_cats+i, j) < 0)
+              continue;
+            res[k++] = i+_cats;
+          }
+        } else
+          res[k++] = i+_cats;
+      }
+    }
+    _coefOriginalIndices = res;
+    return res;
+  }
+  
 
   // Return permutation matrix mapping input names to adaptedFrame colnames
   public int[] mapNames(String[] names) {

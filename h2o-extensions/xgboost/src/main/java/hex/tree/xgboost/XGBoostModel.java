@@ -28,6 +28,7 @@ import water.util.JCodeGen;
 import water.util.SBPrintStream;
 import water.util.TwoDimTable;
 
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -101,6 +102,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public double _colsample_bytree = 1.0;
 
     public KeyValue[] _monotone_constraints;
+    public String[][] _interaction_constraints;
 
     public float _max_abs_leafnode_pred = 0;
     public float _max_delta_step = 0;
@@ -466,13 +468,63 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("monotone_constraints", sb.toString());
       assert constraintsUsed == monotoneConstraints.size();
     }
-
+    
+    String[][] interactionConstraints = p._interaction_constraints;
+    if(interactionConstraints != null && interactionConstraints.length > 0) {
+      if(!p._categorical_encoding.equals(Parameters.CategoricalEncodingScheme.OneHotInternal)){
+        throw new IllegalArgumentException("No support interaction constraint for categorical encoding = " + p._categorical_encoding.toString()+". Constraint interactions are available only for ``AUTO`` (``one_hot_internal`` or ``OneHotInternal``) categorical encoding.");
+      }
+      params.put("interaction_constraints", createInteractions(interactionConstraints, coefNames, p));
+    }
+    
     LOG.info("XGBoost Parameters:");
     for (Map.Entry<String,Object> s : params.entrySet()) {
       LOG.info(" " + s.getKey() + " = " + s.getValue());
     }
     LOG.info("");
     return Collections.unmodifiableMap(params);
+  }
+  
+  private static String createInteractions(String[][] interaction_constraints, String[] coefNames, XGBoostParameters params){
+    StringBuilder sb = new StringBuilder();
+    sb.append("[");
+    for (String[] list : interaction_constraints) {
+      sb.append("[");
+      for (String item : list) {
+        if(item.equals(params._response_column)){
+          throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is used as response column and cannot be used in interaction.");
+        }
+        if(item.equals(params._weights_column)){
+          throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is used as weights column and cannot be used in interaction.");
+        }
+        if(item.equals(params._fold_column)){
+          throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is used as fold column and cannot be used in interaction.");
+        }
+        if(params._ignored_columns != null && ArrayUtils.find(params._ignored_columns, item) != -1) {
+          throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is set in ignored columns and cannot be used in interaction.");
+        }
+        // first find only name
+        int start = ArrayUtils.findWithPrefix(coefNames, item);
+        // find start index and add indices until end index
+        if (start == -1) {
+          throw new IllegalArgumentException("'interaction_constraints': Column with name '" + item + "' is not in the frame.");
+        } else if(start > -1){               // find exact position - no encoding  
+          sb.append(start).append(",");
+        } else {              // find first occur of the name with prefix - encoding
+          start = -start - 2;
+          assert coefNames[start].startsWith(item): "The column name should be find correctly.";
+          // iterate until find all encoding indices
+          int end = start;
+          while (end < coefNames.length && coefNames[end].startsWith(item)) {
+            sb.append(end).append(",");
+            end++;
+          }
+        }
+      }
+      sb.replace(sb.length() - 1, sb.length(), "],");
+    }
+    sb.replace(sb.length() - 1, sb.length(), "]");
+    return sb.toString();
   }
 
   public static BoosterParms createParams(XGBoostParameters p, int nClasses, String[] coefNames) {

@@ -68,6 +68,7 @@
 #' @param max_delta_step (same as max_abs_leafnode_pred) Maximum absolute value of a leaf node prediction Defaults to 0.0.
 #' @param monotone_constraints A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
 #'        decreasing constraint.
+#' @param interaction_constraints A set of allowed column interactions.
 #' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
 #' @param min_split_improvement (same as gamma) Minimum relative improvement in squared error reduction for a split to happen Defaults to 0.0.
 #' @param gamma (same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen
@@ -168,6 +169,7 @@ h2o.xgboost <- function(x,
                         max_abs_leafnode_pred = 0.0,
                         max_delta_step = 0.0,
                         monotone_constraints = NULL,
+                        interaction_constraints = NULL,
                         score_tree_interval = 0,
                         min_split_improvement = 0.0,
                         gamma = 0.0,
@@ -296,6 +298,8 @@ h2o.xgboost <- function(x,
     parms$max_delta_step <- max_delta_step
   if (!missing(monotone_constraints))
     parms$monotone_constraints <- monotone_constraints
+  if (!missing(interaction_constraints))
+    parms$interaction_constraints <- interaction_constraints
   if (!missing(score_tree_interval))
     parms$score_tree_interval <- score_tree_interval
   if (!missing(min_split_improvement))
@@ -390,6 +394,7 @@ h2o.xgboost <- function(x,
                                         max_abs_leafnode_pred = 0.0,
                                         max_delta_step = 0.0,
                                         monotone_constraints = NULL,
+                                        interaction_constraints = NULL,
                                         score_tree_interval = 0,
                                         min_split_improvement = 0.0,
                                         gamma = 0.0,
@@ -522,6 +527,8 @@ h2o.xgboost <- function(x,
     parms$max_delta_step <- max_delta_step
   if (!missing(monotone_constraints))
     parms$monotone_constraints <- monotone_constraints
+  if (!missing(interaction_constraints))
+    parms$interaction_constraints <- interaction_constraints
   if (!missing(score_tree_interval))
     parms$score_tree_interval <- score_tree_interval
   if (!missing(min_split_improvement))
