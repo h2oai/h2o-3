@@ -24,7 +24,6 @@ import hex.util.LinearAlgebraUtils;
 import hex.util.LinearAlgebraUtils.BMulTask;
 import hex.util.LinearAlgebraUtils.FindMaxIndex;
 import jsr166y.CountedCompleter;
-import org.apache.log4j.Logger;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
@@ -50,9 +49,6 @@ import static hex.glm.GLMUtils.*;
  * Generalized linear model implementation.
  */
 public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
-
-  private static final Logger LOG = Logger.getLogger(GLM.class);
-
   static NumberFormat lambdaFormatter = new DecimalFormat(".##E0");
   static NumberFormat devFormatter = new DecimalFormat(".##");
 
@@ -1454,7 +1450,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _state._lsNeeded = true;
           } else {
             if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood)) {
-              LOG.info("DONE after " + (iterCnt-1) + " iterations (1)");
+              Log.info("DONE after " + (iterCnt-1) + " iterations (1)");
               return;
             }
             betaCnd = s == Solver.COORDINATE_DESCENT?COD_solve(gram,_state._alpha,_state.lambda())
