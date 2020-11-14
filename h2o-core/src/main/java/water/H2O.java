@@ -33,8 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static water.util.JavaVersionUtils.JAVA_VERSION;
-
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
 *
@@ -2137,11 +2135,11 @@ final public class H2O {
       return false;
     }
 
-    // Notes: 
-    // - make sure that the following whitelist is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R
-    // - upgrade of the javassist library should be considered when adding support for a new java version
-    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<8 || JAVA_VERSION.getMajor()>14)) {
-      System.err.println("Only Java 8, 9, 10, 11, 12, 13 and 14 are supported, system version is " + System.getProperty("java.version"));
+    if (!JavaVersionSupport.runningOnSupportedVersion()) {
+      System.err.println(String.format("Only Java versions %d-%d are supported, system version is %s",
+              JavaVersionSupport.MIN_SUPPORTED_JAVA_VERSION,
+              JavaVersionSupport.MAX_SUPPORTED_JAVA_VERSION,
+              System.getProperty("java.version")));
       return true;
     }
     String vmName = System.getProperty("java.vm.name");
@@ -2150,21 +2148,7 @@ final public class H2O {
       return true;
     }
     return false;
-  }
-
-  private static boolean isUserEnabledJavaVersion() {
-    String extraJavaVersionsStr = System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.allowJavaVersions");
-    if (extraJavaVersionsStr == null || extraJavaVersionsStr.isEmpty())
-      return false;
-    String[] vs = extraJavaVersionsStr.split(",");
-    for (String v : vs) {
-      int majorVersion = Integer.valueOf(v);
-      if (JAVA_VERSION.getMajor() == majorVersion) {
-        return true;
-      }
-    }
-    return false;
-  }
+  } 
 
   // --------------------------------------------------------------------------
   public static void main( String[] args ) {
