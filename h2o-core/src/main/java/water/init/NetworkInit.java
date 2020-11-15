@@ -30,7 +30,7 @@ import java.util.Set;
  */
 public class NetworkInit {
 
-  public static String DISABLE_NON_LEADER_API = H2O.OptArgs.SYSTEM_PROP_PREFIX + ".disableapinonleader";
+  public static String DISABLE_NON_LEADER_API = H2O.OptArgs.SYSTEM_PROP_PREFIX + "disableapinonleader";
   public static ServerSocketChannel _tcpSocket;
 
   public static H2OHttpViewImpl h2oHttpView;
@@ -200,9 +200,13 @@ public class NetworkInit {
   /**
    * @return False if API is supposed to be disabled on a non-leader node and this node is a non-leader node. Otherwise true.
    */
-  public static boolean isApiEnabledOnThisNode(){
-    return Boolean.getBoolean(DISABLE_NON_LEADER_API)
-            && (H2O.SELF == null || H2O.SELF.isLeaderNode());
+  public static boolean isApiEnabledOnThisNode() {
+    if (Boolean.getBoolean(DISABLE_NON_LEADER_API)) {
+      // If Clustering is not finished yet, treat API as disabled
+      return H2O.SELF == null || H2O.SELF.isLeaderNode();
+    } else {
+      return true;
+    }
   }
 
   static String getJksAlias(H2O.OptArgs args) {
