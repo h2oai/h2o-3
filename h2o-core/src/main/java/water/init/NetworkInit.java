@@ -30,6 +30,7 @@ import java.util.Set;
  */
 public class NetworkInit {
 
+  public static String DISABLE_NON_LEADER_API = H2O.OptArgs.SYSTEM_PROP_PREFIX + ".disableapinonleader";
   public static ServerSocketChannel _tcpSocket;
 
   public static H2OHttpViewImpl h2oHttpView;
@@ -179,7 +180,8 @@ public class NetworkInit {
   }
 
   public static H2OHttpConfig webServerConfig(H2O.OptArgs args) {
-    final H2OHttpConfig config = new H2OHttpConfig();
+    final H2OHttpConfig config = new H2OHttpConfig(NetworkInit::isApiEnabledOnThisNode);
+    
     config.jks = args.jks;
     config.jks_pass = args.jks_pass;
     config.jks_alias = getJksAlias(args);
@@ -193,6 +195,14 @@ public class NetworkInit {
     config.context_path = args.context_path;
     config.ensure_daemon_threads = args.embedded;
     return config;
+  }
+
+  /**
+   * @return False if API is supposed to be disabled on a non-leader node and this node is a non-leader node. Otherwise true.
+   */
+  public static boolean isApiEnabledOnThisNode(){
+    return Boolean.getBoolean(DISABLE_NON_LEADER_API)
+            && (H2O.SELF == null || H2O.SELF.isLeaderNode());
   }
 
   static String getJksAlias(H2O.OptArgs args) {

@@ -134,9 +134,10 @@ class Jetty8ServerAdapter implements WebServer {
 
   private class GateHandler extends AbstractHandler {
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) {
-      final boolean handled = h2oHttpView.gateHandler(request, response);
-      if (handled) {
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
+      if (!h2oHttpView.getConfig().isNodeApiEnabled()) {
+        response.sendError(HttpServletResponse.SC_FORBIDDEN, "API not accessible on this node.");
+      } else if (h2oHttpView.gateHandler(request, response)) {
         baseRequest.setHandled(true);
       }
     }

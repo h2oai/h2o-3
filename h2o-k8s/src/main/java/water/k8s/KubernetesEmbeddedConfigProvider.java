@@ -1,9 +1,9 @@
 package water.k8s;
 
-import fi.iki.elonen.NanoHTTPD;
 import water.H2O;
 import water.init.AbstractEmbeddedH2OConfig;
 import water.init.EmbeddedConfigProvider;
+import water.init.NetworkInit;
 import water.k8s.api.KubernetesRestApi;
 import water.k8s.lookup.KubernetesDnsLookup;
 import water.k8s.lookup.KubernetesLookup;
@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * A configuration provider for H2O running in Kubernetes cluster. It is able to detected H2O is being ran in K8S
@@ -65,7 +64,7 @@ public class KubernetesEmbeddedConfigProvider implements EmbeddedConfigProvider 
         if (!runningOnKubernetes) {
             return; // Do not initialize any configuration if H2O is not running in K8S-spawned container.
         }
-
+        System.setProperty(NetworkInit.DISABLE_NON_LEADER_API, "true");
         startKubernetesRestApi();
 
         Log.info("Initializing H2O Kubernetes cluster");
