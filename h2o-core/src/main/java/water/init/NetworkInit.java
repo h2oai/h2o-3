@@ -30,7 +30,7 @@ import java.util.Set;
  */
 public class NetworkInit {
 
-  public static String DISABLE_NON_LEADER_API = H2O.OptArgs.SYSTEM_PROP_PREFIX + "disableapinonleader";
+  public static String DISABLE_NON_LEADER_API = H2O.OptArgs.SYSTEM_PROP_PREFIX + "disableNonLeaderApi";
   public static ServerSocketChannel _tcpSocket;
 
   public static H2OHttpViewImpl h2oHttpView;
