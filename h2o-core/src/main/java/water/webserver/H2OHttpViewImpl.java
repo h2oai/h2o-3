@@ -5,10 +5,8 @@ import org.apache.log4j.Logger;
 import water.ExtensionManager;
 import water.H2O;
 import water.api.RequestServer;
-import water.init.NetworkInit;
 import water.server.ServletService;
 import water.server.ServletUtils;
-import water.util.Log;
 import water.webserver.iface.*;
 
 import javax.servlet.http.HttpServlet;
@@ -70,7 +68,7 @@ public class H2OHttpViewImpl implements H2OHttpView {
     if (loginName.equals(config.user_name)) {
       return false;
     } else {
-      Log.warn("Login name (" + loginName + ") does not match cluster owner name (" + config.user_name + ")");
+      LOG.warn("Login name (" + loginName + ") does not match cluster owner name (" + config.user_name + ")");
       ServletUtils.sendResponseError(response, HttpServletResponse.SC_UNAUTHORIZED, "Login name does not match cluster owner name");
       return true;
     }
