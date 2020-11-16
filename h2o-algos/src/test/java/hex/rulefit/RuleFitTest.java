@@ -10,14 +10,18 @@ import org.junit.Test;
 
 import org.junit.runner.RunWith;
 import water.DKV;
+import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.parser.ParseDataset;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.test.util.ConfusionMatrixUtils;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -728,11 +732,14 @@ public class RuleFitTest extends TestUtil {
     }
     
     @Test
-    public void testBadColsBug() {
+    public void testBadColsBug() throws IOException {
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file("./smalldata/rulefit/repro_bad_cols_bug.csv"));
 
+            TestUtil.downloadTestFileFromS3("smalldata/rulefit/repro_bad_cols_bug.csv");
+            NFSFileVec nfs = TestUtil.makeNfsFileVec("smalldata/rulefit/repro_bad_cols_bug.csv");
+            final Frame fr = Scope.track(ParseDataset.parse(Key.make(), nfs._key));
+            
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 42;
             params._train = fr._key;

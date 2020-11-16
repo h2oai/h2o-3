@@ -407,7 +407,7 @@ public class TestUtil extends Iced {
     return Boolean.valueOf(System.getenv("H2O_JUNIT_ALLOW_NO_SMALLDATA"));
   }
   
-  private static void downloadTestFileFromS3(String fname) throws IOException {
+  protected static void downloadTestFileFromS3(String fname) throws IOException {
     if (fname.startsWith("./"))
       fname = fname.substring(2);
     File f = new File(fname);
