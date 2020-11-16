@@ -5,6 +5,7 @@ import org.apache.log4j.Logger;
 import water.ExtensionManager;
 import water.H2O;
 import water.api.RequestServer;
+import water.init.AbstractEmbeddedH2OConfig;
 import water.server.ServletService;
 import water.server.ServletUtils;
 import water.webserver.iface.*;
@@ -108,7 +109,19 @@ public class H2OHttpViewImpl implements H2OHttpView {
    * @return False if API is supposed to be disabled on a non-leader node and this node is a non-leader node. Otherwise true.
    */
   public static boolean isApiEnabledOnThisNode() {
-    if (Boolean.getBoolean(DISABLE_NON_LEADER_API)) {
+    final boolean disabledOnNonLeaderNode;
+    final AbstractEmbeddedH2OConfig embeddedConfig = H2O.getEmbeddedH2OConfig();
+    if (embeddedConfig == null) {
+      // If there is no embedded config, use only the sysvar, if present.
+      disabledOnNonLeaderNode = Boolean.getBoolean(DISABLE_NON_LEADER_API);
+    } else {
+      // If there is an embeddedConfig providing the value, us that value primarily.
+      // If the embedded config does not specify API disablement, fall back to presence of the sysvar.
+      disabledOnNonLeaderNode = embeddedConfig.getConfigurationOverrides()
+              .getDisableNonLeaderApi()
+              .orElse(Boolean.getBoolean(DISABLE_NON_LEADER_API));
+    }
+    if (disabledOnNonLeaderNode) {
       // If Clustering is not finished yet, treat API as disabled
       return H2O.SELF == null || H2O.SELF.isLeaderNode();
     } else {

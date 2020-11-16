@@ -2,6 +2,7 @@ package water.k8s;
 
 import water.H2O;
 import water.init.AbstractEmbeddedH2OConfig;
+import water.init.EmbeddedConfigurationOverride;
 import water.util.Log;
 
 import java.net.InetAddress;
@@ -55,4 +56,15 @@ public class KubernetesEmbeddedConfig extends AbstractEmbeddedH2OConfig {
     @Override
     public void print() {
     }
+
+    @Override
+    public EmbeddedConfigurationOverride getConfigurationOverrides() {
+        // Disable APIs of non-leader nodes while running on Kubernetes
+        // Prevents load-balancing services and other accessors to contact the wrong node
+        // if the Kubernetes setup is incorrect
+        return new EmbeddedConfigurationOverride.Builder()
+                .withDisableNonLeaderApi(true)
+                .build();
+    }
+
 }

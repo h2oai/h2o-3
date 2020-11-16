@@ -65,7 +65,6 @@ public class KubernetesEmbeddedConfigProvider implements EmbeddedConfigProvider 
         if (!runningOnKubernetes) {
             return; // Do not initialize any configuration if H2O is not running in K8S-spawned container.
         }
-        System.setProperty(H2OHttpViewImpl.DISABLE_NON_LEADER_API, "true");
         startKubernetesRestApi();
 
         Log.info("Initializing H2O Kubernetes cluster");
