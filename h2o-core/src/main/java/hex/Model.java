@@ -2454,7 +2454,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             FileOutputStream os = new FileOutputStream(ss.getFilename());
             ss.getStreamWriter().writeTo(os);
             os.close();
-            genmodel = MojoModel.load(filename);
+            genmodel = MojoModel.load(filename, true);
             features = MemoryManager.malloc8d(genmodel._names.length);
           } catch (IOException e1) {
             e1.printStackTrace();
