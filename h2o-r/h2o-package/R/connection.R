@@ -492,13 +492,12 @@ h2o.clusterStatus <- function() {
     "----------------------------------------------------------------------\n",
     "\n",
     "Your next step is to start H2O:\n",
-    "    > h2o.init()\n",
+    "    > SUBST_START_COMMAND\n",
     "\n",
     "For H2O package documentation, ask for help:\n",
     "    > ??h2o\n",
     "\n",
-    "After starting H2O, you can use the Web UI at http://localhost:54321\n",
-    "For more information visit https://docs.h2o.ai\n",
+    "SUBST_START_DOCUMENTATION",
     "\n",
     "----------------------------------------------------------------------\n")
   packageStartupMessage(msg)
