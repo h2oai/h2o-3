@@ -26,6 +26,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/2/inde
 <ul>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7739'>PUBDEV-7739</a>] -         Added feature interactions and importance for XGBoost and GBM.
 </li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7774'>PUBDEV-7774</a>] -         Added new `interaction_constraint` parameter to XGBoost.
+</li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7838'>PUBDEV-7838</a>] -         Added an option to not have quotes in the header during exportFile.
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7887'>PUBDEV-7887</a>] -         Added ability to retrieve a list of all the models in an H2O cluster.
