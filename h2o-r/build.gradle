@@ -152,11 +152,30 @@ task cpH2OAppJar(type: Copy, dependsOn: [configurations.compile]) {
     into "${projectDir}/h2o-package/inst/java/"
 }
 
+task cpMainPKG {
+    doLast {
+        file("${buildDir}/tmp/h2o-package-main").mkdirs()
+        copy {
+            from "h2o-package"
+            into "${buildDir}/tmp/h2o-package-main"
+        }
+        File connectionR = new File([T, "h2o-package", "R", "connection.R"].join(File.separator))
+        File connectionMain = new File([T, "build", "tmp", "h2o-package-main", "R", "connection.R"].join(File.separator))
+
+        def connectionRReplaced = connectionR.text
+                .replaceAll("SUBST_START_COMMAND", "h2o.init()")
+                .replaceAll("SUBST_START_DOCUMENTATION", "After starting H2O, you can use the Web UI" +
+                        " at http://localhost:54321\\\\n\",\n" +
+                        "    \"For more information visit https://docs.h2o.ai\\\\n")
+        connectionMain.write(connectionRReplaced)
+    }
+}
+
 task buildPKG(type: Exec) {
     doFirst {
         standardOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_buildPKG.out")
     }
-    commandLine getOsSpecificCommandLine(['R', 'CMD', 'build', 'h2o-package'])
+    commandLine getOsSpecificCommandLine(['R', 'CMD', 'build', 'build/tmp/h2o-package-main'])
 }
 
 task cpToR {
@@ -224,7 +243,8 @@ buildPackageDocumentation.dependsOn setDevPackageFiles, setPackageFiles
 genPDF.dependsOn setPackageFiles
 genPDF.dependsOn buildPackageDocumentation
 cpPDF.dependsOn genPDF
-buildPKG.dependsOn cpPDF
+cpMainPKG.dependsOn cpPDF
+buildPKG.dependsOn cpMainPKG
 cpToR.dependsOn buildPKG
 publishPKG.dependsOn cpToR
 untar.dependsOn publishPKG
