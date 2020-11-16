@@ -178,6 +178,41 @@ task buildPKG(type: Exec) {
     commandLine getOsSpecificCommandLine(['R', 'CMD', 'build', 'build/tmp/h2o-package-main'])
 }
 
+task cpClientPKG {
+    doLast {
+        file("${buildDir}/tmp/h2o-package-client").mkdirs()
+        copy {
+            from "h2o-package"
+            into "${buildDir}/tmp/h2o-package-client"
+        }
+        new File([T, "build", "tmp", "h2o-package-client", "inst", "java", "h2o.jar"].join(File.separator)).delete()
+        copy{
+            from "../h2o-py/build/libs/h2o-py.jar"
+            rename { filename ->
+                return 'h2o.jar'
+            }
+            into "${buildDir}/tmp/h2o-package-client/inst/java"
+        }
+
+        File connectionR = new File([T, "h2o-package", "R", "connection.R"].join(File.separator))
+        File connectionClient = new File([T, "build", "tmp", "h2o-package-client", "R", "connection.R"].join(File.separator))
+
+        def connectionRReplaced = connectionR.text
+                .replaceAll("SUBST_START_COMMAND", "h2o.connect()")
+                .replaceAll("SUBST_START_DOCUMENTATION", "")
+        connectionClient.write(connectionRReplaced)
+    }
+}
+
+task buildPKGClient(type: Exec) {
+    doFirst {
+        workingDir new File(buildDir, "client")
+        file("${buildDir}/client/tmp").mkdirs()
+        standardOutput = new FileOutputStream("${buildDir}/client/tmp/h2o-r_buildPKG.out")
+        commandLine getOsSpecificCommandLine(['R', 'CMD', 'build', '../../build/tmp/h2o-package-client'])
+    }
+}
+
 task cpToR {
     doLast {
         copy {
@@ -245,9 +280,11 @@ genPDF.dependsOn buildPackageDocumentation
 cpPDF.dependsOn genPDF
 cpMainPKG.dependsOn cpPDF
 buildPKG.dependsOn cpMainPKG
+cpClientPKG.dependsOn buildPKG
+buildPKGClient.dependsOn cpClientPKG
 cpToR.dependsOn buildPKG
 publishPKG.dependsOn cpToR
-untar.dependsOn publishPKG
+untar.dependsOn publishPKG, buildPKGClient
 cleaner.dependsOn untar
 task build_rh2o(dependsOn: cleaner)
 build.dependsOn build_rh2o
