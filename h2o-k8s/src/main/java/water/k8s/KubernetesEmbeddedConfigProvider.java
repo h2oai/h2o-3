@@ -9,6 +9,7 @@ import water.k8s.lookup.KubernetesDnsLookup;
 import water.k8s.lookup.KubernetesLookup;
 import water.k8s.lookup.LookupConstraintsBuilder;
 import water.util.Log;
+import water.webserver.H2OHttpViewImpl;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -64,7 +65,7 @@ public class KubernetesEmbeddedConfigProvider implements EmbeddedConfigProvider 
         if (!runningOnKubernetes) {
             return; // Do not initialize any configuration if H2O is not running in K8S-spawned container.
         }
-        System.setProperty(NetworkInit.DISABLE_NON_LEADER_API, "true");
+        System.setProperty(H2OHttpViewImpl.DISABLE_NON_LEADER_API, "true");
         startKubernetesRestApi();
 
         Log.info("Initializing H2O Kubernetes cluster");

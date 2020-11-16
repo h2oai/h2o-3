@@ -1,8 +1,11 @@
 package water.webserver;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
 import water.ExtensionManager;
+import water.H2O;
 import water.api.RequestServer;
+import water.init.NetworkInit;
 import water.server.ServletService;
 import water.server.ServletUtils;
 import water.util.Log;
@@ -23,6 +26,8 @@ import java.util.LinkedHashMap;
  * This is intended to be a singleton per H2O node.
  */
 public class H2OHttpViewImpl implements H2OHttpView {
+  private static final Logger LOG = Logger.getLogger(H2OHttpViewImpl.class);
+  public static String DISABLE_NON_LEADER_API = H2O.OptArgs.SYSTEM_PROP_PREFIX + "disableNonLeaderApi";
   private static volatile boolean _acceptRequests = false;
   private final H2OHttpConfig config;
 
@@ -84,6 +89,12 @@ public class H2OHttpViewImpl implements H2OHttpView {
       if (ServletUtils.isTraceRequest(request)) {
         ServletUtils.setResponseStatus(response, HttpServletResponse.SC_METHOD_NOT_ALLOWED);
         return true;
+      } else if (!isApiEnabledOnThisNode()) {
+        try {
+          response.sendError(HttpServletResponse.SC_FORBIDDEN, "API not accessible on this node, as it is not a leader node.");
+        } catch (IOException e) {
+          LOG.error("API not accessible on this node. Error sending response.", e);
+        }
       }
       isXhrRequest = ServletUtils.isXhrRequest(request);
     }
@@ -93,6 +104,18 @@ public class H2OHttpViewImpl implements H2OHttpView {
 
   protected boolean isAcceptingRequests() {
     return _acceptRequests;
+  }
+
+  /**
+   * @return False if API is supposed to be disabled on a non-leader node and this node is a non-leader node. Otherwise true.
+   */
+  public static boolean isApiEnabledOnThisNode() {
+    if (Boolean.getBoolean(DISABLE_NON_LEADER_API)) {
+      // If Clustering is not finished yet, treat API as disabled
+      return H2O.SELF == null || H2O.SELF.isLeaderNode();
+    } else {
+      return true;
+    }
   }
   
   @Override
