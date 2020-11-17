@@ -24,6 +24,8 @@ fullnameOverride: ""
 
 podAnnotations: { }
 
+podLabels:
+
 podSecurityContext: { }
 
 securityContext: { }
