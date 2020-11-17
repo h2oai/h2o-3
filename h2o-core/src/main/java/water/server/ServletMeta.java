@@ -1,16 +1,16 @@
 package water.server;
 
 import javax.servlet.http.HttpServlet;
+import java.util.Objects;
 
 /**
  * Describes how to register a Servlet in H2O Server
  */
 public class ServletMeta {
 
-  private final String _contextPath;
-  private final Class<? extends HttpServlet> _servletClass;
-  private final boolean _alwaysEnabled;
-
+  private String _contextPath;
+  private Class<? extends HttpServlet> _servletClass;
+  private boolean _alwaysEnabled;
 
   /**
    * Constructs a new instance of {@link ServletMeta} with the alwaysEnabled functionality turned off.
@@ -19,23 +19,13 @@ public class ServletMeta {
    * @param servletClass Specific implementation of the {@link HttpServlet} to handle the context path
    */
   public ServletMeta(final String contextPath, final Class<? extends HttpServlet> servletClass) {
-    this(contextPath, servletClass, false);
-  }
-
-  /**
-   * Constructs a new instance of {@link ServletMeta} with the alwaysEnabled functionality either turned on or off.
-   * An always enabled servlet is guaranteed to be active on every node, even if the rest of the API is shut down
-   * on a particular node. This is useful for vital, per-node APIs. Typically used by non user-facing functionality.
-   * 
-   * @param contextPath Context path the underlying servlet handles
-   * @param servletClass Specific implementation of the {@link HttpServlet} to handle the context path
-   * @param alwaysEnabled Set to true if this servlet should remain active even the API is turned off on a particular node.
-   */
-  public ServletMeta(final String contextPath, final Class<? extends HttpServlet> servletClass, final boolean alwaysEnabled) {
+    Objects.requireNonNull(contextPath);
+    Objects.requireNonNull(servletClass);
     _contextPath = contextPath;
     _servletClass = servletClass;
-    _alwaysEnabled = alwaysEnabled;
+    _alwaysEnabled = false;
   }
+  
 
   public String getContextPath() {
     return _contextPath;
@@ -47,6 +37,40 @@ public class ServletMeta {
   
   public boolean isAlwaysEnabled(){
       return _alwaysEnabled;
+  }
+  
+  public static class Builder {
+    private final ServletMeta servletMeta;
+
+    /**
+     * Constructs a new instance of {@link ServletMeta.Builder} with basic required parameters
+     *
+     * @param contextPath Context path the underlying servlet handles
+     * @param servletClass Specific implementation of the {@link HttpServlet} to handle the context path
+     */
+    public Builder(final String contextPath, final Class<? extends HttpServlet> servletClass) {
+      Objects.requireNonNull(contextPath);
+      Objects.requireNonNull(servletClass);
+      servletMeta = new ServletMeta(contextPath, servletClass);
+    }
+
+    /**
+     * @return The underlying ServletMeta object. Returns reference to the same object if called multiple times. Never null.
+     */
+    public ServletMeta build(){
+      return servletMeta;
+    }
+
+    /**
+     * 
+     * @param alwaysEnabled
+     * @return This builder
+     */
+    public ServletMeta.Builder withAlwaysEnabled(final boolean alwaysEnabled){
+      servletMeta._alwaysEnabled = alwaysEnabled;
+      return this;
+    }
+
   }
 
 }
