@@ -76,6 +76,10 @@ h2o.removeAll <- function(timeout_secs=0, retained_elements = c()) {
         retained_keys <- append(retained_keys, element@model_id)
       } else if (is.H2OFrame(element)) {
         retained_keys <- append(retained_keys, h2o.getId(element))
+      } else if( is.character(element) ) {
+        retained_keys <- append(retained_keys, element)
+      } else {
+        stop("The 'retained_elements' variable must be a Keyed instance (e.g. H2OFrame, H2OModel) or character")
       }
     }
     
