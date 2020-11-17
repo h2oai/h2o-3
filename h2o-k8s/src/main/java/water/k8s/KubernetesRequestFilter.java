@@ -51,7 +51,7 @@ public class KubernetesRequestFilter implements RequestAuthExtension {
 
         // If API is disabled on this node and the context path of the request is not listed in allowedPaths,
         // Then send HTTP 403 - Forbidden and indicate the request has been handled by this filter.
-        response.sendError(HttpServletResponse.SC_FORBIDDEN, "API not accessible on this node while running on Kubernetes, as it is not a leader node.");
+        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Kubernetes deployment/configuration error. Request reached a non-leader H2O node.");
         return true;
     }
 
