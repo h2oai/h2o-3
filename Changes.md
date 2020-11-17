@@ -32,6 +32,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/2/inde
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7887'>PUBDEV-7887</a>] -         Added ability to retrieve a list of all the models in an H2O cluster.
 </li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7900'>PUBDEV-7900</a>] -         Added custom pod labels for HELM charts.
+</li>
 </ul>
     
 #### Task
