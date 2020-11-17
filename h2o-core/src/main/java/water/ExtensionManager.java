@@ -247,7 +247,7 @@ public class ExtensionManager {
     long before = System.currentTimeMillis();
     ServiceLoader<RequestAuthExtension> extensionsLoader = ServiceLoader.load(RequestAuthExtension.class);
     for (RequestAuthExtension ext : extensionsLoader) {
-      if(ext.isEnabled()){
+      if (ext.isEnabled()) {
         authExtensions.put(ext.getClass().getName(), ext);
       }
     }
