@@ -18,6 +18,7 @@ envsubst < testvalues-template.yaml >> testvalues.yaml
 helm install -f testvalues.yaml h2o $H2O_BASE/h2o-helm --kubeconfig $KUBECONFIG --dry-run # Shows resulting YAML
 helm install -f testvalues.yaml h2o $H2O_BASE/h2o-helm --kubeconfig $KUBECONFIG
 helm test h2o
+kubectl logs h2o-h2o-3-test-connection
 kubectl get ingresses
 kubectl describe pods
 timeout 120s bash h2o-cluster-check.sh
