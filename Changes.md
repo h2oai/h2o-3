@@ -2,6 +2,77 @@
 
 ## H2O
 
+### Zermelo (3.32.0.2) - 11/17/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/2/index.html</a>
+
+#### Bug
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7793'>PUBDEV-7793</a>] -         Implemented deserialization of monotone constraints.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7844'>PUBDEV-7844</a>] -         Updated required version of ggplot2 in R package to 3.3.0.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7866'>PUBDEV-7866</a>] -         Fixed the parsing of GLM’s `rand_family` params in MOJO JSON.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7876'>PUBDEV-7876</a>] -         Fixed NPE that resulted when starting a grid with SequentialWalker in AutoML exploitation phase.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7879'>PUBDEV-7879</a>] -         Fixed MOJO version check message.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7886'>PUBDEV-7886</a>] -         When grid search has parallelism enabled, it now includes CV models.
+</li>
+</ul>
+    
+#### New Feature
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7739'>PUBDEV-7739</a>] -         Added feature interactions and importance for XGBoost and GBM.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7774'>PUBDEV-7774</a>] -         Added new `interaction_constraints` parameter to XGBoost.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7838'>PUBDEV-7838</a>] -         Added an option to not have quotes in the header during exportFile.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7887'>PUBDEV-7887</a>] -         Added ability to retrieve a list of all the models in an H2O cluster.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7900'>PUBDEV-7900</a>] -         Added custom pod labels for HELM charts.
+</li>
+</ul>
+    
+#### Task
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7835'>PUBDEV-7835</a>] -         Added `lambda_min` & `lambda_max` parameters to GLMModelOutputs.
+</li>
+</ul>
+    
+#### Improvement
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7745'>PUBDEV-7745</a>] -         Added default values to all algorithm parameters in the User Guide.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7749'>PUBDEV-7749</a>] -         Fixed the discrepancies between the Target Encoding User Guide page and Client.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7834'>PUBDEV-7834</a>] -         Added ONNX support to the documentation.
+</li>
+</ul>
+    
+#### Engineering Story
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7846'>PUBDEV-7846</a>] -         Added a new method which properly locks H2O Frames during conversion from Spark Data Frames to H2O Frames in Sparkling Water.
+</li>
+</ul>
+    
+#### Docs
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7836'>PUBDEV-7836</a>] -         On the Grid Search User Guide page, fixed the missing syntax highlight in the Python example of the Random Grid Search section.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7837'>PUBDEV-7837</a>] -         Added `rule_generation_ntrees` parameter to the RuleFit page.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7877'>PUBDEV-7877</a>] -         Added documentation for GBM and XGBoost on feature interactions and importance.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7888'>PUBDEV-7888</a>] -         Added a Python example to the `stratify_by` parameter. 
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7898'>PUBDEV-7898</a>] -         Added a Feature Engineering section to the Data Manipulation page in the User Guide.
+</li>
+</ul>
+
+
 ### Zermelo (3.32.0.1) - 10/8/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/index.html</a>
