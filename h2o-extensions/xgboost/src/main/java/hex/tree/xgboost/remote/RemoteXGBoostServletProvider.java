@@ -10,7 +10,7 @@ import java.util.List;
 public class RemoteXGBoostServletProvider implements ServletProvider {
 
     private static final List<ServletMeta> SERVLETS = Collections.unmodifiableList(Arrays.asList(
-        new ServletMeta("/3/XGBoostExecutor.upload", RemoteXGBoostUploadServlet.class)
+        new ServletMeta("/3/XGBoostExecutor.upload", RemoteXGBoostUploadServlet.class, false)
     ));
 
     @Override

@@ -77,8 +77,4 @@ public abstract class AbstractEmbeddedH2OConfig {
    * Print debug information.
    */
   public abstract void print();
-  
-  public EmbeddedConfigurationOverride getConfigurationOverrides(){
-    return new EmbeddedConfigurationOverride.Builder().build();
-  }
 }

@@ -92,7 +92,7 @@ public class KubernetesEmbeddedConfigProvider implements EmbeddedConfigProvider 
      * @return True if there are environment variables indicating H2O is running inside a container managed by
      * Kubernetes. Otherwise false.
      */
-    private boolean isRunningOnKubernetes() {
+    public static boolean isRunningOnKubernetes() {
         return KubernetesDnsLookup.isLookupPossible();
     }
 

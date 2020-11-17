@@ -21,7 +21,7 @@ public class EchoServletProvider implements ServletProvider {
 
   @Override
   public List<ServletMeta> servlets() {
-    return Collections.singletonList(new ServletMeta("/99/Echo", EchoServlet.class));
+    return Collections.singletonList(new ServletMeta("/99/Echo", EchoServlet.class, false));
   }
 
   @Override
