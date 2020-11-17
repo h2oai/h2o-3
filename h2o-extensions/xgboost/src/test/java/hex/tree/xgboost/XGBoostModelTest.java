@@ -1,6 +1,11 @@
 package hex.tree.xgboost;
 
 import hex.Model;
+import hex.genmodel.algos.gbm.GbmMojoModel;
+import hex.genmodel.algos.xgboost.XGBoostMojoModel;
+import hex.genmodel.attributes.parameters.KeyValue;
+import hex.genmodel.attributes.parameters.ModelParameter;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
@@ -14,7 +19,10 @@ import water.runner.H2ORunner;
 
 import java.util.Map;
 
+import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static water.TestUtil.toMojo;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -120,6 +128,23 @@ public class XGBoostModelTest {
       final XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Scope.track_generic(model);
 
+      Frame scored = Scope.track(model.score(airlinesFrame));
+      assertTrue(model.testJavaScoring(airlinesFrame, scored, 1e-6));
+
+      XGBoostMojoModel mojo = (XGBoostMojoModel) toMojo(model, "testIncludeInteractionConstraints", true);
+      ModelParameter[] paramsFromMojo = mojo._modelAttributes.getModelParameters();
+      boolean found = false;
+      for (ModelParameter p : paramsFromMojo) {
+        if (p.name.equals("interaction_constraints")) {
+          found = true;
+          assertTrue(p.getActualValue() instanceof String[][]);
+          String[][] value = (String[][]) p.getActualValue();
+          assertEquals(2, value.length);
+          assertArrayEquals(new String[]{"fYear", "fMonth"}, value[0]);
+          assertArrayEquals(new String[]{"Origin", "Distance"}, value[1]);
+        }
+      }
+      Assert.assertTrue("interaction constraints not found in mojo params", found);
     } finally {
       Scope.exit();
     }

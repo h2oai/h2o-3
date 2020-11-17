@@ -244,7 +244,7 @@ public class ModelJsonReader {
      * used.
      */
     private enum TypeHint {
-        INT, FLOAT, DOUBLE, LONG, DOUBLE_ARR, FLOAT_ARR, STRING_ARR, INT_ARR, LONG_ARR, OBJECT_ARR;
+        INT, FLOAT, DOUBLE, LONG, DOUBLE_ARR, FLOAT_ARR, STRING_ARR, STRING_ARR_ARR, INT_ARR, LONG_ARR, OBJECT_ARR;
 
         private static TypeHint fromStringIgnoreCase(final String from) {
             final Matcher matcher = ARRAY_PATTERN.matcher(from);
@@ -313,6 +313,17 @@ public class ModelJsonReader {
                             arrS[i] = array.get(i).getAsString();
                         }
                         convertTo = arrS;
+                        break;
+                    case STRING_ARR_ARR:
+                        final String[][] arrSS = new String[array.size()][];
+                        for (int i = 0; i < array.size(); i++) {
+                            final JsonArray arr2 = array.get(i).getAsJsonArray();
+                            arrSS[i] = new String[arr2.size()];
+                            for (int j = 0; j < arr2.size(); j++) {
+                                arrSS[i][j] = arr2.get(j).getAsString();
+                            }
+                        }
+                        convertTo = arrSS;
                         break;
                     case INT_ARR:
                         final int[] arrI = new int[array.size()];
