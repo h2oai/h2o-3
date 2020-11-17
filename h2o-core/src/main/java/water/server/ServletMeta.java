@@ -11,6 +11,17 @@ public class ServletMeta {
   private final Class<? extends HttpServlet> _servletClass;
   private final boolean _alwaysEnabled;
 
+
+  /**
+   * Constructs a new instance of {@link ServletMeta} with the alwaysEnabled functionality turned off.
+   *
+   * @param contextPath Context path the underlying servlet handles
+   * @param servletClass Specific implementation of the {@link HttpServlet} to handle the context path
+   */
+  public ServletMeta(final String contextPath, final Class<? extends HttpServlet> servletClass) {
+    this(contextPath, servletClass, false);
+  }
+
   /**
    * Constructs a new instance of {@link ServletMeta} with the alwaysEnabled functionality either turned on or off.
    * An always enabled servlet is guaranteed to be active on every node, even if the rest of the API is shut down
