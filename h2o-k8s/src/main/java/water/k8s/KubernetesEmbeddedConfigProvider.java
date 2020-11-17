@@ -1,15 +1,12 @@
 package water.k8s;
 
-import water.H2O;
 import water.init.AbstractEmbeddedH2OConfig;
 import water.init.EmbeddedConfigProvider;
-import water.init.NetworkInit;
 import water.k8s.api.KubernetesRestApi;
 import water.k8s.lookup.KubernetesDnsLookup;
 import water.k8s.lookup.KubernetesLookup;
 import water.k8s.lookup.LookupConstraintsBuilder;
 import water.util.Log;
-import water.webserver.H2OHttpViewImpl;
 
 import java.io.IOException;
 import java.util.Collection;
