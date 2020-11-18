@@ -17,6 +17,17 @@ public final class ServletService {
     _loader = ServiceLoader.load(ServletProvider.class);
   }
 
+  public synchronized LinkedHashMap<String, Class<? extends HttpServlet>> getAlwaysEnabledServlets() {
+    return StreamSupport
+            .stream(_loader.spliterator(), false)
+            .sorted(Comparator.comparing(ServletProvider::priority).reversed())
+            .flatMap(provider -> provider.servlets().stream())
+            .filter(servletMeta -> servletMeta.isAlwaysEnabled())
+            .collect(Collectors.toMap(ServletMeta::getContextPath, ServletMeta::getServletClass,
+                    (val1, val2) -> val2, // Latest always wins
+                    LinkedHashMap::new));
+  }
+
   public synchronized LinkedHashMap<String, Class<? extends HttpServlet>> getAllServlets() {
     return StreamSupport
             .stream(_loader.spliterator(), false)
