@@ -225,8 +225,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
   }
 
-  static class TooManyPredictorsException extends RuntimeException {}
-
   DataInfo _dinfo;
 
   private transient DataInfo _validDinfo;
@@ -894,14 +892,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
 
     private void doCleanup() {
-      if(_parms._lambda_search && _parms._is_cv_model)
-        Scope.untrack(removeLater(_dinfo.getWeightsVec()._key));
-      if (_parms._HGLM) {
-        Key[] vecKeys = _toRemove;
-        for (int index=0; index < vecKeys.length; index++) {
-          Vec tempVec = DKV.getGet(vecKeys[index]);
-          tempVec.remove();
+      try {
+        if (_parms._lambda_search && _parms._is_cv_model)
+          Scope.untrack(removeLater(_dinfo.getWeightsVec()._key));
+        if (_parms._HGLM) {
+          Key[] vecKeys = _toRemove;
+          for (int index = 0; index < vecKeys.length; index++) {
+            Vec tempVec = DKV.getGet(vecKeys[index]);
+            tempVec.remove();
+          }
         }
+      } catch (Exception e) {
+        Log.err("Error while cleaning up GLM " + _result);
+        Log.err(e);
       }
     }
 
