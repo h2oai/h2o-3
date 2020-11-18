@@ -126,7 +126,7 @@ h2o.rm <- function(ids, cascade=TRUE) {
     } else if( is.character(xi) ) {
       .h2o.__remoteSend(paste0(.h2o.__DKV, "/",xi), method = "DELETE", .params=list(cascade=cascade))
     } else {
-      stop("input to h2o.rm must be a Keyed instance (e.g. H2OFrame, H2OModel) or character")
+      stop("Input to h2o.rm must be either an instance of H2OModel/H2OFrame or a character")
     }
   }
 
