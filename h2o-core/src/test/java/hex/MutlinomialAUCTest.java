@@ -96,7 +96,7 @@ public class MutlinomialAUCTest {
         assertTrue("Macro OVO PR AUC should be value in [0, 1] interval.",
                 _auc.getMacroOvoAucPr() >= 0 && _auc.getMacroOvoAucPr() <= 1);
         assertTrue("Macro OVR PR AUC should be value in [0, 1] interval.",
-                _auc.getMacroOvrAucPr() >= 0 && _auc.getMacroOvrAucPr() <= 1);
+                _auc.get_macroOvrAucPr() >= 0 && _auc.get_macroOvrAucPr() <= 1);
     }
     
     @Test

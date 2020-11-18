@@ -794,11 +794,103 @@ Using the previous example, run the following to retrieve the AUCPR.
 Multinomial AUC (Area Under the ROC Curve)
 ##########################################
 
+This model metric is used to evaluate how well a multinomial classification model is able to distinguish between true positives and false positives across all domains. The metric is composed of these outputs:
+
+  **One class versus one class (OVO) AUCs** - calculated for all pairwise combination of classes ((number of classes × number of classes / 2) - number of classes results)
+  
+  **One class versus rest classes (OVR) AUCs** - calculated for all combination one class and rest of classes (number of classes results)
+
+  **Macro average OVR AUC** - Uniformly weighted average of all OVO AUCs
+
+.. math::
+
+   \frac{1}{c}\sum_{j=1}^{c} \text{AUC}(j, rest_j)
+
+where :math:`c` is the number of classes and :math:`\text{AUC}(j, rest_j)` is the
+AUC with class :math:`j` as the positive class and rest classes :math:`rest_j` as the
+negative class.
+
+ 
+   **Weighted average OVR AUC** - Prevalence weighted average of all OVR AUCs
+
+.. math::
+
+  \frac{1}{\sum_{j=1}^{c} p(j)} \sum_{j=1}^{c} p(j) \text{AUC}(j, rest_j)
+
+where :math:`c` is the number of classes, :math:`\text{AUC}(j, rest_j)` is the
+AUC with class :math:`j` as the positive class and rest classes :math:`rest_j` as the
+negative class and :math:`p(j)` is the prevalence of class :math:`j` (number of positives of class :math:`j`).
+
+  **Macro average OVO AUC** - Uniformly weighted average of all OVO AUCs
+
+.. math::
+
+   \frac{1}{c}\sum_{j=1}^{c}\sum_{k \neq j}^{c} \frac{1}{2}(\text{AUC}(j | k) + \text{AUC}(k | j))
+
+where :math:`c` is the number of classes and :math:`\text{AUC}(j, k)` is the
+AUC with class :math:`j` as the positive class and class :math:`k` as the
+negative class.
+ 
+  **Weighted average OVO AUC** - Prevalence weighted average of all OVO AUCs
+
+.. math::
+
+   \frac{1}{\sum_{j=1}^{c}\sum_{k \neq j}^c p(j \cup k)}\sum_{j=1}^{c}\sum_{k \neq j}^c p(j \cup k)\frac{1}{2}(\text{AUC}(j | k) + \text{AUC}(k | j))
+
+where :math:`c` is the number of classes, :math:`\text{AUC}(j, k)` is the
+AUC with class :math:`j` as the positive class and class :math:`k` as the
+negative class and :math:`p(j \cup k)` is prevalence of class :math:`j` and class :math:`k` (sum of positives of both classes).
 
 
 Multinomial AUCPR (Area Under the Precision-Recall Curve)
 #########################################################
 
+This model metric is used to evaluate how well a multinomial classification model is able to distinguish between precision recall pairs or points across all domains. The metric is composed of these outputs:
+
+  **One class versus one class (OVO) AUCPRs** - calculated for all pairwise AUCPR combination of classes ((number of classes × number of classes / 2) - number of classes results)
+  
+  **One class versus rest classes (OVR) AUCPRs** - calculated for all combination one class and rest of classes AUCPR (number of classes results)
+
+  **Macro average OVR AUCPR** - Uniformly weighted average of all OVO AUCPRs
+
+.. math::
+
+   \frac{1}{c}\sum_{j=1}^{c} \text{AUCPR}(j, rest_j)
+
+where :math:`c` is the number of classes and :math:`\text{AUCPR}(j, rest_j)` is the
+AUCPR with class :math:`j` as the positive class and rest classes :math:`rest_j` as the
+negative class.
+
+ 
+   **Weighted average OVR AUCPR** - Prevalence weighted average of all OVR AUCPRs
+
+.. math::
+
+  \frac{1}{\sum_{j=1}^{c} p(j)} \sum_{j=1}^{c} p(j) \text{AUCPR}(j, rest_j)
+
+where :math:`c` is the number of classes, :math:`\text{AUCPR}(j, rest_j)` is the
+AUCPR with class :math:`j` as the positive class and rest classes :math:`rest_j` as the
+negative class and :math:`p(j)` is the prevalence of class :math:`j` (number of positives of class :math:`j`).
+
+  **Macro average OVO AUCPR** - Uniformly weighted average of all OVO AUCPRs
+
+.. math::
+
+   \frac{1}{c}\sum_{j=1}^{c}\sum_{k \neq j}^{c} \frac{1}{2}(\text{AUCPR}(j | k) + \text{AUCPR}(k | j))
+
+where :math:`c` is the number of classes and :math:`\text{AUCPR}(j, k)` is the
+AUCPR with class :math:`j` as the positive class and class :math:`k` as the
+negative class.
+ 
+  **Weighted average OVO AUCPR** - Prevalence weighted average of all OVO AUCPRs
+
+.. math::
+
+   \frac{1}{\sum_{j=1}^{c}\sum_{k \neq j}^c p(j \cup k)}\sum_{j=1}^{c}\sum_{k \neq j}^c p(j \cup k)\frac{1}{2}(\text{AUCPR}(j | k) + \text{AUCPR}(k | j))
+
+where :math:`c` is the number of classes, :math:`\text{AUCPR}(j, k)` is the
+AUCPR with class :math:`j` as the positive class and class :math:`k` as the
+negative class and :math:`p(j \cup k)` is prevalence of class :math:`j` and class :math:`k` (sum of positives of both classes).
 
 
 Kolmogorov-Smirnov (KS) Metric 

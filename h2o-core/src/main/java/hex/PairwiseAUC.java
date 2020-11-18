@@ -5,24 +5,21 @@ import water.Iced;
 public class PairwiseAUC extends Iced {
     private double _auc;
     private double _prAuc;
-    private double _tpSum;
+    private double _sumPositives;
     private String _domainFirst;
     private String _domainSecond;
     
 
     public PairwiseAUC(AUC2 aucFirst, AUC2 aucSecond, String domainFirst, String domainSecond) {
         this._auc = (aucFirst._auc + aucSecond._auc)/2;
-        this._prAuc = (aucFirst._pr_auc + aucSecond._pr_auc)/2;
-        double tpFirst = 0, tpSecond = 0;
-        int firstMaxId = aucFirst._max_idx;
-        if(firstMaxId != -1) {
-            tpFirst = aucFirst.tp(firstMaxId);
-        } 
-        int secondMaxId = aucSecond._max_idx;
-        if(secondMaxId != -1) {
-            tpSecond = aucSecond.tp(secondMaxId);
+        if(Double.isNaN(this._auc)){
+            this._auc = 0;
         }
-        this._tpSum = tpFirst + tpSecond;
+        this._prAuc = (aucFirst._pr_auc + aucSecond._pr_auc)/2;
+        if(Double.isNaN(this._prAuc)){
+            this._prAuc = 0;
+        }
+        this._sumPositives = aucFirst._p + aucSecond._p;
         this._domainFirst = domainFirst;
         this._domainSecond = domainSecond;
     }
@@ -34,8 +31,8 @@ public class PairwiseAUC extends Iced {
         this._domainSecond = domainSecond;
     }
     
-    public double getSumTp(){
-        return _tpSum;
+    public double getSumPositives(){
+        return _sumPositives;
     }
     
     public double getAuc(){ return _auc; }
