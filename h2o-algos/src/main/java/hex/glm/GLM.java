@@ -2113,7 +2113,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       try {
         doCompute();
       } finally {
-        _model.unlock(_job);
+        if (_model != null) _model.unlock(_job);
       }
     }
     
