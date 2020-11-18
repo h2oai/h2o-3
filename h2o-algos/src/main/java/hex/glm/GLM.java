@@ -855,10 +855,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private void buildModel() {
     _model = new GLMModel(_result, _parms, this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
     _model._output.setLambdas(_parms);  // set lambda_min and lambda_max if lambda_search is enabled
-    
-    // clone2 so that I don't change instance which is in the DKV directly
-    // (clone2 also shallow clones _output)
-    _model.clone2().delete_and_lock(_job._key);
+    _model.delete_and_lock(_job);
   }
 
   protected static final long WORK_TOTAL = 1000000;
@@ -897,38 +894,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
 
     private void doCleanup() {
-      try {
-        if(_parms._lambda_search && _parms._is_cv_model)
-          Scope.untrack(removeLater(_dinfo.getWeightsVec()._key));
-        if (_parms._HGLM) {
-          Key[] vecKeys = _toRemove;
-          for (int index=0; index < vecKeys.length; index++) {
-            Vec tempVec = DKV.getGet(vecKeys[index]);
-            tempVec.remove();
-          }
+      if(_parms._lambda_search && _parms._is_cv_model)
+        Scope.untrack(removeLater(_dinfo.getWeightsVec()._key));
+      if (_parms._HGLM) {
+        Key[] vecKeys = _toRemove;
+        for (int index=0; index < vecKeys.length; index++) {
+          Vec tempVec = DKV.getGet(vecKeys[index]);
+          tempVec.remove();
         }
-        if(_model!=null)
-          _model.unlock(_job);
-      } catch(Throwable t){
-        // nada
       }
     }
+
     private transient Cholesky _chol;
     private transient L1Solver _lslvr;
 
-
-    int [] findZeros(double [] vals){
-      int [] res = new int[4];
-      int cnt = 0;
-      for(int i = 0; i < vals.length; ++i){
-        if(vals[i] == 0){
-          if(res.length == cnt)
-            res = Arrays.copyOf(res,res.length*2);
-          res[cnt++] = i;
-        }
-      }
-      return Arrays.copyOf(res,cnt);
-    }
     private double[] ADMM_solve(Gram gram, double [] xy) {
       if(_parms._remove_collinear_columns || _parms._compute_p_values) {
         if(!_parms._intercept) throw H2O.unimpl();
@@ -2131,6 +2110,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     
     @Override
     public void computeImpl() {
+      try {
+        doCompute();
+      } finally {
+        _model.unlock(_job);
+      }
+    }
+    
+    private void doCompute() {
       double nullDevTrain = Double.NaN;
       double nullDevValid = Double.NaN;
       if(_doInit)
@@ -2327,8 +2314,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     @Override public boolean onExceptionalCompletion(Throwable t, CountedCompleter caller){
       doCleanup();
-      super.onExceptionalCompletion(t, caller);
-      return true;
+      return super.onExceptionalCompletion(t, caller);
     }
 
 
