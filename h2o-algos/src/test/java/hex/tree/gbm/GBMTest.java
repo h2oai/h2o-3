@@ -4176,8 +4176,6 @@ public class GBMTest extends TestUtil {
 
       FeatureInteractions featureInteractions = model.getFeatureInteractions(2,100,-1);
       assertEquals(featureInteractions.size(), 113);
-
-      DKV.remove(f._key);
     } finally {
       if( model != null ) model.delete();
       if( fr  != null )   fr.remove();
@@ -4199,31 +4197,26 @@ public class GBMTest extends TestUtil {
       parms._response_column = "CAPSULE";
       parms._train = f._key;
       parms._ntrees = 1;
+      parms._ignored_columns = new String[] {"ID"};
 
       model = new GBM(parms).trainModel().get();
-
       FeatureInteractions featureInteractions = model.getFeatureInteractions(2,100,-1);
-
       SharedTreeSubgraph treeSubgraph = model.getSharedTreeSubgraph(0, 0);
 
-      String[] keysToCheck = new String[]{"DPROS", "ID", "PSA", "GLEASON", "VOL"};
+      String[] keysToCheck = new String[]{"DPROS", "PSA", "GLEASON", "VOL"};
       for (String feature : keysToCheck) {
         if (!feature.equals(parms._response_column)) {
           List<SharedTreeNode> featureSplits = treeSubgraph.nodesArray.stream()
                   .filter(node -> feature.equals(node.getColName()))
                   .collect(Collectors.toList());
-
           double featureGain = 0.0;
           for (int i = 0; i < featureSplits.size(); i++) {
             SharedTreeNode currSplitNode = featureSplits.get(i);
             featureGain += currSplitNode.getSquaredError() - currSplitNode.getLeftChild().getSquaredError() - currSplitNode.getRightChild().getSquaredError();
           }
-
           assertEquals(featureGain, featureInteractions.get(feature).gain, 0.0001);
         }
-      }      
-      
-      DKV.remove(f._key);
+      }
     } finally {
       if( model != null ) model.delete();
       if( fr  != null )   fr.remove();
@@ -4232,7 +4225,7 @@ public class GBMTest extends TestUtil {
   }
 
   @Test
-  public void testXGBoostFeatureInteractionsCheckRanksVsVarimp() {
+  public void testGBMFeatureInteractionsCheckRanksVsVarimp() {
     GBMModel gbmModel = null;
     Frame tfr = null;
     Scope.enter();
