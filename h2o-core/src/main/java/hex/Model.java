@@ -461,13 +461,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       long xs = 0x600DL;
       int count = 0;
       Field[] fields = Weaver.getWovenFields(this.getClass());
-      Arrays.sort(fields,
-              new Comparator<Field>() {
-                public int compare(Field field1, Field field2) {
-                  return field1.getName().compareTo(field2.getName());
-                }
-              });
-
+      Arrays.sort(fields, Comparator.comparing(Field::getName));
       for (Field f : fields) {
         if (ignoredFields != null && ignoredFields.contains(f.getName())) {
           // Do not include ignored fields in the final hash
