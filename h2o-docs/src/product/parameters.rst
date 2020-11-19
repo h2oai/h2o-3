@@ -59,6 +59,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/inflection_point
    data-science/algo-params/init1
    data-science/algo-params/init2
+   data-science/algo-params/interaction_constraints
    data-science/algo-params/interaction_pairs
    data-science/algo-params/interactions
    data-science/algo-params/intercept
