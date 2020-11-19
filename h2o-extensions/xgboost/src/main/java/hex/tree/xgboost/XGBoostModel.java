@@ -756,7 +756,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     sharedTreeNode.setPredValue(xgBoostNode.getLeafValue());
     sharedTreeNode.setInclusiveNa(inclusiveNA);
     sharedTreeNode.setNodeNumber(nodeIndex);
-    sharedTreeNode.setSquaredError(xgBoostNodeStat.getGain());
+    sharedTreeNode.setGain(xgBoostNodeStat.getGain());
     sharedTreeNode.setWeight(xgBoostNodeStat.getCover());
     
     if (!xgBoostNode.isLeaf()) {

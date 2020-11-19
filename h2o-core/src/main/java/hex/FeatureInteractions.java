@@ -232,7 +232,7 @@ public class FeatureInteractions {
         }
 
         interactionPath.add(node);
-        currentGain += node.getSquaredError();
+        currentGain += node.getGain();
         currentCover += node.getWeight();
 
         double ppl = pathProba * (node.getLeftChild().getWeight() / node.getWeight());

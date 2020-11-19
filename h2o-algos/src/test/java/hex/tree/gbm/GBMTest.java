@@ -34,6 +34,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static hex.genmodel.utils.DistributionFamily.*;
 import static org.junit.Assert.*;
@@ -4180,6 +4181,94 @@ public class GBMTest extends TestUtil {
     } finally {
       if( model != null ) model.delete();
       if( fr  != null )   fr.remove();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testGBMFeatureInteractionsGainTest() {
+    Frame fr=null;
+    GBMModel model = null;
+    Scope.enter();
+    try {
+      Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
+      f.replace(f.find("CAPSULE"), f.vec("CAPSULE").toNumericVec());
+      DKV.put(f);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._response_column = "CAPSULE";
+      parms._train = f._key;
+      parms._ntrees = 1;
+
+      model = new GBM(parms).trainModel().get();
+
+      FeatureInteractions featureInteractions = model.getFeatureInteractions(2,100,-1);
+
+      SharedTreeSubgraph treeSubgraph = model.getSharedTreeSubgraph(0, 0);
+
+      String[] keysToCheck = new String[]{"DPROS", "ID", "PSA", "GLEASON", "VOL"};
+      for (String feature : keysToCheck) {
+        if (!feature.equals(parms._response_column)) {
+          List<SharedTreeNode> featureSplits = treeSubgraph.nodesArray.stream()
+                  .filter(node -> feature.equals(node.getColName()))
+                  .collect(Collectors.toList());
+
+          double featureGain = 0.0;
+          for (int i = 0; i < featureSplits.size(); i++) {
+            SharedTreeNode currSplitNode = featureSplits.get(i);
+            featureGain += currSplitNode.getSquaredError() - currSplitNode.getLeftChild().getSquaredError() - currSplitNode.getRightChild().getSquaredError();
+          }
+
+          assertEquals(featureGain, featureInteractions.get(feature).gain, 0.0001);
+        }
+      }      
+      
+      DKV.remove(f._key);
+    } finally {
+      if( model != null ) model.delete();
+      if( fr  != null )   fr.remove();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testXGBoostFeatureInteractionsCheckRanksVsVarimp() {
+    GBMModel gbmModel = null;
+    Frame tfr = null;
+    Scope.enter();
+    try {
+      tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      
+      GBMModel.GBMParameters gbmParms = new GBMModel.GBMParameters();
+      gbmParms._train = tfr._key;
+      gbmParms._response_column = "AGE";
+      gbmParms._ignored_columns = new String[]{"ID"};
+      gbmParms._seed = 0xDECAF;
+
+      gbmModel = new GBM(gbmParms).trainModel().get();
+      
+      FeatureInteractions featureInteractions = gbmModel.getFeatureInteractions(0, 100, -1);
+      VarImp gbmVarimp = gbmModel._output._varimp;
+      
+      List<KeyValue> varimpList = new ArrayList<>();
+      for (int i = 0; i < gbmVarimp._varimp.length; i++) {
+        varimpList.add(new KeyValue(gbmVarimp._names[i], gbmVarimp._varimp[i]));  
+      }
+      varimpList.sort((a,b) -> a.getValue() < b.getValue() ? -1 : a.getValue() == b.getValue() ? 0 : 1);
+
+      List<KeyValue> featureList = new ArrayList<>();
+      for (Map.Entry<String, FeatureInteraction> featureInteraction : featureInteractions.entrySet()) {
+        featureList.add(new KeyValue(featureInteraction.getKey(), featureInteraction.getValue().gain));
+      }
+      featureList.sort((a,b) -> a.getValue() < b.getValue() ? -1 : a.getValue() == b.getValue() ? 0 : 1);
+
+      for (int i= 0; i < featureList.size(); i++) {
+        assertEquals(featureList.get(i).getKey(), varimpList.get(i).getKey());
+      }
+      
+    } finally {
+      if (gbmModel != null) gbmModel.delete();
+      if (tfr != null) tfr.remove();
       Scope.exit();
     }
   }
