@@ -98,7 +98,7 @@ public class FeatureInteractionsTest {
 
         FeatureInteractions.collectFeatureInteractions(sharedTreeGraph.subgraphArray.get(0).rootNode,
                 interactionPath1, 0, 0 ,1,0,0, featureInteractions1, memo1,
-                10,10,-1,0);
+                10,10,-1,0, true);
 
         assertEquals(featureInteractions1.entrySet().size(), 5);
 
@@ -144,10 +144,10 @@ public class FeatureInteractionsTest {
         
         FeatureInteractions.collectFeatureInteractions(sharedTreeGraph.subgraphArray.get(0).rootNode,
                 interactionPath1, 0, 0 ,1,0,0, featureInteractions1, memo1, 
-                10,10,-1,0);
+                10,10,-1,0, true);
         FeatureInteractions.collectFeatureInteractions(sharedTreeGraph.subgraphArray.get(1).rootNode,
                 interactionPath2, 0, 0 ,1,0,0, featureInteractions2, memo2,
-                10,10,-1,1);
+                10,10,-1,1, true);
         
         featureInteractions1.mergeWith(featureInteractions2);
 
@@ -194,7 +194,7 @@ public class FeatureInteractionsTest {
 
         FeatureInteractions.collectFeatureInteractions(sharedTreeGraph.subgraphArray.get(0).rootNode,
                 interactionPath1, 0, 0 ,1,0,0, featureInteractions1, memo1,
-                10,10,-1,0);
+                10,10,-1,0, true);
 
         TwoDimTable[] featureInteractionTable = featureInteractions1.getAsTable();
 

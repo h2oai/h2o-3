@@ -283,7 +283,7 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
         Set<String> memo = new HashSet<>();
 
         FeatureInteractions.collectFeatureInteractions(tree.rootNode, interactionPath, 0, 0, 1, 0, 0, currentTreeFeatureInteractions,
-                memo, maxInteractionDepth, maxTreeDepth, maxDeepening, i);
+                memo, maxInteractionDepth, maxTreeDepth, maxDeepening, i, true);
         featureInteractions.mergeWith(currentTreeFeatureInteractions);
       }
     }

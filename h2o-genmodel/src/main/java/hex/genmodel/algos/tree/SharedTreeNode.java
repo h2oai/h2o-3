@@ -610,14 +610,12 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
     return rightChild != null ? rightChild.internalId : -1;
   }
 
-    public float getGain() {
-        if (!Float.isNaN(gain)) {
-            return gain;
-        } else if (this.getRightChild() != null) {
-            return this.getSquaredError() - this.getRightChild().getSquaredError() - this.getLeftChild().getSquaredError();
-        } else {
-            return Float.NaN;
-        }
+    public float getGain(boolean useSEforGain) {
+      if (useSEforGain) {
+        return this.getSquaredError() - this.getRightChild().getSquaredError() - this.getLeftChild().getSquaredError();
+      } else {
+        return gain;
+      }
     }
 
     public void setGain(float gain) {
