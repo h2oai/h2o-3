@@ -31,6 +31,7 @@ spec:
           /bin/bash <<'EOF'
       
           clouded=false
+          cloud_size=0
           while [ "$clouded" != true ]
           do
               sleep 1
@@ -41,8 +42,19 @@ spec:
               clouded=true
             fi
           done
-          
-          if [ "$clouded" = true ]
+          forbidden_codes=0
+          for (( node = 0; node < cloud_size; node++ )); do
+              node_address=$( curl '{{ include "h2o-helm.fullname" . }}-test-service:{{ .Values.service.port }}/3/Cloud' | jq ".nodes[${node}].ip_port" | cut -d '"' -f 2 )
+              echo "http://${node_address}/3/Cloud"
+              response_code=$( curl -w "%{http_code}" -o /dev/null "http://${node_address}/3/Cloud" )
+              echo "$response_code"
+              if [ "$response_code" -eq 403 ]; then
+                forbidden_codes=$((forbidden_codes + 1))
+              fi
+          done
+
+          expected_forbidden_count=$((cloud_size - 1))
+          if [ "$clouded" = true ]  && [ "$forbidden_codes" -eq "$expected_forbidden_count" ]
           then
               exit 0
           else

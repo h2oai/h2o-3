@@ -1450,7 +1450,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _state._lsNeeded = true;
           } else {
             if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood)) {
-              System.out.println("DONE after " + (iterCnt-1) + " iterations (1)");
+              Log.info("DONE after " + (iterCnt-1) + " iterations (1)");
               return;
             }
             betaCnd = s == Solver.COORDINATE_DESCENT?COD_solve(gram,_state._alpha,_state.lambda())
@@ -1706,12 +1706,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (percdiff < _parms._objective_epsilon & iter2 >1 )
           break;
         objold=objVal;
-        System.out.println("iter1 = " + iter1);
+        Log.debug("iter1 = " + iter1);
       }
-      System.out.println("iter2 = " + iter2);
+      Log.debug("iter2 = " + iter2);
       long endTimeTotalNaive = System.currentTimeMillis();
       long durationTotalNaive = (endTimeTotalNaive - startTimeTotalNaive)/1000;
-      System.out.println("Time to run Naive Coordinate Descent " + durationTotalNaive);
+      Log.info("Time to run Naive Coordinate Descent " + durationTotalNaive);
       _state._iter = iter2;
       for (Vec v : newVecs) v.remove();
       _state.updateState(beta,objold);
