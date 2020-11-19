@@ -35,7 +35,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   final static public double _OneOEPS = 1e6;
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double [] ymu, double ySigma, double lambda_max, long nobs) {
     super(selfKey, parms, job == null?new GLMOutput():new GLMOutput(job));
-    // modelKey, parms, null, Double.NaN, Double.NaN, Double.NaN, -1
     _ymu = ymu;
     _ySigma = ySigma;
     _lambda_max = lambda_max;
@@ -232,13 +231,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     _output._submodels[id] = sm;
     _output.setSubmodelIdx(id);
   }
-
-  public GLMModel clone2(){
-    GLMModel res = clone();
-    res._output = (GLMOutput)res._output.clone();
-    return res;
-  }
-
 
   public static class GLMParameters extends Model.Parameters {
 
