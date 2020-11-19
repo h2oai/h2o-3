@@ -508,7 +508,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             f.setAccessible(true);
             Object value = f.get(this);
             if (value instanceof Enum) {
-              // use string hashcode for enums, since they differ for each run
+              // use string hashcode for enums, otherwise the checksum would be different each run
               xs = xs * P + (long)(value.toString().hashCode());
             } else if (value != null) {
               xs = xs * P + (long)(value.hashCode());
