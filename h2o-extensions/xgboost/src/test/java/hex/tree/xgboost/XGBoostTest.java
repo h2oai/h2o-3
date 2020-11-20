@@ -13,6 +13,8 @@ import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
 import hex.FeatureInteraction;
 import hex.FeatureInteractions;
+import hex.tree.gbm.GBM;
+import hex.tree.gbm.GBMModel;
 import hex.tree.xgboost.predict.XGBoostNativeVariableImportance;
 import hex.tree.xgboost.util.BoosterDump;
 import hex.tree.xgboost.util.BoosterHelper;
@@ -36,6 +38,7 @@ import water.util.TwoDimTable;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static hex.genmodel.utils.DistributionFamily.bernoulli;
 import static hex.genmodel.utils.DistributionFamily.multinomial;
@@ -2001,7 +2004,7 @@ public class XGBoostTest extends TestUtil {
   }
 
   @Test
-  public void testXGBoostFeatureInteractions() {
+  public void testXGBoostFeatureInteractionsAndCompareWithGBMFeatureInteractions() {
     Scope.enter();
     try {
       Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
@@ -2152,11 +2155,63 @@ public class XGBoostTest extends TestUtil {
       assertEquals(overallFeatureInteractionsTable[1].length, 1);
       assertEquals(overallFeatureInteractionsTable[2].length, 7);
       
+      GBMModel.GBMParameters gbmParms = new GBMModel.GBMParameters();
+      gbmParms._train = parms._train;
+      gbmParms._response_column = parms._response_column;
+      gbmParms._ignored_columns = parms._ignored_columns;
+      gbmParms._seed = parms._seed;
+      gbmParms._build_tree_one_node = parms._build_tree_one_node;
+
+      GBMModel gbmModel = new GBM(gbmParms).trainModel().get();
+      Scope.track_generic(gbmModel);
+      
+      // rank of GBM's and XGB's feature interactions sorted by gain should be similar:
+      double level0avgDistance = calculateAverageDistanceOfSortedInteractions(gbmModel.getFeatureInteractions(0,100,-1), model.getFeatureInteractions(0,100,-1));
+      // the bigger is the interaction depth, the bigger is the difference in XGB vs. GBM trees:
+      double level1avgDistance = calculateAverageDistanceOfSortedInteractions(gbmModel.getFeatureInteractions(1,100,-1), model.getFeatureInteractions(1,100,-1));
+      double level2avgDistance = calculateAverageDistanceOfSortedInteractions(gbmModel.getFeatureInteractions(2,100,-1), model.getFeatureInteractions(2,100,-1));
+
+      assertEquals(level0avgDistance, 0.28571428, 0.000001);
+      assertEquals(level1avgDistance, 4.06896551, 0.000001);
+      assertEquals(level2avgDistance, 19.3181818, 0.000001);
+      
     } finally {
       Scope.exit();
     }
   }
+  
+  // if some interaction is not present in both inputs, it is ignored
+  private static double calculateAverageDistanceOfSortedInteractions(FeatureInteractions featureInteractions1, FeatureInteractions featureInteractions2) {
+    List<KeyValue> list1 = new ArrayList<>();
+    List<KeyValue> list2 = new ArrayList<>();
 
+    for (Map.Entry<String, FeatureInteraction> featureInteraction : featureInteractions1.entrySet()) {
+      list1.add(new KeyValue(featureInteraction.getKey(), featureInteraction.getValue().gain));
+    }
+    list1.sort((a,b) -> a.getValue() < b.getValue() ? -1 : a.getValue() == b.getValue() ? 0 : 1);
+
+    for (Map.Entry<String, FeatureInteraction> featureInteraction : featureInteractions2.entrySet()) {
+      list2.add(new KeyValue(featureInteraction.getKey(), featureInteraction.getValue().gain));
+    }
+    list2.sort((a,b) -> a.getValue() < b.getValue() ? -1 : a.getValue() == b.getValue() ? 0 : 1);
+
+    List<String> sortedKeys1 = list1.stream().map(KeyValue::getKey).collect(Collectors.toList());
+    List<String> sortedKeys2 = list2.stream().map(KeyValue::getKey).collect(Collectors.toList());
+
+    double averageDistance = 0;
+    int i, missing = 0;
+    for (i = 0; i < sortedKeys1.size(); i++) {
+      int j = sortedKeys2.indexOf(sortedKeys1.get(i));
+      // if the key is missing in featureInteractions2 then don't count
+      if (j != -1) {
+        averageDistance += Math.abs(i - j);
+      } else {
+        missing++;
+      }
+    }
+    
+    return averageDistance / (i - missing);
+  }
   
 
 }

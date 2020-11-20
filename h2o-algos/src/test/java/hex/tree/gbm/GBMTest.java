@@ -4229,6 +4229,7 @@ public class GBMTest extends TestUtil {
       gbmParms._response_column = "AGE";
       gbmParms._ignored_columns = new String[]{"ID"};
       gbmParms._seed = 0xDECAF;
+      gbmParms._build_tree_one_node = true;
 
       GBMModel gbmModel = new GBM(gbmParms).trainModel().get();
       Scope.track_generic(gbmModel);
