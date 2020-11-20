@@ -3,7 +3,6 @@ package hex.grid;
 import hex.*;
 import water.*;
 import water.api.schemas3.KeyV3;
-import water.exceptions.H2OConcurrentModificationException;
 import water.fvec.Frame;
 import water.persist.Persist;
 import water.util.*;
@@ -16,6 +15,9 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.Set;
+
+import static hex.grid.GridSearch.IGNORED_FIELDS_PARAM_HASH;
 
 /**
  * A Grid of Models representing result of hyper-parameter space exploration.
@@ -237,7 +239,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
   }
 
   public Key<Model> getModelKey(MP params) {
-    long checksum = params.checksum();
+    long checksum = params.checksum(IGNORED_FIELDS_PARAM_HASH);
     return getModelKey(checksum);
   }
 
