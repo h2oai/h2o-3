@@ -8,7 +8,7 @@ import os
 
 
 def test_parser_svmlight_column_skip():
-    # generate a big frame
+    # generate a frame
     nrow = 10000
     ncol = 10
     seed = 12345
@@ -16,7 +16,7 @@ def test_parser_svmlight_column_skip():
                                       has_response=True, seed=seed)
 
     results_path = pyunit_utils.locate("results")
-    svmfile = os.path.join(results_path, 'out_large.svm')
+    svmfile = os.path.join(results_path, 'out.svm')
 
     # write h2o frame to svm format
     pyunit_utils.write_H2OFrame_2_SVMLight(svmfile, original_frame)

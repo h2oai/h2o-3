@@ -10,7 +10,7 @@ from h2o.exceptions import H2OResponseError
 
 def test_parser_svmlight_column_skip_not_supported():
     print("Test that functions calling fail if skipped_columns is passed with svm file.")
-    # generate a big frame with all datatypes and save it to svmlight
+    # generate a frame
     nrow = 10
     ncol = 10
     seed = 12345
