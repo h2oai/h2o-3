@@ -19,7 +19,7 @@ variable "global_prefix" {
 #
 # google provider variables
 #
-variable "gcp_project_name" {
+variable "gcp_project_id" {
   type = string
   default = "steamwithdataproc"
 }
@@ -31,3 +31,4 @@ variable "gcp_project_zone" {
   type = string
   default = "us-west1-a"
 }
+

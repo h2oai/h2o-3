@@ -75,6 +75,17 @@ Setup Service Account
         
     gcloud iam service-accounts list 
     ```
+- Ensure the Service account has necessary priviledges. Here these may be a bit extra but more fin grained access roles could be given
+    - [GCP Roles list](https://cloud.google.com/iam/docs/understanding-roles?authuser=1#compute-engine-roles)
+    - Needed for Cloud Storage backend for Terraform
+    ```
+    gcloud projects add-iam-policy-binding steamwithdataproc --member serviceAccount:steamwithdataproc-sa@steamwithdataproc.iam.gserviceaccount.com --role roles/storage.admin
+    ```
+    - Needed to be able to create Compute Network and vpc
+    ```
+    gcloud projects add-iam-policy-binding steamwithdataproc --member serviceAccount:steamwithdataproc-sa@steamwithdataproc.iam.gserviceaccount.com --role roles/compute.networkAdmin
+    ```
+
 - Create a [service account key for use with terraform](https://cloud.google.com/iam/docs/creating-managing-service-account-keys#creating_service_account_keys). First create a directory structure as shown in the tree command. `cat` is used to check if the key file got created
     ```bash
     $ tree gcp
@@ -101,11 +112,6 @@ Create shared GCS storage for TF backend
 	- `gsutil versioning set on gs://steamwithdataproc-tfstate` to eanble versioning support
 - In web browser, select the project and left top menu dropdown select Storage >> Browser and validate the bucket is created.
 - An alternate option is to have TF create the bucket, but then would need `terraform apply` in multiple folders as in https://github.com/tasdikrahman/terraform-gcp-examples
-
-- When executing `terraform init` I was getting the error message `"Error: Failed to get existing workspaces: querying Cloud Storage failed: googleapi: Error 403: steamwithdataproc-sa@steamwithdataproc.iam.gserviceaccount.com does not have storage.objects.list access to the Google Cloud Storage bucket., forbidden"`
-"
-- To overcome this we need to create an IAM policy for this service account to hage the `storage.admin` role. This can be tweaked down if needed.
-- `gcloud projects add-iam-policy-binding steamwithdataproc --member serviceAccount:steamwithdataproc-sa@steamwithdataproc.iam.gserviceaccount.com --role roles/storage.admin`
 
 Next we configure [terrafom to use gcs backend for state mangement](https://www.terraform.io/docs/backends/types/gcs.html)
 - Add this block to `gcp/main/terraform.tf` file

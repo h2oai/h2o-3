@@ -1,0 +1,60 @@
+
+# Reference https://github.com/mohammadmonjureelahi/gke_eks_aks_terraform/blob/0a5c0674414d7578e6c3a5b97aac0137075ab5b8/GKE_HELM/modules/vpc-network/main.tf
+
+#
+# VPC configuration
+#
+resource "google_compute_network" "vpc" {
+  name = var.vpc_name
+  project = var.gcp_project_id
+  description = "VPC for H2O clusters"
+  
+  # Do not create subnets automatically
+  auto_create_subnetworks = "false"
+  
+  # Fixing all subnets to 1 region only
+  routing_mode = "REGIONAL"
+  
+  # We want internet egress; so keep the default routes
+  delete_default_routes_on_create = "false"
+}
+
+resource "google_compute_router" "vpc_router" {
+  name = "${google_compute_network.vpc.name}-router"
+  project = var.gcp_project_id
+  
+  region = var.vpc_region
+  network = google_compute_network.vpc.self_link
+}
+
+#
+# Public Subnet Configuration
+#
+resource "google_compute_subnetwork" "vpc_public_subnet" {
+  name = "${google_compute_network.vpc.name}-public-subnet"
+  project = var.gcp_project_id
+  description = "Public Subnet to host the instance which will be used as worspace."
+
+  region = var.vpc_region
+  ip_cidr_range = cidrsubnet(var.vpc_cidr, 8, 100)
+  network = google_compute_network.vpc.self_link
+}
+
+
+#
+# Private Subnet Configuration
+#
+resource "google_compute_subnetwork" "vpc_private_subnet" {
+  name = "${google_compute_network.vpc.name}-private-subnet"
+  project = var.gcp_project_id
+  description = "Private Subnet within which the H2O clusters as instance groups will be created."
+  
+  region = var.vpc_region
+  ip_cidr_range = cidrsubnet(var.vpc_cidr, 8, 1)
+  network = google_compute_network.vpc.self_link
+ 
+  # Since this is private subnet we are enabling private access to google api resources on instances in this subnet
+  private_ip_google_access = "true"
+}
+
+
