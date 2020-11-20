@@ -103,6 +103,7 @@ reference:
       - h2o.download_pojo
       - h2o.downloadAllLogs
       - h2o.downloadCSV
+      - h2o.drop_duplicates
       - h2o.entropy
       - h2o.exp
       - h2o.explain
@@ -257,6 +258,7 @@ reference:
       - h2o.rstrip
       - h2o.runif
       - h2o.save_mojo
+      - h2o.save_to_hive
       - h2o.saveGrid
       - h2o.saveModel
       - h2o.saveModelDetails
@@ -304,6 +306,7 @@ reference:
       - h2o.tokenize
       - h2o.tolower
       - h2o.topN
+      - h2o.topBottomN
       - h2o.tot_withinss
       - h2o.totss 
       - h2o.toupper
@@ -370,6 +373,7 @@ reference:
       - print.H2OTable 
       - prostate
       - range.H2OFrame
+      - scale.H2OFrame
       - show,H2OCoxPHModelSummary-method
       - staged_predict_proba.H2OModel
       - str.H2OFrame
