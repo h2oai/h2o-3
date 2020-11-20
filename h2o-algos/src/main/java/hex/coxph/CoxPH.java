@@ -37,6 +37,11 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
   public CoxPH( CoxPHModel.CoxPHParameters parms ) { super(parms); init(false); }
   @Override protected CoxPHDriver trainModelImpl() { return new CoxPHDriver(); }
 
+  @Override
+  public boolean haveMojo() {
+    return true;
+  }
+
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
    *  and each subclass will start with "super.init();".  This call is made
@@ -276,6 +281,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         for (double val : g._gs)
           if (Double.isNaN(val))
             continue groups;
+        System.out.println("g = " + g);
+        System.out.println("outMapping = " + outMapping);
         outMapping.put(g, new IcedInt(outMapping.size()));
       }
     }

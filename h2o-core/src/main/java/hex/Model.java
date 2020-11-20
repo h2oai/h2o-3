@@ -2667,6 +2667,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 d2 = (genmodel instanceof GlrmMojoModel)?((DimReductionModelPrediction) p).reconstructed[col]:
                         ((DimReductionModelPrediction) p).dimensions[col];    // look at the reconstructed matrix
                 break;
+              case CoxPH:
+                d2 = ((CoxPHModelPrediction) p).value;
+                break;
             }
             expected_preds[col] = d;
             actual_preds[col] = d2;

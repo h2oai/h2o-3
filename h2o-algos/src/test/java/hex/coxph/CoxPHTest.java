@@ -335,4 +335,34 @@ public class CoxPHTest extends TestUtil {
     return fr;
   }
 
+  @Test
+  public void testJavaScoring() {
+    Frame fr = null;
+    CoxPHModel dl = null;
+    CoxPHModel dl2 = null;
+
+    try {
+      fr = parse_test_file("smalldata/coxph_test/heart.csv");
+
+
+      CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+      parms._calc_cumhaz = true;
+      parms._train           = fr._key;
+      parms._start_column    = "start";
+      parms._stop_column     = "stop";
+      parms._response_column = "event";
+      parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant"};
+      parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
+      
+      dl = new CoxPH(parms).trainModel().get();
+      Frame res = dl.score(fr);
+      assertTrue(dl.testJavaScoring(fr, res, 1e-5));
+      res.remove();
+    } finally {
+      if (fr != null) fr.delete();
+      if (dl != null) dl.delete();
+      if (dl2 != null) dl2.delete();
+    }
+  }
+
 }
