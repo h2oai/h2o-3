@@ -610,8 +610,8 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
     return rightChild != null ? rightChild.internalId : -1;
   }
 
-    public float getGain(boolean useSEforGain) {
-      if (useSEforGain) {
+    public float getGain(boolean useSquaredErrorForGain) {
+      if (useSquaredErrorForGain) {
         return this.getSquaredError() - this.getRightChild().getSquaredError() - this.getLeftChild().getSquaredError();
       } else {
         return gain;
