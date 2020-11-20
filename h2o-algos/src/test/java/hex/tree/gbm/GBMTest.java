@@ -4160,8 +4160,6 @@ public class GBMTest extends TestUtil {
 
   @Test
   public void testGBMFeatureInteractions() {
-    Frame fr=null;
-    GBMModel model = null;
     Scope.enter();
     try {
       Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
@@ -4172,21 +4170,18 @@ public class GBMTest extends TestUtil {
       parms._response_column = "CAPSULE";
       parms._train = f._key;
 
-      model = new GBM(parms).trainModel().get();
+      GBMModel model = new GBM(parms).trainModel().get();
+      Scope.track_generic(model);
 
       FeatureInteractions featureInteractions = model.getFeatureInteractions(2,100,-1);
       assertEquals(featureInteractions.size(), 113);
     } finally {
-      if( model != null ) model.delete();
-      if( fr  != null )   fr.remove();
       Scope.exit();
     }
   }
 
   @Test
   public void testGBMFeatureInteractionsGainTest() {
-    Frame fr=null;
-    GBMModel model = null;
     Scope.enter();
     try {
       Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
@@ -4199,7 +4194,8 @@ public class GBMTest extends TestUtil {
       parms._ntrees = 1;
       parms._ignored_columns = new String[] {"ID"};
 
-      model = new GBM(parms).trainModel().get();
+      GBMModel model = new GBM(parms).trainModel().get();
+      Scope.track_generic(model);
       FeatureInteractions featureInteractions = model.getFeatureInteractions(2,100,-1);
       SharedTreeSubgraph treeSubgraph = model.getSharedTreeSubgraph(0, 0);
 
@@ -4218,19 +4214,15 @@ public class GBMTest extends TestUtil {
         }
       }
     } finally {
-      if( model != null ) model.delete();
-      if( fr  != null )   fr.remove();
       Scope.exit();
     }
   }
 
   @Test
   public void testGBMFeatureInteractionsCheckRanksVsVarimp() {
-    GBMModel gbmModel = null;
-    Frame tfr = null;
     Scope.enter();
     try {
-      tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
       
       GBMModel.GBMParameters gbmParms = new GBMModel.GBMParameters();
       gbmParms._train = tfr._key;
@@ -4238,7 +4230,8 @@ public class GBMTest extends TestUtil {
       gbmParms._ignored_columns = new String[]{"ID"};
       gbmParms._seed = 0xDECAF;
 
-      gbmModel = new GBM(gbmParms).trainModel().get();
+      GBMModel gbmModel = new GBM(gbmParms).trainModel().get();
+      Scope.track_generic(gbmModel);
       
       FeatureInteractions featureInteractions = gbmModel.getFeatureInteractions(0, 100, -1);
       VarImp gbmVarimp = gbmModel._output._varimp;
@@ -4258,10 +4251,7 @@ public class GBMTest extends TestUtil {
       for (int i= 0; i < featureList.size(); i++) {
         assertEquals(featureList.get(i).getKey(), varimpList.get(i).getKey());
       }
-      
     } finally {
-      if (gbmModel != null) gbmModel.delete();
-      if (tfr != null) tfr.remove();
       Scope.exit();
     }
   }
