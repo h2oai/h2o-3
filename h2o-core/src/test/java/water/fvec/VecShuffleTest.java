@@ -204,11 +204,8 @@ public class VecShuffleTest extends TestUtil{
             fr = parse_test_file("smalldata/gbm_test/30k_cattest.csv");
             assert fr.vec(0).isString();
             
-            for (int i = 0; i < fr.numCols(); i++){
-                // get the shuffled Vec
-                Vec shuffledFeature = VecUtils.ShuffleVec(fr.vec(i), fr.vec(i).makeCopy());
-                Assert.assertFalse(checkElements(fr.vec(i), shuffledFeature));
-            }
+            Vec shuffledFeature = VecUtils.ShuffleVec(fr.vec(0), fr.vec(0).makeCopy());
+            Assert.assertFalse(checkElements(fr.vec(0), shuffledFeature));
         } finally {
             Scope.exit();
             if (fr != null) fr.remove();

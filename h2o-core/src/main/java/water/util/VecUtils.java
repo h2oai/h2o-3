@@ -13,8 +13,6 @@ import water.parser.Categorical;
 
 import java.util.*;
 
-import static water.util.RandomUtils.getRNG;
-
 public class VecUtils {
   /**
    * Create a new {@link Vec} of categorical values from an existing {@link Vec}.
@@ -865,17 +863,13 @@ public class VecUtils {
     }
   }
 
-  public static long seed(int cidx) {
-    return (0xe031e74f321f7e29L + ((long) cidx << 32L));
-  }
-  
   /**
    * Randomly shuffle a Vec using Fisher Yates shuffle 
+   * https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
    */
-  
   public static class ShuffleVecTask extends MRTask<ShuffleVecTask> {
     @Override public void map(Chunk ic, Chunk nc) {
-      Random rng = new Random(); //getRNG(seed(ic.cidx()));
+      Random rng = new Random(); 
       for (int i = 1; i < ic._len ; i++) {
         int j = rng.nextInt(i); // inclusive upper bound <0,i>
         switch (ic.vec().get_type()) {
@@ -900,7 +894,13 @@ public class VecUtils {
       }
     }
   }
-  
+
+  /**
+   * Randomly shuffle a Vec. 
+   * @param iVec original Vec
+   * @param srcVec a copy of original Vec, to be shuffled
+   * @return shuffled Vec
+   */
   public static Vec ShuffleVec(Vec iVec, Vec srcVec) {
     new ShuffleVecTask().doAll(iVec, srcVec);
     return srcVec;
