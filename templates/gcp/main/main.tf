@@ -29,8 +29,8 @@ module "workspace-instance" {
   instance_zone = var.gcp_project_zone
   instance_subnet = module.vpc.vpc_public_subnet_id
   
-  instance_machine_type = var.instance_machine_type
-  instance_boot_disk_image = var.instance_boot_disk_image
-  instance_boot_disk_type = var.instance_boot_disk_type
-  instance_boot_disk_size = var.instance_boot_disk_size
+  instance_machine_type = var.workspace_instance_machine_type
+  instance_boot_disk_image = var.workspace_instance_boot_disk_image
+  instance_boot_disk_type = var.workspace_instance_boot_disk_type
+  instance_boot_disk_size = var.workspace_instance_boot_disk_size
 }
