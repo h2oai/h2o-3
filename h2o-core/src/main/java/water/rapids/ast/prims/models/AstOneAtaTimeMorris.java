@@ -53,18 +53,17 @@ public class AstOneAtaTimeMorris extends AstPrimitive {
 
     /**
      * TwoDimTable rows to Vecs which will be used to create a Frame
-     * @param varImp_t TwoDimTable of PVI
+     * @param varImpTable TwoDimTable of PVI
      * @return an array of Vecs
      */
-    // Rows of TwoDimTable to a Vec [] 
-    Vec[] rowsToVecs(TwoDimTable varImp_t) {
-        Vec[] vecs = new Vec[varImp_t.getRowDim() + 1];
+    Vec[] rowsToVecs(TwoDimTable varImpTable) {
+        Vec[] vecs = new Vec[varImpTable.getRowDim() + 1];
         // Relative, scaled, and percentage importance
-        vecs[0] = Vec.makeVec(varImp_t.getColHeaders(), Vec.newKey());
-        double[] tmp_row = new double[varImp_t.getColDim()];
-        for (int i = 0; i < varImp_t.getRowDim(); i++) {
-            for (int j = 0; j < varImp_t.getColDim(); j++) {
-                tmp_row[j] = (double) varImp_t.get(i, j);
+        vecs[0] = Vec.makeVec(varImpTable.getColHeaders(), Vec.newKey());
+        double[] tmp_row = new double[varImpTable.getColDim()];
+        for (int i = 0; i < varImpTable.getRowDim(); i++) {
+            for (int j = 0; j < varImpTable.getColDim(); j++) {
+                tmp_row[j] = (double) varImpTable.get(i, j);
             }
             vecs[i + 1] = Vec.makeVec(tmp_row, Vec.newKey());
         }
@@ -73,13 +72,13 @@ public class AstOneAtaTimeMorris extends AstPrimitive {
 
     /**
      * TwoDimTable headers to an array of strings with the first element being the indices
-     * @param table_names TwoDimTable of PVI
+     * @param tableNames TwoDimTable of PVI
      * @return an array of Strings
      */
-    String[] headerToStrings(String[] table_names) {
-        String[] varNames = new String[table_names.length + 1];
+    String[] headerToStrings(String[] tableNames) {
+        String[] varNames = new String[tableNames.length + 1];
         varNames[0] = "indices";
-        System.arraycopy(table_names, 0, varNames, 1, table_names.length);
+        System.arraycopy(tableNames, 0, varNames, 1, tableNames.length);
         // add column containing Strings: Relative importance, Scaled importance, percentage 
         return varNames;
     }

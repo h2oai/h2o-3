@@ -170,22 +170,19 @@ public class VecShuffleTest extends TestUtil{
      * Test Bigger frame with unique Double values
      */
     @Test
-    public void shuffleBigVec(){
-        Key parsed = Key.make("shuffle_test_2_parsed");
+    public void shuffleBigData(){
         Frame fr = null;
         Vec shuffledFeature = null ;
         try {
             Scope.enter();
-           // contains 10,000,000 unique doubles
-            fr = parse_test_file(parsed, "smalldata/jira/shuffle_test_2.csv");
+            fr = parse_test_file("bigdata/laptop/lending-club/loan.csv");
             Scope.track(fr);
             DKV.put(fr);
-
-            for (int i = 0 ; i < 10 ; i++) { 
+            for (int i = 0 ; i < fr.numCols() ; i++) { 
                 // get the shuffled vec
-                shuffledFeature = VecUtils.ShuffleVec(fr.vec(0), fr.vec(0).makeCopy());
-                double rndCoe = randomnessCoefficient(fr.vec(0), shuffledFeature);
-                Assert.assertEquals(1.0, rndCoe, 1e-2);
+                shuffledFeature = VecUtils.ShuffleVec(fr.vec(i), fr.vec(i).makeCopy());
+                double rndCoe = randomnessCoefficient(fr.vec(i), shuffledFeature);
+                Assert.assertNotEquals(0.0, rndCoe);
             }
 
         } finally {

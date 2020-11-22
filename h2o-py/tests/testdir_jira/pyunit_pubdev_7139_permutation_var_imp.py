@@ -6,7 +6,7 @@ from builtins import range
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 from tests import pyunit_utils
-from h2o.model.permutation_varimp import permutation_varimp, plot_permutation_var_imp
+from h2o.model.permutation_varimp import permutation_varimp
 
 
 def gbm_model_build():
@@ -27,10 +27,6 @@ def gbm_model_build():
                                            min_rows=min_rows,
                                            distribution="bernoulli")
     gbm_h2o.train(x=list(range(1, prostate_train.ncol)), y="CAPSULE", training_frame=prostate_train)
-    prostate_test = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate_test.csv"))
-
-    # Log.info("Converting CAPSULE and RACE columns to factors...\n")
-    prostate_test["CAPSULE"] = prostate_test["CAPSULE"].asfactor()
 
     # Doing PFI on test data vs train data: In the end, you need to decide whether you want to know how much the 
     # model relies on each feature for making predictions (-> training data) or how much the feature contributes to 
@@ -39,13 +35,15 @@ def gbm_model_build():
     return gbm_h2o, prostate_train
 
 
-def metrics_testing():
+def metrics_testing_gbm():
     """
     test metrics values from the Permutation Variable Importance
     """
+    # train model
     model, fr = gbm_model_build()
+
     # case H2OFrame
-    pm_h2o_df = permutation_varimp(model, fr, use_pandas=False, metric="auc")
+    pm_h2o_df = permutation_varimp(model, fr, use_pandas=False, metric="AUC")
     for col in range(1, pm_h2o_df.ncols):
         assert isinstance(pm_h2o_df[0, col], float)
 
@@ -53,66 +51,45 @@ def metrics_testing():
     assert isinstance(pm_h2o_df[0, 0], str)
 
     # case pandas
-    pm_pd_df = permutation_varimp(model, fr, use_pandas=True, metric="auc")
+    pm_pd_df = permutation_varimp(model, fr, use_pandas=True, metric="AUC")
     assert isinstance(pm_pd_df.loc[0][0], str)
     for col in pm_pd_df.columns:
         if col == "importance":
             continue
         assert isinstance(pm_pd_df.loc[0][col], float)
 
-    metrics = ["mse", "rmse", "auc", "logloss"]
+    metrics = ["MSE", "RMSE", "AUC", "logloss"]
     for metric in metrics:
         pd_pfi = permutation_varimp(model, fr, use_pandas=False, metric=metric)
         for col in range(1, pd_pfi.ncols):
             assert isinstance(pd_pfi[0, col], float)
-    assert isinstance(pd_pfi[0, 0], str)
 
 
-def perm_var_imp_plot_glm():
+def big_data_cars():
     """
-       Test that Permutation Feature Importance indicates that only one variable indicates the result
-       Dummy test was created, result shows that only "meat (gr)" is an important variable.  
-       """
-    full = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/full_testset.csv"))
+    Test big data dataset, with metric logloss. 
+    """
+    h2o_df = h2o.import_file(path=pyunit_utils.locate("bigdata/laptop/lending-club/loan.csv"))
+    predictors = h2o_df.col_names
+    response_col = h2o_df.col_names[12]  # loan amount
+    predictors.remove(response_col)
 
-    predictors = ["meat (gr)", "price (eur)", "restaurant", "city", "gender"]
-    response_col = "full"
-
-    glm_model = H2OGeneralizedLinearEstimator(family="binomial", lambda_=0, seed=1234)
-    glm_model.train(predictors, response_col, training_frame=full)
+    model = H2OGeneralizedLinearEstimator(family="binomial")
+    model.train(y=response_col, x=predictors, training_frame=h2o_df)
 
     metric = "logloss"
-    pvi_df = permutation_varimp(glm_model, full, use_pandas=True, metric=metric)
+    pm_h2o_df = permutation_varimp(model, h2o_df, use_pandas=True, metric=metric)
 
-    for col in pvi_df.columns:
+    for col in predictors:
         if col == "importance":
             continue
-        elif col == "meat (gr)":  # the most influential variable
-            assert pvi_df.loc[2][col] > 0.9
-        else:
-            assert pvi_df.loc[2][col] < 0.1
-
-    plot_permutation_var_imp(pvi_df, glm_model._model_json["algo"], metric=metric)
-
-
-def perm_var_imp_plot_gbm():
-    """
-    test Permutation Variable importance plotting, showing it alongside gbm_h2o.varimp_plot() plotting. 
-    """
-    model, fr = gbm_model_build()
-    metric = "auc"
-    pm_h2o_df = permutation_varimp(model, fr, use_pandas=True, metric=metric)
-    plot_permutation_var_imp(pm_h2o_df, model._model_json["algo"], metric)
-
-    # plot existing varimp 
-    model.varimp_plot()
+        assert isinstance(pm_h2o_df.loc[0][col], float)  # Relative PFI
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(metrics_testing)
-    pyunit_utils.standalone_test(perm_var_imp_plot_glm)
-    pyunit_utils.standalone_test(perm_var_imp_plot_gbm)
+    pyunit_utils.standalone_test(metrics_testing_gbm)
+    pyunit_utils.standalone_test(big_data_cars)
+
 else:
-    metrics_testing()
-    perm_var_imp_plot_glm()
-    perm_var_imp_plot_gbm()
+    metrics_testing_gbm()
+    big_data_cars()
