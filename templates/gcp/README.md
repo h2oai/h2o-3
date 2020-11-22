@@ -81,9 +81,9 @@ Setup Service Account
     ```
     gcloud projects add-iam-policy-binding steamwithdataproc --member serviceAccount:steamwithdataproc-sa@steamwithdataproc.iam.gserviceaccount.com --role roles/storage.admin
     ```
-    - Needed to be able to create Compute Network and vpc
+    - Needed to be able to create Compute Network, VPC, Instances etc
     ```
-    gcloud projects add-iam-policy-binding steamwithdataproc --member serviceAccount:steamwithdataproc-sa@steamwithdataproc.iam.gserviceaccount.com --role roles/compute.networkAdmin
+    gcloud projects add-iam-policy-binding steamwithdataproc --member serviceAccount:steamwithdataproc-sa@steamwithdataproc.iam.gserviceaccount.com --role roles/compute.admin
     ```
 
 - Create a [service account key for use with terraform](https://cloud.google.com/iam/docs/creating-managing-service-account-keys#creating_service_account_keys). First create a directory structure as shown in the tree command. `cat` is used to check if the key file got created
