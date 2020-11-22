@@ -23,7 +23,7 @@ import water.exceptions.JCodeSB;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.persist.Persist;
-import water.rapids.PermutationVarImp;
+import water.rapids.PermutationFeatureImportance;
 import water.udf.CFuncRef;
 import water.util.*;
 
@@ -189,6 +189,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  WARNING: Model Parameters is not immutable object and ModelBuilder can modify
    *  them!
    */
+  
   public abstract static class Parameters extends Iced<Parameters> {
     /** Maximal number of supported levels in response. */
     public static final int MAX_SUPPORTED_LEVELS = 1<<20;
@@ -216,6 +217,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean _keep_cross_validation_fold_assignment = false;
     public boolean _parallelize_cross_validation = true;
     public boolean _auto_rebalance = true;
+    
 
     public void setTrain(Key<Frame> train) {
       this._train = train;
@@ -363,6 +365,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** @return the validation frame instance, or null
      *  if a validation frame was not specified */
     public final Frame valid() { return _valid==null ? null : _valid.get(); }
+    
 
     /** Read-Lock both training and validation User frames. */
     public void read_lock_frames(Job job) {
@@ -652,6 +655,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       return pairs;
     }
+
+  }
+
+  /**
+   * Should be called after Model is scored, Otherwise no one can tell you what will happen
+   *
+   *
+   *
+   * @return*/
+  public TwoDimTable permutationFeatureImportance(Model model){
+
+    PermutationFeatureImportance Fi = new PermutationFeatureImportance(model);
+    return Fi.getFeatureImportance();
 
   }
 
@@ -1229,6 +1245,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             false
     );
   }
+  
 
   /**
    * @param test Frame to be adapted
@@ -1346,6 +1363,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             msgs.add(str);
         }
       }
+      
       if( vec != null) {          // I have a column with a matching name
         if( domains[i] != null) { // Model expects an categorical
           if (vec.isString())
@@ -1472,20 +1490,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, destination_key, j, true);
   }
   
-  /**
-   * Calculate Permutation Variable Importance by shuffling one feature at a time
-   * The user must call this method after training. 
-   * @param fr training frame
-   * @param metric loss function metric 
-   *               if metric not specified mse is default
-   * @return TwoDimTable of Double values having the variables as columns
-   * and as rows their Relative, Scaled and percentage importance
-   */
-  public TwoDimTable getPermVarImpTable(Frame fr, String metric){
-    if (this._output._scoring_history == null )
-      throw new IllegalArgumentException("Model " + this._key + "must be scored!");
-    PermutationVarImp pvi = new PermutationVarImp(this, fr);
-    return pvi.getPermutationVarImp(metric);
+  public TwoDimTable getPermVarImpTable(Frame fr, Frame scored){
+    PermutationFeatureImportance fi = new PermutationFeatureImportance(this, fr, scored);
+    return fi.getFeatureImportance();
+  }
+  public TwoDimTable getPermVarImpTable_oat(Frame fr, Frame scored){
+    PermutationFeatureImportance fi = new PermutationFeatureImportance(this, fr, scored);
+    return fi.oat();
   }
   
   /**
@@ -1934,6 +1945,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public ModelMojoWriter getMojo() {
     throw H2O.unimpl("MOJO format is not available for " + _parms.fullName() + " models.");
   }
+  
 
   /**
    * Specify categorical encoding that should be applied before running score0 method of POJO/MOJO.
