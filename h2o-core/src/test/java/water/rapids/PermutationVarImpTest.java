@@ -32,71 +32,6 @@ public class PermutationVarImpTest extends TestUtil {
     }
     
     /**
-     * Test setting the metric which Permutation Variable Importance will be calculated.
-     * GLM binomial model
-     */
-    @Test public void testMetricBinomial() {
-        GLMModel model = null;
-        Frame fr = parse_test_file("smalldata/glm_test/glm_test2.csv");
-        Frame score = null;
-        try {
-            Scope.enter();
-            GLMModel.GLMParameters params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.binomial);
-            params._response_column = "response";
-            params._ignored_columns = new String[]{"ID"};
-            params._train = fr._key;
-            params._lambda = new double[]{0};
-            params._standardize = false;
-            params._max_iterations = 20;
-
-            GLM glm = new GLM( params);
-            model = glm.trainModel().get();
-            score = model.score(fr);
-
-            PermutationVarImp pvi = new PermutationVarImp(model, fr);
-
-            // when no metric specified "MSE
-            TwoDimTable pviTable = pvi.getPermutationVarImp();
-            assertEquals("mse", pvi._varImpMetric.mMetric);
-
-            TwoDimTable pviTableRmse = pvi.getPermutationVarImp("rmse");
-            assertEquals("rmse", pvi._varImpMetric.mMetric);
-            
-            TwoDimTable pviTableMse = pvi.getPermutationVarImp("mse");
-            TwoDimTable pviTableR2 = pvi.getPermutationVarImp("r2");
-            
-            // Since model is binomial we can also calculate auc and logloss
-            TwoDimTable pviTableAuc = pvi.getPermutationVarImp("auc");
-            TwoDimTable pviTableLogloss = pvi.getPermutationVarImp("logloss");
-
-            // the first column contains the relative (Permutation Variable) importance
-            for (int row = 0 ; row < pviTableAuc.getRowDim() ; row++){
-                String [] colTypes = pviTableRmse.getColTypes();
-                Assert.assertTrue( colTypes[0].equals("double"));
-                Assert.assertTrue( colTypes[1].equals("double"));
-                Assert.assertTrue( colTypes[2].equals("double"));
-
-                colTypes = pviTableMse.getColTypes();
-                Assert.assertTrue( colTypes[0].equals("double"));
-
-                colTypes = pviTableR2.getColTypes();
-                Assert.assertTrue( colTypes[0].equals("double"));
-
-                colTypes = pviTableAuc.getColTypes();
-                Assert.assertTrue( colTypes[0].equals("double"));
-
-                colTypes = pviTableLogloss.getColTypes();
-                Assert.assertTrue( colTypes[0].equals("double"));
-            }
-        } finally {
-            fr.remove();
-            if (model != null) model.delete();
-            if (score != null) score.delete();
-            Scope.exit();
-        }
-    }
-
-    /**
      * Test the TwoDimTable of Permutation Variable Importance and One At a Time
      * GBM gaussian model
      */
@@ -124,29 +59,26 @@ public class PermutationVarImpTest extends TestUtil {
 
             // Done building model; produce a score column with predictions
             fr2 = gbm.score(fr);
-            PermutationVarImp pvi =  new PermutationVarImp(gbm, fr);
-            
-            TwoDimTable pvi_table = pvi.getPermutationVarImp();
-            
-            String [] colTypes = pvi_table.getColTypes();
+            PermutationVarImp pvi = new PermutationVarImp(gbm, fr);
+            TwoDimTable pviTable = pvi.getPermutationVarImp();
 
-            Assert.assertTrue( colTypes[0].equals("double"));
-            Assert.assertTrue( colTypes[1].equals("double"));
-            Assert.assertTrue( colTypes[2].equals("double"));
-            
-            TwoDimTable pvi_oat = pvi.oat();
-            colTypes = pvi_oat.getColTypes();
+            String[] colTypes = pviTable.getColTypes();
 
-            Assert.assertTrue( colTypes[0].equals("double"));
-            Assert.assertTrue( colTypes[1].equals("double"));
-            
-            
+            Assert.assertTrue(colTypes[0].equals("double"));
+            Assert.assertTrue(colTypes[1].equals("double"));
+            Assert.assertTrue(colTypes[2].equals("double"));
+
+            TwoDimTable pviOat = pvi.oat();
+            colTypes = pviOat.getColTypes();
+
+            Assert.assertTrue(colTypes[0].equals("double"));
+            Assert.assertTrue(colTypes[1].equals("double"));
         } finally {
             if (fr != null) fr.remove();
             if (fr2 != null) fr2.remove();
             if (gbm != null) gbm.remove();
             Scope.exit();
-        }        
+        }
     }
 
     /**
@@ -225,7 +157,6 @@ public class PermutationVarImpTest extends TestUtil {
             params._obj_reg = 1.0 / 380;
             GLM glm = new GLM(params, modelKey);
             model = glm.trainModel().get();
-            assertTrue(glm.isStopped());
 
             PermutationVarImp PermVarImp = new PermutationVarImp(model, fr);
             TwoDimTable table = PermVarImp.getPermutationVarImp();
@@ -234,11 +165,6 @@ public class PermutationVarImpTest extends TestUtil {
             assertTrue(ts.length() > 0);
             
             String [] colTypes = table.getColTypes();
-
-            Assert.assertTrue( colTypes[0].equals("double"));
-            Assert.assertTrue( colTypes[1].equals("double"));
-            Assert.assertTrue( colTypes[2].equals("double"));
-
 
             Assert.assertTrue( colTypes[0].equals("double"));
             Assert.assertTrue( colTypes[1].equals("double"));
@@ -340,23 +266,23 @@ public class PermutationVarImpTest extends TestUtil {
                             pvi[i].equals(coeff[i + 2]));
 
                 } else if (i >= 2 && i < size - 2){
-                    assertTrue(pvi[i].equals(coeff[i]) ||
-                            pvi[i].equals(coeff[i - 1]) ||
-                            pvi[i].equals(coeff[i - 2]) ||
-                            pvi[i].equals(coeff[i + 1]) ||
-                            pvi[i].equals(coeff[i + 2]));
-
+                     assertTrue(pvi[i].equals(coeff[i]) ||
+                             pvi[i].equals(coeff[i - 1]) ||
+                             pvi[i].equals(coeff[i - 2]) ||
+                             pvi[i].equals(coeff[i + 1]) ||
+                             pvi[i].equals(coeff[i + 2]));
+                    
                 } else if (i == size - 2){
-                    assertTrue(pvi[i].equals(coeff[i]) ||
-                            pvi[i].equals(coeff[i - 1]) ||
-                            pvi[i].equals(coeff[i - 2]) ||
-                            pvi[i].equals(coeff[i + 1]));
-                    // since these have the least importance I allow 3 "wrong" positions
+                     assertTrue(pvi[i].equals(coeff[i]) ||
+                             pvi[i].equals(coeff[i - 1]) ||
+                             pvi[i].equals(coeff[i - 2]) ||
+                             pvi[i].equals(coeff[i + 1]));
+                // since these have the least importance I allow 3 "wrong" positions
                 } else if (i == size - 1) {
-                    assertTrue(pvi[i].equals(coeff[i]) ||
-                            pvi[i].equals(coeff[i - 1]) ||
-                            pvi[i].equals(coeff[i - 2]) ||
-                            pvi[i].equals(coeff[i - 3]));
+                     assertTrue(pvi[i].equals(coeff[i]) ||
+                             pvi[i].equals(coeff[i - 1]) ||
+                             pvi[i].equals(coeff[i - 2]) ||
+                             pvi[i].equals(coeff[i - 3]));
                 }
             }
         } finally {

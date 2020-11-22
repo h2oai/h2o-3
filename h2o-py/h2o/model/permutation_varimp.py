@@ -9,6 +9,7 @@ H2O Permutation Feature Importance.
 import h2o
 from h2o.frame import H2OFrame
 from h2o.expr import ExprNode
+from h2o.exceptions import H2OValueError
 from h2o.model.model_base import _get_matplotlib_pyplot
 from h2o.utils.shared_utils import can_use_pandas
 
@@ -22,7 +23,7 @@ def permutation_varimp_oat(model, frame):
     :param frame: training frame
     """
     if type(frame) is not H2OFrame:
-        raise ValueError("Frame is not H2OFrame")
+        raise H2OValueError("Frame is not H2OFrame")
 
     m_frame = H2OFrame._expr(ExprNode("PermutationVarImpOat", model, frame))
 
@@ -32,21 +33,24 @@ def permutation_varimp_oat(model, frame):
     annotations = []
     for col in m_frame.col_names:
         if col == "indices":
-            continue    # has string values
+            continue  # has string values
         mean.append(m_frame[0, col])
         std_dev.append(m_frame[1, col])
         annotations.append(col)
-    
+
     fig, ax = plt.subplots()
     ax.scatter(mean, std_dev)
-    ax.set_xlim(left=0, right=0.05)  # x axis limits
-    ax.set_ylim(bottom=0, top=0.01)  # y axis limits
+    ax.set_xlim(left=0, right=max(mean) + 1 / 10 * max(mean))  # x axis limits
+    ax.set_ylim(bottom=0, top=max(std_dev) + 1 / 10 * max(std_dev))  # y axis limits
     ax.set_xlabel('μ*')  # x axis label
     ax.set_ylabel('σ')  # y axis label
-    
+
+    ax.set_yticklabels([])
+    ax.set_xticklabels([])
+
     for index, annotation in enumerate(annotations):
         ax.annotate(annotation, (mean[index], std_dev[index]))
-        
+
     plt.show()
 
 def permutation_varimp(model, frame, use_pandas=True, metric="mse"):
@@ -58,22 +62,22 @@ def permutation_varimp(model, frame, use_pandas=True, metric="mse"):
     :param metric: (str) loss function metrics to be used 
     :return: H2OFrame or Pandas data frame
     """
-    
+
     if type(frame) is not H2OFrame:
-        raise ValueError("Frame is not H2OFrame")
+        raise H2OValueError("Frame is not H2OFrame")
 
     # Check if metric exists for the model
-    existring_metrics = model._model_json['output']['scoring_history'].col_header
-    selected_metric = "training_" + metric.lower()
-    if selected_metric not in existring_metrics:
-        raise H2OValueError("Metric doesn't exist for this model.")
+    # existring_metrics = model._model_json['output']['scoring_history'].col_header
+    existring_metrics = model._model_json['output']['training_metrics']._metric_json
+    if metric not in existring_metrics:
+        raise H2OValueError("Metric " + metric + " doesn't exist for this model.")
 
     m_frame = H2OFrame._expr(ExprNode("PermutationVarImp", model, frame, metric))
     if use_pandas and can_use_pandas():
         import pandas
         pd = h2o.as_list(m_frame)
         return pandas.DataFrame(pd, columns=pd.columns)
-    
+
     return m_frame
 
 
@@ -87,11 +91,11 @@ def plot_permutation_var_imp(importance, algo_name, metric="mse", server=False):
     :param Specify whether to activate matplotlib "server" mode. In this case, the plots are saved to a file instead of being rendered.
     :return: 
     """
-    
+
     importance_val = []
     for col in importance.columns:
         if col == "importance":
-            continue    # has string values
+            continue  # has string values
         importance_val.append(importance.loc[2][col])
 
     # specify bar centers on the y axis, but flip the order so largest bar appears at top
@@ -113,7 +117,7 @@ def plot_permutation_var_imp(importance, algo_name, metric="mse", server=False):
     # Only show ticks on the left and bottom spines
     ax.yaxis.set_ticks_position("left")
     ax.xaxis.set_ticks_position("bottom")
-    plt.yticks(pos[0:num_of_features], importance.columns[1:num_of_features + 1])   # col 0 is str: importance
+    plt.yticks(pos[0:num_of_features], importance.columns[1:num_of_features + 1])  # col 0 is str: importance
     plt.ylim([min(pos[0:num_of_features]) - 1, max(pos[0:num_of_features]) + 1])
     # ax.margins(y=0.5)
     plt.title("Permutation Variable Importance: " + algo_name + " (" + metric + ")", fontsize=20)
