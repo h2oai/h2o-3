@@ -3,6 +3,7 @@ package water.rapids;
 import hex.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 import water.util.VecUtils;
 
@@ -25,7 +26,7 @@ public class PermutationVarImp {
     
     private String _responseCol; 
     
-    private String[] _var; 
+    private String[] _variables; 
     private String[] _varsToShuffle;
     public String[] _metrics;
 
@@ -34,30 +35,30 @@ public class PermutationVarImp {
      */
     public class LocalMetric{ // do it as a string to get the metric from the user
 
-        LocalMetric(String metric)  { mMetric = metric; }
-        LocalMetric()               { mMetric = "mse"; } 
-        String mMetric;
-        double mOgMetric;
-        double mVariablesMetric;
+        LocalMetric(String metric)  { _metric = metric; }
+        LocalMetric()               { _metric = "mse"; } 
+        public String _metric;
+        double _ogMetric;
+        double _variablesMetric;
     }
 
     public LocalMetric _varImpMetric;
     public Map<String, Double> _varImpMap;
     TwoDimTable _permutationVarImp;
     private Model _model;
-    private Frame _trainFr;
+    private Frame _inputFrame;
 
     /**
      * Constructor that stores the model, frame, response column, variable Strings and 
      * sets the allowed metrics
      * @param model trained model
-     * @param fr traiing frame
+     * @param fr training frame
      */
     public PermutationVarImp(Model model, Frame fr) {
         _model = model;
-        _trainFr = fr;
+        _inputFrame = fr;
         _responseCol = _model._parms._response_column;
-        _var = _trainFr.names();
+        _variables = _inputFrame.names();
         _metrics = new String[]{"r2", "mse", "rmse", "gini coefficient", "f1", "logloss", "auc"};
     }
     
@@ -65,7 +66,7 @@ public class PermutationVarImp {
      * Creates a new array of Strings without the response column and ignored columns
      */
     public void removeResCol(){
-        List<String> list = new ArrayList<>(Arrays.asList(_trainFr.names()));
+        List<String> list = new ArrayList<>(Arrays.asList(_inputFrame.names()));
         // remove ignored columns & response column
         if (_model._parms._ignored_columns != null)
             for (String s : _model._parms._ignored_columns) list.remove(s);
@@ -79,40 +80,41 @@ public class PermutationVarImp {
     
     /**
      * Returns the metric (loss function) selected by the user (mse is default)
-     * @throws MetricNotFoundException if metric could not be loaded 
+     * @throws IllegalArgumentException if metric could not be loaded 
      */
-    private double getMetric(ModelMetrics mm) throws MetricNotFoundException {
+    private double getMetric(ModelMetrics mm) {
         double metric = Double.NaN;
         assert mm != null;
-        try{
-            switch (_varImpMetric.mMetric){
-                case "r2":  metric = _model.r2();
+        ModelCategory mc = _model._output.getModelCategory();
+            switch (_varImpMetric._metric){
+                case "r2": metric = ((ModelMetricsSupervised)mm).r2();
                     break;
                 case "mse": metric = mm.mse();
                     break;
                 case "rmse": metric = mm.rmse();
                     break;
-                case "gini coefficient": metric = mm.auc_obj()._gini;
+                case "gini coefficient": 
+                    if (mm.auc_obj() != null)
+                        metric = mm.auc_obj()._gini;
+                    else throw new IllegalArgumentException("Model: " + _model._output.getModelCategory().name() + " doesn't have gini coefficient!");
                     break;
-                case  "logloss": metric = _model.logloss();
-                    ModelCategory mc = _model._output.getModelCategory();
+                case  "logloss":
                     if (mc == ModelCategory.Binomial)
                         metric = ((ModelMetricsBinomial)mm).logloss();
                     else if (mc == ModelCategory.Multinomial)
                         metric = ((ModelMetricsMultinomial)mm).logloss();
-                    else throw new MetricNotFoundException( _model._output.getModelCategory().name() + " with " + _varImpMetric.mMetric + " not found ");
+                    else throw new IllegalArgumentException(_model._output.getModelCategory().name() + " with " + _varImpMetric._metric + " not found ");
                     break; 
-                case "auc": metric = mm.auc_obj()._auc;
+                case "auc":
+                    if (mc == ModelCategory.Binomial)
+                        metric = ((ModelMetricsBinomial)mm).auc_obj()._auc;
+                    else throw new IllegalArgumentException(_model._output.getModelCategory().name() + " with " + _varImpMetric._metric + " not found ");
                     break;
                 default:
-                    throw new MetricNotFoundException("Metric not supported " + _varImpMetric.mMetric);
+                    throw new IllegalArgumentException("Metric not supported " + _varImpMetric._metric);
             }
-        } catch (MetricNotFoundException |NullPointerException e){ 
-            System.err.println("ModelMetricCalculation  " + _model._key);
-            e.printStackTrace();
-        }
         if(Double.isNaN(metric))
-            throw new MetricNotFoundException("Model doesn't support the metric following metric " + _varImpMetric.mMetric);
+            throw new IllegalArgumentException("Model doesn't support the metric following metric " + _varImpMetric._metric);
         return metric;
     }
     
@@ -120,26 +122,17 @@ public class PermutationVarImp {
      * Set the metric upon training the model (original ~ Og)
      */
     public void setOgMetric() {
-        try{
-            _varImpMetric.mOgMetric = getMetric(ModelMetrics.getFromDKV(_model, _model._parms.train()));
-        } catch (MetricNotFoundException e){
-            System.err.println("Metric " + _varImpMetric.mMetric + " not supported for :" + _model._key);
-            e.printStackTrace();
-        }
+        _varImpMetric._ogMetric = getMetric(ModelMetrics.getFromDKV(_model, _model._parms.train()));
     }
     
     /**
      * Set the metric of the feature that is permuted
      */
     private void setVariablesMetric(int var){
-        try{
-            // divide original metric with metric value obtained from shuffled variable 
-            _varImpMetric.mVariablesMetric = getMetric(ModelMetrics.getFromDKV(_model, _trainFr)) - _varImpMetric.mOgMetric;
-        } catch (MetricNotFoundException e){
-            System.err.println("Metric " + _varImpMetric.mMetric + " not supported for :" + _model._key);
-            e.printStackTrace();
-        }
-        _pVarImp[var] = _varImpMetric.mVariablesMetric;
+        // subtract original metric with metric value obtained from shuffled variable 
+        double shuffledVariablesMetric = getMetric(ModelMetrics.getFromDKV(_model, _inputFrame));
+        _varImpMetric._variablesMetric = shuffledVariablesMetric - _varImpMetric._ogMetric;
+        _pVarImp[var] = _varImpMetric._variablesMetric;
     }
 
     /**
@@ -147,16 +140,11 @@ public class PermutationVarImp {
      * @return TwoDimTable of Permutation Feature Importance scores
      */
     public TwoDimTable getPermutationVarImp(String metric)  {
-        try {
-            if (!Arrays.asList(_metrics).contains(metric.toLowerCase()))
-                throw new MetricNotFoundException("Permutation Variable Importance doesnt support " + metric + " for model " + _model._key );
-            } catch (MetricNotFoundException e) {
-            System.err.println("Metric " + _varImpMetric.mMetric + " not supported for :" + _model._key);
-            e.printStackTrace();
-        }
+        if (ArrayUtils.find(_metrics, metric.toLowerCase()) == -1)
+            throw new IllegalArgumentException("Permutation Variable Importance doesnt support " + metric + " for model " + _model._key );
 
         _varImpMetric = new LocalMetric(metric.toLowerCase());
-        return PermutationVarImportance();
+        return permutationVarImportance();
     }
 
     /**
@@ -166,57 +154,55 @@ public class PermutationVarImp {
     public TwoDimTable getPermutationVarImp() {
         // put all the metrics in a class for structure
         _varImpMetric = new LocalMetric();
-        assert _varImpMetric.mMetric.equals("mse");  
-        return PermutationVarImportance();
+        assert _varImpMetric._metric.equals("mse");  
+        return permutationVarImportance();
     }
-
-
+    
     /**
      * Check If the variable is in ignored parameters on the model
      * @param var Vec to be shuffled
-     * @return
+     * @return true of variable is in ignored columns 
      */
     public boolean isIgnored(String var) {
         if (_model._parms._ignored_columns == null) 
                 return false;
-        return Arrays.asList(_model._parms._ignored_columns).contains(var);
+        return ArrayUtils.find(_model._parms._ignored_columns, var) != -1;
     }
     
     /**
      * permute the feature's values breaking the relationship between the feature and the true outcome.
      * Then we score the model again and calculate the loss function, and creating a TwoDimTable.
      */
-    public TwoDimTable PermutationVarImportance(){
+    public TwoDimTable permutationVarImportance(){
         removeResCol(); 
         setOgMetric(); // get the metric value from the model
         _varImpMap = new HashMap<>(_varsToShuffle.length);
 
         int id = 0;
-        for (int f = 0; f < _trainFr.numCols(); f++)
+        for (int f = 0; f < _inputFrame.numCols() ; f++)
         {
-            // skip for response column
-            if (_var[f].equals(_responseCol) || isIgnored(_var[f]))
+            if (_variables[f].equals(_responseCol) || isIgnored(_variables[f]))
                 continue;
-
             //shuffle values of feature
-            Vec shuffled_feature = VecUtils.ShuffleVec(_trainFr.vec(_var[f]), _trainFr.vec(_var[f]).makeCopy());
-            Vec og_feature = _trainFr.replace(f, shuffled_feature);
+            Vec shuffledFeature = VecUtils.ShuffleVec(_inputFrame.vec(_variables[f]), _inputFrame.vec(_variables[f]).makeCopy());
+            Vec ogFeature = _inputFrame.replace(f, shuffledFeature);
 
             // score the model again and compute diff
-            Frame new_score = _model.score(_trainFr);
+            Frame newScore = _model.score(_inputFrame);
 
             // set and add new metrics ~ fills @param _p_var_imp needed for ModelMetrics.calcVarImp()
             setVariablesMetric(id);
             
             //return the original data
-            _trainFr.replace(f, og_feature);
+            _inputFrame.replace(f, ogFeature);
 
             // Create Map
-            _varImpMap.put(_var[f], _pVarImp[id++]);
+            _varImpMap.put(_variables[f], _pVarImp[id++]);
 
-            new_score.remove();
-            shuffled_feature.remove();
+            newScore.remove();
+            shuffledFeature.remove();
         }
+        
         // Create TwoDimTable having (Relative + Scaled + percentage) importance 
         _permutationVarImp = ModelMetrics.calcVarImp(_pVarImp, _varsToShuffle);
         return _permutationVarImp;
@@ -235,7 +221,7 @@ public class PermutationVarImp {
      * type 2: Percentage value of PFI
      */
     public TwoDimTable oat(int type) {
-        int r = 4; // set 4 to 10
+        int r = 7; // set 4 to 10
         
         // Using maps to not lose which Variable has Which score as to sometimes the ordering changes
         List<Map<String, Double>> listOfMaps = new ArrayList<Map<String, Double>>();

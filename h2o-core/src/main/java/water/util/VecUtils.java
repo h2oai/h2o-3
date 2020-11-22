@@ -850,7 +850,7 @@ public class VecUtils {
   
   public static class ShuffleVecTask extends MRTask<ShuffleVecTask> {
     @Override public void map(Chunk ic, Chunk nc) {
-      Random rng = getRNG(seed(ic.cidx()));
+      Random rng = new Random(); //getRNG(seed(ic.cidx()));
       for (int i = 1; i < ic._len ; i++) {
         int j = rng.nextInt(i); // inclusive upper bound <0,i>
         switch (ic.vec().get_type()) {

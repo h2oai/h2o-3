@@ -1,26 +1,38 @@
 package water.rapids;
 
-import hex.Model;
 import water.*;
 import water.fvec.Frame;
-import water.rapids.ast.*;
+import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstParameter;
+import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.params.AstConst;
 import water.rapids.ast.prims.advmath.*;
 import water.rapids.ast.prims.assign.*;
 import water.rapids.ast.prims.math.*;
-import water.rapids.ast.prims.matrix.*;
-import water.rapids.ast.prims.misc.*;
+import water.rapids.ast.prims.matrix.AstMMult;
+import water.rapids.ast.prims.matrix.AstTranspose;
+import water.rapids.ast.prims.misc.AstComma;
+import water.rapids.ast.prims.misc.AstLs;
+import water.rapids.ast.prims.misc.AstSetProperty;
+import water.rapids.ast.prims.models.AstModelResetThreshold;
 import water.rapids.ast.prims.models.AstPerfectAUC;
+import water.rapids.ast.prims.models.AstPermutationVarImp;
+import water.rapids.ast.prims.models.AstOneAtaTimeMorris;
 import water.rapids.ast.prims.models.AstSegmentModelsAsFrame;
-import water.rapids.ast.prims.models.*;
 import water.rapids.ast.prims.mungers.*;
 import water.rapids.ast.prims.operators.*;
 import water.rapids.ast.prims.reducers.*;
-import water.rapids.ast.prims.repeaters.*;
-import water.rapids.ast.prims.search.*;
+import water.rapids.ast.prims.repeaters.AstRepLen;
+import water.rapids.ast.prims.repeaters.AstSeq;
+import water.rapids.ast.prims.repeaters.AstSeqLen;
+import water.rapids.ast.prims.search.AstMatch;
+import water.rapids.ast.prims.search.AstWhich;
+import water.rapids.ast.prims.search.AstWhichMax;
+import water.rapids.ast.prims.search.AstWhichMin;
 import water.rapids.ast.prims.string.*;
 import water.rapids.ast.prims.time.*;
-import water.rapids.ast.prims.timeseries.*;
+import water.rapids.ast.prims.timeseries.AstDiffLag1;
+import water.rapids.ast.prims.timeseries.AstIsax;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValFun;
 import water.rapids.vals.ValKeyed;
@@ -308,6 +320,10 @@ public class Env extends Iced {
     
     // Reset model threshold
     init(new AstModelResetThreshold());
+    
+    // Permutation Variable Importance
+    init(new AstPermutationVarImp());
+    init(new AstOneAtaTimeMorris());
     
     // Custom (eg. algo-specific)
     for (AstPrimitive prim : PrimsService.INSTANCE.getAllPrims())
