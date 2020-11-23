@@ -16,7 +16,7 @@ def test_parser_svmlight_column_skip():
                                       has_response=True, seed=seed)
 
     results_path = pyunit_utils.locate("results")
-    svmfile = os.path.join(results_path, 'out.svm')
+    svmfile = os.path.join(results_path, 'out-column-skip.svm')
 
     # write h2o frame to svm format
     pyunit_utils.write_H2OFrame_2_SVMLight(svmfile, original_frame)
