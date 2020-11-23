@@ -34,6 +34,8 @@ def glrm_grid_user_y():
         hyper_params=hyper_params
     )
     grid.train(x=train.names, training_frame=train, **params)
+    print("first grid")
+    print(grid)
     grid_path = h2o.save_grid(export_dir, grid.grid_id)
     h2o.remove_all()
     
@@ -43,6 +45,13 @@ def glrm_grid_user_y():
     hyper_params["gamma_x"] = [0.1, 1]
     grid = h2o.load_grid(grid_path)
     grid.train(x=train.names, training_frame=train, **params)
+    print("second grid")
+    print(grid)
+    assert len(grid.model_ids) == 4
+    # check actual training ocurred and results are different
+    assert grid.models[0].archetypes() != grid.models[1].archetypes()
+    assert grid.models[1].archetypes() != grid.models[2].archetypes()
+    assert grid.models[2].archetypes() != grid.models[3].archetypes()
     
 
 if __name__ == "__main__":
