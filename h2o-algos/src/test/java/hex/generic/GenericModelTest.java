@@ -30,7 +30,6 @@ import water.runner.H2ORunner;
 import java.io.*;
 import java.util.ArrayList;
 
-import static hex.ModelCategory.CoxPH;
 import static hex.genmodel.utils.DistributionFamily.AUTO;
 import static org.junit.Assert.*;
 
@@ -720,6 +719,52 @@ public class GenericModelTest extends TestUtil {
             final File genericModelMojoFile = File.createTempFile("mojo", "zip");
             genericModel.getMojo().writeTo(new FileOutputStream(genericModelMojoFile));
             assertArrayEquals(FileUtils.readFileToByteArray(originalModelMojoFile), FileUtils.readFileToByteArray(genericModelMojoFile));
+
+        } finally {
+        Scope.exit();
+        }
+    } 
+    
+    @Test
+    public void testJavaScoring_mojo_cox_ph() throws IOException {
+        try {
+            Scope.enter();
+            final Frame trainingFrame = parse_test_file("./smalldata/coxph_test/heart.csv");
+            Scope.track(trainingFrame);
+            final Frame testFrame = parse_test_file("./smalldata/coxph_test/heart_test.csv");
+            Scope.track(testFrame);
+            CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._start_column = "start";
+            parms._stop_column = "stop";
+            parms._response_column = "event";
+
+            hex.coxph.CoxPH job = new CoxPH(parms);
+            final CoxPHModel originalModel = job.trainModel().get();
+            Scope.track_generic(originalModel);
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+            originalModel.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
+
+            final Key mojo = importMojo(originalModelMojoFile.getAbsolutePath());
+
+            // Create Generic model from given imported MOJO
+            final GenericModelParameters genericModelParameters = new GenericModelParameters();
+            genericModelParameters._model_key = mojo;
+            final Generic generic = new Generic(genericModelParameters);
+            final GenericModel genericModel = trainAndCheck(generic);
+            Scope.track_generic(genericModel);
+
+            final Frame genericModelPredictions = genericModel.score(testFrame);
+            Scope.track_generic(genericModelPredictions);
+            assertEquals(testFrame.numRows(), genericModelPredictions.numRows());
+
+            final boolean equallyScored = genericModel.testJavaScoring(testFrame, genericModelPredictions, 0);
+            assertTrue(equallyScored);
+
+            final Frame originalModelPredictions = originalModel.score(testFrame);
+            Scope.track(originalModelPredictions);
+            assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
 
         } finally {
         Scope.exit();
