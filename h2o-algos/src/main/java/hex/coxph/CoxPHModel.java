@@ -344,7 +344,6 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
           continue;
         }
         double lp = r.innerProduct(_coef) - _lpBase[(int) s];
-        System.out.println("lp = " + lp);
         nc.addNum(lp);
       }
     }
@@ -370,8 +369,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
   @Override
   public boolean haveMojo() {
     final boolean hasInteraction = _parms.interactionSpec() != null;
-    final boolean hasStratification = false;//_parms._stratify_by != null && _parms._stratify_by.length > 0;
-    if (hasInteraction || hasStratification) {
+    if (hasInteraction) {
       return false;
     } else {
       return super.haveMojo();

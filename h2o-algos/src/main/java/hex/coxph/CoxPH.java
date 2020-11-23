@@ -281,8 +281,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         for (double val : g._gs)
           if (Double.isNaN(val))
             continue groups;
-        System.out.println("g = " + g);
-        System.out.println("outMapping = " + outMapping);
         outMapping.put(g, new IcedInt(outMapping.size()));
       }
     }

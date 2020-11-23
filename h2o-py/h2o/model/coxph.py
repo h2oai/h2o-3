@@ -8,7 +8,6 @@ class H2OCoxPHModel(ModelBase):
 
     def formula(self):
         """Survival formula."""
-        print(self._model_json["output"])
         return self._model_json["output"]["formula"]
 
     def coefficients_table(self):
