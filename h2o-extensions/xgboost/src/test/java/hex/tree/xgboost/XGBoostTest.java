@@ -13,6 +13,8 @@ import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
 import hex.FeatureInteraction;
 import hex.FeatureInteractions;
+import hex.tree.gbm.GBM;
+import hex.tree.gbm.GBMModel;
 import hex.tree.xgboost.predict.XGBoostNativeVariableImportance;
 import hex.tree.xgboost.util.BoosterDump;
 import hex.tree.xgboost.util.BoosterHelper;
@@ -36,6 +38,7 @@ import water.util.TwoDimTable;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static hex.genmodel.utils.DistributionFamily.bernoulli;
 import static hex.genmodel.utils.DistributionFamily.multinomial;
@@ -2151,12 +2154,100 @@ public class XGBoostTest extends TestUtil {
       assertEquals(overallFeatureInteractionsTable[0].length, 3);
       assertEquals(overallFeatureInteractionsTable[1].length, 1);
       assertEquals(overallFeatureInteractionsTable[2].length, 7);
-      
     } finally {
       Scope.exit();
     }
   }
 
+
+  @Test
+  public void testXGBoostFeatureInteractionsAndCompareWithGBMFeatureInteractions() {
+    Scope.enter();
+    try {
+      // create 2 similar trees and check whether they have similar feature interactions 
+      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = tfr._key;
+      parms._response_column = "CAPSULE";
+      parms._ignored_columns = new String[]{"ID"};
+      parms._seed = 0xDECAF;
+      parms._build_tree_one_node = true;
+      parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.exact;
+      parms._ntrees = 1;
+      parms._max_depth = 3;
+
+      XGBoostModel model = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      
+      GBMModel.GBMParameters gbmParms = new GBMModel.GBMParameters();
+      gbmParms._train = parms._train;
+      gbmParms._response_column = parms._response_column;
+      gbmParms._ignored_columns = parms._ignored_columns;
+      gbmParms._seed = parms._seed;
+      gbmParms._build_tree_one_node = parms._build_tree_one_node;
+      gbmParms._ntrees = parms._ntrees;
+      gbmParms._max_depth = parms._max_depth;
+
+      GBMModel gbmModel = new GBM(gbmParms).trainModel().get();
+      Scope.track_generic(gbmModel);
+      
+      double level0avgDistanceByGain = calculateAverageDistanceOfSortedInteractions(gbmModel.getFeatureInteractions(0,100,-1), model.getFeatureInteractions(0,100,-1),0);
+      double level1avgDistanceByGain = calculateAverageDistanceOfSortedInteractions(gbmModel.getFeatureInteractions(1,100,-1), model.getFeatureInteractions(1,100,-1),0);
+      double level2avgDistanceByGain = calculateAverageDistanceOfSortedInteractions(gbmModel.getFeatureInteractions(2,100,-1), model.getFeatureInteractions(2,100,-1), 0);
+
+      assertEquals(level0avgDistanceByGain, 1.66666666, 0.000001);
+      assertEquals(level1avgDistanceByGain, 2.66666666, 0.000001);
+      assertEquals(level2avgDistanceByGain, 2.42857142, 0.000001);
+
+      double level0avgDistanceByCover = calculateAverageDistanceOfSortedInteractions(gbmModel.getFeatureInteractions(0,100,-1), model.getFeatureInteractions(0,100,-1),1);
+      double level1avgDistanceByCover = calculateAverageDistanceOfSortedInteractions(gbmModel.getFeatureInteractions(1,100,-1), model.getFeatureInteractions(1,100,-1),1);
+      double level2avgDistanceByCover = calculateAverageDistanceOfSortedInteractions(gbmModel.getFeatureInteractions(2,100,-1), model.getFeatureInteractions(2,100,-1), 1);
+
+      assertEquals(level0avgDistanceByCover, 1.00000000, 0.000001);
+      assertEquals(level1avgDistanceByCover, 2.33333333, 0.000001);
+      assertEquals(level2avgDistanceByCover, 2.71428571, 0.000001);
+      
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  // if some interaction is not present in both inputs, it is ignored
+  // sortBy = 0 to sort by gain
+  // sortBy != 1 to sort by cover
+  private static double calculateAverageDistanceOfSortedInteractions(FeatureInteractions featureInteractions1, FeatureInteractions featureInteractions2, int sortByFeature) {
+    List<KeyValue> list1 = new ArrayList<>();
+    List<KeyValue> list2 = new ArrayList<>();
+
+    for (Map.Entry<String, FeatureInteraction> featureInteraction : featureInteractions1.entrySet()) {
+      list1.add(new KeyValue(featureInteraction.getKey(), sortByFeature == 0 ? featureInteraction.getValue().gain :  featureInteraction.getValue().cover));
+    }
+    for (Map.Entry<String, FeatureInteraction> featureInteraction : featureInteractions2.entrySet()) {
+      list2.add(new KeyValue(featureInteraction.getKey(), sortByFeature == 0 ? featureInteraction.getValue().gain :  featureInteraction.getValue().cover));
+    }
+    List<String> sortedKeys1 = list1.stream()
+            .sorted(Comparator.comparing(KeyValue::getValue))
+            .map(KeyValue::getKey)
+            .collect(Collectors.toList());
+    List<String> sortedKeys2 = list2.stream()
+            .sorted(Comparator.comparing(KeyValue::getValue))
+            .map(KeyValue::getKey)
+            .collect(Collectors.toList());
+
+    double averageDistance = 0;
+    int i, missing = 0;
+    for (i = 0; i < sortedKeys1.size(); i++) {
+      int j = sortedKeys2.indexOf(sortedKeys1.get(i));
+      // if the key is missing in featureInteractions2 then don't count
+      if (j != -1) {
+        averageDistance += Math.abs(i - j);
+      } else {
+        missing++;
+      }
+    }
+    
+    return averageDistance / (i - missing);
+  }
   
 
 }
