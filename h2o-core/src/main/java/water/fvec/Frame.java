@@ -883,13 +883,22 @@ public class Frame extends Lockable<Frame> {
 
   /** Write out K/V pairs, in this case Vecs. */
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
-    for( Key k : _keys )
+    ab.putA8(anyVec().espc());
+    for (Key k : _keys)
       ab.putKey(k);
     return super.writeAll_impl(ab);
   }
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
-    for( Key k : _keys )
-      ab.getKey(k,fs);
+    long[] espc = ab.getA8();
+    _keys = new Vec.VectorGroup().addVecs(_keys.length);
+    int rowLayout = Vec.ESPC.rowLayout(_keys[0], espc);
+    for (Key<Vec> key : _keys) {
+      Vec v = ab.get();
+      v._key = key;
+      v._rowLayout = rowLayout;
+      v.readAll_impl(ab, fs);
+      DKV.put(v, fs);
+    }
     return super.readAll_impl(ab,fs);
   }
 
