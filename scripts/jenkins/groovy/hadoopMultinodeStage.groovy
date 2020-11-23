@@ -142,7 +142,7 @@ private String getKillScript() {
         if [ -f h2o_one_node ]; then
             YARN_APPLICATION_ID=\$(cat h2o_one_node | grep job | sed 's/job/application/g')
         elif [ -f h2odriver.log ]; then
-            YARN_APPLICATION_ID=\$(cat h2odriver.log | grep 'yarn logs -applicationId' | sed -r 's/.*(application_[0-9]+_[0-9]+).*/\\1/')
+            YARN_APPLICATION_ID=\$(cat h2odriver.log | grep 'yarn logs -applicationId' | sed -r 's/.*(application_[0-9]+_[0-9]+).*/\\1/' | head -n 1)
         fi
         if [ "\$YARN_APPLICATION_ID" != "" ]; then
             echo "YARN Application ID is \${YARN_APPLICATION_ID}"
