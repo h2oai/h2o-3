@@ -62,6 +62,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       mmr._lkv = info;
       mmr._reader = reader;
       mmr.readAll(readModelMetadata);
+      mmr._model.afterRead();
       return mmr._model;
     } finally {
       if (reader instanceof Closeable)

@@ -22,7 +22,8 @@ public class CoxPHMojoModel extends MojoModel  {
 
   }
 
-  void prepareCoefIndexes() {
+  @Override
+  public void afterRead() {
     final List<String> namesInList = Arrays.asList(_modelDescriptor.columnNames());
     _coef_indexes = new int[_coef_names.length];
     int i = 0;
@@ -34,10 +35,6 @@ public class CoxPHMojoModel extends MojoModel  {
 
   @Override
   public double[] score0(double[] row, double[] predictions) {
-    if (null == _coef_indexes) {
-      prepareCoefIndexes();
-    }
-    
     double result = 0.0;
 
     final int size = 0 < _strata.size() ? _strata.size() : 1;
