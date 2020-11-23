@@ -36,6 +36,9 @@ def glrm_grid_user_y():
     grid.train(x=train.names, training_frame=train, **params)
     print("first grid")
     print(grid)
+    assert len(grid.model_ids) == 2
+    archetypes1 = grid.models[0].archetypes()
+    archetypes2 = grid.models[1].archetypes()
     grid_path = h2o.save_grid(export_dir, grid.grid_id)
     h2o.remove_all()
     
@@ -48,11 +51,12 @@ def glrm_grid_user_y():
     print("second grid")
     print(grid)
     assert len(grid.model_ids) == 4
-    # check actual training ocurred and results are different
-    assert grid.models[0].archetypes() != grid.models[1].archetypes()
+    # check actual training occurred and results are different
+    assert grid.models[0].archetypes() == archetypes1
+    assert grid.models[1].archetypes() == archetypes2
     assert grid.models[1].archetypes() != grid.models[2].archetypes()
     assert grid.models[2].archetypes() != grid.models[3].archetypes()
-    
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(glrm_grid_user_y)
