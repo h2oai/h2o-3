@@ -2,6 +2,8 @@ package hex.generic;
 
 import hex.ModelCategory;
 import hex.ModelMetricsBinomial;
+import hex.coxph.CoxPH;
+import hex.coxph.CoxPHModel;
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningModel;
 import hex.ensemble.Metalearner;
@@ -28,6 +30,7 @@ import water.runner.H2ORunner;
 import java.io.*;
 import java.util.ArrayList;
 
+import static hex.ModelCategory.CoxPH;
 import static hex.genmodel.utils.DistributionFamily.AUTO;
 import static org.junit.Assert.*;
 
@@ -656,6 +659,50 @@ public class GenericModelTest extends TestUtil {
 
             GLM job = new GLM(parms);
             final GLMModel originalModel = job.trainModel().get();
+            Scope.track_generic(originalModel);
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+            originalModel.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
+
+            final Key mojo = importMojo(originalModelMojoFile.getAbsolutePath());
+
+            // Create Generic model from given imported MOJO
+            final GenericModelParameters genericModelParameters = new GenericModelParameters();
+            genericModelParameters._model_key = mojo;
+            final Generic generic = new Generic(genericModelParameters);
+            final GenericModel genericModel = trainAndCheck(generic);
+            Scope.track_generic(genericModel);
+
+            // Compare the two MOJOs byte-wise
+            final File genericModelMojoFile = File.createTempFile("mojo", "zip");
+            genericModel.getMojo().writeTo(new FileOutputStream(genericModelMojoFile));
+            assertArrayEquals(FileUtils.readFileToByteArray(originalModelMojoFile), FileUtils.readFileToByteArray(genericModelMojoFile));
+
+        } finally {
+        Scope.exit();
+        }
+    } 
+    
+    /**
+     * Create a CoxPH model and writes a MOJO into a temporary zip file. Then, it creates a Generic model out of that
+     * temporary zip file and re-downloads the underlying MOJO again. The byte arrays representing both MOJOs are tested
+     * to be the same.
+     *
+     */
+    @Test
+    public void downloadable_mojo_cox_ph() throws IOException {
+        try {
+            Scope.enter();
+            final Frame trainingFrame = parse_test_file("./smalldata/coxph_test/heart.csv");
+            Scope.track(trainingFrame);
+            CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._start_column = "start";
+            parms._stop_column = "stop";
+            parms._response_column = "event";
+
+            hex.coxph.CoxPH job = new CoxPH(parms);
+            final CoxPHModel originalModel = job.trainModel().get();
             Scope.track_generic(originalModel);
             final File originalModelMojoFile = File.createTempFile("mojo", "zip");
             originalModel.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
