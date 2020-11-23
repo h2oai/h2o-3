@@ -23,6 +23,7 @@ reference:
       - apply
       - as.character.H2OFrame
       - as.data.frame.H2OFrame
+      - as.data.frame.H2OSegmentModels
       - as.factor
       - as.h2o
       - as.matrix.H2OFrame
@@ -120,6 +121,7 @@ reference:
       - h2o.flow
       - h2o.gainsLift
       - h2o.gbm
+      - h2o.generic
       - h2o.genericModel
       - h2o.get_automl
       - h2o.get_leaderboard
@@ -155,6 +157,7 @@ reference:
       - h2o.import_sql_select
       - h2o.import_sql_table
       - h2o.importFile
+      - h2o.importFolder
       - h2o.impute
       - h2o.init
       - h2o.insertMissingValues
@@ -176,6 +179,7 @@ reference:
       - h2o.list_api_extensions
       - h2o.list_core_extensions
       - h2o.list_jobs
+      - h2o.list_models
       - h2o.listTimezones
       - h2o.loadGrid
       - h2o.loadModel
