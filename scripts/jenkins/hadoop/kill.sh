@@ -27,7 +27,7 @@ done
 if [ -f ${notifyFile} ]; then
     YARN_APPLICATION_ID=$(cat ${notifyFile} | grep job | sed 's/job/application/g')
 elif [ -f ${driverLogFile} ]; then
-    YARN_APPLICATION_ID=$(cat ${driverLogFile} | grep 'yarn logs -applicationId' | sed -r 's/.*(application_[0-9]+_[0-9]+).*/\1/')
+    YARN_APPLICATION_ID=$(cat ${driverLogFile} | grep 'yarn logs -applicationId' | sed -r 's/.*(application_[0-9]+_[0-9]+).*/\1/' | head -n 1)
 fi
 if [ "$YARN_APPLICATION_ID" != "" ]; then
     echo "YARN Application ID is ${YARN_APPLICATION_ID}"
