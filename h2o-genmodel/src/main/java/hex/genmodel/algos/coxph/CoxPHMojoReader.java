@@ -4,7 +4,6 @@ import hex.genmodel.ModelMojoReader;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class CoxPHMojoReader extends ModelMojoReader<CoxPHMojoModel> {
 
@@ -18,19 +17,12 @@ public class CoxPHMojoReader extends ModelMojoReader<CoxPHMojoModel> {
     _model._x_mean_cat = readkv2D_doubles("x_mean_cat");
     _model._x_mean_num = readkv2D_doubles("x_mean_num");
     _model._coef = readkv("coef");
-    _model._coef_names = readCoefNames();
     _model._strata = readStrata();
     _model._strata_len = readStrataLen();
+    _model._coef_indexes = readkv("coef_indexes");
   }
 
-  private String[] readCoefNames() {
-    final int count = readkv("coef_names_num");
-    final String[] result = new String[count];
-    for (int i = 0; i < count; i++) {
-      result[i] = readkv("coef_names_" + i);
-    }
-    return result;
-  }
+  
 
   private Map<List<Integer>, Integer> readStrata() {
     final int count = readkv("strata_count");

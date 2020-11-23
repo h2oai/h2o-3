@@ -67,16 +67,6 @@ public abstract class MojoModel extends GenModel {
   public static MojoModel load(MojoReaderBackend mojoReader) throws IOException {
     return ModelMojoReader.readFrom(mojoReader);
   }
-
-  /**
-   * This method is called from {@link ModelMojoReader} instances after all data is read. 
-   * 
-   * MojoModel subclasses can put some code initializing it's data structures into this method. By default this method
-   * does nothing.
-   */
-  public void afterRead() {
-    //NOP
-  }
   
   //------------------------------------------------------------------------------------------------------------------
   // IGenModel interface

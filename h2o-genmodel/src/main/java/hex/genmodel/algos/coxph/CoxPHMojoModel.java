@@ -9,28 +9,16 @@ import java.util.Map;
 
 public class CoxPHMojoModel extends MojoModel  {
   double[] _coef;
-  String[] _coef_names;
   int _numStart;
   Map<List<Integer>, Integer> _strata;
   int _strata_len;
   double[][] _x_mean_cat;
   double[][] _x_mean_num;
-  private int[] _coef_indexes;
+  int[] _coef_indexes;
 
   CoxPHMojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
 
-  }
-
-  @Override
-  public void afterRead() {
-    final List<String> namesInList = Arrays.asList(_modelDescriptor.columnNames());
-    _coef_indexes = new int[_coef_names.length];
-    int i = 0;
-    for (String coefName : _coef_names) {
-      Integer index = namesInList.indexOf(coefName);
-      _coef_indexes[i++] = index;
-    }
   }
 
   @Override
@@ -46,7 +34,7 @@ public class CoxPHMojoModel extends MojoModel  {
         lpBase[s] += _x_mean_num[s][i] * _coef[i + _numStart];
     }
     
-    for (int i = 0; i < _coef_names.length; i++) {
+    for (int i = 0; i < _coef_indexes.length; i++) {
       final int coefIndex = _coef_indexes[i];
       result += row[coefIndex] * _coef[i];
     }

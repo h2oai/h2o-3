@@ -7,6 +7,7 @@ import water.util.IcedInt;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 public class CoxPHMojoWriter extends ModelMojoWriter<CoxPHModel, CoxPHModel.CoxPHParameters, CoxPHModel.CoxPHOutput> {
 
@@ -28,15 +29,18 @@ public class CoxPHMojoWriter extends ModelMojoWriter<CoxPHModel, CoxPHModel.CoxP
     writekv2D_doubles("x_mean_num", model._output._x_mean_num);
     writekv("coef", model._output._coef);
     writeStrata();
-    writeCoefNames();
+    writeCoefIndexes();
   }
 
-  private void writeCoefNames() throws IOException {
-    final String[] coef_names = model._output._coef_names;
-    writekv("coef_names_num", coef_names.length);
-    for (int i = 0; i < coef_names.length; i++) {
-      writekv("coef_names_"+ i, coef_names[i]);
+  private void writeCoefIndexes() throws IOException {
+    final List<String> namesInList = Arrays.asList(model._output._names);
+    final int[] _coef_indexes = new int[model._output._coef_names.length];
+    int i = 0;
+    for (String coefName : model._output._coef_names) {
+      Integer index = namesInList.indexOf(coefName);
+      _coef_indexes[i++] = index;
     }
+    writekv("coef_indexes", _coef_indexes);
   }
 
   private void writeStrata() throws IOException {
