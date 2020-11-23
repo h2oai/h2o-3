@@ -40,6 +40,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.*;
 
+import static hex.ModelMetrics.calcVarImp;
 import static hex.glm.GLMUtils.*;
 
 /**
@@ -853,6 +854,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   //  ideally the model should be instantiated in the #computeImpl() method instead of init
   private void buildModel() {
     _model = new GLMModel(_result, _parms, this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
+    _model._output.setLambdas(_parms);  // set lambda_min and lambda_max if lambda_search is enabled
+    
     // clone2 so that I don't change instance which is in the DKV directly
     // (clone2 also shallow clones _output)
     _model.clone2().delete_and_lock(_job._key);
@@ -1450,7 +1453,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               System.out.println("DONE after " + (iterCnt-1) + " iterations (1)");
               return;
             }
-            betaCnd = s == Solver.COORDINATE_DESCENT?COD_solve(gram,_state._alpha,_state.lambda()):ADMM_solve(gram.gram,gram.xy);
+            betaCnd = s == Solver.COORDINATE_DESCENT?COD_solve(gram,_state._alpha,_state.lambda())
+                    :ADMM_solve(gram.gram,gram.xy); // this will shrink betaCnd if needed but this call may be skipped
           }
           firstIter = false;
           long t3 = System.currentTimeMillis();
@@ -1459,7 +1463,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
                  ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
                  : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo());
-            if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) { // ls.getX() get the old beta value
+            double[] oldBetaCnd = ls.getX();
+            if (betaCnd.length != oldBetaCnd.length) {  // if ln 1453 is skipped and betaCnd.length != _state.beta()
+              betaCnd = _state.extractSubRange(betaCnd.length, 0, _state.activeData()._activeCols, betaCnd);
+            }
+            if (!ls.evaluate(ArrayUtils.subtract(betaCnd, oldBetaCnd, betaCnd))) { // ls.getX() get the old beta value
               Log.info(LogMsg("Ls failed " + ls));
               return;
             }
@@ -2067,6 +2075,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _state.setAllIn(false);
       _state.setGslvrNull();
       _state.setActiveDataMultinomialNull();
+      _state.setActiveDataNull();
       int histLen = devHistoryTrain.length;
       for (int ind=0; ind < histLen; ind++) {
         devHistoryTrain[ind]=0;
@@ -2264,6 +2273,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               (null != _parms._valid), false, _model._output.getModelCategory(), false);
       _model._output._scoring_history = combineScoringHistory(_model._output._scoring_history,
               scoring_history_early_stop, _scoreIterationList);
+      _model._output._varimp = _model._output.calculateVarimp();
+      _model._output._variable_importances = calcVarImp(_model._output._varimp);
       _model.update(_job._key);
 /*      if (_vcov != null) {
         _model.setVcov(_vcov);

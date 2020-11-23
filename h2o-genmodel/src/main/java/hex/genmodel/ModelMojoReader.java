@@ -314,7 +314,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
 
   private void checkMaxSupportedMojoVersion() throws IOException {
     if(_model._mojo_version > Double.parseDouble(mojoVersion())){
-      throw new IOException(String.format("MOJO version incompatibility - the model MOJO version (%.2f) is higher than the current h2o version (%s) supports. Please, use the older version of h2o to load MOJO model.", _model._mojo_version, mojoVersion()));
+      throw new IOException(String.format("MOJO version incompatibility - the model MOJO version (%.2f) is higher than the current H2O version (%s) supports. Please, use a newer version of H2O to load MOJO model.", _model._mojo_version, mojoVersion()));
     }
   }
 

@@ -1,5 +1,4 @@
 import sys, os
-import tempfile
 
 sys.path.insert(1, os.path.join("..", "..", ".."))
 import h2o
@@ -24,7 +23,7 @@ def grid_resume():
     grid_id = gs.grid_id
     old_grid_model_count = len(gs.model_ids)
     print("Baseline grid has %d models" % old_grid_model_count)
-    h2o.remove_all();
+    h2o.remove_all()
 
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     grid = h2o.load_grid(export_dir + "/" + grid_id)
@@ -37,7 +36,6 @@ def grid_resume():
     for model_id in grid.model_ids:
         model = h2o.get_model(model_id)
         assert model is not None
-    
 
 
 if __name__ == "__main__":

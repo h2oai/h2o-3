@@ -250,8 +250,6 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           reconcileMaxRuntime(grid._key, nextModelParams);
 
           parallelModelBuilder.run(Collections.singletonList(ModelBuilder.make(nextModelParams)));
-        } else {
-          parallelModelBuilder.noMoreModels();
         }
       } finally {
         parallelSearchGridLock.unlock();

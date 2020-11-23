@@ -328,7 +328,7 @@ public final class ComputationState {
 
   public DataInfo activeDataMultinomial(int c) {return _activeDataMultinomial != null?_activeDataMultinomial[c]:_dinfo;}
 
-  private static double [] extractSubRange(int N, int c, int [] ids, double [] src) {
+  public static double [] extractSubRange(int N, int c, int [] ids, double [] src) {
     if(ids == null) return Arrays.copyOfRange(src,c*N,c*N+N);
     double [] res = MemoryManager.malloc8d(ids.length);
     int j = 0;
@@ -689,6 +689,7 @@ public final class ComputationState {
   protected void setAllIn(boolean val) { _allIn = val; }
   protected void setGslvrNull() { _gslvr = null; }
   protected void setActiveDataMultinomialNull() { _activeDataMultinomial = null; }
+  protected void setActiveDataNull() { _activeData = null; }
   protected void setLambdaSimple(double lambda) { _lambda=lambda; }
 
   protected void setHGLMComputationState(double [] beta, double[] ubeta, double[] psi, double[] phi, 

@@ -135,6 +135,8 @@ Defining an XGBoost Model
 
 -  `monotone_constraints <algo-params/monotone_constraints.html>`__: A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns. Also note that this option can only be used when the distribution is ``gaussian``, ``bernoulli``, or ``tweedie``. A Python demo is available `here <https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/H2O_tutorial_gbm_monotonicity.ipynb>`__.
 
+-  `interaction_constraints <algo-params/interaction_constraints.html>`__: Specify the feature column interactions which are allowed to interact during tree building. Use column names to define which features can interact together. 
+
 -  `score_tree_interval <algo-params/score_tree_interval.html>`__: Score the model after every so many trees. This value is set to 0 (disabled) by default.
 
 -  `min_split_improvement <algo-params/min_split_improvement.html>`__ (alias: ``gamma``): The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range. This value defaults to 0.
@@ -306,6 +308,30 @@ Some environments may required disabling XGBoost. This can be done by setting ``
 
 Setting ``-Dsys.ai.h2o.ext.core.toggle.XGBoost`` to ``False`` can be done on any H2O version that supports XGBoost and removes XGBoost from the list of available algorithms. 
 
+XGBoost Feature Interactions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Ranks of features and feature interactions by various metrics implemented in `XGBFI <https://github.com/Far0n/xgbfi>`__ style.
+
+Metrics
+'''''''
+
+- **Gain:** Total gain of each feature or feature interaction
+- **FScore:** Amount of possible splits taken on a feature or feature interaction
+- **wFScore:** Amount of possible splits taken on a feature or feature interaction weighted by the probability of the splits to take place
+- **Average wFScore:** wFScore divided by FScore
+- **Average Gain:** Gain divided by FScore
+- **Expected Gain:** Total gain of each feature or feature interaction weighted by the probability to gather the gain
+- **Average Tree Index**
+- **Average Tree Depth**
+
+**Additional features:**
+
+- Leaf Statistics
+- Split Value Histograms
+
+Usage is illustrated in the Examples section.
+
 Examples
 ~~~~~~~~
 
@@ -345,6 +371,9 @@ Below is a simple example showing how to build a XGBoost model.
     # Generate predictions on a test set (if necessary):
     pred <- h2o.predict(titanic_xgb, newdata = valid)
 
+    # Extract feature interactions:
+    feature_interactions = h2o.feature_interaction(titanic_xgb)
+
 
    .. code-tab:: python
    
@@ -377,6 +406,9 @@ Below is a simple example showing how to build a XGBoost model.
 
     # Generate predictions on a test set (if necessary):
     pred = titanic_xgb.predict(valid)
+
+    # Extract feature interactions:
+    feature_interactions = titanic_xgb.feature_interaction()
   
 
 FAQs

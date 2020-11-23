@@ -13,6 +13,7 @@ public class PCAMojoModel extends MojoModel {
   public double[] _normMul; // used to perform dataset transformation.  When no transform is needed, will be 1
   public boolean _use_all_factor_levels;
   public String _pca_method;
+  public String _pca_impl;
   public int _k;
   public int _eigenVectorSize;
   

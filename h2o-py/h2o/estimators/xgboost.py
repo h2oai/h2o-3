@@ -29,11 +29,11 @@ class H2OXGBoostEstimator(H2OEstimator):
                    "checkpoint", "export_checkpoints_dir", "ntrees", "max_depth", "min_rows", "min_child_weight",
                    "learn_rate", "eta", "sample_rate", "subsample", "col_sample_rate", "colsample_bylevel",
                    "col_sample_rate_per_tree", "colsample_bytree", "colsample_bynode", "max_abs_leafnode_pred",
-                   "max_delta_step", "monotone_constraints", "score_tree_interval", "min_split_improvement", "gamma",
-                   "nthread", "save_matrix_directory", "build_tree_one_node", "calibrate_model", "calibration_frame",
-                   "max_bins", "max_leaves", "sample_type", "normalize_type", "rate_drop", "one_drop", "skip_drop",
-                   "tree_method", "grow_policy", "booster", "reg_lambda", "reg_alpha", "dmatrix_type", "backend",
-                   "gpu_id", "gainslift_bins"}
+                   "max_delta_step", "monotone_constraints", "interaction_constraints", "score_tree_interval",
+                   "min_split_improvement", "gamma", "nthread", "save_matrix_directory", "build_tree_one_node",
+                   "calibrate_model", "calibration_frame", "max_bins", "max_leaves", "sample_type", "normalize_type",
+                   "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy", "booster", "reg_lambda",
+                   "reg_alpha", "dmatrix_type", "backend", "gpu_id", "gainslift_bins"}
 
     def __init__(self, **kwargs):
         super(H2OXGBoostEstimator, self).__init__()
@@ -1400,6 +1400,21 @@ class H2OXGBoostEstimator(H2OEstimator):
     def monotone_constraints(self, monotone_constraints):
         assert_is_type(monotone_constraints, None, dict)
         self._parms["monotone_constraints"] = monotone_constraints
+
+
+    @property
+    def interaction_constraints(self):
+        """
+        A set of allowed column interactions.
+
+        Type: ``List[List[str]]``.
+        """
+        return self._parms.get("interaction_constraints")
+
+    @interaction_constraints.setter
+    def interaction_constraints(self, interaction_constraints):
+        assert_is_type(interaction_constraints, None, [[str]])
+        self._parms["interaction_constraints"] = interaction_constraints
 
 
     @property

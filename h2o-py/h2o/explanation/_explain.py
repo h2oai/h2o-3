@@ -889,17 +889,19 @@ def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order
             cnt = Counter(nf[column][np.isfinite(nf[column])])
             hist_x = np.array(list(cnt.keys()), dtype=float)
             hist_y = np.array(list(cnt.values()), dtype=float)
+            width = 1
         else:
             hist_y, hist_x = np.histogram(
                 mapping(nf[column][np.isfinite(nf[column])]),
                 bins=20)
             hist_x = hist_x[:-1].astype(float)
             hist_y = hist_y.astype(float)
+            width = hist_x[1] - hist_x[0]
         plt.bar(mapping(hist_x),
                 hist_y / hist_y.max() * ((ylims[1] - ylims[0]) / 1.618),  # ~ golden ratio
                 bottom=ylims[0],
                 align="center" if nf.isfactor(column) else "edge",
-                width=hist_x[1] - hist_x[0], color="gray", alpha=0.2)
+                width=width, color="gray", alpha=0.2)
     if nf.isfactor(column):
         plt.xticks(mapping(range(nf.nlevels(column))), nf.levels(column))
     plt.ylim(ylims)

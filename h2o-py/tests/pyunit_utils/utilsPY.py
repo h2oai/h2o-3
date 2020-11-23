@@ -386,7 +386,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
         out_pojo_csv = os.path.join(tmpdir, "out_pojo.csv")
         cp_sep = ";" if sys.platform == "win32" else ":"
         java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
-                    "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
+                    "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--decimal",
                     "--pojo", pojoname, "--input", in_csv, "--output", out_pojo_csv, "--separator", separator]
         if setInvNumNA:
             java_cmd.append("--setConvertInvalidNum")
@@ -405,17 +405,10 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
         assert hc == pc, "Expected the same number of cols, but got {0} and {1}".format(hc, pc)
 
         # Value
-        for r in range(hr):
-            hp = predictions[r, 0]
-            if equality == "numeric":
-                pp = float.fromhex(predictions2[r, 0])
-                assert abs(hp - pp) < 1e-4, \
-                    "Expected predictions to be the same (within 1e-4) for row %d, but got %r and %r" % (r, hp, pp)
-            elif equality == "class":
-                pp = predictions2[r, 0]
-                assert hp == pp, "Expected predictions to be the same for row %d, but got %r and %r" % (r, hp, pp)
-            else:
-                raise ValueError
+        if not(equality == "class"or equality == "numeric"):
+            raise ValueError
+        compare_frames_local(predictions, predictions2, prob=1, tol=1e-4) # faster frame compare
+
 
 def javamunge(assembly, pojoname, test, compile_only=False):
     """
@@ -3883,15 +3876,16 @@ def generatePandaEnumCols(pandaFtrain, cname, nrows):
     colLength = len(tempNames)
     newNames = ['a']*colLength
     newIndics = [0]*colLength
-    header = tempNames[0].split('.')[0]
-
-    for ind in range(colLength):
-        newIndics[ind] = int(tempNames[ind].split('.')[1][1:])
-    newIndics.sort()
-
-    for ind in range(colLength):
-        newNames[ind] = header+'.l'+str(newIndics[ind])  # generate correct order of names
-    ftemp = temp[newNames]
+    if "." in tempNames[0]:
+        header = tempNames[0].split('.')[0]
+        for ind in range(colLength):
+            newIndics[ind] = int(tempNames[ind].split('.')[1][1:])
+        newIndics.sort()
+        for ind in range(colLength):
+            newNames[ind] = header+'.l'+str(newIndics[ind])  # generate correct order of names
+        ftemp = temp[newNames]
+    else:
+        ftemp = temp
     ctemp = pd.concat([ftemp, zeroFrame], axis=1)
     return ctemp
 

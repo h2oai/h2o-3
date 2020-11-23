@@ -9,6 +9,8 @@ import water.util.PrettyPrint;
 import water.util.StringUtils;
 import water.util.UnsafeUtils;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
@@ -18,6 +20,8 @@ import static water.H2OConstants.MAX_STR_LEN;
 
 // An uncompressed chunk of data, supporting an append operation
 public class NewChunk extends Chunk {
+
+  private static final boolean DEBUG_SAFE_BUFX = H2O.getSysBoolProperty("debug.safe_bufx", false); 
 
   private static final int[] EXP10s = new int[Double.MAX_EXPONENT - Double.MIN_EXPONENT + 1];
   private static final double[] INV_POW10s = new double[EXP10s.length];
@@ -1479,6 +1483,9 @@ public class NewChunk extends Chunk {
   // Compute a compressed integer buffer
   private byte[] bufX( long bias, int scale, int off, int log ) {
     byte[] bs = MemoryManager.malloc1((_len <<log)+off);
+    if (DEBUG_SAFE_BUFX && log > 0) {
+      return bufX_safe(bs, bias, scale, off, log);
+    }
     int j = 0;
     for( int i=0; i< _len; i++ ) {
       long le = -bias;
@@ -1499,6 +1506,34 @@ public class NewChunk extends Chunk {
       case 2: UnsafeUtils.set4(bs, (i << 2) + off, (int) le); break;
       case 3: UnsafeUtils.set8(bs, (i << 3) + off, le); break;
       default: throw H2O.fail();
+      }
+    }
+    assert j == _sparseLen :"j = " + j + ", _sparseLen = " + _sparseLen;
+    return bs;
+  }
+
+  private byte[] bufX_safe( final byte[] bs, long bias, int scale, int off, int log ) {
+    assert log > 0;
+    ByteBuffer bb = ByteBuffer.wrap(bs, off, bs.length - off).order(ByteOrder.nativeOrder());
+    int j = 0;
+    for( int i=0; i< _len; i++ ) {
+      long le = -bias;
+      if(_id == null || _id.length == 0 || (j < _id.length && _id[j] == i)){
+        if( isNA2(j) ) {
+          le = NAS[log];
+        } else {
+          int x = (_xs.get(j)==Integer.MIN_VALUE+1 ? 0 : _xs.get(j))-scale;
+          le += x >= 0
+                  ? _ms.get(j)*PrettyPrint.pow10i( x)
+                  : _ms.get(j)/PrettyPrint.pow10i(-x);
+        }
+        ++j;
+      }
+      switch( log ) {
+        case 1: bb.putShort((short) le); break;
+        case 2: bb.putInt((int) le); break;
+        case 3: bb.putLong(le); break;
+        default: throw H2O.fail();
       }
     }
     assert j == _sparseLen :"j = " + j + ", _sparseLen = " + _sparseLen;

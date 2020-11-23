@@ -1,3 +1,10 @@
+def update_param(name, param):
+    if name == 'data_leakage_handling':
+        param['values'] = ["leave_one_out", "k_fold", "none", "LeaveOneOut", "KFold", "None"]
+        return param
+    return None  # param untouched
+
+
 extensions = dict(
     set_required_params="""
 args <- .verify_dataxy(training_frame, x, y)

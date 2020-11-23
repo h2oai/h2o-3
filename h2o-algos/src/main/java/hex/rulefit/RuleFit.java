@@ -85,6 +85,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
             initTreeParameters();
             initGLMParameters();
+            ignoreBadColumns(separateFeatureVecs(), true);
         }
         //   if (_train == null) return;
         // if (expensive && error_count() == 0) checkMemoryFootPrint();
@@ -181,7 +182,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             try {
                 // linearTrain = frame to be used as _train for GLM in 2., will be filled in 1.
                 Frame linearTrain = new Frame(Key.make("paths_frame" + _result));
-                
+                // store train frame without bad columns to pass it to tree model builders
+                Frame trainAdapted = new Frame(_train);
                 // 1. Rule generation
         
                 // get paths from tree models
@@ -189,6 +191,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 
                 // prepare rules
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.RULES.equals(_parms._model_type)) {
+                    DKV.put(trainAdapted._key, trainAdapted);
+                    treeParameters._train = trainAdapted._key;
                     long startAllTreesTime = System.nanoTime();
                     SharedTree<?, ?, ?>[] builders = ModelBuilderHelper.trainModelsParallel(
                             makeTreeModelBuilders(_parms._algorithm, depths), nTreeEnsemblesInParallel(depths.length));
@@ -198,7 +202,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                         SharedTreeModel<?, ?, ?> treeModel = builders[modelId].get();
                         long endModelTime = System.nanoTime() - startModelTime;
                         LOG.info("Tree model n." + modelId + " trained in " + ((double)endModelTime) / 1E9 + "s.");
-                        rulesList.addAll(Rule.extractRulesListFromModel(treeModel, modelId));
+                        rulesList.addAll(Rule.extractRulesListFromModel(treeModel, modelId, nclasses()));
                         treeModel.delete();
                     }
                     long endAllTreesTime = System.nanoTime() - startAllTreesTime;
@@ -241,6 +245,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 DKV.put(glmModel);
 
                 DKV.remove(linearTrain._key);
+                DKV.remove(trainAdapted._key);
                 
                 model = new RuleFitModel(dest(), _parms, new RuleFitModel.RuleFitOutput(RuleFit.this), glmModel, ruleEnsemble);
                 
@@ -379,11 +384,15 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
         double[] getIntercept(GLMModel glmModel) {
             HashMap<String, Double> glmCoefficients = glmModel.coefficients();
+            double[] intercept = nclasses() > 2 ? new double[nclasses()] : new double[1];
+            int i = 0;
             for (Map.Entry<String, Double> coefficient : glmCoefficients.entrySet()) {
-                if ("Intercept".equals(coefficient.getKey()))
-                    return new double[]{coefficient.getValue()};
+                if ("Intercept".equals(coefficient.getKey()) || coefficient.getKey().contains("Intercept_")) {
+                    intercept[i] = coefficient.getValue();
+                    i++;
+                }
             }
-            return new double[]{};
+            return intercept;
         }
 
 
@@ -391,7 +400,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             // extract variable-coefficient map (filter out intercept and zero betas)
             Map<String, Double> filteredRules = glmCoefficients.entrySet()
                     .stream()
-                    .filter(e -> !"Intercept".equals(e.getKey()) && 0 != e.getValue())
+                    .filter(e -> !("Intercept".equals(e.getKey()) || e.getKey().contains("Intercept_")) && 0 != e.getValue())
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             
             List<Rule> rules = new ArrayList<>();

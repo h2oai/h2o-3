@@ -46,6 +46,8 @@ public class GenericModelOutput extends Model.Output {
                 _variable_importances = convertVariableImportances(((SharedTreeModelAttributes) modelAttributes).getVariableImportances());
             } else if (modelAttributes instanceof DeepLearningModelAttributes) {
                 _variable_importances = convertVariableImportances(((DeepLearningModelAttributes) modelAttributes).getVariableImportances());
+            } else if (modelAttributes instanceof ModelAttributesGLM) {
+                _variable_importances = convertVariableImportances(((ModelAttributesGLM) modelAttributes).getVariableImportances());
             } else {
                 _variable_importances = null;
             }

@@ -6,13 +6,13 @@ import water.MemoryManager;
 import water.api.API;
 import water.api.schemas3.ModelOutputSchemaV3;
 import water.api.schemas3.ModelSchemaV3;
-
 import water.api.schemas3.TwoDimTableV3;
 import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
-import java.util.Comparator;
+
+import static water.util.ArrayUtils.sort;
 //import water.util.DocGen.HTML;
 
 public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLMParameters, GLMV3.GLMParametersV3, GLMOutput, GLMModelV3.GLMModelOutputV3> {
@@ -31,6 +31,9 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     @API(help="Standardized Coefficient Magnitudes")
     TwoDimTableV3 standardized_coefficient_magnitudes;
 
+    @API(help = "Variable Importances", direction = API.Direction.OUTPUT, level = API.Level.secondary)
+    TwoDimTableV3 variable_importances;
+
     @API(help="Lambda minimizing the objective value, only applicable with lambda search or when arrays of alpha and " +
             "lambdas are provided")
     double lambda_best;
@@ -44,6 +47,13 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     @API(help="Lambda best + 1 standard error. Only applicable with lambda search and cross-validation")
     double lambda_1se;
 
+    @API(help="Minimum lambda value calculated that may be used for lambda search.  Early-stop may happen and " +
+            "the minimum lambda value will not be used in this case.")
+    double lambda_min;
+
+    @API(help="Starting lambda value used when lambda search is enabled.")
+    double lambda_max;
+
     @API(help = "Dispersion parameter, only applicable to Tweedie family (input/output) and fractional Binomial (output only)")
     double dispersion;
 
@@ -51,6 +61,11 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       if(impl.get_global_beta_multinomial() == null)
         return this; // no coefificients yet
       String [] names = impl.coefficientNames().clone();
+      int len = names.length-1;
+      String [] names2 = new String[len]; // this one decides the length of standardized table length
+      int[] indices = new int[len];
+      for (int i = 0; i < indices.length; ++i)
+        indices[i] = i;
       // put intercept as the first
       String [] ns = ArrayUtils.append(new String[]{"Intercept"},Arrays.copyOf(names,names.length-1));
 
@@ -98,25 +113,8 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
             revertCoeffNames(cols2, n, coefficients_table_multinomials_with_class_names);
           }
           final double [] magnitudes = new double[betaNorm[0].length];
-          for(int i = 0; i < betaNorm.length; ++i) {
-            for (int j = 0; j < betaNorm[i].length; ++j) {
-              double d = betaNorm[i][j];
-              magnitudes[j] += d < 0 ? -d : d;
-            }
-          }
-          Integer [] indices = new Integer[magnitudes.length-1];
-          for(int i = 0; i < indices.length; ++i)
-            indices[i] = i;
-          Arrays.sort(indices, new Comparator<Integer>() {
-            @Override
-            public int compare(Integer o1, Integer o2) {
-              if(magnitudes[o1] < magnitudes[o2]) return +1;
-              if(magnitudes[o1] > magnitudes[o2]) return -1;
-              return 0;
-            }
-          });
-          int len = names.length-1;
-          String [] names2 = new String[len]; // this one decides the length of standardized table length
+          calculateVarimpMultinomial(magnitudes, indices, betaNorm);
+
           for(int i = 0; i < len; ++i)
             names2[i] = names[indices[i]];
           tdt = new TwoDimTable("Standardized Coefficient Magnitudes", "standardized coefficient magnitudes", names2, new String[]{"Coefficients", "Sign"}, new String[]{"double", "string"}, new String[]{"%5f", "%s"}, "names");
@@ -129,6 +127,16 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
         }
 
       return this;
+    }
+
+    public static void calculateVarimpMultinomial(double[] magnitudes, int[] indices, double[][] betaNorm) {
+      for (int i = 0; i < betaNorm.length; ++i) {
+        for (int j = 0; j < betaNorm[i].length; ++j) {
+          double d = betaNorm[i][j];
+          magnitudes[j] += d < 0 ? -d : d;
+        }
+      }
+      sort(indices, magnitudes, -1, -1);
     }
 
     public void revertCoeffNames(String[] colNames, int nclass, TwoDimTableV3 coeffs_table) {
@@ -174,8 +182,13 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
         random_coefficients_table = new TwoDimTableV3();
         random_coefficients_table.fillFromImpl(buildRandomCoefficients2DTable(impl.ubeta(), impl.randomcoefficientNames()));
       }
-      final double [] magnitudes;
       double [] beta = impl.beta();
+      final double [] magnitudes = new double[beta.length];
+      int len = magnitudes.length - 1;
+      int[] indices = new int[len];
+      for (int i = 0; i < indices.length; ++i)
+        indices[i] = i;
+
       if(beta == null) beta = MemoryManager.malloc8d(names.length);
       String [] colTypes = new String[]{"double"};
       String [] colFormats = new String[]{"%5f"};
@@ -216,22 +229,9 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
         }
       }
       coefficients_table.fillFromImpl(tdt);
-      if(impl.beta() != null) {
-        magnitudes = norm_beta.clone();
-        for (int i = 0; i < magnitudes.length; ++i)
-          if (magnitudes[i] < 0) magnitudes[i] *= -1;
-        Integer[] indices = new Integer[magnitudes.length - 1];
-        for (int i = 0; i < indices.length; ++i)
-          indices[i] = i;
-        Arrays.sort(indices, new Comparator<Integer>() {
-          @Override
-          public int compare(Integer o1, Integer o2) {
-            if (magnitudes[o1] < magnitudes[o2]) return +1;
-            if (magnitudes[o1] > magnitudes[o2]) return -1;
-            return 0;
-          }
-        });
-        int len = names.length-1;
+      if(impl.beta() != null) { // get varImp
+        calculateVarimpBase(magnitudes, indices, impl.getNormBeta());
+
         String[] names2 = new String[len];
         for (int i = 0; i < len; ++i)
           names2[i] = names[indices[i]];
@@ -246,6 +246,14 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       return this;
     }
   } // GLMModelOutputV2
+
+  public static void calculateVarimpBase(double[] magnitudes, int[] indices, double[] betaNorm) {
+    for (int i = 0; i < magnitudes.length; ++i) {
+      magnitudes[i] = (float) betaNorm[i];
+      if (magnitudes[i] < 0) magnitudes[i] *= -1;
+    }
+    sort(indices, magnitudes, -1, -1);
+  }
 
   public GLMV3.GLMParametersV3 createParametersSchema() { return new GLMV3.GLMParametersV3(); }
   public GLMModelOutputV3 createOutputSchema() { return new GLMModelOutputV3(); }

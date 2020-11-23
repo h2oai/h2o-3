@@ -17,6 +17,7 @@ import water.util.ArrayUtils;
 import water.util.VecUtils;
 
 import java.io.Serializable;
+import java.util.Optional;
 
 import static hex.tree.xgboost.XGBoostUtils.sumChunksLength;
 import static hex.tree.xgboost.matrix.MatrixFactoryUtils.setResponseWeightAndOffset;
@@ -72,7 +73,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
         final Vec weightVec = train.vec(parms._weights_column);
         final Vec offsetsVec = train.vec(parms._offset_column);
         final int[] nRowsByChunk = new int[chunks.length];
-        final long nRowsL = sumChunksLength(chunks, responseVec, weightVec, nRowsByChunk);
+        final long nRowsL = sumChunksLength(chunks, responseVec, Optional.ofNullable(weightVec), nRowsByChunk);
         if (nRowsL > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("XGBoost currently doesn't support datasets with more than " +
                 Integer.MAX_VALUE + " per node. " +

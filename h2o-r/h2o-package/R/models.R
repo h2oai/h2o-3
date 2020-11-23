@@ -373,7 +373,9 @@ NULL
                             else if (all(is.na(x))) NA
                             else paste0('"',h2o.getId(x),'"')
                           })
-      if (type == "character")
+      if (paramDef$type == "string[][]"){
+        paramValue <- .collapse.list.of.list.string(paramValue)
+      } else if (type == "character")
         paramValue <- .collapse.char(paramValue)
       else if (paramDef$type == "StringPair[]")
         paramValue <- .collapse(sapply(paramValue, .collapse.tuple.string))
@@ -393,6 +395,14 @@ NULL
 
 .collapse.tuple.string <- function(x) {
   .collapse.tuple(x, .escape.string)
+}
+
+.collapse.list.of.list.string <- function(x){
+  parts <- c()
+  for (i in x) {
+    parts <- c(parts, paste0("[", paste0(i, collapse = ","), "]"))
+  }
+  paste0("[", paste0(parts, collapse = ","), "]")
 }
 
 .collapse.tuple.key_value <- function(x) {
@@ -1972,18 +1982,6 @@ h2o.varimp <- function(object) {
   o <- object
   if( is(o, "H2OModel") ) {
     vi <- o@model$variable_importances
-    if( is.null(vi) && !is.null(object@model$standardized_coefficient_magnitudes)) { # may be glm
-      tvi <- object@model$standardized_coefficient_magnitudes
-      maxCoeff <- max(tvi$coefficients)
-      sumCoeff <- sum(tvi$coefficients)
-      scaledCoeff <- tvi$coefficients/maxCoeff
-      percentageC <- tvi$coefficients/sumCoeff
-      variable <- tvi$names
-      relative_importance <- tvi$coefficients
-      scaled_importance <- scaledCoeff
-      percentage <- percentageC
-      vi <- data.frame(variable, relative_importance, scaled_importance, percentage)
-      }  # no true variable importances, maybe glm coeffs? (return standardized table...)
     if( is.null(vi) ) {
       warning("This model doesn't have variable importances", call. = FALSE)
       return(invisible(NULL))
@@ -2086,6 +2084,63 @@ h2o.get_ntrees_actual <- function(object) {
         return(NULL)
     }
 }
+
+#' Feature interactions and importance, leaf statistics and split value histograms in a tabular form.
+#' Available for XGBoost and GBM.
+#'
+#' Metrics:
+#' Gain - Total gain of each feature or feature interaction.
+#' FScore - Amount of possible splits taken on a feature or feature interaction.
+#' wFScore - Amount of possible splits taken on a feature or feature interaction weighed by 
+#' the probability of the splits to take place.
+#' Average wFScore - wFScore divided by FScore.
+#' Average Gain - Gain divided by FScore.
+#' Expected Gain - Total gain of each feature or feature interaction weighed by the probability to gather the gain.
+#' Average Tree Index
+#' Average Tree Depth
+#'
+#' @param model A trained xgboost model.
+#' @param max_interaction_depth Upper bound for extracted feature interactions depth. Defaults to 100.
+#' @param max_tree_depth Upper bound for tree depth. Defaults to 100.
+#' @param max_deepening Upper bound for interaction start deepening (zero deepening => interactions 
+#' starting at root only). Defaults to -1.
+#'
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' boston <- h2o.importFile(
+#'        "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv",
+#'         destination_frame="boston"
+#'         )
+#' boston_xgb <- h2o.xgboost(training_frame = boston, y = "medv", seed = 1234)
+#' feature_interactions <- h2o.feature_interaction(boston_xgb)
+#' }
+#' @export
+h2o.feature_interaction <- function(model, max_interaction_depth = 100, max_tree_depth = 100, max_deepening = -1) {
+    o <- model
+    if (is(o, "H2OModel")) {
+        if (o@algorithm == "gbm" | o@algorithm == "xgboost"){
+            parms <- list()
+            parms$model_id <- model@model_id
+            parms$max_interaction_depth <- max_interaction_depth
+            parms$max_tree_depth <- max_tree_depth
+            parms$max_deepening <- max_deepening
+            
+            json <- .h2o.doSafePOST(urlSuffix = "FeatureInteraction", parms=parms)
+            source <- .h2o.fromJSON(jsonlite::fromJSON(json,simplifyDataFrame=FALSE))
+            
+            return(source$feature_interaction)
+        } else {
+            warning(paste0("No calculation available for this model"))
+            return(NULL)
+        }
+    } else {
+        warning(paste0("No calculation available for ", class(o)))
+        return(NULL)
+    }
+}
+
 
 #'
 #' Retrieve the respective weight matrix
