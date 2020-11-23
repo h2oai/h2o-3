@@ -1269,7 +1269,7 @@ class ModelBase(h2o_meta(Keyed)):
                         fig_plotted = self.__plot_1d_pdp(col, i, data, pps[i], fig, gxs, plot_stddev, row_index, target, include_na)
                     else:
                         fig_plotted = self.__plot_1d_pdp_multinomial(col, i, data, pps, data_index, fig, gxs, cm, 
-                                                                     plot_stddev, row_index, targets, include_na)
+                                                                     plot_stddev, row_index, targets)
                         data_index = data_index + len(targets)
             if fig_plotted:
                 fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
