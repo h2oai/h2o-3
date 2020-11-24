@@ -28,6 +28,8 @@ resource "google_compute_instance" "workspace" {
     enable-oslogin = "TRUE"
   }
   
+  
+  
   # Startup script in the server
   metadata_startup_script = file("${path.module}/startup.sh")
 }

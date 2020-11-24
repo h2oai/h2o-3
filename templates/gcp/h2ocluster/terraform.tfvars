@@ -1,0 +1,14 @@
+global_prefix = "h2o"
+
+gcp_project_id = "steamwithdataproc"
+gcp_project_region = "us-west1"
+gcp_project_zone = "us-west1-a"
+
+vpc_private_subnet_id = " https://www.googleapis.com/compute/v1/projects/steamwithdataproc/regions/us-west1/subnetworks/h2o-vpc-public-subnet"
+
+
+h2o_cluster_instance_count = "3"
+h2o_cluster_instance_machine_type = "e2-highmem-4"
+h2o_cluster_instance_boot_disk_image = "rhel-cloud/rhel-7"
+h2o_cluster_instance_boot_disk_type = "pd-ssd"
+h2o_cluster_instance_boot_disk_size  = 30
