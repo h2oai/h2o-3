@@ -44,9 +44,11 @@ def pyunit_mean_per_class_error():
     mpce = gbm.mean_per_class_error(train=True)
     assert( mpce == 0 )
     mpce = gbm.mean_per_class_error(valid=True)
-    assert(abs(mpce - 0.207142857143 ) < 1e-5)
+    # assert(abs(mpce - 0.207142857143 ) < 1e-5)
+    assert(abs(mpce - 0.407142857143 ) < 1e-5)
     mpce = gbm.mean_per_class_error(xval=True)
-    assert(abs(mpce - 0.350071715433 ) < 1e-5)
+    # assert(abs(mpce - 0.350071715433 ) < 1e-5)
+    assert(abs(mpce - 0.35127653471 ) < 1e-5)
 
 
 
