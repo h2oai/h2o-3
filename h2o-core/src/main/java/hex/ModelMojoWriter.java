@@ -116,7 +116,20 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     finishWritingTextFile();
   }
 
+  public void writeRectangularDoubleArray(double[][] array, String title) throws IOException {
+    assert null != array;
+    assert null != title;
+
+    writekv(title + "_size1", array.length);
+    writekv(title + "_size2", array.length > 0 ? array[0].length : 0);
+
+    writeDoubleArray(array, title);
+  }
+  
   public void writeDoubleArray(double[][] array, String title) throws IOException {
+    assert null != array;
+    assert null != title;
+    
     int totArraySize = 0;
     for (double[] row : array)
       totArraySize += row.length;

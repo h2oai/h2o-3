@@ -34,8 +34,8 @@ public class GamMojoReader extends ModelMojoReader<GamMojoModelBase> {
     _model._tweedieLinkPower = readkv("tweedie_link_power", 0.0);
     _model._betaCenterSizePerClass = readkv("beta center length per class", 0);
     if (_model._family.equals(DistributionFamily.multinomial) || _model._family.equals(ordinal)) {
-      _model._beta_multinomial_no_center = read2DArray("beta_multinomial", _model._nclasses, _model._betaSizePerClass);
-      _model._beta_multinomial_center = read2DArray("beta_multinomial_centering", _model._nclasses, 
+      _model._beta_multinomial_no_center = readRectangularDoubleArray("beta_multinomial", _model._nclasses, _model._betaSizePerClass);
+      _model._beta_multinomial_center = readRectangularDoubleArray("beta_multinomial_centering", _model._nclasses, 
               _model._betaCenterSizePerClass);
     } else {
       _model._beta_no_center = readkv("beta");
@@ -58,10 +58,10 @@ public class GamMojoReader extends ModelMojoReader<GamMojoModelBase> {
     for (int gInd = 0; gInd < num_gam_columns; gInd++) {
       int num_knots = _model._num_knots[gInd];
       _model._binvD[gInd] = new double[num_knots-2][num_knots];
-      _model._binvD[gInd] = read2DArray(_model._gam_columns[gInd]+"_binvD", _model._binvD[gInd].length, 
+      _model._binvD[gInd] = readRectangularDoubleArray(_model._gam_columns[gInd]+"_binvD", _model._binvD[gInd].length, 
               _model._binvD[gInd][0].length);
       _model._zTranspose[gInd] = new double[num_knots-1][num_knots];
-      _model._zTranspose[gInd] = read2DArray(_model._gam_columns[gInd]+"_zTranspose", 
+      _model._zTranspose[gInd] = readRectangularDoubleArray(_model._gam_columns[gInd]+"_zTranspose", 
               _model._zTranspose[gInd].length, _model._zTranspose[gInd][0].length);
       _model._gamColNames[gInd] = readStringArrays(num_knots,"gamColNames_"+_model._gam_columns[gInd]);
       _model._gamColNamesCenter[gInd] = readStringArrays(num_knots-1,"gamColNamesCenter_"+_model._gam_columns[gInd]);

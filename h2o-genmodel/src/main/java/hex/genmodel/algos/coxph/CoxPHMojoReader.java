@@ -14,8 +14,8 @@ public class CoxPHMojoReader extends ModelMojoReader<CoxPHMojoModel> {
 
   @Override
   protected void readModelData() throws IOException {
-    _model._x_mean_cat = readkv2D_doubles("x_mean_cat");
-    _model._x_mean_num = readkv2D_doubles("x_mean_num");
+    _model._x_mean_cat = readRectangularDoubleArray("x_mean_cat");
+    _model._x_mean_num = readRectangularDoubleArray("x_mean_num");
     _model._coef = readkv("coef");
     _model._strata = readStrata();
     _model._strata_len = readStrataLen();
@@ -51,14 +51,6 @@ public class CoxPHMojoReader extends ModelMojoReader<CoxPHMojoModel> {
     }
   }
 
-  private double[][] readkv2D_doubles(String keyPrefix) throws IOException {
-    assert null != keyPrefix;
-    
-    final int size1 = readkv(keyPrefix + "_size1");
-    final int size2 = readkv(keyPrefix + "_size2");
-    
-    return read2DArray(keyPrefix, size1, size2);
-  }
 
   @Override
   protected CoxPHMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {

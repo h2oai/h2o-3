@@ -25,12 +25,8 @@ public class CoxPHMojoWriter extends ModelMojoWriter<CoxPHModel, CoxPHModel.CoxP
 
   @Override
   protected void writeModelData() throws IOException {
-    writekv("x_mean_cat_size1", model._output._x_mean_cat.length);
-    writekv("x_mean_cat_size2", model._output._x_mean_cat.length > 0 ? model._output._x_mean_cat[0].length : 0);
-    writeDoubleArray(model._output._x_mean_cat, "x_mean_cat");
-    writekv("x_mean_num_size1", model._output._x_mean_num.length);
-    writekv("x_mean_num_size2", model._output._x_mean_num.length > 0 ? model._output._x_mean_num[0].length : 0);
-    writeDoubleArray(model._output._x_mean_num, "x_mean_num");
+    writeRectangularDoubleArray(model._output._x_mean_cat, "x_mean_cat");
+    writeRectangularDoubleArray(model._output._x_mean_num, "x_mean_num");
     writekv("coef", model._output._coef);
     writeStrata();
     writeCoefIndexes();
