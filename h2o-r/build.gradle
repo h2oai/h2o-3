@@ -15,13 +15,16 @@ def getOS() {
     return os
 }
 
-def editConnectionSource(String packageVersion, String startCommand, String startDocumentation) {
+def editConnectionSource(String packageVersion) {
     File connection = new File([T, "h2o-package", "R", "connection.R"].join(File.separator))
-    File connectionNew = new File([T, "build", packageVersion, "R", "connection.R"].join(File.separator))
+    File connectionNew = new File([T, "build", "h2o-package-" + packageVersion, "R", "connection.R"].join(File.separator))
+
+    String startCommand = new File([T, "templates", packageVersion, SUBST_START_COMMAND + ".txt"].join(File.separator)).text
+    String startDocumentation = new File([T, "templates", packageVersion, SUBST_START_DOCUMENTATION + ".txt"].join(File.separator)).text
 
     def connectionReplaced = connection.text
-            .replaceAll("SUBST_START_COMMAND", startCommand)
-            .replaceAll("SUBST_START_DOCUMENTATION", startDocumentation)
+            .replaceAll(SUBST_START_COMMAND, startCommand)
+            .replaceAll(SUBST_START_DOCUMENTATION, startDocumentation)
     connectionNew.write(connectionReplaced)
 }
 
@@ -38,6 +41,8 @@ ext {
     REPO_PATH_WIN      = ["bin", "windows", "contrib", "3.1"].join(File.separator)
     REPO_PATH_MAC      = ["bin", "macosx",  "contrib", "3.1"].join(File.separator)
     H2O_R_SOURCE_FILE  = "h2o_${PROJECT_VERSION}.tar.gz"
+    SUBST_START_COMMAND = "SUBST_START_COMMAND"
+    SUBST_START_DOCUMENTATION = "SUBST_START_DOCUMENTATION"
 }
 
 task untar {
@@ -170,9 +175,7 @@ task cpMainPKG {
             into "${buildDir}/h2o-package-main"
         }
 
-        editConnectionSource("h2o-package-main", "h2o.init()", "After starting H2O, you can use the Web UI" +
-                " at http://localhost:54321\\\\n\",\n" +
-                "    \"For more information visit https://docs.h2o.ai\\\\n")
+        editConnectionSource("main")
     }
 }
 
@@ -199,7 +202,7 @@ task cpClientPKG {
             into "${buildDir}/h2o-package-client/inst/java"
         }
 
-        editConnectionSource("h2o-package-client", "h2o.connect()", "")
+        editConnectionSource("client")
     }
 }
 

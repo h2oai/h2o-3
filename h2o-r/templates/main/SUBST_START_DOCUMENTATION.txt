@@ -1,0 +1,2 @@
+After starting H2O, you can use the Web UI at http://localhost:54321\\n",
+    "For more information visit https://docs.h2o.ai\\n
