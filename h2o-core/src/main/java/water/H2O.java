@@ -1273,7 +1273,7 @@ final public class H2O {
     Log.fatal(msg);
     if (null != cause) Log.fatal(cause);
     Log.fatal("Stacktrace: ");
-    Log.fatal(Arrays.toString(Thread.currentThread().getStackTrace()));
+    Log.fatal(new Exception(msg));
 
     // H2O fail() exists because of coding errors - but what if usage of fail() was itself a coding error?
     // Property "suppress.shutdown.on.failure" can be used in the case when someone is seeing shutdowns on production
