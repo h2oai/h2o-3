@@ -28,7 +28,7 @@ public class MultinomialAUC extends Iced {
         _default_auc_type = type;
         _domain = domain;
         int domainLength = _domain.length;
-        _calculateAuc = !_default_auc_type.equals(MultinomialAucType.AUTO) && !_default_auc_type.equals(MultinomialAucType.NONE) && domainLength < MAX_AUC_CLASSES;
+        _calculateAuc = !_default_auc_type.equals(MultinomialAucType.AUTO) && !_default_auc_type.equals(MultinomialAucType.NONE) && domainLength <= MAX_AUC_CLASSES;
         if(_calculateAuc) {
             _ovoAucs = new PairwiseAUC[(domainLength * domainLength - domainLength) / 2];
             _ovrAucs = new SimpleAUC[domainLength];
