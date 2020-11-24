@@ -1365,7 +1365,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             _toDelete,
             catEncoded
     );
-  }
+  } 
 
   /**
    * @param test Frame to be adapted
@@ -1609,25 +1609,36 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, destination_key, j, true);
   }
   
+<<<<<<< HEAD
   /**
+=======
+   /**
+>>>>>>> Update Model.java
    * Calculate Permutation Variable Importance by shuffling one feature at a time
    * The user must call this method after training. 
    * @param fr training frame
    * @param metric loss function metric 
    *               if metric not specified mse is default
    * @return TwoDimTable of Double values having the variables as columns
+<<<<<<< HEAD
    *          and as rows their Relative, Scaled and percentage importance
+=======
+   * and as rows their Relative, Scaled and percentage importance
+>>>>>>> Update Model.java
    */
   public TwoDimTable getPermVarImpTable(Frame fr, String metric){
     if (this._output._scoring_history == null )
       throw new IllegalArgumentException("Model " + this._key + "must be scored!");
     PermutationVarImp pvi = new PermutationVarImp(this, fr);
     return pvi.getPermutationVarImp(metric);
+<<<<<<< HEAD
   }
   
   public TwoDimTable getPermVarImpTableOat(Frame fr, Frame scored){
     PermutationVarImp fi = new PermutationVarImp(this, fr);
     return fi.oat();
+=======
+>>>>>>> Update Model.java
   }
   
   /**
