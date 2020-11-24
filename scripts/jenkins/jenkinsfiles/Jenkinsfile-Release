@@ -463,9 +463,10 @@ EOF
                     if (params.BUILD_CONDA) {
 
                         final def condaS3Dir = "${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/Conda"
+                        final def pyVersions = pipelineContext.getBuildConfig().PYTHON_VERSIONS.findAll { Double.parseDouble(it) >= 3.6 }
 
                         // build for all Python versions
-                        for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
+                        for (pyVersion in pyVersions) {
                             def uploadToCondaStageName = "Build Py${pyVersion} Conda Packages"
                             stage(uploadToCondaStageName) {
                                 withCredentials([usernamePassword(credentialsId: 'anaconda-credentials', usernameVariable: 'ANACONDA_USERNAME', passwordVariable: 'ANACONDA_PASSWORD')]) {
@@ -517,7 +518,7 @@ EOF
                             }
                         }
 
-                        for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
+                        for (pyVersion in pyVersions) {
                             def checkCondaOfflineStageName = "Check Py${pyVersion} Conda Package Offline"
                             def condaPkgPyVersion = pyVersion.replaceAll('\\.','')
                             def pkgName = "h2o-${env.PROJECT_VERSION}-py${condaPkgPyVersion}*.tar.bz2"
@@ -549,7 +550,7 @@ EOF
 
                         // check that Conda package for each Python version reports correct H2O version
                         if (params.UPLOAD_TO_ANACONDA && !params.TEST_RELEASE) {
-                            for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
+                            for (pyVersion in pyVersions) {
                                 def checkCondaStageName = "Check Py${pyVersion} Conda Package"
                                 stage(checkCondaStageName) {
                                     pipelineContext.getBuildSummary().addStageSummary(this, checkCondaStageName, env.BUILD_NUMBER_DIR)
