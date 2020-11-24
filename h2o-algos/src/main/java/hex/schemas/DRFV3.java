@@ -58,7 +58,7 @@ public class DRFV3 extends SharedTreeV3<DRF, DRFV3, DRFV3.DRFParametersV3> {
                 "export_checkpoints_dir",
                 "check_constant_response",
                 "gainslift_bins",
-                "multinomial_auc_type"
+                "auc_type"
         };
 
         // Input fields

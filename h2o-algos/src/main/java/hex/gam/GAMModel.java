@@ -54,7 +54,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     }
     GLMModel.GLMWeightsFun glmf = new GLMModel.GLMWeightsFun(_parms._family, _parms._link, _parms._tweedie_variance_power,
             _parms._tweedie_link_power, _parms._theta);
-    return new MetricBuilderGAM(domain, _ymu, glmf, _rank, true, _parms._intercept, _nclass);
+    return new MetricBuilderGAM(domain, _ymu, glmf, _rank, true, _parms._intercept, _nclass, _parms._auc_type);
   }
 
   public GAMModel(Key<GAMModel> selfKey, GAMParameters parms, GAMModelOutput output) {

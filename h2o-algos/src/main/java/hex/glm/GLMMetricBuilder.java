@@ -39,7 +39,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
   final boolean _intercept;
   private final double [] _ymu;
   final boolean _computeMetrics;
-  public GLMMetricBuilder(String[] domain, double [] ymu, GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept){
+  public GLMMetricBuilder(String[] domain, double [] ymu, GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept, MultinomialAucType aucType){
     super(domain == null?0:domain.length, domain);
     _glmf = glmf;
     _rank = rank;
@@ -57,7 +57,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
             _metricBuilder = new MetricBuilderBinomial(domain);
             break;
           case multinomial:
-            _metricBuilder = new MetricBuilderMultinomial(domain.length, domain);
+            _metricBuilder = new MetricBuilderMultinomial(domain.length, domain, aucType);
             ((MetricBuilderMultinomial) _metricBuilder)._priorDistribution = ymu;
             break;
           case ordinal:

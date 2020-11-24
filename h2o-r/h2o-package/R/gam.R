@@ -119,7 +119,7 @@
 #' @param bs Basis function type for each gam predictors, 0 for cr
 #' @param scale Smoothing parameter for gam predictors
 #' @param keep_gam_cols \code{Logical}. Save keys of model matrix Defaults to FALSE.
-#' @param multinomial_auc_type Set default multinomial AUC type. Must be one of: "AUTO", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
+#' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @examples
 #' \dontrun{
@@ -195,7 +195,7 @@ h2o.gam <- function(x,
                     bs = NULL,
                     scale = NULL,
                     keep_gam_cols = FALSE,
-                    multinomial_auc_type = c("AUTO", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))
+                    auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -348,8 +348,8 @@ h2o.gam <- function(x,
     parms$scale <- scale
   if (!missing(keep_gam_cols))
     parms$keep_gam_cols <- keep_gam_cols
-  if (!missing(multinomial_auc_type))
-    parms$multinomial_auc_type <- multinomial_auc_type
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -438,7 +438,7 @@ h2o.gam <- function(x,
                                     bs = NULL,
                                     scale = NULL,
                                     keep_gam_cols = FALSE,
-                                    multinomial_auc_type = c("AUTO", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
+                                    auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -596,8 +596,8 @@ h2o.gam <- function(x,
     parms$scale <- scale
   if (!missing(keep_gam_cols))
     parms$keep_gam_cols <- keep_gam_cols
-  if (!missing(multinomial_auc_type))
-    parms$multinomial_auc_type <- multinomial_auc_type
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is

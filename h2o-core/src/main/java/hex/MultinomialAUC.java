@@ -1,6 +1,7 @@
 package hex;
 
 import water.Iced;
+import water.util.Log;
 import water.util.TwoDimTable;
 
 public class MultinomialAUC extends Iced {
@@ -8,7 +9,7 @@ public class MultinomialAUC extends Iced {
     public PairwiseAUC[] _ovoAucs;
     public final MultinomialAucType _default_auc_type;
     public final String[] _domain;
-    public final static int MAX_DOMAIN_SIZE = 100;
+    public static final int MAX_AUC_CLASSES = 50;
     public final boolean _calculateAuc;
 
     // keep this final aggregate value outside to save time
@@ -27,7 +28,8 @@ public class MultinomialAUC extends Iced {
         _default_auc_type = type;
         _domain = domain;
         int domainLength = _domain.length;
-        if(domainLength < MAX_DOMAIN_SIZE) {
+        _calculateAuc = !_default_auc_type.equals(MultinomialAucType.AUTO) && !_default_auc_type.equals(MultinomialAucType.NONE) && domainLength < MAX_AUC_CLASSES;
+        if(_calculateAuc) {
             _ovoAucs = new PairwiseAUC[(domainLength * domainLength - domainLength) / 2];
             _ovrAucs = new SimpleAUC[domainLength];
             int aucsIndex = 0;
@@ -63,7 +65,6 @@ public class MultinomialAUC extends Iced {
             _weightedOvoAucPr = computeOvoWeightedAuc(true);
             _macroOvrAucPr = computeOvrMacroAuc(true);
             _weightedOvrAucPr = computeOvrWeightedAuc(true);
-            _calculateAuc = true;
         } else { // else no result for multinomial AUC - memory issue
             _macroOvoAuc = Double.NaN;
             _weightedOvoAuc = Double.NaN;
@@ -74,14 +75,13 @@ public class MultinomialAUC extends Iced {
             _weightedOvoAucPr = Double.NaN;
             _macroOvrAucPr = Double.NaN;
             _weightedOvrAucPr = Double.NaN;
-            _calculateAuc = false;
         }
     }
 
     public MultinomialAUC(TwoDimTable aucTable, TwoDimTable aucprTable, String[] domain, MultinomialAucType type){
         _default_auc_type = type;
         _domain = domain;
-        if(_domain.length < MAX_DOMAIN_SIZE) {
+        if(_domain.length < MAX_AUC_CLASSES) {
             int domainLength = _domain.length;
             _ovoAucs = new PairwiseAUC[(domainLength * domainLength - domainLength) / 2];
             _ovrAucs = new SimpleAUC[domainLength];
@@ -124,8 +124,7 @@ public class MultinomialAUC extends Iced {
             _calculateAuc = false;
         }
     }
-
-
+    
     public double auc() {
         switch (_default_auc_type) {
             case MACRO_OVR:
@@ -134,8 +133,10 @@ public class MultinomialAUC extends Iced {
                 return getMacroOvoAuc();
             case WEIGHTED_OVO:
                 return getWeightedOvoAuc();
-            default:
+            case WEIGHTED_OVR:
                 return getWeightedOvrAuc();
+            default: 
+                return Double.NaN;
         }
     }
 

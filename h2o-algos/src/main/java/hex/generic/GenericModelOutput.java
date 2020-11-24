@@ -119,7 +119,7 @@ public class GenericModelOutput extends Model.Output {
                             glmMultinomial._mean_per_class_error, glmMultinomial._nullDegressOfFreedom, glmMultinomial._residualDegressOfFreedom,
                             glmMultinomial._resDev, glmMultinomial._nullDev, glmMultinomial._AIC, convertTable(modelAttributesGLM._coefficients_table),
                             glmMultinomial._r2, convertTable(glmMultinomial._multinomial_auc), convertTable(glmMultinomial._multinomial_aucpr),
-                            MultinomialAucType.valueOf((String)modelAttributes.getParameterValueByName("multinomial_auc_type")), glmMultinomial._description);
+                            MultinomialAucType.valueOf((String)modelAttributes.getParameterValueByName("auc_type")), glmMultinomial._description);
                 } else {
                     final MojoModelMetricsMultinomial multinomial = (MojoModelMetricsMultinomial) mojoMetrics;
                     return new ModelMetricsMultinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
@@ -127,7 +127,7 @@ public class GenericModelOutput extends Model.Output {
                             convertTable(multinomial._confusion_matrix), convertTable(multinomial._hit_ratios),
                             multinomial._logloss, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),
                             multinomial._mean_per_class_error, multinomial._r2, convertTable(multinomial._multinomial_auc), convertTable(multinomial._multinomial_aucpr),
-                            MultinomialAucType.valueOf((String)modelAttributes.getParameterValueByName("multinomial_auc_type")), multinomial._description);
+                            MultinomialAucType.valueOf((String)modelAttributes.getParameterValueByName("auc_type")), multinomial._description);
                 }
             case Regression:
                 assert mojoMetrics instanceof MojoModelMetricsRegression;

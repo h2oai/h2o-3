@@ -88,7 +88,7 @@
 #'        column is a constant value.If disabled, then model will train regardless of the response column being a
 #'        constant value or not. Defaults to TRUE.
 #' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
-#' @param multinomial_auc_type Set default multinomial AUC type. Must be one of: "AUTO", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
+#' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
@@ -162,7 +162,7 @@ h2o.randomForest <- function(x,
                              export_checkpoints_dir = NULL,
                              check_constant_response = TRUE,
                              gainslift_bins = -1,
-                             multinomial_auc_type = c("AUTO", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
+                             auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                              verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -277,8 +277,8 @@ h2o.randomForest <- function(x,
     parms$check_constant_response <- check_constant_response
   if (!missing(gainslift_bins))
     parms$gainslift_bins <- gainslift_bins
-  if (!missing(multinomial_auc_type))
-    parms$multinomial_auc_type <- multinomial_auc_type
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   if (!missing(distribution)) {
     warning("Argument distribution is deprecated and has no use for Random Forest.")
@@ -341,7 +341,7 @@ h2o.randomForest <- function(x,
                                              export_checkpoints_dir = NULL,
                                              check_constant_response = TRUE,
                                              gainslift_bins = -1,
-                                             multinomial_auc_type = c("AUTO", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
+                                             auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                              segment_columns = NULL,
                                              segment_models_id = NULL,
                                              parallelism = 1)
@@ -460,8 +460,8 @@ h2o.randomForest <- function(x,
     parms$check_constant_response <- check_constant_response
   if (!missing(gainslift_bins))
     parms$gainslift_bins <- gainslift_bins
-  if (!missing(multinomial_auc_type))
-    parms$multinomial_auc_type <- multinomial_auc_type
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   if (!missing(distribution)) {
     warning("Argument distribution is deprecated and has no use for Random Forest.")

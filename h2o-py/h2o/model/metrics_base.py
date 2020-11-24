@@ -171,11 +171,11 @@ class MetricsBase(h2o_meta()):
             if self._metric_json["multinomial_auc_table"] is not None:
                 self._metric_json["multinomial_auc_table"].show()
             else:
-                print("Multinomial auc values: Table is not computed due to domain size.")
+                print("Multinomial auc values: Table is not computed because it is disabled or due to domain size (maximum is 50 domains).")
             if self._metric_json["multinomial_aucpr_table"] is not None:
                 self._metric_json["multinomial_aucpr_table"].show()
             else:
-                print("Multinomial auc_pr values: Table is not computed due to domain size.")
+                print("Multinomial auc_pr values: Table is not computed because it is disabled or due to domain size (maximum is 50 domains).")
         if metric_type in types_w_anomaly:
             print("Anomaly Score: " + str(self.mean_score()))
             print("Normalized Anomaly Score: " + str(self.mean_normalized_score()))
@@ -762,7 +762,7 @@ class H2OMultinomialModelMetrics(MetricsBase):
         if self._metric_json['multinomial_auc_table'] is not None:
             return self._metric_json['multinomial_auc_table']
         else:
-            return "Table is not computed due to domain size."
+            return "Table is not computed because it is disabled or due to domain size (maximum is 50 domains)."
 
     def multinomial_aucpr_table(self):
         """Retrieve the multinomial PR AUC values.
@@ -787,7 +787,7 @@ class H2OMultinomialModelMetrics(MetricsBase):
         if self._metric_json['multinomial_aucpr_table'] is not None:
             return self._metric_json['multinomial_aucpr_table']
         else:
-            return "Table is not computed due to domain size."
+            return "Table is not computed because it is disabled or due to domain size (maximum is 50 domains)."
 
 
 class H2OOrdinalModelMetrics(MetricsBase):

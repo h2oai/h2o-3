@@ -41,8 +41,7 @@ public class ModelAdaptTest extends TestUtil {
     Frame tst = parse_test_file("smalldata/junit/mixcat_test.csv");
     Frame adapt = new Frame(tst);
     String[] warns = am.adaptTestForTrain(adapt,true, true);
-
-    System.out.println(warns.toString());
+    
     assertTrue(ArrayUtils.find(warns,"Test/Validation dataset column 'Feature_1' has levels not trained on: [\"D\"]")!= -1);
     assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing column 'Const': substituting in a column of NaN") != -1);
     assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing column 'Useless': substituting in a column of NaN") != -1);

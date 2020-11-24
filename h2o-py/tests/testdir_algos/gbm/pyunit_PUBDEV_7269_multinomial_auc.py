@@ -8,6 +8,7 @@ from sklearn.metrics import roc_auc_score
 
 
 def multinomial_auc_prostate_gbm():
+    h2o.rapids('(setproperty "sys.ai.h2o.auc.maxClasses" "10")')
     data = h2o.import_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     response_col = "GLEASON"
     data[response_col] = data[response_col].asfactor()
@@ -16,7 +17,7 @@ def multinomial_auc_prostate_gbm():
     distribution = "multinomial"
 
     # train model
-    gbm = H2OGradientBoostingEstimator(ntrees=1, max_depth=2, nfolds=3, distribution=distribution, multinomial_auc_type="AUTO")
+    gbm = H2OGradientBoostingEstimator(ntrees=1, max_depth=2, nfolds=3, distribution=distribution, auc_type="WEIGHTED_OVR")
     gbm.train(x=predictors, y=response_col, training_frame=data)
 
     gbm.show()
@@ -69,8 +70,8 @@ def multinomial_auc_prostate_gbm():
     assert abs(h2o_ovo_macro_auc - sklearn_ovo_macro_auc) < precision, "sklearn vs. h2o ovo macro: "+str(sklearn_ovo_macro_auc)+" != "+str(h2o_ovo_macro_auc)
     assert abs(h2o_ovo_weighted_auc - sklearn_ovo_weighted_auc) < precision, "sklearn vs. h2o ovo weighted: "+str(sklearn_ovo_weighted_auc)+" != "+str(h2o_ovo_weighted_auc)
 
-    # set multinomial_auc_type 
-    gbm = H2OGradientBoostingEstimator(ntrees=1, max_depth=2, nfolds=3, distribution=distribution, multinomial_auc_type="MACRO_OVR")
+    # set auc_type 
+    gbm = H2OGradientBoostingEstimator(ntrees=1, max_depth=2, nfolds=3, distribution=distribution, auc_type="MACRO_OVR")
     gbm.train(x=predictors, y=response_col, training_frame=data, validation_frame=data)
 
     h2o_auc_table = gbm.multinomial_auc_table(data)
@@ -87,6 +88,7 @@ def multinomial_auc_prostate_gbm():
     
 
 def multinomial_auc_cars_gbm():
+    h2o.rapids('(setproperty "sys.ai.h2o.auc.maxClasses" "10")')
     data = h2o.import_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     response_col = "cylinders"
     data[response_col] = data[response_col].asfactor()
@@ -95,7 +97,7 @@ def multinomial_auc_cars_gbm():
     distribution = "multinomial"
     
     # train model
-    gbm = H2OGradientBoostingEstimator(ntrees=1, max_depth=2, nfolds=3, distribution=distribution, multinomial_auc_type="AUTO")
+    gbm = H2OGradientBoostingEstimator(ntrees=1, max_depth=2, nfolds=3, distribution=distribution, auc_type="WEIGHTED_OVR")
     gbm.train(x=predictors, y=response_col, training_frame=data, validation_frame=data)
     
     gbm.show()
@@ -148,8 +150,8 @@ def multinomial_auc_cars_gbm():
     assert abs(h2o_ovo_macro_auc - sklearn_ovo_macro_auc) < precision, "sklearn vs. h2o ovo macro: "+str(sklearn_ovo_macro_auc)+" != "+str(h2o_ovo_macro_auc)
     assert abs(h2o_ovo_weighted_auc - sklearn_ovo_weighted_auc) < precision, "sklearn vs. h2o ovo weighted: "+str(sklearn_ovo_weighted_auc)+" != "+str(h2o_ovo_weighted_auc)
     
-    # set multinomial_auc_type 
-    gbm = H2OGradientBoostingEstimator(ntrees=1, max_depth=2, nfolds=3, distribution=distribution, multinomial_auc_type="MACRO_OVR")
+    # set auc_type 
+    gbm = H2OGradientBoostingEstimator(ntrees=1, max_depth=2, nfolds=3, distribution=distribution, auc_type="MACRO_OVR")
     gbm.train(x=predictors, y=response_col, training_frame=data)
 
     h2o_auc_table = gbm.multinomial_auc_table(data)
@@ -163,7 +165,7 @@ def multinomial_auc_cars_gbm():
 
     print("default vs. table AUC "+str(h2o_ovr_macro_auc)+" "+str(h2o_default_auc))
     print("default vs. table PR AUC "+str(h2o_ovr_macro_aucpr)+" "+str(h2o_default_aucpr))
-    
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(multinomial_auc_prostate_gbm)

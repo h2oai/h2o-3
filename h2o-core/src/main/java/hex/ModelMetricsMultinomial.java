@@ -8,6 +8,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.MathUtils;
 import water.util.TwoDimTable;
 
@@ -133,19 +134,20 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
    * Build a Multinomial ModelMetrics object from per-class probabilities (in Frame preds - no labels!), from actual labels, and a given domain for all possible labels (maybe more than what's in labels)
    * @param perClassProbs Frame containing predicted per-class probabilities (and no predicted labels)
    * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
+   * @param aucType Type of multinomial AUC/AUCPR calculation, if NONE is set, multinomila AUC and AUCPR will not be computed           
    * @return ModelMetrics object
    */
-  static public ModelMetricsMultinomial make(Frame perClassProbs, Vec actualLabels) {
+  static public ModelMetricsMultinomial make(Frame perClassProbs, Vec actualLabels, MultinomialAucType aucType) {
     String[] names = perClassProbs.names();
     String[] label = actualLabels.domain();
     String[] union = ArrayUtils.union(names, label, true);
     if (union.length == names.length + label.length)
       throw new IllegalArgumentException("Column names of per-class-probabilities and categorical domain of actual labels have no common values!");
-    return make(perClassProbs, actualLabels, perClassProbs.names());
+    return make(perClassProbs, actualLabels, perClassProbs.names(), aucType);
   }
 
-  static public ModelMetricsMultinomial make(Frame perClassProbs, Vec actualLabels, String[] domain) {
-    return make(perClassProbs, actualLabels, null, domain);
+  static public ModelMetricsMultinomial make(Frame perClassProbs, Vec actualLabels, String[] domain, MultinomialAucType aucType) {
+    return make(perClassProbs, actualLabels, null, domain, aucType);
   }
 
   /**
@@ -154,9 +156,10 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
    * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
    * @param weights A Vec containing the observation weights.
    * @param domain Ordered list of factor levels for which the probabilities are given (perClassProbs[i] are the per-observation probabilities for belonging to class domain[i])
+   * @param aucType Type of multinomial AUC/AUCPR calculation, if NONE is set, multinomila AUC and AUCPR will not be computed           
    * @return ModelMetrics object
    */
-  static public ModelMetricsMultinomial make(Frame perClassProbs, Vec actualLabels, Vec weights, String[] domain) {
+  static public ModelMetricsMultinomial make(Frame perClassProbs, Vec actualLabels, Vec weights, String[] domain, MultinomialAucType aucType) {
     Scope.enter();
     Vec labels = actualLabels.toCategoricalVec();
     if (labels == null || perClassProbs == null)
@@ -179,7 +182,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     if (weights != null) {
       fr.add("weights", weights);
     }
-    MetricBuilderMultinomial mb = new MultinomialMetrics((labels.domain())).doAll(fr)._mb;
+    MetricBuilderMultinomial mb = new MultinomialMetrics((labels.domain()),aucType).doAll(fr)._mb;
     labels.remove();
     ModelMetricsMultinomial mm = (ModelMetricsMultinomial)mb.makeModelMetrics(null, fr, null, null);
     mm._description = "Computed on user-given predictions and labels.";
@@ -191,14 +194,17 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   // and the actual label as the (N+1)-th column with optional weights column at the end of the Frame
   private static class MultinomialMetrics extends MRTask<MultinomialMetrics> {
     private final String[] _domain;
+    private final MultinomialAucType _aucType;
     private MetricBuilderMultinomial _mb;
 
-    MultinomialMetrics(String[] domain) { 
+    MultinomialMetrics(String[] domain, MultinomialAucType aucType) { 
       _domain = domain;
+      _aucType = aucType;
+      
     }
 
     @Override public void map(Chunk[] chks) {
-      _mb = new MetricBuilderMultinomial(_domain.length, _domain);
+      _mb = new MetricBuilderMultinomial(_domain.length, _domain, _aucType);
       Chunk actuals = chks[_domain.length];
       Chunk weights = chks.length == _domain.length + 2 ? chks[_domain.length + 1] : null;
       double[] ds = new double[_domain.length + 1];
@@ -225,14 +231,15 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     AUC2.AUCBuilder[/*nclasses*/][/*nclasses*/] _ovoAucs;
     AUC2.AUCBuilder[/*nclasses*/] _ovrAucs;
 
-    public MetricBuilderMultinomial( int nclasses, String[] domain ) {
+    public MetricBuilderMultinomial( int nclasses, String[] domain, MultinomialAucType aucType) {
       super(nclasses,domain);
       int domainLength = domain.length;
       _cm = domain.length > ConfusionMatrix.maxClasses() ? null : new double[domainLength][domainLength];
       _K = Math.min(10,_nclasses);
       _hits = new double[_K];
       // matrix for pairwise AUCs
-      _calculateAuc = domainLength <= MultinomialAUC.MAX_DOMAIN_SIZE;
+      _calculateAuc = !aucType.equals(MultinomialAucType.NONE) && domainLength <= MultinomialAUC.MAX_AUC_CLASSES;
+      Log.warn("Multinomial AUC and AUCPR will not be calculated. The auc_type is set to \"NONE\" or the maximum size of domain (50) was reached.");
       if(_calculateAuc) {
         _ovoAucs = new AUC2.AUCBuilder[domainLength][domainLength];
         _ovrAucs = new AUC2.AUCBuilder[domainLength];
@@ -344,7 +351,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         logloss = _logloss / _wcount;
       }
       // TODO if model is null - add possibility to set type? 
-      MultinomialAucType type = m != null ? m._parms._multinomial_auc_type : MultinomialAucType.AUTO;
+      MultinomialAucType type = m != null ? m._parms._auc_type : MultinomialAucType.AUTO;
       MultinomialAUC auc = new MultinomialAUC(_ovrAucs,_ovoAucs, _domain, _wcount == 0, type);
       ModelMetricsMultinomial mm = new ModelMetricsMultinomial(m, f, _count, mse, _domain, sigma, cm,
                                                                hr, logloss, auc, _customMetric);

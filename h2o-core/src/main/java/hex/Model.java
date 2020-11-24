@@ -391,7 +391,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      */
     public int _gainslift_bins = -1;
     
-    public MultinomialAucType _multinomial_auc_type = MultinomialAucType.AUTO;
+    public MultinomialAucType _auc_type = MultinomialAucType.AUTO;
 
     // Public no-arg constructor for reflective creation
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }

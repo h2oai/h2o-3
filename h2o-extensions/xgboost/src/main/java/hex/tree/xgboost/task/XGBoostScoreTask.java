@@ -52,7 +52,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
             case 2:
                 return new ModelMetricsBinomial.MetricBuilderBinomial(responseDomain);
             default:
-                return new ModelMetricsMultinomial.MetricBuilderMultinomial(responseClassesNum, responseDomain);
+                return new ModelMetricsMultinomial.MetricBuilderMultinomial(responseClassesNum, responseDomain, this._model._parms._auc_type);
         }
     }
 

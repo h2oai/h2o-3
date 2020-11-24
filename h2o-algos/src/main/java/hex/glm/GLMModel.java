@@ -160,9 +160,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       domain = binomialClassNames;
     if (_parms._HGLM) {
       String[] domaint = new String[]{"HGLM_" + _parms._family.toString() + "_" + _parms._rand_family[0].toString()};
-      return new GLMMetricBuilder(domaint, null, null, 0, true, false);
+      return new GLMMetricBuilder(domaint, null, null, 0, true, false, MultinomialAucType.NONE);
     } else
-      return new GLMMetricBuilder(domain, _ymu, new GLMWeightsFun(_parms), _output.bestSubmodel().rank(), true, _parms._intercept);
+      return new GLMMetricBuilder(domain, _ymu, new GLMWeightsFun(_parms), _output.bestSubmodel().rank(), true, _parms._intercept, _parms._auc_type);
   }
 
   protected double [] beta_internal(){

@@ -136,7 +136,7 @@
 #' @param elastic_averaging_moving_rate Elastic averaging moving rate (only if elastic averaging is enabled). Defaults to 0.9.
 #' @param elastic_averaging_regularization Elastic averaging regularization strength (only if elastic averaging is enabled). Defaults to 0.001.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @param multinomial_auc_type Set default multinomial AUC type. Must be one of: "AUTO", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
+#' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per epoch). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
@@ -238,7 +238,7 @@ h2o.deeplearning <- function(x,
                              elastic_averaging_moving_rate = 0.9,
                              elastic_averaging_regularization = 0.001,
                              export_checkpoints_dir = NULL,
-                             multinomial_auc_type = c("AUTO", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
+                             auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                              verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -438,8 +438,8 @@ h2o.deeplearning <- function(x,
     parms$elastic_averaging_regularization <- elastic_averaging_regularization
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
-  if (!missing(multinomial_auc_type))
-    parms$multinomial_auc_type <- multinomial_auc_type
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   # Error check and build model
   model <- .h2o.modelJob('deeplearning', parms, h2oRestApiVersion=3, verbose=verbose)
@@ -531,7 +531,7 @@ h2o.deeplearning <- function(x,
                                              elastic_averaging_moving_rate = 0.9,
                                              elastic_averaging_regularization = 0.001,
                                              export_checkpoints_dir = NULL,
-                                             multinomial_auc_type = c("AUTO", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
+                                             auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                              segment_columns = NULL,
                                              segment_models_id = NULL,
                                              parallelism = 1)
@@ -735,8 +735,8 @@ h2o.deeplearning <- function(x,
     parms$elastic_averaging_regularization <- elastic_averaging_regularization
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
-  if (!missing(multinomial_auc_type))
-    parms$multinomial_auc_type <- multinomial_auc_type
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   # Build segment-models specific parameters
   segment_parms <- list()

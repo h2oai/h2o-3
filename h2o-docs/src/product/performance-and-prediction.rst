@@ -808,7 +808,7 @@ This model metric is used to evaluate how well a multinomial classification mode
 
 where :math:`c` is the number of classes and :math:`\text{AUC}(j, rest_j)` is the
 AUC with class :math:`j` as the positive class and rest classes :math:`rest_j` as the
-negative class.
+negative class. The result AUC is normalized by number of classes.
 
  
    **Weighted average OVR AUC** - Prevalence weighted average of all OVR AUCs
@@ -820,26 +820,138 @@ negative class.
 where :math:`c` is the number of classes, :math:`\text{AUC}(j, rest_j)` is the
 AUC with class :math:`j` as the positive class and rest classes :math:`rest_j` as the
 negative class and :math:`p(j)` is the prevalence of class :math:`j` (number of positives of class :math:`j`).
+The result AUC is normalized by sum of all weights.
 
   **Macro average OVO AUC** - Uniformly weighted average of all OVO AUCs
 
 .. math::
 
-   \frac{1}{c}\sum_{j=1}^{c}\sum_{k \neq j}^{c} \frac{1}{2}(\text{AUC}(j | k) + \text{AUC}(k | j))
+   \frac{2}{c}\sum_{j=1}^{c}\sum_{k \neq j}^{c} \frac{1}{2}(\text{AUC}(j | k) + \text{AUC}(k | j))
 
 where :math:`c` is the number of classes and :math:`\text{AUC}(j, k)` is the
 AUC with class :math:`j` as the positive class and class :math:`k` as the
-negative class.
+negative class. The result AUC is normalized by number of all class combinations.
  
   **Weighted average OVO AUC** - Prevalence weighted average of all OVO AUCs
 
 .. math::
 
-   \frac{1}{\sum_{j=1}^{c}\sum_{k \neq j}^c p(j \cup k)}\sum_{j=1}^{c}\sum_{k \neq j}^c p(j \cup k)\frac{1}{2}(\text{AUC}(j | k) + \text{AUC}(k | j))
+   \frac{2}{\sum_{j=1}^{c}\sum_{k \neq j}^c p(j \cup k)}\sum_{j=1}^{c}\sum_{k \neq j}^c p(j \cup k)\frac{1}{2}(\text{AUC}(j | k) + \text{AUC}(k | j))
 
 where :math:`c` is the number of classes, :math:`\text{AUC}(j, k)` is the
 AUC with class :math:`j` as the positive class and class :math:`k` as the
-negative class and :math:`p(j \cup k)` is prevalence of class :math:`j` and class :math:`k` (sum of positives of both classes).
+negative class and :math:`p(j \cup k)` is prevalence of class :math:`j` and class :math:`k` (sum of positives of both classes). 
+The result AUC is normalized by sum of all weights.
+
+Result Multinomial AUC table could look for three classes like this:
+
+**Note** Macro and weighted average values could be the same if the classes are same distributed. 
+
++--------------+--------------------+---------------------+----------+
+| type         | first_class_domain | second_class_domain | auc      |
++==============+====================+=====================+==========+
+| 1 vs Rest    | 1                  | None                | 0.996891 |
++--------------+--------------------+---------------------+----------+
+| 2 vs Rest    | 2                  | None                | 0.996844 |
++--------------+--------------------+---------------------+----------+
+| 3 vs Rest    | 3                  | None                | 0.987593 |
++--------------+--------------------+---------------------+----------+
+| Macro OVR    | None               | None                | 0.993776 |
++--------------+--------------------+---------------------+----------+
+| Weighted OVR | None               | None                | 0.993776 |
++--------------+--------------------+---------------------+----------+
+| 1 vs 2       | 1                  | 2                   | 0.969807 |
++--------------+--------------------+---------------------+----------+
+| 1 vs 3       | 1                  | 3                   | 1.000000 |
++--------------+--------------------+---------------------+----------+
+| 2 vs 3       | 2                  | 3                   | 0.995536 |
++--------------+--------------------+---------------------+----------+
+| Macro OVO    | None               | None                | 0.988447 |
++--------------+--------------------+---------------------+----------+
+| Weighted OVO | None               | None                | 0.988447 |
++--------------+--------------------+---------------------+----------+
+
+
+**Default value of AUC**
+
+Multinomial AUC metric can be used for early stopping and during grid search as binomial AUC. 
+In case of Multinomial AUC only one value need to be specified. The AUC calculation is disabled (set to ``NONE``) by default. 
+However this option can be changed using ``auc_type`` model parameter to any other average type of AUC and AUCPR - ``MACRO_OVR``, ``WEIGHTED_OVR``, ``MACRO_OVO``, ``WEIGHTED_OVO``.
+
+**Example**
+
+.. tabs::
+   .. code-tab:: r R
+
+        library(h2o)
+        h2o.init()
+
+        # import the cars dataset:
+        cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+        # set the predictor names and the response column name
+        predictors <- c("displacement", "power", "weight", "acceleration", "year")
+        response <- "cylinders"
+        cars[,response] <- as.factor(cars[response])
+
+        # split into train and validation sets
+        cars_splits <- h2o.splitFrame(data =  cars, ratios = 0.8, seed = 1234)
+        train <- cars_splits[[1]]
+        valid <- cars_splits[[2]]
+
+        # build and train the model:
+        cars_gbm <- h2o.gbm(x = predictors, 
+                            y = response, 
+                            training_frame = train,
+                            validation_frame = valid,
+                            distribution = "multinomial",
+                            seed = 1234)
+
+        # get result on training data from h2o
+        h2o_auc_table <- cars_gbm.multinomial_auc_table(train)
+        print(h2o_auc_table)
+
+        # get default value
+        h2o_default_auc <- cars_gbm.auc()
+        print(h2o_default_auc)
+
+   .. code-tab:: python
+   
+        import h2o
+        from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        h2o.init()
+
+        # import the cars dataset:
+        # this dataset is used to classify whether or not a car is economical based on
+        # the car's displacement, power, weight, and acceleration, and the year it was made
+        cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+        # set the predictor names and the response column name
+        predictors = ["displacement","power","weight","acceleration","year"]
+        response = "cylinders"
+        cars[response] = cars[response].asfactor()
+
+        # split into train and validation sets
+        train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+
+        # train a GBM model
+        cars_gbm = H2OGradientBoostingEstimator(distribution = "multinomial", seed = 1234)
+        cars_gbm.train(x = predictors, 
+                       y = response, 
+                       training_frame = train, 
+                       validation_frame = valid)
+
+        # get result on training data from h2o
+        h2o_auc_table = cars_gbm.multinomial_auc_table(train)
+        print(h2o_auc_table)
+
+        # get default value
+        h2o_default_auc = cars_gbm.auc()
+        print(h2o_default_auc)
+
+**Notes**
+- Calculation of this metric can be very expensive on time and memory when the domain is big. So it is disabled by default.
+- To enable it setup system property ``sys.ai.h2o.auc.maxClasses`` to a number.
 
 
 Multinomial AUCPR (Area Under the Precision-Recall Curve)
@@ -851,7 +963,7 @@ This model metric is used to evaluate how well a multinomial classification mode
   
   **One class versus rest classes (OVR) AUCPRs** - calculated for all combination one class and rest of classes AUCPR (number of classes results)
 
-  **Macro average OVR AUCPR** - Uniformly weighted average of all OVO AUCPRs
+  **Macro average OVR AUCPR** - Uniformly weighted average of all OVR AUCPRs
 
 .. math::
 
@@ -859,7 +971,7 @@ This model metric is used to evaluate how well a multinomial classification mode
 
 where :math:`c` is the number of classes and :math:`\text{AUCPR}(j, rest_j)` is the
 AUCPR with class :math:`j` as the positive class and rest classes :math:`rest_j` as the
-negative class.
+negative class. The result AUCPR is normalized by number of classes.
 
  
    **Weighted average OVR AUCPR** - Prevalence weighted average of all OVR AUCPRs
@@ -870,28 +982,139 @@ negative class.
 
 where :math:`c` is the number of classes, :math:`\text{AUCPR}(j, rest_j)` is the
 AUCPR with class :math:`j` as the positive class and rest classes :math:`rest_j` as the
-negative class and :math:`p(j)` is the prevalence of class :math:`j` (number of positives of class :math:`j`).
+negative class and :math:`p(j)` is the prevalence of class :math:`j` (number of positives of class :math:`j`). 
+The result AUCPR is normalized by sum of all weights.
 
   **Macro average OVO AUCPR** - Uniformly weighted average of all OVO AUCPRs
 
 .. math::
 
-   \frac{1}{c}\sum_{j=1}^{c}\sum_{k \neq j}^{c} \frac{1}{2}(\text{AUCPR}(j | k) + \text{AUCPR}(k | j))
+   \frac{2}{c}\sum_{j=1}^{c}\sum_{k \neq j}^{c} \frac{1}{2}(\text{AUCPR}(j | k) + \text{AUCPR}(k | j))
 
 where :math:`c` is the number of classes and :math:`\text{AUCPR}(j, k)` is the
 AUCPR with class :math:`j` as the positive class and class :math:`k` as the
-negative class.
+negative class. The result AUCPR is normalized by number of all class combinations.
  
   **Weighted average OVO AUCPR** - Prevalence weighted average of all OVO AUCPRs
 
 .. math::
 
-   \frac{1}{\sum_{j=1}^{c}\sum_{k \neq j}^c p(j \cup k)}\sum_{j=1}^{c}\sum_{k \neq j}^c p(j \cup k)\frac{1}{2}(\text{AUCPR}(j | k) + \text{AUCPR}(k | j))
+   \frac{2}{\sum_{j=1}^{c}\sum_{k \neq j}^c p(j \cup k)}\sum_{j=1}^{c}\sum_{k \neq j}^c p(j \cup k)\frac{1}{2}(\text{AUCPR}(j | k) + \text{AUCPR}(k | j))
 
 where :math:`c` is the number of classes, :math:`\text{AUCPR}(j, k)` is the
 AUCPR with class :math:`j` as the positive class and class :math:`k` as the
 negative class and :math:`p(j \cup k)` is prevalence of class :math:`j` and class :math:`k` (sum of positives of both classes).
+The result AUCPR is normalized by sum of all weights.
 
+Result Multinomial AUCPR table could look for three classes like this:
+
+**Note** Macro and weighted average values could be the same if the classes are same distributed. 
+
++--------------+--------------------+---------------------+----------+
+| type         | first_class_domain | second_class_domain | aucpr    |
++==============+====================+=====================+==========+
+| 1 vs Rest    | 1                  | None                | 0.996891 |
++--------------+--------------------+---------------------+----------+
+| 2 vs Rest    | 2                  | None                | 0.996844 |
++--------------+--------------------+---------------------+----------+
+| 3 vs Rest    | 3                  | None                | 0.987593 |
++--------------+--------------------+---------------------+----------+
+| Macro OVR    | None               | None                | 0.993776 |
++--------------+--------------------+---------------------+----------+
+| Weighted OVR | None               | None                | 0.993776 |
++--------------+--------------------+---------------------+----------+
+| 1 vs 2       | 1                  | 2                   | 0.969807 |
++--------------+--------------------+---------------------+----------+
+| 1 vs 3       | 1                  | 3                   | 1.000000 |
++--------------+--------------------+---------------------+----------+
+| 2 vs 3       | 2                  | 3                   | 0.995536 |
++--------------+--------------------+---------------------+----------+
+| Macro OVO    | None               | None                | 0.988447 |
++--------------+--------------------+---------------------+----------+
+| Weighted OVO | None               | None                | 0.988447 |
++--------------+--------------------+---------------------+----------+
+
+
+**Default value of AUCPR**
+
+Multinomial AUCPR metric can be also used for early stopping and during grid search as binomial AUCPR. 
+In case of Multinomial AUCPR only one value need to be specified. The AUCPR calculation is disabled (set to ``NONE``) by default. 
+However this option can be changed using ``auc_type`` model parameter to any other average type of AUC and AUCPR - ``MACRO_OVR``, ``WEIGHTED_OVR``, ``MACRO_OVO``, ``WEIGHTED_OVO``.
+
+**Example**
+
+.. tabs::
+   .. code-tab:: r R
+
+        library(h2o)
+        h2o.init()
+
+        # import the cars dataset:
+        cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+        # set the predictor names and the response column name
+        predictors <- c("displacement", "power", "weight", "acceleration", "year")
+        response <- "cylinders"
+        cars[,response] <- as.factor(cars[response])
+
+        # split into train and validation sets
+        cars_splits <- h2o.splitFrame(data =  cars, ratios = 0.8, seed = 1234)
+        train <- cars_splits[[1]]
+        valid <- cars_splits[[2]]
+
+        # build and train the model:
+        cars_gbm <- h2o.gbm(x = predictors, 
+                            y = response, 
+                            training_frame = train,
+                            validation_frame = valid,
+                            distribution = "multinomial",
+                            seed = 1234)
+
+        # get result on training data from h2o
+        h2o_aucpr_table <- cars_gbm.multinomial_aucpr_table(train)
+        print(h2o_aucpr_table)
+
+        # get default value
+        h2o_default_aucpr <- cars_gbm.aucpr()
+        print(h2o_default_aucpr)
+
+   .. code-tab:: python
+   
+        import h2o
+        from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        h2o.init()
+
+        # import the cars dataset:
+        # this dataset is used to classify whether or not a car is economical based on
+        # the car's displacement, power, weight, and acceleration, and the year it was made
+        cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+        # set the predictor names and the response column name
+        predictors = ["displacement","power","weight","acceleration","year"]
+        response = "cylinders"
+        cars[response] = cars[response].asfactor()
+
+        # split into train and validation sets
+        train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+
+        # train a GBM model
+        cars_gbm = H2OGradientBoostingEstimator(distribution = "multinomial", seed = 1234)
+        cars_gbm.train(x = predictors, 
+                       y = response, 
+                       training_frame = train, 
+                       validation_frame = valid)
+
+        # get result on training data from h2o
+        h2o_aucpr_table = cars_gbm.multinomial_aucpr_table(train)
+        print(h2o_aucpr_table)
+
+        # get default value
+        h2o_default_aucpr = cars_gbm.aucpr()
+        print(h2o_default_aucpr)
+
+**Notes**
+- Calculation of this metric can be very expensive on time and memory when the domain is big. So it is disabled by default.
+- To enable it setup system property ``sys.ai.h2o.auc.maxClasses`` to a number of maximum allowed classes.
 
 Kolmogorov-Smirnov (KS) Metric 
 ##############################

@@ -14,6 +14,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    :maxdepth: 2
 
    data-science/algo-params/alpha
+   data-science/algo-params/auc_type
    data-science/algo-params/balance_classes
    data-science/algo-params/base_models
    data-science/algo-params/beta_constraints

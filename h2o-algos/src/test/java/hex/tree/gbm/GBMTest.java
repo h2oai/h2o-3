@@ -16,6 +16,8 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.tree.Constraints;
 import hex.tree.SharedTreeModel;
 import org.junit.*;
+import org.junit.contrib.java.lang.system.ProvideSystemProperty;
+import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;

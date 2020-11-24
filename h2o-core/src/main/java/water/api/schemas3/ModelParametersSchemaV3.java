@@ -197,7 +197,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   @API(help = "Set default multinomial AUC type.",
           valuesProvider = ModelParamsValuesProviders.MultinomialAucTypeSchemeValuesProvider.class,
           level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true)
-  public MultinomialAucType multinomial_auc_type;
+  public MultinomialAucType auc_type;
 
   protected static String[] append_field_arrays(String[] first, String[] second) {
     String[] appended = new String[first.length + second.length];

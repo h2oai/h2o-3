@@ -77,7 +77,7 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "bs", // array, name of basis functions used
             "scale", // array, smoothing parameter for GAM,
             "keep_gam_cols",
-            "multinomial_auc_type"
+            "auc_type"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)

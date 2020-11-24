@@ -67,7 +67,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                    "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
                    "metalearner_fold_column", "metalearner_params", "max_runtime_secs", "weights_column",
                    "offset_column", "seed", "score_training_samples", "keep_levelone_frame", "export_checkpoints_dir",
-                   "multinomial_auc_type"}
+                   "auc_type"}
 
     def __init__(self, **kwargs):
         super(H2OStackedEnsembleEstimator, self).__init__()
@@ -763,19 +763,19 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
 
     @property
-    def multinomial_auc_type(self):
+    def auc_type(self):
         """
         Set default multinomial AUC type.
 
-        One of: ``"auto"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``  (default:
-        ``"auto"``).
+        One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``
+        (default: ``"auto"``).
         """
-        return self._parms.get("multinomial_auc_type")
+        return self._parms.get("auc_type")
 
-    @multinomial_auc_type.setter
-    def multinomial_auc_type(self, multinomial_auc_type):
-        assert_is_type(multinomial_auc_type, None, Enum("auto", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
-        self._parms["multinomial_auc_type"] = multinomial_auc_type
+    @auc_type.setter
+    def auc_type(self, auc_type):
+        assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
+        self._parms["auc_type"] = auc_type
 
 
     def metalearner(self):
