@@ -677,7 +677,7 @@ public class GenericModelTest extends TestUtil {
             assertArrayEquals(FileUtils.readFileToByteArray(originalModelMojoFile), FileUtils.readFileToByteArray(genericModelMojoFile));
 
         } finally {
-        Scope.exit();
+            Scope.exit();
         }
     } 
     
@@ -721,7 +721,7 @@ public class GenericModelTest extends TestUtil {
             assertArrayEquals(FileUtils.readFileToByteArray(originalModelMojoFile), FileUtils.readFileToByteArray(genericModelMojoFile));
 
         } finally {
-        Scope.exit();
+            Scope.exit();
         }
     } 
     
@@ -767,7 +767,7 @@ public class GenericModelTest extends TestUtil {
             assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
 
         } finally {
-        Scope.exit();
+            Scope.exit();
         }
     }
 
