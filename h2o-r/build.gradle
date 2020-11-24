@@ -169,8 +169,7 @@ task cpMainPKG {
             from "h2o-package"
             into "${buildDir}/h2o-package-main"
         }
-        File connectionR = new File([T, "h2o-package", "R", "connection.R"].join(File.separator))
-        File connectionMain = new File([T, "build", "h2o-package-main", "R", "connection.R"].join(File.separator))
+
         editConnectionSource("h2o-package-main", "h2o.init()", "After starting H2O, you can use the Web UI" +
                 " at http://localhost:54321\\\\n\",\n" +
                 "    \"For more information visit https://docs.h2o.ai\\\\n")
