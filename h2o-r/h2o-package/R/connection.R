@@ -348,7 +348,7 @@ h2o.connect <- function(ip = "localhost", port = 54321, strict_version_check = T
 h2o.getConnection <- function() {
   conn <- .attemptConnection()
   if (is.null(conn))
-    stop("No active connection to an H2O cluster. Did you run `h2o.init()` ?")
+    stop("No active connection to an H2O cluster. Did you run `SUBST_START_COMMAND` ?")
   conn
 }
 
