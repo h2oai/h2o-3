@@ -15,16 +15,23 @@ def getOS() {
     return os
 }
 
+def loadProperties(String filename) {
+    def properties = new Properties()
+    file(filename).withInputStream {
+        properties.load(it)
+    }
+    return properties
+}
+
 def editConnectionSource(String packageVersion) {
     File connection = new File([T, "h2o-package", "R", "connection.R"].join(File.separator))
     File connectionNew = new File([T, "build", "h2o-package-" + packageVersion, "R", "connection.R"].join(File.separator))
 
-    String startCommand = new File([T, "templates", packageVersion, SUBST_START_COMMAND + ".txt"].join(File.separator)).text
-    String startDocumentation = new File([T, "templates", packageVersion, SUBST_START_DOCUMENTATION + ".txt"].join(File.separator)).text
+    def properties = loadProperties([T, "source.properties"].join(File.separator))
 
     def connectionReplaced = connection.text
-            .replaceAll(SUBST_START_COMMAND, startCommand)
-            .replaceAll(SUBST_START_DOCUMENTATION, startDocumentation)
+            .replaceAll(SUBST_START_COMMAND, properties."${packageVersion}_${SUBST_START_COMMAND}")
+            .replaceAll(SUBST_START_DOCUMENTATION, properties."${packageVersion}_${SUBST_START_DOCUMENTATION}")
     connectionNew.write(connectionReplaced)
 }
 
