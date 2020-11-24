@@ -4,6 +4,7 @@ import com.google.gson.reflect.TypeToken;
 import hex.ensemble.Metalearner.Algorithm;
 import hex.ensemble.StackedEnsemble;
 import hex.ensemble.StackedEnsembleModel;
+import hex.naivebayes.NaiveBayesModel;
 import hex.tree.gbm.GBMModel;
 import hex.tree.drf.DRFModel;
 import hex.deeplearning.DeepLearningModel;
@@ -22,6 +23,7 @@ import water.api.schemas3.FrameV3;
 import com.google.gson.Gson;
 import water.fvec.Frame;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -156,8 +158,8 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
           }
         }
         
-        ModelParametersSchemaV3 paramsSchema;
-        Model.Parameters params;
+        ModelParametersSchemaV3 paramsSchema = null;
+        Model.Parameters params = null;
         switch (metalearner_algorithm) {
           case AUTO:
           case glm:
@@ -178,6 +180,32 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
           case deeplearning:
             paramsSchema = new DeepLearningV3.DeepLearningParametersV3();
             params = new DeepLearningModel.DeepLearningParameters();
+            break;
+          case naivebayes:
+            paramsSchema = new NaiveBayesV3.NaiveBayesParametersV3();
+            params = new NaiveBayesModel.NaiveBayesParameters();
+            break;
+          case xgboost:
+            try {
+              ClassLoader classLoader = getClass().getClassLoader();
+              paramsSchema = (ModelParametersSchemaV3)  classLoader
+                      .loadClass("hex.schemas.XGBoostV3$XGBoostParametersV3")
+                      .getConstructor()
+                      .newInstance();
+              params = (Model.Parameters) classLoader
+                      .loadClass("hex.tree.xgboost.XGBoostModel$XGBoostParameters")
+                      .getConstructor()
+                      .newInstance();
+            } catch (ClassNotFoundException |
+                     NoSuchMethodException |
+                     IllegalAccessException |
+                     InstantiationException |
+                     InvocationTargetException e) {
+              e.printStackTrace();
+            }
+            if (paramsSchema == null || params == null) {
+              throw new UnsupportedOperationException("Cannot use XGBooost metalearner as the XGBoost extension is not loaded.");
+            }
             break;
           default:
             throw new UnsupportedOperationException("Unknown meta-learner algo: " + metalearner_algorithm);
