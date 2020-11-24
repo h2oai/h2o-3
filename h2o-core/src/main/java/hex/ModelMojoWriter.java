@@ -127,4 +127,5 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
         bb.putDouble(val);
     writeblob(title, bb.array());
   }
+
 }

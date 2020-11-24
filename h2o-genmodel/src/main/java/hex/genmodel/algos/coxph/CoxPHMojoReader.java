@@ -51,16 +51,13 @@ public class CoxPHMojoReader extends ModelMojoReader<CoxPHMojoModel> {
     }
   }
 
-  private double[][] readkv2D_doubles(String keyPrefix) {
+  private double[][] readkv2D_doubles(String keyPrefix) throws IOException {
     assert null != keyPrefix;
     
-    final int count = readkv(keyPrefix + "_num");
-    final double[][] result = new double[count][];
-    for (int i = 0; i < count; i++) {
-      result[i] = readkv(keyPrefix + "_" + i, new double[0]);
-    }
+    final int size1 = readkv(keyPrefix + "_size1");
+    final int size2 = readkv(keyPrefix + "_size2");
     
-    return result;
+    return read2DArray(keyPrefix, size1, size2);
   }
 
   @Override

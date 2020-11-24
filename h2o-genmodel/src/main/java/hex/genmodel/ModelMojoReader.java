@@ -13,6 +13,7 @@ import hex.genmodel.utils.StringEscapeUtils;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -171,7 +172,16 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     }
     return array;
   }
-
+  
+  protected double[][] read2DArray(String title, int firstDSize, int secondDSize) throws IOException {
+    double [][] row = new double[firstDSize][secondDSize];
+    ByteBuffer bb = ByteBuffer.wrap(readblob(title));
+    for (int i = 0; i < firstDSize; i++) {
+      for (int j = 0; j < secondDSize; j++)
+        row[i][j] = bb.getDouble();
+    }
+    return row;
+  }
 
   //--------------------------------------------------------------------------------------------------------------------
   // Private

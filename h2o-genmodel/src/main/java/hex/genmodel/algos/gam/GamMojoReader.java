@@ -78,16 +78,6 @@ public class GamMojoReader extends ModelMojoReader<GamMojoModelBase> {
     return stringArrays;
   }
   
-  double[][] read2DArray(String title, int firstDSize, int secondDSize) throws IOException {
-    double [][] row = new double[firstDSize][secondDSize];
-    ByteBuffer bb = ByteBuffer.wrap(readblob(title));
-    for (int i = 0; i < firstDSize; i++) {
-      for (int j = 0; j < secondDSize; j++)
-        row[i][j] = bb.getDouble();
-    }
-    return row;
-  }
-  
   double[][] read2DArrayDiffLength(String title, double[][] row, int[] num_knots) throws IOException {
     int numGamColumns = num_knots.length;
     ByteBuffer bb = ByteBuffer.wrap(readblob(title));
