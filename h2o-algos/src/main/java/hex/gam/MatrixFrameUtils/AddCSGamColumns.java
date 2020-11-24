@@ -11,12 +11,11 @@ import water.util.ArrayUtils;
 import static hex.genmodel.algos.gam.GamUtilsCubicRegression.*;
 
 /**
- * Given a Frame, the class will add all the gam columns to the end of the Frame right before
- * the response column if it exists
+ * Given a Frame, the class will generate all the gamified columns.
  */
-public class AddGamColumns extends MRTask<AddGamColumns> {
+public class AddCSGamColumns extends MRTask<AddCSGamColumns> {
   double[][][] _binvD;
-  double[][] _knotsMat;
+  double[][][] _knotsMat;
   double[][][] _ztransp;
   int[] _numKnots;
   public int _numGAMcols;
@@ -25,14 +24,13 @@ public class AddGamColumns extends MRTask<AddGamColumns> {
   double[] _vmin;
   int[] _gamColsOffsets;
   Frame _gamFrame;
-
-
-  public AddGamColumns(double[][][] binvD, double[][][] ztransp, double[][] knotsMat, int[] numKnots, 
-                       Frame gamColFrames) {
+  
+  public AddCSGamColumns(double[][][] binvD, double[][][] ztransp, double[][][] knotsMat, int[] numKnots,
+                         Frame gamColFrames) {
     _binvD = binvD;
     _knotsMat = knotsMat;
     _numKnots = numKnots;
-    _numGAMcols = numKnots.length;
+    _numGAMcols = gamColFrames.numCols();
     _vmax = MemoryManager.malloc8d(_numGAMcols);
     _vmin = MemoryManager.malloc8d(_numGAMcols);
     _gamColsOffsets = MemoryManager.malloc4(_numGAMcols);
@@ -54,22 +52,22 @@ public class AddGamColumns extends MRTask<AddGamColumns> {
     double[][] basisVals = new double[_numGAMcols][];
     double[][] basisValsCenter = new double[_numGAMcols][];
     for (int gcolInd = 0; gcolInd < _numGAMcols; gcolInd++) { // prepare splines
-      crSplines[gcolInd] = new CubicRegressionSplines(_numKnots[gcolInd], _knotsMat[gcolInd]);
+      crSplines[gcolInd] = new CubicRegressionSplines(_numKnots[gcolInd], _knotsMat[gcolInd][0]);
       basisValsCenter[gcolInd] = MemoryManager.malloc8d(_numKnots[gcolInd]-1); // with centering, it is one less
       basisVals[gcolInd] = MemoryManager.malloc8d(_numKnots[gcolInd]); // without centering
     }
     int chkLen = chk[0]._len;
     for (int rInd = 0; rInd < chkLen; rInd++) { // go through each row
       for (int cInd = 0; cInd < _numGAMcols; cInd++) {  // add each column
-        generateOneGAMcols(cInd, _gamColsOffsets[cInd], basisVals[cInd], basisValsCenter[cInd], _binvD[cInd], crSplines[cInd],
-                chk[cInd].atd(rInd), newChunks);
+        generateOneGAMcols(cInd, _gamColsOffsets[cInd], basisVals[cInd], basisValsCenter[cInd], _binvD[cInd],
+                crSplines[cInd], chk[cInd].atd(rInd), newChunks);
       }
     }
   }
 
   public void generateOneGAMcols(int colInd, int colOffset, double[] basisVals, double[] basisValCenter, 
                                  double[][] bInvD, CubicRegressionSplines splines, double xval, NewChunk[] newChunks) {
-    int centerKnots = _numKnots[colInd]-1;
+    int centerKnots = _numKnots[colInd]-1;  // number of columns after gamification
     if (!Double.isNaN(xval)) {
       int binIndex = locateBin(xval, splines._knots); // location to update
       // update from F matrix F matrix = [0;invB*D;0] and c functions

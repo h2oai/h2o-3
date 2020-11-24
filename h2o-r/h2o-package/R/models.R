@@ -259,6 +259,13 @@ NULL
 }
 
 .h2o.checkAndUnifyModelParameters <- function(algo, allParams, params, hyper_params = list()) {
+  addGamCol <- FALSE
+  if (algo == "gam") {# gam_column is specified in subspace and need to fake something here
+    if (is.null(params$gam_columns) && !(is.null(hyper_params$subspaces)) && !(is.null(hyper_params$subspaces[[1]]$gam_columns))) {
+      addGamCol <- TRUE
+      params$gam_columns = list("C1")  # set default gam_columns
+    }
+  }
   # First verify all parameters
   error <- lapply(allParams, function(i) {
     e <- ""
@@ -278,6 +285,9 @@ NULL
     e
   })
 
+  if (addGamCol)
+    params$gam_columns <- NULL
+  
   if(any(nzchar(error)))
     stop(error)
 

@@ -6,7 +6,6 @@ source("../../../scripts/h2o-r-test-setup.R")
 # Marco for brining this up to me.
 test.model.gam.IOOB <- function() {
     mtcars_h2o <- as.h2o(mtcars)
-    browser()
     att_model <- h2o.gam(y = "mpg",
                          gam_columns = c("disp", "hp", "drat", "wt"),
                          family = "gamma",

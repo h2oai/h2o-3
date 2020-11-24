@@ -15,9 +15,11 @@ def class_extensions():
     def Lambda(self, value):
         self._parms["lambda"] = value
 
-
 extensions = dict(
-    __imports__="""import h2o""",
+    __imports__="""
+import h2o
+from h2o.utils.typechecks import U
+""",
     __class__=class_extensions,
     __init__validation="""
 if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
@@ -38,6 +40,14 @@ assert_is_type({pname}, None, numeric, [numeric])
 self._parms["{sname}"] = {pname}
 """
     ),
+    gam_columns=dict(
+        setter="""
+assert_is_type(gam_columns, None, [U(str, [str])])
+if gam_columns:  # standardize as a nested list
+    gam_columns = [[g] if isinstance(g, str) else g for g in gam_columns]
+self._parms["gam_columns"] = gam_columns
+"""
+    )
 )
 
 doc = dict(

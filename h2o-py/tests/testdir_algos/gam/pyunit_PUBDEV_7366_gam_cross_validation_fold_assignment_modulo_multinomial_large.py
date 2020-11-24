@@ -16,18 +16,18 @@ def test_gam_model_predict():
     #Prepare predictors and response columns
     covtype_X = covtype_df.col_names[:-1]     #last column is Cover_Type, our desired response variable 
     covtype_y = covtype_df.col_names[-1]
+    # build model with cross validation and with validation dataset
+    gam_multi_valid = H2OGeneralizedAdditiveEstimator(family='multinomial', solver='IRLSM', gam_columns=["Slope"],
+                                                      scale = [0.0001], num_knots=[5], standardize=True, nfolds=2,
+                                                      fold_assignment = 'modulo', alpha=[0.9,0.5,0.1], lambda_search=True,
+                                                      nlambdas=5, max_iterations=3)
+    gam_multi_valid.train(covtype_X, covtype_y, training_frame=train, validation_frame=valid)
     # build model with cross validation and no validation dataset
     gam_multi = H2OGeneralizedAdditiveEstimator(family='multinomial', solver='IRLSM', gam_columns=["Slope"], 
                                                 scale = [0.0001], num_knots=[5], standardize=True, nfolds=2, 
                                                 fold_assignment = 'modulo', alpha=[0.9,0.5,0.1], lambda_search=True,
                                                 nlambdas=5, max_iterations=3)
     gam_multi.train(covtype_X, covtype_y, training_frame=train)
-    # build model with cross validation and with validation dataset
-    gam_multi_valid = H2OGeneralizedAdditiveEstimator(family='multinomial', solver='IRLSM', gam_columns=["Slope"],
-                                                scale = [0.0001], num_knots=[5], standardize=True, nfolds=2,
-                                                fold_assignment = 'modulo', alpha=[0.9,0.5,0.1], lambda_search=True,
-                                                nlambdas=5, max_iterations=3)
-    gam_multi_valid.train(covtype_X, covtype_y, training_frame=train, validation_frame=valid)
     # model should yield the same coefficients in both case
     gam_multi_coef = gam_multi.coef()
     gam_multi_valid_coef = gam_multi_valid.coef()

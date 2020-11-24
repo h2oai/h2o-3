@@ -7,6 +7,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import h2o
+from h2o.utils.typechecks import U
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
@@ -40,8 +41,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                    "beta_constraints", "max_active_predictors", "interactions", "interaction_pairs", "obj_reg",
                    "export_checkpoints_dir", "stopping_rounds", "stopping_metric", "stopping_tolerance",
                    "balance_classes", "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size",
-                   "max_runtime_secs", "custom_metric_func", "num_knots", "knot_ids", "gam_columns", "bs", "scale",
-                   "keep_gam_cols", "auc_type"}
+                   "max_runtime_secs", "custom_metric_func", "num_knots", "knot_ids", "gam_columns",
+                   "standardize_tp_gam_cols", "scale_tp_penalty_mat", "bs", "scale", "keep_gam_cols", "auc_type"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedAdditiveEstimator, self).__init__()
@@ -947,7 +948,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     @property
     def knot_ids(self):
         """
-        String arrays storing frame keys of knots.  One for each gam column specified in gam_columns
+        String arrays storing frame keys of knots.  One for each gam column set specified in gam_columns
 
         Type: ``List[str]``.
         """
@@ -962,22 +963,56 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     @property
     def gam_columns(self):
         """
-        Predictor column names for gam
+        Arrays of predictor column names for gam for smoothers using single or multiple predictors like
+        {{'c1'},{'c2','c3'},{'c4'},...}
 
-        Type: ``List[str]``.
+        Type: ``List[List[str]]``.
         """
         return self._parms.get("gam_columns")
 
     @gam_columns.setter
     def gam_columns(self, gam_columns):
-        assert_is_type(gam_columns, None, [str])
+        assert_is_type(gam_columns, None, [U(str, [str])])
+        if gam_columns:  # standardize as a nested list
+            gam_columns = [[g] if isinstance(g, str) else g for g in gam_columns]
         self._parms["gam_columns"] = gam_columns
+
+
+    @property
+    def standardize_tp_gam_cols(self):
+        """
+        standardize tp (thin plate) predictor columns
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("standardize_tp_gam_cols")
+
+    @standardize_tp_gam_cols.setter
+    def standardize_tp_gam_cols(self, standardize_tp_gam_cols):
+        assert_is_type(standardize_tp_gam_cols, None, bool)
+        self._parms["standardize_tp_gam_cols"] = standardize_tp_gam_cols
+
+
+    @property
+    def scale_tp_penalty_mat(self):
+        """
+        Scale penalty matrix for tp (thin plate) smoothers as in R
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("scale_tp_penalty_mat")
+
+    @scale_tp_penalty_mat.setter
+    def scale_tp_penalty_mat(self, scale_tp_penalty_mat):
+        assert_is_type(scale_tp_penalty_mat, None, bool)
+        self._parms["scale_tp_penalty_mat"] = scale_tp_penalty_mat
 
 
     @property
     def bs(self):
         """
-        Basis function type for each gam predictors, 0 for cr
+        Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for thin plate
+        regression with SVD.  If specified, must be the same size as gam_columns
 
         Type: ``List[int]``.
         """
@@ -992,7 +1027,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     @property
     def scale(self):
         """
-        Smoothing parameter for gam predictors
+        Smoothing parameter for gam predictors.  If specified, must be of the same length as gam_columns
 
         Type: ``List[float]``.
         """

@@ -32,6 +32,21 @@ public class MathUtils {
     return y * Math.log(y) - y + .5*Math.log(2*Math.PI*y);
   }
 
+  public static int combinatorial(int num, int d) {
+    if (num < 0 || d < 0)
+      throw new H2OIllegalArgumentException("argument to combinatorial must be >= 0!");
+    int denom1 = num-d;
+    int maxDenom = Math.max(d, denom1);
+    int minDenom = Math.min(d, denom1);
+    int prodNum = 1;
+    for (int index = maxDenom+1; index <= num; index++)
+      prodNum *= index;
+    int prodDenom = 1;
+    for (int index = 1; index <= minDenom; index++)
+      prodDenom *= index;
+    return (prodNum/prodDenom);
+  }
+
   static public double computeWeightedQuantile(Vec weight, Vec values, double alpha) {
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     Frame tempFrame = weight == null ?

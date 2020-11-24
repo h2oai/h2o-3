@@ -38,7 +38,7 @@ public class GamMojoModelTest {
       params._response_column = "CAPSULE";
       params._family = quasibinomial;
       params._ignored_columns = new String[]{"ID"};
-      params._gam_columns = new String[]{"PSA"};
+      params._gam_columns = new String[][]{{"PSA"}};
       params._num_knots = new int[]{5};
       params._train = fr._key;
       params._link = GLMModel.GLMParameters.Link.logit;
@@ -60,7 +60,7 @@ public class GamMojoModelTest {
       // test for binomial
       String[] ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C14",
               "C15", "C16", "C17", "C18", "C19", "C20"};
-      String[] gamCols = new String[]{"C11", "C12", "C13"};
+      String[][] gamCols = new String[][]{{"C11"}, {"C12"}, {"C13"}};
       Frame trainBinomial = Scope.track(massageFrame(parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv"),
               binomial));
       DKV.put(trainBinomial);
@@ -86,7 +86,7 @@ public class GamMojoModelTest {
     try {
       String[] ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C14",
               "C15", "C16", "C17", "C18", "C19", "C20"};
-      String[] gamCols = new String[]{"C11", "C12", "C13"};
+      String[][] gamCols = new String[][]{{"C11"}, {"C12"}, {"C13"}};
       Frame trainGaussian = Scope.track(massageFrame(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"), gaussian));
       DKV.put(trainGaussian);
       GAMModel gaussianmodel = getModel(gaussian,
@@ -112,7 +112,7 @@ public class GamMojoModelTest {
     try {
       // multinomial
       String[] ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"};
-      String[] gamCols = new String[]{"C6", "C7", "C8"};
+      String[][] gamCols = new String[][]{{"C6"}, {"C7"}, {"C8"}};
       Frame trainMultinomial = Scope.track(massageFrame(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"), multinomial));
       DKV.put(trainMultinomial);
       GAMModel multinomialModel = getModel(multinomial,
@@ -123,6 +123,61 @@ public class GamMojoModelTest {
       Scope.track_generic(multinomialModel);
       Frame predictMult = Scope.track(multinomialModel.score(trainMultinomial));
       assertTrue(multinomialModel.testJavaScoring(trainMultinomial, predictMult, _tol)); // compare scoring result with mojo
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  // add TP GAM cols only MOJO
+  // add multiple TP and CS cols MOJO for multinomial family
+  @Test
+  public void testMojo2CS1TP() {
+    Scope.enter();
+    try {
+      Frame train = Scope.track(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"));
+      train.replace((10), train.vec(10).toCategoricalVec()).remove();
+      DKV.put(train);
+      String[] ignoredCols = new String[]{"C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"};
+      String[][] gamCols = new String[][]{{"C6"},{"C7", "C8"}, {"C9"}};
+      GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+      int k = 5;
+      params._response_column = "C11";
+      params._ignored_columns = ignoredCols;
+      params._num_knots = new int[]{0,k,0};
+      params._gam_columns = gamCols;
+      params._train = train._key;
+      params._savePenaltyMat = true;
+      GAMModel gam = new GAM(params).trainModel().get();
+      Frame predictMult = Scope.track(gam.score(train));
+      assertTrue(gam.testJavaScoring(train, predictMult, _tol)); // compare scoring result with mojo      
+      Scope.track_generic(gam);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  // test TP/CS Smoothers for binomial family
+  @Test
+  public void testMojoCSTPBinomial() {
+    Scope.enter();
+    try {
+      Frame train = parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv");
+      train.replace((20), train.vec(20).toCategoricalVec()).remove();
+      DKV.put(train);
+      Scope.track(train);
+      String[] ignoredCols = new String[]{"C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", 
+      "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20"};
+      String[][] gamCols = new String[][]{{"C12"}, {"C13", "C14"}, {"C15", "C16", "C17"}, {"C18"}};
+      GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+      params._response_column = "C21";
+      params._ignored_columns = ignoredCols;
+      params._gam_columns = gamCols;
+      params._bs = new int[]{1,1,1,0};
+      params._train = train._key;
+      GAMModel gam = new GAM(params).trainModel().get();
+      Frame predictMult = Scope.track(gam.score(train));
+      assertTrue(gam.testJavaScoring(train, predictMult, _tol)); // compare scoring result with mojo      
+      Scope.track_generic(gam);
     } finally {
       Scope.exit();
     }
@@ -141,7 +196,7 @@ public class GamMojoModelTest {
       params._tweedie_variance_power = 1.5;
       params._tweedie_link_power = 0.5;
       params._ignored_columns = new String[]{"ID"};
-      params._gam_columns = new String[]{"x.TRAVTIME"};
+      params._gam_columns = new String[][]{{"x.TRAVTIME"}};
       params._num_knots = new int[]{5};
       params._train = fr._key;
       final GAMModel model = new GAM(params).trainModel().get();
@@ -170,7 +225,7 @@ public class GamMojoModelTest {
     return paramsO;
   }
 
-  public String[] chooseGamColumns(Frame trainF, int maxGamCols) {
+  public String[][] chooseGamColumns(Frame trainF, int maxGamCols) {
     int gamCount=0;
     ArrayList<String> numericCols = new ArrayList<>();
     String[] colNames = trainF.names();
@@ -182,7 +237,7 @@ public class GamMojoModelTest {
       if (gamCount >= maxGamCols)
         break;
     }
-    String[] gam_columns = new String[numericCols.size()];
+    String[][] gam_columns = new String[1][numericCols.size()];
     return numericCols.toArray(gam_columns);
   }
 
@@ -195,18 +250,24 @@ public class GamMojoModelTest {
       final Frame fr = Scope.track(createTrainFrameWithNaNs());
       final GAMModel.GAMParameters params = new GAMModel.GAMParameters();
       int cidx = 0;
-      String[] gam_columns = new String[3];
+      int numGam = 3; // ideally have 3 gam columns
+      String[] tempGamColumns = new String[numGam];
       for (int i = 0; i < fr.numCols(); i++) {
         if (!fr.name(i).equals("response")&& fr.vec(i).get_type() == Vec.T_NUM) {
-          gam_columns[cidx++] = fr.name(i);
-          if (cidx == gam_columns.length) break;
+          tempGamColumns[cidx++] = fr.name(i);
+          if (cidx == numGam) break;
         }
       }
+      String[][] gam_columns = new String[cidx][1];
       params._response_column = "response";
       params._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.MeanImputation;
       params._family = gaussian;
+      params._scale = new double[cidx];  // {0.001, 0.001, 0.001};
+      for (int index = 0; index < cidx; index++) {
+        params._scale[index] = 0.001;
+        gam_columns[index][0] = tempGamColumns[index];
+      }
       params._gam_columns = gam_columns;
-      params._scale = new double[] {0.001, 0.001, 0.001};
       params._train = fr._key;
       final GAMModel model = new GAM(params).trainModel().get();
       Scope.track_generic(model);

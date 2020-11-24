@@ -56,6 +56,24 @@ public class ArrayUtils {
     return cumsumR;
   }
 
+  public static int[] subtract(final int[] from, int val ) {
+    int arryLen = from.length;
+    int[] cumsumR = new int[arryLen];
+    for (int index = 0; index < arryLen; index++) {
+      cumsumR[index] = from[index]-val;
+    }
+    return cumsumR;
+  }
+
+  public static int[] subtract(final int[] from, int[] val ) {
+    int arryLen = from.length;
+    int[] cumsumR = new int[arryLen];
+    for (int index = 0; index < arryLen; index++) {
+      cumsumR[index] = from[index]-val[index];
+    }
+    return cumsumR;
+  }
+
   /**
    * Check to see if a column is a boolean column.  A boolean column should contains only two
    * levels and the string describing the domains should be true/false
@@ -167,6 +185,25 @@ public class ArrayUtils {
       difference[i] = array[i+1] - array[i];
     }
     return difference;
+  }
+
+  /***
+   * Carry out multiplication of row array a and matrix b and store the result in result array.  However the transpose
+   * of the matrix is given.
+   * 
+   * @param a
+   * @param bT
+   * @param result
+   */
+  public static void multArray(double[] a, double[][] bT, double[] result) {
+    int resultDim = result.length;
+    int vectorSize = a.length;
+    Arrays.fill(result, 0.0);
+    for (int index = 0; index < resultDim; index++) {
+      for (int innerIndex = 0; innerIndex < vectorSize; innerIndex++) {
+        result[index] += a[innerIndex]*bT[index][innerIndex];
+      }
+    }
   }
 
 }

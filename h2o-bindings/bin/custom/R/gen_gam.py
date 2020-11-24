@@ -6,11 +6,11 @@ extensions = dict(
     if (missing(x)) {
         x = NULL
     }
-
     # If gam_columns is missing, then assume user wants to use all columns as features for GAM.
     if (missing(gam_columns)) {
         stop("Columns indices to apply to GAM must be specified. If there are none, please use GLM.")
     }
+    gam_columns <- lapply(gam_columns, function(x) if(is.character(x) & length(x) == 1) list(x) else x)
     """,
     set_required_params="""
     parms$training_frame <- training_frame
