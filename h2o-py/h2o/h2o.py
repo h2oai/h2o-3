@@ -339,7 +339,7 @@ def _import_multi(paths, pattern):
 
 
 def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None, skipped_columns=None):
+                na_strings=None, skipped_columns=None, single_quotes=False):
     """
     Upload a dataset from the provided local path to the H2O cluster.
 
@@ -369,6 +369,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
+    :param single_quotes: A hint for the parser to expect single-quoted tokens. False by default.
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -386,18 +387,20 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    assert_is_type(single_quotes, bool)
     assert (skipped_columns==None) or isinstance(skipped_columns, list), \
         "The skipped_columns should be an list of column names!"
 
     check_frame_id(destination_frame)
     if path.startswith("~"):
         path = os.path.expanduser(path)
-    return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns)
+    return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns,
+                                    single_quotes)
 
 
 def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
                 na_strings=None, pattern=None, skipped_columns=None, custom_non_data_line_markers=None,
-                partition_by=None):
+                partition_by=None, single_quotes=False):
     """
     Import a dataset that is already on the cluster.
 
@@ -436,6 +439,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         directory.
     :param skipped_columns: an integer list of column indices to skip and not parsed into the final frame from the import file.
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
+    :param single_quotes: A hint for the parser to expect single-quoted tokens. False by default.
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -457,6 +461,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
     assert_is_type(partition_by, None, [str], str)
+    assert_is_type(single_quotes, bool)
     assert isinstance(skipped_columns, (type(None), list)), "The skipped_columns should be an list of column names!"
     check_frame_id(destination_frame)
     patharr = path if isinstance(path, list) else [path]
@@ -467,7 +472,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         return lazy_import(path, pattern)
     else:
         return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings,
-                                        skipped_columns, custom_non_data_line_markers, partition_by)
+                                        skipped_columns, custom_non_data_line_markers, partition_by, single_quotes)
 
 
 def load_grid(grid_file_path):
@@ -690,7 +695,7 @@ def import_sql_select(connection_url, select_query, username, password, optimize
 
 def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, column_names=None,
                 column_types=None, na_strings=None, skipped_columns=None, custom_non_data_line_markers=None,
-                partition_by=None):
+                partition_by=None, single_quotes=False):
     """
     Retrieve H2O's best guess as to what the structure of the data file is.
 
@@ -698,7 +703,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     the data. This method allows a user to perform corrective measures by updating the
     returning dictionary from this method. This dictionary is then fed into `parse_raw` to
     produce the H2OFrame instance.
-
+ 
     :param raw_frames: a collection of imported file frames
     :param destination_frame: The unique hex key assigned to the imported file. If none is given, a key will
         automatically be generated.
@@ -727,6 +732,8 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
+    :param partition_by: A list of columns the dataset has been partitioned by. None by default.
+    :param single_quotes: A hint for the parser to expect single-quoted tokens. False by default.
 
     :returns: a dictionary containing parse parameters guessed by the H2O backend.
 
@@ -759,13 +766,15 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     assert_is_type(column_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
     assert_is_type(partition_by, None, [str], str)
+    assert_is_type(single_quotes, bool)
     check_frame_id(destination_frame)
 
     # The H2O backend only accepts things that are quoted
     if is_type(raw_frames, str): raw_frames = [raw_frames]
 
     # temporary dictionary just to pass the following information to the parser: header, separator
-    kwargs = {"check_header": header, "source_frames": [quoted(frame_id) for frame_id in raw_frames]}
+    kwargs = {"check_header": header, "source_frames": [quoted(frame_id) for frame_id in raw_frames],
+              "single_quotes": single_quotes}
     if separator:
         kwargs["separator"] = ord(separator)
 
