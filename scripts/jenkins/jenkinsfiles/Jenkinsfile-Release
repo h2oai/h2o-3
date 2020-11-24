@@ -465,7 +465,7 @@ EOF
                     if (params.BUILD_CONDA) {
 
                         final def condaS3Dir = "${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/Conda"
-                        final def pyVersions = pipelineContext.getBuildConfig().PYTHON_VERSIONS.findAll { it != "2.7" }
+                        final def pyVersions = pipelineContext.getBuildConfig().PYTHON_VERSIONS.findAll { Double.parseDouble(it) >= 3.6 }
 
                         // build for all Python versions
                         for (pyVersion in pyVersions) {
