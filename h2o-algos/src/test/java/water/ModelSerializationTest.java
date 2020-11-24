@@ -1,5 +1,7 @@
 package water;
 
+import hex.glrm.GLRM;
+import hex.glrm.GLRMModel;
 import hex.tree.isofor.IsolationForest;
 import hex.tree.isofor.IsolationForestModel;
 import org.junit.Assert;
@@ -24,6 +26,7 @@ import water.util.ArrayUtils;
 import water.util.Log;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class ModelSerializationTest extends TestUtil {
 
@@ -131,7 +134,6 @@ public class ModelSerializationTest extends TestUtil {
     }
   }
 
-
   @Test
   public void testGLMModel() throws IOException {
     GLMModel model, loadedModel = null;
@@ -144,6 +146,23 @@ public class ModelSerializationTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testGLRMModel() throws IOException {
+    GLRMModel model, loadedModel = null;
+    try {
+      model = prepareGLRMModel("smalldata/junit/cars.csv", ESA, "power (hp)");
+      loadedModel = saveAndLoad(model);
+      assertModelBinaryEquals(model, loadedModel);
+      assertNotNull(loadedModel._output._init_key.get());
+      assertNotNull(loadedModel._output._representation_key.get());
+      for (Key<ModelMetrics> mmKey : loadedModel._output.getModelMetrics()) {
+        assertNotNull(mmKey.get());         
+      }
+    } finally {
+      if (loadedModel != null) loadedModel.delete();
+    }
+  }
+  
   private GBMModel prepareGBMModel(String dataset, String[] ignoredColumns, String response, boolean classification, int ntrees) {
     Frame f = parse_test_file(dataset);
     try {
@@ -205,6 +224,19 @@ public class ModelSerializationTest extends TestUtil {
       params._response_column = response;
       params._family = family;
       return new GLM(params).trainModel().get();
+    } finally {
+      if (f!=null) f.delete();
+    }
+  }
+
+  private GLRMModel prepareGLRMModel(String dataset, String[] ignoredColumns, String response) {
+    Frame f = parse_test_file(dataset);
+    try {
+      GLRMModel.GLRMParameters params = new GLRMModel.GLRMParameters();
+      params._train = f._key;
+      params._ignored_columns = ignoredColumns;
+      params._response_column = response;
+      return new GLRM(params).trainModel().get();
     } finally {
       if (f!=null) f.delete();
     }
