@@ -455,20 +455,35 @@ Resources
 Citation
 --------
 
-If you're citing the H2O AutoML algorithm in a paper, please cite this page as the resource.  The H2O AutoML algorithm was first released in `H2O 3.12.0.1 <https://github.com/h2oai/h2o-3/blob/master/Changes.md#vapnik-31201-662017>`__ on June 6, 2017.  A formatted version of the citation would look like this (insert correct H2O version number): 
+If you're citing the H2O AutoML algorithm in a paper, please cite our paper from the `7th ICML Workshop on Automated Machine Learning (AutoML) <https://sites.google.com/view/automl2020/home>`__.  A formatted version of the citation would look like this: 
 
-H2O.ai. *H2O AutoML*, June 2017. URL http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html. H2O version 3.30.0.1.
+Erin LeDell and Sebastien Poirier. *H2O AutoML: Scalable Automatic Machine Learning*. 7th ICML Workshop on Automated Machine Learning (AutoML), July 2020. URL https://www.automl.org/wp-content/uploads/2020/07/AutoML_2020_paper_61.pdf. 
 
 If you are using Bibtex:
 
 ::
 
 
-    @Manual{H2OAutoML,
-        title = {H2O AutoML},
+    @article{H2OAutoML20,
+        title = {{H2O} {A}uto{ML}: Scalable Automatic Machine Learning},
+        author = {Erin LeDell and Sebastien Poirier},
+        year = {2020},
+        month = {July},
+        journal = {7th ICML Workshop on Automated Machine Learning (AutoML)},
+        url = {https://www.automl.org/wp-content/uploads/2020/07/AutoML_2020_paper_61.pdf},
+    }
+
+
+
+The H2O AutoML algorithm was first released in `H2O 3.12.0.1 <https://github.com/h2oai/h2o-3/blob/master/Changes.md#vapnik-31201-662017>`__ on June 6, 2017.  If you need to cite a particular version of the H2O AutoML algorithm, you can use an additional citation (using the appropriate version replaced below) as follows:
+
+::
+
+
+    @Manual{H2OAutoML_33001,
+        title = {{H2O} {A}uto{ML}},
         author = {H2O.ai},
-        year = {2017},
-        month = {June},
+        year = {2020},
         note = {H2O version 3.30.0.1},
         url = {http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html},
     }
