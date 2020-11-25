@@ -2,6 +2,7 @@ package hex.schemas;
 
 import com.google.gson.reflect.TypeToken;
 import hex.ensemble.Metalearner.Algorithm;
+import hex.ensemble.Metalearners;
 import hex.ensemble.StackedEnsemble;
 import hex.ensemble.StackedEnsembleModel;
 import hex.naivebayes.NaiveBayesModel;
@@ -158,58 +159,8 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
           }
         }
         
-        ModelParametersSchemaV3 paramsSchema = null;
-        Model.Parameters params = null;
-        switch (metalearner_algorithm) {
-          case AUTO:
-          case glm:
-            paramsSchema = new GLMV3.GLMParametersV3();
-            params = new GLMModel.GLMParameters();
-            // FIXME: This is here because there is no Family.AUTO. It enables us to know if the user specified family or not.
-            // FIXME: Family.AUTO will be implemented in https://0xdata.atlassian.net/projects/PUBDEV/issues/PUBDEV-7444
-            ((GLMModel.GLMParameters) params)._family = null;
-            break;
-          case gbm:
-            paramsSchema = new GBMV3.GBMParametersV3();
-            params = new GBMModel.GBMParameters();
-            break;
-          case drf:
-            paramsSchema = new DRFV3.DRFParametersV3();
-            params = new DRFModel.DRFParameters();
-            break;
-          case deeplearning:
-            paramsSchema = new DeepLearningV3.DeepLearningParametersV3();
-            params = new DeepLearningModel.DeepLearningParameters();
-            break;
-          case naivebayes:
-            paramsSchema = new NaiveBayesV3.NaiveBayesParametersV3();
-            params = new NaiveBayesModel.NaiveBayesParameters();
-            break;
-          case xgboost:
-            try {
-              ClassLoader classLoader = getClass().getClassLoader();
-              paramsSchema = (ModelParametersSchemaV3)  classLoader
-                      .loadClass("hex.schemas.XGBoostV3$XGBoostParametersV3")
-                      .getConstructor()
-                      .newInstance();
-              params = (Model.Parameters) classLoader
-                      .loadClass("hex.tree.xgboost.XGBoostModel$XGBoostParameters")
-                      .getConstructor()
-                      .newInstance();
-            } catch (ClassNotFoundException |
-                     NoSuchMethodException |
-                     IllegalAccessException |
-                     InstantiationException |
-                     InvocationTargetException e) {
-              e.printStackTrace();
-            }
-            if (paramsSchema == null || params == null) {
-              throw new UnsupportedOperationException("Cannot use XGBooost metalearner as the XGBoost extension is not loaded.");
-            }
-            break;
-          default:
-            throw new UnsupportedOperationException("Unknown meta-learner algo: " + metalearner_algorithm);
-        }
+        ModelParametersSchemaV3 paramsSchema = Metalearners.createParametersSchema(metalearner_algorithm.name());
+        Model.Parameters params = Metalearners.createParameters(metalearner_algorithm.name());
         
         paramsSchema.init_meta();
         impl._metalearner_parameters = (Model.Parameters) paramsSchema

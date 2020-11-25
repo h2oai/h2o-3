@@ -7,6 +7,8 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
+import hex.schemas.*;
+import water.api.schemas3.ModelParametersSchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.nbhm.NonBlockingHashMap;
 import water.util.ArrayUtils;
@@ -26,12 +28,12 @@ public class Metalearners {
 
     static {
         LocalProvider[] localProviders = new LocalProvider[] {
-                new LocalProvider<>(Algorithm.AUTO, AUTOMetalearner::new),
-                new LocalProvider<>(Algorithm.deeplearning, DLMetalearner::new),
-                new LocalProvider<>(Algorithm.drf, DRFMetalearner::new),
-                new LocalProvider<>(Algorithm.gbm, GBMMetalearner::new),
-                new LocalProvider<>(Algorithm.glm, GLMMetalearner::new),
-                new LocalProvider<>(Algorithm.naivebayes, NaiveBayesMetalearner::new),
+                new LocalProvider<>(Algorithm.AUTO, AUTOMetalearner::new, GLMV3.GLMParametersV3::new),
+                new LocalProvider<>(Algorithm.deeplearning, DLMetalearner::new, DeepLearningV3.DeepLearningParametersV3::new),
+                new LocalProvider<>(Algorithm.drf, DRFMetalearner::new, DRFV3.DRFParametersV3::new),
+                new LocalProvider<>(Algorithm.gbm, GBMMetalearner::new, GBMV3.GBMParametersV3::new),
+                new LocalProvider<>(Algorithm.glm, GLMMetalearner::new, GLMV3.GLMParametersV3::new),
+                new LocalProvider<>(Algorithm.naivebayes, NaiveBayesMetalearner::new, NaiveBayesV3.NaiveBayesParametersV3::new),
         };
         for (MetalearnerProvider provider : localProviders) {
             providersByName.put(provider.getName(), provider);
@@ -48,9 +50,14 @@ public class Metalearners {
         return algo == Algorithm.AUTO ? Algorithm.glm : algo;
     }
 
-    static Model.Parameters createParameters(String name) {
+    static public Model.Parameters createParameters(String name) {
         assertAvailable(name);
         return createInstance(name).createBuilder()._parms;
+    }
+
+    static public ModelParametersSchemaV3 createParametersSchema(String name) {
+        assertAvailable(name);
+        return providersByName.get(name).newParametersSchemaInstance();
     }
 
     static Metalearner createInstance(String name) {
@@ -66,15 +73,19 @@ public class Metalearners {
     /**
      * A local implementation of {@link MetalearnerProvider} to expose the {@link Metalearner}s defined in this class.
      */
-    static class LocalProvider<M extends Metalearner> implements MetalearnerProvider<M> {
+    static class LocalProvider<M extends Metalearner, MPS extends ModelParametersSchemaV3> implements MetalearnerProvider<M, MPS> {
 
         private Algorithm _algorithm;
         private Supplier<M> _instanceFactory;
 
+        private Supplier<MPS> _parameterSchemaInstanceFactory;
+
         public LocalProvider(Algorithm algorithm,
-                             Supplier<M> instanceFactory) {
+                             Supplier<M> instanceFactory,
+                             Supplier<MPS> parameterSchemaInstanceFactory) {
             _algorithm = algorithm;
             _instanceFactory = instanceFactory;
+            _parameterSchemaInstanceFactory = parameterSchemaInstanceFactory;
         }
 
         @Override
@@ -85,6 +96,11 @@ public class Metalearners {
         @Override
         public M newInstance() {
             return _instanceFactory.get();
+        }
+
+        @Override
+        public MPS newParametersSchemaInstance() {
+            return _parameterSchemaInstanceFactory.get();
         }
     }
 
