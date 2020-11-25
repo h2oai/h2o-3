@@ -387,6 +387,13 @@ public class TestUtil extends Iced {
     return parse_test_file(Key.make(), fname);
   }
 
+  /** Find & parse & track in {@link Scope} a CSV file.  NPE if file not found.
+   *  @param fname Test filename
+   *  @return      Frame or NPE */
+  public static Frame parse_and_track_test_file( String fname) {
+    return Scope.track(parse_test_file(Key.make(), fname));
+  }
+
   public static Frame parse_test_file( String fname, int[] skipped_columns) {
     return parse_test_file(Key.make(), fname, skipped_columns);
   }
