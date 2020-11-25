@@ -80,7 +80,5 @@ def h2o_H2OFrame_day():
     assert_is_type(mktime_datetime, H2OFrame)
     assert abs(datetime[0,0]+diff-mktime_datetime[0,0]) < 1e-6, "h2o.H2OFrame.mktime() command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_day())
-else:
-    h2o_H2OFrame_day()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_day)

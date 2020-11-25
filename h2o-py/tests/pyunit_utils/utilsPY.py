@@ -546,7 +546,7 @@ def pyunit_exec(test_name):
         pyunit = t.read()
     test_path = os.path.abspath(test_name)
     pyunit_c = compile(pyunit, test_path, 'exec')
-    exec(pyunit_c, dict(__name__='main', __file__=test_path))  # forcing module name to ensure that the test behaves the same way as when executed using `python my_test.py`
+    exec(pyunit_c, dict(__name__='__main__', __file__=test_path))  # forcing module name to ensure that the test behaves the same way as when executed using `python my_test.py`
 
 def standalone_test(test):
     if not h2o.connection() or not h2o.connection().connected:

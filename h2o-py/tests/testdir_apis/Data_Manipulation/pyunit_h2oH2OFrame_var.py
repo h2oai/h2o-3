@@ -27,7 +27,4 @@ def h2o_H2OFrame_var():
         assert abs(var_np[i] - var_h2o[i,0]) < 1e-10, "h2o.H2OFrame.var() command is not working."
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_var())
-else:
-    h2o_H2OFrame_var()
+pyunit_utils.standalone_test(h2o_H2OFrame_var)

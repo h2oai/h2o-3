@@ -31,7 +31,6 @@ def h2o_H2OFrame_quantile():
             "and numpy".format(h2o_val,np_val)
 
     h2o.remove(h2o_data)
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_quantile())
-else:
-    h2o_H2OFrame_quantile()
+
+
+pyunit_utils.standalone_test(h2o_H2OFrame_quantile)

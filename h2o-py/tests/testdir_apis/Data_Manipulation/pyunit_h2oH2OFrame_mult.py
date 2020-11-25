@@ -32,7 +32,5 @@ def h2o_H2OFrame_mult():
             assert abs(h2o_val - np_val) < 1e-06, "check unsuccessful! h2o computed {0} and numpy computed {1}. expected " \
                                                   "equal quantile values between h2o and numpy".format(h2o_val,np_val)
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_mult())
-else:
-    h2o_H2OFrame_mult()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_mult)

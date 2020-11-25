@@ -33,7 +33,4 @@ def h2o_H2OFrame_stats():
     assert pyunit_utils.equal_two_arrays(numpmedian, h2oMedian, 1e-12, 1e-6), "h2o.H2OFrame.median() command is not working."
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_stats())
-else:
-    h2o_H2OFrame_stats()
+pyunit_utils.standalone_test(h2o_H2OFrame_stats)

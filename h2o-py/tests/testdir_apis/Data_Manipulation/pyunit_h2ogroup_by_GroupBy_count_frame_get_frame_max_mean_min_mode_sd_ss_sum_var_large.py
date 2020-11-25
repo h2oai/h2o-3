@@ -70,7 +70,5 @@ def verifyOps(opers, shapeS, threshold_name, threshold_val, groupByCommand):
         assert abs(operInfo[index, threshold_name[index]] - threshold_val[index]) < 1e-6, \
             "{0} command is not working.".format(groupByCommand)
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2ogroup_by_GroupBy_AllOps())
-else:
-    h2ogroup_by_GroupBy_AllOps()
+
+pyunit_utils.standalone_test(h2ogroup_by_GroupBy_AllOps)

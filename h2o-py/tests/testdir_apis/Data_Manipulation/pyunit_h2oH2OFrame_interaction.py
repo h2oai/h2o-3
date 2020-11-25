@@ -45,7 +45,5 @@ def h2o_H2OFrame_interaction():
     assert levels3 == ["0_0", "1_0", "0_1"], "Expected the following levels {0}, but got {1}".format(["0_0", "1_0", "0_1"],
                                                                                                      levels3)
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_interaction())
-else:
-    h2o_H2OFrame_interaction()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_interaction)
