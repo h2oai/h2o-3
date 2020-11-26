@@ -12,7 +12,7 @@ from h2o.estimators.glrm import H2OGeneralizedLowRankEstimator
 def glrm_grid_user_y():
     export_dir = tempfile.mkdtemp()
     train_data = np.dot(np.random.rand(1000, 10), np.random.rand(10, 100))
-    train = h2o.H2OFrame(train_data.tolist())
+    train = h2o.H2OFrame(train_data.tolist(), destination_frame="glrm_train")
     initial_y_data = np.random.rand(10, 100)
     initial_y_h2o = h2o.H2OFrame(initial_y_data.tolist(), destination_frame="glrm_initial_y")
     params = {
@@ -43,10 +43,10 @@ def glrm_grid_user_y():
     h2o.remove_all()
     
     # reimport and train some more
-    train = h2o.H2OFrame(train_data.tolist())
+    train = h2o.H2OFrame(train_data.tolist(), destination_frame="glrm_train")
     initial_y = h2o.H2OFrame(initial_y_data.tolist(), destination_frame="glrm_initial_y")
-    hyper_params["gamma_x"] = [0.1, 1]
     grid = h2o.load_grid(grid_path)
+    grid.hyper_params["gamma_x"] = [0.1, 1]
     grid.train(x=train.names, training_frame=train, **params)
     print("second grid")
     print(grid)
