@@ -182,7 +182,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     if (weights != null) {
       fr.add("weights", weights);
     }
-    MetricBuilderMultinomial mb = new MultinomialMetrics((labels.domain()),aucType).doAll(fr)._mb;
+    MetricBuilderMultinomial mb = new MultinomialMetrics((labels.domain()), aucType).doAll(fr)._mb;
     labels.remove();
     ModelMetricsMultinomial mm = (ModelMetricsMultinomial)mb.makeModelMetrics(null, fr, null, null);
     mm._description = "Computed on user-given predictions and labels.";
@@ -230,6 +230,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     boolean _calculateAuc;
     AUC2.AUCBuilder[/*nclasses*/][/*nclasses*/] _ovoAucs;
     AUC2.AUCBuilder[/*nclasses*/] _ovrAucs;
+    MultinomialAucType _aucType;
 
     public MetricBuilderMultinomial( int nclasses, String[] domain, MultinomialAucType aucType) {
       super(nclasses,domain);
@@ -238,8 +239,8 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       _K = Math.min(10,_nclasses);
       _hits = new double[_K];
       // matrix for pairwise AUCs
-      _calculateAuc = !aucType.equals(MultinomialAucType.NONE) && domainLength <= MultinomialAUC.MAX_AUC_CLASSES;
-      Log.warn("Multinomial AUC and AUCPR will not be calculated. The auc_type is set to \"NONE\" or the maximum size of domain (50) was reached.");
+      _aucType = aucType;
+      _calculateAuc = !_aucType.equals(MultinomialAucType.NONE) && !_aucType.equals(MultinomialAucType.AUTO) && domainLength <= MultinomialAUC.MAX_AUC_CLASSES;
       if(_calculateAuc) {
         _ovoAucs = new AUC2.AUCBuilder[domainLength][domainLength];
         _ovrAucs = new AUC2.AUCBuilder[domainLength];
@@ -252,6 +253,8 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
             }
           }
         }
+      } else {
+        Log.warn("Multinomial AUC and AUCPR will not be calculated. The auc_type is set to \"NONE\" or the maximum size of domain (50) was reached.");
       }
     }
 
@@ -350,9 +353,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         mse = _sumsqe / _wcount;
         logloss = _logloss / _wcount;
       }
-      // TODO if model is null - add possibility to set type? 
-      MultinomialAucType type = m != null ? m._parms._auc_type : MultinomialAucType.AUTO;
-      MultinomialAUC auc = new MultinomialAUC(_ovrAucs,_ovoAucs, _domain, _wcount == 0, type);
+      MultinomialAUC auc = new MultinomialAUC(_ovrAucs,_ovoAucs, _domain, _wcount == 0, _aucType);
       ModelMetricsMultinomial mm = new ModelMetricsMultinomial(m, f, _count, mse, _domain, sigma, cm,
                                                                hr, logloss, auc, _customMetric);
       if (m!=null) m.addModelMetrics(mm);

@@ -4277,6 +4277,7 @@ public class GBMTest extends TestUtil {
       parms._distribution = DistributionFamily.multinomial;
       parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
       parms._stopping_rounds = 1;
+      parms._auc_type = MultinomialAucType.MACRO_OVO;
 
       gbm = new GBM(parms).trainModel().get();
       ScoreKeeper[] history = gbm._output._scored_train;

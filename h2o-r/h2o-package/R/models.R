@@ -995,6 +995,8 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' @param domain Vector with response factors for classification.
 #' @param distribution Distribution for regression.
 #' @param weights (optional) An H2OFrame containing observation weights.
+#' @param auc_type (optional) For multinomial classification you have to specify which type of agregated AUC/AUCPR will be used to calculate this metric. 
+#         Possibilities are MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR (OVO = One vs. One, OVR = One vs. Rest)
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
 #' \dontrun{
@@ -1008,10 +1010,14 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' h2o.make_metrics(pred, prostate$CAPSULE)
 #' }
 #' @export
-h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL, weights=NULL) {
+h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL, weights=NULL, auc_type="NONE") {
   predicted <- .validate.H2OFrame(predicted, required=TRUE)
   actuals <- .validate.H2OFrame(actuals, required=TRUE)
   weights <- .validate.H2OFrame(weights, required=FALSE)
+  if (!is.character(auc_type)) Log.err("auc_type argument must be of type character")
+  if (!(auc_type %in% c("MACRO_OVO", "MACRO_OVR", "WEIGHTED_OVO", "WEIGHTED_OVR", "NONE", "AUTO"))) {
+    Log.err("auc_type argument must be MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR, NONE, AUTO")
+  }
   params <- list()
   params$predictions_frame <- h2o.getId(predicted)
   params$actuals_frame <- h2o.getId(actuals)
@@ -1033,12 +1039,13 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL,
     out <- paste0(out, "]")
     params[["domain"]] <- out
   }
+  params["auc_type"] <- auc_type  
   url <- paste0("ModelMetrics/predictions_frame/",params$predictions_frame,"/actuals_frame/",params$actuals_frame)
   res <- .h2o.__remoteSend(method = "POST", url, .params = params)
   model_metrics <- res$model_metrics
   metrics <- model_metrics[!(names(model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
   name <- "H2ORegressionMetrics"
-  if (!is.null(metrics$AUC)) name <- "H2OBinomialMetrics"
+  if (!is.null(metrics$AUC) && is.null(metrics$hit_ratio_table)) name <- "H2OBinomialMetrics"
   else if (!is.null(distribution) && distribution == "ordinal") name <- "H2OOrdinalMetrics"
   else if (!is.null(metrics$hit_ratio_table)) name <- "H2OMultinomialMetrics"
   new(Class = name, metrics = metrics)

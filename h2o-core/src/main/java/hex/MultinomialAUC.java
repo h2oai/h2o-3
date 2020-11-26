@@ -81,8 +81,9 @@ public class MultinomialAUC extends Iced {
     public MultinomialAUC(TwoDimTable aucTable, TwoDimTable aucprTable, String[] domain, MultinomialAucType type){
         _default_auc_type = type;
         _domain = domain;
-        if(_domain.length < MAX_AUC_CLASSES) {
-            int domainLength = _domain.length;
+        int domainLength = _domain.length;
+        _calculateAuc = !_default_auc_type.equals(MultinomialAucType.AUTO) && !_default_auc_type.equals(MultinomialAucType.NONE) && domainLength <= MAX_AUC_CLASSES;
+        if(_calculateAuc) {
             _ovoAucs = new PairwiseAUC[(domainLength * domainLength - domainLength) / 2];
             _ovrAucs = new SimpleAUC[domainLength];
             int aucsIndex = 0;
@@ -110,7 +111,6 @@ public class MultinomialAUC extends Iced {
 
             _macroOvoAucPr = (double)aucprTable.get(lastOvoIndex, 3);
             _weightedOvoAucPr = (double)aucprTable.get(lastOvoIndex, 3);
-            _calculateAuc = true;
         } else { // else no result for multinomial AUC - memory issue
             _macroOvoAuc = Double.NaN;
             _weightedOvoAuc = Double.NaN;
@@ -121,7 +121,6 @@ public class MultinomialAUC extends Iced {
             _weightedOvoAucPr = Double.NaN;
             _macroOvrAucPr = Double.NaN;
             _weightedOvrAucPr = Double.NaN;
-            _calculateAuc = false;
         }
     }
     

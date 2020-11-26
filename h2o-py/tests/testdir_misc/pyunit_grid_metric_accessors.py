@@ -71,7 +71,7 @@ def grid_metric_accessors():
     response_col = "cylinders"
     distribution = "multinomial"
     predictors = ["displacement","power","weight","acceleration","year"]
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random", auc_type="MACRO_OVR")
     gbm_grid = H2OGridSearch(gbm, hyper_params=dict(ntrees=[1, 2, 3]))
     gbm_grid.train(x=predictors, y=response_col, training_frame=train, validation_frame=valid)
 
