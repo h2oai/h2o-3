@@ -91,8 +91,5 @@ class PUBDEV6416(unittest.TestCase):
         assert len(grid.models) == 1
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(unittest.main)
-else:
-    suite = unittest.TestLoader().loadTestsFromTestCase(PUBDEV6416)
-    unittest.TextTestRunner().run(suite)
+suite = unittest.TestLoader().loadTestsFromTestCase(PUBDEV6416)
+unittest.TextTestRunner().run(suite)

@@ -22,7 +22,4 @@ def h2o_H2OFrame_modulo_kfold_column():
     assert clist.asfactor().nlevels()[0]==k, "h2o.H2OFrame.modulo_kfold_column() command is not working."
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_modulo_kfold_column())
-else:
-    h2o_H2OFrame_modulo_kfold_column()
+pyunit_utils.standalone_test(h2o_H2OFrame_modulo_kfold_column)

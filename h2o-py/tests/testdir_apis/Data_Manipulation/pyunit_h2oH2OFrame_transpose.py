@@ -26,7 +26,4 @@ def h2o_H2OFrame_transpose():
     pyunit_utils.compare_frames(h2oframe, newFrame.transpose(), h2oframe.nrow, tol_time=0, tol_numeric=1e-6)
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_transpose())
-else:
-    h2o_H2OFrame_transpose()
+pyunit_utils.standalone_test(h2o_H2OFrame_transpose)

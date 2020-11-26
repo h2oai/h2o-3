@@ -25,7 +25,5 @@ def h2o_H2OFrame_cor():
     assert corframe.shape==(2,1), "h2o.H2OFrame.cor() command is not working."
     assert_is_type(corval, float)
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_cor())
-else:
-    h2o_H2OFrame_cor()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_cor)
