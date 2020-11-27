@@ -2,6 +2,7 @@ package hex.tree;
 
 import hex.Distribution;
 import hex.genmodel.utils.DistributionFamily;
+import org.apache.log4j.Logger;
 import sun.misc.Unsafe;
 import water.*;
 import water.fvec.Frame;
@@ -9,7 +10,6 @@ import water.fvec.Vec;
 import water.nbhm.UtilUnsafe;
 import water.util.ArrayUtils;
 import water.util.AtomicUtils;
-import water.util.Log;
 import water.util.RandomUtils;
 
 import java.util.Arrays;
@@ -45,6 +45,9 @@ import java.util.Random;
  *
 */
 public final class DHistogram extends Iced {
+  
+  private static final Logger LOG = Logger.getLogger(DHistogram.class);
+  
   public final transient String _name; // Column name (for debugging)
   public final double _minSplitImprovement;
   public final byte  _isInt;    // 0: float col, 1: int col, 2: categorical & int col
@@ -245,7 +248,7 @@ public final class DHistogram extends Iced {
     assert(_nbin>0);
     assert(_vals == null);
 
-//    Log.info("Histogram: " + this);
+    if (LOG.isTraceEnabled()) LOG.trace("Histogram: " + this);
     // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
   }
 
@@ -314,7 +317,7 @@ public final class DHistogram extends Iced {
         if (hq != null) {
           _splitPts = ((HistoQuantiles) DKV.getGet(_globalQuantilesKey)).splitPts;
           if (_splitPts!=null) {
-//            Log.info("Obtaining global splitPoints: " + Arrays.toString(_splitPts));
+            if (LOG.isTraceEnabled()) LOG.trace("Obtaining global splitPoints: " + Arrays.toString(_splitPts));
             _splitPts = ArrayUtils.limitToRange(_splitPts, _min, _maxEx);
             if (_splitPts.length > 1 && _splitPts.length < _nbin)
               _splitPts = ArrayUtils.padUniformly(_splitPts, _nbin);
@@ -325,7 +328,7 @@ public final class DHistogram extends Iced {
             else {
               _hasQuantiles=true;
               _nbin = (char)_splitPts.length;
-//              Log.info("Refined splitPoints: " + Arrays.toString(_splitPts));
+              if (LOG.isTraceEnabled()) LOG.trace("Refined splitPoints: " + Arrays.toString(_splitPts));
             }
           }
         }
@@ -413,7 +416,7 @@ public final class DHistogram extends Iced {
             null : make(fr._names[c], nbins, type, minIn, maxEx, nacnt > 0, seed, parms, globalQuantilesKey[c], cs);
       } catch(StepOutOfRangeException e) {
         hs[c] = null;
-        Log.warn("Column " + fr._names[c]  + " with min = " + v.min() + ", max = " + v.max() + " has step out of range (" + e.getMessage() + ") and is ignored.");
+        LOG.warn("Column " + fr._names[c]  + " with min = " + v.min() + ", max = " + v.max() + " has step out of range (" + e.getMessage() + ") and is ignored.");
       }
       assert (hs[c] == null || vlen > 0);
     }

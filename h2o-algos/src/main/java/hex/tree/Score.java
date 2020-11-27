@@ -4,18 +4,21 @@ import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.gbm.GBMModel;
+import org.apache.log4j.Logger;
 import water.Iced;
 import water.Key;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.Log;
 import water.udf.CFuncRef;
 
 /** Score the tree columns, and produce a confusion matrix and AUC
  */
 public class Score extends CMetricScoringTask<Score> {
+
+  private static final Logger LOG = Logger.getLogger(Score.class);
+  
   final SharedTree _bldr;
   final boolean _is_train;      // Scoring on pre-scored training data vs full-score data
   final boolean _oob;           // Computed on OOB
@@ -165,7 +168,7 @@ public class Score extends CMetricScoringTask<Score> {
       boolean calculatePreds = preds == null && model.isDistributionHuber();
       // FIXME: PUBDEV-4992 we should avoid doing full scoring!
       if (calculatePreds) {
-        Log.warn("Going to calculate predictions from scratch. This can be expensive for large models! See PUBDEV-4992");
+        LOG.warn("Going to calculate predictions from scratch. This can be expensive for large models! See PUBDEV-4992");
         preds = model.score(fr);
       }
       mm = _mb.makeModelMetrics(model, fr, null, preds);
