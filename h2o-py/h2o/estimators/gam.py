@@ -1003,17 +1003,3 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         self._parms["keep_gam_cols"] = keep_gam_cols
 
 
-    @property
-    def Lambda(self):
-        """DEPRECATED. Use ``self.lambda_`` instead"""
-        return self._parms["lambda"] if "lambda" in self._parms else None
-
-    @Lambda.setter
-    def Lambda(self, value):
-        self._parms["lambda"] = value
-
-    def _additional_used_columns(self, parms):
-        """
-        :return: Gam columns if specified.
-        """
-        return parms["gam_columns"]
