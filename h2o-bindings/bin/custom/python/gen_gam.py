@@ -5,8 +5,20 @@ def update_param(name, param):
     return None  # param untouched
 
 
+def class_extensions():
+    @property
+    def Lambda(self):
+        """DEPRECATED. Use ``self.lambda_`` instead"""
+        return self._parms["lambda"] if "lambda" in self._parms else None
+
+    @Lambda.setter
+    def Lambda(self, value):
+        self._parms["lambda"] = value
+
+
 extensions = dict(
     __imports__="""import h2o""",
+    __class__=class_extensions,
     __init__validation="""
 if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
 """
