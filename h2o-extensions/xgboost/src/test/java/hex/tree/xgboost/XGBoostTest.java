@@ -955,7 +955,7 @@ public class XGBoostTest extends TestUtil {
 
       Frame predicted = Scope.track(noWeightsModel.score(trainingFrameSubset));
       predicted.remove(0);
-      ModelMetricsMultinomial expected = ModelMetricsMultinomial.make(predicted, trainingFrameSubset.vec("C5"));
+      ModelMetricsMultinomial expected = ModelMetricsMultinomial.make(predicted, trainingFrameSubset.vec("C5"), MultinomialAucType.NONE);
 
       checkMetrics(expected, (ModelMetricsMultinomial) model._output._training_metrics);
       checkMetrics(expected, (ModelMetricsMultinomial) noWeightsModel._output._training_metrics);
