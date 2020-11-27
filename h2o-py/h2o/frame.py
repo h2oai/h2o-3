@@ -451,7 +451,6 @@ class H2OFrame(Keyed):
         p = {"destination_frame": None,
              "parse_type": None,
              "separator": None,
-             "single_quotes": setup["single_quotes"],
              "check_header": None,
              "number_columns": None,
              "chunk_size": None,

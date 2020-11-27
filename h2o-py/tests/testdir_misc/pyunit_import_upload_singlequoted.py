@@ -1,6 +1,7 @@
 import sys
 
 import h2o
+from h2o.exceptions import H2OTypeError
 from tests import pyunit_utils
 
 sys.path.insert(1, "../../")
@@ -21,15 +22,15 @@ def import_upload_singlequoted():
         h2o.import_file(path=pyunit_utils.locate("smalldata/parser/single_quotes_mixed.csv"),
                         quotechar="f")
         assert False
-    except ValueError as e:
-        assert e.args[0] == "Only single quotes (') and double quotes (\") are allowed."
+    except H2OTypeError as e:
+        assert e.var_name == "quotechar"
 
     try:
         h2o.upload_file(path=pyunit_utils.locate("smalldata/parser/single_quotes_mixed.csv"),
                         quotechar="f")
         assert False
-    except ValueError as e:
-        assert e.args[0] == "Only single quotes (') and double quotes (\") are allowed."
+    except H2OTypeError as e:
+        assert e.var_name == "quotechar"
 
 
 if __name__ == "__main__":

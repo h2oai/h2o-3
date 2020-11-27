@@ -369,7 +369,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
-    :param quotechar: A hint for the parser which character to expect as quoting character. None (default) means autodetection.
+    :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -387,7 +387,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
-    assert_is_type(quotechar, str, None)
+    assert_is_type(quotechar, None, U("'", '"'))
     assert (skipped_columns==None) or isinstance(skipped_columns, list), \
         "The skipped_columns should be an list of column names!"
 
@@ -436,10 +436,10 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
     :param pattern: Character string containing a regular expression to match file(s) in the folder if `path` is a
-        directory.
+        directory.  
     :param skipped_columns: an integer list of column indices to skip and not parsed into the final frame from the import file.
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
-    :param quotechar: A hint for the parser which character to expect as quoting character. None (default) means autodetection.
+    :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -461,7 +461,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
     assert_is_type(partition_by, None, [str], str)
-    assert_is_type(quotechar, str, None)
+    assert_is_type(quotechar, None, U("'", '"'))
     assert isinstance(skipped_columns, (type(None), list)), "The skipped_columns should be an list of column names!"
     check_frame_id(destination_frame)
     patharr = path if isinstance(path, list) else [path]
@@ -733,7 +733,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
     :param partition_by: A list of columns the dataset has been partitioned by. None by default.
-    :param quotechar: A hint for the parser which character to expect as quoting character. None (default) means autodetection.
+    :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
 
     :returns: a dictionary containing parse parameters guessed by the H2O backend.
 
@@ -766,18 +766,15 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     assert_is_type(column_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
     assert_is_type(partition_by, None, [str], str)
-    assert_is_type(quotechar, str, None)
+    assert_is_type(quotechar, None, U("'", '"'))
     check_frame_id(destination_frame)
 
     # The H2O backend only accepts things that are quoted
     if is_type(raw_frames, str): raw_frames = [raw_frames]
 
-    if quotechar not in ["\"", "'", None]:
-        raise ValueError("Only single quotes (') and double quotes (\") are allowed.")
-
     # temporary dictionary just to pass the following information to the parser: header, separator
     kwargs = {"check_header": header, "source_frames": [quoted(frame_id) for frame_id in raw_frames],
-              "single_quotes": True if quotechar == "'" else False}
+              "single_quotes": quotechar == "'"}
     if separator:
         kwargs["separator"] = ord(separator)
 
