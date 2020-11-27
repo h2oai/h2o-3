@@ -8,14 +8,28 @@ sys.path.insert(1, "../../")
 
 def import_upload_singlequoted():
     airlines_import = h2o.import_file(path=pyunit_utils.locate("smalldata/parser/single_quotes_mixed.csv"),
-                                      single_quotes=True)
+                                      quotechar="'")
     assert airlines_import.ncols == 20
     assert airlines_import.nrows == 7
 
     airlines_upload = h2o.upload_file(path=pyunit_utils.locate("smalldata/parser/single_quotes_mixed.csv"),
-                                      single_quotes=True)
+                                      quotechar="\'")
     assert airlines_upload.ncols == 20
     assert airlines_upload.nrows == 7
+
+    try:
+        h2o.import_file(path=pyunit_utils.locate("smalldata/parser/single_quotes_mixed.csv"),
+                        quotechar="f")
+        assert False
+    except ValueError as e:
+        assert e.args[0] == "Only single quotes (') and double quotes (\") are allowed."
+
+    try:
+        h2o.upload_file(path=pyunit_utils.locate("smalldata/parser/single_quotes_mixed.csv"),
+                        quotechar="f")
+        assert False
+    except ValueError as e:
+        assert e.args[0] == "Only single quotes (') and double quotes (\") are allowed."
 
 
 if __name__ == "__main__":
