@@ -525,11 +525,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         usedColumns.add(value);
       }
     }
-    
-    public Set<String> getUsedColumns(String[] trainNames) {
-      Set<String> trainColumns = new HashSet<>(Arrays.asList(trainNames));
-      Set<String> usedColumns = new HashSet<>();
-      Field[] fields = Weaver.getWovenFields(this.getClass());
+
+    /**
+     * Looks for all String parameters with the word 'column' in the parameter name, if
+     * the parameter value is present in supplied array of strings, it will be added to the
+     * returned set of used columns.
+     * 
+     * @param trainNames names of columns in the training frame
+     * @return set of names of columns present in the params as well as the training frame names
+     */
+    public Set<String> getUsedColumns(final String[] trainNames) {
+      final Set<String> trainColumns = new HashSet<>(Arrays.asList(trainNames));
+      final Set<String> usedColumns = new HashSet<>();
+      final Field[] fields = Weaver.getWovenFields(this.getClass());
       for (Field f : fields) {
         if (f.getName().equals("_ignored_columns") || !f.getName().toLowerCase().contains("column")) continue;
         Class<?> c = f.getType();
