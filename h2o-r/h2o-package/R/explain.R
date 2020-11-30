@@ -549,10 +549,9 @@ with_no_h2o_progress <- function(expr) {
 #' Plot variable importances with ggplot2
 #'
 #' @param model H2OModel
-#' @param newdata H2OFrame
 #' @param top_n Plot just top_n features
 #' @return list of variable importance, groupped variable importance, and variable importance plot
-.plot_varimp <- function(model, newdata, top_n = 10) {
+.plot_varimp <- function(model, top_n = 10) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   with_no_h2o_progress({
@@ -2601,7 +2600,7 @@ h2o.explain <- function(object,
       varimp <- NULL
       for (m in models_info$model_ids) {
         m <- models_info$get_model(m)
-        tmp <- .plot_varimp(m, newdata)
+        tmp <- .plot_varimp(m)
         if (!is.null(tmp$varimp)) {
           result$varimp$plots[[m@model_id]] <- tmp$plot
           if (is.null(varimp)) varimp <- names(tmp$grouped_varimp)
