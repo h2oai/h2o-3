@@ -936,12 +936,20 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Log.info(mainModel._output._cross_validation_metrics.toString());
     mainModel._output._cross_validation_metrics_summary = makeCrossValidationSummaryTable(cvModKeys);
 
+    // Put cross-validation scoring history to the main model
+    mainModel._output._cv_scoring_history = new TwoDimTable[cvModKeys.length];
+    for (int i = 0; i < cvModKeys.length; i++) {
+        mainModel._output._cv_scoring_history[i] = (TwoDimTable) cvModKeys[i].get()._output._scoring_history.clone();
+    }
+
     if (!_parms._keep_cross_validation_models) {
       int count = Model.deleteAll(cvModKeys);
       Log.info(count+" CV models were removed");
     }
 
     mainModel._output._total_run_time = _build_model_countdown.elapsedTime();
+
+
     // Now, the main model is complete (has cv metrics)
     DKV.put(mainModel);
   }

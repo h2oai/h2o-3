@@ -2387,6 +2387,188 @@ h2o.ice_plot <- function(model,
   })
 }
 
+#' Generate Learning Curve Plot
+#'
+#' ...
+#'
+#' @param model model
+#' @param metric Metric to be used for the learning curve plot
+h2o.learning_curve_plot <- function(model,
+                                    metric = c("AUTO", "convergence", "deviance", "logloss",
+                                               "MSE", "RMSE", "MAE", "RMSLE",
+                                               "AUC", "AUCPR", "lift_top_group",
+                                               "misclassification",
+                                               "mean_per_class_error")) {
+  metric <- match.arg(metric)
+
+  allowed_metrics <- c()
+  allowed_timestep <- c()
+  sh <- model@model$scoring_history
+
+  if (model@algorithm == "glm") {
+    hglm <- model@parameters$HGLM
+    if (x@allparameters$lambda_search) {
+      allowed_metrics <- c("deviance_train", "deviance_test", "deviance_xval")
+      allowed_timesteps <- c("iteration", "duration")
+      sh <- sh[sh["alpha"] == model@model$alpha_best,]
+    } else if (!is.null(hglm) && hglm) {
+      allowed_metrics <- c("convergence", "sumetaieta02")
+      allowed_timesteps <- c("iterations", "duration")
+    } else {
+      allowed_metrics <- c("objective", "negative_log_likelihood")
+      allowed_timesteps <- c("iterations", "duration")
+    }
+  } else if (model@algorithm == "glrm") {
+    allowed_metrics <- c("objective", "step_size")
+    allowed_timesteps <- "iteration"
+  } else if (model@algorithm %in% c("deeplearning", "drf", "gbm")) {
+    if (is(model, "H2OBinomialModel")) {
+      allowed_metrics <- c("logloss","auc","classification_error","rmse")
+    } else if (is(model, "H2OMultinomialModel") || is(x, "H2OOrdinalModel")) {
+        allowed_metrics <- c("classification_error", "logloss", "rmse")
+    } else if (is(model, "H2ORegressionModel")) {
+        allowed_metrics <- c("rmse","deviance","mae")
+    }
+  }
+
+  if (model@algorithm == "deeplearning") {
+    allowed_timesteps <- c("epochs", "samples", "duration")
+  } else if (model@algorithm %in% c("drf", "gbm", "xgboost")) {
+    allowed_timesteps <- c("number_of_trees")
+  }
+
+  if (metric == "AUTO") {
+    metric <- allowed_metrics[[1]]
+  }
+
+  if (!(metric %in% allowed_metrics)) {
+    stop("Metric must be one of: ", paste(allowed_metrics, collapse = ", "))
+  }
+
+  timestep <- allowed_timestep[[1]]
+
+  # FIXME: GLM is quite messy, find out what could be used and when
+  training_metric <-
+    if (model@algorithm == "glm")
+      paste0(metric, "_train")
+    else
+      paste0("training_", metric)
+  validation_metric <-
+    if (model@algorithm == "glm")
+      paste0(metric, "_test")
+    else
+      paste0("validation_", metric)
+
+  selected_timestep_value <- model@parameters$ntrees
+
+  scoring_history <-
+    data.frame(
+      model = "Main Model",
+      type = "Training",
+      x = sh[[timestep]],
+      metric = sh[[training_metric]]
+    )
+  if (validation_metric %in% names(sh)) {
+    scoring_history <- rbind(
+      scoring_history,
+      data.frame(
+        model = "Main Model",
+        type = "Validation",
+        x = sh[[timestep]],
+        metric = sh[[validation_metric]]
+      )
+    )
+  }
+
+  if (!is.null(model@model$cv_scoring_history)) {
+    cv_scoring_history <- data.frame()
+    for (csh_idx in seq_along(model@model$cv_scoring_history)) {
+      csh <- as.data.frame(model@model$cv_scoring_history[[csh_idx]])
+      cv_scoring_history <- rbind(
+        cv_scoring_history,
+        data.frame(
+          model = paste0("CV-", csh_idx),
+          type = "CV_Training",
+          x = csh[[timestep]],
+          metric = csh[[training_metric]]
+        )
+      )
+      cv_scoring_history <- rbind(
+        cv_scoring_history,
+        data.frame(
+          model = paste0("CV-", csh_idx),
+          type = "CV_Validation",
+          x = csh[[timestep]],
+          metric = csh[[validation_metric]]
+        )
+      )
+    }
+
+    cvsh_mean <-
+      as.data.frame(tapply(cv_scoring_history[, "metric"], cv_scoring_history[, c("x", "type")], mean, na.rm = TRUE))
+    names(cvsh_mean) <- paste0(names(cvsh_mean), "_mean")
+    cvsh_sd <-
+      as.data.frame(tapply(cv_scoring_history[, "metric"], cv_scoring_history[, c("x", "type")], sd, na.rm = TRUE))
+    names(cvsh_sd) <- paste0(names(cvsh_sd), "_sd")
+    cvsh <- cbind(cvsh_mean, cvsh_sd)
+    cvsh$x <- as.numeric(row.names(cvsh))
+
+    cvsh <- rbind(
+      data.frame(
+        x = cvsh$x,
+        mean = cvsh$CV_Training_mean,
+        type = "CV-Training",
+        lower_bound = cvsh$CV_Training_mean - cvsh$CV_Training_sd,
+        upper_bound = cvsh$CV_Training_mean + cvsh$CV_Training_sd
+      ),
+      data.frame(
+        x = cvsh$x,
+        mean = cvsh$CV_Validation_mean,
+        type = "CV-Validation",
+        lower_bound = cvsh$CV_Validation_mean - cvsh$CV_Validation_sd,
+        upper_bound = cvsh$CV_Validation_mean + cvsh$CV_Validation_sd
+      )
+    )
+  }
+
+
+  p <- ggplot2::ggplot(ggplot2::aes_string(
+    x = "x",
+    y = "metric",
+    color = "type",
+    fill = "type"
+  ),
+                  data = scoring_history) +
+    ggplot2::geom_line() +
+    ggplot2::geom_point() +
+    ggplot2::geom_line(ggplot2::aes_string(y = "mean"), data = cvsh) +
+    ggplot2::geom_ribbon(
+      ggplot2::aes_string(
+        ymin = "lower_bound",
+        ymax = "upper_bound",
+        y = NULL,
+        color = NULL
+      ),
+      alpha = 0.25,
+      data = cvsh[!is.na(cvsh$lower_bound) &
+                    !is.na(cvsh$upper_bound),]
+    ) +
+    ggplot2::geom_vline(ggplot2::aes_(
+      xintercept = selected_timestep_value,
+      linetype = paste("Selected", timestep)
+    )) +
+    ggplot2::labs(
+      x = timestep,
+      y = metric,
+      title = "Learning Curve",
+      subtitle = paste("for", model@model_id)
+    ) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(legend.title = ggplot2::element_blank())
+
+  return(p)
+}
+
 ######################################## Explain ###################################################
 
 #' Generate Model Explanations
