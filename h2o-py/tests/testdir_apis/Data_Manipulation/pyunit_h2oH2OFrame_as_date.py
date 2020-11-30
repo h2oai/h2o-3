@@ -31,7 +31,5 @@ def h2o_H2OFrame_as_date():
 
     assert abs(pythonTime-temp[row_ind,0]) < 1e-10, "h2o.H2OFrame.as_date() command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_as_date())
-else:
-    h2o_H2OFrame_as_date()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_as_date)

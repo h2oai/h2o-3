@@ -21,7 +21,5 @@ def h2o_H2OFrame_categories():
     assert pyunit_utils.equal_two_arrays(alllevels, truelevels, 1e-10, 0), "h2o.H2OFrame.categories() command is" \
                                                                            " not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_categories())
-else:
-    h2o_H2OFrame_categories()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_categories)

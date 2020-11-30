@@ -22,7 +22,6 @@ def permutation_varimp_oat(model, frame):
     :param model: trained model
     :param frame: training frame
     """
-
     if type(frame) is not H2OFrame:
         raise H2OValueError("Frame is not H2OFrame")
 
@@ -54,7 +53,6 @@ def permutation_varimp_oat(model, frame):
 
     plt.show()
 
-
 def permutation_varimp(model, frame, use_pandas=True, metric="mse"):
     """
     Get Permutation Variable Importance Frame. 
@@ -75,7 +73,6 @@ def permutation_varimp(model, frame, use_pandas=True, metric="mse"):
         raise H2OValueError("Metric " + metric + " doesn't exist for this model.")
 
     m_frame = H2OFrame._expr(ExprNode("PermutationVarImp", model, frame, metric))
-
     if use_pandas and can_use_pandas():
         import pandas
         pd = h2o.as_list(m_frame)

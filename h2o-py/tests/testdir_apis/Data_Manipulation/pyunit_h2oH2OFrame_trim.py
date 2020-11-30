@@ -23,7 +23,4 @@ def h2o_H2OFrame_trim():
                                                        "but got {}".format(trimmed_frame[2,0])
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_trim())
-else:
-    h2o_H2OFrame_trim()
+pyunit_utils.standalone_test(h2o_H2OFrame_trim)

@@ -19,7 +19,5 @@ def h2o_H2OFrame_strsplit():
     assert result[0,0] == "Iris" and result[0,1] == "setosa", "Expected 'Iris' and 'setosa', but got {0} and " \
                                                               "{1}".format(result[0,0], result[0,1])
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_strsplit())
-else:
-    h2o_H2OFrame_strsplit()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_strsplit)

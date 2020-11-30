@@ -15,7 +15,5 @@ def h2o_H2OFrame_sd():
     framesd = newframe.sd()
     assert (abs(framesd[0]-1) < 1e-3) and (abs(framesd[1]-1))<1e-3, "h2o.H2OFrame.sd() command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_sd())
-else:
-    h2o_H2OFrame_sd()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_sd)

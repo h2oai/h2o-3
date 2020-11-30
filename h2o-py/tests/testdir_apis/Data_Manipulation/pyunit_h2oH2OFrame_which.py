@@ -18,7 +18,5 @@ def h2o_H2OFrame_which():
     assert_is_type(newFrame, H2OFrame)     # check return type
     assert newFrame[1:h2oframe.nrow,0].all(), "h2o.H2OFrame.which() command is not working."  # check return result
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_which())
-else:
-    h2o_H2OFrame_which()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_which)

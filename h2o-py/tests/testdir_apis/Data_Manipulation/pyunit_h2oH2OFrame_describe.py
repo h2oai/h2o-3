@@ -19,7 +19,5 @@ def h2o_H2OFrame_describe():
                             column_names=col_names, column_types=col_types, na_strings=na_str)
     h2oframe.describe(chunk_summary=True)
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_describe())
-else:
-    h2o_H2OFrame_describe()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_describe)
