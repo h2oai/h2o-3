@@ -24,7 +24,7 @@ import static hex.genmodel.utils.DistributionFamily.gaussian;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class PermutationVarImpMetricPassTest extends TestUtil {
+public class PermutationVarImpTest extends TestUtil {
 
     @BeforeClass
     public static void stall() {
@@ -36,7 +36,7 @@ public class PermutationVarImpMetricPassTest extends TestUtil {
      * GLM binomial model
      */
     @Test
-    public void testMetricBinomial() {
+    public void testMetricGLMBinomial() {
         GLMModel model = null;
         Frame fr = parse_test_file("smalldata/glm_test/glm_test2.csv");
         Frame score = null;
@@ -96,7 +96,6 @@ public class PermutationVarImpMetricPassTest extends TestUtil {
             Scope.exit();
         }
     }
-
     /**
      * Test the TwoDimTable of Permutation Variable Importance and One At a Time
      * GBM gaussian model
