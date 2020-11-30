@@ -19,7 +19,5 @@ def h2o_H2OFrame_asnumeric():
     assert newFrame.isfactor()[0] and newFrame.isfactor()[newFrame.ncols-1], \
         "h2o.H2OFrame.asfactor() command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_asnumeric())
-else:
-    h2o_H2OFrame_asnumeric()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_asnumeric)

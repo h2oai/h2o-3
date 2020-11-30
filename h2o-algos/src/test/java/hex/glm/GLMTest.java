@@ -2,6 +2,7 @@ package hex.glm;
 
 import hex.*;
 import hex.DataInfo.TransformType;
+import hex.genmodel.algos.glm.GlmMojoModel;
 import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
@@ -25,6 +26,7 @@ import java.util.HashMap;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
+import static hex.genmodel.utils.ArrayUtils.flat;
 import static org.junit.Assert.*;
 
 public class GLMTest  extends TestUtil {
@@ -175,17 +177,17 @@ public class GLMTest  extends TestUtil {
           double temp2 = coeffF.get(key);
           if (Math.abs(temp1 - temp2) > 1e-6) { // coefficient same for categoricals, different for numericals
             String[] coNames = key.split("_");
-            if (!(coNames[1].equals("Intercept"))) {  // skip over intercepts
-              String colnames = coNames[1];
-              interPClass[Integer.valueOf(coNames[0])] += temp2 * cMeans.get(colnames);
+            if (!(coNames[0].equals("Intercept"))) {  // skip over intercepts
+              String colnames = coNames[0];
+              interPClass[Integer.valueOf(coNames[1])] += temp2 * cMeans.get(colnames);
               temp2 = temp2 * cSigmas.get(colnames);
-              assert Math.abs(temp1 - temp2) < 1e-6 : "Expected coefficients for " + coNames[1] + " is " + temp1 + " but actual " + temp2;
+              assert Math.abs(temp1 - temp2) < 1e-6 : "Expected coefficients for " + coNames[0] + " is " + temp1 + " but actual " + temp2;
             }
           }
         }
         // check for equality of intercepts
         for (int index = 0; index < glmF._output._nclasses; index++) {
-          String interceptKey = index + "_Intercept";
+          String interceptKey = "Intercept_" + index;
           double temp1 = coeffSF.get(interceptKey);
           double temp2 = coeffF.get(interceptKey) + interPClass[index];
           assert Math.abs(temp1 - temp2) < 1e-6 : "Expected coefficients for " + interceptKey + " is " + temp1 + " but actual "
@@ -213,7 +215,7 @@ public class GLMTest  extends TestUtil {
       new TestUtil.StandardizeColumns(numCols2Transform, colMeans, oneOSigma, train).doAll(train);
       DKV.put(train);
       Scope.track(train);
-      
+
       params._standardize=false;
       params._train = train._key;
       GLMModel glmS = new GLM(params).trainModel().get();
@@ -242,25 +244,27 @@ public class GLMTest  extends TestUtil {
     Key parsed = Key.make("gaussian_test_data_parsed");
     GLMModel model = null;
     Frame fr = null, res = null;
-    try {
-      // make data so that the expected coefficients is icept = col[0] = 1.0
-      FVecFactory.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9");
-      fr = ParseDataset.parse(parsed, raw);
-      GLMParameters params = new GLMParameters(Family.gaussian);
-      params._train = fr._key;
-      // params._response = 1;
-      params._response_column = fr._names[1];
-      params._lambda = new double[]{0};
-//      params._standardize= false;
-      model = new GLM(params).trainModel().get();
-      HashMap<String, Double> coefs = model.coefficients();
-      assertEquals(0.0, coefs.get("Intercept"), 1e-4);
-      assertEquals(0.1, coefs.get("x"), 1e-4);
-      testScoring(model,fr);
-    } finally {
-      if (fr != null) fr.remove();
-      if (res != null) res.remove();
-      if (model != null) model.remove();
+    for (Family family : new Family[]{Family.gaussian, Family.AUTO}) {
+      try {
+        // make data so that the expected coefficients is icept = col[0] = 1.0
+        FVecFactory.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9");
+        fr = ParseDataset.parse(parsed, raw);
+        GLMParameters params = new GLMParameters(family);
+        params._train = fr._key;
+        // params._response = 1;
+        params._response_column = fr._names[1];
+        params._lambda = new double[]{0};
+  //      params._standardize= false;
+        model = new GLM(params).trainModel().get();
+        HashMap<String, Double> coefs = model.coefficients();
+        assertEquals(0.0, coefs.get("Intercept"), 1e-4);
+        assertEquals(0.1, coefs.get("x"), 1e-4);
+        testScoring(model,fr);
+      } finally {
+        if (fr != null) fr.remove();
+        if (res != null) res.remove();
+        if (model != null) model.remove();
+      }
     }
   }
 
@@ -567,35 +571,37 @@ public class GLMTest  extends TestUtil {
       -4.303234e-04,  2.608783e-05,  7.889196e-05, -3.559375e-04, -5.551586e-04, -2.777131e-04, 6.505911e-04,  1.033867e-05,  1.837583e-05,  6.750772e-04,
        1.247379e-04, -5.408403e-04,  -4.453114e-04,
     };
-  Vec origRes = null;
-    try {
-      fr = parse_test_file(parsed, "smalldata/covtype/covtype.20k.data");
-      fr.remove("C21").remove();
-      fr.remove("C29").remove();
-      GLMParameters params = new GLMParameters(Family.multinomial);
-      params._response_column = "C55";
-      // params._response = fr.find(params._response_column);
-      params._ignored_columns = new String[]{};
-      params._train = parsed;
-      params._lambda = new double[]{0};
-      params._alpha = new double[]{0};
-      origRes = fr.remove("C55");
-      Vec res = fr.add("C55",origRes.toCategoricalVec());
-      double [] means = new double [res.domain().length];
-      long [] bins = res.bins();
-      double sumInv = 1.0/ArrayUtils.sum(bins);
-      for(int i = 0; i < bins.length; ++i)
-        means[i] = bins[i]*sumInv;
-      DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      GLMTask.GLMMultinomialGradientBaseTask gmt = new GLMTask.GLMMultinomialGradientTask(null,dinfo,0,beta,1.0/fr.numRows()).doAll(dinfo._adaptedFrame);
-      assertEquals(0.6421113,gmt._likelihood/fr.numRows(),1e-8);
-      System.out.println("likelihood = " + gmt._likelihood/fr.numRows());
-      double [] g = gmt.gradient();
-      for(int i = 0; i < g.length; ++i)
-        assertEquals("Mismatch at coefficient '" + "' (" + i + ")",exp_grad[i], g[i], 1e-8);
-    } finally {
-      if(origRes != null)origRes.remove();
-      if (fr != null) fr.delete();
+    Vec origRes = null;
+    for (Family family : new Family[]{Family.multinomial, Family.AUTO}) {
+      try {
+        fr = parse_test_file(parsed, "smalldata/covtype/covtype.20k.data");
+        fr.remove("C21").remove();
+        fr.remove("C29").remove();
+        GLMParameters params = new GLMParameters(family/*Family.multinomial*/);
+        params._response_column = "C55";
+        // params._response = fr.find(params._response_column);
+        params._ignored_columns = new String[]{};
+        params._train = parsed;
+        params._lambda = new double[]{0};
+        params._alpha = new double[]{0};
+        origRes = fr.remove("C55");
+        Vec res = fr.add("C55",origRes.toCategoricalVec());
+        double [] means = new double [res.domain().length];
+        long [] bins = res.bins();
+        double sumInv = 1.0/ArrayUtils.sum(bins);
+        for(int i = 0; i < bins.length; ++i)
+          means[i] = bins[i]*sumInv;
+        DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
+        GLMTask.GLMMultinomialGradientBaseTask gmt = new GLMTask.GLMMultinomialGradientTask(null,dinfo,0,beta,1.0/fr.numRows()).doAll(dinfo._adaptedFrame);
+        assertEquals(0.6421113,gmt._likelihood/fr.numRows(),1e-8);
+        System.out.println("likelihood = " + gmt._likelihood/fr.numRows());
+        double [] g = gmt.gradient();
+        for(int i = 0; i < g.length; ++i)
+          assertEquals("Mismatch at coefficient '" + "' (" + i + ")",exp_grad[i], g[i], 1e-8);
+      } finally {
+        if(origRes != null)origRes.remove();
+        if (fr != null) fr.delete();
+      }
     }
   }
   //------------ TEST on selected files form small data and compare to R results ------------------------------------
@@ -807,6 +813,32 @@ public class GLMTest  extends TestUtil {
     }
   }
 
+  @Ignore // remove when PUBDEV-7693 is fixed
+  @Test
+  public void testInteractionPairs_airlines() {
+    Scope.enter();
+    try {
+      Frame train = Scope.track(parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip"));
+      Frame test = Scope.track(parse_test_file("smalldata/airlines/AirlinesTest.csv.zip"));
+      GLMParameters params = new GLMParameters();
+      params._family = Family.binomial;
+      params._response_column = "IsDepDelayed";
+      params._ignored_columns = new String[]{"IsDepDelayed_REC"};
+      params._train = train._key;
+      params._interaction_pairs = new StringPair[] {
+          new StringPair("DepTime", "UniqueCarrier"),
+          new StringPair("DepTime", "Origin"),
+          new StringPair("UniqueCarrier", "Origin")
+      };
+      GLM glm = new GLM(params);
+      GLMModel model = (GLMModel) Scope.track_generic(glm.trainModel().get());
+      Frame scored = Scope.track(model.score(test));
+      model.testJavaScoring(train, scored, 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
   @Test
   public void testCoordinateDescent_airlines() {
     GLMModel model = null;
@@ -1907,7 +1939,7 @@ public class GLMTest  extends TestUtil {
               parms2._objective_epsilon = 1e-8;
               GLMModel model2 = new GLM(parms2).trainModel().get();
               double[] beta_ls = rp._coefficients_std[i];
-              double [] beta = fam == Family.multinomial?ArrayUtils.flat(model2._output.getNormBetaMultinomial()):model2._output.getNormBeta();
+              double [] beta = fam == Family.multinomial?flat(model2._output.getNormBetaMultinomial()):model2._output.getNormBeta();
               System.out.println(ArrayUtils.pprint(new double[][]{beta,beta_ls}));
               // Can't compare beta here, have to compare objective value
               double null_dev = ((GLMMetrics) model2._output._training_metrics).null_deviance();
@@ -2157,6 +2189,7 @@ public class GLMTest  extends TestUtil {
       parms._train = trn._key;
       parms._response_column = "label";
       parms._missing_values_handling = MissingValuesHandling.Skip;
+      GLMParameters parms2 = (GLMParameters) parms.clone(); 
       GLMModel m = new GLM(parms).trainModel().get();
       System.out.println("coefficients = " + m.coefficients());
       double icpt = m.coefficients().get("Intercept");
@@ -2165,8 +2198,8 @@ public class GLMTest  extends TestUtil {
       Assert.assertEquals(icpt+m.coefficients().get("color.blue"), preds.vec(0).at(1), 0);
       Assert.assertEquals(icpt+m.coefficients().get("color.blue"), preds.vec(0).at(2), 0);
       Assert.assertEquals(icpt, preds.vec(0).at(3), 0);
-      parms._missing_values_handling = MissingValuesHandling.MeanImputation;
-      GLMModel m2 = new GLM(parms).trainModel().get();
+      parms2._missing_values_handling = MissingValuesHandling.MeanImputation;
+      GLMModel m2 = new GLM(parms2).trainModel().get();
       Frame preds2 = m2.score(tst);
       icpt = m2.coefficients().get("Intercept");
       System.out.println("coefficients = " + m2.coefficients());

@@ -50,7 +50,7 @@ Example
 		cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 
 		# set the predictor names and the response column name
-		predictors <- c("displacement","power","weight","acceleration","year")
+		predictors <- c("displacement", "power", "weight", "acceleration", "year")
 		response <- "economy_20mpg"
 
 		# try using the fold_assignment parameter:

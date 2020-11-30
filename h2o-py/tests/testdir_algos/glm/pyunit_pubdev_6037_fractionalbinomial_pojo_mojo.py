@@ -2,6 +2,7 @@ import sys, os
 sys.path.insert(1, "../../../")
 import h2o
 from tests import pyunit_utils
+import tempfile
 
 def glm_fractional_binomial_mojo_pojo():
     params = set_params()
@@ -10,10 +11,9 @@ def glm_fractional_binomial_mojo_pojo():
     x = ["log10conc"]
     y = "y"
 
-    glmModel = pyunit_utils.build_save_model_GLM(params, x, train, y) # build and save mojo model
-
+    TMPDIR = tempfile.mkdtemp()
+    glmModel = pyunit_utils.build_save_model_generic(params, x, train, y, "glm", TMPDIR) # build and save mojo model
     MOJONAME = pyunit_utils.getMojoName(glmModel._id)
-    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
 
     h2o.download_csv(test[x], os.path.join(TMPDIR, 'in.csv'))  # save test file, h2o predict/mojo use same file
     pred_h2o, pred_mojo = pyunit_utils.mojo_predict(glmModel, TMPDIR, MOJONAME)  # load model and perform predict

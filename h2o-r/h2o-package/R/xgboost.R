@@ -52,7 +52,7 @@
 #' @param checkpoint Model checkpoint to resume training with.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param ntrees (same as n_estimators) Number of trees. Defaults to 50.
-#' @param max_depth Maximum tree depth. Defaults to 6.
+#' @param max_depth Maximum tree depth (0 for unlimited). Defaults to 6.
 #' @param min_rows (same as min_child_weight) Fewest allowed (weighted) observations in a leaf. Defaults to 1.
 #' @param min_child_weight (same as min_rows) Fewest allowed (weighted) observations in a leaf. Defaults to 1.
 #' @param learn_rate (same as eta) Learning rate (from 0.0 to 1.0) Defaults to 0.3.
@@ -63,10 +63,12 @@
 #' @param colsample_bylevel (same as col_sample_rate) Column sample rate (from 0.0 to 1.0) Defaults to 1.
 #' @param col_sample_rate_per_tree (same as colsample_bytree) Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param colsample_bytree (same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
+#' @param colsample_bynode Column sample rate per tree node (from 0.0 to 1.0) Defaults to 1.
 #' @param max_abs_leafnode_pred (same as max_delta_step) Maximum absolute value of a leaf node prediction Defaults to 0.0.
 #' @param max_delta_step (same as max_abs_leafnode_pred) Maximum absolute value of a leaf node prediction Defaults to 0.0.
 #' @param monotone_constraints A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
 #'        decreasing constraint.
+#' @param interaction_constraints A set of allowed column interactions.
 #' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
 #' @param min_split_improvement (same as gamma) Minimum relative improvement in squared error reduction for a split to happen Defaults to 0.0.
 #' @param gamma (same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen
@@ -81,8 +83,6 @@
 #' @param calibration_frame Calibration frame for Platt Scaling
 #' @param max_bins For tree_method=hist only: maximum number of bins Defaults to 256.
 #' @param max_leaves For tree_method=hist only: maximum number of leaves Defaults to 0.
-#' @param min_sum_hessian_in_leaf For tree_method=hist only: the mininum sum of hessian in a leaf to keep splitting Defaults to 100.0.
-#' @param min_data_in_leaf For tree_method=hist only: the mininum data in a leaf to keep splitting Defaults to 0.0.
 #' @param sample_type For booster=dart only: sample_type Must be one of: "uniform", "weighted". Defaults to uniform.
 #' @param normalize_type For booster=dart only: normalize_type Must be one of: "tree", "forest". Defaults to tree.
 #' @param rate_drop For booster=dart only: rate_drop (0..1) Defaults to 0.0.
@@ -99,6 +99,7 @@
 #' @param backend Backend. By default (auto), a GPU is used if available. Must be one of: "auto", "gpu", "cpu". Defaults to
 #'        auto.
 #' @param gpu_id Which GPU to use.  Defaults to 0.
+#' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @examples
 #' \dontrun{
@@ -164,9 +165,11 @@ h2o.xgboost <- function(x,
                         colsample_bylevel = 1,
                         col_sample_rate_per_tree = 1,
                         colsample_bytree = 1,
+                        colsample_bynode = 1,
                         max_abs_leafnode_pred = 0.0,
                         max_delta_step = 0.0,
                         monotone_constraints = NULL,
+                        interaction_constraints = NULL,
                         score_tree_interval = 0,
                         min_split_improvement = 0.0,
                         gamma = 0.0,
@@ -177,8 +180,6 @@ h2o.xgboost <- function(x,
                         calibration_frame = NULL,
                         max_bins = 256,
                         max_leaves = 0,
-                        min_sum_hessian_in_leaf = 100.0,
-                        min_data_in_leaf = 0.0,
                         sample_type = c("uniform", "weighted"),
                         normalize_type = c("tree", "forest"),
                         rate_drop = 0.0,
@@ -192,6 +193,7 @@ h2o.xgboost <- function(x,
                         dmatrix_type = c("auto", "dense", "sparse"),
                         backend = c("auto", "gpu", "cpu"),
                         gpu_id = 0,
+                        gainslift_bins = -1,
                         verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -288,12 +290,16 @@ h2o.xgboost <- function(x,
     parms$col_sample_rate_per_tree <- col_sample_rate_per_tree
   if (!missing(colsample_bytree))
     parms$colsample_bytree <- colsample_bytree
+  if (!missing(colsample_bynode))
+    parms$colsample_bynode <- colsample_bynode
   if (!missing(max_abs_leafnode_pred))
     parms$max_abs_leafnode_pred <- max_abs_leafnode_pred
   if (!missing(max_delta_step))
     parms$max_delta_step <- max_delta_step
   if (!missing(monotone_constraints))
     parms$monotone_constraints <- monotone_constraints
+  if (!missing(interaction_constraints))
+    parms$interaction_constraints <- interaction_constraints
   if (!missing(score_tree_interval))
     parms$score_tree_interval <- score_tree_interval
   if (!missing(min_split_improvement))
@@ -314,10 +320,6 @@ h2o.xgboost <- function(x,
     parms$max_bins <- max_bins
   if (!missing(max_leaves))
     parms$max_leaves <- max_leaves
-  if (!missing(min_sum_hessian_in_leaf))
-    parms$min_sum_hessian_in_leaf <- min_sum_hessian_in_leaf
-  if (!missing(min_data_in_leaf))
-    parms$min_data_in_leaf <- min_data_in_leaf
   if (!missing(sample_type))
     parms$sample_type <- sample_type
   if (!missing(normalize_type))
@@ -344,6 +346,8 @@ h2o.xgboost <- function(x,
     parms$backend <- backend
   if (!missing(gpu_id))
     parms$gpu_id <- gpu_id
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   # Error check and build model
   model <- .h2o.modelJob('xgboost', parms, h2oRestApiVersion=3, verbose=verbose)
@@ -386,9 +390,11 @@ h2o.xgboost <- function(x,
                                         colsample_bylevel = 1,
                                         col_sample_rate_per_tree = 1,
                                         colsample_bytree = 1,
+                                        colsample_bynode = 1,
                                         max_abs_leafnode_pred = 0.0,
                                         max_delta_step = 0.0,
                                         monotone_constraints = NULL,
+                                        interaction_constraints = NULL,
                                         score_tree_interval = 0,
                                         min_split_improvement = 0.0,
                                         gamma = 0.0,
@@ -399,8 +405,6 @@ h2o.xgboost <- function(x,
                                         calibration_frame = NULL,
                                         max_bins = 256,
                                         max_leaves = 0,
-                                        min_sum_hessian_in_leaf = 100.0,
-                                        min_data_in_leaf = 0.0,
                                         sample_type = c("uniform", "weighted"),
                                         normalize_type = c("tree", "forest"),
                                         rate_drop = 0.0,
@@ -414,6 +418,7 @@ h2o.xgboost <- function(x,
                                         dmatrix_type = c("auto", "dense", "sparse"),
                                         backend = c("auto", "gpu", "cpu"),
                                         gpu_id = 0,
+                                        gainslift_bins = -1,
                                         segment_columns = NULL,
                                         segment_models_id = NULL,
                                         parallelism = 1)
@@ -514,12 +519,16 @@ h2o.xgboost <- function(x,
     parms$col_sample_rate_per_tree <- col_sample_rate_per_tree
   if (!missing(colsample_bytree))
     parms$colsample_bytree <- colsample_bytree
+  if (!missing(colsample_bynode))
+    parms$colsample_bynode <- colsample_bynode
   if (!missing(max_abs_leafnode_pred))
     parms$max_abs_leafnode_pred <- max_abs_leafnode_pred
   if (!missing(max_delta_step))
     parms$max_delta_step <- max_delta_step
   if (!missing(monotone_constraints))
     parms$monotone_constraints <- monotone_constraints
+  if (!missing(interaction_constraints))
+    parms$interaction_constraints <- interaction_constraints
   if (!missing(score_tree_interval))
     parms$score_tree_interval <- score_tree_interval
   if (!missing(min_split_improvement))
@@ -540,10 +549,6 @@ h2o.xgboost <- function(x,
     parms$max_bins <- max_bins
   if (!missing(max_leaves))
     parms$max_leaves <- max_leaves
-  if (!missing(min_sum_hessian_in_leaf))
-    parms$min_sum_hessian_in_leaf <- min_sum_hessian_in_leaf
-  if (!missing(min_data_in_leaf))
-    parms$min_data_in_leaf <- min_data_in_leaf
   if (!missing(sample_type))
     parms$sample_type <- sample_type
   if (!missing(normalize_type))
@@ -570,6 +575,8 @@ h2o.xgboost <- function(x,
     parms$backend <- backend
   if (!missing(gpu_id))
     parms$gpu_id <- gpu_id
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   # Build segment-models specific parameters
   segment_parms <- list()

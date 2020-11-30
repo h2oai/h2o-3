@@ -2,7 +2,7 @@ package water.webserver.jetty8;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ssl.SslSocketConnector;
+import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Rule;
@@ -13,7 +13,8 @@ import org.mockito.junit.MockitoRule;
 import water.webserver.iface.H2OHttpConfig;
 import water.webserver.iface.H2OHttpView;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
 public class Jetty8HelperTest {
@@ -37,9 +38,9 @@ public class Jetty8HelperTest {
     Connector[] connectors = s.getConnectors();
 
     assertEquals(1, connectors.length);
-    assertTrue(connectors[0] instanceof SslSocketConnector);
+    assertTrue(connectors[0] instanceof SslSelectChannelConnector);
 
-    SslContextFactory contextFactory = ((SslSocketConnector) connectors[0]).getSslContextFactory();
+    SslContextFactory contextFactory = ((SslSelectChannelConnector) connectors[0]).getSslContextFactory();
     assertEquals("/path/to/keystore.jks", contextFactory.getKeyStorePath());
     assertEquals("test-alias", contextFactory.getCertAlias());
   }

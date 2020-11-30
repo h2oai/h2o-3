@@ -31,25 +31,25 @@ Example
 		response <- "IsDepDelayed"
 
 		# set hyperparameters to build one model with 5 trees and one with 10 trees
-		hyper_parameters <- list(ntrees = c(5,10))
+		hyper_parameters <- list(ntrees = c(5, 10))
 
 		# specify the export checkpoints directory
 		checkpoints_dir <- tempfile()
 
 		# perform grid search using GBM
 		gbm_grid <- h2o.grid("gbm", 
-		                     x=predictors, 
-		                     y=response, 
-		                     training_frame=airlines, 
-		                     distribution="bernoulli", 
-		                     stopping_rounds=3, 
-		                     stopping_metric="AUTO", 
-		                     stopping_tolerance=1e-2, 
-		                     learn_rate=0.1, 
-		                     max_depth=3, 
-		                     hyper_params=hyper_parameters, 
-		                     export_checkpoints_dir=checkpoints_dir, 
-		                     seed=1234)
+		                     x = predictors, 
+		                     y = response, 
+		                     training_frame = airlines, 
+		                     distribution = "bernoulli", 
+		                     stopping_rounds = 3, 
+		                     stopping_metric = "AUTO", 
+		                     stopping_tolerance = 1e-2, 
+		                     learn_rate = 0.1, 
+		                     max_depth = 3, 
+		                     hyper_params = hyper_parameters, 
+		                     export_checkpoints_dir = checkpoints_dir, 
+		                     seed = 1234)
 
 		# retrieve the number of files in the exported checkpoints directory
 		num_files <- length(checkpoints_dir)

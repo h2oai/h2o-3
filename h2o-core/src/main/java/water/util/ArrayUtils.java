@@ -23,15 +23,6 @@ public class ArrayUtils {
     }
     return cumsumR;
   }
-
-  public static double[] eleDiff(final double[] from) {
-    int arryLen = from.length-1;
-    double[] cumsumR = new double[arryLen];
-    for (int index = 0; index < arryLen; index++) {
-      cumsumR[index] = from[index+1]-from[index];
-    }
-    return cumsumR;
-  }
   
   // Sum elements of an array
   public static long sum(final long[] from) {
@@ -676,6 +667,26 @@ public class ArrayUtils {
     return result;
   }
 
+  public static String toStringQuotedElements(Object[] a) {
+    if (a == null)
+      return "null";
+
+    int iMax = a.length - 1;
+    if (iMax == -1)
+      return "[]";
+
+    StringBuilder b = new StringBuilder();
+    b.append('[');
+    for (int i = 0; ; i++) {
+      b.append('"');
+      b.append(a[i]);
+      b.append('"');
+      if (i == iMax)
+        return b.append(']').toString();
+      b.append(", ");
+    }
+  }
+
   public static <T> boolean contains(T[] arr, T target) {
     if (null == arr) return false;
     for (T t : arr) {
@@ -866,6 +877,32 @@ public class ArrayUtils {
         return i;
     return -1;
   }
+
+
+  /**
+   * Find an element with prefix with linear search & return it's index if find exactly, 
+   *  -index-2 if find first occurrence with prefix or -1
+   */
+  public static int findWithPrefix(String[] array, String prefix) {
+    return findWithPrefix(array, prefix, 0);
+  }
+
+  /**
+   * Find an element with prefix with linear search & return it's index if find exactly, 
+   *  -index-2 if find first occurrence with prefix or -1
+   */
+  public static int findWithPrefix(String[] array, String prefix, int off) {
+    for (int i = off; i < array.length; i++) {
+      if(array[i].equals(prefix)){
+        return i;
+      }
+      if (array[i].startsWith(prefix)) {
+        return -i - 2;
+      }
+    }
+    return -1;
+  }
+  
   public static int find(long[] ls, long elem) {
     for(int i=0; i<ls.length; ++i )
       if( elem==ls[i] ) return i;
@@ -1401,10 +1438,18 @@ public class ArrayUtils {
       res[i] = ary[idxs[i]];
     return res;
   }
+
   public static int[] select(int[] ary, int[] idxs) {
     int [] res = MemoryManager.malloc4(idxs.length);
     for(int i = 0; i < res.length; ++i)
       res[i] = ary[idxs[i]];
+    return res;
+  }
+
+  public static byte[] select(byte[] array, int[] idxs) {
+    byte[] res = MemoryManager.malloc1(idxs.length);
+    for(int i = 0; i < res.length; ++i)
+      res[i] = array[idxs[i]];
     return res;
   }
 
@@ -1423,9 +1468,14 @@ public class ArrayUtils {
    * @param values values
    */
   public static void sort(final int[] idxs, final double[] values) {
-    sort(idxs, values, 500);
+    sort(idxs, values, 500, 1);
   }
+  
   public static void sort(final int[] idxs, final double[] values, int cutoff) {
+    sort(idxs, values, cutoff, 1);
+  }
+  // set increasing to 1 for ascending sort and -1 for descending sort
+  public static void sort(final int[] idxs, final double[] values, int cutoff, int increasing) {
     if (idxs.length < cutoff) {
       //hand-rolled insertion sort
       for (int i = 0; i < idxs.length; i++) {
@@ -1442,7 +1492,8 @@ public class ArrayUtils {
       Arrays.sort(d, new Comparator<Integer>() {
         @Override
         public int compare(Integer x, Integer y) {
-          return values[x] < values[y] ? -1 : (values[x] > values[y] ? 1 : 0);
+          return values[x]*increasing < values[y]*increasing ? -1 : 
+                  (values[x]*increasing > values[y]*increasing ? 1 : 0);
         }
       });
       for (int i = 0; i < idxs.length; ++i) idxs[i] = d[i];
@@ -1485,30 +1536,14 @@ public class ArrayUtils {
   }
 
   public static double [][] convertTo2DMatrix(double [] x, int N) {
-    assert x.length % N == 0;
-    int len = x.length/N;
+    assert x.length % N == 0: "number of coefficient should be divisible by number of coefficients per class ";
+    int len = x.length/N; // N is number of coefficients per class
     double [][] res = new double[len][];
-    for(int i = 0; i < len; ++i) {
+    for(int i = 0; i < len; ++i) { // go through each class
       res[i] = MemoryManager.malloc8d(N);
       System.arraycopy(x,i*N,res[i],0,N);
     }
     return res;
-  }
-
-  public static double[] flat(double[][] arr) {
-    if (arr == null) return null;
-    if (arr.length == 0) return null;
-    int tlen = 0;
-    for (double[] t : arr) tlen += (t != null) ? t.length : 0;
-    double[] result = Arrays.copyOf(arr[0], tlen);
-    int j = arr[0].length;
-    for (int i = 1; i < arr.length; i++) {
-      if (arr[i] == null)
-        continue;
-      System.arraycopy(arr[i], 0, result, j, arr[i].length);
-      j += arr[i].length;
-    }
-    return result;
   }
 
   public static Object[][] zip(Object[] a, Object[] b) {
@@ -2010,4 +2045,21 @@ public class ArrayUtils {
     return false;
   }
 
+  /**
+   * Count number of occurrences of element in given array.
+   *
+   * @param array   array in which number of occurrences should be counted.
+   * @param element element whose occurrences should be counted.
+   *
+   * @return  number of occurrences of element in given array.
+   */
+  public static int occurrenceCount(byte[] array, byte element) {
+    int cnt = 0;
+
+    for (byte b : array)
+      if (b == element)
+        cnt++;
+
+    return cnt;
+  }
 }

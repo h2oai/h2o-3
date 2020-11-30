@@ -9,6 +9,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.util.*;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -203,8 +204,9 @@ public final class SchemaMetadata extends Iced {
 
       if (null != f.getAnnotation(API.class))
         return new FieldMetadata(schema, f, superclassFields);
-
-      Log.warn("Skipping field that lacks an annotation: " + schema.toString() + "." + f);
+      if (!(Modifier.isPrivate(f.getModifiers()))) { // don't warn in case of private field without annotation
+        Log.warn("Skipping field that lacks an annotation: " + schema.toString() + "." + f);
+      }
       return null;
     }
 
@@ -220,7 +222,13 @@ public final class SchemaMetadata extends Iced {
       if (String.class.isAssignableFrom(clz))
         return "string"; // lower-case, to be less Java-centric
 
-      if (clz.equals(Boolean.TYPE) || clz.equals(Byte.TYPE) || clz.equals(Short.TYPE) || clz.equals(Integer.TYPE) || clz.equals(Long.TYPE) || clz.equals(Float.TYPE) || clz.equals(Double.TYPE))
+      if (clz.equals(Boolean.TYPE) 
+              || clz.equals(Byte.TYPE) 
+              || clz.equals(Short.TYPE) 
+              || clz.equals(Integer.TYPE) 
+              || clz.equals(Long.TYPE) 
+              || clz.equals(Float.TYPE)
+              || clz.equals(Double.TYPE))
         return clz.toString();
 
       if (is_array)
@@ -268,7 +276,7 @@ public final class SchemaMetadata extends Iced {
           return "Polymorphic";
         } else {
           // Special cases: polymorphic metadata fields that can contain scalars, Schemas (any Iced, actually), or arrays of these:
-          if (schema instanceof ModelParameterSchemaV3 && ("default_value".equals(field_name) || "actual_value".equals(field_name)))
+          if (schema instanceof ModelParameterSchemaV3 && ("default_value".equals(field_name) || "actual_value".equals(field_name) || "input_value".equals(field_name)))
             return "Polymorphic";
 
           if ((schema instanceof FieldMetadataV3) && "value".equals(field_name))

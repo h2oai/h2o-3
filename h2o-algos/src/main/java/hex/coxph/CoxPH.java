@@ -111,16 +111,24 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       }
 
       if( _train != null ) {
-        int nonFeatureColCount = (_parms._start_column!=null?1:0) + (_parms._stop_column!=null?1:0); 
+        int nonFeatureColCount = (_parms._start_column!=null?1:0) + (_parms._stop_column!=null?1:0);
         if (_train.numCols() < (2 + nonFeatureColCount))
           error("_train", "Training data must have at least 2 features (incl. response).");
+        if (null != _parms._stratify_by) {
+          int stratifyColCount = _parms._stratify_by.length;
+          if (_train.numCols() < (2 + nonFeatureColCount + stratifyColCount))
+            error("_train", "Training data must have at least 1 feature that is not a response and is not used for stratification."); 
+          }
       }
 
       if (_parms.isStratified()) {
         for (String col : _parms._stratify_by) {
           Vec v = _parms.train().vec(col);
-          if (v == null || v.get_type() != Vec.T_CAT)
+          if (v == null) {
+            error("stratify_by", "column '" + col + "' not found");
+          } else if (v.get_type() != Vec.T_CAT) {
             error("stratify_by", "non-categorical column '" + col + "' cannot be used for stratification");
+          }
           if (_parms._interactions != null) {
             for (String inter : _parms._interactions) {
               if (col.equals(inter)) {
@@ -132,6 +140,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
             }
           }
         }
+       
       }
     }
 
@@ -140,6 +149,11 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
     if (_parms._max_iterations < 1)
       error("max_iterations", "max_iterations must be a positive integer");
+  }
+
+  @Override
+  protected int init_getNClass() {
+    return 1;
   }
 
   static class DiscretizeTimeTask extends MRTask<DiscretizeTimeTask> {
@@ -551,8 +565,9 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         Frame f = reorderTrainFrameColumns(strataMap, time);
 
         int nResponses = (_parms.startVec() == null ? 2 : 3) + (_parms.isStratified() ? 1 : 0);
-        final DataInfo dinfo = new DataInfo(f, null, nResponses, _parms._use_all_factor_levels, TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false, _parms.interactionSpec())
-                .disableIntercept();
+        final DataInfo dinfo = new DataInfo(f, null, nResponses, _parms._use_all_factor_levels, 
+                TransformType.DEMEAN, TransformType.NONE, true, false, false, 
+                hasWeightCol(), false, false, _parms.interactionSpec()).disableIntercept();
         Scope.track_generic(dinfo);
         DKV.put(dinfo);
 
@@ -724,9 +739,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       int ncats = row.nBins;
       int [] cats = row.binIds;
       double [] nums = row.numVals;
-      final double weight = _has_weights_column ? response[0] : 1.0;
-      if (weight <= 0)
+      final double weight = _has_weights_column ? row.weight : 1.0;
+      if (weight <= 0) {
         throw new IllegalArgumentException("weights must be positive values");
+      }
       int respIdx = response.length - 1;
       final long event = (long) (response[respIdx--] - _min_event);
       final int t2 = (int) response[respIdx--];

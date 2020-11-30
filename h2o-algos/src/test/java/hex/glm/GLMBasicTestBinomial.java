@@ -1,6 +1,7 @@
 package hex.glm;
 
 import hex.CreateFrame;
+import hex.GLMMetrics;
 import hex.ModelMetricsBinomialGLM;
 import hex.SplitFrame;
 import hex.glm.GLMModel.GLMParameters;
@@ -17,10 +18,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.util.VecUtils;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -878,19 +876,19 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    1.31814009  0.82918839  0.63285077  0.02949062  0.00000000  0.83011321
     String [] cfs1 = new String [] {"Intercept", "AGE", "DPROS.b",    "DPROS.c",     "DPROS.d",  "DCAPS.b",  "PSA",      "VOL", "GLEASON"};
     double [] vals = new double [] {-7.85142421,   0.0,    0.93030614,   1.31814009,    0.82918839, 0.63285077, 0.02949062, 0.0,    0.83011321};
-    GLMParameters params = new GLMParameters(Family.binomial);
-    params._response_column = "CAPSULE";
-    params._ignored_columns = new String[]{"ID",};
-    params._train = _prostateTrain._key;
-    params._lambda = new double[]{0};
-    params._alpha = new double[]{0};
-    params._standardize = false;
-    params._non_negative = true;
-    params._intercept = true;
-    params._objective_epsilon = 1e-10;
-    params._gradient_epsilon = 1e-6;
-    params._max_iterations = 10000; // not expected to reach max iterations here
     for(Solver s:new Solver[]{Solver.IRLSM,Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
+      GLMParameters params = new GLMParameters(Family.binomial);
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID",};
+      params._train = _prostateTrain._key;
+      params._lambda = new double[]{0};
+      params._alpha = new double[]{0};
+      params._standardize = false;
+      params._non_negative = true;
+      params._intercept = true;
+      params._objective_epsilon = 1e-10;
+      params._gradient_epsilon = 1e-6;
+      params._max_iterations = 10000; // not expected to reach max iterations here
       Frame scoreTrain = null, scoreTest = null;
       try {
         params._solver = s;
@@ -931,19 +929,19 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    0.000000000 0.000000000 0.680406869 0.007137494 0.000000000 0.000000000
     String [] cfs1 = new String [] {"Intercept", "AGE", "DPROS.b",    "DPROS.c",     "DPROS.d",  "DCAPS.b",   "PSA",      "VOL", "GLEASON", "RACE.R1"};
     double [] vals = new double [] { 0.0,         0.0,   0.0,          0,             0.0,        0.680406869, 0.007137494, 0.0,  0.0,       0.240953925};
-    GLMParameters params = new GLMParameters(Family.binomial);
-    params._response_column = "CAPSULE";
-    params._ignored_columns = new String[]{"ID",};
-    params._train = _prostateTrain._key;
-    params._lambda = new double[]{0};
-    params._alpha = new double[]{0};
-    params._standardize = false;
-    params._non_negative = true;
-    params._intercept = false;
-    params._objective_epsilon = 1e-6;
-    params._gradient_epsilon = 1e-5;
-    params._max_iterations = 150; // not expected to reach max iterations here
     for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
+      GLMParameters params = new GLMParameters(Family.binomial);
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID",};
+      params._train = _prostateTrain._key;
+      params._lambda = new double[]{0};
+      params._alpha = new double[]{0};
+      params._standardize = false;
+      params._non_negative = true;
+      params._intercept = false;
+      params._objective_epsilon = 1e-6;
+      params._gradient_epsilon = 1e-5;
+      params._max_iterations = 150; // not expected to reach max iterations here
       Frame scoreTrain = null, scoreTest = null;
       try {
         params._solver = s;
@@ -1448,6 +1446,34 @@ public class GLMBasicTestBinomial extends TestUtil {
     assertEquals(0,fails);
     predict.delete();
     model.delete();
+  }
+  
+  @Test
+  public void testAUTOBinomial(){
+    Vec cat = Vec.makeVec(new long[]{1,1,1,0,0},new String[]{"black","red"},Vec.newKey());
+    Vec res = Vec.makeVec(new long[]{1,1,0,0,0},new String[]{"sun","moon"},Vec.newKey());
+    Frame fr = new Frame(Key.<Frame>make("fr"), new String[]{"x", "y"}, new Vec[]{cat, res});
+    DKV.put(fr);
+    for (Family family : new Family[]{Family.binomial, Family.AUTO}) {
+      for (GLMParameters.Link link : new GLMParameters.Link[]{GLMParameters.Link.family_default, GLMParameters.Link.logit}) {
+        GLMParameters parms = new GLMParameters();
+        parms._train = fr._key;
+        parms._alpha = new double[]{0};
+        parms._response_column = "y";
+        parms._intercept = false;
+        parms._family = family;
+        parms._link = link;
+        // just make sure it runs
+        GLMModel model = new GLM(parms).trainModel().get();
+        Map<String, Double> coefs = model.coefficients();
+        System.out.println("coefs = " + coefs);
+        Assert.assertEquals(coefs.get("Intercept"), 0, 0);
+        Assert.assertEquals(4.2744474, ((GLMMetrics) model._output._training_metrics).residual_deviance(), 1e-4);
+        System.out.println();
+        model.delete();
+      }
+    }
+    fr.delete();
   }
 
   @BeforeClass

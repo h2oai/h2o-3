@@ -34,6 +34,13 @@
 #'        classification problems. Must be one of: "AUTO", "Random", "Modulo", "Stratified".
 #' @param metalearner_fold_column Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.
 #' @param metalearner_params Parameters for metalearner algorithm
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
+#' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
+#'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
+#'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
+#'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
+#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+#' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
 #' @param seed Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number).
 #' @param score_training_samples Specify the number of training set samples for scoring. The value must be >= 0. To use all training samples,
 #'        enter 0. Defaults to 10000.
@@ -53,8 +60,8 @@
 #' x <- setdiff(names(train), y)
 #' 
 #' # For binary classification, response should be a factor
-#' train[,y] <- as.factor(train[,y])
-#' test[,y] <- as.factor(test[,y])
+#' train[, y] <- as.factor(train[, y])
+#' test[, y] <- as.factor(test[, y])
 #' 
 #' # Number of CV folds
 #' nfolds <- 5
@@ -103,6 +110,9 @@ h2o.stackedEnsemble <- function(x,
                                 metalearner_fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                                 metalearner_fold_column = NULL,
                                 metalearner_params = NULL,
+                                max_runtime_secs = 0,
+                                weights_column = NULL,
+                                offset_column = NULL,
                                 seed = -1,
                                 score_training_samples = 10000,
                                 keep_levelone_frame = FALSE,
@@ -162,6 +172,12 @@ h2o.stackedEnsemble <- function(x,
     parms$metalearner_fold_assignment <- metalearner_fold_assignment
   if (!missing(metalearner_fold_column))
     parms$metalearner_fold_column <- metalearner_fold_column
+  if (!missing(max_runtime_secs))
+    parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(weights_column))
+    parms$weights_column <- weights_column
+  if (!missing(offset_column))
+    parms$offset_column <- offset_column
   if (!missing(seed))
     parms$seed <- seed
   if (!missing(score_training_samples))
@@ -181,45 +197,6 @@ h2o.stackedEnsemble <- function(x,
   if (!missing(metalearner_params)) {
       model@parameters$metalearner_params <- list(fromJSON(model@parameters$metalearner_params))[[1]] #Need the `[[ ]]` to avoid a nested list
   }
-  model@model <- .h2o.fill_stackedensemble(model@model, model@parameters, model@allparams)
-
-  # Get the actual models (that were potentially expanded from H2OGrid on the backend)
-  baselearners <- lapply(model@model$base_models, function(base_model) {
-    if (is.character(base_model))
-      base_model <- h2o.getModel(base_model)
-    base_model
-  })
-
-  model@model$model_summary <- capture.output({
-
-    print_ln <- function(...) cat(..., sep = "\n")
-
-    print_ln(paste0("Number of Base Models: ", length(baselearners)))
-    print_ln("\nBase Models (count by algorithm type):")
-    print(table(unlist(lapply(baselearners, function(baselearner) baselearner@algorithm))))
-
-
-    print_ln("\nMetalearner:\n")
-    print_ln(paste0(
-      "Metalearner algorithm: ",
-      ifelse(length(metalearner_algorithm) > 1, "glm", metalearner_algorithm)))
-
-    if (metalearner_nfolds != 0) {
-      print_ln("Metalearner cross-validation fold assignment:")
-      print_ln(paste0(
-        "  Fold assignment scheme: ",
-        ifelse(length(metalearner_fold_assignment) > 1, "Random", metalearner_fold_assignment)))
-      print_ln(paste0("  Number of folds: ", metalearner_nfolds))
-      print_ln(paste0(
-        "  Fold column: ",
-        ifelse(is.null(metalearner_fold_column), "NULL", metalearner_fold_column )))
-    }
-
-    if (!missing(metalearner_params))
-      print_ln(paste0("Metalearner hyperparameters: ", parms$metalearner_params))
-
-  })
-  class(model@model$model_summary) <- "h2o.stackedEnsemble.summary"
   return(model)
 }
 .h2o.train_segments_stackedEnsemble <- function(x,
@@ -233,6 +210,9 @@ h2o.stackedEnsemble <- function(x,
                                                 metalearner_fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                                                 metalearner_fold_column = NULL,
                                                 metalearner_params = NULL,
+                                                max_runtime_secs = 0,
+                                                weights_column = NULL,
+                                                offset_column = NULL,
                                                 seed = -1,
                                                 score_training_samples = 10000,
                                                 keep_levelone_frame = FALSE,
@@ -297,6 +277,12 @@ h2o.stackedEnsemble <- function(x,
     parms$metalearner_fold_assignment <- metalearner_fold_assignment
   if (!missing(metalearner_fold_column))
     parms$metalearner_fold_column <- metalearner_fold_column
+  if (!missing(max_runtime_secs))
+    parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(weights_column))
+    parms$weights_column <- weights_column
+  if (!missing(offset_column))
+    parms$offset_column <- offset_column
   if (!missing(seed))
     parms$seed <- seed
   if (!missing(score_training_samples))
@@ -326,7 +312,56 @@ h2o.stackedEnsemble <- function(x,
 .h2o.fill_stackedensemble <- function(model, parameters, allparams) {
   # Store base models for the Stacked Ensemble in user-readable form
   model$base_models <- unlist(lapply(parameters$base_models, function (base_model) base_model$name))
-  model$metalearner_model <- h2o.getModel(model$metalearner$name)
+  
+  if (!is.null(model$metalearner)) {
+    model$metalearner_model <- h2o.getModel(model$metalearner$name)
+  } else {
+    stop(paste("Meta learner didn't get to be trained in time.",
+               "Try increasing max_runtime_secs or setting it to 0 (unlimited)."))
+  }
+
+  .get_algorithm <- function(model_id) {
+    known_algos <- c("deeplearning", "drf", "glm", "gam", "gbm", "naivebayes", "stackedensemble", "rulefit", "xgboost", "xrt")
+    algorithm <- sub("^(DeepLearning|DRF|GAM|GBM|GLM|NaiveBayes|StackedEnsemble|RuleFit|XGBoost|XRT)_.*",
+                     "\\L\\1", model_id, perl = TRUE)
+    if (algorithm == "xrt")
+      algorithm <- "drf"
+    if (algorithm %in% known_algos) {
+      return(algorithm)
+    }
+    return(h2o.getModel(model_id)@algorithm)
+  }
+
+  model$model_summary <- capture.output({
+    print_ln <- function(...) cat(..., sep = "\n")
+
+    print_ln(paste0("Number of Base Models: ", length(model$base_models)))
+    print_ln("\nBase Models (count by algorithm type):")
+    print(table(unlist(lapply(model$base_models, .get_algorithm))))
+
+    print_ln("\nMetalearner:\n")
+    print_ln(paste0(
+      "Metalearner algorithm: ",
+      ifelse(length(allparams$metalearner_algorithm) > 1, "glm", allparams$metalearner_algorithm)))
+
+    if (allparams$metalearner_nfolds != 0) {
+      print_ln("Metalearner cross-validation fold assignment:")
+      print_ln(paste0(
+         "  Fold assignment scheme: ",
+         ifelse(length(allparams$metalearner_fold_assignment) > 1, "Random",
+                ifelse(is.null(allparams$metalearner_fold_assignment),"AUTO",
+                       allparams$metalearner_fold_assignment))))
+
+      print_ln(paste0("  Number of folds: ", allparams$metalearner_nfolds))
+      print_ln(paste0(
+        "  Fold column: ",
+        ifelse(is.null(allparams$metalearner_fold_column), "NULL", allparams$metalearner_fold_column)))
+    }
+
+    print_ln(paste0("Metalearner hyperparameters: ", allparams$metalearner_params))
+  })
+
+  class(model$model_summary) <- "h2o.stackedEnsemble.summary"
   return(model)
 }
 

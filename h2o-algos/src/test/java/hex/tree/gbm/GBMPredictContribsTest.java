@@ -95,6 +95,7 @@ public class GBMPredictContribsTest extends TestUtil {
               .setModel(gbm.toMojo())
               .setEnableContributions(true);
       EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
+      assertArrayEquals(contributions.names(), wrapper.getContributionNames());
 
       for (long row = 0; row < fr.numRows(); row++) {
         RowData rd = toRowData(fr, gbm._output._names, row);

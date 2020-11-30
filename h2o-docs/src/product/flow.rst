@@ -794,9 +794,9 @@ The available options vary depending on the selected model. If an option is only
 
 -  **fold_column**: (GLM, GBM, DL, DRF, K-Means, XGBoost) Select the column that contains the cross-validation fold index assignment per observation.
 
--  **offset_column**: (GLM, DRF, GBM, DL, XGBoost, CoxPH) Select a column to use as the offset. *Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
+-  **offset_column**: (GLM, DRF, GBM, DL, XGBoost, CoxPH, Stacked Ensembles) Select a column to use as the offset. *Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
 
--  **weights_column**: (GLM, DL, DRF, GBM, XGBoost, CoxPH) Select a column to use for the observation weights. The specified ``weights_column`` must be included in the specified ``training_frame``. *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. *Note*: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+-  **weights_column**: (GLM, DL, DRF, GBM, XGBoost, CoxPH, Stacked Ensembles) Select a column to use for the observation weights. The specified ``weights_column`` must be included in the specified ``training_frame``. *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. *Note*: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
 -  **loss**: (DL) Select the loss function. For DL, the options are Automatic, Quadratic, CrossEntropy, Huber, or Absolute and the default value is Automatic. Absolute, Quadratic, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
 
@@ -819,8 +819,6 @@ The available options vary depending on the selected model. If an option is only
     **Note**: ``balance_classes`` balances over just the target, not over all classes in the training frame.
 
 -  **max_confusion_matrix_size**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum size (in number of classes) for confusion matrices to be  printed in the Logs.
-
--  **max_hit_ratio_k**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multinomial only. To disable, enter 0.
 
 -  **stopping_metric**: (GBM, DRF, DL, XGBoost, AutoML, IF) Specify the metric to use for early stopping. The available options are:
 
@@ -979,8 +977,6 @@ The available options vary depending on the selected model. If an option is only
 
 -  **classification_stop**: (DL) (Applicable to discrete/categorical datasets only) Specify the stopping criterion for classification error fractions on training data. To disable this option, enter -1.
 
--  **max_hit_ratio_k**: (DL, GLM) (Classification only) Specify the maximum number (top K) of predictions to use for hit ratio computation (for multinomial only). To disable this option, enter 0.
-
 -  **regression_stop**: (DL) (Applicable to real value/continuous datasets only) Specify the stopping criterion for regression error (MSE) on the training data. To disable this option, enter -1.
 
 -  **diagnostics**: (DL) Check this checkbox to compute the variable importances for input features (using the Gedeon method). For large networks, selecting this option can reduce speed. This option is selected by default.
@@ -1022,10 +1018,6 @@ The available options vary depending on the selected model. If an option is only
 -  **max_abs_leafnode_pred**: (GBM, XGBoost) The maximum absolute value of a leaf node prediction.
 
 -  **max_bin**: (XGBoost) For tree_method=hist only: specify the maximum number of bins for binning continuous features.
-
--  **min_sum_hessian_in_leaf**: (XGBoost) For tree_method=hist only: the mininum sum of hessian in a leaf to keep splitting
-
--  **min_data_in_leaf**: (XGBoost) For tree_method=hist only: the mininum data in a leaf to keep splitting
 
 -  **booster**: (XGBoost) Specify the booster type. This can be one of the following: "gbtree", "gblinear", or "dart". Note that "gbtree" and "dart" use a tree-based model while "gblinear" uses linear function. This value defaults to "gbtree".
 
@@ -1249,7 +1241,7 @@ The following parameters can be modified when restarting a model from a checkpoi
 +------------------------------------+--------------------------------------+---------------------------------+
 | ``score_validation_sampling``      | ``classification_stop``              | ``regression_stop``             |
 +------------------------------------+--------------------------------------+---------------------------------+
-| ``quiet_mode``                     | ``max_confusion_matrix_size``        | ``max_hit_ratio_k``             |
+| ``quiet_mode``                     | ``max_confusion_matrix_size``        | ``mini_batch_size``             |
 +------------------------------------+--------------------------------------+---------------------------------+
 | ``diagnostics``                    | ``variable_importances``             | ``initial_weight_distribution`` |
 +------------------------------------+--------------------------------------+---------------------------------+
@@ -1265,7 +1257,7 @@ The following parameters can be modified when restarting a model from a checkpoi
 +------------------------------------+--------------------------------------+---------------------------------+
 | ``reproducible``                   | ``export_weights_and_biases``        | ``elastic_averaging``           |
 +------------------------------------+--------------------------------------+---------------------------------+
-| ``elastic_averaging_moving_rate``  | ``elastic_averaging_regularization`` | ``mini_batch_size``             |
+| ``elastic_averaging_moving_rate``  | ``elastic_averaging_regularization`` |                                 |
 +------------------------------------+--------------------------------------+---------------------------------+
 
 1. After building your model, copy the ``model_id``. To view the ``model_id``, click the **Model** menu then click **List All Models**.
@@ -1327,7 +1319,12 @@ The lower-left side of the graph represents less tolerance for false positives w
 Partial Dependence Plots
 ------------------------
 
-For models that include only numerical values, you can view a Partial Dependence Plot (PDP) for that model. This provides a graphical representation of the marginal effect of a variable on the class probability (classification) or response (regression). 
+For models that include only numerical values, you can view a Partial Dependence Plot (PDP) for that model. This provides a graphical representation of the marginal effect of a variable on the class probability (binary and multiclass classification) or response (regression). 
+
+**Notes**:
+
+- For multiclass problems, users must specify a target class
+- In Flow (unlike Python or R), only one target class can be specified for multiclass problems. 
 
 Viewing Partial Dependence Plots
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

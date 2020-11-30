@@ -26,7 +26,5 @@ def h2o_H2OFrame_merge():
     threes = merged[merged['rank'] == 3].nrow
     assert threes == 10000, "Expected 10000 3's, but got {0}".format(threes)
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_merge())
-else:
-    h2o_H2OFrame_merge()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_merge)

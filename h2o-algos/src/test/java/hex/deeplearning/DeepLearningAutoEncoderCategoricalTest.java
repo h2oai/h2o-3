@@ -6,6 +6,7 @@ import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.AutoEncoderModelPrediction;
+import hex.quantile.Quantile;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -82,7 +83,7 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
         double quantile = 1 - 5. / train.numRows();
         sb.append("The following training points are reconstructed with an error above the "
                 + quantile * 100 + "-th percentile - potential \"outliers\" in testing data.\n");
-        double thresh = mymodel.calcOutlierThreshold(l2vec, quantile);
+        double thresh = Quantile.calcQuantile(l2vec, quantile);
         for (long i = 0; i < l2vec.length(); i++) {
           if (l2vec.at(i) > thresh) {
             sb.append(String.format("row %d : l2vec error = %5f\n", i, l2vec.at(i)));

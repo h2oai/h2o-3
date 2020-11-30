@@ -58,9 +58,9 @@ Example
 		response <- "y"
 
 		# split into train and validation sets
-		auto.splits <- h2o.splitFrame(data =  auto, ratios = .8)
-		train <- auto.splits[[1]]
-		valid <- auto.splits[[2]]
+		auto_splits <- h2o.splitFrame(data =  auto, ratios = 0.8)
+		train <- auto_splits[[1]]
+		valid <- auto_splits[[2]]
 
 		# try using the `tweedie_link_power` parameter:
 		# train your model, where you specify tweedie_link_power
@@ -70,12 +70,12 @@ Example
 		                    tweedie_link_power = 1)
 
 		# print the mse for validation set
-		print(h2o.mse(auto_glm, valid=TRUE))
+		print(h2o.mse(auto_glm, valid = TRUE))
 
 		# look at several values of `tweedie_link_power`
 		# use the tweedie_variance_power (vp) with the tweedie_link_power to create the canonical link function
-		vp_list = list(0, 1, 1.1, 1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2,
-		           2.1, 2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3, 5, 7)
+		vp_list = list(0, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2,
+		           2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3, 5, 7)
 
 		# create a dataframe with the tweedie_variance_power, tweedie_link_power, and corresponding mse
 		model_results <-lapply(vp_list, function(vp) {  
@@ -84,12 +84,12 @@ Example
 		                       family = 'tweedie', tweedie_variance_power = vp,
 		                       tweedie_link_power = 1.0 - vp)
 		  temp_df <- data.frame(vp, 1.0 - vp, h2o.mse(auto_glm_2, valid = TRUE))
-		  names(temp_df) <- c("variance_power","link_power","mse")
+		  names(temp_df) <- c("variance_power", "link_power","mse")
 		  return(temp_df)})   
-		results = do.call('rbind',model_results)
+		results = do.call('rbind', model_results)
 
 		# print results
-		results[order(results$mse),]
+		results[order(results$mse), ]
 
    .. code-tab:: python
 

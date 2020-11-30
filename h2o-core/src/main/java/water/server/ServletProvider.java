@@ -1,5 +1,6 @@
 package water.server;
 
+import java.util.Collections;
 import java.util.List;
 
 public interface ServletProvider {
@@ -9,6 +10,10 @@ public interface ServletProvider {
    * @return a map of context path to a Servlet class
    */
   List<ServletMeta> servlets();
+  
+  default List<WebsocketMeta> websockets() {
+    return Collections.emptyList();
+  }
 
   /**
    * Provider priority, providers with higher priority will be used first. H2O Core Provider will be used last and

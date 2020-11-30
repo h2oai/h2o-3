@@ -11,6 +11,7 @@ dependencies {
         transitive = false
     }
     compile project(":h2o-security")
+    compile project(":h2o-ext-steam")
     compile "org.apache.hadoop:hadoop-client:$hadoopMavenArtifactVersion"
     compile "org.apache.hadoop:hadoop-mapreduce-client-app:$hadoopMavenArtifactVersion"
     // Libraries need for Google Cloud Storage strongly require this Guava version
@@ -25,12 +26,13 @@ dependencies {
     // Include S3 persist layer
     compile(project(":h2o-persist-s3"))
     // Include HDFS persist layer
-    compile (project(':h2o-persist-hdfs')) {
+    compile(project(':h2o-persist-hdfs')) {
         transitive = false
     }
-    compile (project(':h2o-hive')) {
+    compile(project(':h2o-hive')) {
         transitive = false
     }
+    compile("org.apache.parquet:parquet-avro:${defaultParquetVersion}") // required by h2o-hive
 
     // For standalone mode to work with MapR, this extra library needs to be
     // included, and it's not pulled in by the dependency stuff;  this must
@@ -93,6 +95,7 @@ shadowJar {
     relocate 'org.joda.time', 'ai.h2o.org.joda.time'
     exclude hadoopShadowJarExcludes
     relocate 'com.google.common', 'ai.h2o.com.google.common'
+    relocate 'org.eclipse.jetty', 'ai.h2o.org.eclipse.jetty'
     baseName = 'h2odriver'
     classifier = ''
     manifest {

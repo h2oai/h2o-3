@@ -141,7 +141,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       
       // Deviance method is not supported in custom distribution
       if((m != null && m._parms._distribution != DistributionFamily.custom) || (_dist != null && _dist ._family != DistributionFamily.custom)) {
-        if (m != null && m._parms._distribution != DistributionFamily.huber) {
+        if (m != null && !m.isDistributionHuber()) {
           _sumdeviance += m.deviance(w, yact[0], ds[0]);
         } else if (_dist != null) {
           _sumdeviance += _dist.deviance(w, yact[0], ds[0]);
@@ -163,13 +163,19 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     }
 
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
-    public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
+    public ModelMetricsRegression makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
+      ModelMetricsRegression mm = computeModelMetrics(m, f, adaptedFrame, preds);
+      if (m!=null) m.addModelMetrics(mm);
+      return mm;
+    }
+
+    ModelMetricsRegression computeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
       double mse = _sumsqe / _wcount;
       double mae = _abserror/_wcount; //Mean Absolute Error
       double rmsle = Math.sqrt(_rmslerror/_wcount); //Root Mean Squared Log Error
       if (adaptedFrame ==null) adaptedFrame = f;
       double meanResDeviance = 0;
-      if (m != null && m._parms._distribution == DistributionFamily.huber) {
+      if (m != null && m.isDistributionHuber()){
         assert(_sumdeviance==0); // should not yet be computed
         if (preds != null) {
           Vec actual = adaptedFrame.vec(m._parms._response_column);
@@ -190,7 +196,6 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
         meanResDeviance = Double.NaN;
       }
       ModelMetricsRegression mm = new ModelMetricsRegression(m, f, _count, mse, weightedSigma(), mae, rmsle, meanResDeviance, _customMetric);
-      if (m!=null) m.addModelMetrics(mm);
       return mm;
     }
   }

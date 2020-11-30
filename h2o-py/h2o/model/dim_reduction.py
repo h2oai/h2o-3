@@ -1,11 +1,12 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
-from h2o.utils.shared_utils import can_use_pandas
+# noinspection PyUnresolvedReferences
 from h2o.utils.compatibility import *  # NOQA
 
+import h2o
+from h2o.utils.shared_utils import can_use_pandas
 from .model_base import ModelBase
 from .metrics_base import *  # NOQA
-import h2o
 
 
 class H2ODimReductionModel(ModelBase):
@@ -106,7 +107,7 @@ class H2ODimReductionModel(ModelBase):
             raise ValueError("Unknown arguments %s to screeplot()" % ", ".join(kwargs.keys()))
         try:
             import matplotlib
-            if is_server: matplotlib.use('Agg', warn=False)
+            if is_server: matplotlib.use('Agg')
             import matplotlib.pyplot as plt
         except ImportError:
             print("matplotlib is required for this function!")

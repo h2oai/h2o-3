@@ -14,12 +14,13 @@ def word2vec_to_frame():
     word_embeddings = words.cbind(embeddings)
 
     w2v_model = H2OWord2vecEstimator(pre_trained=word_embeddings)
-    w2v_model.train(training_frame=word_embeddings)
+    w2v_model.train()
 
     w2v_frame = w2v_model.to_frame()
 
     word_embeddings.names = w2v_frame.names
     assert word_embeddings.as_data_frame().equals(word_embeddings.as_data_frame()), "Source and generated embeddings match"
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(word2vec_to_frame)

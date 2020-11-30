@@ -11,6 +11,7 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
 import hex.genmodel.utils.DistributionFamily;
+import hex.quantile.QuantileModel;
 import org.joda.time.DateTime;
 import water.*;
 import water.api.ModelsHandler;
@@ -33,7 +34,6 @@ import java.net.URI;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import static water.util.FrameUtils.categoricalEncoder;
 import static water.util.FrameUtils.cleanUp;
@@ -48,20 +48,24 @@ import static water.util.FrameUtils.cleanUp;
 public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Lockable<M>
         implements StreamWriter {
 
+  public static final String EVAL_AUTO_PARAMS_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "algos.evaluate_auto_model_parameters";
+
   public P _parms;   // TODO: move things around so that this can be protected
+  public P _input_parms;
   public O _output;  // TODO: move things around so that this can be protected
   public String[] _warnings = new String[0];  // warning associated with model building
   public transient String[] _warningsP;     // warnings associated with prediction only (transient, not persisted)
   public Distribution _dist;
   protected ScoringInfo[] scoringInfo;
   public IcedHashMap<Key, String> _toDelete = new IcedHashMap<>();
+  public boolean evalAutoParamsEnabled;
 
 
   public static Model[] fetchAll() {
     final Key[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
       public boolean filter(KeySnapshot.KeyInfo k) {
-        return Value.isSubclassOf(k._type, Model.class);
+        return Value.isSubclassOf(k._type, Model.class) && !Value.isSubclassOf(k._type, QuantileModel.class);
       }
     }).keys();
 
@@ -74,6 +78,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return models;
   }
 
+  /**
+   * Whether to evaluate input parameters of value AUTO.
+   */
+  public static boolean evaluateAutoModelParameters() {
+    return Boolean.parseBoolean(System.getProperty(EVAL_AUTO_PARAMS_ENABLED, "true"));
+  }
+
+  public void setInputParms(P _input_parms) {
+    this._input_parms = _input_parms;
+  }
 
   public interface DeepFeatures {
     Frame scoreAutoEncoder(Frame frame, Key destination_key, boolean reconstruction_error_per_feature);
@@ -142,11 +156,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public final boolean isSupervised() { return _output.isSupervised(); }
 
   public boolean havePojo() {
-    return ModelBuilder.havePojo(_parms.algoName());
+    final String algoName = _parms.algoName();
+    return ModelBuilder.getRegisteredBuilder(algoName)
+            .map(ModelBuilder::havePojo)
+            .orElseGet(() -> {
+              Log.warn("Model Builder for algo = " + algoName + " is not registered. " +
+                      "Unable to determine if Model has a POJO. Please override method havePojo().");
+              return false;
+            });
   }
 
   public boolean haveMojo() {
-    return ModelBuilder.haveMojo(_parms.algoName());
+    final String algoName = _parms.algoName();
+    return ModelBuilder.getRegisteredBuilder(algoName)
+            .map(ModelBuilder::haveMojo)
+            .orElseGet(() -> {
+              Log.warn("Model Builder for algo = " + algoName + " is not registered. " +
+                      "Unable to determine if Model has a MOJO. Please override method haveMojo().");
+              return false;
+            });
   }
 
   /**
@@ -240,6 +268,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       final boolean _needResponse;
       boolean needsResponse() { return _needResponse; }
     }
+    
+    public Key<ModelPreprocessor>[] _preprocessors;
+    
     public long _seed = -1;
     public long getOrMakeRealSeed(){
       while (_seed==-1) {
@@ -355,6 +386,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      */
     public String _export_checkpoints_dir;
 
+    /**
+     * Bins for Gains/Lift table, if applicable. Ignored if G/L are not calculated.
+     */
+    public int _gainslift_bins = -1;
+
     // Public no-arg constructor for reflective creation
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
 
@@ -419,13 +455,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       long xs = 0x600DL;
       int count = 0;
       Field[] fields = Weaver.getWovenFields(this.getClass());
-      Arrays.sort(fields,
-              new Comparator<Field>() {
-                public int compare(Field field1, Field field2) {
-                  return field1.getName().compareTo(field2.getName());
-                }
-              });
-
+      Arrays.sort(fields, Comparator.comparing(Field::getName));
       for (Field f : fields) {
         if (ignoredFields != null && ignoredFields.contains(f.getName())) {
           // Do not include ignored fields in the final hash
@@ -465,7 +495,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           try {
             f.setAccessible(true);
             Object value = f.get(this);
-            if (value != null) {
+            if (value instanceof Enum) {
+              // use string hashcode for enums, otherwise the checksum would be different each run
+              xs = xs * P + (long)(value.toString().hashCode());
+            } else if (value != null) {
               xs = xs * P + (long)(value.hashCode());
             } else {
               xs = xs * P + P;
@@ -728,7 +761,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     protected Output(ModelBuilder b, Frame train) {
-      _isSupervised = b.isSupervised();
       if (b.error_count() > 0)
         throw new IllegalArgumentException(b.validationErrors());
       // Capture the data "shape" the model is valid on
@@ -737,11 +769,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _origNames = b._origNames;
       _origDomains = b._origDomains;
       _orig_projection_array = b._orig_projection_array;
+      _isSupervised = b.isSupervised();
       _hasOffset = b.hasOffsetCol();
       _hasWeights = b.hasWeightCol();
       _hasFold = b.hasFoldCol();
       _distribution = b._distribution;
       _priorClassDist = b._priorClassDist;
+      _reproducibility_information_table = createReproducibilityInformationTable(b);
       assert(_job==null);  // only set after job completion
       _defaultThreshold = -1;
     }
@@ -788,6 +822,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public TwoDimTable _model_summary;
 
     /**
+     * Reproducibility information describing the current cluster configuration, each node configuration
+     * and checksums for each frame used on the input of the algorithm
+     */
+    public TwoDimTable[] _reproducibility_information_table;
+    
+
+    /**
      * User-facing model scoring history - 2D table with modeling accuracy as a function of time/trees/epochs/iterations, etc.
      */
     public TwoDimTable _scoring_history;
@@ -815,6 +856,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean hasOffset  () { return _hasOffset;}
     public boolean hasWeights () { return _hasWeights;}
     public boolean hasFold () { return _hasFold;}
+    public boolean hasResponse() { return isSupervised(); }
     public String responseName() { return isSupervised()?_names[responseIdx()]:null;}
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
@@ -938,6 +980,41 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       printTwoDimTables(sb, this);
       return sb.toString();
     }
+
+    private TwoDimTable[] createReproducibilityInformationTable(ModelBuilder modelBuilder) {
+      TwoDimTable nodeInformation = ReproducibilityInformationUtils.createNodeInformationTable();
+      TwoDimTable clusterConfiguration = ReproducibilityInformationUtils.createClusterConfigurationTable();
+      TwoDimTable inputFramesInformation = createInputFramesInformationTable(modelBuilder);
+      return new TwoDimTable[] {nodeInformation, clusterConfiguration, inputFramesInformation};
+    }
+
+    public TwoDimTable createInputFramesInformationTable(ModelBuilder modelBuilder) {
+      String[] colHeaders = new String[] {"Input Frame", "Checksum", "ESPC"};
+      String[] colTypes = new String[] {"string", "long", "string"};
+      String[] colFormat = new String[] {"%s", "%d", "%d"};
+
+      final int rows = getInformationTableNumRows();
+      TwoDimTable table = new TwoDimTable(
+              "Input Frames Information", null,
+              new String[rows],
+              colHeaders,
+              colTypes,
+              colFormat,
+              "");
+
+      table.set(0, 0, "training_frame");
+      table.set(1, 0, "validation_frame");
+      table.set(0, 1, modelBuilder.train() != null ? modelBuilder.train().checksum() : -1);
+      table.set(1, 1, modelBuilder._valid != null ? modelBuilder.valid().checksum() : -1);
+      table.set(0, 2, modelBuilder.train() != null ? Arrays.toString(modelBuilder.train().anyVec().espc()) : -1);
+      table.set(1, 2, modelBuilder._valid != null ? Arrays.toString(modelBuilder.valid().anyVec().espc()) : -1);
+
+      return table;
+    }
+    
+    public int getInformationTableNumRows() {
+      return 2; // 1 row per each input frame (training frame, validation frame)
+    }
   } // Output
 
   protected String[][] scoringDomains() { return _output._domains; }
@@ -951,12 +1028,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     super(selfKey);
     assert parms != null;
     _parms = parms;
+    evalAutoParamsEnabled = evaluateAutoModelParameters();
+    if (evalAutoParamsEnabled) {
+      initActualParamValues();
+    }
     _output = output;  // Output won't be set if we're assert output != null;
     if (_output != null)
       _output.startClock();
     _dist = isSupervised() && _output.nclasses() == 1 ? DistributionFactory.getDistribution(_parms) : null;
     Log.info("Starting model "+ selfKey);
   }
+
+  public void initActualParamValues() {}
+  
   /**
    * Deviance of given distribution function at predicted value f
    * @param w observation weight
@@ -1000,7 +1084,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   // Lower is better
   public float loss() {
-    switch (_parms._stopping_metric) {
+    switch (Optional.ofNullable(_parms._stopping_metric).orElse(ScoreKeeper.StoppingMetric.AUTO)) {
       case MSE:
         return (float) mse();
       case MAE:
@@ -1026,7 +1110,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       case AUTO:
       default:
         return (float) (_output.isClassifier() ? logloss() : _output.isAutoencoder() ? mse() : deviance());
-
     }
   } // loss()
 
@@ -1214,6 +1297,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  if any factor column has no levels in common.
    */
   public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics) {
+    return adaptTestForTrain(test, expensive, computeMetrics, false);
+  }
+  
+  public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics, boolean catEncoded) {
     return adaptTestForTrain(
             test,
             _output._origNames,
@@ -1226,9 +1313,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             _output.interactionBuilder(),
             getToEigenVec(),
             _toDelete,
-            false
+            catEncoded
     );
-  }
+  } 
 
   /**
    * @param test Frame to be adapted
@@ -1363,7 +1450,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             if( isResponse && vec.domain() != null && ds.length == domains[i].length+vec.domain().length )
               throw new IllegalArgumentException("Test/Validation dataset has a categorical response column '"+names[i]+"' with no levels in common with the model");
             if (ds.length > domains[i].length)
-              msgs.add("Test/Validation dataset column '" + names[i] + "' has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
+              msgs.add("Test/Validation dataset column '" + names[i] + "' has levels not trained on: " + ArrayUtils.toStringQuotedElements(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
             vec = evec;
           }
         } else if(vec.isCategorical()) {
@@ -1385,7 +1472,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       // check if we first need to expand categoricals before calling this method again
       if (hasCategoricalPredictors) {
-        Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, parms._categorical_encoding, tev, parms._max_categorical_levels);
+        Frame updated = categoricalEncoder(test, parms.getNonPredictors(), parms._categorical_encoding, tev, parms._max_categorical_levels);
         toDelete.put(updated._key, "categorically encoded frame");
         test.restructure(updated.names(), updated.vecs()); //updated in place
         String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactionBldr, tev, toDelete, true /*catEncoded*/);
@@ -1516,8 +1603,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
-    computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
+    List<Frame> tmpFrames = new ArrayList<>();
+    applyPreprocessors(adaptFr, tmpFrames);
+    computeMetrics = computeMetrics && 
+            (!_output.hasResponse() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
+    tmpFrames.add(adaptFr);
     // clean up the previous score warning messages
     _warningsP = new String[0];
     if (msg.length > 0) {
@@ -1557,10 +1648,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           CategoricalWrappedVec.updateDomain(output.vec(0), sdomain);
       }
     }
-    Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, fr);
+    for (Frame tmp : tmpFrames) Frame.deleteTempFrameAndItsNonSharedVecs(tmp, fr);
     return output;
   }
-
+  
+  private void applyPreprocessors(Frame fr, List<Frame> tmpFrames) {
+    if (_parms._preprocessors == null) return;
+    
+    for (Key<ModelPreprocessor> key : _parms._preprocessors) {
+      DKV.prefetch(key);
+    }
+    Frame result = fr;
+    for (Key<ModelPreprocessor> key : _parms._preprocessors) {
+      ModelPreprocessor preprocessor = key.get();
+      result = preprocessor.processScoring(result, this);
+      tmpFrames.add(result);
+    }
+    fr.restructure(result.names(), result.vecs()); //inplace
+  }
+  
   /**
    * Compute the deviances for each observation
    * @param valid Validation Frame (must contain the response)
@@ -1757,7 +1863,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       float [] actual = null;
       _mb = Model.this.makeMetricBuilder(_domain);
       if (_computeMetrics) {
-        if (isSupervised()) {
+        if (_output.hasResponse()) {
           actual = new float[1];
           responseChunk = chks[_output.responseIdx()];
         } else
@@ -1778,7 +1884,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           double offset = offsetChunk != null ? offsetChunk.atd(row) : 0;
           double[] preds = predict.score0(chks, offset, row, tmp, _mb._work);
           if (_computeMetrics) {
-            if (isSupervised()) {
+            if (responseChunk != null) {
               actual[0] = (float) responseChunk.atd(row);
             } else {
               for (int i = 0; i < actual.length; ++i)
@@ -2355,7 +2461,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             FileOutputStream os = new FileOutputStream(ss.getFilename());
             ss.getStreamWriter().writeTo(os);
             os.close();
-            genmodel = MojoModel.load(filename);
+            genmodel = MojoModel.load(filename, true);
             features = MemoryManager.malloc8d(genmodel._names.length);
           } catch (IOException e1) {
             e1.printStackTrace();
@@ -2364,8 +2470,21 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             boolean deleted = new File(filename).delete();
             if (!deleted) Log.warn("Failed to delete the file");
           }
-        }
 
+          if (! Arrays.equals(model_predictions.names(), genmodel.getOutputNames())) {
+            if (_parms._distribution == DistributionFamily.quasibinomial) {
+              Log.warn("Quasibinomial doesn't correctly return output names in MOJO"); 
+            } else if (genmodel.getModelCategory() == ModelCategory.Clustering && Arrays.equals(genmodel.getOutputNames(), new String[]{"cluster"})) {
+              Log.warn("Known inconsistency between MOJO output naming and H2O predict - cluster vs predict");
+            } else if (genmodel instanceof GlrmMojoModel) {
+              Log.trace("GLRM is being tested for 'reconstruct', not the default score0 - dim reduction, unable to compare output names");
+            } else if (false) 
+              throw new IllegalStateException("GenModel output naming doesn't match provided scored frame. " +
+                      "Expected: " + Arrays.toString(model_predictions.names()) +
+                      ", Actual: " + Arrays.toString(genmodel.getOutputNames()));
+          }
+        }
+        
         if (genmodel instanceof GlrmMojoModel) {
           try {
             config.setModel(genmodel).setEnableGLRMReconstrut(true);
@@ -2437,6 +2556,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 case Ordinal:
                   p = epmw.predictOrdinal(rowData, offset);
                   break;
+                case KLime:
+                  p = epmw.predictKLime(rowData);
+                  break;
                 default:
                   throw new UnsupportedOperationException("Predicting with offset current not supported for " + genmodel.getModelCategory());
               }
@@ -2493,7 +2615,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 break;
               case AnomalyDetection:
                 AnomalyDetectionPrediction adp = (AnomalyDetectionPrediction) p;
-                d2 = (col == 0) ? adp.normalizedScore : adp.score;
+                d2 = adp.toPreds()[col];
                 decisionPath = adp.leafNodeAssignments;
                 nodeIds = adp.leafNodeAssignmentIds;
                 break;
@@ -2879,15 +3001,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return true;
   }
 
-  /**
-   * Returns features that are used during prediction. This might be a superset of the features that are actually used,
-   * but it should not be a subset.
-   * @return Array of features used during prediction
-   */
-  public String[] getFeaturesUsedInPrediction() {
-    return Stream
-            .of(_output._names)
-            .filter(this::isFeatureUsedInPredict)
-            .toArray(String[]::new);
+  public boolean isDistributionHuber() {
+    return _parms._distribution == DistributionFamily.huber;
   }
 }

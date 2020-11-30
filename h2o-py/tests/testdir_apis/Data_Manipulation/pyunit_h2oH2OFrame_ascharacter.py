@@ -18,7 +18,5 @@ def h2o_H2OFrame_ascharacter():
     assert_is_type(newFrame, H2OFrame)
     assert newFrame.isstring()[0], "h2o.H2OFrame.ascharacter() command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_ascharacter())
-else:
-    h2o_H2OFrame_ascharacter()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_ascharacter)

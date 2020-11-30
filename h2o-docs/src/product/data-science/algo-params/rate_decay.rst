@@ -31,27 +31,27 @@ Example
         test <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/test.csv.gz")
 
          # Turn response into a factor (we want classification)
-         train[,785] <- as.factor(train[,785])
-         test[,785] <- as.factor(test[,785])
+         train[, 785] <- as.factor(train[, 785])
+         test[, 785] <- as.factor(test[, 785])
          train <- h2o.assign(train, "train")
          test <- h2o.assign(test, "test")
 
          # Train a deep learning model
-         dl_model <- h2o.deeplearning(x=c(1:784), y=785,
-                                      training_frame=train,
-                                      activation="RectifierWithDropout",
-                                      adaptive_rate=F,
-                                      rate=0.01,
-                                      rate_decay=0.9,
-                                      rate_annealing=1e-6,
-                                      momentum_start=0.95, 
-                                      momentum_ramp=1e5, 
-                                      momentum_stable=0.99,
-                                      nesterov_accelerated_gradient=F,
-                                      input_dropout_ratio=0.2,
-                                      train_samples_per_iteration=20000,
-                                      classification_stop=-1,  # Turn off early stopping
-                                      l1=1e-5 
+         dl_model <- h2o.deeplearning(x = c(1:784), y = 785,
+                                      training_frame = train,
+                                      activation = "RectifierWithDropout",
+                                      adaptive_rate = F,
+                                      rate = 0.01,
+                                      rate_decay = 0.9,
+                                      rate_annealing = 1e-6,
+                                      momentum_start = 0.95, 
+                                      momentum_ramp = 1e5, 
+                                      momentum_stable = 0.99,
+                                      nesterov_accelerated_gradient = F,
+                                      input_dropout_ratio = 0.2,
+                                      train_samples_per_iteration = 20000,
+                                      classification_stop = -1,  # Turn off early stopping
+                                      l1 = 1e-5 
                                      )
 
          # See the model performance

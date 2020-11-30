@@ -36,7 +36,7 @@ def glrm_catagorical_bug_fix():
   glrm_h2o.train(x=prostateF.names, training_frame=prostateF)
   glrm_h2o.show()
 
-  assert pyunit_utils.equal_2D_tables(glrm_h2o._model_json["output"]["archetypes"]._cell_values,
+  assert pyunit_utils.equal_2d_tables(glrm_h2o._model_json["output"]["archetypes"]._cell_values,
                                       correct_archetype._cell_values, tolerance=1e-4), \
       "GLRM model archetypes generated from current model are not correct."
 

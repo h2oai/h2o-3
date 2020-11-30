@@ -1,5 +1,6 @@
 package hex.tree.xgboost;
 
+import water.H2O;
 import water.Iced;
 import water.util.IcedHashMapGeneric;
 import water.util.TwoDimTable;
@@ -27,7 +28,16 @@ public class BoosterParms extends Iced<BoosterParms> {
    * @return localized Booster parameters
    */
   public Map<String, Object> get() {
-    return localizeDecimalParams(_parms);
+    Map<String, Object> params = localizeDecimalParams(_parms);
+    addNodeSpecificParams(params);
+    return Collections.unmodifiableMap(params);
+  }
+
+  private static void addNodeSpecificParams(final Map<String, Object> params) {
+    final String sysGpuId = H2O.getSysProperty("xgboost.gpu.id", null);
+    if (sysGpuId != null) {
+      params.put("gpu_id", sysGpuId);
+    }
   }
 
   /**
@@ -48,7 +58,7 @@ public class BoosterParms extends Iced<BoosterParms> {
         newValue = value;
       localized.put(key, newValue);
     }
-    return Collections.unmodifiableMap(localized);
+    return localized;
   }
 
   public TwoDimTable toTwoDimTable() {

@@ -53,6 +53,7 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "gradient_epsilon",
             "link",
             "prior",
+            "cold_start", // if true, will start GLM model from initial values and conditions
             "lambda_min_ratio",
             "beta_constraints",
             "max_active_predictors",
@@ -60,12 +61,14 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "interaction_pairs",
             "obj_reg",
             "export_checkpoints_dir",
+            "stopping_rounds",
+            "stopping_metric",
+            "stopping_tolerance",
             // dead unused args forced here by backwards compatibility, remove in V4
             "balance_classes",
             "class_sampling_factors",
             "max_after_balance_size",
             "max_confusion_matrix_size",
-            "max_hit_ratio_k",
             "max_runtime_secs",
             "custom_metric_func",
             "num_knots",  // array: number of knots for each predictor
@@ -80,7 +83,7 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
     public long seed;
 
     // Input fields
-    @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial","quasibinomial","ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"}, level = Level.critical)
+    @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"AUTO", "gaussian", "binomial","quasibinomial","ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"}, level = Level.critical)
     // took tweedie out since it's not reliable
     public GLMParameters.Family family;
 
@@ -157,6 +160,11 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
     @API(help = "Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean of response does not reflect reality.", level = Level.expert)
     public double prior;
 
+    @API(help = "Only applicable to multiple alpha/lambda values when calling GLM from GAM.  If false, build the next" +
+            " model for next set of alpha/lambda values starting from the values provided by current model.  If true" +
+            " will start GLM model from scratch.", level = Level.critical)
+    public boolean cold_start;
+
     @API(help = "Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all coefficients to zero)." +
             " Default indicates: if the number of observations is greater than the number of variables, then lambda_min_ratio" +
             " is set to 0.0001; if the number of observations is less than the number of variables, then lambda_min_ratio" +
@@ -205,12 +213,6 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
      *  avoid printing extremely large confusion matrices.  */
     @API(help = "[Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs", level = API.Level.secondary, direction = API.Direction.INOUT)
     public int max_confusion_matrix_size;
-
-    /**
-     * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-     */
-    @API(help = "Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT)
-    public int max_hit_ratio_k;
 
     @API(help="Request p-values computation, p-values work only with IRLSM solver and no regularization", level = Level.secondary, direction = Direction.INPUT)
     public boolean compute_p_values; // _remove_collinear_columns

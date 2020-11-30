@@ -38,10 +38,8 @@
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
-#' @param max_hit_ratio_k Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-#'        Defaults to 0.
 #' @param ntrees Number of trees. Defaults to 50.
-#' @param max_depth Maximum tree depth. Defaults to 20.
+#' @param max_depth Maximum tree depth (0 for unlimited). Defaults to 20.
 #' @param min_rows Fewest allowed (weighted) observations in a leaf. Defaults to 1.
 #' @param nbins For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point
 #'        Defaults to 20.
@@ -89,6 +87,7 @@
 #' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
 #'        column is a constant value.If disabled, then model will train regardless of the response column being a
 #'        constant value or not. Defaults to TRUE.
+#' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
@@ -103,7 +102,7 @@
 #' 
 #' # Set predictors and response; set response as a factor
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "economy_20mpg"
 #' 
 #' # Train the DRF model
@@ -131,7 +130,6 @@ h2o.randomForest <- function(x,
                              balance_classes = FALSE,
                              class_sampling_factors = NULL,
                              max_after_balance_size = 5.0,
-                             max_hit_ratio_k = 0,
                              ntrees = 50,
                              max_depth = 20,
                              min_rows = 1,
@@ -161,6 +159,7 @@ h2o.randomForest <- function(x,
                              custom_metric_func = NULL,
                              export_checkpoints_dir = NULL,
                              check_constant_response = TRUE,
+                             gainslift_bins = -1,
                              verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -217,8 +216,6 @@ h2o.randomForest <- function(x,
     parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
-  if (!missing(max_hit_ratio_k))
-    parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(max_depth))
@@ -275,6 +272,8 @@ h2o.randomForest <- function(x,
     parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(check_constant_response))
     parms$check_constant_response <- check_constant_response
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   if (!missing(distribution)) {
     warning("Argument distribution is deprecated and has no use for Random Forest.")
@@ -307,7 +306,6 @@ h2o.randomForest <- function(x,
                                              balance_classes = FALSE,
                                              class_sampling_factors = NULL,
                                              max_after_balance_size = 5.0,
-                                             max_hit_ratio_k = 0,
                                              ntrees = 50,
                                              max_depth = 20,
                                              min_rows = 1,
@@ -337,6 +335,7 @@ h2o.randomForest <- function(x,
                                              custom_metric_func = NULL,
                                              export_checkpoints_dir = NULL,
                                              check_constant_response = TRUE,
+                                             gainslift_bins = -1,
                                              segment_columns = NULL,
                                              segment_models_id = NULL,
                                              parallelism = 1)
@@ -397,8 +396,6 @@ h2o.randomForest <- function(x,
     parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
-  if (!missing(max_hit_ratio_k))
-    parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(max_depth))
@@ -455,6 +452,8 @@ h2o.randomForest <- function(x,
     parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(check_constant_response))
     parms$check_constant_response <- check_constant_response
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   if (!missing(distribution)) {
     warning("Argument distribution is deprecated and has no use for Random Forest.")

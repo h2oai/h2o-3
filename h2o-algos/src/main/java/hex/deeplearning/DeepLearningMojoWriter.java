@@ -27,7 +27,7 @@ public class DeepLearningMojoWriter extends ModelMojoWriter<DeepLearningModel,
 
   @Override
   public String mojoVersion() {
-    return "1.00";
+    return "1.10";
   }
 
   @Override
@@ -69,5 +69,24 @@ public class DeepLearningMojoWriter extends ModelMojoWriter<DeepLearningModel,
       writekv("bias_layer"+index, _model_info.get_biases(index).raw());
     }
     writekv("hidden_dropout_ratios", all_drop_out_ratios);
+    writekv("_genmodel_encoding", model.getGenModelEncoding());
+    String[] origNames = model._output._origNames;
+    if (origNames != null) {
+      int nOrigNames = origNames.length;
+      writekv("_n_orig_names", nOrigNames);
+      writeStringArray(origNames, "_orig_names");
+    }
+    if (model._output._origDomains != null) {
+      int nOrigDomainValues = model._output._origDomains.length;
+      writekv("_n_orig_domain_values", nOrigDomainValues);
+      for (int i=0; i < nOrigDomainValues; i++) {
+        String[] currOrigDomain = model._output._origDomains[i];
+        writekv("_m_orig_domain_values_" + i, currOrigDomain == null ? 0 : currOrigDomain.length);
+        if (currOrigDomain != null) {
+          writeStringArray(currOrigDomain, "_orig_domain_values_" + i);
+        }
+      }
+    }
+    writekv("_orig_projection_array", model._output._orig_projection_array);
   }
 }

@@ -24,8 +24,6 @@ buildscript {
         classpath 'org.ow2.asm:asm:5.1'
         classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.4'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
-        classpath 'com.github.townsfolk:gradle-release:1.2'
-        classpath 'com.adaptc.gradle:nexus-workflow:0.6'
         classpath 'org.testng:testng:6.8'
         classpath 'be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+'
         classpath 'me.champeau.gradle:jmh-gradle-plugin:0.4.6'
@@ -50,11 +48,6 @@ plugins {
 //
 apply from: 'gradle/java.gradle'
 
-// For multiproject setup we have to apply release plugin here (we share same release number cross all modules)
-if (project.hasProperty("doRelease")) {
-    apply from: 'gradle/release.gradle'
-}
-
 // Print out time taken for each task so we find things that are slow.
 apply from: 'gradle/timing.gradle'
 
@@ -70,8 +63,6 @@ ext {
       project(':h2o-algos'),
       project(':h2o-web'),
       project(':h2o-app'),
-      project(':h2o-scala_2.10'),
-      project(':h2o-scala_2.11'),
       project(':h2o-persist-gcs'),
       project(':h2o-persist-hdfs'),
       project(':h2o-persist-s3'),
@@ -87,6 +78,7 @@ ext {
       project(':h2o-ext-xgboost'),
       project(':h2o-ext-krbstandalone'),
       project(':h2o-ext-mojo-pipeline'),
+      project(':h2o-ext-steam'),
       project(':h2o-ext-target-encoder'),
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
@@ -110,7 +102,6 @@ ext {
       project(':h2o-persist-hdfs'),
       project(':h2o-persist-s3'),
       project(':h2o-persist-http'),
-      project(':h2o-test-integ'),
       project(':h2o-test-accuracy'),
       project(':h2o-genmodel'),
       project(':h2o-bindings'),
@@ -125,6 +116,7 @@ ext {
       project(':h2o-ext-xgboost'),
       project(':h2o-ext-krbstandalone'),
       project(':h2o-ext-mojo-pipeline'),
+      project(':h2o-ext-steam'),
       project(':h2o-ext-target-encoder'),
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
@@ -136,11 +128,6 @@ ext {
       project(':h2o-genmodel-ext-jgrapht'),
       project(':h2o-k8s'), 
       project(':h2o-genmodel-ext-deepwater')
-    ]
-
-    scalaProjects = [
-      project(':h2o-scala_2.10'),
-      project(':h2o-scala_2.11'),
     ]
 
     rProjects = [
@@ -285,15 +272,6 @@ subprojects {
         // Analyze dependencies 
         //apply plugin: 'ca.cutterslade.analyze'
         
-    }
-
-    // Configure Scala projects
-    if (project in scalaProjects) {
-        apply from: "$rootDir/gradle/scala.gradle"
-        if (testNeedsCiProject.contains(project)) {
-            logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
-            project.testMultiNode.enabled = isCi
-        }
     }
 
     if (project in rProjects) {

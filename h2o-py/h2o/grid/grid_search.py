@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 from __future__ import division, print_function, absolute_import, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 import itertools
 
@@ -13,8 +14,7 @@ from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
 from h2o.grid.metrics import *  # NOQA
 from h2o.utils.metaclass import Alias as alias, BackwardsCompatible, Deprecated as deprecated, h2o_meta
-from h2o.utils.shared_utils import quoted
-from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.shared_utils import quoted, stringify_dict_as_map
 from h2o.utils.typechecks import assert_is_type, is_type
 
 
@@ -66,7 +66,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                    hyper_parameters)
         >>> training_data = h2o.import_file("smalldata/logreg/benign.csv")
-        >>> gs.train(x=range(3) + range(4,11),y=3, training_frame=training_data)
+        >>> gs.train(x=[3, 4-11], y=3, training_frame=training_data)
         >>> gs.show()
     """
 
@@ -303,10 +303,10 @@ class H2OGridSearch(h2o_meta(Keyed)):
         parms = self._parms.copy()
         parms.update({k: v for k, v in algo_params.items() if k not in ["self", "params", "algo_params", "parms"]})
         # dictionaries have special handling in grid search, avoid the implicit conversion
-        parms["search_criteria"] = None if self.search_criteria is None else str(self.search_criteria)
+        parms["search_criteria"] = None if self.search_criteria is None else stringify_dict_as_map(self.search_criteria)
         parms["export_checkpoints_dir"] = self.export_checkpoints_dir
         parms["parallelism"] = self._parallelism
-        parms["hyper_parameters"] = None if self.hyper_params  is None else str(self.hyper_params) # unique to grid search
+        parms["hyper_parameters"] = None if self.hyper_params is None else stringify_dict_as_map(self.hyper_params) # unique to grid search
         parms.update({k: v for k, v in list(self.model._parms.items()) if v is not None})  # unique to grid search
         parms.update(params)
         if '__class__' in parms:  # FIXME: hackt for PY3
@@ -351,7 +351,8 @@ class H2OGridSearch(h2o_meta(Keyed)):
         validation_frame = algo_params.pop("validation_frame", None)
         is_auto_encoder = (algo_params is not None) and ("autoencoder" in algo_params and algo_params["autoencoder"])
         algo = self.model._compute_algo()  # unique to grid search
-        is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans" or algo == "glrm"
+        is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans" or algo == "glrm" or \
+                          algo == "isolationforest"
         if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
         if not is_unsupervised and y is None: raise ValueError("Missing response")
         if not is_unsupervised:
@@ -1419,14 +1420,14 @@ class H2OGridSearch(h2o_meta(Keyed)):
 
         model_params = dict()
 
-        # if cross-validation is turned on, parameters in one of the fold model actual contains the max_runtime_secs
-        # parameter and not the main model that is returned.
-        if model._is_xvalidated:
-            model = h2o.get_model(model._xval_keys[0])
-
         for param_name in self.hyper_names:
-            model_params[param_name] = model.params[param_name]['actual'][0] if \
-                isinstance(model.params[param_name]['actual'], list) else model.params[param_name]['actual']
+            # if cross-validation is turned on, parameters in one of the fold model actual contains the max_runtime_secs
+            # parameter and not the main model that is returned.
+            if 'max_runtime_secs' == param_name and model._is_xvalidated:
+                xvalidated_model = h2o.get_model(model._xval_keys[0])
+                model_params[param_name] = xvalidated_model.params[param_name]['actual']
+            else:    
+                model_params[param_name] = model.params[param_name]['actual']
 
         if display: print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']')
         return model_params
@@ -1477,6 +1478,8 @@ class H2OGridSearch(h2o_meta(Keyed)):
             model_class = H2OAutoEncoderGridSearch
         elif model_type == "DimReduction":
             model_class = H2ODimReductionGridSearch
+        elif model_type == "AnomalyDetection":
+            model_class = H2OBinomialGridSearch
         else:
             raise NotImplementedError(model_type)
         return model_class

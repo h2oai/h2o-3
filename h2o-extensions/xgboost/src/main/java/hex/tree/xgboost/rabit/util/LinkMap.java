@@ -5,7 +5,7 @@ import water.util.Pair;
 import java.util.*;
 
 /**
- * Java implementation of ml.dmlc.xgboost4j.scala.rabit.util.LinkMap
+ * Java implementation of ai.h2o.xgboost4j.scala.rabit.util.LinkMap
  *
  * Naming left for consistency. In reality this is a simple binary tree data structure, which is used for communication
  * between Rabit workers.

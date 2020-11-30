@@ -2,6 +2,7 @@ package hex.genmodel.algos.glrm;
 
 import hex.ModelCategory;
 import hex.genmodel.MojoModel;
+import hex.genmodel.algos.pca.PCAMojoModel;
 
 import java.util.EnumSet;
 import java.util.Random;
@@ -350,5 +351,14 @@ public class GlrmMojoModel extends MojoModel {
 
     res += _gammax * _regx.regularize(x);
     return res;
+  }
+
+  @Override
+  public String[] getOutputNames() {
+    String[] names = new String[_ncolX];
+    for (int i = 0; i < names.length; i++) {
+      names[i] = "Arch" + (i + 1);
+    }
+    return names;
   }
 }

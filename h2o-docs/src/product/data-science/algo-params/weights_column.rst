@@ -1,7 +1,7 @@
 ``weights_column``
 ------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, GAM, AutoML, XGBoost, CoxPH
+- Available in: GBM, DRF, Deep Learning, GLM, GAM, AutoML, XGBoost, CoxPH, Stacked Ensembles
 - Hyperparameter: no
 
 Description
@@ -53,7 +53,7 @@ Example
 		cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 
 		# set the predictor names and the response column name
-		predictors <- c("displacement","power","acceleration","year")
+		predictors <- c("displacement", "power", "acceleration", "year")
 		response <- "economy_20mpg"
 
 		# create a new column that specifies the weights
@@ -63,9 +63,9 @@ Example
 		# this column contains the integers 1 or 2 in each row
 
 		# split into train and validation sets
-		cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-		train <- cars.split[[1]]
-		valid <- cars.split[[2]]
+		cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
+		train <- cars_split[[1]]
+		valid <- cars_split[[2]]
 
 		# try using the `weights_column` parameter:
 		# train your model, where you specify the weights_column

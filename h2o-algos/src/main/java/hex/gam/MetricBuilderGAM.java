@@ -58,7 +58,7 @@ public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSuperv
       if (_glmf._family.equals(GLMModel.GLMParameters.Family.multinomial) || _glmf._family.equals(GLMModel.GLMParameters.Family.ordinal))
         add2(yact[0], ds[0], weight, offset);
       else if (_glmf._family.equals(binomial) || _glmf._family.equals(quasibinomial) ||
-              _glmf._family.equals(negativebinomial) || _glmf._family.equals(fractionalbinomial))
+             _glmf._family.equals(fractionalbinomial))
         add2(yact[0], ds[2], weight, offset);
       else
         add2(yact[0], ds[0], weight, offset);
@@ -69,7 +69,7 @@ public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSuperv
   private void add2(double yresp, double ypredict, double weight, double offset) {
     _wcount += weight;
     ++_nobs;
-    if (!_glmf._family.equals(multinomial)) {
+    if (!_glmf._family.equals(multinomial) && !_glmf._family.equals(ordinal)) {
       _residual_deviance += weight * _glmf.deviance(yresp, ypredict);
       if (offset == 0)
         _null_deviance += weight * _glmf.deviance(yresp, _ymu[0]);
@@ -146,13 +146,13 @@ public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSuperv
     computeAIC();
     ModelMetrics mm=_metricBuilder.makeModelMetrics(gamM, f, null, null);
     if (_glmf._family.equals(GLMModel.GLMParameters.Family.binomial) || _glmf._family.equals(quasibinomial) ||
-    _glmf._family.equals(negativebinomial) ||  _glmf._family.equals(fractionalbinomial)) {
+    _glmf._family.equals(fractionalbinomial)) {
       ModelMetricsBinomial metricsBinomial = (ModelMetricsBinomial) mm;
       GainsLift gl = null;
       if (preds != null) {
         Vec resp = f.vec(gamM._parms._response_column);
         Vec weights = f.vec(gamM._parms._weights_column);
-        if (resp != null) {
+        if (resp != null && fractionalbinomial != _glmf._family) {
           gl = new GainsLift(preds.lastVec(), resp, weights);
           gl.exec(gamM._output._job);
         }

@@ -100,6 +100,7 @@ As you have noticed, we define a number of special classes to facilitate type co
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 import importlib
 import io
@@ -109,8 +110,6 @@ import tokenize
 from types import BuiltinFunctionType, FunctionType
 
 from h2o.exceptions import H2OTypeError, H2OValueError
-from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.compatibility import PY2, viewitems
 
 __all__ = ("U", "I", "NOT", "Tuple", "Dict", "MagicType", "BoundInt", "BoundNumeric", "Enum",
            "numeric", "h2oframe", "pandas_dataframe", "numpy_ndarray", "scipy_sparse",

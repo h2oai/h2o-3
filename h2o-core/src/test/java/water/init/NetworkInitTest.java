@@ -10,7 +10,10 @@ import water.util.MathUtils;
 import water.webserver.iface.H2OHttpConfig;
 import water.webserver.iface.LoginType;
 
+import java.net.InetAddress;
+
 import static water.TestUtil.ari;
+import static org.junit.Assert.*;
 
 /**
  * Test to verify correctness of network algebra.
@@ -24,7 +27,7 @@ public class NetworkInitTest {
     long low = ArrayUtils.encodeAsLong(address, 0, 8);
     AutoBuffer ab = new AutoBuffer();
     byte[] returnedAddress = ab.put8(low).put8(high).flipForReading().getA1(16);
-    Assert.assertArrayEquals(address, returnedAddress);
+    assertArrayEquals(address, returnedAddress);
   }
 
   // Test for H2OKey
@@ -33,17 +36,17 @@ public class NetworkInitTest {
     int ipv4 = (int) ArrayUtils.encodeAsLong(address);
     AutoBuffer ab = new AutoBuffer();
     byte[] returnedAddress = ab.put4(ipv4).flipForReading().getA1(4);
-    Assert.assertArrayEquals(address, returnedAddress);
+    assertArrayEquals(address, returnedAddress);
   }
 
   @Test public void testUnsignedOps() {
-    Assert.assertEquals(-1, MathUtils.compareUnsigned(0x00L, 0xFFL));
-    Assert.assertEquals(-1, MathUtils.compareUnsigned(0xFFFFFFFFFFFFFFFEL, 0xFFFFFFFFFFFFFFFFL));
-    Assert.assertEquals(-1, MathUtils.compareUnsigned(0xFFFFFFFFFFFFFFFFL & ~0x80FFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL));
-    Assert.assertEquals( 0, MathUtils.compareUnsigned(0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL));
-    Assert.assertEquals(-1, MathUtils.compareUnsigned(0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFEL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL));
-    Assert.assertEquals(-1, MathUtils.compareUnsigned(0x00L, 0xFFFFFFFFFFFFFFFFL, 0x01L, 0xFFFFFFFFFFFFFFFFL));
-    Assert.assertEquals(-1, MathUtils.compareUnsigned(0x00L, 0x00L, 0x00L, 0x01L));
+    assertEquals(-1, MathUtils.compareUnsigned(0x00L, 0xFFL));
+    assertEquals(-1, MathUtils.compareUnsigned(0xFFFFFFFFFFFFFFFEL, 0xFFFFFFFFFFFFFFFFL));
+    assertEquals(-1, MathUtils.compareUnsigned(0xFFFFFFFFFFFFFFFFL & ~0x80FFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL));
+    assertEquals( 0, MathUtils.compareUnsigned(0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL));
+    assertEquals(-1, MathUtils.compareUnsigned(0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFEL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL));
+    assertEquals(-1, MathUtils.compareUnsigned(0x00L, 0xFFFFFFFFFFFFFFFFL, 0x01L, 0xFFFFFFFFFFFFFFFFL));
+    assertEquals(-1, MathUtils.compareUnsigned(0x00L, 0x00L, 0x00L, 0x01L));
   }
 
   static byte[] toByte(int[] ary) {
@@ -94,5 +97,33 @@ public class NetworkInitTest {
     Assert.assertTrue(NetworkInit.webServerConfig(args).ensure_daemon_threads);
   }
 
+  @Test
+  public void testGetJksAlias() throws Exception {
+    assertNull(NetworkInit.getJksAlias(new H2O.OptArgs()));
 
+    H2O.OptArgs oa0 = new H2O.OptArgs();
+    oa0.jks_alias = "oa0_alias";
+    assertEquals("oa0_alias", NetworkInit.getJksAlias(oa0));
+
+    H2O.OptArgs oa1 = new H2O.OptArgs();
+    oa1.hostname_as_jks_alias = true;
+    oa1.ip = "oa1_hostname";
+    assertEquals("oa1_hostname", NetworkInit.getJksAlias(oa1));
+
+    H2O.OptArgs oa2 = new H2O.OptArgs();
+    oa2.hostname_as_jks_alias = true;
+    InetAddress addr = InetAddress.getLocalHost();
+    String hostname = HostnameGuesser.localAddressToHostname(addr);
+    assertEquals(hostname, NetworkInit.getJksAlias(oa2, addr));
+  }
+
+  @Test
+  public void testWebServerConfig_jksAlias() {
+    H2O.OptArgs oa = new H2O.OptArgs();
+    oa.hostname_as_jks_alias = true;
+    oa.ip = "MyHostName";
+
+    H2OHttpConfig config = NetworkInit.webServerConfig(oa);
+    assertEquals("MyHostName", config.jks_alias);
+  }
 }

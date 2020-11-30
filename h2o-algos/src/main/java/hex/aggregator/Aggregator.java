@@ -12,7 +12,6 @@ import water.util.IcedInt;
 import water.util.Log;
 
 import java.util.Arrays;
-import java.util.Collections;
 
 public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.AggregatorParameters,AggregatorModel.AggregatorOutput> {
 

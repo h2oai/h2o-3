@@ -1,12 +1,15 @@
 package hex;
 
 import hex.genmodel.AbstractMojoWriter;
+import hex.genmodel.descriptor.ModelDescriptor;
+import water.Key;
 import water.api.SchemaServer;
 import water.api.StreamWriter;
 import water.api.schemas3.ModelSchemaV3;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.zip.ZipOutputStream;
 
 
@@ -79,8 +82,11 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     }
   }
 
+  protected abstract void writeModelData() throws IOException;
+
   @Override
   protected void writeExtraInfo() throws IOException {
+    super.writeExtraInfo();
     writeModelDetails();
     writeModelDetailsReadme();
   }
@@ -102,4 +108,23 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     finishWritingTextFile();
   }
 
+  public void writeStringArrays(String[] sArrays, String title) throws IOException {
+    startWritingTextFile(title);
+    for (String sName : sArrays) {
+      writeln(sName);
+    }
+    finishWritingTextFile();
+  }
+
+  public void writeDoubleArray(double[][] array, String title) throws IOException {
+    int totArraySize = 0;
+    for (double[] row : array)
+      totArraySize += row.length;
+
+    ByteBuffer bb = ByteBuffer.wrap(new byte[totArraySize * 8]);
+    for (double[] row : array)
+      for (double val : row)
+        bb.putDouble(val);
+    writeblob(title, bb.array());
+  }
 }

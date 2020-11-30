@@ -20,13 +20,12 @@ import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.*;
 
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+
+import static hex.util.LinearAlgebraUtils.toEigenArray;
 
 public abstract class SharedTree<
     M extends SharedTreeModel<M,P,O>, 
@@ -142,7 +141,8 @@ public abstract class SharedTree<
     if (_parms._nbins_cats >= 1<<16) error ("_nbins_cats", "nbins_cats must be < " + (1<<16));
     if (_parms._nbins_top_level < _parms._nbins) error ("_nbins_top_level", "nbins_top_level must be >= nbins (" + _parms._nbins + ").");
     if (_parms._nbins_top_level >= 1<<16) error ("_nbins_top_level", "nbins_top_level must be < " + (1<<16));
-    if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
+    if (_parms._max_depth < 0) error("_max_depth", "_max_depth must be >= 0.");
+    if (_parms._max_depth == 0) _parms._max_depth = Integer.MAX_VALUE;
     if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
     if (_parms._r2_stopping!=Double.MAX_VALUE) warn("_r2_stopping", "_r2_stopping is no longer supported - please use stopping_rounds, stopping_metric and stopping_tolerance instead.");
     if (_parms._score_tree_interval < 0) error ("_score_tree_interval", "_score_tree_interval must be >= 0.");
@@ -164,6 +164,8 @@ public abstract class SharedTree<
       _ncols = _train.numCols()-(isSupervised()?1:0)-numSpecialCols();
 
     PlattScalingHelper.initCalibration(this, _parms, expensive);
+
+    _orig_projection_array = LinearAlgebraUtils.toEigenProjectionArray(_origTrain, _train, expensive);
   }
 
   protected void validateRowSampleRate() {
@@ -207,20 +209,26 @@ public abstract class SharedTree<
           _model._output._init_f = _initialPrediction;
         }
 
-        // Compute the response domain; makes for nicer printouts
-        String[] domain = isSupervised() ? _response.domain() : null;
+        final boolean isQuasibinomial = _parms._distribution == DistributionFamily.quasibinomial;
 
-        // Quasibinomial GBM can have different domains than {0, 1}
-        boolean isQuasibinomial = false;
-        if(_parms._distribution == DistributionFamily.quasibinomial){
-          isQuasibinomial = true;
-          domain = new VecUtils.CollectDoubleDomain(null,2).doAll(_response).stringDomain(_response.isInt());
-          ((GBMModel)_model)._output._quasibinomialDomains = domain;
+        // Get the actual response domain
+        final String[] actualDomain;
+        if (isQuasibinomial) {
+          // Quasibinomial GBM can have different domains than {0, 1}
+          actualDomain = new VecUtils.CollectDoubleDomain(null,2)
+                  .doAll(_response).stringDomain(_response.isInt());
+          ((GBMModel)_model)._output._quasibinomialDomains = actualDomain;
+        } else if (isSupervised()) {
+          // Regular supervised case, most common
+          actualDomain = _response.domain();
+        } else {
+          // Unsupervised, no domain
+          actualDomain = null;
         }
 
-        // Compute the response domain; makes for nicer printouts
-        assert (_nclass > 1 && domain != null) || (_nclass==1 && domain==null);
-        if( _nclass==1 ) domain = new String[] {"r"}; // For regression, give a name to class 0
+        // Compute the print-out response domain; makes for nicer printouts
+        assert (_nclass > 1 && actualDomain != null) || (_nclass==1 && actualDomain==null);
+        final String[] domain = _nclass == 1 ? new String[] {"r"} : actualDomain; // For regression, give a name to class 0   
 
         // Compute class distribution, used to for initial guesses and to
         // upsample minority classes (if asked for).
@@ -240,9 +248,9 @@ public abstract class SharedTree<
             boolean verboseSampling = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.sharedTree.sampleFrameStratified.verbose");
             Frame stratified;
             if(isQuasibinomial) {
-              stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), _train.vec(_model._output.weightsName()), trainSamplingFactors, (long) (_parms._max_after_balance_size * _train.numRows()), _parms._seed, true, false, domain);
+              stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), _train.vec(_model._output.weightsName()), trainSamplingFactors, (long) (_parms._max_after_balance_size * _train.numRows()), _parms._seed, true, verboseSampling, domain);
             } else {
-              stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), _train.vec(_model._output.weightsName()), trainSamplingFactors, (long) (_parms._max_after_balance_size * _train.numRows()), _parms._seed, true, false, null);
+              stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), _train.vec(_model._output.weightsName()), trainSamplingFactors, (long) (_parms._max_after_balance_size * _train.numRows()), _parms._seed, true, verboseSampling, null);
             }
             if (stratified != _train) {
               _train = stratified;
@@ -349,9 +357,10 @@ public abstract class SharedTree<
 
         if (_valid != null) {
           _validWorkspace = makeValidWorkspace();
-          _validPredsCache = Score.makePredictionCache(_model, vresponse());
+          String[] vdomain = isQuasibinomial ? actualDomain : vresponse().domain();
+          _validPredsCache = Score.makePredictionCache(_model, vresponse(), vdomain);
         }
-        _trainPredsCache = Score.makePredictionCache(_model, templateVec());
+        _trainPredsCache = Score.makePredictionCache(_model, templateVec(), actualDomain);
 
         // Variable importance: squared-error-improvement-per-variable-per-split
         _improvPerVar = new float[_ncols];
@@ -506,16 +515,17 @@ public abstract class SharedTree<
       // Add temporary workspace vectors (optional weights are taken over from fr)
       int respIdx = fr2.find(_parms._response_column);
       int weightIdx = fr2.find(_parms._weights_column);
-      fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]);                              //tree predictions
-      int workIdx = fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
-      int nidIdx  = fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
+      int predsIdx = fr2.numCols(); fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]); //tree predictions
+      int workIdx =  fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
+      int nidIdx  =  fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
       if (DEV_DEBUG) {
         System.out.println("Building a layer for class " + k + ":\n" + fr2.toTwoDimTable());
       }
       // Async tree building
       // step 1: build histograms
       // step 2: split nodes
-      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, respIdx, weightIdx, workIdx, nidIdx));
+      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, 
+              respIdx, weightIdx, predsIdx, workIdx, nidIdx));
     }
     // Block for all K trees to complete.
     boolean did_split=false;
@@ -553,12 +563,14 @@ public abstract class SharedTree<
     final DistributionFamily _family;
     final int _respIdx; // index of the actual response column for the whole model (not the residuals!) 
     final int _weightIdx;
+    final int _predsIdx;
     final int _workIdx;
     final int _nidIdx;
 
     boolean _did_split;
 
-    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family, int respIdx, int weightIdx, int workIdx, int nidIdx) {
+    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family,
+                      int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdx) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
@@ -572,6 +584,7 @@ public abstract class SharedTree<
       _family = family;
       _respIdx = respIdx;
       _weightIdx = weightIdx;
+      _predsIdx = predsIdx;
       _workIdx = workIdx;
       _nidIdx = nidIdx;
     }
@@ -585,7 +598,8 @@ public abstract class SharedTree<
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
 //      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _weightIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
-      new ScoreBuildHistogram2(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _respIdx, _weightIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
+      new ScoreBuildHistogram2(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, 
+              _respIdx, _weightIdx, _predsIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
       ScoreBuildHistogram sbh = (ScoreBuildHistogram) caller;
@@ -597,7 +611,7 @@ public abstract class SharedTree<
         // Replace the Undecided with the Split decision
         DTree.DecidedNode dn = _st.makeDecided(udn, sbh._hcs[leaf - leafOffset], udn._cs);
 //        System.out.println(dn + "\n" + dn._split);
-        if (dn._split == null) udn.do_not_split();
+        if (dn._split == null) udn.doNotSplit();
         else {
           _did_split = true;
           DTree.Split s = dn._split; // Accumulate squared error improvements per variable

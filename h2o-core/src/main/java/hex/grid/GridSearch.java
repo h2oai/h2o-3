@@ -7,13 +7,16 @@ import water.*;
 import water.exceptions.H2OConcurrentModificationException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PojoUtils;
 
-import java.io.*;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static hex.grid.HyperSpaceWalker.BaseWalker.SUBSPACES;
 
 /**
  * Grid search job.
@@ -106,9 +109,15 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         throw new H2OIllegalArgumentException("training_frame", "grid", "Cannot append new models to a grid with different training input");
       grid.write_lock(_job);
     } else {
+      String[] hyperNames = _hyperSpaceWalker.getHyperParamNames();
+      String[] allHyperNames = hyperNames;
+      String[] hyperParamNamesSubspace = _hyperSpaceWalker.getAllHyperParamNamesInSubspaces();
+      if (hyperParamNamesSubspace.length > 0) {
+        allHyperNames = ArrayUtils.append(ArrayUtils.remove(hyperNames, SUBSPACES), hyperParamNamesSubspace);
+      }
       grid = new Grid<>(_result,
                       _hyperSpaceWalker.getParams(),
-                      _hyperSpaceWalker.getHyperParamNames(),
+                      allHyperNames,
                       _hyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy());
       grid.delete_and_lock(_job);
     }
@@ -203,7 +212,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       try {
         parallelSearchGridLock.lock();
         constructScoringInfo(finishedModel);
-        grid.putModel(finishedModel._parms.checksum(IGNORED_FIELDS_PARAM_HASH), finishedModel._key);
+        grid.putModel(finishedModel._input_parms.checksum(IGNORED_FIELDS_PARAM_HASH), finishedModel._key);
 
         _job.update(1);
         grid.update(_job);
@@ -241,8 +250,6 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           reconcileMaxRuntime(grid._key, nextModelParams);
 
           parallelModelBuilder.run(Collections.singletonList(ModelBuilder.make(nextModelParams)));
-        } else {
-          parallelModelBuilder.noMoreModels();
         }
       } finally {
         parallelSearchGridLock.unlock();
@@ -451,7 +458,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     }
   }
 
-  private static final Set<String> IGNORED_FIELDS_PARAM_HASH = Collections.singleton("_export_checkpoints_dir");
+  static final Set<String> IGNORED_FIELDS_PARAM_HASH = Collections.singleton("_export_checkpoints_dir");
 
   /**
    * Build a model based on specified parameters and save it to resulting Grid object.
@@ -529,15 +536,14 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       return modelKeys[0].get();
     }
 
-
     // Modify model key to have nice version with counter
     // Note: Cannot create it before checking the cache since checksum would differ for each model
     Key<Model> result = Key.make(protoModelKey + paramsIdx);
     // Build a new model
-    // THIS IS BLOCKING call since we do not have enough information about free resources
-    // FIXME: we should allow here any launching strategy (not only sequential)
     assert grid.getModel(params) == null;
     Model m = ModelBuilder.trainModelNested(_job, result, params, null);
+    assert checksum == m._input_parms.checksum(IGNORED_FIELDS_PARAM_HASH) : 
+        "Model checksum different from original params";
     grid.putModel(checksum, result);
     return m;
   }

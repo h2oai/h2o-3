@@ -55,7 +55,7 @@ public abstract class XGBoostPojoWriter {
             int colIdx = 0;
             while (idx >= _output._catOffsets[colIdx + 1]) colIdx++;
             int colValue = idx - _output._catOffsets[colIdx];
-            return "(data[" + colIdx + "] == " + colValue + " ? 1 : " + (_output._sparse ? "NaN" : "0") + ")";
+            return "(data[" + colIdx + "] == " + colValue + " ? 1 : " + (_output._sparse ? "Float.NaN" : "0") + ")";
         }
     }
 

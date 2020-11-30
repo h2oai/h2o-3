@@ -17,7 +17,5 @@ def h2o_H2OFrame_na_omit():
     assert_is_type(newframe, H2OFrame)
     assert newframe.nrow==iris.nrow-10, "h2o.H2OFrame.na_omit() command is not working."  # check return result
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_na_omit())
-else:
-    h2o_H2OFrame_na_omit()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_na_omit)

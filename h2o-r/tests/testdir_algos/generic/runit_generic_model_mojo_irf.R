@@ -24,7 +24,7 @@ test.model.generic.irf <- function() {
     c("H2OAnomalyDetectionModel: generic", "Model ID", "H2OAnomalyDetectionMetrics: generic"))
     
     generic_model_preds  <- h2o.predict(generic_model, data)
-    expect_equal(length(generic_model_preds), 1)
+    expect_equal(length(generic_model_preds), 2)
     expect_equal(h2o.nrow(generic_model_preds), 24421)
     generic_model_path <- h2o.download_mojo(model = generic_model, path = tempdir())
     expect_equal(file.size(paste0(tempdir(),"/",generic_model_path)), file.size(mojo_original_path))

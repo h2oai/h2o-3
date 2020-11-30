@@ -19,7 +19,5 @@ def h2o_H2OFrame_nrow():
     assert iris.dim==[nrow,ncol], "h2o.H2OFrame.dim command is not working."
     assert iris.shape==(nrow, ncol), "h2o.H2OFrame.shape command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_nrow())
-else:
-    h2o_H2OFrame_nrow()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_nrow)

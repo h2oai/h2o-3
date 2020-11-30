@@ -62,9 +62,9 @@ Example
 		response <- "y"
 
 		# split into train and validation sets
-		auto.splits <- h2o.splitFrame(data =  auto, ratios = .8)
-		train <- auto.splits[[1]]
-		valid <- auto.splits[[2]]
+		auto_splits <- h2o.splitFrame(data =  auto, ratios = 0.8)
+		train <- auto_splits[[1]]
+		valid <- auto_splits[[2]]
 
 		# try using the `tweedie_variance_power` parameter:
 		# train your model, where you specify tweedie_variance_power
@@ -74,12 +74,12 @@ Example
 		                      tweedie_variance_power = 1)
 
 		# print the mse for validation set
-		print(h2o.mse(auto_glm, valid=TRUE))
+		print(h2o.mse(auto_glm, valid = TRUE))
 
 		# grid over `tweedie_variance_power`
 		# select the values for `tweedie_variance_power` to grid over
-		hyper_params <- list( tweedie_variance_power = c(0, 1, 1.1, 1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2,
-		                                          2.1, 2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3, 5, 7) )
+		hyper_params <- list( tweedie_variance_power = c(0, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2,
+		                                          2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3, 5, 7) )
 
 		# this example uses cartesian grid search because the search space is small
 		# and we want to see the performance of all models. For a larger search space use
@@ -91,8 +91,8 @@ Example
 		                 search_criteria = list(strategy = "Cartesian"))
 
 		# Sort the grid models by mse
-		sortedGrid <- h2o.getGrid("auto_grid", sort_by = "mse", decreasing = FALSE)
-		sortedGrid
+		sorted_grid <- h2o.getGrid("auto_grid", sort_by = "mse", decreasing = FALSE)
+		sorted_grid
 
 		# print the mse for the validation data
 		print(h2o.mse(auto_glm, valid = TRUE))

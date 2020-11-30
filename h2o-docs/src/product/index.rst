@@ -48,6 +48,11 @@ Additional Resources:
    starting-h2o
 
 .. toctree::
+   :maxdepth: 2
+
+   h2o-client
+
+.. toctree::
    :maxdepth: 4
 
    getting-data-into-h2o
@@ -61,6 +66,11 @@ Additional Resources:
    :maxdepth: 2
 
    data-science
+
+.. toctree::
+   :maxdepth: 2
+
+   training-models
 
 .. toctree::
    :maxdepth: 2
@@ -87,6 +97,11 @@ Additional Resources:
    :maxdepth: 2
 
    automl
+
+.. toctree::
+   :maxdepth: 2
+
+   explain   
 
 .. toctree::
    :maxdepth: 2

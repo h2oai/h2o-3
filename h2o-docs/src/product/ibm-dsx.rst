@@ -28,6 +28,6 @@ This section show how simple it is to use H2O R with IBM DSX.
 
 After H2O is installed and running, you are ready to use H2O in DSX! Refer to any of the following references for more information about using H2O with R:
 
-- `New User Quick Start <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#new-user-quick-start>`__
+- `New User Quick Start <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#new-user-quick-start>`__
 - `R Booklet <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/RBooklet.pdf>`__
 - `R Demos <https://github.com/h2oai/h2o-3/tree/master/h2o-r/demos>`__

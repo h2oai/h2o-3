@@ -44,9 +44,9 @@ Example
 		response <- "response"
 
 		# split into train and validation
-		higgs.splits <- h2o.splitFrame(data =  higgs, ratios = .8)
-		train <- higgs.splits[[1]]
-		valid <- higgs.splits[[2]]
+		higgs_splits <- h2o.splitFrame(data =  higgs, ratios = 0.8)
+		train <- higgs_splits[[1]]
+		valid <- higgs_splits[[2]]
 
 		# try using the `max_active_predictors` parameter:
 		higgs_glm <- h2o.glm(family = 'binomial', x = predictors, y = response, training_frame = train,

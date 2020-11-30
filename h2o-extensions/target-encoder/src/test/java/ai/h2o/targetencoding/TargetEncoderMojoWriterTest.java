@@ -1,12 +1,14 @@
 package ai.h2o.targetencoding;
 
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -14,10 +16,9 @@ import java.io.FileOutputStream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class TargetEncoderMojoWriterTest extends TestUtil {
-
-  @BeforeClass
-  public static void stall() { stall_till_cloudsize(1); }
 
   @Rule
   public TemporaryFolder folder = new TemporaryFolder();
@@ -25,7 +26,6 @@ public class TargetEncoderMojoWriterTest extends TestUtil {
   @Test
   public void writeModelToZipFile() throws Exception{
 
-    TargetEncoderModel targetEncoderModel = null;
     String fileNameForMojo = "test_mojo_te.zip";
     try {
       Scope.enter();
@@ -41,10 +41,9 @@ public class TargetEncoderMojoWriterTest extends TestUtil {
       p._ignored_columns = ignoredColumns(trainFrame, "home.dest", "embarked", p._response_column);
       p.setTrain(trainFrame._key);
 
-      TargetEncoderBuilder builder = new TargetEncoderBuilder(p);
+      TargetEncoder builder = new TargetEncoder(p);
 
-      builder.trainModel().get(); // Waiting for training to be finished
-      targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
+      TargetEncoderModel targetEncoderModel = builder.trainModel().get(); // Waiting for training to be finished
       Scope.track_generic(targetEncoderModel);
       File mojoFile = folder.newFile(fileNameForMojo);
       
@@ -55,7 +54,6 @@ public class TargetEncoderMojoWriterTest extends TestUtil {
         assertTrue(mojoFile.length() > 0);
       }
     } finally {
-      if(targetEncoderModel != null) TargetEncoderFrameHelper.encodingMapCleanUp(targetEncoderModel._output._target_encoding_map);
       Scope.exit();
     }
   }

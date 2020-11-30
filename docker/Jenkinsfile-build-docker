@@ -12,16 +12,17 @@ properties([
     parameters([
         booleanParam(defaultValue: false, description: 'Build even if the image is already present in the repository', name: 'forceBuild'),
         booleanParam(defaultValue: false, description: 'Publish built images', name: 'publish'),
-        string(defaultValue: 'master', description: 'H2O-3 Branch used to load dependencies.', name: 'h2oBranch')
+        string(defaultValue: 'master', description: 'H2O-3 Branch used to load dependencies.', name: 'h2oBranch'),
+        booleanParam(name: 'noCache', defaultValue: true, description: 'If set to true, the docker image is built from scratch, with no stages used from the cache.')
     ])
 ])
 
 IMAGE_NAME_PREFIX = 'harbor.h2o.ai/opsh2oai/h2o-3'
 
-JDK_VERSIONS = ['8', '10', '11', '12', '13']
+JDK_VERSIONS = ['8', '10', '11', '12', '13', '14']
 OPENJDK_VERSIONS = ['7']
-PYTHON_VERSIONS = ['2.7', '3.5', '3.6']
-R_VERSION = ['3.4.1', '3.3.3', '3.5.3', '3.6.2']
+PYTHON_VERSIONS = ['2.7', '3.5', '3.6', '3.7', '3.8']
+R_VERSION = ['3.3.3', '3.4.1', '3.5.3', '3.6.2', '4.0.2']
 
 def pipelineContext
 
@@ -54,6 +55,8 @@ ansiColor('xterm') {
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-10/x64-linux/jdk-10.0.2_linux-x64_bin.tar.gz"
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-11/x64-linux/jdk-11.0.3_linux-x64_bin.tar.gz"
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-12/x64-linux/jdk-12.0.2_linux-x64_bin.tar.gz"
+                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-13/x64-linux/jdk-13.0.2_linux-x64_bin.tar.gz"
+                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-14/x64-linux/jdk-14.0.2_linux-x64_bin.tar.gz"
                         }
                     }
                     stash name: 'docker-sources'
@@ -127,6 +130,7 @@ private Closure makeStage(final pipelineContext, String target, final boolean us
             buildImageStageName = "$buildImageStageName GPU"
         }
         buildSummary.stageWithSummary(buildImageStageName) {
+            final String noCache = params.noCache ? "--no-cache" : ""
             node (DEFAULT_LABEL) {
                 buildSummary.refreshStage(buildImageStageName)
                 dir (target) {
@@ -140,6 +144,7 @@ private Closure makeStage(final pipelineContext, String target, final boolean us
                                     GRADLE_VERSION=${gradleVersion} \
                                     GPU=${useGpu} \
                                     PUSH=${params.publish} \
+                                    NO_CACHE=${noCache} \
                                     ${target}
                             """
                 }

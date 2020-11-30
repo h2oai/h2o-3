@@ -1,9 +1,13 @@
 #' Automatic Machine Learning
 #'
 #' The Automatic Machine Learning (AutoML) function automates the supervised machine learning model training process.
-#' The current version of AutoML trains and cross-validates a Random Forest, an Extremely-Randomized Forest,
-#' a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, and then trains a
-#' Stacked Ensemble using all of the models.
+#' The current version of AutoML trains and cross-validates the following algorithms (in the following order):
+#' three pre-specified XGBoost GBM (Gradient Boosting Machine) models, a fixed grid of GLMs,
+#' a default Random Forest (DRF), five pre-specified H2O GBMs, a near-default Deep Neural Net,
+#' an Extremely Randomized Forest (XRT), a random grid of XGBoost GBMs, a random grid of H2O GBMs,
+#' and a random grid of Deep Neural Nets. In some cases, there will not be enough time to complete all the algorithms,
+#' so some may be missing from the leaderboard. AutoML then trains two Stacked Ensemble models, one of all the models,
+#' and one of only the best models of each kind.
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
@@ -48,11 +52,9 @@
 #'        Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @param exploitation_ratio The budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase. By default, the exploitation phase is disabled (exploitation_ratio=0) as this is still experimental; to activate it, it is recommended to try a ratio around 0.1. Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.
 #' @param modeling_plan List. The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints). Optional (Expert usage only).
+#' @param preprocessing List. The list of preprocessing steps to run. Only 'target_encoding' is currently supported.
 #' @param monotone_constraints List. A mapping representing monotonic constraints.
 #'        Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.
-#' @param algo_parameters List. A list of param_name=param_value to be passed to internal models. Defaults to none (Expert usage only).
-#'        By default, params are set only to algorithms accepting them, and ignored by others.
-#'        Only following parameters are currently allowed: "monotone_constraints".
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation predictions. This needs to be set to TRUE if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to FALSE.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep fold assignments in the models. Deleting them will save memory in the H2O cluster. Defaults to FALSE.
@@ -63,6 +65,7 @@
 #' @param export_checkpoints_dir (Optional) Path to a directory where every model will be stored in binary form.
 #' @param verbosity Verbosity of the backend messages printed during training; Optional.
 #'        Must be one of NULL (live log disabled), "debug", "info", "warn". Defaults to "warn".
+#' @param ... Additional (experimental) arguments to be passed through; Optional.        
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.
 #' @return An \linkS4class{H2OAutoML} object.
@@ -70,9 +73,13 @@
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
-#' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
-#' aml <- h2o.automl(y = "Class", training_frame = votes_hf, max_runtime_secs = 30)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.importFile(path = prostate_path, header = TRUE)
+#' y <- "CAPSULE"
+#' prostate[,y] <- as.factor(prostate[,y])  #convert to factor for classification
+#' aml <- h2o.automl(y = y, training_frame = prostate, max_runtime_secs = 30)
+#' lb <- h2o.get_leaderboard(aml)
+#' head(lb)
 #' }
 #' @export
 h2o.automl <- function(x, y, training_frame,
@@ -96,16 +103,26 @@ h2o.automl <- function(x, y, training_frame,
                        exclude_algos = NULL,
                        include_algos = NULL,
                        modeling_plan = NULL,
+                       preprocessing = NULL,
                        exploitation_ratio = 0.0,
                        monotone_constraints = NULL,
-                       algo_parameters = NULL,
                        keep_cross_validation_predictions = FALSE,
                        keep_cross_validation_models = FALSE,
                        keep_cross_validation_fold_assignment = FALSE,
                        sort_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "mean_per_class_error"),
                        export_checkpoints_dir = NULL,
-                       verbosity = "warn")
+                       verbosity = "warn",
+                       ...)
 {
+  dots <- list(...)
+  algo_parameters <- NULL  
+  for (arg in names(dots)) {
+    if (arg == 'algo_parameters') {
+      algo_parameters <- dots$algo_parameters  
+    } else {
+      stop(paste("unused argument", arg, "=", dots[[arg]]))
+    }
+  }
 
   tryCatch({
     .h2o.__remoteSend(h2oRestApiVersion = 3, method="GET", page = "Metadata/schemas/AutoMLV99")
@@ -246,6 +263,18 @@ h2o.automl <- function(x, y, training_frame,
       }
     })
     build_models$modeling_plan <- modeling_plan
+  }
+    
+  if (!is.null(preprocessing)) { 
+    is.string <- function(s) is.character(s) && length(s) == 1
+    preprocessing <- lapply(preprocessing, function(step) {
+      if (is.string(step)) {
+        list(type=gsub("_", "", step))  
+      } else {
+        stop("preprocessing steps must be a string (only 'target_encoding' currently supported)")  
+      } 
+    })  
+    build_models$preprocessing <- preprocessing  
   }
 
   if (!is.null(monotone_constraints)) {
@@ -408,7 +437,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   is_progress <- isTRUE(as.logical(.h2o.is_progress()))
   if (show_progress) h2o.show_progress() else h2o.no_progress()
   frame <- tryCatch(
-    as.h2o(table, destination_frame=destination_frame),
+    as.h2o(table, destination_frame=destination_frame, use_datatable=FALSE),
     error = identity,
     finally = if (is_progress) h2o.show_progress() else h2o.no_progress()
   )
@@ -419,6 +448,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   # GET AutoML job and leaderboard for project
   automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", run_id))
   project_name <- automl_job$project_name
+  automl_id <- automl_job$automl_id$name
 
   leaderboard <- as.data.frame(automl_job$leaderboard_table)
   row.names(leaderboard) <- seq(nrow(leaderboard))
@@ -461,6 +491,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   }
 
   return(list(
+    automl_id=automl_id,
     project_name=project_name,
     leaderboard=leaderboard,
     leader=leader,
@@ -479,11 +510,13 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
-#' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
-#' aml <- h2o.automl(y = "Class", project_name="aml_housevotes",
-#'                   training_frame = votes_hf, max_runtime_secs = 30)
-#' automl_retrieved <- h2o.get_automl("aml_housevotes")
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.importFile(path = prostate_path, header = TRUE)
+#' y <- "CAPSULE"
+#' prostate[,y] <- as.factor(prostate[,y])  #convert to factor for classification
+#' aml <- h2o.automl(y = y, training_frame = prostate, 
+#'                   max_runtime_secs = 30, project_name = "prostate")
+#' aml2 <- h2o.get_automl("prostate")
 #' }
 #' @export
 h2o.get_automl <- function(project_name) {
@@ -497,14 +530,16 @@ h2o.get_automl <- function(project_name) {
   }
 
   # Make AutoML object
-  return(new("H2OAutoML",
+  automl <- new("H2OAutoML",
              project_name = state$project,
              leader = state$leader,
              leaderboard = state$leaderboard,
              event_log = state$event_log,
              modeling_steps = state$modeling_steps,
              training_info = training_info
-  ))
+  )
+  attr(automl, "id") <- state$automl_id
+  return(automl)
 }
 
 
@@ -532,12 +567,13 @@ h2o.getAutoML <- function(project_name) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
-#' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
-#' aml <- h2o.automl(y = "Class", project_name="aml_housevotes",
-#'                   training_frame = votes_hf, max_runtime_secs = 30)
-#' lb_all <- h2o.get_leaderboard(aml, 'ALL')
-#' lb_custom <- h2o.get_leaderboard(aml, c('predict_time_per_row_ms', 'training_time_ms'))
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.importFile(path = prostate_path, header = TRUE)
+#' y <- "CAPSULE"
+#' prostate[,y] <- as.factor(prostate[,y])  #convert to factor for classification
+#' aml <- h2o.automl(y = y, training_frame = prostate, max_runtime_secs = 30)
+#' lb <- h2o.get_leaderboard(aml)
+#' head(lb)
 #' }
 #' @export
 h2o.get_leaderboard <- function(object, extra_columns=NULL) {

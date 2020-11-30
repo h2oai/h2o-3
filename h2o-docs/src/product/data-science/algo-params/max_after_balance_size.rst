@@ -31,22 +31,22 @@ Example
 		covtype <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
 
 		# convert response column to a factor
-		covtype[,55] <- as.factor(covtype[,55])
+		covtype[, 55] <- as.factor(covtype[, 55])
 
 		# set the predictor names and the response column name
 		predictors <- colnames(covtype[1:54])
 		response <- 'C55'
 
 		# split into train and validation sets
-		covtype.splits <- h2o.splitFrame(data =  covtype, ratios = .8, seed = 1234)
-		train <- covtype.splits[[1]]
-		valid <- covtype.splits[[2]]
+		covtype_splits <- h2o.splitFrame(data =  covtype, ratios = 0.8, seed = 1234)
+		train <- covtype_splits[[1]]
+		valid <- covtype_splits[[2]]
 
 		# look at the frequencies of each class
 		print(h2o.table(covtype['C55']))
 
 		# try using the max_after_balance_size parameter:
-		max <- .85
+		max <- 0.85
 		cov_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
 		                   validation_frame = valid, balance_classes = TRUE, 
 		                   max_after_balance_size = max, seed = 1234)
@@ -58,7 +58,7 @@ Example
 		# select the values for `max_after_balance_size` to grid over
 		# the first and last max_after_balance_sizes reduce the size of the
 		# original dataset, the second increases the dataset by 1.7 
-		hyper_params <- list( max_after_balance_size = c(.85, 1.7, .5) )
+		hyper_params <- list( max_after_balance_size = c(0.85, 1.7, 0.5) )
 
 		# this example uses cartesian grid search because the search space is small
 		# and we want to see the performance of all models. For a larger search space use
@@ -70,8 +70,8 @@ Example
 		                 search_criteria = list(strategy = "Cartesian"), seed = 1234)  
 
 		# Sort the grid models by logloss
-		sortedGrid <- h2o.getGrid("covtype_grid", sort_by = "logloss", decreasing = FALSE)    
-		sortedGrid
+		sorted_grid <- h2o.getGrid("covtype_grid", sort_by = "logloss", decreasing = FALSE)    
+		sorted_grid
 
 
    .. code-tab:: python

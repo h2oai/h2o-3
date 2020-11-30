@@ -3,9 +3,7 @@ package hex.schemas;
 import hex.tree.xgboost.XGBoost;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.api.API;
-import water.api.schemas3.KeyV3;
-import water.api.schemas3.KeyValueV3;
-import water.api.schemas3.ModelParametersSchemaV3;
+import water.api.schemas3.*;
 
 
 public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XGBoostParametersV3> {
@@ -49,9 +47,11 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "sample_rate", "subsample",
         "col_sample_rate", "colsample_bylevel",
         "col_sample_rate_per_tree", "colsample_bytree",
+        "colsample_bynode",
         "max_abs_leafnode_pred", "max_delta_step",
 
         "monotone_constraints",
+        "interaction_constraints",
 
         "score_tree_interval",
         "min_split_improvement", "gamma",
@@ -68,8 +68,6 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         //lightgbm only
         "max_bins",
         "max_leaves",
-        "min_sum_hessian_in_leaf",
-        "min_data_in_leaf",
 
         //dart
         "sample_type",
@@ -86,13 +84,14 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "reg_alpha",
         "dmatrix_type",
         "backend",
-        "gpu_id"
+        "gpu_id",
+        "gainslift_bins"
     };
 
     @API(help="(same as n_estimators) Number of trees.", gridable = true)
     public int ntrees;
 
-    @API(help="Maximum tree depth.", gridable = true)
+    @API(help="Maximum tree depth (0 for unlimited).", gridable = true)
     public int max_depth;
 
     @API(help="(same as min_child_weight) Fewest allowed (weighted) observations in a leaf.", gridable = true)
@@ -122,6 +121,9 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     public double col_sample_rate_per_tree;
     @API(help = "(same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
     public double colsample_bytree;
+
+    @API(help = "Column sample rate per tree node (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
+    public double colsample_bynode;
 
     @API(help = "A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.", level = API.Level.secondary)
     public KeyValueV3[] monotone_constraints;
@@ -162,12 +164,6 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
 
     @API(help = "For tree_method=hist only: maximum number of leaves", level = API.Level.secondary, gridable = true)
     public int max_leaves;
-
-    @API(help = "For tree_method=hist only: the mininum sum of hessian in a leaf to keep splitting", level = API.Level.expert, gridable = true)
-    public float min_sum_hessian_in_leaf;
-
-    @API(help = "For tree_method=hist only: the mininum data in a leaf to keep splitting", level = API.Level.expert, gridable = true)
-    public float min_data_in_leaf;
 
     @API(help="Tree method", values = { "auto", "exact", "approx", "hist"}, level = API.Level.secondary, gridable = true)
     public XGBoostParameters.TreeMethod tree_method;
@@ -210,5 +206,8 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
 
     @API(help="Which GPU to use. ", level = API.Level.expert, gridable = false)
     public int gpu_id;
+
+    @API(help="A set of allowed column interactions.", level= API.Level.expert)
+    public String[][] interaction_constraints;
   }
 }

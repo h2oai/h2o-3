@@ -42,4 +42,9 @@ public class TreeV3 extends SchemaV3<Iced, TreeV3> {
     @API(direction = API.Direction.OUTPUT, help = "Prediction values on terminal nodes")
     public float[] predictions;
 
+    @API(direction = API.Direction.OUTPUT, help = "Plain language rules representation of a trained decision tree")
+    public String tree_decision_path;
+
+    @API(direction = API.Direction.OUTPUT, help = "Plain language rules that were used in a particular prediction")
+    public String[] decision_paths;
 }

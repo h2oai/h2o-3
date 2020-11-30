@@ -24,7 +24,6 @@ def h2o_H2OFrame_prod():
                                             "equal quantile values between h2o and numpy".format(h2o_prod,np_prod)
 
     h2o.remove(h2o_data)
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_prod())
-else:
-    h2o_H2OFrame_prod()
+
+
+pyunit_utils.standalone_test(h2o_H2OFrame_prod)

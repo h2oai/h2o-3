@@ -50,9 +50,9 @@ Example
 		boston["chas"] <- as.factor(boston["chas"])
 
 		# split into train and validation sets
-		boston.splits <- h2o.splitFrame(data =  boston, ratios = .8)
-		train <- boston.splits[[1]]
-		valid <- boston.splits[[2]]
+		boston_splits <- h2o.splitFrame(data =  boston, ratios = 0.8)
+		train <- boston_splits[[1]]
+		valid <- boston_splits[[2]]
 
 		# try using the `objective_epsilon` parameter:
 		# train your model, where you specify objective_epsilon
@@ -61,7 +61,7 @@ Example
 		                      objective_epsilon = 1e-3)
 
 		# print the mse for the validation data
-		print(h2o.mse(boston_glm, valid=TRUE))
+		print(h2o.mse(boston_glm, valid = TRUE))
 
    .. code-tab:: python
 

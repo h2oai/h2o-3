@@ -35,7 +35,7 @@ The steps below describe the individual tasks involved in training and testing a
 
    a. Train each of the L base algorithms on the training set.
    b. Perform k-fold cross-validation on each of these learners and collect the cross-validated predicted values from each of the L algorithms.
-   c. The N cross-validated predicted values from each of the L algorithms can be combined to form a new N x L matrix. This matrix, along wtih the original response vector, is called the "level-one" data. (N = number of rows in the training set.)
+   c. The N cross-validated predicted values from each of the L algorithms can be combined to form a new N x L matrix. This matrix, along with the original response vector, is called the "level-one" data. (N = number of rows in the training set.)
    d. Train the metalearning algorithm on the level-one data.
       The "ensemble model" consists of the L base learning models and the metalearning model, which can then be used to generate predictions on a test set.
 
@@ -58,6 +58,8 @@ Before training a stacked ensemble, you will need to train and cross-validate a 
 - You can train these models manually, or you can use a group of models from a grid search.
 
 - The models must be trained on the same ``training_frame``.  The rows must be identical, but you can use different sets of predictor columns, ``x``, across models if you choose.  Using base models trained on different subsets of the feature space will add more randomness/diversity to the set of base models, which in theory can improve ensemble performance.  However, using all available predictor columns for each base model will often still yield the best results (the more data, the better the models).  
+
+**Note:** You can train a Stacked Ensemble model using only monotonic models by specifying ``monotone_constraints`` in AutoML and creating at least 2 monotonic models. 
 
 
 Defining a Stacked Ensemble Model
@@ -91,11 +93,17 @@ Defining a Stacked Ensemble Model
 
 -  `metalearner_nfolds <algo-params/nfolds.html>`__: (Optional) Specify the number of folds for cross-validation of the metalearning algorithm.  Defaults to 0 (no cross-validation).  If you want to compare the cross-validated performance of the ensemble model to the cross-validated performance of the base learners or other algorithms, you should make use of this option.
 
--  `metalearner_fold_assignment <algo-params/fold_assignment.html>`__: (Optional; Applicable only if a value for ``metalearner_nfolds`` is specified) Specify the cross-validation fold assignment scheme for the metalearner. The available options are AUTO (which is Random), Random, Modulo, or Stratified (which will stratify the folds based on the response variable for classification problems).
+-  `metalearner_fold_assignment <algo-params/fold_assignment.html>`__: (Optional; Applicable only if a value for ``metalearner_nfolds`` is specified) Specify the cross-validation fold assignment scheme for the metalearner. The available options are AUTO (which is Random), Random, Modulo, or Stratified (which will stratify the folds based on the response variable for classification problems). This value defaults to AUTO.
 
 -  `metalearner_fold_column <algo-params/fold_column.html>`__: (Optional; Cannot be used at the same time as ``nfolds``) Specify the name of the column that contains the cross-validation fold assignment per observation for cross-validation of the metalearner.  The column can be numeric (e.g. fold index or other integer value) or it can be categorical.  The number of folds is equal to the number of unique values in this column.
 
+-  `offset_column <algo-params/offset_column.html>`__: (Optional; Availability depends on the ``metalearner_algorithm``) Specify a column to use as the offset.
+
+-  `weights_column <algo-params/weights_column.html>`__: (Optional) Specifies a column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative weights are not allowed.
+
 -  **keep_levelone_frame**: (Optional) Keep the level one data frame that's constructed for the metalearning step. Defaults to False.
+
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: (Optional) Maximum allowed runtime in seconds for the metalearner model training. Use 0 to disable the time limit. Defaults to 0.
 
 -  `seed <algo-params/seed.html>`__: (Optional) Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number).
 
@@ -115,16 +123,16 @@ Below is a simple example showing how to build a Stacked Ensembles model.
         h2o.init()
 
         # Import a sample binary outcome train/test set into H2O
-        train <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_train_5k.csv")
-        test <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_test_5k.csv")
+        train <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+        test <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
 
         # Identify predictors and response
         y <- "response"
         x <- setdiff(names(train), y)
 
         # For binary classification, response should be a factor
-        train[,y] <- as.factor(train[,y])
-        test[,y] <- as.factor(test[,y])
+        train[, y] <- as.factor(train[, y])
+        test[, y] <- as.factor(test[, y])
 
         # Number of CV folds (to generate level-one data for stacking)
         nfolds <- 5
@@ -246,8 +254,8 @@ Below is a simple example showing how to build a Stacked Ensembles model.
         h2o.init()
 
         # Import a sample binary outcome train/test set into H2O
-        train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_train_5k.csv")
-        test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_test_5k.csv")
+        train = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+        test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
 
         # Identify predictors and response
         x = train.columns
@@ -487,6 +495,4 @@ Statistical Applications in Genetics and Molecular Biology. Volume 6, Issue 1. (
 .. _4:
 
 [4] `LeDell, E. "Scalable Ensemble Learning and Computationally Efficient Variance Estimation" (Doctoral Dissertation). University of California, Berkeley, USA. (2015) <http://www.stat.berkeley.edu/~ledell/papers/ledell-phd-thesis.pdf>`__
-
-
 

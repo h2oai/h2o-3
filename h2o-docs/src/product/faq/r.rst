@@ -144,11 +144,11 @@ Finally, install the latest stable version of the H2O package for R:
 
 ::
 
-    install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R)))
+    install.packages("h2o", type = "source", repos = (c("http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R)))
     library(h2o)
-    localH2O = h2o.init()
+    h2o.init()
 
-If your R version is older than the H2O R package, upgrade your R version using ``update.packages(checkBuilt=TRUE, ask=FALSE)``.
+If your R version is older than the H2O R package, upgrade your R version using ``update.packages(checkBuilt = TRUE, ask = FALSE)``.
 
 --------------
 
@@ -176,14 +176,14 @@ I received the following error message after trying to run some code. What shoul
 
 ::
 
-    > fit <- h2o.deeplearning(x=2:4, y=1, training_frame=train_hex)
+    > fit <- h2o.deeplearning(x = 2:4, y = 1, training_frame = train)
       |=========================================================================================================| 100%
     Error in model$training_metrics$MSE :
       $ operator not defined for this S4 class
     In addition: Warning message:
     Not all shim outputs are fully supported, please see ?h2o.shim for more information
 
-Remove the ``h2o.shim(enable=TRUE)`` line and try running the code
+Remove the ``h2o.shim(enable = TRUE)`` line and try running the code
 again. Note that the ``h2o.shim`` is only a way to notify users of
 previous versions of H2O about changes to the H2O R package - it will
 not revise your code, but provides suggested replacements for deprecated
@@ -207,9 +207,9 @@ For the following example:
 
 ::
 
-    out.h2o.rf = h2o.randomForest( x=c("x1", "x2", "x3", "w"), y="y", training_frame=h2o.df.train, seed=555, model_id= "my.model.1st.try.out.h2o.rf" )
+    rf <- h2o.randomForest(x = c("x1", "x2", "x3", "w"), y = "y", training_frame = train)
 
-Use ``out.h2o.rf@model$run_time`` to determine the value of the
+Use ``rf@model$run_time`` to determine the value of the
 ``run_time`` variable.
 
 --------------
@@ -222,7 +222,7 @@ of ``h2o.ddply``, as shown in the following example:
 
 ::
 
-    newframe <- h2o.group_by(h2oframe, by="footwear_category", nrow("email_event_click_ct"), sum("email_event_click_ct"), mean("email_event_click_ct"), sd("email_event_click_ct"), gb.control = list( col.names=c("count", "total_email_event_click_ct", "avg_email_event_click_ct", "std_email_event_click_ct") ) )
+    newframe <- h2o.group_by(h2oframe, by = "footwear_category", nrow("email_event_click_ct"), sum("email_event_click_ct"), mean("email_event_click_ct"), sd("email_event_click_ct"), gb.control = list(col.names=c("count", "total_email_event_click_ct", "avg_email_event_click_ct", "std_email_event_click_ct")))
 
 Using ``gb.control`` is optional; here it is included so the column
 names are user-configurable.
@@ -233,7 +233,7 @@ example:
 
 ::
 
-    newframe <- h2o.group_by(h2oframe, by=c("footwear_category","age_group"), nrow("email_event_click_ct"), sum("email_event_click_ct"), mean("email_event_click_ct"), sd("email_event_click_ct"), gb.control = list( col.names=c("count", "total_email_event_click_ct", "avg_email_event_click_ct", "std_email_event_click_ct") ) )
+    newframe <- h2o.group_by(h2oframe, by = c("footwear_category","age_group"), nrow("email_event_click_ct"), sum("email_event_click_ct"), mean("email_event_click_ct"), sd("email_event_click_ct"), gb.control = list( col.names = c("count", "total_email_event_click_ct", "avg_email_event_click_ct", "std_email_event_click_ct")))
 
 --------------
 
@@ -293,7 +293,7 @@ frames, or use the frame ID in the following code (replacing
 ::
 
     library(h2o)
-    localH2O = h2o.init(ip="sri.h2o.ai", port=54321, startH2O = F, strict_version_check=T)
+    h2o.init(startH2O = FALSE, strict_version_check = TRUE)
     data_frame <- h2o.getFrame(frame_id = "YOUR_FRAME_ID")
 
 --------------
@@ -384,7 +384,7 @@ entering the following in Terminal:
    library(h2o)
    h2o.init()
    data <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
-   m <- h2o.gbm(x=1:4, y=5, training_frame=data)
+   m <- h2o.gbm(x = 1:4, y = 5, training_frame = data)
 
    m@model$varimp
                 Relative importance Scaled.Values Percent.Influence
@@ -420,8 +420,8 @@ to the following example:
 
 ::
 
-    newframe <- h2o.group_by(dd, by="footwear_category", nrow("email_event_click_ct"), sum("email_event_click_ct"), mean("email_event_click_ct"),
-        sd("email_event_click_ct"), gb.control = list( col.names=c("count", "total_email_event_click_ct", "avg_email_event_click_ct", "std_email_event_click_ct") ) )
+    newframe <- h2o.group_by(dd, by = "footwear_category", nrow("email_event_click_ct"), sum("email_event_click_ct"), mean("email_event_click_ct"),
+        sd("email_event_click_ct"), gb.control = list(col.names = c("count", "total_email_event_click_ct", "avg_email_event_click_ct", "std_email_event_click_ct")))
     newframe$avg_email_event_click_ct2 = newframe$total_email_event_click_ct / newframe$count
 
 --------------
@@ -444,9 +444,9 @@ importances. To view all the variable importances, use the following:
 
 ::
 
-    model <- h2o.getModel(model_id = "my_H2O_modelID",conn=localH2O)
+    model <- h2o.getModel(model_id = "my_H2O_modelID")
 
-    varimp<-as.data.frame(h2o.varimp(model))
+    varimp <- as.data.frame(h2o.varimp(model))
 
 --------------
 
@@ -466,6 +466,6 @@ example:
 
     random_column <- h2o.runif(fr)
 
-    new_fr <- h2o.cbind(fr,random_column)
+    new_fr <- h2o.cbind(fr, random_column)
 
     new_fr

@@ -29,6 +29,7 @@
 #' @param random_columns random columns indices for HGLM.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
+#' @param score_iteration_interval Perform scoring for every score_iteration_interval iterations Defaults to -1.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
@@ -36,8 +37,8 @@
 #'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
 #'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param family Family. Use binomial for classification with logistic regression, others are for regression problems. Must be
-#'        one of: "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson",
-#'        "gamma", "tweedie", "negativebinomial". Defaults to gaussian.
+#'        one of: "AUTO", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial",
+#'        "poisson", "gamma", "tweedie", "negativebinomial". Defaults to AUTO.
 #' @param rand_family Random Component Family array.  One for each random component. Only support gaussian for now. Must be one of:
 #'        "[gaussian]".
 #' @param tweedie_variance_power Tweedie variance power Defaults to 0.
@@ -82,12 +83,15 @@
 #' @param link Link function. Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit".
 #'        Defaults to family_default.
 #' @param rand_link Link function array for random component in HGLM. Must be one of: "[identity]", "[family_default]".
-#' @param startval double array to initialize fixed and random coefficients for HGLM.
+#' @param startval double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
 #' @param calc_like \code{Logical}. if true, will return likelihood function value for HGLM. Defaults to FALSE.
 #' @param HGLM \code{Logical}. If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned Defaults
 #'        to FALSE.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
+#' @param cold_start \code{Logical}. Only applicable to multiple alpha/lambda values.  If false, build the next model for next set
+#'        of alpha/lambda values starting from the values provided by current model.  If true will start GLM model from
+#'        scratch. Defaults to FALSE.
 #' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
 #'        coefficients to zero). Default indicates: if the number of observations is greater than the number of
 #'        variables, then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of
@@ -100,14 +104,21 @@
 #' @param interaction_pairs A list of pairwise (first order) column interactions.
 #' @param obj_reg Likelihood divider in objective value computation, default is 1/nobs Defaults to -1.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
+#'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
+#'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
+#'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
+#'        "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing".
+#'        Defaults to AUTO.
+#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
+#'        much) Defaults to 0.001.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
-#' @param max_hit_ratio_k Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-#'        Defaults to 0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
@@ -129,7 +140,7 @@
 #' # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
 #' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate = h2o.importFile(path = prostate_path)
-#' h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate,
+#' h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"), training_frame = prostate,
 #'         family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #' 
 #' # Run GLM of VOL ~ CAPSULE + AGE + RACE + PSA + GLEASON
@@ -145,9 +156,13 @@
 #'   path="https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv"
 #' )
 #' predictors = 1:20
-#' target="y"
-#' glm = h2o.glm(x=predictors, y=target, training_frame=bank, family="binomial", standardize=TRUE,
-#'               lambda_search=TRUE)
+#' target = "y"
+#' glm = h2o.glm(x = predictors, 
+#'               y = target, 
+#'               training_frame = bank, 
+#'               family = "binomial", 
+#'               standardize = TRUE,
+#'               lambda_search = TRUE)
 #' h2o.std_coef_plot(glm, num_of_features = 20)
 #' }
 #' @export
@@ -166,9 +181,10 @@ h2o.glm <- function(x,
                     random_columns = NULL,
                     ignore_const_cols = TRUE,
                     score_each_iteration = FALSE,
+                    score_iteration_interval = -1,
                     offset_column = NULL,
                     weights_column = NULL,
-                    family = c("gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
+                    family = c("AUTO", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
                     rand_family = c("[gaussian]"),
                     tweedie_variance_power = 0,
                     tweedie_link_power = 1,
@@ -196,6 +212,7 @@ h2o.glm <- function(x,
                     calc_like = FALSE,
                     HGLM = FALSE,
                     prior = -1,
+                    cold_start = FALSE,
                     lambda_min_ratio = -1,
                     beta_constraints = NULL,
                     max_active_predictors = -1,
@@ -203,10 +220,12 @@ h2o.glm <- function(x,
                     interaction_pairs = NULL,
                     obj_reg = -1,
                     export_checkpoints_dir = NULL,
+                    stopping_rounds = 0,
+                    stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
+                    stopping_tolerance = 0.001,
                     balance_classes = FALSE,
                     class_sampling_factors = NULL,
                     max_after_balance_size = 5.0,
-                    max_hit_ratio_k = 0,
                     max_runtime_secs = 0,
                     custom_metric_func = NULL)
 {
@@ -273,6 +292,8 @@ h2o.glm <- function(x,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(score_each_iteration))
     parms$score_each_iteration <- score_each_iteration
+  if (!missing(score_iteration_interval))
+    parms$score_iteration_interval <- score_iteration_interval
   if (!missing(offset_column))
     parms$offset_column <- offset_column
   if (!missing(weights_column))
@@ -331,6 +352,8 @@ h2o.glm <- function(x,
     parms$HGLM <- HGLM
   if (!missing(prior))
     parms$prior <- prior
+  if (!missing(cold_start))
+    parms$cold_start <- cold_start
   if (!missing(lambda_min_ratio))
     parms$lambda_min_ratio <- lambda_min_ratio
   if (!missing(max_active_predictors))
@@ -341,14 +364,18 @@ h2o.glm <- function(x,
     parms$obj_reg <- obj_reg
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(stopping_rounds))
+    parms$stopping_rounds <- stopping_rounds
+  if (!missing(stopping_metric))
+    parms$stopping_metric <- stopping_metric
+  if (!missing(stopping_tolerance))
+    parms$stopping_tolerance <- stopping_tolerance
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))
     parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
-  if (!missing(max_hit_ratio_k))
-    parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(custom_metric_func))
@@ -395,9 +422,10 @@ h2o.glm <- function(x,
                                     random_columns = NULL,
                                     ignore_const_cols = TRUE,
                                     score_each_iteration = FALSE,
+                                    score_iteration_interval = -1,
                                     offset_column = NULL,
                                     weights_column = NULL,
-                                    family = c("gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
+                                    family = c("AUTO", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
                                     rand_family = c("[gaussian]"),
                                     tweedie_variance_power = 0,
                                     tweedie_link_power = 1,
@@ -425,6 +453,7 @@ h2o.glm <- function(x,
                                     calc_like = FALSE,
                                     HGLM = FALSE,
                                     prior = -1,
+                                    cold_start = FALSE,
                                     lambda_min_ratio = -1,
                                     beta_constraints = NULL,
                                     max_active_predictors = -1,
@@ -432,10 +461,12 @@ h2o.glm <- function(x,
                                     interaction_pairs = NULL,
                                     obj_reg = -1,
                                     export_checkpoints_dir = NULL,
+                                    stopping_rounds = 0,
+                                    stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
+                                    stopping_tolerance = 0.001,
                                     balance_classes = FALSE,
                                     class_sampling_factors = NULL,
                                     max_after_balance_size = 5.0,
-                                    max_hit_ratio_k = 0,
                                     max_runtime_secs = 0,
                                     custom_metric_func = NULL,
                                     segment_columns = NULL,
@@ -507,6 +538,8 @@ h2o.glm <- function(x,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(score_each_iteration))
     parms$score_each_iteration <- score_each_iteration
+  if (!missing(score_iteration_interval))
+    parms$score_iteration_interval <- score_iteration_interval
   if (!missing(offset_column))
     parms$offset_column <- offset_column
   if (!missing(weights_column))
@@ -565,6 +598,8 @@ h2o.glm <- function(x,
     parms$HGLM <- HGLM
   if (!missing(prior))
     parms$prior <- prior
+  if (!missing(cold_start))
+    parms$cold_start <- cold_start
   if (!missing(lambda_min_ratio))
     parms$lambda_min_ratio <- lambda_min_ratio
   if (!missing(max_active_predictors))
@@ -575,14 +610,18 @@ h2o.glm <- function(x,
     parms$obj_reg <- obj_reg
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(stopping_rounds))
+    parms$stopping_rounds <- stopping_rounds
+  if (!missing(stopping_metric))
+    parms$stopping_metric <- stopping_metric
+  if (!missing(stopping_tolerance))
+    parms$stopping_tolerance <- stopping_tolerance
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))
     parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
-  if (!missing(max_hit_ratio_k))
-    parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(custom_metric_func))
@@ -630,6 +669,51 @@ h2o.makeGLMModel <- function(model,beta) {
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]
   m
+}
+
+#' Extract best lambda value found from glm model.
+#'
+#' This function allows setting betas of an existing glm model.
+#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @export
+h2o.getLambdaBest <- function(model) {
+  model@model$lambda_best
+}
+
+#' Extract the maximum lambda value used during lambda search from glm model.
+#'
+#' This function allows setting betas of an existing glm model.
+#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @export
+h2o.getLambdaMax <- function(model) {
+  lambdaMax <- model@model$lambda_max
+  if (lambdaMax < 0) # -1 if lambda_search=FALSE
+    stop("getLambdaMax(model) can only be called when lambda_search=True or when you have multiple lambda values to try.")
+  else 
+    lambdaMax
+}
+
+#' Extract best alpha value found from glm model.
+#'
+#' This function allows setting betas of an existing glm model.
+#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @export
+h2o.getAlphaBest <- function(model) {
+  model@model$alpha_best
+}
+
+#' Extract the minimum lambda value calculated during lambda search from glm model.
+#' Note that due to early stop, this minimum lambda value may not be used in the actual lambda search.
+#'
+#' This function allows setting betas of an existing glm model.
+#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @export
+h2o.getLambdaMin <- function(model) {
+  lambdaMin <- model@model$lambda_min # will be -1 if lambda_search=FALSE
+  if (lambdaMin < 0)
+    stop("getLambdaMin(model) can only be called when lambda_search=True or when you have multiple lambda values to try.")
+  else 
+    lambdaMin
 }
 
 #' Extract full regularization path from a GLM model

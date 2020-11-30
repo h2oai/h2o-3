@@ -21,6 +21,9 @@ if( is.data.frame(user_y) || is.matrix(user_y) || is.list(user_y) || is.H2OFrame
   if( !(missing(k)) && k!=as.integer(nrow(user_y)) ) {
     warning("Argument k is not equal to the number of rows in user-specified Y. Ignoring k. Using specified Y.")
   }
+  if ( !missing(loading_name)) {
+    warning("Argument loading_name is deprecated.  Use representation_name instead.")
+  }
   parms[["k"]] <- as.numeric(nrow(user_y))
 # } else if( is.null(user_y) ) {
 #  if(!missing(init) && parms[["init"]] == "User")
@@ -129,8 +132,8 @@ an object of class \linkS4class{H2ODimReductionModel}.
 \code{\link{h2o.kmeans}, \link{h2o.svd}}, \code{\link{h2o.prcomp}}
 """,
     references="""
-M. Udell, C. Horn, R. Zadeh, S. Boyd (2014). {Generalized Low Rank Models}[http://arxiv.org/abs/1410.0342]. Unpublished manuscript, Stanford Electrical Engineering Department.
-N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
+M. Udell, C. Horn, R. Zadeh, S. Boyd (2014). {Generalized Low Rank Models}[https://arxiv.org/abs/1410.0342]. Unpublished manuscript, Stanford Electrical Engineering Department.
+N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[https://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
 """,
     examples="""
 library(h2o)

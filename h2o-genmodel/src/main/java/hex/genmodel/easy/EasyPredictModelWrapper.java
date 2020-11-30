@@ -16,6 +16,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
+import static hex.genmodel.utils.ArrayUtils.nanArray;
+
 /**
  * An easy-to-use prediction wrapper for generated models.  Instantiate as follows.  The following two are equivalent.
  *
@@ -359,10 +361,11 @@ public class EasyPredictModelWrapper implements Serializable {
       case WordEmbedding:
         return predictWord2Vec(data);
       case TargetEncoder:
-        return transformWithTargetEncoding(data);
+        return predictTargetEncoding(data);
       case AnomalyDetection:
         return predictAnomalyDetection(data);
-
+      case KLime:
+        return predictKLime(data);
       case Unknown:
         throw new PredictException("Unknown model category");
       default:
@@ -378,8 +381,18 @@ public class EasyPredictModelWrapper implements Serializable {
     return rowDataConverter.getErrorConsumer();
   }
 
-  
-  
+  /**
+   * Returns names of contributions for prediction results with constributions enabled. 
+   * @return array of contribution names (array has same lenght as the actual contributions, last is BiasTerm)
+   */
+  public String[] getContributionNames() {
+    if (predictContributions == null) {
+      throw new IllegalStateException(
+              "Contributions were not enabled using in EasyPredictModelWrapper (use setEnableContributions).");
+    }
+    return predictContributions.getContributionNames();
+  }
+
   /**
    * Make a prediction on a new data point using an AutoEncoder model.
    * @param data A new data point.
@@ -478,18 +491,51 @@ public class EasyPredictModelWrapper implements Serializable {
               ((GlrmMojoModel) m)._numLevels);
     return p;
   }
+
   /**
-   * Lookup word embeddings for a given word (or set of words).
-   * @param data RawData structure, every key with a String value will be translated to an embedding
+   * Calculate an aggregated word-embedding for a given input sentence (sequence of words).
+   * 
+   * @param sentence array of word forming a sentence
+   * @return word-embedding for the given sentence calculated by averaging the embeddings of the input words
+   * @throws PredictException if model is not a WordEmbedding model
+   */
+  public float[] predictWord2Vec(String[] sentence) throws PredictException {
+    final WordEmbeddingModel weModel = asWordEmbeddingModel();
+    final int vecSize = weModel.getVecSize();
+
+    final float[] aggregated = new float[vecSize];
+    final float[] current = new float[vecSize];
+    int embeddings = 0;
+    for (String word : sentence) {
+      final float[] embedding = weModel.transform0(word, current);
+      if (embedding == null)
+        continue;
+      embeddings++;
+      for (int i = 0; i < vecSize; i++)
+        aggregated[i] += embedding[i];
+    }
+    if (embeddings > 0) {
+      for (int i = 0; i < vecSize; i++) {
+        aggregated[i] /= (float) embeddings;
+      }
+    } else {
+      Arrays.fill(aggregated, Float.NaN);
+    }
+
+    return aggregated;
+  }
+
+  /**
+   * Lookup word embeddings for a given word (or set of words). The result is a dictionary of
+   * words mapped to their respective embeddings.
+   * 
+   * @param data RawData structure, every key with a String value will be translated to an embedding,
+   *             note: keys only purpose is to link the output embedding to the input word
    * @return The prediction
    * @throws PredictException if model is not a WordEmbedding model
    */
   public Word2VecPrediction predictWord2Vec(RowData data) throws PredictException {
-    validateModelCategory(ModelCategory.WordEmbedding);
-
-    if (! (m instanceof WordEmbeddingModel))
-      throw new PredictException("Model is not of the expected type, class = " + m.getClass().getSimpleName());
-    final WordEmbeddingModel weModel = (WordEmbeddingModel) m;
+    final WordEmbeddingModel weModel = asWordEmbeddingModel();
     final int vecSize = weModel.getVecSize();
 
     HashMap<String, float[]> embeddings = new HashMap<>(data.size());
@@ -508,6 +554,14 @@ public class EasyPredictModelWrapper implements Serializable {
 
   }
 
+  private WordEmbeddingModel asWordEmbeddingModel() throws PredictException {
+    validateModelCategory(ModelCategory.WordEmbedding);
+
+    if (! (m instanceof WordEmbeddingModel))
+      throw new PredictException("Model is not of the expected type, class = " + m.getClass().getSimpleName());
+    return  (WordEmbeddingModel) m;
+  }
+  
   /**
    * Make a prediction on a new data point using a Binomial model.
    *
@@ -518,9 +572,7 @@ public class EasyPredictModelWrapper implements Serializable {
   public AnomalyDetectionPrediction predictAnomalyDetection(RowData data) throws PredictException {
     double[] preds = preamble(ModelCategory.AnomalyDetection, data, 0.0);
 
-    AnomalyDetectionPrediction p = new AnomalyDetectionPrediction();
-    p.normalizedScore = preds[0];
-    p.score = preds[1];
+    AnomalyDetectionPrediction p = new AnomalyDetectionPrediction(preds);
     if (enableLeafAssignment) { // only get leaf node assignment if enabled
       SharedTreeMojoModel.LeafNodeAssignments assignments = leafNodeAssignmentExtended(data);
       p.leafNodeAssignments = assignments._paths;
@@ -589,20 +641,25 @@ public class EasyPredictModelWrapper implements Serializable {
   }
 
   /**
+   * @deprecated Use {@link #predictTargetEncoding(RowData)} instead.
+   */
+  @Deprecated
+  public TargetEncoderPrediction transformWithTargetEncoding(RowData data) throws PredictException{
+    return predictTargetEncoding(data);
+  }
+
+  /**
    * Perform target encoding based on TargetEncoderMojoModel
    * @param data RowData structure with data for which we want to produce transformations
    * @return TargetEncoderPrediction with transformations ordered in accordance with corresponding categorical columns' indices in training data
    * @throws PredictException
    */
-  public TargetEncoderPrediction transformWithTargetEncoding(RowData data) throws PredictException{
+  public TargetEncoderPrediction predictTargetEncoding(RowData data) throws PredictException{
     if (! (m instanceof TargetEncoderMojoModel))
       throw new PredictException("Model is not of the expected type, class = " + m.getClass().getSimpleName());
 
     TargetEncoderMojoModel tem = (TargetEncoderMojoModel) this.m;
-    Set<String> teColumnNames = tem._teColumnNameToIdx.keySet();
-
-    double[] preds = new double[teColumnNames.size()];
-
+    double[] preds = new double[tem.getPredsSize()];
     TargetEncoderPrediction prediction = new TargetEncoderPrediction();
     prediction.transformations = predict(data, 0, preds);
     return prediction;
@@ -791,6 +848,18 @@ public class EasyPredictModelWrapper implements Serializable {
     return p;
   }
 
+  public KLimeModelPrediction predictKLime(RowData data) throws PredictException {
+    double[] preds = preamble(ModelCategory.KLime, data);
+
+    KLimeModelPrediction p = new KLimeModelPrediction();
+    p.value = preds[0];
+    p.cluster = (int) preds[1];
+    p.reasonCodes = new double[preds.length - 2];
+    System.arraycopy(preds, 2, p.reasonCodes, 0, p.reasonCodes.length);
+
+    return p;
+  }
+
   //----------------------------------------------------------------------
   // Transparent methods passed through to GenModel.
   //----------------------------------------------------------------------
@@ -842,14 +911,6 @@ public class EasyPredictModelWrapper implements Serializable {
     validateModelCategory(c);
     final int predsSize = m.getPredsSize(c);
     return predict(data, offset, new double[predsSize]);
-  }
-
-  private static double[] nanArray(int len) {
-    double[] arr = new double[len];
-    for (int i = 0; i < len; i++) {
-      arr[i] = Double.NaN;
-    }
-    return arr;
   }
 
   protected double[] fillRawData(RowData data, double[] rawData) throws PredictException {

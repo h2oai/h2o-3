@@ -8,21 +8,23 @@ import org.junit.runners.Suite;
 @Ignore // just for the case if Jenkins is picking up this class causing tests to run two times
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TargetEncodingTest.class,
         TargetEncoderModelTest.class,
         TargetEncodingKFoldStrategyTest.class,
         TargetEncodingLeaveOneOutStrategyTest.class,
         TargetEncodingNoneStrategyTest.class,
-        TargetEncodingMultiClassTargetTest.class,
-        TargetEncodingTargetColumnTest.class,
+        TargetEncodingOnBinaryTest.class,
+        TargetEncodingOnMulticlassTest.class,
+        TargetEncodingOnRegressionTest.class,
         TargetEncodingExceptionsHandlingTest.class,
-        TargetEncodingFrameHelperTest.class,
+        TargetEncodingHelperTest.class,
         TargetEncodingImmutabilityTest.class,
-        BroadcastJoinTest.class,
+        TargetEncoderBroadcastJoinTest.class,
         TargetEncodingImmutabilityTest.class,
-        TEMojoIntegrationTest.class,
-        TargetEncoderBuilderTest.class,
-        TargetEncoderMojoWriterTest.class
+        TargetEncoderMojoIntegrationTest.class,
+        TargetEncoderPreprocessorTest.class,
+        TargetEncoderTest.class,
+        TargetEncoderMojoWriterTest.class,
+        TargetEncoderRGSTest.class
 })
 
 public class TargetEncoderTestSuite {

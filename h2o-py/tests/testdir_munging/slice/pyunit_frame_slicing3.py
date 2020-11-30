@@ -3,6 +3,7 @@
 from __future__ import division, print_function
 
 import h2o
+from tests import pyunit_utils
 
 
 def test_slice3():
@@ -38,7 +39,4 @@ def check_frame(actual, expected):
     assert data == expected, "Frames do not coincide:\nActual: %r\nExpected: %r\n" % (data, expected)
 
 
-if __name__ == "__main__":
-    h2o.init()
-
-test_slice3()
+pyunit_utils.standalone_test(test_slice3)

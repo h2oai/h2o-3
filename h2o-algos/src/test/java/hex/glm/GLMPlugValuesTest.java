@@ -65,6 +65,9 @@ public class GLMPlugValuesTest extends TestUtil {
       Scope.track_generic(model2);
 
       assertEquals(model2.coefficients(), model.coefficients());
+
+      Frame preds = Scope.track(model.score(fr));
+      model.testJavaScoring(fr, preds, 1e-8, 1e-15, 1.0);
     } finally {
       Scope.exit();
     }
@@ -83,9 +86,9 @@ public class GLMPlugValuesTest extends TestUtil {
               .build();
       // introduce na but keep the domain the same
       Frame fr = fr2.deepCopy(Key.make().toString());
-      DKV.put(fr);
-      Scope.track(fr);
       fr.vec(0).setNA(1);
+      Scope.track(fr);
+      DKV.put(fr);
 
       Frame plugValues = oneRowFrame(new String[]{"x"}, new double[]{}, "b");
 
@@ -103,6 +106,7 @@ public class GLMPlugValuesTest extends TestUtil {
 
       params._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.PlugValues;
       params._plug_values = plugValues._key;
+
       GLMModel model = new GLM(params).trainModel().get();
       Scope.track_generic(model);
 
@@ -110,6 +114,9 @@ public class GLMPlugValuesTest extends TestUtil {
       Scope.track_generic(model2);
 
       assertEquals(model2.coefficients(), model.coefficients());
+
+      Frame preds = Scope.track(model.score(fr));
+      model.testJavaScoring(fr, preds, 1e-8, 1e-15, 1.0);
     } finally {
       Scope.exit();
     }

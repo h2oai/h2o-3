@@ -5,9 +5,10 @@ from h2o.exceptions import H2OValueError
 def set_s3_credentials(secret_key_id, secret_access_key, session_token = None):
     """Creates a new Amazon S3 client internally with specified credentials.
     There are no validations done to the credentials. Incorrect credentials are thus revealed with first S3 import call.
-    
-    secretKeyId Amazon S3 Secret Key ID (provided by Amazon)
-    secretAccessKey Amazon S3 Secret Access Key (provided by Amazon)
+
+    :param secret_key_id: Amazon S3 Secret Key ID (provided by Amazon)
+    :param secret_access_key: Amazon S3 Secret Access Key (provided by Amazon)
+    :param session_token: Amazon Session Token (optional, only when using AWS Temporary Credentials)
     """
     if(secret_key_id is None):
         raise H2OValueError("Secret key ID must be specified")

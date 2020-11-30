@@ -12,7 +12,9 @@ import warnings
 
 import h2o
 from h2o.base import Keyed
+from h2o.exceptions import H2OResponseError, H2ODeprecationWarning
 from h2o.grid import H2OGridSearch
+from h2o.job import H2OJob
 from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import is_type
 from h2o.estimators.estimator_base import H2OEstimator
@@ -63,8 +65,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     algo = "stackedensemble"
     param_names = {"model_id", "training_frame", "response_column", "validation_frame", "blending_frame", "base_models",
                    "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
-                   "metalearner_fold_column", "metalearner_params", "seed", "score_training_samples",
-                   "keep_levelone_frame", "export_checkpoints_dir"}
+                   "metalearner_fold_column", "metalearner_params", "max_runtime_secs", "weights_column",
+                   "offset_column", "seed", "score_training_samples", "keep_levelone_frame", "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2OStackedEnsembleEstimator, self).__init__()
@@ -551,6 +553,55 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
 
     @property
+    def max_runtime_secs(self):
+        """
+        Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+        Type: ``float``  (default: ``0``).
+        """
+        return self._parms.get("max_runtime_secs")
+
+    @max_runtime_secs.setter
+    def max_runtime_secs(self, max_runtime_secs):
+        assert_is_type(max_runtime_secs, None, numeric)
+        self._parms["max_runtime_secs"] = max_runtime_secs
+
+
+    @property
+    def weights_column(self):
+        """
+        Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the
+        dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
+        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the data
+        frame. This is typically the number of times a row is repeated, but non-integer values are supported as well.
+        During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+
+        Type: ``str``.
+        """
+        return self._parms.get("weights_column")
+
+    @weights_column.setter
+    def weights_column(self, weights_column):
+        assert_is_type(weights_column, None, str)
+        self._parms["weights_column"] = weights_column
+
+
+    @property
+    def offset_column(self):
+        """
+        Offset column. This will be added to the combination of columns before applying the link function.
+
+        Type: ``str``.
+        """
+        return self._parms.get("offset_column")
+
+    @offset_column.setter
+    def offset_column(self, offset_column):
+        assert_is_type(offset_column, None, str)
+        self._parms["offset_column"] = offset_column
+
+
+    @property
     def seed(self):
         """
         Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)
@@ -750,7 +801,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                 "The usage of stacked_ensemble.metalearner()['name'] will be deprecated. "
                 "Metalearner now returns the metalearner object. If you need to get the "
                 "'name' please use stacked_ensemble.metalearner().model_id",
-                DeprecationWarning
+                H2ODeprecationWarning
             )
             if key == "name":
                 return self.model_id
@@ -827,3 +878,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         parms = sup._make_parms(x, y, training_frame, extend_parms_fn=extend_parms, **kwargs)
 
         sup._train(parms, verbose=verbose)
+        if self.metalearner() is None:
+            raise H2OResponseError("Meta learner didn't get to be trained in time. "
+                                   "Try increasing max_runtime_secs or setting it to 0 (unlimited).")

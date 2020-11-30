@@ -31,7 +31,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'glm', {\"model_id\":\"glm-35836d2a-a2d4-4164-b561-9170fa6a9617\",\"training_frame\":\"X30k_cattest1_train.hex_0.750\",\"validation_frame\":\"X30k_cattest1_test.hex_0.250\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"C2\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+      "input": "buildModel 'glm', {\"model_id\":\"glm-35836d2a-a2d4-4164-b561-9170fa6a9617\",\"training_frame\":\"X30k_cattest1_train.hex_0.750\",\"validation_frame\":\"X30k_cattest1_test.hex_0.250\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"C2\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"max_confusion_matrix_size\":20,\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
     },
     {
       "type": "cs",

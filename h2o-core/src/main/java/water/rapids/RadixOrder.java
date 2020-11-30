@@ -57,7 +57,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     Log.debug("Time to use rollup stats to determine biggestBit: " + ((t1=System.nanoTime()) - t0) / 1e9+" seconds."); t0=t1;
 
     if( _whichCols.length > 0 )
-      new RadixCount(_isLeft, _base[0], _shift[0], _whichCols[0], _isLeft ? _id_maps : null, _ascending[0]).doAll(_DF.vec(_whichCols[0]));
+      new RadixCount(_isLeft, _base[0], _shift[0], _whichCols[0], _id_maps, _ascending[0]).doAll(_DF.vec(_whichCols[0]));
     Log.debug("Time of MSB count MRTask left local on each node (no reduce): " + ((t1=System.nanoTime()) - t0) / 1e9+" seconds."); t0=t1;
 
     // NOT TO DO:  we do need the full allocation of x[] and o[].  We need o[] anyway.  x[] will be compressed and dense.
@@ -128,24 +128,8 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
         // even though some subsets may be far above 0; i.e. forgo uncommon
         // efficiency savings for now
         _base[i] = ZERO;
-        if (_isLeft) {
-          // the left's levels have been matched to the right's levels and we
-          // store the mapped values so it's that mapped range we need here (or
-          // the col.max() of the corresponding right table would be fine too,
-          // but mapped range might be less so use that for possible
-          // efficiency)
-          assert _id_maps[i] != null;
-
-          // TODO: what is in _id_maps for no matches (-1?) and exclude those
-          // i.e. find the minimum >=0. Then treat -1 in _id_map as an NA when
-          // writing key
-          //_colMin[i] = ArrayUtils.minValue(_id_maps[i]);  
-          // if we join to a small subset of levels starting at 0, we'll
-          // benefit from the smaller range here, though
-          max = BigInteger.valueOf(ArrayUtils.maxValue(_id_maps[i]));
-        } else {
-          max = BigInteger.valueOf((long)col.max());
-        }
+        assert _id_maps[i] != null;
+        max = _isLeft?BigInteger.valueOf(ArrayUtils.maxValue(_id_maps[i])):BigInteger.valueOf(col.domain().length);
       } else {
         double colMin = col.min();
         double colMax = col.max();

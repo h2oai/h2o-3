@@ -26,7 +26,5 @@ def h2o_H2OFrame_trunc():
         # check values
     pyunit_utils.assert_correct_frame_operation(h2oframe, allframe, "floor")
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_trunc())
-else:
-    h2o_H2OFrame_trunc()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_trunc)

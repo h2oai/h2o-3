@@ -33,23 +33,23 @@ Example
 		covtype <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
 
 		# convert response column to a factor
-		covtype[,55] <- as.factor(covtype[,55])
+		covtype[, 55] <- as.factor(covtype[, 55])
 
 		# set the predictor names and the response column name
 		predictors <- colnames(covtype[1:54])
 		response <- 'C55'
 
 		# split into train and validation sets
-		covtype.splits <- h2o.splitFrame(data =  covtype, ratios = .8, seed = 1234)
-		train <- covtype.splits[[1]]
-		valid <- covtype.splits[[2]]
+		covtype_splits <- h2o.splitFrame(data =  covtype, ratios = 0.8, seed = 1234)
+		train <- covtype_splits[[1]]
+		valid <- covtype_splits[[2]]
 
 		# look at the counts per class in the training set:
 		h2o.table(train[response])
 
 		# try using the `sample_rate_per_class` parameter:
 		# downsample the Class 2, and leave the rest the same
-		rate_per_class_list = c(1, .4, 1, 1, 1, 1, 1)
+		rate_per_class_list = c(1, 0.4, 1, 1, 1, 1, 1)
 		cov_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
 		                   validation_frame = valid, sample_rate_per_class = rate_per_class_list,
 		                   seed = 1234)

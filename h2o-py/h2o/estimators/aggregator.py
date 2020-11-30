@@ -290,8 +290,8 @@ class H2OAggregatorEstimator(H2OEstimator):
         ...           "save_mapping_frame": True}
         >>> agg = H2OAggregatorEstimator(**params)
         >>> agg.train(training_frame=df)
-        >>> new_df = agg.aggregated_frame
-        >>> new_df
+        >>> mapping_frame = agg.mapping_frame
+        >>> mapping_frame
         """
         return self._parms.get("save_mapping_frame")
 
@@ -372,3 +372,12 @@ class H2OAggregatorEstimator(H2OEstimator):
                 and self._model_json.get("output", {}).get("output_frame", {}).get("name") is not None):
             out_frame_name = self._model_json["output"]["output_frame"]["name"]
             return H2OFrame.get_frame(out_frame_name)
+
+    @property
+    def mapping_frame(self):
+        if self._model_json is None:
+            return None
+        mj = self._model_json
+        if mj.get("output", {}).get("mapping_frame", {}).get("name") is not None:
+            mapping_frame_name = mj["output"]["mapping_frame"]["name"]
+            return H2OFrame.get_frame(mapping_frame_name)

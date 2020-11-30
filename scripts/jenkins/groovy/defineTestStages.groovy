@@ -9,6 +9,7 @@ def call(final pipelineContext) {
   def MODE_KERBEROS_CODE = 6
   def MODE_HADOOP_MULTINODE_CODE = 7
   def MODE_MASTER_CODE = 10
+  def MODE_NIGHTLY_REPEATED_CODE = 15
   def MODE_NIGHTLY_CODE = 20
   def MODES = [
     [name: 'MODE_PR', code: MODE_PR_CODE],
@@ -20,19 +21,29 @@ def call(final pipelineContext) {
     [name: 'MODE_SINGLE_TEST', code: MODE_SINGLE_TEST_CODE],
     [name: 'MODE_BENCHMARK', code: MODE_BENCHMARK_CODE],
     [name: 'MODE_MASTER', code: MODE_MASTER_CODE],
+    [name: 'MODE_NIGHTLY_REPEATED', code: MODE_NIGHTLY_REPEATED_CODE],
     [name: 'MODE_NIGHTLY', code: MODE_NIGHTLY_CODE]
   ]
 
   def modeCode = MODES.find{it['name'] == pipelineContext.getBuildConfig().getMode()}['code']
 
   // Job will execute PR_STAGES only if these are green.
+  // for Python, smoke only oldest and latest supported versions
   def SMOKE_STAGES = [
     [
       stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
+      stageName: 'Py3.7 Smoke', target: 'test-py-smoke', pythonVersion: '3.7',timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
       stageName: 'R3.5 Smoke', target: 'test-r-smoke', rVersion: '3.5.3',timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
+      stageName: 'R4.0 Smoke', target: 'test-r-smoke', rVersion: '4.0.2',timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
@@ -46,18 +57,15 @@ def call(final pipelineContext) {
   ]
 
   // Stages executed after each push to PR branch.
+  // for Python, mainly test with latest supported version
   def PR_STAGES = [
+    [
+      stageName: 'Java 8 RuleFit', target: 'test-junit-rulefit-jenkins', pythonVersion: '2.7', javaVersion: 8,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+    ],
     [
       stageName: 'Py2.7 Booklets', target: 'test-py-booklets', pythonVersion: '2.7',
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.5 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.5',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
-      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py2.7 Init Java 8', target: 'test-py-init', pythonVersion: '2.7', javaVersion: 8,
@@ -65,11 +73,15 @@ def call(final pipelineContext) {
       image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-jdk-8:${pipelineContext.getBuildConfig().DEFAULT_IMAGE_VERSION_TAG}"
     ],
     [
-      stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
+      stageName: 'Py3.7 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.7',
+      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.7 Small', target: 'test-pyunit-small', pythonVersion: '3.7',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.5 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.5',
+      stageName: 'Py3.7 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.7',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
@@ -82,27 +94,23 @@ def call(final pipelineContext) {
       timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.5 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.5.3',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.5 Small Client Mode Disconnect Attack', target: 'test-r-small-client-mode-attack', rVersion: '3.5.3',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.5 Small AutoML', target: 'test-r-small-automl', rVersion: '3.5.3',
+      stageName: 'R3.5 AutoML', target: 'test-r-automl', rVersion: '3.5.3',
       timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.5 Small Client Mode AutoML', target: 'test-r-small-client-mode-automl', rVersion: '3.5.3',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
       stageName: 'R3.5 CMD Check', target: 'test-r-cmd-check', rVersion: '3.5.3',
-      timeoutValue: 30, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 60, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R3.5 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.5.3',
+      timeoutValue: 20, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
+      stageName: 'R4.0 Small', target: 'test-r-small', rVersion: '4.0.2',
+      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
+      stageName: 'R4.0 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '4.0.2',
       timeoutValue: 20, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
@@ -118,7 +126,7 @@ def call(final pipelineContext) {
       timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
-      stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+      stageName: 'Py3.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.7',
       timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
@@ -134,11 +142,19 @@ def call(final pipelineContext) {
       timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_ANY, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R]
     ],
     [
-      stageName: 'Py3.6 Test Demos', target: 'test-demos', pythonVersion: '3.6',
+      stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
+      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.7 Test Demos', target: 'test-pyunit-demos', pythonVersion: '3.7',
       timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Java 8 JUnit', target: 'test-junit-jenkins', pythonVersion: '2.7', javaVersion: 8,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+    ],
+    [
+      stageName: 'REST Smoke Test', target: 'test-rest-smoke', pythonVersion: '2.7', javaVersion: 8,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
     ],
     [
@@ -157,21 +173,13 @@ def call(final pipelineContext) {
     [
       stageName: 'MOJO Compatibility (Java 7)', target: 'test-mojo-compatibility',
       archiveFiles: false, timeoutValue: 20, hasJUnit: false, pythonVersion: '3.6', javaVersion: 7,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA, // only run when Java changes (R/Py cannot affect mojo) 
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA, // only run when Java changes (R/Py cannot affect mojo)
       imageSpecifier: "mojocompat",
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
-    ]
+    ],
   ]
 
   def BENCHMARK_STAGES = [
-    [
-      stageName: 'MERGE Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
-      timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
-      customData: [algorithm: 'merge'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
-      healthCheckSuppressed: true
-    ],
     [
       stageName: 'GBM Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
@@ -185,6 +193,14 @@ def call(final pipelineContext) {
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
       customData: [algorithm: 'glm'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+      healthCheckSuppressed: true
+    ],
+    [ 
+      stageName: 'GAM Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+      timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
+      customData: [algorithm: 'gam'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
       healthCheckSuppressed: true
     ],
@@ -230,7 +246,7 @@ def call(final pipelineContext) {
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
       healthCheckSuppressed: true
     ],
-    [
+    [ 
       stageName: 'MERGE Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
@@ -245,7 +261,15 @@ def call(final pipelineContext) {
       customData: [algorithm: 'sort'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
       healthCheckSuppressed: true
-    ]
+    ],
+    [
+      stageName: 'Rulefit Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+      timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
+      customData: [algorithm: 'rulefit'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+      healthCheckSuppressed: true
+    ],
   ]
 
   // Stages executed in addition to PR_STAGES after merge to master.
@@ -264,24 +288,12 @@ def call(final pipelineContext) {
     ]
   ]
 
-  // Stages executed in addition to MASTER_STAGES, used for nightly builds.
-  def NIGHTLY_STAGES = [
-    [
-      stageName: 'Java 10 Smoke', target: 'test-junit-10-smoke-jenkins', javaVersion: 10, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
-    ],
-    [
-      stageName: 'Java 11 Smoke', target: 'test-junit-11-smoke-jenkins', javaVersion: 11, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
-    ],
-    [
-      stageName: 'Java 12 Smoke', target: 'test-junit-12-smoke-jenkins', javaVersion: 12, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
-    ],
-    [
-      stageName: 'Java 13 Smoke', target: 'test-junit-13-smoke-jenkins', javaVersion: 13, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
-    ],
+  // Stages executed in addition to MASTER_STAGES, used for repeated nightly builds.
+  // Stages in this group are executed several times at night. The goal is to catch
+  // possible rare bugs - these are expected to happen mainly in the Java backend,
+  // we can thus limit the Py/R versions to just a single version (the most common in use).
+  // Should contain any stages that are flaky (eg. the "init" stages).
+  def NIGHTLY_REPEATED_STAGES = [
     [
       stageName: 'Py2.7 Init Java 10', target: 'test-py-init', pythonVersion: '2.7', javaVersion: 10,
       timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_PY,
@@ -301,6 +313,69 @@ def call(final pipelineContext) {
       stageName: 'R3.5 Init Java 11', target: 'test-r-init', rVersion: '3.5.3', javaVersion: 11,
       timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
       image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-r-3.5.3-jdk-11:${pipelineContext.getBuildConfig().DEFAULT_IMAGE_VERSION_TAG}"
+    ],
+    [
+      stageName: 'Java 14 JUnit', target: 'test-junit-14-jenkins', pythonVersion: '2.7', javaVersion: 14,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+    ],
+    [
+      stageName: 'Py3.6 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.6',
+      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.6',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.6',
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'R3.3 Medium-large', target: 'test-r-medium-large', rVersion: '3.3.3',
+      timeoutValue: 70, component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
+      stageName: 'R3.3 Small', target: 'test-r-small', rVersion: '3.3.3',
+      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
+      stageName: 'R3.3 AutoML', target: 'test-r-automl', rVersion: '3.3.3',
+      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
+      stageName: 'Kubernetes', target: 'test-h2o-k8s', timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3-k8s:${pipelineContext.getBuildConfig().K8S_TEST_IMAGE_VERSION_TAG}",
+      customDockerArgs: ['-v /var/run/docker.sock:/var/run/docker.sock', '--network host'], addToDockerGroup: true, nodeLabel: "micro"
+    ]
+  ]
+
+  // Stages executed in addition to NIGHTLY_REPEATED_STAGES, executed once a night.
+  // Should contain all Java versions and also the minimum supported Python version. 
+  def NIGHTLY_STAGES = [
+    [
+      stageName: 'Java 10 Smoke', target: 'test-junit-10-smoke-jenkins', javaVersion: 10, timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ],
+    [
+      stageName: 'Java 11 Smoke', target: 'test-junit-11-smoke-jenkins', javaVersion: 11, timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ],
+    [
+      stageName: 'Java 12 Smoke', target: 'test-junit-12-smoke-jenkins', javaVersion: 12, timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ],
+    [
+      stageName: 'Java 13 Smoke', target: 'test-junit-13-smoke-jenkins', javaVersion: 13, timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ],
+    [
+      stageName: 'Java 14 Smoke', target: 'test-junit-13-smoke-jenkins', javaVersion: 14, timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
       stageName: 'Java 10 JUnit', target: 'test-junit-10-jenkins', pythonVersion: '2.7', javaVersion: 10,
@@ -323,23 +398,11 @@ def call(final pipelineContext) {
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.6 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.6',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
       stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py2.7 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '2.7',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.6 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.6',
+      stageName: 'Py2.7 AutoML', target: 'test-pyunit-automl', pythonVersion: '2.7',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
@@ -347,46 +410,20 @@ def call(final pipelineContext) {
       timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.5 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'R3.3 Medium-large', target: 'test-r-medium-large', rVersion: '3.3.3',
-      timeoutValue: 70, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.3 Small', target: 'test-r-small', rVersion: '3.3.3',
-      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.3 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.3.3',
+      stageName: 'R3.5 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.5.3',
       timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.3 Small AutoML', target: 'test-r-small-automl', rVersion: '3.3.3',
-      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.3 Small Client Mode AutoML', target: 'test-r-small-client-mode-automl', rVersion: '3.3.3',
+      stageName: 'R3.5 Client Mode AutoML', target: 'test-r-client-mode-automl', rVersion: '3.5.3',
       timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.3 CMD Check', target: 'test-r-cmd-check', rVersion: '3.3.3',
-      timeoutValue: 30, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.3 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.3.3',
-      timeoutValue: 20, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
+      stageName: 'R3.5 Small Client Mode Disconnect Attack', target: 'test-r-small-client-mode-attack', rVersion: '3.5.3',
+      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [ // These run with reduced number of file descriptors for early detection of FD leaks
-      stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.5', timeoutValue: 40,
-      component: pipelineContext.getBuildConfig().COMPONENT_PY, customDockerArgs: [ '--ulimit nofile=100:100' ]
-    ],
-    [
-      stageName: 'Kubernetes', target: 'test-h2o-k8s', timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3-k8s:${pipelineContext.getBuildConfig().K8S_TEST_IMAGE_VERSION_TAG}",
-      customDockerArgs: ['-v /var/run/docker.sock:/var/run/docker.sock', '--network host'], addToDockerGroup: true, nodeLabel: "micro"
+      stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.6', timeoutValue: 40,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY, customDockerArgs: [ '--ulimit nofile=150:150' ]
     ]
   ]
 
@@ -416,7 +453,7 @@ def call(final pipelineContext) {
         version: distribution.version,
         commandFactory: 'h2o-3/scripts/jenkins/groovy/hadoopCommands.groovy',
         ldapConfigPath: ldapConfigPath,
-        ldapConfigPathStandalone: 'scripts/jenkins/config/ldap-jetty-8.txt'
+        ldapConfigPathStandalone: 'scripts/jenkins/config/ldap-jetty-9.txt'
       ], pythonVersion: '2.7',
       customDockerArgs: [ '--privileged' ],
       executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy',
@@ -515,21 +552,21 @@ def call(final pipelineContext) {
     KERBEROS_STAGES += [ standaloneStage, onHadoopStage, onHadoopWithSpnegoStage, steamDriverStage, steamMapperStage, sparklingStage, steamSparklingStage ]
   }
 
-  def HADOOP_MULTINODE_STAGES = []
   final MULTINODE_CLUSTERS_CONFIGS = [
-          [ distribution: "hdp", version: "2.2",
-            nameNode: "mr-0xd6", hdpName: "hdp2_2_d", krb: false,
-            hiveHost: "mr-0xd9.0xdata.loc",
-            nodes: 4, xmx: "16G", extramem: "100",
-            cloudingDir: "/user/jenkins/hadoop_multinode_tests"
-          ],
-          [ distribution: "hdp", version: "2.4",
-            nameNode: "mr-0xg5", hdpName: "steam2", krb: true,
-            hiveHost: "mr-0xg6.0xdata.loc", hivePrincipal: "hive/mr-0xg6.0xdata.loc@0XDATA.LOC",
-            nodes: 4, xmx: "10G", extramem: "100",
-            cloudingDir: "/user/jenkins/hadoop_multinode_tests"
-          ]
+      [ distribution: "hdp", version: "2.2",
+        nameNode: "mr-0xd6", hdpName: "hdp2_2_d", krb: false,
+        hiveHost: "mr-0xd9.0xdata.loc",
+        nodes: 4, xmx: "16G", extramem: "100",
+        cloudingDir: "/user/jenkins/hadoop_multinode_tests"
+      ],
+      [ distribution: "hdp", version: "2.4",
+        nameNode: "mr-0xg5", hdpName: "steam2", krb: true,
+        hiveHost: "mr-0xg6.0xdata.loc", hivePrincipal: "hive/mr-0xg6.0xdata.loc@0XDATA.LOC",
+        nodes: 4, xmx: "10G", extramem: "100",
+        cloudingDir: "/user/jenkins/hadoop_multinode_tests"
+      ]
   ]
+  def HADOOP_MULTINODE_STAGES = []
   for (config in MULTINODE_CLUSTERS_CONFIGS) {
     def image = pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(config.distribution, config.version, config.krb)
     def stage = [
@@ -546,6 +583,35 @@ def call(final pipelineContext) {
     ]
     HADOOP_MULTINODE_STAGES += [ stage ]
   }
+  HADOOP_MULTINODE_STAGES += [
+      [
+          stageName: "TEST External XGBoost on ${MULTINODE_CLUSTERS_CONFIGS[0].nameNode}",
+          target: "test-steam-websocket", timeoutValue: 30,
+          component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+          additionalTestPackages: [
+                  pipelineContext.getBuildConfig().COMPONENT_PY
+          ],
+          customData: MULTINODE_CLUSTERS_CONFIGS[0], pythonVersion: '3.6',
+          executionScript: 'h2o-3/scripts/jenkins/groovy/externalXGBoostStage.groovy',
+          image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(
+                  MULTINODE_CLUSTERS_CONFIGS[0].distribution, MULTINODE_CLUSTERS_CONFIGS[0].version, MULTINODE_CLUSTERS_CONFIGS[0].krb
+          )
+      ],
+      [
+          stageName: "TEST Fault Tolerance on ${MULTINODE_CLUSTERS_CONFIGS[0].nameNode}",
+          target: "test-hadoop-fault-tolerance", timeoutValue: 30,
+          component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+          additionalTestPackages: [
+                  pipelineContext.getBuildConfig().COMPONENT_PY,
+                  pipelineContext.getBuildConfig().COMPONENT_R
+          ],
+          customData: MULTINODE_CLUSTERS_CONFIGS[0], pythonVersion: '3.6',
+          executionScript: 'h2o-3/scripts/jenkins/groovy/faultToleranceStage.groovy',
+          image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(
+                  MULTINODE_CLUSTERS_CONFIGS[0].distribution, MULTINODE_CLUSTERS_CONFIGS[0].version, MULTINODE_CLUSTERS_CONFIGS[0].krb
+          )
+      ]
+  ]
 
   def XGB_STAGES = []
   for (String osName: pipelineContext.getBuildConfig().getSupportedXGBEnvironments().keySet()) {
@@ -554,7 +620,7 @@ def call(final pipelineContext) {
       final def stageDefinition = [
         stageName: "XGB on ${xgbEnv.name}", target: "test-xgb-smoke-${xgbEnv.targetName}-jenkins",
         timeoutValue: 15, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
-        additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_JAVA], pythonVersion: '3.5',
+        additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_JAVA], pythonVersion: '3.6',
         image: pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv),
         nodeLabel: xgbEnv.nodeLabel
       ]
@@ -632,10 +698,13 @@ def call(final pipelineContext) {
     if (modeCode >= MODE_MASTER_CODE) {
       jobs += MASTER_STAGES
     }
+    if (modeCode >= MODE_NIGHTLY_REPEATED_CODE) {
+      jobs += NIGHTLY_REPEATED_STAGES
+    }
     if (modeCode >= MODE_NIGHTLY_CODE) {
       jobs += NIGHTLY_STAGES
     }
-    if (modeCode >= MODE_NIGHTLY_CODE) {
+    if (modeCode >= MODE_NIGHTLY_REPEATED_CODE) {
       // in Nightly mode execute all jobs regardless whether smoke tests fail 
       executeInParallel(SMOKE_STAGES + jobs, pipelineContext)
     } else {
@@ -683,7 +752,7 @@ private void executeInParallel(final jobs, final pipelineContext) {
 private void invokeStage(final pipelineContext, final body) {
 
   final String DEFAULT_JAVA = '8'
-  final String DEFAULT_PYTHON = '3.5'
+  final String DEFAULT_PYTHON = '3.6'
   final String DEFAULT_R = '3.5.3'
   final int DEFAULT_TIMEOUT = 60
   final String DEFAULT_EXECUTION_SCRIPT = 'h2o-3/scripts/jenkins/groovy/defaultStage.groovy'

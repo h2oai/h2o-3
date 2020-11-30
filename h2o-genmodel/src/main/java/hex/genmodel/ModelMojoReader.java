@@ -1,9 +1,12 @@
 package hex.genmodel;
 
-import com.google.gson.*;
+import com.google.gson.JsonObject;
 import hex.genmodel.attributes.ModelAttributes;
 import hex.genmodel.attributes.ModelJsonReader;
+import hex.genmodel.attributes.Table;
 import hex.genmodel.descriptor.ModelDescriptorBuilder;
+import hex.genmodel.utils.DistributionFamily;
+import hex.genmodel.utils.LinkFunctionType;
 import hex.genmodel.utils.ParseUtils;
 import hex.genmodel.utils.StringEscapeUtils;
 
@@ -200,6 +203,15 @@ public abstract class ModelMojoReader<M extends MojoModel> {
               .build();
       _model._modelAttributes = readModelSpecificAttributes();
     }
+    _model._reproducibilityInformation = readReproducibilityInformation() ;
+  }
+
+  protected Table[] readReproducibilityInformation() {
+    final JsonObject modelJson = ModelJsonReader.parseModelJson(_reader);
+    if (modelJson != null && modelJson.get("output") != null) {
+      return ModelJsonReader.readTableArray(modelJson, "output.reproducibility_information_table");
+    }
+    return null;
   }
 
   protected ModelAttributes readModelSpecificAttributes() {
@@ -302,7 +314,31 @@ public abstract class ModelMojoReader<M extends MojoModel> {
 
   private void checkMaxSupportedMojoVersion() throws IOException {
     if(_model._mojo_version > Double.parseDouble(mojoVersion())){
-      throw new IOException(String.format("MOJO version incompatibility - the model MOJO version (%.2f) is higher than the current h2o version (%s) supports. Please, use the older version of h2o to load MOJO model.", _model._mojo_version, mojoVersion()));
+      throw new IOException(String.format("MOJO version incompatibility - the model MOJO version (%.2f) is higher than the current H2O version (%s) supports. Please, use a newer version of H2O to load MOJO model.", _model._mojo_version, mojoVersion()));
+    }
+  }
+
+  public static LinkFunctionType readLinkFunction(String linkFunctionTypeName, DistributionFamily family) {
+    if (linkFunctionTypeName != null)
+      return LinkFunctionType.valueOf(linkFunctionTypeName);
+    return defaultLinkFunction(family);
+  }
+
+  public static LinkFunctionType defaultLinkFunction(DistributionFamily family){
+    switch (family) {
+      case bernoulli:
+      case fractionalbinomial:
+      case quasibinomial:
+      case modified_huber:
+      case ordinal:
+        return LinkFunctionType.logit;
+      case multinomial:
+      case poisson:
+      case gamma:
+      case tweedie:
+        return LinkFunctionType.log;
+      default:
+        return LinkFunctionType.identity;
     }
   }
 

@@ -20,4 +20,12 @@ public interface RequestAuthExtension {
    * @throws ServletException -
    */
   boolean handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
+
+  /**
+   * @return True if the given extension is enabled. Otherwise false.
+   */
+  default boolean isEnabled(){
+    return true;
+  }
+  
 }

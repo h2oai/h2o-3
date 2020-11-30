@@ -28,7 +28,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     public GenericModel(Key<GenericModel> selfKey, GenericModelParameters parms, GenericModelOutput output, MojoModel mojoModel, Key<Frame> mojoSource) {
         super(selfKey, parms, output);
         _mojoModelSource = new MojoModelSource(mojoSource, mojoModel);
-        _output = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes);
+        _output = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes, mojoModel._reproducibilityInformation);
         if(mojoModel._modelAttributes != null && mojoModel._modelAttributes.getModelParameters() != null) {
             _parms._modelParameters = GenericModelParameters.convertParameters(mojoModel._modelAttributes.getModelParameters());
         }
@@ -91,6 +91,11 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     @Override
     protected double[] score0(double[] data, double[] preds) {
         return mojoModel().score0(data,preds);
+    }
+
+    @Override
+    protected String[] makeScoringNames() {
+        return mojoModel().getOutputNames();
     }
 
     @Override

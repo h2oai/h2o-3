@@ -25,7 +25,5 @@ def h2o_H2OFrame_pop():
     assert popped_col.ncol==1, "h2o.H2OFrame.pop() command is not working."
     assert pros.ncol==nc-2, "h2o.H2OFrame.pop()command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_pop())
-else:
-    h2o_H2OFrame_pop()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_pop)

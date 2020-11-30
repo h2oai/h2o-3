@@ -1,12 +1,14 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
-from collections import OrderedDict
+# noinspection PyUnresolvedReferences
 from h2o.utils.compatibility import *  # NOQA
 
-from .model_base import ModelBase
-from .metrics_base import *  # NOQA
+from collections import OrderedDict
+
 import h2o
 from h2o.expr import ExprNode
+from .model_base import ModelBase
+from .metrics_base import *  # NOQA
 
 
 class H2OWordEmbeddingModel(ModelBase):

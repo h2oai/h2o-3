@@ -232,7 +232,6 @@ public class PrintMojoTreeTest {
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
       p._seed = 0xFEED;
-      p._response_column = "IsDepDelayed";
       p._ntrees = 1;
       p._max_depth = 3;
       p._ignored_columns = new String[] { "Origin", "Dest", "IsDepDelayed" };
@@ -297,7 +296,6 @@ public class PrintMojoTreeTest {
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
       p._seed = 0xFEED;
-      p._response_column = "IsDepDelayed";
       p._ntrees = 1;
       p._max_depth = 3;
       p._ignored_columns = new String[] { "Origin", "Dest", "IsDepDelayed" };

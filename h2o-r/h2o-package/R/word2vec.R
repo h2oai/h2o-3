@@ -25,13 +25,13 @@
 #' h2o.init()
 #' 
 #' # Import the CraigslistJobTitles dataset
-#' f <- "https://raw.githubusercontent.com/h2oai/sparkling-water/rel-1.6/examples/smalldata/"
-#' jobtitles <- h2o.importFile(paste0(f, "craigslistJobTitles.csv"), 
-#'                              col.names = c("category", "jobtitle"),
-#'                              col.types = c("String", "String"), header = TRUE)
+#' job_titles <- h2o.importFile(
+#'     "https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv",
+#'     col.names = c("category", "jobtitle"), col.types = c("String", "String"), header = TRUE
+#' )
 #' 
 #' # Build and train the Word2Vec model
-#' words <- h2o.tokenize(jobtitles, " ")
+#' words <- h2o.tokenize(job_titles, " ")
 #' vec <- h2o.word2vec(training_frame = words)
 #' h2o.findSynonyms(vec, "teacher", count = 20)
 #' }

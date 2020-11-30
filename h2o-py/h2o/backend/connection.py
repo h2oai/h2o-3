@@ -13,6 +13,7 @@ Class for communication with an H2O server.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 import atexit
 import os
@@ -32,7 +33,6 @@ from h2o.exceptions import H2OConnectionError, H2OServerError, H2OResponseError,
 from h2o.schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.utils.metaclass import CallableString, BackwardsCompatible, h2o_meta
-from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import stringify_list, stringify_dict, print2
 from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfies, is_type, numeric)
 from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,

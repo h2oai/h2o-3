@@ -24,7 +24,4 @@ def h2o_H2OFrame_unique():
         assert newFrame[rowIndex, 0] in allLevels, "h2o.H2OFrame.unique command is not working." # check shape
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_unique())
-else:
-    h2o_H2OFrame_unique()
+pyunit_utils.standalone_test(h2o_H2OFrame_unique)

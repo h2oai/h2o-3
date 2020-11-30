@@ -50,9 +50,9 @@ Example
 		boston["chas"] <- as.factor(boston["chas"])
 
 		# split into train and validation sets
-		boston.splits <- h2o.splitFrame(data =  boston, ratios = .8)
-		train <- boston.splits[[1]]
-		valid <- boston.splits[[2]]
+		boston_splits <- h2o.splitFrame(data =  boston, ratios = 0.8)
+		train <- boston_splits[[1]]
+		valid <- boston_splits[[2]]
 
 		# try using the `nlambas` parameter:
 		# train your model
@@ -62,7 +62,7 @@ Example
 		                      nlambdas = 50)
 
 		# print the mse for the validation data
-		print(h2o.mse(boston_glm, valid=TRUE))
+		print(h2o.mse(boston_glm, valid = TRUE))
 
 
    .. code-tab:: python

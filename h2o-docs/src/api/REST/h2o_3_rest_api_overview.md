@@ -649,13 +649,13 @@ curl -X GET 'http://127.0.0.1:54321/3/Jobs/%2403010a010a7f32d4ffffffff%24_b98fc5
 In Flow:
 
 ```coffeescript
-buildModel 'gbm', {"model_id":"gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1","training_frame":"arrhythmia.hex","score_each_iteration":false,"response_column":"C1","ntrees":"20","max_depth":5,"min_rows":"25","nbins":20,"learn_rate":"0.3","distribution":"AUTO","balance_classes":false,"max_confusion_matrix_size":20,"max_hit_ratio_k":10,"class_sampling_factors":[],"max_after_balance_size":5,"seed":0}
+buildModel 'gbm', {"model_id":"gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1","training_frame":"arrhythmia.hex","score_each_iteration":false,"response_column":"C1","ntrees":"20","max_depth":5,"min_rows":"25","nbins":20,"learn_rate":"0.3","distribution":"AUTO","balance_classes":false,"max_confusion_matrix_size":20,"class_sampling_factors":[],"max_after_balance_size":5,"seed":0}
 ```
 
 In curl:
 
 ```bash
-curl -X POST http://127.0.0.1:54321/3/ModelBuilders/gbm --data 'model_id=gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1&training_frame=arrhythmia.hex&score_each_iteration=false&response_column=C1&ntrees=20&max_depth=5&min_rows=25&nbins=20&learn_rate=0.3&distribution=AUTO&balance_classes=false&max_confusion_matrix_size=20&max_hit_ratio_k=10&class_sampling_factors=&max_after_balance_size=5&seed=0'
+curl -X POST http://127.0.0.1:54321/3/ModelBuilders/gbm --data 'model_id=gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1&training_frame=arrhythmia.hex&score_each_iteration=false&response_column=C1&ntrees=20&max_depth=5&min_rows=25&nbins=20&learn_rate=0.3&distribution=AUTO&balance_classes=false&max_confusion_matrix_size=20&class_sampling_factors=&max_after_balance_size=5&seed=0'
 ```
 
 In Java / Retrofit:

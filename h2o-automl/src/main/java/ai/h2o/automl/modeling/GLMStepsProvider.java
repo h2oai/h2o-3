@@ -1,6 +1,10 @@
 package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
+import ai.h2o.automl.preprocessing.PreprocessingConfig;
+import ai.h2o.automl.preprocessing.PreprocessingStepDefinition;
+import ai.h2o.automl.preprocessing.TargetEncoding;
+import hex.Model;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
 import water.Job;
@@ -20,6 +24,11 @@ public class GLMStepsProvider
                 super(Algo.GLM, id, weight, autoML);
             }
 
+            @Override
+            protected void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults) {
+                // disabled as we're using lambda search
+            }
+
             GLMParameters prepareModelParameters() {
                 GLMParameters glmParameters = new GLMParameters();
                 glmParameters._lambda_search = true;
@@ -28,6 +37,15 @@ public class GLMStepsProvider
                                 : aml().getResponseColumn().isCategorical() ? GLMParameters.Family.multinomial
                                 : GLMParameters.Family.gaussian;  // TODO: other continuous distributions!
                 return glmParameters;
+            }
+            
+            @Override
+            protected PreprocessingConfig getPreprocessingConfig() {
+                //GLM (the exception as usual) doesn't support targetencoding if CV is enabled
+                // because it is initializing its lambdas + other params before CV (preventing changes in train frame during CV).
+                PreprocessingConfig config = super.getPreprocessingConfig();
+                config.put(TargetEncoding.CONFIG_PREPARE_CV_ONLY, aml().isCVEnabled()); 
+                return config;
             }
         }
 

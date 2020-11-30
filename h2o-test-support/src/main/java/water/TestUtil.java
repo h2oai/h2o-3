@@ -1,23 +1,24 @@
 package water;
 
 import hex.CreateFrame;
+import hex.Model;
+import hex.SplitFrame;
+import hex.genmodel.*;
 import hex.genmodel.easy.RowData;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+import water.api.StreamingSchema;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-import water.util.FileUtils;
-import water.util.Log;
+import water.util.*;
 import water.util.Timer;
-import water.util.TwoDimTable;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -406,7 +407,7 @@ public class TestUtil extends Iced {
     return Boolean.valueOf(System.getenv("H2O_JUNIT_ALLOW_NO_SMALLDATA"));
   }
   
-  private static void downloadTestFileFromS3(String fname) throws IOException {
+  protected static void downloadTestFileFromS3(String fname) throws IOException {
     if (fname.startsWith("./"))
       fname = fname.substring(2);
     File f = new File(fname);
@@ -484,7 +485,7 @@ public class TestUtil extends Iced {
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
-        check_header,0,null,null,null,null,null));
+        check_header,0,null,null,null,null,null, null, null));
     if (skippedColumns != null) {
       p.setSkippedColumns(skippedColumns);
       p.setParseColumnIndices(p.getNumberColumns(), skippedColumns);
@@ -570,7 +571,7 @@ public class TestUtil extends Iced {
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
-            check_header,0,null,null,null,null,null));
+            check_header,0,null,null,null,null,null, null, null));
     if (skipped_columns != null) {
       p.setSkippedColumns(skipped_columns);
       p.setParseColumnIndices(p.getNumberColumns(), skipped_columns);
@@ -599,7 +600,42 @@ public class TestUtil extends Iced {
 
   }
 
+  public static class Frames {
+    public final Frame train;
+    public final Frame test;
+    public final Frame valid;
 
+    public Frames(Frame train, Frame test, Frame valid) {
+      this.train = train;
+      this.test = test;
+      this.valid = valid;
+    }
+  }
+  
+  public static Frames split(Frame f) {
+    return split(f, 0.9, 0d);
+  }
+
+  public static Frames split(Frame f, double testFraction) {
+    return split(f, testFraction, 0);
+  }
+
+  public static Frames split(Frame f, double testFraction, double validFraction) {
+    double[] fractions;
+    double trainFraction = 1d - testFraction - validFraction;
+    if (validFraction > 0d) {
+      fractions = new double[] { trainFraction, testFraction, validFraction };
+    } else {
+      fractions = new double[] { trainFraction, testFraction };
+    }
+    SplitFrame sf = new SplitFrame(f, fractions, null);
+    sf.exec().get();
+    Key<Frame>[] splitKeys = sf._destination_frames;
+    Frame trainFrame = Scope.track(splitKeys[0].get());
+    Frame testFrame = Scope.track(splitKeys[1].get());
+    Frame validFrame = (validFraction > 0d) ? Scope.track(splitKeys[2].get()) : null;
+    return new Frames(trainFrame, testFrame, validFrame);
+  }
 
   /** A Numeric Vec from an array of ints
    *  @param rows Data
@@ -820,6 +856,23 @@ public class TestUtil extends Iced {
       String actual = getFactorAsString(actuals, i);
       final String message = i + ": " + expected + " != " + actual + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
       assertEquals(message, expected, actual);
+    }
+  }
+  
+  public static void assertTwoDimTableEquals(TwoDimTable expected, TwoDimTable actual) {
+    assertEquals("tableHeader different", expected.getTableHeader(), actual.getTableHeader());
+    assertEquals("tableDescriptionDifferent", expected.getTableDescription(), actual.getTableDescription());
+    assertArrayEquals("rowHeaders different", expected.getRowHeaders(), actual.getRowHeaders());
+    assertArrayEquals("colHeaders different", expected.getColHeaders(), actual.getColHeaders());
+    assertArrayEquals("colTypes different", expected.getColTypes(), actual.getColTypes());
+    assertArrayEquals("colFormats different", expected.getColFormats(), actual.getColFormats());
+    assertEquals("colHeaderForRowHeaders different", expected.getColHeaderForRowHeaders(), actual.getColHeaderForRowHeaders());
+    for (int r = 0; r < expected.getRowDim(); r++) {
+      for (int c = 0; c < expected.getColDim(); c++) {
+        Object ex = expected.get(r, c);
+        Object act = actual.get(r, c);
+        assertEquals("cellValues different at row " + r + ", col " + c, ex, act);
+      }
     }
   }
 
@@ -1172,7 +1225,7 @@ public class TestUtil extends Iced {
    * @param columnName column's name to be factorized
    * @return Frame with factorized column
    */
-  public Frame asFactor(Frame frame, String columnName) {
+  public static Frame asFactor(Frame frame, String columnName) {
     Vec vec = frame.vec(columnName);
     frame.replace(frame.find(columnName), vec.toCategoricalVec());
     vec.remove();
@@ -1318,6 +1371,71 @@ public class TestUtil extends Iced {
       while((bytesRead=frameToStream.read(buffer)) > 0) { // for our toCSV stream, return 0 as EOF, not -1
         outStream.write(buffer, 0, bytesRead);
       }
+    }
+  }
+
+  /**
+   * @param len        Length of the resulting vector
+   * @param randomSeed Seed for the random generator (for reproducibility)
+   * @return An instance of {@link Vec} with binary weights (either 0.0D or 1.0D, nothing in between).
+   */
+  public static Vec createRandomBinaryWeightsVec(final long len, final long randomSeed) {
+    final Vec weightsVec = Vec.makeZero(len, Vec.T_NUM);
+    final Random random = RandomUtils.getRNG(randomSeed);
+    for (int i = 0; i < weightsVec.length(); i++) {
+      weightsVec.set(i, random.nextBoolean() ? 1.0D : 0D);
+    }
+
+    return weightsVec;
+  }
+
+  /**
+   * @param len        Length of the resulting vector
+   * @param randomSeed Seed for the random generator (for reproducibility)
+   * @return An instance of {@link Vec} with random double values
+   */ 
+  public static Vec createRandomDoubleVec(final long len, final long randomSeed) {
+    final Vec vec = Vec.makeZero(len, Vec.T_NUM);
+    final Random random = RandomUtils.getRNG(randomSeed);
+    for (int i = 0; i < vec.length(); i++) {
+      vec.set(i, random.nextDouble());
+    }
+    return vec;
+  }
+
+  /**
+   * @param len        Length of the resulting vector
+   * @param randomSeed Seed for the random generator (for reproducibility)
+   * @return An instance of {@link Vec} with random categorical values
+   */  
+  public static Vec createRandomCategoricalVec(final long len, final long randomSeed) {
+    String[] domain = new String[100];
+    for (int i = 0; i < domain.length; i++) domain[i] = "CAT_" + i;
+    final Vec vec = Scope.track(Vec.makeZero(len, Vec.T_NUM)).makeZero(domain);
+    final Random random = RandomUtils.getRNG(randomSeed);
+    for (int i = 0; i < vec.length(); i++) {
+      vec.set(i, random.nextInt(domain.length));
+    }
+    return vec;
+  }
+
+  @SuppressWarnings("rawtypes")
+  public static GenModel toMojo(Model model, String testName, boolean readModelMetaData) {
+    final String filename = testName + ".zip";
+    StreamingSchema ss = new StreamingSchema(model.getMojo(), filename);
+    try (FileOutputStream os = new FileOutputStream(ss.getFilename())) {
+      ss.getStreamWriter().writeTo(os);
+    } catch (IOException e) {
+      throw new IllegalStateException("MOJO writing failed", e);
+    }
+    try {
+      MojoReaderBackend cr = MojoReaderBackendFactory.createReaderBackend(filename);
+      return ModelMojoReader.readFrom(cr, readModelMetaData);
+    } catch (IOException e) {
+      throw new IllegalStateException("MOJO loading failed", e);
+    } finally {
+      boolean deleted = new File(filename).delete();
+      if (!deleted) Log.warn("Failed to delete the file");
     }
   }
 

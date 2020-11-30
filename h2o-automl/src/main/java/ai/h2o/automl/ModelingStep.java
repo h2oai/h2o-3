@@ -9,12 +9,14 @@ import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.leaderboard.Leaderboard;
+import ai.h2o.automl.preprocessing.PreprocessingConfig;
+import ai.h2o.automl.preprocessing.PreprocessingStep;
+import ai.h2o.automl.preprocessing.PreprocessingStepDefinition;
 import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
 import hex.ModelContainer;
 import hex.ScoreKeeper.StoppingMetric;
-import hex.ensemble.StackedEnsembleModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
@@ -28,9 +30,8 @@ import water.util.Countdown;
 import water.util.EnumUtils;
 import water.util.Log;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
@@ -47,6 +48,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         Incremental
     }
 
+    static Predicate<Work> isDefaultModel = w -> w._type == JobType.ModelBuild;
     static Predicate<Work> isExplorationWork = w -> w._type == JobType.ModelBuild || w._type == JobType.HyperparamSearch;
     static Predicate<Work> isExploitationWork = w -> w._type == JobType.Selection;
 
@@ -56,6 +58,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             final Map<String, Object[]> hyperParams,
             final HyperSpaceSearchCriteria searchCriteria)
     {
+        applyPreprocessing(baseParams);
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" hyperparameter search")
                 .setNamedValue("start_"+_algo+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
         return GridSearch.startGridSearch(
@@ -73,6 +76,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             final MP params
     ) {
         Job<M> job = new Job<>(resultKey, ModelBuilder.javaName(_algo.urlName()), _description);
+        applyPreprocessing(params);
         ModelBuilder builder = ModelBuilder.make(_algo.urlName(), job, (Key<Model>) resultKey);
         builder._parms = params;
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" model training")
@@ -82,9 +86,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             return builder.trainModelOnH2ONode();
         } catch (H2OIllegalArgumentException exception) {
             aml().eventLog().warn(Stage.ModelTraining, "Skipping training of model "+resultKey+" due to exception: "+exception);
+            onDone(null);
             return null;
         }
-
     }
 
     private transient AutoML _aml;
@@ -94,6 +98,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     protected int _weight;
     protected AutoML.Constraint[] _ignoredConstraints = new AutoML.Constraint[0];  // whether or not to ignore the max_models/max_runtime constraints
     protected String _description;
+    private final transient List<Consumer<Job>> _onDone = new ArrayList<>();
 
     StepDefinition _fromDef;
 
@@ -112,6 +117,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     protected abstract Work makeWork();
 
     protected abstract Job startJob();
+
+    protected void onDone(Job job) {
+        for (Consumer<Job> exec : _onDone) {
+            exec.accept(job);
+        }
+        _onDone.clear();
+    };
 
     protected AutoML aml() {
         return _aml;
@@ -158,32 +170,41 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         params._response_column = buildSpec.input_spec.response_column;
         params._ignored_columns = buildSpec.input_spec.ignored_columns;
 
-        // currently required, for the base_models, for stacking:
-        if (! (params instanceof StackedEnsembleModel.StackedEnsembleParameters)) {  // TODO: now that we have an object hierarchy, we can think about refactoring this logic
-            params._keep_cross_validation_predictions = aml().getBlendingFrame() == null ? true : buildSpec.build_control.keep_cross_validation_predictions;
-
-            // TODO: StackedEnsemble doesn't support weights yet in score0
-            params._fold_column = buildSpec.input_spec.fold_column;
-            params._weights_column = buildSpec.input_spec.weights_column;
-
-            if (buildSpec.input_spec.fold_column == null) {
-                params._nfolds = buildSpec.build_control.nfolds;
-                if (buildSpec.build_control.nfolds > 1) {
-                    // TODO: below allow the user to specify this (vs Modulo)
-                    params._fold_assignment = FoldAssignmentScheme.Modulo;
-                }
-            }
-            if (buildSpec.build_control.balance_classes) {
-                params._balance_classes = buildSpec.build_control.balance_classes;
-                params._class_sampling_factors = buildSpec.build_control.class_sampling_factors;
-                params._max_after_balance_size = buildSpec.build_control.max_after_balance_size;
-            }
-            //TODO: add a check that gives an error when class_sampling_factors, max_after_balance_size is set and balance_classes = false
-        }
+        setCrossValidationParams(params);
+        setWeightingParams(params);
+        setClassBalancingParams(params);
 
         params._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
         params._keep_cross_validation_fold_assignment = buildSpec.build_control.nfolds != 0 && buildSpec.build_control.keep_cross_validation_fold_assignment;
         params._export_checkpoints_dir = buildSpec.build_control.export_checkpoints_dir;
+    }
+    
+    protected void setCrossValidationParams(Model.Parameters params) {
+        AutoMLBuildSpec buildSpec = aml().getBuildSpec();
+        params._keep_cross_validation_predictions = aml().getBlendingFrame() == null ? true : buildSpec.build_control.keep_cross_validation_predictions;
+        params._fold_column = buildSpec.input_spec.fold_column;
+
+        if (buildSpec.input_spec.fold_column == null) {
+            params._nfolds = buildSpec.build_control.nfolds;
+            if (buildSpec.build_control.nfolds > 1) {
+                // TODO: below allow the user to specify this (vs Modulo)
+                params._fold_assignment = FoldAssignmentScheme.Modulo;
+            }
+        }
+    }
+    
+    protected void setWeightingParams(Model.Parameters params) {
+        AutoMLBuildSpec buildSpec = aml().getBuildSpec();
+        params._weights_column = buildSpec.input_spec.weights_column;
+    }
+    
+    protected void setClassBalancingParams(Model.Parameters params) {
+        AutoMLBuildSpec buildSpec = aml().getBuildSpec();
+        if (buildSpec.build_control.balance_classes) {
+            params._balance_classes = buildSpec.build_control.balance_classes;
+            params._class_sampling_factors = buildSpec.build_control.class_sampling_factors;
+            params._max_after_balance_size = buildSpec.build_control.max_after_balance_size;
+        }
     }
 
     protected void setCustomParams(Model.Parameters params) {
@@ -191,41 +212,34 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         if (customParams == null) return;
         customParams.applyCustomParameters(_algo, params);
     }
-
+    
+    protected void applyPreprocessing(Model.Parameters params) {
+        if (aml().getPreprocessing() == null) return;
+        for (PreprocessingStep preprocessingStep : aml().getPreprocessing()) {
+            PreprocessingStep.Completer complete = preprocessingStep.apply(params, getPreprocessingConfig());
+            _onDone.add(j -> complete.run());
+        }
+    }
+    
+    protected PreprocessingConfig getPreprocessingConfig() {
+        return new PreprocessingConfig();
+    }
 
     /**
      * Configures early-stopping for the model or set of models to be built.
      *
      * @param parms the model parameters to which the stopping criteria will be added.
      * @param defaults the default parameters for the corresponding {@link ModelBuilder}.
-     * @param seedPolicy the policy defining how the seed will be assigned to the model parameters.
      */
-    protected void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults, SeedPolicy seedPolicy) {
+    protected void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults) {
         // If the caller hasn't set ModelBuilder stopping criteria, set it from our global criteria.
         AutoMLBuildSpec buildSpec = aml().getBuildSpec();
-        if (parms._max_runtime_secs == 0)
-            parms._max_runtime_secs = buildSpec.build_control.stopping_criteria.max_runtime_secs_per_model();
 
         //FIXME: Do we really need to compare with defaults before setting the buildSpec value instead?
         // This can create subtle bugs: e.g. if dev wanted to enforce a stopping criteria for a specific algo/model,
         // he wouldn't be able to enforce the default value, that would always be overridden by buildSpec.
         // We should instead provide hooks and ensure that properties are always set in the following order:
         //  1. defaults, 2. user defined, 3. internal logic/algo specific based on the previous state (esp. handling of AUTO properties).
-
-        // Don't use the same exact seed so that, e.g., if we build two GBMs they don't do the same row and column sampling.
-        if (parms._seed == defaults._seed) {
-            switch (seedPolicy) {
-                case Global:
-                    parms._seed = buildSpec.build_control.stopping_criteria.seed();
-                    break;
-                case Incremental:
-                    parms._seed = _aml._incrementalSeed.get() == defaults._seed ? defaults._seed : _aml._incrementalSeed.getAndIncrement();
-                    break;
-                default:
-                    break;
-            }
-        }
-
 
         if (parms._stopping_metric == defaults._stopping_metric)
             parms._stopping_metric = buildSpec.build_control.stopping_criteria.stopping_metric();
@@ -242,6 +256,36 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
         if (parms._stopping_tolerance == defaults._stopping_tolerance)
             parms._stopping_tolerance = buildSpec.build_control.stopping_criteria.stopping_tolerance();
+    }
+
+    /**
+     * @param parms the model parameters to which the stopping criteria will be added.
+     * @param defaults the default parameters for the corresponding {@link ModelBuilder}.
+     * @param seedPolicy the policy defining how the seed will be assigned to the model parameters.
+     */
+    protected void setSeed(Model.Parameters parms, Model.Parameters defaults, SeedPolicy seedPolicy) {
+        AutoMLBuildSpec buildSpec = aml().getBuildSpec();
+        // Don't use the same exact seed so that, e.g., if we build two GBMs they don't do the same row and column sampling.
+        if (parms._seed == defaults._seed) {
+            switch (seedPolicy) {
+                case Global:
+                    parms._seed = buildSpec.build_control.stopping_criteria.seed();
+                    break;
+                case Incremental:
+                    parms._seed = _aml._incrementalSeed.get() == defaults._seed ? defaults._seed : _aml._incrementalSeed.getAndIncrement();
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+    
+    protected void initTimeConstraints(Model.Parameters parms, double upperLimit) {
+        AutoMLBuildSpec buildSpec = aml().getBuildSpec();
+        if (parms._max_runtime_secs == 0) {
+            double maxPerModel = buildSpec.build_control.stopping_criteria.max_runtime_secs_per_model();
+            parms._max_runtime_secs = upperLimit <= 0 ? maxPerModel : Math.min(maxPerModel, upperLimit);
+        }
     }
 
     private String getSortMetric() {
@@ -307,8 +351,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             if (null == key) key = makeKey(algoName, true);
 
             Model.Parameters defaults = ModelBuilder.make(_algo.urlName(), null, null)._parms;
+            initTimeConstraints(parms, 0);
             setCommonModelBuilderParams(parms);
-            setStoppingCriteria(parms, defaults, SeedPolicy.Incremental);
+            setSeed(parms, defaults, SeedPolicy.Incremental);
+            setStoppingCriteria(parms, defaults);
             setCustomParams(parms);
 
             // override model's max_runtime_secs to ensure that the total max_runtime doesn't exceed expectations
@@ -318,6 +364,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 Work work = getAllocatedWork();
 //                double maxAssignedTimeSecs = aml().timeRemainingMs() / 1e3; // legacy
                 double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3; //including default models in the distribution of the time budget.
+//                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, isDefaultModel) / 1e3; //PUBDEV-7595
                 parms._max_runtime_secs = parms._max_runtime_secs == 0
                         ? maxAssignedTimeSecs
                         : Math.min(parms._max_runtime_secs, maxAssignedTimeSecs);
@@ -328,7 +375,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     : "Time assigned for "+key+": "+parms._max_runtime_secs+"s");
             return startModel(key, parms);
         }
-
     }
 
     /**
@@ -380,8 +426,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 throw new H2OIllegalArgumentException("Hyperparameter search can't create a new instance of Model.Parameters subclass: " + baseParms.getClass());
             }
 
+            initTimeConstraints(baseParms, 0);
             setCommonModelBuilderParams(baseParms);
-            setStoppingCriteria(baseParms, defaults, SeedPolicy.None);
+            // grid seed is provided later through the searchCriteria
+            setStoppingCriteria(baseParms, defaults);
             setCustomParams(baseParms);
 
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();

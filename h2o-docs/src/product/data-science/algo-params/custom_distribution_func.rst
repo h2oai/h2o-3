@@ -38,7 +38,7 @@ Example
 		# Import the airlines dataset:
 		# this dataset is used to classify whether a flight will be delayed 'YES' or not "NO"
 		# original data can be found at http://www.transtats.bts.gov/
-		airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+		airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
 
 		# convert columns to factors
 		airlines["Year"] = airlines["Year"].asfactor()

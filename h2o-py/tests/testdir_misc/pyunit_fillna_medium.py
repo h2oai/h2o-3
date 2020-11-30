@@ -6,6 +6,7 @@ import sys
 sys.path.insert(1,"../../")
 import h2o
 import pandas
+from tests import pyunit_utils
 
 def fillna():
     NUM_COLS = 3
@@ -22,7 +23,5 @@ def fillna():
     filled = df.fillna(method="forward",axis=0,maxlen=3)
     assert abs((filled - filledpdfh2o).sum(return_frame=False)) < 1e-11, "Difference between Pandas pivot too high"
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(fillna)
-else:
-    fillna()
+
+pyunit_utils.standalone_test(fillna)

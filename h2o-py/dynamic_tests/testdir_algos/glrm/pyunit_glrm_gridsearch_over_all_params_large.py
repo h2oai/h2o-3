@@ -57,7 +57,7 @@ class Test_glrm_grid_search:
     allowed_diff = 1e-2   # difference allow between grid search model and manually built model MSEs
 
     # System parameters, do not change.  Dire consequences may follow if you do
-    current_dir = os.path.dirname(os.path.realpath(sys.argv[1]))    # directory of this test file
+    current_dir = os.path.dirname(os.path.realpath(sys.argv[0]))    # directory of this test file
 
     train_row_count = 0         # training data row count, randomly generated later
     train_col_count = 0         # training data column count, randomly generated later

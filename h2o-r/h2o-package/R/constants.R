@@ -54,7 +54,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
                    data.frame(type = "character", scalar = FALSE,  row.names = "VecSpecifier[]", stringsAsFactors = FALSE),
                    data.frame(type = "list",      scalar = FALSE, row.names = "KeyValue[]",   stringsAsFactors = FALSE),
                    data.frame(type = "list",      scalar = FALSE, row.names = "StringPair[]", stringsAsFactors = FALSE),
-                   data.frame(type = "list",        scalar = FALSE, row.names = "Key<Keyed>[]", stringsAsFactors = FALSE))
+                   data.frame(type = "list",      scalar = FALSE, row.names = "Key<Keyed>[]", stringsAsFactors = FALSE),
+                   data.frame(type = "list",      scalar = FALSE, row.names = "string[][]",   stringsAsFactors = FALSE))
 
 #' Capabilities endpoints
 .h2o.__ALL_CAPABILITIES  <- "Capabilities"
@@ -138,6 +139,11 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__SAVE_MODEL <- function(model) paste0("Models.bin/", model)
 .h2o.__LOAD_MODEL <- "Models.bin/"
 .h2o.__UPLOAD_MODEL <- "Models.upload.bin/"
+
+# Export/Import Frame Endpoints
+.h2o.__SAVE_FRAME <- function(frame_id) paste0("Frames/", frame_id, "/save")
+.h2o.__LOAD_FRAME <- "Frames/load"
+
 
 # Grid search 
 .h2o.__GRID <- function(algo) paste0("Grid/", algo)

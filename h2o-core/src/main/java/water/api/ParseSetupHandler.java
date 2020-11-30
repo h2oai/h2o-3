@@ -2,6 +2,7 @@ package water.api;
 
 import water.DKV;
 import water.Key;
+import water.api.schemas3.KeyV3;
 import water.api.schemas3.ParseSetupV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.parser.ParseDataset;
@@ -9,8 +10,7 @@ import water.parser.ParseSetup;
 import water.util.DistributedException;
 import water.util.PojoUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,12 +32,16 @@ public class ParseSetupHandler extends Handler {
     }
 
     // corrects for json putting in empty strings in the place of empty sub-arrays
-    if (p.na_strings != null)
-      for(int i = 0; i < p.na_strings.length; i++)
+    if (p.na_strings != null) {
+      for (int i = 0; i < p.na_strings.length; i++) {
         if (p.na_strings[i] != null && p.na_strings[i].length == 0) p.na_strings[i] = null;
+      }
+    }
+    checkPartitionByColumnPresence(p.source_frames, p.partition_by);
     ParseSetup ps;
     try{
-      ps = ParseSetup.guessSetup(fkeys, new ParseSetup(p));
+      ps = new ParseSetup(p);
+      ps = ParseSetup.guessSetup(fkeys, ps);
     } catch(Throwable ex) {
       Throwable ex2 = ex;
       if(ex instanceof DistributedException)
@@ -98,10 +102,44 @@ public class ParseSetupHandler extends Handler {
       p.total_filtered_column_count = keep_indexes.size();
     }
     p.destination_frame = ParseSetup.createHexName(p.source_frames[0].toString());
-    if( p.check_header==ParseSetup.HAS_HEADER && p.data != null && Arrays.equals(p.column_names, p.data[0])) p.data = Arrays.copyOfRange(p.data,1,p.data.length);
+    if (p.check_header == ParseSetup.HAS_HEADER && p.data != null && Arrays.equals(p.column_names, p.data[0]))
+      p.data = Arrays.copyOfRange(p.data, 1, p.data.length);
     // Fill in data type names for each column.
     p.column_types = ps.getColumnTypeStrings();
     p.parse_type = ps.getParseType() != null ? ps.getParseType().name() : GUESS_INFO.name();
     return p;
+  }
+
+  /**
+   * @param sourceFrames       Source frames provided by the user to parse
+   * @param partitionByColumns partitionByColumn specified by the user
+   */
+  private void checkPartitionByColumnPresence(final KeyV3.FrameKeyV3[] sourceFrames, final String[] partitionByColumns) {
+    if (partitionByColumns == null || partitionByColumns.length == 0) return;
+    
+    final Map<String, String> nonMatchingKeys = new HashMap<>();
+    for (final String partitionColumn : partitionByColumns) {
+      final Pattern pattern = Pattern.compile(".*" + partitionColumn + "=([^\\/\\\\]+).*");
+      for (int i = 0; i < sourceFrames.length; i++) {
+        final String framePath = sourceFrames[i].key().toString();
+        final Matcher matcher = pattern.matcher(framePath);
+        if (!matcher.matches()) {
+          nonMatchingKeys.put(framePath, partitionColumn);
+        }
+      }
+    }
+
+    if (nonMatchingKeys.size() == 0) return;
+
+    final StringBuilder errMsgBuilder = new StringBuilder("The following files do not contain required partitionBy columns on their path: ");
+    nonMatchingKeys.entrySet().forEach(nonMatching -> {
+      errMsgBuilder.append('\n');
+      errMsgBuilder.append("File: ");
+      errMsgBuilder.append(nonMatching.getKey());
+      errMsgBuilder.append(" | Missing column: ");
+      errMsgBuilder.append(nonMatching.getValue());
+    });
+
+    throw new IllegalArgumentException(errMsgBuilder.toString());
   }
 }

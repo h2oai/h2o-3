@@ -2,10 +2,10 @@ package hex.tree.xgboost;
 
 import hex.DataInfo;
 import hex.tree.xgboost.matrix.DenseMatrixFactory;
+import hex.tree.xgboost.matrix.MatrixLoader;
 import hex.tree.xgboost.matrix.SparseMatrixFactory;
-import hex.tree.xgboost.util.FeatureScore;
-import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.XGBoostError;
+import ai.h2o.xgboost4j.java.DMatrix;
+import ai.h2o.xgboost4j.java.XGBoostError;
 import org.apache.log4j.Logger;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -15,6 +15,7 @@ import water.util.VecUtils;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static water.H2O.technote;
 import static water.MemoryManager.malloc4f;
@@ -23,14 +24,22 @@ public class XGBoostUtils {
 
     private static final Logger LOG = Logger.getLogger(XGBoostUtils.class);
 
-    public static String makeFeatureMap(Frame f, DataInfo di) {
+    public static void createFeatureMap(XGBoostModel model, Frame train) {
+        // Create a "feature map" and store in a temporary file (for Variable Importance, MOJO, ...)
+        DataInfo dataInfo = model.model_info().dataInfo();
+        assert dataInfo != null;
+        String featureMap = makeFeatureMap(train, dataInfo);
+        model.model_info().setFeatureMap(featureMap);
+    }
+
+    private static String makeFeatureMap(Frame f, DataInfo di) {
         // set the names for the (expanded) columns
         String[] coefnames = di.coefNames();
         StringBuilder sb = new StringBuilder();
         assert(coefnames.length == di.fullN());
         int catCols = di._catOffsets[di._catOffsets.length-1];
 
-        for (int i = 0; i < di.fullN(); ++i) {
+        for (int i = 0; i < di.fullN(); i++) {
             sb.append(i).append(" ").append(coefnames[i].replaceAll("\\s*","")).append(" ");
             if (i < catCols || f.vec(i-catCols).isBinary())
                 sb.append("i");
@@ -52,19 +61,19 @@ public class XGBoostUtils {
      * @return DMatrix
      * @throws XGBoostError
      */
-    public static DMatrix convertFrameToDMatrix(DataInfo di,
+    public static MatrixLoader.DMatrixProvider convertFrameToDMatrix(DataInfo di,
                                                 Frame frame,
                                                 String response,
                                                 String weight,
                                                 String offset,
-                                                boolean sparse) throws XGBoostError {
+                                                boolean sparse) {
         assert di != null;
         int[] chunks = VecUtils.getLocalChunkIds(frame.anyVec());
         final Vec responseVec = frame.vec(response);
         final Vec weightVec = frame.vec(weight);
         final Vec offsetsVec = frame.vec(offset);
         final int[] nRowsByChunk = new int[chunks.length];
-        final long nRowsL = sumChunksLength(chunks, responseVec, weightVec, nRowsByChunk);
+        final long nRowsL = sumChunksLength(chunks, responseVec, Optional.ofNullable(weightVec), nRowsByChunk);
         if (nRowsL > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("XGBoost currently doesn't support datasets with more than " +
                     Integer.MAX_VALUE + " per node. " +
@@ -72,7 +81,7 @@ public class XGBoostUtils {
         }
         final int nRows = (int) nRowsL;
 
-        final DMatrix trainMat;
+        final MatrixLoader.DMatrixProvider trainMat;
 
         // In the future this 2 arrays might also need to be rewritten into float[][],
         // but only if we want to handle datasets over 2^31-1 on a single machine. For now I'd leave it as it is.
@@ -92,43 +101,37 @@ public class XGBoostUtils {
             LOG.debug("Treating matrix as dense.");
             trainMat = DenseMatrixFactory.dense(frame, chunks, nRows, nRowsByChunk, weightVec, offsetsVec, responseVec, di, resp, weights, offsets);
         }
-
-        assert trainMat.rowNum() == nRows;
-        trainMat.setLabel(resp);
-        if (weights != null) {
-            trainMat.setWeight(weights);
-        }
-        if (offsets != null) {
-            trainMat.setBaseMargin(offsets);
-        }
         return trainMat;
     }
 
     /**
-     * Counts a total sum of chunks inside a vector. Only chunks present in chunkIds are considered.
+     * Counts a total sum of chunks inside a vector. Only chunks present in chunkIds are counted.
+     * If a weights vector is provided, only rows with non-zero weights are counted.
      *
-     * @param chunkIds Chunk identifier of a vector
+     * @param chunkIds Chunk ids to consider during the calculation. Chunks IDs not listed are not included.
      * @param vec      Vector containing given chunk identifiers
-     * @param weightsVector Vector with row weights, possibly null
+     * @param weightsVector Vector with row weights, possibly an empty optional
+     * @param chunkLengths Array of integers where the lengths of the individual chunks will be added. Initialization to an array of 0's is expected.
      * @return A sum of chunk lengths. Possibly zero, if there are no chunks or the chunks are empty.
      */
-    private static long sumChunksLength(int[] chunkIds, Vec vec, Vec weightsVector, int[] chunkLengths) {
+    public static long sumChunksLength(int[] chunkIds, Vec vec, Optional<Vec> weightsVector, int[] chunkLengths) {
+        assert chunkLengths.length == chunkIds.length;
         for (int i = 0; i < chunkIds.length; i++) {
             final int chunk = chunkIds[i];
-            chunkLengths[i] = vec.chunkLen(chunk);
-            if (weightsVector == null)
-                continue;
+            if (weightsVector.isPresent()) {
+                final Chunk weightVecChunk = weightsVector.get().chunkForChunkIdx(chunk);
+                assert weightVecChunk.len() == vec.chunkLen(chunk); // Chunk layout of both vectors must be the same
+                if (weightVecChunk.len() == 0) continue;
 
-            Chunk weightVecChunk = weightsVector.chunkForChunkIdx(chunk);
-            if (weightVecChunk.atd(0) == 0) chunkLengths[i]--;
-            int nzIndex = 0;
-            do {
-                nzIndex = weightVecChunk.nextNZ(nzIndex, true);
-                if (nzIndex < 0 || nzIndex >= weightVecChunk._len) break;
-                if (weightVecChunk.atd(nzIndex) == 0) chunkLengths[i]--;
-            } while (true);
+                int nzIndex = 0;
+                do {
+                    if (weightVecChunk.atd(nzIndex) != 0) chunkLengths[i]++;
+                    nzIndex = weightVecChunk.nextNZ(nzIndex, true);
+                } while (nzIndex > 0 && nzIndex < weightVecChunk._len);
+            } else {
+                chunkLengths[i] = vec.chunkLen(chunk);
+            }
         }
-
         long totalChunkLength = 0;
         for (int cl : chunkLengths) {
             totalChunkLength += cl;
@@ -179,22 +182,44 @@ public class XGBoostUtils {
 
         String[] featureNames = new String[di.fullN()];
         boolean[] oneHotEncoded = new boolean[di.fullN()];
-        for (int i = 0; i < di.fullN(); ++i) {
+        int[] originalColumnIndices = di.coefOriginalColumnIndices();
+        for (int i = 0; i < di.fullN(); i++) {
             featureNames[i] = coefnames[i];
             if (i < numCatCols) {
                 oneHotEncoded[i] = true;
             }
         }
-        return new FeatureProperties(featureNames, oneHotEncoded);
+        return new FeatureProperties(di._adaptedFrame._names, featureNames, oneHotEncoded, originalColumnIndices);
     }
 
     public static class FeatureProperties {
+        public String[] _originalNames;
+        public Map<String, Integer> _originalNamesMap;
         public String[] _names;
         public boolean[] _oneHotEncoded;
+        public int[] _originalColumnIndices;
 
-        public FeatureProperties(String[] names, boolean[] oneHotEncoded) {
+        public FeatureProperties(String[] originalNames, String[] names, boolean[] oneHotEncoded, int[] originalColumnIndices) {
+            _originalNames = originalNames;
+            _originalNamesMap = new HashMap<>();
+            for(int i = 0; i < originalNames.length; i++){
+                _originalNamesMap.put(originalNames[i], i);
+            }
             _names = names;
             _oneHotEncoded = oneHotEncoded;
+            _originalColumnIndices = originalColumnIndices;
+        }
+        
+        public int getOriginalIndex(String originalName){
+            return _originalNamesMap.get(originalName);
+        }
+        
+        public Integer[] mapOriginalNamesToIndices(String[] names){
+            Integer[] res = new Integer[names.length];
+            for(int i = 0; i<names.length; i++){
+                res[i] = getOriginalIndex(names[i]);
+            }
+            return res;
         }
     }
 

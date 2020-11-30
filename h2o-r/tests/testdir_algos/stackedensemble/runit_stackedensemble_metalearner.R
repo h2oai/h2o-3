@@ -46,8 +46,8 @@ stackedensemble.metalearner.test <- function() {
                                 training_frame = train,
                                 base_models = list(my_gbm, my_rf))
   # Check that metalearner_algorithm default is GLM w/ non-negative
-  expect_equal(stack0@parameters$metalearner_algorithm, NULL)
-  expect_equal(stack0@allparameters$metalearner_algorithm, "AUTO")
+  expect_equal(stack0@parameters$metalearner_algorithm, "glm")
+  expect_equal(stack0@allparameters$metalearner_algorithm, "glm")
   # Check that the metalearner is GLM w/ non-negative
   meta0 <- h2o.getModel(stack0@model$metalearner$name)
   expect_equal(meta0@algorithm, "glm")
@@ -67,7 +67,7 @@ stackedensemble.metalearner.test <- function() {
   # Check that the metalearner is default GBM
   meta1 <- h2o.getModel(stack1@model$metalearner$name)
   expect_equal(meta1@algorithm, "gbm")
-  expect_equal(length(meta1@parameters), 5)  #no hyperparms are set (only the 5 basic: model_id, seed, distribution, x, y)
+  expect_equal(length(meta1@parameters), 7)  #no hyperparms are set (only the 5 basic: model_id, seed, distribution, x, y + 2 specified from AUTO: categorical_encoding, histogram_type)
 
 
   # Train a stacked ensemble & metalearner_algorithm "drf"; check that metalearner_algorithm works with CV

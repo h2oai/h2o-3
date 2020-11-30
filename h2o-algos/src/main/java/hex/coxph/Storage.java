@@ -81,7 +81,7 @@ public class Storage {
         fv[i] = new FillVec(_m, vs[i], i);
       }
       ForkJoinTask.invokeAll(fv);
-      Frame f = new Frame(_key, vs, true);
+      Frame f = new Frame(_key, vs);
       DKV.put(_key, f);
 
       tryComplete();

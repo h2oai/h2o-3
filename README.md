@@ -2,9 +2,9 @@
 
 [![Join the chat at https://gitter.im/h2oai/h2o-3](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o-3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-H2O is an in-memory platform for distributed, scalable machine learning. H2O uses familiar interfaces like R, Python, Scala, Java, JSON and the Flow notebook/web interface, and works seamlessly with big data technologies like Hadoop and Spark. H2O provides implementations of many popular algorithms such as [GBM](https://en.wikipedia.org/wiki/Gradient_boosting), [Random Forest](https://en.wikipedia.org/wiki/Random_forest), [Deep Neural Networks](https://en.wikipedia.org/wiki/Deep_neural_networks), [Word2Vec](https://en.wikipedia.org/wiki/Word2vec) and [Stacked Ensembles](https://en.wikipedia.org/wiki/Ensemble_learning).  H2O is extensible so that developers can add data transformations and custom algorithms of their choice and access them through all of those clients.  
+H2O is an in-memory platform for distributed, scalable machine learning. H2O uses familiar interfaces like R, Python, Scala, Java, JSON and the Flow notebook/web interface, and works seamlessly with big data technologies like Hadoop and Spark. H2O provides implementations of many popular [algorithms](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science.html) such as Generalized Linear Models (GLM), Gradient Boosting Machines (including XGBoost), Random Forests, Deep Neural Networks, Stacked Ensembles, Naive Bayes, Generalized Additive Models (GAM), Cox Proportional Hazards, K-Means, PCA, Word2Vec, as well as a fully automatic machine learning algorithm ([H2O AutoML](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html)). 
 
-Data collection is easy. Decision making is hard. H2O makes it fast and easy to derive insights from your data through faster and better predictive modeling. H2O allows online scoring and modeling in a single platform.
+H2O is extensible so that developers can add data transformations and custom algorithms of their choice and access them through all of those clients.  H2O models can be [downloaded](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/save-and-load-model.html) and loaded into H2O memory for scoring, or exported into POJO or MOJO format for extemely fast scoring in [production](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/productionizing.html).  More information can be found in the [H2O User Guide](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html).
 
 H2O-3 (this repository) is the third incarnation of H2O, and the successor to [H2O-2](https://github.com/h2oai/h2o-2).  
 
@@ -284,6 +284,8 @@ for (pkg in pkgs) {
 ```
 Note that [libcurl](http://curl.haxx.se) is required for installation of the **RCurl** R package.
 
+Note that this packages don't cover running tests, they for building H2O only.
+
 Finally, install [Rtools](http://cran.r-project.org/bin/windows/Rtools/), which is a collection of command line tools to facilitate R development on Windows.
 >**NOTE**: During Rtools installation, do **not** install Cygwin.dll.
 
@@ -352,6 +354,8 @@ for (pkg in pkgs) {
 }
 ```
 Note that [libcurl](http://curl.haxx.se) is required for installation of the **RCurl** R package.
+
+Note that this packages don't cover running tests, they for building H2O only.
 
 ##### Step 4. Install python and the required packages:
 
@@ -684,25 +688,26 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 <a name="Roadmap"></a>
 ## 10. Roadmap
 
-### H2O 3.30 - Winter 2020 (Q1/2020)
-
-* Generalized Additive Models: [PUBDEV-6807](https://0xdata.atlassian.net/browse/PUBDEV-6807)
-* Constrained k-means Clustering: [PUBDEV-6447](https://0xdata.atlassian.net/browse/PUBDEV-6447)
-* CBOW for word2vec: [PUBDEV-7229](https://0xdata.atlassian.net/browse/PUBDEV-7229)
-* Fractional Binomial in GLM: [PUBDEV-6037](https://0xdata.atlassian.net/browse/PUBDEV-6037)
-* Bulk Model Building: [PUBDEV-6976](https://0xdata.atlassian.net/browse/PUBDEV-6976)
-* Kubernetes Support: [PUBDEV-6852](https://0xdata.atlassian.net/browse/PUBDEV-6852)
-* Out-of-memory error protection: [PUBDEV-6614](https://0xdata.atlassian.net/browse/PUBDEV-6614)
-
-### H2O 3.32 - Spring 2020 (Q2/2020)
+### H2O 3.32.0.1 - October 2020
 
 * RuleFit algorithm
-* Grid Search for Unsupervised algos (Isolation Forest, Autoencoder)
-* NLP Improvements: TF-IDF, plot embeddings
-* Hive Data Export
-* XGBoost Stability/Resource utilization: Scaling cluster up for XGBoost
-* Automatic cluster sizing: [PUBDEV-6045](https://0xdata.atlassian.net/browse/PUBDEV-6045)
-* PSVM Improvements (linear kernel, MOJO)
+* GAM Improvements (Cross Validation, MOJO support)
+* Target Encoding for Regression and Multinomial problems
+* Target Encoding minimal integration into AutoML
+* Kubernetes Improvements (Helm Charts)
+* GBM monotone constraints for quantile and tweedie distributions
+* Performance optimizations (lower memory usage)
+* Model Explainability
+* Upgrade XGBoost to 1.2
+
+### H2O 3.34.0.1 - January 2021
+
+* Extended Isolation Forest Algorithm
+* Uplift Trees in GBM
+* Extracting & ranking feature interactions from GBM and XGBoost models
+* Externalized XGBoost on Kubernetes clusters
+* RuleFit MOJO
+* Support for MOJO2 Scoring
 
 <a name="Community"></a>
 ## 11. Community
@@ -783,6 +788,9 @@ Pavel Pscheidl
 Michal Kurka
 Veronika Maurerova
 Jan Sterba
+Jan Jendrusak
+Sebastien Poirier
+Tomáš Frýda
 ```
 
 <a name="Advisors"></a>

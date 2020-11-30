@@ -13,6 +13,9 @@ import static java.math.BigInteger.ONE;
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 
 public class Merge {
+  
+  public static int ASCENDING = 1;
+  public static int DESCENDING = -1; 
 
   public static Frame sort(final Frame fr, int col) {
     return sort(fr, new int[]{col});
@@ -25,6 +28,7 @@ public class Merge {
 
     return sort(fr, cols, ascending); // default is to sort in ascending order
   }
+  
   // Radix-sort a Frame using the given columns as keys.
   // This is a fully distributed and parallel sort.
   // It is not currently an in-place sort, so the data is doubled and a sorted copy is returned.
@@ -90,12 +94,11 @@ public class Merge {
     Frame rightFrame = naPresent ? new RemoveNAsTask(riteCols)
             .doAll(riteFrame.types(), riteFrame).outputFrame(riteFrame.names(), riteFrame.domains())
             : riteFrame;
-
-
+    
     // map missing levels to -1 (rather than increasing slots after the end)
     // for now to save a deep branch later
-    for (int i=0; i<id_maps.length; i++) {
-      if (id_maps[i] == null) continue;
+    for (int i=0; i<id_maps.length; i++) { // id_maps is for leftFrame.  
+      if (id_maps[i] == null) continue;    // id_maps -1 represent leftFrame levels not found in riteFrame
       assert id_maps[i].length >= leftFrame.vec(leftCols[i]).max()+1
               :"Left frame cardinality is higher than right frame!  Switch frames and change merge directions to get " +
               "around this restriction.";
@@ -103,7 +106,7 @@ public class Merge {
       int right_max = (int)rightFrame.vec(riteCols[i]).max();
       for (int j=0; j<id_maps[i].length; j++) {
         assert id_maps[i][j] >= 0;
-        if (id_maps[i][j] > right_max) id_maps[i][j] = -1;
+        if (id_maps[i][j] > right_max) id_maps[i][j] = -1;  // map enum levels of left frame to -1 if not found in rite frame
       }
     }
 
@@ -127,10 +130,10 @@ public class Merge {
     final BigInteger riteBase = riteFrameEmpty?ZERO : riteIndex._base [0];
 
     // initialize for double columns, may not be used....
-    long leftMSBfrom = riteBase.subtract(leftBase).shiftRight(leftShift).longValue();  // value when all frames nonempty
-    boolean riteBaseExceedsleftBase=riteFrameEmpty?false:riteBase.compareTo(leftBase)>0;
+    long leftMSBfrom = riteBase.subtract(leftBase).shiftRight(leftShift).longValue();    // calculate the MSB or base differences between rite and left base 
+    boolean riteBaseExceedsleftBase=riteFrameEmpty?false:riteBase.compareTo(leftBase)>0; // true if rite base minimum value exceeds left base minimum value
     // deal with the left range below the right minimum, if any
-    if (riteBaseExceedsleftBase) {  // right branch has higher minimum column value
+    if (riteBaseExceedsleftBase) {  // left base starts at lower value than rite frame
       // deal with the range of the left below the start of the right, if any
       assert leftMSBfrom >= 0;
       if (leftMSBfrom>255) {
@@ -139,29 +142,30 @@ public class Merge {
       }
       // run the merge for the whole lefts that end before the first right.
       // The overlapping one with the right base is dealt with inside
-      // BinaryMerge (if _allLeft)
-      if (allLeft) for (int leftMSB=0; leftMSB<leftMSBfrom; leftMSB++) {
-        BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame, leftMSB, leftShift,
-                leftIndex._bytesUsed, leftIndex._base), new BinaryMerge.FFSB(rightFrame,/*rightMSB*/-1, riteShift,
-                riteIndex._bytesUsed, riteIndex._base),
-                true);
+      if (allLeft) { // no need to iterate from 0 to 255, only need to go from leftbase MSB to min(max leftMSB, ritebaseMSB)
+        for (int leftMSB = 0; leftMSB < leftMSBfrom; leftMSB++) {  // grab only left frame and add to final merged frame
+          BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame, leftMSB, leftShift,
+                  leftIndex._bytesUsed, leftIndex._base), new BinaryMerge.FFSB(rightFrame,/*rightMSB*/-1, riteShift,
+                  riteIndex._bytesUsed, riteIndex._base),
+                  true);
           bmList.add(bm);
           fs.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(leftMSB), bm).call());
         }
+      }
     } else {
       // completely ignore right MSBs below the left base
-      assert leftMSBfrom <= 0;
+      assert leftMSBfrom <= 0;  // rite frame starts with lower or equal base than right
       leftMSBfrom = 0;
     }
 
-    BigInteger rightS = BigInteger.valueOf(256L<<riteShift);
+    BigInteger rightS = BigInteger.valueOf(256L<<riteShift);  // get max value of key values possible, power of 2 only
     long leftMSBto = leftFrameEmpty?0:riteBase.add(rightS).subtract(ONE).subtract(leftBase).shiftRight(leftShift).longValue();
     // deal with the left range above the right maximum, if any.  For doubles, -1 from shift to avoid negative outcome
     boolean leftRangeAboveRightMax = leftIndex._isCategorical[0]?
             leftBase.add(BigInteger.valueOf(256L<<leftShift)).compareTo(riteBase.add(rightS)) > 0:
             leftBase.add(BigInteger.valueOf(256L<<leftShift)).compareTo(riteBase.add(rightS)) >= 0;
 
-    if (leftRangeAboveRightMax) { //
+    if (leftRangeAboveRightMax) { // left and rite frames have no overlap and left frame base is higher than rite max
       assert leftMSBto <= 255;
       if (leftMSBto<0) {
         // The left range starts after the right range ends.  So every left row
@@ -169,19 +173,19 @@ public class Merge {
         leftMSBto = -1;  // all MSBs (0-255) need to fetch the left rows only
       }
       // run the merge for the whole lefts that start after the last right
-      if (allLeft) for (int leftMSB=(int)leftMSBto+1; leftMSB<=255; leftMSB++) {
-        BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame,   leftMSB    ,leftShift,
-                leftIndex._bytesUsed,leftIndex._base),
-                new BinaryMerge.FFSB(rightFrame,/*rightMSB*/-1,riteShift,
-                        riteIndex._bytesUsed,riteIndex._base),
-                true);
+      if (allLeft) {  // not worthy restricting length here unless store column max.
+        for (int leftMSB = (int) leftMSBto + 1; leftMSB <= 255; leftMSB++) {
+          BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame, leftMSB, leftShift, leftIndex._bytesUsed,
+                  leftIndex._base), new BinaryMerge.FFSB(rightFrame,/*rightMSB*/-1, riteShift, 
+                  riteIndex._bytesUsed, riteIndex._base), true);
           bmList.add(bm);
           fs.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(leftMSB), bm).call());
+        }
       }
     } else if (!leftFrameEmpty){
       // completely ignore right MSBs after the right peak
-        assert leftMSBto >= 255;
-        leftMSBto = 255;
+      assert leftMSBto >= 255;
+      leftMSBto = 255;
     }
 
     // the overlapped region; i.e. between [ max(leftMin,rightMin), min(leftMax, rightMax) ]
@@ -195,8 +199,10 @@ public class Merge {
       long leftTo = leftFrameEmpty ? 0 : (((((long) leftMSB + 1) << leftShift) - 1 + leftBase.longValue()) - 1);  // -1 for leading NA spot and another -1 to get last of previous bin
 
       // which right bins do these left extents occur in (could span multiple, and fall in the middle)
-      int rightMSBfrom = (int) ((leftFrom - (riteFrameEmpty ? 0 : riteBase.longValue()) + 1) >> riteShift);   // +1 again for the leading NA spot
-      int rightMSBto = (int) ((leftTo - (riteFrameEmpty ? 0 : riteBase.longValue()) + 1) >> riteShift);
+      long temprightMSB = (leftFrom - (riteFrameEmpty ? 0 : riteBase.longValue()) + 1) >> riteShift; // direct casting to int can give wrong values
+      int rightMSBfrom =  temprightMSB < 0 ? 0 : (int) temprightMSB;   // +1 again for the leading NA spot
+      temprightMSB = (leftTo - (riteFrameEmpty ? 0 : riteBase.longValue()) + 1) >> riteShift;
+      int rightMSBto =  temprightMSB < 0 ? 0 : (int) temprightMSB;
 
       // the non-matching part of this region will have been dealt with above when allLeft==true
       if (rightMSBfrom < 0) rightMSBfrom = 0;
@@ -224,7 +230,6 @@ public class Merge {
     fs.blockForPending();
     
     Log.debug("took: " + (System.nanoTime() - t0) / 1e9+" seconds.");
-    
     Log.debug("Removing DKV keys of left and right index.  ... ");
     // TODO: In future we won't delete but rather persist them as index on the table
     // Explicitly deleting here (rather than Arno's cleanUp) to reveal if we're not removing keys early enough elsewhere
@@ -243,7 +248,6 @@ public class Merge {
       }
     }
     Log.debug("took: " + (System.nanoTime() - t0)/1e9+" seconds.");
-
     Log.info("Allocating and populating chunk info (e.g. size and batch number) ...");
     t0 = System.nanoTime();
     long ansN = 0;
@@ -314,8 +318,7 @@ public class Merge {
     ChunkStitcher ff = new ChunkStitcher(chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
     ff.doAll(fr);
     Log.debug("took: " + (System.nanoTime() - t0) / 1e9+" seconds");
-
-    //Merge.cleanUp();
+    
     return fr;
   }
 

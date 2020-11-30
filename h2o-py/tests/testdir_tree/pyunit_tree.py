@@ -40,6 +40,17 @@ def tree_test():
     check_tree(tree, 0, "NO")
     assert tree.root_node.left_levels is not None#Only categoricals in the model, guaranteed to have categorical split
     assert tree.root_node.right_levels is not None #Only categoricals in the model, guaranteed to have categorical split
+    assert tree.left_cat_split is not None and tree.right_cat_split is not None
+    assert len(tree.left_cat_split) == len(tree.right_cat_split)
+
+    # There are categorical splits only, check none of the cat splits is None
+    for i in range(0, len(tree.left_cat_split)):
+        if(tree.left_children[i] == -1 and tree.right_children[i] == -1): # Except leaf nodes, those should be None
+            assert tree.left_cat_split[i] is None
+            assert tree.right_cat_split[i] is None
+        else:
+            assert tree.left_cat_split[i] is not None
+            assert tree.right_cat_split[i] is not None
 
     # DRF
     cars = h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_nice_header.csv"))
@@ -55,6 +66,16 @@ def tree_test():
     isofor.train(training_frame=ecg_discord)
 
     if_tree = H2OTree(isofor, 2)
+
+    # There are no categoricall splits, check none of the cat splits is None
+    for i in range(0, len(if_tree.node_ids)):
+        assert if_tree.left_cat_split[i] is None
+        assert if_tree.right_cat_split[i] is None
+        if(if_tree.left_children[i] == -1 and tree.right_children[i] == -1): # Leaf nodes don't have split thresholds
+            assert if_tree.thresholds is None
+        else: # All others nodes should have split thresholds
+            assert if_tree.thresholds[i] is not None
+            assert if_tree.thresholds[i] is not None
     check_tree(if_tree, 2)
 
 

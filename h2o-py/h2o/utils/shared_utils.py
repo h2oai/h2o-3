@@ -8,24 +8,24 @@
 This file INTENTIONALLY has NO module dependencies!
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from .compatibility import *  # NOQA
 
-import imp
+import csv
+import imp  # keeping this deprecated module as soon as we keep supporting Py2.7
+import io
 import itertools
 import os
 import re
-import sys
-import zipfile
-import io
+import shutil
 import string
 import subprocess
-import csv
-import shutil
+import sys
 import tempfile
+import zipfile
 
-from h2o.exceptions import H2OValueError
-from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import assert_is_type, is_type, numeric
 from h2o.backend.server import H2OLocalServer
+from h2o.exceptions import H2OValueError
+from h2o.utils.typechecks import assert_is_type, is_type, numeric
 
 _id_ctr = 0
 
@@ -141,15 +141,31 @@ def stringify_dict(d):
     return stringify_list(["{'key': %s, 'value': %s}" % (_quoted(k), v) for k, v in d.items()])
 
 
+def stringify_dict_as_map(d):
+    return "{%s}" % ",".join(["%s: %s" % (_quoted(k), stringify_object(v, stringify_dict_as_map)) for k, v in d.items()])
+
+
 def stringify_list(arr):
     return "[%s]" % ",".join(stringify_list(item) if isinstance(item, list) else _str(item)
                              for item in arr)
 
+
+def stringify_object(o, dict_function=stringify_dict):
+    if isinstance(o, dict):
+        return dict_function(o)
+    elif isinstance(o, list):
+        return stringify_list(o)
+    else:
+        return _str(o)
+
+
 def _str(item):
     return _str_tuple(item) if isinstance(item, tuple) else str(item)
 
+
 def _str_tuple(t):
-    return "{%s}" % ",".join(["%s: %s" % (ti[0], str(ti[1])) for ti in zip(list(string.ascii_lowercase), t)])
+    return "{%s}" % ",".join(["%s: %s" % (ti[0], _str(ti[1])) for ti in zip(list(string.ascii_lowercase), t)])
+
 
 def _is_list(l):
     return isinstance(l, (tuple, list))
@@ -371,7 +387,7 @@ h2o_predictor_class = "hex.genmodel.tools.PredictCsv"
 
 
 def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classpath=None, java_options=None, 
-                        verbose=False, setInvNumNA=False):
+                        verbose=False, setInvNumNA=False, predict_contributions=False):
     """
     MOJO scoring function to take a Pandas frame and use MOJO model as zip file to score.
 
@@ -383,6 +399,8 @@ def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classp
         (default) then the default classpath for this MOJO model will be used.
     :param java_options: Optional, custom user defined options for Java. By default ``-Xmx4g`` is used.
     :param verbose: Optional, if True, then additional debug information will be printed. False by default.
+    :param predict_contributions: if True, then return prediction contributions instead of regular predictions 
+        (only for tree-based models).
     :return: Pandas frame with predictions
     """
     tmp_dir = tempfile.mkdtemp()
@@ -396,14 +414,15 @@ def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classp
         dataframe.to_csv(input_csv_path)
         mojo_predict_csv(input_csv_path=input_csv_path, mojo_zip_path=mojo_zip_path,
                          output_csv_path=prediction_csv_path, genmodel_jar_path=genmodel_jar_path,
-                         classpath=classpath, java_options=java_options, verbose=verbose, setInvNumNA=setInvNumNA)
+                         classpath=classpath, java_options=java_options, verbose=verbose, setInvNumNA=setInvNumNA,
+                         predict_contributions=predict_contributions)
         return pandas.read_csv(prediction_csv_path)
     finally:
         shutil.rmtree(tmp_dir)
 
 
 def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmodel_jar_path=None, classpath=None, 
-                     java_options=None, verbose=False, setInvNumNA=False):
+                     java_options=None, verbose=False, setInvNumNA=False, predict_contributions=False):
     """
     MOJO scoring function to take a CSV file and use MOJO model as zip file to score.
 
@@ -417,6 +436,8 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
         (default) then the default classpath for this MOJO model will be used.
     :param java_options: Optional, custom user defined options for Java. By default ``-Xmx4g -XX:ReservedCodeCacheSize=256m`` is used.
     :param verbose: Optional, if True, then additional debug information will be printed. False by default.
+    :param predict_contributions: if True, then return prediction contributions instead of regular predictions 
+        (only for tree-based models).
     :return: List of computed predictions
     """
     default_java_options = '-Xmx4g -XX:ReservedCodeCacheSize=256m'
@@ -477,7 +498,10 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
 
     if setInvNumNA:
         cmd.append('--setConvertInvalidNum')
-        
+
+    if predict_contributions:
+        cmd.append('--predictContributions')
+
     if verbose:
         cmd_str = " ".join(cmd)
         print("java cmd:\t%s" % cmd_str)

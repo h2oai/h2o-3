@@ -35,16 +35,16 @@ Defining an Aggregator Model
 
 -  **rel_tol_num_exemplars**: Specify the relative tolerance for the number of exemplars (e.g, 0.5 is +/- 50 percent). This value defaults to 0.5.
 
--  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data: None, Standardize, Normalize, Demean, or Descale. The default is Normalize.
+-  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data: None, Standardize, Normalize (default), Demean, or Descale.
 
--  `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
+-  `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features (defaults to AUTO):
 
   - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In Aggregator, the algorithm will automatically perform ``enum`` encoding.
-  - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels (default)
+  - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels 
   - ``binary``: No more than 32 columns per categorical feature
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
   - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
-  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during Aggregator training and only keep the **T** (1024) most frequent levels.
+  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during Aggregator training and only keep the **T** (10) most frequent levels.
 
 - **save_mapping_frame**: When this option is enabled, the mapping of rows in an aggregated frame to the one in the original/raw frame will be created and exported. This option is disabled by default.
 
@@ -65,15 +65,15 @@ Below is a simple example showing how to build a Aggregator model.
 
         # Create a random frame with 5 columns and 100 rows
         df <- h2o.createFrame(
-          rows=100,
-          cols=5,
-          categorical_fraction=0.6,
-          integer_fraction=0,
-          binary_fraction=0,
-          real_range=100,
-          integer_range=100,
-          missing_fraction=0,
-          seed=123
+          rows = 100,
+          cols = 5,
+          categorical_fraction = 0.6,
+          integer_fraction = 0,
+          binary_fraction = 0,
+          real_range = 100,
+          integer_range = 100,
+          missing_fraction = 0,
+          seed = 123
         )
 
         # View the dataframe
@@ -89,13 +89,13 @@ Below is a simple example showing how to build a Aggregator model.
         [100 rows x 5 columns]
 
         # Build an aggregated frame using eigan categorical encoding
-        target_num_exemplars=1000
-        rel_tol_num_exemplars=0.5
-        encoding="Eigen"
-        agg <- h2o.aggregator(training_frame=df, 
-                              target_num_exemplars=target_num_exemplars, 
-                              rel_tol_num_exemplars=rel_tol_num_exemplars, 
-                              categorical_encoding=encoding)
+        target_num_exemplars <- 1000
+        rel_tol_num_exemplars <- 0.5
+        encoding <- "Eigen"
+        agg <- h2o.aggregator(training_frame = df, 
+                              target_num_exemplars = target_num_exemplars, 
+                              rel_tol_num_exemplars = rel_tol_num_exemplars, 
+                              categorical_encoding = encoding)
 
         # Use the aggregated frame to create a new dataframe 
         new_df <- h2o.aggregated_frame(agg)

@@ -68,11 +68,14 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   final int _numLeafs;
   final IcedBitSet _activeCols;
   final int _respIdx;
+  final int _predsIdx;
 
-  public ScoreBuildHistogram2(H2O.H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram[][] hcs, DistributionFamily family, int respIdx, int weightIdx, int workIdx, int nidIdxs) {
+  public ScoreBuildHistogram2(H2O.H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram[][] hcs, DistributionFamily family, 
+                              int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdxs) {
     super(cc, k, ncols, nbins, nbins_cats, tree, leaf, hcs, family, weightIdx, workIdx, nidIdxs);
     _numLeafs = _hcs.length;
     _respIdx = respIdx;
+    _predsIdx = predsIdx;
 
     int hcslen = _hcs.length;
     IcedBitSet activeCols = new IcedBitSet(ncols);
@@ -297,19 +300,22 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
 
     @Override
     protected void map(int id){
-      double [] cs = null;
-      double [] resp = null;
+      double[] cs = null;
+      double[] resp = null;
+      double[] preds = null;
       for(int i = _cidx.getAndIncrement(); i < _cids.length; i = _cidx.getAndIncrement()) {
         if (cs == null) {
           cs = MemoryManager.malloc8d(_maxChunkSz);
           if (_respIdx >= 0)
-          resp = MemoryManager.malloc8d(_maxChunkSz);
+            resp = MemoryManager.malloc8d(_maxChunkSz);
+          if (_predsIdx >= 0)
+            preds = MemoryManager.malloc8d(_maxChunkSz);
         }
-        computeChunk(i, cs, _ws[i], resp);
+        computeChunk(i, cs, _ws[i], resp, preds);
       }
     }
 
-    private void computeChunk(int id, double[] cs, double[] ws, double[] resp){
+    private void computeChunk(int id, double[] cs, double[] ws, double[] resp, double[] preds){
       int [] nh = _nhs[id];
       int [] rs = _rss[id];
       Chunk resChk = _chks[id][_workIdx];
@@ -328,12 +334,15 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           if (h._vals == null) h.init();
           if (! extracted) {
             _chks[id][_col].getDoubles(cs, 0, len);
-            if (h._vals_dim == 6) {
+            if (h._vals_dim >= 6) {
               _chks[id][_respIdx].getDoubles(resp, 0, len);
+              if (h._vals_dim == 7) {
+                _chks[id][_predsIdx].getDoubles(preds, 0, len);
+              }
             }
             extracted = true;
           }
-          h.updateHisto(ws, resp, cs, ys, rs, hi, lo);
+          h.updateHisto(ws, resp, cs, ys, preds, rs, hi, lo);
         }
       }
     }

@@ -3,11 +3,17 @@ package ai.h2o.automl.modeling;
 import ai.h2o.automl.*;
 import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.events.EventLogEntry;
+import ai.h2o.automl.preprocessing.PreprocessingConfig;
+import ai.h2o.automl.preprocessing.PreprocessingStepDefinition;
+import ai.h2o.automl.preprocessing.TargetEncoding;
+import hex.KeyValue;
 import hex.Model;
 import hex.ensemble.StackedEnsembleModel;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
+import water.DKV;
 import water.Job;
 import water.Key;
+import water.util.PojoUtils;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -28,6 +34,29 @@ public class StackedEnsembleStepsProvider
             StackedEnsembleModelStep(String id, int weight, AutoML autoML) {
                 super(Algo.StackedEnsemble, id, weight, autoML);
                 _ignoredConstraints = new AutoML.Constraint[] {AutoML.Constraint.TIMEOUT, AutoML.Constraint.MODEL_COUNT};
+            }
+
+            @Override
+            protected void setCrossValidationParams(Model.Parameters params) {
+                //added in the stack: we could probably move this here.
+            }
+
+            @Override
+            protected void setWeightingParams(Model.Parameters params) {
+                //Disabled: StackedEnsemble doesn't support weights in score0? 
+            }
+
+            @Override
+            protected void setClassBalancingParams(Model.Parameters params) {
+                //Disabled
+            }
+
+            @Override
+            protected PreprocessingConfig getPreprocessingConfig() {
+                //SE should not have TE applied, the base models already do it.
+                PreprocessingConfig config = super.getPreprocessingConfig();
+                config.put(TargetEncoding.CONFIG_ENABLED, false);
+                return config;
             }
 
             @Override
@@ -66,9 +95,15 @@ public class StackedEnsembleStepsProvider
             }
 
             Job<StackedEnsembleModel> stack(String modelName, Key<Model>[] baseModels, boolean isLast) {
+                StackedEnsembleParameters stackedEnsembleParameters = getStackedEnsembleParameters(baseModels, isLast);
+                Key<StackedEnsembleModel> modelKey = makeKey(modelName, false);
+                return trainModel(modelKey, stackedEnsembleParameters);
+            }
+
+            protected StackedEnsembleParameters getStackedEnsembleParameters(Key<Model>[] baseModels, boolean isLast) {
                 AutoMLBuildSpec buildSpec = aml().getBuildSpec();
                 // Set up Stacked Ensemble
-                StackedEnsembleModel.StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleParameters();
+                StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleParameters();
                 stackedEnsembleParameters._base_models = baseModels;
                 stackedEnsembleParameters._valid = (aml().getValidationFrame() == null ? null : aml().getValidationFrame()._key);
                 stackedEnsembleParameters._blending = (aml().getBlendingFrame() == null ? null : aml().getBlendingFrame()._key);
@@ -81,9 +116,7 @@ public class StackedEnsembleStepsProvider
                 stackedEnsembleParameters.initMetalearnerParams();
                 stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
                 stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_predictions = buildSpec.build_control.keep_cross_validation_predictions;
-
-                Key<StackedEnsembleModel> modelKey = makeKey(modelName, false);
-                return trainModel(modelKey, stackedEnsembleParameters);
+                return stackedEnsembleParameters;
             }
 
         }
@@ -128,6 +161,59 @@ public class StackedEnsembleStepsProvider
                     @Override
                     protected Job<StackedEnsembleModel> startJob() {
                         return stack(_algo+"_AllModels", getBaseModels(), true);
+                    }
+                },
+                new StackedEnsembleModelStep("monotonic", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
+                    { _description = _description+" (built using monotonically constrained AutoML models)"; }
+
+                    boolean hasMonotoneConstrains(Key<Model> modelKey) {
+                        Model model = DKV.getGet(modelKey);
+                        try {
+                            KeyValue[] mc = (KeyValue[]) PojoUtils.getFieldValue(
+                                    model._parms, "_monotone_constraints",
+                                    PojoUtils.FieldNaming.CONSISTENT);
+                            return mc != null && mc.length > 0;
+                        } catch (IllegalArgumentException e) {
+                            return false;
+                        }
+                    }
+
+                    @Override
+                    protected boolean canRun() {
+                        boolean canRun = super.canRun();
+                        if (!canRun) return false;
+                        int monotoneModels=0;
+                        for (Key<Model> modelKey: getTrainedModelsKeys()) {
+                            if (hasMonotoneConstrains(modelKey))
+                                monotoneModels++;
+                            if (monotoneModels >= 2)
+                                return true;
+                        }
+                        if (monotoneModels == 1) {
+                            aml().job().update(getAllocatedWork().consume(),
+                                    "Only one monotonic base model; skipping this StackedEnsemble");
+                            aml().eventLog().info(EventLogEntry.Stage.ModelTraining,
+                                    String.format("Skipping StackedEnsemble '%s' since there is only one monotonic model to stack", _id));
+                        } else {
+                            aml().job().update(getAllocatedWork().consume(),
+                                    "No monotonic base model; skipping this StackedEnsemble");
+                            aml().eventLog().info(EventLogEntry.Stage.ModelTraining,
+                                    String.format("Skipping StackedEnsemble '%s' since there is no monotonic model to stack", _id));
+                        }
+                        return false;
+                    }
+
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    protected Key<Model>[] getBaseModels() {
+                        return Stream.of(getTrainedModelsKeys())
+                                .filter(k -> !isStackedEnsemble(k) && hasMonotoneConstrains(k))
+                                .toArray(Key[]::new);
+                    }
+
+                    @Override
+                    protected Job<StackedEnsembleModel> startJob() {
+                        return stack(_algo + "_Monotonic", getBaseModels(), true);
                     }
                 },
         };

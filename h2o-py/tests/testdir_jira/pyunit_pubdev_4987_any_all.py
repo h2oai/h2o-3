@@ -23,7 +23,5 @@ def h2o_H2OFrame_all():
     assert not(h2oframe.all()), "h2o.H2OFrame.all() command is not working." # all elements are false or NA
     assert h2oframe.any(), "h2o.H2OFrame.any() command is not working." # all elements are true or NA
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_all())
-else:
-    h2o_H2OFrame_all()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_all)

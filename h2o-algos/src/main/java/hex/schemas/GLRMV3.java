@@ -20,7 +20,8 @@ public class GLRMV3 extends ModelBuilderSchema<GLRM, GLRMV3, GLRMV3.GLRMParamete
         "validation_frame",
         "ignored_columns",
         "ignore_const_cols",
-        "score_each_iteration",
+        "score_each_iteration", 
+        "representation_name",
         "loading_name",
         "transform",
         "k",
@@ -109,8 +110,12 @@ public class GLRMV3 extends ModelBuilderSchema<GLRM, GLRMV3, GLRMV3.GLRMParamete
     @API(help = "User-specified initial X")
     public KeyV3.FrameKeyV3 user_x;
 
-    @API(help = "Frame key to save resulting X")
+
+    @API(help = "[Deprecated] Use representation_name instead.  Frame key to save resulting X.")
     public String loading_name;
+
+    @API(help = "Frame key to save resulting X")
+    public String representation_name;
 
     @API(help = "Expand categorical columns in user-specified initial Y")
     public boolean expand_user_y;

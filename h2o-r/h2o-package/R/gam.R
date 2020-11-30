@@ -37,8 +37,8 @@
 #'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
 #'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param family Family. Use binomial for classification with logistic regression, others are for regression problems. Must be
-#'        one of: "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie",
-#'        "negativebinomial", "fractionalbinomial".
+#'        one of: "AUTO", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma",
+#'        "tweedie", "negativebinomial", "fractionalbinomial". Defaults to AUTO.
 #' @param tweedie_variance_power Tweedie variance power Defaults to 0.
 #' @param tweedie_link_power Tweedie link power Defaults to 0.
 #' @param theta Theta Defaults to 0.
@@ -79,8 +79,12 @@
 #'        is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
 #'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.
 #' @param link Link function. Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit".
+#'        Defaults to family_default.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
+#' @param cold_start \code{Logical}. Only applicable to multiple alpha/lambda values when calling GLM from GAM.  If false, build
+#'        the next model for next set of alpha/lambda values starting from the values provided by current model.  If
+#'        true will start GLM model from scratch. Defaults to FALSE.
 #' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
 #'        coefficients to zero). Default indicates: if the number of observations is greater than the number of
 #'        variables, then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of
@@ -93,14 +97,21 @@
 #' @param interaction_pairs A list of pairwise (first order) column interactions.
 #' @param obj_reg Likelihood divider in objective value computation, default is 1/nobs Defaults to -1.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
+#'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
+#'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
+#'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
+#'        "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing".
+#'        Defaults to AUTO.
+#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
+#'        much) Defaults to 0.001.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
-#' @param max_hit_ratio_k Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-#'        Defaults to 0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param num_knots Number of knots for gam predictors
@@ -117,7 +128,7 @@
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' prostate$CAPSULE <- as.factor(prostate$CAPSULE)
 #' h2o.gam(y = "CAPSULE", x = c("RACE"), gam_columns = c("PSA"),
-#'      training_frame = prostate,family = "binomial")
+#'      training_frame = prostate, family = "binomial")
 #' 
 #' }
 #' @export
@@ -138,7 +149,7 @@ h2o.gam <- function(x,
                     score_each_iteration = FALSE,
                     offset_column = NULL,
                     weights_column = NULL,
-                    family = c("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"),
+                    family = c("AUTO", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"),
                     tweedie_variance_power = 0,
                     tweedie_link_power = 0,
                     theta = 0,
@@ -161,6 +172,7 @@ h2o.gam <- function(x,
                     gradient_epsilon = -1,
                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
                     prior = -1,
+                    cold_start = FALSE,
                     lambda_min_ratio = -1,
                     beta_constraints = NULL,
                     max_active_predictors = -1,
@@ -168,10 +180,12 @@ h2o.gam <- function(x,
                     interaction_pairs = NULL,
                     obj_reg = -1,
                     export_checkpoints_dir = NULL,
+                    stopping_rounds = 0,
+                    stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
+                    stopping_tolerance = 0.001,
                     balance_classes = FALSE,
                     class_sampling_factors = NULL,
                     max_after_balance_size = 5.0,
-                    max_hit_ratio_k = 0,
                     max_runtime_secs = 0,
                     custom_metric_func = NULL,
                     num_knots = NULL,
@@ -218,6 +232,7 @@ h2o.gam <- function(x,
   if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  if( !missing(gam_columns) && !is.null(gam_columns)) args$x_ignore <- args$x_ignore[!( args$x_ignore %in% gam_columns )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   parms$gam_columns <- gam_columns
@@ -290,6 +305,8 @@ h2o.gam <- function(x,
     parms$link <- link
   if (!missing(prior))
     parms$prior <- prior
+  if (!missing(cold_start))
+    parms$cold_start <- cold_start
   if (!missing(lambda_min_ratio))
     parms$lambda_min_ratio <- lambda_min_ratio
   if (!missing(max_active_predictors))
@@ -300,14 +317,18 @@ h2o.gam <- function(x,
     parms$obj_reg <- obj_reg
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(stopping_rounds))
+    parms$stopping_rounds <- stopping_rounds
+  if (!missing(stopping_metric))
+    parms$stopping_metric <- stopping_metric
+  if (!missing(stopping_tolerance))
+    parms$stopping_tolerance <- stopping_tolerance
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))
     parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
-  if (!missing(max_hit_ratio_k))
-    parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(custom_metric_func))
@@ -368,7 +389,7 @@ h2o.gam <- function(x,
                                     score_each_iteration = FALSE,
                                     offset_column = NULL,
                                     weights_column = NULL,
-                                    family = c("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"),
+                                    family = c("AUTO", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"),
                                     tweedie_variance_power = 0,
                                     tweedie_link_power = 0,
                                     theta = 0,
@@ -391,6 +412,7 @@ h2o.gam <- function(x,
                                     gradient_epsilon = -1,
                                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
                                     prior = -1,
+                                    cold_start = FALSE,
                                     lambda_min_ratio = -1,
                                     beta_constraints = NULL,
                                     max_active_predictors = -1,
@@ -398,10 +420,12 @@ h2o.gam <- function(x,
                                     interaction_pairs = NULL,
                                     obj_reg = -1,
                                     export_checkpoints_dir = NULL,
+                                    stopping_rounds = 0,
+                                    stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
+                                    stopping_tolerance = 0.001,
                                     balance_classes = FALSE,
                                     class_sampling_factors = NULL,
                                     max_after_balance_size = 5.0,
-                                    max_hit_ratio_k = 0,
                                     max_runtime_secs = 0,
                                     custom_metric_func = NULL,
                                     num_knots = NULL,
@@ -455,6 +479,7 @@ h2o.gam <- function(x,
   if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  if( !missing(gam_columns) && !is.null(gam_columns)) args$x_ignore <- args$x_ignore[!( args$x_ignore %in% gam_columns )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   parms$gam_columns <- gam_columns
@@ -525,6 +550,8 @@ h2o.gam <- function(x,
     parms$link <- link
   if (!missing(prior))
     parms$prior <- prior
+  if (!missing(cold_start))
+    parms$cold_start <- cold_start
   if (!missing(lambda_min_ratio))
     parms$lambda_min_ratio <- lambda_min_ratio
   if (!missing(max_active_predictors))
@@ -535,14 +562,18 @@ h2o.gam <- function(x,
     parms$obj_reg <- obj_reg
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(stopping_rounds))
+    parms$stopping_rounds <- stopping_rounds
+  if (!missing(stopping_metric))
+    parms$stopping_metric <- stopping_metric
+  if (!missing(stopping_tolerance))
+    parms$stopping_tolerance <- stopping_tolerance
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))
     parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
-  if (!missing(max_hit_ratio_k))
-    parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(custom_metric_func))

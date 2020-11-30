@@ -1,30 +1,35 @@
 package water.fvec;
 
-import org.junit.*;
+import org.apache.commons.io.IOUtils;
+import org.junit.Assume;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import water.*;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.*;
 
 /**
  * Tests for Frame.java
  */
-public class FrameTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(2)
+public class FrameTest {
   
   @Rule
   public transient ExpectedException ee = ExpectedException.none();
   
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
-
   @Test
   public void testNonEmptyChunks() {
     try {
@@ -202,6 +207,14 @@ public class FrameTest extends TestUtil {
       Scope.exit();
     }
   }
+  
+  private static class DoubleColTask extends MRTask {
+    @Override
+    public void map(Chunk c, NewChunk nc) {
+      for (int i = 0; i < c._len; i++)
+        nc.addNum(c.atd(i));
+    }
+  }
 
   @Test
   public void testFinalizePartialFrameRemovesTrailingChunks() {
@@ -226,13 +239,7 @@ public class FrameTest extends TestUtil {
       final long[] expectedESPC = new long[]{0, 0, 1, 1, 4, 6};
       assertArrayEquals(expectedESPC, f.anyVec().espc());
 
-      Frame f2 = Scope.track(new MRTask(){
-        @Override
-        public void map(Chunk c, NewChunk nc) {
-          for (int i = 0; i < c._len; i++)
-            nc.addNum(c.atd(i));
-        }
-      }.doAll(Vec.T_NUM, f).outputFrame());
+      Frame f2 = Scope.track(new DoubleColTask().doAll(Vec.T_NUM, f).outputFrame());
 
       // the ESPC is the same
       assertArrayEquals(expectedESPC, f2.anyVec().espc());
@@ -346,12 +353,15 @@ public class FrameTest extends TestUtil {
       @Override
       public InputStream toCSV(CSVStreamParams parms) {
         assertEquals(headers, parms._headers);
-        assertEquals(hex_string, parms._hex_string);
+        assertEquals(hex_string, parms._hexString);
         return invoked;
       }
     };
 
-    InputStream wasInvoked = f.toCSV(headers, hex_string);
+    Frame.CSVStreamParams params = new Frame.CSVStreamParams()
+        .setHeaders(headers)
+        .setHexString(hex_string);
+    InputStream wasInvoked = f.toCSV(params);
 
     assertSame(invoked, wasInvoked); // just make sure the asserts were actually called
   }
@@ -406,4 +416,39 @@ public class FrameTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testToCSV_noHeader() throws IOException {
+    Scope.enter();
+    try {
+      Frame fr = TestFrameCatalog.oneChunkFewRows();
+      Frame.CSVStreamParams parms_no_header = new Frame.CSVStreamParams()
+              .noHeader();
+      assertFalse(parms_no_header._headers);
+      try (Frame.CSVStream stream = (Frame.CSVStream) fr.toCSV(parms_no_header)) {
+        String firstLine = IOUtils.lineIterator(stream, Charset.defaultCharset()).nextLine();
+        assertEquals("1.2,-1,\"a\",\"y\"", firstLine);
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testToCSV_noQuotesHeader() throws IOException {
+    Scope.enter();
+    try {
+      Frame fr = TestFrameCatalog.oneChunkFewRows();
+      Frame.CSVStreamParams parms_no_quotes = new Frame.CSVStreamParams()
+              .setQuoteColumnNames(false);
+      assertFalse(parms_no_quotes._quoteColumnNames);
+      try (Frame.CSVStream stream = (Frame.CSVStream) fr.toCSV(parms_no_quotes)) {
+        String firstLine = IOUtils.lineIterator(stream, Charset.defaultCharset()).nextLine();
+        assertEquals("col_0,col_1,col_2,col_3", firstLine);
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

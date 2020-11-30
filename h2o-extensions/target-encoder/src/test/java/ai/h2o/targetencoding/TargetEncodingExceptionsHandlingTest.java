@@ -1,256 +1,100 @@
 package ai.h2o.targetencoding;
 
-import org.junit.After;
-import org.junit.BeforeClass;
+import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
+import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-
-import java.util.Map;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
  * This test is checking for data leakage in case of exception during execution.
  */
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class TargetEncodingExceptionsHandlingTest extends TestUtil {
 
-
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
-
-  private Frame fr = null;
-
   @Test
-  public void exceptionInPrepareEncodingTest() {
-    fr = new TestFrameBuilder()
-            .withName("testFrame")
-            .withColNames("ColA", "ColB", "fold_column")
-            .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
-            .withDataForCol(0, ar("a", "b", "b", "b"))
-            .withDataForCol(1, ar("2", "6", "6", "6"))
-            .withDataForCol(2, ar(1, 2, 2, 3))
-            .build();
-
-    String[] teColumns = {"ColA"};
-    String targetColumnName = "ColB";
-    String foldColumnName = "fold_column";
-    int targetIndex = fr.find(targetColumnName);
-
-    TargetEncoder tec = new TargetEncoder(teColumns);
-    TargetEncoder tecSpy = spy(tec);
-
-    doThrow(new IllegalStateException("Fake exception")).when(tecSpy).filterOutNAsFromTargetColumn(fr, targetIndex);
-
-    Map<String, Frame> targetEncodingMap = null;
+  public void test_exception_handling_during_training() {
     try {
-      targetEncodingMap = tecSpy.prepareEncodingMap(fr, targetColumnName, foldColumnName);
-      fail();
-    } catch (IllegalStateException ex) {
-      assertEquals("Fake exception", ex.getMessage());
-    }
+      Scope.enter();
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("categorical", "target", "foldc")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "b", "b"))
+              .withDataForCol(1, ar("N", "Y", "Y", "Y"))
+              .withDataForCol(2, ar(1, 2, 2, 3))
+              .build(); //auto-track
 
-    if(targetEncodingMap != null) encodingMapCleanUp(targetEncodingMap);
+      TargetEncoderParameters teParams = new TargetEncoderParameters();
+      teParams._train = fr._key;
+      teParams._response_column = "target";
+      teParams._fold_column = "foldc";
+      teParams._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
+      teParams._seed = 42;
+      
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoder teSpy = spy(te);
+      doNothing().when(teSpy).init(true); // this won't initialize columns to encode and throw a NPE later during training
+      
+      try {
+        Scope.track_generic(teSpy.trainModel().get());
+        fail("should not be raised");
+      } catch (NullPointerException ex) {
+        assertEquals("prepareEncodingMap", ex.getStackTrace()[0].getMethodName());
+      }
+    } finally {
+      Scope.exit();
+    }
   }
 
   @Test
-  public void exceptionInPrepareEncodingAtTheEndTest() {
-    fr = new TestFrameBuilder()
-            .withName("testFrame")
-            .withColNames("ColA", "ColB", "fold_column")
-            .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
-            .withDataForCol(0, ar("a", "b", "b", "b"))
-            .withDataForCol(1, ar("2", "6", "6", "6"))
-            .withDataForCol(2, ar(1, 2, 2, 3))
-            .build();
+  public void test_exception_handling_during_predictions() {
+      try {
+        Scope.enter();
+        Frame fr = new TestFrameBuilder()
+                .withName("testFrame")
+                .withColNames("categorical", "target", "foldc")
+                .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
+                .withDataForCol(0, ar("a", "b", "b", "b"))
+                .withDataForCol(1, ar("N", "Y", "Y", "Y"))
+                .withDataForCol(2, ar(1, 2, 2, 3))
+                .build(); //auto-track
 
-    String[] teColumns = {"ColA"};
-    String targetColumnName = "ColB";
-    String foldColumnName = "fold_column";
-    int targetIndex = fr.find(targetColumnName);
+        TargetEncoderParameters teParams = new TargetEncoderParameters();
+        teParams._train = fr._key;
+        teParams._response_column = "target";
+        teParams._fold_column = "foldc";
+        teParams._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
+        teParams._seed = 42;
 
-    TargetEncoder tec = new TargetEncoder(teColumns);
-    TargetEncoder tecSpy = spy(tec);
+        TargetEncoder te = new TargetEncoder(teParams);
+        TargetEncoderModel teModel = te.trainModel().get();
+        Scope.track_generic(teModel);
+        
+        // modifying encodings after training to cause an exception when applying the model.
+        Frame encodings = teModel._output._target_encoding_map.get("categorical");
+        Scope.track(encodings.remove(TargetEncoderHelper.NUMERATOR_COL));
 
-    doThrow(new IllegalStateException("Fake exception")).when(tecSpy)
-            .groupThenAggregateForNumeratorAndDenominator(any(Frame.class), eq(teColumns[0]), eq(foldColumnName), eq(targetIndex));
-
-    Map<String, Frame> targetEncodingMap = null;
-    try {
-      targetEncodingMap = tecSpy.prepareEncodingMap(fr, targetColumnName, foldColumnName);
-      fail();
-    } catch (IllegalStateException ex) {
-      assertEquals("Fake exception", ex.getMessage());
-    }
-
-    if(targetEncodingMap != null) encodingMapCleanUp(targetEncodingMap);
+        try {
+          Scope.track(teModel.score(fr));
+          fail("should not be raised");
+        } catch (AssertionError ex) {
+          assertEquals("groupEncodingsByCategory", ex.getStackTrace()[0].getMethodName());
+        }
+      } finally {
+        Scope.exit();
+      }
   }
-
-  @Test
-  public void exceptionInApplyEncodingKFOLDInsideCycleTest() {
-    fr = new TestFrameBuilder()
-            .withName("testFrame")
-            .withColNames("ColA", "ColB", "fold_column")
-            .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
-            .withDataForCol(0, ar("a", "b", "b", "b"))
-            .withDataForCol(1, ar("2", "6", "6", "6"))
-            .withDataForCol(2, ar(1, 2, 2, 3))
-            .build();
-
-    String[] teColumns = {"ColA"};
-    String targetColumnName = "ColB";
-    String foldColumnName = "fold_column";
-
-    TargetEncoder tec = new TargetEncoder(teColumns);
-    TargetEncoder tecSpy = spy(tec);
-
-    Map<String, Frame> targetEncodingMap = tecSpy.prepareEncodingMap(fr, targetColumnName, foldColumnName);
-
-    Frame resultWithEncoding = null;
-
-      doThrow(new IllegalStateException("Fake exception")).when(tecSpy).getOutOfFoldData(any(Frame.class), eq(foldColumnName), anyLong());
-
-    try {
-      resultWithEncoding = tecSpy.applyTargetEncoding(fr, targetColumnName, targetEncodingMap,
-              TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, false, 0, false,
-              TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
-      fail();
-    } catch (IllegalStateException ex) {
-      assertEquals("Fake exception", ex.getMessage());
-    }
-
-    if(resultWithEncoding != null) resultWithEncoding.delete();
-    if(targetEncodingMap != null) encodingMapCleanUp(targetEncodingMap);
-  }
-
-  @Test
-  public void exceptionInApplyEncodingKFOLDTest() {
-    fr = new TestFrameBuilder()
-            .withName("testFrame")
-            .withColNames("ColA", "ColB", "fold_column")
-            .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
-            .withDataForCol(0, ar("a", "b", "b", "b"))
-            .withDataForCol(1, ar("2", "6", "6", "6"))
-            .withDataForCol(2, ar(1, 2, 2, 3))
-            .build();
-
-    String[] teColumns = {"ColA"};
-    String targetColumnName = "ColB";
-    String foldColumnName = "fold_column";
-
-    TargetEncoder tec = new TargetEncoder(teColumns);
-    TargetEncoder tecSpy = spy(tec);
-
-    Map<String, Frame> targetEncodingMap = tecSpy.prepareEncodingMap(fr, targetColumnName, foldColumnName);
-
-    Frame resultWithEncoding = null;
-
-    doThrow(new IllegalStateException("Fake exception")).when(tecSpy).removeNumeratorAndDenominatorColumns(any(Frame.class));
-
-    try {
-      resultWithEncoding = tecSpy.applyTargetEncoding(fr, targetColumnName, targetEncodingMap,
-              TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, false, 0, false,
-              TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
-      fail();
-    } catch (IllegalStateException ex) {
-      assertEquals("Fake exception", ex.getMessage());
-    }
-
-    if(resultWithEncoding != null) resultWithEncoding.delete();
-    if(targetEncodingMap != null) encodingMapCleanUp(targetEncodingMap);
-  }
-
-  @Test
-  public void exceptionIsNotCausingKeysLeakageInApplyEncodingLOOTest() {
-    fr = new TestFrameBuilder()
-            .withName("testFrame")
-            .withColNames("ColA", "ColB")
-            .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-            .withDataForCol(0, ar("a", "b", "b", "b"))
-            .withDataForCol(1, ar("2", "6", "6", "6"))
-            .build();
-
-    String[] teColumns = {"ColA"};
-    String targetColumnName = "ColB";
-
-    TargetEncoder tec = new TargetEncoder(teColumns);
-    TargetEncoder tecSpy = spy(tec);
-
-    Map<String, Frame> targetEncodingMap = tecSpy.prepareEncodingMap(fr, targetColumnName, null);
-
-    Frame resultWithEncoding = null;
-
-    // In most cases it is better to throw exception at the end of the logic we are going to test.
-    // This way we will create as much objects/frames as possible prior to the exception.
-    doThrow(new IllegalStateException("Fake exception")).when(tecSpy).removeNumeratorAndDenominatorColumns(any(Frame.class));
-
-    try {
-      resultWithEncoding = tecSpy.applyTargetEncoding(fr, targetColumnName, targetEncodingMap,
-              TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false,
-              0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
-      fail();
-    } catch (IllegalStateException ex) {
-      assertEquals("Fake exception", ex.getMessage());
-    }
-
-    if(resultWithEncoding != null) resultWithEncoding.delete();
-    if(targetEncodingMap != null) encodingMapCleanUp(targetEncodingMap);
-  }
-
-  @Test
-  public void exceptionIsNotCausingKeysLeakageInApplyEncodingNoneTest() {
-    fr = new TestFrameBuilder()
-            .withName("testFrame")
-            .withColNames("ColA", "ColB")
-            .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-            .withDataForCol(0, ar("a", "b", "b", "b"))
-            .withDataForCol(1, ar("2", "6", "6", "6"))
-            .build();
-
-    String[] teColumns = {"ColA"};
-    String targetColumnName = "ColB";
-
-    TargetEncoder tec = new TargetEncoder(teColumns);
-    TargetEncoder tecSpy = spy(tec);
-
-    Map<String, Frame> targetEncodingMap = tecSpy.prepareEncodingMap(fr, targetColumnName, null);
-
-    Frame resultWithEncoding = null;
-
-    // In most cases it is better to throw exception at the end of the logic we are going to test.
-    // This way we will create as much objects/frames as possible prior to the exception.
-    doThrow(new IllegalStateException("Fake exception")).when(tecSpy).removeNumeratorAndDenominatorColumns(any(Frame.class));
-//    doThrow(new IllegalStateException("Fake exception")).when(tecSpy).foldColumnIsInEncodingMapCheck(nullable(String.class), any(Frame.class));
-
-    try {
-      resultWithEncoding = tecSpy.applyTargetEncoding(fr, targetColumnName, targetEncodingMap,
-              TargetEncoder.DataLeakageHandlingStrategy.None, false,
-              0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
-      fail();
-    } catch (IllegalStateException ex) {
-      assertEquals("Fake exception", ex.getMessage());
-    }
-
-    if(resultWithEncoding != null) resultWithEncoding.delete();
-    if(targetEncodingMap != null) encodingMapCleanUp(targetEncodingMap);
-  }
-
-  @After
-  public void afterEach() {
-    if (fr != null) fr.delete();
-  }
-
-  private void encodingMapCleanUp(Map<String, Frame> encodingMap) {
-    for (Map.Entry<String, Frame> map : encodingMap.entrySet()) {
-      map.getValue().delete();
-    }
-  }
-
+  
 }

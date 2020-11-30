@@ -23,7 +23,7 @@ Defining an XGBoost Model
 
 -  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate the accuracy of the model.
 
--  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation.
+-  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation (defaults to 0).
 
 -  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
@@ -31,13 +31,13 @@ Defining an XGBoost Model
 
 -  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
 
--  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation predictions.
+-  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation predictions (disabled by default).
 
--  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. 
+-  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment (disabled by default). 
 
--  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training.
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training (disabled by default).
 
--  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for **nfolds** is specified and **fold\_column** is not specified) Specify the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems).
+-  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for **nfolds** is specified and **fold\_column** is not specified) Specify the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems). This value defaults to AUTO.
 
 -  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the cross-validation fold index assignment per observation.
 
@@ -86,7 +86,7 @@ Defining an XGBoost Model
 
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. This option defaults to 0 (disabled) by default.
 
--  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. Also useful when you want to use ``exact`` tree method.
+-  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. Also useful when you want to use ``exact`` tree method. This value is disabled by default.
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to -1 (time-based random number).
 
@@ -109,12 +109,9 @@ Defining an XGBoost Model
   - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels
   - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels
   - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
-  - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
   - ``label_encoder`` or ``LabelEncoder``: Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.) 
   - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. 
-  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** (1024) most frequent levels, and then internally do one hot encoding in the case of XGBoost.
-
-  **Note**: This value defaults to ``label_encoder``. Similarly, if ``auto`` is specified, then the algorithm performs ``label_encoder`` encoding. 
+  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** (10) most frequent levels, and then internally do one hot encoding in the case of XGBoost.
 
 -  **quiet_mode**: Specify whether to enable quiet mode. This option is enabled by default.
 
@@ -130,11 +127,15 @@ Defining an XGBoost Model
 
 -  `col_sample_rate <algo-params/col_sample_rate.html>`__ (alias: ``colsample_bylevel``): Specify the column sampling rate (y-axis) for each split in each level. (Note that this method is sample without replacement.) This value defaults to 1.0, and the range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
--  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__ (alias: ``colsample_bytree``: Specify the column subsampling rate per tree. (Note that this method is sample without replacement.) This value defaults to 1.0 and can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
+-  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__ (alias: ``colsample_bytree``): Specify the column subsampling rate per tree. (Note that this method is sample without replacement.) This value defaults to 1.0 and can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate`` and ``colsample_bynode``, so setting all parameters to 0.8, for example, results in 51% of columns being considered at any given node to split.
+
+-  `colsample_bynode <algo-params/colsample_bynode.html>`__: Specify the column subsampling rate per tree node. (Note that this method is sample without replacement.) This value defaults to 1.0 and can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate`` and ``col_sample_rate_per_tree``, so setting all parameters to 0.8, for example, results in 51% of columns being considered at any given node to split.
 
 -  `max_abs_leafnode_pred <algo-params/max_abs_leafnode_pred.html>`__ (alias: ``max_delta_step``): Specifies the maximum delta step allowed in each tree’s weight estimation. This value defaults to 0. Setting this value to 0 specifies no constraint. Setting this value to be greater than 0 can help making the update step more conservative and reduce overfitting by limiting the absolute value of a leafe node prediction. This option also helps in logistic regression when a class is extremely imbalanced. 
 
--  `monotone_constraints <algo-params/monotone_constraints.html>`__: A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns. Also note that this option can only be used when the distribution is either ``gaussian`` or ``bernoulli``. A Python demo is available `here <https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/H2O_tutorial_gbm_monotonicity.ipynb>`__.
+-  `monotone_constraints <algo-params/monotone_constraints.html>`__: A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns. Also note that this option can only be used when the distribution is ``gaussian``, ``bernoulli``, or ``tweedie``. A Python demo is available `here <https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/H2O_tutorial_gbm_monotonicity.ipynb>`__.
+
+-  `interaction_constraints <algo-params/interaction_constraints.html>`__: Specify the feature column interactions which are allowed to interact during tree building. Use column names to define which features can interact together. 
 
 -  `score_tree_interval <algo-params/score_tree_interval.html>`__: Score the model after every so many trees. This value is set to 0 (disabled) by default.
 
@@ -154,10 +155,6 @@ Defining an XGBoost Model
 -  **max_bins**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the maximum number of bins for binning continuous features. This value defaults to 256.
 
 -  **max_leaves**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the maximum number of leaves to include each tree. This value defaults to 0.
-
--  **min_sum_hessian_in_leaf**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the mininum sum of hessian in a leaf to keep splitting. This value defaults to 100.
-
--  **min_data_in_leaf**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the mininum data in a leaf to keep splitting. This value defaults to 0.
 
 -  **booster**: Specify the booster type. This can be one of the following: ``gbtree``, ``gblinear``, or ``dart``. 
    Note that ``gbtree`` and ``dart`` use a tree-based model while ``gblinear`` uses linear function. This value 
@@ -204,6 +201,8 @@ Defining an XGBoost Model
 
 -  `calibration_frame <algo-params/calibration_frame.html>`__: Specifies the frame to be used for Platt scaling.
 
+- `gainslift_bins <algo-params/gainslift_bins.html>`__: The number of bins for a Gains/Lift table. The default value is ``-1`` and makes the binning automatic. To disable this feature, set to ``0``.
+
 
 "LightGBM" Emulation Mode Options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -219,8 +218,6 @@ When the above are configured, then the following additional "LightGBM" options 
 
 - ``max_bin``
 - ``max_leaves``
-- ``min_sum_hessian_in_leaf``
-- ``min_data_in_leaf``
 
 XGBoost Only Options
 ~~~~~~~~~~~~~~~~~~~~
@@ -255,9 +252,12 @@ GPU Support
 GPU support is available in H2O's XGBoost if the following requirements are met:
 
 - NVIDIA GPUs (GPU Cloud, DGX Station, DGX-1, or DGX-2)
-- CUDA 8
+- CUDA 9
 
-You can monitor your GPU utilization via the ``nvidia-smi`` command. Refer to https://developer.nvidia.com/nvidia-system-management-interface for more information.
+**Notes**:
+
+ - You can verify that your CUDA runtime version is CUDA 9 by typing ``ls /usr/local/cuda``. If this does not point to CUDA 9, and you have CUDA 9 installed, then create a symlink that points to CUDA 9.
+ - You can monitor your GPU utilization via the ``nvidia-smi`` command. Refer to https://developer.nvidia.com/nvidia-system-management-interface for more information.
 
 Limitations
 ~~~~~~~~~~~
@@ -308,6 +308,30 @@ Some environments may required disabling XGBoost. This can be done by setting ``
 
 Setting ``-Dsys.ai.h2o.ext.core.toggle.XGBoost`` to ``False`` can be done on any H2O version that supports XGBoost and removes XGBoost from the list of available algorithms. 
 
+XGBoost Feature Interactions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Ranks of features and feature interactions by various metrics implemented in `XGBFI <https://github.com/Far0n/xgbfi>`__ style.
+
+Metrics
+'''''''
+
+- **Gain:** Total gain of each feature or feature interaction
+- **FScore:** Amount of possible splits taken on a feature or feature interaction
+- **wFScore:** Amount of possible splits taken on a feature or feature interaction weighted by the probability of the splits to take place
+- **Average wFScore:** wFScore divided by FScore
+- **Average Gain:** Gain divided by FScore
+- **Expected Gain:** Total gain of each feature or feature interaction weighted by the probability to gather the gain
+- **Average Tree Index**
+- **Average Tree Depth**
+
+**Additional features:**
+
+- Leaf Statistics
+- Split Value Histograms
+
+Usage is illustrated in the Examples section.
+
 Examples
 ~~~~~~~~
 
@@ -328,9 +352,9 @@ Below is a simple example showing how to build a XGBoost model.
     response <- "survived"
 
     # Split the dataset into a train and valid set:
-    titanic.splits <- h2o.splitFrame(data =  titanic, ratios = .8, seed = 1234)
-    train <- titanic.splits[[1]]
-    valid <- titanic.splits[[2]]
+    titanic_splits <- h2o.splitFrame(data =  titanic, ratios = 0.8, seed = 1234)
+    train <- titanic_splits[[1]]
+    valid <- titanic_splits[[2]]
 
     # Build and train the model:
     titanic_xgb <- h2o.xgboost(x = predictors, 
@@ -346,6 +370,9 @@ Below is a simple example showing how to build a XGBoost model.
 
     # Generate predictions on a test set (if necessary):
     pred <- h2o.predict(titanic_xgb, newdata = valid)
+
+    # Extract feature interactions:
+    feature_interactions = h2o.feature_interaction(titanic_xgb)
 
 
    .. code-tab:: python
@@ -379,6 +406,9 @@ Below is a simple example showing how to build a XGBoost model.
 
     # Generate predictions on a test set (if necessary):
     pred = titanic_xgb.predict(valid)
+
+    # Extract feature interactions:
+    feature_interactions = titanic_xgb.feature_interaction()
   
 
 FAQs
