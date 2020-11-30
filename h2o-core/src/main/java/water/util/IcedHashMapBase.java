@@ -66,10 +66,10 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
   public boolean containsKey(Object key)                { return map().containsKey(key); }
   public boolean containsValue(Object value)            { return map().containsValue(value); }
   public V get(Object key)                              { return (V)map().get(key); }
-  public V put(K key, V value)                          { assert !_write_lock; return (V)map().put(key, value);}
-  public V remove(Object key)                           { assert !_write_lock; return map().remove(key); }
-  public void putAll(Map<? extends K, ? extends V> m)   { assert !_write_lock;        map().putAll(m); }
-  public void clear()                                   { assert !_write_lock;        map().clear(); }
+  public V put(K key, V value)                          { assert writeable(); return (V)map().put(key, value);}
+  public V remove(Object key)                           { assert writeable(); return map().remove(key); }
+  public void putAll(Map<? extends K, ? extends V> m)   { assert writeable();        map().putAll(m); }
+  public void clear()                                   { assert writeable();        map().clear(); }
   public Set<K> keySet()                                { return map().keySet(); }
   public Collection<V> values()                         { return map().values(); }
   public Set<Entry<K, V>> entrySet()                    { return map().entrySet(); }
@@ -158,6 +158,19 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
   }
 
   abstract protected Map<K,V> init();
+
+  /**
+   * Can the map be modified?
+   * 
+   * By default we don't make any assumptions about the implementation of the backing Map and we will write-lock
+   * the map when we are trying to serialize it. However, if the specific implementation knows it is safe to modify
+   * the map when it is being written, it can bypass the write-lock by overriding this method. 
+   * 
+   * @return true if map can be modified 
+   */
+  protected boolean writeable() {
+    return !_write_lock;
+  }
 
   protected void writeMap(AutoBuffer ab, byte mode) {
     KeyType keyType = keyType(mode);

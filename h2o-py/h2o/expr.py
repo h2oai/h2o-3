@@ -6,6 +6,7 @@ Rapids expressions. These are helper classes for H2OFrame.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import division, print_function, absolute_import, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 from collections import OrderedDict
 import copy
@@ -19,8 +20,6 @@ import tabulate
 
 import h2o
 from h2o.backend.connection import H2OConnectionError
-from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.compatibility import repr2, viewitems, viewvalues
 from h2o.utils.shared_utils import _is_fr, _py_tmp_key
 from h2o.model.model_base import ModelBase
 from h2o.expr_optimizer import optimize

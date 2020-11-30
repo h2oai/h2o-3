@@ -8,6 +8,7 @@ import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.params.AstConst;
 import water.rapids.ast.prims.advmath.*;
 import water.rapids.ast.prims.assign.*;
+import water.rapids.ast.prims.filters.dropduplicates.AstDropDuplicates;
 import water.rapids.ast.prims.math.*;
 import water.rapids.ast.prims.matrix.AstMMult;
 import water.rapids.ast.prims.matrix.AstTranspose;
@@ -227,6 +228,7 @@ public class Env extends Iced {
     init(new AstTable());
     init(new AstUnique());
     init(new AstVariance());
+    init(new AstTfIdf());
 
     // Generic data mungers
     init(new AstAnyFactor());
@@ -320,6 +322,9 @@ public class Env extends Iced {
     
     // Reset model threshold
     init(new AstModelResetThreshold());
+    
+    // Filters
+    init(new AstDropDuplicates());
     
     // Permutation Variable Importance
     init(new AstPermutationVarImp());

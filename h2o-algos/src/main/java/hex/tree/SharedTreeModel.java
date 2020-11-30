@@ -3,6 +3,7 @@ package hex.tree;
 import hex.*;
 
 import static hex.genmodel.GenModel.createAuxKey;
+import static hex.genmodel.algos.tree.SharedTreeMojoModel.__INTERNAL_MAX_TREE_DEPTH;
 
 import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
@@ -175,6 +176,21 @@ public abstract class SharedTreeModel<
       _modelClassDist = _priorClassDist;
     }
 
+    @Override
+    public TwoDimTable createInputFramesInformationTable(ModelBuilder modelBuilder) {
+      SharedTreeParameters params = (SharedTreeParameters) modelBuilder._parms;
+      TwoDimTable table = super.createInputFramesInformationTable(modelBuilder);
+      table.set(2, 0, "calibration_frame");
+      table.set(2, 1, params.getCalibrationFrame() != null ? params.getCalibrationFrame().checksum() : -1);
+      table.set(2, 2, params.getCalibrationFrame() != null ? Arrays.toString(params.getCalibrationFrame().anyVec().espc()) : -1);
+      return table;
+    }
+
+    @Override
+    public int getInformationTableNumRows() {
+      return super.getInformationTableNumRows() + 1;// +1 row for calibration frame
+    }
+
     // Append next set of K trees
     public void addKTrees( DTree[] trees) {
       // DEBUG: Print the generated K trees
@@ -252,7 +268,7 @@ public abstract class SharedTreeModel<
   }
 
   public static class BufStringDecisionPathTracker implements SharedTreeMojoModel.DecisionPathTracker<BufferedString> {
-    private final byte[] _buf = new byte[64];
+    private final byte[] _buf = new byte[__INTERNAL_MAX_TREE_DEPTH];
     private final BufferedString _bs = new BufferedString(_buf, 0, 0);
     private int _pos = 0;
     @Override
@@ -266,6 +282,10 @@ public abstract class SharedTreeModel<
       _bs.setLen(_pos);
       _pos = 0;
       return _bs;
+    }
+    @Override
+    public BufferedString invalidPath() {
+      return null;
     }
   }
 
@@ -345,9 +365,11 @@ public abstract class SharedTreeModel<
       // convert to categorical
       Vec vv;
       Vec[] nvecs = new Vec[res.vecs().length];
+      boolean hasInvalidPaths = false;
       for(int c=0;c<res.vecs().length;++c) {
         vv = res.vec(c);
         try {
+          hasInvalidPaths = hasInvalidPaths || vv.naCnt() > 0;
           nvecs[c] = vv.toCategoricalVec();
         } catch (Exception e) {
           VecUtils.deleteVecs(nvecs, c);
@@ -356,7 +378,13 @@ public abstract class SharedTreeModel<
       }
       res.delete();
       res = new Frame(destKey, names, nvecs);
-      DKV.put(res);
+      if (destKey != null) {
+        DKV.put(res);
+      }
+      if (hasInvalidPaths) {
+        Log.warn("Some of the leaf node assignments were skipped (NA), " +
+                "only tree-paths up to length 64 are supported.");
+      }
       return res;
     }
   }
@@ -386,7 +414,12 @@ public abstract class SharedTreeModel<
 
     @Override
     protected Frame execute(Frame adaptFrm, String[] names, Key<Frame> destKey) {
-      return doAll(names.length, Vec.T_NUM, adaptFrm).outputFrame(destKey, names, null);
+      Frame result = doAll(names.length, Vec.T_NUM, adaptFrm).outputFrame(destKey, names, null);
+      if (result.vec(0).min() < 0) {
+        Log.warn("Some of the observations were not assigned a Leaf Node ID (-1), " +
+                "only tree-paths up to length 64 are supported.");
+      }
+      return result;
     }
   }
 
@@ -665,30 +698,13 @@ public abstract class SharedTreeModel<
     sb.ip("public int nfeatures() { return " + _output.nfeatures() + "; }").nl();
     sb.ip("public int nclasses() { return " + _output.nclasses() + "; }").nl();
     if (encoding == CategoricalEncoding.Eigen) {
-      sb.ip("public double[] getOrigProjectionArray() { return " + toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
+      sb.ip("public double[] getOrigProjectionArray() { return " + PojoUtils.toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
     }
     if (encoding != CategoricalEncoding.AUTO) {
       sb.ip("public hex.genmodel.CategoricalEncoding getCategoricalEncoding() { return hex.genmodel.CategoricalEncoding." + 
               encoding.name() + "; }").nl();
     }
     return sb;
-  }
-  
-  String toJavaDoubleArray(double[] array) {
-    if (array == null) {
-      return "null";
-    }
-
-    SB sb = new SB();
-    sb.p("new double[] {");
-    for (int i = 0; i < array.length; i++) {
-      sb.p(" ");
-      sb.p(array[i]);
-      if (i < array.length - 1)
-        sb.p(",");
-    }
-    sb.p("}");
-    return sb.getContent();
   }
 
   @Override protected void toJavaPredictBody(SBPrintStream body,

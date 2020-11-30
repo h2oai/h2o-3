@@ -23,25 +23,25 @@ Defining a Word2vec Model
 
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. This option defaults to 0 (disabled) by default.
 
-- **min_word_freq**: Specify an integer for the minimum word frequency. Word2vec will discard words that appear less than this number of times.
+- **min_word_freq**: Specify an integer for the minimum word frequency. Word2vec will discard words that appear less than this number of times. This value defaults to 5.
 
-- **word_model**: Specify "SkipGram" to use the Skip-Gram model when producing a distributed representation of words. When enabled, the model uses each word to predict the surrounding window of context words. The skip-gram architecture weighs close context words more heavily than more distant context words. Using Skip-Gram can increase model build time but performs better for infrequently used words. Specify "CBOW" to use continuous bag-of-words model, in which case the surrounding context words are used without taking the distance into account.
+- **word_model**: Specify "SkipGram" (default) to use the Skip-Gram model when producing a distributed representation of words. When enabled, the model uses each word to predict the surrounding window of context words. The skip-gram architecture weighs close context words more heavily than more distant context words. Using Skip-Gram can increase model build time but performs better for infrequently used words. Specify "CBOW" to use continuous bag-of-words model, in which case the surrounding context words are used without taking the distance into account.
 
 - **norm_model**: Specify "HSM" to use Hierarchical Softmax. When enabled, Word2vec uses a `Huffman tree <https://en.wikipedia.org/wiki/Huffman_coding>`__ to reduce calculations when approximating the conditional log-likelihood that the model is attempting to maximize. This option is useful for infrequent words, but this option becomes less useful as training epochs increase. **NOTE**: This option is specified by default and cannot be disabled. It is currently the only approach supported in H2O. 
 
-- **vec_size**: Specify the size of word vectors.
+- **vec_size**: Specify the size of word vectors (defaults to 100).
 
-- **window_size**: This specifies the size of the context window around a given word. For example, consider the following string:
+- **window_size**: This specifies the size of the context window around a given word (defaults to 5). For example, consider the following string:
 
    "Lorem ipsum (dolor sit amet, quot hendrerit) pri cu,..."
 
   For a target word, "amet" and ``window size=2``, the context is made of words: dolor, sit, quot, hendrerit.
 
-- **sent_sample_rate**: Set the threshold for the occurrence of words. Those words that appear with higher frequency in the training data will be randomly down-sampled. An ideal range for this option 0, 1e-5.
+- **sent_sample_rate**: Set the threshold for the occurrence of words. Those words that appear with higher frequency in the training data will be randomly down-sampled. An ideal range for this option 0, 1e-5. This value defaults to 0.001.
 
-- **init_learning_rate**: Set the starting learning rate.
+- **init_learning_rate**: Set the starting learning rate (defaults to 0.025).
 
-- **epochs**: Specify the number of training iterations to run.
+- **epochs**: Specify the number of training iterations to run (defaults to 5).
 
 - **pre_trained**: Specify the ID of a data frame that contains a pre-trained (external) Word2vec model.
 
@@ -115,18 +115,16 @@ Below is a simple example showing how to build a Word2vec model.
    	h2o.init()
 
    	# Import the craigslist dataset into H2O:
-   	job.titles.path = "https://raw.githubusercontent.com/h2oai/sparkling-water/rel-1.6/examples/smalldata/craigslistJobTitles.csv"
-   	job.titles <- h2o.importFile(job.titles.path, 
-                                     destination_frame = "jobtitles", 
+   	job_title <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv",
                                      col.names = c("category", "jobtitle"), 
                                      col.types = c("Enum", "String"), 
                                      header = TRUE)
-   	STOP_WORDS = c("ax","i","you","edu","s","t","m","subject","can",
-                       "lines","re","what","there","all","we","one","the",
-                       "a","an","of","or","in","for","by","on","but","is",
-                       "in","a","not","with","as","was","if","they","are",
-                       "this","and","it","have","from","at","my","be","by",
-                       "not","that","to","from","com","org","like","likes",
+   	STOP_WORDS = c("ax", "i", "you", "edu", "s", "t", "m", "subject", "can", 
+                       "lines", "re", "what", "there", "all", "we", "one", "the", 
+                       "a", "an", "of", "or", "in", "for", "by", "on", "but", "is", 
+                       "in", "a", "not", "with", "as", "was", "if", "they", "are",
+                       "this", "and", "it", "have", "from", "at", "my", "be", "by",
+                       "not", "that", "to", "from", "com", "org", "like", "likes",
                        "so")
 
    	# Make the 'tokenize' function:
@@ -140,39 +138,39 @@ Below is a simple example showing how to build a Word2vec model.
    	}
 
    	# Make the 'predict' function:
-   	.predict <- function(job.title, w2v, gbm) {
-   		words <- tokenize(as.character(as.h2o(job.title)))
-   		job.title.vec <- h2o.transform(w2v, words, aggregate_method = "AVERAGE")
-   		h2o.predict(gbm, job.title.vec)
+   	.predict <- function(job_title, w2v, gbm) {
+   		words <- tokenize(as.character(as.h2o(job_title)))
+   		job_title_vec <- h2o.transform(w2v, words, aggregate_method = "AVERAGE")
+   		h2o.predict(gbm, job_title_vec)
    	}
 
    	# Break job titles into sequence of words:
-   	words <- tokenize(job.titles$jobtitle)
+   	words <- tokenize(job_titles$jobtitle)
 
    	# Build the word2vec model:
-   	w2v.model <- h2o.word2vec(words, sent_sample_rate = 0, epochs = 10)
+   	w2v_model <- h2o.word2vec(words, sent_sample_rate = 0, epochs = 10)
 
    	# Find synonyms for the word "teacher":
-   	print(h2o.findSynonyms(w2v.model, "teacher", count = 5))
+   	print(h2o.findSynonyms(w2v_model, "teacher", count = 5))
 
    	# Calculate a vector for each job title:
-   	job.title.vecs <- h2o.transform(w2v.model, words, aggregate_method = "AVERAGE")
+   	job_title_vecs <- h2o.transform(w2v_model, words, aggregate_method = "AVERAGE")
 
    	# Prepare training & validation data (keep only job titles made of known words):
-   	valid.job.titles <- ! is.na(job.title.vecs$C1)
-   	data <- h2o.cbind(job.titles[valid.job.titles, "category"], job.title.vecs[valid.job.titles, ])
-   	data.split <- h2o.splitFrame(data, ratios = 0.8)
+   	valid_job_titles <- ! is.na(job_title_vecs$C1)
+   	data <- h2o.cbind(job.titles[valid_job_titles, "category"], job_title_vecs[valid_job_titles, ])
+   	data_split <- h2o.splitFrame(data, ratios = 0.8)
 
    	# Build a basic GBM model:
-   	gbm.model <- h2o.gbm(x = names(job.title.vecs), 
+   	gbm_model <- h2o.gbm(x = names(job_title_vecs), 
                              y = "category", 
-                             training_frame = data.split[[1]], 
-                             validation_frame = data.split[[2]])
+                             training_frame = data_split[[1]], 
+                             validation_frame = data_split[[2]])
 
    	# Predict:
-   	print(.predict("school teacher having holidays every month", w2v.model, gbm.model))
-   	print(.predict("developer with 3+ Java experience, jumping", w2v.model, gbm.model))
-   	print(.predict("Financial accountant CPA preferred", w2v.model, gbm.model))
+   	print(.predict("school teacher having holidays every month", w2v_model, gbm_model))
+   	print(.predict("developer with 3+ Java experience, jumping", w2v_model, gbm_model))
+   	print(.predict("Financial accountant CPA preferred", w2v_model, gbm_model))
 
 
    .. code-tab:: python

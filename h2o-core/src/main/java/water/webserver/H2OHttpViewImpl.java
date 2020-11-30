@@ -6,9 +6,7 @@ import water.api.RequestServer;
 import water.server.ServletService;
 import water.server.ServletUtils;
 import water.util.Log;
-import water.webserver.iface.H2OHttpConfig;
-import water.webserver.iface.H2OHttpView;
-import water.webserver.iface.RequestAuthExtension;
+import water.webserver.iface.*;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -46,6 +44,11 @@ public class H2OHttpViewImpl implements H2OHttpView {
   @Override
   public LinkedHashMap<String, Class<? extends HttpServlet>> getServlets() {
     return ServletService.INSTANCE.getAllServlets();
+  }
+
+  @Override
+  public LinkedHashMap<String, Class<? extends H2OWebsocketServlet>> getWebsockets() {
+    return ServletService.INSTANCE.getAllWebsockets();
   }
 
   @Override

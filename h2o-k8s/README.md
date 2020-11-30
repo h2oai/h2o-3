@@ -58,6 +58,7 @@ metadata:
   namespace: <namespace-name>
 spec:
   serviceName: h2o-service
+  podManagementPolicy: "Parallel"
   replicas: 3
   selector:
     matchLabels:
@@ -69,7 +70,7 @@ spec:
     spec:
       containers:
         - name: h2o-k8s
-          image: '<someDockerImageWithH2OInside>'
+          image: 'h2oai/h2o-open-source-k8s:<tagname>'
           resources:
             requests:
               memory: "4Gi"
@@ -99,6 +100,9 @@ several settings to pay attention to.
 The name of the application `app: h2o-k8s` must correspond to the name expected by the above-defined headless service in order
 for the H2O node discovery to work. H2O communicates on port 54321, therefore `containerPort: 54321`must be exposed to
 make it possible for the clients to connect.
+
+The documentation of the official H2O Docker images is available at the official [H2O Docker Hub page](https://hub.docker.com/r/h2oai/h2o-open-source-k8s). Use the `nightly` tag to
+get the bleeding-edge Docker image with H2O inside. 
 
 Environment variables:
 

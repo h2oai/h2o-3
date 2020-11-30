@@ -18,7 +18,7 @@ package hex.tree.xgboost.util;
 import java.io.IOException;
 import java.util.LinkedList;
 
-import ml.dmlc.xgboost4j.java.INativeLibLoader;
+import ai.h2o.xgboost4j.java.INativeLibLoader;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 

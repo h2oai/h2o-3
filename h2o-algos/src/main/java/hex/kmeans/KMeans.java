@@ -292,7 +292,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         if( centers==null ) return; // Stopped/cancelled during center-finding
         boolean work_unit_iter = !_parms._estimate_k;
         boolean constrained = _parms._cluster_size_constraints != null;
-        
+
         // ---
         // Run the main KMeans Clustering loop
         // Stop after enough iterations or reassigned_count < TOLERANCE * num_rows

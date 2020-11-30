@@ -39,4 +39,10 @@ public class H2OHttpViewImplTest {
     assertEquals(EchoServletProvider.EchoServlet.class, httpView.getServlets().get("/99/Echo"));
   }
 
+  @Test
+  public void customWebsocketRegistered() {
+    H2OHttpView httpView = new H2OHttpViewImpl(null);
+    assertEquals(EchoServletProvider.EchoWebsocket.class, httpView.getWebsockets().get("/99/EchoWs"));
+  }
+
 }

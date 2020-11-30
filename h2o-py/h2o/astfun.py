@@ -6,13 +6,13 @@ Disassembly support.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.utils.compatibility import *
 
 import dis
 import inspect
 
-from h2o.utils.compatibility import *
-from .expr import ExprNode, ASTId
 from . import h2o
+from .expr import ExprNode, ASTId
 
 #
 # List of supported bytecode instructions: cf. https://docs.python.org/3/library/dis.html#python-bytecode-instructions

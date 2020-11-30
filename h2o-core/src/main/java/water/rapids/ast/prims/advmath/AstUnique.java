@@ -1,16 +1,17 @@
 package water.rapids.ast.prims.advmath;
 
 import water.DKV;
-import water.MRTask;
-import water.fvec.Chunk;
+import water.H2O;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.task.UniqOldTask;
 import water.fvec.task.UniqTask;
 import water.rapids.Env;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
-import water.rapids.ast.prims.mungers.AstGroup;
 import water.rapids.vals.ValFrame;
+import water.util.Log;
+import water.util.VecUtils;
 
 public class AstUnique extends AstPrimitive {
   @Override
@@ -20,7 +21,7 @@ public class AstUnique extends AstPrimitive {
 
   @Override
   public int nargs() {
-    return 1 + 1;
+    return 2 + 1;
   }  // (unique col)
 
   @Override
@@ -30,30 +31,41 @@ public class AstUnique extends AstPrimitive {
 
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    return new ValFrame(uniqueValuesBy(fr,0));
+    final Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    final boolean includeNAs = asts[2].exec(env).getBool();
+    return new ValFrame(uniqueValuesBy(fr,0, includeNAs));
   }
 
   /** return a frame with unique values from the specified column */
-  public static Frame uniqueValuesBy(Frame fr, int columnIndex) {
-    Vec vec0 = fr.vec(columnIndex);
-    Vec v;
+  public static Frame uniqueValuesBy(final Frame fr, final int columnIndex, final boolean includeNAs) {
+    final Vec vec0 = fr.vec(columnIndex);
+    final Vec v;
     if (vec0.isCategorical()) {
-      v = Vec.makeSeq(0, (long) vec0.domain().length, true);
-      v.setDomain(vec0.domain());
+      // Vector domain might contain levels not actually present in the vector - collection of actual values is required.
+      final String[] actualVecDomain = VecUtils.collectDomainFast(vec0);
+      final boolean contributeNAs = vec0.naCnt() > 0 && includeNAs;
+      final long uniqueVecLength = contributeNAs ? actualVecDomain.length + 1 : actualVecDomain.length;
+      v = Vec.makeSeq(0, uniqueVecLength, true);
+      if(contributeNAs) {
+        v.setNA(uniqueVecLength - 1);
+      }
+      v.setDomain(actualVecDomain);
       DKV.put(v);
     } else {
-      UniqTask t = new UniqTask().doAll(vec0);
-      int nUniq = t._uniq.size();
-      final AstGroup.G[] uniq = t._uniq.keySet().toArray(new AstGroup.G[nUniq]);
-      v = Vec.makeZero(nUniq, vec0.get_type());
-      new MRTask() {
-        @Override
-        public void map(Chunk c) {
-          int start = (int) c.start();
-          for (int i = 0; i < c._len; ++i) c.set(i, uniq[i + start]._gs[0]);
-        }
-      }.doAll(v);
+      long start = System.currentTimeMillis();
+      String uniqImpl = H2O.getSysProperty("rapids.unique.impl", "IcedDouble");
+      switch (uniqImpl) {
+        case "IcedDouble":
+          v = new UniqTask().doAll(vec0).toVec();
+          break;
+        case "GroupBy":
+          v = new UniqOldTask().doAll(vec0).toVec();
+          break;
+        default:
+          throw new UnsupportedOperationException("Unknown unique implementation: " + uniqImpl);
+      }
+      Log.info("Unique on a numerical Vec (len=" + vec0.length() + ") took " + 
+              (System.currentTimeMillis() - start) + "ms and returned " + v.length() + " unique values (impl: " + uniqImpl + ").");
     }
     return new Frame(v);
   }

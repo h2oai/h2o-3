@@ -5,17 +5,19 @@ import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
+import biz.k11i.xgboost.tree.RegTreeNodeStat;
 import hex.*;
 import hex.genmodel.algos.tree.*;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
+import hex.FeatureInteraction;
+import hex.FeatureInteractions;
+import hex.FeatureInteractionsCollector;
 import hex.tree.PlattScalingHelper;
 import hex.tree.xgboost.predict.*;
-import hex.tree.xgboost.util.BoosterHelper;
 import hex.tree.xgboost.util.PredictConfiguration;
-import ml.dmlc.xgboost4j.java.Booster;
-import hex.tree.xgboost.predict.PredictorFactory;
+import hex.util.EffectiveParametersUtils;
 import org.apache.log4j.Logger;
 import water.*;
 import water.codegen.CodeGeneratorPipeline;
@@ -24,11 +26,11 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
+import water.util.TwoDimTable;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
+import java.lang.reflect.Array;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static hex.genmodel.algos.xgboost.XGBoostMojoModel.ObjectiveType;
@@ -36,7 +38,7 @@ import static hex.tree.xgboost.XGBoost.makeDataInfo;
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> 
-        implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions {
+        implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions, FeatureInteractionsCollector {
 
   private static final Logger LOG = Logger.getLogger(XGBoostModel.class);
 
@@ -94,11 +96,13 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     public double _col_sample_rate = 1.0;
     public double _colsample_bylevel = 1.0;
+    public double _colsample_bynode = 1.0;
 
     public double _col_sample_rate_per_tree = 1.0; //fraction of columns to sample for each tree
     public double _colsample_bytree = 1.0;
 
     public KeyValue[] _monotone_constraints;
+    public String[][] _interaction_constraints;
 
     public float _max_abs_leafnode_pred = 0;
     public float _max_delta_step = 0;
@@ -117,8 +121,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     // LightGBM specific (only for grow_policy == lossguide)
     public int _max_bins = 256;
     public int _max_leaves = 0;
-    public float _min_sum_hessian_in_leaf = 100;
-    public float _min_data_in_leaf = 0;
 
     // XGBoost specific options
     public TreeMethod _tree_method = TreeMethod.auto;
@@ -230,29 +232,69 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     setDataInfoToOutput(dinfo);
     model_info = new XGBoostModelInfo(parms, dinfo);
   }
-  
-  public static XGBoostParameters.Backend getActualBackend(XGBoostParameters p) {
-    if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
-      if (H2O.getCloudSize() > 1) {
-        LOG.info("GPU backend not supported in distributed mode. Using CPU backend.");
-        return XGBoostParameters.Backend.cpu;
-      } else if (! p.gpuIncompatibleParams().isEmpty()) {
-        LOG.info("GPU backend not supported for the choice of parameters (" + p.gpuIncompatibleParams() + "). Using CPU backend.");
-        return XGBoostParameters.Backend.cpu;
-      } else if (XGBoost.hasGPU(H2O.CLOUD.members()[0], p._gpu_id)) {
-        LOG.info("Using GPU backend (gpu_id: " + p._gpu_id + ").");
-        return XGBoostParameters.Backend.gpu;
+
+  @Override
+  public void initActualParamValues() {
+    super.initActualParamValues();
+    EffectiveParametersUtils.initFoldAssignment(_parms);
+    _parms._backend = getActualBackend(_parms, true);
+    _parms._tree_method = getActualTreeMethod(_parms);
+  }
+
+  public static XGBoostParameters.TreeMethod getActualTreeMethod(XGBoostParameters p) {
+    // tree_method parameter is evaluated according to:
+    // https://github.com/h2oai/xgboost/blob/96f61fb3be8c4fa0e160dd6e82677dfd96a5a9a1/src/gbm/gbtree.cc#L127 
+    // + we don't use external-memory data matrix feature in h2o 
+    // + https://github.com/h2oai/h2o-3/blob/b68e544d8dac3c5c0ed16759e6bf7e8288573ab5/h2o-extensions/xgboost/src/main/java/hex/tree/xgboost/XGBoostModel.java#L348
+    if ( p._tree_method == XGBoostModel.XGBoostParameters.TreeMethod.auto) {
+      if (p._backend == XGBoostParameters.Backend.gpu) {
+        return XGBoostParameters.TreeMethod.hist;
+      } else if (H2O.getCloudSize() > 1) {
+        if (p._monotone_constraints != null && p._booster != XGBoostParameters.Booster.gblinear && p._backend != XGBoostParameters.Backend.gpu) {
+          return XGBoostParameters.TreeMethod.hist;
+        } else {
+          return XGBoostModel.XGBoostParameters.TreeMethod.approx;
+        }
+      } else if (p.train() != null && p.train().numRows() >= (4 << 20)) {
+        return XGBoostModel.XGBoostParameters.TreeMethod.approx;
       } else {
-        LOG.info("No GPU (gpu_id: " + p._gpu_id + ") found. Using CPU backend.");
-        return XGBoostParameters.Backend.cpu;
+        return XGBoostModel.XGBoostParameters.TreeMethod.exact;
       }
     } else {
-      LOG.info("Using CPU backend.");
-      return XGBoostParameters.Backend.cpu;
+      return p._tree_method;
     }
   }
 
-  public static BoosterParms createParams(XGBoostParameters p, int nClasses, String[] coefNames) {
+  public void initActualParamValuesAfterOutputSetup(boolean isClassifier, int nclasses) {
+    EffectiveParametersUtils.initStoppingMetric(_parms, isClassifier);
+    EffectiveParametersUtils.initCategoricalEncoding(_parms, Parameters.CategoricalEncodingScheme.OneHotInternal);
+    EffectiveParametersUtils.initDistribution(_parms, nclasses);
+    _parms._dmatrix_type = _output._sparse ? XGBoostModel.XGBoostParameters.DMatrixType.sparse : XGBoostModel.XGBoostParameters.DMatrixType.dense;
+  }
+  
+  public static XGBoostParameters.Backend getActualBackend(XGBoostParameters p, boolean verbose) {
+    Consumer<String> log = verbose ? LOG::info : LOG::debug;
+    if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
+      if (H2O.getCloudSize() > 1 && !p._build_tree_one_node && !XGBoost.allowMultiGPU()) {
+        log.accept("GPU backend not supported in distributed mode. Using CPU backend.");
+        return XGBoostParameters.Backend.cpu;
+      } else if (! p.gpuIncompatibleParams().isEmpty()) {
+        log.accept("GPU backend not supported for the choice of parameters (" + p.gpuIncompatibleParams() + "). Using CPU backend.");
+        return XGBoostParameters.Backend.cpu;
+      } else if (XGBoost.hasGPU(H2O.CLOUD.members()[0], p._gpu_id)) {
+        log.accept("Using GPU backend (gpu_id: " + p._gpu_id + ").");
+        return XGBoostParameters.Backend.gpu;
+      } else {
+        log.accept("No GPU (gpu_id: " + p._gpu_id + ") found. Using CPU backend.");
+        return XGBoostParameters.Backend.cpu;
+      }
+    } else {
+      log.accept("Using CPU backend.");
+      return XGBoostParameters.Backend.cpu;
+    }
+  }
+  
+  public static Map<String, Object> createParamsMap(XGBoostParameters p, int nClasses, String[] coefNames) {
     Map<String, Object> params = new HashMap<>();
 
     // Common parameters with H2O GBM
@@ -302,6 +344,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("colsample_bylevel", p._col_sample_rate);
       p._colsample_bylevel = p._col_sample_rate;
     }
+    if (p._colsample_bynode != 1.0) {
+      params.put("colsample_bynode", p._colsample_bynode);
+    }    
     if (p._max_delta_step != 0) {
       LOG.info("Using user-provided parameter max_delta_step instead of max_abs_leafnode_pred.");
       params.put("max_delta_step", p._max_delta_step);
@@ -314,21 +359,20 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     // XGBoost specific options
     params.put("grow_policy", p._grow_policy.toString());
-    if (p._grow_policy== XGBoostParameters.GrowPolicy.lossguide) {
-      params.put("max_bins", p._max_bins);
+    if (p._grow_policy == XGBoostParameters.GrowPolicy.lossguide) {
+      params.put("max_bin", p._max_bins);
       params.put("max_leaves", p._max_leaves);
-      params.put("min_sum_hessian_in_leaf", p._min_sum_hessian_in_leaf);
-      params.put("min_data_in_leaf", p._min_data_in_leaf);
     }
     params.put("booster", p._booster.toString());
-    if (p._booster== XGBoostParameters.Booster.dart) {
+    if (p._booster == XGBoostParameters.Booster.dart) {
       params.put("sample_type", p._sample_type.toString());
       params.put("normalize_type", p._normalize_type.toString());
       params.put("rate_drop", p._rate_drop);
       params.put("one_drop", p._one_drop ? "1" : "0");
       params.put("skip_drop", p._skip_drop);
     }
-    XGBoostParameters.Backend actualBackend = getActualBackend(p);
+    XGBoostParameters.Backend actualBackend = getActualBackend(p, true);
+    XGBoostParameters.TreeMethod actualTreeMethod = getActualTreeMethod(p);
     if (actualBackend == XGBoostParameters.Backend.gpu) {
       params.put("gpu_id", p._gpu_id);
       // we are setting updater rather than tree_method here to keep CPU predictor, which is faster
@@ -346,11 +390,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     } else if (H2O.CLOUD.size() > 1 && p._tree_method == XGBoostParameters.TreeMethod.auto &&
         p._monotone_constraints != null) {
       LOG.info("Using hist tree method for distributed computation with monotone_constraints.");
-      params.put("tree_method", XGBoostParameters.TreeMethod.hist.toString());
+      params.put("tree_method", actualTreeMethod.toString());
       params.put("max_bin", p._max_bins);
     } else {
       LOG.info("Using " + p._tree_method.toString() + " tree method.");
-      params.put("tree_method", p._tree_method.toString());
+      params.put("tree_method", actualTreeMethod.toString());
       if (p._tree_method == XGBoostParameters.TreeMethod.hist) {
         params.put("max_bin", p._max_bins);
       }
@@ -424,14 +468,67 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("monotone_constraints", sb.toString());
       assert constraintsUsed == monotoneConstraints.size();
     }
-
+    
+    String[][] interactionConstraints = p._interaction_constraints;
+    if(interactionConstraints != null && interactionConstraints.length > 0) {
+      if(!p._categorical_encoding.equals(Parameters.CategoricalEncodingScheme.OneHotInternal)){
+        throw new IllegalArgumentException("No support interaction constraint for categorical encoding = " + p._categorical_encoding.toString()+". Constraint interactions are available only for ``AUTO`` (``one_hot_internal`` or ``OneHotInternal``) categorical encoding.");
+      }
+      params.put("interaction_constraints", createInteractions(interactionConstraints, coefNames, p));
+    }
+    
     LOG.info("XGBoost Parameters:");
     for (Map.Entry<String,Object> s : params.entrySet()) {
       LOG.info(" " + s.getKey() + " = " + s.getValue());
     }
     LOG.info("");
+    return Collections.unmodifiableMap(params);
+  }
+  
+  private static String createInteractions(String[][] interaction_constraints, String[] coefNames, XGBoostParameters params){
+    StringBuilder sb = new StringBuilder();
+    sb.append("[");
+    for (String[] list : interaction_constraints) {
+      sb.append("[");
+      for (String item : list) {
+        if(item.equals(params._response_column)){
+          throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is used as response column and cannot be used in interaction.");
+        }
+        if(item.equals(params._weights_column)){
+          throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is used as weights column and cannot be used in interaction.");
+        }
+        if(item.equals(params._fold_column)){
+          throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is used as fold column and cannot be used in interaction.");
+        }
+        if(params._ignored_columns != null && ArrayUtils.find(params._ignored_columns, item) != -1) {
+          throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is set in ignored columns and cannot be used in interaction.");
+        }
+        // first find only name
+        int start = ArrayUtils.findWithPrefix(coefNames, item);
+        // find start index and add indices until end index
+        if (start == -1) {
+          throw new IllegalArgumentException("'interaction_constraints': Column with name '" + item + "' is not in the frame.");
+        } else if(start > -1){               // find exact position - no encoding  
+          sb.append(start).append(",");
+        } else {              // find first occur of the name with prefix - encoding
+          start = -start - 2;
+          assert coefNames[start].startsWith(item): "The column name should be find correctly.";
+          // iterate until find all encoding indices
+          int end = start;
+          while (end < coefNames.length && coefNames[end].startsWith(item)) {
+            sb.append(end).append(",");
+            end++;
+          }
+        }
+      }
+      sb.replace(sb.length() - 1, sb.length(), "],");
+    }
+    sb.replace(sb.length() - 1, sb.length(), "]");
+    return sb.toString();
+  }
 
-    return BoosterParms.fromMap(Collections.unmodifiableMap(params));
+  public static BoosterParms createParams(XGBoostParameters p, int nClasses, String[] coefNames) {
+    return BoosterParms.fromMap(createParamsMap(p, nClasses, coefNames));
   }
 
   /** Performs deep clone of given model.  */
@@ -552,11 +649,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return new XGBoostJavaBigScorePredict(model_info, _output, di, _parms, defaultThreshold());
   }
   
-  public XGBoostVariableImportance setupVarImp(File featureMapFile) {
+  public XGBoostVariableImportance setupVarImp() {
     if (PredictConfiguration.useJavaScoring()) {
       return new XGBoostJavaVariableImportance(model_info);
     } else {
-      return new XGBoostNativeVariableImportance(model_info, featureMapFile);
+      return new XGBoostNativeVariableImportance(_key, model_info.getFeatureMap());
     }
   }
 
@@ -631,20 +728,22 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
 
     final RegTreeNode[] treeNodes = treesInGroup[treeNumber].getNodes();
+    final RegTreeNodeStat[] treeNodeStats = treesInGroup[treeNumber].getStats();
     assert treeNodes.length >= 1;
 
     SharedTreeGraph sharedTreeGraph = new SharedTreeGraph();
     final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeGraph.makeSubgraph(_output._training_metrics._description);
 
     final XGBoostUtils.FeatureProperties featureProperties = XGBoostUtils.assembleFeatureNames(model_info.dataInfo()); // XGBoost's usage of one-hot encoding assumed
-    constructSubgraph(treeNodes, sharedTreeSubgraph.makeRootNode(), 0, sharedTreeSubgraph, featureProperties, true); // Root node is at index 0
+    constructSubgraph(treeNodes, treeNodeStats, sharedTreeSubgraph.makeRootNode(), 0, sharedTreeSubgraph, featureProperties, true); // Root node is at index 0
     return sharedTreeGraph;
   }
 
-  private static void constructSubgraph(final RegTreeNode[] xgBoostNodes, final SharedTreeNode sharedTreeNode,
+  private static void constructSubgraph(final RegTreeNode[] xgBoostNodes, final RegTreeNodeStat[] xgBoostNodeStats, final SharedTreeNode sharedTreeNode,
                                         final int nodeIndex, final SharedTreeSubgraph sharedTreeSubgraph,
                                         final XGBoostUtils.FeatureProperties featureProperties, boolean inclusiveNA) {
     final RegTreeNode xgBoostNode = xgBoostNodes[nodeIndex];
+    final RegTreeNodeStat xgBoostNodeStat = xgBoostNodeStats[nodeIndex];
     // Not testing for NaNs, as SharedTreeNode uses NaNs as default values.
     //No domain set, as the structure mimics XGBoost's tree, which is numeric-only
     if (featureProperties._oneHotEncoded[xgBoostNode.getSplitIndex()]) {
@@ -657,11 +756,14 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     sharedTreeNode.setPredValue(xgBoostNode.getLeafValue());
     sharedTreeNode.setInclusiveNa(inclusiveNA);
     sharedTreeNode.setNodeNumber(nodeIndex);
+    sharedTreeNode.setGain(xgBoostNodeStat.getGain());
+    sharedTreeNode.setWeight(xgBoostNodeStat.getCover());
+    
     if (!xgBoostNode.isLeaf()) {
       sharedTreeNode.setCol(xgBoostNode.getSplitIndex(), featureProperties._names[xgBoostNode.getSplitIndex()]);
-      constructSubgraph(xgBoostNodes, sharedTreeSubgraph.makeLeftChildNode(sharedTreeNode),
+      constructSubgraph(xgBoostNodes, xgBoostNodeStats, sharedTreeSubgraph.makeLeftChildNode(sharedTreeNode),
               xgBoostNode.getLeftChildIndex(), sharedTreeSubgraph, featureProperties, xgBoostNode.default_left());
-      constructSubgraph(xgBoostNodes, sharedTreeSubgraph.makeRightChildNode(sharedTreeNode),
+      constructSubgraph(xgBoostNodes, xgBoostNodeStats, sharedTreeSubgraph.makeRightChildNode(sharedTreeNode),
           xgBoostNode.getRightChildIndex(), sharedTreeSubgraph, featureProperties, !xgBoostNode.default_left());
     }
   }
@@ -743,5 +845,31 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     Predictor p = PredictorFactory.makePredictor(model_info._boosterBytes, false);
     XGBoostPojoWriter.make(p, namePrefix, _output, defaultThreshold()).renderJavaPredictBody(sb, fileCtx);
   }
+
+  public FeatureInteractions getFeatureInteractions(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
+
+    FeatureInteractions featureInteractions = new FeatureInteractions();
+    
+    for (int i = 0; i < this._parms._ntrees; i++) {
+      FeatureInteractions currentTreeFeatureInteractions = new FeatureInteractions();
+      SharedTreeGraph sharedTreeGraph = convert(i, null);
+      assert sharedTreeGraph.subgraphArray.size() == 1;
+      SharedTreeSubgraph tree = sharedTreeGraph.subgraphArray.get(0);
+      List<SharedTreeNode> interactionPath = new ArrayList<>();
+      Set<String> memo = new HashSet<>();
+      
+      FeatureInteractions.collectFeatureInteractions(tree.rootNode, interactionPath, 0, 0, 1, 0, 0,
+              currentTreeFeatureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, i, false);
+      featureInteractions.mergeWith(currentTreeFeatureInteractions);
+    }
+    
+    return featureInteractions;
+  }
+
+  @Override
+  public TwoDimTable[][] getFeatureInteractionsTable(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
+    return FeatureInteractions.getFeatureInteractionsTable(this.getFeatureInteractions(maxInteractionDepth,maxTreeDepth,maxDeepening));
+  }
+
 
 }

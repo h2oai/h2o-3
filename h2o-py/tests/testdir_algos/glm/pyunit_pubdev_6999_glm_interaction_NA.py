@@ -98,7 +98,7 @@ def performOneTest(frameWithNA, frameWithoutNA, interactionColumn, xcols, standa
     if not (len(coef_m_NA.cell_values)==len(coef_m.cell_values)):   # deal with 0 coeff for NA
         assert_arrays_equal_NA(coef_m_NA.cell_values, coef_m.cell_values)         
     else:
-        pyunit_utils.equal_2D_tables(coef_m_NA.cell_values, coef_m.cell_values)
+        pyunit_utils.equal_2d_tables(coef_m_NA.cell_values, coef_m.cell_values)
 
 def assert_arrays_equal_NA(coef_m_NA_dict, coef_m):
     coefNAIndex = 0

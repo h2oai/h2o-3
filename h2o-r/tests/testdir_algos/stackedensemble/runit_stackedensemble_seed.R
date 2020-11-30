@@ -54,6 +54,11 @@ stackedensemble.metalearner.seed.test <- function() {
                                   metalearner_algorithm = "gbm",
                                   metalearner_params = gbm_params,
                                   seed = 55555)
+
+    # Seed should be retrieved correctly from both SE and MetaLearner
+    expect_equal(as.numeric(stack0@parameters$seed), 55555)
+    expect_equal(as.numeric(stack0@model$metalearner_model@parameters$seed), 55555)
+
     #RMSE should match for each metalearner since the same seed is used
     meta0 <- h2o.getModel(stack0@model$metalearner$name)
     meta1 <- h2o.getModel(stack1@model$metalearner$name)

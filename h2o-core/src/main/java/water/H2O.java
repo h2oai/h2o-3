@@ -33,8 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static water.util.JavaVersionUtils.JAVA_VERSION;
-
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
 *
@@ -142,6 +140,9 @@ final public class H2O {
             "    -jks_alias <alias>\n" +
             "          (Optional, use if the keystore has multiple certificates and you want to use a specific one.)\n" +
             "\n" +
+            "    -hostname_as_jks_alias\n" +
+            "          (Optional, use if you want to use the machine hostname as your certificate alias.)\n" +
+            "\n" +
             "    -hash_login\n" +
             "          Use Jetty HashLoginService\n" +
             "\n" +
@@ -220,8 +221,12 @@ final public class H2O {
     /** -jks_pass is Java KeyStore password; default is 'h2oh2o' */
     public String jks_pass = DEFAULT_JKS_PASS;
 
+    /** -jks_alias if the keystore has multiple certificates and you want to use a specific one */
     public String jks_alias = null;
-    
+
+    /** -hostname_as_jks_alias if you want to use the machine hostname as your certificate alias */
+    public boolean hostname_as_jks_alias = false;    
+
     /** -hash_login enables HashLoginService */
     public boolean hash_login = false;
 
@@ -263,7 +268,10 @@ final public class H2O {
     public boolean internal_security_enabled = false;
 
     /** -allow_insecure_xgboost is a boolean that allows xgboost to run in a secured cluster */
-    public boolean allow_insecure_xgboost;
+    public boolean allow_insecure_xgboost = false;
+
+    /** -use_external_xgboost; invoke XGBoost on external cluster stared by Steam */
+    public boolean use_external_xgboost = false;
 
     /** -decrypt_tool specifies the DKV key where a default decrypt tool will be installed*/
     public String decrypt_tool = null;
@@ -665,6 +673,9 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         trgt.jks_alias = args[i];
       }
+      else if (s.matches("hostname_as_jks_alias")) {
+        trgt.hostname_as_jks_alias = true;
+      }
       else if (s.matches("hash_login")) {
         trgt.hash_login = true;
       }
@@ -705,6 +716,9 @@ final public class H2O {
       }
       else if (s.matches("allow_insecure_xgboost")) {
         trgt.allow_insecure_xgboost = true;
+      }
+      else if (s.matches("use_external_xgboost")) {
+        trgt.use_external_xgboost = true;
       }
       else if (s.matches("decrypt_tool")) {
         i = s.incrementAndCheck(i, args);
@@ -761,6 +775,10 @@ final public class H2O {
       }
     }
 
+    if (ARGS.jks_alias != null && ARGS.hostname_as_jks_alias) {
+      parseFailed("Options -jks_alias and -hostname_as_jks_alias are mutually exclusive, specify only one of them");
+    }
+    
     if (ARGS.login_conf != null) {
       if (! new File(ARGS.login_conf).exists()) {
         parseFailed("File does not exist: " + ARGS.login_conf);
@@ -1255,7 +1273,7 @@ final public class H2O {
     Log.fatal(msg);
     if (null != cause) Log.fatal(cause);
     Log.fatal("Stacktrace: ");
-    Log.fatal(Arrays.toString(Thread.currentThread().getStackTrace()));
+    Log.fatal(new Exception(msg));
 
     // H2O fail() exists because of coding errors - but what if usage of fail() was itself a coding error?
     // Property "suppress.shutdown.on.failure" can be used in the case when someone is seeing shutdowns on production
@@ -2117,11 +2135,11 @@ final public class H2O {
       return false;
     }
 
-    // Notes: 
-    // - make sure that the following whitelist is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R
-    // - upgrade of the javassist library should be considered when adding support for a new java version
-    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<8 || JAVA_VERSION.getMajor()>13)) {
-      System.err.println("Only Java 8, 9, 10, 11, 12 and 13 are supported, system version is " + System.getProperty("java.version"));
+    if (!JavaVersionSupport.runningOnSupportedVersion()) {
+      System.err.println(String.format("Only Java versions %d-%d are supported, system version is %s",
+              JavaVersionSupport.MIN_SUPPORTED_JAVA_VERSION,
+              JavaVersionSupport.MAX_SUPPORTED_JAVA_VERSION,
+              System.getProperty("java.version")));
       return true;
     }
     String vmName = System.getProperty("java.vm.name");
@@ -2130,21 +2148,7 @@ final public class H2O {
       return true;
     }
     return false;
-  }
-
-  private static boolean isUserEnabledJavaVersion() {
-    String extraJavaVersionsStr = System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.allowJavaVersions");
-    if (extraJavaVersionsStr == null || extraJavaVersionsStr.isEmpty())
-      return false;
-    String[] vs = extraJavaVersionsStr.split(",");
-    for (String v : vs) {
-      int majorVersion = Integer.valueOf(v);
-      if (JAVA_VERSION.getMajor() == majorVersion) {
-        return true;
-      }
-    }
-    return false;
-  }
+  } 
 
   // --------------------------------------------------------------------------
   public static void main( String[] args ) {

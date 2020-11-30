@@ -21,7 +21,6 @@ public class DataInfo extends Keyed<DataInfo> {
   public int [] _activeCols;
   public Frame _adaptedFrame;  // the modified DataInfo frame (columns sorted by largest categorical -> least then all numerical columns)
   public int _responses;   // number of responses
-  public int _outpus; // number of outputs
 
   public Vec setWeights(String name, Vec vec) {
     if(_weights)
@@ -151,6 +150,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
   private DataInfo() {  _intLvls=null; _catLvls = null; _skipMissing = true; _imputeMissing = false; _valid = false; _offset = false; _weights = false; _fold = false; }
   public String[] _coefNames;
+  public int[] _coefOriginalIndices; // 
   @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
 
   // Modify the train & valid frames directly; sort the categorical columns
@@ -470,7 +470,7 @@ public class DataInfo extends Keyed<DataInfo> {
     if(v.isCategorical()) {
       if (useAllFactorLevels) return v.mode();
       long[] bins = v.bins();
-      return ArrayUtils.maxIndex(bins,1);
+      return ArrayUtils.maxIndex(bins,0);
     }
     return (int)Math.round(v.mean());
   }
@@ -588,9 +588,12 @@ public class DataInfo extends Keyed<DataInfo> {
     dinfo._nums=f.numCols()-dinfo._cats - dinfo._responses - (dinfo._offset?1:0) - (dinfo._weights?1:0) - (dinfo._fold?1:0);
     dinfo._numMeans=new double[nnums];
     dinfo._numNAFill=new double[nnums];
-    for(int k=id; k < (id+nnums);++k ) {
-      dinfo._numMeans[k - id] = _numMeans[cols[k] - off];
-      dinfo._numNAFill[k - id] = _numNAFill[cols[k] - off];
+    int colsSize = id+nnums;  // small optimization
+    for(int k=id; k < colsSize;++k ) {
+      int index1 = k - id;
+      int index2 = cols[k] - off;
+      dinfo._numMeans[index1] = _numMeans[index2];
+      dinfo._numNAFill[index1] = _numNAFill[index2];
     }
     return dinfo;
   }
@@ -758,6 +761,7 @@ public class DataInfo extends Keyed<DataInfo> {
     if( currentColIdx+1 >= _numOffsets.length ) return fullN() - _numOffsets[currentColIdx];
     return _numOffsets[currentColIdx+1] - _numOffsets[currentColIdx];
   }
+  
   public final String[] coefNames() {
     if (_coefNames != null) return _coefNames; // already computed
     int k = 0;
@@ -804,6 +808,56 @@ public class DataInfo extends Keyed<DataInfo> {
     _coefNames = res;
     return res;
   }
+
+  public final int[] coefOriginalColumnIndices() {
+    if (_coefOriginalIndices != null) return _coefOriginalIndices; // already computed
+    int k = 0;
+    final int n = fullN(); // total number of columns to compute
+    int[] res = new int[n];
+    final Vec [] vecs = _adaptedFrame.vecs();
+
+    // first do all of the expanded categorical names
+    for(int i = 0; i < _cats; ++i) {
+      for (int j = (_useAllFactorLevels || vecs[i] instanceof InteractionWrappedVec) ? 0 : 1; j < vecs[i].domain().length; ++j) {
+        int jj = getCategoricalId(i, j);
+        if(jj < 0)
+          continue;
+        res[k++] = i;
+      }
+      if (_catMissing[i] && getCategoricalId(i, -1) >=0)
+        res[k++] = i;
+      if( vecs[i] instanceof InteractionWrappedVec ) {
+        InteractionWrappedVec iwv = (InteractionWrappedVec)vecs[i];
+        if( null != iwv.missingDomains() ) {
+          for(String s: iwv.missingDomains() )
+            res[k++] = i;
+        }
+      }
+    }
+    // now loop over the numerical columns, collecting up any expanded InteractionVec names
+    if( _interactions == null ) {
+      int index = _cats;
+      for(int i = k; i < n; i++) {
+        res[i] = index++;
+      }
+    } else {
+      for (int i = 0; i <= _nums; i++) {
+        InteractionWrappedVec v;
+        if( i+_cats >= n || k >=n ) break;
+        if (vecs[i+_cats] instanceof InteractionWrappedVec && ((v = (InteractionWrappedVec) vecs[i+_cats]).domain() != null)) { // in this case, get the categoricalOffset
+          for (int j = v._useAllFactorLevels?0:1; j < v.domain().length; ++j) {
+            if (getCategoricalIdFromInteraction(_cats+i, j) < 0)
+              continue;
+            res[k++] = i+_cats;
+          }
+        } else
+          res[k++] = i+_cats;
+      }
+    }
+    _coefOriginalIndices = res;
+    return res;
+  }
+  
 
   // Return permutation matrix mapping input names to adaptedFrame colnames
   public int[] mapNames(String[] names) {
@@ -1081,7 +1135,10 @@ public class DataInfo extends Keyed<DataInfo> {
   public final int getCategoricalId(int cid, int val) {
     boolean isIWV = isInteractionVec(cid);
     if(val == -1) { // NA
-      val = _catNAFill[cid];
+      if (isIWV && !_useAllFactorLevels) 
+        val = _catNAFill[cid]-1; // need to -1 here because no -1 in 6 lines later for isIWV vector
+      else
+        val = _catNAFill[cid];
     }
 
     if (!_useAllFactorLevels && !isIWV) {  // categorical interaction vecs drop reference level in a special way
@@ -1091,7 +1148,7 @@ public class DataInfo extends Keyed<DataInfo> {
     int [] offs = fullCatOffsets();
     int expandedVal = val + offs[cid];
     if(expandedVal >= offs[cid+1]) {  // previously unseen level
-      assert _valid : "Categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid + 1];
+      assert (isIWV && !_useAllFactorLevels) || _valid : "Categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid + 1];
       if(_skipMissing)
         return -1;
       val = _catNAFill[cid];

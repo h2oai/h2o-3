@@ -25,7 +25,7 @@ public class PermutationVarImpMetricPassTest extends TestUtil {
      * GLM binomial model
      */
     @Test
-    public void testMetricBinomial() {
+    public void testMetricGLMBinomial() {
         GLMModel model = null;
         Frame fr = parse_test_file("smalldata/glm_test/glm_test2.csv");
         Frame score = null;

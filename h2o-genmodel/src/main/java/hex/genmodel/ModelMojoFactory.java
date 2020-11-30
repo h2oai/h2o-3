@@ -2,17 +2,19 @@ package hex.genmodel;
 
 import hex.genmodel.algos.deeplearning.DeeplearningMojoReader;
 import hex.genmodel.algos.drf.DrfMojoReader;
+import hex.genmodel.algos.ensemble.StackedEnsembleMojoReader;
+import hex.genmodel.algos.gam.GamMojoReader;
 import hex.genmodel.algos.gbm.GbmMojoReader;
 import hex.genmodel.algos.glm.GlmMojoReader;
-import hex.genmodel.algos.pca.PCAMojoReader;
 import hex.genmodel.algos.glrm.GlrmMojoReader;
 import hex.genmodel.algos.isofor.IsolationForestMojoReader;
 import hex.genmodel.algos.kmeans.KMeansMojoReader;
+import hex.genmodel.algos.pca.PCAMojoReader;
 import hex.genmodel.algos.pipeline.MojoPipelineReader;
 import hex.genmodel.algos.svm.SvmMojoReader;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoReader;
 import hex.genmodel.algos.word2vec.Word2VecMojoReader;
-import hex.genmodel.algos.ensemble.StackedEnsembleMojoReader;
+import hex.genmodel.algos.klime.KLimeMojoReader;
 
 import java.util.ServiceLoader;
 
@@ -66,7 +68,8 @@ public class ModelMojoFactory {
       case "Generalized Linear Modeling":
       case "Generalized Linear Model":
         return new GlmMojoReader();
-
+      case "Generalized Additive Model":
+        return new GamMojoReader();
       case "Word2Vec":
         return new Word2VecMojoReader();
         
@@ -89,6 +92,9 @@ public class ModelMojoFactory {
       case "StackedEnsemble":
       case "Stacked Ensemble":
         return new StackedEnsembleMojoReader();
+      
+      case "k-LIME":
+        return new KLimeMojoReader();
 
       case "MOJO Pipeline":
         return new MojoPipelineReader();

@@ -1,11 +1,11 @@
 apply plugin: 'java'
 apply plugin: 'maven-publish'
-apply plugin: "signing"
+apply plugin: 'signing'
 
 // Default task to bundle sources code as jar
 task sourcesJar(type: Jar) {
-  classifier = 'sources'
-  from sourceSets.main.allSource
+    classifier = 'sources'
+    from sourceSets.main.allSource
 }
 
 // Container for generated POMs (by default added into archive configuration)
@@ -23,12 +23,14 @@ artifacts {
     toPublish sourcesJar
 }
 
-task signAll(type : Sign) {
-    sign configurations.archives
-    // Sign additional artifacts
-    sign configurations.toPublish
-    // Sign only in case of release
-    required = project.ext.isRelease || project.hasProperty("doSignAll")
+if (project.gradle.startParameter.taskNames.contains("publish")) {
+    java {
+        withJavadocJar()
+    }
+
+    javadoc {
+        options.encoding = 'UTF-8'
+    }
 }
 
 //
@@ -65,19 +67,6 @@ publishing {
           configurations.toPublish.allArtifacts.each { art ->
               logger.debug("Publishing artifact for: " + art)
               artifact art
-          }
-
-          if (signAll.required) {
-              signAll.signatures.all { Signature signature ->
-                  logger.debug("Publishing signature for: " + signature.file + ", type=" + signature.type)
-                  artifact(signature, new Action<MavenArtifact>() {
-                      @Override
-                      void execute(MavenArtifact t) {
-                          t.classifier = signature.toSignArtifact.classifier != "" ? signature.toSignArtifact.classifier : null
-                          t.extension = signature.type == "xml.asc" ? "pom.asc" : signature.type
-                      }
-                  })
-              }
           }
 
           pom.withXml { provider ->
@@ -128,6 +117,11 @@ publishing {
               provider.asNode().children().last() + h2oPOM
           }
       }
+  }
+
+  signing {
+    required { project.ext.isRelease || project.hasProperty("doSignAll")}
+    sign publishing.publications.mavenAll
   }
 
   repositories {

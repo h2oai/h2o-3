@@ -56,6 +56,26 @@ public class DeeplearningMojoReader extends ModelMojoReader<DeeplearningMojoMode
       _model._weightsAndBias[layerIndex] = new DeeplearningMojoModel.StoreWeightsBias(tempW, tempB);
     }
 
+    if (_model._mojo_version < 1.10) {
+      _model._genmodel_encoding = "AUTO";
+    } else {
+      _model._genmodel_encoding = readkv("_genmodel_encoding").toString();
+      _model._orig_projection_array = readkv("_orig_projection_array");
+      Integer n = readkv("_n_orig_names");
+      if (n != null) {
+        _model._orig_names = readStringArray("_orig_names", n);
+      }
+      n = readkv("_n_orig_domain_values");
+      if (n != null) {
+        _model._orig_domain_values = new String[n][];
+        for (int i = 0; i < n; i++) {
+          int m = readkv("_m_orig_domain_values_" + i);
+          if (m > 0) {
+            _model._orig_domain_values[i] = readStringArray("_orig_domain_values_" + i, m);
+          }
+        }
+      }
+    }
     _model.init();
   }
 
@@ -66,7 +86,7 @@ public class DeeplearningMojoReader extends ModelMojoReader<DeeplearningMojoMode
 
   @Override
   public String mojoVersion() {
-    return "1.00";
+    return "1.10";
   }
 
   @Override

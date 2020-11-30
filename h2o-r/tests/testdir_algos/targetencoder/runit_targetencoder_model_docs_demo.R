@@ -10,7 +10,7 @@ test.model.targetencoder <- function() {
         response <- "survived"
         titanic[response] <- as.factor(titanic[response])
 
-        seed=1234
+        seed <- 1234
         splits <- h2o.splitFrame(titanic, seed = seed, ratios = c(0.8), destination_frames = c("train", "test"))
 
         train <- splits[[1]]
@@ -19,20 +19,16 @@ test.model.targetencoder <- function() {
         # Choose which columns to encode
         encoded_columns <- c('home.dest', 'cabin', 'embarked')
 
-        train$fold <- h2o.kfold_column(train, nfolds = 5, seed = 3456)
+        train$fold <- h2o.kfold_column(train, nfolds = 5, seed = seed)
 
-        blended_avg = TRUE
-        inflection_point = 3
-        smoothing = 10
         # In general, the less data you have the more regularisation you need
-        noise = 0.15
-
         target_encoder <- h2o.targetencoder(training_frame = train, x = encoded_columns, y = "survived",
                                             fold_column="fold", data_leakage_handling="KFold",
-                                            blending=blended_avg, k=inflection_point, f=smoothing, noise=noise)
+                                            blending=TRUE, inflection_point=3, smoothing=10,
+                                            noise=0.15, seed=seed)
 
-        transformed_train <- h2o.transform(target_encoder, train, data_leakage_handling="KFold", noise=noise)
-        transformed_test <- h2o.transform(target_encoder, test, noise=0.0)
+        transformed_train <- h2o.transform(target_encoder, train, as_training=TRUE)
+        transformed_test <- h2o.transform(target_encoder, test, noise=0)
 
         ignored_columns <- c("boat", "ticket", "name", "body")
         features_with_te <- setdiff(setdiff(setdiff(names(transformed_train), response), encoded_columns), ignored_columns)
@@ -42,16 +38,6 @@ test.model.targetencoder <- function() {
                                y = response,
                                training_frame = transformed_train,
                                fold_column="fold",
-                               score_tree_interval=5,
-                               ntrees = 10000,
-                               max_depth = 6,
-                               min_rows = 1,
-                               sample_rate=0.8,
-                               col_sample_rate=0.8,
-                               seed=1234,
-                               stopping_rounds=5,
-                               stopping_metric="auto",
-                               stopping_tolerance=0.001,
                                model_id="gbm_with_te")
 
         with_te_test_predictions <- predict(gbm_with_te, transformed_test)
@@ -69,16 +55,6 @@ test.model.targetencoder <- function() {
                                 y = response,
                                 training_frame = train,
                                 fold_column="fold",
-                                score_tree_interval=5,
-                                ntrees = 10000,
-                                max_depth = 6,
-                                min_rows = 1,
-                                sample_rate=0.8,
-                                col_sample_rate=0.8,
-                                seed=1234,
-                                stopping_rounds=5,
-                                stopping_metric="auto",
-                                stopping_tolerance=0.001,
                                 model_id="gbm_baseline")
 
         baseline_test_predictions <- predict(gbm_baseline, test)

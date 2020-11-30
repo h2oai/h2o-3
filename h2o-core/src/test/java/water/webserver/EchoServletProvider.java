@@ -4,6 +4,10 @@ import org.junit.Ignore;
 import water.server.ServletMeta;
 import water.server.ServletProvider;
 import water.server.ServletUtils;
+import water.server.WebsocketMeta;
+import water.webserver.iface.WebsocketConnection;
+import water.webserver.iface.WebsocketHandler;
+import water.webserver.iface.H2OWebsocketServlet;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -18,6 +22,11 @@ public class EchoServletProvider implements ServletProvider {
   @Override
   public List<ServletMeta> servlets() {
     return Collections.singletonList(new ServletMeta("/99/Echo", EchoServlet.class));
+  }
+
+  @Override
+  public List<WebsocketMeta> websockets() {
+    return Collections.singletonList(new WebsocketMeta("/99/EchoWs", EchoWebsocket.class));
   }
 
   public static class EchoServlet extends HttpServlet {
@@ -38,6 +47,15 @@ public class EchoServletProvider implements ServletProvider {
         ServletUtils.logRequest("GET", request, response);
       }
     }
+  }
+  
+  public static class EchoWebsocket implements H2OWebsocketServlet {
+
+    @Override
+    public WebsocketHandler onConnect(WebsocketConnection conn) {
+      return null;
+    }
+
   }
 
 }

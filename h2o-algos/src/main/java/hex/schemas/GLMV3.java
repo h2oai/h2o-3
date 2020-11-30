@@ -16,7 +16,7 @@ import water.api.schemas3.StringPairV3;
 public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
   public static final class GLMParametersV3 extends ModelParametersSchemaV3<GLMParameters, GLMParametersV3> {
-     public static final String[] fields = new String[] {
+    public static final String[] fields = new String[]{
             "model_id",
             "training_frame",
             "validation_frame",
@@ -32,6 +32,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "random_columns", // HGLM denote random columns, array
             "ignore_const_cols",
             "score_each_iteration",
+            "score_iteration_interval",
             "offset_column",
             "weights_column",
             "family",
@@ -56,12 +57,13 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "objective_epsilon",
             "beta_epsilon",
             "gradient_epsilon",
-            "link", 
+            "link",
             "rand_link", // link function for random components, array
             "startval",  // initial starting values for fixed and randomized coefficients, double array
             "calc_like", // HGLM, true will return likelhood function value
             "HGLM",  // boolean: true - enabled HGLM, false - normal GLM
             "prior",
+            "cold_start", // if true, will start GLM model from initial values and conditions
             "lambda_min_ratio",
             "beta_constraints",
             "max_active_predictors",
@@ -69,12 +71,14 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "interaction_pairs",
             "obj_reg",
             "export_checkpoints_dir",
+            "stopping_rounds",
+            "stopping_metric",
+            "stopping_tolerance",
             // dead unused args forced here by backwards compatibility, remove in V4
             "balance_classes",
             "class_sampling_factors",
             "max_after_balance_size",
             "max_confusion_matrix_size",
-            "max_hit_ratio_k",
             "max_runtime_secs",
             "custom_metric_func"
     };
@@ -84,7 +88,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     // Input fields
     @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.",
-            values = {"gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson",
+            values = {"AUTO", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson",
                     "gamma", "tweedie", "negativebinomial"}, level = Level.critical)
     // took tweedie out since it's not reliable
     public GLMParameters.Family family;
@@ -122,9 +126,17 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     " set to True, the value of nlamdas is set to 30 (fewer lambdas" +
     " are needed for ridge regression) otherwise it is set to 100.", level = Level.critical)
     public int nlambdas;
+    
+    @API(help = "Perform scoring for every score_iteration_interval iterations", level = Level.secondary)
+    public int score_iteration_interval;
 
     @API(help = "Standardize numeric columns to have zero mean and unit variance", level = Level.critical)
     public boolean standardize;
+
+    @API(help = "Only applicable to multiple alpha/lambda values.  If false, build the next model for next set of " +
+            "alpha/lambda values starting from the values provided by current model.  If true will start GLM model " +
+            "from scratch.", level = Level.critical)
+    public boolean cold_start;
 
     @API(help = "Handling of missing values. Either MeanImputation, Skip or PlugValues.", values = { "MeanImputation", "Skip", "PlugValues" }, level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public GLMParameters.MissingValuesHandling missing_values_handling;
@@ -163,7 +175,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "Link function array for random component in HGLM.", values = {"[identity]", "[family_default]"},level = Level.secondary, gridable=true)   
     public GLMParameters.Link[] rand_link; // link function for random components
 
-    @API(help = "double array to initialize fixed and random coefficients for HGLM.", gridable=true)
+    @API(help = "double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.", gridable=true)
     public double[] startval;
     
     @API(help = "random columns indices for HGLM.")
@@ -229,12 +241,6 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
      *  avoid printing extremely large confusion matrices.  */
     @API(help = "[Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs", level = API.Level.secondary, direction = API.Direction.INOUT)
     public int max_confusion_matrix_size;
-
-    /**
-     * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-     */
-    @API(help = "Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT)
-    public int max_hit_ratio_k;
 
     @API(help="Request p-values computation, p-values work only with IRLSM solver and no regularization", level = Level.secondary, direction = Direction.INPUT)
     public boolean compute_p_values; // _remove_collinear_columns

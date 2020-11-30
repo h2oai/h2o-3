@@ -15,14 +15,14 @@ if (hasCustomHdfsDep) {
 }
 
 dependencies {
-  compile ("org.apache.hadoop:hadoop-client:$hadoopMavenArtifactVersion") {
+  compile("org.apache.hadoop:hadoop-client:$hadoopMavenArtifactVersion") {
     force = true
   }
-  compile ("org.apache.hadoop:hadoop-common:$hadoopMavenArtifactVersion") {
+  compile("org.apache.hadoop:hadoop-common:$hadoopMavenArtifactVersion") {
     force = true
   }
   if (hasCustomHdfsDep) {
-    compile ("org.apache.hadoop:${hdfsDependency}:$hadoopMavenArtifactVersion") {
+    compile("org.apache.hadoop:${hdfsDependency}:$hadoopMavenArtifactVersion") {
       force = true
     }
   }
@@ -30,6 +30,7 @@ dependencies {
     transitive = false
   }
   compile project(":h2o-security")
+  compile project(":h2o-ext-steam")
   // Libraries need for Google Cloud Storage strongly require this Guava version
   compile('com.google.guava:guava:20.0') {force = true}
   compile(project(':h2o-app')) {
@@ -38,16 +39,17 @@ dependencies {
   compile project(":h2o-web")
   compile project(":h2o-avro-parser")
   // Include GCS persist layer
-  compile(project(":h2o-persist-gcs"))
+  compile project(":h2o-persist-gcs")
   // Include S3 persist layer
-  compile(project(":h2o-persist-s3"))
+  compile project(":h2o-persist-s3")
   // Include HDFS persist layer
-  compile (project(':h2o-persist-hdfs')) {
+  compile(project(':h2o-persist-hdfs')) {
     transitive = false
   }
   compile(project(':h2o-hive')) {
     transitive = false
   }
+  compile("org.apache.parquet:parquet-avro:${defaultParquetVersion}") // required by h2o-hive
 
   // For standalone mode to work with MapR, this extra library needs to be
   // included, and it's not pulled in by the dependency stuff;  this must
@@ -108,6 +110,7 @@ shadowJar {
   mergeServiceFiles()
   // CDH 5.3.0 provides joda-time v1.6 which is too old, shadow the library instead
   relocate 'org.joda.time', 'ai.h2o.org.joda.time'
+  relocate 'org.apache.http', 'ai.h2o.org.apache.http'
   exclude hadoopShadowJarExcludes
   relocate 'com.google.common', 'ai.h2o.com.google.common'
   baseName = 'h2odriver'

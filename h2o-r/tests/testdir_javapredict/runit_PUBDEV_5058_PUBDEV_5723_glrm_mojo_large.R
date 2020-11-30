@@ -17,9 +17,25 @@ test.Glrm.mojo <-
       loadedModel = h2o.loadModel(filePath(modelAndDir$dirName, modelAndDir$model@model_id, fsep=.Platform$file.sep))
       lpredict = h2o.predict(loadedModel, params_prob_data$tDataset)
       twoFrames<-mojoH2Opredict(modelAndDir$model, modelAndDir$dirName, filename, glrmReconstruct=TRUE) # perform H2O and mojo prediction and return frames
-      compareFrames(twoFrames$h2oPredict,twoFrames$mojoPredict, prob=1, tolerance = 1e-6)
+      ncols = ncol(twoFrames$h2oPredict)
+      # I set enum columns to numeric before comparing them.
+      for (ind in seq_len(ncols)) {
+        temp1 = twoFrames$h2oPredict[ind]
+        temp2 = twoFrames$mojoPredict[ind]
+        if (h2o.isnumeric(temp1)) {
+          compareFrames(temp1, temp2, prob=1, tolerance=1e-6)
+        } else
+          compareFrames(h2o.asnumeric(temp1), h2o.asnumeric(temp2), prob=1, tolerance=1e-6)
+      }
       print("Comparing mojo predict and loaded model predict....")
-      compareFrames(twoFrames$h2oPredict, lpredict, prob=1, tolerance=1e-6)
+      for (cind in seq_len(ncols)) {
+        temp1 <- twoFrames$h2oPredict[cind]
+        temp2 <- lpredict[cind]
+        if (h2o.isnumeric(temp1))
+          compareFrames(temp1, temp2, prob=1, tolerance=1e-6)
+        else
+          compareFrames(h2o.asnumeric(temp1), h2o.asnumeric(temp2), prob=1, tolerance=1e-6)
+      }
       twoFrames<-mojoH2Opredict(modelAndDir$model, modelAndDir$dirName, filename)
       xFactorTest <- h2o.getFrame(paste("GLRMLoading", twoFrames$frameId, sep="_"))
       compareFrames(xFactorTest, twoFrames$mojoPredict, prob=1, tolerance =1e-6)

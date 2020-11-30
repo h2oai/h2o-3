@@ -2,10 +2,12 @@ package hex.tree.xgboost.matrix;
 
 import water.util.ArrayUtils;
 
+import java.io.Serializable;
+
 /**
  * Dimensions of a Sparse Matrix
  */
-public final class SparseMatrixDimensions {
+public final class SparseMatrixDimensions implements Serializable {
 
     public final int[] _precedingRowCounts;
     public final long[] _precedingNonZeroElementsCounts;

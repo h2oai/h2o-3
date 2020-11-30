@@ -19,5 +19,7 @@ public enum DistributionFamily {
   huber,
   laplace,
   quantile,
+  fractionalbinomial,
+  negativebinomial,
   custom
 }

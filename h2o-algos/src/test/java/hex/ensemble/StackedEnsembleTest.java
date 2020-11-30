@@ -40,7 +40,7 @@ public class StackedEnsembleTest extends TestUtil {
     @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   @Rule
-  public ExpectedException expectedException = ExpectedException.none();
+  public transient ExpectedException expectedException = ExpectedException.none();
 
     private abstract class PrepData { abstract int prep(Frame fr); }
 
@@ -373,13 +373,11 @@ public class StackedEnsembleTest extends TestUtil {
         Assert.assertEquals(4, models.length);
 
         StackedEnsembleParameters seParams = new StackedEnsembleParameters();
-        seParams._distribution = DistributionFamily.bernoulli;
         seParams._train = train._key;
         seParams._blending = blend._key;
         seParams._response_column = target;
         seParams._base_models = grid.getModelKeys();
         seParams._seed = seed;
-
         //running a first blending SE without keeping predictions
         seParams._keep_base_model_predictions = false;
         StackedEnsemble seJob = new StackedEnsemble(seParams);
@@ -763,6 +761,7 @@ public class StackedEnsembleTest extends TestUtil {
 
             Frame training_clone = new Frame(training_frame);
             DKV.put(training_clone);
+            Scope.track(training_clone);
             preds = stackedEnsembleModel.score(training_clone);
             final boolean predsTheSame = stackedEnsembleModel.testJavaScoring(training_clone, preds, 1e-15, 0.01);
             Assert.assertTrue(predsTheSame);
@@ -777,6 +776,7 @@ public class StackedEnsembleTest extends TestUtil {
                 ModelMetrics validation_metrics = stackedEnsembleModel._output._validation_metrics;
                 Frame validation_clone = new Frame(validation_frame);
                 DKV.put(validation_clone);
+                Scope.track(validation_clone);
                 stackedEnsembleModel.score(validation_clone).remove();
                 ModelMetrics validation_clone_metrics = ModelMetrics.getFromDKV(stackedEnsembleModel, validation_clone);
                 Assert.assertEquals(validation_metrics.mse(), validation_clone_metrics.mse(), 1e-15);
@@ -1160,4 +1160,276 @@ public class StackedEnsembleTest extends TestUtil {
       }
     }
   }
+
+  @Test
+  public void testCanInferFromBaseModelsDistribution() {
+    List<Lockable> deletables = new ArrayList<>();
+    try {
+      final int seed = 1;
+      final Frame train = parse_test_file("./smalldata/testng/prostate_train.csv");
+      deletables.add(train);
+      final Frame test = parse_test_file("./smalldata/testng/prostate_test.csv");
+      deletables.add(test);
+      final String target = "CAPSULE";
+      int target_idx = train.find(target);
+      train.replace(target_idx, train.vec(target_idx).toCategoricalVec()).remove();
+      DKV.put(train);
+      test.remove(target_idx).remove();
+      DKV.put(test);
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = train._key;
+      params._response_column = target;
+      params._seed = seed;
+      params._keep_cross_validation_models = false;
+      params._keep_cross_validation_predictions = true;
+      params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+      params._nfolds = 3;
+      params._distribution = DistributionFamily.bernoulli;
+
+      Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
+        put("_ntrees", new Integer[]{3, 5});
+      }});
+      Grid grid = gridSearch.get();
+      deletables.add(grid);
+      Model[] gridModels = grid.getModels();
+      deletables.addAll(Arrays.asList(gridModels));
+      Assert.assertEquals(2, gridModels.length);
+
+      StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+      seParams._train = train._key;
+      seParams._response_column = target;
+      seParams._base_models = ArrayUtils.append(grid.getModelKeys());
+      seParams._metalearner_algorithm = Algorithm.AUTO;
+      seParams._seed = seed;
+      StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get();
+      deletables.add(se);
+
+      Assert.assertTrue(((GLMModel.GLMParameters) se._output._metalearner._parms)._family == GLMModel.GLMParameters.Family.binomial);
+
+      StackedEnsembleParameters seParams2 = new StackedEnsembleParameters();
+      seParams2._train = train._key;
+      seParams2._response_column = target;
+      seParams2._base_models = ArrayUtils.append(grid.getModelKeys());
+      seParams2._metalearner_algorithm = Algorithm.gbm;
+      seParams2._seed = seed;
+      StackedEnsembleModel se2 = new StackedEnsemble(seParams2).trainModel().get();
+      deletables.add(se2);
+
+      Assert.assertTrue(se2._output._metalearner._parms._distribution == DistributionFamily.bernoulli);
+    } finally {
+      for (Lockable l : deletables) {
+        if (l instanceof Model) ((Model) l).deleteCrossValidationPreds();
+        l.delete();
+      }
+    }
+  }
+
+  @Test
+  public void testCanInferFromBaseModelsFamily() {
+    familyAndLinkInferenceTestHelper(GLMModel.GLMParameters.Family.gaussian, GLMModel.GLMParameters.Link.identity, DistributionFamily.gaussian, false);
+    familyAndLinkInferenceTestHelper(GLMModel.GLMParameters.Family.gamma, GLMModel.GLMParameters.Link.log, DistributionFamily.gamma, false);
+    familyAndLinkInferenceTestHelper(GLMModel.GLMParameters.Family.gamma, GLMModel.GLMParameters.Link.identity, DistributionFamily.gamma, false);
+    familyAndLinkInferenceTestHelper(GLMModel.GLMParameters.Family.tweedie, GLMModel.GLMParameters.Link.tweedie, DistributionFamily.tweedie, false);
+  }
+
+  @Test
+  public void testCanInferFromBaseModelsMixedFamilyAndDistributions() {
+    familyAndLinkInferenceTestHelper(GLMModel.GLMParameters.Family.gaussian, GLMModel.GLMParameters.Link.identity, DistributionFamily.gaussian, true);
+    familyAndLinkInferenceTestHelper(GLMModel.GLMParameters.Family.gamma, GLMModel.GLMParameters.Link.log, DistributionFamily.gamma, true);
+    familyAndLinkInferenceTestHelper(GLMModel.GLMParameters.Family.gamma, GLMModel.GLMParameters.Link.identity, DistributionFamily.gamma, true);
+    familyAndLinkInferenceTestHelper(GLMModel.GLMParameters.Family.tweedie, GLMModel.GLMParameters.Link.tweedie, DistributionFamily.tweedie, true);
+  }
+
+  @Test
+  public void testInferenceOfDistributionFallbacksToBasicDistribution() {
+    List<Lockable> deletables = new ArrayList<>();
+    try {
+      final int seed = 1;
+      final Frame train = parse_test_file("./smalldata/iris/iris_train.csv");
+      deletables.add(train);
+      final Frame test = parse_test_file("./smalldata/iris/iris_test.csv");
+      deletables.add(test);
+      final String target = "petal_wid";
+      int target_idx = train.find(target);
+      DKV.put(train);
+      test.remove(target_idx).remove();
+      DKV.put(test);
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = train._key;
+      params._response_column = target;
+      params._seed = seed;
+      params._keep_cross_validation_models = false;
+      params._keep_cross_validation_predictions = true;
+      params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+      params._nfolds = 3;
+      params._distribution = DistributionFamily.tweedie;
+
+      Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
+        put("_ntrees", new Integer[]{3, 5});
+      }});
+      Grid grid = gridSearch.get();
+      deletables.add(grid);
+      Model[] gridModels = grid.getModels();
+      deletables.addAll(Arrays.asList(gridModels));
+      Assert.assertEquals(2, gridModels.length);
+
+      StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+      seParams._train = train._key;
+      seParams._response_column = target;
+      seParams._base_models = ArrayUtils.append(grid.getModelKeys());
+      seParams._metalearner_algorithm = Algorithm.drf; // does NOT support tweedie
+      seParams._seed = seed;
+      StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get();
+      deletables.add(se);
+
+      Assert.assertTrue(se._output._metalearner._parms._distribution == DistributionFamily.gaussian);
+    } finally {
+      for (Lockable l : deletables) {
+        if (l instanceof Model) ((Model) l).deleteCrossValidationPreds();
+        l.delete();
+      }
+    }
+  }
+
+
+  private void familyAndLinkInferenceTestHelper(
+          GLMModel.GLMParameters.Family family,
+          GLMModel.GLMParameters.Link link,
+          DistributionFamily distribution,
+          boolean mixed) {
+    List<Lockable> deletables = new ArrayList<>();
+    try {
+      final int seed = 1;
+      final Frame train = parse_test_file("./smalldata/iris/iris_train.csv");
+      deletables.add(train);
+      final Frame test = parse_test_file("./smalldata/iris/iris_test.csv");
+      deletables.add(test);
+      final String target = "petal_wid";
+      int target_idx = train.find(target);
+      DKV.put(train);
+      test.remove(target_idx).remove();
+      DKV.put(test);
+
+      GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+      params._train = train._key;
+      params._response_column = target;
+      params._seed = seed;
+      params._keep_cross_validation_models = false;
+      params._keep_cross_validation_predictions = true;
+      params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+      params._nfolds = 3;
+      params._family = family;
+      params._link = link;
+
+      Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
+        put("_non_negative", new Boolean[]{false, true});
+      }});
+      Grid grid = gridSearch.get();
+      deletables.add(grid);
+      Model[] gridModels = grid.getModels();
+      deletables.addAll(Arrays.asList(gridModels));
+      Assert.assertEquals(2, gridModels.length);
+
+      Grid gridGBM = null;
+      if (mixed) {
+        GBMModel.GBMParameters paramsGBM = new GBMModel.GBMParameters();
+        paramsGBM._train = train._key;
+        paramsGBM._response_column = target;
+        paramsGBM._seed = seed;
+        paramsGBM._keep_cross_validation_models = false;
+        paramsGBM._keep_cross_validation_predictions = true;
+        paramsGBM._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+        paramsGBM._nfolds = 3;
+        paramsGBM._distribution = distribution;
+        Job<Grid> gridSearchGBM = GridSearch.startGridSearch(null, paramsGBM, new HashMap<String, Object[]>() {{
+          put("_ntrees", new Integer[]{3, 5});
+        }});
+        gridGBM = gridSearchGBM.get();
+        deletables.add(gridGBM);
+        Model[] gridModelsGBM = gridGBM.getModels();
+        deletables.addAll(Arrays.asList(gridModelsGBM));
+        Assert.assertEquals(2, gridModelsGBM.length);
+      }
+
+      StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+      seParams._train = train._key;
+      seParams._response_column = target;
+      if (mixed) {
+        // first glm and then gbm base models
+        seParams._base_models = ArrayUtils.append(grid.getModelKeys(), gridGBM.getModelKeys());
+      } else {
+        seParams._base_models = ArrayUtils.append(grid.getModelKeys());
+      }
+      seParams._metalearner_algorithm = Algorithm.AUTO;
+      seParams._seed = seed;
+      StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get();
+      deletables.add(se);
+
+      Assert.assertTrue(((GLMModel.GLMParameters) se._output._metalearner._parms)._family == family);
+      Assert.assertTrue(((GLMModel.GLMParameters) se._output._metalearner._parms)._link == link);
+
+
+      StackedEnsembleParameters seParams2 = new StackedEnsembleParameters();
+      seParams2._train = train._key;
+      seParams2._response_column = target;
+      if (mixed) {
+        seParams2._base_models = ArrayUtils.append(grid.getModelKeys(), gridGBM.getModelKeys());
+      } else {
+        seParams2._base_models = ArrayUtils.append(grid.getModelKeys());
+      }
+      seParams2._metalearner_algorithm = Algorithm.gbm;
+      seParams2._seed = seed;
+      StackedEnsembleModel se2 = new StackedEnsemble(seParams2).trainModel().get();
+      deletables.add(se2);
+
+      Assert.assertTrue(se2._output._metalearner._parms._distribution == distribution);
+
+      if (mixed) {
+        // first gbm and then glm base models
+        StackedEnsembleParameters seParams3 = new StackedEnsembleParameters();
+        seParams3._train = train._key;
+        seParams3._response_column = target;
+        seParams3._base_models = ArrayUtils.append(gridGBM.getModelKeys(), grid.getModelKeys());
+        seParams3._metalearner_algorithm = Algorithm.AUTO;
+        seParams3._seed = seed;
+        StackedEnsembleModel se3 = new StackedEnsemble(seParams3).trainModel().get();
+        deletables.add(se3);
+
+        Assert.assertTrue(((GLMModel.GLMParameters) se3._output._metalearner._parms)._family == family);
+        Assert.assertTrue(((GLMModel.GLMParameters) se3._output._metalearner._parms)._link == link);
+      }
+
+    } finally {
+      for (Lockable l : deletables) {
+        if (l instanceof Model) ((Model) l).deleteCrossValidationPreds();
+        l.delete();
+      }
+    }
+  }
+
+  @Test
+  public void showEnsembleCannotAssumeSameColumnHandlingForBaseModelsAndOuterModel() {
+    expectedException.expectMessage("has non-standard number of columns"); // this is wrong => PUBDEV-7842
+    try {
+      Scope.enter();
+      basicEnsemble("./smalldata/junit/cars.csv",
+              null,
+              new StackedEnsembleTest.PrepData() {
+                int prep(Frame fr) {
+                  fr.remove("name").remove();
+                  Vec acVec = fr.anyVec().makeCon(Math.PI); // this is what breaks SE - SE will ignore this column, DRF not
+                  Scope.track(acVec);
+                  acVec.setNA(0);
+                  fr.insertVec(0, "almost_constant", acVec);
+                  return ~fr.find("economy (mpg)");
+                }
+              },
+              false, DistributionFamily.gaussian, Algorithm.glm, false);
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

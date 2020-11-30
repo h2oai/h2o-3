@@ -25,6 +25,7 @@ public class ModelBuilderHandlerUtils {
     schema.parameters.fillFromImpl(builder._parms); // Defaults for this builder into schema
     schema.parameters.fillFromParms(parms);         // Overwrite with user parms
     schema.parameters.fillImpl(builder._parms);     // Merged parms back over Model.Parameter object
+    schema.parameters.fillImpl(builder._input_parms);
     return schema;
   }
 

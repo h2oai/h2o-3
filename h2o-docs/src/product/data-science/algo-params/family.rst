@@ -26,6 +26,12 @@ You can specify one of the following ``family`` options based on the response co
 - ``poisson``: The data must be numeric and non-negative (Int).
 - ``gamma``: The data must be numeric and continuous and positive (Real or Int).
 - ``tweedie``: The data must be numeric and continuous (Real) and non-negative.
+- ``negativebinomial``: The data must be numeric and non-negative (Int).
+- ``AUTO``: The family can fall into three cases based on the response:
+		
+		- If the data is **Enum** with cardinality = 2, then the family is automatically determined as **binomial**.
+		- If the data is **Enum** with cardinality > 2, then the family is automatically determined as **multinomial**.
+		- If the data is numeric (**Real** or **Int**), then the family is automatically determined as **gaussian**.
 
 Refer to the `Families <../glm.html#families>`__ section for detailed information about each family option. 
 
@@ -57,13 +63,13 @@ Example
 		cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 
 		# set the predictor names and the response column name
-		predictors <- c("displacement","power","weight","acceleration","year")
+		predictors <- c("displacement", "power", "weight", "acceleration", "year")
 		response <- "economy_20mpg"
 
 		# split into train and validation
-		cars.splits <- h2o.splitFrame(data = cars, ratios = .8)
-		train <- cars.splits[[1]]
-		valid <- cars.splits[[2]]
+		cars_splits <- h2o.splitFrame(data = cars, ratios = 0.8)
+		train <- cars_splits[[1]]
+		valid <- cars_splits[[2]]
 
 		# try using the `family` parameter:
 		car_glm <- h2o.glm(x = predictors, y = response, family = 'binomial', training_frame = train, 

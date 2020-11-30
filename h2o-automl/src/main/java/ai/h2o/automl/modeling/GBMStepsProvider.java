@@ -164,9 +164,10 @@ public class GBMStepsProvider
                         aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Retraining best GBM with learning rate annealing: "+bestGBM._key);
                         GBMParameters gbmParameters = (GBMParameters) bestGBM._parms.clone();
                         gbmParameters._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
+                        gbmParameters._max_runtime_secs = 0; // reset max runtime
                         gbmParameters._learn_rate_annealing = 0.99;
-                        gbmParameters._max_runtime_secs = maxRuntimeSecs;
-                        setStoppingCriteria(gbmParameters, new GBMParameters(), SeedPolicy.None);
+                        initTimeConstraints(gbmParameters, maxRuntimeSecs);
+                        setStoppingCriteria(gbmParameters, new GBMParameters());
                         return asModelsJob(startModel(Key.make(result+"_model"), gbmParameters), result);
                     }
 

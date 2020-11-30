@@ -1,16 +1,28 @@
 package hex;
 
 import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
+import water.util.TwoDimTable;
 
 import java.util.Random;
 
+import static org.junit.Assert.assertEquals;
+
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class GainsLiftTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+
+  @Rule
+  public ExpectedException expectedException = ExpectedException.none();
 
   @Test public void constant() {
     int len = 100000;
@@ -255,5 +267,48 @@ public class GainsLiftTest extends TestUtil {
 
     actual.remove();
     predict.remove();
+  }
+
+  @Test
+  public void testAverageResponseRate() {
+    final int vectorLength = 10;
+    try {
+      Scope.enter();
+      Vec actual = Scope.track(Vec.makeCon(1.0d, vectorLength));
+      actual.set(0, 0d);
+      Vec predict = Scope.track(Vec.makeCon(1.0d, vectorLength));
+      Vec weights = Scope.track(Vec.makeCon(1.0d, vectorLength));
+      weights.set(0, 0d);
+
+      GainsLift gl = new GainsLift(predict, actual, weights);
+      gl.exec();
+      Log.info(gl);
+      Log.info(gl.avg_response_rate);
+      assertEquals(1.0d, gl.avg_response_rate, 0d);
+
+      final TwoDimTable twoDimTable = gl.createTwoDimTable();
+      assertEquals("Kolmogorov Smirnov",twoDimTable.getColHeaders()[13]);
+      assertEquals(1.0d, twoDimTable.getCellValues()[0][13].get());
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testActualLabelCardinality() {
+    final int vectorLength = 10;
+    Scope.enter();
+    final Vec actual = Vec.makeCon(1.0d, vectorLength);
+    final Vec predict = Vec.makeCon(1.0d, vectorLength);
+    try {
+      expectedException.expect(IllegalArgumentException.class);
+      expectedException.expectMessage("Actual column must contain binary class labels, but found cardinality 1!");
+      GainsLift gl = new GainsLift(predict, actual);
+      gl.exec();
+    } finally {
+      actual.remove();
+      predict.remove();
+      Scope.exit();
+    }
   }
 }

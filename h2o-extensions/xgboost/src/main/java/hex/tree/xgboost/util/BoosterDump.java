@@ -2,8 +2,8 @@ package hex.tree.xgboost.util;
 
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
-import ml.dmlc.xgboost4j.java.Booster;
-import ml.dmlc.xgboost4j.java.XGBoostError;
+import ai.h2o.xgboost4j.java.Booster;
+import ai.h2o.xgboost4j.java.XGBoostError;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -31,12 +31,9 @@ public class BoosterDump {
                 Files.write(featureMapFile, Collections.singletonList(featureMap), Charset.defaultCharset(), StandardOpenOption.WRITE);
             }
             Booster booster = BoosterHelper.loadModel(new ByteArrayInputStream(boosterBytes));
-            BoosterHelper.BoosterOp<String[]> dumpOp = new BoosterHelper.BoosterOp<String[]>() {
-                @Override
-                public String[] apply(Booster booster) throws XGBoostError {
-                    String featureMap = featureMapFile != null ? featureMapFile.toFile().getAbsolutePath() : null;
-                    return booster.getModelDump(featureMap, withStats, format);
-                }
+            BoosterHelper.BoosterOp<String[]> dumpOp = booster1 -> {
+                String featureMap1 = featureMapFile != null ? featureMapFile.toFile().getAbsolutePath() : null;
+                return booster1.getModelDump(featureMap1, withStats, format);
             };
             return BoosterHelper.doWithLocalRabit(dumpOp, booster);
         } catch (IOException e) {

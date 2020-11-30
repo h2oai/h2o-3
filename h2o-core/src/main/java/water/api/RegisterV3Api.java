@@ -54,6 +54,10 @@ public class RegisterV3Api extends AbstractRegister {
         "POST /3/ImportHiveTable", ImportHiveTableHandler.class, "importHiveTable",
         "Import Hive table into an H2O Frame.");
 
+    context.registerEndpoint("saveToHiveTable",
+        "POST /3/SaveToHiveTable", SaveToHiveTableHandler.class, "saveToHiveTable",
+        "Save an H2O Frame contents into a Hive table.");
+
     context.registerEndpoint("guessParseSetup",
             "POST /3/ParseSetup", ParseSetupHandler.class, "guessSetup",
             "Guess the parameters for parsing raw byte-oriented data into an H2O Frame.");
@@ -164,6 +168,14 @@ public class RegisterV3Api extends AbstractRegister {
             "POST /3/Frames/{frame_id}/export", FramesHandler.class, "export",
             "Export a Frame to the given path with optional overwrite.");
 
+    context.registerEndpoint("saveFrame",
+            "POST /3/Frames/{frame_id}/save", FramesHandler.class, "save",
+            "Save frame data to the given path.");
+
+    context.registerEndpoint("loadFrame",
+            "POST /3/Frames/load", FramesHandler.class, "load",
+            "Load a frame from data on given path.");
+
     context.registerEndpoint("frameColumnSummary",
             "GET /3/Frames/{frame_id}/columns/{column}/summary", FramesHandler.class, "columnSummary",
             "Return the summary metrics for a column, e.g. min, max, mean, sigma, percentiles, etc.");
@@ -248,6 +260,10 @@ public class RegisterV3Api extends AbstractRegister {
     context.registerEndpoint("makePDP",
             "POST /3/PartialDependence/", ModelsHandler.class, "makePartialDependence",
             "Create data for partial dependence plot(s) for the specified model and frame.");
+
+    context.registerEndpoint("makeFI",
+            "POST /3/FeatureInteraction", ModelsHandler.class, "makeFeatureInteraction",
+            "Fetch feature interaction data");
 
     context.registerEndpoint("fetchPDP",
             "GET /3/PartialDependence/{name}", ModelsHandler.class, "fetchPartialDependence",

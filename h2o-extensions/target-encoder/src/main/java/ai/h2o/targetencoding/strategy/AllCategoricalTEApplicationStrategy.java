@@ -23,7 +23,8 @@ public class AllCategoricalTEApplicationStrategy extends TEApplicationStrategy {
   public String[] getColumnsToEncode() {
     return Arrays.stream(_frame.names())
         .filter(columnName ->
-            _frame.vec(columnName).isCategorical() && ! Arrays.asList(_excludedColumnNames).contains(columnName)
+            _frame.vec(columnName).isCategorical() 
+            && ! Arrays.asList(_excludedColumnNames).contains(columnName)
         )
         .toArray(String[]::new);
   }

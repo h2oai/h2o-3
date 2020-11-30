@@ -30,7 +30,6 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "class_sampling_factors",
       "max_after_balance_size",
       "max_confusion_matrix_size",
-      "max_hit_ratio_k",
       "ntrees",
       "max_depth",
       "min_rows",
@@ -67,7 +66,8 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "custom_distribution_func",      
       "export_checkpoints_dir",
       "monotone_constraints",
-      "check_constant_response"
+      "check_constant_response",
+      "gainslift_bins"
 //      "use_new_histo_tsk",
 //      "col_block_sz",
 //      "min_threads",

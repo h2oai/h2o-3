@@ -47,12 +47,12 @@ h2o.ls <- function() {
 #' Remove All Objects on the H2O Cluster
 #'
 #' Removes the data from the h2o cluster, but does not remove the local references.
-#' Retains frames and vectors specified in retained_elements argument.
-#' Retained keys must be keys of models and frames only. For models retained, training and validation frames are retained as well.
+#' Retains models, frames and vectors specified in retained_elements argument.
+#' Retained elements must be instances/ids of models and frames only. For models retained, training and validation frames are retained as well.
 #' Cross validation models of a retained model are NOT retained automatically, those must be specified explicitely.
 #'
 #' @param timeout_secs Timeout in seconds. Default is no timeout.
-#' @param retained_elements Frames and vectors to be retained. Other keys provided are ignored.
+#' @param retained_elements Instances or ids of models and frames to be retained. Combination of instances and ids in the same list is also a valid input.
 #' @seealso \code{\link{h2o.rm}}
 #' @examples
 #' \dontrun{
@@ -76,6 +76,10 @@ h2o.removeAll <- function(timeout_secs=0, retained_elements = c()) {
         retained_keys <- append(retained_keys, element@model_id)
       } else if (is.H2OFrame(element)) {
         retained_keys <- append(retained_keys, h2o.getId(element))
+      } else if( is.character(element) ) {
+        retained_keys <- append(retained_keys, element)
+      } else {
+        stop("The 'retained_elements' variable must be either an instance of H2OModel/H2OFrame or an id of H2OModel/H2OFrame.")
       }
     }
     
@@ -103,9 +107,9 @@ h2o.removeAll <- function(timeout_secs=0, retained_elements = c()) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris_hex <- as.h2o(iris)
-#' model <- h2o.glm(1:4,5,training = iris_hex, family = "multinomial")
-#' h2o.rm(iris_hex)
+#' iris <- as.h2o(iris)
+#' model <- h2o.glm(1:4,5,training = iris, family = "multinomial")
+#' h2o.rm(iris)
 #' }
 #' @export
 h2o.rm <- function(ids, cascade=TRUE) {
@@ -122,7 +126,7 @@ h2o.rm <- function(ids, cascade=TRUE) {
     } else if( is.character(xi) ) {
       .h2o.__remoteSend(paste0(.h2o.__DKV, "/",xi), method = "DELETE", .params=list(cascade=cascade))
     } else {
-      stop("input to h2o.rm must be a Keyed instance (e.g. H2OFrame, H2OModel) or character")
+      stop("Input to h2o.rm must be either an instance of H2OModel/H2OFrame or a character")
     }
   }
 
@@ -142,11 +146,11 @@ h2o.rm <- function(ids, cascade=TRUE) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
 #' train <- h2o.importFile(f)
 #' y <- "species"
 #' x <- setdiff(names(train), y)
-#' train[,y] <- as.factor(train[,y])
+#' train[, y] <- as.factor(train[, y])
 #' nfolds <- 5
 #' num_base_models <- 2
 #' my_gbm <- h2o.gbm(x = x, y = y, training_frame = train, 
@@ -168,6 +172,28 @@ h2o.getFrame <- function(id) {
   fr <- .newH2OFrame(id,id,-1,-1)
   .fetch.data(fr,1L)
   fr
+}
+
+#' Get an list of all model ids present in the cluster
+#'
+#' @return Returns a vector of model ids.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' iris_hf <- as.h2o(iris)
+#' model_id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris_hf)@@model_id
+#' model_id_list <- h2o.list_models()
+#' }
+#' @export
+h2o.list_models <- function() {
+    models_json <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS))$models
+    res <- NULL
+    for (json in models_json) {
+        res <- c(res, json$model_id$name)
+    }
+    res
 }
 
 #' Get an R reference to an H2O model
@@ -210,13 +236,14 @@ h2o.getModel <- function(model_id) {
   }
   parameters <- list()
   allparams  <- list()
-  lapply(json$parameters, function(param) {
-    if (!is.null(param$actual_value)) {
+
+  fill_pairs <- function(param, all=TRUE) {
+    if (!is.null(param$actual_value) && !is.null(param$name)) {
       name <- param$name
       value <- param$actual_value
       mapping <- .type.map[param$type,]
-      type    <- mapping[1L, 1L]
-      scalar  <- mapping[1L, 2L]
+      type    <- mapping$type
+      scalar  <- mapping$scalar
 
       if(type == "numeric" && class(value) == "list" && length(value) == 0) #Special case when using deep learning with 0 hidden units
         value <- 0
@@ -236,13 +263,31 @@ h2o.getModel <- function(model_id) {
       # Response column needs to be parsed
       if (name == "response_column")
         value <- value$column_name
-      allparams[[name]] <<- value
+        
+      if (all == TRUE) {
+        return(list(name, value))
+      }
+        
       # Store only user changed parameters into parameters
       # TODO: Should we use !isTrue(all.equal(param$default_value, param$actual_value)) instead?
-      if (is.null(param$default_value) || param$required || !identical(param$default_value, param$actual_value))
-        parameters[[name]] <<- value
+      if (is.null(param$default_value) || param$required || !identical(param$default_value, param$actual_value)){
+        return(list(name, value))
+      }
     }
-  })
+    return(NULL)
+  }
+    
+  # get name, value pairs
+  allparams_key_val <- lapply(json$parameters, fill_pairs, all=TRUE)
+  parameters_key_val <- lapply(json$parameters, fill_pairs, all=FALSE)
+    
+  # remove NULLs
+  allparams_key_val[sapply(allparams_key_val, is.null)] <- NULL
+  parameters_key_val[sapply(parameters_key_val, is.null)] <- NULL
+    
+  # fill allparams, parameters
+  for (param in allparams_key_val) {if (!any(is.na(param[1]))) allparams[unlist(param[1])] <- param[2]}
+  for (param in parameters_key_val) {if (!any(is.na(param[1]))) parameters[unlist(param[1])] <- param[2]}
 
   # Run model specific hooks
   model_fill_func <- paste0(".h2o.fill_", json$algo)
@@ -255,6 +300,7 @@ h2o.getModel <- function(model_id) {
 
   parameters$x <- json$output$names
   allparams$x  <- json$output$names
+    
   if (!is.null(parameters$response_column))
   {
     parameters$y <- parameters$response_column
@@ -530,4 +576,18 @@ h2o.download_model <- function(model, path=NULL) {
     writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), file_path, useBytes = TRUE)
     
     return(paste0(file_path))
+}
+
+#'
+#' Execute a Rapids expression.
+#'
+#' @param expr The rapids expression (ascii string)
+#'
+#' @examples
+#' \dontrun{
+#' h2o.rapids('(setproperty "sys.ai.h2o.algos.evaluate_auto_model_parameters" "true")')
+#' }
+#' @export
+h2o.rapids <- function(expr) {
+    res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0(expr), session_id=h2o.getConnection()@mutable$session_id, method = "POST")
 }

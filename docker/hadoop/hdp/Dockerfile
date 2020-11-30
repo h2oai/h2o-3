@@ -1,6 +1,6 @@
-# pull base image
 ARG PARENT_VERSION
-FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop-gradle-4.10.1:${PARENT_VERSION}
+ARG GRADLE_VERSION
+FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop-gradle-${GRADLE_VERSION}:${PARENT_VERSION}
 
 # maintainer details
 MAINTAINER h2oai "h2o.ai"
@@ -103,6 +103,12 @@ RUN chmod 700 /usr/sbin/startup.sh && \
 # Copy hive configs
 COPY ${PATH_PREFIX}/../common/conf-hive/ /etc/${HIVE_PACKAGE}/conf/
 COPY ${PATH_PREFIX}/conf-tez/ /etc/tez/conf/
+
+# Copy hive data
+RUN cd /home/jenkins/ && \
+    wget https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTest.csv.zip && \
+    wget https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv && \
+    chown jenkins:jenkins /home/jenkins/*
 
 RUN /usr/sbin/install_ldap.sh
 

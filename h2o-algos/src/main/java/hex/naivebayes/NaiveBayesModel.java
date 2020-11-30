@@ -6,6 +6,7 @@ import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
 import hex.genmodel.GenModel;
 import hex.schemas.NaiveBayesModelV3;
+import hex.util.EffectiveParametersUtils;
 import water.H2O;
 import water.Key;
 import water.api.schemas3.ModelSchemaV3;
@@ -52,7 +53,15 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
     public NaiveBayesOutput(NaiveBayes b) { super(b); }
   }
 
-  public NaiveBayesModel(Key selfKey, NaiveBayesParameters parms, NaiveBayesOutput output) { super(selfKey,parms,output); }
+  public NaiveBayesModel(Key selfKey, NaiveBayesParameters parms, NaiveBayesOutput output) { 
+    super(selfKey,parms,output);
+  }
+  
+  @Override
+  public void initActualParamValues() {
+    super.initActualParamValues();
+    EffectiveParametersUtils.initFoldAssignment(_parms);
+  }
 
   public ModelSchemaV3 schema() {
     return new NaiveBayesModelV3();

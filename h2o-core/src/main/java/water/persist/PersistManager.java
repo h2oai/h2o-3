@@ -1,6 +1,5 @@
 package water.persist;
 
-import org.joda.time.Period;
 import water.*;
 import water.api.FSIOException;
 import water.api.HDFSIOException;
@@ -691,7 +690,7 @@ public class PersistManager {
           throw new IllegalArgumentException("File already exists (" + path + ")");
         }
       }
-      return new FileOutputStream(path);
+      return new BufferedOutputStream(new FileOutputStream(path));
     }
     catch (Exception e) {
       throw new RuntimeException(e);

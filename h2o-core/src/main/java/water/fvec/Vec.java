@@ -258,7 +258,6 @@ public class Vec extends Keyed<Vec> {
     assert key._kb[0]==Key.VEC;
     assert domain==null || type==T_CAT;
     assert T_BAD <= type && type <= T_TIME; // Note that T_BAD is allowed for all-NA Vecs
-    setMeta(type,domain);
     _rowLayout = rowLayout;
     _type = type;
     _domain = domain;
@@ -320,13 +319,6 @@ public class Vec extends Keyed<Vec> {
     RollupStats rs = rollupStats();
     return rs._isInt && rs._mins[0] >= 0 && rs._maxs[0] <= 1;
   }
-
-  private void setMeta( byte type, String[] domain) {
-    if( domain==null && type==T_CAT ) type = T_NUM; // Until you have some strings, you are just a numeric column
-    _domain = domain;
-    _type = type;
-  }
-  public void copyMeta( Vec src, Futures fs ) { setMeta(src._type,src._domain); DKV.put(this,fs); }
 
   // ======= Create zero/constant Vecs ======
   /** Make a new zero-filled vec **/
@@ -474,11 +466,18 @@ public class Vec extends Keyed<Vec> {
 
   /** A new vector which is a copy of {@code this} one.
    *  @return a copy of the vector.  */
-  public Vec makeCopy(String[] domain){ return makeCopy(domain, _type); }
+  public Vec makeCopy(String[] domain) {
+    final byte type = _type == T_CAT && domain == null ? T_NUM : _type; // convenience for dropping a domain
+    return makeCopy(domain, type);
+  }
 
   public Vec makeCopy(String[] domain, byte type) {
+    if (domain == null && type == T_CAT) {
+      throw new IllegalArgumentException("Desired Vec type is Categorical but not domain provided.");
+    }
     Vec v = doCopy();
-    v.setMeta(type,domain);
+    v._domain = domain;
+    v._type = type;
     DKV.put(v);
     return v;
   }
@@ -1343,7 +1342,12 @@ public class Vec extends Keyed<Vec> {
     return fs;
   }
 
-  static void bulk_remove( final Key[] keys, final int ncs ) {
+  @Override protected Futures remove_self_key_impl(Futures fs) {
+    // nothing to do, Vec removal is handled in a special way in bulk_remove
+    return fs;
+  }
+
+  static void bulk_remove(final Key[] keys, final int ncs ) {
     // Need to mark the Vec as mutating to make sure that no running computations of RollupStats will
     // re-insert the rollups into DKV after they are deleted in bulk_remove(Key, int).
     Futures fs = new Futures();

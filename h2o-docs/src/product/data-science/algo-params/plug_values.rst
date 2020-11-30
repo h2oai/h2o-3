@@ -34,8 +34,8 @@ Example
         glm1 <- h2o.glm(training_frame = cars, y = "cylinders")
         glm2 <- h2o.glm(training_frame = cars, 
                         y = "cylinders", 
-                        missing_values_handling="PlugValues", 
-                        plug_values=means)
+                        missing_values_handling = "PlugValues", 
+                        plug_values = means)
 
         # determine if the coefficients are equal
         h2o.coef(glm1)

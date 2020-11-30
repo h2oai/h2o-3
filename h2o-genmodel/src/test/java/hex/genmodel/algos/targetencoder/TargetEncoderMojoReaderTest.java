@@ -4,8 +4,10 @@ import hex.genmodel.MojoReaderBackend;
 import org.junit.Test;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -22,8 +24,29 @@ public class TargetEncoderMojoReaderTest {
     }
 
     @Override public String getModelName() { return null; }
-    @Override protected void readModelData() { }
+    @Override protected void readModelData() throws IOException {
+      _model._nclasses = 2;
+      _model.setEncodings(parseEncodingMap());
+    }
     @Override public String mojoVersion() { return null; }
+    
+    public void initModel() {
+      _model = makeModel(
+              new String[]{"embarked", "sex", "foo", "bar", "response"}, 
+              new String[][]{
+                      new String[] {"n", "y"},
+                      new String[] {"f", "m"},
+                      null, 
+                      null,
+                      null
+              }, 
+              "response"
+      );
+    }
+    
+    public TargetEncoderMojoModel getModel() {
+      return _model;
+    }
 
     @Override
     public MojoReaderBackend getMojoReaderBackend() {
@@ -52,10 +75,11 @@ public class TargetEncoderMojoReaderTest {
     when(mojoReaderBackendMock.getTextFile(anyString())).thenReturn(encodingsBR);
 
     TestMojoReader testMojoReader = new TestMojoReader(mojoReaderBackendMock);
-
-    EncodingMaps parsedEncodings = testMojoReader.parseEncodingMap();
-    assertArrayEquals(parsedEncodings.get("embarked").get(0), new int[]{2, 4});
-    assertArrayEquals(parsedEncodings.get("sex").get(0), new int[]{3, 42});
+    testMojoReader.initModel();
+    testMojoReader.readModelData();
+    Map<String, EncodingMap> parsedEncodings = testMojoReader.getModel()._encodingsByCol;
+    assertArrayEquals(parsedEncodings.get("embarked").getNumDen(0), new double[]{2, 4}, 1e-8);
+    assertArrayEquals(parsedEncodings.get("sex").getNumDen(0), new double[]{3, 42}, 1e-8);
 
   }
 }

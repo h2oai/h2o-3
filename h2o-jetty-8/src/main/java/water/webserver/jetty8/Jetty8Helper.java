@@ -2,27 +2,20 @@ package water.webserver.jetty8;
 
 import ai.h2o.org.eclipse.jetty.security.authentication.SpnegoAuthenticator;
 import org.eclipse.jetty.plus.jaas.JAASLoginService;
-import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.ConstraintMapping;
-import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.security.DefaultIdentityService;
-import org.eclipse.jetty.security.HashLoginService;
-import org.eclipse.jetty.security.IdentityService;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.SpnegoLoginService;
+import org.eclipse.jetty.security.*;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.server.ssl.SslSocketConnector;
+import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -66,10 +59,10 @@ class Jetty8Helper {
       if (config.jks_alias != null) {
         sslContextFactory.setCertAlias(config.jks_alias);
       }
-      connector = new SslSocketConnector(sslContextFactory);
+      connector = new SslSelectChannelConnector(sslContextFactory);
     } else {
       proto = "http";
-      connector = new SocketConnector();
+      connector = new SelectChannelConnector();
     }
     if (ip != null) {
       connector.setHost(ip);

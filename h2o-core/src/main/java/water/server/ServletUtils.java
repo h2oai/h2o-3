@@ -21,6 +21,8 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
 import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Utilities supporting HTTP server-side functionality, without depending on specific version of Jetty, or on Jetty at all.
@@ -34,6 +36,11 @@ public class ServletUtils {
    * to this server from any origin.
    */
   private static final boolean DISABLE_CORS = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "disable.cors");
+
+  /**
+   * Sets header that allows usage in i-frame. Off by default for security reasons.
+   */
+  private static final boolean ENABLE_XFRAME_SAMEORIGIN = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "enable.xframe.sameorigin");
 
   private static final String TRACE_METHOD = "TRACE";
 
@@ -173,6 +180,21 @@ public class ServletUtils {
       throw new RuntimeException(e);
     }
   }
+  
+  public static String[] parseUriParams(String uri, HttpServletResponse response, Pattern p, int numParams) throws IOException {
+    Matcher m = p.matcher(uri);
+    if (!m.matches()) {
+      ServletUtils.setResponseStatus(response, HttpServletResponse.SC_BAD_REQUEST);
+      response.getWriter().write("Improperly formatted URI");
+      return null;
+    } else {
+      String[] result = new String[numParams];
+      for (int i = 0; i < numParams; i++) {
+        result[i] = m.group(i+1);
+      }
+      return result;
+    }
+  }
 
   public static boolean isXhrRequest(final HttpServletRequest request) {
     final String requestedWithHeader = request.getHeader("X-Requested-With");
@@ -197,7 +219,11 @@ public class ServletUtils {
     response.setHeader("X-h2o-cluster-id", Long.toString(H2O.CLUSTER_ID));
     response.setHeader("X-h2o-cluster-good", Boolean.toString(H2O.CLOUD.healthy()));
     // Security headers
-    response.setHeader("X-Frame-Options", "deny");
+    if (ENABLE_XFRAME_SAMEORIGIN) {
+      response.setHeader("X-Frame-Options", "sameorigin");
+    } else {
+      response.setHeader("X-Frame-Options", "deny");
+    }
     response.setHeader("X-XSS-Protection", "1; mode=block");
     response.setHeader("X-Content-Type-Options", "nosniff");
     response.setHeader("Content-Security-Policy", "default-src 'self' 'unsafe-eval' 'unsafe-inline'; img-src 'self' data:");

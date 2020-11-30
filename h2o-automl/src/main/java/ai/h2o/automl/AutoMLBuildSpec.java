@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.preprocessing.PreprocessingStepDefinition;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.grid.HyperSpaceSearchCriteria;
@@ -8,10 +9,7 @@ import water.Iced;
 import water.Key;
 import water.exceptions.H2OIllegalValueException;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
-import water.util.IcedHashMap;
-import water.util.Log;
-import water.util.PojoUtils;
+import water.util.*;
 import water.util.PojoUtils.FieldNaming;
 
 import java.util.ArrayList;
@@ -173,6 +171,7 @@ public class AutoMLBuildSpec extends Iced {
     public StepDefinition[] modeling_plan;
     public double exploitation_ratio = 0;
     public AutoMLCustomParameters algo_parameters = new AutoMLCustomParameters();
+    public PreprocessingStepDefinition[] preprocessing;
   }
 
   public static final class AutoMLCustomParameters extends Iced {
@@ -349,4 +348,12 @@ public class AutoMLBuildSpec extends Iced {
     }
     return build_control.project_name;
   }
+
+  public Key<AutoML> makeKey() {
+    // if user offers a different response column,
+    //   the new models will be added to a new Leaderboard, without removing the previous one.
+    // otherwise, the new models will be added to the existing leaderboard.
+    return Key.make(project() + AutoML.keySeparator + StringUtils.sanitizeIdentifier(input_spec.response_column));
+  }
+
 }

@@ -6,19 +6,16 @@ import hex.gam.MatrixFrameUtils.AddGamColumns;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters.Family;
-import hex.glm.GLMModel.GLMParameters.GLMType;
 import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
+import hex.util.EffectiveParametersUtils;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.udf.CFuncRef;
-import water.util.ArrayUtils;
-import water.util.FrameUtils;
-import water.util.Log;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -28,14 +25,17 @@ import static hex.gam.MatrixFrameUtils.GamUtils.sortCoeffMags;
 import static hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 
 public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.GAMModelOutput> {
+  private static final String[] BINOMIAL_CLASS_NAMES = new String[]{"0", "1"};
   public String[][] _gamColNamesNoCentering; // store column names only for GAM columns
   public String[][] _gamColNames; // store column names only for GAM columns after decentering
   public Key<Frame>[] _gamFrameKeysCenter;
+  public double[] _gamColMeans;
   public int _nclass; // 2 for binomial, > 2 for multinomial and ordinal
   public double[] _ymu;
   public long _nobs;
   public long _nullDOF;
   public int _rank;
+  public IcedHashSet<Key<Frame>> _validKeys = null;
 
   @Override public String[] makeScoringNames() {
     String[] names = super.makeScoringNames();
@@ -46,8 +46,12 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
   
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     if (domain==null && (_parms._family==Family.binomial || _parms._family==Family.quasibinomial || 
-            _parms._family==Family.negativebinomial || _parms._family==Family.fractionalbinomial))
-      domain = new String[]{"0","1"};
+            _parms._family==Family.negativebinomial || _parms._family==Family.fractionalbinomial)) {
+      if (_parms._family == Family.fractionalbinomial)
+        domain = BINOMIAL_CLASS_NAMES;
+      else
+        domain = _output._responseDomains;
+    }
     GLMModel.GLMWeightsFun glmf = new GLMModel.GLMWeightsFun(_parms._family, _parms._link, _parms._tweedie_variance_power,
             _parms._tweedie_link_power, _parms._theta);
     return new MetricBuilderGAM(domain, _ymu, glmf, _rank, true, _parms._intercept, _nclass);
@@ -56,6 +60,10 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
   public GAMModel(Key<GAMModel> selfKey, GAMParameters parms, GAMModelOutput output) {
     super(selfKey, parms, output);
     assert(Arrays.equals(_key._kb, selfKey._kb));
+  }
+  
+  public void initActualParamValuesAfterGlmCreation(){
+    EffectiveParametersUtils.initFoldAssignment(_parms);
   }
 
   public TwoDimTable copyTwoDimTable(TwoDimTable table) {
@@ -210,60 +218,66 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     }
   }
 
+  /** Score on an already adapted validation frame during cross validation.  This function is not expected to be called
+   * by other methods.   Returns a MetricBuilder that can be used to make a model metrics.
+   * @param adaptFrm Already adapted frame with gamified columns
+   * @return MetricBuilder
+   */
+  @Override
+  protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
+    GAMScore gs = makeScoringTask(adaptFrm,false,null, true);
+    assert gs._dinfo._valid:"_valid flag should be set on data info when doing scoring";
+    return gs.doAll(gs._dinfo._adaptedFrame)._mb;
+  }
+
   @SuppressWarnings("WeakerAccess")
   public static class GAMParameters extends Model.Parameters {
     // the following parameters will be passed to GLM algos
     public boolean _standardize = false; // pass to GLM algo
-    public Family _family;
-    public Link _link;
+    public Family _family = Family.AUTO;
+    public Link _link = Link.family_default;
     public Solver _solver = Solver.AUTO;
     public double _tweedie_variance_power;
     public double _tweedie_link_power;
     public double _theta; // 1/k and is used by negative binomial distribution only
-    public double _invTheta;
     public double [] _alpha;
     public double [] _lambda;
     public Serializable _missing_values_handling = MissingValuesHandling.MeanImputation;
-    public double _prior = -1;
     public boolean _lambda_search = false;
-    public int _nlambdas = -1;
-    public boolean _non_negative = false;
-    public boolean _exactLambdas = false;
-    public double _lambda_min_ratio = -1; // special
     public boolean _use_all_factor_levels = false;
     public int _max_iterations = -1;
     public boolean _intercept = true;
     public double _beta_epsilon = 1e-4;
     public double _objective_epsilon = -1;
-    public double _gradient_epsilon = -1;
     public double _obj_reg = -1;
     public boolean _compute_p_values = false;
-    public boolean _remove_collinear_columns = false;
     public String[] _interactions=null;
     public StringPair[] _interaction_pairs=null;
-    public boolean _early_stopping = true;
-    public Key<Frame> _beta_constraints = null;
     public Key<Frame> _plug_values = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
-    public int _max_active_predictors = -1;
-    public boolean _stdOverride; // standardization override by beta constraints
+    public int _max_active_predictors = -1; // not used in GAM, copied over to GLM params
 
     // the following parameters are for GAM
     public int[] _num_knots; // array storing number of knots per basis function
-    public double[][] _knots;// store knots for each gam column specified in _gam_X
     public String[] _knot_ids;  // store frame keys that contain knots location for each gam column in gam_X;
     public String[] _gam_columns; // array storing which predictor columns are needed
-   // public BSType _bs; // choose spline function for gam column
     public int[] _bs; // choose spline function for gam column, 0 = cr
     public double[] _scale;  // array storing scaling values to control wriggliness of fit
-    public GLMType _glmType = GLMType.gam; // internal parameter
     public boolean _saveZMatrix = false;  // if asserted will save Z matrix
     public boolean _keep_gam_cols = false;  // if true will save the keys to gam Columns only
     public boolean _savePenaltyMat = false; // if true will save penalty matrices as tripple array
-
     public String algoName() { return "GAM"; }
-    public String fullName() { return "General Additive Model"; }
+    public String fullName() { return "Generalized Additive Model"; }
     public String javaName() { return GAMModel.class.getName(); }
+    public double _prior = -1;
+    public boolean _cold_start = false; // start building GLM model from scratch if true
+    public int _nlambdas = -1;
+    public boolean _non_negative = false;
+    public boolean _remove_collinear_columns = false;
+    public double _gradient_epsilon = -1;
+    public boolean _early_stopping = true;  // internal GLM early stopping.
+    public Key<Frame> _beta_constraints = null;
+    public double _lambda_min_ratio = -1;
 
     @Override
     public long progressUnits() {
@@ -271,10 +285,6 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     }
 
     public long _seed = -1;
-
-    public enum BSType {
-      cr  // will support more in the future
-    }
 
     public InteractionSpec interactionSpec() {
       return InteractionSpec.create(_interactions, _interaction_pairs);
@@ -305,9 +315,8 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
       }
     }
 
-    public final static double linkInv(double x, Link link, double tweedie_link_power) {
-      switch(link) {
-//        case multinomial: // should not be used
+    public double linkInv(double x) {
+      switch(_link) {
         case identity:
           return x;
         case ologlog:
@@ -321,13 +330,29 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return 1.0 / xx;
         case tweedie:
-          return tweedie_link_power == 0
+          return _tweedie_link_power == 0
                   ?Math.max(2e-16,Math.exp(x))
-                  :Math.pow(x, 1/ tweedie_link_power);
+                  :Math.pow(x, 1/ _tweedie_link_power);
         default:
-          throw new RuntimeException("unexpected link function  " + link.toString());
+          throw new RuntimeException("unexpected link function  " + _link.toString());
       }
     }
+  }
+
+  @Override
+  protected String[][] scoringDomains(){
+    int responseColIdx = _output._dinfo.responseChunkId(0);
+    String [][] domains = _output._domains;
+    if ((_parms._family == Family.binomial || _parms._family == Family.quasibinomial ||
+            _parms._family == Family.fractionalbinomial)
+            && _output._domains[responseColIdx] == null) {
+      domains = domains.clone();
+      if (_parms._family == Family.fractionalbinomial)
+        domains[responseColIdx] = BINOMIAL_CLASS_NAMES;
+      else
+        domains[responseColIdx] = _output._responseDomains;
+    }
+    return domains;
   }
 
   public static class GAMModelOutput extends Model.Output {
@@ -336,7 +361,6 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public TwoDimTable _glm_model_summary;
     public ModelMetrics _glm_training_metrics;
     public ModelMetrics _glm_validation_metrics;
-    public ModelMetrics _glm_cross_validation_metrics;
     public double _glm_dispersion;
     public double[] _glm_zvalues;
     public double[] _glm_pvalues;
@@ -347,9 +371,8 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public TwoDimTable _coefficients_table;
     public TwoDimTable _coefficients_table_no_centering;
     public TwoDimTable _standardized_coefficient_magnitudes;
-    public int _best_lambda_idx; // lambda which minimizes deviance on validation (if provided) or train (if not)
-    public int _lambda_1se = -1; // lambda_best + sd(lambda); only applicable if running lambda search with nfold
-    public int _selected_lambda_idx; // lambda which minimizes deviance on validation (if provided) or train (if not)
+    public TwoDimTable _variable_importances;
+    public VarImp _varimp;  // should contain the same content as standardized coefficients
     public double[] _model_beta_no_centering; // coefficients generated during model training
     public double[] _standardized_model_beta_no_centering; // standardized coefficients generated during model training
     public double[] _model_beta; // coefficients generated during model training
@@ -358,9 +381,14 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public double[][] _standardized_model_beta_multinomial_no_centering;  // store standardized multinomial coefficients during model training
     public double[][] _model_beta_multinomial;  // store multinomial coefficients during model training
     public double[][] _standardized_model_beta_multinomial;  // store standardized multinomial coefficients during model training
+    public double _best_alpha;
+    public double _best_lambda;
+    public double _devianceValid = Double.NaN;
+    public double _devianceTrain = Double.NaN;
     private double[] _zvalues;
     private double _dispersion;
     private boolean _dispersionEstimated;
+    public String[][] _gamColNames; // store gam column names after transformation and decentering
     public double[][][] _zTranspose; // Z matrix for de-centralization, can be null
     public double[][][] _penaltyMatrices_center; // stores t(Z)*t(D)*Binv*D*Z and can be null
     public double[][][] _penaltyMatrices;          // store t(D)*Binv*D and can be null
@@ -373,37 +401,45 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public String _gam_transformed_center_key;
     final Family _family;
     
-    public double dispersion(){ return _dispersion;}
-
     @Override
     public int nclasses() {
-      if (_family == Family.multinomial || _family == Family.ordinal)
+      if (_family == Family.multinomial || _family == Family.ordinal) {
         return super.nclasses();
-      if (Family.binomial == _family || Family.quasibinomial == _family
-              || Family.fractionalbinomial == _family)
+      } else if (Family.binomial == _family || Family.quasibinomial == _family
+              || Family.fractionalbinomial == _family) {
         return 2;
-      return 1;
+      } else {
+        return 1;
+      }
     }
 
     /** Names of levels for a categorical response column. */
     @Override
     public String[] classNames() {
-      if (_family == Family.fractionalbinomial) {
-        return new String[]{"0", "1"};
-      } else 
+      if (_family == Family.quasibinomial || _family == Family.binomial)
+        return _responseDomains;
+      else if (_family == Family.fractionalbinomial)
+        return BINOMIAL_CLASS_NAMES;
+      else
         return super.classNames();
     }
 
-    public GAMModelOutput(GAM b, Frame adaptr, DataInfo dinfo) {
-      super(b, adaptr);
+    public GAMModelOutput(GAM b, DataInfo dinfo) {
+      super(b, dinfo._adaptedFrame);
       _dinfo = dinfo;
       _domains = dinfo._adaptedFrame.domains(); // get domain of dataset predictors
-      _responseDomains = dinfo._adaptedFrame.lastVec().domain();
       _family = b._parms._family;
+      if (_family.equals(Family.quasibinomial)) {
+        _responseDomains = new VecUtils.CollectDoubleDomain(null, 2).doAll(dinfo._adaptedFrame.vec(b._parms._response_column)).stringDomain(dinfo._adaptedFrame.vec(b._parms._response_column).isInt());
+      } else {
+        _responseDomains = dinfo._adaptedFrame.lastVec().domain();
+      }
     }
 
     @Override public ModelCategory getModelCategory() {
       switch (_family) {
+        case quasibinomial:
+        case fractionalbinomial:
         case binomial: return ModelCategory.Binomial;
         case multinomial: return ModelCategory.Multinomial;
         case ordinal: return ModelCategory.Ordinal;
@@ -470,18 +506,18 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
         }
       }
     }
-    int numCols = adptedF.numCols();  // remove constant or bad frames.
-    for (int vInd=0; vInd<numCols; vInd++) {
-      Vec v = adptedF.vec(vInd);
-      if ((parms._ignore_const_cols &&  v.isConst()) || v.isBad())
-        adptedF.remove(vInd);
-    }
+
     Vec respV = null;
+    Vec weightV = null;
+    if (parms._weights_column != null)  // move weight column to be last column before response column
+      weightV = adptedF.remove(parms._weights_column);
     if (ArrayUtils.contains(testNames, parms._response_column))
       respV = adptedF.remove(parms._response_column);
     adptedF.add(oneAugmentedColumn.names(), oneAugmentedColumn.removeAll());
     Scope.track(oneAugmentedColumn);
-
+    
+    if (weightV != null)
+      adptedF.add(parms._weights_column, weightV);
     if (respV != null)
       adptedF.add(parms._response_column, respV);
     return adptedF;
@@ -492,7 +528,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
                                    CFuncRef customMetricFunc) {
     String[] predictNames = makeScoringNames();
     String[][] domains = new String[predictNames.length][];
-    GAMScore gs = makeScoringTask(adaptFrm, j, computeMetrics);
+    GAMScore gs = makeScoringTask(adaptFrm, true, j, computeMetrics);
     gs.doAll(predictNames.length, Vec.T_NUM, gs._dinfo._adaptedFrame);
     if (gs._computeMetrics)
       gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
@@ -500,17 +536,18 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     return gs.outputFrame(Key.make(destination_key), predictNames, domains);  // place holder
   }
   
-  private GAMScore makeScoringTask(Frame adaptFrm, Job j, boolean computeMetrics) {
+  private GAMScore makeScoringTask(Frame adaptFrm, boolean makePredictions, Job j, boolean computeMetrics) {
     int responseId = adaptFrm.find(_output.responseName());
     if(responseId > -1 && adaptFrm.vec(responseId).isBad()) { // remove inserted invalid response
       adaptFrm = new Frame(adaptFrm.names(),adaptFrm.vecs());
       adaptFrm.remove(responseId);
     }
-// Build up the names & domains.
     final boolean detectedComputeMetrics = computeMetrics && (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad());
     String [] domain = _output.nclasses()<=1 ? null : (!detectedComputeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain());
-// Score the dataset, building the class distribution & predictions
-    return new GAMScore(j, this, _output._dinfo.scoringInfo(_output._names,adaptFrm),domain,detectedComputeMetrics);
+    if (_parms._family.equals(Family.quasibinomial))
+      domain = _output._responseDomains;
+    return new GAMScore(j, this, _output._dinfo.scoringInfo(_output._names,adaptFrm),domain,detectedComputeMetrics, 
+            makePredictions);
   }
 
   private class GAMScore extends MRTask<GAMScore> {
@@ -519,27 +556,30 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     private double[][] _coeffs_multinomial;
     private int _nclass;
     private boolean _computeMetrics;
-    final Job _j;
-    Family _family;
+    private final Job _j;
+    private Family _family;
     private transient double[] _eta;  // store eta calculation
     private String[] _predDomains;
-    final GAMModel _m;
+    private final GAMModel _m;
     private final double _defaultThreshold;
     private int _lastClass;
-    ModelMetrics.MetricBuilder _mb;
-    final boolean _sparse;
+    private ModelMetrics.MetricBuilder _mb;
+    final boolean _generatePredictions;
     private transient double[][] _vcov;
     private transient double[] _tmp;
+    private boolean _classifier2class;
 
 
-    private GAMScore(Job j, GAMModel m, DataInfo dinfo, String[] domain, boolean computeMetrics) {
+    private GAMScore(final Job j, final GAMModel m, DataInfo dinfo, final String[] domain, final boolean computeMetrics, 
+                     final boolean makePredictions) {
       _j = j;
       _m = m;
       _computeMetrics = computeMetrics;
-      _sparse = FrameUtils.sparseRatio(dinfo._adaptedFrame) < .5;
       _predDomains = domain;
-      _m._parms = m._parms;
       _nclass = m._output.nclasses();
+      _generatePredictions = makePredictions;
+      _classifier2class = _m._parms._family == GLMModel.GLMParameters.Family.binomial || 
+              _m._parms._family == Family.quasibinomial || _m._parms._family == Family.fractionalbinomial;
       if(_m._parms._family == GLMModel.GLMParameters.Family.multinomial ||
               _m._parms._family == GLMModel.GLMParameters.Family.ordinal){
         _coeffs = null;
@@ -551,14 +591,15 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
         for(int i = 0; i < beta.length-1; ++i){ // pick out beta that is not zero in ids
           if(beta[i] != 0) ids[k++] = i;
         }
-        if(k < beta.length-1) {
-          ids = Arrays.copyOf(ids,k);
+        if (k < beta.length - 1) {
+          ids = Arrays.copyOf(ids, k);
           dinfo = dinfo.filterExpandedColumns(ids);
-          double [] beta2 = MemoryManager.malloc8d(ids.length+1);
+          double[] beta2 = MemoryManager.malloc8d(ids.length + 1);
           int l = 0;
-          for(int x:ids)
+          for (int x : ids) {
             beta2[l++] = beta[x];
-          beta2[l] = beta[beta.length-1];
+          }
+          beta2[l] = beta[beta.length - 1];
           beta = beta2;
         }
         _coeffs_multinomial = null;
@@ -610,20 +651,19 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
         case ordinal: ps = scoreOrdinalRow(r, r.offset, ps); break;
         default: ps = scoreRow(r, r.offset, ps); break;
       }
-      for (int predCol=0; predCol < ncols; predCol++) { // write prediction to NewChunk
-        preds[predCol].addNum(ps[predCol]);
+      if (_generatePredictions) {
+        for (int predCol = 0; predCol < ncols; predCol++) { // write prediction to NewChunk
+          preds[predCol].addNum(ps[predCol]);
+        }
+        if (_vcov != null)
+          preds[ncols].addNum(Math.sqrt(r.innerProduct(r.mtrxMul(_vcov, _tmp))));
       }
-      if (_vcov != null) 
-        preds[ncols].addNum(Math.sqrt(r.innerProduct(r.mtrxMul(_vcov, _tmp))));
     }
 
     public double[] scoreRow(DataInfo.Row r, double offset, double[] preds) {
-      double mu = _m._parms.linkInv(r.innerProduct(_coeffs) + offset, _m._parms._link,
-              _m._parms._tweedie_link_power);
-      if (_m._parms._family == GLMModel.GLMParameters.Family.binomial ||
-              _m._parms._family == GLMModel.GLMParameters.Family.quasibinomial ||
-      _m._parms._family == Family.negativebinomial || _m._parms._family == Family.fractionalbinomial) { // threshold for prediction
-        preds[0] = mu >= _defaultThreshold?1:0;
+      double mu = _m._parms.linkInv(r.innerProduct(_coeffs) + offset);
+      if (_classifier2class) { // threshold for prediction
+        preds[0] = mu >= _defaultThreshold ? 1 : 0;
         preds[1] = 1.0 - mu; // class 0
         preds[2] = mu; // class 1
       } else
@@ -695,9 +735,18 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
   }
 
   @Override
+  public GAMMojoWriter getMojo() {
+    return new GAMMojoWriter(this);
+  }
+
+  @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
-    Keyed.remove(_output._gamTransformedTrainCenter, fs, true);
     super.remove_impl(fs, cascade);
+    Keyed.remove(_output._gamTransformedTrainCenter, fs, true);
+    if (_validKeys != null)
+      for (Key oneKey:_validKeys) {
+          Keyed.remove(oneKey, fs, true);
+      }
     return fs;
   }
 

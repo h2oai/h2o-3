@@ -1,18 +1,12 @@
 package water.util;
 
+import org.junit.Assert;
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static water.util.ArrayUtils.append;
-import static water.util.ArrayUtils.countNonzeros;
-import static water.util.ArrayUtils.decodeAsInt;
-import static water.util.ArrayUtils.encodeAsInt;
-import static water.util.ArrayUtils.remove;
-import static water.util.ArrayUtils.toDouble;
+import java.util.Random;
+
+import static org.junit.Assert.*;
+import static water.util.ArrayUtils.*;
 
 /**
  * Test FrameUtils interface.
@@ -179,6 +173,26 @@ public class ArrayUtilsTest {
     double[] somenz = {-1.0, Double.MIN_VALUE, 0.0, Double.MAX_VALUE, 0.001, 0.0, 42.0};
     assertEquals(5, countNonzeros(somenz));
   }
+  
+  @Test
+  public void testSortIndices() {
+    Random randObj = new Random(12345);
+    int arrayLen = 100;
+    int[] indices = new int[arrayLen];
+    double[] values = new double[arrayLen];
+    for (int index = 0; index < arrayLen; index++)  // generate data array
+      values[index] = randObj.nextDouble();
+    
+    sort(indices, values, -1, 1); // sorting in ascending order
+    for (int index = 1; index < arrayLen; index++)  // check correct sorting in ascending order
+      Assert.assertTrue(values[indices[index-1]]+" should be <= "+values[indices[index]], 
+              values[indices[index-1]] <= values[indices[index]]); 
+    
+    sort(indices, values, -1, -1);  // sorting in descending order
+    for (int index = 1; index < arrayLen; index++)  // check correct sorting in descending order
+      Assert.assertTrue(values[indices[index-1]]+" should be >= "+values[indices[index]],
+              values[indices[index-1]] >= values[indices[index]]);  
+  }
 
   @Test
   public void testAddWithCoefficients() {
@@ -242,4 +256,58 @@ public class ArrayUtilsTest {
     assertArrayEquals(new double[]{1.0, 42.0}, toDouble(new int[]{1, 42}), 0);
   }
 
+  @Test
+  public void testOccurrenceCount() {
+    byte[] arr = new byte[]{ 1, 2, 1, 1, 3, 4 };
+    assertEquals("Occurrence count mismatch.", 3, ArrayUtils.occurrenceCount(arr, (byte) 1));
+    assertEquals("Occurrence count mismatch.", 0, ArrayUtils.occurrenceCount(arr, (byte) 0));
+  }
+
+  @Test
+  public void testOccurrenceCountEmptyArray() {
+    byte[] arr = new byte[]{};
+    assertEquals("Occurrence count mismatch.", 0, ArrayUtils.occurrenceCount(arr, (byte) 1));
+  }
+  
+  @Test
+  public void testByteArraySelect() {
+    byte[] arr = new byte[]{ 1, 2, 3, 4, 5, 6 };
+    int[] idxs = new int[]{ 3, 1, 5 };
+
+    byte[] expectedSelectedElements = new byte[]{ 4, 2, 6 };
+
+    assertArrayEquals("Selected array elements mismatch.", 
+                      expectedSelectedElements, ArrayUtils.select(arr, idxs));
+  }
+  
+  @Test
+  public void testByteArrayEmptySelect() {
+    byte[] arr = new byte[]{ 1, 2, 3, 4, 5, 6 };
+    int[] idxs = new int[]{};
+
+    byte[] expectedSelectedElements = new byte[]{};
+
+    assertArrayEquals("Selected array elements mismatch.",
+                      expectedSelectedElements, ArrayUtils.select(arr, idxs));
+  }
+  
+  @Test
+  public void testToStringQuotedElements(){
+    final Object[] names = new String[]{"", "T16384"};
+    final String outputString = toStringQuotedElements(names);
+    assertEquals("[\"\", \"T16384\"]", outputString);
+  }
+
+  @Test
+  public void testToStringQuotedElementsNullInput(){
+    final String outputString = toStringQuotedElements(null);
+    assertEquals("null", outputString);
+  }
+
+  @Test
+  public void testToStringQuotedElementsEmptyInput(){
+    final Object[] emptyNames = new String[0];
+    final String outputString = toStringQuotedElements(emptyNames);
+    assertEquals("[]", outputString);
+  }
 }

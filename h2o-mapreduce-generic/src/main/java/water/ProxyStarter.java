@@ -30,25 +30,11 @@ public class ProxyStarter {
 
     InetAddress address = HostnameGuesser.findInetAddressForSelf(baseArgs.ip, baseArgs.network);
     if (useHostname) {
-      String hostname = localIpToHostname(address);
+      String hostname = HostnameGuesser.localAddressToHostname(address);
       return H2O.getURL(h2oHttpViewForProxy.getScheme(), hostname, proxyPort, baseArgs.context_path);
     } else {
       return H2O.getURL(h2oHttpViewForProxy.getScheme(), address, proxyPort, baseArgs.context_path);
     }
-  }
-
-  private static String localIpToHostname(InetAddress address) {
-    String hostname = address.getHostName();
-    if (! address.getHostAddress().equals(hostname)) {
-      return hostname;
-    }
-    // we don't want to return IP address (because of a security policy of a particular customer, see PUBDEV-5680)
-    hostname = System.getenv("HOSTNAME");
-    if ((hostname == null) || hostname.isEmpty()) {
-      hostname = "localhost";
-    }
-    System.out.println("WARN: Proxy IP address couldn't be translated to a hostname. Using environment variable HOSTNAME='" + hostname + "' as a fallback.");
-    return hostname;
   }
 
   private static int initializeProxy(ProxyServer proxy, H2O.OptArgs proxyConfig) {
@@ -109,8 +95,8 @@ public class ProxyStarter {
 
   // just for local testing
   public static void main(String[] args) {
-    Credentials cred = new Credentials(System.getProperty("user.name"), "Heslo123");
-    String url = start(args, cred, "https://localhost:54321/", false);
+    Credentials cred = new Credentials(System.getProperty("user.name"), "water");
+    String url = start(args, cred, "http://localhost:54321/", false);
     System.out.println("Proxy started on " + url + " " + cred.toDebugString());
   }
 

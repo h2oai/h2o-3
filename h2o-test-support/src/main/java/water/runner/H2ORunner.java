@@ -19,6 +19,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,6 +28,8 @@ import java.util.Set;
 @Ignore
 public class H2ORunner extends BlockJUnit4ClassRunner {
     private final TestClass testClass;
+    private final HashSet<String> doOnlyTestNames;
+    private final HashSet<String> ignoreTestsNames;
 
     /**
      * Creates a BlockJUnit4ClassRunner to run {@code klass}
@@ -37,7 +40,9 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
     public H2ORunner(Class<?> klass) throws InitializationError {
         super(klass);
         testClass = getTestClass();
-        TestUtil.stall_till_cloudsize(fetchCloudSize());
+        doOnlyTestNames = new HashSet();
+        ignoreTestsNames = new HashSet();
+        createTestFilters();
     }
 
 
@@ -70,6 +75,8 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
      */
     private void leaf(Statement statement, Description description,
                       RunNotifier notifier) {
+        TestUtil.stall_till_cloudsize(fetchCloudSize());
+        
         final EachTestNotifier eachNotifier = new EachTestNotifier(notifier, description);
         eachNotifier.fireTestStarted();
         try {
@@ -94,24 +101,23 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
             return;
         }
 
-        printLeakedKeys(checkKeysTask.leakedKeys);
+        printLeakedKeys(checkKeysTask.leakedKeys, checkKeysTask.leakInfos);
         throw new IllegalStateException(String.format("Test method '%s.%s' leaked %d keys.", description.getTestClass().getName(), description.getMethodName(), checkKeysTask.leakedKeys.length));
     }
 
 
-    private void printLeakedKeys(final Key[] leakedKeys) {
+    private void printLeakedKeys(final Key[] leakedKeys, final CheckKeysTask.LeakInfo[] leakInfos) {
         final Set<Key> leakedKeysSet = new HashSet<>(leakedKeys.length);
 
-        for (Key k : leakedKeys) {
-            leakedKeysSet.add(k);
-        }
+        leakedKeysSet.addAll(Arrays.asList(leakedKeys));
 
         for (Key key : leakedKeys) {
 
             final Value keyValue = Value.STORE_get(key);
             if (keyValue != null && keyValue.isFrame()) {
                 Frame frame = (Frame) key.get();
-                Log.err(String.format("Leaked frame with key '%s'. This frame contains the following vectors:", frame._key.toString()));
+                Log.err(String.format("Leaked frame with key '%s' and columns '%s'. This frame contains the following vectors:", 
+                        frame._key.toString(), Arrays.toString(frame.names())));
 
                 for (Key vecKey : frame.keys()) {
                     if (!leakedKeysSet.contains(vecKey)) continue;
@@ -143,20 +149,60 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
         for (Key key : leakedKeysSet) {
             Log.err(String.format("Key '%s' of type %s.", key.toString(), key.valueClass()));
         }
+
+        for (CheckKeysTask.LeakInfo leakInfo : leakInfos) {
+            Log.err(String.format("Leak info for key '%s': %s", leakedKeys[leakInfo._keyIdx], leakInfo));
+        }
     }
 
 
 
     private int fetchCloudSize() {
         final CloudSize annotation = testClass.getAnnotation(CloudSize.class);
-        if (annotation == null) throw new IllegalStateException("@CloudSize annotation is missing for test class: " + testClass.getName());
+        if (annotation == null)
+            throw new IllegalStateException("@CloudSize annotation is missing for test class: " + testClass.getName());
 
         final int cloudSize = annotation.value();
 
-        if(cloudSize < 1) throw new IllegalStateException("@CloudSize annotation must specify sizes greater than zero. Given value: " + cloudSize);
+        if (cloudSize < 1)
+            throw new IllegalStateException("@CloudSize annotation must specify sizes greater than zero. Given value: " + cloudSize);
 
         return cloudSize;
     }
 
+    @Override
+    protected boolean isIgnored(FrameworkMethod child) {
+        final boolean isAnnotatedAsIgnored = super.isIgnored(child); // Marked as ignored by @Ignored annotation
+        final String testName = child.getDeclaringClass().getName() + "#" + child.getMethod().getName();
+        
+        final boolean isConfiguredAsIgnored = this.ignoreTestsNames.contains(testName);
+        final boolean isConfiguredAsDoOnly = this.doOnlyTestNames.contains(testName);
+
+        return isAnnotatedAsIgnored || (isConfiguredAsIgnored && !isConfiguredAsDoOnly) 
+                || (!this.doOnlyTestNames.isEmpty() && !isConfiguredAsDoOnly);
+    }
+
+    private void createTestFilters() {
+        final String ignoreTests = System.getProperty("ignore.tests");
+        if (ignoreTests != null) {
+            final String[] split = ignoreTests.split(",");
+            if (split.length != 1 && !split[0].equals("")) {
+                for (final String ignoredTestName : split) {
+                    this.ignoreTestsNames.add(ignoredTestName);
+                }
+            }
+        }
+
+        final String doOnlytestsInput = System.getProperty("doonly.tests");
+        if (doOnlytestsInput != null) {
+            final String[] split = doOnlytestsInput.split(",");
+            if (split.length != 1 && !split[0].equals("")) {
+                for (final String doOnlyTestName : split) {
+                    this.doOnlyTestNames.add(doOnlyTestName);
+                }
+            }
+        }
+
+    }
 
 }

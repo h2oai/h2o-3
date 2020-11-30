@@ -34,6 +34,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static hex.genmodel.utils.DistributionFamily.*;
 import static org.junit.Assert.*;
@@ -69,8 +70,8 @@ public class GBMTest extends TestUtil {
       return new GBMModel.GBMParameters() {
         @Override
         Constraints emptyConstraints(Frame f) {
-          if (_distribution == DistributionFamily.gaussian || _distribution == DistributionFamily.bernoulli) {
-            return new Constraints(new int[f.numCols()], _distribution, true);
+          if (_distribution == DistributionFamily.gaussian || _distribution == DistributionFamily.bernoulli || _distribution == DistributionFamily.tweedie) {
+            return new Constraints(new int[f.numCols()], DistributionFactory.getDistribution(this), true);
           } else 
             return null;
         }
@@ -115,6 +116,37 @@ public class GBMTest extends TestUtil {
       assertEquals(79152.12337641386,mse,0.1);
       assertEquals(79152.12337641386,gbm._output._scored_train[1]._mse,0.1);
       assertEquals(79152.12337641386,gbm._output._scored_train[1]._mean_residual_deviance,0.1);
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( fr2 != null ) fr2.remove();
+      if( gbm != null ) gbm.remove();
+    }
+  }
+
+  @Test public void testGBMMaximumDepth() {
+    GBMModel gbm = null;
+    Frame fr = null, fr2 = null;
+    try {
+      fr = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = fr._key;
+      parms._distribution = gaussian;
+      parms._response_column = fr._names[1]; // Row in col 0, dependent in col 1, predictor in col 2
+      parms._ntrees = 1;
+      parms._max_depth = 0;
+      parms._min_rows = 1;
+      parms._nbins = 20;
+      // Drop ColV2 0 (row), keep 1 (response), keep col 2 (only predictor), drop remaining cols
+      String[] xcols = parms._ignored_columns = new String[fr.numCols()-2];
+      xcols[0] = fr._names[0];
+      System.arraycopy(fr._names,3,xcols,1,fr.numCols()-3);
+      parms._learn_rate = 1.0f;
+      parms._score_each_iteration=true;
+
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+      
+      assertEquals(Integer.MAX_VALUE, gbm._parms._max_depth);
     } finally {
       if( fr  != null ) fr .remove();
       if( fr2 != null ) fr2.remove();
@@ -215,7 +247,7 @@ public class GBMTest extends TestUtil {
     }
 
   }
-  
+
   @Test public void testBasicGBM() {
     // Regression tests
     basicGBM("./smalldata/junit/cars.csv",
@@ -3050,7 +3082,9 @@ public class GBMTest extends TestUtil {
   @Test
   public void testDeviances() {
     for (DistributionFamily dist : DistributionFamily.values()) {
-      if (dist == modified_huber || dist == quasibinomial || dist == ordinal || dist == custom) continue;
+      if (dist == modified_huber || dist == quasibinomial || dist == ordinal || dist == custom ||
+              dist == negativebinomial || dist == fractionalbinomial)
+        continue;
       Frame tfr = null;
       Frame res = null;
       Frame preds = null;
@@ -3684,8 +3718,73 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Test public void testMonotoneConstraintsBernoulli() {
+    Scope.enter();
+    try {
+      final Key<Frame> target = Key.make();
+      Frame train = Scope.track(parse_test_file("smalldata/gbm_test/ecology_model.csv"));
+      train.remove("Site").remove();     // Remove unique ID
+      int ci = train.find("Angaus");
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
+      DKV.put(train);                    // Update frame after hacking it
+      
+      String colName = "SegSumT";
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = train._key;
+      parms._response_column = "Angaus"; // Train on the outcome
+      parms._distribution = DistributionFamily.bernoulli;
+      parms._monotone_constraints = new KeyValue[]{new KeyValue(colName, 1)};
+      
+      GBMModel model = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+      Scope.track_generic(model);
+
+      String[] uniqueValues = Scope.track(train.vec(colName).toCategoricalVec()).domain();
+      Vec unchangedPreds = Scope.track(model.score(train)).anyVec();
+      Vec lastPreds = null;
+      for (String valueStr : uniqueValues) {
+        final double value = Double.parseDouble(valueStr);
+
+        new MRTask() {
+          @Override
+          public void map(Chunk c) {
+            for (int i = 0; i < c._len; i++)
+              c.set(i, value);
+          }
+        }.doAll(train.vec(colName));
+        assertEquals(value, train.vec(colName).min(), 0);
+        assertEquals(value, train.vec(colName).max(), 0);
+
+        Vec currentPreds = Scope.track(model.score(train)).anyVec();
+        if (lastPreds != null)
+          for (int i = 0; i < lastPreds.length(); i++) {
+            assertTrue("value=" + value + ", id=" + i, lastPreds.at(i) <= currentPreds.at(i));
+            System.out.println("value=" + value + ", id="+ i +" "+lastPreds.at(i) +" <= "+currentPreds.at(i)+" - "+unchangedPreds.at(i));
+          }
+        lastPreds = currentPreds;
+      }
+      
+    } finally {
+      Scope.exit();
+    }
+  }
+
   @Test
   public void testMonotoneConstraintsProstate() {
+    checkMonotoneConstraintsProstate(DistributionFamily.gaussian);
+  }
+
+  @Test
+  public void testMonotoneConstraintsProstateTweedie() {
+    checkMonotoneConstraintsProstate(DistributionFamily.tweedie);
+  }
+
+  @Test
+  public void testMonotoneConstraintsProstateQuantile() {
+    checkMonotoneConstraintsProstate(DistributionFamily.quantile);
+  }
+
+  private void checkMonotoneConstraintsProstate(DistributionFamily distributionFamily) {
     try {
       Scope.enter();
       Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
@@ -3699,6 +3798,10 @@ public class GBMTest extends TestUtil {
       parms._ignored_columns = new String[]{"ID"};
       parms._ntrees = 50;
       parms._seed = 42;
+      parms._distribution = distributionFamily;
+      if (distributionFamily.equals(quantile)) {
+        parms._quantile_alpha = 0.1;
+      }
 
       String[] uniqueAges = Scope.track(f.vec("AGE").toCategoricalVec()).domain();
 
@@ -3743,10 +3846,10 @@ public class GBMTest extends TestUtil {
       parms._response_column = "CAPSULE";
       parms._train = f._key;
       parms._monotone_constraints = new KeyValue[]{new KeyValue("AGE", 1)};
-      parms._distribution = DistributionFamily.tweedie;
+      parms._distribution = laplace;
 
       expectedException.expectMessage("ERRR on field: _monotone_constraints: " +
-              "Monotone constraints are only supported for Gaussian and Bernoulli distributions, your distribution: tweedie.");
+              "Monotone constraints are only supported for Gaussian, Bernoulli, Tweedie and Quantile distributions, your distribution: laplace.");
       GBMModel model = new GBM(parms).trainModel().get();
       Scope.track_generic(model);
     } finally {
@@ -4051,6 +4154,129 @@ public class GBMTest extends TestUtil {
         gbm.deleteCrossValidationModels();
         gbm.deleteCrossValidationPreds();
       }
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testGBMFeatureInteractions() {
+    Scope.enter();
+    try {
+      Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
+      f.replace(f.find("CAPSULE"), f.vec("CAPSULE").toNumericVec());
+      DKV.put(f);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._response_column = "CAPSULE";
+      parms._train = f._key;
+
+      GBMModel model = new GBM(parms).trainModel().get();
+      Scope.track_generic(model);
+
+      FeatureInteractions featureInteractions = model.getFeatureInteractions(2,100,-1);
+      assertEquals(featureInteractions.size(), 113);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testGBMFeatureInteractionsGainTest() {
+    Scope.enter();
+    try {
+      Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
+      f.replace(f.find("CAPSULE"), f.vec("CAPSULE").toNumericVec());
+      DKV.put(f);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._response_column = "CAPSULE";
+      parms._train = f._key;
+      parms._ntrees = 1;
+      parms._ignored_columns = new String[]{"ID"};
+
+      GBMModel model = new GBM(parms).trainModel().get();
+      Scope.track_generic(model);
+      FeatureInteractions featureInteractions = model.getFeatureInteractions(2, 100, -1);
+      SharedTreeSubgraph treeSubgraph = model.getSharedTreeSubgraph(0, 0);
+
+      String[] keysToCheck = new String[]{"DPROS", "PSA", "GLEASON", "VOL"};
+      for (String feature : keysToCheck) {
+        if (!feature.equals(parms._response_column)) {
+          List<SharedTreeNode> featureSplits = treeSubgraph.nodesArray.stream()
+                  .filter(node -> feature.equals(node.getColName()))
+                  .collect(Collectors.toList());
+          double featureGain = 0.0;
+          for (int i = 0; i < featureSplits.size(); i++) {
+            SharedTreeNode currSplitNode = featureSplits.get(i);
+            featureGain += currSplitNode.getSquaredError() - currSplitNode.getLeftChild().getSquaredError() - currSplitNode.getRightChild().getSquaredError();
+          }
+          assertEquals(featureGain, featureInteractions.get(feature).gain, 0.0001);
+        }
+      }
+    } finally{
+      Scope.exit();
+    }
+  }
+
+   //PUBDEV-7139
+  @Test
+  public void testPermVarImp() {
+    try {
+      Scope.enter();
+      final String response = "CAPSULE";
+      final String testFile = "./smalldata/logreg/prostate.csv";
+      Frame fr = parse_test_file(testFile)
+              .toCategoricalCol("RACE")
+              .toCategoricalCol("GLEASON")
+              .toCategoricalCol(response);
+      fr.remove("ID").remove();
+      fr.vec("RACE").setDomain(ArrayUtils.append(fr.vec("RACE").domain(), "3"));
+      Scope.track(fr);
+      DKV.put(fr);
+
+      Model.Parameters.CategoricalEncodingScheme[] supportedSchemes = {
+              Model.Parameters.CategoricalEncodingScheme.OneHotExplicit,
+              Model.Parameters.CategoricalEncodingScheme.SortByResponse,
+              Model.Parameters.CategoricalEncodingScheme.EnumLimited,
+              Model.Parameters.CategoricalEncodingScheme.Enum,
+              Model.Parameters.CategoricalEncodingScheme.Binary,
+              Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
+              Model.Parameters.CategoricalEncodingScheme.Eigen
+      };
+
+      for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
+
+        GBMModel.GBMParameters parms = makeGBMParameters();
+        parms._train = fr._key;
+        parms._response_column = response;
+        parms._ntrees = 5;
+        parms._categorical_encoding = scheme;
+        if (scheme == Model.Parameters.CategoricalEncodingScheme.EnumLimited) {
+          parms._max_categorical_levels = 3;
+        }
+
+        GBM job = new GBM(parms);
+        GBMModel gbm = job.trainModel().get();
+        Scope.track_generic(gbm);
+
+        // Done building model; produce a score column with predictions
+        Frame scored = Scope.track(gbm.score(fr));
+
+        TwoDimTable varImp = gbm._output._variable_importances;
+        PermutationVarImp PermVarImp = new PermutationVarImp(gbm, fr);
+
+        TwoDimTable permVarImp = PermVarImp.getPermutationVarImp();
+
+        Map<String, Double> perVarImp = PermVarImp.toMapScaled();
+        Map<String, Float> b_varImp = gbm._output._varimp.toMapScaled();
+
+        for (String name : perVarImp.keySet()) {
+          double pvi = perVarImp.get(name);
+          double vi = (double) b_varImp.get(name); // VarImp stores floats, typecast needed
+          Assert.assertEquals(pvi, vi, 0.2);
+        }
+      }
+    } finally {
       Scope.exit();
     }
   }

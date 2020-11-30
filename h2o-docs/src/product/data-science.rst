@@ -26,9 +26,14 @@ Common
 Supervised
 ----------
 
+In supervised learning, the dataset is labeled with the answer that algorithm should come up with. Supervised learning takes input variables (x) along with an output variable (y). The output variable represents the column that you want to predict on. The algorithm then uses these variables to learn and approximate the mapping function from the input to the output. Supervised learning algorithms support classification and regression problems. 
+
+H2O supports the following supervised algorithms:
+
 .. toctree::
    :maxdepth: 1
 
+   automl
    data-science/coxph
    data-science/deep-learning
    data-science/drf
@@ -36,12 +41,17 @@ Supervised
    data-science/gam
    data-science/gbm
    data-science/naive-bayes
+   data-science/rulefit
    data-science/stacked-ensembles
    data-science/svm
    data-science/xgboost
 
 Unsupervised
 ------------
+
+In unsupervised learning, the model is provided with a dataset that isn't labeled - i.e., without an explicit outcome that the algorithm should return. In this case, the algorithm attempts to find patterns and structure in the data by extracting useful features. The model organizes the data in different ways, depending on the algorithm (clustering, anomaly detection, autoencoders, etc). 
+
+H2O supports the following unsupervised algorithms:
 
 .. toctree::
    :maxdepth: 1
@@ -58,5 +68,7 @@ Miscellaneous
 .. toctree::
    :maxdepth: 1
 
+   data-science/target-encoding
+   data-science/tf-idf
    data-science/word2vec
    data-science/permutationVarImp

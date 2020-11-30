@@ -43,7 +43,7 @@ public class PermutationVarImpTest extends TestUtil {
             Scope.enter();
             fr = parse_test_file("./smalldata/junit/cars.csv");
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-            
+
             parms._train = fr._key;
             parms._distribution = gaussian;
             parms._response_column = "economy (mpg)";
@@ -53,27 +53,26 @@ public class PermutationVarImpTest extends TestUtil {
             parms._nbins = 50;
             parms._learn_rate = .2f;
             parms._score_each_iteration = true;
-            
+
             GBM job = new GBM(parms);
             gbm = job.trainModel().get();
 
             // Done building model; produce a score column with predictions
             fr2 = gbm.score(fr);
-            PermutationVarImp pvi =  new PermutationVarImp(gbm, fr);
-
+            PermutationVarImp pvi = new PermutationVarImp(gbm, fr);
             TwoDimTable pviTable = pvi.getPermutationVarImp();
-            
-            String [] colTypes = pviTable.getColTypes();
 
-            Assert.assertTrue( colTypes[0].equals("double"));
-            Assert.assertTrue( colTypes[1].equals("double"));
-            Assert.assertTrue( colTypes[2].equals("double"));
-            
+            String[] colTypes = pviTable.getColTypes();
+
+            Assert.assertTrue(colTypes[0].equals("double"));
+            Assert.assertTrue(colTypes[1].equals("double"));
+            Assert.assertTrue(colTypes[2].equals("double"));
+
             TwoDimTable pviOat = pvi.oat();
             colTypes = pviOat.getColTypes();
 
-            Assert.assertTrue( colTypes[0].equals("double"));
-            Assert.assertTrue( colTypes[1].equals("double"));
+            Assert.assertTrue(colTypes[0].equals("double"));
+            Assert.assertTrue(colTypes[1].equals("double"));
         } finally {
             if (fr != null) fr.remove();
             if (fr2 != null) fr2.remove();
@@ -109,7 +108,7 @@ public class PermutationVarImpTest extends TestUtil {
             GBM job = new GBM(parms);
             GBMModel gbm = job.trainModel().get();
             Scope.track_generic(gbm);
-                            
+
             // Done building model; produce a score column with predictions
             Frame scored = Scope.track(gbm.score(fr));
 
@@ -184,7 +183,7 @@ public class PermutationVarImpTest extends TestUtil {
         public static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
             List<Map.Entry<K, V>> list = new ArrayList<>(map.entrySet());
             list.sort(Collections.reverseOrder(Map.Entry.comparingByValue()));
-            
+
             Map<K, V> result = new LinkedHashMap<>();
             for (Map.Entry<K, V> entry : list) {
                 result.put(entry.getKey(), entry.getValue());
@@ -216,7 +215,7 @@ public class PermutationVarImpTest extends TestUtil {
             params._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.Skip;
 
             model = new GLM(params).trainModel().get();
-            
+
             // calculate permutation feature importance
             PermutationVarImp permVarImp = new PermutationVarImp(model, fr);
             TwoDimTable permVarImpTable = permVarImp.getPermutationVarImp("r2");
@@ -226,11 +225,11 @@ public class PermutationVarImpTest extends TestUtil {
             // Variable -> Relative Importance 
             Map<String, Double> perVarImp = permVarImp._varImpMap;
             Map<String, Double> coefficients = model.coefficients();
-            
+
             // Sort the maps
             Map<String, Double> sCoefficients = MapUtil.sortByValue(coefficients);
             Map<String, Double> sPvi = MapUtil.sortByValue(perVarImp);
-            
+
             // Instead of comparing values compare positions (rank)
             String [] coeff = new String[sCoefficients.size() - 1];
             String [] pvi = new String[perVarImp.size()];
@@ -246,25 +245,25 @@ public class PermutationVarImpTest extends TestUtil {
             }
             // same leangth of variables
             assertEquals(coeff.length, pvi.length);
-            
+
             int size = perVarImp.size();
-            
+
             // Compares the rank where the feature is for +- 2 positions
-            
+
             // *      ...       *        ...        *     (variable)
             // |\\    ...   / / | \ \    ...      //|     (compared)
             // * **   ...  *  * * *  *   ...    * * *     (variable)
             for (int i = 0 ; i < size; i++){
-                 if (i == 0){
-                     assertTrue(pvi[i].equals(coeff[i]) || 
-                             pvi[i].equals(coeff[i + 1]) ||
-                             pvi[i].equals(coeff[i + 2]));
-                         
+                if (i == 0){
+                    assertTrue(pvi[i].equals(coeff[i]) ||
+                            pvi[i].equals(coeff[i + 1]) ||
+                            pvi[i].equals(coeff[i + 2]));
+
                 } else if (i == 1){
-                     assertTrue(pvi[i].equals(coeff[i]) ||
-                             pvi[i].equals(coeff[i - 1]) ||
-                             pvi[i].equals(coeff[i + 1]) ||
-                             pvi[i].equals(coeff[i + 2]));
+                    assertTrue(pvi[i].equals(coeff[i]) ||
+                            pvi[i].equals(coeff[i - 1]) ||
+                            pvi[i].equals(coeff[i + 1]) ||
+                            pvi[i].equals(coeff[i + 2]));
 
                 } else if (i >= 2 && i < size - 2){
                      assertTrue(pvi[i].equals(coeff[i]) ||

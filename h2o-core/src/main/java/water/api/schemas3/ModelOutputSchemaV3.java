@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelCategory;
 import water.Weaver;
 import water.api.API;
+import water.util.IcedHashMap;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
@@ -49,6 +50,9 @@ public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSc
   @API(help="Scoring history", direction=API.Direction.OUTPUT, level=API.Level.secondary)
   public TwoDimTableV3 scoring_history;
 
+  @API(help="Model reproducibility information", direction=API.Direction.OUTPUT, level=API.Level.secondary)
+  public TwoDimTableV3[] reproducibility_information_table;
+  
   @API(help="Training data model metrics", direction=API.Direction.OUTPUT, level=API.Level.critical)
   public ModelMetricsBaseV3 training_metrics;
 

@@ -42,7 +42,7 @@ Defining a CoxPH Model
 
 -  `stratify_by <algo-params/stratify_by.html>`__: A list of columns to use for stratification.
 
--  `ties <algo-params/ties.html>`__: The approximation method for handling ties in the partial likelihood. This can be either **efron** (default) or **breslow**). See the :ref:`coxph_model_details` section below for more information about these options.
+-  `ties <algo-params/ties.html>`__: The approximation method for handling ties in the partial likelihood. This can be either **efron** (default) or **breslow**. See the :ref:`coxph_model_details` section below for more information about these options.
 
 -  `init <algo-params/init2.html>`__: (Optional) Initial values for the coefficients in the model. This value defaults to 0.
 
@@ -56,7 +56,7 @@ Defining a CoxPH Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
-- `single_node_mode <algo-params/single_node_mode.html>`__: Specify whether to run on a single node for fine-tuning of model parameters. Running on a single node reduces the effect of network overhead (for smaller datasets).
+- `single_node_mode <algo-params/single_node_mode.html>`__: Specify whether to run on a single node for fine-tuning of model parameters. Running on a single node reduces the effect of network overhead (for smaller datasets). This defaults to false.
 
 Cox Proportional Hazards Model Results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -205,23 +205,23 @@ Below is a simple example showing how to build a CoxPH model.
     heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 
     # Split the dataset into a train and test set:
-    heart.split <- h2o.splitFrame(data=heart, ratios=.8, seed=1234)
-    train <- heart.split[[1]]
-    test <- heart.split[[2]]
+    heart_split <- h2o.splitFrame(data = heart, ratios = 0.8, seed = 1234)
+    train <- heart_split[[1]]
+    test <- heart_split[[2]]
 
     # Build and train the model:
-    coxph.model <- h2o.coxph(x = "age", 
+    heart_coxph <- h2o.coxph(x = "age", 
                              event_column = "event",
-                             start_column="start", 
+                             start_column = "start", 
                              stop_column = "stop", 
                              ties = "breslow", 
                              training_frame = train)
 
     # Eval performance:
-    perf <- h2o.performance(coxph_model)
+    perf <- h2o.performance(heart_coxph)
 
     # Generate predictions on a test set (if necessary):
-    predict <- h2o.predict(coxph_model, newdata = test)
+    predict <- h2o.predict(heart_coxph, newdata = test)
 
 
    .. code-tab:: python
@@ -237,15 +237,15 @@ Below is a simple example showing how to build a CoxPH model.
     train, test = heart.split_frame(ratios = [.8], seed = 1234)   
 
     # Build and train the model:
-    coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
-                                               stop_column="stop", 
-                                               ties="breslow")
-    coxph.train(x="age", 
+    heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+                                                     stop_column="stop", 
+                                                     ties="breslow")
+    heart_coxph.train(x="age", 
                 y="event", 
                 training_frame=train)
 
     # Generate predictions on a test set (if necessary):
-    pred = coxph.predict(test)
+    pred = heart_coxph.predict(test)
 
 
 

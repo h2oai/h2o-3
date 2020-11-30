@@ -593,6 +593,31 @@ public class VecUtils {
     public long[] domain() { return _d; }
   }
 
+
+  /**
+   * Collects current domain of a categorical vector in an optimized way. Original vector's domain is not modified.
+   *
+   * @param vec A categorical vector to collect domain of.
+   * @return An array of String with the domain of given vector - possibly empty if the domain is empty. Never null.
+   * @throws IllegalArgumentException If the given vector is not categorical
+   */
+  public static String[] collectDomainFast(final Vec vec) throws IllegalArgumentException {
+    if (!vec.isCategorical())
+      throw new IllegalArgumentException("Unable to collect domain on a non-categorical vector.");
+    // Indices of the new, reduced domain. Still point to the original domain.
+    final long[] newDomainIndices = new VecUtils.CollectDomainFast((int) vec.max())
+            .doAll(vec)
+            .domain();
+
+    final String[] originalDomain = vec.domain();
+    final String[] newDomain = new String[newDomainIndices.length];
+    for (int i = 0; i < newDomain.length; ++i) {
+      newDomain[i] = originalDomain[(int) newDomainIndices[i]];
+    }
+
+    return newDomain;
+  }
+
   public static void deleteVecs(Vec[] vs, int cnt) {
     Futures f = new Futures();
     for (int i =0; i < cnt; i++) vs[cnt].remove(f);

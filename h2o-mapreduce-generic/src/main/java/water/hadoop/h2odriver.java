@@ -108,9 +108,11 @@ public class h2odriver extends Configured implements Tool {
   static String jksFileName = null;
   static String jksPass = null;
   static String jksAlias = null;
+  static boolean hostnameAsJksAlias = false;
   static String securityConf = null;
   static boolean internal_secure_connections = false;
   static boolean allow_insecure_xgboost = false;
+  static boolean use_external_xgboost = false;
   static boolean hashLogin = false;
   static boolean ldapLogin = false;
   static boolean kerberosLogin = false;
@@ -1180,7 +1182,9 @@ public class h2odriver extends Configured implements Tool {
         i++; if (i >= args.length) { usage(); }
         jksAlias = args[i];
       }
-      else if (s.equals("-internal_secure_connections")) {
+      else if (s.equals("-hostname_as_jks_alias")) {
+        hostnameAsJksAlias = true;
+      } else if (s.equals("-internal_secure_connections")) {
         internal_secure_connections = true;
       }
       else if (s.equals("-internal_security_conf") || s.equals("-internal_security")) {
@@ -1193,6 +1197,9 @@ public class h2odriver extends Configured implements Tool {
       }
       else if (s.equals("-allow_insecure_xgboost")) {
         allow_insecure_xgboost = true;
+      }
+      else if (s.equals("-use_external_xgboost")) {
+        use_external_xgboost = true;
       }
       else if (s.equals("-hash_login")) {
         hashLogin = true;
@@ -1394,6 +1401,10 @@ public class h2odriver extends Configured implements Tool {
 
     if (proxy && disown) {
       error("proxy mode doesn't support the '-disown' option");
+    }
+
+    if (jksAlias != null && hostnameAsJksAlias) {
+      error("options -jks_alias and -hostname_as_jks_alias are mutually exclusive, specify only one of them");
     }
   }
   
@@ -1775,7 +1786,9 @@ public class h2odriver extends Configured implements Tool {
     if (jksPass != null) {
       addMapperArg(conf, "-jks_pass", jksPass);
     }
-    if (jksAlias != null) {
+    if (hostnameAsJksAlias) {
+      addMapperArg(conf, "-hostname_as_jks_alias");
+    } else if (jksAlias != null) {
       addMapperArg(conf, "-jks_alias", jksAlias);
     }
     if (hashLogin) {
@@ -1826,7 +1839,12 @@ public class h2odriver extends Configured implements Tool {
       addMapperArg(conf, "-hash_login");
       addMapperConf(conf, "-login_conf", "login.conf", hashFileData);
     }
-
+    if (allow_insecure_xgboost) {
+      addMapperArg(conf, "-allow_insecure_xgboost");
+    }
+    if (use_external_xgboost) {
+      addMapperArg(conf, "-use_external_xgboost");
+    }
     conf.set(h2omapper.H2O_MAPPER_ARGS_LENGTH, Integer.toString(mapperArgsLength));
 
     // Config files.
@@ -1865,9 +1883,6 @@ public class h2odriver extends Configured implements Tool {
       securityConf = SecurityUtils.generateSSLConfig(credentials);
       addMapperConf(conf, "", credentials.jks.name, credentials.jks.getLocation());
       addMapperConf(conf, "-internal_security_conf", "default-security.config", securityConf);
-    }
-    if (allow_insecure_xgboost) {
-      addMapperArg(conf, "-allow_insecure_xgboost");
     }
 
     conf.set(h2omapper.H2O_MAPPER_CONF_LENGTH, Integer.toString(mapperConfLength));

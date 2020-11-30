@@ -6,7 +6,7 @@ test.km.constrained <- function() {
     # import the iris dataset:
     # this dataset is used to classify the type of iris plant
     # the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Iris
-    iris <-h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    iris <-h2o.importFile(locate("smalldata/iris/iris_wheader.csv"))
 
     # convert response column to a factor
     iris['class'] <-as.factor(iris['class'])

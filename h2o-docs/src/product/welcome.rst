@@ -23,7 +23,7 @@ At a minimum, we recommend the following for compatibility with H2O:
 
 -  **Languages**: Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required. Supported versions include:
 
-   -  Java 8, 9, 10, 11, 12, and 13
+   -  Java 8, 9, 10, 11, 12, 13, 14
 
       - To build H2O or run H2O tests, the 64-bit JDK is required.
       - To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required.
@@ -130,7 +130,7 @@ At this point, determine whether you want to complete this quick start in either
         >
 
         # Copy and paste the following commands in R to download dependency packages.
-        > pkgs <- c("methods","statmod","stats","graphics","RCurl","jsonlite","tools","utils")
+        > pkgs <- c("methods", "statmod", "stats", "graphics", "RCurl", "jsonlite", "tools", "utils")
         > for (pkg in pkgs) {if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }}
 
         # Run the following command to load the H2O:
@@ -373,11 +373,8 @@ Developers
 
 If you're looking to use H2O to help you develop your own apps, the following links will provide helpful references.
 
-For the latest version of IDEA IntelliJ, run ``./gradlew idea``, then click **File > Open** within IDEA. Select the ``.ipr`` file in the repository and click the **Choose** button.
-
-For older versions of IDEA IntelliJ, run ``./gradlew idea``, then **Import Project** within IDEA and point it to the `h2o-3 directory <https://github.com/h2oai/h2o-3>`_.
-
-**Note**: This process will take longer, so we recommend using the first method if possible.
+H2O's build is completely managed by Gradle. Any IDEA with Gradle support is sufficient for H2O-3 development. The latest versions of IntelliJ IDEA have been thoroughly tested and are proven to work well. 
+Just open the folder with H2O-3 in IntellliJ IDEA, and it will automatically recognize that Gradle is required and will import the project. The Gradle wrapper present in the repository itself may be used manually/directly to build and test if required.
 
 For JUnit tests to pass, you may need multiple H2O nodes. Create a "Run/Debug" configuration with the following parameters:
 
@@ -399,8 +396,6 @@ After starting multiple "worker" node processes in addition to the JUnit test pr
 -  `apps.h2o.ai <http://apps.h2o.ai/>`_: Apps.h2o.ai is designed to support application developers via events, networking opportunities, and a new, dedicated website comprising developer kits and technical specs, news, and product spotlights.
 
 -  `H2O Droplet Project Templates <https://github.com/h2oai/h2o-droplets>`_: This page provides template info for projects created in Java, Scala, or Sparkling Water.
-
--  H2O Scala API Developer Documentation for `Scala 2.11 <../h2o-scala_2.11/scaladoc/index.html>`__ or `Scala 2.10 <../h2o-scala_2.10/scaladoc/index.html>`__: The definitive Scala API guide for H2O.
 
 -  `Hacking Algos <https://www.h2o.ai/blog/hacking-algorithms-in-h2o-with-cliff/>`_: This blog post by Cliff walks you through building a new algorithm, using K-Means, Quantiles, and Grep as examples.
 
@@ -960,7 +955,7 @@ The ``app: h2o-k8s`` setting is of **great importance** because it is the name o
 Creating the H2O Deployment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We strongly recommended to run H2O as a StatefulSet on a Kubernetes cluster. Treating H2O nodes as stateful ensures that:
+We strongly recommended running H2O as a `StatefulSet <https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/>`__ on a Kubernetes cluster. Treating H2O nodes as stateful ensures that:
 
 - H2O nodes are treated as a single unit. They will be brought up and down gracefully and together.
 - No attempts will be made by a K8S healthcheck to restart individual H2O nodes in case of an error.
@@ -976,6 +971,7 @@ We strongly recommended to run H2O as a StatefulSet on a Kubernetes cluster. Tre
     namespace: h2o-statefulset
   spec:
     serviceName: h2o-service
+    podManagementPolicy: "Parallel"
     replicas: 3
     selector:
       matchLabels:
@@ -988,7 +984,7 @@ We strongly recommended to run H2O as a StatefulSet on a Kubernetes cluster. Tre
         terminationGracePeriodSeconds: 10
         containers:
           - name: h2o-k8s
-            image: '<someDockerImageWithH2OInside>'
+            image: 'h2oai/h2o-open-source-k8s:latest'
             resources:
               requests:
                 memory: "4Gi"
@@ -1003,11 +999,20 @@ We strongly recommended to run H2O as a StatefulSet on a Kubernetes cluster. Tre
             - name: H2O_NODE_EXPECTED_COUNT
               value: '3'
 
-Below are additional environment variables:
+The environment variables used are described below:
 
-- ``H2O_KUBERNETES_SERVICE_DNS`` - (Required) Specify the H2O Kubernetes Service DNS to enable H2O node discovery via DNS. This is crucial for the clustering to work. The format usually follows the ``<service-name>.<project-name>.svc.cluster.local`` pattern. This must be modified to match the name of the headless service created.
-- ``H2O_NODE_LOOKUP_TIMEOUT`` - (Optional) The node lookup constraint. Specify the time before the node lookup times out. (Defaults to 3 minutes.)
-- ``H2O_NODE_EXPECTED_COUNT`` - (Optional) The node lookup constraint. This is the expected number of H2O pods to be discovered. (Defaults to 3.)
+- ``H2O_KUBERNETES_SERVICE_DNS`` - **[MANDATORY]** Crucial for the clustering to work. The format usually follows the ``<service-name>.<project-name>.svc.cluster.local`` pattern. This setting enables H2O node discovery via DNS. It must be modified to match the name of the headless service created. Also, pay attention to the rest of the address. It must match the specifics of your Kubernetes implementation.
+- ``H2O_NODE_LOOKUP_TIMEOUT`` - **[OPTIONAL]** Node lookup constraint. Specify the time before the node lookup times out.
+- ``H2O_NODE_EXPECTED_COUNT`` - **[OPTIONAL]** Node lookup constraint. This is the expected number of H2O pods to be discovered.
+- ``H2O_KUBERNETES_API_PORT`` - **[OPTIONAL]** Port for Kubernetes API checks to listen on. Defaults to 8080.
+
+If none of the optional lookup constraints are specified, a sensible default node lookup timeout will be set - currently
+defaults to 3 minutes. If any of the lookup constraints are defined, the H2O node lookup is terminated on whichever
+condition is met first.
+
+In the above example, ``'h2oai/h2o-open-source-k8s:latest'`` retrieves the latest build of the H2O Docker image. Replace ``latest`` with ``nightly`` to get the bleeding-edge Docker image with H2O inside.
+
+The documentation for the official H2O Docker images is available at the official `H2O Docker Hub page <https://hub.docker.com/r/h2oai/h2o-open-source-k8s>`__. 
 
 Exposing the H2O Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~

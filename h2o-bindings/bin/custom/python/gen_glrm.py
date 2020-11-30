@@ -104,7 +104,24 @@ examples = dict(
 >>> iris_glrm.train(x=iris.names, training_frame=iris)
 >>> iris_glrm.show()
 """,
+    representation_name="""
+>>> acs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip")
+>>> acs_fill = acs.drop("ZCTA5")
+>>> acs_glrm = H2OGeneralizedLowRankEstimator(k=10,
+...                                           transform="standardize",
+...                                           loss="quadratic",
+...                                           regularization_x="quadratic",
+...                                           regularization_y="L1",
+...                                           gamma_x=0.25,
+...                                           gamma_y=0.5,
+...                                           max_iterations=1,
+...                                           representation_name="acs_full")
+>>> acs_glrm.train(x=acs_fill.names, training_frame=acs)
+>>> acs_glrm.loading_name
+>>> acs_glrm.show()
+""",
     loading_name="""
+>>> # loading_name will be deprecated.  Use representation_name instead.    
 >>> acs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip")
 >>> acs_fill = acs.drop("ZCTA5")
 >>> acs_glrm = H2OGeneralizedLowRankEstimator(k=10,

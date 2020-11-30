@@ -1,6 +1,6 @@
-from ..estimators.estimator_base import H2OEstimator
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum
+from ..estimators.estimator_base import H2OEstimator
 
 
 

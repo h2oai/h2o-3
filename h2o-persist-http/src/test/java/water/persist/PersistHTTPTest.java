@@ -1,9 +1,6 @@
 package water.persist;
 
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpResponse;
+import org.apache.http.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
@@ -13,6 +10,7 @@ import water.parser.ParseDataset;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Optional;
 
 
 import static org.mockito.Mockito.mock;
@@ -23,7 +21,7 @@ public class PersistHTTPTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(5);
+    stall_till_cloudsize(1);
   }
 
   @Test
@@ -37,7 +35,7 @@ public class PersistHTTPTest extends TestUtil {
 
       PersistHTTP p = new PersistHTTP();
 
-      assertEquals(-1L, p.checkRangeSupport(URI.create(localUrl))); // H2O doesn't support byte-ranges
+      assertEquals(-1L, p.useLazyLoad(URI.create(localUrl))); // H2O doesn't support byte-ranges
 
       ArrayList<String> files = new ArrayList<>();
       ArrayList<String> keys = new ArrayList<>();
@@ -76,7 +74,7 @@ public class PersistHTTPTest extends TestUtil {
 
       PersistHTTP p = new PersistHTTP();
 
-      assertEquals(expectedSize, p.checkRangeSupport(URI.create(remoteUrl))); // S3 supports byte-ranges
+      assertEquals(expectedSize, p.useLazyLoad(URI.create(remoteUrl))); // S3 supports byte-ranges
 
       ArrayList<String> files = new ArrayList<>();
       ArrayList<String> keys = new ArrayList<>();
@@ -157,4 +155,36 @@ public class PersistHTTPTest extends TestUtil {
     assertEquals(42L, PersistHTTP.readContentLength(r));
   }
 
+  @Test
+  public void testIsCompressed() {
+    assertFalse(PersistHTTP.isCompressed(mockResponse(null)));
+    assertFalse(PersistHTTP.isCompressed(mockResponse("text/csv")));
+    assertTrue(PersistHTTP.isCompressed(mockResponse("application/zip")));
+    assertTrue(PersistHTTP.isCompressed(mockResponse("application/gzip")));
+    assertTrue(PersistHTTP.isCompressed(mockResponse("application/GZip"))); // case insensitive
+  }
+  
+  private HttpResponse mockResponse(final String contentType) {
+    HttpResponse r = mock(HttpResponse.class);
+    if (contentType != null) {
+      when(r.getFirstHeader(HttpHeaders.CONTENT_TYPE)).thenReturn(new Header() {
+        @Override
+        public String getName() {
+          return HttpHeaders.CONTENT_TYPE;
+        }
+
+        @Override
+        public String getValue() {
+          return contentType;
+        }
+
+        @Override
+        public HeaderElement[] getElements() throws ParseException {
+          return new HeaderElement[0];
+        }
+      });
+    }
+    return r;
+  }
+  
 }

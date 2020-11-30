@@ -358,7 +358,7 @@ public class AutoMLTest extends water.TestUtil {
         put(Algo.GBM, 5*10+1*60); // models+grids
         put(Algo.GLM, 1*10);
         put(Algo.XGBoost, 3*10+1*100); // models+grids
-        put(Algo.StackedEnsemble, 2*10);
+        put(Algo.StackedEnsemble, 3*10);
       }};
       int maxTotalWork = 0;
       for (Map.Entry<Algo, Integer> entry : defaultAllocs.entrySet()) {
@@ -398,7 +398,7 @@ public class AutoMLTest extends water.TestUtil {
         put(Algo.GBM, 5*10+1*60); // models+grids
         put(Algo.GLM, 1*10);
         put(Algo.XGBoost, 3*10+1*100); // models+grids
-        put(Algo.StackedEnsemble, 2*10);
+        put(Algo.StackedEnsemble, 3*10);
       }};
       Map<Algo, Integer> exploitationAllocs = new HashMap<Algo, Integer>(){{
         put(Algo.GBM, 1*10);
@@ -710,7 +710,7 @@ public class AutoMLTest extends water.TestUtil {
           assertTrue(key+":"+parameters._seed, Math.abs(parameters._seed - seed) < maxModels);
           collectedSeeds.add(parameters._seed);
           assertTrue(key+" has `stopping_rounds` param set to "+parameters._stopping_rounds,
-                  parameters._stopping_rounds == 3 || algo == Algo.XGBoost);  // currently only enforced to different value for XGB (AutoML hardcoded)
+                  parameters._stopping_rounds == 3 || algo == Algo.GLM);  // stopping criteria only disabled for GLM (using lambda search)
         }
         assertTrue(collectedSeeds.size() > 1 || keys.size() < 2);  // we should have built enough models to guarantee this
       }

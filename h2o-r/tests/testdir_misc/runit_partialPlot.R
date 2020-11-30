@@ -122,24 +122,24 @@ test <- function() {
   check_pp_race_2 = partialDependence(object = prostate_drf, pred.data = prostate_hex_race_2, xname = "RACE", h2o.pp = h2o_pp_race_2)
   
   ## Check the partial plot from h2o
-
+  
   #Mean response
   checkEqualsNumeric(check_pp_race_0[,"mean_response"], h2o_pp_race_0[,"mean_response"])
   checkEqualsNumeric(check_pp_race_1[,"mean_response"], h2o_pp_race_1[,"mean_response"])
   checkEqualsNumeric(check_pp_race_2[,"mean_response"], h2o_pp_race_2[,"mean_response"])
-
+  
   #Standard Deviation of Response
   checkEqualsNumeric(check_pp_race_0[,"stddev_response"], h2o_pp_race_0[,"stddev_response"])
   checkEqualsNumeric(check_pp_race_1[,"stddev_response"], h2o_pp_race_1[,"stddev_response"])
   checkEqualsNumeric(check_pp_race_2[,"stddev_response"], h2o_pp_race_2[,"stddev_response"])
-
+  
   #Standard Error of Mean Response
   checkEqualsNumeric(check_pp_race_0[,"std_error_mean_response"], h2o_pp_race_0[,"std_error_mean_response"])
   checkEqualsNumeric(check_pp_race_1[,"std_error_mean_response"], h2o_pp_race_1[,"std_error_mean_response"])
   checkEqualsNumeric(check_pp_race_2[,"std_error_mean_response"], h2o_pp_race_2[,"std_error_mean_response"])
   
   ## H2O partial plot on the entire dataset
-  h2o_pp_race   = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "RACE", plot = FALSE)
+  h2o_pp_race  = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "RACE", plot = FALSE)
   
   ## Dataset with only one level only scores with the first level in the column domain based off of the model
   checkEquals(h2o_pp_race_0$RACE, "0")
@@ -154,22 +154,45 @@ test <- function() {
   checkTrue(all(unlist(lapply(1:4, function(i) checkEqualsNumeric(iris_pps2[[i]]$mean_response, iris_pps[[i]]$mean_response)))))
   checkTrue(all(unlist(lapply(1:4, function(i) checkEqualsNumeric(iris_pps2[[i]]$stddev_response, iris_pps[[i]]$stddev_response)))))
   checkTrue(all(unlist(lapply(1:4, function(i) checkEqualsNumeric(iris_pps2[[i]]$std_error_mean_response, iris_pps[[i]]$std_error_mean_response)))))
-  
+    
+  ## Ask to score on multinomial case
+  iris[,'random'] <- as.factor(as.data.frame(unlist(sample(x = 1:4, size = length(iris[[1]]), replace=TRUE)))[[1]])
+  iris_hex <- as.h2o(iris)
+  iris_gbm <- h2o.gbm(x = c(1:4,6), y = 5, training_frame = iris_hex)
+    
+  # one column  
+  h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", targets=c("setosa"))
+  h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", targets=c("setosa", "virginica", "versicolor"))
+
+  h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", targets=c("setosa"), plot_stddev = FALSE)
+  h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", targets=c("setosa", "virginica", "versicolor"), plot_stddev = FALSE)
+
+  # two colums  
+  h2o.partialPlot(object = iris_gbm, data = iris_hex, cols=c("Petal.Length", "Sepal.Length"), targets=c("setosa"))
+  h2o.partialPlot(object = iris_gbm, data = iris_hex, cols=c("Petal.Length", "Sepal.Length"), targets=c("setosa"), plot_stddev =  FALSE)  
+    
+  # categorical column
+  h2o.partialPlot(object = iris_gbm, data = iris_hex, cols=c("random"), targets=c("versicolor"))
+  h2o.partialPlot(object = iris_gbm, data = iris_hex, cols=c("random"), targets=c("versicolor"), plot_stddev = FALSE)
+
   ## Check failure cases
   ## 1) Selection of incorrect columns 
   expect_error(h2o.partialPlot(object = prostate_drf, data = prostate_hex[-2], cols = "AGE"), "is not a column name")
   expect_error(h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "BLAH"), "Invalid column names")
-  
-  ## 2) Ask to score on unsupported multinomial case 
-  iris_hex = as.h2o( iris)
-  iris_gbm = h2o.gbm(x = 1:4, y = 5, training_frame = iris_hex)
-  expect_error(h2o.partialPlot(object = iris_gbm, data = iris_hex, "Sepal.Length"), "object must be a regression model or binary classfier")
-  
-  ## 3) Nbins is smaller than cardinality of a categorical column
+    
+  ## 2) Nbins is smaller than cardinality of a categorical column
   prostate_hex[ ,"AGE"] = as.factor(prostate_hex[ ,"AGE"])
   prostate_gbm = h2o.gbm(x = c("AGE", "RACE"), y = "CAPSULE", training_frame = prostate_hex, ntrees = 10, seed = seed)
   expect_error(h2o.partialPlot(object = prostate_gbm, data = prostate_hex),"Column AGE's cardinality")
-  
+    
+  ## 3) Target is not set for multinomial classification  
+  expect_error(h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Sepal.Length"), "targets parameter has to be set for multinomial classification")
+
+  ## 4) Target class is not in target domain   
+  expect_error(h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Sepal.Length", targets=c("Iris")), "\n\nERROR MESSAGE:\n\nIncorrect target class: Iris.\n\n")
+
+  ## 5) Target is set for non multinomial problem
+  expect_error(h2o.partialPlot(object = prostate_drf, data = prostate_hex, targets=c("Iris")), "\n\nERROR MESSAGE:\n\nTargets parameter is available only for multinomial classification.\n\n")
 }
 
 doTest("Test Partial Dependence Plots in H2O: ", test)

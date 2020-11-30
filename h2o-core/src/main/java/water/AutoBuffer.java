@@ -1667,7 +1667,8 @@ public final class AutoBuffer {
     }
     return put1(']');
   }
-  private AutoBuffer putJSONAAStr( String[][] sss) {
+  
+  public AutoBuffer putJSONAAStr( String[][] sss) {
     if( sss == null ) return putJNULL();
     put1('[');
     for( int i=0; i<sss.length; i++ ) {

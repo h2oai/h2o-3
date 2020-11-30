@@ -7,7 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-This option is used to specify the way that the algorithm will treat missing values. In H2O, the Deep Learning and GLM algorithms will either skip or mean-impute rows with NA values. The GLM algorithm can also use plug_values, which allows you to specify a single-row frame containing values that will be used to impute missing values of the training/validation frame. Both algorithms default to MeanImputation. Note that in Deep Learning, unseen categorical variables are imputed by adding an extra “missing” level. In GLM, unseen categorical levels are replaced by the most frequent level present in training (mod).
+This option is used to specify the way that the algorithm will treat missing values. In H2O, the Deep Learning, GLM, and GAM algorithms will either skip or mean-impute rows with NA values. The GLM and GAM algorithms can also use plug_values, which allows you to specify a single-row frame containing values that will be used to impute missing values of the training/validation frame. These three algorithms default to MeanImputation. Note that in Deep Learning, unseen categorical variables are imputed by adding an extra “missing” level. In GLM and GAM, unseen categorical levels are replaced by the most frequent level present in training (mod).
  
 The fewer the NA values in your training data, the better. Always check degrees of freedom in the output model. Degrees of freedom is the number of observations used to train the model minus the size of the model (i.e., the number of features). If this number is much smaller than expected, it is likely that too many rows have been excluded due to missing values:
 
@@ -41,9 +41,9 @@ Example
 		boston["chas"] <- as.factor(boston["chas"])
 
 		# split into train and validation sets
-		boston.splits <- h2o.splitFrame(data =  boston, ratios = .8)
-		train <- boston.splits[[1]]
-		valid <- boston.splits[[2]]
+		boston_splits <- h2o.splitFrame(data =  boston, ratios = 0.8)
+		train <- boston_splits[[1]]
+		valid <- boston_splits[[2]]
 
 		# insert missing values at random (this method happens inplace)
 		h2o.insertMissingValues(boston)
@@ -57,7 +57,7 @@ Example
 		                      validation_frame = valid)
 
 		# print the mse for the validation data
-		print(h2o.mse(boston_glm, valid=TRUE))
+		print(h2o.mse(boston_glm, valid = TRUE))
 
 		# grid over `missing_values_handling`
 		# select the values for `missing_values_handling` to grid over
@@ -73,8 +73,8 @@ Example
 		                 search_criteria = list(strategy = "Cartesian"))
 
 		# Sort the grid models by mse
-		sortedGrid <- h2o.getGrid("boston_grid", sort_by = "mse", decreasing = FALSE)
-		sortedGrid
+		sorted_grid <- h2o.getGrid("boston_grid", sort_by = "mse", decreasing = FALSE)
+		sorted_grid
    
    .. code-tab:: python
 

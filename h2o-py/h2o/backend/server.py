@@ -11,6 +11,7 @@ Local server.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 import atexit
 import os
@@ -24,7 +25,6 @@ from sysconfig import get_config_var
 from warnings import warn
 
 from h2o.exceptions import H2OServerError, H2OStartupError, H2OValueError
-from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, BoundInt, I, is_type
 
 __all__ = ("H2OLocalServer", )

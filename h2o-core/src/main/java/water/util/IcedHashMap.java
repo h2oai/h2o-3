@@ -46,4 +46,11 @@ public class IcedHashMap<K, V> extends IcedHashMapBase<K,V> implements Concurren
       writeValue(ab, valueType, valueArrayType, value);
     }
   }
+
+  @Override
+  protected boolean writeable() {
+    return true; // we are backed by NonBlockingHashMap, serialization is thus safe even while the map is being modified
+                 // because we are working with a snapshot of NBHM
+  }
+
 }

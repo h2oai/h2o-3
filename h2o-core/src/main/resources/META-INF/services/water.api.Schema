@@ -31,6 +31,8 @@ water.api.schemas3.FrameV3$ColSpecifierV3
 water.api.schemas3.FrameV3$ColV3
 water.api.schemas3.FramesV3
 water.api.schemas3.FramesListV3
+water.api.schemas3.FrameSaveV3
+water.api.schemas3.FrameLoadV3
 water.api.schemas3.GarbageCollectV3
 water.api.schemas3.H2OErrorV3
 water.api.schemas3.H2OModelBuilderErrorV3
@@ -83,6 +85,7 @@ water.api.schemas3.ModelMetricsOrdinalGenericV3
 water.api.schemas3.ModelMetricsOrdinalGLMGenericV3
 water.api.schemas3.ModelMetricsRegressionGLMV3
 water.api.schemas3.ModelMetricsRegressionGLMGenericV3
+water.api.schemas3.ModelMetricsRegressionCoxPHV3
 water.api.schemas3.ModelMetricsRegressionV3
 water.api.schemas3.ModelMetricsRegressionGenericV3
 water.api.schemas3.ModelOutputSchemaV3
@@ -117,6 +120,7 @@ water.api.schemas3.RemoveAllV3
 water.api.schemas3.RemoveV3
 water.api.schemas3.RequestSchemaV3
 water.api.schemas3.RouteV3
+water.api.schemas3.SaveToHiveTableV3
 water.api.schemas3.SchemaMetadataV3
 water.api.schemas3.SchemaV3
 water.api.schemas3.ShutdownV3
@@ -164,3 +168,4 @@ water.api.schemas3.PingV3$NodeMemoryInfoV3
 water.api.schemas3.CloudLockV3
 water.api.schemas3.SegmentModelsV3
 water.api.schemas3.SegmentModelsParametersV3
+water.api.schemas3.FeatureInteractionV3

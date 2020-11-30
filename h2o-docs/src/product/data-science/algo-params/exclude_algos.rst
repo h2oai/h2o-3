@@ -41,7 +41,7 @@ Example
 		y <- "response"
 
 		# For binary classification, response should be a factor
-		train[,y] <- as.factor(train[,y])
+		train[, y] <- as.factor(train[, y])
 
 		# Train AutoML, omitting DeepLearning and DRF
 		aml <- h2o.automl(x = x, y = y,

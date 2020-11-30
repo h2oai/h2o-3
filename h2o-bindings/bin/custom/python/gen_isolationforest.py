@@ -1,6 +1,7 @@
 def update_param(name, param):
     if name == 'stopping_metric':
-        param['values'] = ['AUTO', 'anomaly_score']
+        param['values'] = ['AUTO', 'anomaly_score', 'deviance', 'logloss', 'mse', 'rmse', 'mae', 'rmsle',
+                            'auc', 'aucpr', 'misclassification', 'mean_per_class_error']
         return param
     return None  # param untouched
 

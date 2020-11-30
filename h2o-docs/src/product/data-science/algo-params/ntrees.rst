@@ -33,19 +33,19 @@ Example
 		response <- "survived"
 
 		# split into train and validation
-		titanic.splits <- h2o.splitFrame(data =  titanic, ratios = .8, seed = 1234)
-		train <- titanic.splits[[1]]
-		valid <- titanic.splits[[2]]
+		titanic_splits <- h2o.splitFrame(data =  titanic, ratios = 0.8, seed = 1234)
+		train <- titanic_splits[[1]]
+		valid <- titanic_splits[[2]]
 
 		# try a range of ntrees: 
 		bin_num = c(20, 50, 80, 110, 140, 170, 200)
 		label = c("20", "50", "80", "110", "140", "170", "200")
 		lapply(seq_along(1:length(bin_num)),function(num) {
-		  titanic.gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, validation_frame = valid,
+		  titanic_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, validation_frame = valid,
 		                          ntrees = bin_num[num], nfolds = 5, seed = 1234)
 		  # print the value used and AUC score for train and valid
-		  print(paste(label[num], 'training score',  h2o.auc(titanic.gbm, train = TRUE)))
-		  print(paste(label[num], 'validation score',  h2o.auc(titanic.gbm, valid = TRUE)))
+		  print(paste(label[num], 'training score',  h2o.auc(titanic_gbm, train = TRUE)))
+		  print(paste(label[num], 'validation score',  h2o.auc(titanic_gbm, valid = TRUE)))
 		})
 
 
@@ -60,8 +60,8 @@ Example
 		                 search_criteria = list(strategy = "Cartesian"), seed = 1234)  
 
 		## Sort the grid models by AUC
-		sortedGrid <- h2o.getGrid("titanic_grid", sort_by = "auc", decreasing = TRUE)    
-		sortedGrid
+		sorted_grid <- h2o.getGrid("titanic_grid", sort_by = "auc", decreasing = TRUE)    
+		sorted_grid
 
 
    .. code-tab:: python

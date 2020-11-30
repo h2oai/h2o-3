@@ -11,7 +11,13 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s 
 	&& chmod +x ./kubectl \
 	&& mv ./kubectl /usr/local/bin/kubectl
 
-RUN curl -s https://raw.githubusercontent.com/rancher/k3d/master/install.sh | bash
+RUN curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=v1.7.0 bash
+
+RUN curl https://baltocdn.com/helm/signing.asc | apt-key add - \
+    && apt-get install apt-transport-https --yes \
+    && echo "deb https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list \
+    && apt-get update \
+    && apt-get install helm -y
 
 RUN rm /var/lib/apt/lists -rf
 

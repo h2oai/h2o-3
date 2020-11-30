@@ -6,27 +6,26 @@ H2O data frame.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 import csv
 import datetime
 import functools
+from io import StringIO
 import os
 import sys
 import tempfile
 import traceback
-import warnings
-from io import StringIO
 from types import FunctionType
+import warnings
 
 import h2o
 from h2o.base import Keyed
 from h2o.display import H2ODisplay
-from h2o.exceptions import H2OTypeError, H2OValueError
+from h2o.exceptions import H2OTypeError, H2OValueError, H2ODeprecationWarning
 from h2o.expr import ExprNode
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
-from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.compatibility import viewitems, viewvalues
 from h2o.utils.config import get_config_value
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
@@ -422,12 +421,12 @@ class H2OFrame(Keyed):
 
 
     def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings,
-                      skipped_columns=None, custom_non_data_line_markers = None):
+                      skipped_columns=None, custom_non_data_line_markers=None, partition_by=None):
         if H2OFrame.__LOCAL_EXPANSION_ON_SINGLE_IMPORT__ and is_type(path, str) and "://" not in path:  # fixme: delete those 2 lines, cf. PUBDEV-5717
             path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path, pattern)
         self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                    skipped_columns, custom_non_data_line_markers)
+                    skipped_columns, custom_non_data_line_markers, partition_by)
         return self
 
 
@@ -439,9 +438,9 @@ class H2OFrame(Keyed):
 
 
     def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None,
-               na_strings=None, skipped_columns=None, custom_non_data_line_markers = None):
+               na_strings=None, skipped_columns=None, custom_non_data_line_markers=None, partition_by=None):
         setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                                skipped_columns, custom_non_data_line_markers)
+                                skipped_columns, custom_non_data_line_markers, partition_by)
         return self._parse_raw(setup)
 
 
@@ -458,7 +457,8 @@ class H2OFrame(Keyed):
              "blocking": False,
              "column_types": None,
              "skipped_columns":None,
-             "custom_non_data_line_markers": setup["custom_non_data_line_markers"]
+             "custom_non_data_line_markers": setup["custom_non_data_line_markers"],
+             "partition_by": setup["partition_by"]
              }
 
         if setup["column_names"]: p["column_names"] = None
@@ -1560,10 +1560,11 @@ class H2OFrame(Keyed):
         return res
 
 
-    def unique(self):
+    def unique(self, include_nas=False):
         """
         Extract the unique values in the column.
-
+        
+        :param include_nas: If set to true, NAs are included. False (turned off) by default.
         :returns: H2OFrame of just the unique values in the column.
 
         :examples:
@@ -1573,7 +1574,7 @@ class H2OFrame(Keyed):
         >>> h2oframe = h2o.H2OFrame(python_obj=python_lists)
         >>> h2oframe.unique()
         """
-        return H2OFrame._expr(expr=ExprNode("unique", self))
+        return H2OFrame._expr(expr=ExprNode("unique", self, include_nas))
 
 
     def levels(self):
@@ -2136,6 +2137,38 @@ class H2OFrame(Keyed):
             frame.pop(0)
         return frame
 
+    def save_to_hive(self, jdbc_url, table_name, format="csv", table_path=None, tmp_path=None):
+        """
+        Save contents of this data frame into a Hive table.
+        
+        :param jdbc_url: Hive JDBC connection URL.
+        :param table_name: Table name into which to store the data. The table must not exist as it will be created
+            to match the structure of the the frame. The user must be allowed to create tables.
+        :param format: Storage format of created Hive table, can be either ``csv`` (default) or ``parquet``.
+        :param table_path: If specified, the table will be created as an external table and this is where the data 
+            will be stored.
+        :param tmp_path: Path where to store temporary data.
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines.save_to_hive("jdbc:hive2://hive-server:10000/default", "airlines")
+        """
+        assert_is_type(jdbc_url, str)
+        assert_is_type(table_name, str)
+        assert_is_type(format, Enum("csv", "parquet"))
+        assert_is_type(table_path, str, None)
+        assert_is_type(tmp_path, str, None)
+        p = {
+            "frame_id": self.frame_id,
+            "jdbc_url": jdbc_url,
+            "table_name": table_name,
+            "format": format,
+            "table_path": table_path,
+            "tmp_path": tmp_path
+        }
+        h2o.api("POST /3/SaveToHiveTable", data=p)
 
     def get_frame_data(self):
         """
@@ -2151,8 +2184,32 @@ class H2OFrame(Keyed):
         >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
         >>> iris.get_frame_data()
         """
-        return h2o.api("GET /3/DownloadDataset", data={"frame_id": self.frame_id, "hex_string": False})
+        return h2o.api(
+            "GET /3/DownloadDataset", 
+            data={"frame_id": self.frame_id, "hex_string": False, "escape_quotes": True}
+        )
 
+    def save(self, path, force=True):
+        """
+        Store frame data in H2O's native format.
+
+        This will store this frame's data to a file-system location in H2O's native binary format. Stored data can be
+        loaded only with a cluster of the same size and same version the the one which wrote the data. The provided
+        directory must be accessible from all nodes (HDFS, NFS). 
+        
+        :param path: a filesystem location where to write frame data
+        :param force: overwrite already existing files (defaults to true)
+        :returns: Frame data as a string in csv format.
+        
+        :examples:
+        
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> iris.save("hdfs://namenode/h2o_data")
+        """
+        H2OJob(h2o.api(
+            "POST /3/Frames/%s/save" % self.frame_id, 
+            data={"dir": path, "force": force}
+        ), "Save frame data").poll()
 
     def __getitem__(self, item):
         """
@@ -3071,7 +3128,7 @@ class H2OFrame(Keyed):
         assert_is_type(axis, 0, 1)
         # Deprecated since 2016-10-14,
         if "na_rm" in kwargs:
-            warnings.warn("Parameter na_rm is deprecated; use skipna instead", category=DeprecationWarning)
+            warnings.warn("Parameter na_rm is deprecated; use skipna instead", category=H2ODeprecationWarning)
             na_rm = kwargs.pop("na_rm")
             assert_is_type(na_rm, bool)
             skipna = na_rm  # don't assign to skipna directly, to help with error reporting
@@ -3113,7 +3170,7 @@ class H2OFrame(Keyed):
         assert_is_type(axis, 0, 1)
         # Deprecated since 2016-10-14,
         if "na_rm" in kwargs:
-            warnings.warn("Parameter na_rm is deprecated; use skipna instead", category=DeprecationWarning)
+            warnings.warn("Parameter na_rm is deprecated; use skipna instead", category=H2ODeprecationWarning)
             na_rm = kwargs.pop("na_rm")
             assert_is_type(na_rm, bool)
             skipna = na_rm  # don't assign to skipna directly, to help with error reporting
@@ -3326,6 +3383,11 @@ class H2OFrame(Keyed):
         if measure is None: measure = "l2"
         return H2OFrame._expr(expr=ExprNode("distance", self, y, measure))._frame()
 
+    def drop_duplicates(self, columns, keep = "first"):
+        assert_is_type(columns, [int], [str])
+        assert_is_type(keep,  Enum("first", "last"))
+    
+        return H2OFrame._expr(expr=ExprNode("dropdup", self, columns, keep))._frame()
 
     def strdistance(self, y, measure=None, compare_empty=True):
         """
@@ -3738,7 +3800,7 @@ class H2OFrame(Keyed):
             try:
                 import matplotlib
                 if server:
-                    matplotlib.use("Agg", warn=False)
+                    matplotlib.use("Agg")
                 import matplotlib.pyplot as plt
             except ImportError:
                 print("ERROR: matplotlib is required to make the histogram plot. "

@@ -113,7 +113,7 @@ class EfronDJKTermTask extends CPHBaseTask<EfronDJKTermTask> {
     int ncats = row.nBins;
     int [] cats = row.binIds;
     double [] nums = row.numVals;
-    final double weight = _has_weights_column ? response[0] : 1.0;
+    final double weight = _has_weights_column ? row.weight : 1.0;
     if (weight <= 0)
       throw new IllegalArgumentException("weights must be positive values");
     int respIdx = response.length - 1;

@@ -8,7 +8,13 @@ import water.rapids.Env;
 import water.rapids.Session;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * Class used for creating simple test frames using builder pattern
@@ -44,8 +50,9 @@ import java.util.Random;
 public class TestFrameBuilder {
 
   private static final long NOT_SET = -1;
-  private HashMap<Integer, String[]> stringData = new HashMap<>();
-  private HashMap<Integer, double[]> numericData = new HashMap<>();
+  private Map<Integer, String[]> stringData = new HashMap<>();
+  private Map<Integer, double[]> numericData = new HashMap<>();
+  private Map<Integer, String[]> givenDomains = new HashMap<>();
   private String frameName;
   private byte[] vecTypes;
   private String[] colNames;
@@ -54,7 +61,7 @@ public class TestFrameBuilder {
   private Key<Frame> key;
   private long numRows = NOT_SET;
   private String[][] domains = null;
-  private HashMap<Integer, Integer[]> categoriesPerCol = new HashMap<>();
+  private Map<Integer, Integer[]> categoriesPerCol = new HashMap<>();
 
   /**
    * Sets the name for the frame. Default name is created if this method is not called.
@@ -198,6 +205,11 @@ public class TestFrameBuilder {
     return this;
   }
 
+  public TestFrameBuilder withDomain(int column, String[] domain) {
+    givenDomains.put(column, domain);
+    return this;
+  }
+
   public TestFrameBuilder withChunkLayout(long... chunkLayout) {
     this.chunkLayout = chunkLayout;
     return this;
@@ -246,7 +258,7 @@ public class TestFrameBuilder {
   }
 
   // Utility method to get unique values from categorical domain
-  private String[] getUniqueValues(HashMap<String, Integer> mapping){
+  private String[] getUniqueValues(Map<String, Integer> mapping){
     String[] values = new String[mapping.size()];
     for (String key : mapping.keySet())
       values[mapping.get(key)] = key;
@@ -254,36 +266,50 @@ public class TestFrameBuilder {
   }
 
   // Utility method to convert domain into categories
-  private Integer[] getCategories(HashMap<String, Integer> mapping, String[] original){
+  private Integer[] applyDomainMapping(Map<String, Integer> mapping, String[] original){
     Integer[] categoricals = new Integer[original.length];
     for(int i = 0; i < original.length; i++) {
-      categoricals[i] = mapping.get(original[i]);
+      categoricals[i] = original[i] == null ? null : mapping.get(original[i]);
     }
     return categoricals;
   }
 
+  private Map<String, Integer> getMapping(String[] array) {
+    return getMapping(array, false);
+  }
+  
   // Utility method to get mapping from domain member to its level
-  private HashMap<String, Integer> getMapping(String[] array){
-   HashMap<String, Integer> mapping = new HashMap<>();
+  private Map<String, Integer> getMapping(String[] array, boolean useOrderInArray){
+    Map<String, Integer> mapping = new TreeMap<>();
     int level = 0;
     for (String item : array) {
       if ((item != null) && (! mapping.containsKey(item))) {
-        mapping.put(item, level);
-        level++;
+        mapping.put(item, useOrderInArray ? level++ : 0);
+      }
+    }
+    if (!useOrderInArray) { // use lexicographic order instead (default behaviour of H2O parser)
+      for (Map.Entry<String, Integer> entry : mapping.entrySet()) {
+        entry.setValue(level++);
       }
     }
     return mapping;
   }
-
+  
   private void prepareCategoricals(){
     // domains is not null if there is any T_CAT
     for (int colIdx = 0; colIdx < vecTypes.length; colIdx++) {
-      if(vecTypes[colIdx]==Vec.T_CAT){
-        HashMap<String, Integer> mapping = getMapping(stringData.get(colIdx));
-        Integer[] categories = getCategories(mapping, stringData.get(colIdx));
+      if (givenDomains.containsKey(colIdx)) { // domain set explicitly
+        String[] doms = givenDomains.get(colIdx);
+        domains[colIdx] = doms;
+        Map<String, Integer> mapping = getMapping(doms, true);
+        Integer[] categories = applyDomainMapping(mapping, stringData.get(colIdx));
+        categoriesPerCol.put(colIdx, categories);
+      } else if (vecTypes[colIdx]==Vec.T_CAT) { // default domain extraction (use lexicographical order)
+        Map<String, Integer> mapping = getMapping(stringData.get(colIdx));
+        Integer[] categories = applyDomainMapping(mapping, stringData.get(colIdx));
         domains[colIdx] = getUniqueValues(mapping);
         categoriesPerCol.put(colIdx, categories);
-      }else{
+      } else {
         if(domains != null) {
           domains[colIdx] = null;
         }

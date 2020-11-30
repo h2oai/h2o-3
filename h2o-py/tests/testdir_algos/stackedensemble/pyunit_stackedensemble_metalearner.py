@@ -62,7 +62,7 @@ def stackedensemble_metalearner_test():
 
         se = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_algorithm=algo, **meta_params)
         se.train(x=x, y=y, training_frame=train)
-        assert(se.params['metalearner_algorithm']['actual'] == algo)
+        assert(se.params['metalearner_algorithm']['actual'] == expected_algo)
         if meta_params:
             assert(se.params['metalearner_nfolds']['actual'] == 3)
 

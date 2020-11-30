@@ -78,7 +78,8 @@ def stackedensemble_nfolds_test():
     meta1 = h2o.get_model(stack1.metalearner()['name'])
     assert(meta1.params['nfolds']['actual'] == 3)
     # Check that metalearner fold_assignment is NULL/"AUTO"
-    assert(meta1.params['fold_assignment']['actual'] == "AUTO")
+    assert(meta1.params['fold_assignment']['input'] == "AUTO")
+    assert(meta1.params['fold_assignment']['actual'] == "Random")
     # Check that validation metrics are NULL
     assert(stack1.mse(valid=True) is None)
     # Check that xval metrics from metalearner and ensemble are equal (use mse as proxy)

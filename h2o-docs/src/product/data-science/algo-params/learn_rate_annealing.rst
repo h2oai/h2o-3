@@ -48,17 +48,17 @@ Example
 		response <- "survived"
 
 		# split into train and validation
-		titanic.splits <- h2o.splitFrame(data =  titanic, ratios = .8, seed = 1234)
-		train <- titanic.splits[[1]]
-		valid <- titanic.splits[[2]]
+		titanic_splits <- h2o.splitFrame(data =  titanic, ratios = 0.8, seed = 1234)
+		train <- titanic_splits[[1]]
+		valid <- titanic_splits[[2]]
 
 		# try using the `learn_rate_annealing` parameter: 
 		# combine learn_rate with learn_rate_annealing
 		# since we have learning_rate_annealing, we can afford to start with a bigger learning rate (.05)
 		# learning rate annealing = .99 means learning_rate shrinks by 1% after every tree 
 		# early stopping makes it okay to use 'more than enough' trees
-		titanic.gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, validation_frame = valid,
-		                       learn_rate = .05, learn_rate_annealing =.99,
+		titanic_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, validation_frame = valid,
+		                       learn_rate = 0.05, learn_rate_annealing = 0.99,
 		                       # use early stopping once the validation AUC doesn't improve by at least 0.01%
 		                       # for 5 consecutive scoring events
 		                       stopping_rounds = 5,
@@ -66,7 +66,7 @@ Example
 		                       stopping_metric = "AUC", seed = 1234)
 
 		# print the auc for the validation data
-		print(h2o.auc(titanic.gbm, valid = TRUE))
+		print(h2o.auc(titanic_gbm, valid = TRUE))
 
 
    .. code-tab:: python

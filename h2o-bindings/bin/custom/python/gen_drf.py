@@ -229,20 +229,6 @@ examples = dict(
 ...               validation_frame=valid)
 >>> print('logloss', cov_drf.logloss(valid=True))
 """,
-    max_hit_ratio_k="""
->>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
->>> covtype[54] = covtype[54].asfactor()
->>> predictors = covtype.columns[0:54]
->>> response = 'C55'
->>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
->>> cov_drf = H2ORandomForestEstimator(max_hit_ratio_k=3,
-...                                    seed=1234)
->>> cov_drf.train(x=predictors,
-...               y=response,
-...               training_frame=train,
-...               validation_frame=valid)
->>> cov_drf.show()
-""",
     ntrees="""
 >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
 >>> titanic['survived'] = titanic['survived'].asfactor()
@@ -760,5 +746,13 @@ examples = dict(
 >>> my_drf.train(x=list(range(1,5)),
 ...              y="constantCol",
 ...              training_frame=train)
+""",
+    gainslift_bins="""
+>>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+>>> model = H2ORandomForestEstimator(ntrees=1, gainslift_bins=20)
+>>> model.train(x=["Origin", "Distance"],
+...             y="IsDepDelayed",
+...             training_frame=airlines)
+>>> model.gains_lift()
 """
 )

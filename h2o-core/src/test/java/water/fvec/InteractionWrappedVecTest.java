@@ -220,6 +220,33 @@ public class InteractionWrappedVecTest extends TestUtil {
       if( interactionVec!=null ) interactionVec.remove();
     }
   }
+  
+  // This test is added to make sure we get the correct number of bins when use_all_factor_level = True and False.
+  @Test
+  public void testCatCatInteraction1() {
+    Scope.enter();
+    try {
+      final Frame train2 = Scope.track(new TestFrameBuilder()
+              .withColNames("cat1", "cat2")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a","a","a","b","b","b","c","c","c","a","a","a","b"))
+              .withDataForCol(1, ar("Red", "Blue", "Green","Red", "Blue", "Green","Red", "Blue", 
+                      "Green","Blue", "Green","Red", "Blue"))
+              .build());
+      Vec f1useAllFactor = Scope.track(new InteractionWrappedVec(
+              train2.anyVec().group().addVec(), train2.anyVec()._rowLayout, null, null, true, true, false,
+              train2.vec(0)._key, train2.vec(1)._key));
+      long[] bin1 = f1useAllFactor.bins();
+      Vec f1noUseAllFactor = Scope.track(new InteractionWrappedVec(
+              train2.anyVec().group().addVec(), train2.anyVec()._rowLayout, null, null, false, true, false,
+              train2.vec(0)._key, train2.vec(1)._key));
+      long[] bin2 = f1noUseAllFactor.bins();
+      assert bin1.length==9 : "Expected bin length is 9.  Actual bin lenght is "+bin1.length;
+      assert bin2.length==5 : "Expected bin length is 5.  Actual bin lenght is "+bin2.length;
+    } finally {
+      Scope.exit();
+    }
+  }
 
   @Test public void testModeOfCatNumInteraction() {
     try {

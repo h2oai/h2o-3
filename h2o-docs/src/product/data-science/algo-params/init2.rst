@@ -28,20 +28,20 @@ Example
 		heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 
 		# split the dataset into train and validation datasets
-		heart.split <- h2o.splitFrame(data=heart, ratios=.8, seed=1234)
-		train <- heart.split[[1]]
-		test <- heart.split[[2]]
+		heart_split <- h2o.splitFrame(data = heart, ratios = 0.8, seed = 1234)
+		train <- heart_split[[1]]
+		test <- heart_split[[2]]
 
 		# train your model
-		coxph.model <- h2o.coxph(x="age", 
-		                         event_column="event", 
-		                         start_column="start", 
-		                         stop_column="stop", 
-		                         training_frame=heart, 
-		                         init=3)
+		coxph_model <- h2o.coxph(x = "age", 
+		                         event_column = "event", 
+		                         start_column = "start", 
+		                         stop_column = "stop", 
+		                         training_frame = heart, 
+		                         init = 3)
 
 		# view the model details
-		coxph.model
+		coxph_model
 		Loading required namespace: survival
 		Model Details:
 		==============
@@ -54,8 +54,8 @@ Example
 		      coef exp(coef) se(coef)    z     p
 		age 0.0307    1.0312   0.0143 2.15 0.031
 
-		Likelihood ratio test=6109  on 1 df, p=<2e-16
-		n= 172, number of events= 75 
+		Likelihood ratio tes = 6109  on 1 df, p =< 2e-16
+		n = 172, number of events = 75 
 
    .. code-tab:: python
 

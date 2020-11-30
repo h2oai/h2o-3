@@ -37,8 +37,6 @@
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
-#' @param max_hit_ratio_k Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable).
-#'        Defaults to 0.
 #' @param checkpoint Model checkpoint to resume training with.
 #' @param pretrained_autoencoder Pretrained autoencoder model to initialize this model with.
 #' @param overwrite_with_best_model \code{Logical}. If enabled, override the final model with the best model found during training. Defaults to
@@ -169,7 +167,6 @@ h2o.deeplearning <- function(x,
                              balance_classes = FALSE,
                              class_sampling_factors = NULL,
                              max_after_balance_size = 5.0,
-                             max_hit_ratio_k = 0,
                              checkpoint = NULL,
                              pretrained_autoencoder = NULL,
                              overwrite_with_best_model = TRUE,
@@ -295,8 +292,6 @@ h2o.deeplearning <- function(x,
     parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
-  if (!missing(max_hit_ratio_k))
-    parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(checkpoint))
     parms$checkpoint <- checkpoint
   if (!missing(pretrained_autoencoder))
@@ -462,7 +457,6 @@ h2o.deeplearning <- function(x,
                                              balance_classes = FALSE,
                                              class_sampling_factors = NULL,
                                              max_after_balance_size = 5.0,
-                                             max_hit_ratio_k = 0,
                                              checkpoint = NULL,
                                              pretrained_autoencoder = NULL,
                                              overwrite_with_best_model = TRUE,
@@ -592,8 +586,6 @@ h2o.deeplearning <- function(x,
     parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
-  if (!missing(max_hit_ratio_k))
-    parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(checkpoint))
     parms$checkpoint <- checkpoint
   if (!missing(pretrained_autoencoder))
@@ -774,7 +766,7 @@ h2o.deeplearning <- function(x,
 #'                                hidden = c(10, 10), epochs = 5)
 #' prostate_anon = h2o.anomaly(prostate_dl, prostate)
 #' head(prostate_anon)
-#' prostate_anon_per_feature = h2o.anomaly(prostate_dl, prostate, per_feature=TRUE)
+#' prostate_anon_per_feature = h2o.anomaly(prostate_dl, prostate, per_feature = TRUE)
 #' head(prostate_anon_per_feature)
 #' }
 #' @export
