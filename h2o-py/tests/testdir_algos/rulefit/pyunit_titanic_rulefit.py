@@ -17,6 +17,7 @@ def titanic():
     rfit.train(training_frame=train, x=x, y="survived")
 
     print(rfit.rule_importance())
+    print(rfit._model_json["output"]["model_summary"])
 
     rfit.predict(test)
 

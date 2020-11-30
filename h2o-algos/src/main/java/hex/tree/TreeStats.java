@@ -38,4 +38,18 @@ public class TreeStats extends Iced {
            ", _mean_depth=" + _mean_depth +
            '}';
   }
+  
+  public void mergeWith(TreeStats otherTreeStats) {
+    if (otherTreeStats._min_depth < this._min_depth) this._min_depth = otherTreeStats._min_depth;
+    if (otherTreeStats._max_depth > this._max_depth) this._max_depth = otherTreeStats._max_depth;
+    if (otherTreeStats._min_leaves < this._min_leaves) this._min_leaves = otherTreeStats._min_leaves;
+    if (otherTreeStats._max_leaves > this._max_leaves) this._max_leaves = otherTreeStats._max_leaves;
+    this._byte_size += otherTreeStats._byte_size;
+    this._num_trees += otherTreeStats._num_trees;
+    this._sum_depth += otherTreeStats._sum_depth;
+    this._sum_leaves += otherTreeStats._sum_leaves;
+    this._num_trees += otherTreeStats._num_trees;
+    _mean_depth = ((float) _sum_depth / _num_trees);
+    _mean_leaves = ((float) _sum_leaves / _num_trees);
+  }
 }
