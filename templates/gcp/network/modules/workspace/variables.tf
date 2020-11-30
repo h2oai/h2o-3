@@ -26,3 +26,9 @@ variable instance_zone {
 variable instance_subnet {
   type = string
 }
+variable instance_service_account_email {
+  type = string
+}
+variable instance_service_account_scopes {
+  type = list(string)
+}

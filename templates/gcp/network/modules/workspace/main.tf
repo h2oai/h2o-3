@@ -28,9 +28,18 @@ resource "google_compute_instance" "workspace" {
     enable-oslogin = "TRUE"
   }
   
-  
-  
   # Startup script in the server
   metadata_startup_script = file("${path.module}/startup.sh")
+  
+  # Allows stopping the instance to update properties that need the instance to be stopped
+  allow_stopping_for_update = true
+  
+  # Associate a Service Account with the VM instance.
+  service_account {
+    email = var.instance_service_account_email
+    scopes = var.instance_service_account_scopes 
+  }
+  
 }
+
 
