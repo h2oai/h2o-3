@@ -37,5 +37,6 @@ unzip h2ocluster.zip
 mv h2ocluster /opt
 chown -R root:root /opt/h2ocluster
 chmod o+x /opt/h2ocluster/h2ocluster.sh
+chmod o+r /opt/h2ocluster/gcpkey.json
 popd
 
