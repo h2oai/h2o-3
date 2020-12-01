@@ -5,10 +5,11 @@ import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
-import hex.util.CheckpointUtils;
 import hex.tree.gbm.GBMModel;
+import hex.util.CheckpointUtils;
 import hex.util.LinearAlgebraUtils;
 import jsr166y.CountedCompleter;
+import org.apache.log4j.Logger;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
@@ -25,8 +26,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static hex.util.LinearAlgebraUtils.toEigenArray;
-
 public abstract class SharedTree<
     M extends SharedTreeModel<M,P,O>, 
     P extends SharedTreeModel.SharedTreeParameters, 
@@ -34,13 +33,15 @@ public abstract class SharedTree<
     extends ModelBuilder<M,P,O> 
     implements PlattScalingHelper.ModelBuilderWithCalibration<M, P, O> {
 
+  private static final Logger LOG = Logger.getLogger(SharedTree.class);
+
   private static final boolean DEBUG_PUBDEV_6686 = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.pubdev6686");
 
   public boolean shouldReorder(Vec v) {
     return _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.SortByResponse
            && v.cardinality() > _parms._nbins_cats;  // no need to sort categoricals with fewer than nbins_cats - they will be sorted in every leaf anyway
   }
-  final protected static boolean DEV_DEBUG = false;
+
   protected int _mtry;
   protected int _mtry_per_tree;
 
@@ -271,12 +272,12 @@ public abstract class SharedTree<
               }
             }
           }
-          Log.info("Prior class distribution: " + Arrays.toString(_model._output._priorClassDist));
-          Log.info("Model class distribution: " + Arrays.toString(_model._output._modelClassDist));
+          LOG.info("Prior class distribution: " + Arrays.toString(_model._output._priorClassDist));
+          LOG.info("Model class distribution: " + Arrays.toString(_model._output._modelClassDist));
           if (_parms._sample_rate_per_class != null) {
-            Log.info("Sample rates per tree (this affects the distribution of probabilities):");
+            LOG.info("Sample rates per tree (this affects the distribution of probabilities):");
             for (int i = 0; i < nclasses(); ++i)
-              Log.info(" sample rate for class '" + response().domain()[i] + "' : " + _parms._sample_rate_per_class[i]);
+              LOG.info(" sample rate for class '" + response().domain()[i] + "' : " + _parms._sample_rate_per_class[i]);
           }
         }
 
@@ -317,8 +318,7 @@ public abstract class SharedTree<
               splitPoints[i] = ArrayUtils.padUniformly(splitPoints[i], _parms._nbins_top_level);
             assert splitPoints[i] == null || splitPoints[i].length > 1;
             if (splitPoints[i]!=null && keys[i]!=null) {
-//              Log.info("Creating quantiles for column " + i + " (key: "+ keys[i] +")");
-//              Log.info("Quantiles for column " + i + ": " + Arrays.toString(quantiles[i]));
+              LOG.debug("Creating quantiles for column " + i + " (key: "+ keys[i] +")");
               DKV.put(new DHistogram.HistoQuantiles(keys[i], splitPoints[i]));
             }
           }
@@ -428,10 +428,8 @@ public abstract class SharedTree<
               new CompressedForest(_model._output._treeKeys, _model._output._domains), doOOBScoring())
               .doAll(_train, _parms._build_tree_one_node);
       for (int i = 0; i < ntreesFromCheckpoint; i++) _rand.nextLong(); //for determinism
-      Log.info("Reconstructing OOB stats from checkpoint took " + t);
-      if (DEV_DEBUG) {
-        System.out.println(_train.toTwoDimTable());
-      }
+      LOG.info("Reconstructing OOB stats from checkpoint took " + t);
+      if (LOG.isTraceEnabled()) LOG.trace(_train.toTwoDimTable());
     }
 
     /**
@@ -449,10 +447,10 @@ public abstract class SharedTree<
         }
         Timer kb_timer = new Timer();
         boolean converged = buildNextKTrees();
-        Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
+        LOG.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
         if (_model._output._treeStats._max_depth==0) {
-          Log.warn("Nothing to split on: Check that response and distribution are meaningful (e.g., you are not using laplace/quantile regression with a binary response).");
+          LOG.warn("Nothing to split on: Check that response and distribution are meaningful (e.g., you are not using laplace/quantile regression with a binary response).");
         }
         if (converged || timeout()) {
           _job.update(_parms._ntrees-tid-1); // add remaining trees to progress bar
@@ -502,9 +500,9 @@ public abstract class SharedTree<
           for (int i = 0; i < fr2vecs.length; i++) {
             sb.append(fr2cols[i]).append(":").append(fr2vecs[i] == null).append("; ");
           }
-          Log.warn("A null Vec found in `fr2=" + fr._key + "`: " + sb.toString());
-          Log.warn("Training frame: " + _train._key + "; model: " + _result);
-          Log.warn("Params: " + _parms.toJsonString());
+          LOG.warn("A null Vec found in `fr2=" + fr._key + "`: " + sb.toString());
+          LOG.warn("Training frame: " + _train._key + "; model: " + _result);
+          LOG.warn("Params: " + _parms.toJsonString());
         }
       }
       Frame fr2 = new Frame(fr2cols, fr2vecs); //predictors, weights and the actual response
@@ -518,9 +516,7 @@ public abstract class SharedTree<
       int predsIdx = fr2.numCols(); fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]); //tree predictions
       int workIdx =  fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
       int nidIdx  =  fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
-      if (DEV_DEBUG) {
-        System.out.println("Building a layer for class " + k + ":\n" + fr2.toTwoDimTable());
-      }
+      if (LOG.isTraceEnabled()) LOG.trace("Building a layer for class " + k + ":\n" + fr2.toTwoDimTable());
       // Async tree building
       // step 1: build histograms
       // step 2: split nodes
@@ -534,8 +530,8 @@ public abstract class SharedTree<
       if( tree == null ) continue;
       sb1ts[k].join();
       if( sb1ts[k]._did_split ) did_split=true;
-      if (DEV_DEBUG) {
-        System.out.println("Done with this layer for class " + k + ":\n" + new Frame(
+      if (LOG.isTraceEnabled()) {
+        LOG.trace("Done with this layer for class " + k + ":\n" + new Frame(
                 new String[]{"TREE", "WORK", "NIDS"},
                 new Vec[]{
                         vecs[idx_tree(k)],
@@ -607,10 +603,10 @@ public abstract class SharedTree<
       int tmax = _tree.len();   // Number of total splits in tree K
       for (int leaf = leafOffset; leaf < tmax; leaf++) { // Visit all the new splits (leaves)
         DTree.UndecidedNode udn = _tree.undecided(leaf);
-//        System.out.println((_st._nclass==1?"Regression":("Class "+_st._response.domain()[_k]))+",\n  Undecided node:"+udn);
+        if (LOG.isTraceEnabled()) LOG.trace((_st._nclass==1?"Regression":("Class "+_st._response.domain()[_k]))+",\n  Undecided node:"+udn);
         // Replace the Undecided with the Split decision
         DTree.DecidedNode dn = _st.makeDecided(udn, sbh._hcs[leaf - leafOffset], udn._cs);
-//        System.out.println(dn + "\n" + dn._split);
+        if (LOG.isTraceEnabled()) LOG.trace(dn + "\n" + dn._split);
         if (dn._split == null) udn.doNotSplit();
         else {
           _did_split = true;
@@ -735,18 +731,16 @@ public abstract class SharedTree<
       _model.update(_job);
       updated = true;
 
-      Log.info("============================================================== ");
+      LOG.info("============================================================== ");
       O out = _model._output;
       _timeLastScoreStart = now;
 
       final boolean printout = (_parms._score_each_iteration || finalScoring || sinceLastScore > _parms._score_interval);
-//      final boolean computeGainsLift = printout;  //only compute Gains/Lift during final scoring
-      final boolean computeGainsLift = true;
 
       // Score on training data
       _job.update(0,"Scoring the model.");
       _model._output._job = _job; // to allow to share the job for quantiles task
-      Score sc = new Score(this,_model._output._ntrees>0/*score 0-tree model from scratch*/,oob,response(),_model._output.getModelCategory(),computeGainsLift,_trainPredsCache, CFuncRef.from(_parms._custom_metric_func));
+      Score sc = new Score(this,_model._output._ntrees>0/*score 0-tree model from scratch*/,oob,response(),_model._output.getModelCategory(),true,_trainPredsCache, CFuncRef.from(_parms._custom_metric_func));
       ModelMetrics mm = sc.scoreAndMakeModelMetrics(_model, _parms.train(), train(), build_tree_one_node);
       out._training_metrics = mm;
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
@@ -761,7 +755,7 @@ public abstract class SharedTree<
           sii = new Score.ScoreIncInfo(_lastScoredTree, valid().numCols(), validWorkspace().numCols(), _nclass > 1 ? 1 : 0 /* skip class for classification problems */);
         } else
           sii = null;
-        Score scv = new Score(this, sii,false, vresponse(), _model._output.getModelCategory(), computeGainsLift, _validPredsCache, CFuncRef.from(_parms._custom_metric_func));
+        Score scv = new Score(this, sii,false, vresponse(), _model._output.getModelCategory(), true, _validPredsCache, CFuncRef.from(_parms._custom_metric_func));
         ModelMetrics mmv = scv.scoreAndMakeModelMetrics(_model, _parms.valid(), v, build_tree_one_node);
         _lastScoredTree = _model._output._ntrees;
         out._validation_metrics = mmv;
@@ -776,7 +770,7 @@ public abstract class SharedTree<
       }
       addCustomInfo(out);
       if (printout) {
-        Log.info(_model.toString());
+        LOG.info(_model.toString());
       }
       _timeLastScoreEnd = System.currentTimeMillis();
     }
@@ -1025,7 +1019,7 @@ public abstract class SharedTree<
     long model_mem_size = new ComputeModelSize(trees_so_far, _model._output._treeKeys).doAllNodes()._model_mem_size;
     _model._output._treeStats._byte_size = model_mem_size;
     double avg_tree_mem_size = (double)model_mem_size / trees_so_far;
-    Log.debug("Average tree size (for all classes): " + PrettyPrint.bytes((long)avg_tree_mem_size));
+    LOG.debug("Average tree size (for all classes): " + PrettyPrint.bytes((long) avg_tree_mem_size));
 
     // all the compressed trees are stored on the driver node
     long max_mem = H2O.SELF._heartbeat.get_free_mem();

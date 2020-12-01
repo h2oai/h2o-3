@@ -1,22 +1,28 @@
 package hex.tree.gbm;
 
-import hex.DistributionFactory;
-import hex.Model;
-import hex.genmodel.utils.DistributionFamily;
 import hex.Distribution;
+import hex.DistributionFactory;
 import hex.ModelCategory;
+import hex.genmodel.utils.DistributionFamily;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
+import org.apache.log4j.Logger;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
-import water.util.*;
+import water.util.ArrayUtils;
+import water.util.MathUtils;
+import water.util.RandomUtils;
+import water.util.VecUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 
 import static hex.util.LinearAlgebraUtils.toEigenArray;
 
@@ -25,6 +31,9 @@ import static hex.util.LinearAlgebraUtils.toEigenArray;
  *  Based on "Elements of Statistical Learning, Second Edition, page 387"
  */
 public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
+
+  private static final Logger LOG = Logger.getLogger(GBM.class);
+  
   @Override public ModelCategory[] can_build() {
     return new ModelCategory[]{
             ModelCategory.Regression,
@@ -276,7 +285,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
      * Helper to compute the initial value for Bernoulli for offset != 0
      */
     private double getInitialValueBernoulliOffset(Frame train) {
-      Log.info("Running Newton-Raphson iteration to find the initial value since offsets are specified.");
+      LOG.info("Running Newton-Raphson iteration to find the initial value since offsets are specified.");
       double delta;
       int count = 0;
       double tol = 1e-4;
@@ -293,10 +302,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         double newInit = new NewtonRaphson(frameMap, DistributionFactory.getDistribution(_parms), init).doAll(train).value();
         delta = Math.abs(init - newInit);
         init = newInit;
-        Log.info("Iteration " + (++count) + ": initial value: " + init);
+        LOG.info("Iteration " + (++count) + ": initial value: " + init);
       } while (count < N && delta >= tol);
-      if (delta > tol) Log.warn("Not fully converged.");
-      Log.info("Newton-Raphson iteration ran for " + count + " iteration(s). Final residual: " + delta);
+      if (delta > tol) LOG.warn("Not fully converged.");
+      LOG.info("Newton-Raphson iteration ran for " + count + " iteration(s). Final residual: " + delta);
       return init;
     }
 
@@ -307,10 +316,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     private void truncatePreds(final DTree tree, int firstLeafIndex, DistributionFamily dist) {
       if (firstLeafIndex==tree._len) return;
       ComputeMinMax minMax = new ComputeMinMax(frameMap, firstLeafIndex, tree._len).doAll(_train);
-      if (DEV_DEBUG) {
-        Log.info("Number of leaf nodes: " + minMax._mins.length);
-        Log.info("Min: " + java.util.Arrays.toString(minMax._mins));
-        Log.info("Max: " + java.util.Arrays.toString(minMax._maxs));
+      if (LOG.isTraceEnabled()) {
+        LOG.trace("Number of leaf nodes: " + minMax._mins.length);
+        LOG.trace("Min: " + Arrays.toString(minMax._mins));
+        LOG.trace("Max: " + Arrays.toString(minMax._maxs));
       }
       //loop over leaf nodes only: starting at leaf index
       for (int i = 0; i < tree._len - firstLeafIndex; i++) {
@@ -318,7 +327,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         int nidx = node.nid();
         float nodeMin = minMax._mins[nidx- firstLeafIndex];
         float nodeMax = minMax._maxs[nidx- firstLeafIndex];
-//        Log.info("Node: " + nidx + " min/max: " + nodeMin + "/" + nodeMax);
+        if (LOG.isTraceEnabled()) LOG.trace("Node: " + nidx + " min/max: " + nodeMin + "/" + nodeMax);
 
         // https://github.com/cran/gbm/blob/master/src/poisson.cpp
         // https://github.com/harrysouthworth/gbm/blob/master/src/poisson.cpp
@@ -333,18 +342,18 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (dist == DistributionFamily.gamma || dist == DistributionFamily.tweedie) //only for gamma/tweedie
           val += nodeMax;
         if (val > MAX_LOG_TRUNC) {
-//          Log.warn("Truncating large positive leaf prediction (log): " + node._pred + " to " + (MAX_LOG_TRUNC - nodeMax));
+          if (LOG.isDebugEnabled()) LOG.debug("Truncating large positive leaf prediction (log): " + node._pred + " to " + (MAX_LOG_TRUNC - nodeMax));
           node._pred = (float) (MAX_LOG_TRUNC - nodeMax);
         }
         val = node._pred;
         if (dist == DistributionFamily.gamma || dist == DistributionFamily.tweedie) //only for gamma/tweedie
           val += nodeMin;
         if (val < MIN_LOG_TRUNC) {
-//          Log.warn("Truncating large negative leaf prediction (log): " + node._pred + " to " + (MIN_LOG_TRUNC - nodeMin));
+          if (LOG.isDebugEnabled()) LOG.debug("Truncating large negative leaf prediction (log): " + node._pred + " to " + (MIN_LOG_TRUNC - nodeMin));
           node._pred = (float) (MIN_LOG_TRUNC - nodeMin);
         }
         if (node._pred < MIN_LOG_TRUNC && node._pred > MAX_LOG_TRUNC) {
-          Log.warn("Terminal node prediction outside of allowed interval in log-space: "
+          LOG.warn("Terminal node prediction outside of allowed interval in log-space: "
                   + node._pred + " (should be in " + MIN_LOG_TRUNC + "..." + MAX_LOG_TRUNC + ").");
         }
       }
@@ -384,8 +393,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
                 .doAll(_train, _parms._build_tree_one_node);
       }
       for (int k = 0; k < _nclass; k++) {
-        if (DEV_DEBUG && ktrees[k]!=null) {
-          System.out.println("Updated predictions in WORK col for class " + k + ":\n" + new Frame(new String[]{"WORK"},new Vec[]{vec_work(_train, k)}).toTwoDimTable());
+        if (LOG.isTraceEnabled() && ktrees[k]!=null) {
+          LOG.trace("Updated predictions in WORK col for class " + k + ":\n" + new Frame(new String[]{"WORK"},new Vec[]{vec_work(_train, k)}).toTwoDimTable());
         }
       }
 
@@ -396,8 +405,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       Constraints cs = _parms.constraints(_train);
       growTrees(ktrees, leaves, _rand, cs);
       for (int k = 0; k < _nclass; k++) {
-        if (DEV_DEBUG && ktrees[k]!=null) {
-          System.out.println("Grew trees. Updated NIDs for class " + k + ":\n" + new Frame(new String[]{"NIDS"},new Vec[]{vec_nids(_train, k)}).toTwoDimTable());
+        if (LOG.isTraceEnabled() && ktrees[k]!=null) {
+          LOG.trace("Grew trees. Updated NIDs for class " + k + ":\n" + new Frame(new String[]{"NIDS"},new Vec[]{vec_nids(_train, k)}).toTwoDimTable());
         }
       }
 
@@ -453,7 +462,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       boolean converged = effective_learning_rate() < 1e-6;
       if (converged) {
-        Log.warn("Effective learning rate dropped below 1e-6 (" + _parms._learn_rate + " * " + _parms._learn_rate_annealing + "^" + (_model._output._ntrees-1) + ") - stopping the model now.");
+        LOG.warn("Effective learning rate dropped below 1e-6 (" + _parms._learn_rate + " * " + _parms._learn_rate_annealing + "^" + (_model._output._ntrees-1) + ") - stopping the model now.");
       }
       return converged;
     }
@@ -500,8 +509,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         for (int k = 0; k < _nclass; k++) {
           if (ss[k] != null) {
             ss[k].getResult();
-            if (DEV_DEBUG && ktrees[k]!=null) {
-              System.out.println("Sampled OOB rows. NIDS:\n" + new Frame(vec_nids(_train, k)).toTwoDimTable());
+            if (LOG.isTraceEnabled() && ktrees[k]!=null) {
+              LOG.trace("Sampled OOB rows. NIDS:\n" + new Frame(vec_nids(_train, k)).toTwoDimTable());
             }
           }
         }
@@ -585,7 +594,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (val > _parms._max_abs_leafnode_pred) val = _parms._max_abs_leafnode_pred;
         if (val < -_parms._max_abs_leafnode_pred) val = -_parms._max_abs_leafnode_pred;
         ((LeafNode) tree.node(sqt._nids[i]))._pred = (float) val;
-        if (DEV_DEBUG) { Log.info("Leaf " + sqt._nids[i] + " has huber value: " + huber); }
+        if (LOG.isTraceEnabled()) { LOG.trace("Leaf " + sqt._nids[i] + " has huber value: " + huber); }
       }
       diffMinusMedianDiff.remove();
     }
@@ -684,7 +693,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       for (int k = 0; k < _nclass; k++) {
         final DTree tree = ktrees[k];
         if (tree == null) continue;
-        if (DEV_DEBUG) for (int i=0;i<ktrees[k]._len-leafs[k];++i) System.out.println(ktrees[k].node(leafs[k]+i).toString());
+        if (LOG.isTraceEnabled()) {
+          for (int i=0;i<ktrees[k]._len-leafs[k];++i) 
+            LOG.trace(ktrees[k].node(leafs[k]+i).toString());
+        }
         for (int i = 0; i < tree._len - leafs[k]; i++) {
           LeafNode leafNode = (LeafNode) ktrees[k].node(leafs[k] + i);
           final double gamma;
@@ -907,7 +919,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (ys.isNA(row)) continue;
         double f = preds.atd(row) + offset.atd(row);
         double y = ys.atd(row);
-//          Log.info(f + " vs " + y); //expect that the model predicts very negative values for 0 and very positive values for 1
+        if (LOG.isTraceEnabled()) LOG.trace(f + " vs " + y); //expect that the model predicts very negative values for 0 and very positive values for 1
         if ((dist._family == DistributionFamily.multinomial && fs != null) || (dist._family == DistributionFamily.custom && nclass > 2)) {
           double sum = score1static(chks, fm.tree0Index, 0.0 /*not used for multiclass*/, fs, row, dist, nclass);
           if (Double.isInfinite(sum)) {  // Overflow (happens for constant responses)
@@ -1057,12 +1069,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     @Override
     public void map(Chunk[] cs) {
       if (_strata.length() == 0) {
-        Log.warn("No Huber math can be done since there's no strata.");
+        LOG.warn("No Huber math can be done since there's no strata.");
         _huberGamma = new double[0];
         return;
       }
       final int nstrata = _strataMax - _strataMin + 1;
-      Log.info("Computing Huber math for (up to) " + nstrata + " different strata.");
+      LOG.info("Computing Huber math for (up to) " + nstrata + " different strata.");
       _huberGamma = new double[nstrata];
       _wcounts = new double[nstrata];
       Chunk weights = fm.weightIndex >= 0 ? cs[fm.weightIndex] : new C0DChunk(1, cs[0]._len);
