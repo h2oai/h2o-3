@@ -2393,46 +2393,58 @@ h2o.ice_plot <- function(model,
 #'
 #' @param model model
 #' @param metric Metric to be used for the learning curve plot
+#' @export
 h2o.learning_curve_plot <- function(model,
                                     metric = c("AUTO", "convergence", "deviance", "logloss",
-                                               "MSE", "RMSE", "MAE", "RMSLE",
-                                               "AUC", "AUCPR", "lift_top_group",
-                                               "misclassification",
-                                               "mean_per_class_error")) {
+                                               "mse", "rmse", "mae", "rmsle",
+                                               "auc", "pr_auc", "lift_top_group",
+                                               "classification_error", "lift",
+                                               "mean_per_class_error", "sumetaieta02",
+                                               "negative_log_likelihood"),
+                                    cv_ribbon = TRUE,
+                                    cv_individual_lines = TRUE
+                                    ) {
   metric <- match.arg(metric)
 
+  if ("stackedensemble" == model@algorithm)
+    model <- model@model$metalearner_model
+
   allowed_metrics <- c()
-  allowed_timestep <- c()
+  allowed_timesteps <- c()
   sh <- model@model$scoring_history
 
   if (model@algorithm == "glm") {
     hglm <- model@parameters$HGLM
-    if (x@allparameters$lambda_search) {
-      allowed_metrics <- c("deviance_train", "deviance_test", "deviance_xval")
-      allowed_timesteps <- c("iteration", "duration")
-      sh <- sh[sh["alpha"] == model@model$alpha_best,]
+    if (model@allparameters$lambda_search) {
+      allowed_metrics <- "deviance"
+      allowed_timesteps <- "iteration"
+      #FIXME: Uncomment me after https://github.com/h2oai/h2o-3/pull/5069 is merged
+      #sh <- sh[sh["alpha"] == model@model$alpha_best,]
     } else if (!is.null(hglm) && hglm) {
       allowed_metrics <- c("convergence", "sumetaieta02")
-      allowed_timesteps <- c("iterations", "duration")
+      allowed_timesteps <- "iterations"
     } else {
       allowed_metrics <- c("objective", "negative_log_likelihood")
-      allowed_timesteps <- c("iterations", "duration")
+      allowed_timesteps <- "iterations"
     }
   } else if (model@algorithm == "glrm") {
     allowed_metrics <- c("objective", "step_size")
     allowed_timesteps <- "iteration"
   } else if (model@algorithm %in% c("deeplearning", "drf", "gbm")) {
     if (is(model, "H2OBinomialModel")) {
-      allowed_metrics <- c("logloss","auc","classification_error","rmse")
+      allowed_metrics <- c("logloss", "auc", "classification_error", "rmse")
     } else if (is(model, "H2OMultinomialModel") || is(x, "H2OOrdinalModel")) {
         allowed_metrics <- c("classification_error", "logloss", "rmse")
     } else if (is(model, "H2ORegressionModel")) {
         allowed_metrics <- c("rmse","deviance","mae")
     }
+  } else if (model@algorithm == "xgboost") {
+    allowed_timesteps <- "number_of_trees"
+    allowed_metrics <- c("logloss", "rmse", "auc", "pr_auc", "lift", "classification_error")
   }
 
   if (model@algorithm == "deeplearning") {
-    allowed_timesteps <- c("epochs", "samples", "duration")
+    allowed_timesteps <- c("epochs", "iterations", "samples")
   } else if (model@algorithm %in% c("drf", "gbm", "xgboost")) {
     allowed_timesteps <- c("number_of_trees")
   }
@@ -2445,21 +2457,24 @@ h2o.learning_curve_plot <- function(model,
     stop("Metric must be one of: ", paste(allowed_metrics, collapse = ", "))
   }
 
-  timestep <- allowed_timestep[[1]]
+  timestep <- allowed_timesteps[[1]]
 
-  # FIXME: GLM is quite messy, find out what could be used and when
-  training_metric <-
-    if (model@algorithm == "glm")
-      paste0(metric, "_train")
-    else
-      paste0("training_", metric)
-  validation_metric <-
-    if (model@algorithm == "glm")
-      paste0(metric, "_test")
-    else
-      paste0("validation_", metric)
+  # FIXME: Inconsistencies in naming, find out what could be used and when
+  training_metric <- sprintf(switch(metric,
+                                    deviance = "%s_train",
+                                    objective = "objective",
+                                    convergence = "convergence",
+                                    "training_%s"), metric)
+  validation_metric <- sprintf(switch(metric,
+                                      deviance = "%s_test",
+                                      "validation_%s"), metric)
 
-  selected_timestep_value <- model@parameters$ntrees
+  selected_timestep_value <- switch(timestep,
+                                    number_of_trees = model@parameters$ntrees,
+                                    iterations = model@model$model_summary$number_of_iterations,
+                                    iteration = model@model$model_summary$number_of_iterations,
+                                    epochs = model@parameters$epochs
+  )
 
   scoring_history <-
     data.frame(
@@ -2488,20 +2503,22 @@ h2o.learning_curve_plot <- function(model,
         cv_scoring_history,
         data.frame(
           model = paste0("CV-", csh_idx),
-          type = "CV_Training",
+          type = "CV-Training",
           x = csh[[timestep]],
           metric = csh[[training_metric]]
         )
       )
-      cv_scoring_history <- rbind(
-        cv_scoring_history,
-        data.frame(
-          model = paste0("CV-", csh_idx),
-          type = "CV_Validation",
-          x = csh[[timestep]],
-          metric = csh[[validation_metric]]
+      if (validation_metric %in% names(csh)) {
+        cv_scoring_history <- rbind(
+          cv_scoring_history,
+          data.frame(
+            model = paste0("CV-", csh_idx),
+            type = "CV-Validation",
+            x = csh[[timestep]],
+            metric = csh[[validation_metric]]
+          )
         )
-      )
+      }
     }
 
     cvsh_mean <-
@@ -2516,21 +2533,24 @@ h2o.learning_curve_plot <- function(model,
     cvsh <- rbind(
       data.frame(
         x = cvsh$x,
-        mean = cvsh$CV_Training_mean,
+        mean = cvsh[["CV-Training_mean"]],
         type = "CV-Training",
-        lower_bound = cvsh$CV_Training_mean - cvsh$CV_Training_sd,
-        upper_bound = cvsh$CV_Training_mean + cvsh$CV_Training_sd
+        lower_bound = cvsh[["CV-Training_mean"]] - cvsh[["CV-Training_sd"]],
+        upper_bound = cvsh[["CV-Training_mean"]] + cvsh[["CV-Training_sd"]]
       ),
-      data.frame(
-        x = cvsh$x,
-        mean = cvsh$CV_Validation_mean,
-        type = "CV-Validation",
-        lower_bound = cvsh$CV_Validation_mean - cvsh$CV_Validation_sd,
-        upper_bound = cvsh$CV_Validation_mean + cvsh$CV_Validation_sd
-      )
+      if ("CV-Validation_mean" %in% names(cvsh))
+        data.frame(
+          x = cvsh$x,
+          mean = cvsh[["CV-Validation_mean"]],
+          type = "CV-Validation",
+          lower_bound = cvsh[["CV-Validation_mean"]] - cvsh[["CV-Validation_sd"]],
+          upper_bound = cvsh[["CV-Validation_mean"]] + cvsh[["CV-Validation_sd"]]
+        )
     )
+  } else {
+    cv_ribbon <- FALSE
+    cv_individual_lines <- FALSE
   }
-
 
   p <- ggplot2::ggplot(ggplot2::aes_string(
     x = "x",
@@ -2538,10 +2558,16 @@ h2o.learning_curve_plot <- function(model,
     color = "type",
     fill = "type"
   ),
-                  data = scoring_history) +
+                  data = scoring_history[!(is.na(scoring_history$x) |
+                    is.na(scoring_history$metric) |
+                    is.na(scoring_history$type)
+                  ), ]) +
     ggplot2::geom_line() +
-    ggplot2::geom_point() +
-    ggplot2::geom_line(ggplot2::aes_string(y = "mean"), data = cvsh) +
+    ggplot2::geom_point()
+  if (cv_ribbon) {
+    cvsh <- cvsh[!is.na(cvsh$lower_bound) &
+                   !is.na(cvsh$upper_bound),]
+    p <- p + ggplot2::geom_line(ggplot2::aes_string(y = "mean"), data = cvsh) +
     ggplot2::geom_ribbon(
       ggplot2::aes_string(
         ymin = "lower_bound",
@@ -2550,10 +2576,15 @@ h2o.learning_curve_plot <- function(model,
         color = NULL
       ),
       alpha = 0.25,
-      data = cvsh[!is.na(cvsh$lower_bound) &
-                    !is.na(cvsh$upper_bound),]
-    ) +
-    ggplot2::geom_vline(ggplot2::aes_(
+      data = cvsh
+    )
+  }
+  if (cv_individual_lines) {
+    p <- p + ggplot2::geom_line(ggplot2::aes(group = paste(model, type)),
+                                linetype = "dotted",
+                                data = cv_scoring_history[!is.na(cv_scoring_history$metric),])
+  }
+  p <- p + ggplot2::geom_vline(ggplot2::aes_(
       xintercept = selected_timestep_value,
       linetype = paste("Selected", timestep)
     )) +
@@ -2564,7 +2595,11 @@ h2o.learning_curve_plot <- function(model,
       subtitle = paste("for", model@model_id)
     ) +
     ggplot2::theme_bw() +
-    ggplot2::theme(legend.title = ggplot2::element_blank())
+    ggplot2::theme(
+      legend.title = ggplot2::element_blank(),
+      plot.title = ggplot2::element_text(hjust = 0.5),
+      plot.subtitle = ggplot2::element_text(hjust = 0.5)
+    )
 
   return(p)
 }
