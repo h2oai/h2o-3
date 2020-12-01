@@ -17,8 +17,8 @@ def titanic():
     rfit.train(training_frame=train, x=x, y="survived")
 
     print(rfit.rule_importance())
-    assert rfit._model_json["output"]["model_summary"] is not None
-    assert len(rfit._model_json["output"]["model_summary"]._cell_values) > 0
+    assert rfit._model_json["output"]["model_summary"] is not None, "model_summary should be present"
+    assert len(rfit._model_json["output"]["model_summary"]._cell_values) > 0, "model_summary's content should be present"
 
     rfit.predict(test)
 
