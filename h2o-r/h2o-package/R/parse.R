@@ -136,6 +136,7 @@ h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, se
 #'
 #' Get a parse setup back for the staged data.
 #' @inheritParams h2o.parseRaw
+#' @param single_quotes If set to true, the parser expects single quotes. False for double quotes (default).
 #' @seealso \link{h2o.parseRaw}
 #' @export
 h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA, sep = "", col.names = NULL, col.types = NULL,
