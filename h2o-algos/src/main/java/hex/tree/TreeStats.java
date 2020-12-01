@@ -6,7 +6,7 @@ public class TreeStats extends Iced {
   public int _min_depth = 0;
   public int _max_depth = 0;
   public float _mean_depth;
-  public int _min_leaves = 0;
+  public int _min_leaves = 0; 
   public int _max_leaves = 0;
   public float _mean_leaves;
   public long _byte_size;
@@ -24,8 +24,7 @@ public class TreeStats extends Iced {
     _sum_depth += tree._depth;
     _sum_leaves += tree._leaves;
     _num_trees++;
-    _mean_depth = ((float) _sum_depth / _num_trees);
-    _mean_leaves = ((float) _sum_leaves / _num_trees);
+    updateMeans();
   }
 
   public void setNumTrees(int i) { _num_trees = i; }
@@ -39,6 +38,11 @@ public class TreeStats extends Iced {
            '}';
   }
   
+  private void updateMeans() {
+    _mean_depth = ((float) _sum_depth / _num_trees);
+    _mean_leaves = ((float) _sum_leaves / _num_trees);
+  }
+  
   public void mergeWith(TreeStats otherTreeStats) {
     if (otherTreeStats._min_depth < this._min_depth) this._min_depth = otherTreeStats._min_depth;
     if (otherTreeStats._max_depth > this._max_depth) this._max_depth = otherTreeStats._max_depth;
@@ -48,8 +52,6 @@ public class TreeStats extends Iced {
     this._num_trees += otherTreeStats._num_trees;
     this._sum_depth += otherTreeStats._sum_depth;
     this._sum_leaves += otherTreeStats._sum_leaves;
-    this._num_trees += otherTreeStats._num_trees;
-    _mean_depth = ((float) _sum_depth / _num_trees);
-    _mean_leaves = ((float) _sum_leaves / _num_trees);
+    updateMeans();
   }
 }
