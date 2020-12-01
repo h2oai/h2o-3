@@ -4303,21 +4303,77 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
         upper = y + stddev
         lower = y - stddev
         plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol="red", medlty=0, staplelty=0, boxlty=0, col="red", main = attr(pp,"description"), ylim  = c(min(lower), max(upper)))
-        polygon(c(x, rev(x)), c(lower, rev(upper)), col = adjustcolor("red", alpha.f = 0.1), border = F)
+        pp.plot.1d.plotNA(pp, type, "red")
+        polygon(pp.plot.1d.proccessDataForPolygon(c(pp[,1], rev(pp[,1])), c(lower, rev(upper))) , col = adjustcolor("red", alpha.f = 0.1), border = F)
         if(type == "enum"){
           x <- c(1:length(x))
           arrows(x, lower, x, upper, code=3, angle=90, length=0.1, col="red")
         }
       } else {
         plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol="red", medlty=0, staplelty=0, boxlty=0, col="red", main = attr(pp,"description"))
+        pp.plot.1d.plotNA(pp, type, "red")
       }
     } else {
       print("Partial Dependence not calculated--make sure nbins is as high as the level count")
     }
   }
+        
+  pp.plot.1d.plotNA <- function(pp, type, color) {
+    ## Plot NA value if numerical
+    NAsIds = which(is.na(pp[,1:1]))
+    if (type != "enum" && include_na && length(NAsIds) != 0) {
+        points(pp[,1:1],array(pp[NAsIds, 2:2], dim = c(length(pp[,1:1]), 1)), col=color, type="l", lty=5)
+        if (is.null(targets)) {
+          legend("topright", legend="NAN", col=color, lty=5, bty="n", ncol=length(pps))
+        }
+        return(TRUE)
+    } else {
+        return(FALSE)
+    }
+  }     
+         
+  pp.plot.1d.plotLegend.multinomial <- function(pp, targets, colors, lty, pch, has_NA) {
+    if (include_na && length(which(is.na(pp[,1:1]))) != 0) {
+      legendTargets <- c()
+      legendColors <- c()
+      legendLtys <- c()
+      legendPchs <- c()
+      legendBtys <- c()
+      for ( i in 1: length(targets)) {
+        # target label
+        legendTargets <- append(legendTargets, targets[i])
+        legendColors <- append(legendColors, colors[i])
+        legendLtys <- append(legendLtys, lty)
+        legendPchs <- append(legendPchs, pch)
+        legendBtys <- append(legendBtys, "n")
+        # target NAN line label
+        if (has_NA[i]) {
+          legendTargets <- append(legendTargets, paste(targets[i], " NAN"))
+          legendColors <- append(legendColors, colors[i])
+          legendLtys <- append(legendLtys, 5)
+        } 
+        legendPchs <- append(legendPchs, NULL)
+        legendBtys <- append(legendBtys, NULL)
+      }
+      legend("topright", legend=legendTargets, col=legendColors, lty=legendLtys, pch=legendPchs, bty=legendBtys, ncol=length(pps))
+    }  else {
+      legend("topright",legend=targets, col=colors, lty=lty, pch=pch, bty="n", ncol=length(pps))
+    }
+  }
+    
+  pp.plot.1d.proccessDataForPolygon <- function(X, Y) {
+    ## polygon can't handle NAs
+    NAsIds = which(is.na(X))
+    if (length(NAsIds) != 0) {
+      X = X[-NAsIds]
+      Y = Y[-NAsIds]
+    }
+    return(cbind(X, Y))
+  }        
 
   pp.plot.1d.multinomial <- function(pps) {
     colors <- rainbow(length(pps))
+    has_NA <- c()
     for(i in 1:length(pps)) {
       pp <- pps[[i]]
       if(!all(is.na(pp))) {
@@ -4345,7 +4401,8 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
           } else {
             points(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, col = color)
           }
-          polygon(c(x, rev(x)), c(lower, rev(upper)), col = adjustcolor(color, alpha.f = 0.1), border = F)   
+          has_NA <- append(has_NA, pp.plot.1d.plotNA(pp, type, color))
+          polygon(pp.plot.1d.proccessDataForPolygon(c(x, rev(x)), c(lower, rev(upper))), col = adjustcolor(color, alpha.f = 0.1), border = F)   
           if(type == "enum"){
             x <- c(1:length(x))
             arrows(x, lower, x, upper, code=3, angle=90, length=0.1, col=color)
@@ -4356,12 +4413,13 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
           } else {
             points(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, col = color) 
           }
+          has_NA <- append(has_NA, pp.plot.1d.plotNA(pp, type, color))
         }
-        legend("topright",legend=targets, col=colors, lty=lty, pch=pch, bty="n", ncol=length(pps))      
       } else {
         print("Partial Dependence not calculated--make sure nbins is as high as the level count")
       }
     }
+    pp.plot.1d.plotLegend.multinomial(pp, targets, colors, lty, pch, has_NA)
   }      
         
   pp.plot.2d <- function(pp, nBins=nbins, user_cols=NULL, user_num_splits=NULL) {
