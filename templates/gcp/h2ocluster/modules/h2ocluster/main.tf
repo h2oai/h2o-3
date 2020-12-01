@@ -33,13 +33,6 @@ resource "google_compute_instance" "h2ocluster_instances" {
   
   # Startup script in the server
   metadata_startup_script = file("${path.module}/startup.sh")
+  
 }
 
-//resource "google_compute_instance_group" "h2ocluster" {
-//  project = var.h2o_cluster_instance_project
-//
-//  name = "${var.h2o_cluster_instance_name_prefix}-${var.h2o_cluster_instance_user}-${var.h2o_cluster_instance_randstr}"
-//  description = var.h2o_cluster_instance_description
-//  
-//  
-//}
