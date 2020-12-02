@@ -30,10 +30,11 @@ class H2OXGBoostEstimator(H2OEstimator):
                    "learn_rate", "eta", "sample_rate", "subsample", "col_sample_rate", "colsample_bylevel",
                    "col_sample_rate_per_tree", "colsample_bytree", "colsample_bynode", "max_abs_leafnode_pred",
                    "max_delta_step", "monotone_constraints", "interaction_constraints", "score_tree_interval",
-                   "min_split_improvement", "gamma", "multinomial_auc_type", "nthread", "save_matrix_directory", "build_tree_one_node",
-                   "calibrate_model", "calibration_frame", "max_bins", "max_leaves", "sample_type", "normalize_type",
-                   "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy", "booster", "reg_lambda",
-                   "reg_alpha", "dmatrix_type", "backend", "gpu_id", "gainslift_bins", "auc_type"}
+                   "min_split_improvement", "gamma", "auc_type", "nthread", "save_matrix_directory",
+                   "build_tree_one_node", "calibrate_model", "calibration_frame", "max_bins", "max_leaves",
+                   "sample_type", "normalize_type", "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy",
+                   "booster", "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id", "gainslift_bins",
+                   "auc_type"}
 
     def __init__(self, **kwargs):
         super(H2OXGBoostEstimator, self).__init__()
