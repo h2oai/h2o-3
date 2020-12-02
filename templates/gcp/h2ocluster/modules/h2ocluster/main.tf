@@ -38,6 +38,12 @@ resource "google_compute_instance" "h2ocluster_instances" {
   
   # Startup script in the server
   metadata_startup_script = file("${path.module}/startup.sh")
+  
+  # Associate a Service Account with the VM instance.
+  service_account {
+    email = var.h2o_cluster_instance_service_account_email
+    scopes = var.h2o_cluster_instance_service_account_scopes
+  }
 }
 
 resource "google_compute_instance_group" "h2ocluster_instance_group" {
