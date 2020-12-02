@@ -937,9 +937,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     mainModel._output._cross_validation_metrics_summary = makeCrossValidationSummaryTable(cvModKeys);
 
     // Put cross-validation scoring history to the main model
-    mainModel._output._cv_scoring_history = new TwoDimTable[cvModKeys.length];
-    for (int i = 0; i < cvModKeys.length; i++) {
+    if (mainModel._output._scoring_history != null) { // check if scoring history is supported (e.g., NaiveBayes doesn't)
+      mainModel._output._cv_scoring_history = new TwoDimTable[cvModKeys.length];
+      for (int i = 0; i < cvModKeys.length; i++) {
         mainModel._output._cv_scoring_history[i] = (TwoDimTable) cvModKeys[i].get()._output._scoring_history.clone();
+      }
     }
 
     if (!_parms._keep_cross_validation_models) {
