@@ -12,7 +12,7 @@ from sklearn.metrics._ranking import _binary_roc_auc_score
 from sklearn.utils.multiclass import type_of_target
 
 
-def roc_auc_score(y_true, y_score, *, average="macro", sample_weight=None,
+def roc_auc_score(y_true, y_score, average="macro", sample_weight=None,
                   max_fpr=None, multi_class="raise", labels=None):
     """Compute Area Under the Receiver Operating Characteristic Curve (ROC AUC)
     from prediction scores.
