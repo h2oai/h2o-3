@@ -3413,20 +3413,22 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
 
   #Ensure metric and timestep can be passed in as upper case (by converting to lower case) if not "AUTO"
   if(metric != "AUTO"){
-    metric = tolower(metric)
+    metric <- tolower(metric)
   }
 
   if(timestep != "AUTO"){
-    timestep = tolower(timestep)
+    timestep <- tolower(timestep)
   }
 
   # Separate functionality for GLM since output is different from other algos
-  if (x@algorithm == "glm") {
+  if (x@algorithm %in% c("gam", "glm")) {
+    if ("gam" == x@algorithm)
+      df <- as.data.frame(x@model$glm_scoring_history)
     if (x@allparameters$lambda_search) {
       allowed_metrics <- c("deviance_train", "deviance_test", "deviance_xval")
       allowed_timesteps <- c("iteration", "duration")
       df <- df[df["alpha"] == x@model$alpha_best,]
-    } else if (x@allparameters$HGLM) {
+    } else if (!is.null(x@allparameters$HGLM) && x@allparameters$HGLM) {
       allowed_metrics <- c("convergence", "sumetaieta02")
       allowed_timesteps <- c("iterations", "duration")
     } else {
@@ -3437,13 +3439,13 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
     if (timestep == "AUTO") {
       timestep <- allowed_timesteps[[1]]
     } else if (!(metric %in% allowed_timesteps)) {
-      stop("for GLM, timestep must be one of: ", paste(allowed_timesteps, collapse = ", "))
+      stop("for ", toupper(x@algorithm), ", timestep must be one of: ", paste(allowed_timesteps, collapse = ", "))
     }
 
     if (metric == "AUTO") {
       metric <- allowed_metrics[[1]]
     } else if (!(metric %in% allowed_metrics)) {
-      stop("for GLM, metric must be one of: ", paste(allowed_metrics, collapse = ", "))
+      stop("for ", toupper(x@algorithm),", metric must be one of: ", paste(allowed_metrics, collapse = ", "))
     }
 
     graphics::plot(df$iteration, df[, c(metric)], type="l", xlab = timestep, ylab = metric, main = "Validation Scoring History", ...)

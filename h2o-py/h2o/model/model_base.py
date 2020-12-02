@@ -399,6 +399,8 @@ class ModelBase(h2o_meta(Keyed)):
         model = self._model_json["output"]
         if "scoring_history" in model and model["scoring_history"] is not None:
             return model["scoring_history"].as_data_frame()
+        if "glm_scoring_history" in model and model["glm_scoring_history"] is not None:
+            return model["glm_scoring_history"].as_data_frame()
         print("No score history for this model")
 
 
@@ -1019,28 +1021,29 @@ class ModelBase(h2o_meta(Keyed)):
 
         scoring_history = self.scoring_history()
         # Separate functionality for GLM since its output is different from other algos
-        if self._model_json["algo"] == "glm":
+        if self._model_json["algo"] in ("gam", "glm"):
             if self.actual_params.get("lambda_search"):
                 allowed_timesteps = ["iteration", "duration"]
                 allowed_metrics = ["deviance_train", "deviance_test", "deviance_xval"]
                 # When provided with multiple alpha values, scoring history contains history of all...
                 scoring_history = scoring_history[scoring_history["alpha"] == self._model_json["output"]["alpha_best"]]
-            elif self.actual_params["HGLM"]:
+            elif self.actual_params.get("HGLM"):
                 allowed_timesteps = ["iterations", "duration"]
                 allowed_metrics = ["convergence", "sumetaieta02"]
             else:
                 allowed_timesteps = ["iterations", "duration"]
                 allowed_metrics = ["objective", "negative_log_likelihood"]
-
             if metric == "AUTO":
                 metric = allowed_metrics[0]
             elif metric not in allowed_metrics:
-                raise H2OValueError("for GLM, metric must be one of: {}".format(", ".join(allowed_metrics)))
+                raise H2OValueError("for {}, metric must be one of: {}".format(self.algo.upper(),
+                                                                               ", ".join(allowed_metrics)))
 
             if timestep == "AUTO":
                 timestep = allowed_timesteps[0]
             elif timestep not in allowed_timesteps:
-                raise H2OValueError("for GLM, timestep must be one of: {}".format(", ".join(allowed_timesteps)))
+                raise H2OValueError("for {}, timestep must be one of: {}".format(self.algo.upper(),
+                                                                                 ", ".join(allowed_timesteps)))
 
             plt.xlabel(timestep)
             plt.ylabel(metric)
