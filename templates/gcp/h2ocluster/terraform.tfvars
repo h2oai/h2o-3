@@ -12,3 +12,6 @@ h2o_cluster_instance_machine_type = "e2-highmem-4"
 h2o_cluster_instance_boot_disk_image = "rhel-cloud/rhel-7"
 h2o_cluster_instance_boot_disk_type = "pd-ssd"
 h2o_cluster_instance_boot_disk_size  = 30
+
+h2o_cluster_instance_service_account_email = "h2ocluster-vm-sa@steamwithdataproc.iam.gserviceaccount.com"
+h2o_cluster_instance_service_account_scopes = ["cloud-platform"]

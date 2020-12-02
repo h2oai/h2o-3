@@ -37,13 +37,9 @@ variable h2o_cluster_instance_user {
 variable h2o_cluster_instance_description {
   type = string
 }
-
-
-
-
-
-
-
-
-
-
+variable h2o_cluster_instance_service_account_email {
+  type = string
+}
+variable h2o_cluster_instance_service_account_scopes {
+  type = list(string)
+}

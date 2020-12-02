@@ -19,11 +19,14 @@ module "h2o-cluster" {
 
   # Organise in Network
   h2o_cluster_instance_zone = var.gcp_project_zone
-  h2o_cluster_instance_subnet = module.vpc.vpc_private_subnet_id
+  h2o_cluster_instance_subnet = var.vpc_private_subnet_id 
 
   # Cluster node instance information
   h2o_cluster_instance_machine_type = var.h2o_cluster_instance_machine_type
   h2o_cluster_instance_boot_disk_image = var.h2o_cluster_instance_boot_disk_image
   h2o_cluster_instance_boot_disk_type = var.h2o_cluster_instance_boot_disk_type
   h2o_cluster_instance_boot_disk_size = var.h2o_cluster_instance_boot_disk_size
+  
+  h2o_cluster_instance_service_account_email = var.h2o_cluster_instance_service_account_email
+  h2o_cluster_instance_service_account_scopes = var.h2o_cluster_instance_service_account_scopes
 }
