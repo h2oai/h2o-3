@@ -35,3 +35,8 @@ resource "google_project_iam_member" "h2ocluster-vm-sa-serviceAccountUser-bindin
   role = "roles/iam.serviceAccountUser"
   member = "serviceAccount:${google_service_account.h2ocluster-vm-sa.email}"
 }
+resource "google_project_iam_member" "h2ocluster-vm-sa-compute-admin-binding" {
+  project = var.gcp_project_id
+  role = "roles/compute.admin"
+  member = "serviceAccount:${google_service_account.h2ocluster-vm-sa.email}"
+}
