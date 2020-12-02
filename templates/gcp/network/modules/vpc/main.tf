@@ -36,7 +36,8 @@ resource "google_compute_subnetwork" "vpc_public_subnet" {
   description = "Public Subnet to host the instance which will be used as worspace."
 
   region = var.vpc_region
-  ip_cidr_range = cidrsubnet(var.vpc_cidr, 8, 100)
+  # ip_cidr_range = cidrsubnet(var.vpc_cidr, 8, 100)
+  ip_cidr_range = var.vpc_subnet_public_cidr
   network = google_compute_network.vpc.self_link
 }
 
@@ -50,7 +51,8 @@ resource "google_compute_subnetwork" "vpc_private_subnet" {
   description = "Private Subnet within which the H2O clusters as instance groups will be created."
   
   region = var.vpc_region
-  ip_cidr_range = cidrsubnet(var.vpc_cidr, 8, 1)
+  # ip_cidr_range = cidrsubnet(var.vpc_cidr, 8, 1)
+  ip_cidr_range = var.vpc_subnet_private_cidr
   network = google_compute_network.vpc.self_link
  
   # Since this is private subnet we are enabling private access to google api resources on instances in this subnet
