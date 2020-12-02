@@ -10,6 +10,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from h2o.model.confusion_matrix import ConfusionMatrix
 from h2o.utils.metaclass import BackwardsCompatible, Deprecated as deprecated, h2o_meta
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.ext_dependencies import get_matplotlib_pyplot
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, is_type, numeric
 
 
@@ -1357,12 +1358,8 @@ class H2OBinomialModelMetrics(MetricsBase):
     
     def _plot_roc(self, server=False, save_to_file=None, plot=True):
         if plot:
-            try:
-                import matplotlib
-                if server: matplotlib.use('Agg')
-                import matplotlib.pyplot as plt
-            except ImportError:
-                print("matplotlib is required for this function!")
+            plt = get_matplotlib_pyplot(server)
+            if plt is None:
                 return
             plt.xlabel('False Positive Rate (FPR)')
             plt.ylabel('True Positive Rate (TPR)')
@@ -1384,12 +1381,8 @@ class H2OBinomialModelMetrics(MetricsBase):
         precisions = self.tprs
         assert len(precisions) == len(recalls), "Precision and recall arrays must have the same length"
         if plot:
-            try:
-                import matplotlib
-                if server: matplotlib.use('Agg')
-                import matplotlib.pyplot as plt
-            except ImportError:
-                print("matplotlib is required for this function!")
+            plt = get_matplotlib_pyplot(server)
+            if plt is None:
                 return
             plt.xlabel('Recall (TP/(TP+FP))')
             plt.ylabel('Precision (TPR)')

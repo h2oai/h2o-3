@@ -27,6 +27,7 @@ from h2o.expr import ExprNode
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
 from h2o.utils.config import get_config_value
+from h2o.utils.ext_dependencies import get_matplotlib_pyplot
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
                                     can_use_pandas, quote, normalize_slice, slice_is_normalized, check_frame_id)
@@ -3774,14 +3775,8 @@ class H2OFrame(Keyed):
         hist = H2OFrame._expr(expr=ExprNode("hist", self, breaks))._frame()
 
         if plot:
-            try:
-                import matplotlib
-                if server:
-                    matplotlib.use("Agg")
-                import matplotlib.pyplot as plt
-            except ImportError:
-                print("ERROR: matplotlib is required to make the histogram plot. "
-                      "Set `plot` to False, if a plot is not desired.")
+            plt = get_matplotlib_pyplot(server)
+            if plt is None:
                 return
 
             hist["widths"] = hist["breaks"].difflag1()
