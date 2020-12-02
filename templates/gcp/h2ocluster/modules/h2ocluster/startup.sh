@@ -44,7 +44,7 @@ done
 #    IP_ADDRESSES+=("${IP_ADDRESS}")
 #done
 echo "${IP_ADDRESSES[*]}" | tr ' ' '\n' > /tmp/instance_ips
-echo "${IP_ADDRESSES[*]}" | tr ' ' '\n' | sed 's/$/:54321' > /tmp/flatfile
+echo "${IP_ADDRESSES[*]}" | tr ' ' '\n' | sed 's/$/:54321/' > /tmp/flatfile
  
 # Signal Startup script completion
 gcloud compute instances add-metadata ${INSTANCE} --metadata startup-complete=TRUE --zone=${ZONE}
