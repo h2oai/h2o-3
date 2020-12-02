@@ -71,4 +71,48 @@ public class DHistogramTest extends TestUtil {
     }
   }
 
+  @Test
+  public void randomSplitPointsAreConsistent() {
+    Scope.enter();
+    try {
+      final double min = -1;
+      final double maxEx = 2;
+      final double[] values = new double[101];
+      final double step = (maxEx - min) / (values.length - 1);
+      values[0] = min;        
+      for (int i = 1; i < values.length; i++) {
+        values[i] = values[i - 1] + step;
+      }
+      assertEquals(maxEx, values[values.length - 1], 1e-8);
+      values[values.length - 1] = maxEx - 1e-8;
+
+      DHistogram histoRand = new DHistogram("rand", 20, 1024, (byte) 0, min, maxEx, false, -0.001,
+              SharedTreeModel.SharedTreeParameters.HistogramType.Random, 42L, null, null);
+      histoRand.init();
+
+      // project the random split points into regular space (original values of the column)
+      double[] splitPointsQuant = new double[histoRand._splitPts.length];
+      for (int i = 0; i < splitPointsQuant.length; i++) {
+        splitPointsQuant[i] = histoRand.binAt(i);
+      }
+      // make a quantile-global estimator with conceptually the same split points
+      DHistogram.HistoQuantiles hq = new DHistogram.HistoQuantiles(Key.make(), splitPointsQuant);
+      DKV.put(hq);
+      Scope.track_generic(hq);
+      DHistogram histoQuant = new DHistogram("quant", 20, 1024, (byte) 0, min, maxEx, false, -0.001,
+              SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal, 42L, hq._key, null);
+      histoQuant.init();
+
+      int[] bins_rand = new int[values.length];
+      int[] bins_quant = new int[values.length];
+      for (int i = 0; i < values.length; i++) {
+        bins_rand[i] = histoRand.bin(values[i]);
+        bins_quant[i] = histoQuant.bin(values[i]);
+      }
+      assertArrayEquals(bins_rand, bins_quant);
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }
