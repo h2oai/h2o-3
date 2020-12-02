@@ -108,4 +108,8 @@ public class RuleEnsemble extends Iced {
             }
         }
     }
+    
+    public int size() {
+        return rules.length;
+    }
 }
