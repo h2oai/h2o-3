@@ -27,6 +27,21 @@ resource "google_compute_router" "vpc_router" {
   network = google_compute_network.vpc.self_link
 }
 
+resource "google_compute_router_nat" "vpc_router_nat" {
+  name = "${google_compute_network.vpc.name}-router-nat"
+  project = var.gcp_project_id
+  region = google_compute_router.vpc_router.region 
+ 
+  nat_ip_allocate_option = "AUTO_ONLY"
+  source_subnetwork_ip_ranges_to_nat = "LIST_OF_SUBNETWORKS"
+  router = google_compute_router.vpc_router.name
+  
+  subnetwork {
+    name = google_compute_subnetwork.vpc_private_subnet.id 
+    source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
+  }
+}
+
 #
 # Public Subnet Configuration
 #
