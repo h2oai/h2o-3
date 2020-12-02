@@ -4,7 +4,7 @@ sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
-from sklearn.metrics import roc_auc_score
+from tests.pyunit_utils import roc_auc_score
 
 
 def multinomial_auc_prostate_gbm():
