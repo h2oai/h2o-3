@@ -421,26 +421,28 @@ class H2OFrame(Keyed):
 
 
     def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings,
-                      skipped_columns=None, custom_non_data_line_markers=None, partition_by=None):
+                      skipped_columns=None, custom_non_data_line_markers=None, partition_by=None, quotechar=None):
         if H2OFrame.__LOCAL_EXPANSION_ON_SINGLE_IMPORT__ and is_type(path, str) and "://" not in path:  # fixme: delete those 2 lines, cf. PUBDEV-5717
             path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path, pattern)
         self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                    skipped_columns, custom_non_data_line_markers, partition_by)
+                    skipped_columns, custom_non_data_line_markers, partition_by, quotechar)
         return self
 
 
-    def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns=None):
+    def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns=None,
+                      quotechar=None):
         ret = h2o.api("POST /3/PostFile", filename=path)
         rawkey = ret["destination_frame"]
-        self._parse(rawkey, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns)
+        self._parse(rawkey, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns,
+                    quotechar=quotechar)
         return self
 
 
     def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None,
-               na_strings=None, skipped_columns=None, custom_non_data_line_markers=None, partition_by=None):
+               na_strings=None, skipped_columns=None, custom_non_data_line_markers=None, partition_by=None, quotechar=None):
         setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                                skipped_columns, custom_non_data_line_markers, partition_by)
+                                skipped_columns, custom_non_data_line_markers, partition_by, quotechar)
         return self._parse_raw(setup)
 
 
@@ -449,7 +451,6 @@ class H2OFrame(Keyed):
         p = {"destination_frame": None,
              "parse_type": None,
              "separator": None,
-             "single_quotes": None,
              "check_header": None,
              "number_columns": None,
              "chunk_size": None,
