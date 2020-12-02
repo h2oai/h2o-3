@@ -2594,6 +2594,8 @@ h2o.learning_curve_plot <- function(model,
       title = "Learning Curve",
       subtitle = paste("for", model@model_id)
     ) +
+    ggplot2::scale_color_manual(values = c("#ff6666", "#66bb00", "#dd77ff", "#00cccc")) +
+    ggplot2::scale_fill_manual(values = c("#ff6666", "#66bb00", "#dd77ff", "#00cccc")) +
     ggplot2::theme_bw() +
     ggplot2::theme(
       legend.title = ggplot2::element_blank(),
