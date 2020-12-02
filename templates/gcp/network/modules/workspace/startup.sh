@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 
-curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/name -o /tmp/instance.name
-curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone -o /tmp/instance.zone
-curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/id -o /tmp/instance.id
-curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/servers -o /tmp/instance.servers
+ZONE=$(basename $(curl --silent -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone))
+INSTANCE=$(curl --silent -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/name)
 
 # install dependencies
 yum install -y wget unzip python3
@@ -40,3 +38,5 @@ chmod o+x /opt/h2ocluster/h2ocluster.sh
 chmod o+r /opt/h2ocluster/gcpkey.json
 popd
 
+# Signal Startup script completion
+gcloud compute instances add-metadata ${INSTANCE} --metadata startup-complete=TRUE --zone=${ZONE}

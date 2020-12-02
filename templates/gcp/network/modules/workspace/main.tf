@@ -26,6 +26,7 @@ resource "google_compute_instance" "workspace" {
   # Will use OS Login to the Workspace
   metadata = {
     enable-oslogin = "TRUE"
+    startup-complete = "FALSE"
   }
   
   # Startup script in the server

@@ -12,6 +12,11 @@ resource "google_project_iam_member" "workspace-vm-sa-compute-admin-binding" {
   role = "roles/compute.admin"
   member = "serviceAccount:${google_service_account.workspace-vm-sa.email}"
 }
+resource "google_project_iam_member" "workspace-vm-sa-serviceAccountUser-binding" {
+  project = var.gcp_project_id
+  role = "roles/iam.serviceAccountUser"
+  member = "serviceAccount:${google_service_account.workspace-vm-sa.email}"
+}
 
 # Service Account to be assigned to VM instances forming the h2o cluster
 resource "google_service_account" "h2o-cluster-vm-sa" {
