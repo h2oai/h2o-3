@@ -1185,7 +1185,7 @@ class ModelBase(h2o_meta(Keyed)):
 
         # Plot partial dependence plots using matplotlib
         self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
-                                      kwargs["user_cols"], kwargs["num_user_splits"], plot_stddev, cols, save_to_file, row_index, targets)
+                                      kwargs["user_cols"], kwargs["num_user_splits"], plot_stddev, cols, save_to_file, row_index, targets, include_na)
         return pps
 
     def __generate_user_splits(self, user_splits, data, kwargs):
@@ -1239,7 +1239,7 @@ class ModelBase(h2o_meta(Keyed)):
             kwargs["num_user_splits"] = None
 
     def __generate_partial_plots(self, num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
-                                 user_cols, user_num_splits, plot_stddev, cols, save_to_file, row_index, targets):
+                                 user_cols, user_num_splits, plot_stddev, cols, save_to_file, row_index, targets, include_na):
         # Plot partial dependence plots using matplotlib
         to_fig = num_1dpdp + num_2dpdp
         if plot and to_fig > 0:     # plot 1d pdp for now
@@ -1266,10 +1266,10 @@ class ModelBase(h2o_meta(Keyed)):
                 else:  # plot 1D pdp
                     col = cols[i]
                     if targets is None or target:
-                        fig_plotted = self.__plot_1d_pdp(col, i, data, pps[i], fig, gxs, plot_stddev, row_index, target)
+                        fig_plotted = self.__plot_1d_pdp(col, i, data, pps[i], fig, gxs, plot_stddev, row_index, target, include_na)
                     else:
                         fig_plotted = self.__plot_1d_pdp_multinomial(col, i, data, pps, data_index, fig, gxs, cm, 
-                                                                     plot_stddev, row_index, targets)
+                                                                     plot_stddev, row_index, targets, include_na)
                         data_index = data_index + len(targets)
             if fig_plotted:
                 fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
@@ -1310,17 +1310,17 @@ class ModelBase(h2o_meta(Keyed)):
         ax.set_title(title)
         return True
     
-    def __plot_1d_pdp(self, col, i, data, pp, fig, gxs, plot_stddev, row_index, target=None):
+    def __plot_1d_pdp(self, col, i, data, pp, fig, gxs, plot_stddev, row_index, target=None, include_na=False):
         cat = data[col].isfactor()[0]
         axs = fig.add_subplot(gxs[i])
-        self.__set_axs_1d(axs, plot_stddev, cat, pp, col, row_index, target) 
+        self.__set_axs_1d(axs, plot_stddev, cat, pp, col, row_index, target, include_na) 
         return True
     
     def __plot_1d_pdp_multinomial(self, col, i, data, pps, data_start_index, fig, gxs, cm, plot_stddev, row_index, 
-                                    targets):
+                                    targets, include_na):
         cat = data[col].isfactor()[0]
         axs = fig.add_subplot(gxs[i])
-        self.__set_axs_1d_multinomial(axs, cm, plot_stddev, cat, pps, data_start_index, col, row_index, targets)
+        self.__set_axs_1d_multinomial(axs, cm, plot_stddev, cat, pps, data_start_index, col, row_index, targets, include_na)
         return True
         
     # change x, y, z to be 2-D numpy arrays in order to plot it.
@@ -1367,7 +1367,10 @@ class ModelBase(h2o_meta(Keyed)):
         else:
             return pp[index]
         
-    def __set_axs_1d(self, axs, plot_stddev, cat, pp, col, row_index, target):
+    def __set_axs_1d(self, axs, plot_stddev, cat, pp, col, row_index, target, include_na):
+        np = _get_numpy("1D partial plots")
+        if np is None:
+            print("Numpy not found. Cannot plot partial plots.")
         pp_start_index = 0
         x = pp[pp_start_index]
         y = pp[pp_start_index+1]
@@ -1390,12 +1393,15 @@ class ModelBase(h2o_meta(Keyed)):
             if cat:
                 axs.errorbar(x, y, yerr=std, fmt=fmt, alpha=0.5, capsize=5, label=target)
             else:
-                axs.plot(x, y, fmt, label=target)
+                numline, = axs.plot(x, y, fmt, label=target)
             axs.fill_between(x, lower, upper, where=lower < upper, alpha=0.1, interpolate=False)
             axs.set_ylim(min(lower) - 0.2 * abs(min(lower)), max(upper) + 0.2 * abs(max(upper)))
         else:
-            axs.plot(x, y, fmt, label=target)
+            numline, = axs.plot(x, y, fmt, label=target)
             axs.set_ylim(min(y) - 0.2 * abs(min(y)), max(y) + 0.2 * abs(max(y)))
+        if (not cat) and include_na:
+            axs.plot(x, [y[np.argwhere(np.isnan(x))[0][0]]] * len(x), '--', color=numline._color,label="NAN")
+            axs.legend() 
         title = "Partial Dependence Plot for {}".format(col)
         if target:
             title += " and class {}".format(target)
@@ -1407,7 +1413,10 @@ class ModelBase(h2o_meta(Keyed)):
         axs.xaxis.grid()
         axs.yaxis.grid()
         
-    def __set_axs_1d_multinomial(self, axs, cm, plot_stddev, cat, pps, data_start_index, col, row_index, targets):
+    def __set_axs_1d_multinomial(self, axs, cm, plot_stddev, cat, pps, data_start_index, col, row_index, targets, include_na):
+        np = _get_numpy("1D multinomial partial plots")
+        if np is None:
+            print("Numpy not found. Cannot plot multinomial partial plots.")
         pp_start_index = 0
         pp = pps[data_start_index]
         x = pp[pp_start_index]
@@ -1445,10 +1454,12 @@ class ModelBase(h2o_meta(Keyed)):
                 if cat:
                     axs.errorbar(x, y, yerr=std, fmt=fmt, c=cmap(i), alpha=0.5, capsize=5, label=targets[i])
                 else:
-                    axs.plot(x, y, c=cmap(i), label=targets[i])
+                    numline, = axs.plot(x, y, c=cmap(i), label=targets[i])
                 axs.fill_between(x, lower, upper, where=lower < upper, facecolor=cmap(i), alpha=0.1, interpolate=False)
             else:
-                axs.plot(x, y, c=cmap(i), marker=fmt, label=targets[i]) 
+                numline, = axs.plot(x, y, c=cmap(i), marker=fmt, label=targets[i])
+            if (not cat) and include_na:
+                axs.plot(x, [y[np.argwhere(np.isnan(x))[0][0]]] * len(x), '--', color=numline._color,label=targets[i] + " NAN")
         if plot_stddev:
             axs.set_ylim(min_lower - 0.2 * abs(min_lower), max_upper + 0.2 * abs(max_upper))
         else:
