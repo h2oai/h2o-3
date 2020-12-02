@@ -4,7 +4,7 @@ gcp_project_id = "steamwithdataproc"
 gcp_project_region = "us-west1"
 gcp_project_zone = "us-west1-a"
 
-vpc_private_subnet_id = " https://www.googleapis.com/compute/v1/projects/steamwithdataproc/regions/us-west1/subnetworks/h2o-vpc-public-subnet"
+vpc_private_subnet_id = " https://www.googleapis.com/compute/v1/projects/steamwithdataproc/regions/us-west1/subnetworks/h2o-vpc-private-subnet"
 
 
 h2o_cluster_instance_count = "3"
