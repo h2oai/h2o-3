@@ -8,9 +8,48 @@ import java.util.List;
 import java.util.Map;
 
 public class CoxPHMojoModel extends MojoModel  {
+  
+  static class Strata {
+    final double[] strata;
+    final int strataLen;
+    final int hashCode;
+
+    public Strata(double[] strata, int strataLen) {
+      this.strata = strata;
+      
+      int hash = 11;
+      for (int i = 0; i < strataLen; i++) {
+        hash *= 13;
+        hash += 17 * (int) strata[i];
+      }
+      hashCode = hash;
+
+      this.strataLen = strataLen;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      final Strata that = (Strata) o;
+      if (this.hashCode != that.hashCode) return false;
+      if (this.strataLen != that.strataLen) return false;
+
+      for (int i = 0; i < strataLen; i++) {
+        if ((int) strata[i] != (int) that.strata[i]) return false;
+      } 
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return hashCode;
+    }
+  }
+  
   double[] _coef;
   int _numStart;
-  Map<List<Integer>, Integer> _strata;
+  Map<Strata, Integer> _strata;
   int _strata_len;
   double[][] _x_mean_cat;
   double[][] _x_mean_num;
@@ -49,11 +88,8 @@ public class CoxPHMojoModel extends MojoModel  {
     if (0 == _strata.size()) {
       return 0;
     } else {
-      List<Integer> a = new ArrayList<>(_strata_len);
-      for (int i = 0; i < _strata_len; i++) {
-        a.add(i, (int) row[i]);
-      }
-      return _strata.get(a);
+      final Strata o = new Strata(row, _strata_len);
+      return _strata.get(o);
     }
   }
 

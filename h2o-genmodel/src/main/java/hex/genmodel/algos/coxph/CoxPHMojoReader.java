@@ -24,18 +24,14 @@ public class CoxPHMojoReader extends ModelMojoReader<CoxPHMojoModel> {
 
   
 
-  private Map<List<Integer>, Integer> readStrata() {
+  private Map<CoxPHMojoModel.Strata, Integer> readStrata() {
     final int count = readkv("strata_count");
     
-    final Map<List<Integer>, Integer> result = new HashMap<List<Integer>, Integer>(count);
+    final Map<CoxPHMojoModel.Strata, Integer> result = new HashMap<>(count);
 
     for (int i = 0; i < count; i++) {
       final double[] strata = readkv("strata_" + i);
-      final List<Integer> strataAsList = new ArrayList<>(strata.length);
-      for (int j = 0; j < strata.length; j++) {
-        strataAsList.add(j, (int) strata[j]);
-      }
-      result.put(strataAsList, i);
+      result.put(new CoxPHMojoModel.Strata(strata, strata.length), i);
     }
     return result;
   }
