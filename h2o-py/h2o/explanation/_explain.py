@@ -13,9 +13,13 @@ import matplotlib.figure
 try:
     import matplotlib.pyplot as plt
 except ImportError:
+    import warnings
     # Possibly failed due to missing tkinter in old matplotlib in python 2.7
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
+    warnings.warn(
+        "An error occurred while importing matplotlib with backend \"{}\". Trying with to use Agg backend now."
+            .format(matplotlib.get_backend()))
+    from h2o.utils.ext_dependencies import get_matplotlib_pyplot
+    plt = get_matplotlib_pyplot(True)
 
 
 def _display(object):
