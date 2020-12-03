@@ -18,7 +18,7 @@ def get_matplotlib_pyplot(server, raise_if_not_available=False):
             import warnings
             # Possibly failed due to missing tkinter in old matplotlib in python 2.7
             warnings.warn(
-                "An error occurred while importing matplotlib with backend \"{}\". Trying with to use Agg backend now."
+                "An error occurred while importing matplotlib with backend \"{}\". Trying again with Agg backend."
                     .format(matplotlib.get_backend()))
             plt = get_matplotlib_pyplot(True, raise_if_not_available)
         return plt
@@ -27,5 +27,4 @@ def get_matplotlib_pyplot(server, raise_if_not_available=False):
             raise e
         print("`matplotlib` library is required for this function!")
         return None
-
 
