@@ -991,6 +991,9 @@ assertCorrectSkipColumns <-
       wholeFrame <<-
         h2o.uploadFile(inputFileName, skipped_columns = skip_columns)
     }
+    # time type gets lost when exporting to, e.g., csv and importing it back
+    for (i in which(sapply(f1R[,names(wholeFrame)], class) == "POSIXct"))
+      attr(wholeFrame, "types")[[i]] <- "time"
 
     expect_true(h2o.nrow(wholeFrame) == nrow(f1R))
     cfullnames <- names(f1R)
@@ -1024,12 +1027,12 @@ assertCorrectSkipColumns <-
             else if (is.numeric(f1R[rind, ind]) || is.factor(f1R[rind, ind])) {
               if (allFrameTypes[ind] == 'time')
                 expect_true(
-                  abs(f1R[rind, ind] - f2R[rind, skipcount]/1000) < 10,
+                  abs(f1R[rind, ind] - f2R[rind, skipcount]) < 10,
                   info = paste0(
                     "expected: ",
                     f1R[rind, ind],
                     " but received: ",
-                    f2R[rind, skipcount]/1000,
+                    f2R[rind, skipcount],
                     " in row: ",
                     rind,
                     " with column name: ",
