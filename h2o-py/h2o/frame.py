@@ -3766,6 +3766,7 @@ class H2OFrame(Keyed):
         >>> iris.describe()
         >>> iris[0].hist(breaks=5,plot=False)
         """
+        import matplotlib
         server = kwargs.pop("server") if "server" in kwargs else False
         assert_is_type(breaks, int, [numeric], Enum("sturges", "rice", "sqrt", "doane", "fd", "scott"))
         assert_is_type(plot, bool)
