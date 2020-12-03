@@ -1985,7 +1985,7 @@ def _default_source_provider(obj):
     # First try to get source code via inspect
     try:
         return '    '.join(inspect.getsourcelines(obj)[0])
-    except (OSError, TypeError):
+    except (OSError, TypeError, IOError):
         # It seems like we are in interactive shell and
         # we do not have access to class source code directly
         # At this point we can:
