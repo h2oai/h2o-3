@@ -1024,12 +1024,12 @@ assertCorrectSkipColumns <-
             else if (is.numeric(f1R[rind, ind]) || is.factor(f1R[rind, ind])) {
               if (allFrameTypes[ind] == 'time')
                 expect_true(
-                  abs(f1R[rind, ind] - f2R[rind, skipcount]) < 10,
+                  abs(f1R[rind, ind] - f2R[rind, skipcount]/1000) < 10,
                   info = paste0(
                     "expected: ",
                     f1R[rind, ind],
                     " but received: ",
-                    f2R[rind, skipcount],
+                    f2R[rind, skipcount]/1000,
                     " in row: ",
                     rind,
                     " with column name: ",
