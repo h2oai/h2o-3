@@ -254,6 +254,10 @@ public final class AutoBuffer {
   /** Read from a persistent Stream (including all TypeMap info) into same
    *  exact rev of H2O). */
   public AutoBuffer( InputStream is ) {
+    this(is, null);
+  }
+
+  public AutoBuffer( InputStream is, short[] typeMap ) {
     _chan = null;
     _h2o = null;
     _firstPage = true;
@@ -264,16 +268,26 @@ public final class AutoBuffer {
     _bb.flip();
     _is = is;
     int b = get1U();
-    if( b==0 ) return;          // No persistence info
-    int magic = get1U();
-    if( b!=0x1C || magic != 0xED ) throw new IllegalArgumentException("Missing magic number 0x1CED at stream start");
-    checkVersion(getStr());
-    String[] typeMap = getAStr();
-    _typeMap = new short[typeMap.length];
-    for( int i=0; i<typeMap.length; i++ )
-      _typeMap[i] = (short)(typeMap[i]==null ? 0 : TypeMap.onIce(typeMap[i]));
+    if (typeMap == null) {
+      if( b==0 ) return;          // No persistence info
+      int magic = get1U();
+      if( b!=0x1C || magic != 0xED ) throw new IllegalArgumentException("Missing magic number 0x1CED at stream start");
+      checkVersion(getStr());
+      String[] typeMapNames = getAStr();
+      _typeMap = new short[typeMapNames.length];
+      for (int i = 0; i < typeMapNames.length; i++)
+        _typeMap[i] = (short) (typeMapNames[i] == null ? 0 : TypeMap.onIce(typeMapNames[i]));
+    } else {
+      _typeMap = typeMap;
+      if( b!=0 )
+        throw new IllegalStateException("Header byte is expected to be 0 when external typemap is provided, got " + b + " instead.");
+    }
   }
 
+  public short[] getTypeMap() {
+    return _typeMap;
+  }
+  
   private void checkVersion(String version) {
     final boolean ignoreVersion = Boolean.getBoolean(H2O_SYSTEM_SERIALIZATION_IGNORE_VERSION);
     if (! version.equals(H2O.ABV.projectVersion())) {

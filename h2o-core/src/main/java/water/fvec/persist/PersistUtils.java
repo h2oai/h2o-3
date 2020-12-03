@@ -20,9 +20,13 @@ class PersistUtils {
     }
 
     static <T> T read(URI uri, Reader<T> r) {
+        return read(uri, r, null);
+    }
+
+    static <T> T read(URI uri, Reader<T> r, short[] typeMap) {
         final Persist persist = H2O.getPM().getPersistForURI(uri);
         try (final InputStream inputStream = persist.open(uri.toString())) {
-            final AutoBuffer autoBuffer = new AutoBuffer(inputStream);
+            final AutoBuffer autoBuffer = new AutoBuffer(inputStream, typeMap);
             T res = r.read(autoBuffer);
             autoBuffer.close();
             return res;
@@ -32,9 +36,13 @@ class PersistUtils {
     }
 
     static void write(URI uri, Writer w) {
+        write(uri, w, true);
+    }
+
+    static void write(URI uri, Writer w, boolean writeTypeMap) {
         final Persist persist = H2O.getPM().getPersistForURI(uri);
         try (final OutputStream outputStream = persist.create(uri.toString(), true)) {
-            final AutoBuffer autoBuffer = new AutoBuffer(outputStream, true);
+            final AutoBuffer autoBuffer = new AutoBuffer(outputStream, writeTypeMap);
             w.write(autoBuffer);
             autoBuffer.close();
         } catch (IOException e) {
