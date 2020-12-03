@@ -335,7 +335,7 @@ class H2OEstimator(ModelBase):
         if is_type(x[0], int):
             x = [names[i] for i in x]
         if override_default_training_frame:
-            ignored_columns = list(set(names) - set(x + [y, offset, folds, weights] + self._additional_used_columns(parms)))
+            ignored_columns = list(set(names) - set(x + [y, offset, folds, weights]))
             parms["ignored_columns"] = None if ignored_columns == [] else [quoted(col) for col in ignored_columns]
         parms["interactions"] = (None if "interactions" not in parms or parms["interactions"] is None
                                  else [quoted(col) for col in parms["interactions"]])
@@ -525,13 +525,6 @@ class H2OEstimator(ModelBase):
         :return: True as a default value. Can be overridden by any specific algorithm.
         """
         return True
-
-    def _additional_used_columns(self, parms):
-        """
-        Returns list of additional columns not to automatically add to ignored_columns parameter.
-        :return: Empty list as default. Can be overridden by any specific algorithm.
-        """
-        return []
 
     @staticmethod
     def _metrics_class(model_json):

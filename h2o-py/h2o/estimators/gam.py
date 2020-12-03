@@ -1027,9 +1027,3 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     @Lambda.setter
     def Lambda(self, value):
         self._parms["lambda"] = value
-
-    def _additional_used_columns(self, parms):
-        """
-        :return: Gam columns if specified.
-        """
-        return parms["gam_columns"]

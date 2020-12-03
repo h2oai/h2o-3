@@ -1,31 +1,37 @@
 package hex;
 
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.util.ReflectionUtils;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.test.dummy.DummyModelBuilder;
 import water.test.dummy.DummyModelParameters;
+import water.util.ReflectionUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.*;
+import static water.TestUtil.ar;
 
-
-public class ModelBuilderTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class ModelBuilderTest {
 
   @Rule
   public transient TemporaryFolder tmp = new TemporaryFolder();
-
-  @BeforeClass()
-  public static void setup() { stall_till_cloudsize(1); }
 
   @Test
   public void testRebalancePubDev5400() {
@@ -280,6 +286,38 @@ public class ModelBuilderTest extends TestUtil {
     } finally {
       Scope.exit();
     }
+  }
+  
+  @Test
+  public void testUsedColumns() {
+    String[] trainNames = new String[] {
+        "c1", "c2", "c3", "c4", "c5", "response"
+    };
+    DummyModelParameters params = new DummyModelParameters();
+    params._dummy_string_array_param = new String[] { "c1" };
+    params._dummy_string_param = "c2";
+    assertEquals(
+        "no columns used", emptySet(), params.getUsedColumns(trainNames));
+    params._column_param = "invalid";
+    assertEquals(
+        "invalid column name not used", emptySet(), params.getUsedColumns(trainNames)
+    );
+    params._column_param = "response";
+    assertEquals(
+        "columns from simple param", 
+        new HashSet<>(singletonList("response")), params.getUsedColumns(trainNames)
+    );
+    params._column_param = null;
+    params._column_list_param = new String[] { "invalid", "c4", "c5" };
+    assertEquals(
+        "columns from array param", 
+        new HashSet<>(asList("c4", "c5")), params.getUsedColumns(trainNames)
+    );
+    params._column_param = "response";
+    assertEquals(
+        "columns from multiple params combined", 
+        new HashSet<>(asList("c4", "c5", "response")), params.getUsedColumns(trainNames)
+    );
   }
 
   public static class BulkRunner extends H2O.H2OCountedCompleter<BulkRunner> {
