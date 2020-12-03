@@ -4,12 +4,148 @@ from functools import partial
 
 from sklearn.utils import column_or_1d,  check_consistent_length, check_array
 from sklearn.preprocessing import label_binarize
-from sklearn.preprocessing._label import _encode
 
-from sklearn.metrics._base import _average_binary_score
-from sklearn.metrics._ranking import _binary_roc_auc_score
+from sklearn.metrics import auc, roc_curve
 
 from sklearn.utils.multiclass import type_of_target
+
+
+def _encode_check_unknown(values, uniques, return_mask=False):
+    """
+    Helper function to check for unknowns in values to be encoded.
+
+    Uses pure python method for object dtype, and numpy method for
+    all other dtypes.
+
+    Parameters
+    ----------
+    values : array
+        Values to check for unknowns.
+    uniques : array
+        Allowed uniques values.
+    return_mask : bool, default False
+        If True, return a mask of the same shape as `values` indicating
+        the valid values.
+
+    Returns
+    -------
+    diff : list
+        The unique values present in `values` and not in `uniques` (the
+        unknown values).
+    valid_mask : boolean array
+        Additionally returned if ``return_mask=True``.
+
+    """
+    if values.dtype == object:
+        uniques_set = set(uniques)
+        diff = list(set(values) - uniques_set)
+        if return_mask:
+            if diff:
+                valid_mask = np.array([val in uniques_set for val in values])
+            else:
+                valid_mask = np.ones(len(values), dtype=bool)
+            return diff, valid_mask
+        else:
+            return diff
+    else:
+        unique_values = np.unique(values)
+        diff = list(np.setdiff1d(unique_values, uniques, assume_unique=True))
+        if return_mask:
+            if diff:
+                valid_mask = np.in1d(values, uniques)
+            else:
+                valid_mask = np.ones(len(values), dtype=bool)
+            return diff, valid_mask
+        else:
+            return diff
+
+
+def _encode_numpy(values, uniques=None, encode=False, check_unknown=True):
+    # only used in _encode below, see docstring there for details
+    if uniques is None:
+        if encode:
+            uniques, encoded = np.unique(values, return_inverse=True)
+            return uniques, encoded
+        else:
+            # unique sorts
+            return np.unique(values)
+    if encode:
+        if check_unknown:
+            diff = _encode_check_unknown(values, uniques)
+            if diff:
+                raise ValueError("y contains previously unseen labels: %s"
+                                 % str(diff))
+        encoded = np.searchsorted(uniques, values)
+        return uniques, encoded
+    else:
+        return uniques
+
+
+def _encode_python(values, uniques=None, encode=False):
+    # only used in _encode below, see docstring there for details
+    if uniques is None:
+        uniques = sorted(set(values))
+        uniques = np.array(uniques, dtype=values.dtype)
+    if encode:
+        table = {val: i for i, val in enumerate(uniques)}
+        try:
+            encoded = np.array([table[v] for v in values])
+        except KeyError as e:
+            raise ValueError("y contains previously unseen labels: %s"
+                             % str(e))
+        return uniques, encoded
+    else:
+        return uniques
+
+
+def _encode(values, uniques=None, encode=False, check_unknown=True):
+    """Helper function to factorize (find uniques) and encode values.
+
+    Uses pure python method for object dtype, and numpy method for
+    all other dtypes.
+    The numpy method has the limitation that the `uniques` need to
+    be sorted. Importantly, this is not checked but assumed to already be
+    the case. The calling method needs to ensure this for all non-object
+    values.
+
+    Parameters
+    ----------
+    values : array
+        Values to factorize or encode.
+    uniques : array, optional
+        If passed, uniques are not determined from passed values (this
+        can be because the user specified categories, or because they
+        already have been determined in fit).
+    encode : bool, default False
+        If True, also encode the values into integer codes based on `uniques`.
+    check_unknown : bool, default True
+        If True, check for values in ``values`` that are not in ``unique``
+        and raise an error. This is ignored for object dtype, and treated as
+        True in this case. This parameter is useful for
+        _BaseEncoder._transform() to avoid calling _encode_check_unknown()
+        twice.
+
+    Returns
+    -------
+    uniques
+        If ``encode=False``. The unique values are sorted if the `uniques`
+        parameter was None (and thus inferred from the data).
+    (uniques, encoded)
+        If ``encode=True``.
+
+    """
+    if values.dtype == object:
+        try:
+            res = _encode_python(values, uniques, encode)
+        except TypeError:
+            types = sorted(t.__qualname__
+                           for t in set(type(v) for v in values))
+            raise TypeError("Encoders require their input to be uniformly "
+                            f"strings or numbers. Got {types}")
+        return res
+    else:
+        return _encode_numpy(values, uniques, encode,
+                             check_unknown=check_unknown)
 
 
 def roc_auc_score(y_true, y_score, average="macro", sample_weight=None,
@@ -141,6 +277,118 @@ def roc_auc_score(y_true, y_score, average="macro", sample_weight=None,
                                              max_fpr=max_fpr),
                                      y_true, y_score, average,
                                      sample_weight=sample_weight)
+    
+
+def _average_binary_score(binary_metric, y_true, y_score, average,
+                          sample_weight=None):
+    """Average a binary metric for multilabel classification
+
+    Parameters
+    ----------
+    y_true : array, shape = [n_samples] or [n_samples, n_classes]
+        True binary labels in binary label indicators.
+
+    y_score : array, shape = [n_samples] or [n_samples, n_classes]
+        Target scores, can either be probability estimates of the positive
+        class, confidence values, or binary decisions.
+
+    average : string, [None, 'micro', 'macro' (default), 'samples', 'weighted']
+        If ``None``, the scores for each class are returned. Otherwise,
+        this determines the type of averaging performed on the data:
+
+        ``'micro'``:
+            Calculate metrics globally by considering each element of the label
+            indicator matrix as a label.
+        ``'macro'``:
+            Calculate metrics for each label, and find their unweighted
+            mean.  This does not take label imbalance into account.
+        ``'weighted'``:
+            Calculate metrics for each label, and find their average, weighted
+            by support (the number of true instances for each label).
+        ``'samples'``:
+            Calculate metrics for each instance, and find their average.
+
+        Will be ignored when ``y_true`` is binary.
+
+    sample_weight : array-like of shape (n_samples,), default=None
+        Sample weights.
+
+    binary_metric : callable, returns shape [n_classes]
+        The binary metric function to use.
+
+    Returns
+    -------
+    score : float or array of shape [n_classes]
+        If not ``None``, average the score, else return the score for each
+        classes.
+
+    """
+    average_options = (None, 'micro', 'macro', 'weighted', 'samples')
+    if average not in average_options:
+        raise ValueError('average has to be one of {0}'
+                         ''.format(average_options))
+
+    y_type = type_of_target(y_true)
+    if y_type not in ("binary", "multilabel-indicator"):
+        raise ValueError("{0} format is not supported".format(y_type))
+
+    if y_type == "binary":
+        return binary_metric(y_true, y_score, sample_weight=sample_weight)
+
+    check_consistent_length(y_true, y_score, sample_weight)
+    y_true = check_array(y_true)
+    y_score = check_array(y_score)
+
+    not_average_axis = 1
+    score_weight = sample_weight
+    average_weight = None
+
+    if average == "micro":
+        if score_weight is not None:
+            score_weight = np.repeat(score_weight, y_true.shape[1])
+        y_true = y_true.ravel()
+        y_score = y_score.ravel()
+
+    elif average == 'weighted':
+        if score_weight is not None:
+            average_weight = np.sum(np.multiply(
+                y_true, np.reshape(score_weight, (-1, 1))), axis=0)
+        else:
+            average_weight = np.sum(y_true, axis=0)
+        if np.isclose(average_weight.sum(), 0.0):
+            return 0
+
+    elif average == 'samples':
+        # swap average_weight <-> score_weight
+        average_weight = score_weight
+        score_weight = None
+        not_average_axis = 0
+
+    if y_true.ndim == 1:
+        y_true = y_true.reshape((-1, 1))
+
+    if y_score.ndim == 1:
+        y_score = y_score.reshape((-1, 1))
+
+    n_classes = y_score.shape[not_average_axis]
+    score = np.zeros((n_classes,))
+    for c in range(n_classes):
+        y_true_c = y_true.take([c], axis=not_average_axis).ravel()
+        y_score_c = y_score.take([c], axis=not_average_axis).ravel()
+        score[c] = binary_metric(y_true_c, y_score_c,
+                                 sample_weight=score_weight)
+
+    # Average the results
+    if average is not None:
+        if average_weight is not None:
+            # Scores with 0 weights are forced to be 0, preventing the average
+            # score from being affected by 0-weighted NaN elements.
+            average_weight = np.asarray(average_weight)
+            score[average_weight == 0] = 0
+        return np.average(score, weights=average_weight)
+    else:
+        return score
+
 
 
 def _average_multiclass_ovo_score(binary_metric, y_true, y_score,
@@ -299,3 +547,31 @@ def _multiclass_roc_auc_score(y_true, y_score, labels,
         return _average_binary_score(_binary_roc_auc_score, y_true_multilabel,
                                      y_score, average,
                                      sample_weight=sample_weight)
+    
+
+def _binary_roc_auc_score(y_true, y_score, sample_weight=None, max_fpr=None):
+    """Binary roc auc score"""
+    if len(np.unique(y_true)) != 2:
+        raise ValueError("Only one class present in y_true. ROC AUC score "
+                         "is not defined in that case.")
+
+    fpr, tpr, _ = roc_curve(y_true, y_score,
+                            sample_weight=sample_weight)
+    if max_fpr is None or max_fpr == 1:
+        return auc(fpr, tpr)
+    if max_fpr <= 0 or max_fpr > 1:
+        raise ValueError("Expected max_fpr in range (0, 1], got: %r" % max_fpr)
+
+    # Add a single point at max_fpr by linear interpolation
+    stop = np.searchsorted(fpr, max_fpr, 'right')
+    x_interp = [fpr[stop - 1], fpr[stop]]
+    y_interp = [tpr[stop - 1], tpr[stop]]
+    tpr = np.append(tpr[:stop], np.interp(max_fpr, x_interp, y_interp))
+    fpr = np.append(fpr[:stop], max_fpr)
+    partial_auc = auc(fpr, tpr)
+
+    # McClish correction: standardize result to be 0.5 if non-discriminant
+    # and 1 if maximal
+    min_area = 0.5 * max_fpr**2
+    max_area = max_fpr
+    return 0.5 * (1 + (partial_auc - min_area) / (max_area - min_area))
