@@ -336,33 +336,49 @@ public class CoxPHTest extends TestUtil {
   }
 
   @Test
-  public void testJavaScoring() {
-    Frame fr = null;
-    CoxPHModel dl = null;
-    CoxPHModel dl2 = null;
-
+  public void testJavaScoringNumeric() {
     try {
-      fr = parse_test_file("smalldata/coxph_test/heart.csv");
-
-
-      CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
-      parms._calc_cumhaz = true;
-      parms._train           = fr._key;
-      parms._start_column    = "start";
-      parms._stop_column     = "stop";
-      parms._response_column = "event";
-      parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant"};
-      parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
-      
-      dl = new CoxPH(parms).trainModel().get();
-      Frame res = dl.score(fr);
-      assertTrue(dl.testJavaScoring(fr, res, 1e-5));
-      res.remove();
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file("smalldata/coxph_test/heart.csv"));
+      testJavaScoring(fr);
     } finally {
-      if (fr != null) fr.delete();
-      if (dl != null) dl.delete();
-      if (dl2 != null) dl2.delete();
+      Scope.exit();
     }
   }
 
+  @Test
+  public void testJavaScoringCategorical() {
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file("smalldata/coxph_test/heart.csv"))
+              .toCategoricalCol("surgery")
+              .toCategoricalCol("transplant");
+      testJavaScoring(fr);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private void testJavaScoring(Frame fr) {
+    try {
+      CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+      parms._calc_cumhaz = true;
+      parms._train = fr._key;
+      parms._start_column = "start";
+      parms._stop_column = "stop";
+      parms._response_column = "event";
+      parms._ignored_columns = new String[]{"id", "year"};
+      parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
+
+      CoxPHModel model = new CoxPH(parms).trainModel().get();
+      assertNotNull(model);
+      Scope.track_generic(model);
+      Frame scored = model.score(fr);
+      Scope.track(scored);
+      assertTrue(model.testJavaScoring(fr, scored, 1e-5));
+    } finally {
+      Scope.exit();
+    }
+  }
+  
 }
