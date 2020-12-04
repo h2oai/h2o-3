@@ -29,4 +29,7 @@ module "h2o-cluster" {
   
   h2o_cluster_instance_service_account_email = var.h2o_cluster_instance_service_account_email
   h2o_cluster_instance_service_account_scopes = var.h2o_cluster_instance_service_account_scopes
+  
+  # h2o details
+  h2o_download_url = var.h2o_download_url
 }

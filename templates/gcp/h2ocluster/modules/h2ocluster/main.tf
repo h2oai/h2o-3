@@ -34,6 +34,7 @@ resource "google_compute_instance" "h2ocluster_instances" {
     zone = var.h2o_cluster_instance_zone
     instance-group-name = "${var.h2o_cluster_instance_name_prefix}-${var.h2o_cluster_instance_user}-${var.h2o_cluster_instance_randstr}-cluster" 
     startup-complete = "FALSE"
+    h2o-url = var.h2o_download_url
   }
   
   # Startup script in the server

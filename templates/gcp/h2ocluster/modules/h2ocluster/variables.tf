@@ -43,3 +43,6 @@ variable h2o_cluster_instance_service_account_email {
 variable h2o_cluster_instance_service_account_scopes {
   type = list(string)
 }
+variable h2o_download_url {
+  type = string
+}
