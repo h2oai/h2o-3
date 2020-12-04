@@ -699,6 +699,7 @@ public class GenericModelTest extends TestUtil {
             parms._start_column = "start";
             parms._stop_column = "stop";
             parms._response_column = "event";
+            parms._ignored_columns = new String[] {"id"};
 
             hex.coxph.CoxPH job = new CoxPH(parms);
             final CoxPHModel originalModel = job.trainModel().get();
@@ -739,6 +740,7 @@ public class GenericModelTest extends TestUtil {
             parms._start_column = "start";
             parms._stop_column = "stop";
             parms._response_column = "event";
+            parms._ignored_columns = new String[] {"id"};
 
             hex.coxph.CoxPH job = new CoxPH(parms);
             final CoxPHModel originalModel = job.trainModel().get();
