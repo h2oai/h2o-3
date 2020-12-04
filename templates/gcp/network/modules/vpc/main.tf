@@ -130,7 +130,8 @@ resource "google_compute_firewall" "firewall_private_access" {
     protocol = "udp"
   }
   # from the public subnet 
-  source_ranges = [google_compute_subnetwork.vpc_public_subnet.ip_cidr_range]
+  source_ranges = [google_compute_subnetwork.vpc_public_subnet.ip_cidr_range, 
+                   google_compute_subnetwork.vpc_private_subnet.ip_cidr_range]
   # to instances that have the public tag
   target_tags = ["private"]
 }
