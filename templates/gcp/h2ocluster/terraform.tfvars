@@ -15,4 +15,4 @@ h2o_cluster_instance_boot_disk_size  = 30
 h2o_cluster_instance_service_account_email = "h2ocluster-vm-sa@steamwithdataproc.iam.gserviceaccount.com"
 h2o_cluster_instance_service_account_scopes = ["cloud-platform"]
 
-h2o_download_url = "http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/2/h2o-3.32.0.2.zip":w
+h2o_download_url = "http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/2/h2o-3.32.0.2.zip"
