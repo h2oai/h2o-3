@@ -1779,10 +1779,20 @@ def learning_curve_plot(
     allowed_timesteps = []
     if model.algo in ("glm", "gam"):
         if model.actual_params["lambda_search"]:
+            import h2o.two_dim_table
             allowed_metrics = ["deviance"]
             allowed_timesteps = ["iteration"]
-            #FIXME: Uncomment me after https://github.com/h2oai/h2o-3/pull/5069 is merged
-            # scoring_history = scoring_history[scoring_history["alpha"] == model._model_json["output"]["alpha_best"]]
+            alpha_best = model._model_json["output"]["alpha_best"]
+            alpha_idx = scoring_history.col_header.index("alpha")
+            iteration_idx = scoring_history.col_header.index("iteration")
+
+            scoring_history = h2o.two_dim_table.H2OTwoDimTable(
+                table_header=scoring_history._table_header,
+                table_description=scoring_history._table_description,
+                col_header=scoring_history.col_header,
+                col_types=scoring_history.col_types,
+                cell_values=sorted([list(v) for v in scoring_history.cell_values if v[alpha_idx] == alpha_best],
+                                   key=lambda row: row[iteration_idx]))
         elif model.actual_params.get("HGLM"):
             allowed_timesteps = ["iterations", "duration"]
             allowed_metrics = ["convergence", "sumetaieta02"]
@@ -1834,7 +1844,7 @@ def learning_curve_plot(
     if "number_of_trees" == timestep:
         selected_timestep_value = model.actual_params["ntrees"]
     elif timestep in ["iteration", "iterations"]:
-        model_summary = model.summary()
+        model_summary = model._model_json["output"]["model_summary"]
         if model_summary is None:
             model_summary = model._model_json["output"]["glm_model_summary"]
         selected_timestep_value = model_summary["number_of_iterations"][0]

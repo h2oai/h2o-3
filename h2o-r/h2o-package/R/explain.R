@@ -2418,8 +2418,7 @@ h2o.learning_curve_plot <- function(model,
     if (model@allparameters$lambda_search) {
       allowed_metrics <- "deviance"
       allowed_timesteps <- "iteration"
-      #FIXME: Uncomment me after https://github.com/h2oai/h2o-3/pull/5069 is merged
-      #sh <- sh[sh["alpha"] == model@model$alpha_best,]
+      sh <- sh[sh["alpha"] == model@model$alpha_best,]
     } else if (!is.null(hglm) && hglm) {
       allowed_metrics <- c("convergence", "sumetaieta02")
       allowed_timesteps <- "iterations"
@@ -2459,7 +2458,6 @@ h2o.learning_curve_plot <- function(model,
 
   timestep <- allowed_timesteps[[1]]
 
-  # FIXME: Inconsistencies in naming, find out what could be used and when
   training_metric <- sprintf(switch(metric,
                                     deviance = "%s_train",
                                     objective = "objective",
