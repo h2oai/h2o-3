@@ -472,6 +472,8 @@ class ModelBase(h2o_meta(Keyed)):
         model = self._model_json["output"]
         if "model_summary" in model and model["model_summary"] is not None:
             return model["model_summary"]
+        if "glm_model_summary" in model and model["glm_model_summary"] is not None:
+            return model["glm_model_summary"]
         print("No model summary for this model")
 
     def show(self):

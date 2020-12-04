@@ -1844,9 +1844,7 @@ def learning_curve_plot(
     if "number_of_trees" == timestep:
         selected_timestep_value = model.actual_params["ntrees"]
     elif timestep in ["iteration", "iterations"]:
-        model_summary = model._model_json["output"]["model_summary"]
-        if model_summary is None:
-            model_summary = model._model_json["output"]["glm_model_summary"]
+        model_summary = model.model_summary()
         selected_timestep_value = model_summary["number_of_iterations"][0]
     elif "epochs" == timestep:
         selected_timestep_value = model.actual_params["epochs"]
