@@ -39,5 +39,8 @@ chmod o+x /opt/h2ocluster/h2ocluster.sh
 chmod o+r /opt/h2ocluster/gcpkey.json
 popd
 
+# install jq
+wget -O /usr/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+chmod +x /usr/bin/jq
 # Signal Startup script completion
 gcloud compute instances add-metadata ${INSTANCE} --metadata startup-complete=TRUE --zone=${ZONE}
