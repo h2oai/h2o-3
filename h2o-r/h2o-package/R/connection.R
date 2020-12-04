@@ -348,7 +348,10 @@ h2o.connect <- function(ip = "localhost", port = 54321, strict_version_check = T
 h2o.getConnection <- function() {
   conn <- .attemptConnection()
   if (is.null(conn))
-    stop("No active connection to an H2O cluster. Did you run `SUBST_START_COMMAND` ?")
+    if (.h2o.__CLIENT_VERSION())
+      stop("No active connection to an H2O cluster. Did you run `h2o.connect()` ?")
+    else
+      stop("No active connection to an H2O cluster. Did you run `h2o.init()` ?")
   conn
 }
 
@@ -491,15 +494,30 @@ h2o.clusterStatus <- function() {
     "\n",
     "----------------------------------------------------------------------\n",
     "\n",
-    "Your next step is to start H2O:\n",
-    "    > SUBST_START_COMMAND\n",
+    "Your next step is to start H2O:\n")
+
+  if (.h2o.__CLIENT_VERSION())
+    msg = paste0(msg, "    > h2o.connect()\n")
+  else
+    msg = paste0(msg, "    > h2o.init()\n")
+
+  msg = paste0(
+    msg,
     "\n",
     "For H2O package documentation, ask for help:\n",
     "    > ??h2o\n",
-    "\n",
-    "SUBST_START_DOCUMENTATION",
-    "\n",
-    "----------------------------------------------------------------------\n")
+    "\n")
+
+    if (!.h2o.__CLIENT_VERSION())
+      msg = paste0(
+        msg,
+        "After starting H2O, you can use the Web UI at http://localhost:54321\n",
+        "For more information visit https://docs.h2o.ai\n")
+
+    msg = paste0(
+      msg,
+      "\n",
+      "----------------------------------------------------------------------\n")
   packageStartupMessage(msg)
 
   # Shut down local H2O when user exits from R ONLY if h2o started from R

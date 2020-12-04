@@ -15,26 +15,6 @@ def getOS() {
     return os
 }
 
-def loadProperties(String filename) {
-    def properties = new Properties()
-    file(filename).withInputStream {
-        properties.load(it)
-    }
-    return properties
-}
-
-def editConnectionSource(String packageVersion) {
-    File connection = new File([T, "h2o-package", "R", "connection.R"].join(File.separator))
-    File connectionNew = new File([T, "build", "h2o-package-" + packageVersion, "R", "connection.R"].join(File.separator))
-
-    def properties = loadProperties([T, "source.properties"].join(File.separator))
-
-    def connectionReplaced = connection.text
-            .replaceAll(SUBST_START_COMMAND, properties."${packageVersion}_${SUBST_START_COMMAND}")
-            .replaceAll(SUBST_START_DOCUMENTATION, properties."${packageVersion}_${SUBST_START_DOCUMENTATION}")
-    connectionNew.write(connectionReplaced)
-}
-
 def bv = new H2OBuildVersion(rootDir, version)
 
 ext {
@@ -48,8 +28,6 @@ ext {
     REPO_PATH_WIN      = ["bin", "windows", "contrib", "3.1"].join(File.separator)
     REPO_PATH_MAC      = ["bin", "macosx",  "contrib", "3.1"].join(File.separator)
     H2O_R_SOURCE_FILE  = "h2o_${PROJECT_VERSION}.tar.gz"
-    SUBST_START_COMMAND = "SUBST_START_COMMAND"
-    SUBST_START_DOCUMENTATION = "SUBST_START_DOCUMENTATION"
 }
 
 task untar {
@@ -181,8 +159,6 @@ task cpMainPKG {
             from "h2o-package"
             into "${buildDir}/h2o-package-main"
         }
-
-        editConnectionSource("main")
     }
 }
 
@@ -208,8 +184,13 @@ task cpClientPKG {
             }
             into "${buildDir}/h2o-package-client/inst/java"
         }
-
-        editConnectionSource("client")
+        copy{
+            from "dist-readme.txt"
+            rename { filename ->
+                return 'client_info.txt'
+            }
+            into "${buildDir}/h2o-package-client/inst/"
+        }
     }
 }
 
