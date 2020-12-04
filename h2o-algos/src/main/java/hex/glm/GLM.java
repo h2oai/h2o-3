@@ -302,7 +302,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private ArrayList<Double> _lambdaDevTest;
     private ArrayList<Double> _lambdaDevXval;
     private ArrayList<Double> _lambdaDevXvalSE;
-
+    private ArrayList<Double> _alpha = new ArrayList<>();
 
     public LambdaSearchScoringHistory(boolean hasTest, boolean hasXval) {
       if(hasTest || true)_lambdaDevTest = new ArrayList<>();
@@ -312,7 +312,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
 
-    public synchronized void addLambdaScore(int iter, int predictors, double lambda, double devRatioTrain, double devRatioTest, double devRatioXval, double devRatoioXvalSE) {
+    public synchronized void addLambdaScore(int iter, int predictors, double lambda, double devRatioTrain, double devRatioTest, double devRatioXval, double devRatoioXvalSE, double alpha) {
       _scoringTimes.add(System.currentTimeMillis());
       _lambdaIters.add(iter);
       _lambdas.add(lambda);
@@ -321,6 +321,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if(_lambdaDevTest != null)_lambdaDevTest.add(devRatioTest);
       if(_lambdaDevXval != null)_lambdaDevXval.add(devRatioXval);
       if(_lambdaDevXvalSE != null)_lambdaDevXvalSE.add(devRatoioXvalSE);
+      _alpha.add(alpha);
     }
     public synchronized TwoDimTable to2dTable() {
 
@@ -339,6 +340,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         cformats = ArrayUtils.append(cformats,"%.3f");
       if(_lambdaDevXval != null)
         cformats = ArrayUtils.append(cformats,new String[]{"%.3f","%.3f"});
+      cnames = ArrayUtils.append(cnames, "alpha");
+      ctypes = ArrayUtils.append(ctypes, "double");
+      cformats = ArrayUtils.append(cformats, "%.6f");
       TwoDimTable res = new TwoDimTable("Scoring History", "", new String[_lambdaIters.size()], cnames, ctypes, cformats, "");
       int j = 0;
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
@@ -356,6 +360,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           res.set(i, col++, _lambdaDevXval.get(i));
           res.set(i, col++, _lambdaDevXvalSE.get(i));
         }
+        res.set(i, col++, _alpha.get(i));
       }
       return res;
     }
@@ -2104,7 +2109,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           Log.info(LogMsg("train deviance = " + trainDev + ", valid deviance = " + validDev));
           double xvalDev = ((_xval_deviances == null) || (_xval_deviances.length <= i)) ? -1 : _xval_deviances[i];
           double xvalDevSE = ((_xval_sd == null) || (_xval_deviances.length <= i)) ? -1 : _xval_sd[i];
-          _lsc.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()), _state.lambda(), trainDev, validDev, xvalDev, xvalDevSE); // add to scoring history
+          _lsc.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()), _state.lambda(), trainDev, validDev, xvalDev, xvalDevSE, _state.alpha()); // add to scoring history
           _model.updateSubmodel(sm = new Submodel(_state.lambda(), _state.alpha(), _state.beta(), _state._iter, trainDev, validDev));
         }
       }
