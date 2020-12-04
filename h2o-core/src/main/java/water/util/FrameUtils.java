@@ -6,6 +6,7 @@ import hex.ToEigenVec;
 import jsr166y.CountedCompleter;
 import water.*;
 import water.fvec.*;
+import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 
@@ -1027,5 +1028,49 @@ public class FrameUtils {
   public static void labelRows(final Frame frame, final String labelColumnName) {
     final Vec labelVec = Vec.makeSeq(1, frame.numRows());
     frame.add(labelColumnName, labelVec);
+  }
+
+  public static class BetaConstraintsEncoder extends MRTask<BetaConstraintsEncoder> {
+    String[] _coefNames;
+    String[] _coefOriginalNames;
+
+    public BetaConstraintsEncoder(String[] coefNames, String[] coefOriginalNames) {
+      _coefNames = coefNames;
+      _coefOriginalNames = coefOriginalNames;
+    }
+
+    private String getCurrConstraintName(int id, Vec constraintsNames, BufferedString tmpStr) {
+      String currConstraintName;
+      if (constraintsNames.isString())
+        currConstraintName =  constraintsNames.atStr(tmpStr, id).toString();
+      else if (constraintsNames.isCategorical())
+        currConstraintName = constraintsNames.domain()[id];
+      else
+        throw new IllegalArgumentException("Illegal beta constraints file, names column expected to contain column names (strings)");
+      return currConstraintName;
+    }
+
+    @Override
+    public void map(Chunk[] cs, NewChunk[] nc) {
+      Vec constraintsNames = cs[0].vec();
+      BufferedString tmpStr = new BufferedString();
+      for (int i = 0; i < constraintsNames.length(); i++) {
+        String currConstraintName = getCurrConstraintName(i, cs[0].vec(), tmpStr);
+        for (int j = 0; j < _coefNames.length; j++) {
+          if (_coefNames[j].equals(currConstraintName)) {
+            writeNewRow(currConstraintName, cs, nc, i);
+          } else if (!Arrays.asList(_coefNames).contains(currConstraintName) && Arrays.asList(_coefOriginalNames).contains(currConstraintName) && _coefNames[j].startsWith(currConstraintName)) {
+            writeNewRow(_coefNames[j], cs, nc, i);
+          }
+        }
+      }
+    }
+
+    private void writeNewRow(String name, Chunk[] cs, NewChunk[] nc, int id) {
+      nc[0].addStr(name);
+      for (int k = 1; k < nc.length; k++) {
+        nc[k].addNum(cs[k].atd(id));
+      }
+    }
   }
 }

@@ -28,9 +28,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.Frame;
-import water.fvec.InteractionWrappedVec;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Rapids;
 import water.rapids.Val;
@@ -3022,7 +3020,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       return d;
     }
 
+    private Frame encodeCategoricalsIfPresent(Frame beta_constraints) {
+      FrameUtils.BetaConstraintsEncoder constraintsEncoder = new FrameUtils.BetaConstraintsEncoder(_dinfo.coefNames(), _dinfo.coefOriginalNames());
+      Frame transformedFrame =  constraintsEncoder.doAll(beta_constraints.types(), beta_constraints).outputFrame();
+      transformedFrame.setNames(beta_constraints._names);
+      return transformedFrame;
+    }
+
     public BetaConstraint(Frame beta_constraints) {
+      beta_constraints = encodeCategoricalsIfPresent(beta_constraints);
       Vec v = beta_constraints.vec("names");
       String[] dom;
       int[] map;

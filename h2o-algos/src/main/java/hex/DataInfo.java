@@ -6,6 +6,7 @@ import water.util.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by tomasnykodym on 1/29/15.
@@ -857,7 +858,47 @@ public class DataInfo extends Keyed<DataInfo> {
     _coefOriginalIndices = res;
     return res;
   }
+
+  public final String[] coefOriginalNames() {
+    int[] coefOriginalIndices = coefOriginalColumnIndices();
+    String[] originalNames = new String[coefOriginalIndices[coefOriginalIndices.length - 1]];
+    int i = 0, j = 0;
+    while (i < coefOriginalIndices.length && j < originalNames.length) {
+      List<Integer> coefOriginalIndicesList = new ArrayList<>(coefOriginalIndices.length);
+      for (int value : coefOriginalIndices) coefOriginalIndicesList.add(value);
+      int end = coefOriginalIndicesList.lastIndexOf(coefOriginalIndices[i]);
+      String prefix = findLongestCommonPrefix(Arrays.copyOfRange(coefNames(), i, end + 1));
+      if (".".equals(prefix.substring(prefix.length() - 1))) {
+        prefix = prefix.substring(0, prefix.length() - 1);
+      }
+      originalNames[j] = prefix;
+      i = end + 1;
+      j++;
+    }
+    return originalNames;
+  }
   
+  public static String findLongestCommonPrefix(String inputArray[]) {
+    String referenceWord = inputArray[0];
+    String result = "";
+      for (int j = 1; j <= referenceWord.length(); j++) {
+        String prefix = referenceWord.substring(0, j);
+        if (isPresentInAllWords(prefix, inputArray) && result.length() < prefix.length()) {
+          result = prefix;
+        }
+      }
+    return result;
+  }
+  
+  private static boolean isPresentInAllWords(String prefix, String[] words) {
+    int n = words.length, k;
+    for (k = 1; k < n; k++) {
+      if (!words[k].startsWith(prefix)) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   // Return permutation matrix mapping input names to adaptedFrame colnames
   public int[] mapNames(String[] names) {
