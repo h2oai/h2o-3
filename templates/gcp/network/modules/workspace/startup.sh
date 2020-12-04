@@ -30,7 +30,7 @@ popd
 # Get h2ocluster terraform code and move it to 
 mkdir -p /tmp/temp
 pushd /tmp/temp
-curl https://0xdata-public.s3.amazonaws.com/hemen/h2ocluster.zip -o h2ocluster.zip
+curl --silent https://0xdata-public.s3.amazonaws.com/hemen/h2ocluster.zip -o h2ocluster.zip
 unzip h2ocluster.zip
 mv h2ocluster /opt
 chown -R root:root /opt/h2ocluster
