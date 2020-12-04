@@ -254,7 +254,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
           }
         }
       } else {
-        Log.warn("Multinomial AUC and AUCPR will not be calculated. The auc_type is set to \"NONE\" or the maximum size of domain (50) was reached.");
+        Log.info("Multinomial AUC and AUCPR will not be calculated. The auc_type is set to \"NONE\" or the maximum size of domain (50) was reached.");
       }
     }
 

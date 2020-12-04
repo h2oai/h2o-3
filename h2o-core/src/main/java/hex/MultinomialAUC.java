@@ -1,7 +1,6 @@
 package hex;
 
 import water.Iced;
-import water.util.Log;
 import water.util.TwoDimTable;
 
 public class MultinomialAUC extends Iced {
