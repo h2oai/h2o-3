@@ -1,3 +1,12 @@
+#############################################################################
+# This code lines are copy pasted from a sklearn package version 0.23.2 just 
+# for testing  multinomial AUC/AUCPR purpose. Upgrade sklearn dependency
+# in h2o could cause other tests failing. This was easier way to deal with
+# test incompatibility. 
+# The code was just slightly edited to can be run under Python 2.7
+# Source: https://github.com/scikit-learn/scikit-learn
+#############################################################################
+
 import numpy as np
 from itertools import combinations
 from functools import partial
@@ -6,7 +15,6 @@ from sklearn.utils import column_or_1d,  check_consistent_length, check_array
 from sklearn.preprocessing import label_binarize
 
 from sklearn.metrics import auc, roc_curve
-
 from sklearn.utils.multiclass import type_of_target
 
 
@@ -74,7 +82,7 @@ def _encode_numpy(values, uniques=None, encode=False, check_unknown=True):
             diff = _encode_check_unknown(values, uniques)
             if diff:
                 raise ValueError("y contains previously unseen labels: %s"
-                                 % str(diff))
+                                 .format(str(diff)))
         encoded = np.searchsorted(uniques, values)
         return uniques, encoded
     else:
@@ -92,7 +100,7 @@ def _encode_python(values, uniques=None, encode=False):
             encoded = np.array([table[v] for v in values])
         except KeyError as e:
             raise ValueError("y contains previously unseen labels: %s"
-                             % str(e))
+                             .format(str(e)))
         return uniques, encoded
     else:
         return uniques
@@ -140,8 +148,8 @@ def _encode(values, uniques=None, encode=False, check_unknown=True):
         except TypeError:
             types = sorted(t.__qualname__
                            for t in set(type(v) for v in values))
-            raise TypeError("Encoders require their input to be uniformly "
-                            f"strings or numbers. Got {types}")
+            raise TypeError("Encoders require their input to be uniformly " +
+                            "strings or numbers. Got "+" ".join(types))
         return res
     else:
         return _encode_numpy(values, uniques, encode,
@@ -560,7 +568,7 @@ def _binary_roc_auc_score(y_true, y_score, sample_weight=None, max_fpr=None):
     if max_fpr is None or max_fpr == 1:
         return auc(fpr, tpr)
     if max_fpr <= 0 or max_fpr > 1:
-        raise ValueError("Expected max_fpr in range (0, 1], got: %r" % max_fpr)
+        raise ValueError("Expected max_fpr in range (0, 1], got: %r".format(max_fpr))
 
     # Add a single point at max_fpr by linear interpolation
     stop = np.searchsorted(fpr, max_fpr, 'right')
