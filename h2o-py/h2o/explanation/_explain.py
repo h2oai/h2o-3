@@ -1772,13 +1772,15 @@ def learning_curve_plot(
         model = model.metalearner
 
     # Using the value from output to keep it simple - only one version required - (no need to use pandas for small data)
-    scoring_history = model._model_json["output"]["scoring_history"]
+    scoring_history = model._model_json["output"]["scoring_history"] or model._model_json["output"].get("glm_scoring_history")
+    if scoring_history is None:
+        raise RuntimeError("Could not retrieve scoring history for {}".format(model.algo))
     allowed_metrics = []
     allowed_timesteps = []
     if model.algo in ("glm", "gam"):
-        if model.lambda_search:
+        if model.actual_params["lambda_search"]:
             allowed_metrics = ["deviance"]
-            allowed_timestep = ["iteration"]
+            allowed_timesteps = ["iteration"]
             #FIXME: Uncomment me after https://github.com/h2oai/h2o-3/pull/5069 is merged
             # scoring_history = scoring_history[scoring_history["alpha"] == model._model_json["output"]["alpha_best"]]
         elif model.actual_params.get("HGLM"):
@@ -1832,7 +1834,10 @@ def learning_curve_plot(
     if "number_of_trees" == timestep:
         selected_timestep_value = model.actual_params["ntrees"]
     elif timestep in ["iteration", "iterations"]:
-        selected_timestep_value = model.summary()["number_of_iterations"][0]
+        model_summary = model.summary()
+        if model_summary is None:
+            model_summary = model._model_json["output"]["glm_model_summary"]
+        selected_timestep_value = model_summary["number_of_iterations"][0]
     elif "epochs" == timestep:
         selected_timestep_value = model.actual_params["epochs"]
 
