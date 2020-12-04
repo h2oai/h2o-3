@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -o xtrace
 
 ZONE=$(basename $(curl --silent -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone))
 INSTANCE=$(curl --silent -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/name)
@@ -9,7 +10,7 @@ yum install -y wget unzip python3
 # Install terraform
 mkdir -p /tmp/terraform
 pushd /tmp/terraform
-curl $(curl --silent  https://www.terraform.io/downloads.html | grep '_linux_amd64.zip' | cut -d '"' -f 2) -o terraform.zip
+curl https://releases.hashicorp.com/terraform/0.13.5/terraform_0.13.5_linux_amd64.zip -o terraform.zip
 unzip terraform.zip
 mv terraform /usr/bin
 popd
