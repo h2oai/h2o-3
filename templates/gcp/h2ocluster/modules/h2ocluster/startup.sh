@@ -74,9 +74,11 @@ memTotalKb=$(cat /proc/meminfo | grep MemTotal | sed 's/MemTotal:[ \t]*//' | sed
 memTotalMb=$[ $memTotalKb / 1024 ]
 tmp=$[ $memTotalMb * 90 ]
 xmxMb=$[ $tmp / 100 ]
-# run H2O in flatfile approach
-java -Xmx${xmxMb}m -jar "${H2O_HOME_DIR}/h2o.jar" -flatfile "${H2O_HOME_DIR}/flatfile.txt"
 
 # Signal Startup script completion
-gcloud compute instances add-metadata ${INSTANCE} --metadata startup-complete=TRUE --zone=${ZONE}
+gcloud compute instances add-metadata ${INSTANCE} --metadata startup-complete=TRUE --zone=${ZONE} 
+
+# run H2O in flatfile approach. 
+java -Xmx${xmxMb}m -jar "${H2O_HOME_DIR}/h2o.jar" -flatfile "${H2O_HOME_DIR}/flatfile.txt" -name "${IG_NAME}"
+
 
