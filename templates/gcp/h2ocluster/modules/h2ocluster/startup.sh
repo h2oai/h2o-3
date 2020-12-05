@@ -57,6 +57,8 @@ H2O_ZIP_FILE=$(basename ${H2O_URL})
 echo "${H2O_ZIP_FILE}" > /tmp/h2o_filename
 H2O_VERSION=${H2O_ZIP_FILE%.zip}
 echo "${H2O_VERSION}" > /tmp/h2o_version
+H2O_HOME_DIR="/opt/h2oai/${H2O_VERSION}"
+echo "${H2O_HOME_DIR}" > /tmp/h2o_home_dir
 
 # Start installing H2O
 mkdir -p /opt/h2oai
@@ -64,8 +66,6 @@ mkdir -p /opt/h2oai
 if [[ ! -f /opt/h2oai/h2o_installed ]]; then
     curl "${H2O_URL}" -o "/tmp/${H2O_ZIP_FILE}"
     unzip -d /opt/h2oai "/tmp/${H2O_ZIP_FILE}"
-    H2O_HOME_DIR="/opt/h2oai/${H2O_VERSION}"
-    cp /tmp/flatfile "${H2O_HOME_DIR}/flatfile.txt" 
     touch /opt/h2oai/h2o_installed 
 fi
 
@@ -79,6 +79,7 @@ xmxMb=$[ $tmp / 100 ]
 gcloud compute instances add-metadata ${INSTANCE} --metadata startup-complete=TRUE --zone=${ZONE} 
 
 # run H2O in flatfile approach. 
+cp /tmp/flatfile "${H2O_HOME_DIR}/flatfile.txt" 
 java -Xmx${xmxMb}m -jar "${H2O_HOME_DIR}/h2o.jar" -flatfile "${H2O_HOME_DIR}/flatfile.txt" -name "${IG_NAME}"
 
 
