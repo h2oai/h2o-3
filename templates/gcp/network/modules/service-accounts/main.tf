@@ -40,3 +40,13 @@ resource "google_project_iam_member" "h2ocluster-vm-sa-compute-admin-binding" {
   role = "roles/compute.admin"
   member = "serviceAccount:${google_service_account.h2ocluster-vm-sa.email}"
 }
+resource "google_project_iam_member" "h2ocluster-vm-storage-objectCreator-binding" {
+  project = var.gcp_project_id
+  role = "roles/storage.objectCreator"
+  member = "serviceAccount:${google_service_account.h2ocluster-vm-sa.email}"
+}
+resource "google_project_iam_member" "h2ocluster-vm-storage-objectViewer-binding" {
+  project = var.gcp_project_id
+  role = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.h2ocluster-vm-sa.email}"
+}
