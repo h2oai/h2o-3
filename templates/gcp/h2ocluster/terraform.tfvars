@@ -1,3 +1,4 @@
+# dont change value of global_prefix.
 global_prefix = "h2o"
 
 gcp_project_id = "steamwithdataproc"

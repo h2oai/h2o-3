@@ -34,8 +34,9 @@ pushd /tmp/temp
 curl --silent https://0xdata-public.s3.amazonaws.com/hemen/h2ocluster.zip -o h2ocluster.zip
 unzip h2ocluster.zip
 mv h2ocluster /opt
+mv /opt/h2ocluster/h2ocluster.sh /opt/h2ocluster/h2ocluster
 chown -R root:root /opt/h2ocluster
-chmod o+x /opt/h2ocluster/h2ocluster.sh
+chmod o+x /opt/h2ocluster/h2ocluster
 chmod o+r /opt/h2ocluster/gcpkey.json
 popd
 

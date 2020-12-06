@@ -43,16 +43,6 @@ variable h2o_cluster_instance_boot_disk_size {
 variable h2o_cluster_instance_machine_type {
   type = string
 }
-# Variables for which input is captured from user
-variable h2o_cluster_instance_user {
-  type = string
-}
-variable h2o_cluster_random_string {
-  type = string
-}
-variable h2o_cluster_instance_description {
-  type = string
-}
 variable h2o_cluster_instance_service_account_email {
   type = string
 }
@@ -60,5 +50,18 @@ variable h2o_cluster_instance_service_account_scopes {
   type = list(string)
 }
 variable h2o_download_url {
+  type = string
+}
+
+#
+# Variables for which input is captured from user
+#
+variable h2o_cluster_instance_user {
+  type = string
+}
+variable h2o_cluster_random_string {
+  type = string
+}
+variable h2o_cluster_instance_description {
   type = string
 }

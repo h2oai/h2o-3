@@ -3,7 +3,7 @@ resource "google_compute_instance" "h2ocluster_instances" {
   project = var.h2o_cluster_instance_project
   
   count = var.h2o_cluster_instance_count
-  name = "${var.h2o_cluster_instance_name_prefix}-${var.h2o_cluster_instance_user}-${var.h2o_cluster_instance_randstr}-node-${count.index}"
+  name = "${var.h2o_cluster_instance_name_prefix}-${var.h2o_cluster_instance_user}-${var.h2o_cluster_instance_randstr}-cluster-node-${count.index}"
   description = var.h2o_cluster_instance_description
  
   machine_type = var.h2o_cluster_instance_machine_type
@@ -29,7 +29,7 @@ resource "google_compute_instance" "h2ocluster_instances" {
   # Will use OS Login to the Workspace
   metadata = {
     nodes-count = var.h2o_cluster_instance_count
-    nodes-prefix = "${var.h2o_cluster_instance_name_prefix}-${var.h2o_cluster_instance_user}-${var.h2o_cluster_instance_randstr}-node-"
+    nodes-prefix = "${var.h2o_cluster_instance_name_prefix}-${var.h2o_cluster_instance_user}-${var.h2o_cluster_instance_randstr}-cluster-node-"
     project-id = var.h2o_cluster_instance_project
     zone = var.h2o_cluster_instance_zone
     instance-group-name = "${var.h2o_cluster_instance_name_prefix}-${var.h2o_cluster_instance_user}-${var.h2o_cluster_instance_randstr}-cluster" 
