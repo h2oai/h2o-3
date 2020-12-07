@@ -26,14 +26,14 @@ def import_gzip_skipped_columns():
 
     try:
         bad = h2o.import_file(filePath, skipped_columns=skip_all)  # skipped all
-        sys.exit(1)
+        assert False, "Test should have thrown an exception due to all columns are skipped"  # should have failed here
     except Exception as ex:
         print(ex)
         pass
 
     try:
         bad = h2o.upload_file(filePath, skipped_columns=skip_all)   # skipped all
-        sys.exit(1)
+        assert False, "Test should have thrown an exception due to all columns are skipped"  # should have failed here
     except Exception as ex:
         print(ex)
         pass

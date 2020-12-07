@@ -11,4 +11,6 @@ public interface PredictContributions extends Serializable {
    */
   float[] calculateContributions(double[] input);
 
+  String[] getContributionNames();
+
 }

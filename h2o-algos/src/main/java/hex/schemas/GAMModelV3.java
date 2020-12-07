@@ -1,10 +1,10 @@
 package hex.schemas;
 
 import hex.gam.GAMModel;
+import water.api.API;
+import water.api.schemas3.ModelOutputSchemaV3;
 import water.api.schemas3.ModelSchemaV3;
 import water.api.schemas3.TwoDimTableV3;
-import water.api.schemas3.ModelOutputSchemaV3;
-import water.api.API;
 
 public class GAMModelV3 extends ModelSchemaV3<GAMModel, GAMModelV3, GAMModel.GAMParameters, GAMV3.GAMParametersV3,
         GAMModel.GAMModelOutput, GAMModelV3.GAMModelOutputV3> {
@@ -24,9 +24,9 @@ public class GAMModelV3 extends ModelSchemaV3<GAMModel, GAMModelV3, GAMModel.GAM
     @API(help="Table of Standardized Coefficients Magnitudes")
     TwoDimTableV3 standardized_coefficient_magnitudes;
 
-    @API(help="Dispersion parameter, only applicable to Tweedie family")
-    double dispersion;
-    
+    @API(help="Variable Importances", direction=API.Direction.OUTPUT, level = API.Level.secondary)
+    TwoDimTableV3 variable_importances;
+
     @API(help="key storing gam columns and predictor columns.  For debugging purposes only")
     String gam_transformed_center_key;
     

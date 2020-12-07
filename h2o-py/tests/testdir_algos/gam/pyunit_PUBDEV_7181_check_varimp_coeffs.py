@@ -10,8 +10,7 @@ from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
 # In this test, we check and make sure that we can get the various model coefficients and variable importance
 def test_gam_coeffs_varimp():
     print("Checking coefficients and variable importance for binomial")
-    h2o_data = h2o.import_file(
-        path=pyunit_utils.locate("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
+    h2o_data = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
     h2o_data["C1"] = h2o_data["C1"].asfactor()
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C21"
@@ -36,7 +35,8 @@ def test_gam_coeffs_varimp():
     buildModelCoeffVarimpCheck(h2o_data, myY, ["C6", "C7", "C8"], 'multinomial')
     
     print("gam coeff/varimp test completed successfully")    
-    
+
+
 def buildModelCoeffVarimpCheck(train_data, y, gamX, family):
     numKnots = [5,6,7]
     x=["C1","C2"]
@@ -60,6 +60,7 @@ def buildModelCoeffVarimpCheck(train_data, y, gamX, family):
     # exclude the intercept term here
     assert len(varimp)==(numPCoeffs-1), "expected number of coefficients: {0}, actual number of " \
                                    "coefficients:{1}".format(numPCoeffs-1, len(varimp))
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_gam_coeffs_varimp)

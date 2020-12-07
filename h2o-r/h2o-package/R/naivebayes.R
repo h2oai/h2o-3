@@ -38,8 +38,6 @@
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
-#' @param max_hit_ratio_k Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-#'        Defaults to 0.
 #' @param laplace Laplace smoothing parameter Defaults to 0.
 #' @param threshold This argument is deprecated, use `min_sdev` instead. The minimum standard deviation to use for observations without enough data.
 #'        Must be at least 1e-10.
@@ -52,6 +50,7 @@
 #' @param compute_metrics \code{Logical}. Compute metrics on training data Defaults to TRUE.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
 #' @return an object of class \linkS4class{H2OBinomialModel} if the response has two categorical levels,
 #'         and \linkS4class{H2OMultinomialModel} otherwise.
 #' @examples
@@ -79,7 +78,6 @@ h2o.naiveBayes <- function(x,
                            balance_classes = FALSE,
                            class_sampling_factors = NULL,
                            max_after_balance_size = 5.0,
-                           max_hit_ratio_k = 0,
                            laplace = 0,
                            threshold = 0.001,
                            min_sdev = 0.001,
@@ -89,7 +87,8 @@ h2o.naiveBayes <- function(x,
                            eps_prob = 0,
                            compute_metrics = TRUE,
                            max_runtime_secs = 0,
-                           export_checkpoints_dir = NULL)
+                           export_checkpoints_dir = NULL,
+                           gainslift_bins = -1)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -145,8 +144,6 @@ h2o.naiveBayes <- function(x,
     parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
-  if (!missing(max_hit_ratio_k))
-    parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(laplace))
     parms$laplace <- laplace
   if (!missing(min_sdev))
@@ -163,6 +160,8 @@ h2o.naiveBayes <- function(x,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   if (!missing(threshold) && missing(min_sdev)) {
     warning("argument 'threshold' is deprecated; use 'min_sdev' instead.")
@@ -193,7 +192,6 @@ h2o.naiveBayes <- function(x,
                                            balance_classes = FALSE,
                                            class_sampling_factors = NULL,
                                            max_after_balance_size = 5.0,
-                                           max_hit_ratio_k = 0,
                                            laplace = 0,
                                            threshold = 0.001,
                                            min_sdev = 0.001,
@@ -204,6 +202,7 @@ h2o.naiveBayes <- function(x,
                                            compute_metrics = TRUE,
                                            max_runtime_secs = 0,
                                            export_checkpoints_dir = NULL,
+                                           gainslift_bins = -1,
                                            segment_columns = NULL,
                                            segment_models_id = NULL,
                                            parallelism = 1)
@@ -264,8 +263,6 @@ h2o.naiveBayes <- function(x,
     parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
-  if (!missing(max_hit_ratio_k))
-    parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(laplace))
     parms$laplace <- laplace
   if (!missing(min_sdev))
@@ -282,6 +279,8 @@ h2o.naiveBayes <- function(x,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   if (!missing(threshold) && missing(min_sdev)) {
     warning("argument 'threshold' is deprecated; use 'min_sdev' instead.")

@@ -41,17 +41,17 @@ Example
 		response <- "IsDepDelayed"
 
 		# split into train and validation
-		airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8)
-		train <- airlines.splits[[1]]
-		valid <- airlines.splits[[2]]
+		airlines_splits <- h2o.splitFrame(data =  airlines, ratios = 0.8)
+		train <- airlines_splits[[1]]
+		valid <- airlines_splits[[2]]
 
 		# try using the `remove_collinear_columns` parameter:
 		# must be used with lambda = 0
-		airlines.glm <- h2o.glm(family = 'binomial', x = predictors, y = response, training_frame = train,
+		airlines_glm <- h2o.glm(family = 'binomial', x = predictors, y = response, training_frame = train,
 		                        validation_frame = valid, remove_collinear_columns = TRUE, lambda = 0)
 
 		# print the auc for the validation data
-		print(h2o.auc(airlines.glm, valid = TRUE))
+		print(h2o.auc(airlines_glm, valid = TRUE))
 
    
    .. code-tab:: python

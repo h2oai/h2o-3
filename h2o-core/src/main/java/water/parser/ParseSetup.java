@@ -7,10 +7,13 @@ import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.FileUtils;
 import water.util.Log;
+import water.util.StringUtils;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static water.parser.DefaultParserProviders.*;
 
@@ -44,6 +47,7 @@ public class ParseSetup extends Iced {
 
   String[] _synthetic_column_names; // Columns with constant values to be added to parsed Frame
   String[][] _synthetic_column_values; // For each imported file contains array of values for each synthetic column
+  byte _synthetic_column_type = Vec.T_STR; // By default, all synthetic columns are treated as strings
 
   String [] _fileNames = new String[]{"unknown"};
   public boolean disableParallelParse;
@@ -63,15 +67,16 @@ public class ParseSetup extends Iced {
 
   public ParseSetup(ParseSetup ps) {
     this(ps._parse_type,
-         ps._separator, ps._single_quotes, ps._check_header, ps._number_columns,
-         ps._column_names, ps._column_types, ps._domains, ps._na_strings, ps._data,
+            ps._separator, ps._single_quotes, ps._check_header, ps._number_columns,
+            ps._column_names, ps._column_types, ps._domains, ps._na_strings, ps._data,
             new ParseWriter.ParseErr[0], ps._chunk_size, ps._decrypt_tool, ps._skipped_columns,
             ps._nonDataLineMarkers);
   }
 
   public static ParseSetup makeSVMLightSetup(){
     return new ParseSetup(SVMLight_INFO, ParseSetup.GUESS_SEP,
-        false,ParseSetup.NO_HEADER,1,null,new byte[]{Vec.T_NUM},null,null,null, new ParseWriter.ParseErr[0], null);
+        false,ParseSetup.NO_HEADER,1,null,new byte[]{Vec.T_NUM},null,null,null, new ParseWriter.ParseErr[0],
+            null);
   }
 
   // This method was called during guess setup, lot of things are null, like ctypes.
@@ -80,8 +85,9 @@ public class ParseSetup extends Iced {
                     byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs,
                     int chunkSize, byte[] nonDataLineMarkers) {
     this(parse_type, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes, domains, naStrings, data, errs,
-            chunkSize, null, null, nonDataLineMarkers);
+        chunkSize, null, null, nonDataLineMarkers);
   }
+
   public ParseSetup(ParserInfo parse_type, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames,
                     byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs,
                     int chunkSize, Key<DecryptionTool> decrypt_tool, int[] skipped_columns, byte[] nonDataLineMarkers) {
@@ -122,9 +128,10 @@ public class ParseSetup extends Iced {
     }
   }
   
-  public void setSyntheticColumns(String[] names, String[][] valueMapping) {
+  public void setSyntheticColumns(String[] names, String[][] valueMapping, byte synthetic_column_type) {
     _synthetic_column_names = names;
     _synthetic_column_values = valueMapping;
+    _synthetic_column_type = synthetic_column_type;
   }
 
   /**
@@ -137,22 +144,22 @@ public class ParseSetup extends Iced {
    */
   public ParseSetup(ParseSetupV3 ps) {
     this(ps.parse_type != null ? ParserService.INSTANCE.getByName(ps.parse_type).info() : GUESS_INFO,
-         ps.separator != 0 ? ps.separator : GUESS_SEP,
-         ps.single_quotes,
-         ps.check_header,
-         GUESS_COL_CNT,
-         ps.column_names, strToColumnTypes(ps.column_types),
-         null, ps.na_strings,
-         null,
-         new ParseWriter.ParseErr[0],
-         ps.chunk_size,
-            ps.decrypt_tool != null ? ps.decrypt_tool.key() : null, ps.skipped_columns,
-            ps.custom_non_data_line_markers != null ? ps.custom_non_data_line_markers.getBytes() : null);
+        ps.separator != 0 ? ps.separator : GUESS_SEP,
+        ps.single_quotes,
+        ps.check_header,
+        GUESS_COL_CNT,
+        ps.column_names, strToColumnTypes(ps.column_types),
+        null, ps.na_strings,
+        null,
+        new ParseWriter.ParseErr[0],
+        ps.chunk_size,
+        ps.decrypt_tool != null ? ps.decrypt_tool.key() : null, ps.skipped_columns,
+        ps.custom_non_data_line_markers != null ? ps.custom_non_data_line_markers.getBytes() : null);
   }
 
   /**
    * Create a ParseSetup with all parameters except chunk size.
-   *
+   * <p>
    * Typically used by file type parsers for returning final valid results
    * _chunk_size will be set later using results from all files.
    */
@@ -165,7 +172,7 @@ public class ParseSetup extends Iced {
 
   /**
    * Create a ParseSetup with all parameters except chunk size.
-   *
+   * <p>
    * Typically used by file type parsers for returning final valid results
    * _chunk_size will be set later using results from all files.
    */
@@ -173,26 +180,26 @@ public class ParseSetup extends Iced {
                     int ncols, String[] columnNames, byte[] ctypes,
                     String[][] domains, String[][] naStrings, String[][] data) {
     this(parseType, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes,
-            domains, naStrings, data, new ParseWriter.ParseErr[0], FileVec.DFLT_CHUNK_SIZE, null);
+        domains, naStrings, data, new ParseWriter.ParseErr[0], FileVec.DFLT_CHUNK_SIZE, null);
   }
-  
+
   public ParseSetup(ParserInfo parseType, byte sep, boolean singleQuotes, int checkHeader,
                     int ncols, String[] columnNames, byte[] ctypes,
                     String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs, byte[] nonDataLineMarkers) {
     this(parseType, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes,
-            domains, naStrings, data, errs, FileVec.DFLT_CHUNK_SIZE, nonDataLineMarkers);
+        domains, naStrings, data, errs, FileVec.DFLT_CHUNK_SIZE, nonDataLineMarkers);
   }
 
   public ParseSetup(ParserInfo parseType, byte sep, boolean singleQuotes, int checkHeader,
                     int ncols, String[] columnNames, byte[] ctypes,
                     String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs) {
     this(parseType, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes,
-            domains, naStrings, data, errs, FileVec.DFLT_CHUNK_SIZE, null);
+        domains, naStrings, data, errs, FileVec.DFLT_CHUNK_SIZE, null);
   }
 
   /**
    * Create a ParseSetup without any column information
-   *
+   * <p>
    * Typically used by file type parsers for returning final invalid results
    */
   public ParseSetup(ParserInfo parseType, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[][] data, ParseWriter.ParseErr[] errs) {
@@ -364,7 +371,6 @@ public class ParseSetup extends Iced {
       t._gblSetup._chunk_size = FileVec.calcOptimalChunkSize(t._totalParseSize, t._gblSetup._number_columns, t._maxLineLength,
               Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false /*use new heuristic*/, true);
     }
-
     return t._gblSetup;
   }
 
@@ -695,12 +701,8 @@ public class ParseSetup extends Iced {
     // "2012_somedata" ==> "X2012_somedata"
     if( !Character.isJavaIdentifierStart(n.charAt(0)) ) n = "X"+n;
     // "human%Percent" ==> "human_Percent"
-    char[] cs = n.toCharArray();
-    for( int i=1; i<cs.length; i++ )
-      if( !Character.isJavaIdentifierPart(cs[i]) )
-        cs[i] = '_';
+    n = StringUtils.sanitizeIdentifier(n);
     // "myName" ==> "myName.hex"
-    n = new String(cs);
     int i = 0;
     String res = n + ".hex";
     Key k = Key.make(res);
@@ -782,7 +784,7 @@ public class ParseSetup extends Iced {
       if (str.equalsAsciiString(naStr)) return true;
     return false;
   }
-
+  
   public ParserInfo getParseType() {
     return _parse_type;
   }
@@ -846,5 +848,5 @@ public class ParseSetup extends Iced {
     this._decrypt_tool = decrypt_tool;
     return this;
   }
-
+  
 } // ParseSetup state class

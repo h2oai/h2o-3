@@ -1,4 +1,4 @@
-In [57]: from sklearn.grid_search import RandomizedSearchCV
+In [57]: from sklearn.model_selection import RandomizedSearchCV
 
 In [58]: from h2o.cross_validation import H2OKFold
 

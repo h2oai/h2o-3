@@ -98,7 +98,7 @@ class Test_rf_grid_search:
                                'col_sample_rate_change_per_level', 'sample_rate_per_class', 'col_sample_rate_per_tree',
                                'nbins', 'nbins_top_level', 'nbins_cats', 'seed', 'class_sampling_factors',
                                'max_after_balance_size', 'min_split_improvement', 'histogram_type', 'mtries',
-                               'weights_column', 'min_rows', 'r2_stopping', 'max_hit_ratio_k', 'score_tree_interval']
+                               'weights_column', 'min_rows', 'r2_stopping', 'score_tree_interval']
 
     params_zero_one = ["sample_rate"]
     params_more_than_zero = ['ntrees', 'max_depth']

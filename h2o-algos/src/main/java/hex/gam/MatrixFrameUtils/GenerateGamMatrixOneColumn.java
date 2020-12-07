@@ -3,6 +3,7 @@ package hex.gam.MatrixFrameUtils;
 import hex.DataInfo;
 import hex.gam.GAMModel.GAMParameters;
 import hex.gam.GamSplines.CubicRegressionSplines;
+import hex.genmodel.algos.gam.GamUtilsCubicRegression;
 import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 import hex.util.LinearAlgebraUtils.BMulInPlaceTask;
 import water.MRTask;
@@ -12,13 +13,13 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 
-import static hex.gam.MatrixFrameUtils.GamUtils.locateBin;
+import static hex.genmodel.algos.gam.GamUtilsCubicRegression.locateBin;
 
 public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColumn> {
   int _splineType;
   public int _numKnots;      // number of knots
   public double[][] _bInvD;  // store inv(B)*D
-  Frame _gamX;
+  public int _initChunks;
   double[] _u; // store transpose(X)*1, sum across rows per column
   public double[][] _ZTransp;  // store Z matrix transpose
   public double[][] _penaltyMat;  // store penalty matrix
@@ -26,40 +27,50 @@ public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColum
   double[] _maxAbsRowSum; // store maximum row sum
   double _s_scale;
 
-  public GenerateGamMatrixOneColumn(int splineType, int numKnots, double[] knots, Frame gamx, boolean standardize) {
+  public GenerateGamMatrixOneColumn(int splineType, int numKnots, double[] knots, Frame gamx) {
     _splineType = splineType;
     _numKnots = numKnots;
      CubicRegressionSplines crSplines = new CubicRegressionSplines(numKnots, knots);
     _bInvD = crSplines.gen_BIndvD(crSplines._hj);
     _penaltyMat = crSplines.gen_penalty_matrix(crSplines._hj, _bInvD);
-    _gamX = gamx;
+    _initChunks = gamx.vec(0).nChunks();
     _knots = knots;
   }
 
   @Override
   public void map(Chunk[] chk, NewChunk[] newGamCols) {
-    _maxAbsRowSum = new double[_gamX.vec(0).nChunks()];
+    _maxAbsRowSum = new double[_initChunks];
     int cIndex = chk[0].cidx();
     _maxAbsRowSum[cIndex] = Double.NEGATIVE_INFINITY;
     int chunkRows = chk[0].len(); // number of rows in chunk
     CubicRegressionSplines crSplines = new CubicRegressionSplines(_numKnots, _knots); // not iced, must have own
     double[] basisVals = new double[_numKnots];
-    for (int rowIndex=0; rowIndex < chunkRows; rowIndex++) {
+    for (int rowIndex = 0; rowIndex < chunkRows; rowIndex++) {
       double gamRowSum = 0.0;
       // find index of knot bin where row value belongs to
-      double xval = chk[0].atd(rowIndex);
-      int binIndex = locateBin(xval,_knots); // location to update
-      // update from F matrix F matrix = [0;invB*D;0] and c functions
-      updateFMatrixCFunc(basisVals, xval, binIndex, crSplines, _bInvD);
-      // update from a+ and a- functions
-      updateAFunc(basisVals, xval, binIndex, crSplines);
-      // copy updates to the newChunk row
-      for (int colIndex = 0; colIndex < _numKnots; colIndex++) {
-        newGamCols[colIndex].addNum(basisVals[colIndex]);
-        gamRowSum += Math.abs(basisVals[colIndex]);
+      if (chk[1].atd(rowIndex) != 0) {  // consider weight column value during gamification.  If 0, insert rows of zeros.
+        double xval = chk[0].atd(rowIndex);
+        if (Double.isNaN(xval)) { // fill with NaN
+          for (int colIndex = 0; colIndex < _numKnots; colIndex++)
+            newGamCols[colIndex].addNum(Double.NaN);
+        } else {
+          int binIndex = locateBin(xval, _knots); // location to update
+          // update from F matrix F matrix = [0;invB*D;0] and c functions
+          GamUtilsCubicRegression.updateFMatrixCFunc(basisVals, xval, binIndex, _knots, crSplines._hj, _bInvD);
+          // update from a+ and a- functions
+          GamUtilsCubicRegression.updateAFunc(basisVals, xval, binIndex, _knots, crSplines._hj);
+          // copy updates to the newChunk row
+          for (int colIndex = 0; colIndex < _numKnots; colIndex++) {
+            newGamCols[colIndex].addNum(basisVals[colIndex]);
+            gamRowSum += Math.abs(basisVals[colIndex]);
+          }
+          if (gamRowSum > _maxAbsRowSum[cIndex])
+            _maxAbsRowSum[cIndex] = gamRowSum;
+        }
+      } else {  // zero weight, fill entries with zeros and skip all that processing
+        for (int colIndex = 0; colIndex < _numKnots; colIndex++)
+          newGamCols[colIndex].addNum(0.0);
       }
-      if (gamRowSum > _maxAbsRowSum[cIndex])
-        _maxAbsRowSum[cIndex] = gamRowSum;
     }
   }
 
@@ -91,32 +102,7 @@ public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColum
       }
     }
   }
-
-  public static void updateAFunc(double[] basisVals, double xval, int binIndex, CubicRegressionSplines splines) {
-    int jp1 = binIndex+1;
-    basisVals[binIndex] += splines.gen_a_m_j(splines._knots[jp1], xval, splines._hj[binIndex]);
-    basisVals[jp1] += splines.gen_a_p_j(splines._knots[binIndex], xval, splines._hj[binIndex]);
-  }
-
-  public static void updateFMatrixCFunc(double[] basisVals, double xval, int binIndex, CubicRegressionSplines splines,
-                                        double[][] binvD) {
-    int numKnots = basisVals.length;
-    int matSize = binvD.length;
-    int jp1 = binIndex+1;
-    double cmj = splines.gen_c_m_j(splines._knots[jp1], xval, splines._hj[binIndex]);
-    double cpj = splines.gen_c_p_j(splines._knots[binIndex], xval, splines._hj[binIndex]);
-    int binIndexM1 = binIndex-1;
-    for (int index=0; index < numKnots; index++) {
-      if (binIndex == 0) {  // only one part
-        basisVals[index] = binvD[binIndex][index] * cpj;
-      } else if (binIndex >= matSize) { // update only one part
-        basisVals[index] = binvD[binIndexM1][index] * cmj;
-      } else { // binIndex > 0 and binIndex < matSize
-        basisVals[index] = binvD[binIndexM1][index] * cmj+binvD[binIndex][index] * cpj;
-      }
-    }
-  }
-
+  
   public Frame centralizeFrame(Frame fr, String colNameStart, GAMParameters parms) {
     generateZtransp(fr);
     int numCols = fr.numCols();

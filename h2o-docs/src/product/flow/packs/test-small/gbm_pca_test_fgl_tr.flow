@@ -31,7 +31,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'gbm', {\"model_id\":\"gbm-de726240-7fb8-4953-82c4-58ae7b1e7645\",\"training_frame\":\"fgl_tr1_train.hex_0.80\",\"validation_frame\":\"fgl_tr1_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"type\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-5148747193781306000,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"balance_classes\":false,\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-de726240-7fb8-4953-82c4-58ae7b1e7645\",\"training_frame\":\"fgl_tr1_train.hex_0.80\",\"validation_frame\":\"fgl_tr1_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"type\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-5148747193781306000,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"balance_classes\":false,\"max_confusion_matrix_size\":20,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
     },
     {
       "type": "cs",

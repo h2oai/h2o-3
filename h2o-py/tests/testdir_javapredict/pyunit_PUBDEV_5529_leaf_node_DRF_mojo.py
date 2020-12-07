@@ -5,7 +5,7 @@ sys.path.insert(1, "../../../")
 import h2o
 from tests import pyunit_utils
 from random import randint
-
+import tempfile
 
 # This test will compare the leaf node assignment from model predict and mojo predict to make sure they
 # agree for DRF models
@@ -18,10 +18,9 @@ def drf_leaf_node_assignment_mojo_test():
     test = df[:TESTROWS, :]
     x = list(set(df.names) - {"respose"})
     params = {'ntrees': 50, 'max_depth': 4}
-
-    my_gbm = pyunit_utils.build_save_model_DRF(params, x, train, "response")
+    TMPDIR = tempfile.mkdtemp()
+    my_gbm = pyunit_utils.build_save_model_generic(params, x, train, "response", "DRF", TMPDIR)
     MOJONAME = pyunit_utils.getMojoName(my_gbm._id)
-    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
 
     h2o.download_csv(test[x], os.path.join(TMPDIR, 'in.csv'))  # save test file, h2o predict/mojo use same file
     pred_h2o, pred_mojo = pyunit_utils.mojo_predict(my_gbm, TMPDIR, MOJONAME, get_leaf_node_assignment=True)  # load model and perform predict

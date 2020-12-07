@@ -33,6 +33,21 @@ def coxph_validations():
         assert False, "Expected an error to be thrown"
     except H2OResponseError as ex:
         assert "Training data must have at least 2 features" in ex.args[0].exception_msg
+        
+    # check any num/cat features present with stratification
+    try:
+        coxph = H2OCoxProportionalHazardsEstimator(
+            start_column="start",
+            stop_column="stop",
+            stratify_by=["transplant"]
+        )
+        coxph.train(x=["transplant"], y="event", training_frame=heart)
+        assert False, "Expected an error to be thrown"
+    except H2OResponseError as ex:
+        assert "Training data must have at least 1 feature that is not a response and is not used for stratification" \
+               in ex.args[0].exception_msg, \
+               "There should be an error message warning that there is no feature that is not used for stratification"
+        
     # interactions column validation
     try:
         coxph = H2OCoxProportionalHazardsEstimator(
@@ -51,6 +66,24 @@ def coxph_validations():
             "There should be an error message for interactions_only"
         assert "interaction_pairs: BBB not found in the training frame" in ex.args[0].exception_msg, \
             "There should be an error message for interaction_pairs"
+        
+    # stratification
+    try:
+        coxph = H2OCoxProportionalHazardsEstimator(
+            start_column="start",
+            stop_column="stop",
+            stratify_by=["age", "BBB"]
+        )
+        coxph.train(x=["transplant", "age"], y="event", training_frame=heart)
+        assert False, "Expected an error to be thrown"
+    except H2OResponseError as ex:
+        assert "stratify_by: non-categorical column 'age' cannot be used for stratification" \
+               in ex.args[0].exception_msg, \
+            "There should be an error message warning that there is no categorical column used for stratification"
+        assert "stratify_by: column 'BBB' not found" \
+               in ex.args[0].exception_msg, \
+            "There should be an error message warning that there is a not-existing column used for stratification"
+        
     # happy path
     coxph = H2OCoxProportionalHazardsEstimator(
         start_column="start",

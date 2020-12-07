@@ -7,7 +7,8 @@ This section describes how to build and implement a POJO to use predictive scori
 
 **Notes**: 
 
-- POJOs are not supported for source files larger than 1G. For more information, refer to the POJO FAQ section below. POJOs are also not supported for GLRM or Stacked Ensembles models. 
+- POJOs are not supported for source files larger than 1G. For more information, refer to the POJO FAQ section below. 
+- POJOs are not supported for GLRM, Stacked Ensembles, or Word2Vec models. 
 - POJO predict cannot parse columns enclosed in double quotes (for example, ""2"").  
 
 What is a POJO?

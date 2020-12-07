@@ -1,7 +1,5 @@
 # h2o-docs
 
----
-
 ## src/product  
 
 This folder includes the main product documentation. The documentation is built using [Sphinx](http://www.sphinx-doc.org/) with the [Read The Docs theme](https://sphinx-rtd-theme.readthedocs.io/en/stable/).
@@ -33,7 +31,6 @@ python3 -m pip install recommonmark
 python3 -m pip sphinx_prompt==1.1.0
 python3 -m pip sphinx-tabs==1.1.12
 python3 -m pip install sphinx_substitution_extensions==2019.6.15.0
-
 ```
 
 The makefile for building the docs is in the **/src/product** folder. Run the following to build the H2O-3 User Guide.
@@ -41,15 +38,12 @@ The makefile for building the docs is in the **/src/product** folder. Run the fo
 ```
 cd src/product
 make html
-
 ```
 
 The output will be available in:
 
 > src/product/_build/html/index.html
 
-
----
 ## src/booklets/v2_2015
 
 This folder contains latex source code for H2O-3 booklets. The booklets can be built from the **/h2o-3** folder.
@@ -62,8 +56,6 @@ cd ..
 The output PDFs are available in:
 
 > src/booklets/v2_2015/source
-
----
 
 ## src/api
 

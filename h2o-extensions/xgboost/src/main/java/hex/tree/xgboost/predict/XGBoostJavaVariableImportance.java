@@ -5,7 +5,6 @@ import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
 import biz.k11i.xgboost.tree.RegTreeNodeStat;
-import hex.DataInfo;
 import hex.tree.xgboost.XGBoostModelInfo;
 import hex.tree.xgboost.XGBoostUtils;
 import hex.tree.xgboost.util.FeatureScore;
@@ -15,26 +14,24 @@ import java.util.Map;
 
 public class XGBoostJavaVariableImportance implements XGBoostVariableImportance {
     
-    private final Predictor predictor;
-    private final DataInfo dataInfo;
+    private final String[] _featureNames;
     
     public XGBoostJavaVariableImportance(XGBoostModelInfo modelInfo) {
-        predictor = PredictorFactory.makePredictor(modelInfo._boosterBytes, false);
-        dataInfo = modelInfo.dataInfo();
+        _featureNames = XGBoostUtils.assembleFeatureNames(modelInfo.dataInfo())._names;
     }
 
     @Override
-    public Map<String, FeatureScore> getFeatureScores() {
+    public Map<String, FeatureScore> getFeatureScores(byte[] boosterBytes) {
+        Predictor predictor = PredictorFactory.makePredictor(boosterBytes, false);
         Map<String, FeatureScore> featureScore = new HashMap<>();
         if (!(predictor.getBooster() instanceof GBTree)) {
             return featureScore;
         }
         GBTree gbm = (GBTree) predictor.getBooster();
-        final XGBoostUtils.FeatureProperties featureProperties = XGBoostUtils.assembleFeatureNames(dataInfo);
         final RegTree[][] trees = gbm.getGroupedTrees();
-        for (int i = 0; i < trees.length; i++) {
-            for (int j = 0; j < trees[i].length; j++) {
-                RegTree t = trees[i][j];
+        for (final RegTree[] treeGroup : trees) {
+            for (int j = 0; j < treeGroup.length; j++) {
+                RegTree t = treeGroup[j];
                 for (int k = 0; k < t.getNodes().length; k++) {
                     RegTreeNode node = t.getNodes()[k];
                     if (node.isLeaf()) continue;
@@ -42,7 +39,7 @@ public class XGBoostJavaVariableImportance implements XGBoostVariableImportance 
                     FeatureScore fs = new FeatureScore();
                     fs._gain = stat.getGain();
                     fs._cover = stat.getCover();
-                    String fid = featureProperties._names[node.getSplitIndex()];
+                    final String fid = _featureNames[node.getSplitIndex()];
                     if (featureScore.containsKey(fid)) {
                         featureScore.get(fid).add(fs);
                     } else {

@@ -90,3 +90,7 @@ water.api.ModelMetricsAnomalyV3
 water.api.ModelMetricsGLRMV99
 water.api.ModelMetricsPCAV3
 water.api.ModelMetricsSVDV99
+hex.schemas.RuleFitModelV3
+hex.schemas.RuleFitModelV3$RuleFitModelOutputV3
+hex.schemas.RuleFitV3$RuleFitParametersV3
+hex.schemas.RuleFitV3

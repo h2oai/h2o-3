@@ -16,6 +16,100 @@ def class_extensions():
         self._parms["lambda"] = value
 
     @staticmethod
+    def getAlphaBest(model):
+        """
+        Extract best alpha value found from glm model.
+
+        :param model: source lambda search model
+
+        :examples:
+
+        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family = 'binomial',
+        ...                                   lambda_search = True,
+        ...                                   solver = 'COORDINATE_DESCENT')
+        >>> m.train(training_frame = d,
+        ...         x = [2,3,4,5,6,7,8],
+        ...         y = 1)
+        >>> bestAlpha = H2OGeneralizedLinearEstimator.getAlphaBest(m)
+        >>> print("Best alpha found is {0}".format(bestAlpha))
+        """
+        return model._model_json["output"]["alpha_best"]
+        
+    @staticmethod
+    def getLambdaBest(model):
+        """
+        Extract best lambda value found from glm model.
+
+        :param model: source lambda search model
+
+        :examples:
+
+        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family = 'binomial',
+        ...                                   lambda_search = True,
+        ...                                   solver = 'COORDINATE_DESCENT')
+        >>> m.train(training_frame = d,
+        ...         x = [2,3,4,5,6,7,8],
+        ...         y = 1)
+        >>> bestLambda = H2OGeneralizedLinearEstimator.getLambdaBest(m)
+        >>> print("Best lambda found is {0}".format(bestLambda))
+        """
+        return model._model_json["output"]["lambda_best"]
+
+    @staticmethod
+    def getLambdaMax(model):
+        """
+        Extract the maximum lambda value used during lambda search.
+    
+        :param model: source lambda search model
+    
+        :examples:
+    
+        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family = 'binomial',
+        ...                                   lambda_search = True,
+        ...                                   solver = 'COORDINATE_DESCENT')
+        >>> m.train(training_frame = d,
+        ...         x = [2,3,4,5,6,7,8],
+        ...         y = 1)
+        >>> maxLambda = H2OGeneralizedLinearEstimator.getLambdaMax(m)
+        >>> print("Maximum lambda found is {0}".format(maxLambda))
+        """
+        lambdaMax = model._model_json["output"]["lambda_max"] # will be -1 if lambda_search is disabled
+        if lambdaMax >= 0:
+            return lambdaMax
+        else:
+            raise H2OValueError("getLambdaMax(model) can only be called when lambda_search=True.")
+
+    
+    @staticmethod
+    def getLambdaMin(model):
+        """
+        Extract the minimum lambda value calculated during lambda search from glm model.  Note that due to early stop,
+        this minimum lambda value may not be used in the actual lambda search.
+    
+        :param model: source lambda search model
+    
+        :examples:
+    
+        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family = 'binomial',
+        ...                                   lambda_search = True,
+        ...                                   solver = 'COORDINATE_DESCENT')
+        >>> m.train(training_frame = d,
+        ...         x = [2,3,4,5,6,7,8],
+        ...         y = 1)
+        >>> minLambda = H2OGeneralizedLinearEstimator.getLambdaMin(m)
+        >>> print("Minimum lambda found is {0}".format(minLambda))
+        """
+        lambdaMin = model._model_json["output"]["lambda_min"] # will be -1 if lambda_search is disabled
+        if lambdaMin >= 0:
+            return lambdaMin
+        else:
+            raise H2OValueError("getLambdaMin(model) can only be called when lambda_search=True.")
+
+    @staticmethod
     def getGLMRegularizationPath(model):
         """
         Extract full regularization path explored during lambda search from glm model.
@@ -43,6 +137,7 @@ def class_extensions():
         ns = x.pop("coefficient_names")
         res = {
             "lambdas": x["lambdas"],
+            "alphas": x["alphas"],
             "explained_deviance_train": x["explained_deviance_train"],
             "explained_deviance_valid": x["explained_deviance_valid"],
             "coefficients": [dict(zip(ns, y)) for y in x["coefficients"]],
@@ -677,19 +772,6 @@ examples = dict(
 >>> max = .85
 >>> cars_glm = H2OGeneralizedLinearEstimator(balance_classes=True,
 ...                                          max_after_balance_size=max,
-...                                          seed=1234)
->>> cars_glm.train(x=predictors,
-...                y=response,
-...                training_frame=train,
-...                validation_frame=valid)
->>> cars_glm.mse()
-""",
-    max_hit_ratio_k="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> predictors = ["displacement","power","weight","year"]
->>> response = "acceleration"
->>> train, valid = cars.split_frame(ratios=[.8])
->>> cars_glm = H2OGeneralizedLinearEstimator(max_hit_ratio_k=3,
 ...                                          seed=1234)
 >>> cars_glm.train(x=predictors,
 ...                y=response,

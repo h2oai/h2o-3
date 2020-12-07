@@ -66,6 +66,14 @@ final class RollupStats extends Iced {
   // Check for: Rollups available
   private boolean isReady() { return _naCnt>=0; }
 
+  private String modeDescription() {
+    if (isMutating())
+      return "Mutating";
+    if (isComputing())
+      return "Computing";
+    return "Ready";
+  }
+  
   private RollupStats(int mode) {
     _mins = new double[5];
     _maxs = new double[5];
@@ -298,7 +306,17 @@ final class RollupStats extends Iced {
      * Added to avoid deadlocks when running from idea in debug mode (evaluating toSgtring on mr task causes rollups to be computed)
      * @return
      */
-    @Override public String toString(){return "Roll(" + _fr.anyVec()._key +")";}
+    @Override 
+    public String toString(){
+      return "Roll(" + _fr.anyVec()._key + ")";
+    }
+  }
+
+  @Override
+  public String toString() {
+    return "RollupStats{" +
+            "state=" + modeDescription() +
+            '}';
   }
 
   static void start(final Vec vec, Futures fs, boolean computeHisto) {

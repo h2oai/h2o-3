@@ -14,14 +14,14 @@ class BuildConfig {
   private static final String DEFAULT_HADOOP_IMAGE_NAME_PREFIX = 'dev-build-hadoop-gradle'
   private static final String DEFAULT_RELEASE_IMAGE_NAME_PREFIX = 'dev-release-gradle'
 
-  public static final int DEFAULT_IMAGE_VERSION_TAG = 25
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 36
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/opsh2oai/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/opsh2oai/s3cmd'
 
   private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
-  private static final String HADOOP_IMAGE_VERSION_TAG = '79'
-  
-  private static final String K8S_TEST_IMAGE_VERSION_TAG = '1'
+  private static final String HADOOP_IMAGE_VERSION_TAG = '83'
+
+  private static final String K8S_TEST_IMAGE_VERSION_TAG = '3' // Change the new Docker image in the K8S YAML template as well
 
   public static final String XGB_TARGET_MINIMAL = 'minimal'
   public static final String XGB_TARGET_OMP = 'omp'
@@ -47,7 +47,7 @@ class BuildConfig {
 
   public static final String RELEASE_BRANCH_PREFIX = 'rel-'
 
-  public static final List PYTHON_VERSIONS = ['2.7', '3.5', '3.6']
+  public static final List PYTHON_VERSIONS = ['2.7', '3.5', '3.6', '3.7', '3.8']
   public static final List R_VERSIONS = ['3.3.3', '3.4.1']
 
   public static final String MAKEFILE_PATH = 'scripts/jenkins/Makefile.jenkins'
@@ -62,7 +62,6 @@ class BuildConfig {
   private String commitMessage
   private boolean buildHadoop
   private List hadoopDistributionsToBuild
-  private JenkinsMaster master
   private NodeLabels nodeLabels
   private LinkedHashMap changesMap = [
     (COMPONENT_PY): false,
@@ -93,20 +92,19 @@ class BuildConfig {
     }
     changesMap[COMPONENT_HADOOP] = buildHadoop
 
-    master = JenkinsMaster.findByBuildURL(context.env.BUILD_URL)
-    nodeLabels = NodeLabels.findByJenkinsMaster(master)
+    nodeLabels = NodeLabels.findByBuildURL(context.env.BUILD_URL)
     supportedXGBEnvironments = [
       'centos7.3': [
         [name: 'CentOS 7.3 Minimal', dockerfile: 'xgb/centos/Dockerfile-centos-minimal', fromImage: 'centos:7.3.1611', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel()],
         [name: 'CentOS 7.3 OMP', dockerfile: 'xgb/centos/Dockerfile-centos-omp', fromImage: 'harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:centos7.3', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel()],
       ],
       'centos7.4': [
-        [name: 'CentOS 7.4 GPU', dockerfile: 'xgb/centos/Dockerfile-centos-gpu', fromImage: 'nvidia/cuda:9.0-devel-centos7', targetName: XGB_TARGET_GPU, nodeLabel: getGPUNodeLabel()],
+        [name: 'CentOS 7.4 GPU', dockerfile: 'xgb/centos/Dockerfile-centos-gpu', fromImage: 'nvidia/cuda:10.0-devel-centos7', targetName: XGB_TARGET_GPU, nodeLabel: getGPUNodeLabel()],
       ],
       'ubuntu16': [
         [name: 'Ubuntu 16.04 Minimal', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-minimal', fromImage: 'ubuntu:16.04', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel()],
         [name: 'Ubuntu 16.04 OMP', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-omp', fromImage: 'harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:ubuntu16', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel()],
-        [name: 'Ubuntu 16.04 GPU', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-gpu', fromImage: 'nvidia/cuda:9.0-devel-ubuntu16.04', targetName: XGB_TARGET_GPU, nodeLabel: getGPUNodeLabel()],
+        [name: 'Ubuntu 16.04 GPU', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-gpu', fromImage: 'nvidia/cuda:10.0-devel-ubuntu16.04', targetName: XGB_TARGET_GPU, nodeLabel: getGPUNodeLabel()],
       ],
       'ubuntu18': [
         [name: 'Ubuntu 18.04 Minimal', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-minimal', fromImage: 'ubuntu:18.04', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel()],
@@ -135,7 +133,7 @@ class BuildConfig {
   String getBenchmarkNodeLabel() {
     return nodeLabels.getBenchmarkNodeLabel()
   }
-  
+
   String getGPUBenchmarkNodeLabel() {
     return nodeLabels.getGPUBenchmarkNodeLabel()
   }
@@ -202,7 +200,7 @@ class BuildConfig {
   String getHadoopImageVersion() {
     return HADOOP_IMAGE_VERSION_TAG
   }
-  
+
   String getK8STestImageVersion() {
     return K8S_TEST_IMAGE_VERSION_TAG
   }
@@ -321,7 +319,7 @@ class BuildConfig {
     }
     return getSmokeHadoopImageImpl(distribution, version, krbSuffix)
   }
-  
+
   String getHadoopEdgeNodeImage(final distribution, final version, final useKrb) {
     def suffix = "-0xd-edge"
     if (useKrb) {
@@ -329,35 +327,20 @@ class BuildConfig {
     }
     return getSmokeHadoopImageImpl(distribution, version, suffix)
   }
-  
+
   String getSmokeHadoopImageImpl(final distribution, final version, final suffix) {
     return "${DOCKER_REGISTRY}/opsh2oai/${HADOOP_IMAGE_NAME_PREFIX}-${distribution}-${version}${suffix}:${HADOOP_IMAGE_VERSION_TAG}".toString()
   }
 
-  static enum JenkinsMaster {
-    C1, // indicates we are running under mr-0xc1 master - master or nightly build
-    B4  // indicates we are running under mr-0xb4 master - PR build
-
-    private static JenkinsMaster findByName(final String name) {
-      switch(name.toLowerCase()) {
-        case 'c1':
-          return C1
-        case 'b4':
-          return B4
-        default:
-          throw new IllegalArgumentException(String.format("Master %s is unknown", name))
-      }
-    }
-
-    private static JenkinsMaster findByBuildURL(final String buildURL) {
-      final String name = buildURL.replaceAll('http://mr-0x', '').replaceAll(':8080.*', '')
-      return findByName(name)
-    }
-  }
-
   static enum NodeLabels {
-    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'mr-dl3'),
-    LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'docker')
+    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'mr-dl3'), //master or nightly build
+    LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'docker')  //PR build
+
+    static Map<String, NodeLabels> LABELS_MAP = [
+            "c1": LABELS_C1,
+            "g1": LABELS_C1, //mr-0xg1 was set as alias to mr-0xc1
+            "b4": LABELS_B4
+    ]
 
     private final String defaultNodeLabel
     private final String benchmarkNodeLabel
@@ -387,18 +370,16 @@ class BuildConfig {
       return gpuBenchmarkNodeLabel
     }
 
-    private static findByJenkinsMaster(final JenkinsMaster master) {
-      switch (master) {
-        case JenkinsMaster.C1:
-          return LABELS_C1
-        case JenkinsMaster.B4:
-          return LABELS_B4
-        default:
-          throw new IllegalArgumentException(String.format("Master %s is unknown", master))
+    private static NodeLabels findByBuildURL(final String buildURL) {
+      final String name = buildURL.replaceAll('http://mr-0x', '').replaceAll(':8080.*', '')
+
+      if (LABELS_MAP.containsKey(name)) {
+        return LABELS_MAP.get(name)
+      } else {
+        throw new IllegalArgumentException(String.format("Master %s (%s) is unknown", name, buildURL))
       }
     }
   }
-
 }
 
 return this

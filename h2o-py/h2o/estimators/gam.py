@@ -15,7 +15,7 @@ from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     """
-    General Additive Model
+    Generalized Additive Model
 
     Fits a generalized additive model, specified by a response variable, a set of predictors, and a
     description of the error distribution.
@@ -36,11 +36,11 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                    "solver", "alpha", "lambda_", "lambda_search", "early_stopping", "nlambdas", "standardize",
                    "missing_values_handling", "plug_values", "compute_p_values", "remove_collinear_columns",
                    "intercept", "non_negative", "max_iterations", "objective_epsilon", "beta_epsilon",
-                   "gradient_epsilon", "link", "prior", "lambda_min_ratio", "beta_constraints", "max_active_predictors",
-                   "interactions", "interaction_pairs", "obj_reg", "export_checkpoints_dir", "balance_classes",
-                   "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k",
-                   "max_runtime_secs", "custom_metric_func", "num_knots", "knot_ids", "gam_columns", "bs", "scale",
-                   "keep_gam_cols"}
+                   "gradient_epsilon", "link", "prior", "cold_start", "lambda_min_ratio", "beta_constraints",
+                   "max_active_predictors", "interactions", "interaction_pairs", "obj_reg", "export_checkpoints_dir",
+                   "stopping_rounds", "stopping_metric", "stopping_tolerance", "balance_classes",
+                   "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size", "max_runtime_secs",
+                   "custom_metric_func", "num_knots", "knot_ids", "gam_columns", "bs", "scale", "keep_gam_cols"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedAdditiveEstimator, self).__init__()
@@ -289,14 +289,15 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         Family. Use binomial for classification with logistic regression, others are for regression problems.
 
-        One of: ``"gaussian"``, ``"binomial"``, ``"quasibinomial"``, ``"ordinal"``, ``"multinomial"``, ``"poisson"``,
-        ``"gamma"``, ``"tweedie"``, ``"negativebinomial"``, ``"fractionalbinomial"``.
+        One of: ``"auto"``, ``"gaussian"``, ``"binomial"``, ``"quasibinomial"``, ``"ordinal"``, ``"multinomial"``,
+        ``"poisson"``, ``"gamma"``, ``"tweedie"``, ``"negativebinomial"``, ``"fractionalbinomial"``  (default:
+        ``"auto"``).
         """
         return self._parms.get("family")
 
     @family.setter
     def family(self, family):
-        assert_is_type(family, None, Enum("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"))
+        assert_is_type(family, None, Enum("auto", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"))
         self._parms["family"] = family
 
 
@@ -617,8 +618,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         Link function.
 
-        One of: ``"family_default"``, ``"identity"``, ``"logit"``, ``"log"``, ``"inverse"``, ``"tweedie"``,
-        ``"ologit"``.
+        One of: ``"family_default"``, ``"identity"``, ``"logit"``, ``"log"``, ``"inverse"``, ``"tweedie"``, ``"ologit"``
+        (default: ``"family_default"``).
         """
         return self._parms.get("link")
 
@@ -642,6 +643,23 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     def prior(self, prior):
         assert_is_type(prior, None, numeric)
         self._parms["prior"] = prior
+
+
+    @property
+    def cold_start(self):
+        """
+        Only applicable to multiple alpha/lambda values when calling GLM from GAM.  If false, build the next model for
+        next set of alpha/lambda values starting from the values provided by current model.  If true will start GLM
+        model from scratch.
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("cold_start")
+
+    @cold_start.setter
+    def cold_start(self, cold_start):
+        assert_is_type(cold_start, None, bool)
+        self._parms["cold_start"] = cold_start
 
 
     @property
@@ -754,6 +772,56 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
 
 
     @property
+    def stopping_rounds(self):
+        """
+        Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
+        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
+
+        Type: ``int``  (default: ``0``).
+        """
+        return self._parms.get("stopping_rounds")
+
+    @stopping_rounds.setter
+    def stopping_rounds(self, stopping_rounds):
+        assert_is_type(stopping_rounds, None, int)
+        self._parms["stopping_rounds"] = stopping_rounds
+
+
+    @property
+    def stopping_metric(self):
+        """
+        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score
+        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+        client.
+
+        One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
+        ``"aucpr"``, ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``,
+        ``"custom_increasing"``  (default: ``"auto"``).
+        """
+        return self._parms.get("stopping_metric")
+
+    @stopping_metric.setter
+    def stopping_metric(self, stopping_metric):
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"))
+        self._parms["stopping_metric"] = stopping_metric
+
+
+    @property
+    def stopping_tolerance(self):
+        """
+        Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
+
+        Type: ``float``  (default: ``0.001``).
+        """
+        return self._parms.get("stopping_tolerance")
+
+    @stopping_tolerance.setter
+    def stopping_tolerance(self, stopping_tolerance):
+        assert_is_type(stopping_tolerance, None, numeric)
+        self._parms["stopping_tolerance"] = stopping_tolerance
+
+
+    @property
     def balance_classes(self):
         """
         Balance training data class counts via over/under-sampling (for imbalanced data).
@@ -813,21 +881,6 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     def max_confusion_matrix_size(self, max_confusion_matrix_size):
         assert_is_type(max_confusion_matrix_size, None, int)
         self._parms["max_confusion_matrix_size"] = max_confusion_matrix_size
-
-
-    @property
-    def max_hit_ratio_k(self):
-        """
-        Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-
-        Type: ``int``  (default: ``0``).
-        """
-        return self._parms.get("max_hit_ratio_k")
-
-    @max_hit_ratio_k.setter
-    def max_hit_ratio_k(self, max_hit_ratio_k):
-        assert_is_type(max_hit_ratio_k, None, int)
-        self._parms["max_hit_ratio_k"] = max_hit_ratio_k
 
 
     @property
@@ -958,3 +1011,9 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     @Lambda.setter
     def Lambda(self, value):
         self._parms["lambda"] = value
+
+    def _additional_used_columns(self, parms):
+        """
+        :return: Gam columns if specified.
+        """
+        return parms["gam_columns"]

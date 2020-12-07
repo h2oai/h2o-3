@@ -32,15 +32,16 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     param_names = {"model_id", "training_frame", "validation_frame", "nfolds", "seed", "keep_cross_validation_models",
                    "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
                    "fold_column", "response_column", "ignored_columns", "random_columns", "ignore_const_cols",
-                   "score_each_iteration", "offset_column", "weights_column", "family", "rand_family",
-                   "tweedie_variance_power", "tweedie_link_power", "theta", "solver", "alpha", "lambda_",
+                   "score_each_iteration", "score_iteration_interval", "offset_column", "weights_column", "family",
+                   "rand_family", "tweedie_variance_power", "tweedie_link_power", "theta", "solver", "alpha", "lambda_",
                    "lambda_search", "early_stopping", "nlambdas", "standardize", "missing_values_handling",
                    "plug_values", "compute_p_values", "remove_collinear_columns", "intercept", "non_negative",
                    "max_iterations", "objective_epsilon", "beta_epsilon", "gradient_epsilon", "link", "rand_link",
-                   "startval", "calc_like", "HGLM", "prior", "lambda_min_ratio", "beta_constraints",
+                   "startval", "calc_like", "HGLM", "prior", "cold_start", "lambda_min_ratio", "beta_constraints",
                    "max_active_predictors", "interactions", "interaction_pairs", "obj_reg", "export_checkpoints_dir",
-                   "balance_classes", "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size",
-                   "max_hit_ratio_k", "max_runtime_secs", "custom_metric_func"}
+                   "stopping_rounds", "stopping_metric", "stopping_tolerance", "balance_classes",
+                   "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size", "max_runtime_secs",
+                   "custom_metric_func"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedLinearEstimator, self).__init__()
@@ -449,6 +450,21 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
 
     @property
+    def score_iteration_interval(self):
+        """
+        Perform scoring for every score_iteration_interval iterations
+
+        Type: ``int``  (default: ``-1``).
+        """
+        return self._parms.get("score_iteration_interval")
+
+    @score_iteration_interval.setter
+    def score_iteration_interval(self, score_iteration_interval):
+        assert_is_type(score_iteration_interval, None, int)
+        self._parms["score_iteration_interval"] = score_iteration_interval
+
+
+    @property
     def offset_column(self):
         """
         Offset column. This will be added to the combination of columns before applying the link function.
@@ -519,8 +535,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Family. Use binomial for classification with logistic regression, others are for regression problems.
 
-        One of: ``"gaussian"``, ``"binomial"``, ``"fractionalbinomial"``, ``"quasibinomial"``, ``"ordinal"``,
-        ``"multinomial"``, ``"poisson"``, ``"gamma"``, ``"tweedie"``, ``"negativebinomial"``  (default: ``"gaussian"``).
+        One of: ``"auto"``, ``"gaussian"``, ``"binomial"``, ``"fractionalbinomial"``, ``"quasibinomial"``,
+        ``"ordinal"``, ``"multinomial"``, ``"poisson"``, ``"gamma"``, ``"tweedie"``, ``"negativebinomial"``  (default:
+        ``"auto"``).
 
         :examples:
 
@@ -540,7 +557,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @family.setter
     def family(self, family):
-        assert_is_type(family, None, Enum("gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"))
+        assert_is_type(family, None, Enum("auto", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"))
         self._parms["family"] = family
 
 
@@ -1238,7 +1255,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def startval(self):
         """
-        double array to initialize fixed and random coefficients for HGLM.
+        double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
 
         Type: ``List[float]``.
         """
@@ -1308,6 +1325,22 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def prior(self, prior):
         assert_is_type(prior, None, numeric)
         self._parms["prior"] = prior
+
+
+    @property
+    def cold_start(self):
+        """
+        Only applicable to multiple alpha/lambda values.  If false, build the next model for next set of alpha/lambda
+        values starting from the values provided by current model.  If true will start GLM model from scratch.
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("cold_start")
+
+    @cold_start.setter
+    def cold_start(self, cold_start):
+        assert_is_type(cold_start, None, bool)
+        self._parms["cold_start"] = cold_start
 
 
     @property
@@ -1538,6 +1571,56 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
 
     @property
+    def stopping_rounds(self):
+        """
+        Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
+        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
+
+        Type: ``int``  (default: ``0``).
+        """
+        return self._parms.get("stopping_rounds")
+
+    @stopping_rounds.setter
+    def stopping_rounds(self, stopping_rounds):
+        assert_is_type(stopping_rounds, None, int)
+        self._parms["stopping_rounds"] = stopping_rounds
+
+
+    @property
+    def stopping_metric(self):
+        """
+        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score
+        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+        client.
+
+        One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
+        ``"aucpr"``, ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``,
+        ``"custom_increasing"``  (default: ``"auto"``).
+        """
+        return self._parms.get("stopping_metric")
+
+    @stopping_metric.setter
+    def stopping_metric(self, stopping_metric):
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"))
+        self._parms["stopping_metric"] = stopping_metric
+
+
+    @property
+    def stopping_tolerance(self):
+        """
+        Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
+
+        Type: ``float``  (default: ``0.001``).
+        """
+        return self._parms.get("stopping_tolerance")
+
+    @stopping_tolerance.setter
+    def stopping_tolerance(self, stopping_tolerance):
+        assert_is_type(stopping_tolerance, None, numeric)
+        self._parms["stopping_tolerance"] = stopping_tolerance
+
+
+    @property
     def balance_classes(self):
         """
         Balance training data class counts via over/under-sampling (for imbalanced data).
@@ -1646,35 +1729,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
 
     @property
-    def max_hit_ratio_k(self):
-        """
-        Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-
-        Type: ``int``  (default: ``0``).
-
-        :examples:
-
-        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> predictors = ["displacement","power","weight","year"]
-        >>> response = "acceleration"
-        >>> train, valid = cars.split_frame(ratios=[.8])
-        >>> cars_glm = H2OGeneralizedLinearEstimator(max_hit_ratio_k=3,
-        ...                                          seed=1234)
-        >>> cars_glm.train(x=predictors,
-        ...                y=response,
-        ...                training_frame=train,
-        ...                validation_frame=valid)
-        >>> cars_glm.mse()
-        """
-        return self._parms.get("max_hit_ratio_k")
-
-    @max_hit_ratio_k.setter
-    def max_hit_ratio_k(self, max_hit_ratio_k):
-        assert_is_type(max_hit_ratio_k, None, int)
-        self._parms["max_hit_ratio_k"] = max_hit_ratio_k
-
-
-    @property
     def max_runtime_secs(self):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
@@ -1729,6 +1783,100 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self._parms["lambda"] = value
 
     @staticmethod
+    def getAlphaBest(model):
+        """
+        Extract best alpha value found from glm model.
+
+        :param model: source lambda search model
+
+        :examples:
+
+        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family = 'binomial',
+        ...                                   lambda_search = True,
+        ...                                   solver = 'COORDINATE_DESCENT')
+        >>> m.train(training_frame = d,
+        ...         x = [2,3,4,5,6,7,8],
+        ...         y = 1)
+        >>> bestAlpha = H2OGeneralizedLinearEstimator.getAlphaBest(m)
+        >>> print("Best alpha found is {0}".format(bestAlpha))
+        """
+        return model._model_json["output"]["alpha_best"]
+
+    @staticmethod
+    def getLambdaBest(model):
+        """
+        Extract best lambda value found from glm model.
+
+        :param model: source lambda search model
+
+        :examples:
+
+        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family = 'binomial',
+        ...                                   lambda_search = True,
+        ...                                   solver = 'COORDINATE_DESCENT')
+        >>> m.train(training_frame = d,
+        ...         x = [2,3,4,5,6,7,8],
+        ...         y = 1)
+        >>> bestLambda = H2OGeneralizedLinearEstimator.getLambdaBest(m)
+        >>> print("Best lambda found is {0}".format(bestLambda))
+        """
+        return model._model_json["output"]["lambda_best"]
+
+    @staticmethod
+    def getLambdaMax(model):
+        """
+        Extract the maximum lambda value used during lambda search.
+
+        :param model: source lambda search model
+
+        :examples:
+
+        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family = 'binomial',
+        ...                                   lambda_search = True,
+        ...                                   solver = 'COORDINATE_DESCENT')
+        >>> m.train(training_frame = d,
+        ...         x = [2,3,4,5,6,7,8],
+        ...         y = 1)
+        >>> maxLambda = H2OGeneralizedLinearEstimator.getLambdaMax(m)
+        >>> print("Maximum lambda found is {0}".format(maxLambda))
+        """
+        lambdaMax = model._model_json["output"]["lambda_max"] # will be -1 if lambda_search is disabled
+        if lambdaMax >= 0:
+            return lambdaMax
+        else:
+            raise H2OValueError("getLambdaMax(model) can only be called when lambda_search=True.")
+
+
+    @staticmethod
+    def getLambdaMin(model):
+        """
+        Extract the minimum lambda value calculated during lambda search from glm model.  Note that due to early stop,
+        this minimum lambda value may not be used in the actual lambda search.
+
+        :param model: source lambda search model
+
+        :examples:
+
+        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family = 'binomial',
+        ...                                   lambda_search = True,
+        ...                                   solver = 'COORDINATE_DESCENT')
+        >>> m.train(training_frame = d,
+        ...         x = [2,3,4,5,6,7,8],
+        ...         y = 1)
+        >>> minLambda = H2OGeneralizedLinearEstimator.getLambdaMin(m)
+        >>> print("Minimum lambda found is {0}".format(minLambda))
+        """
+        lambdaMin = model._model_json["output"]["lambda_min"] # will be -1 if lambda_search is disabled
+        if lambdaMin >= 0:
+            return lambdaMin
+        else:
+            raise H2OValueError("getLambdaMin(model) can only be called when lambda_search=True.")
+
+    @staticmethod
     def getGLMRegularizationPath(model):
         """
         Extract full regularization path explored during lambda search from glm model.
@@ -1756,6 +1904,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         ns = x.pop("coefficient_names")
         res = {
             "lambdas": x["lambdas"],
+            "alphas": x["alphas"],
             "explained_deviance_train": x["explained_deviance_train"],
             "explained_deviance_valid": x["explained_deviance_valid"],
             "coefficients": [dict(zip(ns, y)) for y in x["coefficients"]],

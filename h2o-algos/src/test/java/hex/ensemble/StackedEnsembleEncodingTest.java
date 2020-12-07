@@ -215,6 +215,7 @@ public class StackedEnsembleEncodingTest extends TestUtil {
                     .withDataForCol(0, ar("B", "B", "A", "A", "A", "B", "A"))
                     .withDataForCol(1, ar(2, 2, 1, 1, 1, 2, 1))
                     .withDataForCol(2, ar("C", "C", "V", "V", "V", "C", "V"))
+                    .withDomain(0, ar("B", "A"))  //XXX: red flag, this test fails for OneHotExplicit and Binary encoding if the domain is sorted in lexicographical order (which is H2O-3 default...)
                     .build();
             String target = "Response";
 

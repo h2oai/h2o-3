@@ -8,7 +8,6 @@ The artifacts are available via [this query](http://search.maven.org/#search%7Cg
   * `h2o-algos` - basic set of algorithms (GLM, GBM, DeepLeaning,...)
   * `h2o-app` - H2O standalone application launcher
   * `h2o-web` - H2O web UI called _Steam_
-  * `h2o-scala` - Scala API
   
 ### Versioning of Artifacts
 All published artifacts share the same version enforced by
@@ -45,7 +44,7 @@ gradle publish
 ### Sonatype & Public H2O Release Repository
 To publish artifacts into remote **Sonatype Release** and **Public H2O Release** repository please type:
 ```
-gradle -DdoRelease publish
+gradle -PdoRelease publish
 ```
 
 #### Public release repository configuration
@@ -104,7 +103,7 @@ In release Jenkins job, please setup environment and call the `make-dist.sh` scr
   * `./gradlew test`
   
 * How can I run a specific task on a particular project?
-  * `./gradlew :h2o-scala:test`
+  * `./gradlew :h2o-algos:test`
   
 * How can I run gradle daemon by default?
   * Put `org.gradle.daemon=true` into your `~/.gradle/gradle.properties`

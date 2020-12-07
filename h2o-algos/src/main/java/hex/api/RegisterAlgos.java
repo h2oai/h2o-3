@@ -29,7 +29,8 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.coxph       .CoxPH       (true),
             new hex.generic     .Generic     (true),
             new hex.gam         .GAM         (true),
-            new PSVM(true)
+            new PSVM(true),
+            new hex.rulefit     .RuleFit     (true)
     };
 
     // "Word2Vec", "Example", "Grep"

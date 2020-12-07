@@ -73,9 +73,9 @@ def compare_weightedStats(model, datafile, xlist, xname, weightV, pdpTDTable, to
     wMean = pyunit_utils.extract_col_value_H2OTwoDimTable(pdpTDTable, "mean_response") # stats for age predictor
     wStd = pyunit_utils.extract_col_value_H2OTwoDimTable(pdpTDTable, "stddev_response")
     wStdErr = pyunit_utils.extract_col_value_H2OTwoDimTable(pdpTDTable, "std_error_mean_response")
-    pyunit_utils.equal_two_arrays(weightStat[0], wMean, tol, tol, throwError=True)
-    pyunit_utils.equal_two_arrays(weightStat[1], wStd, tol, tol, throwError=True)
-    pyunit_utils.equal_two_arrays(weightStat[2], wStdErr, tol, tol, throwError=True)
+    pyunit_utils.equal_two_arrays(weightStat[0], wMean, tol, tol, throw_error=True)
+    pyunit_utils.equal_two_arrays(weightStat[1], wStd, tol, tol, throw_error=True)
+    pyunit_utils.equal_two_arrays(weightStat[2], wStdErr, tol, tol, throw_error=True)
 
 
 def manual_partial_dependence(model, datafile, xlist, xname, weightV):

@@ -6,10 +6,12 @@ h2o -- module for using H2O services.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+# noinspection PyUnresolvedReferences
+from .utils.compatibility import *  # NOQA
+
+import os
 
 import tabulate
-
-from .utils.compatibility import *  # NOQA
 
 
 class H2ODisplay(object):
@@ -95,7 +97,6 @@ class H2ODisplay(object):
     @staticmethod
     def _in_zep():  # are we in zeppelin? then use zeppelin pretty print support
         if H2ODisplay._zeppelin is None:
-            import os
             H2ODisplay._zeppelin = H2ODisplay._in_ipy() and "ZEPPELIN_RUNNER" in os.environ
         return H2ODisplay._zeppelin
 

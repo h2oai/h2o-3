@@ -10,10 +10,6 @@ compileJava {
   options.encoding = "UTF-8"
 }
 
-java {
-    withJavadocJar()
-}
-
 task testJar(type: Jar, dependsOn: testClasses, group: "build") {
     classifier = 'test'
     from sourceSets.test.output
@@ -28,15 +24,6 @@ if (JavaVersion.current().isJava8Compatible()) {
         options.addStringOption('Xdoclint:none', '-quiet')
     }
 }
-
-plugins.withType(org.gradle.api.publish.maven.plugins.MavenPublishPlugin) {
-    // Publish it only if "maven-publish" plugin is in the context
-    artifacts {
-        toPublish javadocJar
-        toPublish testJar
-    }
-}
-
 
 clean {
     doLast {

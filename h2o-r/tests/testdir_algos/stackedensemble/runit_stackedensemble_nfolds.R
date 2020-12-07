@@ -71,8 +71,8 @@ stackedensemble.nfolds.test <- function() {
   expect_equal(meta1@parameters$nfolds, 3)
   expect_equal(meta1@allparameters$nfolds, 3)
   # Check that metalearner fold_assignment is NULL/"AUTO"
-  expect_equal(meta1@parameters$fold_assignment, NULL)
-  expect_equal(meta1@allparameters$fold_assignment, "AUTO")
+  expect_equal(meta1@parameters$fold_assignment, "Random")
+  expect_equal(meta1@allparameters$fold_assignment, "Random")
   # Check that validation metrics are NULL
   expect_equal(h2o.mse(stack1, valid = TRUE), NULL)
   # Check that xval metrics from metalearner and ensemble are equal (use mse as proxy)

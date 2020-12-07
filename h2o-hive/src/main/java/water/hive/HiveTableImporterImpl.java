@@ -7,6 +7,7 @@ import water.Job;
 import water.Key;
 import water.api.ImportHiveTableHandler;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.parser.CsvParser;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
@@ -26,8 +27,6 @@ import static water.parser.ParseSetup.NO_HEADER;
 public class HiveTableImporterImpl extends AbstractH2OExtension implements ImportHiveTableHandler.HiveTableImporter {
 
   private static final Logger LOG = Logger.getLogger(HiveTableImporterImpl.class);
-  
-  private static String NAME = "HiveTableImporter";
 
   @Override
   public String getExtensionName() {
@@ -171,7 +170,7 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     for (int i = 0; i < table.getPartitionKeys().size(); i++) {
       partitionKeys[i] = table.getPartitionKeys().get(i).getName();
     }
-    setup.setSyntheticColumns(partitionKeys, partitionValuesMap.toArray(new String[0][]));
+    setup.setSyntheticColumns(partitionKeys, partitionValuesMap.toArray(new String[0][]), T_STR);
     return parseTable(targetFrame, filesKeys, setup);
   }
   

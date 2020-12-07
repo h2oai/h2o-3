@@ -26,16 +26,17 @@ Authors@R: c(
     person("Jan", "Gorecki", role = c("ctb")),
     person("Matt", "Dowle", role = c("ctb")),
     person("Yuan", "Tang", role = c("ctb")),    
-    person("Lauren", "DiPerna", role = c("ctb")),    
+    person("Lauren", "DiPerna", role = c("ctb")), 
+    person("Tomas", "Fryda", role = c("ctb")),        
     person("H2O.ai", role = c("cph", "fnd"))
     )
-Description: R interface for 'H2O', the scalable open source machine learning 
-    platform that offers parallelized implementations of many supervised and 
-    unsupervised machine learning algorithms such as Generalized Linear 
-    Models, Gradient Boosting Machines (including XGBoost), Random Forests, 
-    Deep Neural Networks (Deep Learning), Stacked Ensembles, Naive Bayes, Cox 
-    Proportional Hazards, K-Means, PCA, Word2Vec, as well as a fully automatic 
-    machine learning algorithm (AutoML).
+Description: R interface for 'H2O', the scalable open source machine learning
+    platform that offers parallelized implementations of many supervised and
+    unsupervised machine learning algorithms such as Generalized Linear
+    Models (GLM), Gradient Boosting Machines (including XGBoost), Random Forests,
+    Deep Neural Networks (Deep Learning), Stacked Ensembles, Naive Bayes,
+    Generalized Additive Models (GAM), Cox Proportional Hazards, K-Means, PCA,
+    Word2Vec, as well as a fully automatic machine learning algorithm (H2O AutoML).
 License: Apache License (== 2.0)
 URL: https://github.com/h2oai/h2o-3
 BugReports: https://0xdata.atlassian.net/projects/PUBDEV
@@ -49,7 +50,7 @@ Imports: graphics,
          utils,
          RCurl,
          jsonlite
-Suggests: ggplot2,
+Suggests: ggplot2 (>= 3.3.0),
           mlbench,
           Matrix,
           slam,
@@ -57,7 +58,12 @@ Suggests: ggplot2,
           data.table (>= 1.9.8),
           rgl (>= 0.100.19),
           plot3Drgl (>= 1.0.1),
-          survival
+          survival,
+          DT,
+          IRdisplay,
+          htmltools,
+          plotly,
+          repr
 Collate:
          'aggregator.R'
          'astfun.R'
@@ -71,7 +77,6 @@ Collate:
          'communication.R'
          'kvstore.R'
          'frame.R'
-         'targetencoder_deprecated.R'
          'targetencoder.R'
          'import.R'
          'isolationforest.R'
@@ -101,4 +106,7 @@ Collate:
          'grid.R'
          'segment.R'
          'predict.R'
+         'tf-idf.R'
+         'rulefit.R'
+         'explain.R'
          'zzz.R'

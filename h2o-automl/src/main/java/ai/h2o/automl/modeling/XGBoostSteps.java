@@ -113,8 +113,6 @@ public class XGBoostSteps extends ModelingSteps {
                     if (_emulateLightGBM) {
                         xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
                         xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
-//                        xgBoostParameters._min_data_in_leaf = (float) xgBoostParameters._min_rows;
-                        xgBoostParameters._min_sum_hessian_in_leaf = (float) xgBoostParameters._min_rows;
                     }
 
                     return trainModel(xgBoostParameters);
@@ -134,8 +132,6 @@ public class XGBoostSteps extends ModelingSteps {
                     if (_emulateLightGBM) {
                         xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
                         xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
-//                        xgBoostParameters._min_data_in_leaf = (float) xgBoostParameters._min_rows;
-                        xgBoostParameters._min_sum_hessian_in_leaf = (float) xgBoostParameters._min_rows;
                     }
 
                     return trainModel(xgBoostParameters);
@@ -155,8 +151,6 @@ public class XGBoostSteps extends ModelingSteps {
                     if (_emulateLightGBM) {
                         xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
                         xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
-//                        xgBoostParameters._min_data_in_leaf = (float) xgBoostParameters._min_rows;
-                        xgBoostParameters._min_sum_hessian_in_leaf = (float) xgBoostParameters._min_rows;
                     }
 
                     return trainModel(xgBoostParameters);
@@ -175,12 +169,14 @@ public class XGBoostSteps extends ModelingSteps {
                     if (_emulateLightGBM) {
                         searchParams.put("_max_leaves", new Integer[]{1<<5, 1<<10, 1<<15, 1<<20});
                         searchParams.put("_max_depth", new Integer[]{10, 20, 50});
-                        searchParams.put("_min_sum_hessian_in_leaf", new Double[]{0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0});
                     } else {
                         searchParams.put("_max_depth", new Integer[]{5, 10, 15, 20});
-                        searchParams.put("_min_rows", new Double[]{0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0});  // = _min_child_weight
+                        if (aml().getWeightsColumn() == null || aml().getWeightsColumn().isInt()) {
+                            searchParams.put("_min_rows", new Double[]{1.0, 3.0, 5.0, 10.0, 15.0, 20.0});  // = _min_child_weight
+                        } else {
+                            searchParams.put("_min_rows", new Double[]{0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0});  // = _min_child_weight
+                        }
                     }
-
                     searchParams.put("_sample_rate", new Double[]{0.6, 0.8, 1.0}); // = _subsample
                     searchParams.put("_col_sample_rate" , new Double[]{ 0.6, 0.8, 1.0}); // = _colsample_bylevel"
                     searchParams.put("_col_sample_rate_per_tree", new Double[]{ 0.7, 0.8, 0.9, 1.0}); // = _colsample_bytree: start higher to always use at least about 40% of columns
@@ -212,9 +208,10 @@ public class XGBoostSteps extends ModelingSteps {
                     aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Retraining best XGBoost with learning rate annealing: "+bestXGB._key);
                     XGBoostParameters xgBoostParameters = (XGBoostParameters) bestXGB._parms.clone();
                     xgBoostParameters._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
+                    xgBoostParameters._max_runtime_secs = 0; // reset max runtime
                     xgBoostParameters._learn_rate_annealing = 0.99;
-                    xgBoostParameters._max_runtime_secs = maxRuntimeSecs;
-                    setStoppingCriteria(xgBoostParameters, new XGBoostParameters(), SeedPolicy.None);
+                    initTimeConstraints(xgBoostParameters, maxRuntimeSecs);
+                    setStoppingCriteria(xgBoostParameters, new XGBoostParameters());
                     return asModelsJob(startModel(Key.make(result+"_model"), xgBoostParameters), result);
                 }
 
@@ -245,7 +242,9 @@ public class XGBoostSteps extends ModelingSteps {
                     XGBoostParameters xgBoostParameters = (XGBoostParameters) bestXGB._parms.clone();
                     XGBoostParameters defaults = new XGBoostParameters();
                     xgBoostParameters._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
-                    setStoppingCriteria(xgBoostParameters, defaults, SeedPolicy.None); // keep the same seed as the bestXGB
+                    xgBoostParameters._max_runtime_secs = 0; // reset max runtime
+                    initTimeConstraints(xgBoostParameters, 0); // ensure we have a max runtime per model in the grid
+                    setStoppingCriteria(xgBoostParameters, defaults); // keep the same seed as the bestXGB
                     // reset _eta to defaults, otherwise it ignores the _learn_rate hyperparam: this is very annoying!
                     xgBoostParameters._eta = defaults._eta;
 //                    xgBoostParameters._learn_rate = defaults._learn_rate;

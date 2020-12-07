@@ -11,13 +11,17 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
+import hex.FeatureInteraction;
+import hex.FeatureInteractions;
+import hex.tree.gbm.GBM;
+import hex.tree.gbm.GBMModel;
 import hex.tree.xgboost.predict.XGBoostNativeVariableImportance;
 import hex.tree.xgboost.util.BoosterDump;
 import hex.tree.xgboost.util.BoosterHelper;
 import hex.tree.xgboost.util.FeatureScore;
-import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.XGBoost;
-import ml.dmlc.xgboost4j.java.*;
+import ai.h2o.xgboost4j.java.DMatrix;
+import ai.h2o.xgboost4j.java.XGBoost;
+import ai.h2o.xgboost4j.java.*;
 import org.apache.log4j.Logger;
 import org.hamcrest.CoreMatchers;
 import org.junit.*;
@@ -34,6 +38,7 @@ import water.util.TwoDimTable;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static hex.genmodel.utils.DistributionFamily.bernoulli;
 import static hex.genmodel.utils.DistributionFamily.multinomial;
@@ -49,7 +54,7 @@ public class XGBoostTest extends TestUtil {
   @Parameterized.Parameters(name = "XGBoost(javaPredict={0}")
   public static Collection<Object> data() {
     return Arrays.asList(new Object[]{
-            "false", "true"
+            "true", "false"
     });
   }
 
@@ -65,6 +70,11 @@ public class XGBoostTest extends TestUtil {
   @Before
   public void setupMojoJavaScoring() {
     System.setProperty("sys.ai.h2o.xgboost.predict.java.enable", confJavaPredict); // in-h2o predict
+  }
+  
+  @After
+  public void cleanupProperties() {
+    System.clearProperty("sys.ai.h2o.xgboost.predict.java.enable");
   }
 
   public static final class FrameMetadata {
@@ -441,35 +451,32 @@ public class XGBoostTest extends TestUtil {
     }
     Rabit.shutdown();
   }
+  
+  public static Frame loadWeather(String response) {
+    Frame df = parse_test_file("./smalldata/junit/weather.csv");
+    int responseIdx = df.find(response);
+    Scope.track(df.replace(responseIdx, df.vecs()[responseIdx].toCategoricalVec()));
+    // remove columns correlated with the response
+    df.remove("RISK_MM").remove();
+    df.remove("EvapMM").remove();
+    DKV.put(df);
+    return Scope.track(df);
+  }
 
   @Test
   public void WeatherBinary() {
-    Frame tfr = null;
-    Frame trainFrame = null;
-    Frame testFrame = null;
-    Frame preds = null;
-    XGBoostModel model = null;
     Scope.enter();
     try {
-      // Parse frame into H2O
-      tfr = parse_test_file("./smalldata/junit/weather.csv");
-      // define special columns
       String response = "RainTomorrow";
-//      String weight = null;
-//      String fold = null;
-      Scope.track(tfr.replace(tfr.find(response), tfr.vecs()[tfr.find(response)].toCategoricalVec()));
-      // remove columns correlated with the response
-      tfr.remove("RISK_MM").remove();
-      tfr.remove("EvapMM").remove();
-      FrameMetadata metadataBefore = new FrameMetadata(tfr);  // make sure it's after removing those columns!
-      DKV.put(tfr);
+      Frame df = loadWeather(response);
+      FrameMetadata metadataBefore = new FrameMetadata(df);  // make sure it's after removing those columns!
 
       // split into train/test
-      SplitFrame sf = new SplitFrame(tfr, new double[] { 0.7, 0.3 }, null);
+      SplitFrame sf = new SplitFrame(df, new double[] { 0.7, 0.3 }, null);
       sf.exec().get();
-      Key[] ksplits = sf._destination_frames;
-      trainFrame = (Frame)ksplits[0].get();
-      testFrame = (Frame)ksplits[1].get();
+      Key<Frame>[] ksplits = sf._destination_frames;
+      Frame trainFrame = Scope.track(ksplits[0].get());
+      Frame testFrame = Scope.track(ksplits[1].get());
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._ntrees = 5;
@@ -478,13 +485,14 @@ public class XGBoostTest extends TestUtil {
       parms._valid = testFrame._key;
       parms._response_column = response;
 
-      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
       LOG.info(model);
 
-      FrameMetadata metadataAfter = new FrameMetadata(tfr);
+      FrameMetadata metadataAfter = new FrameMetadata(df);
       assertEquals(metadataBefore, metadataAfter);
 
-      preds = model.score(testFrame);
+      Frame preds = Scope.track(model.score(testFrame));
       assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
       assertEquals(
               ModelMetricsBinomial.make(preds.vec(2), testFrame.vec(response)).auc(),
@@ -495,42 +503,23 @@ public class XGBoostTest extends TestUtil {
 
     } finally {
       Scope.exit();
-      if (trainFrame!=null) trainFrame.remove();
-      if (testFrame!=null) testFrame.remove();
-      if (tfr!=null) tfr.remove();
-      if (preds!=null) preds.remove();
-      if (model!=null) model.delete();
     }
   }
 
   @Test
   public void WeatherBinaryCV() {
-    Frame tfr = null;
-    Frame trainFrame = null;
-    Frame testFrame = null;
-    Frame preds = null;
-    XGBoostModel model = null;
     try {
       Scope.enter();
-      // Parse frame into H2O
-      tfr = parse_test_file("./smalldata/junit/weather.csv");
-      // define special columns
       String response = "RainTomorrow";
-//      String weight = null;
-//      String fold = null;
-      Scope.track(tfr.replace(tfr.find(response), tfr.vecs()[tfr.find(response)].toCategoricalVec()));
-      // remove columns correlated with the response
-      tfr.remove("RISK_MM").remove();
-      tfr.remove("EvapMM").remove();
-      FrameMetadata metadataBefore = new FrameMetadata(tfr);  // make sure it's after removing those columns!
-      DKV.put(tfr);
+      Frame df = loadWeather(response);
+      FrameMetadata metadataBefore = new FrameMetadata(df);  // make sure it's after removing those columns!
 
       // split into train/test
-      SplitFrame sf = new SplitFrame(tfr, new double[] { 0.7, 0.3 }, null);
+      SplitFrame sf = new SplitFrame(df, new double[] { 0.7, 0.3 }, null);
       sf.exec().get();
-      Key[] ksplits = sf._destination_frames;
-      trainFrame = (Frame)ksplits[0].get();
-      testFrame = (Frame)ksplits[1].get();
+      Key<Frame>[] ksplits = sf._destination_frames;
+      Frame trainFrame = Scope.track(ksplits[0].get());
+      Frame testFrame = Scope.track(ksplits[1].get());
 
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -541,13 +530,14 @@ public class XGBoostTest extends TestUtil {
       parms._nfolds = 5;
       parms._response_column = response;
 
-      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
       LOG.info(model);
 
-      FrameMetadata metadataAfter = new FrameMetadata(tfr);
+      FrameMetadata metadataAfter = new FrameMetadata(df);
       assertEquals(metadataBefore, metadataAfter);
 
-      preds = model.score(testFrame);
+      Frame preds = Scope.track(model.score(testFrame));
       assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
       assertEquals(
               ((ModelMetricsBinomial)model._output._validation_metrics).auc(),
@@ -558,34 +548,20 @@ public class XGBoostTest extends TestUtil {
 
     } finally {
       Scope.exit();
-      if (trainFrame!=null) trainFrame.remove();
-      if (testFrame!=null) testFrame.remove();
-      if (tfr!=null) tfr.remove();
-      if (preds!=null) preds.remove();
-      if (model!=null) {
-        model.deleteCrossValidationModels();
-        model.delete();
-      }
     }
   }
 
   @Test
   public void testWeatherBinaryCVEarlyStopping() {
-    XGBoostModel model = null;
     try {
       Scope.enter();
-      Frame tfr = Scope.track(parse_test_file("./smalldata/junit/weather.csv"));
       final String response = "RainTomorrow";
-      Scope.track(tfr.replace(tfr.find(response), tfr.vecs()[tfr.find(response)].toCategoricalVec()));
-      // remove columns correlated with the response
-      tfr.remove("RISK_MM").remove();
-      tfr.remove("EvapMM").remove();
-      DKV.put(tfr);
+      Frame df = loadWeather(response);
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._ntrees = 50;
       parms._max_depth = 5;
-      parms._train = tfr._key;
+      parms._train = df._key;
       parms._nfolds = 5;
       parms._response_column = response;
       parms._stopping_rounds = 3;
@@ -593,7 +569,8 @@ public class XGBoostTest extends TestUtil {
       parms._seed = 123;
       parms._keep_cross_validation_models = true;
 
-      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
       final int ntrees = model._output._ntrees;
 
       int expected = 0;
@@ -601,14 +578,51 @@ public class XGBoostTest extends TestUtil {
         expected += ((XGBoostModel) k.get())._output._ntrees;
       }
       expected = (int) ((double) expected) / model._output._cross_validation_models.length;
-
       assertEquals(expected, ntrees);
     } finally {
       Scope.exit();
-      if (model!=null) {
-        model.deleteCrossValidationModels();
-        model.delete();
-      }
+    }
+  }
+
+  @Test
+  public void WeatherBinaryCheckpoint() {
+    Scope.enter();
+    try {
+      String response = "RainTomorrow";
+      Frame df = loadWeather(response);
+
+      XGBoostModel.XGBoostParameters directParms = new XGBoostModel.XGBoostParameters();
+      directParms._ntrees = 10;
+      directParms._max_depth = 5;
+      directParms._train = df._key;
+      directParms._response_column = response;
+      XGBoostModel directModel = new hex.tree.xgboost.XGBoost(directParms).trainModel().get();
+      Scope.track_generic(directModel);
+      Frame directPreds = Scope.track(directModel.score(df));
+
+      XGBoostModel.XGBoostParameters step1Parms = new XGBoostModel.XGBoostParameters();
+      step1Parms._ntrees = 5;
+      step1Parms._max_depth = 5;
+      step1Parms._train = df._key;
+      step1Parms._response_column = response;
+      XGBoostModel step1Model = new hex.tree.xgboost.XGBoost(step1Parms).trainModel().get();
+      Scope.track_generic(step1Model);
+
+      XGBoostModel.XGBoostParameters step2Parms = new XGBoostModel.XGBoostParameters();
+      step2Parms._ntrees = 10;
+      step2Parms._max_depth = 5;
+      step2Parms._train = df._key;
+      step2Parms._response_column = response;
+      step2Parms._checkpoint = step1Model._key;
+      XGBoostModel step2Model = new hex.tree.xgboost.XGBoost(step2Parms).trainModel().get();
+      Scope.track_generic(step2Model);
+      Frame step2Preds = Scope.track(step2Model.score(df));
+
+      // on GPU the resume from checkpoint is slightly in-deterministic
+      double delta = (hex.tree.xgboost.XGBoost.hasGPU(H2O.CLOUD.members()[0], 0)) ? 1e-6d : 0;
+      assertFrameEquals(directPreds, step2Preds, delta);
+    } finally {
+      Scope.exit();
     }
   }
 
@@ -637,9 +651,7 @@ public class XGBoostTest extends TestUtil {
       trainFrame = (Frame)ksplits[0].get();
       testFrame = (Frame)ksplits[1].get();
 
-      // define special columns
-//      String response = "cylinders"; // passes
-      String response = "economy (mpg)"; //Expected to fail - contains NAs
+      String response = "economy (mpg)";
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = trainFrame._key;
@@ -700,8 +712,6 @@ public class XGBoostTest extends TestUtil {
 
       // define special columns
       String response = "AGE";
-//      String weight = null;
-//      String fold = null;
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = trainFrame._key;
@@ -776,9 +786,12 @@ public class XGBoostTest extends TestUtil {
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = tfr._key;
+      parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist;
+      parms._grow_policy = XGBoostModel.XGBoostParameters.GrowPolicy.lossguide;
       parms._response_column = "AGE";
       parms._ignored_columns = new String[]{"ID"};
       parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
+      parms._max_bins = 10;
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
 
@@ -793,7 +806,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(names, new HashSet<>(Arrays.asList(
               "colsample_bytree", "silent", "tree_method", "seed", "max_depth", "booster", "objective", "nround",
               "lambda", "eta", "grow_policy", "nthread", "alpha", "colsample_bylevel", "subsample", "min_child_weight",
-              "gamma", "max_delta_step")));
+              "gamma", "max_delta_step", "max_bin", "max_leaves")));
     } finally {
       Scope.exit();
       if (tfr!=null) tfr.remove();
@@ -936,6 +949,7 @@ public class XGBoostTest extends TestUtil {
       DKV.put(trainingFrameSubset);
       parms._weights_column = null;
       parms._train = trainingFrameSubset._key;
+      parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
 
       noWeightsModel = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
 
@@ -951,21 +965,6 @@ public class XGBoostTest extends TestUtil {
       if (noWeightsModel != null) noWeightsModel.delete();
     }
 
-  }
-
-  /**
-   * @param len        Length of the resulting vector
-   * @param randomSeed Seed for the random generator (for reproducibility)
-   * @return An instance of {@link Vec} with binary weights (either 0.0D or 1.0D, nothing in between).
-   */
-  private Vec createRandomBinaryWeightsVec(final long len, final int randomSeed) {
-    final Vec weightsVec = Vec.makeZero(len, Vec.T_NUM);
-    final Random random = new Random(randomSeed);
-    for (int i = 0; i < weightsVec.length(); i++) {
-      weightsVec.set(i, random.nextBoolean() ? 1.0D : 0D);
-    }
-
-    return weightsVec;
   }
 
   @Test
@@ -1021,8 +1020,6 @@ public class XGBoostTest extends TestUtil {
 
         // define special columns
         String response = "AGE";
-//      String weight = null;
-//      String fold = null;
 
         XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
         parms._dmatrix_type = dMatrixType;
@@ -1564,20 +1561,14 @@ public class XGBoostTest extends TestUtil {
   public void testScoreContributions() throws IOException, XGBoostError {
     Scope.enter();
     try {
-      Frame tfr = Scope.track(parse_test_file("./smalldata/junit/weather.csv"));
-      assertEquals(1, tfr.anyVec().nChunks()); // tiny file => should always fit in a single chunk
-      
       String response = "RainTomorrow";
-      Scope.track(tfr.replace(tfr.find(response), tfr.vecs()[tfr.find(response)].toCategoricalVec()));
-      // remove columns correlated with the response
-      tfr.remove("RISK_MM").remove();
-      tfr.remove("EvapMM").remove();
-      DKV.put(tfr);
+      Frame df = loadWeather(response);
+      assertEquals(1, df.anyVec().nChunks()); // tiny file => should always fit in a single chunk
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._ntrees = 5;
       parms._max_depth = 5;
-      parms._train = tfr._key;
+      parms._train = df._key;
       parms._response_column = response;
       parms._save_matrix_directory = tmp.newFolder("matrix_dump").getAbsolutePath();
 
@@ -1585,15 +1576,13 @@ public class XGBoostTest extends TestUtil {
       Scope.track_generic(model);
       LOG.info(model);
 
-      Frame contributions = model.scoreContributions(tfr, Key.make());
-      Scope.track(contributions);
+      Frame contributions = Scope.track(model.scoreContributions(df, Key.make()));
 
       assertEquals("BiasTerm", contributions.names()[contributions.names().length - 1]);
       
       // basic sanity check - contributions should sum-up to predictions
       Frame predsFromContributions = new CalcContribsTask().doAll(Vec.T_NUM, contributions).outputFrame();
-      Frame expectedPreds = model.score(tfr);
-      Scope.track(expectedPreds);
+      Frame expectedPreds = Scope.track(model.score(df));
       assertVecEquals(expectedPreds.vec(2), predsFromContributions.vec(0), 1e-6);
 
       // make the predictions with XGBoost
@@ -1728,6 +1717,7 @@ public class XGBoostTest extends TestUtil {
               .setModel(mojo)
               .setEnableContributions(true);
       EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
+      assertArrayEquals(contributions.names(), wrapper.getContributionNames());
 
       for (long row = 0; row < fr.numRows(); row++) {
         RowData rd = toRowData(fr, model._output._names, row);
@@ -1991,5 +1981,273 @@ public class XGBoostTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testXGBoostMaximumDepth() {
+    Scope.enter();
+    try {
+      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = tfr._key;
+      parms._response_column = "AGE";
+      parms._ignored_columns = new String[]{"ID"};
+      parms._seed = 0xDECAF;
+      parms._max_depth = 0;
+
+      XGBoostModel model = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      Scope.track_generic(model);
+      assertEquals(Integer.MAX_VALUE, model._parms._max_depth);
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testXGBoostFeatureInteractions() {
+    Scope.enter();
+    try {
+      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = tfr._key;
+      parms._response_column = "AGE";
+      parms._ignored_columns = new String[]{"ID"};
+      parms._seed = 0xDECAF;
+      parms._build_tree_one_node = true;
+      parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.exact;
+
+      XGBoostModel model = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      FeatureInteractions featureInteractionMap = model.getFeatureInteractions(2,100,-1);
+
+      assertEquals(featureInteractionMap.size(), 85);
+      
+      double epsilon = 1e-4;
+      // check some interactions of depth 0:
+      FeatureInteraction capsuleInteraction = featureInteractionMap.get("CAPSULE");
+      assertEquals(capsuleInteraction.gain, 768.988530628086, epsilon);
+      assertEquals(capsuleInteraction.fScore, 82.0, epsilon);
+      assertEquals(capsuleInteraction.fScoreWeighted, 5.21315789473684, epsilon);
+      assertEquals(capsuleInteraction.averageFScoreWeighted, 0.0635750962772786, epsilon);
+      assertEquals(capsuleInteraction.averageGain, 9.37790891009861, epsilon);
+      assertEquals(capsuleInteraction.expectedGain, 43.0394271689104, epsilon);
+      assertEquals(capsuleInteraction.averageTreeDepth, 4.2, 1e-1);
+      assertEquals(capsuleInteraction.averageTreeIndex, 25.78, 1e-2);
+
+      FeatureInteraction psaInteraction = featureInteractionMap.get("PSA");
+      assertEquals(psaInteraction.gain, 11264.2880798631, epsilon);
+      assertEquals(psaInteraction.fScore, 572.0, epsilon);
+      assertEquals(psaInteraction.fScoreWeighted, 148.452631578947, epsilon);
+      assertEquals(psaInteraction.averageFScoreWeighted, 0.259532572690467, epsilon);
+      assertEquals(psaInteraction.averageGain, 19.692811328432, epsilon);
+      assertEquals(psaInteraction.expectedGain, 2323.51525060787, epsilon);
+      assertEquals(psaInteraction.averageTreeDepth, 3.55, 1e-2);
+      assertEquals(psaInteraction.averageTreeIndex, 27.29, 1e-2);
+
+      // check some interactions of depth 1:
+      FeatureInteraction psaPsaInteraction = featureInteractionMap.get("PSA|PSA");
+      assertEquals(psaPsaInteraction.gain, 13584.7678359787, epsilon);
+      assertEquals(psaPsaInteraction.fScore, 326.0, epsilon);
+      assertEquals(psaPsaInteraction.fScoreWeighted, 101.189473684211, epsilon);
+      assertEquals(psaPsaInteraction.averageFScoreWeighted, 0.310397158540523, epsilon);
+      assertEquals(psaPsaInteraction.averageGain, 41.6710669815298, epsilon);
+      assertEquals(psaPsaInteraction.expectedGain, 2906.05613890999, epsilon);
+      assertEquals(psaPsaInteraction.averageTreeDepth, 3.66, 1e-2);
+      assertEquals(psaPsaInteraction.averageTreeIndex, 27.78, 1e-2);
+
+      FeatureInteraction gleasonRaceInteraction = featureInteractionMap.get("GLEASON|RACE");
+      assertEquals(gleasonRaceInteraction.gain, 2028.03059237, epsilon);
+      assertEquals(gleasonRaceInteraction.fScore, 14.0, epsilon);
+      assertEquals(gleasonRaceInteraction.fScoreWeighted, 4.61052631578947, epsilon);
+      assertEquals(gleasonRaceInteraction.averageFScoreWeighted, 0.329323308270677, epsilon);
+      assertEquals(gleasonRaceInteraction.averageGain, 144.859328026429, epsilon);
+      assertEquals(gleasonRaceInteraction.expectedGain, 815.892524956053, epsilon);
+      assertEquals(gleasonRaceInteraction.averageTreeDepth, 3.14, 1e-2);
+      assertEquals(gleasonRaceInteraction.averageTreeIndex, 14.5, 1e-1);
+
+      // check some interactions of depth 2:
+      FeatureInteraction volVolVolInteraction = featureInteractionMap.get("VOL|VOL|VOL");
+      assertEquals(volVolVolInteraction.gain, 3197.648769331, epsilon);
+      assertEquals(volVolVolInteraction.fScore, 37.0, epsilon);
+      assertEquals(volVolVolInteraction.fScoreWeighted, 12.5947368421053, epsilon);
+      assertEquals(volVolVolInteraction.averageFScoreWeighted, 0.340398293029872, epsilon);
+      assertEquals(volVolVolInteraction.averageGain, 86.4229397116487, epsilon);
+      assertEquals(volVolVolInteraction.expectedGain, 740.075555944026, epsilon);
+      assertEquals(volVolVolInteraction.averageTreeDepth, 3.7, 1e-1);
+      assertEquals(volVolVolInteraction.averageTreeIndex, 22.03, 1e-2);
+
+      FeatureInteraction capsuleDprosGleasonInteraction = featureInteractionMap.get("CAPSULE|DPROS|GLEASON");
+      assertEquals(capsuleDprosGleasonInteraction.gain, 227.14370899, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.fScore, 4.0, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.fScoreWeighted, 0.347368421052632, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.averageFScoreWeighted, 0.0868421052631579, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.averageGain, 56.7859272475, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.expectedGain, 17.2918210555789, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.averageTreeDepth, 4.0, 1e-1);
+      assertEquals(capsuleDprosGleasonInteraction.averageTreeIndex, 28.5, 1e-1);
+
+      // check leaf statistics
+      FeatureInteraction psaVolInteraction = featureInteractionMap.get("PSA|VOL");
+      assertEquals(psaVolInteraction.sumLeafValuesLeft, -0.467761263, epsilon);
+      assertEquals(psaVolInteraction.sumLeafValuesRight, 0.56550011, epsilon);
+      assertEquals(psaVolInteraction.sumLeafCoversLeft, 2.0, 1e-1);
+      assertEquals(psaVolInteraction.sumLeafCoversRight, 2.0, 1e-1);
+
+      // check split value histograms
+      // CAPSULE
+      assertEquals(capsuleInteraction.splitValueHistogram.get(0.5).toInteger(), 82.0, 1e-1);
+      assertEquals(capsuleInteraction.splitValueHistogram.entrySet().size(), 1);
+      // DCAPS
+      assertEquals(featureInteractionMap.get("DCAPS").splitValueHistogram.get(1.5).toInteger(), 42.0, 1e-1);
+      assertEquals(featureInteractionMap.get("DCAPS").splitValueHistogram.entrySet().size(), 1);
+      // RACE
+      assertEquals(featureInteractionMap.get("RACE").splitValueHistogram.get(0.5).toInteger(), 18.0, 1e-1);
+      assertEquals(featureInteractionMap.get("RACE").splitValueHistogram.get(1.5).toInteger(), 62.0, 1e-1);
+      assertEquals(featureInteractionMap.get("RACE").splitValueHistogram.entrySet().size(), 2);
+      // GLEASON
+      double[] expectedKeys = new double[]{2.5, 3.0, 5.5, 6.5, 7, 7.5, 8.5};
+      double[] expectedValues = new double[]{2.0, 3.0, 44.0, 31.0, 1.0, 21.0, 14.0};
+      for (int i = 0; i < expectedKeys.length; i++) {
+        assertEquals(featureInteractionMap.get("GLEASON").splitValueHistogram.get(expectedKeys[i]).toInteger(), expectedValues[i], 1e-1);
+      }
+      assertEquals(featureInteractionMap.get("GLEASON").splitValueHistogram.entrySet().size(), 7);
+      // DPROS
+      expectedKeys = new double[]{1.5, 2.0, 2.5, 3.0, 3.5};
+      expectedValues = new double[]{67.0, 3.0, 63.0, 12.0, 36.0};
+      for (int i = 0; i < expectedKeys.length; i++) {
+        assertEquals(featureInteractionMap.get("DPROS").splitValueHistogram.get(expectedKeys[i]).toInteger(), expectedValues[i], 1e-1);
+      }
+      assertEquals(featureInteractionMap.get("DPROS").splitValueHistogram.entrySet().size(), 5);
+      // VOL
+      expectedKeys = new double[]{5.75, 11.25, 13.75, 14.5, 15.75};
+      expectedValues = new double[]{1.0, 1.0, 1.0, 2.0, 1.0};
+      for (int i = 0; i < expectedKeys.length; i++) {
+        assertEquals(featureInteractionMap.get("VOL").splitValueHistogram.get(expectedKeys[i]).toInteger(), expectedValues[i], 1e-1);
+      }
+      assertEquals(featureInteractionMap.get("VOL").splitValueHistogram.entrySet().size(), 180);
+      // PSA
+      expectedKeys = new double[]{1.5, 1.75, 3.25, 5.25, 8.75};
+      expectedValues = new double[]{1.0, 4.0, 4.0, 3.0, 2.0};
+      for (int i = 0; i < expectedKeys.length; i++) {
+        assertEquals(psaInteraction.splitValueHistogram.get(expectedKeys[i]).toInteger(), expectedValues[i], 1e-1);
+      }
+      assertEquals(psaInteraction.splitValueHistogram.entrySet().size(), 261);
+
+      TwoDimTable[] featureInteractionsTables = featureInteractionMap.getAsTable();
+      TwoDimTable leafStatisticsTable = featureInteractionMap.getLeafStatisticsTable();
+      TwoDimTable[] getSplitValuesHistograms = featureInteractionMap.getSplitValueHistograms();
+
+      assertEquals(featureInteractionsTables.length, 3);
+      assertEquals(featureInteractionsTables[0].getRowDim(), 7);
+      assertEquals(featureInteractionsTables[1].getRowDim(), 25);
+      assertEquals(featureInteractionsTables[2].getRowDim(), 53);
+      assertEquals(leafStatisticsTable.getRowDim(), 1);
+      assertEquals(getSplitValuesHistograms[0].getRowDim(), 261);
+      assertEquals(getSplitValuesHistograms[1].getRowDim(), 180);
+      assertEquals(getSplitValuesHistograms[2].getRowDim(), 1);
+      assertEquals(getSplitValuesHistograms[3].getRowDim(), 5);
+      assertEquals(getSplitValuesHistograms[4].getRowDim(), 7);
+      assertEquals(getSplitValuesHistograms[5].getRowDim(), 2);
+      assertEquals(getSplitValuesHistograms[6].getRowDim(), 1);
+      
+      TwoDimTable[][] overallFeatureInteractionsTable = model.getFeatureInteractionsTable(2,100,-1);
+      assertEquals(overallFeatureInteractionsTable[0].length, 3);
+      assertEquals(overallFeatureInteractionsTable[1].length, 1);
+      assertEquals(overallFeatureInteractionsTable[2].length, 7);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
+  @Test
+  public void testXGBoostFeatureInteractionsAndCompareWithGBMFeatureInteractions() {
+    Scope.enter();
+    try {
+      // create 2 similar trees and check whether they have similar feature interactions 
+      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = tfr._key;
+      parms._response_column = "CAPSULE";
+      parms._ignored_columns = new String[]{"ID"};
+      parms._seed = 0xDECAF;
+      parms._build_tree_one_node = true;
+      parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.exact;
+      parms._ntrees = 1;
+      parms._max_depth = 3;
+
+      XGBoostModel model = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      
+      GBMModel.GBMParameters gbmParms = new GBMModel.GBMParameters();
+      gbmParms._train = parms._train;
+      gbmParms._response_column = parms._response_column;
+      gbmParms._ignored_columns = parms._ignored_columns;
+      gbmParms._seed = parms._seed;
+      gbmParms._build_tree_one_node = parms._build_tree_one_node;
+      gbmParms._ntrees = parms._ntrees;
+      gbmParms._max_depth = parms._max_depth;
+
+      GBMModel gbmModel = new GBM(gbmParms).trainModel().get();
+      Scope.track_generic(gbmModel);
+      
+      double level0avgDistanceByGain = calculateAverageDistanceOfSortedInteractions(gbmModel.getFeatureInteractions(0,100,-1), model.getFeatureInteractions(0,100,-1),0);
+      double level1avgDistanceByGain = calculateAverageDistanceOfSortedInteractions(gbmModel.getFeatureInteractions(1,100,-1), model.getFeatureInteractions(1,100,-1),0);
+      double level2avgDistanceByGain = calculateAverageDistanceOfSortedInteractions(gbmModel.getFeatureInteractions(2,100,-1), model.getFeatureInteractions(2,100,-1), 0);
+
+      assertEquals(level0avgDistanceByGain, 1.66666666, 0.000001);
+      assertEquals(level1avgDistanceByGain, 2.66666666, 0.000001);
+      assertEquals(level2avgDistanceByGain, 2.42857142, 0.000001);
+
+      double level0avgDistanceByCover = calculateAverageDistanceOfSortedInteractions(gbmModel.getFeatureInteractions(0,100,-1), model.getFeatureInteractions(0,100,-1),1);
+      double level1avgDistanceByCover = calculateAverageDistanceOfSortedInteractions(gbmModel.getFeatureInteractions(1,100,-1), model.getFeatureInteractions(1,100,-1),1);
+      double level2avgDistanceByCover = calculateAverageDistanceOfSortedInteractions(gbmModel.getFeatureInteractions(2,100,-1), model.getFeatureInteractions(2,100,-1), 1);
+
+      assertEquals(level0avgDistanceByCover, 1.00000000, 0.000001);
+      assertEquals(level1avgDistanceByCover, 2.33333333, 0.000001);
+      assertEquals(level2avgDistanceByCover, 2.71428571, 0.000001);
+      
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  // if some interaction is not present in both inputs, it is ignored
+  // sortBy = 0 to sort by gain
+  // sortBy != 1 to sort by cover
+  private static double calculateAverageDistanceOfSortedInteractions(FeatureInteractions featureInteractions1, FeatureInteractions featureInteractions2, int sortByFeature) {
+    List<KeyValue> list1 = new ArrayList<>();
+    List<KeyValue> list2 = new ArrayList<>();
+
+    for (Map.Entry<String, FeatureInteraction> featureInteraction : featureInteractions1.entrySet()) {
+      list1.add(new KeyValue(featureInteraction.getKey(), sortByFeature == 0 ? featureInteraction.getValue().gain :  featureInteraction.getValue().cover));
+    }
+    for (Map.Entry<String, FeatureInteraction> featureInteraction : featureInteractions2.entrySet()) {
+      list2.add(new KeyValue(featureInteraction.getKey(), sortByFeature == 0 ? featureInteraction.getValue().gain :  featureInteraction.getValue().cover));
+    }
+    List<String> sortedKeys1 = list1.stream()
+            .sorted(Comparator.comparing(KeyValue::getValue))
+            .map(KeyValue::getKey)
+            .collect(Collectors.toList());
+    List<String> sortedKeys2 = list2.stream()
+            .sorted(Comparator.comparing(KeyValue::getValue))
+            .map(KeyValue::getKey)
+            .collect(Collectors.toList());
+
+    double averageDistance = 0;
+    int i, missing = 0;
+    for (i = 0; i < sortedKeys1.size(); i++) {
+      int j = sortedKeys2.indexOf(sortedKeys1.get(i));
+      // if the key is missing in featureInteractions2 then don't count
+      if (j != -1) {
+        averageDistance += Math.abs(i - j);
+      } else {
+        missing++;
+      }
+    }
+    
+    return averageDistance / (i - missing);
+  }
+  
 
 }

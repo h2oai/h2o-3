@@ -79,6 +79,9 @@ public class ParseSetupV3 extends RequestSchemaV3<ParseSetup, ParseSetupV3> {
   @API(help="Key-reference to an initialized instance of a Decryption Tool")
   public KeyV3.DecryptionToolKeyV3 decrypt_tool;
 
+  @API(help = "Names of the columns the persisted dataset has been partitioned by.", direction = API.Direction.INOUT)
+  public String[] partition_by;
+
   @Override
   public ParseSetup fillImpl(ParseSetup impl) {
     ParseSetup parseSetup = fillImpl(impl, new String[] {"parse_type"});

@@ -4,6 +4,7 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 from datetime import datetime
 import inspect
@@ -14,7 +15,6 @@ import h2o
 from h2o.exceptions import H2OValueError, H2OResponseError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
-from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import assert_is_type, is_type, numeric, FunctionType
 from ..model.autoencoder import H2OAutoEncoderModel
@@ -24,7 +24,7 @@ from ..model.dim_reduction import H2ODimReductionModel, H2OTargetEncoderMetrics
 from ..model.metrics_base import (H2OBinomialModelMetrics, H2OClusteringModelMetrics, H2ORegressionModelMetrics,
                                   H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics, H2ODimReductionModelMetrics,
                                   H2OWordEmbeddingModelMetrics, H2OOrdinalModelMetrics, H2OAnomalyDetectionModelMetrics,
-                                  H2OCoxPHModelMetrics)
+                                  H2OModelMetricsRegressionCoxPH)
 from ..model.model_base import ModelBase
 from ..model.multinomial import H2OMultinomialModel
 from ..model.ordinal import H2OOrdinalModel
@@ -33,6 +33,7 @@ from ..model.word_embedding import H2OWordEmbeddingModel
 from ..model.anomaly_detection import H2OAnomalyDetectionModel
 from ..model.coxph import H2OCoxPHModel
 from ..model.segment_models import H2OSegmentModels
+from ..model.permutation_varimp import permutation_varimp, plot_permutation_var_imp
 
 
 class EstimatorAttributeError(AttributeError):
@@ -193,6 +194,11 @@ class H2OEstimator(ModelBase):
         rest_ver = self._get_rest_version(parms)
         model_builder_json = h2o.api("POST /%d/ModelBuilders/%s" % (rest_ver, self.algo), data=parms)
         job = H2OJob(model_builder_json, job_type=(self.algo + " Model Build"))
+
+        if model_builder_json["messages"] is not None:
+            for mesg in model_builder_json["messages"]:
+                if mesg["message_type"] == "WARN":
+                    warnings.warn(mesg["message"], RuntimeWarning)
 
         if self._future:
             self._job = job
@@ -380,7 +386,7 @@ class H2OEstimator(ModelBase):
 
 
     def _resolve_model(self, model_id, model_json):
-        metrics_class, model_class = H2OEstimator._metrics_class(model_json)
+        metrics_class, model_class, metrics_class_valid = H2OEstimator._metrics_class(model_json)
         m = model_class()
         m._id = model_id
         m._model_json = model_json
@@ -391,6 +397,7 @@ class H2OEstimator(ModelBase):
             m._have_pojo = model_json.get('have_pojo', True)
             m._have_mojo = model_json.get('have_mojo', True)
         m._metrics_class = metrics_class
+        m._metrics_class_valid = metrics_class_valid
         m._parms = self._parms
         m._estimator_type = self._estimator_type
         m._start_time = model_json.get('output', {}).get('start_time', None)
@@ -404,8 +411,10 @@ class H2OEstimator(ModelBase):
                     if model_json["output"][metric] is not None:
                         if metric == "cross_validation_metrics":
                             m._is_xvalidated = True
+                        # for Isolation Forest, validation metrics might have a different metric class
+                        mc = metrics_class_valid if metric == "validation_metrics" else metrics_class  
                         model_json["output"][metric] = \
-                            metrics_class(model_json["output"][metric], metric, model_json["algo"])
+                            mc(model_json["output"][metric], metric, model_json["algo"])
 
             #if m._is_xvalidated:
             if m._is_xvalidated and model_json["output"]["cross_validation_models"] is not None:
@@ -432,8 +441,10 @@ class H2OEstimator(ModelBase):
         if name == "H2OXGBoostEstimator": return "xgboost"
         if name == "H2OCoxProportionalHazardsEstimator": return "coxph"
         if name == "H2OGeneralizedAdditiveEstimator": return "gam"
+        if name == "H2OIsolationForestEstimator": return "isolationforest"
         if name in ["H2OPCA", "H2OPrincipalComponentAnalysisEstimator"]: return "pca"
         if name in ["H2OSVD", "H2OSingularValueDecompositionEstimator"]: return "svd"
+        if name == "H2ORuleFitEstimator": return "rulefit"
 
 
     @staticmethod
@@ -526,6 +537,7 @@ class H2OEstimator(ModelBase):
     @staticmethod
     def _metrics_class(model_json):
         model_type = model_json["output"]["model_category"]
+        valid_metrics_class = None
         if model_type == "Binomial":
             metrics_class = H2OBinomialModelMetrics
             model_class = H2OBinomialModel
@@ -552,16 +564,19 @@ class H2OEstimator(ModelBase):
             model_class = H2OWordEmbeddingModel
         elif model_type == "AnomalyDetection":
             metrics_class = H2OAnomalyDetectionModelMetrics
+            valid_metrics_class = H2OBinomialModelMetrics
             model_class = H2OAnomalyDetectionModel
         elif model_type == "CoxPH":
-            metrics_class = H2OCoxPHModelMetrics
+            metrics_class = H2OModelMetricsRegressionCoxPH
             model_class = H2OCoxPHModel
         elif model_type == "TargetEncoder":
             metrics_class = H2OTargetEncoderMetrics
             model_class = h2o.estimators.H2OTargetEncoderEstimator
         else:
             raise NotImplementedError(model_type)
-        return [metrics_class, model_class]
+        if valid_metrics_class is None:
+            valid_metrics_class = metrics_class
+        return [metrics_class, model_class, valid_metrics_class]
 
     def convert_H2OXGBoostParams_2_XGBoostParams(self):
         """

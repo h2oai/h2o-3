@@ -32,22 +32,22 @@ Examples
         h2o.init()
 
         # Import the ecology dataset
-        ecology.hex <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/ecology_model.csv")
+        ecology <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/ecology_model.csv")
 
         # Convert response column to a factor
-        ecology.hex$Angaus <- as.factor(ecology.hex$Angaus)
+        ecology$Angaus <- as.factor(ecology$Angaus)
 
         # Split the dataset into training and calibrating datasets
-        ecology.split <- h2o.splitFrame(ecology.hex, seed = 12354)
-        ecology.train <- ecology.split[[1]]
-        ecology.calib <- ecology.split[[2]]
+        ecology_split <- h2o.splitFrame(ecology, seed = 12354)
+        ecology_train <- ecology_split[[1]]
+        ecology_calib <- ecology_split[[2]]
 
         # Introduce a weight column (artificial non-constant) ONLY to the train set (NOT the calibration one)
-        weights <- c(0, rep(1, nrow(ecology.train) - 1))
-        ecology.train$weight <- as.h2o(weights)
+        weights <- c(0, rep(1, nrow(ecology_train) - 1))
+        ecology_train$weight <- as.h2o(weights)
 
         # Train an H2O GBM Model with the Calibration dataset
-        ecology.model <- h2o.gbm(x = 3:13, y = "Angaus", training_frame = ecology.train,
+        ecology_model <- h2o.gbm(x = 3:13, y = "Angaus", training_frame = ecology_train,
                                  ntrees = 10,
                                  max_depth = 5,
                                  min_rows = 10,
@@ -55,10 +55,10 @@ Examples
                                  distribution = "multinomial",
                                  weights_column = "weight",
                                  calibrate_model = TRUE,
-                                 calibration_frame = ecology.calib
+                                 calibration_frame = ecology_calib
         )
 
-        predicted <- h2o.predict(ecology.model, ecology.calib)
+        predicted <- h2o.predict(ecology_model, ecology_calib)
 
         # View the predictions
         predicted

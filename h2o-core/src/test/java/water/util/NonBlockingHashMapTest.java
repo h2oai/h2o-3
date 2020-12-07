@@ -1,5 +1,6 @@
 package water.util;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import water.nbhm.NonBlockingHashMap;
 import static org.junit.Assert.assertEquals;
@@ -16,6 +17,7 @@ public class NonBlockingHashMapTest {
    * @throws Exception not expected
    */
   @Test 
+  @Ignore // doesn't work well on CI, can be used locally to demonstrate the behavior
   public void testPutIfAbsent_PubDev6319() throws Exception {
     NonBlockingHashMap<K, K> map = new NonBlockingHashMap<>();
     
@@ -59,7 +61,7 @@ public class NonBlockingHashMapTest {
     @Override
     public void run() {
       for (int i = 0; i < 100000; i++) {
-        K k = new K(System.currentTimeMillis(), this);
+        K k = new K(System.nanoTime(), this);
         K old = map.putIfAbsent(k, k);
         if (old == null) {
           nInserts++;

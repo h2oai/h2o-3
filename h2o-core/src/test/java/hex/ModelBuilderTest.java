@@ -202,7 +202,8 @@ public class ModelBuilderTest extends TestUtil {
       test = new TestFrameBuilder()
               .withVecTypes(Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ar(0, 1))
-              .withDataForCol(1, ar("B", "A"))
+              .withDataForCol(1, ar("A", "B"))
+              .withDomain(1, ar("B", "A"))
               .build();
 
       assertFalse(Arrays.equals(train.vec(1).domain(), test.vec(1).domain()));
@@ -216,6 +217,7 @@ public class ModelBuilderTest extends TestUtil {
       model = bldr.trainModel().get();
       scored = model.score(test);
 
+      //predict column should have the same domain as the target column of the scored frame
       assertArrayEquals(new String[]{"B", "A"}, scored.vec(0).domain());
     } finally {
       if (model != null)

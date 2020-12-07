@@ -1,35 +1,34 @@
 package hex.example;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Job;
-import water.TestUtil;
+import water.Scope;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
-public class ExampleTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+import static water.TestUtil.parse_test_file;
+
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class ExampleTest {
   
-  @Test public void testIris() {
-    ExampleModel emm = null;
-    Frame fr = null;
-    try {
-      long start = System.currentTimeMillis();
-      System.out.println("Start Parse");
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      System.out.println("Done Parse: "+(System.currentTimeMillis()-start));
+    @Test
+    public void testIris() {
+        Scope.enter();
+        try {
+            Frame fr = Scope.track(parse_test_file("smalldata/iris/iris_wheader.csv"));
 
-      ExampleModel.ExampleParameters parms = new ExampleModel.ExampleParameters();
-      parms._train = fr._key;
-      parms._max_iterations = 10;
-      parms._response_column = "class";
+            ExampleModel.ExampleParameters parms = new ExampleModel.ExampleParameters();
+            parms._train = fr._key;
+            parms._max_iterations = 10;
+            parms._response_column = "class";
 
-      Job<ExampleModel> job = new Example(parms).trainModel();
-      emm = job.get();
-      job.remove();
-
-    } finally {
-      if( fr  != null ) fr .remove();
-      if( emm != null ) emm.delete();
+            Job<ExampleModel> job = new Example(parms).trainModel();
+            Scope.track_generic(job.get());
+        } finally {
+            Scope.exit();
+        }
     }
-  }
 }

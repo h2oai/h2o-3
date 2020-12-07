@@ -12,6 +12,8 @@ Although H2O has made it easy for non-experts to experiment with machine learnin
 
 H2O's AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit.  `Stacked Ensembles <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html>`__ – one based on all previously trained models, another one on the best model of each family – will be automatically trained on collections of individual models to produce highly predictive ensemble models which, in most cases, will be the top performing models in the AutoML Leaderboard.
 
+H2O offers a number of `model explainability <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/explain.html>`__ methods that apply to AutoML objects (groups of models), as well as individual models (e.g. leader model).  Explanations can be generated automatically with a single function call, providing a simple interface to exploring and explaining the AutoML models.
+
 
 AutoML Interface
 ----------------
@@ -63,19 +65,14 @@ Optional Miscellaneous Parameters
 
 - `nfolds <data-science/algo-params/nfolds.html>`__:  Specify a value >= 2 for the number of folds for k-fold cross-validation of the models in the AutoML run. This value defaults to 5. Use 0 to disable cross-validation; this will also disable Stacked Ensembles (thus decreasing the overall best model performance).
 
-- `balance_classes <data-science/algo-params/balance_classes.html>`__: Specify whether to oversample the minority classes to balance the class distribution. This option is not enabled by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **max\_after\_balance\_size** parameter.
+- `balance_classes <data-science/algo-params/balance_classes.html>`__: Specify whether to oversample the minority classes to balance the class distribution. This option is not enabled by default and can increase the data frame size. This option is only applicable for classification. If the oversampled size of the dataset exceeds the maximum size calculated using the ``max_after_balance_size parameter``, then the majority classes will be undersampled to satisfy the size limit.
 
 - `class_sampling_factors <data-science/algo-params/class_sampling_factors.html>`__: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. Note that this requires ``balance_classes=true``.
 
-- **exploitation_ratio**: Specify the budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase. By default, the exploitation phase is disabled (exploitation_ratio=0) as this is still experimental; to activate it, it is recommended to try a ratio around 0.1. Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.
 
 - `max_after_balance_size <data-science/algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). Defaults to 5.0.  (The value can be less than 1.0).
 
 - `max_runtime_secs_per_model <data-science/algo-params/max_runtime_secs_per_model.html>`__: Specify the max amount of time dedicated to the training of each individual model in the AutoML run. Defaults to 0 (disabled). Note that setting this parameter can affect AutoML reproducibility.
-
-- **modeling_plan**: The list of modeling steps to be used by the AutoML engine. (They may not all get executed, depending on other constraints.)
-
-- `monotone_constraints <data-science/algo-params/monotone_constraints.html>`__: A mapping that represents monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. 
 
 -  `stopping_metric <data-science/algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. Defaults to ``AUTO``. The available options are:
     
@@ -113,14 +110,7 @@ Optional Miscellaneous Parameters
 
 - **project_name**: Character string to identify an AutoML project. Defaults to ``NULL/None``, which means a project name will be auto-generated based on the training frame ID.  More models can be trained and added to an existing AutoML project by specifying the same project name in multiple calls to the AutoML function (as long as the same training frame is used in subsequent runs).
 
-- `exclude_algos <data-science/algo-params/exclude_algos.html>`__: A list/vector of character strings naming the algorithms to skip during the model-building phase.  An example use is ``exclude_algos = ["GLM", "DeepLearning", "DRF"]`` in Python or ``exclude_algos = c("GLM", "DeepLearning", "DRF")`` in R.  Defaults to ``None/NULL``, which means that all appropriate H2O algorithms will be used if the search stopping criteria allows and if the ``include_algos`` option is not specified. This option is mutually exclusive with ``include_algos``. The available algorithms are:
-
-    - ``DRF`` (This includes both the Random Forest and Extremely Randomized Trees (XRT) models. Refer to the :ref:`xrt` section in the DRF chapter and the `histogram_type <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/algo-params/histogram_type.html>`__ parameter description for more information.)
-    - ``GLM``
-    - ``XGBoost``  (XGBoost GBM)
-    - ``GBM``  (H2O GBM)
-    - ``DeepLearning``  (Fully-connected multi-layer artificial neural network)
-    - ``StackedEnsemble``
+- `exclude_algos <data-science/algo-params/exclude_algos.html>`__: A list/vector of character strings naming the algorithms to skip during the model-building phase.  An example use is ``exclude_algos = ["GLM", "DeepLearning", "DRF"]`` in Python or ``exclude_algos = c("GLM", "DeepLearning", "DRF")`` in R.  Defaults to ``None/NULL``, which means that all appropriate H2O algorithms will be used if the search stopping criteria allows and if the ``include_algos`` option is not specified. This option is mutually exclusive with ``include_algos``. See ``include_algos`` below for the list of available options.
 
 - `include_algos <data-science/algo-params/include_algos.html>`__: A list/vector of character strings naming the algorithms to include during the model-building phase.  An example use is ``include_algos = ["GLM", "DeepLearning", "DRF"]`` in Python or ``include_algos = c("GLM", "DeepLearning", "DRF")`` in R.  Defaults to ``None/NULL``, which means that all appropriate H2O algorithms will be used if the search stopping criteria allows and if no algorithms are specified in ``exclude_algos``. This option is mutually exclusive with ``exclude_algos``. The available algorithms are:
 
@@ -130,6 +120,14 @@ Optional Miscellaneous Parameters
     - ``GBM``  (H2O GBM)
     - ``DeepLearning``  (Fully-connected multi-layer artificial neural network)
     - ``StackedEnsemble``
+
+- **modeling_plan**: The list of modeling steps to be used by the AutoML engine. (They may not all get executed, depending on other constraints.)
+
+- **preprocessing**: The list of preprocessing steps to run. Only ``["target_encoding"]`` is currently supported.  There is more information about how Target Encoding is automatically applied `here <https://0xdata.atlassian.net/browse/PUBDEV-7778>`__.  Experimental.
+
+- **exploitation_ratio**: Specify the budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase. By default, the exploitation phase is disabled (exploitation_ratio=0) as this is still experimental; to activate it, it is recommended to try a ratio around 0.1. Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.  Experimental.
+
+- `monotone_constraints <data-science/algo-params/monotone_constraints.html>`__: A mapping that represents monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. 
 
 - `keep_cross_validation_predictions <data-science/algo-params/keep_cross_validation_predictions.html>`__: Specify whether to keep the predictions of the cross-validation predictions. This needs to be set to TRUE if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to FALSE.
 
@@ -145,6 +143,14 @@ Notes
 ~~~~~
 
 If the user sets ``nfolds == 0``, then cross-validation metrics will not be available to populate the leaderboard.  In this case, we need to make sure there is a holdout frame (aka. the "leaderboard frame") to score the models on so that we can generate model performance metrics for the leaderboard.  Without cross-validation, we will also require a validation frame to be used for early stopping on the models.  Therefore, if either of these frames are not provided by the user, they will be automatically partitioned from the training data.  If either frame is missing, 10% of the training data will be used to create a missing frame (if both are missing then a total of 20% of the training data will be used to create a 10% validation and 10% leaderboard frame).
+
+``H2OAutoML`` can interact with the ``h2o.sklearn`` module. The ``h2o.sklearn`` module exposes 2 wrappers for ``H2OAutoML`` (``H2OAutoMLClassifier`` and ``H2OAutoMLRegressor``), which expose the standard API familiar to ``sklearn`` users: ``fit``, ``predict``, ``fit_predict``, ``score``, ``get_params``, and ``set_params``. It accepts various formats as input data (H2OFrame, ``numpy`` array, ``pandas`` Dataframe) which allows them to be combined with pure ``sklearn`` components in pipelines. For an example using ``H2OAutoML`` with the ``h2o.sklearn`` module, click `here <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/sklearn-integration/H2OAutoML_as_sklearn_estimator.ipynb>`__.
+
+
+Explainability
+--------------
+
+AutoML objects are fully supported though the `H2O Model Explainability <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/explain.html>`__ interface.  A large number of multi-model comparison and single model (AutoML leader) plots can be generated automatically with a single call to ``h2o.explain()``.  We invite you to learn more at page linked above.
 
 
 Code Examples
@@ -170,8 +176,8 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
         x <- setdiff(names(train), y)
 
         # For binary classification, response should be a factor
-        train[,y] <- as.factor(train[,y])
-        test[,y] <- as.factor(test[,y])
+        train[, y] <- as.factor(train[, y])
+        test[, y] <- as.factor(test[, y])
 
         # Run AutoML for 20 base models (limited to 1 hour max runtime by default)
         aml <- h2o.automl(x = x, y = y, 
@@ -306,7 +312,7 @@ AutoML Output
 -------------
 
 Leaderboard 
-~~~~~~~~~~~~
+~~~~~~~~~~~
 
 The AutoML object includes a "leaderboard" of models that were trained in the process, including the 5-fold cross-validated model performance (by default).  The number of folds used in the model evaluation process can be adjusted using the ``nfolds`` parameter.  If you would like to score the models on a specific dataset, you can specify the ``leaderboard_frame`` argument in the AutoML run, and then the leaderboard will show scores on that dataset instead. 
 
@@ -397,13 +403,11 @@ When using Python or R clients, you can also access meta information with the fo
 Experimental Features
 ---------------------
 
-XGBoost
-~~~~~~~
+Preprocessing
+~~~~~~~~~~~~~
 
-AutoML now includes `XGBoost <data-science/xgboost.html>`__ GBMs (Gradient Boosting Machines) among its set of algorithms. This feature is currently provided with the following restrictions:
+As of H2O 3.32.0.1, AutoML now has a ``preprocessing`` option with `minimal support <https://0xdata.atlassian.net/browse/PUBDEV-7778>`__ for automated Target Encoding of high cardinality categorical variables.  The only currently supported option is ``preprocessing = ["target_encoding"]``: we automatically tune a Target Encoder model and apply it to columns that meet certain cardinality requirements for the tree-based algorithms (XGBoost, H2O GBM and Random Forest).  Work to improve the automated preprocessing support (improved model performance as well as customization) is documented in this `ticket <https://0xdata.atlassian.net/browse/PUBDEV-7795>`__.
 
-- XGBoost is used only if it is available globally and if it hasn't been explicitly `disabled <data-science/xgboost.html#disabling-xgboost>`__.
-- You can check if XGBoost is available by using the ``h2o.xgboost.available()`` in R or ``h2o.estimators.xgboost.H2OXGBoostEstimator.available()`` in Python.
 
 
 FAQ
@@ -411,11 +415,11 @@ FAQ
 
 -  **Which models are trained in the AutoML process?**
 
-  The current version of AutoML trains and cross-validates the following algorithms (in the following order):  three pre-specified XGBoost GBM (Gradient Boosting Machine) models, a fixed grid of GLMs, a default Random Forest (DRF), five pre-specified H2O GBMs, a near-default Deep Neural Net, an Extremely Randomized Forest (XRT), a random grid of XGBoost GBMs, a random grid of H2O GBMs, and a random grid of Deep Neural Nets.  In some cases, there will not be enough time to complete all the algorithms, so some may be missing from teh leaderboard.  AutoML then trains two Stacked Ensemble models (more info about the ensembles below). Particular algorithms (or groups of algorithms) can be switched off using the ``exclude_algos`` argument. This is useful if you already have some idea of the algorithms that will do well on your dataset, though sometimes this can lead to a loss of performance because having more diversity among the set of models generally increases the performance of the Stacked Ensembles. As a recommendation, if you have really wide (10k+ columns) and/or sparse data, you may consider skipping the tree-based algorithms (GBM, DRF, XGBoost).
+  The current version of AutoML trains and cross-validates the following algorithms (in the following order): three pre-specified XGBoost GBM (Gradient Boosting Machine) models, a fixed grid of GLMs, a default Random Forest (DRF), five pre-specified H2O GBMs, a near-default Deep Neural Net, an Extremely Randomized Forest (XRT), a random grid of XGBoost GBMs, a random grid of H2O GBMs, and a random grid of Deep Neural Nets.  In some cases, there will not be enough time to complete all the algorithms, so some may be missing from the leaderboard.  AutoML then trains two Stacked Ensemble models (more info about the ensembles below). Particular algorithms (or groups of algorithms) can be switched off using the ``exclude_algos`` argument. This is useful if you already have some idea of the algorithms that will do well on your dataset, though sometimes this can lead to a loss of performance because having more diversity among the set of models generally increases the performance of the Stacked Ensembles. As a recommendation, if you have really wide (10k+ columns) and/or sparse data, you may consider skipping the tree-based algorithms (GBM, DRF, XGBoost).
 
-  A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below.  More `details <https://0xdata.atlassian.net/browse/PUBDEV-6003>`__ about the hyperparamter ranges for the models in addition to the hard-coded models will be added to the appendix at a later date.
+  A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below.  More `details <https://0xdata.atlassian.net/browse/PUBDEV-6003>`__ about the hyperparameter ranges for the models in addition to the hard-coded models will be added to the appendix at a later date.
 
-  Both of the ensembles should produce better models than any individual model from the AutoML run with the exception of some rare cases.  One ensemble contains all the models, and the second ensemble contains just the best performing model from each algorithm class/family.  The "Best of Family" ensemble is optimized for production use since it only contains six (or fewer) base models.  It should be relatively fast to use (to generate predictions on new data) without much degredation in model performance when compared to the "All Models" ensemble.   
+  Both of the ensembles should produce better models than any individual model from the AutoML run with the exception of some rare cases.  One ensemble contains all the models, and the second ensemble contains just the best performing model from each algorithm class/family.  The "Best of Family" ensemble is optimized for production use since it only contains six (or fewer) base models.  It should be relatively fast to use (to generate predictions on new data) without much degradation in model performance when compared to the "All Models" ensemble.   
 
 -  **How do I save AutoML runs?**
 
@@ -431,6 +435,14 @@ FAQ
   You can monitor your GPU utilization via the ``nvidia-smi`` command. Refer to https://developer.nvidia.com/nvidia-system-management-interface for more information.
 
 
+-   **Why don't I see XGBoost models?** 
+
+  AutoML includes `XGBoost <data-science/xgboost.html>`__ GBMs (Gradient Boosting Machines) among its set of algorithms. This feature is currently provided with the following restrictions:
+
+  - XGBoost is not available on Windows machines.
+  - XGBoost is used only if it is available globally and if it hasn't been explicitly `disabled <data-science/xgboost.html#disabling-xgboost>`__. You can check if XGBoost is available by using the ``h2o.xgboost.available()`` in R or ``h2o.estimators.xgboost.H2OXGBoostEstimator.available()`` in Python.
+
+
 Resources
 ---------
 
@@ -443,20 +455,35 @@ Resources
 Citation
 --------
 
-If you're citing the H2O AutoML algorithm in a paper, please cite this page as the resource.  The H2O AutoML algorithm was first released in `H2O 3.12.0.1 <https://github.com/h2oai/h2o-3/blob/master/Changes.md#vapnik-31201-662017>`__ on June 6, 2017.  A formatted version of the citation would look like this (insert correct H2O version number): 
+If you're citing the H2O AutoML algorithm in a paper, please cite our paper from the `7th ICML Workshop on Automated Machine Learning (AutoML) <https://sites.google.com/view/automl2020/home>`__.  A formatted version of the citation would look like this: 
 
-H2O.ai. *H2O AutoML*, June 2017. URL http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html. H2O version 3.30.0.1.
+Erin LeDell and Sebastien Poirier. *H2O AutoML: Scalable Automatic Machine Learning*. 7th ICML Workshop on Automated Machine Learning (AutoML), July 2020. URL https://www.automl.org/wp-content/uploads/2020/07/AutoML_2020_paper_61.pdf. 
 
 If you are using Bibtex:
 
 ::
 
 
-    @Manual{H2OAutoML,
-        title = {H2O AutoML},
+    @article{H2OAutoML20,
+        title = {{H2O} {A}uto{ML}: Scalable Automatic Machine Learning},
+        author = {Erin LeDell and Sebastien Poirier},
+        year = {2020},
+        month = {July},
+        journal = {7th ICML Workshop on Automated Machine Learning (AutoML)},
+        url = {https://www.automl.org/wp-content/uploads/2020/07/AutoML_2020_paper_61.pdf},
+    }
+
+
+
+The H2O AutoML algorithm was first released in `H2O 3.12.0.1 <https://github.com/h2oai/h2o-3/blob/master/Changes.md#vapnik-31201-662017>`__ on June 6, 2017.  If you need to cite a particular version of the H2O AutoML algorithm, you can use an additional citation (using the appropriate version replaced below) as follows:
+
+::
+
+
+    @Manual{H2OAutoML_33001,
+        title = {{H2O} {A}uto{ML}},
         author = {H2O.ai},
-        year = {2017},
-        month = {June},
+        year = {2020},
         note = {H2O version 3.30.0.1},
         url = {http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html},
     }
@@ -468,51 +495,105 @@ Information about how to cite the H2O software in general is covered in the `H2O
 Random Grid Search Parameters
 -----------------------------
 
-AutoML performs hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In AutoML, the following hyperparameters are supported by grid search.  Random Forest and Extremely Randomized Trees are not grid searched (in the current version of AutoML), so they are not included in the list below.
+AutoML performs a hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In the table below, we list the hyperparameters, along with all potential values that can be randomly chosen in the search. If these models also have a non-default value set for a hyperparameter, we identify it in the list as well. Random Forest and Extremely Randomized Trees are not grid searched (in the current version of AutoML), so they are not included in the list below.
+
+**Note**: AutoML does not run a grid search for GLM. Instead AutoML builds a single model with ``lambda_search`` enabled and passes a list of ``alpha`` values. It returns only the model with the best alpha-lambda combination rather than one model for each alpha.
 
 
-**GLM Hyperparameters**
+GLM Hyperparameters
+~~~~~~~~~~~~~~~~~~~
 
--  ``alpha``
--  ``missing_values_handling``
+This table shows the GLM values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/GLMStepsProvider.java>`__.
 
+**Note**: GLM uses its own internal grid search rather than the H2O Grid interface. For GLM, AutoML builds a single model with ``lambda_search`` enabled and passes a list of ``alpha`` values. It returns a single model with the best alpha-lambda combination rather than one model for each alpha.
 
-**XGBoost Hyperparameters**
-
--  ``ntrees``
--  ``max_depth``
--  ``min_rows``
--  ``min_sum_hessian_in_leaf``
--  ``sample_rate``
--  ``col_sample_rate``
--  ``col_sample_rate_per_tree``
--  ``booster``
--  ``reg_lambda``
--  ``reg_alpha``
-
-**GBM Hyperparameters**
-
--  ``histogram_type``
--  ``ntrees``
--  ``max_depth``
--  ``min_rows``
--  ``learn_rate``
--  ``sample_rate``
--  ``col_sample_rate``
--  ``col_sample_rate_per_tree``
--  ``min_split_improvement``
++-----------------------------+---------------------------------------------------------------------------------------------+
+| Parameter                   | Searchable Values                                                                           |
++=============================+=============================================================================================+
+| ``alpha``                   | ``{0.0, 0.2, 0.4, 0.6, 0.8, 1.0}``                                                          |
++-----------------------------+---------------------------------------------------------------------------------------------+
 
 
-**Deep Learning Hyperparameters**
+XGBoost Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~
 
--  ``epochs``
--  ``adaptive_rate``
--  ``activation``
--  ``rho``
--  ``epsilon``
--  ``input_dropout_ratio``
--  ``hidden``
--  ``hidden_dropout_ratios``
+This table shows the XGBoost values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/XGBoostSteps.java>`__.
+
++------------------------------+---------------------------------------------------------------------------------------------+
+| Parameter                    | Searchable Values                                                                           |
++==============================+=============================================================================================+
+| ``booster``                  | ``gbtree``, ``dart``                                                                        |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``col_sample_rate``          | ``{0.6, 0.8, 1.0}``                                                                         |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``col_sample_rate_per_tree`` | ``{0.7, 0.8, 0.9, 1.0}``                                                                    |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``max_depth``                | ``{5, 10, 15, 20}``                                                                         |          
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``min_rows``                 | ``{0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0}``                                            |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``ntrees``                   | Hard coded: ``10000`` (true value found by early stopping)                                  |                                               
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``reg_alpha``                | ``{0.001, 0.01, 0.1, 1, 10, 100}``                                                          |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``reg_lambda``               | ``{0.001, 0.01, 0.1, 0.5, 1}``                                                              |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``sample_rate``              | ``{0.6, 0.8, 1.0}``                                                                         |
++------------------------------+---------------------------------------------------------------------------------------------+
+
+
+GBM Hyperparameters
+~~~~~~~~~~~~~~~~~~~
+
+This table shows the GLM values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/GBMStepsProvider.java>`__.
+
++------------------------------+---------------------------------------------------------------------------------------------+
+| Parameter                    | Searchable Values                                                                           |
++==============================+=============================================================================================+
+| ``col_sample_rate``          | ``{0.4, 0.7, 1.0}``                                                                         |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``col_sample_rate_per_tree`` | ``{0.4, 0.7, 1.0}``                                                                         |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``learn_rate``               | Hard coded: ``0.1``                                                                         |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``max_depth``                | ``{3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17}``                                   |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``min_rows``                 | ``{1, 5, 10, 15, 30, 100}``                                                                 |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``min_split_improvement``    | ``{1e-4, 1e-5}``                                                                            |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``ntrees``                   | Hard coded: ``10000``  (true value found by early stopping)                                 | 
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``sample_rate``              | ``{0.50, 0.60, 0.70, 0.80, 0.90, 1.00}``                                                    |
++------------------------------+---------------------------------------------------------------------------------------------+
+
+
+Deep Learning Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This table shows the Deep Learning values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/DeepLearningStepsProvider.java>`__.
+
++------------------------------+----------------------------------------------------------------------------------------------------------+
+| Parameter                    | Searchable Values                                                                                        |
++==============================+==========================================================================================================+
+| ``activation``               | Hard coded: ``RectifierWithDropout``                                                                     |
++------------------------------+----------------------------------------------------------------------------------------------------------+
+| ``epochs``                   | Hard coded: ``10000`` (true value found by early stopping)                                               |                                                 
++------------------------------+----------------------------------------------------------------------------------------------------------+
+| ``epsilon``                  | ``{1e-6, 1e-7, 1e-8, 1e-9}``                                                                             |
++------------------------------+----------------------------------------------------------------------------------------------------------+
+| ``hidden``                   |  - Grid search 1: ``{50}, {200}, {500}``                                                                 |
+|                              |  - Grid search 2: ``{50, 50}, {200, 200}, {500, 500}``                                                   |
+|                              |  - Grid search 3: ``{50, 50, 50}, {200, 200, 200}, {500, 500, 500}``                                     |
++------------------------------+----------------------------------------------------------------------------------------------------------+
+| ``hidden_dropout_ratios``    |  - Grid search 1: ``{0.1}, {0.2}, {0.3}, {0.4}, {0.5}``                                                  |
+|                              |  - Grid search 2: ``{0.1, 0.1}, {0.2, 0.2}, {0.3, 0.3}, {0.4, 0.4}, {0.5, 0.5}``                         |
+|                              |  - Grid search 3: ``{0.1, 0.1, 0.1}, {0.2, 0.2, 0.2} {0.3, 0.3, 0.3}, {0.4, 0.4, 0.4}, {0.5, 0.5, 0.5}`` |
++------------------------------+----------------------------------------------------------------------------------------------------------+
+| ``input_dropout_ratio``      | ``{0.0, 0.05, 0.1, 0.15, 0.2}``                                                                          |
++------------------------------+----------------------------------------------------------------------------------------------------------+
+| ``rho``                      | ``{0.9, 0.95, 0.99}``                                                                                    |
++------------------------------+----------------------------------------------------------------------------------------------------------+
 
 
 Additional Information

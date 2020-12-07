@@ -26,13 +26,13 @@ def test_setInvNumNA():
     response = "C2"
     x = ["C1"]
     params = {'missing_values_handling':"MeanImputation", 'family':'gaussian'}
-    glmMultinomialModel = pyunit_utils.build_save_model_GLM(params, x, train, response) # build and save mojo model
+    tmpdir = tempfile.mkdtemp()
+    glmMultinomialModel = pyunit_utils.build_save_model_generic(params, x, train, response, "glm", tmpdir) # build and save mojo model
 
-    MOJONAME = pyunit_utils.getMojoName(glmMultinomialModel._id)
-    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
-    mojoLoco = os.path.normpath(os.path.join(TMPDIR, MOJONAME+'.zip'))
-    mojoOut = os.path.normpath(os.path.join(TMPDIR, "mojo_out.csv"))
-    genJarDir = str.split(str(TMPDIR ),'/')
+    mojoname = pyunit_utils.getMojoName(glmMultinomialModel._id)
+    mojoLoco = os.path.join(tmpdir, mojoname) + ".zip"
+    mojoOut = os.path.join(tmpdir, "mojo_out.csv")
+    genJarDir = str.split(os.path.realpath("__file__"),'/')
     genJarDir = '/'.join(genJarDir[0:genJarDir.index('h2o-py')])    # locate directory of genmodel.jar
     jarpath = os.path.join(genJarDir, "h2o-assemblies/genmodel/build/libs/genmodel.jar")
     mojoPredict = h2o.mojo_predict_csv(input_csv_path=testdata, mojo_zip_path=mojoLoco, output_csv_path=mojoOut, 

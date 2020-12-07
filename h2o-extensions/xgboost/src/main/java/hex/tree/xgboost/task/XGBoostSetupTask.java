@@ -1,13 +1,12 @@
 package hex.tree.xgboost.task;
 
 import hex.tree.xgboost.BoosterParms;
-import hex.tree.xgboost.XGBoostModel;
-import hex.tree.xgboost.XGBoostModelInfo;
-import hex.tree.xgboost.XGBoostUtils;
-import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.XGBoostError;
+import hex.tree.xgboost.matrix.MatrixLoader;
+import ai.h2o.xgboost4j.java.DMatrix;
+import ai.h2o.xgboost4j.java.XGBoostError;
 import org.apache.log4j.Logger;
-import water.*;
+import water.H2O;
+import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.IcedHashMapGeneric;
@@ -22,65 +21,46 @@ public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
 
   private static final Logger LOG = Logger.getLogger(XGBoostSetupTask.class);
 
-  private final XGBoostModelInfo _sharedModel;
-  private final XGBoostModel.XGBoostParameters _parms;
-  private final boolean _sparse;
   private final BoosterParms _boosterParms;
   private final byte[] _checkpoint;
   private final IcedHashMapGeneric.IcedHashMapStringString _rabitEnv;
-  private final Frame _trainFrame;
+  private final MatrixLoader _matrixLoader;
+  private final String _saveMatrixDirectory;
 
   public XGBoostSetupTask(
-      XGBoostModel model, XGBoostModel.XGBoostParameters parms, BoosterParms boosterParms,
-      byte[] checkpointToResume, Map<String, String> rabitEnv, FrameNodes trainFrame
+      Key modelKey, String saveMatrixDirectory, BoosterParms boosterParms,
+      byte[] checkpointToResume, Map<String, String> rabitEnv, boolean[] nodes,
+      MatrixLoader matrixLoader
   ) {
-    super(model._key, trainFrame._nodes);
-    _sharedModel = model.model_info();
-    _parms = parms;
-    _sparse = model._output._sparse;
+    super(modelKey, nodes);
     _boosterParms = boosterParms;
     _checkpoint = checkpointToResume;
+    _matrixLoader = matrixLoader;
+    _saveMatrixDirectory = saveMatrixDirectory;
     (_rabitEnv = new IcedHashMapGeneric.IcedHashMapStringString()).putAll(rabitEnv);
-    _trainFrame = trainFrame._fr;
   }
 
   @Override
   protected void execute() {
-    final DMatrix matrix;
+    DMatrix matrix;
     try {
-      matrix = makeLocalMatrix();
-      if (_parms._save_matrix_directory != null) {
-        File directory = new File(_parms._save_matrix_directory);
-        if (directory.mkdirs()) {
-          LOG.debug("Created directory for matrix export: " + directory.getAbsolutePath());
-        }
-        File path = new File(directory, "matrix.part" + H2O.SELF.index()); 
-        LOG.info("Saving node-local portion of XGBoost training dataset to " + path.getAbsolutePath() + ".");
-        matrix.saveBinary(path.getAbsolutePath());
-      }
-    } catch (XGBoostError xgBoostError) {
-      throw new IllegalStateException("Failed XGBoost training.", xgBoostError);
+      matrix = _matrixLoader.makeLocalMatrix().get();
+    } catch (XGBoostError e) {
+      throw new IllegalStateException("Failed to create XGBoost DMatrix", e);
     }
-
-    if (matrix == null)
-      throw new IllegalStateException("Node " + H2O.SELF + " is supposed to participate in XGB training " +
-              "but it doesn't have a DMatrix!");
-
+    if (_saveMatrixDirectory != null) {
+      File directory = new File(_saveMatrixDirectory);
+      if (directory.mkdirs()) {
+        LOG.debug("Created directory for matrix export: " + directory.getAbsolutePath());
+      }
+      File path = new File(directory, "matrix.part" + H2O.SELF.index());
+      LOG.info("Saving node-local portion of XGBoost training dataset to " + path.getAbsolutePath() + ".");
+      matrix.saveBinary(path.getAbsolutePath());
+    }
     _rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
 
     XGBoostUpdater thread = XGBoostUpdater.make(_modelKey, matrix, _boosterParms, _checkpoint, _rabitEnv);
     thread.start(); // we do not need to wait for the Updater to init Rabit - subsequent tasks will wait
-  }
-
-  private DMatrix makeLocalMatrix() throws XGBoostError {
-      return XGBoostUtils.convertFrameToDMatrix(
-              _sharedModel.dataInfo(),
-              _trainFrame,
-              _parms._response_column,
-              _parms._weights_column,
-              _parms._offset_column,
-              _sparse
-      );
   }
 
   /**
@@ -101,9 +81,9 @@ public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
   }
 
   public static class FrameNodes {
-    final Frame _fr;
-    final boolean[] _nodes;
-    final int _numNodes;
+    public final Frame _fr;
+    public final boolean[] _nodes;
+    public final int _numNodes;
     private FrameNodes(Frame fr, boolean[] nodes) {
       _fr = fr;
       _nodes = nodes;

@@ -5,6 +5,7 @@ import org.junit.Assert;
 import water.MRTask;
 import water.Scope;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 
@@ -24,7 +25,9 @@ public class ConfusionMatrixUtils {
         try {
             Vec adapted = predictions.adaptTo(actuals.domain());
             int len = actuals.domain().length;
-            CMBuilder cm = new CMBuilder(len).doAll(actuals, adapted);
+            Frame fr = new Frame(actuals);
+            fr.add("C2", adapted);
+            CMBuilder cm = new CMBuilder(len).doAll(fr);
             return new ConfusionMatrix(cm._arr, actuals.domain());
         } finally {
             Scope.exit();

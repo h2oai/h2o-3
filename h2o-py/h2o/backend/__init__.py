@@ -38,15 +38,15 @@ have multiple connections to separate H2O servers open at the same time. Such fa
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from distutils.version import StrictVersion
+import sys
+
+import colorama
 
 from .cluster import H2OCluster
 from .server import H2OLocalServer
 from .connection import H2OConnection
 from .connection import H2OConnectionConf
-
-import colorama
-from distutils.version import StrictVersion
-import sys
 
 if not hasattr(colorama, '__version__'):
     print("[WARNING] H2O requires colorama module of version 0.3.8 or newer. You have older version .\n"

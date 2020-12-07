@@ -1,5 +1,6 @@
-from .transform_base import H2OTransformer
 import warnings
+
+from .transform_base import H2OTransformer
 
 
 class H2OScaler(H2OTransformer):

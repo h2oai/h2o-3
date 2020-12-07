@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 from __future__ import division, print_function, absolute_import, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 import itertools
 
@@ -14,7 +15,6 @@ from h2o.display import H2ODisplay
 from h2o.grid.metrics import *  # NOQA
 from h2o.utils.metaclass import Alias as alias, BackwardsCompatible, Deprecated as deprecated, h2o_meta
 from h2o.utils.shared_utils import quoted
-from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, is_type
 
 
@@ -66,7 +66,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                    hyper_parameters)
         >>> training_data = h2o.import_file("smalldata/logreg/benign.csv")
-        >>> gs.train(x=range(3) + range(4,11),y=3, training_frame=training_data)
+        >>> gs.train(x=[3, 4-11], y=3, training_frame=training_data)
         >>> gs.show()
     """
 
@@ -351,7 +351,8 @@ class H2OGridSearch(h2o_meta(Keyed)):
         validation_frame = algo_params.pop("validation_frame", None)
         is_auto_encoder = (algo_params is not None) and ("autoencoder" in algo_params and algo_params["autoencoder"])
         algo = self.model._compute_algo()  # unique to grid search
-        is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans" or algo == "glrm"
+        is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans" or algo == "glrm" or \
+                          algo == "isolationforest"
         if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
         if not is_unsupervised and y is None: raise ValueError("Missing response")
         if not is_unsupervised:
@@ -1419,14 +1420,14 @@ class H2OGridSearch(h2o_meta(Keyed)):
 
         model_params = dict()
 
-        # if cross-validation is turned on, parameters in one of the fold model actual contains the max_runtime_secs
-        # parameter and not the main model that is returned.
-        if model._is_xvalidated:
-            model = h2o.get_model(model._xval_keys[0])
-
         for param_name in self.hyper_names:
-            model_params[param_name] = model.params[param_name]['actual'][0] if \
-                isinstance(model.params[param_name]['actual'], list) else model.params[param_name]['actual']
+            # if cross-validation is turned on, parameters in one of the fold model actual contains the max_runtime_secs
+            # parameter and not the main model that is returned.
+            if 'max_runtime_secs' == param_name and model._is_xvalidated:
+                xvalidated_model = h2o.get_model(model._xval_keys[0])
+                model_params[param_name] = xvalidated_model.params[param_name]['actual']
+            else:    
+                model_params[param_name] = model.params[param_name]['actual']
 
         if display: print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']')
         return model_params
@@ -1477,6 +1478,8 @@ class H2OGridSearch(h2o_meta(Keyed)):
             model_class = H2OAutoEncoderGridSearch
         elif model_type == "DimReduction":
             model_class = H2ODimReductionGridSearch
+        elif model_type == "AnomalyDetection":
+            model_class = H2OBinomialGridSearch
         else:
             raise NotImplementedError(model_type)
         return model_class

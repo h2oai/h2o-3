@@ -15,24 +15,24 @@ import java.util.Date;
 public class TimelineV3 extends RequestSchemaV3<Timeline,TimelineV3> {
   // This schema has no input params
   @API(help="Current time in millis.", direction=API.Direction.OUTPUT)
-  private long now;
+  public long now;
 
   @API(help="This node", direction=API.Direction.OUTPUT)
-  private String self;
+  public String self;
 
   @API(help="recorded timeline events", direction=API.Direction.OUTPUT)
   public EventV3[] events;
 
   public static class EventV3<I, S extends EventV3<I, S>> extends SchemaV3<Iced, S> {
     @API(help="Time when the event was recorded. Format is hh:mm:ss:ms")
-    private final String date;
+    public final String date;
 
     @API(help="Time in nanos")
-    private final long nanos;
+    public final long nanos;
 
     enum EventType {unknown, heartbeat, network_msg, io}
     @API(help="type of recorded event", values = {"unknown", "heartbeat", "network_msg", "io"})
-    private final EventType type;
+    public final EventType type;
 
     @SuppressWarnings("unused")
     public EventV3() { date = null; nanos = -1; type = EventType.unknown; }
@@ -72,15 +72,15 @@ public class TimelineV3 extends RequestSchemaV3<Timeline,TimelineV3> {
     @API(help="Boolean flag distinguishing between sends (true) and receives(false)")
     public final boolean is_send;
     @API(help="network protocol (UDP/TCP)")
-    private final String protocol;
+    public final String protocol;
     @API(help="UDP type (exec,ack, ackack,...")
-    private final String msg_type; // udp
+    public final String msg_type; // udp
     @API(help="Sending node")
     public final String from;
     @API(help="Receiving node")
     public final String to;
     @API(help="Pretty print of the first few bytes of the msg payload. Contains class name for tasks.")
-    private final String data;
+    public final String data;
 
     public NetworkEvent() { super(); is_send = false; protocol = "unknown"; msg_type = "unknown"; from = "unknown"; to = "unknown"; data = "unknown"; }
     private NetworkEvent(long ms, long ns, boolean is_send, String protocol, String msg_type, String from, String to, String data){
@@ -103,11 +103,11 @@ public class TimelineV3 extends RequestSchemaV3<Timeline,TimelineV3> {
 
   public static class IOEvent extends EventV3<Iced, IOEvent> {
     @API(help="flavor of the recorded io (ice/hdfs/...)")
-    private final String io_flavor;
+    public final String io_flavor;
     @API(help="node where this io event happened")
-    private final String node;
+    public final String node;
     @API(help="data info")
-    private final String data;
+    public final String data;
 
     public IOEvent() { this(-1, -1, "unknown", "unknown", "unknown"); }
     private IOEvent(long ms, long ns, String node, String io_flavor, String data){

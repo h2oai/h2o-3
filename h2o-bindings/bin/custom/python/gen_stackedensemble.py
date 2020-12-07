@@ -50,7 +50,7 @@ def class_extensions():
                 "The usage of stacked_ensemble.metalearner()['name'] will be deprecated. "
                 "Metalearner now returns the metalearner object. If you need to get the "
                 "'name' please use stacked_ensemble.metalearner().model_id",
-                DeprecationWarning
+                H2ODeprecationWarning
             )
             if key == "name":
                 return self.model_id
@@ -127,6 +127,10 @@ def class_extensions():
         parms = sup._make_parms(x, y, training_frame, extend_parms_fn=extend_parms, **kwargs)
 
         sup._train(parms, verbose=verbose)
+        if self.metalearner() is None:
+            raise H2OResponseError("Meta learner didn't get to be trained in time. "
+                                   "Try increasing max_runtime_secs or setting it to 0 (unlimited).")
+
 
 
 extensions = dict(
@@ -137,7 +141,9 @@ import warnings
 
 import h2o
 from h2o.base import Keyed
+from h2o.exceptions import H2OResponseError, H2ODeprecationWarning
 from h2o.grid import H2OGridSearch
+from h2o.job import H2OJob
 from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import is_type
 """,

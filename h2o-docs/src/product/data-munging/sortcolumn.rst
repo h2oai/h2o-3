@@ -31,7 +31,7 @@ Assuming two columns, X (first column) and Y (second column):
 		[180000 rows x 2 columns]
 
 		# Sort on the first column only in ascending order (default)
-		X_sorted1 <- h2o.arrange(X,C1)
+		X_sorted1 <- h2o.arrange(X, C1)
 		X_sorted1
 		           C1           C10
 		1 -1073593184  7.474380e+05
@@ -44,7 +44,7 @@ Assuming two columns, X (first column) and Y (second column):
 		[180000 rows x 2 columns] 
 
 		# Sort on both columns in descending order, specifying to sort on C1 first
-		X_sorted2 <- h2o.arrange(X, desc(C1),desc(C10))
+		X_sorted2 <- h2o.arrange(X, desc(C1), desc(C10))
 		X_sorted2
 		          C1         C10
 		1 1073593184  256.000000

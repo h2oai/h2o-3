@@ -83,7 +83,7 @@ class Jetty9Helper {
         final String proto = isSecured ? "https" : "http";
 
         final HttpConfiguration httpConfiguration = new HttpConfiguration();
-        httpConfiguration.setSendServerVersion(true);
+        httpConfiguration.setSendServerVersion(false);
         httpConfiguration.setRequestHeaderSize(getSysPropInt(proto + ".requestHeaderSize", 32 * 1024));
         httpConfiguration.setResponseHeaderSize(getSysPropInt(proto + ".responseHeaderSize", 32 * 1024));
         httpConfiguration.setOutputBufferSize(getSysPropInt(proto + ".responseBufferSize", httpConfiguration.getOutputBufferSize()));
@@ -154,10 +154,10 @@ class Jetty9Helper {
 
         final SessionHandler sessionHandler = new SessionHandler();
         if (config.session_timeout > 0) {
-            sessionHandler.getSessionManager().setMaxInactiveInterval(config.session_timeout * 60);
+            sessionHandler.setMaxInactiveInterval(config.session_timeout * 60);
         }
         sessionHandler.setHandler(security);
-        jettyServer.setSessionIdManager(sessionHandler.getSessionManager().getSessionIdManager());
+        jettyServer.setSessionIdManager(sessionHandler.getSessionIdManager());
 
         // Pass-through to H2O if authenticated.
         jettyServer.setHandler(sessionHandler);

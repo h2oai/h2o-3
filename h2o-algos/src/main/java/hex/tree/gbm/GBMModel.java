@@ -1,10 +1,11 @@
 package hex.tree.gbm;
 
-import hex.DistributionFactory;
-import hex.KeyValue;
-import hex.Model;
+import hex.*;
+import hex.genmodel.algos.tree.SharedTreeNode;
+import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
+import hex.util.EffectiveParametersUtils;
 import water.DKV;
 import water.Key;
 import water.MRTask;
@@ -13,11 +14,12 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.SBPrintStream;
+import water.util.TwoDimTable;
 
-import java.util.Arrays;
+import java.util.*;
 
 public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> 
-        implements Model.StagedPredictions {
+        implements Model.StagedPredictions, FeatureInteractionsCollector {
 
   public static class GBMParameters extends SharedTreeModel.SharedTreeParameters {
     public double _learn_rate;
@@ -43,7 +45,7 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
     public String fullName() { return "Gradient Boosting Machine"; }
     public String javaName() { return GBMModel.class.getName(); }
 
-    Constraints constraints(Frame f) {
+    public Constraints constraints(Frame f) {
       if (_monotone_constraints == null || _monotone_constraints.length == 0) {
         return emptyConstraints(f);
       }
@@ -59,9 +61,11 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
       }
       boolean useBounds = _distribution == DistributionFamily.gaussian ||
               _distribution == DistributionFamily.bernoulli ||
+              _distribution == DistributionFamily.tweedie ||
               _distribution == DistributionFamily.quasibinomial ||
-              _distribution == DistributionFamily.multinomial;
-      return new Constraints(cs, _distribution, useBounds);
+              _distribution == DistributionFamily.multinomial ||
+              _distribution == DistributionFamily.quantile;
+      return new Constraints(cs, DistributionFactory.getDistribution(this), useBounds);
     }
 
     // allows to override the behavior in tests (eg. create empty constraints and test execution as if constraints were used)
@@ -96,6 +100,19 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
 
   public GBMModel(Key<GBMModel> selfKey, GBMParameters parms, GBMOutput output) {
     super(selfKey,parms,output);
+  }
+
+  @Override
+  public void initActualParamValues() {
+    super.initActualParamValues();
+    EffectiveParametersUtils.initFoldAssignment(_parms);
+    EffectiveParametersUtils.initHistogramType(_parms);
+    EffectiveParametersUtils.initCategoricalEncoding(_parms, Parameters.CategoricalEncodingScheme.Enum);
+  }
+  
+  public void initActualParamValuesAfterOutputSetup(int nclasses, boolean isClassifier) {
+    EffectiveParametersUtils.initStoppingMetric(_parms, isClassifier);
+    EffectiveParametersUtils.initDistribution(_parms, nclasses);
   }
 
   @Override
@@ -252,6 +269,31 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
   @Override
   public GbmMojoWriter getMojo() {
     return new GbmMojoWriter(this);
+  }
+
+  public FeatureInteractions getFeatureInteractions(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
+    FeatureInteractions featureInteractions = new FeatureInteractions();
+
+    int nclasses = this._output._nclasses > 2 ? this._output._nclasses : 1;
+    for (int i = 0; i < this._parms._ntrees; i++) {
+      for (int j = 0; j < nclasses; j++) {
+        FeatureInteractions currentTreeFeatureInteractions = new FeatureInteractions();
+        SharedTreeSubgraph tree = this.getSharedTreeSubgraph(i, j);
+        List<SharedTreeNode> interactionPath = new ArrayList<>();
+        Set<String> memo = new HashSet<>();
+
+        FeatureInteractions.collectFeatureInteractions(tree.rootNode, interactionPath, 0, 0, 1, 0, 0, currentTreeFeatureInteractions,
+                memo, maxInteractionDepth, maxTreeDepth, maxDeepening, i, true);
+        featureInteractions.mergeWith(currentTreeFeatureInteractions);
+      }
+    }
+
+    return featureInteractions;
+  }
+
+  @Override
+  public TwoDimTable[][] getFeatureInteractionsTable(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
+    return FeatureInteractions.getFeatureInteractionsTable(this.getFeatureInteractions(maxInteractionDepth,maxTreeDepth,maxDeepening));
   }
 
 }

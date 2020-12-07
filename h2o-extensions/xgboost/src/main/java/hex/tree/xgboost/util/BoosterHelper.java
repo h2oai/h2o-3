@@ -1,6 +1,6 @@
 package hex.tree.xgboost.util;
 
-import ml.dmlc.xgboost4j.java.*;
+import ai.h2o.xgboost4j.java.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -22,6 +22,9 @@ public class BoosterHelper {
   }
   
   public static Booster loadModel(byte[] boosterBytes) {
+    if (boosterBytes == null) {
+      throw new IllegalArgumentException("Booster not initialized!");
+    }
     return loadModel(new ByteArrayInputStream(boosterBytes));
   }
 

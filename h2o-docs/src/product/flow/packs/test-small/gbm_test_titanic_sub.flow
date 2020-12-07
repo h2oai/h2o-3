@@ -31,7 +31,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'gbm', {\"model_id\":\"gbm-6fdec2a7-9cc4-4288-90ec-882fdc9278f9\",\"training_frame\":\"titanic_sub2_train.hex_0.80\",\"validation_frame\":\"titanic_sub2_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"home.dest\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-7616393279183154000,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"balance_classes\":false,\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-6fdec2a7-9cc4-4288-90ec-882fdc9278f9\",\"training_frame\":\"titanic_sub2_train.hex_0.80\",\"validation_frame\":\"titanic_sub2_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"home.dest\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-7616393279183154000,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"balance_classes\":false,\"max_confusion_matrix_size\":20,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
     },
     {
       "type": "cs",

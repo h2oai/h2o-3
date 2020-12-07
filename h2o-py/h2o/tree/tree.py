@@ -1,8 +1,11 @@
-import h2o
 import math
-from h2o.estimators import H2OXGBoostEstimator
 
-class H2OTree():
+import h2o
+from h2o.estimators import H2OXGBoostEstimator
+from h2o.utils.metaclass import Deprecated as deprecated
+
+
+class H2OTree(object):
     """
     Represents a model of a Tree built by one of H2O's tree algorithms (GBM, Random Forest, XGBoost, Isolation Forest).
     
@@ -85,6 +88,11 @@ class H2OTree():
         self._nas = response['nas']
         self._predictions = response['predictions']
         self._root_node = self.__assemble_tree(0)
+        self._tree_decision_path = response['tree_decision_path']
+        self._decision_paths = response['decision_paths']
+        (left, right) = self.__per_node_cat_splits()
+        self._left_cat_split = left
+        self._right_cat_split = right
 
     @property
     def left_children(self):
@@ -152,6 +160,7 @@ class H2OTree():
     @property
     def descriptions(self):
         """
+        Deprecated, please use decision_paths and tree_decision_path instead.
         Descriptions for each node to be found in the tree, in human-readable format. Provides a human-readable summary of each node.
         Contains split threshold if the split is based on numerical column.
         For categorical splits, it contains a list of categorical levels for transition from the parent node.
@@ -361,6 +370,15 @@ class H2OTree():
         """
         return self._predictions
 
+    @property
+    def tree_decision_path(self):
+        return self._tree_decision_path
+
+    @property
+    def decision_paths(self):
+        return self._decision_paths
+
+
     def __convert_threshold_nans(self, thresholds):
         for i in range(0, len(thresholds)):
             if thresholds[i] == "NaN": thresholds[i] = float('nan')
@@ -436,6 +454,41 @@ class H2OTree():
                 self._right_children[i] = -1
 
         return node_ids
+
+    def __per_node_cat_splits(self):
+
+        num_records = len(self.left_children)
+        per_node_levels_left = [None] * num_records
+        per_node_levels_right = [None] * num_records
+        for i in range(0, (len(self.left_children))):
+
+            # -1 means leaf - if a node is leaf node, there is not child and thus no split
+            left_idx = self._left_children[i]
+            right_idx = self._right_children[i]
+
+            if (left_idx != -1):
+                per_node_levels_left[i] = (self.levels[left_idx])
+
+            if (right_idx != -1):
+                per_node_levels_right[i] = (self.levels[right_idx])
+
+        return (per_node_levels_left, per_node_levels_right)
+
+    @property
+    def left_cat_split(self):
+        """
+        :return: Categorical levels leading to the left child node. Only present when split is categorical, otherwise none.
+        """
+        return self._left_cat_split
+
+    @property
+    def right_cat_split(self):
+        """
+        
+        :return: Categorical levels leading to the right child node. Only present when split is categorical, otherwise none.
+ 
+        """
+        return self._right_cat_split
 
     def __len__(self):
         """
@@ -993,5 +1046,5 @@ class H2OSplitNode(H2ONode):
         ...                           right_levels)
         >>> split_node.show
         """
-        print(self.__str__())
-        
+        print(self)
+

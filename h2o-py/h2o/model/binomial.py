@@ -1,10 +1,10 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.compatibility import viewitems
+
+from h2o.exceptions import H2OValueError
 from h2o.utils.typechecks import assert_is_type
 from .model_base import ModelBase
-from h2o.exceptions import H2OValueError
 
 
 class H2OBinomialModel(ModelBase):
@@ -869,6 +869,26 @@ class H2OBinomialModel(ModelBase):
         """
         return self._delegate_to_metrics('gains_lift', train, valid, xval)
 
+    def kolmogorov_smirnov(self):
+        """
+        Retrieves a Kolmogorov-Smirnov metric for given binomial model. The number returned is in range between 0 and 1.
+        K-S metric represents the degree of separation between the positive (1) and negative (0) cumulative distribution
+        functions. Detailed metrics per each group are to be found in the gains-lift table.
+
+        :return: Kolmogorov-Smirnov metric, a number between 0 and 1
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+        >>> model = H2OGradientBoostingEstimator(ntrees=1,
+        ...                                      gainslift_bins=20)
+        >>> model.train(x=["Origin", "Distance"],
+        ...             y="IsDepDelayed",
+        ...             training_frame=airlines)
+        >>> model.kolmogorov_smirnov()
+        """
+        return max(self.gains_lift()["kolmogorov_smirnov"])
 
     def confusion_matrix(self, metrics=None, thresholds=None, train=False, valid=False, xval=False):
         """

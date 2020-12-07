@@ -44,6 +44,14 @@ The following table describes the allowed Family/Link combinations.
 +---------------------+----------------+----------+-------+-----+---------+---------+--------+
 | Negative Binomial   | X              | X        |       | X   |         |         |        |
 +---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| AUTO                | X***           | X*       | X**   | X*  | X*      |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+
+For **AUTO**:
+
+- X*: the data is numeric (``Real`` or ``Int``) (family determined as ``gaussian``)
+- X**: the data is ``Enum`` with cardinality = 2 (family determined as ``binomial``)
+- X***: the data is ``Enum`` with cardinality > 2 (family determined as ``multinomial``)
 
 Refer to the `Links <../glm.html#links>`__ section for more information. 
 
@@ -74,9 +82,9 @@ Example
 		response <- 'class'
 
 		# split into train and validation
-		iris.splits <- h2o.splitFrame(data = iris, ratios = .8)
-		train <- iris.splits[[1]]
-		valid <- iris.splits[[2]]
+		iris_splits <- h2o.splitFrame(data = iris, ratios = 0.8)
+		train <- iris_splits[[1]]
+		valid <- iris_splits[[2]]
 
 		# try using the `link` parameter:
 		iris_glm <- h2o.glm(x = predictors, y = response, family = 'multinomial', link = 'family_default',

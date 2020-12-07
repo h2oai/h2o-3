@@ -9,7 +9,7 @@ Description
 
 A mapping that represents monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns. 
 
-**Note**: In GBM and XGBoost, this option can only be used when the distribution is either ``gaussian`` or ``bernoulli``.
+**Note**: In GBM and XGBoost, this option can only be used when the distribution is ``gaussian``, ``bernoulli``, ``tweedie``. In GBM also ``quantile`` distribution is supported.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
@@ -33,10 +33,10 @@ Example
 		response <- "CAPSULE"
 
 		# train a model using the monotone_constraints option
-		prostate.gbm <- h2o.gbm(y=response, 
-	                        	monotone_constraints=list(AGE = 1), 
-	                        	seed=1234, 
-	                        	training_frame=prostate)
+		prostate_gbm <- h2o.gbm(y = response, 
+	                        	monotone_constraints = list(AGE = 1), 
+	                        	seed = 1234, 
+	                        	training_frame = prostate)
 
 
    .. code-tab:: python

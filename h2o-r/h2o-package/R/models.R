@@ -1,8 +1,8 @@
 #'
 #' H2O Model Related Functions
 #'
-#' @importFrom graphics strwidth par legend polygon
-#' @importFrom grDevices dev.copy dev.off png
+#' @importFrom graphics strwidth par legend polygon arrows points grid
+#' @importFrom grDevices dev.copy dev.off png rainbow adjustcolor
 
 NULL
 
@@ -373,7 +373,9 @@ NULL
                             else if (all(is.na(x))) NA
                             else paste0('"',h2o.getId(x),'"')
                           })
-      if (type == "character")
+      if (paramDef$type == "string[][]"){
+        paramValue <- .collapse.list.of.list.string(paramValue)
+      } else if (type == "character")
         paramValue <- .collapse.char(paramValue)
       else if (paramDef$type == "StringPair[]")
         paramValue <- .collapse(sapply(paramValue, .collapse.tuple.string))
@@ -393,6 +395,14 @@ NULL
 
 .collapse.tuple.string <- function(x) {
   .collapse.tuple(x, .escape.string)
+}
+
+.collapse.list.of.list.string <- function(x){
+  parts <- c()
+  for (i in x) {
+    parts <- c(parts, paste0("[", paste0(i, collapse = ","), "]"))
+  }
+  paste0("[", paste0(parts, collapse = ","), "]")
 }
 
 .collapse.tuple.key_value <- function(x) {
@@ -550,50 +560,66 @@ setGeneric("h2o.transform", function(model, ...) {
 #'
 #' @param model A trained model representing the transformation strategy
 #' @param data An H2OFrame with data to be transformed
-#' @param data_leakage_handling Handling of data leakage.
-#'  Available options are : ["None", "LeaveOneOut", "KFold"]. Defaults to "None".
-#' @param use_blending Use blending during the transformation. Respects model settings when not set.
+#' @param blending Use blending during the transformation. Respects model settings when not set.
 #' @param inflection_point Blending parameter. Only effective when blending is enabled.
 #'  By default, model settings are respected, if not overridden by this setting.
 #' @param smoothing Blending parameter. Only effective when blending is enabled.
 #'  By default, model settings are respected, if not overridden by this setting.
-#' @param noise An amount of random noise added to the encoding. This helps prevent overfitting. Defaults to 0.01 * range of response.
-#' @param seed A random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
+#' @param noise An amount of random noise added to the encoding, this helps prevent overfitting.
+#'  By default, model settings are respected, if not overridden by this setting.
+#' @param as_training Must be set to True when encoding the training frame. Defaults to False.
+#' @param ... Mainly used for backwards compatibility, to allow deprecated parameters.
 #' @return Returns an H2OFrame object with data transformed.
 #' @export
 setMethod("h2o.transform", signature("H2OTargetEncoderModel"), function(model, data,
-                                                                        data_leakage_handling = NULL,
-                                                                        use_blending = NULL,
+                                                                        blending = NULL,
                                                                         inflection_point = -1,
-                                                                        smoothing = -1, 
-                                                                        noise = -1, 
-                                                                        seed = -1) {
+                                                                        smoothing = -1,
+                                                                        noise = NULL,
+                                                                        as_training = FALSE,
+                                                                        ...) {
+    varargs <- list(...)
+    for (arg in names(varargs)) {
+        if (arg %in% c('data_leakage_handling', 'seed')) {
+            warning(paste0("argument '", arg, "' is deprecated and will be ignored; please define it instead on model creation using `h2o.targetencoder`."))
+            argval <- varargs[[arg]]
+            if (arg == 'data_leakage_handling' && argval != "None") {
+                warning(paste0("Deprecated `data_leakage_handling=",argval,"` is replaced by `as_training=True`. ",
+                        "Please update your code."))
+                as_training <- TRUE
+            }
+        } else if (arg == 'use_blending') {
+            warning("argument 'use_blending' is deprecated; please use 'blending' instead.")
+            if (missing(blending)) blending <- varargs$use_blending else warning("ignoring 'use_blending' as 'blending' was also provided.")
+        } else {
+            stop(paste("unused argument", arg, "=", varargs[[arg]]))
+        }
+    }
+
+    params <- list()
+    params$model <- model@model_id
+    params$frame <- h2o.getId(data)
+    if (is.null(blending)){
+        params$blending <- model@allparameters$blending
+    } else {
+        params$blending <- blending
+    }
+    if (params$blending) {
+        params$inflection_point <- inflection_point
+        params$smoothing <- smoothing
+    }
+    if (!is.null(noise)){
+        params$noise <- noise
+    }
+    params$as_training <- as_training
+    
+    res <- .h2o.__remoteSend(
+        "TargetEncoderTransform",
+        method = "GET",
+        h2oRestApiVersion = 3,.params = params
+    )
   
-  params <- list()
-  params[["model"]] <- model@model_id
-  params[["frame"]] <- h2o.getId(data)
-  if(!is.null(data_leakage_handling)){
-    params[["data_leakage_handling"]] <- data_leakage_handling
-  }
-  if(!is.null(use_blending)){
-    params[["use_blending"]] <- use_blending
-  }
-  if(!is.null(noise)){
-    params[["noise"]] <- noise
-  }
-  if(!is.null(seed)){
-    params[["seed"]] <- seed
-  }
-  
-  
-  res <- .h2o.__remoteSend(
-    "TargetEncoderTransform",
-    method = "GET",
-    h2oRestApiVersion = 3,.params = params
-  )
-  
-  h2o.getFrame(res$name)
-  
+    h2o.getFrame(res$name)
 })
 
 #'
@@ -898,7 +924,7 @@ h2o.feature_frequencies <- feature_frequencies.H2OModel
 #' h2o.performance(model = prostate_gbm, newdata=prostate)
 #'
 #' ## If model uses balance_classes
-#' ## the results from train = TRUE will not match the results from newdata = prostate.hex
+#' ## the results from train = TRUE will not match the results from newdata = prostate
 #' prostate_gbm_balanced <- h2o.gbm(3:9, "CAPSULE", prostate, balance_classes = TRUE)
 #' h2o.performance(model = prostate_gbm_balanced, newdata = prostate)
 #' h2o.performance(model = prostate_gbm_balanced, train = TRUE)
@@ -978,7 +1004,7 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' prostate$CAPSULE <- as.factor(prostate$CAPSULE)
 #' prostate_gbm <- h2o.gbm(3:9, "CAPSULE", prostate)
-#' pred <- h2o.predict(prostate_gbm, prostate)[,3] ## class-1 probability
+#' pred <- h2o.predict(prostate_gbm, prostate)[, 3] ## class-1 probability
 #' h2o.make_metrics(pred, prostate$CAPSULE)
 #' }
 #' @export
@@ -1041,7 +1067,7 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL,
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' perf <- h2o.performance(model, prostate)
 #' h2o.auc(perf)
@@ -1119,7 +1145,7 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' perf <- h2o.performance(model, prostate)
 #' h2o.aucpr(perf)
@@ -1191,7 +1217,7 @@ h2o.pr_auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' perf <- h2o.performance(model, prostate)
 #' h2o.mean_per_class_error(perf)
@@ -1253,9 +1279,9 @@ h2o.mean_per_class_error <- function(object, train=FALSE, valid=FALSE, xval=FALS
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
-#' p.sid <- h2o.runif(prostate)
-#' prostate_train <- prostate[p.sid > .2,]
-#' prostate_glm <- h2o.glm(x=3:7, y=2, training_frame=prostate_train)
+#' p_sid <- h2o.runif(prostate)
+#' prostate_train <- prostate[p_sid > .2,]
+#' prostate_glm <- h2o.glm(x = 3:7, y = 2, training_frame = prostate_train)
 #' aic_basic <- h2o.aic(prostate_glm)
 #' print(aic_basic)
 #' }
@@ -1456,7 +1482,7 @@ h2o.HGLMMetrics <- function(object) {
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' perf <- h2o.performance(model, prostate)
 #' h2o.giniCoef(perf)
@@ -1512,11 +1538,11 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' 
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "cylinders"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_glm <- h2o.glm(balance_classes = TRUE, 
 #'                     seed = 1234, 
 #'                     x = predictors, 
@@ -1550,11 +1576,11 @@ h2o.coef <- function(object) {
 #' 
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "cylinders"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_glm <- h2o.glm(balance_classes = TRUE, 
 #'                     seed = 1234, 
 #'                     x = predictors, 
@@ -1624,7 +1650,7 @@ grabCoeff <- function(tempTable, nameStart, standardize=FALSE) {
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' perf <- h2o.performance(model, prostate)
 #' h2o.mse(perf)
@@ -1697,7 +1723,7 @@ h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' perf <- h2o.performance(model, prostate)
 #' h2o.rmse(perf)
@@ -1886,11 +1912,11 @@ h2o.rmsle <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "economy_20mpg"
-#' cars.splits <- h2o.splitFrame(data =  cars, ratios = .8, seed = 1234)
-#' train <- cars.splits[[1]]
-#' valid <- cars.splits[[2]]
+#' cars_splits <- h2o.splitFrame(data =  cars, ratios = .8, seed = 1234)
+#' train <- cars_splits[[1]]
+#' valid <- cars_splits[[2]]
 #' car_drf <- h2o.randomForest(x = predictors, 
 #'                             y = response, 
 #'                             training_frame = train, 
@@ -1944,10 +1970,10 @@ h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip"
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip"
 #' pros <- h2o.importFile(f)
 #' response <- "GLEASON"
-#' predictors <- c("ID","AGE","CAPSULE","DCAPS","PSA","VOL","DPROS")
+#' predictors <- c("ID", "AGE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
 #' model <- h2o.glm(x = predictors, y = response, training_frame = pros)
 #' h2o.varimp(model)
 #' }
@@ -1956,18 +1982,6 @@ h2o.varimp <- function(object) {
   o <- object
   if( is(o, "H2OModel") ) {
     vi <- o@model$variable_importances
-    if( is.null(vi) ) { # may be glm
-      tvi <- object@model$standardized_coefficient_magnitudes 
-      maxCoeff <- max(tvi$coefficients)
-      sumCoeff <- sum(tvi$coefficients)
-      scaledCoeff <- tvi$coefficients/maxCoeff
-      percentageC <- tvi$coefficients/sumCoeff
-      variable <- tvi$names
-      relative_importance <- tvi$coefficients
-      scaled_importance <- scaledCoeff
-      percentage <- percentageC
-      vi <- data.frame(variable, relative_importance, scaled_importance, percentage)
-      }  # no true variable importances, maybe glm coeffs? (return standardized table...)
     if( is.null(vi) ) {
       warning("This model doesn't have variable importances", call. = FALSE)
       return(invisible(NULL))
@@ -2017,11 +2031,11 @@ h2o.varsplits <- function(object) {
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "economy_20mpg"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, 
 #'                     training_frame = train, 
 #'                     validation_frame = valid, 
@@ -2039,6 +2053,14 @@ h2o.scoreHistory <- function(object) {
     warning( paste0("No score history for ", class(o)) )
     return(NULL)
   }
+}
+
+#'
+#' Retrieve GLM Model Score History buried in GAM model
+#' @param object An \linkS4class{H2OModel} object.
+#' @export
+h2o.scoreHistoryGAM <- function(object) {
+    return(object@model$glm_scoring_history)
 }
 
 #'
@@ -2063,6 +2085,63 @@ h2o.get_ntrees_actual <- function(object) {
     }
 }
 
+#' Feature interactions and importance, leaf statistics and split value histograms in a tabular form.
+#' Available for XGBoost and GBM.
+#'
+#' Metrics:
+#' Gain - Total gain of each feature or feature interaction.
+#' FScore - Amount of possible splits taken on a feature or feature interaction.
+#' wFScore - Amount of possible splits taken on a feature or feature interaction weighed by 
+#' the probability of the splits to take place.
+#' Average wFScore - wFScore divided by FScore.
+#' Average Gain - Gain divided by FScore.
+#' Expected Gain - Total gain of each feature or feature interaction weighed by the probability to gather the gain.
+#' Average Tree Index
+#' Average Tree Depth
+#'
+#' @param model A trained xgboost model.
+#' @param max_interaction_depth Upper bound for extracted feature interactions depth. Defaults to 100.
+#' @param max_tree_depth Upper bound for tree depth. Defaults to 100.
+#' @param max_deepening Upper bound for interaction start deepening (zero deepening => interactions 
+#' starting at root only). Defaults to -1.
+#'
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' boston <- h2o.importFile(
+#'        "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv",
+#'         destination_frame="boston"
+#'         )
+#' boston_xgb <- h2o.xgboost(training_frame = boston, y = "medv", seed = 1234)
+#' feature_interactions <- h2o.feature_interaction(boston_xgb)
+#' }
+#' @export
+h2o.feature_interaction <- function(model, max_interaction_depth = 100, max_tree_depth = 100, max_deepening = -1) {
+    o <- model
+    if (is(o, "H2OModel")) {
+        if (o@algorithm == "gbm" | o@algorithm == "xgboost"){
+            parms <- list()
+            parms$model_id <- model@model_id
+            parms$max_interaction_depth <- max_interaction_depth
+            parms$max_tree_depth <- max_tree_depth
+            parms$max_deepening <- max_deepening
+            
+            json <- .h2o.doSafePOST(urlSuffix = "FeatureInteraction", parms=parms)
+            source <- .h2o.fromJSON(jsonlite::fromJSON(json,simplifyDataFrame=FALSE))
+            
+            return(source$feature_interaction)
+        } else {
+            warning(paste0("No calculation available for this model"))
+            return(NULL)
+        }
+    } else {
+        warning(paste0("No calculation available for ", class(o)))
+        return(NULL)
+    }
+}
+
+
 #'
 #' Retrieve the respective weight matrix
 #'
@@ -2075,13 +2154,13 @@ h2o.get_ntrees_actual <- function(object) {
 #' 
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv"
 #' census <- h2o.importFile(f)
-#' census[,1] <- as.factor(census[,1])
-#' dlmodel <- h2o.deeplearning(x = c(1:3), y = 4, training_frame = census,
-#'                             hidden = c(17,191), 
+#' census[, 1] <- as.factor(census[, 1])
+#' dl_model <- h2o.deeplearning(x = c(1:3), y = 4, training_frame = census,
+#'                             hidden = c(17, 191), 
 #'                             epochs = 1,
 #'                             balance_classes = FALSE,
 #'                             export_weights_and_biases = TRUE)
-#' h2o.weights(dlmodel, matrix_id = 1)
+#' h2o.weights(dl_model, matrix_id = 1)
 #' }
 #' @export
 h2o.weights <- function(object, matrix_id=1){
@@ -2107,16 +2186,16 @@ h2o.weights <- function(object, matrix_id=1){
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/chicago/chicagoCensus.csv"
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/chicago/chicagoCensus.csv"
 #' census <- h2o.importFile(f)
-#' census[,1] <- as.factor(census[,1])
+#' census[, 1] <- as.factor(census[, 1])
 #' 
-#' dlmodel <- h2o.deeplearning(x = c(1:3), y = 4, training_frame = census,
-#'                             hidden = c(17,191),
+#' dl_model <- h2o.deeplearning(x = c(1:3), y = 4, training_frame = census,
+#'                             hidden = c(17, 191),
 #'                             epochs = 1, 
 #'                             balance_classes = FALSE, 
 #'                             export_weights_and_biases = TRUE)
-#' h2o.biases(dlmodel, vector_id = 1)
+#' h2o.biases(dl_model, vector_id = 1)
 #' }
 #' @export
 h2o.biases <- function(object, vector_id=1){
@@ -2150,9 +2229,9 @@ h2o.biases <- function(object, vector_id=1){
 #' 
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv"
 #' iris <- h2o.importFile(f)
-#' iris.split <- h2o.splitFrame(data = iris, ratios = 0.8, seed = 1234)
-#' train <- iris.split[[1]]
-#' valid <- iris.split[[2]]
+#' iris_split <- h2o.splitFrame(data = iris, ratios = 0.8, seed = 1234)
+#' train <- iris_split[[1]]
+#' valid <- iris_split[[2]]
 #' 
 #' iris_xgb <- h2o.xgboost(x = 1:4, y = 5, training_frame = train, validation_frame = valid)
 #' hrt_iris <- h2o.hit_ratio_table(iris_xgb, valid = TRUE)
@@ -2401,11 +2480,11 @@ h2o.specificity <- function(object, thresholds){
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "economy_20mpg"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, 
 #'                     training_frame = train, validation_frame = valid, 
 #'                     build_tree_one_node = TRUE , seed = 1234)
@@ -2433,11 +2512,11 @@ h2o.find_threshold_by_max_metric <- function(object, metric) {
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "economy_20mpg"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, 
 #'                     training_frame = train, validation_frame = valid, 
 #'                     build_tree_one_node = TRUE , seed = 1234)
@@ -2469,8 +2548,8 @@ h2o.find_row_by_threshold <- function(object, threshold) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
-#' h2o.ceiling(fr[,1])
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' h2o.ceiling(fr[, 1])
 #' }
 #' @export
 h2o.centers <- function(object) { as.data.frame(object@model$centers[,-1]) }
@@ -2483,7 +2562,7 @@ h2o.centers <- function(object) { as.data.frame(object@model$centers[,-1]) }
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.centersSTD(km)
@@ -2514,7 +2593,7 @@ h2o.withinss <- function(object) { h2o.mse(object) }
 #' library(h2o)
 #' h2o.init()
 #' 
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.tot_withinss(km, train = TRUE)
@@ -2562,7 +2641,7 @@ h2o.tot_withinss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.betweenss(km, train = TRUE)
@@ -2611,7 +2690,7 @@ h2o.betweenss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.totss(km, train = TRUE)
@@ -2655,8 +2734,8 @@ h2o.totss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
-#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"), 
 #'                         training_frame = prostate, family = "binomial", 
 #'                         nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #' h2o.num_iterations(prostate_glm)
@@ -2681,7 +2760,7 @@ h2o.num_iterations <- function(object) { object@model$model_summary$number_of_it
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.centroid_stats(km, train = TRUE)
@@ -2730,7 +2809,7 @@ h2o.centroid_stats <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' fr <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
 #' h2o.cluster_sizes(km, train = TRUE)
@@ -2782,8 +2861,8 @@ h2o.cluster_sizes <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
-#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"), 
 #'                         training_frame = prostate, family = "binomial", nfolds = 0, 
 #'                         alpha = 0.5, lambda_search = FALSE)
 #' h2o.null_deviance(prostate_glm, train = TRUE)
@@ -2844,8 +2923,8 @@ h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
-#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"), 
 #'                         training_frame = prostate, family = "binomial", 
 #'                         nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #' h2o.residual_deviance(prostate_glm, train = TRUE)
@@ -2906,8 +2985,8 @@ h2o.residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) 
 #' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
-#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"), 
 #'                         training_frame = prostate, family = "binomial", 
 #'                         nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #' h2o.residual_dof(prostate_glm, train = TRUE)
@@ -2968,8 +3047,8 @@ h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
-#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"), 
 #'                         training_frame = prostate, family = "binomial", nfolds = 0, 
 #'                         alpha = 0.5, lambda_search = FALSE)
 #' h2o.null_dof(prostate_glm, train = TRUE)
@@ -3037,13 +3116,13 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, distribution = "bernoulli",
-#'                  training_frame = prostate, validation_frame = prostate, nfolds=3)
+#'                  training_frame = prostate, validation_frame = prostate, nfolds = 3)
 #' h2o.gainsLift(model)              ## extract training metrics
-#' h2o.gainsLift(model, valid=TRUE)  ## extract validation metrics (here: the same)
-#' h2o.gainsLift(model, xval =TRUE)  ## extract cross-validation metrics
-#' h2o.gainsLift(model, newdata=prostate) ## score on new data (here: the same)
+#' h2o.gainsLift(model, valid = TRUE)  ## extract validation metrics (here: the same)
+#' h2o.gainsLift(model, xval = TRUE)  ## extract cross-validation metrics
+#' h2o.gainsLift(model, newdata = prostate) ## score on new data (here: the same)
 #' # Generating a ModelMetrics object
 #' perf <- h2o.performance(model, prostate)
 #' h2o.gainsLift(perf)               ## extract from existing metrics object
@@ -3091,6 +3170,60 @@ setMethod("h2o.gainsLift", "H2OModelMetrics", function(object) {
   }
 })
 
+#' Kolmogorov-Smirnov metric for binomial models
+#'
+#' Retrieves a Kolmogorov-Smirnov metric for given binomial model. The number returned is in range between 0 and 1.
+#' K-S metric represents the degree of separation between the positive (1) and negative (0) cumulative distribution
+#' functions. Detailed metrics per each group are to be found in the gains-lift table.
+#'
+#' The \linkS4class{H2OModelMetrics} version of this function will only take
+#' \linkS4class{H2OBinomialMetrics} objects.
+#'
+#' @param object Either an \linkS4class{H2OModel} object or an
+#'        \linkS4class{H2OModelMetrics} object.
+#' @return Kolmogorov-Smirnov metric, a number between 0 and 1.
+#' @seealso \code{\link{h2o.gainsLift}} to see detailed K-S metrics per group
+#' 
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' data <- h2o.importFile(
+#' path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+#' model <- h2o.gbm(x = c("Origin", "Distance"), y = "IsDepDelayed", 
+#'                        training_frame = data, ntrees = 1)
+#' h2o.kolmogorov_smirnov(model)
+#' }
+#' @export
+setGeneric("h2o.kolmogorov_smirnov", function(object) {})
+
+#' @rdname h2o.kolmogorov_smirnov
+#' @export
+setMethod("h2o.kolmogorov_smirnov", "H2OModelMetrics", function(object) {
+  gains_lift <- h2o.gainsLift(object = object)
+  if(is.null(gains_lift)){
+    warning(paste0("No Gains/Lift table for ",class(object)))
+    return(NULL)
+  } else {
+    return(max(gains_lift$kolmogorov_smirnov))
+  }
+  
+})
+
+#' @rdname h2o.kolmogorov_smirnov
+#' @export
+setMethod("h2o.kolmogorov_smirnov", "H2OModel", function(object) {
+  gains_lift <- h2o.gainsLift(object = object)
+  if(is.null(gains_lift)){
+    warning(paste0("No Gains/Lift table for ",class(object)))
+    return(NULL)
+  } else {
+    return(max(gains_lift$kolmogorov_smirnov))
+  }
+  
+})
+
+
 #' Access H2O Confusion Matrices
 #'
 #' Retrieve either a single or many confusion matrices from H2O objects.
@@ -3124,7 +3257,7 @@ setMethod("h2o.gainsLift", "H2OModelMetrics", function(object) {
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' h2o.confusionMatrix(model, prostate)
 #' # Generating a ModelMetrics object
@@ -3260,13 +3393,13 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
 #'     library(h2o)
 #'     h2o.init()
 #'
-#'     df <- as.h2o(mlbench::mlbench.friedman1(10000,1))
-#'     rng <- h2o.runif(df, seed=1234)
-#'     train <- df[rng<0.8,]
-#'     valid <- df[rng>=0.8,]
+#'     df <- as.h2o(mlbench::mlbench.friedman1(10000, 1))
+#'     rng <- h2o.runif(df, seed = 1234)
+#'     train <- df[rng < 0.8,]
+#'     valid <- df[rng >= 0.8,]
 #'
 #'     gbm <- h2o.gbm(x = 1:10, y = "y", training_frame = train, validation_frame = valid,
-#'                    ntrees=500, learn_rate=0.01, score_each_iteration = TRUE)
+#'                    ntrees = 500, learn_rate = 0.01, score_each_iteration = TRUE)
 #'     plot(gbm)
 #'     plot(gbm, timestep = "duration", metric = "deviance")
 #'     plot(gbm, timestep = "number_of_trees", metric = "deviance")
@@ -3394,7 +3527,7 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' h2o.varimp_plot(model)
 #'
@@ -3467,8 +3600,8 @@ h2o.varimp_plot <- function(model, num_of_features = NULL){
 #'
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
-#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"),
 #'                          training_frame = prostate, family = "binomial",
 #'                          nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #' h2o.std_coef_plot(prostate_glm)
@@ -3555,19 +3688,34 @@ h2o.std_coef_plot <- function(model, num_of_features = NULL){
 #' @export
 plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
   # TODO: add more types (i.e. cutoffs)
-  if(!type %in% c("roc")) stop("type must be 'roc'")
+  if(!type %in% c("roc", "pr")) stop("type must be 'roc' or 'pr'")
   if(type == "roc") {
-    xaxis <- "False Positive Rate"; yaxis = "True Positive Rate"
+    xaxis <- "False Positive Rate (TPR)"; yaxis = "True Positive Rate (FPR)"
     if(missing(main)) {
-      main <- paste(yaxis, "vs", xaxis)
+      main <- "Receiver Operating Characteristic curve"
       if(x@on_train) {
         main <- paste(main, "(on train)")
       } else if (x@on_valid) {
         main <- paste(main, "(on valid)")
       }
     }
-    graphics::plot(x@metrics$thresholds_and_metric_scores$fpr, x@metrics$thresholds_and_metric_scores$tpr, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), ...)
+    xdata <- x@metrics$thresholds_and_metric_scores$fpr
+    ydata <- x@metrics$thresholds_and_metric_scores$tpr
+    graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
     graphics::abline(0, 1, lty = 2)
+  } else if(type=="pr"){
+    xaxis <- "Recall (TP/(TP+FP))"; yaxis = "Precision (TPR)"
+    if(missing(main)) {
+      main <- "Precision Recall curve"
+      if(x@on_train) {
+        main <- paste(main, "(on train)")
+      } else if (x@on_valid) {
+        main <- paste(main, "(on valid)")
+      }
+    }
+    xdata <- rev(x@metrics$thresholds_and_metric_scores$recall)
+    ydata <- rev(x@metrics$thresholds_and_metric_scores$precision)
+    graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
   }
 }
 
@@ -3601,7 +3749,7 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
 #' 
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' cars_pca <- h2o.prcomp(cars, transform = "STANDARDIZE", 
 #'                        k = 3, x = predictors, seed = 12345)
 #' h2o.sdev(cars_pca)
@@ -3790,11 +3938,11 @@ plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "economy_20mpg"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, 
 #'                     nfolds = 5,  keep_cross_validation_models = TRUE, seed = 1234)
 #' h2o.cross_validation_models(cars_gbm)
@@ -3820,13 +3968,13 @@ h2o.cross_validation_models <- function(object) {
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "economy_20mpg"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
-#'                     nfolds = 5,  keep_cross_validation_fold_assignment= TRUE, seed = 1234)
+#'                     nfolds = 5,  keep_cross_validation_fold_assignment = TRUE, seed = 1234)
 #' h2o.cross_validation_fold_assignment(cars_gbm)
 #' }
 #' @export
@@ -3852,9 +4000,9 @@ h2o.cross_validation_fold_assignment <- function(object) {
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "economy_20mpg"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, 
 #'                     nfolds = 5,  keep_cross_validation_predictions = TRUE, seed = 1234)
 #' h2o.cross_validation_holdout_predictions(cars_gbm)
@@ -3880,11 +4028,11 @@ h2o.cross_validation_holdout_predictions <- function(object) {
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "economy_20mpg"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, 
 #'                     nfolds = 5,  keep_cross_validation_predictions = TRUE, seed = 1234)
 #' h2o.cross_validation_predictions(cars_gbm)
@@ -3924,6 +4072,7 @@ h2o.cross_validation_predictions <- function(object) {
 #'  If the files already exists, they will be overridden. Files are only saves if plot = TRUE (default).
 #' @return Plot and list of calculated mean response tables for each feature requested.
 #' @param row_index Row for which partial dependence will be calculated instead of the whole input frame.
+#' @param targets Target classes for multinomial model.    
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -3931,28 +4080,43 @@ h2o.cross_validation_predictions <- function(object) {
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' prostate[, "CAPSULE"] <- as.factor(prostate[, "CAPSULE"] )
-#' prostate[, "RACE"] <- as.factor(prostate[,"RACE"] )
-#' prostate_gbm <- h2o.gbm(x = c("AGE","RACE"),
+#' prostate[, "RACE"] <- as.factor(prostate[, "RACE"] )
+#' prostate_gbm <- h2o.gbm(x = c("AGE", "RACE"),
 #'                         y = "CAPSULE",
 #'                         training_frame = prostate,
 #'                         ntrees = 10,
 #'                         max_depth = 5,
 #'                         learn_rate = 0.1)
 #' h2o.partialPlot(object = prostate_gbm, data = prostate, cols = c("AGE", "RACE"))
+#'
+#' iris_hex <- as.h2o(iris)
+#' iris_gbm <- h2o.gbm(x = c(1:4), y = 5, training_frame = iris_hex)
+#'
+#' # one target class
+#' h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", targets=c("setosa"))
+#' # three target classes
+#' h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", 
+#'                  targets=c("setosa", "virginica", "versicolor"))
 #' }
 #' @export
 
 h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE,
-                            weight_column=-1, include_na=FALSE, user_splits=NULL, col_pairs_2dpdp=NULL, save_to=NULL,
-row_index=-1) {
+                            weight_column=-1, include_na=FALSE, user_splits=NULL, col_pairs_2dpdp=NULL, save_to=NULL, 
+                            row_index=-1, targets=NULL) {
   if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
-  if( is(object, "H2OMultinomialModel")) stop("object must be a regression model or binary classfier")
-  if( is(object, "H2OOrdinalModel")) stop("object must be a regression model or binary classfier")
+  if( is(object, "H2OOrdinalModel")) stop("object must be a regression model or binary and multinomial classfier")
   if(!is(data, "H2OFrame")) stop("data must be H2OFrame")
   if(!is.numeric(nbins) | !(nbins > 0) ) stop("nbins must be a positive numeric")
   if(!is.logical(plot)) stop("plot must be a logical value")
   if(!is.logical(plot_stddev)) stop("plot must be a logical value")
   if(!is.logical(include_na)) stop("add_missing_NA must be a logical value")
+  if((is(object, "H2OMultinomialModel"))){
+    if(is.null(targets)) stop("targets parameter has to be set for multinomial classification")
+    for(i in 1:length(targets)){
+        if(!is.character(targets[i])) stop("targets parameter must be a list of string values")
+    }
+  }
+  
   noPairs = missing(col_pairs_2dpdp)
   noCols = missing(cols)
   if(noCols && noPairs) cols =  object@parameters$x # set to default only if both are missing
@@ -3994,6 +4158,11 @@ row_index=-1) {
   if (!missing(cols)) {
     parms$cols <- paste0("[", paste (args$x, collapse = ','), "]")
     numCols = length(cols)
+  }
+  if(is.null(targets)){
+    num_1d_pp_data <- numCols
+  } else {
+    num_1d_pp_data <- numCols * length(targets)
   }
   noCols = missing(cols)
   parms$model_id  <- attr(object, "model_id")
@@ -4051,6 +4220,10 @@ row_index=-1) {
     parms$user_splits <- paste0("[", paste(user_values, collapse=','), "]")
     parms$num_user_splits <- paste0("[", paste(user_num_splits, collapse=','), "]")
   }
+  
+  if(!is.null(targets)) {
+    parms$targets <- paste0("[", paste (targets, collapse = ','), "]")
+  }
 
   if(!missing(destination_key)) parms$destination_key = destination_key
 
@@ -4060,52 +4233,138 @@ row_index=-1) {
   res <- .h2o.__remoteSend(url, method = "GET", h2oRestApiVersion = 3)
 
   ## Change feature names to the original supplied, the following is okay because order is preserved
+      
   pps <- res$partial_dependence_data
+  min_y <- min(pps[[1]][,2])
+  max_y <- max(pps[[1]][,2])
+  min_lower <- min_y
+  max_upper <- max_y
+  col_name_index <- 1
   for (i in 1:length(pps)) {
-    if (!all(is.na(pps[[i]]))) {
-      if (i <=  numCols) {
-      names(pps[[i]]) <-
-        c(cols[i],
-          "mean_response",
-          "stddev_response",
-          "std_error_mean_response")
-      } else {
+    pp <- pps[[i]]
+    if (!all(is.na(pp))) {
+      min_y <- min(min_y, min(pp[,2])) 
+      max_y <- max(max_y, max(pp[,2]))
+      min_lower <- min(min_lower, pp[,2] - pp[,3])
+      max_upper <- max(max_upper, pp[,2] + pp[,3])
+      if (i <= num_1d_pp_data) {
+        if(is.null(targets)){
+          col_name_index = i
+          title <- paste("Partial dependency plot for", cols[col_name_index]) 
+        } else if(!is.null(targets)){
+          if(length(cols) > 1 && i %% length(cols) == 0) {
+            col_name_index = col_name_index + 1
+          }
+          if(length(targets) > 1) {
+            title <- paste("Partial dependency plot for", cols[col_name_index], "and classes\n", paste(targets, collapse=", "))
+          } else {
+            title <- paste("Partial dependency plot for", cols[col_name_index], "and class", targets)
+          }
+        }
         names(pps[[i]]) <-
-          c(col_pairs_2dpdp[[i-numCols]][1],
-            col_pairs_2dpdp[[i-numCols]][2],
+          c(cols[col_name_index],
             "mean_response",
             "stddev_response",
             "std_error_mean_response")
+        attr(pps[[i]],"description") <- title
+      } else {
+        names(pps[[i]]) <-
+          c(col_pairs_2dpdp[[i-num_1d_pp_data]][1],
+            col_pairs_2dpdp[[i-num_1d_pp_data]][2],
+            "mean_response",
+            "stddev_response",
+            "std_error_mean_response")
+        attr(pps[[i]],"description") <- paste('2D partial dependence plot for', col_pairs_2dpdp[[i-num_1d_pp_data]][1], "and", col_pairs_2dpdp[[i-num_1d_pp_data]][1])    
       }
     }
   }
   col_types = unlist(h2o.getTypes(data))
   col_names = names(data)
     
-  pp.plot <- function(pp) {
+  pp.plot.1d <- function(pp) {
     if(!all(is.na(pp))) {
-      type = col_types[which(col_names == names(pp)[1])]
-      if(type == "enum") pp[,1] = factor( pp[,1], levels=pp[,1])
-
-      ## Plot one standard deviation above and below the mean
-      if( plot_stddev) {
-        ## Added upper and lower std dev confidence bound
-        upper = pp[,2] + pp[,3]
-        lower = pp[,2] - pp[,3]
-        plot(pp[,1:2], type = "l", main = attr(x,"description"), ylim  = c(min(lower), max(upper)))
-
-        polygon(c(pp[,1], rev(pp[,1])), c(lower, rev(upper)), col = "grey75", border = F)
-        lines(pp[,1], pp[,2], lwd = 2)
-        lines(pp[,1], lower, col = "blue", lty = 2)
-        lines(pp[,1], upper, col = "blue", lty = 2)
+      x <- pp[,1]
+      y <- pp[,2]
+      stddev <- pp[,3] 
+      type <- col_types[which(col_names == names(pp)[1])]
+      if(type == "enum") {
+        line_type <- "p"
+        lty <- NULL
+        pch <- 19
+        pp[, 1] <- factor(pp[,1], levels=pp[,1])
       } else {
-        plot(pp[,1:2], type = "l", main = attr(x,"description") )
+        line_type <- "l"
+        lty <- 1
+        pch <- NULL
+      }
+      ## Plot one standard deviation above and below the mean
+      if(plot_stddev) {
+        ## Added upper and lower std dev confidence bound
+        upper = y + stddev
+        lower = y - stddev
+        plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol="red", medlty=0, staplelty=0, boxlty=0, col="red", main = attr(pp,"description"), ylim  = c(min(lower), max(upper)))
+        polygon(c(x, rev(x)), c(lower, rev(upper)), col = adjustcolor("red", alpha.f = 0.1), border = F)
+        if(type == "enum"){
+          x <- c(1:length(x))
+          arrows(x, lower, x, upper, code=3, angle=90, length=0.1, col="red")
+        }
+      } else {
+        plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol="red", medlty=0, staplelty=0, boxlty=0, col="red", main = attr(pp,"description"))
       }
     } else {
       print("Partial Dependence not calculated--make sure nbins is as high as the level count")
     }
   }
-  pp.plot2 <- function(pp, nBins=nbins, user_cols=NULL, user_num_splits=NULL) {
+
+  pp.plot.1d.multinomial <- function(pps) {
+    colors <- rainbow(length(pps))
+    for(i in 1:length(pps)) {
+      pp <- pps[[i]]
+      if(!all(is.na(pp))) {
+        x <- pp[,1]
+        y <- pp[,2]
+        stddev <- pp[,3]
+        color <- colors[i]
+        title <- attr(pp,"description")
+        type <- col_types[which(col_names == names(pp)[1])]
+        if(type == "enum"){
+           line_type <- "p"
+           lty <- NULL
+           pch <- 19
+           pp[, 1] <- factor(x, labels=x)
+        } else {
+          line_type <- "l"
+          lty <- 1
+          pch <- NULL
+        }
+        if(plot_stddev) {
+          upper <- y + stddev
+          lower <- y - stddev
+          if(i == 1){
+            plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, main = title, col = color, ylim  = c(min_lower, max_upper + 0.1 * abs(max_upper)))
+          } else {
+            points(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, col = color)
+          }
+          polygon(c(x, rev(x)), c(lower, rev(upper)), col = adjustcolor(color, alpha.f = 0.1), border = F)   
+          if(type == "enum"){
+            x <- c(1:length(x))
+            arrows(x, lower, x, upper, code=3, angle=90, length=0.1, col=color)
+          }
+        } else {
+          if(i == 1) {
+            plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, main = title, col = color, ylim  = c(min_y, max_y + 0.05 * abs(max_y)))
+          } else {
+            points(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, col = color) 
+          }
+        }
+        legend("topright",legend=targets, col=colors, lty=lty, pch=pch, bty="n", ncol=length(pps))      
+      } else {
+        print("Partial Dependence not calculated--make sure nbins is as high as the level count")
+      }
+    }
+  }      
+        
+  pp.plot.2d <- function(pp, nBins=nbins, user_cols=NULL, user_num_splits=NULL) {
     xtickMarks <- NULL
     ytickMarks <- NULL
     if (!all(is.na(pp))) {
@@ -4160,45 +4419,72 @@ row_index=-1) {
     }
   }
   
-  pp.plot.save <- function(pp) {
+  pp.plot.save.1d <- function(pp) {
     # If user accidentally provides one of the most common suffixes in R, it is removed.
     save_to <- gsub(replacement = "",pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
     destination_file <- paste0(save_to,"_",names(pp)[1],'.png')
     png(destination_file)
-    pp.plot(pp)
+    pp.plot.1d(pp)
     dev.off()
   }
+      
+  pp.plot.save.1d.multinomial <- function(pps) {
+    # If user accidentally provides one of the most common suffixes in R, it is removed.
+    save_to <- gsub(replacement = "",pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
+    destination_file <- paste0(save_to,"_",names(pps[[1]])[1],'.png')
+    png(destination_file)
+    pp.plot.1d.multinomial(pps)
+    dev.off()
+}
 
-  pp.plot.save2 <- function(pp, nBins=nbins, user_cols=NULL, user_num_splits=NULL) {
+  pp.plot.save.2d <- function(pp, nBins=nbins, user_cols=NULL, user_num_splits=NULL) {
     # If user accidentally provides one of the most common suffixes in R, it is removed.
     save_to <- gsub(replacement = "", pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
     colnames = paste0(names(pp)[1], "_", names(pp)[2])
     destination_file <- paste0(save_to,"_",colnames,'.png')
-    pp.plot2(pp, nbins, user_cols, user_num_splits)
+    pp.plot.2d(pp, nbins, user_cols, user_num_splits)
     rgl::snapshot3d(destination_file)
     dev.off()
   }
 
-  if(plot && !noCols) lapply(pps[1:numCols], pp.plot) # plot 1d pdp here
-  if(plot && !noCols && !is.null(save_to)){  # save 1d pdp here
-    lapply(pps[1:numCols], pp.plot.save)
+  # 1D PDP plot and save    
+  if(plot && !noCols) {
+    if(is.null(targets)){ # multonomial PDP
+      lapply(pps[1:num_1d_pp_data], pp.plot.1d)
+      if(!is.null(save_to)){
+        lapply(pps[1:num_1d_pp_data], pp.plot.save.1d)
+      }
+    } else {
+      from <- 1
+      to <- length(targets)
+      for(i in 1:numCols) {
+        pp = pps[from:to]
+        pp.plot.1d.multinomial(pp)
+        if(!is.null(save_to)){
+          pp.plot.save.1d.multinomial(pp)
+        }
+        from <- from + to
+        to <- to + length(targets)
+      }
+    }
   }
-
+          
+  # 2D PDP plot and save
   if (!noPairs && requireNamespace("plot3Drgl", quietly = TRUE) && requireNamespace("rgl", quietly = TRUE)) {
     if (plot && !is.null(save_to)) {
       # plot and save to file
       if (is.null(user_splits)) {
         sapply(
-          pps[(numCols + 1):(numCols + numColPairs)],
-          pp.plot.save2,
+          pps[(num_1d_pp_data + 1):(num_1d_pp_data + numColPairs)],
+          pp.plot.save.2d,
           nBins = nbins,
           user_cols = NULL,
           user_num_splits = NULL
         )
       } else {
         sapply(
-          pps[(numCols + 1):(numCols + numColPairs)],
-          pp.plot.save2,
+          pps[(num_1d_pp_data + 1):(num_1d_pp_data + numColPairs)],
+          pp.plot.save.2d,
           nBins = nbins,
           user_cols = user_cols,
           user_num_splits = user_num_splits
@@ -4209,7 +4495,7 @@ row_index=-1) {
       if (is.null(user_splits)) {
         sapply(
           pps[(numCols + 1):(numCols + numColPairs)],
-          pp.plot2,
+          pp.plot.2d,
           nBins = nbins,
           user_cols = NULL,
           user_num_splits = NULL
@@ -4217,7 +4503,7 @@ row_index=-1) {
       } else {
         sapply(
           pps[(numCols + 1):(numCols + numColPairs)],
-          pp.plot2,
+          pp.plot.2d,
           nBins = nbins,
           user_cols = user_cols,
           user_num_splits = user_num_splits
@@ -4401,6 +4687,10 @@ print.H2ONode <- function(node){
 #' @slot levels A \code{character} representing categorical levels on split from parent's node belonging into this node. NULL for root node or non-categorical splits.
 #' @slot nas A \code{character} representing if NA values go to the left node or right node. May be NA if node is a leaf.
 #' @slot predictions A \code{numeric} representing predictions for each node in the graph.
+#' @slot tree_decision_path A \code{character}, plain language rules representation of a trained decision tree    
+#' @slot decision_paths A \code{character} representing plain language rules that were used in a particular prediction.
+#' @slot left_cat_split A \code{character} list of categorical levels leading to the left child node. Only present when split is categorical, otherwise none.
+#' @slot right_cat_split A \code{character} list of categorical levels leading to the right child node. Only present when split is categorical, otherwise none.
 #' @aliases H2OTree
 #' @export
 setClass(
@@ -4418,7 +4708,11 @@ setClass(
     features = "character",
     levels = "list",
     nas = "character",
-    predictions = "numeric"
+    predictions = "numeric",
+    tree_decision_path = "character",
+    decision_paths = "character",
+    left_cat_split = "list",
+    right_cat_split = "list"
   )
 )
 
@@ -4491,7 +4785,7 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
 #' iris <- h2o.importFile(f)
 #' gbm_model <- h2o.gbm(y = "species", training_frame = iris)
 #' tree <- h2o.getModelTree(gbm_model, 1, "Iris-setosa")
@@ -4555,7 +4849,9 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
     thresholds = res$thresholds,
     features = res$features,
     nas = res$nas,
-    predictions = res$predictions
+    predictions = res$predictions,
+    tree_decision_path = res$tree_decision_path,
+    decision_paths = res$decision_paths
   )
 
   node_index <- 0
@@ -4641,6 +4937,24 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
       }
     }
   }
+  
+  for (i in 1: length(tree@left_children)){
+    left_idx = tree@left_children[i]
+    right_idx = tree@right_children[i]
+    
+    if(left_idx != -1){
+      tree@left_cat_split[i] <- tree@levels[left_idx + 1]
+    } else {
+      tree@left_cat_split[i] <- NULL
+    }
+    
+    if(right_idx != -1){
+      tree@right_cat_split[i] <- tree@levels[right_idx + 1]
+    } else {
+      tree@right_cat_split[i] <- NULL
+    }
+  }
+  
   tree@root_node <- .h2o.walk_tree(0, tree)
   tree
 }
@@ -4692,11 +5006,11 @@ h2o.get_seed <- get_seed.H2OModel
 #'
 #' # Train a very simple GBM model
 #' features <- c("Sepal.Length", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
-#' original_model <- h2o.gbm(x=features, y = "Species", training_frame = data)
+#' original_model <- h2o.gbm(x = features, y = "Species", training_frame = data)
 #'
 #' # Download the trained GBM model as MOJO (temporary directory used in this example)
 #' mojo_original_name <- h2o.download_mojo(model = original_model, path = tempdir())
-#' mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
+#' mojo_original_path <- paste0(tempdir(), "/", mojo_original_name)
 #'
 #' # Import the MOJO as Generic model
 #' generic_model <- h2o.genericModel(mojo_original_path)
@@ -4726,7 +5040,7 @@ h2o.genericModel <- function(mojo_file_path){
 #'
 #' # Train a very simple GBM model
 #' features <- c("Sepal.Length", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
-#' original_model <- h2o.gbm(x=features, y = "Species", training_frame = data)
+#' original_model <- h2o.gbm(x = features, y = "Species", training_frame = data)
 #'
 #' # Download the trained GBM model as MOJO (temporary directory used in this example)
 #' mojo_original_path <- h2o.save_mojo(original_model, path = tempdir())
@@ -4761,11 +5075,11 @@ h2o.import_mojo <- function(mojo_file_path){
 #'
 #' # Train a very simple GBM model
 #' features <- c("Sepal.Length", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
-#' original_model <- h2o.gbm(x=features, y = "Species", training_frame = data)
+#' original_model <- h2o.gbm(x = features, y = "Species", training_frame = data)
 #'
 #' # Download the trained GBM model as MOJO (temporary directory used in this example)
 #' mojo_original_name <- h2o.download_mojo(model = original_model, path = tempdir())
-#' mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
+#' mojo_original_path <- paste0(tempdir(), "/", mojo_original_name)
 #'
 #' # Upload the MOJO from local filesystem and obtain a Generic model
 #' mojo_model <- h2o.upload_mojo(mojo_original_path)
@@ -4794,8 +5108,8 @@ h2o.upload_mojo <- function(mojo_local_file_path){
 #' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
-#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"), 
 #'                         training_frame = prostate, family = "binomial", 
 #'                         nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #' old_threshold <- h2o.reset_threshold(prostate_glm, 0.9)

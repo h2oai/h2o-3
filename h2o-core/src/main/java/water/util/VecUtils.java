@@ -593,6 +593,31 @@ public class VecUtils {
     public long[] domain() { return _d; }
   }
 
+
+  /**
+   * Collects current domain of a categorical vector in an optimized way. Original vector's domain is not modified.
+   *
+   * @param vec A categorical vector to collect domain of.
+   * @return An array of String with the domain of given vector - possibly empty if the domain is empty. Never null.
+   * @throws IllegalArgumentException If the given vector is not categorical
+   */
+  public static String[] collectDomainFast(final Vec vec) throws IllegalArgumentException {
+    if (!vec.isCategorical())
+      throw new IllegalArgumentException("Unable to collect domain on a non-categorical vector.");
+    // Indices of the new, reduced domain. Still point to the original domain.
+    final long[] newDomainIndices = new VecUtils.CollectDomainFast((int) vec.max())
+            .doAll(vec)
+            .domain();
+
+    final String[] originalDomain = vec.domain();
+    final String[] newDomain = new String[newDomainIndices.length];
+    for (int i = 0; i < newDomain.length; ++i) {
+      newDomain[i] = originalDomain[(int) newDomainIndices[i]];
+    }
+
+    return newDomain;
+  }
+
   public static void deleteVecs(Vec[] vs, int cnt) {
     Futures f = new Futures();
     for (int i =0; i < cnt; i++) vs[cnt].remove(f);
@@ -838,4 +863,46 @@ public class VecUtils {
     }
   }
 
+  /**
+   * Randomly shuffle a Vec using Fisher Yates shuffle 
+   * https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
+   */
+  public static class ShuffleVecTask extends MRTask<ShuffleVecTask> {
+    @Override public void map(Chunk ic, Chunk nc) {
+      Random rng = new Random(); 
+      for (int i = 1; i < ic._len ; i++) {
+        int j = rng.nextInt(i); // inclusive upper bound <0,i>
+        switch (ic.vec().get_type()) {
+          case Vec.T_BAD: break; /* NOP */
+          case Vec.T_UUID:
+            if (j != i) nc.setAny(i, ic.at16l(j));
+            nc.setAny(j, ic.at16l(i));
+            break;
+          case Vec.T_STR:
+            if (j != i) nc.setAny(i, ic.stringAt(j));
+            nc.setAny(j, ic.stringAt(i));
+            break;
+          case Vec.T_NUM: /* fallthrough */
+          case Vec.T_CAT:
+          case Vec.T_TIME:
+            if (j != i) nc.setAny(i, ic.atd(j));
+            nc.setAny(j, ic.atd(i));
+            break;
+          default:
+            throw new IllegalArgumentException("Unsupported vector type: " + ic.vec().get_type());
+        }
+      }
+    }
+  }
+
+  /**
+   * Randomly shuffle a Vec. 
+   * @param iVec original Vec
+   * @param srcVec a copy of original Vec, to be shuffled
+   * @return shuffled Vec
+   */
+  public static Vec ShuffleVec(Vec iVec, Vec srcVec) {
+    new ShuffleVecTask().doAll(iVec, srcVec);
+    return srcVec;
+  }
 }

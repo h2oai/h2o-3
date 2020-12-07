@@ -7,6 +7,7 @@ from functools import reduce
 from scipy.sparse import csr_matrix
 import sys, os, gc
 import pandas as pd
+import tempfile
 
 try:        # works with python 2.7 not 3
     from StringIO import StringIO
@@ -261,7 +262,7 @@ def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_a
     mojoZip = os.path.join(tmpdir, mojoname) + ".zip"
     if not(zipFilePath==None):
         mojoZip = zipFilePath
-    genJarDir = str.split(str(tmpdir),'/')
+    genJarDir = str.split(os.path.realpath("__file__"),'/')
     genJarDir = '/'.join(genJarDir[0:genJarDir.index('h2o-py')])    # locate directory of genmodel.jar
 
     java_cmd = ["java", "-ea", "-cp", os.path.join(genJarDir, "h2o-assemblies/genmodel/build/libs/genmodel.jar"),
@@ -281,7 +282,16 @@ def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_a
 
     p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
     o, e = p.communicate()
-    pred_mojo = h2o.import_file(os.path.join(tmpdir, 'out_mojo.csv'), header=1)  # load mojo prediction into a frame and compare
+    files = os.listdir(tmpdir)
+    print("listing files {1} in directory {0}".format(tmpdir, files))
+    outfile = os.path.join(tmpdir, 'out_mojo.csv')
+    if not os.path.exists(outfile) or os.stat(outfile).st_size == 0:
+        print("MOJO SCORING FAILED:")
+        print("--------------------")
+        print(o.decode("utf-8"))
+    print("***** importing file {0}".format(outfile))        
+    pred_mojo = h2o.import_file(outfile, header=1)  # load mojo prediction in 
+    # to a frame and compare
     if glrmReconstruct or ('glrm' not in model.algo):
         return predict_h2o, pred_mojo
     else:
@@ -376,7 +386,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
         out_pojo_csv = os.path.join(tmpdir, "out_pojo.csv")
         cp_sep = ";" if sys.platform == "win32" else ":"
         java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
-                    "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
+                    "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--decimal",
                     "--pojo", pojoname, "--input", in_csv, "--output", out_pojo_csv, "--separator", separator]
         if setInvNumNA:
             java_cmd.append("--setConvertInvalidNum")
@@ -395,17 +405,10 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
         assert hc == pc, "Expected the same number of cols, but got {0} and {1}".format(hc, pc)
 
         # Value
-        for r in range(hr):
-            hp = predictions[r, 0]
-            if equality == "numeric":
-                pp = float.fromhex(predictions2[r, 0])
-                assert abs(hp - pp) < 1e-4, \
-                    "Expected predictions to be the same (within 1e-4) for row %d, but got %r and %r" % (r, hp, pp)
-            elif equality == "class":
-                pp = predictions2[r, 0]
-                assert hp == pp, "Expected predictions to be the same for row %d, but got %r and %r" % (r, hp, pp)
-            else:
-                raise ValueError
+        if not(equality == "class"or equality == "numeric"):
+            raise ValueError
+        compare_frames_local(predictions, predictions2, prob=1, tol=1e-4) # faster frame compare
+
 
 def javamunge(assembly, pojoname, test, compile_only=False):
     """
@@ -539,9 +542,11 @@ def hadoop_namenode():
     return None
 
 def pyunit_exec(test_name):
-    with open(test_name, "r") as t: pyunit = t.read()
-    pyunit_c = compile(pyunit, os.path.abspath(test_name), 'exec')
-    exec(pyunit_c, dict(__name__='main'))  # forcing module name to ensure that the test behaves the same way as when executed using `python my_test.py`
+    with open(test_name, "r") as t: 
+        pyunit = t.read()
+    test_path = os.path.abspath(test_name)
+    pyunit_c = compile(pyunit, test_path, 'exec')
+    exec(pyunit_c, dict(__name__='main', __file__=test_path))  # forcing module name to ensure that the test behaves the same way as when executed using `python my_test.py`
 
 def standalone_test(test):
     if not h2o.connection() or not h2o.connection().connected:
@@ -1739,7 +1744,8 @@ def equal_two_dicts(dict1, dict2, tolerance=1e-6, throwError=True):
                 else:
                     return False
                 
-def equal_two_arrays(array1, array2, eps, tolerance, throwError=True):
+                
+def equal_two_arrays(array1, array2, eps=1e-6, tolerance=1e-6, throw_error=True):
     """
     This function will compare the values of two python tuples.  First, if the values are below
     eps which denotes the significance level that we care, no comparison is performed.  Next,
@@ -1749,6 +1755,7 @@ def equal_two_arrays(array1, array2, eps, tolerance, throwError=True):
     :param array2: numpy array containing some values of interest that we would like to compare it with array1
     :param eps: significance level that we care about in order to perform the comparison
     :param tolerance: threshold for which we allow the two array elements to be different by
+    :param throw_error: throws error when two arrays are not equal
 
     :return: True if elements in array1 and array2 are close and False otherwise
     """
@@ -1761,30 +1768,29 @@ def equal_two_arrays(array1, array2, eps, tolerance, throwError=True):
                 # values to be compared are not too small, perform comparison
 
                 # look at differences between elements of array1 and array2
-                compare_val_h2o_Py = abs(array1[ind] - array2[ind])
+                compare_val_h2o_py = abs(array1[ind] - array2[ind])
 
-                if compare_val_h2o_Py > tolerance:    # difference is too high, return false
-                    if throwError:
+                if compare_val_h2o_py > tolerance:    # difference is too high, return false
+                    if throw_error:
                         assert False, "Array 1 value {0} and array 2 value {1} do not agree.".format(array1[ind], array2[ind])
                     else:
                         return False
 
         return True                                     # return True, elements of two arrays are close enough
     else:
-        if throwError:
+        if throw_error:
             assert False, "The two arrays are of different size!"
         else:
             return False
+        
 
-def equal_2D_tables(table1, table2, tolerance=1e-6):
+def equal_2d_tables(table1, table2, tolerance=1e-6):
     """
-    This function will compare the values of two python tuples.  First, if the values are below
-    eps which denotes the significance level that we care, no comparison is performed.  Next,
+    This function will compare the values of two python tuples. 
     False is returned if the different between any elements of the two array exceeds some tolerance.
 
-    :param array1: numpy array containing some values of interest
-    :param array2: numpy array containing some values of interest that we would like to compare it with array1
-    :param eps: significance level that we care about in order to perform the comparison
+    :param table1: numpy array containing some values of interest
+    :param table2: numpy array containing some values of interest that we would like to compare it with array1
     :param tolerance: threshold for which we allow the two array elements to be different by
 
     :return: True if elements in array1 and array2 are close and False otherwise
@@ -2846,11 +2852,16 @@ def evaluate_early_stopping(metric_list, stop_round, tolerance, bigger_is_better
 
     :return:    bool indicating if we should stop early and sorted metric_list
     """
-    metric_len = len(metric_list)
-    metric_list.sort(reverse=bigger_is_better)
-    shortest_len = 2*stop_round
+    if (bigger_is_better):
+        metric_list.reverse()
 
-    bestInLastK = 1.0*sum(metric_list[0:stop_round])/stop_round
+    shortest_len = 2*stop_round
+    if (isinstance(metric_list[0], float)):
+        startIdx = 0
+    else:
+        startIdx = 1
+        
+    bestInLastK = 1.0*sum(metric_list[startIdx:stop_round])/stop_round
     lastBeforeK = 1.0*sum(metric_list[stop_round:shortest_len])/stop_round
 
     if not(np.sign(bestInLastK) == np.sign(lastBeforeK)):
@@ -2888,7 +2899,6 @@ def check_and_count_models(hyper_params, params_zero_one, params_more_than_zero,
     """
 
     total_model = 1
-    param_len = 0
     hyper_keys = list(hyper_params)
     shuffle(hyper_keys)    # get all hyper_parameter names in random order
     final_hyper_params = dict()
@@ -2949,7 +2959,7 @@ def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, stric
     :param numElements: integer to denote number of rows to compare.  Done to reduce compare time.
         Set to 0 or negative number if you want to compare all elements.
     :param tol_time: optional parameter to limit time value difference.
-    :param tol_numerica: optional parameter to limit numeric value difference.
+    :param tol_numeric: optional parameter to limit numeric value difference.
     :param strict: optional parameter to enforce strict comparison or not.  If True, column type must
         match in order to pass the test.
     :param compare_NA: optional parameter to compare NA or not.  For csv file generated from orc file, the
@@ -2968,10 +2978,11 @@ def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, stric
 
     na_frame1 = frame1.isna().sum().sum(axis=1)[:,0]
     na_frame2 = frame2.isna().sum().sum(axis=1)[:,0]
+    probVal = numElements/rows1 if numElements > 0 else 1
 
     if compare_NA:      # check number of missing values
         assert na_frame1.flatten() == na_frame2.flatten(), "failed numbers of NA check!  Frame 1 NA number: {0}, frame 2 " \
-                                   "NA number: {1}".format(na_frame1, na_frame2)
+                                   "NA number: {1}".format(na_frame1.flatten(), na_frame2.flatten())
 
     # check column types are the same before proceeding to check each row content.
     for col_ind in range(cols1):
@@ -2990,86 +3001,17 @@ def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, stric
             if str(c2_type) == 'enum':  # orc files do not have enum column type.  We convert it here
                 frame1[col_ind].asfactor()
 
-        if custom_comparators and c1_key in custom_comparators:        
+        if custom_comparators and c1_key in custom_comparators:
             custom_comparators[c1_key](frame1, frame2, col_ind, rows1, numElements)
         elif (str(c1_type) == 'string') or (str(c1_type) == 'enum'):
             # compare string
-            compareOneStringColumn(frame1, frame2, col_ind, rows1, numElements)
+            compare_frames_local_onecolumn_NA_string(frame1[col_ind], frame2[col_ind], prob=probVal)
         else:
             if str(c2_type) == 'time':  # compare time columns
-                compareOneNumericColumn(frame1, frame2, col_ind, rows1, tol_time, numElements)
+                compare_frames_local_onecolumn_NA(frame1[col_ind], frame2[col_ind], prob=probVal, tol=tol_time)
             else:
-                compareOneNumericColumn(frame1, frame2, col_ind, rows1, tol_numeric, numElements)
+                compare_frames_local_onecolumn_NA(frame1[col_ind], frame2[col_ind], prob=probVal, tol=tol_numeric)
     return True
-
-
-def compareOneStringColumn(frame1, frame2, col_ind, rows, numElements):
-    """
-    This function will compare two String columns of two H2O frames to make sure that they are the same.
-
-    :param frame1: H2O frame to be compared
-    :param frame2: H2O frame to be compared
-    :param col_ind: integer denoting column index to compare the two frames
-    :param rows: integer denoting number of rows in the column
-    :param numElements: integer to denote number of rows to compare.  Done to reduce compare time
-    :return: None.  Will throw exceptions if comparison failed.
-    """
-
-    row_indices = list(range(rows))
-    if numElements > 0:
-        random.shuffle(row_indices)
-    else:
-        numElements = rows
-
-    for ele_ind in range(numElements):
-        row_ind = row_indices[ele_ind]
-
-        val1 = frame1[row_ind, col_ind]
-        val2 = frame2[row_ind, col_ind]
-
-        assert val1 == val2, "failed frame values check! frame1 value: {0}, frame2 value: {1} at row {2}, column " \
-                             "{3}".format(val1, val2, row_ind, col_ind)
-
-
-def compareOneNumericColumn(frame1, frame2, col_ind, rows, tolerance, numElements):
-    """
-    This function compares two numeric columns of two H2O frames to make sure that they are close.
-
-    :param frame1: H2O frame to be compared
-    :param frame2: H2O frame to be compared
-    :param col_ind: integer denoting column index to compare the two frames
-    :param rows: integer denoting number of rows in the column
-    :param tolerance: double parameter to limit numerical value difference.
-    :param numElements: integer to denote number of rows to compare.  Done to reduce compare time.
-    :return: None.  Will throw exceptions if comparison failed.
-    """
-
-    row_indices = []
-    if numElements > 0:
-        row_indices = random.sample(range(rows), numElements)
-    else:
-        numElements = rows  # Compare all elements
-        row_indices = list(range(rows))
-
-
-    for ele_ind in range(numElements):
-        row_ind = row_indices[ele_ind]
-
-        val1 = frame1[row_ind, col_ind]
-        val2 = frame2[row_ind, col_ind]
-
-        if not(math.isnan(val1)) and not(math.isnan(val2)): # both frames contain valid elements
-            diff = abs(val1-val2)/max(1, abs(val1), abs(val2))
-            assert diff <= tolerance, "failed frame values check! frame1 value = {0}, frame2 value =  {1}, " \
-                                      "at row {2}, column {3}.  The difference is {4}.".format(val1, val2, row_ind,
-                                                                                               col_ind, diff)
-        elif math.isnan(val1) and math.isnan(val2): # both frame contains missing values
-            continue
-        else:   # something is wrong, one frame got a missing value while the other is fine.
-            assert 1 == 2,  "failed frame values check! frame1 value {0}, frame2 value {1} at row {2}, " \
-                            "column {3}".format(val1, val2, row_ind, col_ind)
-
-import warnings
 
 def expect_warnings(filewithpath, warn_phrase="warn", warn_string_of_interest="warn", number_of_times=1, in_hdfs=False):
     """
@@ -3225,7 +3167,6 @@ def extract_scoring_history_field(aModel, fieldOfInterest, takeFirst=False):
     return extract_from_twoDimTable(aModel._model_json["output"]["scoring_history"], fieldOfInterest, takeFirst)
 
 
-
 def extract_from_twoDimTable(metricOfInterest, fieldOfInterest, takeFirst=False):
     """
     Given a fieldOfInterest that are found in the model scoring history, this function will extract the list
@@ -3237,12 +3178,16 @@ def extract_from_twoDimTable(metricOfInterest, fieldOfInterest, takeFirst=False)
     """
 
     allFields = metricOfInterest._col_header
+    return extract_field_from_twoDimTable(allFields, metricOfInterest.cell_values, fieldOfInterest, takeFirst=False)
+
+
+def extract_field_from_twoDimTable(allFields, cell_values, fieldOfInterest, takeFirst=False):
     if fieldOfInterest in allFields:
         cellValues = []
         fieldIndex = allFields.index(fieldOfInterest)
-        for eachCell in metricOfInterest.cell_values:
+        for eachCell in cell_values:
             cellValues.append(eachCell[fieldIndex])
-            if takeFirst:   # only grab the result from the first iteration.
+            if takeFirst:  # only grab the result from the first iteration.
                 break
         return cellValues
     else:
@@ -3301,23 +3246,7 @@ def check_ignore_cols_automl(models,names,x,y):
                 "ignored columns are not honored for model " + model
 
 
-def compare_numeric_frames(f1, f2, prob=0.5, tol=1e-6):
-    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
-    temp1 = f1.asnumeric()
-    temp2 = f2.asnumeric()
-    for colInd in range(f1.ncol):
-        for rowInd in range(f2.nrow):
-            if (random.uniform(0,1) < prob):
-                if (math.isnan(temp1[rowInd, colInd])):
-                    assert math.isnan(temp2[rowInd, colInd]), "Failed frame values check at row {2} and column {3}! " \
-                                                              "frame1 value: {0}, frame2 value: " \
-                                                              "{1}".format(temp1[rowInd, colInd], temp2[rowInd, colInd], rowInd, colInd)
-                else:
-                    diff = abs(temp1[rowInd, colInd]-temp2[rowInd, colInd])/max(1.0, abs(temp1[rowInd, colInd]),
-                                                                            abs(temp2[rowInd, colInd]))
-                    assert diff<=tol, "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
-                                  "{1}".format(temp1[rowInd, colInd], temp2[rowInd, colInd], rowInd, colInd)
-
+# This method is not changed to local method using as_data_frame because the frame size is too big.
 def check_sorted_2_columns(frame1, sorted_column_indices, prob=0.5, ascending=[True, True]):
     for colInd in sorted_column_indices:
         for rowInd in range(0, frame1.nrow-1):
@@ -3344,34 +3273,7 @@ def check_sorted_2_columns(frame1, sorted_column_indices, prob=0.5, ascending=[T
                                     assert frame1[rowInd,colInd] >= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
                                                                                              "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
                                                                                                                    rowInd+1, frame1[rowInd+1,colInd])
-
-def check_sorted_2_columns(frame1, sorted_column_indices, prob=0.5, ascending=[True, True]):
-    for colInd in sorted_column_indices:
-        for rowInd in range(0, frame1.nrow-1):
-            if (random.uniform(0.0,1.0) < prob):
-                if colInd == sorted_column_indices[0]:
-                    if not(math.isnan(frame1[rowInd, colInd])) and not(math.isnan(frame1[rowInd+1,colInd])):
-                        if ascending[colInd]:
-                            assert frame1[rowInd,colInd] <= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
-                                                                                     "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
-                                                                                                           rowInd+1, frame1[rowInd+1,colInd])
-                        else:
-                            assert frame1[rowInd,colInd] >= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
-                                                                                     "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
-                                                                                                           rowInd+1, frame1[rowInd+1,colInd])
-                else: # for second column
-                    if not(math.isnan(frame1[rowInd, sorted_column_indices[0]])) and not(math.isnan(frame1[rowInd+1,sorted_column_indices[0]])):
-                        if (frame1[rowInd,sorted_column_indices[0]]==frame1[rowInd+1, sorted_column_indices[0]]):  # meaningful to compare row entries then
-                            if not(math.isnan(frame1[rowInd, colInd])) and not(math.isnan(frame1[rowInd+1,colInd])):
-                                if ascending[colInd]:
-                                    assert frame1[rowInd,colInd] <= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
-                                                                                             "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
-                                                                                                                   rowInd+1, frame1[rowInd+1,colInd])
-                                else:
-                                    assert frame1[rowInd,colInd] >= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
-                                                                                             "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
-                                                                                                                   rowInd+1, frame1[rowInd+1,colInd])
-
+# This method is not changed to local method using as_data_frame because the frame size is too big.
 def check_sorted_1_column(frame1, sorted_column_index, prob=0.5, ascending=True):
     totRow = frame1.nrow * prob
     skipRow = int(frame1.nrow/totRow)
@@ -3579,8 +3481,8 @@ def compare_frames_local(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
     :param returnResult:
     :return:
     '''
-    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "Frame 1 row {0}, col {1}.  Frame 2 row {2}, col {3}.  " \
-                                                      "They are different.".format(f1.nrow, f1.ncol, f2.nrow, f2.ncol)
+    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "Frame 1 row {0}, col {1}.  Frame 2 row {2}, col {3}.  They are " \
+                                                      "different.".format(f1.nrow, f1.ncol, f2.nrow, f2.ncol)
     typeDict = f1.types
     frameNames = f1.names
 
@@ -3740,53 +3642,27 @@ def compare_frames_local_onecolumn_NA_string(f1, f2, prob=0.5, returnResult=Fals
     if returnResult:
         return True
 
-def build_save_model_GLM(params, x, train, respName):
-    # build a model
-    model = H2OGeneralizedLinearEstimator(**params)
+def build_save_model_generic(params, x, train, respName, algoName, tmpdir):
+    if algoName.lower() == "gam":
+        model = H2OGeneralizedAdditiveEstimator(**params)
+    elif algoName.lower() == "glm":
+        model = H2OGeneralizedLinearEstimator(**params)
+    elif algoName.lower() == "gbm":
+        model = H2OGradientBoostingEstimator(**params)
+    elif algoName.lower() == "drf":
+        model = H2ORandomForestEstimator(**params)
+    else:
+        raise Exception("build_save_model does not support algo "+algoName+".  Please add this to build_save_model.")
     model.train(x=x, y=respName, training_frame=train)
-    # save model
-    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
-    MOJONAME = regex.sub("_", model._id)
-
-    print("Downloading Java prediction model code from H2O")
-    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
-    os.makedirs(TMPDIR)
-    model.download_mojo(path=TMPDIR)    # save mojo
+    model.download_mojo(path=tmpdir)
     return model
-
-def build_save_model_GBM(params, x, train, respName):
-    # build a model
-    model = H2OGradientBoostingEstimator(**params)
-    model.train(x=x, y=respName, training_frame=train)
-    # save model
-    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
-    MOJONAME = regex.sub("_", model._id)
-
-    print("Downloading Java prediction model code from H2O")
-    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
-    os.makedirs(TMPDIR)
-    model.download_mojo(path=TMPDIR)    # save mojo
-    return model
-
-def build_save_model_DRF(params, x, train, respName):
-    # build a model
-    model = H2ORandomForestEstimator(**params)
-    model.train(x=x, y=respName, training_frame=train)
-    # save model
-    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
-    MOJONAME = regex.sub("_", model._id)
-
-    print("Downloading Java prediction model code from H2O")
-    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
-    os.makedirs(TMPDIR)
-    model.download_mojo(path=TMPDIR)    # save mojo
-    return model
-
 
 # generate random dataset, copied from Pasha
 def random_dataset(response_type, verbose=True, ncol_upper=25000, ncol_lower=15000, NTESTROWS=200, missing_fraction=0.0, seed=None):
     """Create and return a random dataset."""
-    if verbose: print("\nCreating a dataset for a %s problem:" % response_type)
+    if verbose:
+        print("\nCreating a dataset for a %s problem:" % response_type)
+    random.seed(seed)
     fractions = {k + "_fraction": random.random() for k in "real categorical integer time string binary".split()}
     fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
     fractions["binary_fraction"] /= 3
@@ -3797,6 +3673,8 @@ def random_dataset(response_type, verbose=True, ncol_upper=25000, ncol_lower=150
         fractions[k] /= sum_fractions
     if response_type == 'binomial':
         response_factors = 2
+    elif response_type == 'gaussian':
+        response_factors = 1
     else:
         response_factors = random.randint(3, 10)
     df = h2o.create_frame(rows=random.randint(ncol_lower, ncol_upper) + NTESTROWS, cols=random.randint(3, 20),
@@ -3998,15 +3876,16 @@ def generatePandaEnumCols(pandaFtrain, cname, nrows):
     colLength = len(tempNames)
     newNames = ['a']*colLength
     newIndics = [0]*colLength
-    header = tempNames[0].split('.')[0]
-
-    for ind in range(colLength):
-        newIndics[ind] = int(tempNames[ind].split('.')[1][1:])
-    newIndics.sort()
-
-    for ind in range(colLength):
-        newNames[ind] = header+'.l'+str(newIndics[ind])  # generate correct order of names
-    ftemp = temp[newNames]
+    if "." in tempNames[0]:
+        header = tempNames[0].split('.')[0]
+        for ind in range(colLength):
+            newIndics[ind] = int(tempNames[ind].split('.')[1][1:])
+        newIndics.sort()
+        for ind in range(colLength):
+            newNames[ind] = header+'.l'+str(newIndics[ind])  # generate correct order of names
+        ftemp = temp[newNames]
+    else:
+        ftemp = temp
     ctemp = pd.concat([ftemp, zeroFrame], axis=1)
     return ctemp
 
@@ -4159,9 +4038,9 @@ def compare_weightedStats(model, dataframe, xlist, xname, weightV, pdpTDTable, t
     wMean = extract_col_value_H2OTwoDimTable(pdpTDTable, "mean_response") # stats for age predictor
     wStd = extract_col_value_H2OTwoDimTable(pdpTDTable, "stddev_response")
     wStdErr = extract_col_value_H2OTwoDimTable(pdpTDTable, "std_error_mean_response")
-    equal_two_arrays(weightStat[0], wMean, tol, tol, throwError=True)
-    equal_two_arrays(weightStat[1], wStd, tol, tol, throwError=True)
-    equal_two_arrays(weightStat[2], wStdErr, tol, tol, throwError=True)
+    equal_two_arrays(weightStat[0], wMean, tol, tol, throw_error=True)
+    equal_two_arrays(weightStat[1], wStd, tol, tol, throw_error=True)
+    equal_two_arrays(weightStat[2], wStdErr, tol, tol, throw_error=True)
 
 
 def manual_partial_dependence(model, dataframe, xlist, xname, weightV):
@@ -4394,3 +4273,81 @@ def saveModelMojo(model):
     os.makedirs(tmpdir)
     model.download_mojo(path=tmpdir)    # save mojo
     return tmpdir
+
+# This file will contain functions used by GLM test only.
+def assertEqualRegPaths(keys, pathList, index, onePath, tol=1e-6):
+    for oneKey in keys:
+        if (pathList[oneKey] != None):
+            assert abs(pathList[oneKey][index]-onePath[oneKey][0]) < tol, \
+                "Expected value: {0}, Actual: {1}".format(pathList[oneKey][index], onePath[oneKey][0])
+
+
+
+def assertEqualCoeffDicts(coef1Dict, coef2Dict, tol = 1e-6):
+    assert len(coef1Dict) == len(coef2Dict), "Length of first coefficient dict: {0}, length of second coefficient " \
+                                             "dict: {1} and they are different.".format(len(coef1Dict, len(coef2Dict)))
+    for key in coef1Dict:
+        assert abs(coef1Dict[key]-coef2Dict[key]) < tol, "Coefficient for {0} from first dict: {1}, from second dict:" \
+                                                         " {2} and they are different.".format(key, coef1Dict[key],
+                                                                                               coef2Dict[key])
+def assertEqualModelMetrics(metrics1, metrics2, tol = 1e-6,
+                            keySet=["MSE", "AUC", "Gini", "null_deviance", "logloss", "RMSE",
+                                    "pr_auc", "r2"]):
+    # 1. Check model types
+    model1_type = metrics1.__class__.__name__
+    model2_type = metrics2.__class__.__name__
+    assert model1_type is model2_type, "The model types differ. The first model metric is of type {0} and the second " \
+                                       "model metric is of type {1}.".format(model1_type, model2_type)
+
+    metricDict1 = metrics1._metric_json
+    metricDict2 = metrics2._metric_json
+
+    for key in keySet:
+        if key in metricDict1.keys() and (isinstance(metricDict1[key], float)): # only compare floating point metrics
+            assert abs(metricDict1[key]-metricDict2[key])/max(1,max(metricDict1[key],metricDict2[key])) < tol, \
+                "ModelMetric {0} from model 1,  {1} from model 2 are different.".format(metricDict1[key],metricDict2[key])
+
+# When an array of alpha and/or lambdas are given, a list of submodels are also built.  For each submodel built, only
+# the coefficients, lambda/alpha/deviance values are returned.  The model metrics is calculated from the submodel
+# with the best deviance.  
+#
+# In this test, in addition, we build separate models using just one lambda and one alpha values as when building one
+# submodel.  In theory, the coefficients obtained from the separate models should equal to the submodels.  We check 
+# and compare the followings:
+# 1. coefficients from submodels and individual model should match when they are using the same alpha/lambda value;
+# 2. training metrics from alpha array should equal to the individual model matching the alpha/lambda value;
+def compareSubmodelsNindividualModels(modelWithArray, trainingData, xarray, yindex):
+    best_submodel_index = modelWithArray._model_json["output"]["best_submodel_index"]
+    r = H2OGeneralizedLinearEstimator.getGLMRegularizationPath(modelWithArray)  # contains all lambda/alpha values of submodels trained.
+    submodel_num = len(r["lambdas"])
+    regKeys = ["alphas", "lambdas", "explained_deviance_valid", "explained_deviance_train"]
+    for submodIndx in range(submodel_num):  # manually build glm model and compare to those built before
+        modelGLM = H2OGeneralizedLinearEstimator(family='binomial', alpha=[r["alphas"][submodIndx]], Lambda=[r["lambdas"][submodIndx]])
+        modelGLM.train(training_frame=trainingData, x=xarray, y=yindex)
+        # check coefficients between submodels and model trained with same parameters
+        assertEqualCoeffDicts(r["coefficients"][submodIndx], modelGLM.coef())
+        modelGLMr = H2OGeneralizedLinearEstimator.getGLMRegularizationPath(modelGLM) # contains one item only
+        assertEqualRegPaths(regKeys, r, submodIndx, modelGLMr)
+        if (best_submodel_index == submodIndx):  # check training metrics of modelGLM should equal that of m since it is the best subModel
+            assertEqualModelMetrics(modelWithArray._model_json["output"]["training_metrics"],
+                                    modelGLM._model_json["output"]["training_metrics"])
+            assertEqualCoeffDicts(modelWithArray.coef(), modelGLM.coef()) # model coefficient should come from best submodel
+        else:  # check and make sure best_submodel_index has lowest deviance
+            assert modelGLM.residual_deviance() - modelWithArray.residual_deviance() >= 0, \
+                "Individual model has better residual_deviance than best submodel!"
+
+def extractNextCoeff(cs_norm, orderedCoeffNames, startVal):
+    for ind in range(0, len(startVal)):
+        startVal[ind] = cs_norm[orderedCoeffNames[ind]]
+    return startVal
+
+def assertCoefEqual(regCoeff, coeff, coeffClassSet, tol=1e-6):
+    for key in regCoeff:
+        temp = key.split('_')
+        classInd = int(temp[1])
+        val1 = regCoeff[key]
+        val2 = coeff[coeffClassSet[classInd]][temp[0]]
+        assert type(val1)==type(val2), "type of coeff1: {0}, type of coeff2: {1}".format(type(val1), type(val2))
+        diff = abs(val1-val2)
+        print("val1: {0}, val2: {1}, tol: {2}".format(val1, val2, tol))
+        assert diff < tol, "diff {0} exceeds tolerance {1}.".format(diff, tol)

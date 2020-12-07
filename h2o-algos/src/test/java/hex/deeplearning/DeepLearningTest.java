@@ -2,10 +2,13 @@ package hex.deeplearning;
 
 
 import hex.*;
+import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.tools.PredictCsv;
 import hex.genmodel.utils.DistributionFamily;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.junit.*;
+import org.junit.rules.TemporaryFolder;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -14,6 +17,7 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
+import water.parser.ParseSetup;
 import water.util.*;
 
 import java.io.File;
@@ -26,10 +30,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static hex.genmodel.utils.DistributionFamily.*;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
 
 public class DeepLearningTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+
+  @Rule
+  public transient TemporaryFolder tmp = new TemporaryFolder();
 
   abstract static class PrepData { abstract int prep(Frame fr); }
 
@@ -1881,7 +1889,7 @@ public class DeepLearningTest extends TestUtil {
   @Test
   public void testHuberDeltaLarge() {
     Frame tfr = null;
-    DeepLearningModel dl = null;
+    DeepLearningModel dl = null, dl2 = null;
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
@@ -1899,17 +1907,35 @@ public class DeepLearningTest extends TestUtil {
       Assert.assertEquals(12.93808 /*MSE*/,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,0.7);
       Assert.assertEquals(12.93808 /*MSE*/,((ModelMetricsRegression)dl._output._training_metrics)._MSE,0.7);
 
+      // the same for distribution = AUTO representing Huber:
+      DeepLearningParameters parms2 = new DeepLearningParameters();
+      parms2._train = tfr._key;
+      parms2._response_column = tfr.lastVecName();
+      parms2._reproducible = true;
+      parms2._hidden = new int[]{20,20};
+      parms2._seed = 0xdecaf;
+      parms2._distribution = AUTO;
+      parms2._loss = DeepLearningParameters.Loss.Huber;
+      parms2._huber_alpha = 1; //just like gaussian
+
+      dl2 = new DeepLearning(parms2).trainModel().get();
+      
+      Assert.assertEquals(12.93808 /*MSE*/,((ModelMetricsRegression)dl2._output._training_metrics)._mean_residual_deviance,0.7);
+      Assert.assertEquals(12.93808 /*MSE*/,((ModelMetricsRegression)dl2._output._training_metrics)._MSE,0.7);
+
     } finally {
       if (tfr != null) tfr.delete();
       if (dl != null) dl.deleteCrossValidationModels();
       if (dl != null) dl.delete();
+      if (dl2 != null) dl2.deleteCrossValidationModels();
+      if (dl2 != null) dl2.delete();  
     }
   }
 
   @Test
   public void testHuberDeltaTiny() {
     Frame tfr = null;
-    DeepLearningModel dl = null;
+    DeepLearningModel dl = null, dl2 = null;
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
@@ -1930,17 +1956,35 @@ public class DeepLearningTest extends TestUtil {
       Assert.assertEquals((2*2.31398/*MAE*/-delta)*delta,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,2e-2);
       Assert.assertEquals(19.856,((ModelMetricsRegression)dl._output._training_metrics)._MSE,1e-3);
 
+      // the same for distribution = AUTO representing Huber:
+      DeepLearningParameters parms2 = new DeepLearningParameters();
+      parms2._train = tfr._key;
+      parms2._response_column = tfr.lastVecName();
+      parms2._reproducible = true;
+      parms2._hidden = new int[]{20,20};
+      parms2._seed = 0xdecaf;
+      parms2._distribution = AUTO;
+      parms2._loss = DeepLearningParameters.Loss.Huber;
+      parms2._huber_alpha = 1e-2;
+
+      dl2 = new DeepLearning(parms2).trainModel().get();
+      
+      Assert.assertEquals((2*2.31398/*MAE*/-delta)*delta,((ModelMetricsRegression)dl2._output._training_metrics)._mean_residual_deviance,2e-2);
+      Assert.assertEquals(19.856,((ModelMetricsRegression)dl2._output._training_metrics)._MSE,1e-3);
+
     } finally {
       if (tfr != null) tfr.delete();
       if (dl != null) dl.deleteCrossValidationModels();
       if (dl != null) dl.delete();
+      if (dl2 != null) dl2.deleteCrossValidationModels();
+      if (dl2 != null) dl2.delete();
     }
   }
 
   @Test
   public void testHuber() {
     Frame tfr = null;
-    DeepLearningModel dl = null;
+    DeepLearningModel dl = null, dl2 = null;
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
@@ -1956,10 +2000,26 @@ public class DeepLearningTest extends TestUtil {
 
       Assert.assertEquals(6.4964976811,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
 
+      // the same for distribution = AUTO representing Huber:
+      DeepLearningParameters parms2 = new DeepLearningParameters();
+      parms2._train = tfr._key;
+      parms2._response_column = tfr.lastVecName();
+      parms2._reproducible = true;
+      parms2._hidden = new int[]{20,20};
+      parms2._seed = 0xdecaf;
+      parms2._distribution = AUTO;
+      parms2._loss = DeepLearningParameters.Loss.Huber;
+
+      dl2 = new DeepLearning(parms2).trainModel().get();
+
+      Assert.assertEquals(6.4964976811,((ModelMetricsRegression)dl2._output._training_metrics)._mean_residual_deviance,1e-5);
+
     } finally {
       if (tfr != null) tfr.delete();
       if (dl != null) dl.deleteCrossValidationModels();
       if (dl != null) dl.delete();
+      if (dl2 != null) dl2.deleteCrossValidationModels();
+      if (dl2 != null) dl2.delete();
     }
   }
 
@@ -1983,7 +2043,6 @@ public class DeepLearningTest extends TestUtil {
       parms._seed = 0xdecaf;
       parms._nfolds = 3;
       parms._distribution = bernoulli;
-      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.AUTO;
 
       dl = new DeepLearning(parms).trainModel().get();
 
@@ -2127,7 +2186,7 @@ public class DeepLearningTest extends TestUtil {
   @Test
   public void testCategoricalEncodingRegressionHuber() {
     Frame tfr = null;
-    DeepLearningModel dl = null;
+    DeepLearningModel dl = null, dl2 = null;
 
     try {
       String response = "age";
@@ -2158,10 +2217,31 @@ public class DeepLearningTest extends TestUtil {
       int mean_residual_deviance_row = Arrays.binarySearch(dl._output._cross_validation_metrics_summary.getRowHeaders(), "mean_residual_deviance");
       Assert.assertEquals(117.8014, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(mean_residual_deviance_row,0)), 1);
 
+      // the same for distribution = AUTO representing Huber:
+      DeepLearningParameters parms2 = new DeepLearningParameters();
+      parms2._train = tfr._key;
+      parms2._valid = tfr._key;
+      parms2._response_column = response;
+      parms2._reproducible = true;
+      parms2._hidden = new int[]{20,20};
+      parms2._seed = 0xdecaf;
+      parms2._nfolds = 3;
+      parms2._distribution = AUTO;
+      parms2._loss = DeepLearningParameters.Loss.Huber;
+      parms2._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Binary;
+
+      dl2 = new DeepLearning(parms2).trainModel().get();
+
+      Assert.assertEquals(87.26206135855, ((ModelMetricsRegression)dl2._output._training_metrics)._mean_residual_deviance,1e-4);
+      Assert.assertEquals(87.26206135855, ((ModelMetricsRegression)dl2._output._validation_metrics)._mean_residual_deviance,1e-4);
+      Assert.assertEquals(117.8014, ((ModelMetricsRegression)dl2._output._cross_validation_metrics)._mean_residual_deviance,1e-4);
+
     } finally {
       if (tfr != null) tfr.remove();
       if (dl != null) dl.deleteCrossValidationModels();
       if (dl != null) dl.delete();
+      if (dl2 != null) dl2.deleteCrossValidationModels();
+      if (dl2 != null) dl2.delete();
     }
   }
 
@@ -2462,13 +2542,12 @@ public class DeepLearningTest extends TestUtil {
       parms._score_interval = 0;
       parms._stopping_rounds = 0;
       parms._overwrite_with_best_model = true;
+      DeepLearningParameters parms2 = (DeepLearningParameters)parms.clone();
+      parms2._epochs = 10;
 
       dl = new DeepLearning(parms).trainModel().get();
       double ll1 = ((ModelMetricsMultinomial)dl._output._validation_metrics).logloss();
 
-
-      DeepLearningParameters parms2 = (DeepLearningParameters)parms.clone();
-      parms2._epochs = 10;
       parms2._checkpoint = dl._key;
 
       dl2 = new DeepLearning(parms2).trainModel().get();
@@ -2513,13 +2592,12 @@ public class DeepLearningTest extends TestUtil {
       parms._score_interval = 0;
       parms._stopping_rounds = 0;
       parms._overwrite_with_best_model = true;
+      DeepLearningParameters parms2 = (DeepLearningParameters)parms.clone();
+      parms2._epochs = 20;
 
       dl = new DeepLearning(parms).trainModel().get();
       double ll1 = ((ModelMetricsMultinomial)dl._output._validation_metrics).logloss();
 
-
-      DeepLearningParameters parms2 = (DeepLearningParameters)parms.clone();
-      parms2._epochs = 20;
       parms2._checkpoint = dl._key;
 
       dl2 = new DeepLearning(parms2).trainModel().get();
@@ -2676,6 +2754,95 @@ public class DeepLearningTest extends TestUtil {
       zeros.remove();
       Scope.exit();
     }
+  }
+
+
+  @Test public void testMOJOandPOJOSupportedCategoricalEncodings() throws Exception {
+      try {
+          Scope.enter();
+          final String response = "CAPSULE";
+          final String testFile = "./smalldata/logreg/prostate.csv";
+          Frame fr = parse_test_file(testFile)
+                  .toCategoricalCol("RACE")
+                  .toCategoricalCol("GLEASON")
+                  .toCategoricalCol(response);
+          fr.remove("ID").remove();
+          fr.vec("RACE").setDomain(ArrayUtils.append(fr.vec("RACE").domain(), "3"));
+          Scope.track(fr);
+          DKV.put(fr);
+    
+          Model.Parameters.CategoricalEncodingScheme[] supportedSchemes = {
+                  Model.Parameters.CategoricalEncodingScheme.AUTO,
+                  Model.Parameters.CategoricalEncodingScheme.OneHotInternal,
+                  Model.Parameters.CategoricalEncodingScheme.SortByResponse,
+                  Model.Parameters.CategoricalEncodingScheme.Binary,
+                  Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
+                  Model.Parameters.CategoricalEncodingScheme.Eigen
+          };
+    
+          for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
+    
+              DeepLearningModel.DeepLearningParameters parms = new DeepLearningModel.DeepLearningParameters();
+              parms._train = fr._key;
+              parms._response_column = response;
+              parms._categorical_encoding = scheme;
+    
+              DeepLearning job = new DeepLearning(parms);
+              DeepLearningModel dl = job.trainModel().get();
+              Scope.track_generic(dl);
+    
+              // Done building model; produce a score column with predictions
+              Frame scored = Scope.track(dl.score(fr));
+    
+              // Build a POJO & MOJO, validate same results
+              Assert.assertTrue(dl.testJavaScoring(fr, scored, 1e-15));
+    
+              File pojoScoringOutput = tmp.newFile(dl._key + "_scored.csv");
+    
+              String modelName = JCodeGen.toJavaId(dl._key.toString());
+              String pojoSource = dl.toJava(false, true);
+              Class pojoClass = JCodeGen.compile(modelName, pojoSource);
+    
+              PredictCsv predictor = PredictCsv.make(
+                      new String[]{
+                              "--embedded",
+                              "--input", TestUtil.makeNfsFileVec(testFile).getPath(),
+                              "--output", pojoScoringOutput.getAbsolutePath(),
+                              "--decimal"}, (GenModel) pojoClass.newInstance());
+              predictor.run();
+              Frame scoredWithPojo = Scope.track(parse_test_file(pojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+                  @Override
+                  public ParseSetup transformSetup(ParseSetup guessedSetup) {
+                      return guessedSetup.setCheckHeader(1);
+                  }
+              }));
+    
+              scoredWithPojo.setNames(scored.names());
+              assertFrameEquals(scored, scoredWithPojo, 1e-7);
+
+              File mojoScoringOutput = tmp.newFile(dl._key + "_scored2.csv");
+              MojoModel mojoModel = dl.toMojo();
+
+              predictor = PredictCsv.make(
+                      new String[]{
+                              "--embedded",
+                              "--input", TestUtil.makeNfsFileVec(testFile).getPath(),
+                              "--output", mojoScoringOutput.getAbsolutePath(),
+                              "--decimal"}, (GenModel) mojoModel);
+              predictor.run();
+              Frame scoredWithMojo = Scope.track(parse_test_file(mojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+                  @Override
+                  public ParseSetup transformSetup(ParseSetup guessedSetup) {
+                      return guessedSetup.setCheckHeader(1);
+                  }
+              }));
+
+              scoredWithMojo.setNames(scored.names());
+              assertFrameEquals(scored, scoredWithMojo, 1e-8);
+          }
+      } finally {
+          Scope.exit();
+      }
   }
 }
 

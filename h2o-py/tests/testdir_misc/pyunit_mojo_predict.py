@@ -5,6 +5,7 @@ import time
 import os
 
 import pandas
+from pandas.testing import assert_frame_equal
 
 sys.path.insert(1, "../../")
 import h2o
@@ -114,6 +115,7 @@ def mojo_predict_csv_test(target_dir):
     regression_gbm1 = H2OGradientBoostingEstimator(distribution="gaussian")
     regression_gbm1.train(x=[2, 3, 4, 5, 6, 7, 8], y=1, training_frame=train)
     pred_reg = regression_gbm1.predict(pdf)
+    contribs_reg = regression_gbm1.predict_contributions(pdf)
     p1 = pred_reg[0, 0]
     print("Regression prediction: " + str(p1))
 
@@ -121,9 +123,16 @@ def mojo_predict_csv_test(target_dir):
 
     print("\nPerforming Regression Prediction using MOJO @... " + target_dir)
     prediction_result = h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=mojo_zip_path,
-                                                   output_csv_path=output_csv)
+                                             output_csv_path=output_csv)
     print("Prediction result: " + str(prediction_result))
     assert p1 == float(prediction_result[0]['predict']), "expected predictions to be the same for binary and MOJO model for regression"
+
+    print("\nComparing Regression Contributions using MOJO @... " + target_dir)
+    contributions_result = h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=mojo_zip_path,
+                                                output_csv_path=output_csv, predict_contributions=True)
+    assert contributions_result is not None
+    contributions_pandas = pandas.read_csv(output_csv)
+    assert_frame_equal(contribs_reg.as_data_frame(use_pandas=True), contributions_pandas, check_dtype=False)
 
     # =================================================================
     # Binomial
@@ -133,6 +142,7 @@ def mojo_predict_csv_test(target_dir):
 
     bernoulli_gbm1.train(x=[2, 3, 4, 5, 6, 7, 8], y=1, training_frame=train)
     pred_bin = bernoulli_gbm1.predict(pdf)
+    contribs_bin = bernoulli_gbm1.predict_contributions(pdf)
 
     binary_prediction_0 = pred_bin[0, 1]
     binary_prediction_1 = pred_bin[0, 2]
@@ -143,15 +153,24 @@ def mojo_predict_csv_test(target_dir):
 
     print("\nPerforming Binomial Prediction using MOJO @... " + target_dir)
     prediction_result = h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=mojo_zip_path,
-                                                   output_csv_path=output_csv)
+                                             output_csv_path=output_csv)
 
-    mojo_prediction_0 = float(prediction_result[0]['0'])
-    mojo_prediction_1 = float(prediction_result[0]['1'])
+    mojo_prediction_0 = float(prediction_result[0]['p0'])
+    mojo_prediction_1 = float(prediction_result[0]['p1'])
     print("Binomial prediction: p0: " + str(mojo_prediction_0))
     print("Binomial prediction: p1: " + str(mojo_prediction_1))
 
     assert binary_prediction_0 == mojo_prediction_0, "expected predictions to be the same for binary and MOJO model for Binomial - p0"
     assert binary_prediction_1 == mojo_prediction_1, "expected predictions to be the same for binary and MOJO model for Binomial - p1"
+
+    print("\nComparing Binary Classification Contributions using MOJO @... " + target_dir)
+    contributions_bin_result = h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=mojo_zip_path,
+                                                    output_csv_path=output_csv, predict_contributions=True)
+    assert contributions_bin_result is not None
+    contributions_bin_pandas = pandas.read_csv(output_csv)
+    print(contributions_bin_pandas)
+    print(contribs_bin.as_data_frame(use_pandas=True))
+    assert_frame_equal(contribs_bin.as_data_frame(use_pandas=True), contributions_bin_pandas, check_dtype=False)
 
     # =================================================================
     # Multinomial
@@ -209,7 +228,8 @@ def mojo_predict_pandas_test(sandbox_dir):
     model.train(x=[2, 3, 4, 5, 6, 7, 8], y=1, training_frame=data)
 
     h2o_prediction = model.predict(pdf)
-
+    h2o_contributions = model.predict_contributions(pdf)
+    
     # download mojo
     model_zip_path = os.path.join(sandbox_dir, 'model.zip')
     genmodel_path = os.path.join(sandbox_dir, 'h2o-genmodel.jar')
@@ -221,10 +241,14 @@ def mojo_predict_pandas_test(sandbox_dir):
     mojo_prediction = h2o.mojo_predict_pandas(dataframe=pandas_frame, mojo_zip_path=model_zip_path, genmodel_jar_path=genmodel_path)
     print("Binomial Prediction (Binary) - p0: %f" % h2o_prediction[0,1])
     print("Binomial Prediction (Binary) - p1: %f" % h2o_prediction[0,2])
-    print("Binomial Prediction (MOJO) - p0: %f" % mojo_prediction['0'].iloc[0])
-    print("Binomial Prediction (MOJO) - p1: %f" % mojo_prediction['1'].iloc[0])
-    assert h2o_prediction[0,1] == mojo_prediction['0'].iloc[0], "expected predictions to be the same for binary and MOJO model - p0"
-    assert h2o_prediction[0,2] == mojo_prediction['1'].iloc[0], "expected predictions to be the same for binary and MOJO model - p0"
+    print("Binomial Prediction (MOJO) - p0: %f" % mojo_prediction['p0'].iloc[0])
+    print("Binomial Prediction (MOJO) - p1: %f" % mojo_prediction['p1'].iloc[0])
+    assert h2o_prediction[0,1] == mojo_prediction['p0'].iloc[0], "expected predictions to be the same for binary and MOJO model - p0"
+    assert h2o_prediction[0,2] == mojo_prediction['p1'].iloc[0], "expected predictions to be the same for binary and MOJO model - p0"
+
+    mojo_contributions = h2o.mojo_predict_pandas(dataframe=pandas_frame, mojo_zip_path=model_zip_path,
+                                                 genmodel_jar_path=genmodel_path, predict_contributions=True)
+    assert_frame_equal(h2o_contributions.as_data_frame(use_pandas=True), mojo_contributions, check_dtype=False)
 
 
 csv_test_dir = tempfile.mkdtemp()

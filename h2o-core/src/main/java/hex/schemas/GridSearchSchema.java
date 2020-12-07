@@ -12,9 +12,10 @@ import water.api.schemas3.SchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMap;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
+import java.util.stream.Stream;
+
+import static hex.grid.HyperSpaceWalker.BaseWalker.SUBSPACES;
 
 /**
  * This is a common grid search schema composed of two parameters: default parameters for a builder
@@ -62,19 +63,26 @@ public class GridSearchSchema<G extends Grid<MP>,
 
   private static final int SEQUENTIAL_GRID_SEARCH = 1; // 1 model built at a time = sequential :)
 
+  private static Map<String, Object[]> paramValuesToArray(Map<String, Object> params) {
+    Map<String, Object[]> result = new HashMap<>();
+    for (Map.Entry<String, Object> e : params.entrySet()) {
+      String k = e.getKey();
+      Object v = e.getValue();
+      Object[] arr = SUBSPACES.equals(k) ? ((List) v).stream().map(x -> paramValuesToArray((Map<String, Object>) x)).toArray(Map[]::new)
+              : v instanceof List ? ((List) v).toArray()
+              : new Object[]{v};
+      result.put(k, arr);
+    }
+    return result;
+  }
+  
   @Override public S fillFromParms(Properties parms) {
     if( parms.containsKey("hyper_parameters") ) {
       Map<String, Object> m;
       try {
         m = water.util.JSONUtils.parse(parms.getProperty("hyper_parameters"));
-
         // Convert lists and singletons into arrays
-        for (Map.Entry<String, Object> e : m.entrySet()) {
-          Object o = e.getValue();
-          Object[] o2 = o instanceof List ? ((List) o).toArray() : new Object[]{o};
-
-          hyper_parameters.put(e.getKey(),o2);
-        }
+        hyper_parameters.putAll(paramValuesToArray(m));
       }
       catch (Exception e) {
         // usually JsonSyntaxException, but can also be things like IllegalStateException or NumberFormatException
@@ -85,6 +93,7 @@ public class GridSearchSchema<G extends Grid<MP>,
 
     if( parms.containsKey("search_criteria") ) {
       Properties p;
+      
       try {
         p = water.util.JSONUtils.parseToProperties(parms.getProperty("search_criteria"));
 
@@ -107,7 +116,7 @@ public class GridSearchSchema<G extends Grid<MP>,
         } else {
           throw new H2OIllegalArgumentException("search_criteria.strategy", strategy);
         }
-
+        
         search_criteria.fillWithDefaults();
         search_criteria.fillFromParms(p);
       }

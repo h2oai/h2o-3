@@ -758,7 +758,7 @@ Can be modified | | |
 `score_interval`| `train_samples_per_iteration`| `target_ratio_comm_to_comp`
 `score_duty_cycle`| `score_training_samples`| `score_validation_samples`
 `score_validation_sampling`| `classification_stop`| `regression_stop`
-`quiet_mode` | `max_confusion_matrix_size`| `max_hit_ratio_k`
+`quiet_mode` | `max_confusion_matrix_size`| `mini_batch_size`
 `diagnostics` | `variable_importances`| `initial_weight_distribution`
 `initial_weight_scale` | `force_load_balance` | `replicate_training_data`
 `shuffle_training_data`| `single_node_mode` | `fast_mode`
@@ -766,7 +766,7 @@ Can be modified | | |
 `input_dropout_ratio`| `hidden_dropout_ratios` | `loss`
 `overwrite_with_best_model`| `missing_values_handling` | `average_activation`
 `reproducible` | `export_weights_and_biases`| `elastic_averaging`
-`elastic_averaging_moving_rate`| `elastic_averaging_regularization`| `mini_batch_size`
+`elastic_averaging_moving_rate`| `elastic_averaging_regularization`| 
 
 
 1. After building your model, copy the `model_id`. To view the `model_id`, click the **Model** menu then click **List All Models**. 

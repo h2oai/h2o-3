@@ -100,7 +100,6 @@ class Test_deeplearning_grid_search:
     hyper_params['variable_importances'] = [False]
     hyper_params['fast_mode'] = [True, False]
     hyper_params['shuffle_training_data'] = [False]
-    # hyper_params["max_hit_ratio_k"] = [0.0]
 
     # parameters to be excluded from hyper parameter list even though they may be gridable
     exclude_parameter_lists = ['distribution', 'tweedie_power', 'validation_frame', 'response_column',
@@ -114,7 +113,7 @@ class Test_deeplearning_grid_search:
                                'score_duty_cycle', 'max_after_balance_size', 'nesterov_accelerated_gradient',
                                'max_categorical_features', 'reproducible', 'missing_values_handling', 'initial_biases',
                                'stopping_rounds', 'stopping_tolerance', 'stopping_metric', 'target_ratio_comm_to_comp',
-                               'stopping_metric', 'max_hit_ratio_k', 'balance_classes']
+                               'stopping_metric', 'balance_classes']
 
     final_hyper_params = dict()     # store the final hyper-parameters that we are going to use
     gridable_parameters = []    # store griddable parameter names

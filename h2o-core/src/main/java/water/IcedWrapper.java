@@ -45,6 +45,8 @@ public class IcedWrapper extends Iced {
   KeyV3[] k_ar;
   Iced[] iced_ar;
 
+  String[][] s_ar_ar;
+  
   public IcedWrapper(Object o) {
     if (null == o) {
       this.t = null;
@@ -54,9 +56,9 @@ public class IcedWrapper extends Iced {
     this.is_array = o.getClass().isArray();
 
     if (is_array) {
+      
       // array (1D only, for now)
       Class clz = o.getClass().getComponentType();
-
       if (clz == Byte.class) {
         t = "Byte";
         // TODO: i_ar = ArrayUtils.toPrimitive((Byte[])o);
@@ -107,6 +109,12 @@ public class IcedWrapper extends Iced {
       } else if (o instanceof Iced[]) {
         t = "Iced";
         iced_ar = (Iced[])o;
+      } else if(clz.isArray()){ // 2D array
+        if(clz.getComponentType() == String.class) {
+          t = "SS";
+          s_ar_ar = (String[][]) o;
+        }
+        
       }
     } else {
       // scalar
@@ -171,6 +179,8 @@ public class IcedWrapper extends Iced {
         return k_ar;
       } else if (t.equals("Iced")) {
         return iced_ar;
+      } else if(t.equals("SS")){
+        return s_ar_ar;
       }
     } else {
       if (t.equals("B")) {
@@ -215,6 +225,13 @@ public class IcedWrapper extends Iced {
         return Arrays.toString(e_ar);
       else if (t.equals("K"))
         return Arrays.toString(k_ar);
+      else if (t.equals("SS")){
+        StringBuilder sb = new StringBuilder("[");
+        for(String[] s_ar : s_ar_ar) {
+          sb.append(Arrays.toString(s_ar)).append(",");
+        }
+        return sb.replace(sb.length()-1, sb.length(), "]").toString();
+      }
     } else if (t.equals("B")) {
       return "" + i;
     } else if (t.equals("I")) {
@@ -262,6 +279,8 @@ public class IcedWrapper extends Iced {
         return ab.putJSONA(k_ar);
       else if (t.equals("Iced"))
         return ab.putJSONA(iced_ar);
+      else if (t.equals("SS"))
+        return ab.putJSONAAStr(s_ar_ar);
     } else {
       if (t.equals("B"))
         return ab.putJSON1((byte)i);

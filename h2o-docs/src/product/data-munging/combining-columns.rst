@@ -11,14 +11,14 @@ The ``cbind`` function allows you to combine datasets by adding columns from one
 		
 		# Create two simple, two-column R data frames by inputting values, 
 		# ensuring that both have a common column (in this case, "fruit").
-		left <- data.frame(fruit = c('apple','orange','banana','lemon','strawberry','blueberry'), 
-		     color = c('red','orange','yellow','yellow','red','blue'))
-		right <- data.frame(fruit = c('apple','orange','banana','lemon','strawberry','watermelon'), 
+		left <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'blueberry'), 
+		     color = c('red', 'orange', 'yellow', 'yellow', 'red', 'blue'))
+		right <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'watermelon'), 
 		    citrus = c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE))
 		
 		# Create the H2O data frames from the inputted data.
-		l.hex <- as.h2o(left)
-		print(l.hex)
+		left_frame <- as.h2o(left)
+		print(left_frame)
 		        fruit  color
 		 1      apple    red
 		 2     orange orange
@@ -29,8 +29,8 @@ The ``cbind`` function allows you to combine datasets by adding columns from one
 		
 		[6 rows x 2 columns]
 		
-		r.hex <- as.h2o(right)
-		print(r.hex)
+		right_frame <- as.h2o(right)
+		print(right_frame)
 		        fruit  citrus
 		 1      apple  FALSE
 		 2     orange   TRUE
@@ -47,8 +47,8 @@ The ``cbind`` function allows you to combine datasets by adding columns from one
 		# second "fruit" column name with "0". Note that this is different than ``merge``, 
 		# which combines data from two commonly named columns in two datasets. 
 		
-		columns.hex <- h2o.cbind(l.hex, r.hex)
-		print(columns.hex)
+		columns <- h2o.cbind(left_frame, right_frame)
+		print(columns)
 		       fruit  color     fruit0 citrus
 		1      apple    red      apple  FALSE
 		2     orange orange     orange   TRUE

@@ -16,6 +16,21 @@ class H2OAutoEncoderGridSearch(object):
         :param bool per_feature: Whether to return the square reconstruction error per feature. Otherwise, return
             the mean square error.
         :returns: the reconstruction error.
+
+        :example:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators import H2OAutoEncoderEstimator
+        >>> rows = [[1,2,3,4,0]*50,
+        ...         [2,1,2,4,1]*50,
+        ...         [2,1,4,2,1]*50,
+        ...         [0,1,2,34,1]*50,
+        ...         [2,3,4,1,0]*50]
+        >>> fr = h2o.H2OFrame(rows)
+        >>> hyper_parameters = {'activation': "Tanh", 'hidden': [50,50,50]}
+        >>> gs = H2OGridSearch(H2OAutoEncoderEstimator(), hyper_parameters)
+        >>> gs.train(x=range(4), training_frame=fr)
+        >>> gs.anomaly(fr, per_feature=True)
         """
         return {model.model_id: model.anomaly(test_data, per_feature) for model in self.models}
 
@@ -41,6 +56,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If True, return the F1 value for the validation data.
         :param bool xval: If True, return the F1 value for each of the cross-validated splits.
         :returns: Dictionary of model keys to F1 values
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.F1(train=True)
         """
         return {model.model_id: model.F1(thresholds, train, valid, xval) for model in
                 self.models}  # dict model key -> F1 score
@@ -60,6 +88,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the F2 value for the validation data.
         :param bool xval:  If xval is True, then return the F2 value for the cross validation data.
         :returns: Dictionary of model keys to F2 values.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.F2(train=True)
         """
         return {model.model_id: model.F2(thresholds, train, valid, xval) for model in self.models}
 
@@ -78,6 +119,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the F0point5 value for the validation data.
         :param bool xval:  If xval is True, then return the F0point5 value for the cross validation data.
         :returns: The F0point5 for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.F0point5(train=True)
         """
         return {model.model_id: model.F0point5(thresholds, train, valid, xval) for model in self.models}
 
@@ -96,6 +150,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the accuracy value for the validation data.
         :param bool xval:  If xval is True, then return the accuracy value for the cross validation data.
         :returns: The accuracy for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.accuracy(train=True)
         """
         return {model.model_id: model.accuracy(thresholds, train, valid, xval) for model in self.models}
 
@@ -114,6 +181,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the error value for the validation data.
         :param bool xval:  If xval is True, then return the error value for the cross validation data.
         :returns: The error for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.error(train=True)
         """
         return {model.model_id: model.error(thresholds, train, valid, xval) for model in self.models}
 
@@ -132,6 +212,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the precision value for the validation data.
         :param bool xval:  If xval is True, then return the precision value for the cross validation data.
         :returns: The precision for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs. precision(train=True)
         """
         return {model.model_id: model.precision(thresholds, train, valid, xval) for model in self.models}
 
@@ -150,6 +243,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the TPR value for the validation data.
         :param bool xval:  If xval is True, then return the TPR value for the cross validation data.
         :returns: The TPR for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.tpr(train=True)
         """
         return {model.model_id: model.tpr(thresholds, train, valid, xval) for model in self.models}
 
@@ -168,6 +274,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the TNR value for the validation data.
         :param bool xval:  If xval is True, then return the TNR value for the cross validation data.
         :returns: The TNR for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.tnr(train=True)
         """
         return {model.model_id: model.tnr(thresholds, train, valid, xval) for model in self.models}
 
@@ -185,6 +304,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the FNR value for the validation data.
         :param bool xval:  If xval is True, then return the FNR value for the cross validation data.
         :returns: The FNR for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.fnr(train=True)
         """
         return {model.model_id: model.fnr(thresholds, train, valid, xval) for model in self.models}
 
@@ -203,6 +335,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the FPR value for the validation data.
         :param bool xval:  If xval is True, then return the FPR value for the cross validation data.
         :returns: The FPR for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.fpr(train=True)
         """
         return {model.model_id: model.fpr(thresholds, train, valid, xval) for model in self.models}
 
@@ -221,6 +366,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the recall value for the validation data.
         :param bool xval:  If xval is True, then return the recall value for the cross validation data.
         :returns: The recall for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.recall(train=True)
         """
         return {model.model_id: model.recall(thresholds, train, valid, xval) for model in self.models}
 
@@ -239,6 +397,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the sensitivity value for the validation data.
         :param bool xval:  If xval is True, then return the sensitivity value for the cross validation data.
         :returns: The sensitivity for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.sensitivity(train=True)
         """
         return {model.model_id: model.sensitivity(thresholds, train, valid, xval) for model in self.models}
 
@@ -257,6 +428,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the fallout value for the validation data.
         :param bool xval:  If xval is True, then return the fallout value for the cross validation data.
         :returns: The fallout for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.fallout(train=True)
         """
         return {model.model_id: model.fallout(thresholds, train, valid, xval) for model in self.models}
 
@@ -275,6 +459,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the missrate value for the validation data.
         :param bool xval:  If xval is True, then return the missrate value for the cross validation data.
         :returns: The missrate for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.missrate(train=True)
         """
         return {model.model_id: model.missrate(thresholds, train, valid, xval) for model in self.models}
 
@@ -293,6 +490,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the specificity value for the validation data.
         :param bool xval:  If xval is True, then return the specificity value for the cross validation data.
         :returns: The specificity for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.specificity(train=True)
         """
         return {model.model_id: model.specificity(thresholds, train, valid, xval) for model in self.models}
 
@@ -311,6 +521,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the mcc value for the validation data.
         :param bool xval:  If xval is True, then return the mcc value for the cross validation data.
         :returns: The MCC for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.mcc(train=True)
         """
         return {model.model_id: model.mcc(thresholds, train, valid, xval) for model in self.models}
 
@@ -329,6 +552,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the max_per_class_error value for the validation data.
         :param bool xval:  If xval is True, then return the max_per_class_error value for the cross validation data.
         :returns: The max per class error for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.max_per_class_error(train=True)
         """
         return {model.model_id: model.max_per_class_error(thresholds, train, valid, xval) for model in self.models}
 
@@ -347,6 +583,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the mean_per_class_error value for the validation data.
         :param bool xval:  If xval is True, then return the mean_per_class_error value for the cross validation data.
         :returns: The mean per class error for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.mean_per_class_error(train=True)
         """
         return {model.model_id: model.mean_per_class_error(thresholds, train, valid, xval) for model in self.models}
 
@@ -366,6 +615,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the metrics for the validation data.
         :param bool xval:  If xval is True, then return the metrics for the cross validation data.
         :returns: The metrics for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.metric("tps", train=True)
         """
         return {model.model_id: model.metric(metric, thresholds, train, valid, xval) for model in self.models}
 
@@ -382,6 +644,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is true, then return the ROC coordinates for the validation data.
         :param bool xval: If xval is true, then return the ROC coordinates for the cross validation data.
         :returns: the true cooridinates of the roc curve.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.roc(train=True)
         """
         return {model.model_id: model.roc(train, valid, xval) for model in self.models}
 
@@ -402,6 +677,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the confusion matrix value for the validation data.
         :param bool xval:  If xval is True, then return the confusion matrix value for the cross validation data.
         :returns: The confusion matrix for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.confusion_matrix(train=True)
         """
         return {model.model_id: model.confusion_matrix(metrics, thresholds, train, valid, xval) for model in
                 self.models}
@@ -418,6 +706,20 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the threshold_by_max_metric value for the validation data.
         :param bool xval:  If xval is True, then return the threshold_by_max_metric value for the cross validation data.
         :returns: The threshold_by_max_metric for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.find_threshold_by_max_metric("tps", train=True)
+        
         """
         return {model.model_id: model.find_threshold_by_max_metric(metric, train, valid, xval) for model in self.models}
 
@@ -435,6 +737,19 @@ class H2OBinomialGridSearch(object):
         :param bool valid: If valid is True, then return the idx_by_threshold for the validation data.
         :param bool xval:  If xval is True, then return the idx_by_threshold for the cross validation data.
         :returns: The idx_by_threshold for this binomial model.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[3, 4-11],
+        ...          y=3,
+        ...          training_frame=training_data)
+        >>> gs.find_idx_by_threshold(0.45, train=True)
         """
         return {model.model_id: model.find_idx_by_threshold(threshold, train, valid, xval) for model in self.models}
 
@@ -459,12 +774,34 @@ class H2OClusteringGridSearch(object):
         :param bool valid: If True, then return the cluster sizes for the validation data.
         :param bool xval: If True, then return the cluster sizes for each of the cross-validated splits.
         :returns: the cluster sizes for the specified key(s).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+        >>> gs.size(train=True)
         """
         return {model.model_id: model.size(train, valid, xval) for model in self.models}
 
 
     def num_iterations(self):
-        """Get the number of iterations that it took to converge or reach max iterations."""
+        """Get the number of iterations that it took to converge or reach max iterations.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+        >>> gs.num_iterations()
+        """
+        
         return {model.model_id: model.num_iterations() for model in self.models}
 
 
@@ -481,6 +818,16 @@ class H2OClusteringGridSearch(object):
         :param bool xval: If True, then return the between cluster sum of squares value for each of the
             cross-validated splits.
         :returns: the between cluster sum of squares values for the specified key(s).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+        >>> gs.betweenss(train=True)
         """
         return {model.model_id: model.betweenss(train, valid, xval) for model in self.models}
 
@@ -497,6 +844,16 @@ class H2OClusteringGridSearch(object):
         :param bool valid: If True, then return the total sum of squares for the validation data.
         :param bool xval: If True, then return the total sum of squares for each of the cross-validated splits.
         :returns: the total sum of squares values for the specified key(s).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+        >>> gs.totss(train=True)
         """
         return {model.model_id: model.totss(train, valid, xval) for model in self.models}
 
@@ -514,6 +871,16 @@ class H2OClusteringGridSearch(object):
         :param bool xval: If True, then return the total within cluster sum of squares for each of the
             cross-validated splits.
         :returns: the total within cluster sum of squares values for the specified key(s).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+        >>> gs.tot_withinss(train=True)
         """
         return {model.model_id: model.tot_withinss(train, valid, xval) for model in self.models}
 
@@ -531,6 +898,16 @@ class H2OClusteringGridSearch(object):
         :param bool xval: If True, then return the within cluster sum of squares for each of the
             cross-validated splits.
         :returns: the within cluster sum of squares values for the specified key(s).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+        >>> gs.withinss(train=True)
         """
         return {model.model_id: model.withinss(train, valid, xval) for model in self.models}
 
@@ -547,17 +924,49 @@ class H2OClusteringGridSearch(object):
         :param bool valid: If True, then return the centroid statistics for the validation data.
         :param bool xval: If True, then return the centroid statistics for each of the cross-validated splits.
         :returns: the centroid statistics for the specified key(s).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+        >>> gs.centroid_stats(train=True)
         """
         return {model.model_id: model.centroid_stats(train, valid, xval) for model in self.models}
 
 
     def centers(self):
-        """Returns the centers for the KMeans model."""
+        """Returns the centers for the KMeans model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+        >>> gs.centers()
+        """
         return {model.model_id: model.centers() for model in self.models}
 
 
     def centers_std(self):
-        """Returns the standardized centers for the kmeans model."""
+        """Returns the standardized centers for the kmeans model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+        >>> gs.centers_std()
+        """
         return {model.model_id: model.centers_std() for model in self.models}
 
 
@@ -573,6 +982,17 @@ class H2ODimReductionGridSearch(object):
         Get the number of iterations that it took to converge or reach max iterations.
 
         :returns: number of iterations (integer)
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLowRankEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> hyper_parameters = {'gamma_x': [0.05, 0.5], 'gamma_y': [0.05,0.5]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLowRankEstimator(),
+        ...                    hyper_parameters)
+        >>> gs.train(x=iris.names, training_frame=iris)
+        >>> gs.num_iterations()
         """
         return {model.model_id: model.num_iterations for model in self.models}
 
@@ -581,6 +1001,17 @@ class H2ODimReductionGridSearch(object):
         Get the final value of the objective function from the GLRM model.
 
         :returns: final objective value (double)
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLowRankEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> hyper_parameters = {'gamma_x': [0.05, 0.5], 'gamma_y': [0.05,0.5]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLowRankEstimator(),
+        ...                    hyper_parameters)
+        >>> gs.train(x=iris.names, training_frame=iris)
+        >>> gs.objective()
         """
         return {model.model_id: model.objective for model in self.models}
 
@@ -589,12 +1020,34 @@ class H2ODimReductionGridSearch(object):
         Get the final step size from the GLRM model.
 
         :returns: final step size (double)
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLowRankEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> hyper_parameters = {'gamma_x': [0.05, 0.5], 'gamma_y': [0.05,0.5]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLowRankEstimator(),
+        ...                    hyper_parameters)
+        >>> gs.train(x=iris.names, training_frame=iris)
+        >>> gs.final_step()
         """
         return {model.model_id: model.final_step for model in self.models}
 
     def archetypes(self):
         """
         :returns: the archetypes (Y) of the GLRM model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLowRankEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> hyper_parameters = {'gamma_x': [0.05, 0.5], 'gamma_y': [0.05,0.5]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLowRankEstimator(),
+        ...                    hyper_parameters)
+        >>> gs.train(x=iris.names, training_frame=iris)
+        >>> gs.archetypes()
         """
         return {model.model_id: model.archetypes for model in self.models}
 
@@ -611,6 +1064,17 @@ class H2OMultinomialGridSearch(object):
         Returns a confusion matrix based of H2O's default prediction threshold for a dataset.
 
         :param data: metric for which the confusion matrix will be calculated.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family = "multinomial"),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[0,1,2,3], y=4, training_frame=iris)
+        >>> gs.confusion_matrix(iris)
         """
         return {model.model_id: model.confusion_matrix(data) for model in self.models}
 
@@ -627,6 +1091,17 @@ class H2OMultinomialGridSearch(object):
         :param bool valid: If valid is True, then return the hit ratio value for the validation data.
         :param bool xval:  If xval is True, then return the hit ratio value for the cross validation data.
         :returns: The hit ratio for this multinomial model.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family = "multinomial"),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[0,1,2,3], y=4, training_frame=iris)
+        >>> gs.hit_ratio_table(train=True)
         """
         return {model.model_id: model.hit_ratio_table(train, valid, xval) for model in self.models}
 
@@ -643,6 +1118,17 @@ class H2OMultinomialGridSearch(object):
         :param bool valid: If valid is True, then return the mean per class error value for the validation data.
         :param bool xval:  If xval is True, then return the mean per class error value for the cross validation data.
         :returns: The mean per class error for this multinomial model.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family = "multinomial"),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[0,1,2,3], y=4, training_frame=iris)
+        >>> gs.mean_per_class_error(train=True)
         """
         return {model.model_id: model.mean_per_class_error(train, valid, xval) for model in self.models}
 
@@ -657,6 +1143,17 @@ class H2OOrdinalGridSearch(object):
         Returns a confusion matrix based of H2O's default prediction threshold for a dataset.
 
         :param data: metric for which the confusion matrix will be calculated.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> h2o_df = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/glm_ordinal_logit/ordinal_multinomial_training_set.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family="ordinal"), hyper_parameters)
+        >>> h2o_df['C11'] = h2o_df['C11'].asfactor()
+        >>> gs.train(x=list(range(0,10)), y="C11", training_frame=h2o_df)
+        >>> gs.confusion_matrix(h2o_df)
         """
         return {model.model_id: model.confusion_matrix(data) for model in self.models}
 
@@ -673,6 +1170,17 @@ class H2OOrdinalGridSearch(object):
         :param bool valid: If valid is True, then return the hit ratio value for the validation data.
         :param bool xval:  If xval is True, then return the hit ratio value for the cross validation data.
         :returns: The hit ratio for this ordinal model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> h2o_df = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/glm_ordinal_logit/ordinal_multinomial_training_set.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family="ordinal"), hyper_parameters)
+        >>> h2o_df['C11'] = h2o_df['C11'].asfactor()
+        >>> gs.train(x=list(range(0,10)), y="C11", training_frame=h2o_df)
+        >>> gs.hit_ratio_table(train=True)
         """
         return {model.model_id: model.hit_ratio_table(train, valid, xval) for model in self.models}
 
@@ -689,6 +1197,17 @@ class H2OOrdinalGridSearch(object):
         :param bool valid: If valid is True, then return the mean per class error value for the validation data.
         :param bool xval:  If xval is True, then return the mean per class error value for the cross validation data.
         :returns: The mean per class error for this ordinal model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> h2o_df = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/glm_ordinal_logit/ordinal_multinomial_training_set.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}                          
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family="ordinal"), hyper_parameters)
+        >>> h2o_df['C11'] = h2o_df['C11'].asfactor()
+        >>> gs.train(x=list(range(0,10)), y="C11", training_frame=h2o_df)
+        >>> gs.mean_per_class_error(train=True)
         """
         return {model.model_id: model.mean_per_class_error(train, valid, xval) for model in self.models}
 

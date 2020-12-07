@@ -29,14 +29,14 @@ Example
         cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
         # Specify model-building exercise (1:binomial, 2:multinomial)
-        problem <- sample(1:2,1)
+        problem <- sample(1:2, 1)
 
         # Specify response column based on predictor value and problem type
-        predictors <- c("displacement","power","weight","acceleration","year")
-        if ( problem == 1 ) { response_col <- "economy_20mpg"} else { response_col <- "cylinders" }
+        predictors <- c("displacement", "power", "weight", "acceleration", "year")
+        if ( problem == 1 ) { response_col <- "economy_20mpg" } else { response_col <- "cylinders" }
 
         # Convert the response column to a factor
-        cars[,response_col] <- as.factor(cars[,response_col])
+        cars[, response_col] <- as.factor(cars[, response_col])
 
         # Specify model parameters
         laplace <- c(1)
@@ -44,27 +44,27 @@ Example
         eps_sdev <- c(0.5)
 
         # Build the model 
-        cars_naivebayes <- h2o.naiveBayes(x=predictors, y=response_col, training_frame=cars, 
-                                          eps_sdev=eps_sdev, min_sdev=min_sdev, laplace=laplace)
+        cars_naivebayes <- h2o.naiveBayes(x = predictors, y = response_col, training_frame = cars, 
+                                          eps_sdev = eps_sdev, min_sdev = min_sdev, laplace = laplace)
         print(cars_naivebayes)
 
         # Specify grid search parameters
         grid_space <- list()
-        grid_space$laplace <- c(1,2)
-        grid_space$min_sdev <- c(0.1,0.2)
-        grid_space$eps_sdev <- c(0.5,0.6)
+        grid_space$laplace <- c(1, 2)
+        grid_space$min_sdev <- c(0.1, 0.2)
+        grid_space$eps_sdev <- c(0.5, 0.6)
 
         # Specify response column based on predictor value and problem type
         predictors <- c("displacement","power","weight","acceleration","year")
-        if ( problem == 1 ) { response_col <- "economy_20mpg"} else { response_col <- "cylinders" }
+        if ( problem == 1 ) { response_col <- "economy_20mpg" } else { response_col <- "cylinders" }
 
         # Convert the response column to a factor
-        cars[,response_col] <- as.factor(cars[,response_col])
+        cars[, response_col] <- as.factor(cars[, response_col])
 
         # Construct the grid of naive bayes models
-        cars_naivebayes_grid <- h2o.grid("naivebayes", grid_id="naiveBayes_grid_cars_test", 
-                                         x=predictors, y=response_col, training_frame=cars, 
-                                         hyper_params=grid_space)
+        cars_naivebayes_grid <- h2o.grid("naivebayes", grid_id = "naiveBayes_grid_cars_test", 
+                                         x = predictors, y = response_col, training_frame = cars, 
+                                         hyper_params = grid_space)
         print(cars_naivebayes_grid)
 
 

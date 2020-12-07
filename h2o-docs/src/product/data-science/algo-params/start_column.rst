@@ -35,12 +35,12 @@ Example
         stop <- "stop"
 
         # train your model
-        coxph.h2o <- h2o.coxph(x=x, event_column=y, 
-                               start_column=start, stop_column=stop, 
-                               training_frame=heart.hex)
+        heart_coxph <- h2o.coxph(x = x, event_column = y, 
+                                 start_column = start, stop_column = stop, 
+                                 training_frame = heart)
 
         # view the model details
-        coxph.h2o
+        heart_coxph
         Model Details:
         ==============
 
@@ -52,8 +52,8 @@ Example
               coef exp(coef) se(coef)    z     p
         age 0.0307    1.0312   0.0143 2.15 0.031
 
-        Likelihood ratio test=5.17  on 1 df, p=0.023
-        n= 172, number of events= 75
+        Likelihood ratio test = 5.17  on 1 df, p = 0.023
+        n = 172, number of events = 75
 
 
 
@@ -67,12 +67,12 @@ Example
         heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 
         # set the parameters
-        coxph = H2OCoxProportionalHazardsEstimator(start_column="start", 
-                                                   stop_column="stop", 
-                                                   ties="breslow")
+        heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start", 
+                                                         stop_column="stop", 
+                                                         ties="breslow")
 
         # train your model
-        coxph.train(x="age", y="event", training_frame=heart)
+        heart_coxph.train(x="age", y="event", training_frame=heart)
 
         # view the model details
-        coxph
+        heart_coxph

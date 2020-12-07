@@ -1,4 +1,4 @@
-``hglm``
+``HGLM``
 --------
 
 - Available in: GLM
@@ -11,14 +11,15 @@ Generalized Linear Models (GLM) estimate regression models for outcomes followin
 
 HGLM produces estimates for fixed effects, random effects, variance components and their standard errors. It also produces diagnostics, such as variances and leverages. 
 
-The ``hglm`` option allows you to build a hierarchical generalized linear model. This option is disabled by default.
+The ``HGLM`` option allows you to build a hierarchical generalized linear model. This option is disabled by default.
 
-**Note**: This initial release of HGLM supports only the Gaussian family and random family.
+**Note**: This initial release of HGLM supports only Gaussian for ``family`` and ``rand_family``.
 
-Related Paramters
-~~~~~~~~~~~~~~~~~
+Related Parameters
+~~~~~~~~~~~~~~~~~~
 
-none
+- `random_columns <random_columns.html>`__
+- `rand_family <rand_family.html>`__
 
 Example
 ~~~~~~~
@@ -41,15 +42,15 @@ Example
         h2odata$Device <- h2o.asfactor(h2odata$Device)
 
         # Train and view the model
-        m11H2O <- h2o.glm(x=xlist, 
-                          y=yresp, 
-                          family="gaussian", 
+        m11H2O <- h2o.glm(x = xlist, 
+                          y = yresp, 
+                          family = "gaussian", 
                           rand_family = c("gaussian"), 
-                          rand_link=c("identity"), 
-                          training_frame=h2odata, 
-                          HGLM=TRUE, 
-                          random_columns=z, 
-                          calc_like=TRUE)
+                          rand_link = c("identity"), 
+                          training_frame = h2odata, 
+                          HGLM = TRUE, 
+                          random_columns = z, 
+                          calc_like = TRUE)
         print(m11H2O)
 
    .. code-tab:: python
@@ -64,7 +65,7 @@ Example
         # Set the response, predictor, and random columns
         y = "y"
         x = ["x1","x3","x5","x6"]
-        z = "Device"
+        z = 0
 
         # Convert the "Device" column to a factor
         h2o_data["Device"] = h2o_data["Device"].asfactor()

@@ -15,16 +15,16 @@ public class EigenEncoderTest {
     Arrays.fill(row, Double.NaN);
 
     assertTrue(encoder.encodeCatValue("a", row));
-    assertArrayEquals(new double[]{Double.NaN, Double.NaN, Double.NaN, 0.234, Double.NaN, Double.NaN, Double.NaN, Double.NaN}, row, 0);
+    assertArrayEquals(new double[]{Double.NaN, Double.NaN, Double.NaN, 0.234, Double.NaN, Double.NaN, Double.NaN, Double.NaN}, row, 1e-3);
 
     assertTrue(encoder.encodeCatValue("b", row));
-    assertArrayEquals(new double[]{Double.NaN, Double.NaN, Double.NaN, 1.203, Double.NaN, Double.NaN, Double.NaN, Double.NaN}, row, 0);
+    assertArrayEquals(new double[]{Double.NaN, Double.NaN, Double.NaN, 1.203, Double.NaN, Double.NaN, Double.NaN, Double.NaN}, row, 1e-3);
 
     assertTrue(encoder.encodeCatValue("c", row));
-    assertArrayEquals(new double[]{Double.NaN, Double.NaN, Double.NaN, 0.0, Double.NaN, Double.NaN, Double.NaN, Double.NaN}, row, 0);
+    assertArrayEquals(new double[]{Double.NaN, Double.NaN, Double.NaN, 0.0, Double.NaN, Double.NaN, Double.NaN, Double.NaN}, row, 1e-3);
 
     assertFalse(encoder.encodeCatValue("invalid", row));
-    assertArrayEquals(new double[]{Double.NaN, Double.NaN, Double.NaN, 0.0, Double.NaN, Double.NaN, Double.NaN, Double.NaN}, row, 0);
+    assertArrayEquals(new double[]{Double.NaN, Double.NaN, Double.NaN, 0.0, Double.NaN, Double.NaN, Double.NaN, Double.NaN}, row, 1e-3);
   }
 
   @Test

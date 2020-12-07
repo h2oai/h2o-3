@@ -43,19 +43,19 @@ Example
 		response <- "eyeDetection"
 
 		# split into train and validation
-		eeg.splits <- h2o.splitFrame(data =  eeg, ratios = .8, seed = 1234)
-		train <- eeg.splits[[1]]
-		valid <- eeg.splits[[2]]
+		eeg_splits <- h2o.splitFrame(data =  eeg, ratios = 0.8, seed = 1234)
+		train <- eeg_splits[[1]]
+		valid <- eeg_splits[[2]]
 
 		# try a range of nbins_top_level: 
 		bin_num = c(32, 64, 128, 256, 512, 1024, 2048, 4096)
 		label = c("32", "64", "128", "256", "512", "1024", "2048", "4096")
 		lapply(seq_along(1:length(bin_num)),function(num) {
-		  eeg.gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, validation_frame = valid,
+		  eeg_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, validation_frame = valid,
 		                          nbins_top_level = bin_num[num], nfolds = 5, seed = 1234)
 		  # print the value used and AUC score for train and valid
-		  print(paste(label[num], 'training score',  h2o.auc(eeg.gbm, train = TRUE)))
-		  print(paste(label[num], 'validation score',  h2o.auc(eeg.gbm, valid = TRUE)))
+		  print(paste(label[num], 'training score',  h2o.auc(eeg_gbm, train = TRUE)))
+		  print(paste(label[num], 'validation score',  h2o.auc(eeg_gbm, valid = TRUE)))
 		})
 
 
@@ -73,8 +73,8 @@ Example
 		                 search_criteria = list(strategy = "Cartesian"), seed = 1234)  
 
 		## Sort the grid models by AUC
-		sortedGrid <- h2o.getGrid("eeg_grid", sort_by = "auc", decreasing = TRUE)    
-		sortedGrid
+		sorted_grid <- h2o.getGrid("eeg_grid", sort_by = "auc", decreasing = TRUE)    
+		sorted_grid
 
 
    .. code-tab:: python

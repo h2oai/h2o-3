@@ -125,7 +125,7 @@ public class SpearmanCorrelation {
       correlationVecs[width] = Vec.makeCon(Double.NaN, height);
     }
 
-    return new Frame(Key.make(), correlationVecs, true);
+    return new Frame(Key.make(), correlationVecs);
   }
 
   /**

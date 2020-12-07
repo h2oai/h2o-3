@@ -1,7 +1,7 @@
 package hex.tree.xgboost;
 
-import ml.dmlc.xgboost4j.java.INativeLibLoader;
-import ml.dmlc.xgboost4j.java.NativeLibLoader;
+import ai.h2o.xgboost4j.java.INativeLibLoader;
+import ai.h2o.xgboost4j.java.NativeLibLoader;
 import hex.tree.xgboost.util.NativeLibrary;
 import hex.tree.xgboost.util.NativeLibraryLoaderChain;
 import org.apache.log4j.Logger;

@@ -7,7 +7,7 @@
     },
     {
       "type": "cs",
-      "input": "setupParse paths: [ \"./smalldata/logreg/prostate.csv\" ]"
+      "input": "setupParse paths: [ \"../smalldata/logreg/prostate.csv\" ]"
     },
     {
       "type": "cs",

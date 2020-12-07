@@ -22,7 +22,9 @@ Certain cases can exist, however, in which the median starting value for this lo
 - If the distribution is ``laplace``, the response column must be numeric.
 - If the distribution is ``quantile``, the response column must be numeric.
 - If the distribution is ``huber``, the response column must be numeric.
+- If the distribution is ``modified_huber``, the response column must be 2-class categorical.
 - If the distribution is ``tweedie``, the response column must be numeric.
+- If the distribution is ``ordinal``, the response column must be categorical with at least 3 levels.
 - If the distribution is ``custom``, the response column must be numeric/binary/categorical depends on type of custom distribution.
 
 **NOTE**: ``laplace``, ``quantile``, and ``huber`` are NOT available in XGBoost. ``custom`` is available ONLY in GBM.
@@ -104,13 +106,13 @@ Example
 
 
 		# set the predictor names and the response column name
-		predictors <- c("displacement","power","weight","acceleration","year")
+		predictors <- c("displacement","power", "weight", "acceleration", "year")
 		response <- "cylinders"
 
 		# split into train and validation sets
-		cars.splits <- h2o.splitFrame(data =  cars, ratios = .8, seed = 1234)
-		train <- cars.splits[[1]]
-		valid <- cars.splits[[2]]
+		cars_splits <- h2o.splitFrame(data =  cars, ratios = 0.8, seed = 1234)
+		train <- cars_splits[[1]]
+		valid <- cars_splits[[2]]
 
 		# try using the distribution parameter:
 		# train a GBM

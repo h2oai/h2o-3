@@ -153,7 +153,7 @@ def word2vec_export():
     embeddings = h2o.create_frame(rows=1000, cols=100, real_fraction=1.0, missing_fraction=0.0)
     frame = words.cbind(embeddings)
     model = H2OWord2vecEstimator(pre_trained=frame)
-    model.train(training_frame=frame)
+    model.train()
     expect_error(model.download_pojo, model="Word2Vec", format="POJO")
     model.download_mojo(path=RESULT_DIR)
 

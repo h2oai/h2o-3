@@ -26,23 +26,32 @@ public class MakeGLMModelHandler extends Handler {
     GLMModel model = DKV.getGet(args.model.key());
     if(model == null)
       throw new IllegalArgumentException("missing source model " + args.model);
-    String [] names = model._output.coefficientNames();
+    boolean multiClass = model._output._multinomial || model._output._ordinal;
+    String [] names = multiClass?model._output.multiClassCoeffNames():model._output.coefficientNames(); // coefficient names in order and with Intercept
     Map<String,Double> coefs = model.coefficients();
+    if (args.beta.length != names.length) {
+      throw new IllegalArgumentException("model coefficient length " + names.length + " is different from coefficient" +
+              " provided by user " + args.beta.length + ".\n model coefficients needed are:\n" + String.join("\n", names));
+    }
     for(int i = 0; i < args.names.length; ++i)
       coefs.put(args.names[i],args.beta[i]);
     double [] beta = model.beta().clone();
     for(int i = 0; i < beta.length; ++i)
       beta[i] = coefs.get(names[i]);
-    GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, model._ymu, Double.NaN, Double.NaN, -1);
+    GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, model._ymu,
+            Double.NaN, Double.NaN, -1);
+    m.setInputParms(model._input_parms);
     DataInfo dinfo = model.dinfo();
     dinfo.setPredictorTransform(TransformType.NONE);
-    m._output = new GLMOutput(model.dinfo(),model._output._names,model._output._column_types,  model._output._domains, model._output.coefficientNames(), model._output._binomial, beta);
+    m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
+            model._output.coefficientNames(), beta, model._output._binomial, model._output._multinomial, 
+            model._output._ordinal);
     DKV.put(m._key, m);
     GLMModelV3 res = new GLMModelV3();
     res.fillFromImpl(m);
     return res;
   }
-
+  
   public GLMRegularizationPathV3 extractRegularizationPath(int v, GLMRegularizationPathV3 args) {
     GLMModel model = DKV.getGet(args.model.key());
     if(model == null)
@@ -52,7 +61,6 @@ public class MakeGLMModelHandler extends Handler {
   // instead of adding a new endpoint, just put this stupid test functionality here
  /** Get the expanded (interactions + offsets) dataset. Careful printing! Test only
   */
-
   public DataInfoFrameV3 getDataInfoFrame(int version, DataInfoFrameV3 args) {
     Frame fr = DKV.getGet(args.frame.key());
     if( null==fr ) throw new IllegalArgumentException("no frame found");

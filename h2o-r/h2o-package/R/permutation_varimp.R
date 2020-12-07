@@ -1,0 +1,23 @@
+#'
+#' Calculate Permutation Feature Importance 
+#'
+
+h2o.permutation_varimp <- function(model, frame){
+    if (is.H2OFrame(validation_frame))
+         tryCatch(permutation_varim_table <- .newExpr('PermutationVarImp', model, validation_frame), 
+                error = function(err) {
+                    message(err)
+                    message("validation frame is a valid H2OFrame, newExpr didnt work")
+                    stop("argument  is a valid H2OFrame, newExpr didnt work")
+                },
+                warning = function(err){
+                    message("warning message:")
+                    message(err)
+                },
+                finally = {
+                    message("Loading permutation_varim")
+                    return(permutation_varim_table)
+                })
+    else stop("Input frame is not H2OFrame") # find out how to check for model
+        
+}

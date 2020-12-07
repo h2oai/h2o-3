@@ -40,9 +40,9 @@ Examples
 		boston["chas"] <- as.factor(boston["chas"])
 
 		# split into train and validation sets
-		boston.splits <- h2o.splitFrame(data =  boston, ratios = .8)
-		train <- boston.splits[[1]]
-		valid <- boston.splits[[2]]
+		boston_splits <- h2o.splitFrame(data =  boston, ratios = 0.8)
+		train <- boston_splits[[1]]
+		valid <- boston_splits[[2]]
 
 		# try using the `interactions` parameter:
 		# add the interaction terms between 'crim' and 'dis' (per capita crime rate by town and 
@@ -54,7 +54,7 @@ Examples
 		                      validation_frame = valid)
 
 		# print the mse for validation set
-		print(h2o.mse(boston_glm, valid=TRUE))
+		print(h2o.mse(boston_glm, valid = TRUE))
 
    .. code-tab:: python
 
