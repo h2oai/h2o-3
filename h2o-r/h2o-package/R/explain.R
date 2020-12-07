@@ -2387,12 +2387,14 @@ h2o.ice_plot <- function(model,
   })
 }
 
-#' Generate Learning Curve Plot
+#' Learning Curve Plot
 #'
-#' ...
+#' Create learning curve plot for an H2O Model.
 #'
-#' @param model model
+#' @param model an H2O model
 #' @param metric Metric to be used for the learning curve plot
+#' @param cv_ribbon if True, plot the CV mean as a and CV standard deviation as a ribbon around the mean
+#' @param cv_individual_lines if True, plot scoring history for individual CV models
 #' @export
 h2o.learning_curve_plot <- function(model,
                                     metric = c("AUTO", "convergence", "deviance", "logloss",
@@ -2401,9 +2403,16 @@ h2o.learning_curve_plot <- function(model,
                                                "classification_error", "lift",
                                                "mean_per_class_error", "sumetaieta02",
                                                "negative_log_likelihood"),
-                                    cv_ribbon = TRUE,
-                                    cv_individual_lines = TRUE
+                                    cv_ribbon = NULL,
+                                    cv_individual_lines = NULL
                                     ) {
+  .preprocess_scoring_history <- function(model, scoring_history) {
+    if (model@algorithm %in% c("glm", "gam") && model@allparameters$lambda_search) {
+      scoring_history <- scoring_history[scoring_history["alpha"] == model@model$alpha_best,]
+    }
+    return(scoring_history)
+  }
+
   metric <- match.arg(metric)
 
   if ("stackedensemble" == model@algorithm)
@@ -2413,12 +2422,12 @@ h2o.learning_curve_plot <- function(model,
   allowed_timesteps <- c()
   sh <- model@model$scoring_history
 
-  if (model@algorithm == "glm") {
+  if (model@algorithm %in% c("glm", "gam")) {
     hglm <- model@parameters$HGLM
     if (model@allparameters$lambda_search) {
       allowed_metrics <- "deviance"
       allowed_timesteps <- "iteration"
-      sh <- sh[sh["alpha"] == model@model$alpha_best,]
+      sh <- .preprocess_scoring_history(model, sh)
     } else if (!is.null(hglm) && hglm) {
       allowed_metrics <- c("convergence", "sumetaieta02")
       allowed_timesteps <- "iterations"
@@ -2432,14 +2441,14 @@ h2o.learning_curve_plot <- function(model,
   } else if (model@algorithm %in% c("deeplearning", "drf", "gbm")) {
     if (is(model, "H2OBinomialModel")) {
       allowed_metrics <- c("logloss", "auc", "classification_error", "rmse")
-    } else if (is(model, "H2OMultinomialModel") || is(x, "H2OOrdinalModel")) {
+    } else if (is(model, "H2OMultinomialModel") || is(model, "H2OOrdinalModel")) {
         allowed_metrics <- c("classification_error", "logloss", "rmse")
     } else if (is(model, "H2ORegressionModel")) {
         allowed_metrics <- c("rmse","deviance","mae")
     }
   } else if (model@algorithm == "xgboost") {
     allowed_timesteps <- "number_of_trees"
-    allowed_metrics <- c("logloss", "rmse", "auc", "pr_auc", "lift", "classification_error")
+    allowed_metrics <- c("rmse", "logloss", "auc", "pr_auc", "lift", "classification_error")
   }
 
   if (model@algorithm == "deeplearning") {
@@ -2468,10 +2477,10 @@ h2o.learning_curve_plot <- function(model,
                                       "validation_%s"), metric)
 
   selected_timestep_value <- switch(timestep,
-                                    number_of_trees = model@parameters$ntrees,
+                                    number_of_trees = model@allparameters$ntrees,
                                     iterations = model@model$model_summary$number_of_iterations,
                                     iteration = model@model$model_summary$number_of_iterations,
-                                    epochs = model@parameters$epochs
+                                    epochs = model@allparameters$epochs
   )
 
   scoring_history <-
@@ -2496,7 +2505,7 @@ h2o.learning_curve_plot <- function(model,
   if (!is.null(model@model$cv_scoring_history)) {
     cv_scoring_history <- data.frame()
     for (csh_idx in seq_along(model@model$cv_scoring_history)) {
-      csh <- as.data.frame(model@model$cv_scoring_history[[csh_idx]])
+      csh <- .preprocess_scoring_history(model, as.data.frame(model@model$cv_scoring_history[[csh_idx]]))
       cv_scoring_history <- rbind(
         cv_scoring_history,
         data.frame(
@@ -2525,6 +2534,24 @@ h2o.learning_curve_plot <- function(model,
     cvsh_sd <-
       as.data.frame(tapply(cv_scoring_history[, "metric"], cv_scoring_history[, c("x", "type")], sd, na.rm = TRUE))
     names(cvsh_sd) <- paste0(names(cvsh_sd), "_sd")
+
+    cvsh_len <-
+      as.data.frame(tapply(cv_scoring_history[, "metric"], cv_scoring_history[, c("x", "type")], length))
+
+    if (nrow(cvsh_len)  <= 1) {
+      cv_ribbon <- FALSE
+      cv_individual_lines <- FALSE
+    } else if (mean(cvsh_len$`CV-Training`[-nrow(cvsh_len)] == cvsh_len$`CV-Training`[-1]) < 0.5 ||
+        mean(cvsh_len$`CV-Training`) < 2) {
+      if (is.null(cv_ribbon)) {
+        cv_individual_lines <- is.null(cv_individual_lines) || cv_individual_lines
+        cv_ribbon <- FALSE
+      }
+    } else {
+      cv_individual_lines <- !is.null(cv_individual_lines) && cv_individual_lines
+      cv_ribbon <- is.null(cv_ribbon) || cv_ribbon
+    }
+
     cvsh <- cbind(cvsh_mean, cvsh_sd)
     cvsh$x <- as.numeric(row.names(cvsh))
 
@@ -2549,6 +2576,9 @@ h2o.learning_curve_plot <- function(model,
     cv_ribbon <- FALSE
     cv_individual_lines <- FALSE
   }
+
+  colors <- c("Training" = "#ff6666", "Validation" = "#66bb00",
+              "CV-Training" = "#dd77ff", "CV-Validation" = "#00cccc")
 
   p <- ggplot2::ggplot(ggplot2::aes_string(
     x = "x",
@@ -2592,8 +2622,8 @@ h2o.learning_curve_plot <- function(model,
       title = "Learning Curve",
       subtitle = paste("for", model@model_id)
     ) +
-    ggplot2::scale_color_manual(values = c("#ff6666", "#66bb00", "#dd77ff", "#00cccc")) +
-    ggplot2::scale_fill_manual(values = c("#ff6666", "#66bb00", "#dd77ff", "#00cccc")) +
+    ggplot2::scale_color_manual(values = colors) +
+    ggplot2::scale_fill_manual(values = colors) +
     ggplot2::theme_bw() +
     ggplot2::theme(
       legend.title = ggplot2::element_blank(),

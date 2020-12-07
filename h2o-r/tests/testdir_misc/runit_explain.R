@@ -40,6 +40,9 @@ explanation_test_single_model_regression <- function() {
     expect_ggplot(h2o.ice_plot(gbm, train, col))
   }
 
+  # test learning curve plot
+  expect_ggplot(h2o.learning_curve_plot(gbm))
+
   # test explanation
   expect_true("H2OExplanation" %in% class(h2o.explain(gbm, train)))
 
@@ -125,6 +128,11 @@ explanation_test_list_of_models_regression <- function() {
   # test ice plot
   expect_error(h2o.ice_plot(models, train, cols_to_test[[1]]), "Only one model is allowed!")
 
+  # test learning curve plot
+  for (model in models) {
+    expect_ggplot(h2o.learning_curve_plot(model))
+  }
+
   # test explanation
   expect_true("H2OExplanation" %in% class(h2o.explain(models, train)))
 
@@ -164,6 +172,9 @@ explanation_test_single_model_binomial_classification <- function() {
   for (col in cols_to_test) {
     expect_ggplot(h2o.ice_plot(gbm, train, col))
   }
+
+  # test learning curve plot
+  expect_ggplot(h2o.learning_curve_plot(gbm))
 
   # test explanation
   expect_true("H2OExplanation" %in% class(h2o.explain(gbm, train)))
@@ -252,6 +263,11 @@ explanation_test_list_of_models_binomial_classification <- function() {
   # test ice plot
   expect_error(h2o.ice_plot(models, train, cols_to_test[[1]]), "Only one model is allowed!")
 
+  # test learning curve plot
+  for (model in models) {
+    expect_ggplot(h2o.learning_curve_plot(model))
+  }
+
   # test explanation
   expect_true("H2OExplanation" %in% class(h2o.explain(models, train)))
 
@@ -291,6 +307,9 @@ explanation_test_single_model_multinomial_classification <- function() {
   for (col in cols_to_test) {
     expect_ggplot(h2o.ice_plot(gbm, train, col, target = "setosa"))
   }
+
+  # test learning curve plot
+  expect_ggplot(h2o.learning_curve_plot(gbm))
 
   # test explanation
   expect_true("H2OExplanation" %in% class(h2o.explain(gbm, train)))
@@ -378,6 +397,11 @@ explanation_test_list_of_models_multinomial_classification <- function() {
   }
   # test ice plot
   expect_error(h2o.ice_plot(models, train, cols_to_test[[1]]), "Only one model is allowed!")
+
+  # test learning curve plot
+  for (model in models) {
+    expect_ggplot(h2o.learning_curve_plot(model))
+  }
 
   # test explanation
   expect_true("H2OExplanation" %in% class(h2o.explain(models, train)))

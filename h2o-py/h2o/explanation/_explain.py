@@ -1694,7 +1694,7 @@ def residual_analysis_plot(
 
     :param model: H2OModel
     :param frame: H2OFrame
-    :param figsize: figsize: figure size; passed directly to matplotlib
+    :param figsize: figure size; passed directly to matplotlib
     :returns: a matplotlib figure object
 
     :examples:
@@ -1762,19 +1762,34 @@ def residual_analysis_plot(
 def learning_curve_plot(
         model,  # type: h2o.model.ModelBase
         metric="AUTO",  # type: str
-        cv_ribbon=True,  # type: bool
-        cv_individual_lines=True,  # type: bool
+        cv_ribbon=None,  # type: Optional[bool]
+        cv_individual_lines=None,  # type: Optional[bool]
         figsize=(16,9),  # type: Tuple[float]
         colormap=None  # type: Optional[str]
 ):
     # type: (...) -> plt.Figure
+    """
+    Learning curve
+
+    Create learning curve plot for an H2O Model.
+
+    :param model: an H2O model
+    :param metric: a metric that is present in `model.scoring_history()`
+    :param cv_ribbon: if True, plot the CV mean as a and CV standard deviation as a ribbon around the mean
+    :param cv_individual_lines: if True, plot scoring history for individual CV models
+    :param figsize: figure size; passed directly to matplotlib
+    :param colormap: colormap to use
+    :return: a matplotlib figure
+    """
     if model.algo == "stackedensemble":
-        model = model.metalearner
+        model = model.metalearner()
 
     # Using the value from output to keep it simple - only one version required - (no need to use pandas for small data)
     scoring_history = model._model_json["output"]["scoring_history"] or model._model_json["output"].get("glm_scoring_history")
     if scoring_history is None:
         raise RuntimeError("Could not retrieve scoring history for {}".format(model.algo))
+    scoring_history = _preprocess_scoring_history(model, scoring_history)
+
     allowed_metrics = []
     allowed_timesteps = []
     if model.algo in ("glm", "gam"):
@@ -1782,17 +1797,6 @@ def learning_curve_plot(
             import h2o.two_dim_table
             allowed_metrics = ["deviance"]
             allowed_timesteps = ["iteration"]
-            alpha_best = model._model_json["output"]["alpha_best"]
-            alpha_idx = scoring_history.col_header.index("alpha")
-            iteration_idx = scoring_history.col_header.index("iteration")
-
-            scoring_history = h2o.two_dim_table.H2OTwoDimTable(
-                table_header=scoring_history._table_header,
-                table_description=scoring_history._table_description,
-                col_header=scoring_history.col_header,
-                col_types=scoring_history.col_types,
-                cell_values=sorted([list(v) for v in scoring_history.cell_values if v[alpha_idx] == alpha_best],
-                                   key=lambda row: row[iteration_idx]))
         elif model.actual_params.get("HGLM"):
             allowed_timesteps = ["iterations", "duration"]
             allowed_metrics = ["convergence", "sumetaieta02"]
@@ -1812,7 +1816,7 @@ def learning_curve_plot(
             allowed_metrics = ["rmse","deviance","mae"]
     elif model.algo == "xgboost":
         allowed_timesteps = ["number_of_trees"]
-        allowed_metrics = ["logloss", "rmse", "auc", "pr_auc", "lift", "classification_error"]
+        allowed_metrics = ["rmse", "logloss", "auc", "pr_auc", "lift", "classification_error"]
 
     if model.algo == "deeplearning":
         allowed_timesteps = ["epochs", "iterations", "samples"]
@@ -1844,14 +1848,14 @@ def learning_curve_plot(
     if "number_of_trees" == timestep:
         selected_timestep_value = model.actual_params["ntrees"]
     elif timestep in ["iteration", "iterations"]:
-        model_summary = model.model_summary()
+        model_summary = model.summary()
         selected_timestep_value = model_summary["number_of_iterations"][0]
     elif "epochs" == timestep:
         selected_timestep_value = model.actual_params["epochs"]
 
     if colormap is None:
-        col_cv_train, col_cv_valid = "#f66", "#6b0"
-        col_train, col_valid = "#d7f", "#0cc"
+        col_train, col_valid = "#ff6666", "#66bb00"
+        col_cv_train, col_cv_valid = "#dd77ff", "#00cccc"
     else:
         col_train, col_valid, col_cv_train, col_cv_valid = plt.get_cmap(colormap, 4)(list(range(4)))
 
@@ -1870,44 +1874,57 @@ def learning_curve_plot(
                  c=col_valid)
 
     if model._model_json["output"]["cv_scoring_history"]:
-        if cv_ribbon:
+        if cv_ribbon or cv_ribbon is None:
             cvsh_train = defaultdict(list)
             cvsh_valid = defaultdict(list)
             for cvsh in model._model_json["output"]["cv_scoring_history"]:
+                cvsh = _preprocess_scoring_history(model, cvsh)
                 for i in range(len(cvsh[timestep])):
                     cvsh_train[cvsh[timestep][i]].append(cvsh[training_metric][i])
                 if validation_metric in cvsh.col_header:
                     for i in range(len(cvsh[timestep])):
                         cvsh_valid[cvsh[timestep][i]].append(cvsh[validation_metric][i])
             mean_train = np.array(sorted(
-                [(k, np.mean(v)) for k,v in cvsh_train.items()],
+                [(k, np.mean(v)) for k, v in cvsh_train.items()],
                 key=lambda k: k[0]
             ))
             sd_train = np.array(sorted(
-                [(k, np.std(v)) for k,v in cvsh_train.items()],
+                [(k, np.std(v)) for k, v in cvsh_train.items()],
                 key=lambda k: k[0]
             ))[:, 1]
-            plt.plot(mean_train[:,0], mean_train[:, 1], c=col_cv_train)
-            plt.fill_between(mean_train[:, 0],
-                             mean_train[:, 1] - sd_train,
-                             mean_train[:, 1] + sd_train,
-                             color=col_cv_train, alpha=0.25)
-            if len(cvsh_valid) > 0:
-                mean_valid = np.array(sorted(
-                    [(k, np.mean(v)) for k, v in cvsh_valid.items()],
-                    key=lambda k: k[0]
-                ))
-                sd_valid = np.array(sorted(
-                    [(k, np.std(v)) for k, v in cvsh_valid.items()],
-                    key=lambda k: k[0]
-                ))[:, 1]
-                plt.plot(mean_valid[:,0], mean_valid[:, 1], c=col_cv_valid)
-                plt.fill_between(mean_valid[:, 0],
-                                 mean_valid[:, 1] - sd_valid,
-                                 mean_valid[:, 1] + sd_valid,
-                                 color=col_cv_valid, alpha=0.25)
+
+            len_train = np.array(sorted(
+                [(k, len(v)) for k, v in cvsh_train.items()],
+                key=lambda k: k[0]
+            ))[:, 1]
+            if len_train.mean() > 2 and np.mean(len_train[:-1] == len_train[1:]) >= 0.5:
+                plt.plot(mean_train[:, 0], mean_train[:, 1], c=col_cv_train,
+                         label="CV-Training")
+                plt.fill_between(mean_train[:, 0],
+                                 mean_train[:, 1] - sd_train,
+                                 mean_train[:, 1] + sd_train,
+                                 color=col_cv_train, alpha=0.25)
+                if len(cvsh_valid) > 0:
+                    mean_valid = np.array(sorted(
+                        [(k, np.mean(v)) for k, v in cvsh_valid.items()],
+                        key=lambda k: k[0]
+                    ))
+                    sd_valid = np.array(sorted(
+                        [(k, np.std(v)) for k, v in cvsh_valid.items()],
+                        key=lambda k: k[0]
+                    ))[:, 1]
+                    plt.plot(mean_valid[:,0], mean_valid[:, 1], c=col_cv_valid,
+                             label="CV-Validation")
+                    plt.fill_between(mean_valid[:, 0],
+                                     mean_valid[:, 1] - sd_valid,
+                                     mean_valid[:, 1] + sd_valid,
+                                     color=col_cv_valid, alpha=0.25)
+            else:
+                cv_individual_lines = cv_individual_lines is None or cv_individual_lines
+
         if cv_individual_lines:
             for cvsh in model._model_json["output"]["cv_scoring_history"]:
+                cvsh = _preprocess_scoring_history(model, cvsh)
                 plt.plot(cvsh[timestep],
                          cvsh[training_metric],
                          label="CV-Training",
@@ -1933,6 +1950,20 @@ def learning_curve_plot(
 
     return plt.gcf()
 
+
+def _preprocess_scoring_history(model, scoring_history):
+    if model.algo in ("glm", "gam") and model.actual_params["lambda_search"]:
+        alpha_best = model._model_json["output"]["alpha_best"]
+        alpha_idx = scoring_history.col_header.index("alpha")
+        iteration_idx = scoring_history.col_header.index("iteration")
+        scoring_history = h2o.two_dim_table.H2OTwoDimTable(
+            table_header=scoring_history._table_header,
+            table_description=scoring_history._table_description,
+            col_header=scoring_history.col_header,
+            col_types=scoring_history.col_types,
+            cell_values=sorted([list(v) for v in scoring_history.cell_values if v[alpha_idx] == alpha_best],
+                               key=lambda row: row[iteration_idx]))
+    return scoring_history
 
 
 def _is_tree_model(model):

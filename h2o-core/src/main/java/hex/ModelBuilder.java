@@ -950,8 +950,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     mainModel._output._total_run_time = _build_model_countdown.elapsedTime();
-
-
     // Now, the main model is complete (has cv metrics)
     DKV.put(mainModel);
   }

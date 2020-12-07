@@ -69,6 +69,10 @@ def test_explanation_single_model_regression():
         assert isinstance(gbm.ice_plot(train, col), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
+    # test learning curve
+    assert isinstance(gbm.learning_curve_plot(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
     # test explain
     assert isinstance(gbm.explain(train, render=False), H2OExplanation)
 
@@ -142,6 +146,11 @@ def test_explanation_list_of_models_regression():
         assert isinstance(h2o.pd_multi_plot(models, train, col), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
+    # test learning curve
+    for model in models:
+        assert isinstance(model.learning_curve_plot(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close("all")
+
     # test explain
     assert isinstance(h2o.explain(models, train, render=False), H2OExplanation)
 
@@ -181,6 +190,10 @@ def test_explanation_single_model_binomial_classification():
     for col in cols_to_test:
         assert isinstance(gbm.ice_plot(train, col), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
+
+    # test learning curve
+    assert isinstance(gbm.learning_curve_plot(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
 
     # test explain
     assert isinstance(gbm.explain(train, render=False), H2OExplanation)
@@ -257,6 +270,11 @@ def test_explanation_list_of_models_binomial_classification():
         assert isinstance(h2o.pd_multi_plot(models, train, col), matplotlib.pyplot.Figure)
         matplotlib.pyplot.close()
 
+    # test learning curve
+    for model in models:
+        assert isinstance(model.learning_curve_plot(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close("all")
+
     # test explain
     assert isinstance(h2o.explain(models, train, render=False), H2OExplanation)
 
@@ -304,6 +322,10 @@ def test_explanation_single_model_multinomial_classification():
     for col in cols_to_test:
         assert isinstance(gbm.ice_plot(train, col, target="setosa"), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
+
+    # test learning curve
+    assert isinstance(gbm.learning_curve_plot(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
 
     # test explain
     assert isinstance(gbm.explain(train, render=False), H2OExplanation)
@@ -379,6 +401,11 @@ def test_explanation_list_of_models_multinomial_classification():
     # test partial dependences
     for col in cols_to_test:
         assert isinstance(h2o.pd_multi_plot(models, train, col, target="setosa"), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close("all")
+
+    # test learning curve
+    for model in models:
+        assert isinstance(model.learning_curve_plot(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
     # test explain
