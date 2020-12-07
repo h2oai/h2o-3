@@ -19,10 +19,9 @@ public class XGBoostGPUCVModelBuilder extends CVModelBuilder {
         Job job,
         ModelBuilder<?, ?, ?>[] modelBuilders,
         int parallelization,
-        int updateInc,
         int[] gpuIds
     ) {
-        super(modelType, job, modelBuilders, parallelization, updateInc);
+        super(modelType, job, modelBuilders, parallelization);
         if (gpuIds != null && gpuIds.length > 0) {
             availableGpus = new LinkedList<>();
             for (int id : gpuIds) availableGpus.add(id);

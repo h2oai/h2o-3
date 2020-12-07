@@ -15,24 +15,20 @@ public class CVModelBuilder {
     private final Job job;
     private final ModelBuilder<?, ?, ?>[] modelBuilders;
     private final int parallelization;
-    private final int updateInc;
 
     /**
      * @param modelType       text description of group of models being built (for logging purposes)
      * @param job             parent job (processing will be stopped if stop of a parent job was requested)
      * @param modelBuilders   list of model builders to run in bulk
      * @param parallelization level of parallelization (how many models can be built at the same time)
-     * @param updateInc       update increment (0 = disable updates)
      */
     public CVModelBuilder(
-        String modelType, Job job, ModelBuilder<?, ?, ?>[] modelBuilders,
-        int parallelization, int updateInc
+        String modelType, Job job, ModelBuilder<?, ?, ?>[] modelBuilders, int parallelization
     ) {
         this.modelType = modelType;
         this.job = job;
         this.modelBuilders = modelBuilders;
         this.parallelization = parallelization;
-        this.updateInc = updateInc;
     }
     
     protected void prepare(ModelBuilder m) {}
@@ -59,7 +55,6 @@ public class CVModelBuilder {
                     submodel_tasks[waitForTaskIndex].join();
                     finished(modelBuilders[waitForTaskIndex]);
                     nRunning--;
-                    if (updateInc > 0) job.update(updateInc); // One job finished
                 } catch (RuntimeException t) {
                     if (rt == null) rt = t;
                 }

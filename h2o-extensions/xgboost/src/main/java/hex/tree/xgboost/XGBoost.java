@@ -722,12 +722,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
   @Override
   protected CVModelBuilder makeCVModelBuilder(
-      String modelType, ModelBuilder<?, ?, ?>[] modelBuilders, int parallelization, int updateInc
+      String modelType, ModelBuilder<?, ?, ?>[] modelBuilders, int parallelization
   ) {
     if (XGBoostModel.getActualBackend(_parms, false) == XGBoostModel.XGBoostParameters.Backend.gpu && parallelization > 1) {
-      return new XGBoostGPUCVModelBuilder(modelType, _job, modelBuilders, parallelization, updateInc, _parms._gpu_id);      
+      return new XGBoostGPUCVModelBuilder(modelType, _job, modelBuilders, parallelization, _parms._gpu_id);      
     } else {
-      return super.makeCVModelBuilder(modelType, modelBuilders, parallelization, updateInc);
+      return super.makeCVModelBuilder(modelType, modelBuilders, parallelization);
     }
   }
 
