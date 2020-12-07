@@ -19,6 +19,7 @@ script_name=$(basename "${0}")
 # Setup directories for state management
 h2ocluster_home="${HOME}/.h2ocluster"
 h2ocluster_info_file="${h2ocluster_home}/clusterinfo"
+touch "${h2ocluster_info_file}"
 # Terraform data and state directories
 h2ocluster_tfdata="${h2ocluster_home}/tfdata"
 h2ocluster_tfstate="${h2ocluster_home}/tfstate"
@@ -29,7 +30,7 @@ mkdir -p "${h2ocluster_tfstate}"
 h2ocluster_tfhome="/opt/h2ocluster"
 
 # Create username with lower characters
-username=$(echo "${USER}" | tr -dc '[:lower:][:digit:]' | fold -w 8 | head -n 1)
+username=$(echo "${USER}" | tr '[:upper:]' '[:lower:]' | tr -dc '[:lower:][:digit:]' | fold -w 8 | head -n 1)
 
 # Initialize terraform for the first time
 if [[ ! -f "${h2ocluster_tfdata}/plugins/registry.terraform.io/hashicorp/google/3.48.0/linux_amd64/terraform-provider-google_v3.48.0_x5" ]]; then
