@@ -42,9 +42,7 @@ public class CVModelBuilderTest {
                 new DummyModelBuilder(new DummyModelParameters("Dummy 1", Key.make(_j._key + "-dummny-1"))),
                 new DummyModelBuilder(new DummyModelParameters("Dummy 2", Key.make(_j._key + "-dummny-2")))
             };
-            new CVModelBuilder("dummy-group", _j, builders, 1 /*sequential*/, 1 /*increment by 1*/).bulkBuildModels();
-            // check that progress is as expected
-            assertEquals(0.2, _j.progress(), 0.001);
+            new CVModelBuilder("dummy-group", _j, builders, 1 /*sequential*/).bulkBuildModels();
             tryComplete();
         }
     }
