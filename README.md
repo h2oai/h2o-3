@@ -688,26 +688,16 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 <a name="Roadmap"></a>
 ## 10. Roadmap
 
-### H2O 3.32.0.1 - October 2020
-
-* RuleFit algorithm
-* GAM Improvements (Cross Validation, MOJO support)
-* Target Encoding for Regression and Multinomial problems
-* Target Encoding minimal integration into AutoML
-* Kubernetes Improvements (Helm Charts)
-* GBM monotone constraints for quantile and tweedie distributions
-* Performance optimizations (lower memory usage)
-* Model Explainability
-* Upgrade XGBoost to 1.2
-
 ### H2O 3.34.0.1 - January 2021
 
 * Extended Isolation Forest Algorithm
 * Uplift Trees in GBM
 * Extracting & ranking feature interactions from GBM and XGBoost models
-* Externalized XGBoost on Kubernetes clusters
-* RuleFit MOJO
+* RuleFit MOJO, CoxPH MOJO
 * Support for MOJO2 Scoring
+* Grid-Search fault Tolerance
+* Kubernetes Operator
+* Externalized XGBoost on Kubernetes clusters
 
 <a name="Community"></a>
 ## 11. Community
