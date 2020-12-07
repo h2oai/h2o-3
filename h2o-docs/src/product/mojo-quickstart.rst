@@ -470,7 +470,7 @@ Step 2: Compile and Run the MOJO
          }
 
          System.out.println("Leaf node assignments: ");
-         for (int i=0; i < p.leafNodeAssignments; i++) {
+         for (int i=0; i < p.leafNodeAssignments.length; i++) {
            if (i > 0) {
              System.out.print(p.leafNodeAssignments[i]);
            }
@@ -478,7 +478,7 @@ Step 2: Compile and Run the MOJO
          System.out.println("");
 
          System.out.println("Shapley contributions: ");
-         for (int i=0; i < p.contributions; i++) {
+         for (int i=0; i < p.contributions.length; i++) {
            if (i > 0) {
              System.out.print(", ");
            }
