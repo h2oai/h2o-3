@@ -5,7 +5,7 @@ ZONE=$(basename $(curl --silent -H "Metadata-Flavor: Google" http://metadata.goo
 INSTANCE=$(curl --silent -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/name)
 
 # install dependencies
-yum install -y wget unzip python3
+yum install -y wget unzip python3 tree
 
 # Install terraform
 mkdir -p /tmp/terraform
