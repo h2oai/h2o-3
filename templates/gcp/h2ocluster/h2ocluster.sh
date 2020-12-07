@@ -140,7 +140,12 @@ exec_create () {
     popd && \
     echo "${cluster_name}|${cluster_description}" >> "${h2ocluster_info_file}" && \
     echo -e "Cluster instances created.\n" ) || { error_exit "Cluster creation failed."; }
-  # Cluster instances should be created. Display them.
+  # Cluster instances should be created. Wait for H2O to start
+  wait_for_h2o_start "${cluster_name}" 
+}
+
+wait_for_h2o_start () {
+  local cluster_name="${1}"
   echo -e "Cluster Instances:\n==================\n"
   echo "NAME                                 ZONE        MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP   EXTERNAL_IP     STATUS"
   gcloud compute instances list | grep -w "${cluster_name}"
@@ -160,6 +165,7 @@ exec_create () {
   echo "Cluster Leader IP and PORT: ${leader_ipport}"
   echo "Cluster Leader Url: http://${leader_ipport}/flow/index.html#"
   echo -e "\n"
+  
 }
 
 exec_info () {
@@ -176,14 +182,23 @@ exec_info () {
 }
 
 exec_start () {
-  echo "Start"
-  echo "Cluster Name: ${1}"
+  local cluster_name="${1}"
+  exec_info "${cluster_name}"
+  print_heading "STARTING CLUSTER"
+  instance_list=$(gcloud compute instances list | grep "${cluster_name}" | cut -d " " -f 1 | tr '\n' ' ' | xargs)
+  gcloud compute instances start ${instance_list}
+  wait_for_h2o_start "${cluster_name}" 
 }
 exec_stop () {
-  echo "Stop"
-  echo "Cluster Name: ${1}"
+  local cluster_name="${1}"
+  exec_info "${cluster_name}"
+  print_heading "STOPPING CLUSTER"
+  instance_list=$(gcloud compute instances list | grep "${cluster_name}" | cut -d " " -f 1 | tr '\n' ' ' | xargs)
+  gcloud compute instances stop ${instance_list}
+  exec_info "${cluster_name}"
 }
 exec_destroy() {
+  print_heading "DESTROYING CLUSTER"
   local cluster_name="${1}"
   # shellcheck disable=SC2155,SC2116
   local randstr=$(echo "${cluster_name} | cut -d '-' -f 3")
