@@ -3022,9 +3022,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private Frame encodeCategoricalsIfPresent(Frame beta_constraints) {
       FrameUtils.BetaConstraintsEncoder constraintsEncoder = new FrameUtils.BetaConstraintsEncoder(_dinfo.coefNames(), _dinfo.coefOriginalNames());
-      Frame transformedFrame =  constraintsEncoder.doAll(beta_constraints.types(), beta_constraints).outputFrame();
+      Frame transformedFrame =  constraintsEncoder.doAll(getBetaConstraintsTypesForEncoder(beta_constraints), beta_constraints).outputFrame();
       transformedFrame.setNames(beta_constraints._names);
       return transformedFrame;
+    }
+    
+    private byte[] getBetaConstraintsTypesForEncoder(Frame beta_constraints) {
+      byte[] types = beta_constraints.types();
+      int id = Arrays.asList(beta_constraints.names()).indexOf("names");
+      types[id] = 2;
+      return types;
+      
     }
 
     public BetaConstraint(Frame beta_constraints) {
