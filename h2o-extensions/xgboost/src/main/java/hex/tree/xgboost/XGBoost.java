@@ -721,13 +721,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   }
 
   @Override
-  protected BulkModelBuilder makeBulkModelBuilder(
-      String modelType, Job job, ModelBuilder<?, ?, ?>[] modelBuilders, int parallelization, int updateInc
+  protected CVModelBuilder makeCVModelBuilder(
+      String modelType, ModelBuilder<?, ?, ?>[] modelBuilders, int parallelization, int updateInc
   ) {
     if (XGBoostModel.getActualBackend(_parms, false) == XGBoostModel.XGBoostParameters.Backend.gpu && parallelization > 1) {
-      return new XGBoostGPUBulkModelBuilder(modelType, job, modelBuilders, parallelization, updateInc, _parms._gpu_id);      
+      return new XGBoostGPUCVModelBuilder(modelType, _job, modelBuilders, parallelization, updateInc, _parms._gpu_id);      
     } else {
-      return super.makeBulkModelBuilder(modelType, job, modelBuilders, parallelization, updateInc);
+      return super.makeCVModelBuilder(modelType, modelBuilders, parallelization, updateInc);
     }
   }
 

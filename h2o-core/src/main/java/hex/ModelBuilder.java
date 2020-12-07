@@ -674,15 +674,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   // Step 4: Run all the CV models and launch the main model
   public void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
-    makeBulkModelBuilder("cross-validation", _job, cvModelBuilders, nModelsInParallel(N), 0 /*no job updates*/).bulkBuildModels();
+    makeCVModelBuilder("cross-validation", cvModelBuilders, nModelsInParallel(N), 0 /*no job updates*/).bulkBuildModels();
     cv_computeAndSetOptimalParameters(cvModelBuilders);
   }
   
-  protected BulkModelBuilder makeBulkModelBuilder(
-      String modelType, Job job, ModelBuilder<?, ?, ?>[] modelBuilders,
+  protected CVModelBuilder makeCVModelBuilder(
+      String modelType, ModelBuilder<?, ?, ?>[] modelBuilders,
       int parallelization, int updateInc
   ) {
-    return new BulkModelBuilder(modelType, job, modelBuilders, parallelization, updateInc);
+    return new CVModelBuilder(modelType, _job, modelBuilders, parallelization, updateInc);
   }
   
   // Step 5: Score the CV models

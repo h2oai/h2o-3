@@ -15,12 +15,12 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
-public class BulkModelBuilderTest {
+public class CVModelBuilderTest {
 
     @Test
     @SuppressWarnings("unchecked")
     public void bulkBuildModels() {
-        Job j = new Job(null, null, "BulkBuilding");
+        Job<Model> j = new Job<>(null, null, "BulkBuilding");
         Key key1 = Key.make(j._key + "-dummny-1");
         Key key2 = Key.make(j._key + "-dummny-2");
         try {
@@ -42,7 +42,7 @@ public class BulkModelBuilderTest {
                 new DummyModelBuilder(new DummyModelParameters("Dummy 1", Key.make(_j._key + "-dummny-1"))),
                 new DummyModelBuilder(new DummyModelParameters("Dummy 2", Key.make(_j._key + "-dummny-2")))
             };
-            new BulkModelBuilder("dummy-group", _j, builders, 1 /*sequential*/, 1 /*increment by 1*/).bulkBuildModels();
+            new CVModelBuilder("dummy-group", _j, builders, 1 /*sequential*/, 1 /*increment by 1*/).bulkBuildModels();
             // check that progress is as expected
             assertEquals(0.2, _j.progress(), 0.001);
             tryComplete();

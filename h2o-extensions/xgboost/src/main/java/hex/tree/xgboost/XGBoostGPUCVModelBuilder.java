@@ -1,21 +1,20 @@
 package hex.tree.xgboost;
 
-import hex.BulkModelBuilder;
+import hex.CVModelBuilder;
 import hex.ModelBuilder;
 import hex.tree.xgboost.util.GpuUtils;
 import org.apache.log4j.Logger;
 import water.Job;
 
-import javax.sound.sampled.Line;
 import java.util.*;
 
-public class XGBoostGPUBulkModelBuilder extends BulkModelBuilder {
+public class XGBoostGPUCVModelBuilder extends CVModelBuilder {
 
-    private static final Logger LOG = Logger.getLogger(XGBoostGPUBulkModelBuilder.class);
+    private static final Logger LOG = Logger.getLogger(XGBoostGPUCVModelBuilder.class);
 
     private final Deque<Integer> availableGpus;
 
-    public XGBoostGPUBulkModelBuilder(
+    public XGBoostGPUCVModelBuilder(
         String modelType,
         Job job,
         ModelBuilder<?, ?, ?>[] modelBuilders,

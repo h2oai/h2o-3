@@ -1,13 +1,15 @@
 package hex;
 
+import org.apache.log4j.Logger;
 import water.H2O;
 import water.Job;
-import water.util.Log;
 
 /**
- * Runs given model builders in bulk.
+ * Execute Cross-Validation model build in parallel
  */
-public class BulkModelBuilder {
+public class CVModelBuilder {
+    
+    private static final Logger LOG = Logger.getLogger(CVModelBuilder.class);
 
     private final String modelType;
     private final Job job;
@@ -22,7 +24,7 @@ public class BulkModelBuilder {
      * @param parallelization level of parallelization (how many models can be built at the same time)
      * @param updateInc       update increment (0 = disable updates)
      */
-    public BulkModelBuilder(
+    public CVModelBuilder(
         String modelType, Job job, ModelBuilder<?, ?, ?>[] modelBuilders,
         int parallelization, int updateInc
     ) {
@@ -44,11 +46,11 @@ public class BulkModelBuilder {
         RuntimeException rt = null;
         for (int i = 0; i < N; ++i) {
             if (job.stop_requested()) {
-                Log.info("Skipping build of last " + (N - i) + " out of " + N + " " + modelType + " CV models");
+                LOG.info("Skipping build of last " + (N - i) + " out of " + N + " " + modelType + " CV models");
                 stopAll(submodel_tasks);
                 throw new Job.JobCancelledException();
             }
-            Log.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
+            LOG.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
             prepare(modelBuilders[i]);
             submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
             if (++nRunning == parallelization) { //piece-wise advance in training the models
