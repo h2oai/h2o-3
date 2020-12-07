@@ -1,6 +1,5 @@
 package hex.glm;
 
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Scope;
@@ -10,6 +9,8 @@ import water.fvec.TestFrameBuilder;
 import water.parser.BufferedString;
 import water.util.FrameUtils;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 import static water.fvec.Vec.T_NUM;
 import static water.fvec.Vec.T_STR;
 
@@ -76,9 +77,9 @@ public class GLMBetaConstraintsEncoderTest extends TestUtil {
     void testFramesEqual(Frame frame1, Frame frame2) {
         BufferedString tmpStr = new BufferedString();
         for (int j = 0; j < frame1.anyVec().length(); j++) {
-            Assert.assertTrue(frame1.vec(0).atStr(tmpStr, j).equals(frame2.vec(0).atStr(tmpStr, j)));
-            Assert.assertEquals(frame1.vec(1).at(j), frame2.vec(1).at(j), 1e-1);
-            Assert.assertEquals(frame1.vec(2).at(j), frame2.vec(2).at(j), 1e-1);
+            assertTrue(frame1.vec(0).atStr(tmpStr, j).equals(frame2.vec(0).atStr(tmpStr, j)));
+            assertEquals(frame1.vec(1).at(j), frame2.vec(1).at(j), 1e-1);
+            assertEquals(frame1.vec(2).at(j), frame2.vec(2).at(j), 1e-1);
         }
     }
     

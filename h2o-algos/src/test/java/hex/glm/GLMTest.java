@@ -2294,17 +2294,17 @@ public class GLMTest  extends TestUtil {
    */
   @Test
   public void testBoundsCategoricalCol() {
-    GLMModel model = null;
+    Scope.enter();
 
     Key parsed = Key.make("prostate_parsed");
     Key modelKey = Key.make("prostate_model");
 
-    Frame fr = parse_test_file(parsed, "smalldata/logreg/prostate.csv");
+    Frame fr = Scope.track(parse_test_file(parsed, "smalldata/logreg/prostate.csv"));
     fr.toCategoricalCol("AGE");
     Key betaConsKey = Key.make("beta_constraints");
 
     FVecFactory.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n AGE, -.5, .5\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5\nGLEASON, -.5, .5");
-    Frame betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
+    Frame betaConstraints = Scope.track(ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey));
 
     try {
       // H2O differs on intercept and race, same residual deviance though
@@ -2320,7 +2320,8 @@ public class GLMTest  extends TestUtil {
       params._lambda = new double[]{0.001607};
       params._obj_reg = 1.0/380;
       GLM glm = new GLM( params, modelKey);
-      model = glm.trainModel().get();
+      GLMModel model = glm.trainModel().get();
+      Scope.track_generic(model);
       assertTrue(glm.isStopped());
       ModelMetricsBinomialGLM val = (ModelMetricsBinomialGLM) model._output._training_metrics;
       assertEquals(512.2888, val._nullDev, 1e-1);
@@ -2328,10 +2329,11 @@ public class GLMTest  extends TestUtil {
       model.delete();
       params._lambda = new double[]{0};
       params._alpha = new double[]{0};
-      FVecFactory.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5");
+      FVecFactory.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5\n AGE, -.5, .5");
       betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
       glm = new GLM( params, modelKey);
       model = glm.trainModel().get();
+      Scope.track_generic(model);
       assertTrue(glm.isStopped());
       double[] beta = model.beta();
       System.out.println("beta = " + Arrays.toString(beta));
@@ -2355,9 +2357,7 @@ public class GLMTest  extends TestUtil {
         assertEquals(0, grad[i], 1e-2);
       }
     } finally {
-      fr.delete();
-      betaConstraints.delete();
-      if (model != null) model.delete();
+      Scope.exit();
     }
   }
 }

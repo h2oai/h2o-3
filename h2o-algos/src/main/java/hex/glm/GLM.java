@@ -40,6 +40,7 @@ import java.util.*;
 
 import static hex.ModelMetrics.calcVarImp;
 import static hex.glm.GLMUtils.*;
+import static water.fvec.Vec.T_STR;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -3030,7 +3031,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private byte[] getBetaConstraintsTypesForEncoder(Frame beta_constraints) {
       byte[] types = beta_constraints.types();
       int id = Arrays.asList(beta_constraints.names()).indexOf("names");
-      types[id] = 2;
+      types[id] = T_STR;
       return types;
       
     }
