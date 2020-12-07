@@ -6,7 +6,7 @@
 set -o errexit          # exit script when any command fails
 # set -o nounset          # exit if using undefined variables
 set -o pipefail         # exit and return the exist status of last command in pipe to fail
-set -o xtrace           # Uncomment to enable script debugging
+# set -o xtrace           # Uncomment to enable script debugging
 
 # Get important execution information
 # shellcheck disable=SC2034
@@ -27,6 +27,9 @@ mkdir -p "${h2ocluster_tfstate}"
 
 # h2ocluster Terraform dir
 h2ocluster_tfhome="/opt/h2ocluster"
+
+# Create username with lower characters
+username=$(echo "${USER}" | tr -dc '[:lower:][:digit:]' | fold -w 8 | head -n 1)
 
 # Initialize terraform for the first time
 if [[ ! -f "${h2ocluster_tfdata}/plugins/registry.terraform.io/hashicorp/google/3.48.0/linux_amd64/terraform-provider-google_v3.48.0_x5" ]]; then
@@ -49,7 +52,7 @@ error_exit () {
 
 print_heading () {
   echo ""
-  echo "====== ${1} ======"
+  echo "********** ${1} **********"
   echo ""
 }
 
@@ -98,7 +101,7 @@ exec_action () {
         validate_cluster "${cluster_name}"
         exec_stop "${cluster_name}"
         ;;
-    destory )
+    destroy )
         validate_cluster "${cluster_name}"
         exec_destroy "${cluster_name}"
         ;;
@@ -108,7 +111,7 @@ exec_action () {
 exec_list () {
   print_heading "LISTING CLUSTERS"
   (printf 'Cluster Name|Cluster Description\n'; \
-   printf '============================|================================================\n'; \
+   printf '============|===================\n'; \
    cat "${h2ocluster_info_file}") | column -t -s "|"
   echo -e "\n"
 }
@@ -117,37 +120,59 @@ exec_create () {
   print_heading "CREATING CLUSTER"
   read -e -r -n 50 -p "Enter short description (max 50 chars): " cluster_description
   # shellcheck disable=SC2155
-  local randstr=$(head /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 7 | head -n 1)
-  local cluster_name="${prefix}-${USER}-${randstr}-cluster"
+  local randstr=$(head /dev/urandom | tr -dc 'a-z0-9' | fold -w 7 | head -n 1)
+  local cluster_name="${prefix}-${username}-${randstr}-cluster"
   echo -e "\n"
   echo -e "Creating H2O Cluster"
   echo -e "--------------------"
   echo -e "Cluster Name: ${cluster_name}" 
-  echo -e "User: ${USER}" 
+  echo -e "User: ${username}" 
   echo -e "Description: ${cluster_description}" 
   echo -e "\n"
   # execute this as a single operation or return error 
   ( pushd /opt/h2ocluster && \
     TF_DATA_DIR="${h2ocluster_tfdata}" \
       terraform apply \
-      -var "h2o_cluster_instance_user=${USER}" \
+      -var "h2o_cluster_instance_user=${username}" \
       -var "h2o_cluster_random_string=${randstr}" \
       -var "h2o_cluster_instance_description='${cluster_description}'" \
       -state="${h2ocluster_tfstate}/${cluster_name}.tfstate" && \
     popd && \
     echo "${cluster_name}|${cluster_description}" >> "${h2ocluster_info_file}" && \
-    true ) || { error_exit "Cluster creation failed."; } 
+    echo -e "Cluster instances created.\n" ) || { error_exit "Cluster creation failed."; }
+  # Cluster instances should be created. Display them.
+  echo -e "Cluster Instances:\n==================\n"
+  echo "NAME                                 ZONE        MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP   EXTERNAL_IP     STATUS"
+  gcloud compute instances list | grep -w "${cluster_name}"
+  echo -e "\n\nWaiting for H2O to be installed and started. Takes about 5 minutes. Be patient."
+  # shellcheck disable=SC2091
+  until $(curl -X GET --output /dev/null --silent --head --fail "http://${cluster_name}-node-0:54321/3/Cloud"); do
+    echo "...waiting...retrying after 10 seconds..."
+    sleep 10
+  done
+  echo -e "H2O detected.\nGetting cluster leader information\n\n"
+  cluster_nodes=$(curl --silent "http://${cluster_name}-node-0:54321/3/Cloud" | jq '.cloud_size') 
+  leader_idx=$(curl --silent "http://${cluster_name}-node-0:54321/3/Cloud" | jq '.leader_idx') 
+  leader_ipport=$(curl --silent "http://${cluster_name}-node-0:54321/3/Cloud" | jq ".nodes[${leader_idx}].ip_port" | tr -d '"') 
+  echo -e "H2O Cluster Information:\n========================="
+  echo "Cluster Name: ${cluster_name}"
+  echo "Cluster Size: ${cluster_nodes}"
+  echo "Cluster Leader IP and PORT: ${leader_ipport}"
+  echo "Cluster Leader Url: http://${leader_ipport}/flow/index.html#"
+  echo -e "\n"
 }
 
 exec_info () {
   local cluster_name="${1}"
   print_heading "CLUSTER INFORMATION"
   (printf 'Cluster Name|Cluster Description\n'; \
-   printf '============================|================================================\n'; \
+   printf '============|===================\n'; \
    grep -w "${cluster_name}" "${h2ocluster_info_file}" ) | column -t -s "|"
   echo -e "\n"
   echo -e "Cluster Instances:\n==================\n"
+  echo "NAME                                 ZONE        MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP   EXTERNAL_IP     STATUS"
   gcloud compute instances list | grep -w "${cluster_name}"
+  echo -e "\n"
 }
 
 exec_start () {
@@ -168,19 +193,20 @@ exec_destroy() {
   echo -e "Destroying H2O Cluster"
   echo -e "--------------------"
   echo -e "Cluster Name: ${cluster_name}" 
-  echo -e "User: ${USER}" 
+  echo -e "User: ${username}" 
   echo -e "Description: ${cluster_description}" 
   echo -e "\n"
   # execute this as a single operation or return error 
   ( pushd /opt/h2ocluster && \
     TF_DATA_DIR="${h2ocluster_tfdata}" \
       terraform destroy \
-      -var "h2o_cluster_instance_user=${USER}" \
+      -var "h2o_cluster_instance_user=${username}" \
       -var "h2o_cluster_random_string=${randstr}" \
       -var "h2o_cluster_instance_description='${cluster_description}'" \
       -state="${h2ocluster_tfstate}/${cluster_name}.tfstate" && \
     popd && \
     sed -i "/${cluster_name}/d" "${h2ocluster_info_file}" && \
+    rm "${h2ocluster_tfstate}/${cluster_name}.tfstate" "${h2ocluster_tfstate}/${cluster_name}.tfstate.backup" && \
     true ) || { error_exit "Cluster deletion failed."; } 
 }
 
@@ -199,6 +225,7 @@ parse_args_and_exec () {
             action="${1}"
             shift
             cluster_name="${1}"
+            [[ "${cluster_name}" != "" ]] || { print_usage; error_exit "Missing expected parameters"; }
             ;;
         --help )
             print_usage
