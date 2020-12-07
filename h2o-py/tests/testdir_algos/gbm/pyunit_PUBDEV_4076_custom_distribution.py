@@ -60,7 +60,8 @@ def test_custom_distribution_computation():
     test_null()
     test_worng_and_inherited_regression()
     test_wrong_multinomial()
-    
+    test_custom_distribution_reuse()
+
     
 def test_regression():
     print("Regression tests")
