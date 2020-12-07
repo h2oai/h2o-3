@@ -193,7 +193,7 @@ Step 2: Creating H2O clusters
     H2O Cluster Information:
     =========================
     Cluster Name: h2o-hemenkap-letxk7f-cluster
-    Cluster Size: 1
+    Cluster Size: 3
     Cluster Leader IP and PORT: 10.100.1.2:54321
     Cluster Leader Url: http://10.100.1.2:54321/flow/index.html#
     ```
