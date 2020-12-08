@@ -1897,7 +1897,7 @@ def learning_curve_plot(
                 [(k, len(v)) for k, v in cvsh_train.items()],
                 key=lambda k: k[0]
             ))[:, 1]
-            if len_train.mean() > 2 and np.mean(len_train[:-1] == len_train[1:]) >= 0.5:
+            if cv_ribbon or len_train.mean() > 2 and np.mean(len_train[:-1] == len_train[1:]) >= 0.5:
                 plt.plot(mean_train[:, 0], mean_train[:, 1], c=col_cv_train,
                          label="CV-Training")
                 plt.fill_between(mean_train[:, 0],
