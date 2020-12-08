@@ -242,6 +242,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public double _theta; // 1/k and is used by negative binomial distribution only
     public double [] _alpha;
     public double [] _lambda;
+    public double[] _startval;
     public Serializable _missing_values_handling = MissingValuesHandling.MeanImputation;
     public boolean _lambda_search = false;
     public boolean _use_all_factor_levels = false;

@@ -202,60 +202,60 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         'xgb': [
             'airlines-1m': [
                 [100, "cpu"]: [
-                    'train_time_min': 12,
-                    'train_time_max': 35
+                    'train_time_min': 9,
+                    'train_time_max': 15
                 ],
                 [100, "ext"]: [
-                    'train_time_min': 12,
-                    'train_time_max': 38
+                    'train_time_min': 15,
+                    'train_time_max': 19
                 ],
                 [100, "gpu"]: [
-                    'train_time_min': 11,
-                    'train_time_max': 19
+                    'train_time_min': 10,
+                    'train_time_max': 26
                 ]
             ],
             'airlines-10m': [
                 [100, "cpu"]: [
-                    'train_time_min': 102,
-                    'train_time_max': 175
+                    'train_time_min': 54,
+                    'train_time_max': 70
                 ],
                 [100, "ext"]: [
-                    'train_time_min': 102,
-                    'train_time_max': 193
+                    'train_time_min': 68,
+                    'train_time_max': 73
                 ],
                 [100, "gpu"]: [
                     'train_time_min': 31,
-                    'train_time_max': 49
+                    'train_time_max': 52
                 ]
             ],
             'higgs': [
                 [100, "cpu"]: [
-                    'train_time_min': 153,
-                    'train_time_max': 178
+                    'train_time_min': 91,
+                    'train_time_max': 94
                 ],
                 [100, "ext"]: [
-                    'train_time_min': 153,
-                    'train_time_max': 197
+                    'train_time_min': 93,
+                    'train_time_max': 100
                 ],
                 [100, "gpu"]: [
-                    'train_time_min': 50,
-                    'train_time_max': 59
+                    'train_time_min': 55,
+                    'train_time_max': 63
                 ]
             ],
             'cox2': [
                 [10, "cpu"]: [
-                    'train_time_min': 1301,
-                    'train_time_max': 1581
+                    'train_time_min': 1275,
+                    'train_time_max': 1464
                 ]
             ],
             'cox2-20m': [
                 [10, "cpu"]: [
-                    'train_time_min': 291,
-                    'train_time_max': 310
+                    'train_time_min': 279,
+                    'train_time_max': 294
                 ],
                 [10, "ext"]: [
-                    'train_time_min': 291,
-                    'train_time_max': 341
+                    'train_time_min': 286,
+                    'train_time_max': 299
                 ]
             ]
         ],
@@ -282,20 +282,20 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         'xgb-dmlc': [
             'airlines-1m': [
                 100: [
-                    'train_time_min': 6,
+                    'train_time_min': 7,
                     'train_time_max': 9
                 ]
             ],
             'airlines-10m': [
                 100: [
                     'train_time_min': 74,
-                    'train_time_max': 89
+                    'train_time_max': 88
                 ]
             ],
             'higgs': [
                 100: [
                     'train_time_min': 117,
-                    'train_time_max': 132
+                    'train_time_max': 129
                 ]
             ]
         ],
@@ -341,133 +341,33 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         ],
         'rulefit': [
             'redhat': [
-                ['RULES', 1, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
-                ['RULES', 3, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
-                ['RULES', 1, 5]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
-                ['RULES_AND_LINEAR', 1, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],    
                 ['RULES_AND_LINEAR', 3, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
-                ['RULES_AND_LINEAR', 1, 5]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
+                        'train_time_min': 971,
+                        'train_time_max': 1081
                 ]
             ],
             'homesite': [
-                ['RULES', 1, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],    
-                ['RULES', 3, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
-                ['RULES', 1, 5]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
-                ['RULES_AND_LINEAR', 1, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],    
                 ['RULES_AND_LINEAR', 3, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
-                ['RULES_AND_LINEAR', 1, 5]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
+                        'train_time_min': 8,
+                        'train_time_max': 11
                 ]
             ],
             'springleaf': [
-                ['RULES', 1, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],    
-                ['RULES', 3, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
-                ['RULES', 1, 5]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
-                ['RULES_AND_LINEAR', 1, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
                 ['RULES_AND_LINEAR', 3, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
-                ['RULES_AND_LINEAR', 1, 5]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
+                        'train_time_min': 20,
+                        'train_time_max': 23
                 ]
             ],
             'paribas': [
-                ['RULES', 1, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],    
-                ['RULES', 3, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
-                ['RULES', 1, 5]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
-                ['RULES_AND_LINEAR', 1, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],    
                 ['RULES_AND_LINEAR', 3, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
-                ['RULES_AND_LINEAR', 1, 5]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
+                        'train_time_min': 7,
+                        'train_time_max': 12
                 ]
             ],
             'higgs': [
-                ['RULES', 1, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],    
-                ['RULES', 3, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
-                ['RULES', 1, 5]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
-                ['RULES_AND_LINEAR', 1, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
                 ['RULES_AND_LINEAR', 3, 3]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
-                ],
-                ['RULES_AND_LINEAR', 1, 5]: [
-                        'train_time_min': 3,
-                        'train_time_max': 8
+                        'train_time_min': 71,
+                        'train_time_max': 80
                 ]
             ]
         ]    

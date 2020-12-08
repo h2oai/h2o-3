@@ -161,3 +161,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
          url
     }
 }
+
+# Client version of R package
+.h2o.__CLIENT_VERSION_FILENAME <- "client_info.txt"
+.h2o.__CLIENT_VERSION <- function() {return(file.exists(paste0(path.package("h2o", quiet = FALSE), .Platform$file.sep, .h2o.__CLIENT_VERSION_FILENAME)))}
