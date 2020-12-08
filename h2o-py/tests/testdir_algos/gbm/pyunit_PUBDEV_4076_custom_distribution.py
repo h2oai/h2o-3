@@ -145,6 +145,25 @@ def test_wrong_multinomial():
         "Validation rmse is not different for default and custom multinomial model."
 
 
+def test_custom_distribution_reuse():
+    from h2o.utils.distributions import CustomDistributionGaussian
+    train = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris_train.csv"))
+    y = "petal_wid"
+    x = train.columns
+    x.remove(y)
+
+    nfolds = 2
+    for i in range(3):
+        test_wrong_multinomial()
+        custom_dist1 = h2o.upload_custom_distribution(CustomDistributionGaussian)
+        gbm = H2OGradientBoostingEstimator(nfolds=nfolds,
+                                           fold_assignment="Modulo",
+                                           keep_cross_validation_predictions=True,
+                                           distribution="custom",
+                                           custom_distribution_func=custom_dist1)
+        gbm.train(x=x, y=y, training_frame=train)
+
+
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_custom_distribution_computation)
 else:
