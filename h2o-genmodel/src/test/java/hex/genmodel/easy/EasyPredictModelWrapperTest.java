@@ -4,7 +4,9 @@ import hex.ModelCategory;
 import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.MojoReaderBackendFactoryTest;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
+import hex.genmodel.attributes.parameters.KeyValue;
 import hex.genmodel.easy.error.CountingErrorConsumer;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
@@ -17,6 +19,7 @@ import org.mockito.ArgumentMatchers;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -529,6 +532,32 @@ public class EasyPredictModelWrapperTest {
     EasyPredictModelWrapper.ErrorConsumer errorConsumer = modelWrapper.getErrorConsumer();
     Assert.assertNotNull(errorConsumer);
     Assert.assertEquals(VoidErrorConsumer.class, errorConsumer.getClass());
+  }
+
+  @Test
+  public void testVariableImportances() throws Exception {
+    URL modelRes = MojoReaderBackendFactoryTest.class.getResource("algos/gbm/gbm_variable_importance.zip");
+
+    MojoModel modelMojo = MojoModel.load(modelRes.getPath(), true);
+
+    EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config().setModel(modelMojo);
+    EasyPredictModelWrapper model = new EasyPredictModelWrapper(config);
+
+    KeyValue[] variableImportances = model.getTopNImportantVariables(2);
+
+    Assert.assertEquals("Variable importance has different size of array", 2, variableImportances.length);
+    Assert.assertEquals("Variables are not correctly sorted", "GLEASON", variableImportances[0].getKey());
+    Assert.assertEquals("Variables are not correctly sorted", "PSA", variableImportances[1].getKey());
+
+    variableImportances = model.getTopNImportantVariables(14);
+    Assert.assertEquals("Variable importance has different size of array", 7, variableImportances.length);
+    Assert.assertEquals("Variables are not correctly sorted", "VOL", variableImportances[2].getKey());
+    Assert.assertEquals("Variables are not correctly sorted", "AGE", variableImportances[3].getKey());
+
+    variableImportances = model.getTopNImportantVariables(-2);
+    Assert.assertEquals("Variable importance has different size of array", 7, variableImportances.length);
+    Assert.assertEquals("Variables are not correctly sorted", "DPROS", variableImportances[4].getKey());
+    Assert.assertEquals("Variables are not correctly sorted", "RACE", variableImportances[5].getKey());
   }
 
 

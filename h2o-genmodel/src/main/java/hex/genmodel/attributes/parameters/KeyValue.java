@@ -18,4 +18,8 @@ public class KeyValue {
         return value;
     }
 
+    @Override
+    public String toString() {
+        return "{Key: " + key + ", Value: " + value + "}";
+    }
 }

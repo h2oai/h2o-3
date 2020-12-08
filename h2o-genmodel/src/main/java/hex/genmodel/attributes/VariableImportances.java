@@ -2,8 +2,13 @@ package hex.genmodel.attributes;
 
 
 import com.google.gson.JsonObject;
+import hex.genmodel.attributes.parameters.KeyValue;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Represents model's variables and their relative importances in the model.
@@ -35,5 +40,28 @@ public class VariableImportances implements Serializable {
         }
 
         return new VariableImportances(varNames, relativeVarimps);
+    }
+
+    /**
+     *
+     * @param n how many variables is in the output. If n >= number of variables or n <= 0 then all variables are returned.
+     * @return descending sorted array of String -> double.
+     *          Where String is variable and double is relative importance of the variable.
+     */
+    public KeyValue[] topN(int n) {
+        if (n <= 0 || n > _importances.length) {
+            n = _importances.length;
+        }
+        KeyValue[] sortedImportances = new KeyValue[_importances.length];
+        for (int i = 0; i < _importances.length; i++) {
+            sortedImportances[i] = new KeyValue(_variables[i], _importances[i]);
+        }
+        Arrays.sort(sortedImportances, new Comparator<KeyValue>() {
+            @Override
+            public int compare(KeyValue o1, KeyValue o2) {
+                return o1.getValue() > o2.getValue() ? -1 : 0;
+            }
+        });
+        return Arrays.copyOfRange(sortedImportances, 0, n);
     }
 }
