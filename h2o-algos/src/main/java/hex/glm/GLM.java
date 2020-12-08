@@ -28,9 +28,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.Frame;
-import water.fvec.InteractionWrappedVec;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Rapids;
 import water.rapids.Val;
@@ -42,6 +40,7 @@ import java.util.*;
 
 import static hex.ModelMetrics.calcVarImp;
 import static hex.glm.GLMUtils.*;
+import static water.fvec.Vec.T_STR;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -3027,7 +3026,23 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       return d;
     }
 
+    private Frame encodeCategoricalsIfPresent(Frame beta_constraints) {
+      FrameUtils.BetaConstraintsEncoder constraintsEncoder = new FrameUtils.BetaConstraintsEncoder(_dinfo.coefNames(), _dinfo.coefOriginalNames());
+      Frame transformedFrame =  constraintsEncoder.doAll(getBetaConstraintsTypesForEncoder(beta_constraints), beta_constraints).outputFrame();
+      transformedFrame.setNames(beta_constraints._names);
+      return transformedFrame;
+    }
+    
+    private byte[] getBetaConstraintsTypesForEncoder(Frame beta_constraints) {
+      byte[] types = beta_constraints.types();
+      int id = Arrays.asList(beta_constraints.names()).indexOf("names");
+      types[id] = T_STR;
+      return types;
+      
+    }
+
     public BetaConstraint(Frame beta_constraints) {
+      beta_constraints = encodeCategoricalsIfPresent(beta_constraints);
       Vec v = beta_constraints.vec("names");
       String[] dom;
       int[] map;
