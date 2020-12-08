@@ -78,6 +78,11 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       return Double.NaN;
     }
   }
+  
+  public double aucpr(){
+    return pr_auc();
+  }
+  
 
   public static ModelMetricsMultinomial getFromDKV(Model model, Frame frame) {
     ModelMetrics mm = ModelMetrics.getFromDKV(model, frame);

@@ -62,7 +62,7 @@ automl.leaderboard_sort_metric.test <- function() {
                      project_name = "r_lbsm_test_aml3",
                      sort_metric = "MSE")
   aml3@leaderboard
-  expect_equal(names(aml3@leaderboard),c("model_id", "mse", "mean_per_class_error", "logloss", "rmse"))
+  expect_equal(names(aml3@leaderboard),c("model_id", "mse", "mean_per_class_error", "logloss", "rmse", "auc", "aucpr"))
   # check that mse col is sorted already
   mse_col <- as.vector(aml3@leaderboard[,"mse"])
   expect_equal(identical(mse_col, sort(mse_col, decreasing = FALSE)), TRUE)
