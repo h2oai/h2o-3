@@ -1192,7 +1192,7 @@ h2o.multinomial_auc_table <- function(object, train=FALSE, valid=FALSE, xval=FAL
             if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
         }
     }
-    warning(paste0("Multinomial AUC table is not computed because it is disabled or due to domain size (maximum is 50 domains).", class(object)))
+    warning(paste0("Multinomial AUC table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).", class(object)))
     invisible(NULL)
 }
 
@@ -1258,7 +1258,7 @@ h2o.aucpr <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
       if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
     }
   }
-  warning(paste0("Multinomial PR AUC table is not computed because it is disabled or due to domain size (maximum is 50 domains).", class(object)))
+  warning(paste0("Multinomial PR AUC table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).", class(object)))
   invisible(NULL)
 }
 

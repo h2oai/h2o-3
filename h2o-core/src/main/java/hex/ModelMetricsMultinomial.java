@@ -39,12 +39,12 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     sb.append(" hit ratios: " + Arrays.toString(_hit_ratios) + "\n");
     sb.append(" AUC: "+auc()+ "\n");
     sb.append(" auc_pr: "+ pr_auc()+ "\n");
-    if(_auc == null){
-      sb.append(" AUC table: too large to compute.\n");
-      sb.append(" auc_pr table: too large to compute.\n");
+    if(_auc.getAucTable() == null){
+      sb.append(" AUC table: is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).\n");
+      sb.append(" auc_pr table: is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).\n");
     } else if(_domain.length <= 20) {
-      sb.append(" AUC table: " + _auc.getAucTable());
-      sb.append(" auc_pr table: " + _auc.getAucPrTable());
+      sb.append(" AUC table: " + _auc.getAucTable()+"\n");
+      sb.append(" auc_pr table: " + _auc.getAucPrTable()+"\n");
     } else {
       sb.append(" AUC table: too large to print.\n");
       sb.append(" auc_pr table: too large to print.\n");
@@ -172,6 +172,9 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       if (p.min() < 0 || p.max() > 1)
         throw new IllegalArgumentException("Predicted probabilities must be between 0 and 1 for multinomial metrics.");
     }
+    if ((aucType.equals(MultinomialAucType.AUTO) || (aucType.equals(MultinomialAucType.NONE)))){
+      Log.info("Multinomial AUC and AUCPR will not be calculated in metric summary. The model parameter auc_type is set to \"NONE\" or \"AUTO\" or the maximum size of domain (50) was reached.");
+    }
     int nclasses = perClassProbs.numCols();
     if (domain.length!=nclasses)
       throw new IllegalArgumentException("Given domain has " + domain.length + " classes, but predictions have " + nclasses + " columns (per-class probabilities) for multinomial metrics.");
@@ -253,8 +256,6 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
             }
           }
         }
-      } else {
-        Log.info("Multinomial AUC and AUCPR will not be calculated. The auc_type is set to \"NONE\" or the maximum size of domain (50) was reached.");
       }
     }
 

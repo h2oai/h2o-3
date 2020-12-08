@@ -129,7 +129,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
    * Metrics reported in leaderboard
    * Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle
    * Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse
-   * Multinomial metrics: logloss, mean_per_class_error, rmse, mse
+   * Multinomial metrics: logloss, mean_per_class_error, rmse, mse, auc, aucpr
    */
   private String[] _metrics;
 
@@ -593,7 +593,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     if (m._output.isBinomialClassifier()) { //binomial
       return new String[] {"auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse"};
     } else if (m._output.isMultinomialClassifier()) { // multinomial
-      return new String[] {"mean_per_class_error", "logloss", "rmse", "mse"};
+      return new String[] {"mean_per_class_error", "logloss", "rmse", "mse", "auc", "aucpr"};
     } else if (m._output.isSupervised()) { // regression
       return new String[] {"mean_residual_deviance", "rmse", "mse", "mae", "rmsle"};
     }
