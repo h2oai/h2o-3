@@ -674,63 +674,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   // Step 4: Run all the CV models and launch the main model
   public void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
-    bulkBuildModels("cross-validation", _job, cvModelBuilders, nModelsInParallel(N), 0 /*no job updates*/);
+    makeCVModelBuilder("cross-validation", cvModelBuilders, nModelsInParallel(N)).bulkBuildModels();
     cv_computeAndSetOptimalParameters(cvModelBuilders);
   }
-
-  /**
-   * Runs given model builders in bulk.
-   *
-   * @param modelType text description of group of models being built (for logging purposes)
-   * @param job parent job (processing will be stopped if stop of a parent job was requested)
-   * @param modelBuilders list of model builders to run in bulk
-   * @param parallelization level of parallelization (how many models can be built at the same time)
-   * @param updateInc update increment (0 = disable updates)
-   */
-  public static void bulkBuildModels(String modelType, Job job, ModelBuilder<?, ?, ?>[] modelBuilders,
-                                     int parallelization, int updateInc) {
-    final int N = modelBuilders.length;
-    H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
-    int nRunning=0;
-    RuntimeException rt = null;
-    for( int i=0; i<N; ++i ) {
-      if (job.stop_requested() ) {
-        Log.info("Skipping build of last "+(N-i)+" out of "+N+" "+modelType+" CV models");
-        stopAll(submodel_tasks);
-        throw new Job.JobCancelledException();
-      }
-      Log.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
-      modelBuilders[i].startClock();
-      submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
-      if(++nRunning == parallelization) { //piece-wise advance in training the models
-        while (nRunning > 0) try {
-          submodel_tasks[i + 1 - nRunning--].join();
-          if (updateInc > 0) job.update(updateInc); // One job finished
-        } catch (RuntimeException t) {
-          if (rt == null) rt = t;
-        }
-        if(rt != null) throw rt;
-      }
-    }
-    for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
-      try {
-        final H2O.H2OCountedCompleter task = submodel_tasks[i];
-        assert task != null;
-        task.join();
-      } catch(RuntimeException t){
-        if (rt == null) rt = t;
-      }
-    if(rt != null) throw rt;
+  
+  protected CVModelBuilder makeCVModelBuilder(
+      String modelType, ModelBuilder<?, ?, ?>[] modelBuilders, int parallelization
+  ) {
+    return new CVModelBuilder(modelType, _job, modelBuilders, parallelization);
   }
-
-  private static void stopAll(H2O.H2OCountedCompleter[] tasks) {
-    for (H2O.H2OCountedCompleter task : tasks) {
-      if (task != null) {
-        task.cancel(true);
-      }
-    }
-  }
-
+  
   // Step 5: Score the CV models
   public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, Vec[] weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
     if (_job.stop_requested()) {

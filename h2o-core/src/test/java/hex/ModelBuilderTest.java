@@ -4,7 +4,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
-import water.*;
+import water.H2O;
+import water.Key;
+import water.Scope;
+import water.TestFrameCatalog;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
@@ -17,7 +20,6 @@ import water.util.ReflectionUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 
 import static java.util.Arrays.asList;
@@ -237,23 +239,6 @@ public class ModelBuilderTest {
     }
   }
   
-  
-  @Test
-  @SuppressWarnings("unchecked")
-  public void bulkBuildModels() throws Exception {
-    Job j = new Job(null, null, "BulkBuilding");
-    Key key1 = Key.make(j._key + "-dummny-1");
-    Key key2 = Key.make(j._key + "-dummny-2");
-    try {
-      j.start(new BulkRunner(j), 10).get();
-      assertEquals("Computed Dummy 1", DKV.getGet(key1).toString());
-      assertEquals("Computed Dummy 2", DKV.getGet(key2).toString());
-    } finally {
-      DKV.remove(key1);
-      DKV.remove(key2);
-    }
-  }
-
   @Test
   public void testExportCheckpointsWriteCheck() throws IOException {
     try {
@@ -318,22 +303,6 @@ public class ModelBuilderTest {
         "columns from multiple params combined", 
         new HashSet<>(asList("c4", "c5", "response")), params.getUsedColumns(trainNames)
     );
-  }
-
-  public static class BulkRunner extends H2O.H2OCountedCompleter<BulkRunner> {
-    private Job _j;
-    private BulkRunner(Job j) { _j = j; }
-    @Override
-    public void compute2() {
-      ModelBuilder<?, ?, ?>[] builders = {
-              new DummyModelBuilder(new DummyModelParameters("Dummy 1", Key.make(_j._key + "-dummny-1"))),
-              new DummyModelBuilder(new DummyModelParameters("Dummy 2", Key.make(_j._key + "-dummny-2")))
-      };
-      ModelBuilder.bulkBuildModels("dummy-group", _j, builders, 1 /*sequential*/, 1 /*increment by 1*/);
-      // check that progress is as expected
-      assertEquals(0.2, _j.progress(), 0.001);
-      tryComplete();
-    }
   }
 
 }
