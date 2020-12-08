@@ -341,133 +341,33 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         ],
         'rulefit': [
             'redhat': [
-                ['RULES', 1, 3]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],
-                ['RULES', 3, 3]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],
-                ['RULES', 1, 5]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],
-                ['RULES_AND_LINEAR', 1, 3]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],    
                 ['RULES_AND_LINEAR', 3, 3]: [
                         'train_time_min': 971,
                         'train_time_max': 1081
-                ],
-                ['RULES_AND_LINEAR', 1, 5]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
                 ]
             ],
             'homesite': [
-                ['RULES', 1, 3]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],    
-                ['RULES', 3, 3]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],
-                ['RULES', 1, 5]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],
-                ['RULES_AND_LINEAR', 1, 3]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],    
                 ['RULES_AND_LINEAR', 3, 3]: [
                         'train_time_min': 8,
                         'train_time_max': 11
-                ],
-                ['RULES_AND_LINEAR', 1, 5]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
                 ]
             ],
             'springleaf': [
-                ['RULES', 1, 3]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],    
-                ['RULES', 3, 3]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],
-                ['RULES', 1, 5]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],
-                ['RULES_AND_LINEAR', 1, 3]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],
                 ['RULES_AND_LINEAR', 3, 3]: [
                         'train_time_min': 20,
                         'train_time_max': 23
-                ],
-                ['RULES_AND_LINEAR', 1, 5]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
                 ]
             ],
             'paribas': [
-                ['RULES', 1, 3]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],    
-                ['RULES', 3, 3]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],
-                ['RULES', 1, 5]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],
-                ['RULES_AND_LINEAR', 1, 3]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],    
                 ['RULES_AND_LINEAR', 3, 3]: [
                         'train_time_min': 7,
                         'train_time_max': 12
-                ],
-                ['RULES_AND_LINEAR', 1, 5]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
                 ]
             ],
             'higgs': [
-                ['RULES', 1, 3]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],    
-                ['RULES', 3, 3]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],
-                ['RULES', 1, 5]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],
-                ['RULES_AND_LINEAR', 1, 3]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
-                ],
                 ['RULES_AND_LINEAR', 3, 3]: [
                         'train_time_min': 71,
                         'train_time_max': 80
-                ],
-                ['RULES_AND_LINEAR', 1, 5]: [
-                        'train_time_min': 1,
-                        'train_time_max': 1000
                 ]
             ]
         ]    
