@@ -20,6 +20,8 @@ public class CoxPHMojoReader extends ModelMojoReader<CoxPHMojoModel> {
     _model._strata = readStrata();
     _model._strata_len = readStrataLen();
     _model._coef_indexes = readkv("coef_indexes");
+    
+    _model._lpBase = _model.computeLpBase();
   }
 
   

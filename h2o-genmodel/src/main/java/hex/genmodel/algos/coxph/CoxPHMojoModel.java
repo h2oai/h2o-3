@@ -54,6 +54,7 @@ public class CoxPHMojoModel extends MojoModel  {
   double[][] _x_mean_cat;
   double[][] _x_mean_num;
   int[] _coef_indexes;
+  double[] _lpBase;
 
   CoxPHMojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
@@ -78,12 +79,24 @@ public class CoxPHMojoModel extends MojoModel  {
       result += row[coefIndex] * _coef[i];
     }
     
-    result -= lpBase[strataForRow(row)];
+    result -= _lpBase[strataForRow(row)];
     
     predictions[0] = result;
     return predictions;
   }
-  
+
+  double[] computeLpBase() {
+    final int size = 0 < _strata.size() ? _strata.size() : 1;
+    double[] lpBase = new double[size];
+    for (int s = 0; s < size; s++) {
+      for (int i = 0; i < _x_mean_cat[s].length; i++)
+        lpBase[s] += _x_mean_cat[s][i] * _coef[i];
+      for (int i = 0; i < _x_mean_num[s].length; i++)
+        lpBase[s] += _x_mean_num[s][i] * _coef[i + _numStart];
+    }
+    return lpBase;
+  }
+
   private int strataForRow(double[] row) {
     if (0 == _strata.size()) {
       return 0;
