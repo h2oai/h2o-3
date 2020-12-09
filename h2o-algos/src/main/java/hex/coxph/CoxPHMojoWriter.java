@@ -28,19 +28,10 @@ public class CoxPHMojoWriter extends ModelMojoWriter<CoxPHModel, CoxPHModel.CoxP
     writeRectangularDoubleArray(model._output._x_mean_cat, "x_mean_cat");
     writeRectangularDoubleArray(model._output._x_mean_num, "x_mean_num");
     writekv("coef", model._output._coef);
+    writekv("cats", model._output.data_info._cats);
+    writekv("cat_offsets", model._output.data_info._catOffsets);
+    writekv("use_all_factor_levels", model._output.data_info._useAllFactorLevels);
     writeStrata();
-    writeCoefIndexes();
-  }
-
-  private void writeCoefIndexes() throws IOException {
-    final List<String> namesInList = Arrays.asList(model._output._names);
-    final int[] _coef_indexes = new int[model._output._coef_names.length];
-    int i = 0;
-    for (String coefName : model._output._coef_names) {
-      Integer index = namesInList.indexOf(coefName);
-      _coef_indexes[i++] = index;
-    }
-    writekv("coef_indexes", _coef_indexes);
   }
 
   private void writeStrata() throws IOException {

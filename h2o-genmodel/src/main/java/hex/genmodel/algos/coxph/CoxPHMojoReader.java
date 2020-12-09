@@ -19,8 +19,9 @@ public class CoxPHMojoReader extends ModelMojoReader<CoxPHMojoModel> {
     _model._coef = readkv("coef");
     _model._strata = readStrata();
     _model._strata_len = readStrataLen();
-    _model._coef_indexes = readkv("coef_indexes");
-    
+    _model._cat_offsets = readkv("cat_offsets");
+    _model._cats = readkv("cats");
+    _model._useAllFactorLevels = readkv("use_all_factor_levels");
     _model._lpBase = _model.computeLpBase();
   }
 
@@ -28,9 +29,7 @@ public class CoxPHMojoReader extends ModelMojoReader<CoxPHMojoModel> {
 
   private Map<CoxPHMojoModel.Strata, Integer> readStrata() {
     final int count = readkv("strata_count");
-    
     final Map<CoxPHMojoModel.Strata, Integer> result = new HashMap<>(count);
-
     for (int i = 0; i < count; i++) {
       final double[] strata = readkv("strata_" + i);
       result.put(new CoxPHMojoModel.Strata(strata, strata.length), i);

@@ -734,43 +734,112 @@ public class GenericModelTest extends TestUtil {
             Scope.track(trainingFrame);
             final Frame testFrame = parse_test_file("./smalldata/coxph_test/heart_test.csv");
             Scope.track(testFrame);
-            CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
-            parms._train = trainingFrame._key;
-            parms._distribution = AUTO;
-            parms._start_column = "start";
-            parms._stop_column = "stop";
-            parms._response_column = "event";
-            parms._ignored_columns = new String[] {"id"};
-
-            hex.coxph.CoxPH job = new CoxPH(parms);
-            final CoxPHModel originalModel = job.trainModel().get();
-            Scope.track_generic(originalModel);
-            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
-            originalModel.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
-
-            final Key mojo = importMojo(originalModelMojoFile.getAbsolutePath());
-
-            // Create Generic model from given imported MOJO
-            final GenericModelParameters genericModelParameters = new GenericModelParameters();
-            genericModelParameters._model_key = mojo;
-            final Generic generic = new Generic(genericModelParameters);
-            final GenericModel genericModel = trainAndCheck(generic);
-            Scope.track_generic(genericModel);
-
-            final Frame genericModelPredictions = genericModel.score(testFrame);
-            Scope.track_generic(genericModelPredictions);
-            assertEquals(testFrame.numRows(), genericModelPredictions.numRows());
-
-            final boolean equallyScored = genericModel.testJavaScoring(testFrame, genericModelPredictions, 0);
-            assertTrue(equallyScored);
-
-            final Frame originalModelPredictions = originalModel.score(testFrame);
-            Scope.track(originalModelPredictions);
-            assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
+            testJavaScoringCoxPH(trainingFrame, testFrame, new String[0]);
+        } finally {
+            Scope.exit();
+        }
+    }
+     @Test
+    public void testJavaScoring_mojo_cox_ph_strata() throws IOException {
+        try {
+            Scope.enter();
+            final Frame trainingFrame = parse_test_file("./smalldata/coxph_test/heart.csv").toCategoricalCol("transplant");
+            Scope.track(trainingFrame);
+            final Frame testFrame = parse_test_file("./smalldata/coxph_test/heart_test.csv").toCategoricalCol("transplant");
+            Scope.track(testFrame);
+            testJavaScoringCoxPH(trainingFrame, testFrame, new String[] {"transplant"});
 
         } finally {
             Scope.exit();
         }
+    }
+    
+    @Test
+    public void testJavaScoring_mojo_cox_ph_categorical() throws IOException {
+        try {
+            Scope.enter();
+            final Frame trainingFrame = parse_test_file("./smalldata/coxph_test/heart.csv").toCategoricalCol("transplant");
+            Scope.track(trainingFrame);
+            final Frame testFrame = parse_test_file("./smalldata/coxph_test/heart_test.csv").toCategoricalCol("transplant");
+            Scope.track(testFrame);
+            testJavaScoringCoxPH(trainingFrame, testFrame, new String[0]);
+        } finally {
+            Scope.exit();
+        }
+    }
+ 
+    @Test
+    public void testJavaScoring_mojo_cox_ph_2_categoricals() throws IOException {
+        try {
+            Scope.enter();
+            final Frame trainingFrame = parse_test_file("./smalldata/coxph_test/heart.csv")
+                    .toCategoricalCol("transplant")
+                    .toCategoricalCol("surgery");
+            Scope.track(trainingFrame);
+            final Frame testFrame = parse_test_file("./smalldata/coxph_test/heart_test.csv")
+                    .toCategoricalCol("transplant")
+                    .toCategoricalCol("surgery");
+            Scope.track(testFrame);
+            testJavaScoringCoxPH(trainingFrame, testFrame, new String[0]);
+        } finally {
+            Scope.exit();
+        }
+    }
+    
+    @Test
+    public void testJavaScoring_mojo_cox_ph_2_stratify() throws IOException {
+        try {
+            Scope.enter();
+            final Frame trainingFrame = parse_test_file("./smalldata/coxph_test/heart.csv")
+                    .toCategoricalCol("transplant")
+                    .toCategoricalCol("surgery");
+            Scope.track(trainingFrame);
+            final Frame testFrame = parse_test_file("./smalldata/coxph_test/heart_test.csv")
+                    .toCategoricalCol("transplant")
+                    .toCategoricalCol("surgery");
+            Scope.track(testFrame);
+            testJavaScoringCoxPH(trainingFrame, testFrame, new String[] {"transplant", "surgery"});
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    private void testJavaScoringCoxPH(Frame trainingFrame, Frame testFrame, String[] stratifyBy) throws IOException {
+        CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+        parms._train = trainingFrame._key;
+        parms._distribution = AUTO;
+        parms._start_column = "start";
+        parms._stop_column = "stop";
+        parms._response_column = "event";
+        parms._ignored_columns = new String[]{"id"};
+        parms._stratify_by = stratifyBy;
+        parms._use_all_factor_levels = true;
+
+        CoxPH job = new CoxPH(parms);
+        final CoxPHModel originalModel = job.trainModel().get();
+        Scope.track_generic(originalModel);
+        final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+        originalModel.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
+
+        final Key mojoKey = importMojo(originalModelMojoFile.getAbsolutePath());
+
+        // Create Generic model from given imported MOJO
+        final GenericModelParameters genericModelParameters = new GenericModelParameters();
+        genericModelParameters._model_key = mojoKey;
+        final Generic generic = new Generic(genericModelParameters);
+        final GenericModel genericModel = trainAndCheck(generic);
+        Scope.track_generic(genericModel);
+
+        final Frame genericModelPredictions = genericModel.score(testFrame);
+        Scope.track_generic(genericModelPredictions);
+        assertEquals(testFrame.numRows(), genericModelPredictions.numRows());
+
+        final boolean equallyScored = genericModel.testJavaScoring(testFrame, genericModelPredictions, 0);
+        assertTrue(equallyScored);
+
+        final Frame originalModelPredictions = originalModel.score(testFrame);
+        Scope.track(originalModelPredictions);
+        assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions, 0.000001));
     }
 
     @Test
