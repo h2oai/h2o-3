@@ -6,7 +6,7 @@ from h2o.estimators.rulefit import H2ORuleFitEstimator
 
 
 def titanic():
-    df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv",
+    df = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"),
                        col_types={'pclass': "enum", 'survived': "enum"})
     x =  ["age", "sibsp", "parch", "fare", "sex", "pclass"]
 
@@ -17,6 +17,8 @@ def titanic():
     rfit.train(training_frame=train, x=x, y="survived")
 
     print(rfit.rule_importance())
+    assert rfit._model_json["output"]["model_summary"] is not None, "model_summary should be present"
+    assert len(rfit._model_json["output"]["model_summary"]._cell_values) > 0, "model_summary's content should be present"
 
     rfit.predict(test)
 

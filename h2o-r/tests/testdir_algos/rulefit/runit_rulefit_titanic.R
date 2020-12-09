@@ -23,6 +23,8 @@ test.rulefit.titanic <- function() {
     rfit <- h2o.rulefit(y = response, x = predictors, training_frame = train, min_rule_length = 1, max_rule_length = 10, max_num_rules = 100, seed = 1, model_type="rules")
 
     print(rfit@model$rule_importance)
+    expect_true(!is.null(rfit@model$model_summary))
+    expect_true(length(rfit@model$model_summary) > 0)
 
     h2o.predict(rfit, newdata = test)
 

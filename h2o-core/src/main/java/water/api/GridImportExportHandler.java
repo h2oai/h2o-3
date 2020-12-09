@@ -9,7 +9,6 @@ import water.api.schemas3.KeyV3;
 import water.persist.Persist;
 import water.util.FileUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -43,7 +42,8 @@ public class GridImportExportHandler extends Handler {
       }
       final Grid grid = (Grid) freezable;
 
-      loadGridModels(grid, new File(gridImportV3.grid_path).getParent());
+      final String gridDirectory = persist.getParent(gridUri.toString());
+      loadGridModels(grid, gridDirectory);
       DKV.put(grid);
       return new KeyV3.GridKeyV3(grid._key);
     }

@@ -674,63 +674,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   // Step 4: Run all the CV models and launch the main model
   public void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
-    bulkBuildModels("cross-validation", _job, cvModelBuilders, nModelsInParallel(N), 0 /*no job updates*/);
+    makeCVModelBuilder("cross-validation", cvModelBuilders, nModelsInParallel(N)).bulkBuildModels();
     cv_computeAndSetOptimalParameters(cvModelBuilders);
   }
-
-  /**
-   * Runs given model builders in bulk.
-   *
-   * @param modelType text description of group of models being built (for logging purposes)
-   * @param job parent job (processing will be stopped if stop of a parent job was requested)
-   * @param modelBuilders list of model builders to run in bulk
-   * @param parallelization level of parallelization (how many models can be built at the same time)
-   * @param updateInc update increment (0 = disable updates)
-   */
-  public static void bulkBuildModels(String modelType, Job job, ModelBuilder<?, ?, ?>[] modelBuilders,
-                                     int parallelization, int updateInc) {
-    final int N = modelBuilders.length;
-    H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
-    int nRunning=0;
-    RuntimeException rt = null;
-    for( int i=0; i<N; ++i ) {
-      if (job.stop_requested() ) {
-        Log.info("Skipping build of last "+(N-i)+" out of "+N+" "+modelType+" CV models");
-        stopAll(submodel_tasks);
-        throw new Job.JobCancelledException();
-      }
-      Log.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
-      modelBuilders[i].startClock();
-      submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
-      if(++nRunning == parallelization) { //piece-wise advance in training the models
-        while (nRunning > 0) try {
-          submodel_tasks[i + 1 - nRunning--].join();
-          if (updateInc > 0) job.update(updateInc); // One job finished
-        } catch (RuntimeException t) {
-          if (rt == null) rt = t;
-        }
-        if(rt != null) throw rt;
-      }
-    }
-    for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
-      try {
-        final H2O.H2OCountedCompleter task = submodel_tasks[i];
-        assert task != null;
-        task.join();
-      } catch(RuntimeException t){
-        if (rt == null) rt = t;
-      }
-    if(rt != null) throw rt;
+  
+  protected CVModelBuilder makeCVModelBuilder(
+      String modelType, ModelBuilder<?, ?, ?>[] modelBuilders, int parallelization
+  ) {
+    return new CVModelBuilder(modelType, _job, modelBuilders, parallelization);
   }
-
-  private static void stopAll(H2O.H2OCountedCompleter[] tasks) {
-    for (H2O.H2OCountedCompleter task : tasks) {
-      if (task != null) {
-        task.cancel(true);
-      }
-    }
-  }
-
+  
   // Step 5: Score the CV models
   public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, Vec[] weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
     if (_job.stop_requested()) {
@@ -1244,11 +1197,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // Drop explicitly dropped columns
     if( _parms._ignored_columns != null ) {
-      _train.remove(_parms._ignored_columns);
-      if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
+      Set<String> ignoreColumnSet = new HashSet<>(Arrays.asList(_parms._ignored_columns));
+      Collection<String> usedColumns = _parms.getUsedColumns(tr._names);
+      ignoreColumnSet.removeAll(usedColumns);
+      String[] actualIgnoredColumns = ignoreColumnSet.toArray(new String[0]);
+      _train.remove(actualIgnoredColumns);
+      if (expensive) Log.info("Dropping ignored columns: " + Arrays.toString(actualIgnoredColumns));
     }
 
-    if(_parms._checkpoint != null){
+    if(_parms._checkpoint != null) {
       if(DKV.get(_parms._checkpoint) == null){
           error("_checkpoint", "Checkpoint has to point to existing model!");
       }
@@ -1408,8 +1365,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                   _parms._weights_column != null ? _train.vec(_parms._weights_column) : v.makeCon(1.0),
                   _train.vec(_parms._response_column));
           double[] meanWeightedResponse  = mrplt.meanWeightedResponse;
-//          for (int i=0;i<len;++i)
-//            Log.info(v.domain()[i] + " -> " + meanWeightedResponse[i]);
 
           // Option 1: Order the categorical column by response to make better splits
           int[] idx=new int[len];
@@ -1421,8 +1376,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           String[] newDomain = new String[len];
           for (int i = 0; i < len; ++i) newDomain[i] = v.domain()[idx[i]];
           vNew.setDomain(newDomain);
-//          for (int i=0;i<len;++i)
-//            Log.info(vNew.domain()[i] + " -> " + meanWeightedResponse[idx[i]]);
           vecs[j] = vNew;
           restructured = true;
         }

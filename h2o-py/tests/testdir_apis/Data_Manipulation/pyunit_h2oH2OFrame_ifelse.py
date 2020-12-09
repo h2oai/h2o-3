@@ -26,7 +26,4 @@ def h2o_H2OFrame_ifelse():
     assert newFrame[rowInd, colInd]==np.sign(h2oframe[rowInd, colInd]), "h2o.H2OFrame.ifelse() command is not working."
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_ifelse())
-else:
-    h2o_H2OFrame_ifelse()
+pyunit_utils.standalone_test(h2o_H2OFrame_ifelse)

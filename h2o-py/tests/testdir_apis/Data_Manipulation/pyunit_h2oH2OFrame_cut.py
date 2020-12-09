@@ -20,7 +20,5 @@ def h2o_H2OFrame_cut():
     assert newframe.types["C1"]=="enum", "h2o.H2OFrame.cut() command is not working."
     assert len(newframe.levels()) <= len(breaks), "h2o.H2OFrame.cut() command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_cut())
-else:
-    h2o_H2OFrame_cut()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_cut)

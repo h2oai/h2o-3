@@ -14,7 +14,5 @@ def h2o_H2OFrame_frame_id():
     h2oframe = h2o.H2OFrame(python_obj=python_lists, destination_frame=frameName)
     assert frameName==h2oframe.frame_id, "h2o.H2OFrame.frame_id command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_frame_id())
-else:
-    h2o_H2OFrame_frame_id()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_frame_id)

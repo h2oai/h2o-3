@@ -19,7 +19,4 @@ def h2o_H2OFrame_levels():
     assert_is_type(clist, list)     # check return type
     assert len(clist)==2, "h2o.H2OFrame.levels() command is not working."  # check list length
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_levels())
-else:
-    h2o_H2OFrame_levels()
+pyunit_utils.standalone_test(h2o_H2OFrame_levels)

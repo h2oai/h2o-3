@@ -2062,4 +2062,26 @@ public class ArrayUtils {
 
     return cnt;
   }
+
+  public static String findLongestCommonPrefix(String inputArray[]) {
+    String referenceWord = inputArray[0];
+    String result = "";
+    for (int j = 1; j <= referenceWord.length(); j++) {
+      String prefix = referenceWord.substring(0, j);
+      if (isPresentInAllWords(prefix, inputArray) && result.length() < prefix.length()) {
+        result = prefix;
+      }
+    }
+    return result;
+  }
+
+  private static boolean isPresentInAllWords(String prefix, String[] words) {
+    int n = words.length, k;
+    for (k = 1; k < n; k++) {
+      if (!words[k].startsWith(prefix)) {
+        return false;
+      }
+    }
+    return true;
+  }
 }

@@ -27,7 +27,5 @@ def h2o_H2OFrame_concat():
     assert df123_row.shape==(df1.nrows+df2.nrows+df3.nrows, df1.ncols), \
         "h2o.H2OFrame.concat command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_concat())
-else:
-    h2o_H2OFrame_concat()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_concat)

@@ -22,7 +22,4 @@ def h2o_H2OFrame_kurtosis():
     assert abs(clist_kurtosis - 3.0 - scipy_kurtosis) < 1e-10, "h2o.H2OFrame.kurtosis() command is not working, wrong result. CList kurtosis: %s, scipy kurtosis: %s" % (clist_kurtosis, scipy_kurtosis)  # check return result
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_kurtosis())
-else:
-    h2o_H2OFrame_kurtosis()
+pyunit_utils.standalone_test(h2o_H2OFrame_kurtosis)

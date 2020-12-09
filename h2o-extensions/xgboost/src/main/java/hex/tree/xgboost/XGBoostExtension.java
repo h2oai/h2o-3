@@ -22,7 +22,7 @@ public class XGBoostExtension extends AbstractH2OExtension {
   
   private static final Logger LOG = Logger.getLogger(XGBoostExtension.class);
 
-  private static String XGBOOST_MIN_REQUIREMENTS =
+  private static final String XGBOOST_MIN_REQUIREMENTS =
           "Xgboost (enabled GPUs) needs: \n"
                   + "  - CUDA 8.0\n"
                   + "XGboost (minimal version) needs: \n"
@@ -80,20 +80,6 @@ public class XGBoostExtension extends AbstractH2OExtension {
     } catch (IOException e) {
       // Ups no lib loaded or load failed
       LOG.warn("Cannot initialize XGBoost backend! " + XGBOOST_MIN_REQUIREMENTS);
-      return false;
-    }
-  }
-
-  static boolean isGpuSupportEnabled() {
-    try {
-      INativeLibLoader loader = NativeLibLoader.getLoader();
-      if (! (loader instanceof NativeLibraryLoaderChain))
-        return false;
-      NativeLibraryLoaderChain chainLoader = (NativeLibraryLoaderChain) loader;
-      NativeLibrary lib = chainLoader.getLoadedLibrary();
-      return lib.hasCompilationFlag(NativeLibrary.CompilationFlags.WITH_GPU);
-    } catch (IOException e) {
-      LOG.debug(e);
       return false;
     }
   }

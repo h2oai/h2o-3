@@ -17,7 +17,4 @@ def h2o_H2OFrame_gsub():
     assert frame[0,4] == "Iriz-zetoza", "Expected 'Iriz-zetoza', but got {0}".format(frame[0,4])
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_gsub())
-else:
-    h2o_H2OFrame_gsub()
+pyunit_utils.standalone_test(h2o_H2OFrame_gsub)
