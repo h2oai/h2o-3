@@ -24,6 +24,7 @@ import water.exceptions.JCodeSB;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.persist.Persist;
+import water.rapids.PermutationVarImp;
 import water.udf.CFuncRef;
 import water.util.*;
 
@@ -399,12 +400,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** @return the validation frame instance, or null
      *  if a validation frame was not specified */
     public final Frame valid() { return _valid==null ? null : _valid.get(); }
-    
-    public String[] getNonPredictors() {
-        return Arrays.stream(new String[]{_weights_column, _offset_column, _fold_column, _response_column})
-                .filter(Objects::nonNull)
-                .toArray(String[]::new);
-    }
 
     /** Read-Lock both training and validation User frames. */
     public void read_lock_frames(Job job) {
@@ -1370,7 +1365,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             _toDelete,
             catEncoded
     );
-  }
+  } 
 
   /**
    * @param test Frame to be adapted
@@ -1613,7 +1608,39 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public Frame score(Frame fr, String destination_key, Job j) throws IllegalArgumentException {
     return score(fr, destination_key, j, true);
   }
-
+  
+<<<<<<< HEAD
+  /**
+=======
+   /**
+>>>>>>> Update Model.java
+   * Calculate Permutation Variable Importance by shuffling one feature at a time
+   * The user must call this method after training. 
+   * @param fr training frame
+   * @param metric loss function metric 
+   *               if metric not specified mse is default
+   * @return TwoDimTable of Double values having the variables as columns
+<<<<<<< HEAD
+   *          and as rows their Relative, Scaled and percentage importance
+=======
+   * and as rows their Relative, Scaled and percentage importance
+>>>>>>> Update Model.java
+   */
+  public TwoDimTable getPermVarImpTable(Frame fr, String metric){
+    if (this._output._scoring_history == null )
+      throw new IllegalArgumentException("Model " + this._key + "must be scored!");
+    PermutationVarImp pvi = new PermutationVarImp(this, fr);
+    return pvi.getPermutationVarImp(metric);
+<<<<<<< HEAD
+  }
+  
+  public TwoDimTable getPermVarImpTableOat(Frame fr, Frame scored){
+    PermutationVarImp fi = new PermutationVarImp(this, fr);
+    return fi.oat();
+=======
+>>>>>>> Update Model.java
+  }
+  
   /**
    * Adds a scoring-related warning. 
    * 
