@@ -22,6 +22,7 @@ import hex.tree.xgboost.util.FeatureScore;
 import ai.h2o.xgboost4j.java.DMatrix;
 import ai.h2o.xgboost4j.java.XGBoost;
 import ai.h2o.xgboost4j.java.*;
+import hex.tree.xgboost.util.GpuUtils;
 import org.apache.log4j.Logger;
 import org.hamcrest.CoreMatchers;
 import org.junit.*;
@@ -619,7 +620,7 @@ public class XGBoostTest extends TestUtil {
       Frame step2Preds = Scope.track(step2Model.score(df));
 
       // on GPU the resume from checkpoint is slightly in-deterministic
-      double delta = (hex.tree.xgboost.XGBoost.hasGPU(H2O.CLOUD.members()[0], 0)) ? 1e-6d : 0;
+      double delta = (GpuUtils.hasGPU(H2O.CLOUD.members()[0], null)) ? 1e-6d : 0;
       assertFrameEquals(directPreds, step2Preds, delta);
     } finally {
       Scope.exit();
