@@ -44,7 +44,7 @@ getData <- function(algo, begin.date) {
       result[["numRows"]] <- tests$numRows
       result[["numCols"]] <- tests$numCols
     } else if ("model_type" %in% names(tests)) {
-        result[["model_type"]]] <- tests$model_type
+        result[["model_type"]] <- tests$model_type
         result[["min_rule_length"]] <- tests$min_rule_length
         result[["max_rule_length"]] <- tests$max_rule_length
     } else {
@@ -97,16 +97,16 @@ getData <- function(algo, begin.date) {
 
 # configuration
 dir <- "../ml-benchmark/"
-begin.date <- seq(Sys.Date(), length = 2, by = "-3 months")[2]
+begin.date <- seq(Sys.Date(), length = 2, by = "-1 months")[2]
 tests <- c(
     "gbm",
     "gbm-client",
     "glm",
+    "gam",
     "xgb",
     "xgb_gpu",
     "xgb-vanilla",
     "xgb-dmlc",
-    "gbm",
     "sort",
     "merge",
     "rulefit"

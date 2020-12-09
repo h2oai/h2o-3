@@ -27,6 +27,15 @@ extensions = dict(
     __class__=class_extensions,
 )
 
+overrides = dict(
+    gpu_id=dict(
+        setter="""
+assert_is_type(gpu_id, None, int, [int])
+self._parms["gpu_id"] = gpu_id
+"""
+    )
+)
+
 doc = dict(
     __class__="""
 Builds an eXtreme Gradient Boosting model using the native XGBoost backend.

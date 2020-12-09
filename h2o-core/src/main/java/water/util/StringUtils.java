@@ -7,15 +7,18 @@ import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.util.*;
 
+import static java.util.Collections.unmodifiableMap;
+import static water.util.CollectionUtils.createMap;
+
 /**
  * String manipulation utilities.
  */
 public class StringUtils {
 
-  private static Map<Character, Integer> hexCode = CollectionUtils.createMap(
+  private static final Map<Character, Integer> HEX_CODE = unmodifiableMap(createMap(
       toCharacterArray("0123456789abcdefABCDEF"),
       new Integer[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 10, 11, 12, 13, 14, 15}
-  );
+  ));
 
   /**
    * Print exception stack trace into a string.
@@ -184,8 +187,8 @@ public class StringUtils {
   public static int unhex(String str) {
     int res = 0;
     for (char c : str.toCharArray()) {
-      if (!hexCode.containsKey(c)) throw new NumberFormatException("Not a hexademical character " + c);
-      res = (res << 4) + hexCode.get(c);
+      if (!HEX_CODE.containsKey(c)) throw new NumberFormatException("Not a hexademical character " + c);
+      res = (res << 4) + HEX_CODE.get(c);
     }
     return res;
   }
@@ -210,4 +213,20 @@ public class StringUtils {
     return new String(cs);
   }
 
+  public static String fixedLength(String s, int length) {
+    String r = padRight(s, length);
+    if (r.length() > length) {
+      int a = Math.max(r.length() - length + 1, 0);
+      int b = Math.max(a, r.length());
+      r = "#" + r.substring(a, b);
+    }
+    return r;
+  }
+
+  private static String padRight(String stringToPad, int size) {
+    StringBuilder strb = new StringBuilder(stringToPad);
+    while (strb.length() < size)
+      if (strb.length() < size) strb.append(' ');
+    return strb.toString();
+  }
 }

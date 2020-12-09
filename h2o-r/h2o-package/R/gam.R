@@ -80,6 +80,7 @@
 #'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.
 #' @param link Link function. Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit".
 #'        Defaults to family_default.
+#' @param startval double array to initialize coefficients for GAM.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
 #' @param cold_start \code{Logical}. Only applicable to multiple alpha/lambda values when calling GLM from GAM.  If false, build
@@ -173,6 +174,7 @@ h2o.gam <- function(x,
                     beta_epsilon = 0.0001,
                     gradient_epsilon = -1,
                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
+                    startval = NULL,
                     prior = -1,
                     cold_start = FALSE,
                     lambda_min_ratio = -1,
@@ -235,7 +237,6 @@ h2o.gam <- function(x,
   if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
-  if( !missing(gam_columns) && !is.null(gam_columns)) args$x_ignore <- args$x_ignore[!( args$x_ignore %in% gam_columns )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   parms$gam_columns <- gam_columns
@@ -306,6 +307,8 @@ h2o.gam <- function(x,
     parms$gradient_epsilon <- gradient_epsilon
   if (!missing(link))
     parms$link <- link
+  if (!missing(startval))
+    parms$startval <- startval
   if (!missing(prior))
     parms$prior <- prior
   if (!missing(cold_start))
@@ -416,6 +419,7 @@ h2o.gam <- function(x,
                                     beta_epsilon = 0.0001,
                                     gradient_epsilon = -1,
                                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
+                                    startval = NULL,
                                     prior = -1,
                                     cold_start = FALSE,
                                     lambda_min_ratio = -1,
@@ -485,7 +489,6 @@ h2o.gam <- function(x,
   if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
-  if( !missing(gam_columns) && !is.null(gam_columns)) args$x_ignore <- args$x_ignore[!( args$x_ignore %in% gam_columns )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   parms$gam_columns <- gam_columns
@@ -554,6 +557,8 @@ h2o.gam <- function(x,
     parms$gradient_epsilon <- gradient_epsilon
   if (!missing(link))
     parms$link <- link
+  if (!missing(startval))
+    parms$startval <- startval
   if (!missing(prior))
     parms$prior <- prior
   if (!missing(cold_start))

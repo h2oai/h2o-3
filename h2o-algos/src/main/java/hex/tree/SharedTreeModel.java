@@ -11,6 +11,7 @@ import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.glm.GLMModel;
 import hex.util.LinearAlgebraUtils;
+import org.apache.log4j.Logger;
 import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
@@ -30,6 +31,8 @@ public abstract class SharedTreeModel<
         P extends SharedTreeModel.SharedTreeParameters,
         O extends SharedTreeModel.SharedTreeOutput
         > extends Model<M, P, O> implements Model.LeafNodeAssignment, Model.GetMostImportantFeatures, Model.FeatureFrequencies {
+
+  private static final Logger LOG = Logger.getLogger(SharedTreeModel.class);
 
   @Override
   public String[] getMostImportantFeatures(int n) {
@@ -382,7 +385,7 @@ public abstract class SharedTreeModel<
         DKV.put(res);
       }
       if (hasInvalidPaths) {
-        Log.warn("Some of the leaf node assignments were skipped (NA), " +
+        LOG.warn("Some of the leaf node assignments were skipped (NA), " +
                 "only tree-paths up to length 64 are supported.");
       }
       return res;
@@ -416,7 +419,7 @@ public abstract class SharedTreeModel<
     protected Frame execute(Frame adaptFrm, String[] names, Key<Frame> destKey) {
       Frame result = doAll(names.length, Vec.T_NUM, adaptFrm).outputFrame(destKey, names, null);
       if (result.vec(0).min() < 0) {
-        Log.warn("Some of the observations were not assigned a Leaf Node ID (-1), " +
+        LOG.warn("Some of the observations were not assigned a Leaf Node ID (-1), " +
                 "only tree-paths up to length 64 are supported.");
       }
       return result;
