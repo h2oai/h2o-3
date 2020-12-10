@@ -781,6 +781,7 @@ Jan Sterba
 Jan Jendrusak
 Sebastien Poirier
 Tomáš Frýda
+Ard Kelmendi
 ```
 
 <a name="Advisors"></a>
