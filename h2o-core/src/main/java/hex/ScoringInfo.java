@@ -23,8 +23,6 @@ public class ScoringInfo extends Iced<ScoringInfo> {
   public long this_scoring_time_ms;   //scoring time for this scoring event (only)
   public boolean is_classification;
   public boolean is_autoencoder;
-  public AUC2 training_AUC;
-  public AUC2 validation_AUC;
 
   public boolean validation;
   public boolean cross_validation;
@@ -166,6 +164,10 @@ public class ScoringInfo extends Iced<ScoringInfo> {
     if (isClassifier) {
       colHeaders.add("Training Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
     }
+    if(modelCategory == ModelCategory.Multinomial){
+      colHeaders.add("Training AUC"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Training pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
+    }
     if(modelCategory == ModelCategory.AutoEncoder) {
       colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
     }
@@ -187,6 +189,10 @@ public class ScoringInfo extends Iced<ScoringInfo> {
       }
       if (isClassifier) {
         colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
+      }
+      if (modelCategory == ModelCategory.Multinomial) {
+        colHeaders.add("Validation AUC"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Validation pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if(modelCategory == ModelCategory.AutoEncoder) {
         colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
@@ -210,6 +216,10 @@ public class ScoringInfo extends Iced<ScoringInfo> {
       }
       if (isClassifier) {
         colHeaders.add("Cross-Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
+      }
+      if (modelCategory == ModelCategory.Multinomial) {
+        colHeaders.add("Cross-Validation AUC"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Cross-Validation pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if(modelCategory == ModelCategory.AutoEncoder) {
         colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
@@ -262,12 +272,16 @@ public class ScoringInfo extends Iced<ScoringInfo> {
         table.set(row, col++, si.scored_train != null ? si.scored_train._r2 : Double.NaN);
       }
       if (modelCategory == ModelCategory.Binomial) {
-        table.set(row, col++, si.training_AUC != null ? si.training_AUC._auc : Double.NaN);
-        table.set(row, col++, si.training_AUC != null ? si.training_AUC.pr_auc() : Double.NaN);
+        table.set(row, col++, si.scored_train != null ? si.scored_train._AUC : Double.NaN);
+        table.set(row, col++, si.scored_train != null ? si.scored_train._pr_auc : Double.NaN);
         table.set(row, col++, si.scored_train != null ? si.scored_train._lift : Double.NaN);
       }
       if (isClassifier) {
         table.set(row, col++, si.scored_train != null ? si.scored_train._classError : Double.NaN);
+      }
+      if (modelCategory == ModelCategory.Multinomial) {
+        table.set(row, col++, si.scored_train != null ? si.scored_train._AUC : Double.NaN);
+        table.set(row, col++, si.scored_train != null ? si.scored_train._pr_auc : Double.NaN);
       }
       if (isAutoencoder) {
         table.set(row, col++, si.scored_train != null ? si.scored_train._mse : Double.NaN);
@@ -291,6 +305,10 @@ public class ScoringInfo extends Iced<ScoringInfo> {
         if (isClassifier) {
           table.set(row, col++, si.scored_valid != null ? si.scored_valid._classError : Double.NaN);
         }
+        if (modelCategory == ModelCategory.Multinomial) {
+          table.set(row, col++, si.scored_valid != null ? si.scored_valid._AUC : Double.NaN);
+          table.set(row, col++, si.scored_valid != null ? si.scored_valid._pr_auc : Double.NaN);
+        }
         if (isAutoencoder) {
           table.set(row, col++, si.scored_valid != null ? si.scored_valid._mse : Double.NaN);
         }
@@ -313,6 +331,10 @@ public class ScoringInfo extends Iced<ScoringInfo> {
         }
         if (isClassifier) {
           table.set(row, col, si.scored_xval != null ? si.scored_xval._classError : Double.NaN);
+        }
+        if (modelCategory == ModelCategory.Multinomial) {
+          table.set(row, col++, si.scored_xval != null ? si.scored_xval._AUC : Double.NaN);
+          table.set(row, col++, si.scored_xval != null ? si.scored_xval._pr_auc : Double.NaN);
         }
         if (isAutoencoder) {
           table.set(row, col++, si.scored_xval != null ? si.scored_xval._mse : Double.NaN);

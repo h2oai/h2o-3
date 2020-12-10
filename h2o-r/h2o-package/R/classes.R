@@ -273,6 +273,20 @@ setMethod("summary", "H2OModel", function(object, ...) {
   }
   if( !is.null(tm$hit_ratio_table)                                 )  { cat("=======================================================================\n"); print(h2o.hit_ratio_table(tm$hit_ratio_table)); }
   cat("\n")
+  if (arg != "test") {
+    if( !is.null(tm$multinomial_auc_table)                                 )  cat(paste0("\nAUC Table: Extract with `h2o.multinomial_auc_table(<model>,", arg, " = TRUE)`\n"))
+  } else {
+    if( !is.null(tm$multinomial_auc_table)                                 )  cat(paste0("\nAUC Table: Extract with `h2o.multinomial_auc_table(<model>, <data>)`\n"))
+  }
+  if( !is.null(tm$multinomial_auc_table)                                 )  { cat("=======================================================================\n"); print(tm$multinomial_auc_table); }
+  cat("\n")
+  if (arg != "test") {
+    if( !is.null(tm$multinomial_aucpr_table)                                 )  cat(paste0("\nPR AUC Table: Extract with `h2o.multinomial_aucpr_table(<model>,", arg, " = TRUE)`\n"))
+  } else {
+    if( !is.null(tm$multinomial_aucpr_table)                                 )  cat(paste0("\nPR AUC Table: Extract with `h2o.multinomial_aucpr_table(<model>, <data>)`\n"))
+  }
+  if( !is.null(tm$multinomial_aucpr_table)                                 )  { cat("=======================================================================\n"); print(tm$multinomial_auc_table); }
+  cat("\n")
   invisible(tm)
 }
 

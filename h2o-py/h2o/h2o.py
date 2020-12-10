@@ -1880,7 +1880,7 @@ def load_dataset(relative_path):
     raise H2OValueError("Data file %s cannot be found" % relative_path)
 
 
-def make_metrics(predicted, actual, domain=None, distribution=None, weights=None):
+def make_metrics(predicted, actual, domain=None, distribution=None, weights=None, auc_type="NONE"):
     """
     Create Model Metrics from predicted and actual values in H2O.
 
@@ -1889,6 +1889,9 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
     :param domain: list of response factors for classification.
     :param distribution: distribution for regression.
     :param H2OFrame weights: an H2OFrame containing observation weights (optional).
+    :param auc_type: auc For multinomial classification you have to specify which type of agregated AUC/AUCPR 
+           will be used to calculate this metric. Possibilities are MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR, 
+           NONE and AUTO (OVO = One vs. One, OVR = One vs. Rest). Default is "NONE" (AUC and AUCPR are not calculated).
 
     :examples:
 
@@ -1923,11 +1926,15 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
     assert actual.ncol == 1, "`actual` frame should have exactly 1 column"
     assert_is_type(distribution, str, None)
     assert_satisfies(actual.ncol, actual.ncol == 1)
+    assert_is_type(auc_type, str)
+    allowed_auc_types = ["MACRO_OVO", "MACRO_OVR", "WEIGHTED_OVO", "WEIGHTED_OVR", "AUTO", "NONE"]
+    assert auc_type in allowed_auc_types, "auc_type should be "+(" ".join([str(type) for type in allowed_auc_types]))
     if domain is None and any(actual.isfactor()):
         domain = actual.levels()[0]
     params = {"domain": domain, "distribution": distribution}
     if weights is not None:
         params["weights_frame"] = weights.frame_id
+    params["auc_type"] = auc_type    
     res = api("POST /3/ModelMetrics/predictions_frame/%s/actuals_frame/%s" % (predicted.frame_id, actual.frame_id),
               data=params)
     return res["model_metrics"]

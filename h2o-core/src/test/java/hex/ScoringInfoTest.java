@@ -22,9 +22,6 @@ public class ScoringInfoTest {
         scoringInfo.scored_train._rmse = 0.4477;
         scoringInfo.scored_train._logloss = 0.5857;
         scoringInfo.scored_train._r2 = 0.1910;
-        AUC2.AUCBuilder aucBuilder = new AUC2.AUCBuilder(2);
-        aucBuilder._n = 2;
-        scoringInfo.training_AUC = new AUC2(aucBuilder);
         scoringInfo.scored_train._lift = 1.8014;
         scoringInfo.scored_train._classError = 0.3299;
 
@@ -62,7 +59,7 @@ public class ScoringInfoTest {
         assertEquals(scoringInfo.scored_train._rmse, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Training RMSE")].get());
         assertEquals(scoringInfo.scored_train._logloss, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Training LogLoss")].get());
         assertEquals(scoringInfo.scored_train._r2, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Training r2")].get());
-        assertEquals(scoringInfo.training_AUC._auc, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Training AUC")].get());
+        assertEquals(scoringInfo.scored_train._AUC, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Training AUC")].get());
         assertEquals(scoringInfo.scored_train._lift, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Training Lift")].get());
         assertEquals(scoringInfo.scored_train._classError, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Training Classification Error")].get());
 

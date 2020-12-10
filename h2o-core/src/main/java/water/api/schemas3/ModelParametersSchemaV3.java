@@ -1,5 +1,6 @@
 package water.api.schemas3;
 
+import hex.MultinomialAucType;
 import hex.genmodel.utils.DistributionFamily;
 import hex.Model;
 import hex.ScoreKeeper;
@@ -158,6 +159,8 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
 
   @API(help = "Maximum allowed runtime in seconds for model training. Use 0 to disable.", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
   public double max_runtime_secs;
+  
+  
 
   /**
    * Metric to use for convergence checking, only for _stopping_rounds > 0
@@ -190,6 +193,11 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
 
   @API(help = "Automatically export generated models to this directory.", level = API.Level.secondary, direction = API.Direction.INOUT)
   public String export_checkpoints_dir;
+
+  @API(help = "Set default multinomial AUC type.",
+          valuesProvider = ModelParamsValuesProviders.MultinomialAucTypeSchemeValuesProvider.class,
+          level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true)
+  public MultinomialAucType auc_type;
 
   protected static String[] append_field_arrays(String[] first, String[] second) {
     String[] appended = new String[first.length + second.length];

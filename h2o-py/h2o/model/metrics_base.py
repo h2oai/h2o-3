@@ -165,12 +165,25 @@ class MetricsBase(h2o_meta()):
             self._metric_json["max_criteria_and_metric_scores"].show()
             if self.gains_lift():
                 print(self.gains_lift())
+        if metric_type in types_w_mult:
+            print("AUC: " + str(self.auc()))
+            print("AUCPR: " + str(self.aucpr()))
+            # AUC and PR AUC table cannot be computed due domain size
+            if self._metric_json["multinomial_auc_table"] is not None:
+                self._metric_json["multinomial_auc_table"].show()
+            else:
+                print("Multinomial auc values: Table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).")
+            if self._metric_json["multinomial_aucpr_table"] is not None:
+                self._metric_json["multinomial_aucpr_table"].show()
+            else:
+                print("Multinomial auc_pr values: Table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).")
         if metric_type in types_w_anomaly:
             print("Anomaly Score: " + str(self.mean_score()))
             print("Normalized Anomaly Score: " + str(self.mean_normalized_score()))
         if (metric_type in types_w_mult) or (metric_type in types_w_ord):
             self.confusion_matrix().show()
             self.hit_ratio_table().show()
+            
         if metric_type in types_w_clustering:
             print("Total Within Cluster Sum of Square Error: " + str(self.tot_withinss()))
             print("Total Sum of Square Error to Grand Mean: " + str(self.totss()))
@@ -726,6 +739,56 @@ class H2OMultinomialModelMetrics(MetricsBase):
         """
         return self._metric_json['hit_ratio_table']
 
+
+    def multinomial_auc_table(self):
+        """Retrieve the multinomial AUC values.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> response_col = "cylinders"
+        >>> distribution = "multinomial"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution = distribution)
+        >>> gbm.train(x=predictors,
+        ...           y = response,
+        ...           training_frame = train,
+        ...           validation_frame = valid)
+        >>> gbm.multinomial_auc_table()
+        """
+        if self._metric_json['multinomial_auc_table'] is not None:
+            return self._metric_json['multinomial_auc_table']
+        else:
+            return "Table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains)."
+
+    def multinomial_aucpr_table(self):
+        """Retrieve the multinomial PR AUC values.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> response_col = "cylinders"
+        >>> distribution = "multinomial"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution = distribution)
+        >>> gbm.train(x=predictors,
+        ...           y = response,
+        ...           training_frame = train,
+        ...           validation_frame = valid)
+        >>> gbm.multinomial_aucpr_table()
+        """
+        if self._metric_json['multinomial_aucpr_table'] is not None:
+            return self._metric_json['multinomial_aucpr_table']
+        else:
+            return "Table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains)."
 
 
 class H2OOrdinalModelMetrics(MetricsBase):

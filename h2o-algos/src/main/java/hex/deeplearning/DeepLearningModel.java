@@ -127,7 +127,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
       case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
-      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
+      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain, get_params()._auc_type);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       case AutoEncoder: return new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_output.nfeatures());
       default: throw H2O.unimpl("Invalid ModelCategory " + _output.getModelCategory());
@@ -402,10 +402,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         _output._training_metrics = mtrain;
         scoringInfo.scored_train = new ScoreKeeper(mtrain);
         hex.ModelMetricsSupervised mm1 = (ModelMetricsSupervised)mtrain;
-        if (mm1 instanceof ModelMetricsBinomial) {
-          ModelMetricsBinomial mm = (ModelMetricsBinomial)(mm1);
-          scoringInfo.training_AUC = mm._auc;
-        }
         if (fTrain.numRows() != training_rows) {
           _output._training_metrics._description = "Metrics reported on temporary training frame with " + fTrain.numRows() + " samples";
         } else if (fTrain._key != null && fTrain._key.toString().contains("chunks")){
@@ -431,10 +427,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           _output._validation_metrics = mvalid;
           scoringInfo.scored_valid = new ScoreKeeper(mvalid);
           if (mvalid != null) {
-            if (mvalid instanceof ModelMetricsBinomial) {
-              ModelMetricsBinomial mm = (ModelMetricsBinomial) mvalid;
-              scoringInfo.validation_AUC = mm._auc;
-            }
             if (fValid.numRows() != validation_rows) {
               _output._validation_metrics._description = "Metrics reported on temporary validation frame with " + fValid.numRows() + " samples";
               if (get_params()._score_validation_sampling == DeepLearningParameters.ClassSamplingMethod.Stratified) {

@@ -956,7 +956,7 @@ public class XGBoostTest extends TestUtil {
 
       Frame predicted = Scope.track(noWeightsModel.score(trainingFrameSubset));
       predicted.remove(0);
-      ModelMetricsMultinomial expected = ModelMetricsMultinomial.make(predicted, trainingFrameSubset.vec("C5"));
+      ModelMetricsMultinomial expected = ModelMetricsMultinomial.make(predicted, trainingFrameSubset.vec("C5"), MultinomialAucType.NONE);
 
       checkMetrics(expected, (ModelMetricsMultinomial) model._output._training_metrics);
       checkMetrics(expected, (ModelMetricsMultinomial) noWeightsModel._output._training_metrics);
@@ -1088,7 +1088,7 @@ public class XGBoostTest extends TestUtil {
       assertTrue(preds.anyVec().sigma() > 0);
       assertEquals(
               ((ModelMetricsMultinomial)model._output._training_metrics).logloss(),
-              ModelMetricsMultinomial.make(preds, tfr.vec(response), tfr.vec(response).domain()).logloss(),
+              ModelMetricsMultinomial.make(preds, tfr.vec(response), tfr.vec(response).domain(), MultinomialAucType.NONE).logloss(),
               1e-5
       );
     } finally {
@@ -1186,7 +1186,7 @@ public class XGBoostTest extends TestUtil {
       assertTrue(preds.anyVec().sigma() > 0);
       assertEquals(
               ((ModelMetricsMultinomial)model._output._training_metrics).logloss(),
-              ModelMetricsMultinomial.make(preds, tfr.vec(response), tfr.vec(response).domain()).logloss(),
+              ModelMetricsMultinomial.make(preds, tfr.vec(response), tfr.vec(response).domain(), MultinomialAucType.NONE).logloss(),
               1e-5
       );
     } finally {
@@ -1469,7 +1469,7 @@ public class XGBoostTest extends TestUtil {
 
       Frame predicted = Scope.track(model.score(f));
       predicted.remove(0);
-      ModelMetricsMultinomial expected = (ModelMetricsMultinomial.make(predicted, f.vec(response), f.vec(response).domain()));
+      ModelMetricsMultinomial expected = (ModelMetricsMultinomial.make(predicted, f.vec(response), f.vec(response).domain(), MultinomialAucType.NONE));
       Scope.track_generic(expected);
 
       checkMetrics(expected, modelMetricsMultinomial);

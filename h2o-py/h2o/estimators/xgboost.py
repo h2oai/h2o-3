@@ -30,10 +30,11 @@ class H2OXGBoostEstimator(H2OEstimator):
                    "learn_rate", "eta", "sample_rate", "subsample", "col_sample_rate", "colsample_bylevel",
                    "col_sample_rate_per_tree", "colsample_bytree", "colsample_bynode", "max_abs_leafnode_pred",
                    "max_delta_step", "monotone_constraints", "interaction_constraints", "score_tree_interval",
-                   "min_split_improvement", "gamma", "nthread", "save_matrix_directory", "build_tree_one_node",
-                   "calibrate_model", "calibration_frame", "max_bins", "max_leaves", "sample_type", "normalize_type",
-                   "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy", "booster", "reg_lambda",
-                   "reg_alpha", "dmatrix_type", "backend", "gpu_id", "gainslift_bins"}
+                   "min_split_improvement", "gamma", "auc_type", "nthread", "save_matrix_directory",
+                   "build_tree_one_node", "calibrate_model", "calibration_frame", "max_bins", "max_leaves",
+                   "sample_type", "normalize_type", "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy",
+                   "booster", "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id", "gainslift_bins",
+                   "auc_type"}
 
     def __init__(self, **kwargs):
         super(H2OXGBoostEstimator, self).__init__()
@@ -1517,6 +1518,22 @@ class H2OXGBoostEstimator(H2OEstimator):
 
 
     @property
+    def auc_type(self):
+        """
+        Set default multinomial AUC type.
+
+        One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``
+        (default: ``"auto"``).
+        """
+        return self._parms.get("auc_type")
+
+    @auc_type.setter
+    def auc_type(self, auc_type):
+        assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
+        self._parms["auc_type"] = auc_type
+
+
+    @property
     def nthread(self):
         """
         Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O cluster limits (-nthreads
@@ -2110,6 +2127,22 @@ class H2OXGBoostEstimator(H2OEstimator):
     def gainslift_bins(self, gainslift_bins):
         assert_is_type(gainslift_bins, None, int)
         self._parms["gainslift_bins"] = gainslift_bins
+
+
+    @property
+    def auc_type(self):
+        """
+        Set default multinomial AUC type.
+
+        One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``
+        (default: ``"auto"``).
+        """
+        return self._parms.get("auc_type")
+
+    @auc_type.setter
+    def auc_type(self, auc_type):
+        assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
+        self._parms["auc_type"] = auc_type
 
 
     @staticmethod

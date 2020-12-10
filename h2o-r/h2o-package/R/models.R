@@ -995,6 +995,8 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' @param domain Vector with response factors for classification.
 #' @param distribution Distribution for regression.
 #' @param weights (optional) An H2OFrame containing observation weights.
+#' @param auc_type (optional) For multinomial classification you have to specify which type of agregated AUC/AUCPR will be used to calculate this metric. 
+#         Possibilities are MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR (OVO = One vs. One, OVR = One vs. Rest)
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
 #' \dontrun{
@@ -1008,10 +1010,14 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' h2o.make_metrics(pred, prostate$CAPSULE)
 #' }
 #' @export
-h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL, weights=NULL) {
+h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL, weights=NULL, auc_type="NONE") {
   predicted <- .validate.H2OFrame(predicted, required=TRUE)
   actuals <- .validate.H2OFrame(actuals, required=TRUE)
   weights <- .validate.H2OFrame(weights, required=FALSE)
+  if (!is.character(auc_type)) stop("auc_type argument must be of type character")
+  if (!(auc_type %in% c("MACRO_OVO", "MACRO_OVR", "WEIGHTED_OVO", "WEIGHTED_OVR", "NONE", "AUTO"))) {
+    stop("auc_type argument must be MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR, NONE, AUTO")
+  }
   params <- list()
   params$predictions_frame <- h2o.getId(predicted)
   params$actuals_frame <- h2o.getId(actuals)
@@ -1033,12 +1039,13 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL,
     out <- paste0(out, "]")
     params[["domain"]] <- out
   }
+  params["auc_type"] <- auc_type  
   url <- paste0("ModelMetrics/predictions_frame/",params$predictions_frame,"/actuals_frame/",params$actuals_frame)
   res <- .h2o.__remoteSend(method = "POST", url, .params = params)
   model_metrics <- res$model_metrics
   metrics <- model_metrics[!(names(model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
   name <- "H2ORegressionMetrics"
-  if (!is.null(metrics$AUC)) name <- "H2OBinomialMetrics"
+  if (!is.null(metrics$AUC) && is.null(metrics$hit_ratio_table)) name <- "H2OBinomialMetrics"
   else if (!is.null(distribution) && distribution == "ordinal") name <- "H2OOrdinalMetrics"
   else if (!is.null(metrics$hit_ratio_table)) name <- "H2OMultinomialMetrics"
   new(Class = name, metrics = metrics)
@@ -1051,7 +1058,7 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL,
 #' than one parameter is set to TRUE, then a named vector of AUCs are returned, where the names are "train", "valid"
 #' or "xval".
 #'
-#' @param object An \linkS4class{H2OBinomialMetrics} object.
+#' @param object An \linkS4class{H2OBinomialMetrics} or \linkS4class{H2OMultinomialMetrics} object.
 #' @param train Retrieve the training AUC
 #' @param valid Retrieve the validation AUC
 #' @param xval Retrieve the cross-validation AUC
@@ -1122,6 +1129,73 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   .newExpr("perfectAUC", probs, acts)[1, 1]
 }
 
+#' Retrieve the all AUC values in a table (One to Rest, One to One, macro and weighted average) 
+#' for mutlinomial classification.
+#'
+#' Retrieves the AUC table from an \linkS4class{H2OMultinomialMetrics}.
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training AUC table is returned. If more
+#' than one parameter is set to TRUE, then a named vector of AUC tables are returned, where the names are "train", "valid"
+#' or "xval".
+#'
+#' @param object An \linkS4class{H2OMultinomialMetrics} object.
+#' @param train Retrieve the training AUC table
+#' @param valid Retrieve the validation AUC table
+#' @param xval Retrieve the cross-validation AUC table
+#' @seealso \code{\link{h2o.giniCoef}} for the Gini coefficient,
+#'          \code{\link{h2o.mse}} for MSE, and \code{\link{h2o.metric}} for the
+#'          various threshold metrics. See \code{\link{h2o.performance}} for
+#'          creating H2OModelMetrics objects.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(prostate_path)
+#'
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
+#' perf <- h2o.performance(model, prostate)
+#' h2o.multinomial_auc_table(perf)
+#' }
+#' @export
+h2o.multinomial_auc_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+    if( is(object, "H2OModelMetrics") ) return( object@metrics$multinomial_auc_table )
+    if( is(object, "H2OModel") ) {
+        model.parts <- .model.parts(object)
+        if ( !train && !valid && !xval ) {
+            metric <- model.parts$tm@metrics$multinomial_auc_table
+            if ( !is.null(metric) ) return(metric)
+        }
+        v <- c()
+        v_names <- c()
+        if ( train ) {
+            v <- c(v,model.parts$tm@metrics$multinomial_auc_table)
+            v_names <- c(v_names,"train")
+        }
+        if ( valid ) {
+            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+            else {
+                v <- c(v,model.parts$vm@metrics$multinomial_auc_table)
+                v_names <- c(v_names,"valid")
+            }
+        }
+        if ( xval ) {
+            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+            else {
+                v <- c(v,model.parts$xm@metrics$multinomial_auc_table)
+                v_names <- c(v_names,"xval")
+            }
+        }
+        if ( !is.null(v) ) {
+            names(v) <- v_names
+            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+        }
+    }
+    warning(paste0("Multinomial AUC table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).", class(object)))
+    invisible(NULL)
+}
+
 #' Retrieve the AUCPR (Area Under Precision Recall Curve)
 #'
 #' Retrieves the AUCPR value from an \linkS4class{H2OBinomialMetrics}.
@@ -1184,8 +1258,75 @@ h2o.aucpr <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
       if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
     }
   }
-  warning(paste0("No aucpr for ", class(object)))
+  warning(paste0("Multinomial PR AUC table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).", class(object)))
   invisible(NULL)
+}
+
+#' Retrieve the all PR AUC values in a table (One to Rest, One to One, macro and weighted average) 
+#' for mutlinomial classification.
+#'
+#' Retrieves the PR AUC table from an \linkS4class{H2OMultinomialMetrics}.
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training PR AUC table is returned. If more
+#' than one parameter is set to TRUE, then a named vector of PR AUC tables are returned, where the names are "train", "valid"
+#' or "xval".
+#'
+#' @param object An \linkS4class{H2OMultinomialMetrics} object.
+#' @param train Retrieve the training PR AUC table
+#' @param valid Retrieve the validation PR AUC table
+#' @param xval Retrieve the cross-validation PR AUC table
+#' @seealso \code{\link{h2o.giniCoef}} for the Gini coefficient,
+#'          \code{\link{h2o.mse}} for MSE, and \code{\link{h2o.metric}} for the
+#'          various threshold metrics. See \code{\link{h2o.performance}} for
+#'          creating H2OModelMetrics objects.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(prostate_path)
+#'
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
+#' perf <- h2o.performance(model, prostate)
+#' h2o.multinomial_aucpr_table(perf)
+#' }
+#' @export
+h2o.multinomial_aucpr_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+    if( is(object, "H2OModelMetrics") ) return( object@metrics$multinomial_aucpr_table )
+    if( is(object, "H2OModel") ) {
+        model.parts <- .model.parts(object)
+        if ( !train && !valid && !xval ) {
+            metric <- model.parts$tm@metrics$multinomial_aucpr_table
+            if ( !is.null(metric) ) return(metric)
+        }
+        v <- c()
+        v_names <- c()
+        if ( train ) {
+            v <- c(v,model.parts$tm@metrics$multinomial_aucpr_table)
+            v_names <- c(v_names,"train")
+        }
+        if ( valid ) {
+            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+            else {
+                v <- c(v,model.parts$vm@metrics$multinomial_aucpr_table)
+                v_names <- c(v_names,"valid")
+            }
+        }
+        if ( xval ) {
+            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+            else {
+                v <- c(v,model.parts$xm@metrics$multinomial_aucpr_table)
+                v_names <- c(v_names,"xval")
+            }
+        }
+        if ( !is.null(v) ) {
+            names(v) <- v_names
+            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+        }
+    }
+    warning(paste0("No PR AUC table for ", class(object)))
+    invisible(NULL)
 }
 
 #' @rdname h2o.aucpr

@@ -163,25 +163,29 @@ def pyunit_make_metrics(weights_col=None):
     response = "RACE"
     predictors = list(set(fr.names) - {"ID", response})
     model = H2OGradientBoostingEstimator(distribution="multinomial", ntrees=2, max_depth=3, min_rows=1,
-                                         learn_rate=0.01, nbins=20, weights_column=weights_col)
+                                         learn_rate=0.01, nbins=20, weights_column=weights_col, auc_type="MACRO_OVR")
     model.train(x=predictors, y=response, training_frame=fr)
     predicted = h2o.assign(model.predict(fr)[1:], "pred")
     actual = h2o.assign(fr[response].asfactor(), "act")
     domain = fr[response].levels()[0]
 
     m0 = model.model_performance(train=True)
-    m1 = h2o.make_metrics(predicted, actual, domain=domain, weights=weights)
-    m2 = h2o.make_metrics(predicted, actual, weights=weights)
+    m1 = h2o.make_metrics(predicted, actual, domain=domain, weights=weights, auc_type="MACRO_OVR")
+    m2 = h2o.make_metrics(predicted, actual, weights=weights, auc_type="MACRO_OVR")
 
     assert abs(m0.mse() - m1.mse()) < 1e-5
     assert abs(m0.rmse() - m1.rmse()) < 1e-5
     assert abs(m0.logloss() - m1.logloss()) < 1e-5
     assert abs(m0.mean_per_class_error() - m1.mean_per_class_error()) < 1e-5
+    assert abs(m0.auc() - m1.auc()) < 1e-5
+    assert abs(m0.aucpr() - m1.aucpr()) < 1e-5
 
     assert abs(m2.mse() - m1.mse()) < 1e-5
     assert abs(m2.rmse() - m1.rmse()) < 1e-5
     assert abs(m2.logloss() - m1.logloss()) < 1e-5
     assert abs(m2.mean_per_class_error() - m1.mean_per_class_error()) < 1e-5
+    assert abs(m2.auc() - m1.auc()) < 1e-5
+    assert abs(m2.aucpr() - m1.aucpr()) < 1e-5
 
 
 def suite_model_metrics():

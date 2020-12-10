@@ -34,7 +34,8 @@ public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,Nai
         "compute_metrics",
         "max_runtime_secs",
         "export_checkpoints_dir",
-        "gainslift_bins"
+        "gainslift_bins",
+        "auc_type"
 		};
 
   /*Imbalanced Classes*/

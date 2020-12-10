@@ -1409,11 +1409,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance && !getClass().getSimpleName().contains("GLM")) {
           error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
         }
-        if (nclasses()!=2 && (_parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC || _parms._stopping_metric
-                == ScoreKeeper.StoppingMetric.AUCPR)) {
-          error("_stopping_metric", "Stopping metric cannot be AUC or AUCPR for multinomial " +
-                  "classification.");
-        }
       } else {
         if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.misclassification ||
                 _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC ||
