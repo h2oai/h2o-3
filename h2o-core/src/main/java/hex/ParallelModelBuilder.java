@@ -47,8 +47,6 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
     if (LOG.isTraceEnabled()) LOG.trace("run with " + modelBuilders.size() + " models");
     for (final ModelBuilder modelBuilder : modelBuilders) {
       _modelInProgressCounter.incrementAndGet();
-
-      // Set the callbacks
       modelBuilder.trainModel(_parallelModelBuiltListener);
     }
   }
