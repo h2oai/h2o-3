@@ -844,8 +844,8 @@ class ModelBase(h2o_meta(Keyed)):
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
         for k, v in viewitems(tm):
-            if not(v == None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics)):
-                raise H2OValueError("auc() is only available for Binomial classifiers.")
+            if not(v == None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics)) and not(is_type(v, h2o.model.metrics_base.H2OMultinomialModelMetrics)):
+                raise H2OValueError("auc() is only available for Binomial classifiers. For Multinomial classifiers is available average AUC value, default is Weighted One-to-Rest AUC.")
             m[k] = None if v is None else v.auc()
         return list(m.values())[0] if len(m) == 1 else m
 
@@ -907,8 +907,8 @@ class ModelBase(h2o_meta(Keyed)):
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
         for k, v in viewitems(tm): 
-            if v is not None and not is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics):
-                raise H2OValueError("aucpr() is only available for Binomial classifiers.")
+            if v is not None and not is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics) and not is_type(v, h2o.model.metrics_base.H2OMultinomialModelMetrics):
+                raise H2OValueError("aucpr() is only available for Binomial classifiers. For Multinomial classifiers is available average PR AUC value, default is Weighted One-to-Rest PR AUC.")
             m[k] = None if v is None else v.aucpr()
         return list(m.values())[0] if len(m) == 1 else m
 

@@ -73,6 +73,8 @@
 #' @param min_split_improvement (same as gamma) Minimum relative improvement in squared error reduction for a split to happen Defaults to 0.0.
 #' @param gamma (same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen
 #'        Defaults to 0.0.
+#' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
+#'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @param nthread Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O cluster limits (-nthreads
 #'        parameter). Defaults to maximum available Defaults to -1.
 #' @param save_matrix_directory Directory where to save matrices passed to XGBoost library. Useful for debugging.
@@ -173,6 +175,7 @@ h2o.xgboost <- function(x,
                         score_tree_interval = 0,
                         min_split_improvement = 0.0,
                         gamma = 0.0,
+                        auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                         nthread = -1,
                         save_matrix_directory = NULL,
                         build_tree_one_node = FALSE,
@@ -306,6 +309,8 @@ h2o.xgboost <- function(x,
     parms$min_split_improvement <- min_split_improvement
   if (!missing(gamma))
     parms$gamma <- gamma
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
   if (!missing(nthread))
     parms$nthread <- nthread
   if (!missing(save_matrix_directory))
@@ -398,6 +403,7 @@ h2o.xgboost <- function(x,
                                         score_tree_interval = 0,
                                         min_split_improvement = 0.0,
                                         gamma = 0.0,
+                                        auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                         nthread = -1,
                                         save_matrix_directory = NULL,
                                         build_tree_one_node = FALSE,
@@ -535,6 +541,8 @@ h2o.xgboost <- function(x,
     parms$min_split_improvement <- min_split_improvement
   if (!missing(gamma))
     parms$gamma <- gamma
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
   if (!missing(nthread))
     parms$nthread <- nthread
   if (!missing(save_matrix_directory))

@@ -5,6 +5,7 @@ import water.MRTask;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Vec;
+import water.util.Log;
 import water.util.fp.Function;
 
 import java.util.Arrays;
@@ -110,7 +111,10 @@ public class AUC2 extends Iced {
       int mx = -1;
       for( int i=0; i<auc._nBins; i++ ) {
         double d = exec(auc,i);
-        if( d > md ) { md = d; mx = i; }
+        if( d > md ) { 
+          md = d; 
+          mx = i; 
+        }
       }
       return mx;
     }

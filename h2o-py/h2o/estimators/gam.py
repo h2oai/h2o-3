@@ -41,7 +41,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                    "export_checkpoints_dir", "stopping_rounds", "stopping_metric", "stopping_tolerance",
                    "balance_classes", "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size",
                    "max_runtime_secs", "custom_metric_func", "num_knots", "knot_ids", "gam_columns", "bs", "scale",
-                   "keep_gam_cols"}
+                   "keep_gam_cols", "auc_type"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedAdditiveEstimator, self).__init__()
@@ -1017,6 +1017,22 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     def keep_gam_cols(self, keep_gam_cols):
         assert_is_type(keep_gam_cols, None, bool)
         self._parms["keep_gam_cols"] = keep_gam_cols
+
+
+    @property
+    def auc_type(self):
+        """
+        Set default multinomial AUC type.
+
+        One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``
+        (default: ``"auto"``).
+        """
+        return self._parms.get("auc_type")
+
+    @auc_type.setter
+    def auc_type(self, auc_type):
+        assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
+        self._parms["auc_type"] = auc_type
 
 
     @property

@@ -16,6 +16,8 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.tree.Constraints;
 import hex.tree.SharedTreeModel;
 import org.junit.*;
+import org.junit.contrib.java.lang.system.ProvideSystemProperty;
+import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
@@ -4253,6 +4255,41 @@ public class GBMTest extends TestUtil {
         assertEquals(featureList.get(i).getKey(), varimpList.get(i).getKey());
       }
     } finally {
+      Scope.exit();
+    }
+  }
+  
+  @Test
+  public void testMultinomialAucEarlyStopping(){
+    GBMModel gbm = null;
+    GBMModel.GBMParameters parms = makeGBMParameters();
+    Frame train = null, valid = null;
+    try {
+      Scope.enter();
+      train = parse_test_file("smalldata/junit/mixcat_train.csv");
+      valid = parse_test_file("smalldata/junit/mixcat_test.csv");
+      parms._train = train._key;
+      parms._valid = valid._key;
+      parms._response_column = "Response"; 
+      parms._ntrees = 5;
+      parms._learn_rate = 1;
+      parms._min_rows = 1;
+      parms._distribution = DistributionFamily.multinomial;
+      parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
+      parms._stopping_rounds = 1;
+      parms._auc_type = MultinomialAucType.MACRO_OVO;
+
+      gbm = new GBM(parms).trainModel().get();
+      ScoreKeeper[] history = gbm._output._scored_train;
+      double previous = Double.MIN_VALUE;
+      for(ScoreKeeper sk : history){
+        assert sk._AUC >= previous;
+        previous = sk._AUC;
+      }
+    } finally {
+      if(train != null){ train.remove();}
+      if(valid != null) {valid.remove();}
+      if( gbm != null ) gbm.delete();
       Scope.exit();
     }
   }

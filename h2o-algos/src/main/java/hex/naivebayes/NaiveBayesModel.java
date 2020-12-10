@@ -71,7 +71,7 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
       case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
-      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(domain.length,domain);
+      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(domain.length,domain, _parms._auc_type);
       default: throw H2O.unimpl();
     }
   }

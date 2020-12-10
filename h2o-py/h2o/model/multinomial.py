@@ -127,6 +127,87 @@ class H2OMultinomialModel(ModelBase):
         for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.mean_per_class_error()
         return list(m.values())[0] if len(m) == 1 else m
 
+    def multinomial_auc_table(self, train=False, valid=False, xval=False):
+        """
+        Retrieve the multinomial AUC table.
+    
+        If all are False (default), then return the training metric value.
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
+    
+        :param bool train: If True, return the multinomial_auc_table for the training data.
+        :param bool valid: If True, return the multinomial_auc_table for the validation data.
+        :param bool xval:  If True, return the multinomial_auc_table for each of the cross-validated splits.
+    
+        :returns: The multinomial_auc_table values for the specified key(s).
+    
+        :examples:
+    
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "cylinders"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> distribution = "multinomial"
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution)
+        >>> gbm.train(x=predictors,
+        ...           y=response_col,
+        ...           training_frame=train,
+        ...           validation_frame=valid)
+        >>> multinomial_auc_table = gbm.multinomial_auc_table() # <- Default: return training metric
+        >>> multinomial_auc_table
+        >>> multinomial_auc_table = gbm.multinomial_auc_table(train=True,
+        ...                                        valid=True,
+        ...                                        xval=True)
+        >>> multinomial_auc_table1
+            """
+        tm = ModelBase._get_metrics(self, train, valid, xval)
+        m = {}
+        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.multinomial_auc_table()
+        return list(m.values())[0] if len(m) == 1 else m
+
+    def multinomial_aucpr_table(self, train=False, valid=False, xval=False):
+        """
+        Retrieve the multinomial PR AUC table.
+    
+        If all are False (default), then return the training metric value.
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
+    
+        :param bool train: If True, return the amultinomial_aucpr_table for the training data.
+        :param bool valid: If True, return the multinomial_aucpr_table for the validation data.
+        :param bool xval:  If True, return the multinomial_aucpr_table for each of the cross-validated splits.
+    
+        :returns: The average_pairwise_auc values for the specified key(s).
+    
+        :examples:
+    
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "cylinders"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> distribution = "multinomial"
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution)
+        >>> gbm.train(x=predictors,
+        ...           y=response_col,
+        ...           training_frame=train,
+        ...           validation_frame=valid)
+        >>> multinomial_aucpr_table = gbm.multinomial_aucpr_table() # <- Default: return training metric
+        >>> multinomial_aucpr_table
+        >>> multinomial_aucpr_table1 = gbm.multinomial_aucpr_table(train=True,
+        ...                                        valid=True,
+        ...                                        xval=True)
+        >>> multinomial_aucpr_table1
+            """
+        tm = ModelBase._get_metrics(self, train, valid, xval)
+        m = {}
+        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.multinomial_aucpr_table()
+        return list(m.values())[0] if len(m) == 1 else m
 
     def plot(self, timestep="AUTO", metric="AUTO", **kwargs):
         """

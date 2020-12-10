@@ -154,4 +154,13 @@ public class ModelAttributes implements Serializable {
   public ModelParameter[] getModelParameters() {
     return _model_parameters;
   }
+  
+  public Object getParameterValueByName(String name){
+    for (ModelParameter parameter:_model_parameters) {
+      if(parameter.name.equals(name)){
+        return parameter.actual_value;
+      }
+    }
+    return null;
+  }
 }
