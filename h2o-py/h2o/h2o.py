@@ -2269,11 +2269,11 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     else:
         raise H2OError("Unable to print MOJO: %s" % output)
 
-def estimate_mem_usage(ncols, nrows, num_cols = 0, string_cols = 0, cat_cols = 0, time_cols = 0, uuid_cols = 0):
+def estimate_cluster_mem(ncols, nrows, num_cols = 0, string_cols = 0, cat_cols = 0, time_cols = 0, uuid_cols = 0):
     """
-    Generates and estimate for memory usage in GB.
+    Computes an estimate for cluster memory usage in GB.
     
-    Number of columns and number of rows are required. For a better estimate you can provide a counts of ddifferent
+    Number of columns and number of rows are required. For a better estimate you can provide a counts of different
     types of columns in the dataset.
 
     :param ncols: total number of columns in a dataset. An required parameter, integer, can't be negative
@@ -2287,15 +2287,15 @@ def estimate_mem_usage(ncols, nrows, num_cols = 0, string_cols = 0, cat_cols = 0
 
     :example:
 
-    >>> from h2o import estimate_mem_usage
+    >>> from h2o import estimate_cluster_mem
     >>> ### I will load an parquet file with 18 columns and 2 million lines
-    >>> estimate_mem_usage(18, 2000000)
+    >>> estimate_cluster_mem(18, 2000000)
     >>> ### I will load an other parquet file with 16 columns and 2 million lines, I ask for a more precise estimate 
     >>> ### because I know 12 of 16 columns are categorical and one of 16 columns consist of uuids.
-    >>> estimate_mem_usage(18, 2000000, cat_cols=12, uuid_cols=1)
+    >>> estimate_cluster_mem(18, 2000000, cat_cols=12, uuid_cols=1)
     >>> ### I will load an parquet file with 8 columns and 31 million lines, I ask for a more precise estimate 
     >>> ### because I know 4 of 8 columns are categorical and 4 of 8 columns consist of numbers.
-    >>> estimate_mem_usage(ncols=8, nrows=31000000, cat_cols=4, num_cols=4)
+    >>> estimate_cluster_mem(ncols=8, nrows=31000000, cat_cols=4, num_cols=4)
     
     """    
     import math

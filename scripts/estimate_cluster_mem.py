@@ -4,7 +4,7 @@ import argparse
 
 import h2o
 
-from h2o import estimate_mem_usage
+from h2o import estimate_cluster_mem
 
 
 def check_nonnegative(value):
@@ -41,7 +41,7 @@ if (args.ncols < known_cols):
     parser.print_help()
     exit(2)
 
-mem_req_rounded = h2o.estimate_mem_usage(ncols=args.ncols
+mem_req_rounded = h2o.estimate_cluster_mem(ncols=args.ncols
                                          , num_cols=args.n_num_cols
                                          , string_cols=args.n_string_cols
                                          , cat_cols=args.n_cat_cols
