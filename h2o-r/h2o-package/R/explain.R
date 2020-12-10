@@ -2577,8 +2577,26 @@ h2o.learning_curve_plot <- function(model,
     cv_individual_lines <- FALSE
   }
 
-  colors <- c("Training" = "#ff6666", "Validation" = "#66bb00",
-              "CV-Training" = "#dd77ff", "CV-Validation" = "#00cccc")
+  colors <- c("Training" = "#ff6000", "Validation" = "#785ff0",
+              "CV-Training" = "#ffb000", "CV-Validation" = "#648fff")
+  shape <- c("Training" = 16, "Validation" = 16,
+              "CV-Training" = NA, "CV-Validation" = NA)
+  fill <- c("Training" = NA, "Validation" = NA,
+              "CV-Training" = "#ffb000", "CV-Validation" = "#648fff")
+
+  scoring_history <- scoring_history[!(is.na(scoring_history$x) |
+    is.na(scoring_history$metric) |
+    is.na(scoring_history$type)
+  ), ]
+  cv_scoring_history <- cv_scoring_history[!(is.na(cv_scoring_history$x) |
+    is.na(cv_scoring_history$metric) |
+    is.na(cv_scoring_history$type)
+  ), ]
+
+  if (cv_ribbon || cv_individual_lines)
+    labels <- c(sort(unique(cv_scoring_history$type)), sort(unique(scoring_history$type)))
+  else
+    labels <- sort(unique(scoring_history$type))
 
   p <- ggplot2::ggplot(ggplot2::aes_string(
     x = "x",
@@ -2586,12 +2604,7 @@ h2o.learning_curve_plot <- function(model,
     color = "type",
     fill = "type"
   ),
-                  data = scoring_history[!(is.na(scoring_history$x) |
-                    is.na(scoring_history$metric) |
-                    is.na(scoring_history$type)
-                  ), ]) +
-    ggplot2::geom_line() +
-    ggplot2::geom_point()
+                  data = scoring_history)
   if (cv_ribbon) {
     cvsh <- cvsh[!is.na(cvsh$lower_bound) &
                    !is.na(cvsh$upper_bound),]
@@ -2610,9 +2623,12 @@ h2o.learning_curve_plot <- function(model,
   if (cv_individual_lines) {
     p <- p + ggplot2::geom_line(ggplot2::aes(group = paste(model, type)),
                                 linetype = "dotted",
-                                data = cv_scoring_history[!is.na(cv_scoring_history$metric),])
+                                data = cv_scoring_history)
   }
-  p <- p + ggplot2::geom_vline(ggplot2::aes_(
+  p <- p +
+    ggplot2::geom_line() +
+    ggplot2::geom_point() +
+    ggplot2::geom_vline(ggplot2::aes_(
       xintercept = selected_timestep_value,
       linetype = paste("Selected", timestep)
     )) +
@@ -2624,6 +2640,12 @@ h2o.learning_curve_plot <- function(model,
     ) +
     ggplot2::scale_color_manual(values = colors) +
     ggplot2::scale_fill_manual(values = colors) +
+    ggplot2::guides(color=ggplot2::guide_legend(
+      override.aes = list(
+        shape=shape[labels],
+        fill=fill[labels]
+      )
+    )) +
     ggplot2::theme_bw() +
     ggplot2::theme(
       legend.title = ggplot2::element_blank(),

@@ -1854,24 +1854,13 @@ def learning_curve_plot(
         selected_timestep_value = model.actual_params["epochs"]
 
     if colormap is None:
-        col_train, col_valid = "#ff6666", "#66bb00"
-        col_cv_train, col_cv_valid = "#dd77ff", "#00cccc"
+        col_train, col_valid = "#ff6000", "#785ff0"
+        col_cv_train, col_cv_valid = "#ffb000", "#648fff"
     else:
         col_train, col_valid, col_cv_train, col_cv_valid = plt.get_cmap(colormap, 4)(list(range(4)))
 
     plt.figure(figsize=figsize)
     plt.grid(True)
-    plt.plot(scoring_history[timestep],
-             scoring_history[training_metric],
-             "o-",
-             label="Training",
-             c=col_train)
-    if validation_metric in scoring_history.col_header:
-        plt.plot(scoring_history[timestep],
-                 scoring_history[validation_metric],
-                 "o-",
-                 label="Validation",
-                 c=col_valid)
 
     if model._model_json["output"]["cv_scoring_history"]:
         if cv_ribbon or cv_ribbon is None:
@@ -1937,6 +1926,18 @@ def learning_curve_plot(
                              c=col_cv_valid,
                              linestyle="dotted"
                              )
+
+    plt.plot(scoring_history[timestep],
+             scoring_history[training_metric],
+             "o-",
+             label="Training",
+             c=col_train)
+    if validation_metric in scoring_history.col_header:
+        plt.plot(scoring_history[timestep],
+                 scoring_history[validation_metric],
+                 "o-",
+                 label="Validation",
+                 c=col_valid)
 
     if selected_timestep_value is not None:
         plt.axvline(x=selected_timestep_value, label="Selected {}".format(timestep), c="black")
