@@ -360,7 +360,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return trainModel(null);
   }
 
-  final public Job<M> trainModel(ModelBuilderListener callback) {
+  final public Job<M> trainModel(final ModelBuilderListener callback) {
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     startClock();
@@ -379,13 +379,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
                           @Override
                           public void onCompletion(CountedCompleter caller) {
-                            callback.onModelSuccess(_result.get());
+                            if (callback != null) callback.onModelSuccess(_result.get());
                           }
 
                           @Override
                           public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
                             Log.warn("Model training job " + _job._description + " completed with exception: " + ex);
-                            callback.onModelFailure(ex, _parms);
+                            if (callback != null) callback.onModelFailure(ex, _parms);
                             try {
                               Keyed.remove(_job._result); // ensure there's no incomplete model left for manipulation after crash or cancellation
                             } catch (Exception logged) {
