@@ -4192,11 +4192,11 @@ public class GBMTest extends TestUtil {
       parms._response_column = "CAPSULE";
       parms._train = f._key;
       parms._ntrees = 1;
-      parms._ignored_columns = new String[]{"ID"};
+      parms._ignored_columns = new String[] {"ID"};
 
       GBMModel model = new GBM(parms).trainModel().get();
       Scope.track_generic(model);
-      FeatureInteractions featureInteractions = model.getFeatureInteractions(2, 100, -1);
+      FeatureInteractions featureInteractions = model.getFeatureInteractions(2,100,-1);
       SharedTreeSubgraph treeSubgraph = model.getSharedTreeSubgraph(0, 0);
 
       String[] keysToCheck = new String[]{"DPROS", "PSA", "GLEASON", "VOL"};
@@ -4213,68 +4213,44 @@ public class GBMTest extends TestUtil {
           assertEquals(featureGain, featureInteractions.get(feature).gain, 0.0001);
         }
       }
-    } finally{
+    } finally {
       Scope.exit();
     }
   }
 
-   //PUBDEV-7139
   @Test
-  public void testPermVarImp() {
+  public void testGBMFeatureInteractionsCheckRanksVsVarimp() {
+    Scope.enter();
     try {
-      Scope.enter();
-      final String response = "CAPSULE";
-      final String testFile = "./smalldata/logreg/prostate.csv";
-      Frame fr = parse_test_file(testFile)
-              .toCategoricalCol("RACE")
-              .toCategoricalCol("GLEASON")
-              .toCategoricalCol(response);
-      fr.remove("ID").remove();
-      fr.vec("RACE").setDomain(ArrayUtils.append(fr.vec("RACE").domain(), "3"));
-      Scope.track(fr);
-      DKV.put(fr);
+      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      
+      GBMModel.GBMParameters gbmParms = new GBMModel.GBMParameters();
+      gbmParms._train = tfr._key;
+      gbmParms._response_column = "AGE";
+      gbmParms._ignored_columns = new String[]{"ID"};
+      gbmParms._seed = 0xDECAF;
+      gbmParms._build_tree_one_node = true;
 
-      Model.Parameters.CategoricalEncodingScheme[] supportedSchemes = {
-              Model.Parameters.CategoricalEncodingScheme.OneHotExplicit,
-              Model.Parameters.CategoricalEncodingScheme.SortByResponse,
-              Model.Parameters.CategoricalEncodingScheme.EnumLimited,
-              Model.Parameters.CategoricalEncodingScheme.Enum,
-              Model.Parameters.CategoricalEncodingScheme.Binary,
-              Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
-              Model.Parameters.CategoricalEncodingScheme.Eigen
-      };
+      GBMModel gbmModel = new GBM(gbmParms).trainModel().get();
+      Scope.track_generic(gbmModel);
+      
+      FeatureInteractions featureInteractions = gbmModel.getFeatureInteractions(0, 100, -1);
+      VarImp gbmVarimp = gbmModel._output._varimp;
+      
+      List<KeyValue> varimpList = new ArrayList<>();
+      for (int i = 0; i < gbmVarimp._varimp.length; i++) {
+        varimpList.add(new KeyValue(gbmVarimp._names[i], gbmVarimp._varimp[i]));  
+      }
+      varimpList.sort((a,b) -> a.getValue() < b.getValue() ? -1 : a.getValue() == b.getValue() ? 0 : 1);
 
-      for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
+      List<KeyValue> featureList = new ArrayList<>();
+      for (Map.Entry<String, FeatureInteraction> featureInteraction : featureInteractions.entrySet()) {
+        featureList.add(new KeyValue(featureInteraction.getKey(), featureInteraction.getValue().gain));
+      }
+      featureList.sort((a,b) -> a.getValue() < b.getValue() ? -1 : a.getValue() == b.getValue() ? 0 : 1);
 
-        GBMModel.GBMParameters parms = makeGBMParameters();
-        parms._train = fr._key;
-        parms._response_column = response;
-        parms._ntrees = 5;
-        parms._categorical_encoding = scheme;
-        if (scheme == Model.Parameters.CategoricalEncodingScheme.EnumLimited) {
-          parms._max_categorical_levels = 3;
-        }
-
-        GBM job = new GBM(parms);
-        GBMModel gbm = job.trainModel().get();
-        Scope.track_generic(gbm);
-
-        // Done building model; produce a score column with predictions
-        Frame scored = Scope.track(gbm.score(fr));
-
-        TwoDimTable varImp = gbm._output._variable_importances;
-        PermutationVarImp PermVarImp = new PermutationVarImp(gbm, fr);
-
-        TwoDimTable permVarImp = PermVarImp.getPermutationVarImp();
-
-        Map<String, Double> perVarImp = PermVarImp.toMapScaled();
-        Map<String, Float> b_varImp = gbm._output._varimp.toMapScaled();
-
-        for (String name : perVarImp.keySet()) {
-          double pvi = perVarImp.get(name);
-          double vi = (double) b_varImp.get(name); // VarImp stores floats, typecast needed
-          Assert.assertEquals(pvi, vi, 0.2);
-        }
+      for (int i= 0; i < featureList.size(); i++) {
+        assertEquals(featureList.get(i).getKey(), varimpList.get(i).getKey());
       }
     } finally {
       Scope.exit();

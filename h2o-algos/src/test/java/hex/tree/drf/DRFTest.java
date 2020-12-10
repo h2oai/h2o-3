@@ -19,10 +19,8 @@ import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.util.Triple;
-import water.util.VecUtils;
+import water.parser.ParseSetup;
+import water.util.*;
 
 import java.io.BufferedWriter;
 import java.io.File;

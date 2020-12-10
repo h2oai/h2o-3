@@ -110,3 +110,4 @@ Collate:
          'rulefit.R'
          'explain.R'
          'zzz.R'
+         'permutation_varimp.R'

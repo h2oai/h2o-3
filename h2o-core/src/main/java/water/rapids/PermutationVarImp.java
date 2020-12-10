@@ -71,6 +71,9 @@ public class PermutationVarImp {
         if (_model._parms._ignored_columns != null)
             for (String s : _model._parms._ignored_columns) list.remove(s);
         list.remove(_responseCol);
+        list.remove("weight_column");
+        list.remove("fold_column");
+        
         _varsToShuffle = list.toArray(new String[0]);
         
         // alloc permutation variable importance array 
