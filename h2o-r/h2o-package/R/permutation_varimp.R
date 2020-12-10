@@ -1,23 +1,18 @@
 #'
 #' Calculate Permutation Feature Importance 
 #'
+#' @param model     Trained model which's score is going to be used.
+#' @param frame     Training frame of the model which is going to be permuted
+#' @param metric    Loss Function metric (defalt is MSE)
+#' @return          Resulting frame with Relative, Scaled and Percentage scaled importances
 
-h2o.permutation_varimp <- function(model, frame){
-    if (is.H2OFrame(validation_frame))
-         tryCatch(permutation_varim_table <- .newExpr('PermutationVarImp', model, validation_frame), 
-                error = function(err) {
-                    message(err)
-                    message("validation frame is a valid H2OFrame, newExpr didnt work")
-                    stop("argument  is a valid H2OFrame, newExpr didnt work")
-                },
-                warning = function(err){
-                    message("warning message:")
-                    message(err)
-                },
-                finally = {
-                    message("Loading permutation_varim")
-                    return(permutation_varim_table)
-                })
-    else stop("Input frame is not H2OFrame") # find out how to check for model
-        
+h2o.permutation_varimp <- function(model, frame, metric = "MSE"){
+    if (!is.H2OFrame(frame)){
+        permutation_varim_table <- .newExpr("PermutationVarImp", model, frame, metric)
+    }   else    {
+        warning(paste0("Permutation Variable Importance cannot be calculated for ", class(frame), ". H2OFrame is requrired"))
+        return(NULL)
+    }
+    
+    return(permutation_varim_table)
 }
