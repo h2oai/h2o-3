@@ -189,6 +189,8 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
   if (!h2o.clusterIsUp(tmpConn)) {
     if (!startH2O)
       stop("Cannot connect to H2O server. Please check that H2O is running at ", h2o.getBaseURL(tmpConn))
+    else if (.h2o.__CLIENT_VERSION())
+      stop("Client version of the library cannot be used to start a local H2O instance. Use h2o.connect() instead.")
     else if (ip == "localhost" || ip == "127.0.0.1") {
       cat("\nH2O is not running yet, starting it now...\n")
       
