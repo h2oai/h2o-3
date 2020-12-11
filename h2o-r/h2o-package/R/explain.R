@@ -2544,9 +2544,9 @@ h2o.learning_curve_plot <- function(model,
     } else if (mean(cvsh_len$`CV-Training`[-nrow(cvsh_len)] == cvsh_len$`CV-Training`[-1]) < 0.5 ||
         mean(cvsh_len$`CV-Training`) < 2) {
       if (is.null(cv_ribbon)) {
-        cv_individual_lines <- is.null(cv_individual_lines) || cv_individual_lines
         cv_ribbon <- FALSE
       }
+      cv_individual_lines <- is.null(cv_individual_lines) || cv_individual_lines
     } else {
       cv_individual_lines <- !is.null(cv_individual_lines) && cv_individual_lines
       cv_ribbon <- is.null(cv_ribbon) || cv_ribbon
