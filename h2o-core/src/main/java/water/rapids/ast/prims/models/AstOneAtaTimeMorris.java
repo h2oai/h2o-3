@@ -34,9 +34,8 @@ public class AstOneAtaTimeMorris extends AstPrimitive {
         Scope.enter();
         Frame pviFr = null;
         try {
-            PermutationVarImp fi = new PermutationVarImp(model, in_fr); 
-            TwoDimTable oatTable = fi.oat(); // might be able to use AstPerfectAuc for calculation of AUC 
             // Get OAT TwoDimTable 
+            TwoDimTable oatTable = new PermutationVarImp(model, in_fr).oat(); 
             
             // Frame contains one row and n features 
             pviFr = new Frame(Key.make(model._key + "Oat_pfi"));

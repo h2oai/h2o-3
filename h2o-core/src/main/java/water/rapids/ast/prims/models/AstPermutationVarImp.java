@@ -36,6 +36,7 @@ public class AstPermutationVarImp extends AstPrimitive {
         try {
             // Calculate Permutation Variable Importance 
             TwoDimTable varImpTable = model.getPermVarImpTable(fr, metric);
+            
             // Create Frame from TwoDimTable 
             pviFr = new Frame(Key.make(model._key + "permutationVarImp"));
             pviFr.add(headerToStrings(varImpTable.getRowHeaders()), rowsToVecs(varImpTable));
@@ -46,6 +47,7 @@ public class AstPermutationVarImp extends AstPrimitive {
         }
         return new ValFrame(pviFr);
     }
+
     /**
      * TwoDimTable rows to Vecs which will be used to create a Frame
      * @param varImpTable TwoDimTable of PVI
