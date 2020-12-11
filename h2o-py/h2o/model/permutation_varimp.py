@@ -10,7 +10,7 @@ import h2o
 from h2o.frame import H2OFrame
 from h2o.expr import ExprNode
 from h2o.exceptions import H2OValueError
-from h2o.model.model_base import _get_matplotlib_pyplot
+from h2o.model.model_base import get_matplotlib_pyplot
 from h2o.utils.shared_utils import can_use_pandas
 
 
@@ -52,6 +52,7 @@ def permutation_varimp_oat(model, frame):
         ax.annotate(annotation, (mean[index], std_dev[index]))
 
     plt.show()
+
 
 def permutation_varimp(model, frame, use_pandas=True, metric="mse"):
     """
@@ -102,7 +103,7 @@ def plot_permutation_var_imp(importance, algo_name, metric="mse", server=False):
     pos = range(len(importance_val))[::-1]
 
     num_of_features = min(len(importance_val), 10)
-    plt = _get_matplotlib_pyplot(server)
+    plt = get_matplotlib_pyplot(server)
     if not plt: return
 
     fig, ax = plt.subplots(1, 1, figsize=(14, 10))
