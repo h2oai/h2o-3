@@ -18,7 +18,7 @@ function make_zip_common {
 
   mkdir $IMAGEDIR/R
   cp h2o-r/R/src/contrib/h2o_${PROJECT_VERSION}.tar.gz $IMAGEDIR/R
-  cp h2o-r/build/client/h2o_${PROJECT_VERSION}.tar.gz $IMAGEDIR/R/h2o_client${PROJECT_VERSION}.tar.gz
+  cp h2o-r/build/client/h2o_${PROJECT_VERSION}.tar.gz $IMAGEDIR/R/h2o_client_${PROJECT_VERSION}.tar.gz
   cp h2o-r/dist-readme.txt $IMAGEDIR/R/README.txt
 
   mkdir $IMAGEDIR/python

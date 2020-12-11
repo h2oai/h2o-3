@@ -493,13 +493,12 @@ h2o.clusterStatus <- function() {
   msg = paste0(
     "\n",
     "----------------------------------------------------------------------\n",
-    "\n",
-    "Your next step is to start H2O:\n")
+    "\n")
 
   if (.h2o.__CLIENT_VERSION())
-    msg = paste0(msg, "    > h2o.connect()\n")
+    msg = paste0(msg, "Your next step is to connect to H2O:\n", "    > h2o.connect()\n")
   else
-    msg = paste0(msg, "    > h2o.init()\n")
+    msg = paste0(msg, "Your next step is to start H2O:\n", "    > h2o.init()\n")
 
   msg = paste0(
     msg,
