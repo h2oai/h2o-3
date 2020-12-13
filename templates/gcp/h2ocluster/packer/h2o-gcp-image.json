@@ -1,0 +1,37 @@
+{
+  "variables": {
+    "h2o_version": "h2o-3-32-0-2",
+    "h2o_url": "http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/2/h2o-3.32.0.2.zip",
+    "project_id": "steamwithdataproc",
+    "source_image": "rhel-cloud/rhel-7",
+    "zone": "us-west1-a"
+  },
+  "builders": [
+    {
+      "type": "googlecompute",
+      "project_id": "{{user `project_id`}}",
+      "source_image": "{{user `source_image`}}",
+      "zone": "{{user `zone`}}",
+      "communicator": "ssh",
+      "pause_before_connecting": "1m",
+      "ssh_username": "rhel",
+      "disk_size": 20,
+      "machine-type": "e2-highmem-4",
+      "image_name": "packer-{{user `h2o_version`}}"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "scripts/bootstrap.sh",
+      "destination": "/tmp/bootstrap.sh"
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "chmod u+x /tmp/bootstrap.sh",
+        "/tmp/bootstrap.sh {{user `h2o_url`}}"
+      ]
+    }
+  ]
+}
