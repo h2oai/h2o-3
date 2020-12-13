@@ -48,7 +48,8 @@ echo "${IP_ADDRESSES[*]}" | tr ' ' '\n' | sed 's/$/:54321/' > /tmp/flatfile
 # Flatfile generated- but do it at the proper place later
 
 # install dependencies
-yum install -y unzip java-1.8.0-openjdk-devel
+unzip -v || { echo "Installing Unzip"; yum install -y unzip; }
+java -version || { echo "Installing Java JDK"; yum install -y java-1.8.0-openjdk-devel; }
 
 H2O_URL=$(curl --silent -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/h2o-url)
 echo "${H2O_URL}" > /tmp/h2o_url
