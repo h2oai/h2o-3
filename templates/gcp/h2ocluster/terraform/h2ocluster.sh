@@ -124,6 +124,8 @@ exec_create () {
   # shellcheck disable=SC2155
   local randstr=$(head /dev/urandom | tr -dc 'a-z0-9' | fold -w 7 | head -n 1)
   local cluster_name="${prefix}-${username}-${randstr}-cluster"
+  local cluster_nodes
+  cluster_nodes=$(grep -oP 'h2o_cluster_instance_count = "\K[0-9]*(?=")' "${h2ocluster_tfhome}/terraform.tfvars")
   echo -e "\n"
   echo -e "Creating H2O Cluster"
   echo -e "--------------------"
@@ -143,11 +145,12 @@ exec_create () {
     echo "${cluster_name}|${cluster_description}" >> "${h2ocluster_info_file}" && \
     echo -e "Cluster instances created.\n" ) || { error_exit "Cluster creation failed."; }
   # Cluster instances should be created. Wait for H2O to start
-  wait_for_h2o_start "${cluster_name}" 
+  wait_for_h2o_start "${cluster_name}" "${cluster_nodes}"
 }
 
 wait_for_h2o_start () {
   local cluster_name="${1}"
+  local cluster_nodes="${2}"
   echo -e "Cluster Instances:\n==================\n"
   echo "NAME                                 ZONE        MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP   EXTERNAL_IP     STATUS"
   gcloud compute instances list | grep -w "${cluster_name}"
@@ -157,13 +160,17 @@ wait_for_h2o_start () {
     echo "...waiting...retrying after 10 seconds..."
     sleep 10
   done
-  echo -e "H2O detected.\nGetting cluster leader information\n\n"
-  cluster_nodes=$(curl --silent "http://${cluster_name}-node-0:54321/3/Cloud" | jq '.cloud_size') 
+  echo -e "H2O detected.\nGetting cluster information\n\n"
+  formed_cluster_nodes=$(curl --silent "http://${cluster_name}-node-0:54321/3/Cloud" | jq '.cloud_size')
+  until [[ "${cluster_nodes}" == "${formed_cluster_nodes}" ]]; do
+    echo "H2O detected.Cluster of ${formed_cluster_nodes} out of ${cluster_nodes} formed. Retrying in 10 seconds.."
+    sleep 10
+  done
   leader_idx=$(curl --silent "http://${cluster_name}-node-0:54321/3/Cloud" | jq '.leader_idx') 
   leader_ipport=$(curl --silent "http://${cluster_name}-node-0:54321/3/Cloud" | jq ".nodes[${leader_idx}].ip_port" | tr -d '"') 
   echo -e "H2O Cluster Information:\n========================="
   echo "Cluster Name: ${cluster_name}"
-  echo "Cluster Size: ${cluster_nodes}"
+  echo "Cluster Size: ${formed_cluster_nodes}"
   echo "Cluster Leader IP and PORT: ${leader_ipport}"
   echo "Cluster Leader Url: http://${leader_ipport}/flow/index.html#"
   echo -e "\n"
@@ -196,6 +203,7 @@ exec_stop () {
   exec_info "${cluster_name}"
   print_heading "STOPPING CLUSTER"
   instance_list=$(gcloud compute instances list | grep "${cluster_name}" | cut -d " " -f 1 | tr '\n' ' ' | xargs)
+  # Not quoting instance_list; we want word splitting
   gcloud compute instances stop ${instance_list}
   exec_info "${cluster_name}"
 }
