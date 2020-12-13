@@ -16,7 +16,7 @@
       "pause_before_connecting": "1m",
       "ssh_username": "rhel",
       "disk_size": 20,
-      "machine-type": "e2-highmem-4",
+      "machine_type": "e2-highmem-4",
       "image_name": "packer-{{user `h2o_version`}}"
     }
   ],
