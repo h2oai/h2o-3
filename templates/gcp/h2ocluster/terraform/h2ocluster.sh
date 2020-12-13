@@ -18,6 +18,7 @@ script_name=$(basename "${0}")
 
 # Setup directories for state management
 h2ocluster_home="${HOME}/.h2ocluster"
+mkdir -p "${h2ocluster_home}"
 h2ocluster_info_file="${h2ocluster_home}/clusterinfo"
 touch "${h2ocluster_info_file}"
 # Terraform data and state directories
