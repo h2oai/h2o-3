@@ -10,9 +10,17 @@ yum install -y wget unzip python3 tree
 # Install terraform
 mkdir -p /tmp/terraform
 pushd /tmp/terraform
-curl https://releases.hashicorp.com/terraform/0.13.5/terraform_0.13.5_linux_amd64.zip -o terraform.zip
+curl --silent https://releases.hashicorp.com/terraform/0.13.5/terraform_0.13.5_linux_amd64.zip -o terraform.zip
 unzip terraform.zip
 mv terraform /usr/bin
+popd
+
+# Install packer 
+mkdir -p /tmp/packer
+pushd /tmp/packer
+curl --silent https://releases.hashicorp.com/packer/1.6.5/packer_1.6.5_linux_amd64.zip -o packer.zip
+unzip packer.zip
+mv packer /usr/bin
 popd
 
 ## Install google cloud sdk
