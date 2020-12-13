@@ -28,7 +28,7 @@ mkdir -p "${h2ocluster_tfdata}"
 mkdir -p "${h2ocluster_tfstate}"
 
 # h2ocluster Terraform dir
-h2ocluster_tfhome="/opt/h2ocluster"
+h2ocluster_tfhome="/opt/h2ocluster/terraform"
 
 # Create username with lower characters
 username=$(echo "${USER}" | tr '[:upper:]' '[:lower:]' | tr -dc '[:lower:][:digit:]' | fold -w 8 | head -n 1)
@@ -132,7 +132,7 @@ exec_create () {
   echo -e "Description: ${cluster_description}" 
   echo -e "\n"
   # execute this as a single operation or return error 
-  ( pushd /opt/h2ocluster && \
+  ( pushd "${h2ocluster_tfhome}" && \
     TF_DATA_DIR="${h2ocluster_tfdata}" \
       terraform apply \
       -var "h2o_cluster_instance_user=${username}" \
@@ -214,7 +214,7 @@ exec_destroy() {
   echo -e "Description: ${cluster_description}" 
   echo -e "\n"
   # execute this as a single operation or return error 
-  ( pushd /opt/h2ocluster && \
+  ( pushd pushd "${h2ocluster_tfhome}" && \
     TF_DATA_DIR="${h2ocluster_tfdata}" \
       terraform destroy \
       -var "h2o_cluster_instance_user=${username}" \
