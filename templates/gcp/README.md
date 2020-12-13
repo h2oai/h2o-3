@@ -184,7 +184,7 @@ Step 2: Creating H2O clusters
 -------------------------
 - Once Workspace server is up and running check. `jq --version`, `terraform --version`, `gcloud config list`. All these commands should be working. Additionally `gcloud` should be able to detect the service account that is associated with the Workspace compute instance.
 - To avoid the zone prompt for some of the commands used internally by the `h2ocluster` tool set the zone information using `gcloud config set compute/region us-west1`
-- Update PATH variable `export PATH="$PATH:/opt/h2ocluster"`
+- Update PATH variable `export PATH="$PATH:/opt/h2ocluster/terraform"`
 - Initialise `h2ocluster --help`
 - Read the usage of `h2ocluster` tool using `h2ocluster --help`
 - Create a cluster `h2ocluster create`
