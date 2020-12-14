@@ -16,3 +16,14 @@ h2o.permutation_varimp <- function(model, frame, metric = "MSE"){
     
     return(permutation_varim_table)
 }
+
+h2o.permutation_varimp.oat <- function(model, frame){
+    if (!is.H2OFrame(frame)){
+        permutation_varim_table <- .newExpr("PermutationVarImpOat", model, frame)
+    }   else    {
+        warning(paste0("Permutation Variable Importance cannot be calculated for ", class(frame), ". H2OFrame is requrired"))
+        return(NULL)
+    }
+
+    return(permutation_varim_table)
+}
