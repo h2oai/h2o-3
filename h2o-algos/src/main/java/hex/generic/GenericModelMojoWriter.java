@@ -2,6 +2,7 @@ package hex.generic;
 
 import hex.ModelMojoWriter;
 import hex.genmodel.utils.IOUtils;
+import water.api.StreamWriteOption;
 import water.fvec.ByteVec;
 import water.util.Log;
 
@@ -31,7 +32,7 @@ public class GenericModelMojoWriter extends ModelMojoWriter<GenericModel, Generi
     }
 
     @Override
-    public void writeTo(final OutputStream os) {
+    public void writeTo(final OutputStream os, StreamWriteOption... options) {
         try (final InputStream inputStream = _mojoBytes.openStream(null); OutputStream outputStream = os) {
             IOUtils.copyStream(inputStream, outputStream);
         } catch (IOException e) {

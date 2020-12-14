@@ -1,5 +1,6 @@
 package water;
 
+import hex.ModelExportOptions;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel;
 import hex.tree.isofor.IsolationForest;
@@ -21,18 +22,18 @@ import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
+import org.junit.runner.RunWith;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.Log;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
+@CloudSize(1)
+@RunWith(H2ORunner.class)
 public class ModelSerializationTest extends TestUtil {
-
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
-
-  private static String[] ESA = new String[] {};
 
   @Test public void testSimpleModel() throws IOException {
     // Create a model
@@ -56,7 +57,7 @@ public class ModelSerializationTest extends TestUtil {
   public void testGBMModelMultinomial() throws IOException {
     GBMModel model, loadedModel = null;
     try {
-      model = prepareGBMModel("smalldata/iris/iris.csv", ESA, "C5", true, 5);
+      model = prepareGBMModel("smalldata/iris/iris.csv", "C5");
       CompressedTree[][] trees = getTrees(model);
       loadedModel = saveAndLoad(model);
       // And compare
@@ -72,7 +73,9 @@ public class ModelSerializationTest extends TestUtil {
   public void testGBMModelBinomial() throws IOException {
     GBMModel model, loadedModel = null;
     try {
-      model = prepareGBMModel("smalldata/logreg/prostate.csv", ar("ID"), "CAPSULE", true, 5);
+      GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();
+      gbmParameters._ignored_columns = ar("ID");
+      model = prepareGBMModel("smalldata/logreg/prostate.csv", gbmParameters, "CAPSULE");
       CompressedTree[][] trees = getTrees(model);
       loadedModel = saveAndLoad(model);
       // And compare
@@ -85,10 +88,59 @@ public class ModelSerializationTest extends TestUtil {
   }
 
   @Test
+  public void testGBMModelBinomialWithCV() throws IOException {
+    GBMModel model, loadedModel = null;
+    final Key<Frame> holdPredsCloneKey = Key.make();
+    try {
+      GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();
+      gbmParameters._ignored_columns = ar("ID");
+      gbmParameters._nfolds = 2;
+      gbmParameters._keep_cross_validation_predictions = true;
+      model = prepareGBMModel("smalldata/logreg/prostate.csv", gbmParameters, "CAPSULE");
+      Frame holdoutPreds = DKV.getGet(model._output._cross_validation_holdout_predictions_frame_id);
+      assertNotNull(holdoutPreds);
+      Frame holdoutPredsClone = holdoutPreds.deepCopy(holdPredsCloneKey.toString());
+      DKV.put(holdoutPredsClone);
+      loadedModel = saveAndLoad(model, ModelExportOptions.INCLUDE_CV_PREDICTIONS);
+      // And compare
+      assertModelBinaryEquals(model, loadedModel);
+      // Check that holdout predictions were re-loaded as well
+      Frame holdoutPredsReloaded = DKV.getGet(model._output._cross_validation_holdout_predictions_frame_id);
+      assertNotNull(holdoutPredsReloaded);
+      assertFrameEquals(holdoutPredsClone, holdoutPredsReloaded, 0);
+    } finally {
+      if (loadedModel!=null) 
+        loadedModel.delete();
+      Keyed.remove(holdPredsCloneKey);
+    }
+  }
+
+  @Test
+  public void testGBMModelBinomialWithCV_noExport() throws IOException {
+    GBMModel model, loadedModel = null;
+    try {
+      GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();
+      gbmParameters._ignored_columns = ar("ID");
+      gbmParameters._nfolds = 2;
+      gbmParameters._keep_cross_validation_predictions = true;
+      model = prepareGBMModel("smalldata/logreg/prostate.csv", gbmParameters, "CAPSULE");
+      assertNotNull(DKV.getGet(model._output._cross_validation_holdout_predictions_frame_id));
+      loadedModel = saveAndLoad(model);
+      // And compare
+      assertModelBinaryEquals(model, loadedModel);
+      // Check that holdout predictions were re-loaded as well
+      assertNull(DKV.getGet(model._output._cross_validation_holdout_predictions_frame_id));
+    } finally {
+      if (loadedModel!=null)
+        loadedModel.delete();
+    }
+  }
+
+  @Test
   public void testDRFModelMultinomial() throws IOException {
     DRFModel model, loadedModel = null;
     try {
-      model = prepareDRFModel("smalldata/iris/iris.csv", ESA, "C5", true, 5);
+      model = prepareDRFModel("smalldata/iris/iris.csv", new String[0], "C5", true, 5);
       CompressedTree[][] trees = getTrees(model);
       loadedModel = saveAndLoad(model);
       // And compare
@@ -138,7 +190,7 @@ public class ModelSerializationTest extends TestUtil {
   public void testGLMModel() throws IOException {
     GLMModel model, loadedModel = null;
     try {
-      model = prepareGLMModel("smalldata/junit/cars.csv", ESA, "power (hp)", GLMModel.GLMParameters.Family.poisson);
+      model = prepareGLMModel("smalldata/junit/cars.csv", new String[0], "power (hp)", GLMModel.GLMParameters.Family.poisson);
       loadedModel = saveAndLoad(model);
       assertModelBinaryEquals(model, loadedModel);
     } finally {
@@ -150,7 +202,7 @@ public class ModelSerializationTest extends TestUtil {
   public void testGLRMModel() throws IOException {
     GLRMModel model, loadedModel = null;
     try {
-      model = prepareGLRMModel("smalldata/junit/cars.csv", ESA, "power (hp)");
+      model = prepareGLRMModel("smalldata/junit/cars.csv", new String[0], "power (hp)");
       loadedModel = saveAndLoad(model);
       assertModelBinaryEquals(model, loadedModel);
       assertNotNull(loadedModel._output._init_key.get());
@@ -162,19 +214,21 @@ public class ModelSerializationTest extends TestUtil {
       if (loadedModel != null) loadedModel.delete();
     }
   }
+
+  private GBMModel prepareGBMModel(String dataset, String response) {
+    return prepareGBMModel(dataset, new GBMModel.GBMParameters(), response);
+  }
   
-  private GBMModel prepareGBMModel(String dataset, String[] ignoredColumns, String response, boolean classification, int ntrees) {
+  private GBMModel prepareGBMModel(String dataset, GBMModel.GBMParameters gbmParams, String response) {
     Frame f = parse_test_file(dataset);
     try {
-      if (classification && !f.vec(response).isCategorical()) {
+      if (!f.vec(response).isCategorical()) {
         f.replace(f.find(response), f.vec(response).toCategoricalVec()).remove();
         DKV.put(f._key, f);
       }
-      GBMModel.GBMParameters gbmParams = new GBMModel.GBMParameters();
       gbmParams._train = f._key;
-      gbmParams._ignored_columns = ignoredColumns;
       gbmParams._response_column = response;
-      gbmParams._ntrees = ntrees;
+      gbmParams._ntrees = 5;
       gbmParams._score_each_iteration = true;
       return new GBM(gbmParams).trainModel().get();
     } finally {
@@ -260,16 +314,14 @@ public class ModelSerializationTest extends TestUtil {
     }
   }
 
-  private <M extends Model> M saveAndLoad(M model) throws IOException {
-    return saveAndLoad(model,true);
-  }
   // Serialize to and from a file
-  private <M extends Model<?, ?, ?>> M saveAndLoad(M model, boolean deleteModel) throws IOException {
+  private <M extends Model<?, ?, ?>> M saveAndLoad(M model, ModelExportOptions... options) throws IOException {
     File file = File.createTempFile(model.getClass().getSimpleName(),null);
     try {
       String path = file.getAbsolutePath();
-      model.exportBinaryModel(path, true);
-      if( deleteModel ) model.delete();
+      model.exportBinaryModel(path, true, options);
+      Log.info("Model export file size: " + file.length());
+      model.delete();
       return Model.importBinaryModel(path);
     } finally {
       if (! file.delete())
@@ -283,7 +335,7 @@ public class ModelSerializationTest extends TestUtil {
 
   public static void assertIcedBinaryEquals(String msg, Iced a, Iced b) {
     if (a == null) {
-      Assert.assertEquals(msg, null, b);
+      assertNull(msg, b);
     } else {
       assertArrayEquals(msg, a.write(new AutoBuffer()).buf(), b.write(new AutoBuffer()).buf());
     }

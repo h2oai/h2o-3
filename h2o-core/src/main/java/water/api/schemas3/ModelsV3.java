@@ -4,7 +4,7 @@ import hex.Model;
 import water.api.*;
 import water.api.ModelsHandler.Models;
 
-public class ModelsV3 extends RequestSchemaV3<Models, ModelsV3> {
+public class ModelsV3 extends RequestSchemaV3<Models, ModelsV3> implements ModelExportAware {
 
   // Input fields
   @API(help="Name of Model of interest", json=false)
@@ -22,6 +22,11 @@ public class ModelsV3 extends RequestSchemaV3<Models, ModelsV3> {
 
   @API(help="Compatible frames", direction=API.Direction.OUTPUT)
   public FrameV3[] compatible_frames; // TODO: FrameBaseV3
+
+  @API(direction = API.Direction.INPUT,
+          help = "Flag indicating whether the exported model artifact should also include CV Holdout Frame predictions", 
+          level = API.Level.secondary)
+  public boolean export_cv_predictions;
 
   // Non-version-specific filling into the impl
   @Override
@@ -71,4 +76,10 @@ public class ModelsV3 extends RequestSchemaV3<Models, ModelsV3> {
     }
     return this;
   }
+
+  @Override
+  public boolean isExportCVPredictionsEnabled() {
+    return export_cv_predictions;
+  }
+
 }

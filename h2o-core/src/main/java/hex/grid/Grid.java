@@ -533,10 +533,10 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * @param exportDir Directory to export all the models to.
    * @throws IOException Error exporting the models
    */
-  public void exportModelsBinary(final String exportDir) throws IOException {
+  public void exportModelsBinary(final String exportDir, ModelExportOptions... options) throws IOException {
     Objects.requireNonNull(exportDir);
     for (Model model : getModels()) {
-      model.exportBinaryModel(exportDir + "/" + model._key.toString(), true);
+      model.exportBinaryModel(exportDir + "/" + model._key.toString(), true, options);
     }
   }
 

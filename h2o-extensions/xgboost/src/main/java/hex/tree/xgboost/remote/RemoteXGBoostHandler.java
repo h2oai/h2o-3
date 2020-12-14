@@ -8,10 +8,13 @@ import hex.tree.xgboost.exec.XGBoostExecReq;
 import org.apache.log4j.Logger;
 import water.H2O;
 import water.api.Handler;
+import water.api.StreamWriteOption;
+import water.api.StreamWriter;
 import water.api.StreamingSchema;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 import static hex.tree.xgboost.remote.XGBoostExecutorRegistry.*;
 
@@ -73,13 +76,13 @@ public class RemoteXGBoostHandler extends Handler {
         final byte[] dataToSend;
         if (data == null) dataToSend = new byte[0];
         else dataToSend = data;
-        return new StreamingSchema(os -> {
-            try {
-                IOUtils.copyStream(new ByteArrayInputStream(dataToSend), os);
-            } catch (IOException e) {
-                LOG.error("Failed writing data to response.", e);
-                throw new RuntimeException("Failed writing data to response.", e);
-            }
+        return new StreamingSchema((os, options) -> {
+          try { 
+              IOUtils.copyStream(new ByteArrayInputStream(dataToSend), os);
+          } catch (IOException e) { 
+              LOG.error("Failed writing data to response.", e);
+              throw new RuntimeException("Failed writing data to response.", e);
+          }  
         });
     }
 

@@ -451,4 +451,33 @@ public class FrameTest {
     }
   }
 
+  @Test
+  public void testWriteAll() { // shows that writeAll/readAll creates new keys for the Vecs of the imported frame
+    Scope.enter();
+    try {
+      Frame fr = TestFrameCatalog.oneChunkFewRows();
+      Key<Vec>[] origVecKeys = fr.keys().clone();
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      try (AutoBuffer ab = new AutoBuffer(baos, true)) {
+        fr.writeAll(ab);
+      }
+      byte[] frBytes = baos.toByteArray();
+      assertNotNull(frBytes);
+      fr.delete();
+      for (Key<Vec> k : origVecKeys) {
+        assertNull(DKV.get(k));
+      }
+      try (AutoBuffer ab = new AutoBuffer(new ByteArrayInputStream(frBytes))) {
+        Frame reloaded = (Frame) Frame.readAll(ab);
+        Frame frCopy = TestFrameCatalog.oneChunkFewRows();
+        assertFrameEquals(frCopy, reloaded, 0);
+        for (int i = 0; i < origVecKeys.length; i++) { // all Vecs were re-keyed
+          assertNotEquals(origVecKeys[i], frCopy.vec(i)._key);
+        }
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

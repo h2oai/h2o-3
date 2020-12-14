@@ -2,6 +2,7 @@ package water.api;
 
 import hex.FeatureInteractionsCollector;
 import hex.Model;
+import hex.ModelExportOptions;
 import hex.PartialDependence;
 import water.*;
 import water.api.schemas3.*;
@@ -11,6 +12,7 @@ import water.exceptions.H2OKeyWrongTypeArgumentException;
 import water.exceptions.H2OKeysNotFoundArgumentException;
 import water.fvec.Frame;
 import water.persist.Persist;
+import water.util.ArrayUtils;
 import water.util.FileUtils;
 import water.util.JCodeGen;
 import water.util.TwoDimTable;
@@ -47,9 +49,8 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
      * For a given model return an array of the compatible frames.
      *
      * @param model The model to fetch the compatible frames for.
-     * @param all_frames An array of all the Frames in the DKV.
      * @param all_frames_cols A Map of Frame to a Set of its column names.
-     * @return
+     * @return all frames compatible with a given model
      */
     private static Frame[] findCompatibleFrames(Model<?, ?, ?> model, Map<Frame, Set<String>> all_frames_cols) {
       List<Frame> compatible_frames = new ArrayList<>();
@@ -159,10 +160,11 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   
   @SuppressWarnings("unused") // called from the RequestServer through reflection
   public StreamingSchema fetchBinaryModel(int version, ModelsV3 s) {
-    Model model = getFromDKV("key", s.model_id.key());
+    Model<?, ?, ?> model = getFromDKV("key", s.model_id.key());
     String filename = JCodeGen.toJavaId(s.model_id.key().toString());
-    StreamingSchema ss = new StreamingSchema(model, filename);
-    return ss;
+    StreamWriteOption[] options = s.getModelExportOptions();
+    StreamWriter sw = DelegatingStreamWriter.wrapWithOptions(model, options);
+    return new StreamingSchema(sw, filename);
   }
 
   @SuppressWarnings("unused") // called from the RequestServer through reflection
@@ -262,7 +264,8 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   public ModelExportV3 exportModel(int version, ModelExportV3 mexport) {
     Model model = getFromDKV("model_id", mexport.model_id.key());
     try {
-      URI targetUri = model.exportBinaryModel(mexport.dir, mexport.force); // mexport.dir: Really file, not dir
+      ModelExportOptions[] options = mexport.getModelExportOptions();
+      URI targetUri = model.exportBinaryModel(mexport.dir, mexport.force, options); // mexport.dir: Really file, not dir
       // Send back
       mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri).getCanonicalPath() : targetUri.toString();
     } catch (IOException | FSIOException e) {

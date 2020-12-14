@@ -1,12 +1,14 @@
 package water.api;
 
 import hex.Model;
+import hex.ModelExportOptions;
 import hex.grid.Grid;
 import water.*;
 import water.api.schemas3.GridExportV3;
 import water.api.schemas3.GridImportV3;
 import water.api.schemas3.KeyV3;
 import water.persist.Persist;
+import water.util.ArrayUtils;
 import water.util.FileUtils;
 
 import java.io.IOException;
@@ -63,7 +65,8 @@ public class GridImportExportHandler extends Handler {
 
     final Grid serializedGrid = (Grid) possibleGrid;
     serializedGrid.exportBinary(gridExportV3.grid_directory);
-    serializedGrid.exportModelsBinary(gridExportV3.grid_directory);
+    ModelExportOptions[] options = gridExportV3.getModelExportOptions();
+    serializedGrid.exportModelsBinary(gridExportV3.grid_directory, options);
 
     return new KeyV3.GridKeyV3(serializedGrid._key);
   }

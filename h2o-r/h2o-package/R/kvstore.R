@@ -552,7 +552,7 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
 #' h2o.download_model(my_model)  # save to the current working directory
 #' }
 #' @export
-h2o.download_model <- function(model, path=NULL) {
+h2o.download_model <- function(model, path=NULL, export_cv_predictions=FALSE) {
 
     if(!is.null(path) && !(is.character(path))){
       stop("The 'path' variable should be of type character")
@@ -562,6 +562,9 @@ h2o.download_model <- function(model, path=NULL) {
     }
     if(is.null(path)){
       path = getwd()
+    }
+    if(!is.logical(export_cv_predictions)){
+      stop("The 'export_cv_predictions' variable should be of type logical")
     }
     
     #Get model id
@@ -573,7 +576,8 @@ h2o.download_model <- function(model, path=NULL) {
     
     #Path to save model, if `path` is provided
     file_path <- file.path(path, paste0(modelname))
-    writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), file_path, useBytes = TRUE)
+    parms <- list(export_cv_predictions=export_cv_predictions)
+    writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE, parms = parms), file_path, useBytes = TRUE)
     
     return(paste0(file_path))
 }
