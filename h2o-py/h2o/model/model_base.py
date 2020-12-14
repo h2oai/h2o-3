@@ -1452,7 +1452,7 @@ class ModelBase(h2o_meta(Keyed)):
         Plot the variable importance for a trained model.
 
         :param num_of_features: the number of features shown in the plot (default is 10 or all if less than 10).
-        :param server: ?
+        :param server: if true set server settings to matplotlib and show the graph
 
         :returns: None.
         """
@@ -1473,10 +1473,6 @@ class ModelBase(h2o_meta(Keyed)):
         pos = range(len(feature_labels))[::-1]
         # specify the bar lengths
         val = scaled_importances
-
-        # # check that num_of_features is an integer
-        # if num_of_features is None:
-        #     num_of_features = len(val)
 
         # default to 10 or less features if num_of_features is not specified
         if num_of_features is None:
@@ -1529,7 +1525,8 @@ class ModelBase(h2o_meta(Keyed)):
             if not server: plt.show()
         elif self._model_json["algo"] == "glm":
             plt.title("Variable Importance: H2O GLM", fontsize=20)
-            if not server: plt.show()            
+            if not server: 
+                plt.show()            
         else:
             raise H2OValueError("A variable importances plot is not implemented for this type of model")
 
@@ -1538,7 +1535,7 @@ class ModelBase(h2o_meta(Keyed)):
         Plot a GLM model"s standardized coefficient magnitudes.
 
         :param num_of_features: the number of features shown in the plot.
-        :param server: ?
+        :param server: if true set server settings to matplotlib and show the graph
 
         :returns: None.
         """
@@ -1640,14 +1637,11 @@ class ModelBase(h2o_meta(Keyed)):
         ax.spines["left"].set_color("#7B7B7B")
 
         # Only show ticks on the left and bottom spines
-        # ax.yaxis.set_ticks_position("left")
-        # ax.xaxis.set_ticks_position("bottom")
         plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
         plt.tick_params(axis="x", which="minor", bottom="off", top="off",  labelbottom="off")
         plt.title("Standardized Coef. Magnitudes: H2O GLM", fontsize=20)
-        # plt.axis("tight")
         # show plot
-        if server is not None: 
+        if server: 
             plt.show()
 
     @staticmethod
