@@ -207,6 +207,20 @@ Step 2: Creating H2O clusters
     - Local machine/laptop with ssh forwarding use  `http://localhost:8888`
 
 
+Step 3: Optional create a custom H2O-3 image 
+-----------------------------------------------
+- To speed up the cluster creation times you can use an image with H2O preloaded on it.
+- To create such an image, on the Workspace machine follow the instructions below
+  - `cd /opt/h2ocluster/packer/`
+  - If needed update the variable values in the file `h2o-gcp-image.json`
+  - `packer build h2o-gcp-image.json`
+- Once the image is built, it can be used in the terraform code to create H2O-3 clusters.
+  - Edit file `/opt/h2ocluster/terraform/terraform.tfvars` and update the value of `h2o_cluster_instance_boot_disk_image` to the name of the packer imge.
+- Now the cluster load times will be significantly reduced as compared to the situation where we start from a bare RHEL7 image as the base
+
+
+
+
 
 Good References
 ---------------
