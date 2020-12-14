@@ -1763,7 +1763,7 @@ def learning_curve_plot(
         model,  # type: h2o.model.ModelBase
         metric="AUTO",  # type: str
         cv_ribbon=None,  # type: Optional[bool]
-        cv_individual_lines=None,  # type: Optional[bool]
+        cv_lines=None,  # type: Optional[bool]
         figsize=(16,9),  # type: Tuple[float]
         colormap=None  # type: Optional[str]
 ):
@@ -1776,7 +1776,7 @@ def learning_curve_plot(
     :param model: an H2O model
     :param metric: a metric that is present in `model.scoring_history()`
     :param cv_ribbon: if True, plot the CV mean as a and CV standard deviation as a ribbon around the mean
-    :param cv_individual_lines: if True, plot scoring history for individual CV models
+    :param cv_lines: if True, plot scoring history for individual CV models
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
     :return: a matplotlib figure
@@ -1804,8 +1804,8 @@ def learning_curve_plot(
             allowed_timesteps = ["iterations", "duration"]
             allowed_metrics = ["objective", "negative_log_likelihood"]
     elif model.algo == "glrm":
-        allowed_metrics = ["objective", "step_size"]
-        allowed_timesteps = ["iteration"]
+        allowed_metrics = ["objective"]
+        allowed_timesteps = ["iterations"]
     elif model.algo in ("deeplearning", "drf", "gbm"):
         model_category = model._model_json["output"]["model_category"]
         if "Binomial" == model_category:
@@ -1817,6 +1817,9 @@ def learning_curve_plot(
     elif model.algo == "xgboost":
         allowed_timesteps = ["number_of_trees"]
         allowed_metrics = ["rmse", "logloss", "auc", "pr_auc", "lift", "classification_error"]
+    elif model.algo == "coxph":
+        allowed_metrics = ["loglik"]
+        allowed_timesteps = ["iterations"]
 
     if model.algo == "deeplearning":
         allowed_timesteps = ["epochs", "iterations", "samples"]
@@ -1837,7 +1840,7 @@ def learning_curve_plot(
     if "deviance" == metric:
         training_metric = "deviance_train"
         validation_metric = "deviance_test"
-    elif metric in ("objective", "convergence"):
+    elif metric in ("objective", "convergence", "loglik"):
         training_metric = metric
         validation_metric = "UNDEFINED"
     else:
@@ -1848,8 +1851,10 @@ def learning_curve_plot(
     if "number_of_trees" == timestep:
         selected_timestep_value = model.actual_params["ntrees"]
     elif timestep in ["iteration", "iterations"]:
-        model_summary = model.summary()
-        selected_timestep_value = model_summary["number_of_iterations"][0]
+        if "coxph" == model.algo:
+            selected_timestep_value = model._model_json["output"]["iter"]
+        else:
+            selected_timestep_value = model.summary()["number_of_iterations"][0]
     elif "epochs" == timestep:
         selected_timestep_value = model.actual_params["epochs"]
 
@@ -1909,9 +1914,9 @@ def learning_curve_plot(
                                      mean_valid[:, 1] + sd_valid,
                                      color=col_cv_valid, alpha=0.25)
             else:
-                cv_individual_lines = cv_individual_lines is None or cv_individual_lines
+                cv_lines = cv_lines is None or cv_lines
 
-        if cv_individual_lines:
+        if cv_lines:
             for cvsh in model._model_json["output"]["cv_scoring_history"]:
                 cvsh = _preprocess_scoring_history(model, cvsh)
                 plt.plot(cvsh[timestep],

@@ -2436,8 +2436,8 @@ h2o.learning_curve_plot <- function(model,
       allowed_timesteps <- "iterations"
     }
   } else if (model@algorithm == "glrm") {
-    allowed_metrics <- c("objective", "step_size")
-    allowed_timesteps <- "iteration"
+    allowed_metrics <- c("objective")
+    allowed_timesteps <- "iterations"
   } else if (model@algorithm %in% c("deeplearning", "drf", "gbm")) {
     if (is(model, "H2OBinomialModel")) {
       allowed_metrics <- c("logloss", "auc", "classification_error", "rmse")
@@ -2449,6 +2449,9 @@ h2o.learning_curve_plot <- function(model,
   } else if (model@algorithm == "xgboost") {
     allowed_timesteps <- "number_of_trees"
     allowed_metrics <- c("rmse", "logloss", "auc", "pr_auc", "lift", "classification_error")
+  } else if (model@algorithm == "coxph") {
+    allowed_timesteps <- "iterations"
+    allowed_metrics <- "loglik"
   }
 
   if (model@algorithm == "deeplearning") {
@@ -2471,6 +2474,7 @@ h2o.learning_curve_plot <- function(model,
                                     deviance = "%s_train",
                                     objective = "objective",
                                     convergence = "convergence",
+                                    loglik = "loglik",
                                     "training_%s"), metric)
   validation_metric <- sprintf(switch(metric,
                                       deviance = "%s_test",
@@ -2480,8 +2484,10 @@ h2o.learning_curve_plot <- function(model,
                                     number_of_trees = model@allparameters$ntrees,
                                     iterations = model@model$model_summary$number_of_iterations,
                                     iteration = model@model$model_summary$number_of_iterations,
-                                    epochs = model@allparameters$epochs
+                                    epochs = model@allparameters$epochs,
   )
+  if ("coxph" == model@algorithm)
+    selected_timestep_value <- model@model$iter
 
   scoring_history <-
     data.frame(
@@ -2572,6 +2578,10 @@ h2o.learning_curve_plot <- function(model,
           upper_bound = cvsh[["CV-Validation_mean"]] + cvsh[["CV-Validation_sd"]]
         )
     )
+    cv_scoring_history <- cv_scoring_history[!(is.na(cv_scoring_history$x) |
+      is.na(cv_scoring_history$metric) |
+      is.na(cv_scoring_history$type)
+    ), ]
   } else {
     cv_ribbon <- FALSE
     cv_individual_lines <- FALSE
@@ -2588,10 +2598,7 @@ h2o.learning_curve_plot <- function(model,
     is.na(scoring_history$metric) |
     is.na(scoring_history$type)
   ), ]
-  cv_scoring_history <- cv_scoring_history[!(is.na(cv_scoring_history$x) |
-    is.na(cv_scoring_history$metric) |
-    is.na(cv_scoring_history$type)
-  ), ]
+
 
   if (cv_ribbon || cv_individual_lines)
     labels <- c(sort(unique(cv_scoring_history$type)), sort(unique(scoring_history$type)))
