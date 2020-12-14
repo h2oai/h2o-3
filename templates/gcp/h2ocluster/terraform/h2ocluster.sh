@@ -222,7 +222,7 @@ exec_destroy() {
   echo -e "Description: ${cluster_description}" 
   echo -e "\n"
   # execute this as a single operation or return error 
-  ( pushd pushd "${h2ocluster_tfhome}" && \
+  ( pushd "${h2ocluster_tfhome}" && \
     TF_DATA_DIR="${h2ocluster_tfdata}" \
       terraform destroy \
       -var "h2o_cluster_instance_user=${username}" \
