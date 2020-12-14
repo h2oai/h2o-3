@@ -865,9 +865,17 @@ public class EasyPredictModelWrapper implements Serializable {
   }
 
   /**
+   *  See {@link #varimp(int)}
+   *  return descending sorted by relative importance array of all variables in the model
+   */
+  public KeyValue[] varimp() {
+    return varimp(-1);
+  }
+
+  /**
    * See {@link VariableImportances#topN(int)}
    */
-  public KeyValue[] getTopNImportantVariables(int n) {
+  public KeyValue[] varimp(int n) {
     VariableImportances variableImportances;
     if (m instanceof MojoModel) {
       ModelAttributes attributes = ((MojoModel) m)._modelAttributes;

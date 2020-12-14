@@ -14,7 +14,6 @@ import hex.genmodel.easy.prediction.*;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentMatchers;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -543,21 +542,26 @@ public class EasyPredictModelWrapperTest {
     EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config().setModel(modelMojo);
     EasyPredictModelWrapper model = new EasyPredictModelWrapper(config);
 
-    KeyValue[] variableImportances = model.getTopNImportantVariables(2);
+    KeyValue[] variableImportances = model.varimp(2);
 
     Assert.assertEquals("Variable importance has different size of array", 2, variableImportances.length);
     Assert.assertEquals("Variables are not correctly sorted", "GLEASON", variableImportances[0].getKey());
     Assert.assertEquals("Variables are not correctly sorted", "PSA", variableImportances[1].getKey());
 
-    variableImportances = model.getTopNImportantVariables(14);
+    variableImportances = model.varimp(14);
     Assert.assertEquals("Variable importance has different size of array", 7, variableImportances.length);
     Assert.assertEquals("Variables are not correctly sorted", "VOL", variableImportances[2].getKey());
     Assert.assertEquals("Variables are not correctly sorted", "AGE", variableImportances[3].getKey());
 
-    variableImportances = model.getTopNImportantVariables(-2);
+    variableImportances = model.varimp(-2);
     Assert.assertEquals("Variable importance has different size of array", 7, variableImportances.length);
     Assert.assertEquals("Variables are not correctly sorted", "DPROS", variableImportances[4].getKey());
     Assert.assertEquals("Variables are not correctly sorted", "RACE", variableImportances[5].getKey());
+
+    variableImportances = model.varimp();
+    Assert.assertEquals("Variable importance has different size of array", 7, variableImportances.length);
+    Assert.assertEquals("Variables are not correctly sorted", "GLEASON", variableImportances[0].getKey());
+    Assert.assertEquals("Variables are not correctly sorted", "DCAPS", variableImportances[6].getKey());
   }
 
 
