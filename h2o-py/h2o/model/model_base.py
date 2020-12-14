@@ -350,13 +350,13 @@ class ModelBase(h2o_meta(Keyed)):
         :returns: An object of class H2OModelMetrics.
         """
         if test_data is None:
-            if valid is None and xval is None: 
+            if train: 
                 return self._model_json["output"]["training_metrics"]
-            if valid is not None: 
+            if valid: 
                 return self._model_json["output"]["validation_metrics"]
-            if xval is not None: 
+            if xval: 
                 return self._model_json["output"]["cross_validation_metrics"]
-
+            return self._model_json["output"]["training_metrics"]
         else:  # cases dealing with test_data not None
             if not isinstance(test_data, h2o.H2OFrame):
                 raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
@@ -531,9 +531,9 @@ class ModelBase(h2o_meta(Keyed)):
 
         :returns: Return the residual deviance, or None if it is not present.
         """
-        if xval is not None: 
+        if xval: 
             raise H2OValueError("Cross-validation metrics are not available.")
-        if valid is not None and train is None:
+        if valid and not train:
             return self._model_json["output"]["validation_metrics"].residual_deviance()
         else:
             return self._model_json["output"]["training_metrics"].residual_deviance()
@@ -549,9 +549,9 @@ class ModelBase(h2o_meta(Keyed)):
 
         :returns: Return the residual dof, or None if it is not present.
         """
-        if xval is not None: 
+        if xval: 
             raise H2OValueError("Cross-validation metrics are not available.")
-        if valid is not None and train is None:
+        if valid and not train:
             return self._model_json["output"]["validation_metrics"].residual_degrees_of_freedom()
         else:
             return self._model_json["output"]["training_metrics"].residual_degrees_of_freedom()
@@ -567,9 +567,9 @@ class ModelBase(h2o_meta(Keyed)):
 
         :returns: Return the null deviance, or None if it is not present.
         """
-        if xval is None: 
+        if xval: 
             raise H2OValueError("Cross-validation metrics are not available.")
-        if valid is not None and train is None:
+        if valid and not train:
             return self._model_json["output"]["validation_metrics"].null_deviance()
         else:
             return self._model_json["output"]["training_metrics"].null_deviance()
@@ -585,9 +585,9 @@ class ModelBase(h2o_meta(Keyed)):
 
         :returns: Return the null dof, or None if it is not present.
         """
-        if xval is None: 
+        if xval: 
             raise H2OValueError("Cross-validation metrics are not available.")
-        if valid is not None and train is None:
+        if valid and not train:
             return self._model_json["output"]["validation_metrics"].null_degrees_of_freedom()
         else: 
             return self._model_json["output"]["training_metrics"].null_degrees_of_freedom()
@@ -637,7 +637,7 @@ class ModelBase(h2o_meta(Keyed)):
         all_col_header = tbl.col_header
         startIndex = 1
         endIndex = int((len(all_col_header)-1)/2+1)
-        if standardize is not None:
+        if standardize:
             startIndex = int((len(all_col_header)-1)/2+1) # start index for standardized coefficients
             endIndex = len(all_col_header)
         for nameIndex in list(range(startIndex, endIndex)):
@@ -960,11 +960,11 @@ class ModelBase(h2o_meta(Keyed)):
         # noinspection PyProtectedMember
         output = o._model_json["output"]
         metrics = {}
-        if train is not None: 
+        if train: 
             metrics["train"] = output["training_metrics"]
-        if valid is not None: 
+        if valid: 
             metrics["valid"] = output["validation_metrics"]
-        if xval is not None: 
+        if xval: 
             metrics["xval"] = output["cross_validation_metrics"]
         if len(metrics) == 0: 
             metrics["train"] = output["training_metrics"]

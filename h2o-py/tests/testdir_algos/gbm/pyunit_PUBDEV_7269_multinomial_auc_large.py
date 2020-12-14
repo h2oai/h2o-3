@@ -23,8 +23,8 @@ def multinomial_auc_prostate_gbm():
 
     # get result on training data from h2o
     cm = gbm.confusion_matrix(data)
-    h2o_auc_table = gbm.multinomial_auc_table(data)
-    h2o_aucpr_table = gbm.multinomial_aucpr_table(data)
+    h2o_auc_table = gbm.multinomial_auc_table(train=True)
+    h2o_aucpr_table = gbm.multinomial_aucpr_table(train=True)
 
     print(cm)
     print(h2o_auc_table.as_data_frame())
@@ -73,8 +73,8 @@ def multinomial_auc_prostate_gbm():
     gbm = H2OGradientBoostingEstimator(ntrees=1, max_depth=2, nfolds=3, distribution=distribution, auc_type="MACRO_OVR")
     gbm.train(x=predictors, y=response_col, training_frame=data, validation_frame=data)
 
-    h2o_auc_table = gbm.multinomial_auc_table(data)
-    h2o_aucpr_table = gbm.multinomial_aucpr_table(data)
+    h2o_auc_table = gbm.multinomial_auc_table(train=True)
+    h2o_aucpr_table = gbm.multinomial_aucpr_table(train=True)
 
     h2o_ovr_macro_auc = h2o_auc_table[3][7]
     h2o_ovr_macro_aucpr = h2o_aucpr_table[3][7]
