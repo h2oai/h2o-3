@@ -12,6 +12,6 @@ vpc_subnet_public_cidr = "10.100.200.0/24"
 
 
 workspace_instance_machine_type = "e2-medium"
-workspace_instance_boot_disk_image = "rhel-cloud/rhel-7"
+workspace_instance_boot_disk_image = "rhel-7-v20201112"
 workspace_instance_boot_disk_type = "pd-ssd"
 workspace_instance_boot_disk_size = "256"

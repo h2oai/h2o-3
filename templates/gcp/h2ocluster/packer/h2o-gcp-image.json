@@ -3,7 +3,7 @@
     "h2o_version": "h2o-3-32-0-2",
     "h2o_url": "http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/2/h2o-3.32.0.2.zip",
     "project_id": "steamwithdataproc",
-    "source_image": "rhel-cloud/rhel-7",
+    "source_image": "rhel-7-v20201112",
     "zone": "us-west1-a"
   },
   "builders": [
