@@ -65,7 +65,7 @@ public class PermutationVarImp {
     /**
      * Creates a new array of Strings without the response column and ignored columns
      */
-    public void removeResCol(){
+    public void arrangeColsToShuffle(){
         List<String> list = new ArrayList<>(Arrays.asList(_inputFrame.names()));
         // remove ignored columns & response column
         if (_model._parms._ignored_columns != null)
@@ -177,7 +177,7 @@ public class PermutationVarImp {
      * Then we score the model again and calculate the loss function, and creating a TwoDimTable.
      */
     public TwoDimTable permutationVarImportance(){
-        removeResCol(); 
+        arrangeColsToShuffle(); 
         setOgMetric(); // get the metric value from the model
         _varImpMap = new HashMap<>(_varsToShuffle.length);
 

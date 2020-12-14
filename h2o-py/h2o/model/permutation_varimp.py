@@ -67,8 +67,6 @@ def permutation_varimp(model, frame, use_pandas=True, metric="mse"):
     if type(frame) is not H2OFrame:
         raise H2OValueError("Frame is not H2OFrame")
 
-    # Check if metric exists for the model
-    # existring_metrics = model._model_json['output']['scoring_history'].col_header
     existring_metrics = model._model_json['output']['training_metrics']._metric_json
     if metric not in existring_metrics:
         raise H2OValueError("Metric " + metric + " doesn't exist for this model.")

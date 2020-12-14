@@ -4,7 +4,7 @@
 #' @param model     Trained model which's score is going to be used.
 #' @param frame     Training frame of the model which is going to be permuted
 #' @param metric    Loss Function metric (defalt is MSE)
-#' @return          Resulting frame with Relative, Scaled and Percentage scaled importances
+#' @return          Frame with Relative, Scaled and Percentage scaled importances
 
 h2o.permutation_varimp <- function(model, frame, metric = "MSE"){
     if (!is.H2OFrame(frame)){
