@@ -161,10 +161,12 @@ wait_for_h2o_start () {
     sleep 10
   done
   echo -e "H2O detected.\nGetting cluster information\n\n"
+  local formed_cluster_nodes
   formed_cluster_nodes=$(curl --silent "http://${cluster_name}-node-0:54321/3/Cloud" | jq '.cloud_size')
   until [[ "${cluster_nodes}" == "${formed_cluster_nodes}" ]]; do
     echo "H2O detected.Cluster of ${formed_cluster_nodes} out of ${cluster_nodes} formed. Retrying in 10 seconds.."
     sleep 10
+    formed_cluster_nodes=$(curl --silent "http://${cluster_name}-node-0:54321/3/Cloud" | jq '.cloud_size')
   done
   leader_idx=$(curl --silent "http://${cluster_name}-node-0:54321/3/Cloud" | jq '.leader_idx') 
   leader_ipport=$(curl --silent "http://${cluster_name}-node-0:54321/3/Cloud" | jq ".nodes[${leader_idx}].ip_port" | tr -d '"') 
