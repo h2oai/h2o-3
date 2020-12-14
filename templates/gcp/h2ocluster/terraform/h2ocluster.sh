@@ -198,7 +198,9 @@ exec_start () {
   print_heading "STARTING CLUSTER"
   instance_list=$(gcloud compute instances list | grep "${cluster_name}" | cut -d " " -f 1 | tr '\n' ' ' | xargs)
   gcloud compute instances start ${instance_list}
-  wait_for_h2o_start "${cluster_name}" 
+  local cluster_nodes
+  cluster_nodes=$(grep -oP 'h2o_cluster_instance_count = "\K[0-9]*(?=")' "${h2ocluster_tfhome}/terraform.tfvars")
+  wait_for_h2o_start "${cluster_name}" "${cluster_nodes}"
 }
 exec_stop () {
   local cluster_name="${1}"
