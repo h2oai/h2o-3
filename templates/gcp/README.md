@@ -5,7 +5,7 @@ Terraform deployment template to spin up a 3 node H2O Open Source cluster in GCP
 This template is a work in progress and is provided without any warranty or support. You are free to refer/modify it as you need.
 
 There are two distinct parts to this setup
-1. Setting up the GCP project, service account, VPC, Subnet etc. Also in this step we create the GCP compute instance we call __Workspace__. All H2O users will need to ssh to this workspace instance to create the H2O cluster in the private subnet (not directly accessible). The workspace instance is in the public subnet an forms the gateway for all communication between the H2O cluster and machine of data scientist.
+1. Setting up the GCP project, service account, VPC, Subnet etc. Also in this step we create the GCP compute instance we call __Workspace__. All H2O users will need to ssh to this workspace instance to create the H2O cluster in the private subnet (not directly accessible). The workspace instance is in the public subnet and forms the gateway for all communication between the H2O cluster and machine of data scientist.
 2. Creating the H2O cluster using the `h2ocluster` tool available on the __Workspace__ instance
 
 Step 1: Main Infrastructure and Workspace Setup

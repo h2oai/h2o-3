@@ -23,19 +23,6 @@ unzip packer.zip
 mv packer /usr/bin
 popd
 
-## Install google cloud sdk
-#tee -a /etc/yum.repos.d/google-cloud-sdk.repo << EOM
-#[google-cloud-sdk]
-#name=Google Cloud SDK
-#baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el7-x86_64
-#enabled=1
-#gpgcheck=1
-#repo_gpgcheck=1
-#gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
-#       https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-#EOM
-#yum install google-cloud-sdk
-
 # Get h2ocluster terraform code and move it to 
 mkdir -p /tmp/temp
 pushd /tmp/temp
@@ -51,5 +38,9 @@ popd
 # install jq
 wget -O /usr/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
 chmod +x /usr/bin/jq
+
+# shellcheck disable=SC2016
+echo 'PATH="/opt/h2ocluster/terraform:$PATH"' > /etc/profile.d/h2ocluster.sh
+
 # Signal Startup script completion
 gcloud compute instances add-metadata ${INSTANCE} --metadata startup-complete=TRUE --zone=${ZONE}

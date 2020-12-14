@@ -27,9 +27,6 @@ echo "${IG_NAME}" > /tmp/ig_name
 # sleep to let all instances to be created 
 sleep 10
 
-# Get list of instances in the instance group
-#instances=$(gcloud compute instance-groups unmanaged list-instances "${IG_NAME}" --zone="${ZONE}" | tail -n +2 | cut -d " " -f 1)
-#echo "${instances}" > /tmp/instances
 
 # Declare and array to capture ip addresses
 IP_ADDRESSES=()
@@ -38,11 +35,7 @@ do
     IP_ADDRESS=$(getent hosts "${NODES_PREFIX}${i}.${FQDN_SUFFIX}" | awk '{print $1}' | head -1)
     IP_ADDRESSES+=("${IP_ADDRESS}")
 done
-#for instance in ${instances}
-#do
-#    IP_ADDRESS=$(getent hosts "${instance}.${FQDN_SUFFIX}" | awk '{print $1}' | head -1)
-#    IP_ADDRESSES+=("${IP_ADDRESS}")
-#done
+
 echo "${IP_ADDRESSES[*]}" | tr ' ' '\n' > /tmp/instance_ips
 echo "${IP_ADDRESSES[*]}" | tr ' ' '\n' | sed 's/$/:54321/' > /tmp/flatfile
 # Flatfile generated- but do it at the proper place later
