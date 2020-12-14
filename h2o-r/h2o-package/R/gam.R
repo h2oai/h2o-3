@@ -640,3 +640,13 @@ h2o.gam <- function(x,
   segment_models <- .h2o.segmentModelsJob('gam', segment_parms, parms, h2oRestApiVersion=3)
   return(segment_models)
 }
+
+
+    .h2o.fill_gam <- function(model, parameters, allparams) {
+        if (is.null(model$scoring_history))
+            model$scoring_history <- model$glm_scoring_history
+        if (is.null(model$model_summary))
+            model$model_summary <- model$glm_model_summary
+        return(model)
+    }
+

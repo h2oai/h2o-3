@@ -410,6 +410,103 @@ explanation_test_list_of_models_multinomial_classification <- function() {
   expect_true("H2OExplanation" %in% class(h2o.explain_row(models, train, 1)))
 }
 
+learning_curve_plot_test_of_models_not_included_in_automl <- function() {
+  # GLM without lambda search
+  prostate <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+
+  prostate$CAPSULE <- as.factor(prostate$CAPSULE)
+  prostate$RACE <- as.factor(prostate$RACE)
+  prostate$DCAPS <- as.factor(prostate$DCAPS)
+  prostate$DPROS <- as.factor(prostate$DPROS)
+
+  predictors <- c("AGE", "RACE", "VOL", "GLEASON")
+  response <- "CAPSULE"
+
+  glm_model <- h2o.glm(family = "binomial",
+                       x = predictors,
+                       y = response,
+                       training_frame = prostate,
+                       lambda = 0,
+                       compute_p_values = TRUE)
+  expect_ggplot(h2o.learning_curve_plot(glm_model))
+
+  # HGLM
+  h2odata <- h2o.uploadFile(locate("smalldata/glm_test/semiconductor.csv"))
+  yresp <- "y"
+  xlist <- c("x1", "x3", "x5", "x6")
+  z <- c(1)
+  h2odata$Device <- h2o.asfactor(h2odata$Device)
+  hglm_model <- h2o.glm(x = xlist,
+                        y = yresp,
+                        family = "gaussian",
+                        rand_family = c("gaussian"),
+                        rand_link = c("identity"),
+                        training_frame = h2odata,
+                        HGLM = TRUE,
+                        random_columns = z,
+                        calc_like = TRUE)
+  expect_ggplot(h2o.learning_curve_plot(hglm_model))
+
+  # GAM
+  knots1 <- c(-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290)
+  frame_Knots1 <- as.h2o(knots1)
+  knots2 <- c(-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589)
+  frame_Knots2 <- as.h2o(knots2)
+  knots3 <- c(-1.999675688, -0.979893796, 0.007573327, 1.011437347, 1.999611676)
+  frame_Knots3 <- as.h2o(knots3)
+
+  h2o_data <- h2o.uploadFile(locate("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"))
+  h2o_data["C1"] <- as.factor(h2o_data["C1"])
+  h2o_data["C2"] <- as.factor(h2o_data["C2"])
+  h2o_data["C11"] <- as.factor(h2o_data["C11"])
+  splits <- h2o.splitFrame(data = h2o_data, ratios = 0.8)
+  train <- splits[[1]]
+  test <- splits[[2]]
+  predictors <- colnames(train[1:2])
+  response <- 'C11'
+  numKnots <- c(5, 5, 5)
+  gam_model <- h2o.gam(x = predictors,
+                       y = response,
+                       training_frame = train,
+                       validation_frame = test,
+                       family = 'multinomial',
+                       gam_columns = c("C6", "C7", "C8"),
+                       scale = c(1, 1, 1),
+                       num_knots = numKnots,
+                       knot_ids = c(h2o.keyof(frame_Knots1), h2o.keyof(frame_Knots2), h2o.keyof(frame_Knots3)))
+  expect_ggplot(h2o.learning_curve_plot(gam_model))
+
+  # GLRM
+  arrests <- h2o.uploadFile(locate("smalldata/pca_test/USArrests.csv"))
+  glrm_model <- h2o.glrm(training_frame = arrests,
+                         k = 4,
+                         loss = "Quadratic",
+                         gamma_x = 0.5,
+                         gamma_y = 0.5,
+                         max_iterations = 700,
+                         recover_svd = TRUE,
+                         init = "SVD",
+                         transform = "STANDARDIZE")
+  expect_ggplot(h2o.learning_curve_plot(glrm_model))
+
+  # CoxPH
+  heart <- h2o.uploadFile(locate("smalldata/coxph_test/heart.csv"))
+  coxph_model <- h2o.coxph(x = "age",
+                           event_column = "event",
+                           start_column = "start",
+                           stop_column = "stop",
+                           ties = "breslow",
+                           training_frame = heart)
+  expect_ggplot(h2o.learning_curve_plot(coxph_model))
+
+  # IsolationForest
+  if_model <- h2o.isolationForest(training_frame = prostate,
+                                  sample_rate = 0.1,
+                                  max_depth = 5,
+                                  ntrees = 5)
+  expect_ggplot(h2o.learning_curve_plot(if_model))
+}
+
 
 doSuite("Explanation Tests", makeSuite(
   explanation_test_single_model_regression
@@ -421,4 +518,5 @@ doSuite("Explanation Tests", makeSuite(
   , explanation_test_single_model_multinomial_classification
   , explanation_test_automl_multinomial_classification
   , explanation_test_list_of_models_multinomial_classification
+  , learning_curve_plot_test_of_models_not_included_in_automl
 ))

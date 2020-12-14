@@ -2415,6 +2415,11 @@ h2o.learning_curve_plot <- function(model,
 
   metric <- match.arg(metric)
 
+  if (!model@algorithm %in% c("stackedensemble", "glm", "gam", "glrm", "deeplearning",
+                              "drf", "gbm", "xgboost", "coxph", "isolationforest")) {
+    stop("Algorithm ", model@algoritm, " doesn't support learning curve plot!")
+  }
+
   if ("stackedensemble" == model@algorithm)
     model <- model@model$metalearner_model
 
@@ -2452,6 +2457,9 @@ h2o.learning_curve_plot <- function(model,
   } else if (model@algorithm == "coxph") {
     allowed_timesteps <- "iterations"
     allowed_metrics <- "loglik"
+  } else if (model@algorithm == "isolationforest") {
+    allowed_timesteps <- "number_of_trees"
+    allowed_metrics <- "mean_anomaly_score"
   }
 
   if (model@algorithm == "deeplearning") {
@@ -2470,15 +2478,16 @@ h2o.learning_curve_plot <- function(model,
 
   timestep <- allowed_timesteps[[1]]
 
-  training_metric <- sprintf(switch(metric,
-                                    deviance = "%s_train",
-                                    objective = "objective",
-                                    convergence = "convergence",
-                                    loglik = "loglik",
-                                    "training_%s"), metric)
-  validation_metric <- sprintf(switch(metric,
-                                      deviance = "%s_test",
-                                      "validation_%s"), metric)
+  if (metric %in% c("objective", "convergence", "loglik", "mean_anomaly_score")) {
+    training_metric <- metric
+    validation_metric <- "UNDEFINED"
+  } else if ("deviance" == metric) {
+    training_metric <- "deviance_train"
+    validation_metric <- "deviance_test"
+  } else {
+    training_metric <- sprintf("training_%s", metric)
+    validation_metric <- sprintf("validation_%s", metric)
+  }
 
   selected_timestep_value <- switch(timestep,
                                     number_of_trees = model@allparameters$ntrees,

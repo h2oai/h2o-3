@@ -1784,6 +1784,11 @@ def learning_curve_plot(
     if model.algo == "stackedensemble":
         model = model.metalearner()
 
+    if model.algo not in ("stackedensemble", "glm", "gam", "glrm", "deeplearning",
+                          "drf", "gbm", "xgboost", "coxph", "isolationforest"):
+        raise H2OValueError("Algorithm {} doesn't support learning curve plot!".format(model.algo))
+
+
     # Using the value from output to keep it simple - only one version required - (no need to use pandas for small data)
     scoring_history = model._model_json["output"]["scoring_history"] or model._model_json["output"].get("glm_scoring_history")
     if scoring_history is None:
@@ -1820,6 +1825,9 @@ def learning_curve_plot(
     elif model.algo == "coxph":
         allowed_metrics = ["loglik"]
         allowed_timesteps = ["iterations"]
+    elif model.algo == "isolationforest":
+        allowed_timesteps = ["number_of_trees"]
+        allowed_metrics = ["mean_anomaly_score"]
 
     if model.algo == "deeplearning":
         allowed_timesteps = ["epochs", "iterations", "samples"]
@@ -1840,7 +1848,7 @@ def learning_curve_plot(
     if "deviance" == metric:
         training_metric = "deviance_train"
         validation_metric = "deviance_test"
-    elif metric in ("objective", "convergence", "loglik"):
+    elif metric in ("objective", "convergence", "loglik", "mean_anomaly_score"):
         training_metric = metric
         validation_metric = "UNDEFINED"
     else:
@@ -1867,7 +1875,7 @@ def learning_curve_plot(
     plt.figure(figsize=figsize)
     plt.grid(True)
 
-    if model._model_json["output"]["cv_scoring_history"]:
+    if model._model_json["output"].get("cv_scoring_history"):
         if cv_ribbon or cv_ribbon is None:
             cvsh_train = defaultdict(list)
             cvsh_valid = defaultdict(list)
