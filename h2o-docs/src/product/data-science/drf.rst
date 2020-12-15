@@ -343,7 +343,7 @@ Below is a simple example showing how to build a Random Forest model.
     cars_drf.train(x=predictors, 
                    y=response, 
                    training_frame=train, 
-                   validation_frame=valid
+                   validation_frame=valid)
 
     # Eval performance:
     perf = cars_drf.model_performance()
