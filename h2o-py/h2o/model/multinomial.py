@@ -158,7 +158,7 @@ class H2OMultinomialModel(ModelBase):
         ...           validation_frame=valid)
         >>> multinomial_auc_table = gbm.multinomial_auc_table() # <- Default: return training metric
         >>> multinomial_auc_table
-        >>> multinomial_auc_table = gbm.multinomial_auc_table(train=True,
+        >>> multinomial_auc_table1 = gbm.multinomial_auc_table(train=True,
         ...                                        valid=True,
         ...                                        xval=True)
         >>> multinomial_auc_table1
