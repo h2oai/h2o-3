@@ -2285,6 +2285,85 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     else:
         raise H2OError("Unable to print MOJO: %s" % output)
 
+def estimate_cluster_mem(ncols, nrows, num_cols = 0, string_cols = 0, cat_cols = 0, time_cols = 0, uuid_cols = 0):
+    """
+    Computes an estimate for cluster memory usage in GB.
+    
+    Number of columns and number of rows are required. For a better estimate you can provide a counts of different
+    types of columns in the dataset.
+
+    :param ncols: total number of columns in a dataset. An required parameter, integer, can't be negative
+    :param nrows: total number of rows in a dataset. An required parameter, integer, can't be negative 
+    :param num_cols: number of numeric columns in a dataset. Integer, can't be negative.
+    :param string_cols: number of string columns in a dataset. Integer, can't be negative.
+    :param cat_cols: number of categorical columns in a dataset. Integer, can't be negative.
+    :param time_cols: number of time columns in a dataset. Integer, can't be negative.
+    :param uuid_cols: number of uuid columns in a dataset. Integer, can't be negative.
+    :return: An memory estimate in GB.
+
+    :example:
+
+    >>> from h2o import estimate_cluster_mem
+    >>> ### I will load an parquet file with 18 columns and 2 million lines
+    >>> estimate_cluster_mem(18, 2000000)
+    >>> ### I will load an other parquet file with 16 columns and 2 million lines, I ask for a more precise estimate 
+    >>> ### because I know 12 of 16 columns are categorical and one of 16 columns consist of uuids.
+    >>> estimate_cluster_mem(18, 2000000, cat_cols=12, uuid_cols=1)
+    >>> ### I will load an parquet file with 8 columns and 31 million lines, I ask for a more precise estimate 
+    >>> ### because I know 4 of 8 columns are categorical and 4 of 8 columns consist of numbers.
+    >>> estimate_cluster_mem(ncols=8, nrows=31000000, cat_cols=4, num_cols=4)
+    
+    """    
+    import math
+    
+    if (ncols < 0):
+        raise ValueError("ncols can't be a negative number")
+    
+    if (nrows < 0):
+        raise ValueError("nrows can't be a negative number")
+    
+    if (num_cols < 0):
+        raise ValueError("num_cols can't be a negative number")
+    
+    if (string_cols < 0):
+        raise ValueError("string_cols can't be a negative number")
+    
+    if (cat_cols < 0):
+        raise ValueError("cat_cols can't be a negative number")
+    
+    if (time_cols < 0):
+        raise ValueError("time_cols can't be a negative number")
+    
+    if (uuid_cols < 0):
+        raise ValueError("uuid_cols can't be a negative number")
+    
+    BASE_MEM_REQUIREMENT_MB = 32
+    SAFETY_FACTOR = 4
+    BYTES_IN_MB = 1024 * 1024
+    BYTES_IN_GB = 1024 * BYTES_IN_MB
+
+    known_cols = num_cols + string_cols + uuid_cols + cat_cols + time_cols
+    
+    if (known_cols > ncols):
+        raise ValueError("There can not be more specific columns then columns in total")
+
+    unknown_cols = ncols - known_cols
+    unknown_size = 8
+    unknown_requirement = unknown_cols * nrows * unknown_size
+    num_size = 8
+    num_requirement = num_cols * nrows * num_size
+    string_size = 128
+    string_requirement = string_size * string_cols * nrows
+    uuid_size = 16
+    uuid_requirement = uuid_size * uuid_cols * nrows
+    cat_size = 2
+    cat_requirement = cat_size * cat_cols * nrows
+    time_size = 8
+    time_requirement = time_size * time_cols * nrows
+    data_requirement = unknown_requirement + num_requirement + string_requirement + uuid_requirement + cat_requirement + time_requirement
+    mem_req = (BASE_MEM_REQUIREMENT_MB * BYTES_IN_MB + data_requirement) * SAFETY_FACTOR / BYTES_IN_GB
+    return math.ceil(mem_req)
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Private
 #-----------------------------------------------------------------------------------------------------------------------

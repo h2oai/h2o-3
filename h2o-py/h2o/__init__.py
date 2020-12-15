@@ -23,7 +23,7 @@ from h2o.h2o import (connect, init, api, connection,
                      interaction, as_list,
                      get_timezone, set_timezone, list_timezones,
                      load_dataset, demo, make_metrics, flow, upload_custom_metric, upload_custom_distribution,
-                     import_mojo, upload_mojo, print_mojo, load_grid, save_grid)
+                     import_mojo, upload_mojo, print_mojo, load_grid, save_grid, estimate_cluster_mem)
 # We have substantial amount of code relying on h2o.H2OFrame to exist. Thus, we make this class available from
 # root h2o module, without exporting it explicitly. In the future this import may be removed entirely, so that
 # one would have to import it from h2o.frames.
@@ -70,7 +70,7 @@ __all__ = ["connect", "init", "api", "connection", "upload_file", "lazy_import",
            "cluster_status", "cluster_info", "shutdown", "create_frame", "interaction", "as_list", "network_test",
            "set_timezone", "get_timezone", "list_timezones", "demo", "make_metrics", "cluster", "load_dataset", "flow",
            "upload_custom_metric", "upload_custom_distribution",  "mojo_predict_csv", "mojo_predict_pandas", "import_mojo", 
-           "upload_mojo", "print_mojo", "load_grid", "save_grid"]
+           "upload_mojo", "print_mojo", "load_grid", "save_grid", "estimate_cluster_mem"]
 
 try:
     # Export explain functions that are useful for lists of models
