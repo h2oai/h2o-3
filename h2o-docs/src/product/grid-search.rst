@@ -430,10 +430,10 @@ Using the `Grid Search <#grid-search-examples>`__ example through the hyperparam
     grid
 
 
-Fault tolerant Grid Search
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Fault-Tolerant Grid Search
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-H2O supports progress recovery should the cluster fail during grid training. The ``recovery_dir`` parameter will cause the grid to save all its inputs and outputs into given directory and should the training fail, the grid progress can be resumed from the last model that was successfully trained.
+H2O supports progress recovery should the cluster fail during grid training. The ``recovery_dir`` parameter will cause the grid to save all its inputs and outputs into the given directory, and should the training fail, the grid progress can be resumed from the last model that was successfully trained.
 
 .. tabs::
   .. code-tab:: r R

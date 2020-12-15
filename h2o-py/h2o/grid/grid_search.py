@@ -53,10 +53,10 @@ class H2OGridSearch(h2o_meta(Keyed)):
             >>> criteria = {"strategy": "RandomDiscrete", "stopping_rounds": 5,
             ...             "stopping_metric": "misclassification",
             ...             "stopping_tolerance": 0.00001}
-    :param export_checkpoints_dir: Directory to automatically export grid and its models to.
-    :param recovery_dir: When specified the grid and all necessary data (frames, models) will be saved to this
+    :param export_checkpoints_dir: Directory to automatically export the grid and its models to.
+    :param recovery_dir: When specified, the grid and all necessary data (frames, models) will be saved to this
         directory (use HDFS or other distributed file-system). Should the cluster crash during training, the grid
-         can be reloaded from this directory via ``h2o.load_grid`` and training can be resumed.
+        can be reloaded from this directory via ``h2o.load_grid``, and training can be resumed.
     :param parallelism: Level of parallelism during grid model building. 1 = sequential building (default). 
          Use the value of 0 for adaptive parallelism - decided by H2O. Any number > 1 sets the exact number of models
          built in parallel.

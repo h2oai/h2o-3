@@ -525,7 +525,7 @@ def save_grid(grid_directory, grid_id, save_params_references=False):
     Export a Grid and it's all its models into the given folder
 
     :param grid_directory: A string containing the path to the folder for the grid to be saved to.
-    :param grid_id: A chracter string with identification of the Grid in H2O.
+    :param grid_id: A character string with identification of the Grid in H2O.
     :param save_params_references: True if objects referenced by grid parameters
       (e.g. training frame, calibration frame) should also be saved. 
 
