@@ -13,6 +13,7 @@ import hex.genmodel.utils.StringEscapeUtils;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -172,6 +173,45 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     return array;
   }
 
+  /**
+   * Reads an two dimensional array written by {@link hex.ModelMojoWriter#writeRectangularDoubleArray} method.
+   * 
+   * Dimensions of the result are explicitly given as parameters.
+   * 
+   * @param title can't be null
+   * @param firstSize 
+   * @param secondSize
+   * @return and double[][]  array with dimensions firstSize and secondSize
+   * @throws IOException
+   */
+  protected double[][] readRectangularDoubleArray(String title, int firstSize, int secondSize) throws IOException {
+    assert null != title;
+    
+    final double [][] row = new double[firstSize][secondSize];
+    final ByteBuffer bb = ByteBuffer.wrap(readblob(title));
+    for (int i = 0; i < firstSize; i++) {
+      for (int j = 0; j < secondSize; j++)
+        row[i][j] = bb.getDouble();
+    }
+    return row;
+  }
+  
+  /**
+   * Reads an two dimensional array written by {@link hex.ModelMojoWriter#writeRectangularDoubleArray} method
+   * 
+   * Dimensions of the array are read from the mojo.
+   *
+   * @param title can't be null
+   * @throws IOException
+   */
+  protected double[][] readRectangularDoubleArray(String title) throws IOException {
+    assert null != title;
+
+    final int size1 = readkv(title + "_size1");
+    final int size2 = readkv(title + "_size2");
+
+    return readRectangularDoubleArray(title, size1, size2);
+  }
 
   //--------------------------------------------------------------------------------------------------------------------
   // Private
