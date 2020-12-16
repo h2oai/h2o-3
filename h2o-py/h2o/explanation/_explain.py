@@ -1788,6 +1788,22 @@ def learning_curve_plot(
                           "drf", "gbm", "xgboost", "coxph", "isolationforest"):
         raise H2OValueError("Algorithm {} doesn't support learning curve plot!".format(model.algo))
 
+    metric_mapping = {'anomaly_score': 'mean_anomaly_score',
+                      'custom': 'custom',
+                      'custom_increasing': 'custom',
+                      'deviance': 'deviance',
+                      'logloss': 'logloss',
+                      'rmse': 'rmse',
+                      'mae': 'mae',
+                      'auc': 'auc',
+                      'aucpr': 'pr_auc',
+                      'lift_top_group': 'lift',
+                      'misclassification': 'classification_error',
+                      'objective': 'objective',
+                      'convergence': 'convergence',
+                      'negative_log_likelihood': 'negative_log_likelihood',
+                      'sumetaieta02': 'sumetaieta02'}
+    inverse_metric_mappping = {v: k for k, v in metric_mapping.items()}
 
     # Using the value from output to keep it simple - only one version required - (no need to use pandas for small data)
     scoring_history = model._model_json["output"]["scoring_history"] or model._model_json["output"].get("glm_scoring_history")
@@ -1836,11 +1852,13 @@ def learning_curve_plot(
 
     if metric == "AUTO":
         metric = allowed_metrics[0]
+    else:
+        metric = metric_mapping[metric.lower()]
 
     if metric not in allowed_metrics:
         raise H2OValueError("for {}, metric must be one of: {}".format(
             model.algo.upper(),
-            ", ".join(allowed_metrics)
+            ", ".join(inverse_metric_mappping[m] for m in allowed_metrics)
         ))
 
     timestep = allowed_timesteps[0]

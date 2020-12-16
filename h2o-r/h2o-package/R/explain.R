@@ -2392,19 +2392,17 @@ h2o.ice_plot <- function(model,
 #' Create learning curve plot for an H2O Model.
 #'
 #' @param model an H2O model
-#' @param metric Metric to be used for the learning curve plot
+#' @param metric Metric to be used for the learning curve plot. These should mostly correspond with stopping metric.
 #' @param cv_ribbon if True, plot the CV mean as a and CV standard deviation as a ribbon around the mean
-#' @param cv_individual_lines if True, plot scoring history for individual CV models
+#' @param cv_lines if True, plot scoring history for individual CV models
 #' @export
 h2o.learning_curve_plot <- function(model,
-                                    metric = c("AUTO", "convergence", "deviance", "logloss",
-                                               "mse", "rmse", "mae", "rmsle",
-                                               "auc", "pr_auc", "lift_top_group",
-                                               "classification_error", "lift",
-                                               "mean_per_class_error", "sumetaieta02",
-                                               "negative_log_likelihood"),
+                                    metric = c("AUTO", "auc", "aucpr", "mae", "rmse", "anomaly_score",
+                                               "convergence", "custom", "custom_increasing", "deviance",
+                                               "lift_top_group", "logloss", "misclassification",
+                                               "negative_log_likelihood", "objective", "sumetaieta02"),
                                     cv_ribbon = NULL,
-                                    cv_individual_lines = NULL
+                                    cv_lines = NULL
                                     ) {
   .preprocess_scoring_history <- function(model, scoring_history) {
     if (model@algorithm %in% c("glm", "gam") && model@allparameters$lambda_search) {
@@ -2412,6 +2410,25 @@ h2o.learning_curve_plot <- function(model,
     }
     return(scoring_history)
   }
+
+  metric_mapping <- list(
+    anomaly_score = "mean_anomaly_score",
+    custom = "custom",
+    custom_increasing = "custom",
+    deviance = "deviance",
+    logloss = "logloss",
+    rmse = "rmse",
+    mae = "mae",
+    auc = "auc",
+    aucpr = "pr_auc",
+    lift_top_group = "lift",
+    misclassification = "classification_error",
+    objective = "objective",
+    convergence = "convergence",
+    negative_log_likelihood = "negative_log_likelihood",
+    sumetaieta02 = "sumetaieta02"
+  )
+  inverse_metric_mapping <- stats::setNames(names(metric_mapping), metric_mapping)
 
   metric <- match.arg(metric)
 
@@ -2426,13 +2443,15 @@ h2o.learning_curve_plot <- function(model,
   allowed_metrics <- c()
   allowed_timesteps <- c()
   sh <- model@model$scoring_history
+  if (is.null(sh))
+    stop("Scoring history not found!")
 
+  sh <- .preprocess_scoring_history(model, sh)
   if (model@algorithm %in% c("glm", "gam")) {
     hglm <- model@parameters$HGLM
     if (model@allparameters$lambda_search) {
       allowed_metrics <- "deviance"
       allowed_timesteps <- "iteration"
-      sh <- .preprocess_scoring_history(model, sh)
     } else if (!is.null(hglm) && hglm) {
       allowed_metrics <- c("convergence", "sumetaieta02")
       allowed_timesteps <- "iterations"
@@ -2470,10 +2489,12 @@ h2o.learning_curve_plot <- function(model,
 
   if (metric == "AUTO") {
     metric <- allowed_metrics[[1]]
+  } else {
+    metric <- metric_mapping[[tolower(metric)]]
   }
 
   if (!(metric %in% allowed_metrics)) {
-    stop("Metric must be one of: ", paste(allowed_metrics, collapse = ", "))
+    stop("Metric must be one of: ", paste(inverse_metric_mapping[allowed_metrics], collapse = ", "))
   }
 
   timestep <- allowed_timesteps[[1]]
@@ -2555,15 +2576,15 @@ h2o.learning_curve_plot <- function(model,
 
     if (nrow(cvsh_len)  <= 1) {
       cv_ribbon <- FALSE
-      cv_individual_lines <- FALSE
+      cv_lines <- FALSE
     } else if (mean(cvsh_len$`CV-Training`[-nrow(cvsh_len)] == cvsh_len$`CV-Training`[-1]) < 0.5 ||
         mean(cvsh_len$`CV-Training`) < 2) {
       if (is.null(cv_ribbon)) {
         cv_ribbon <- FALSE
       }
-      cv_individual_lines <- is.null(cv_individual_lines) || cv_individual_lines
+      cv_lines <- is.null(cv_lines) || cv_lines
     } else {
-      cv_individual_lines <- !is.null(cv_individual_lines) && cv_individual_lines
+      cv_lines <- !is.null(cv_lines) && cv_lines
       cv_ribbon <- is.null(cv_ribbon) || cv_ribbon
     }
 
@@ -2593,7 +2614,7 @@ h2o.learning_curve_plot <- function(model,
     ), ]
   } else {
     cv_ribbon <- FALSE
-    cv_individual_lines <- FALSE
+    cv_lines <- FALSE
   }
 
   colors <- c("Training" = "#ff6000", "Validation" = "#785ff0",
@@ -2609,7 +2630,7 @@ h2o.learning_curve_plot <- function(model,
   ), ]
 
 
-  if (cv_ribbon || cv_individual_lines)
+  if (cv_ribbon || cv_lines)
     labels <- c(sort(unique(cv_scoring_history$type)), sort(unique(scoring_history$type)))
   else
     labels <- sort(unique(scoring_history$type))
@@ -2636,7 +2657,7 @@ h2o.learning_curve_plot <- function(model,
       data = cvsh
     )
   }
-  if (cv_individual_lines) {
+  if (cv_lines) {
     p <- p + ggplot2::geom_line(ggplot2::aes(group = paste(model, type)),
                                 linetype = "dotted",
                                 data = cv_scoring_history)
