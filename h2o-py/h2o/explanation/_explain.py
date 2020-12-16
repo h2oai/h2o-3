@@ -1774,7 +1774,7 @@ def learning_curve_plot(
     Create learning curve plot for an H2O Model.
 
     :param model: an H2O model
-    :param metric: a metric that is present in `model.scoring_history()`
+    :param metric: a stopping metric
     :param cv_ribbon: if True, plot the CV mean as a and CV standard deviation as a ribbon around the mean
     :param cv_lines: if True, plot scoring history for individual CV models
     :param figsize: figure size; passed directly to matplotlib
