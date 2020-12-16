@@ -25,7 +25,7 @@ public class XGBoostPredictWithOffsetComparisonTest extends TestUtil {
         stall_till_cloudsize(1);
     }
 
-    @Parameterized.Parameters(name = "XGBoost(booster={0},distribution={1},response={2}")
+    @Parameterized.Parameters(name = "XGBoost(booster={0},response={1}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
             {"gbtree", "AGE"},
@@ -95,7 +95,7 @@ public class XGBoostPredictWithOffsetComparisonTest extends TestUtil {
                 predsNative = Scope.track(predsNative.subframe(1, predsNative.numCols()));
                 predsJava = Scope.track(predsJava.subframe(1, predsJava.numCols()));
             }
-            assertFrameEquals(predsNative, predsJava, 1e-10, getRelDelta(parms, booster));
+            assertFrameEquals(predsNative, predsJava, 1e-5, getRelDelta(parms, booster));
         } finally {
             System.clearProperty("sys.ai.h2o.xgboost.predict.native.enable");
             Scope.exit();

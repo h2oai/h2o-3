@@ -19,7 +19,7 @@ def comparison_test_dense():
     if len(ret.nodes) == 1:
         runSeed = 1
         dataSeed = 17
-        testTol = 1e-10
+        testTol = 1e-5
         ntrees = 17
         maxdepth = 5
         # CPU Backend is forced for the results to be comparable

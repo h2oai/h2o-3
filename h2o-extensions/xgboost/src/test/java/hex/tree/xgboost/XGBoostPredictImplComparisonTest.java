@@ -97,7 +97,7 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
                 predsNative = Scope.track(predsNative.subframe(1, predsNative.numCols()));
                 predsJava = Scope.track(predsJava.subframe(1, predsJava.numCols()));
             }
-            assertFrameEquals(predsNative, predsJava, 1e-10, getRelDelta(parms, booster));
+            assertFrameEquals(predsNative, predsJava, 1e-5, getRelDelta(parms, booster));
         } finally {
             System.clearProperty("sys.ai.h2o.xgboost.predict.native.enable");
             Scope.exit();
