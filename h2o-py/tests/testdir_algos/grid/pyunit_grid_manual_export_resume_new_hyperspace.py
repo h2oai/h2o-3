@@ -1,6 +1,5 @@
 import sys
 import os
-import tempfile
 
 sys.path.insert(1, os.path.join("..", "..", ".."))
 import h2o
@@ -20,8 +19,8 @@ def grid_resume():
         "ntrees": ntrees_opts
     }
     print("GBM grid with the following hyper_parameters:", hyper_parameters)
-    
-    export_dir = tempfile.mkdtemp()
+
+    export_dir = pyunit_utils.locate("results") + "/grid_resume_new_hyperspace_1"
     gs = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters)
     gs.train(x=list(range(4)), y=4, training_frame=train)
     grid_id = gs.grid_id
@@ -46,7 +45,7 @@ def grid_resume():
         model = h2o.get_model(model_id)
         assert model is not None
 
-    export_dir2 = tempfile.mkdtemp()
+    export_dir2 = pyunit_utils.locate("results") + "/grid_resume_new_hyperspace_2"
     saved_path2 = h2o.save_grid(export_dir2, grid_id, save_params_references=True)
     h2o.remove_all()
     grid = h2o.load_grid(saved_path2, load_params_references=True)
