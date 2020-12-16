@@ -609,7 +609,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           Timer loglikTimer = new Timer();
           final double newLoglik = calcLoglik(dinfo, cs, _parms, coxMR)._logLik;
           Log.info("LogLik: iter=" + i + ", time=" + loglikTimer.toString() + ", logLig=" + newLoglik);
-          model._output._scoring_history = sc.addIterationScore(i, newLoglik).to2dTable(i);
+          model._output._scoring_history = sc.addIterationScore(i, newLoglik).to2dTable(i+1);
 
           if (newLoglik > logLik) {
             if (i == 0)
