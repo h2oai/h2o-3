@@ -366,6 +366,8 @@ public class EasyPredictModelWrapper implements Serializable {
         return predictAnomalyDetection(data);
       case KLime:
         return predictKLime(data);
+      case CoxPH:
+        return predictCoxPH(data);
       case Unknown:
         throw new PredictException("Unknown model category");
       default:
@@ -857,6 +859,14 @@ public class EasyPredictModelWrapper implements Serializable {
     p.reasonCodes = new double[preds.length - 2];
     System.arraycopy(preds, 2, p.reasonCodes, 0, p.reasonCodes.length);
 
+    return p;
+  }
+  
+  public CoxPHModelPrediction predictCoxPH(RowData data) throws PredictException {
+    final double[] preds = preamble(ModelCategory.CoxPH, data);
+    CoxPHModelPrediction p = new CoxPHModelPrediction();
+    p.value = preds[0];
+    
     return p;
   }
 

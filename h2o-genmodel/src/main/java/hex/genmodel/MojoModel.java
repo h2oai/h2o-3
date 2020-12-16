@@ -54,8 +54,7 @@ public abstract class MojoModel extends GenModel {
   public static MojoModel load(MojoReaderBackend mojoReader) throws IOException {
     return ModelMojoReader.readFrom(mojoReader);
   }
-
-
+  
   //------------------------------------------------------------------------------------------------------------------
   // IGenModel interface
   //------------------------------------------------------------------------------------------------------------------
@@ -71,5 +70,4 @@ public abstract class MojoModel extends GenModel {
   protected MojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
   }
-  
 }

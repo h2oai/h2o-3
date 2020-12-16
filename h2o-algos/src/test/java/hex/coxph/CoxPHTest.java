@@ -335,4 +335,50 @@ public class CoxPHTest extends TestUtil {
     return fr;
   }
 
+  @Test
+  public void testJavaScoringNumeric() {
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file("smalldata/coxph_test/heart.csv"));
+      testJavaScoring(fr);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testJavaScoringCategorical() {
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file("smalldata/coxph_test/heart.csv"))
+              .toCategoricalCol("surgery")
+              .toCategoricalCol("transplant");
+      testJavaScoring(fr);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private void testJavaScoring(Frame fr) {
+    try {
+      CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+      parms._calc_cumhaz = true;
+      parms._train = fr._key;
+      parms._start_column = "start";
+      parms._stop_column = "stop";
+      parms._response_column = "event";
+      parms._ignored_columns = new String[]{"id", "year"};
+      parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
+
+      CoxPHModel model = new CoxPH(parms).trainModel().get();
+      assertNotNull(model);
+      Scope.track_generic(model);
+      Frame scored = model.score(fr);
+      Scope.track(scored);
+      assertTrue(model.testJavaScoring(fr, scored, 1e-5));
+    } finally {
+      Scope.exit();
+    }
+  }
+  
 }

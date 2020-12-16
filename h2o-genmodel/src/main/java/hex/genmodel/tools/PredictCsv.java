@@ -256,6 +256,13 @@ public class PredictCsv {
 
             break;
           }
+          
+          case CoxPH: {
+              CoxPHModelPrediction p = model.predictCoxPH(row);
+              output.write(myDoubleToString(p.value));
+
+            break;
+          }
 
           case DimReduction: {
             DimReductionModelPrediction p = model.predictDimReduction(row);

@@ -356,5 +356,19 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     return fs;
   }
 
+  @Override
+  public CoxPHMojoWriter getMojo() {
+    return new CoxPHMojoWriter(this);
+  }
+
+  @Override
+  public boolean haveMojo() {
+    final boolean hasInteraction = _parms.interactionSpec() != null;
+    if (hasInteraction) {
+      return false;
+    } else {
+      return super.haveMojo();
+    }
+  }
 }
 
