@@ -1533,6 +1533,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       int lambdaSearch = 0;
       if (_parms._lambda_search) {
         lambdaSearch = 1;
+        iter = _output._submodels[_output._selected_submodel_idx].iteration;
         _output._model_summary.set(0, 3, "nlambda = " + _parms._nlambdas + ", lambda.max = " + MathUtils.roundToNDigits(_lambda_max, 4) + ", lambda.min = " + MathUtils.roundToNDigits(_output.lambda_best(), 4) + ", lambda.1se = " + MathUtils.roundToNDigits(_output.lambda_1se(), 4));
       }
       int intercept = _parms._intercept ? 1 : 0;
