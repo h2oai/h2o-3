@@ -1,12 +1,11 @@
 package water;
 
-import hex.ModelExportOptions;
+import hex.ModelExportOption;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel;
 import hex.tree.isofor.IsolationForest;
 import hex.tree.isofor.IsolationForestModel;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
@@ -26,7 +25,6 @@ import org.junit.runner.RunWith;
 import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
-import water.util.ArrayUtils;
 import water.util.Log;
 
 import static org.junit.Assert.*;
@@ -101,7 +99,7 @@ public class ModelSerializationTest extends TestUtil {
       assertNotNull(holdoutPreds);
       Frame holdoutPredsClone = holdoutPreds.deepCopy(holdPredsCloneKey.toString());
       DKV.put(holdoutPredsClone);
-      loadedModel = saveAndLoad(model, ModelExportOptions.INCLUDE_CV_PREDICTIONS);
+      loadedModel = saveAndLoad(model, ModelExportOption.INCLUDE_CV_PREDICTIONS);
       // And compare
       assertModelBinaryEquals(model, loadedModel);
       // Check that holdout predictions were re-loaded as well
@@ -315,7 +313,7 @@ public class ModelSerializationTest extends TestUtil {
   }
 
   // Serialize to and from a file
-  private <M extends Model<?, ?, ?>> M saveAndLoad(M model, ModelExportOptions... options) throws IOException {
+  private <M extends Model<?, ?, ?>> M saveAndLoad(M model, ModelExportOption... options) throws IOException {
     File file = File.createTempFile(model.getClass().getSimpleName(),null);
     try {
       String path = file.getAbsolutePath();

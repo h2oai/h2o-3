@@ -2877,7 +2877,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @return URI representation of the target location
    * @throws water.api.FSIOException when writing fails
    */
-  public final URI exportBinaryModel(String location, boolean force, ModelExportOptions... options) throws IOException {
+  public final URI exportBinaryModel(String location, boolean force, ModelExportOption... options) throws IOException {
     OutputStream os = null;
     try {
       URI targetUri = FileUtils.getURI(location);
@@ -2896,7 +2896,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     try (AutoBuffer ab = new AutoBuffer(os, true)) {
       writeAll(ab);
       Frame holdoutFrame = null;
-      if (ArrayUtils.contains(options, ModelExportOptions.INCLUDE_CV_PREDICTIONS) 
+      if (ArrayUtils.contains(options, ModelExportOption.INCLUDE_CV_PREDICTIONS) 
               && _output._cross_validation_holdout_predictions_frame_id != null) {
         holdoutFrame = DKV.getGet(_output._cross_validation_holdout_predictions_frame_id);
         if (holdoutFrame == null)

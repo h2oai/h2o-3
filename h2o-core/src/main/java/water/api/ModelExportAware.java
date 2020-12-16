@@ -1,14 +1,14 @@
 package water.api;
 
-import hex.ModelExportOptions;
+import hex.ModelExportOption;
 
 public interface ModelExportAware {
 
     boolean isExportCVPredictionsEnabled(); 
 
-    default ModelExportOptions[] getModelExportOptions() {
+    default ModelExportOption[] getModelExportOptions() {
         if (isExportCVPredictionsEnabled())
-            return new ModelExportOptions[]{ModelExportOptions.INCLUDE_CV_PREDICTIONS};
+            return new ModelExportOption[]{ModelExportOption.INCLUDE_CV_PREDICTIONS};
         else
             return null;
     }

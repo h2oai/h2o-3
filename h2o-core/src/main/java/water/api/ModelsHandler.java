@@ -2,7 +2,7 @@ package water.api;
 
 import hex.FeatureInteractionsCollector;
 import hex.Model;
-import hex.ModelExportOptions;
+import hex.ModelExportOption;
 import hex.PartialDependence;
 import water.*;
 import water.api.schemas3.*;
@@ -12,7 +12,6 @@ import water.exceptions.H2OKeyWrongTypeArgumentException;
 import water.exceptions.H2OKeysNotFoundArgumentException;
 import water.fvec.Frame;
 import water.persist.Persist;
-import water.util.ArrayUtils;
 import water.util.FileUtils;
 import water.util.JCodeGen;
 import water.util.TwoDimTable;
@@ -264,7 +263,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   public ModelExportV3 exportModel(int version, ModelExportV3 mexport) {
     Model model = getFromDKV("model_id", mexport.model_id.key());
     try {
-      ModelExportOptions[] options = mexport.getModelExportOptions();
+      ModelExportOption[] options = mexport.getModelExportOptions();
       URI targetUri = model.exportBinaryModel(mexport.dir, mexport.force, options); // mexport.dir: Really file, not dir
       // Send back
       mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri).getCanonicalPath() : targetUri.toString();

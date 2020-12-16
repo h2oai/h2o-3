@@ -15,7 +15,6 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.Set;
 
 import static hex.grid.GridSearch.IGNORED_FIELDS_PARAM_HASH;
 
@@ -533,7 +532,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * @param exportDir Directory to export all the models to.
    * @throws IOException Error exporting the models
    */
-  public void exportModelsBinary(final String exportDir, ModelExportOptions... options) throws IOException {
+  public void exportModelsBinary(final String exportDir, ModelExportOption... options) throws IOException {
     Objects.requireNonNull(exportDir);
     for (Model model : getModels()) {
       model.exportBinaryModel(exportDir + "/" + model._key.toString(), true, options);
