@@ -53,6 +53,10 @@ class H2OGridSearch(h2o_meta(Keyed)):
             >>> criteria = {"strategy": "RandomDiscrete", "stopping_rounds": 5,
             ...             "stopping_metric": "misclassification",
             ...             "stopping_tolerance": 0.00001}
+    :param export_checkpoints_dir: Directory to automatically export the grid and its models to.
+    :param recovery_dir: When specified, the grid and all necessary data (frames, models) will be saved to this
+        directory (use HDFS or other distributed file-system). Should the cluster crash during training, the grid
+        can be reloaded from this directory via ``h2o.load_grid``, and training can be resumed.
     :param parallelism: Level of parallelism during grid model building. 1 = sequential building (default). 
          Use the value of 0 for adaptive parallelism - decided by H2O. Any number > 1 sets the exact number of models
          built in parallel.
@@ -72,17 +76,20 @@ class H2OGridSearch(h2o_meta(Keyed)):
 
 
     def __init__(self, model, hyper_params, grid_id=None, search_criteria=None, export_checkpoints_dir=None,
-                 parallelism=1):
+                 recovery_dir=None, parallelism=1):
         assert_is_type(model, None, H2OEstimator, lambda mdl: issubclass(mdl, H2OEstimator))
         assert_is_type(hyper_params, dict)
         assert_is_type(grid_id, None, str)
         assert_is_type(search_criteria, None, dict)
+        assert_is_type(export_checkpoints_dir, None, str)
+        assert_is_type(recovery_dir, None, str)
         if not (model is None or is_type(model, H2OEstimator)): model = model()
         self._id = grid_id
         self.model = model
         self.hyper_params = dict(hyper_params)
         self.search_criteria = None if search_criteria is None else dict(search_criteria)
         self.export_checkpoints_dir = export_checkpoints_dir
+        self.recovery_dir = recovery_dir
         self._parallelism = parallelism  # Degree of parallelism during model building
         self._grid_json = None
         self.models = None  # list of H2O Estimator instances
@@ -242,7 +249,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
                    validation_frame=validation_frame,
                    **params)
 
-
     def join(self):
         """Wait until grid finishes computing.
 
@@ -265,6 +271,11 @@ class H2OGridSearch(h2o_meta(Keyed)):
         self._job.poll()
         self._job = None
 
+    def cancel(self):
+        """Cancel grid execution."""
+        if self._job is None:
+            raise H2OValueError("Grid is not running.")
+        self._job.cancel()
 
     def train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None, weights_column=None,
               validation_frame=None, **params):
@@ -305,6 +316,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         # dictionaries have special handling in grid search, avoid the implicit conversion
         parms["search_criteria"] = None if self.search_criteria is None else stringify_dict_as_map(self.search_criteria)
         parms["export_checkpoints_dir"] = self.export_checkpoints_dir
+        parms["recovery_dir"] = self.recovery_dir
         parms["parallelism"] = self._parallelism
         parms["hyper_parameters"] = None if self.hyper_params is None else stringify_dict_as_map(self.hyper_params) # unique to grid search
         parms.update({k: v for k, v in list(self.model._parms.items()) if v is not None})  # unique to grid search
@@ -313,7 +325,8 @@ class H2OGridSearch(h2o_meta(Keyed)):
             del parms['__class__']
         y = algo_params["y"]
         tframe = algo_params["training_frame"]
-        if tframe is None: raise ValueError("Missing training_frame")
+        if tframe is None: 
+            raise ValueError("Missing training_frame")
         if y is not None:
             if is_type(y, list, tuple):
                 if len(y) == 1:
@@ -321,7 +334,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
                 else:
                     raise ValueError('y must be a single column reference')
         if x is None:
-            if(isinstance(y, int)):
+            if isinstance(y, int):
                 xset = set(range(training_frame.ncols)) - {y}
             else:
                 xset = set(training_frame.names) - {y}
@@ -341,10 +354,10 @@ class H2OGridSearch(h2o_meta(Keyed)):
         parms["x"] = x
         self.build_model(parms)
 
-
     def build_model(self, algo_params):
         """(internal)"""
-        if algo_params["training_frame"] is None: raise ValueError("Missing training_frame")
+        if algo_params["training_frame"] is None:
+            raise ValueError("Missing training_frame")
         x = algo_params.pop("x")
         y = algo_params.pop("y", None)
         training_frame = algo_params.pop("training_frame")
@@ -353,13 +366,14 @@ class H2OGridSearch(h2o_meta(Keyed)):
         algo = self.model._compute_algo()  # unique to grid search
         is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans" or algo == "glrm" or \
                           algo == "isolationforest"
-        if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
-        if not is_unsupervised and y is None: raise ValueError("Missing response")
+        if is_auto_encoder and y is not None:
+            raise ValueError("y should not be specified for autoencoder.")
+        if not is_unsupervised and y is None:
+            raise ValueError("Missing response")
         if not is_unsupervised:
             y = y if y in training_frame.names else training_frame.names[y]
             self.model._estimator_type = "classifier" if training_frame.types[y] == "enum" else "regressor"
         self._model_build(x, y, training_frame, validation_frame, algo_params)
-
 
     def _model_build(self, x, y, tframe, vframe, kwargs):
         kwargs['training_frame'] = tframe
@@ -374,8 +388,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         weights = kwargs["weights_column"]
         ignored_columns = list(set(tframe.names) - set(x + [y, offset, folds, weights]))
         kwargs["ignored_columns"] = None if not ignored_columns else [quoted(col) for col in ignored_columns]
-        kwargs = dict([(k, kwargs[k].frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if
-                       kwargs[k] is not None])  # gruesome one-liner
+        kwargs = {k: H2OEstimator._keyify_if_h2oframe(kwargs[k]) for k in kwargs}
         algo = self.model._compute_algo()  # unique to grid search
         if self.grid_id is not None: kwargs["grid_id"] = self.grid_id
         rest_ver = kwargs.pop("_rest_version") if "_rest_version" in kwargs else None
@@ -393,7 +406,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         error_index = 0
         if len(grid_json["failure_details"]) > 0:
             print("Errors/Warnings building gridsearch model\n")
-# will raise error if no grid model is returned, store error messages here
+            # will raise error if no grid model is returned, store error messages here
 
             for error_message in grid_json["failure_details"]:
                 if isinstance(grid_json["failed_params"][error_index], dict):

@@ -430,6 +430,77 @@ Using the `Grid Search <#grid-search-examples>`__ example through the hyperparam
     grid
 
 
+Fault-Tolerant Grid Search
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+H2O supports progress recovery should the cluster fail during grid training. The ``recovery_dir`` parameter will cause the grid to save all its inputs and outputs into the given directory, and should the training fail, the grid progress can be resumed from the last model that was successfully trained.
+
+.. tabs::
+  .. code-tab:: r R
+
+    iris <- h2o.importFile(
+        "https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris.csv", 
+        destination_frame="iris"
+    )
+    hyper_parameters <- list(
+        learn_rate=c(0.01, 0.02, 0.03, 0.04),
+        ntrees=c(100, 120, 130, 140)
+    )
+    # train a cartesian grid of GBMs
+    gbm_grid <- h2o.grid(
+        "gbm", x=1:4, y=5, 
+        grid_id="gbm_grid", training_frame=iris, 
+        hyper_params=hyper_parameters,
+        recovery_dir="hdfs://nameNode/user/john/gbm_grid_recovery"
+    )
+    
+    # on a new cluster recover grid
+    # this will load the training frame and any other objects required for training
+    h2o.loadGrid(
+        "hdfs://nameNode/user/john/gbm_grid_recovery/gbm_grid", # append grid ID to the recovery_dir 
+        load_params_references=TRUE
+    )
+    iris <- h2o.getFrame("iris") # get reference to re-loaded training frame
+    # continue grid training, same grid id will cause H2O to resume progress
+    grid <- h2o.grid(
+        "gbm", grid_id="gbm_grid", x=1:4, y=5,
+        training_frame=iris, 
+        hyper_params=hyper_parameters # use original hyper-parameters
+    )
+
+  .. code-tab:: python
+
+    iris = h2o.import_file(
+        "https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris.csv", 
+        destination_frame="iris"
+    )
+    hyper_parameters = {
+        "learn_rate": [0.01, 0.02, 0.03, 0.04],
+        "ntrees": [100, 120, 130, 140]
+    }
+    
+    # train a cartesian grid of GBMs
+    gbm_grid = H2OGridSearch(
+        model=H2OGradientBoostingEstimator,
+        grid_id='gbm_grid', 
+        hyper_params=hyper_parameters,
+        recovery_dir="hdfs://nameNode/user/john/gbm_grid_recovery"
+    )
+    gbm_grid.train(x=list(range(4)), y=4, training_frame=iris)
+    
+    # on a new cluster recover grid
+    # this will load the training frame and any other objects required for training
+    grid = h2o.load_grid(
+        "hdfs://nameNode/user/john/gbm_grid_recovery/gbm_grid",  # append grid ID to the recovery_dir 
+        load_params_references=True
+    )
+    train = h2o.get_frame("iris") # get reference to re-loaded training frame
+    grid.hyper_params = hyper_parameters # use original hyper-parameters
+    # continue grid training
+    grid.train(x=list(range(4)), y=4, training_frame=train)
+
+
+
 Grid Search Java API
 --------------------
 

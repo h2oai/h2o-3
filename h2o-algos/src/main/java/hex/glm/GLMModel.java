@@ -20,7 +20,8 @@ import water.udf.CFuncRef;
 import water.util.*;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
 
 import static hex.genmodel.utils.ArrayUtils.flat;
 import static hex.schemas.GLMModelV3.GLMModelOutputV3.calculateVarimpMultinomial;
@@ -242,7 +243,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public String fullName() { return "Generalized Linear Modeling"; }
     public String javaName() { return GLMModel.class.getName(); }
     @Override public long progressUnits() { return GLM.WORK_TOTAL; }
-    // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
     public boolean _standardize = true;
     public boolean _useDispersion1 = false; // internal use only, not for users
     public Family _family;

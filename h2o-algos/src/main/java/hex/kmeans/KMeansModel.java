@@ -38,6 +38,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
                                               // Ex: k = 4, cluster = 3 -> [0, 0, 1, 0]
     public boolean _estimate_k = false;       // If enabled, iteratively find up to _k clusters
     public int[] _cluster_size_constraints = null;
+
   }
 
   public static class KMeansOutput extends ClusteringModel.ClusteringOutput {

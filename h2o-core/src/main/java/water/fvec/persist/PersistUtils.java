@@ -9,9 +9,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 
-class PersistUtils {
+public class PersistUtils {
     
-    static String sanitizeUri(String uri) {
+    public static String sanitizeUri(String uri) {
         if (uri.endsWith("/")) {
             return uri.substring(0, uri.length()-1);
         } else {
@@ -19,7 +19,7 @@ class PersistUtils {
         }
     }
 
-    static <T> T read(URI uri, Reader<T> r) {
+    public static <T> T read(URI uri, Reader<T> r) {
         final Persist persist = H2O.getPM().getPersistForURI(uri);
         try (final InputStream inputStream = persist.open(uri.toString())) {
             final AutoBuffer autoBuffer = new AutoBuffer(inputStream);
@@ -31,7 +31,7 @@ class PersistUtils {
         }
     }
 
-    static void write(URI uri, Writer w) {
+    public static void write(URI uri, Writer w) {
         final Persist persist = H2O.getPM().getPersistForURI(uri);
         try (final OutputStream outputStream = persist.create(uri.toString(), true)) {
             final AutoBuffer autoBuffer = new AutoBuffer(outputStream, true);
@@ -42,16 +42,16 @@ class PersistUtils {
         }
     }
     
-    static boolean exists(URI uri) {
+    public static boolean exists(URI uri) {
         final Persist persist = H2O.getPM().getPersistForURI(uri);
         return persist.exists(uri.toString());
     }
 
-    interface Reader<T> {
+    public interface Reader<T> {
         T read(AutoBuffer ab);
     }
 
-    interface Writer {
+    public interface Writer {
         void write(AutoBuffer ab);
     }
 }

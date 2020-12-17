@@ -401,7 +401,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** @return the validation frame instance, or null
      *  if a validation frame was not specified */
     public final Frame valid() { return _valid==null ? null : _valid.get(); }
-    
+
     public String[] getNonPredictors() {
         return Arrays.stream(new String[]{_weights_column, _offset_column, _fold_column, _response_column})
                 .filter(Objects::nonNull)
@@ -568,6 +568,29 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
       return usedColumns;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public Set<Key<?>> getDependentKeys() {
+      Field[] fields = Weaver.getWovenFields(getClass());
+      Set<Key<?>> values = new HashSet<>();
+      for (Field f : fields) {
+        f.setAccessible(true);
+        Class<?> c = f.getType();
+        try {
+          Object value = f.get(this);
+          if (value instanceof Key) {
+            values.add((Key) value);
+          } else if (value != null && c.isArray() && c.getComponentType() == Key.class) {
+            Key[] arr = (Key[]) value;
+            for (Key k : arr)
+              if (k != null) values.add(k);
+          }
+        } catch (IllegalAccessException e) {
+          throw new RuntimeException(e);
+        }
+      }
+      return values;
     }
   }
 

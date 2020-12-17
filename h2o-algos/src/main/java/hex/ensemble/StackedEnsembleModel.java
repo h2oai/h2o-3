@@ -1,6 +1,9 @@
 package hex.ensemble;
 
-import hex.*;
+import hex.Distribution;
+import hex.Model;
+import hex.ModelCategory;
+import hex.ModelMetrics;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;

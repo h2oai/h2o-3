@@ -475,12 +475,14 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
                                         skipped_columns, custom_non_data_line_markers, partition_by, quotechar)
 
 
-def load_grid(grid_file_path):
+def load_grid(grid_file_path, load_params_references=False):
     """
     Loads previously saved grid with all its models from the same folder
 
     :param grid_file_path: A string containing the path to the file with grid saved.
      Grid models are expected to be in the same folder.
+    :param load_params_references: If true will attemt to reload saved objects referenced by grid parameters
+      (e.g. training frame, calibration frame), will fail if grid was saved without referenced objects.
 
     :return: An instance of H2OGridSearch
 
@@ -511,16 +513,21 @@ def load_grid(grid_file_path):
     """
 
     assert_is_type(grid_file_path, str)
-    response = api("POST /3/Grid.bin/import", {"grid_path": grid_file_path})
+    response = api(
+        "POST /3/Grid.bin/import", 
+        {"grid_path": grid_file_path, "load_params_references": load_params_references}
+    )
     return get_grid(response["name"])
 
 
-def save_grid(grid_directory, grid_id):
+def save_grid(grid_directory, grid_id, save_params_references=False):
     """
     Export a Grid and it's all its models into the given folder
 
     :param grid_directory: A string containing the path to the folder for the grid to be saved to.
-    :param grid_id: A chracter string with identification of the Grid in H2O. 
+    :param grid_id: A character string with identification of the Grid in H2O.
+    :param save_params_references: True if objects referenced by grid parameters
+      (e.g. training frame, calibration frame) should also be saved. 
 
     :examples:
 
@@ -549,8 +556,12 @@ def save_grid(grid_directory, grid_id):
     """
     assert_is_type(grid_directory, str)
     assert_is_type(grid_id, str)
-    api("POST /3/Grid.bin/" + grid_id + "/export", {"grid_directory": grid_directory})
+    api(
+        "POST /3/Grid.bin/" + grid_id + "/export", 
+        {"grid_directory": grid_directory, "save_params_references": save_params_references}
+    )
     return grid_directory + "/" + grid_id
+
 
 def import_hive_table(database=None, table=None, partitions=None, allow_multi_format=False):
     """

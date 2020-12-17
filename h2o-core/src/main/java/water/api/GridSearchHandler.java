@@ -3,6 +3,7 @@ package water.api;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelParametersBuilderFactory;
+import hex.faulttolerance.Recovery;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
@@ -81,7 +82,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     // Right now only names, no types
     // note: still use _validation_frame and and _training_frame at this point.
     // Do not change those names yet.
-    validateHyperParams((P)gss.parameters, gss.hyper_parameters);
+    validateHyperParams(gss.parameters, gss.hyper_parameters);
 
     // Get actual parameters
     MP params = (MP) gss.parameters.createAndFillImpl();
@@ -97,8 +98,12 @@ public class GridSearchHandler<G extends Grid<MP>,
     }
 
     // Get/create a grid for given frame
-    // FIXME: Grid ID is not pass to grid search builder!
     Key<Grid> destKey = gss.grid_id != null ? gss.grid_id.key() : null;
+    // Prepare recovery if requested
+    Recovery<Grid> recovery = null;
+    if (gss.recovery_dir != null) {
+      recovery = new Recovery<>(gss.recovery_dir);
+    }
     // Create target grid search object (keep it private for now)
     // Start grid search and return the schema back with job key
     Job<Grid> gsJob = GridSearch.startGridSearch(
@@ -106,7 +111,8 @@ public class GridSearchHandler<G extends Grid<MP>,
         params,
         sortedMap,
         new DefaultModelParametersBuilderFactory<MP, P>(),
-        (HyperSpaceSearchCriteria) gss.search_criteria.createAndFillImpl(), 
+        (HyperSpaceSearchCriteria) gss.search_criteria.createAndFillImpl(),
+        recovery,
         GridSearch.getParallelismLevel(gss.parallelism)
     );
 
