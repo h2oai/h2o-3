@@ -389,7 +389,7 @@ public class DTree extends Iced {
       DecidedNode dn = _tree.decided(_pid);
       for( int i=0; i<dn._nids.length; i++ )
         if( dn._nids[i]==_nid )
-          { dn._nids[i] = ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID; return; }
+          { dn._nids[i] = BuildHistogram.UNDECIDED_CHILD_NODE_ID; return; }
       throw H2O.fail();
     }
 
@@ -565,7 +565,7 @@ public class DTree extends Iced {
         // which might be because all predictor columns are now constant, or
         // because all responses are now constant.
         _splat = Float.NaN;
-        Arrays.fill(_nids,ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID);
+        Arrays.fill(_nids, BuildHistogram.UNDECIDED_CHILD_NODE_ID);
         return;
       }
       _splat = _split._nasplit != DHistogram.NASplitDir.NAvsREST && (_split._equal == 0 || _split._equal == 1) ? _split.splat(hs) : -1f; // Split-at value (-1 for group-wise splits)
@@ -575,7 +575,7 @@ public class DTree extends Iced {
         DHistogram nhists[] = _split.nextLevelHistos(hs, way,_splat, _tree._parms, ncs); //maintains the full range for NAvsREST
         assert nhists==null || nhists.length==_tree._ncols;
         // Assign a new (yet undecided) node to each child, and connect this (the parent) decided node and the newly made histograms to it
-        _nids[way] = nhists == null ? ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID : makeUndecidedNode(nhists,ncs)._nid;
+        _nids[way] = nhists == null ? BuildHistogram.UNDECIDED_CHILD_NODE_ID : makeUndecidedNode(nhists,ncs)._nid;
       }
     }
 

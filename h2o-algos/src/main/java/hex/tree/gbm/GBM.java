@@ -544,7 +544,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             }
             for (int i = 0; i < dn._nids.length; i++) { //L/R children
               int cnid = dn._nids[i];
-              if (cnid == ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID ||    // Bottomed out (predictors or responses known constant)
+              if (cnid == BuildHistogram.UNDECIDED_CHILD_NODE_ID ||    // Bottomed out (predictors or responses known constant)
                       tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
                       (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
                               ((DecidedNode) tree.node(cnid))._split == null)) {
@@ -974,7 +974,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (ys.isNA(row)) continue;
         if (weights.atd(row) == 0) continue;
         int nid = (int) nids.at8(row);
-        assert (nid != ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID);
+        assert (nid != BuildHistogram.UNDECIDED_CHILD_NODE_ID);
         if (nid < 0) continue; //skip OOB and otherwise skipped rows
         float f = (float) (preds.atd(row) + offset.atd(row));
         int idx = nid - firstLeafIdx;
@@ -1227,8 +1227,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
           // Compute numerator and denominator of terminal node estimate (gamma)
           int nid = (int) nids.at8(row);          // Get Node to decide from
-          final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow(nid); //same for all k
-          if (wasOOBRow) nid = ScoreBuildHistogram.oob2Nid(nid);
+          final boolean wasOOBRow = BuildHistogram.isOOBRow(nid); //same for all k
+          if (wasOOBRow) nid = BuildHistogram.oob2Nid(nid);
           if (nid < 0)
             continue;
           DecidedNode dn = tree.decided(nid);           // Must have a decision point
@@ -1312,7 +1312,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         long baseseed = (0xDECAF + _seed) * (0xFAAAAAAB + k * _ntrees1 + _ntrees2);
         for (int row = 0; row < nids._len; row++) {
           int nid = nids_vals[row];
-          nids_vals[row] = ScoreBuildHistogram.FRESH;
+          nids_vals[row] = BuildHistogram.FRESH;
           if (nid < 0) continue;
           if (y.isNA(row)) continue;
           if (weights.atd(row) == 0) continue;

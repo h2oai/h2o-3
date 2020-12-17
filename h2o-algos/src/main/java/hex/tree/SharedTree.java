@@ -563,12 +563,13 @@ public abstract class SharedTree<
       // Pass 2: Build new summary DHistograms on the new child Nodes every row
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
-//      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _weightIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
-      new ScoreBuildHistogram2(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, 
-              _respIdx, _weightIdx, _predsIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
+      new BuildHistogram(
+          this, _k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, 
+          _respIdx, _weightIdx, _predsIdx, _workIdx, _nidIdx, _fr2
+      ).start();
     }
     @Override public void onCompletion(CountedCompleter caller) {
-      ScoreBuildHistogram sbh = (ScoreBuildHistogram) caller;
+      BuildHistogram sbh = (BuildHistogram) caller;
       final int leafOffset = _leafOffsets[_k];
       int tmax = _tree.len();   // Number of total splits in tree K
       for (int leaf = leafOffset; leaf < tmax; leaf++) { // Visit all the new splits (leaves)

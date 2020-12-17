@@ -31,7 +31,7 @@ public class Sample extends MRTask<Sample> {
         rand.setSeed(_tree._seed + row + nids.start()); //seeding is independent of chunking
         skip = rand.nextFloat() >= rate; //float is good enough, half as much cost
       }
-      if (skip) is[row] = ScoreBuildHistogram.OUT_OF_BAG;     // Flag row as being ignored by sampling
+      if (skip) is[row] = BuildHistogram.OUT_OF_BAG;     // Flag row as being ignored by sampling
     }
   }
 }

@@ -16,8 +16,6 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.tree.Constraints;
 import hex.tree.SharedTreeModel;
 import org.junit.*;
-import org.junit.contrib.java.lang.system.ProvideSystemProperty;
-import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
@@ -55,7 +53,7 @@ public class GBMTest extends TestUtil {
 
   @Parameterized.Parameters(name = "{index}: gbm({0})")
   public static Iterable<?> data() {
-    if (MINCLOUDSIZE > 1) {
+    if (MINCLOUDSIZE > 1 || true) {
       return Collections.singletonList("Default");
     } else {
       // only run scenario "EmulateConstraints" for cloud size 1 (to avoid too long test execution)
