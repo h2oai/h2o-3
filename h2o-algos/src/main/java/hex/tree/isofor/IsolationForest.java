@@ -321,8 +321,8 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
         final Chunk oobt = chk_oobt(chks);
         for (int row = 0; row < nids._len; row++) {
           final int rawNid = (int) chk_nids(chks,0).at8(row);
-          final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow(rawNid);
-          final int nid = wasOOBRow ? ScoreBuildHistogram.oob2Nid(rawNid) : rawNid;
+          final boolean wasOOBRow = BuildHistogram.isOOBRow(rawNid);
+          final int nid = wasOOBRow ? BuildHistogram.oob2Nid(rawNid) : rawNid;
           final int depth = getNodeDepth(chks, row, nid);
           if (wasOOBRow) {
             double oobcnt = oobt.atd(row) + 1;

@@ -523,53 +523,6 @@ public final class DHistogram extends Iced {
     }
   }
 
-  public void updateSharedHistosAndReset(ScoreBuildHistogram.LocalHisto lh, double[] ws, double[] cs, double[] ys, int [] rows, int hi, int lo) {
-    double minmax[] = new double[]{_min2,_maxIn};
-    // Gather all the data for this set of rows, for 1 column and 1 split/NID
-    // Gather min/max, wY and sum-squares.
-    for(int r = lo; r< hi; ++r) {
-      int k = rows[r];
-      double weight = ws[k];
-      if (weight == 0) continue;
-      double col_data = cs[k];
-      if (col_data < minmax[0]) minmax[0] = col_data;
-      if (col_data > minmax[1]) minmax[1] = col_data;
-      double y = ys[k];
-      assert(!Double.isNaN(y));
-      double wy = weight * y;
-      double wyy = wy * y;
-      if (Double.isNaN(col_data)) {
-        //separate bucket for NA - atomically added to the shared histo
-        addNasAtomic(weight,wy,wyy);
-      } else {
-        // increment local per-thread histograms
-        int b = bin(col_data);
-        lh.wAdd(b,weight);
-        lh.wYAdd(b,wy);
-        lh.wYYAdd(b,wyy);
-      }
-    }
-    // Atomically update histograms
-    setMin(minmax[0]);       // Track actual lower/upper bound per-bin
-    setMaxIn(minmax[1]);
-    final int len = _nbin;
-    for( int b=0; b<len; b++ ) {
-      int binDimStart = _vals_dim*b;
-      if (lh.w(b) != 0) {
-        AtomicUtils.DoubleArray.add(_vals, binDimStart, lh.w(b));
-        lh.wClear(b);
-      }
-      if (lh.wY(b) != 0) {
-        AtomicUtils.DoubleArray.add(_vals, binDimStart+1, (float) lh.wY(b));
-        lh.wYClear(b);
-      }
-      if (lh.wYY(b) != 0) {
-        AtomicUtils.DoubleArray.add(_vals, binDimStart+2,(float)lh.wYY(b));
-        lh.wYYClear(b);
-      }
-    }
-  }
-
   static double[] makeRandomSplitPoints(int nbin, Random rng) {
     final double[] splitPts = new double[nbin];
     splitPts[0] = 0;

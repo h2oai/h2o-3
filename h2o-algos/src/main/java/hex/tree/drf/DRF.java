@@ -259,7 +259,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
         // Iterate over all rows
         for( int row=0; row<oobt._len; row++ ) {
           double weight = weights.atd(row);
-          final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow((int)chk_nids(chks,0).at8(row));
+          final boolean wasOOBRow = BuildHistogram.isOOBRow((int)chk_nids(chks,0).at8(row));
           // For all tree (i.e., k-classes)
           for( int k=0; k<_nclass; k++ ) {
             final Chunk nids = chk_nids(chks, k); // Node-ids  for this tree/class
@@ -271,7 +271,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
               // This is out-of-bag row - but we would like to track on-the-fly prediction for the row
               if (wasOOBRow) {
                 final Chunk ct = chk_tree(chks, k); // k-tree working column holding votes for given row
-                nid = ScoreBuildHistogram.oob2Nid(nid);
+                nid = BuildHistogram.oob2Nid(nid);
                 if (tree.node(nid) instanceof UndecidedNode) // If we bottomed out the tree
                   nid = tree.node(nid).pid();                 // Then take parent's decision
                 int leafnid;

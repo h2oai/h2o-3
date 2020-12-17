@@ -57,25 +57,76 @@ import java.util.concurrent.atomic.AtomicInteger;
  *    exp(nthreads-pre-column) = max(1,H2O.NUMCPUS - num_cols)
  *
  */
-public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
-  transient int []   _cids;
+public class BuildHistogram extends MRTask<BuildHistogram> {
+
+  /** Marker for already decided row. */
+  public static final int DECIDED_ROW = -1;
+  /** Marker for sampled out rows */
+  public static final int OUT_OF_BAG = -2;
+  /** Marker for rows without a response */
+  public static final int MISSING_RESPONSE = -1;
+  /** Marker for a fresh tree */
+  public static final int UNDECIDED_CHILD_NODE_ID = -1; //Integer.MIN_VALUE;
+
+  public static final int FRESH = 0;
+
+  public static boolean isOOBRow(int nid) {
+    return nid <= OUT_OF_BAG;
+  }
+
+  public static boolean isDecidedRow(int nid) {
+    return nid == DECIDED_ROW;
+  }
+
+  public static int oob2Nid(int oobNid) {
+    return -oobNid + OUT_OF_BAG;
+  }
+
+  public static int nid2Oob(int nid) {
+    return -nid + OUT_OF_BAG;
+  }
+
+  final int _k; // Which tree
+  final int _ncols; // Active feature columns
+  final int _nbins; // Numerical columns: Number of bins in each histogram
+  final int _nbins_cats; // Categorical columns: Number of bins in each histogram
+  final DTree _tree; // Read-only, shared (except at the histograms in the Nodes)
+  final int _leaf; // Number of active leaves (per tree)
+  DHistogram _hcs[/*tree-relative node-id*/][/*column*/]; // Histograms for every tree, split & active column
+  final DistributionFamily _family;
+  final int _weightIdx;
+  final int _workIdx;
+  final int _nidIdx;
+  transient int[] _cids;
   transient Chunk[][] _chks;
-  transient double [][] _ys;
-  transient double [][] _ws;
-  transient int [][] _nhs;
-  transient int [][] _rss;
-  Frame _fr2;
+  transient double[][] _ys;
+  transient double[][] _ws;
+  transient int[][] _nhs;
+  transient int[][] _rss;
+  final Frame _fr2;
   final int _numLeafs;
   final IcedBitSet _activeCols;
   final int _respIdx;
   final int _predsIdx;
 
-  public ScoreBuildHistogram2(H2O.H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram[][] hcs, DistributionFamily family, 
-                              int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdxs) {
-    super(cc, k, ncols, nbins, nbins_cats, tree, leaf, hcs, family, weightIdx, workIdx, nidIdxs);
+  public BuildHistogram(H2O.H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram[][] hcs, DistributionFamily family, 
+                              int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdx, Frame fr2) {
+    super(cc);
+    _k    = k;
+    _ncols= ncols;
+    _nbins= nbins;
+    _nbins_cats= nbins_cats;
+    _tree = tree;
+    _leaf = leaf;
+    _hcs  = hcs;
+    _family = family;
+    _weightIdx = weightIdx;
+    _workIdx = workIdx;
+    _nidIdx = nidIdx;
     _numLeafs = _hcs.length;
     _respIdx = respIdx;
     _predsIdx = predsIdx;
+    _fr2 = fr2;
 
     int hcslen = _hcs.length;
     IcedBitSet activeCols = new IcedBitSet(ncols);
@@ -93,27 +144,9 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     _hcs = ArrayUtils.transpose(_hcs);
   }
 
-  @Override
-  public ScoreBuildHistogram dfork2(byte[] types, Frame fr, boolean run_local) {
-    _fr2 = fr;
+  public void start() {
     dfork((Key[])null);
-    return this;
   }
-
-  @Override public void map(Chunk [] chks){
-    // Even though this is an MRTask over a Frame, map(Chunk [] chks) should not be called for this task.
-    //  Instead, we do a custom 2-stage local pass (launched from setupLocal) using LocalMR.
-    //
-    // There are 2 reasons for that:
-    //    a) We have 2 local passes. 1st pass scores the trees and sorts rows, 2nd pass starts after the 1st pass is done and computes the histogram.
-    //       Conceptually two tasks but since we do not need global result we want to do the two passes inside of 1 task - no need to insert extra communication overhead here.
-    //    b) To reduce the memory overhead in pass 2(in case we're making private DHistogram copies).
-    //       There is a private copy made for each task. MRTask forks one task per one line of chunks and we do not want to make too many copies.
-    //       By reusing the same DHisto for multiple chunks we save memory and calls to reduce.
-    //
-    throw H2O.unimpl();
-  }
-
 
   // Pass 1: Score a prior partially-built tree model, and make new Node
   // assignments to every row.  This involves pulling out the current
@@ -234,14 +267,14 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           }
         }
       }
-    },new H2O.H2OCountedCompleter(this){
+    },new H2O.H2OCountedCompleter(this) {
       public void onCompletion(CountedCompleter cc){
         final int ncols = _ncols;
         final int [] active_cols = _activeCols == null?null:new int[Math.max(1,_activeCols.cardinality())];
         int nactive_cols = active_cols == null?ncols:active_cols.length;
         final int numWrks = _hcs.length*nactive_cols < 16*1024?H2O.NUMCPUS:Math.min(H2O.NUMCPUS,Math.max(4*H2O.NUMCPUS/nactive_cols,1));
         final int rem = H2O.NUMCPUS-numWrks*ncols;
-        ScoreBuildHistogram2.this.addToPendingCount(1+nactive_cols);
+        BuildHistogram.this.addToPendingCount(1+nactive_cols);
         if(active_cols != null) {
           int j = 0;
           for (int i = 0; i < ncols; ++i)
@@ -261,9 +294,9 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           @Override
           protected void map(int c) {
             c = active_cols == null?c:active_cols[c];
-            new LocalMR(new ComputeHistoThread(_hcs.length == 0?new DHistogram[0]:_hcs[c],c,fLargestChunkSz,new AtomicInteger()),numWrks + (c < rem?1:0),ScoreBuildHistogram2.this).fork();
+            new LocalMR(new ComputeHistogramTask(_hcs.length == 0?new DHistogram[0]:_hcs[c],c,fLargestChunkSz,new AtomicInteger()),numWrks + (c < rem?1:0), BuildHistogram.this).fork();
           }
-        },nactive_cols,ScoreBuildHistogram2.this).fork();
+        },nactive_cols, BuildHistogram.this).fork();
       }
     }).fork();
   }
@@ -278,7 +311,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     }
   }
 
-  private class ComputeHistoThread extends MrFun<ComputeHistoThread> {
+  private class ComputeHistogramTask extends MrFun<ComputeHistogramTask> {
     final int _maxChunkSz;
     final int _col;
     final DHistogram [] _lh;
@@ -288,14 +321,14 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
 
     public boolean isDone(){return _done || (_done = _cidx.get() >= _cids.length);}
 
-    ComputeHistoThread(DHistogram [] hcs, int col, int maxChunkSz,AtomicInteger cidx){
+    ComputeHistogramTask(DHistogram [] hcs, int col, int maxChunkSz,AtomicInteger cidx){
       _lh = hcs; _col = col; _maxChunkSz = maxChunkSz;
       _cidx = cidx;
     }
 
     @Override
-    public ComputeHistoThread makeCopy() {
-      return new ComputeHistoThread(ArrayUtils.deepClone(_lh),_col,_maxChunkSz,_cidx);
+    public ComputeHistogramTask makeCopy() {
+      return new ComputeHistogramTask(ArrayUtils.deepClone(_lh),_col,_maxChunkSz,_cidx);
     }
 
     @Override
@@ -320,7 +353,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       int [] rs = _rss[id];
       Chunk resChk = _chks[id][_workIdx];
       int len = resChk._len;
-      double [] ys = ScoreBuildHistogram2.this._ys[id];
+      double [] ys = BuildHistogram.this._ys[id];
       if(_weightIdx != -1) _chks[id][_weightIdx].getDoubles(ws, 0, len);
       final int hcslen = _lh.length;
       boolean extracted = false;
@@ -348,7 +381,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     }
 
     @Override
-    protected void reduce(ComputeHistoThread cc) {
+    protected void reduce(ComputeHistogramTask cc) {
       assert _lh != cc._lh;
       mergeHistos(_lh, cc._lh);
     }
