@@ -204,13 +204,9 @@ h2o.gam <- function(x,
   validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
 
   # Validate other required args
-  # If x is missing, then assume user wants to use all columns as features.
+  # If x is missing, no predictors will be used.  Only the gam columns are present as predictors
   if (missing(x)) {
-     if (is.numeric(y)) {
-         x <- setdiff(col(training_frame), y)
-     } else {
-         x <- setdiff(colnames(training_frame), y)
-     }
+      x = NULL
   }
 
   # If gam_columns is missing, then assume user wants to use all columns as features for GAM.
@@ -456,13 +452,9 @@ h2o.gam <- function(x,
   validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
 
   # Validate other required args
-  # If x is missing, then assume user wants to use all columns as features.
+  # If x is missing, no predictors will be used.  Only the gam columns are present as predictors
   if (missing(x)) {
-     if (is.numeric(y)) {
-         x <- setdiff(col(training_frame), y)
-     } else {
-         x <- setdiff(colnames(training_frame), y)
-     }
+      x = NULL
   }
 
   # If gam_columns is missing, then assume user wants to use all columns as features for GAM.

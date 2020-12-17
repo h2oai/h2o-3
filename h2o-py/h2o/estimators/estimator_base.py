@@ -332,7 +332,7 @@ class H2OEstimator(ModelBase):
             parms["response_column"] = y
         if not isinstance(x, (list, tuple)):
             x = [x]
-        if is_type(x[0], int):
+        if len(x) > 0 and is_type(x[0], int):
             x = [names[i] for i in x]
         if override_default_training_frame:
             ignored_columns = list(set(names) - set(x + [y, offset, folds, weights]))

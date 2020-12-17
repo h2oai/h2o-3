@@ -2,13 +2,9 @@
 extensions = dict(
     required_params=['x', 'y', 'training_frame', 'gam_columns'],  # empty to override defaults in gen_defaults
     validate_required_params="""
-    # If x is missing, then assume user wants to use all columns as features.
+    # If x is missing, no predictors will be used.  Only the gam columns are present as predictors
     if (missing(x)) {
-       if (is.numeric(y)) {
-           x <- setdiff(col(training_frame), y)
-       } else {
-           x <- setdiff(colnames(training_frame), y)
-       }
+        x = NULL
     }
 
     # If gam_columns is missing, then assume user wants to use all columns as features for GAM.
