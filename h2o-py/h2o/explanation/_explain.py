@@ -1780,6 +1780,29 @@ def learning_curve_plot(
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
     :return: a matplotlib figure
+
+    :examples:
+    >>> import h2o
+    >>> from h2o.estimators import H2OGradientBoostingEstimator
+    >>>
+    >>> h2o.init()
+    >>>
+    >>> # Import the wine dataset into H2O:
+    >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+    >>> df = h2o.import_file(f)
+    >>>
+    >>> # Set the response
+    >>> response = "quality"
+    >>>
+    >>> # Split the dataset into a train and test set:
+    >>> train, test = df.split_frame([0.8])
+    >>>
+    >>> # Train a GBM
+    >>> gbm = H2OGradientBoostingEstimator()
+    >>> gbm.train(y=response, training_frame=train)
+    >>>
+    >>> # Create the learning curve plot
+    >>> gbm.learning_curve_plot()
     """
     if model.algo == "stackedensemble":
         model = model.metalearner()

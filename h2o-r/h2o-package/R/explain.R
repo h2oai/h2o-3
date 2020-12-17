@@ -2395,6 +2395,33 @@ h2o.ice_plot <- function(model,
 #' @param metric Metric to be used for the learning curve plot. These should mostly correspond with stopping metric.
 #' @param cv_ribbon if True, plot the CV mean as a and CV standard deviation as a ribbon around the mean
 #' @param cv_lines if True, plot scoring history for individual CV models
+#'
+#' @return A ggplot2 object
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
+#'
+#' # Set the response
+#' response <- "quality"
+#'
+#' # Split the dataset into a train and test set:
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#'
+#' # Build and train the model:
+#' gbm <- h2o.gbm(y = response,
+#'                training_frame = train)
+#'
+#' # Create the learning curve plot
+#' learning_curve <- h2o.learning_curve_plot(gbm)
+#' print(learning_curve)
+#' }
 #' @export
 h2o.learning_curve_plot <- function(model,
                                     metric = c("AUTO", "auc", "aucpr", "mae", "rmse", "anomaly_score",
@@ -2658,6 +2685,7 @@ h2o.learning_curve_plot <- function(model,
     )
   }
   if (cv_lines) {
+    type <- NULL
     p <- p + ggplot2::geom_line(ggplot2::aes(group = paste(model, type)),
                                 linetype = "dotted",
                                 data = cv_scoring_history)
