@@ -18,23 +18,27 @@ NULL
 #' @param y response
 #' @param autoencoder autoencoder flag
 .verify_dataxy <- function(data, x, y, autoencoder = FALSE) {
-  if(!is.character(x) && !is.numeric(x))
+  if(!is.null(x) && !is.character(x) && !is.numeric(x)) # only check if x is not null
     stop('`x` must be column names or indices')
   if( !autoencoder )
     if(!is.character(y) && !is.numeric(y))
       stop('`y` must be a column name or index')
 
   cc <- colnames(chk.H2OFrame(data))
-
-  if(is.character(x)) {
-    if(!all(x %in% cc))
-      stop("Invalid column names: ", paste(x[!(x %in% cc)], collapse=','))
-    x_i <- match(x, cc)
+  
+  if (!is.null(x)) {
+    if(is.character(x)) {
+      if(!all(x %in% cc))
+        stop("Invalid column names: ", paste(x[!(x %in% cc)], collapse = ','))
+      x_i <- match(x, cc)
+    } else {
+      if(any( x < 1L | x > attr(x,'ncol')))
+        stop('out of range explanatory variable ', paste(x[x < 1L | x > length(cc)], collapse = ','))
+      x_i <- x
+      x <- cc[x_i]
+    }
   } else {
-    if(any( x < 1L | x > attr(x,'ncol')))
-      stop('out of range explanatory variable ', paste(x[x < 1L | x > length(cc)], collapse=','))
-    x_i <- x
-    x <- cc[x_i]
+    x_i <- NULL
   }
 
   x_ignore <- c()
@@ -50,7 +54,7 @@ NULL
       y <- cc[y]
     }
 
-    if(!autoencoder && (y %in% x)) {
+    if(!is.null(x) && !autoencoder && (y %in% x)) {
       warning('removing response variable from the explanatory variables')
       x <- setdiff(x,y)
     }
