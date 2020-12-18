@@ -521,7 +521,7 @@ def save_grid(grid_directory, grid_id, export_cv_predictions=False):
 
     :param grid_directory: A string containing the path to the folder for the grid to be saved to.
     :param grid_id: A character string with identification of the Grid in H2O.
-    :param export_cv_prediction: A boolean flag indicating whether the models exported from the grid should be saved
+    :param export_cv_predictions: A boolean flag indicating whether the models exported from the grid should be saved
         with CV Holdout Frame predictions. 
 
     :examples:

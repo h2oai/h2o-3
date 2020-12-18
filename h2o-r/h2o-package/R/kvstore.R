@@ -542,6 +542,8 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
 #'
 #' @param model An H2OModel
 #' @param path The path where binary file should be downloaded. Downloaded to current directory by default.
+#' @param export_cv_predictions A boolean flag indicating whether the download model should be saved with CV Holdout 
+#'  Frame predictions. 
 #'
 #' @examples
 #' \dontrun{
