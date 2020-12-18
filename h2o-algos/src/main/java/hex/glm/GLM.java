@@ -20,6 +20,7 @@ import hex.optimization.OptimizationUtils.*;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
 import hex.svd.SVDModel.SVDParameters;
+import hex.util.CheckpointUtils;
 import hex.util.LinearAlgebraUtils;
 import hex.util.LinearAlgebraUtils.BMulTask;
 import hex.util.LinearAlgebraUtils.FindMaxIndex;
@@ -28,7 +29,9 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.*;
+import water.fvec.Frame;
+import water.fvec.InteractionWrappedVec;
+import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.rapids.Rapids;
 import water.rapids.Val;
@@ -39,6 +42,8 @@ import java.text.NumberFormat;
 import java.util.*;
 
 import static hex.ModelMetrics.calcVarImp;
+import static hex.glm.GLMModel.GLMParameters;
+import static hex.glm.GLMModel.GLMParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS;
 import static hex.glm.GLMUtils.*;
 import static water.fvec.Vec.T_STR;
 
@@ -738,6 +743,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._gradient_epsilon = _parms._lambda[0] == 0 ? 1e-6 : 1e-4;
         if(_parms._lambda_search) _parms._gradient_epsilon *= 1e-2;
       }
+
+      if (_parms.hasCheckpoint()) {
+        if (!Family.gaussian.equals(_parms._family))  // Gaussian it not iterative and therefore don't care
+          _checkPointFirstIter = true;  // mark the first iteration during iteration process of training
+        if (!Solver.IRLSM.equals(_parms._solver))
+          error("_checkpoint", "GLM checkpoint is supported only for IRLSM.  Please specify it " +
+                  "explicitly.  Do not use AUTO or default");
+        Value cv = DKV.get(_parms._checkpoint);
+        CheckpointUtils.getAndValidateCheckpointModel(this, CHECKPOINT_NON_MODIFIABLE_FIELDS, cv);
+      }
       buildModel();
     }
   }
@@ -889,11 +904,52 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     GLMModel model = new GLM(tempParams).trainModel().get();
     return model;
   }
+  
+  // copy from scoring_history back to _sc or _lsc
+  private void restoreScoringHistoryFromCheckpoint() {
+      TwoDimTable scoringHistory = _model._output._scoring_history;
+      String[] colHeaders2Restore = _parms._lambda_search ? 
+              new String[]{"iteration", "timestamp", "lambda", "predictors", "deviance_train", 
+                      "deviance_test", "alpha"}
+              : new String[]{"iteration", "timestamp", "negative_log_likelihood", "objective", "sum(etai-eta0)^2", 
+              "convergence"};
+      int num2Copy = _parms._HGLM || _parms._lambda_search ? colHeaders2Restore.length : colHeaders2Restore.length-2;
+      int[] colHeadersIndex = grabHeaderIndex(scoringHistory, num2Copy, colHeaders2Restore);
+      if (_parms._lambda_search)
+        _lambdaSearchScoringHistory.restoreFromCheckpoint(scoringHistory, colHeadersIndex);
+      else
+        _scoringHistory.restoreFromCheckpoint(scoringHistory, colHeadersIndex, _parms._HGLM);
+  }
+  
+  static int[] grabHeaderIndex(TwoDimTable sHist, int numHeaders, String[] colHeadersUseful) {
+    int[] colHeadersIndex = new int[numHeaders];
+    List<String> colHeadersList = Arrays.asList(sHist.getColHeaders());
+    for (int colInd = 0; colInd < numHeaders; colInd++) {
+      if (colInd == 0) {
+        int indexFound = colHeadersList.indexOf(colHeadersUseful[colInd]);
+        if (indexFound < 0)
+          indexFound = colHeadersList.indexOf(colHeadersUseful[colInd]+"s");
+        colHeadersIndex[colInd] = indexFound;
+      } else {
+        colHeadersIndex[colInd] = colHeadersList.indexOf(colHeadersUseful[colInd]);
+      }
+    }
+    return colHeadersIndex;
+  }
 
   // FIXME: contrary to other models, GLM output duration includes computation of CV models:
   //  ideally the model should be instantiated in the #computeImpl() method instead of init
   private void buildModel() {
-    _model = new GLMModel(_result, _parms, this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
+    if (_parms.hasCheckpoint()) {
+      GLMModel model = ((GLMModel)DKV.getGet(_parms._checkpoint)).deepClone(_result);
+      // Override original parameters by new parameters
+      model._parms = _parms;
+      // We create a new model
+      _model = model;
+      restoreScoringHistoryFromCheckpoint();  // copy over scoring history and related data structure
+    } else {
+      _model = new GLMModel(_result, _parms, this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
+    }
     _model._output.setLambdas(_parms);  // set lambda_min and lambda_max if lambda_search is enabled
     _model.delete_and_lock(_job);
   }
