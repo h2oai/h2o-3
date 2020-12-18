@@ -746,7 +746,7 @@ public final class ComputationState {
 
   public double [] expandBeta(double [] beta) { // for multinomials
     int fullCoefLen = (_dinfo.fullN() + 1) * _nclasses;
-    if(_activeData._activeCols != null || beta.length == fullCoefLen)
+    if(_activeData._activeCols == null || beta.length == fullCoefLen)
       return beta;
     return ArrayUtils.expandAndScatter(beta, fullCoefLen, _activeData._activeCols);
   }
