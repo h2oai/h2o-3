@@ -53,7 +53,7 @@ public class GBMTest extends TestUtil {
 
   @Parameterized.Parameters(name = "{index}: gbm({0})")
   public static Iterable<?> data() {
-    if (MINCLOUDSIZE > 1 || true) {
+    if (MINCLOUDSIZE > 1) {
       return Collections.singletonList("Default");
     } else {
       // only run scenario "EmulateConstraints" for cloud size 1 (to avoid too long test execution)
