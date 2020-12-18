@@ -2162,15 +2162,27 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     
     protected Submodel computeSubmodel(int i,double lambda, double nullDevTrain, double nullDevValid) {
       Submodel sm;
-      if(lambda >= _lmax && _state.l1pen() > 0)
-        _model.addSubmodel(sm = new Submodel(lambda, _state.alpha(), getNullBeta(),_state._iter,nullDevTrain, nullDevValid));
-      else {  // this is also the path for HGLM model
-        sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, -1, -1);// restart from last run
-         if (_parms._HGLM) // add random coefficients for random effects/columns
-          sm.ubeta = Arrays.copyOf(_state.ubeta(), _state.ubeta().length);
-        _model.addSubmodel(sm);
-        if (!_parms._HGLM) // only perform this when HGLM is not used.
-          _state.setLambda(lambda);
+      boolean continueFromPreviousSubmodel = _parms.hasCheckpoint() && (_parms._alpha.length > 1 || 
+              _parms._lambda.length > 1) && _checkPointFirstIter && !Family.gaussian.equals(_parms._family);
+      if(lambda >= _lmax && _state.l1pen() > 0) {
+        if (continueFromPreviousSubmodel)
+          sm = _model._output._submodels[i];
+        else
+          _model.addSubmodel(sm = new Submodel(lambda, _state.alpha(), getNullBeta(), _state._iter, nullDevTrain, nullDevValid));
+      } else {  // this is also the path for HGLM model
+        if (continueFromPreviousSubmodel) {
+          sm = _model._output._submodels[i];
+        } else {
+          sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, -1, -1);// restart from last run
+          if (_parms._HGLM) // add random coefficients for random effects/columns
+            sm.ubeta = Arrays.copyOf(_state.ubeta(), _state.ubeta().length);
+          _model.addSubmodel(sm);
+        }
+        if (!_parms._HGLM) {  // only perform this when HGLM is not used.
+          if (!_checkPointFirstIter)
+            _state.setLambda(lambda);
+        }
+        
         checkMemoryFootPrint(_state.activeData());
         do {
           if (_parms._family == Family.multinomial || _parms._family == Family.ordinal)
