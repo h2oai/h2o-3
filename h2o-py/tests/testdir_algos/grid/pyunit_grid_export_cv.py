@@ -24,7 +24,7 @@ def grid_export_with_cv():
     holdout_frame_ids = map(lambda m: m.cross_validation_holdout_predictions().frame_id, gs.models)
 
     export_dir = pyunit_utils.locate("results")
-    saved_path = h2o.save_grid(export_dir, gs.grid_id, export_cv_predictions=True)
+    saved_path = h2o.save_grid(export_dir, gs.grid_id, export_cross_validation_predictions=True)
 
     h2o.remove_all()
 

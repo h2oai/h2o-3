@@ -26,7 +26,7 @@ public class ModelsV3 extends RequestSchemaV3<Models, ModelsV3> implements Model
   @API(direction = API.Direction.INPUT,
           help = "Flag indicating whether the exported model artifact should also include CV Holdout Frame predictions", 
           level = API.Level.secondary)
-  public boolean export_cv_predictions;
+  public boolean export_cross_validation_predictions;
 
   // Non-version-specific filling into the impl
   @Override
@@ -79,7 +79,7 @@ public class ModelsV3 extends RequestSchemaV3<Models, ModelsV3> implements Model
 
   @Override
   public boolean isExportCVPredictionsEnabled() {
-    return export_cv_predictions;
+    return export_cross_validation_predictions;
   }
 
 }

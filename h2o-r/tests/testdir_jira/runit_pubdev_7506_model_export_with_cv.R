@@ -16,7 +16,7 @@ test.model_export_with_cv <- function() {
   holdout.preds <- as.data.frame(h2o.getFrame(prostate.gbm@model$cross_validation_holdout_predictions_frame_id$name))
 
   gbm_dir_download <- sandboxMakeSubDir(dirname = "gbm_export_with_cv")
-  exported.gbm.path <- h2o.saveModel(prostate.gbm, path = gbm_dir_download, export_cv_predictions = TRUE)
+  exported.gbm.path <- h2o.saveModel(prostate.gbm, path = gbm_dir_download, export_cross_validation_predictions = TRUE)
   Log.info(paste("Model saved in", exported.gbm.path))
 
   # All keys removed to test that cross validation models are actually being loaded

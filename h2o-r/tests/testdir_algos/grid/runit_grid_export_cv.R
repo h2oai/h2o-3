@@ -23,7 +23,7 @@ test.save.grid.with.cv <- function() {
                          hyper_params = params,
                          search_criteria = search_criteria)
     
-    saved_path <- h2o.saveGrid(grid_directory = tempdir(), grid_id = gbm_grid@grid_id, export_cv_predictions = TRUE)
+    saved_path <- h2o.saveGrid(grid_directory = tempdir(), grid_id = gbm_grid@grid_id, export_cross_validation_predictions = TRUE)
 
     # Wipe the cloud to simulate cluster restart - the models will no longer be available
     h2o.removeAll()

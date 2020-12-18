@@ -17,11 +17,11 @@ public class GridExportV3 extends SchemaV3<Iced, GridExportV3> implements ModelE
 
   @API(direction = API.Direction.INPUT, help = "Flag indicating whether the exported model artifacts should also include CV Holdout Frame predictions",
           level = API.Level.secondary)
-  public boolean export_cv_predictions;
+  public boolean export_cross_validation_predictions;
 
   @Override
   public boolean isExportCVPredictionsEnabled() {
-    return export_cv_predictions;
+    return export_cross_validation_predictions;
   }
 
 }

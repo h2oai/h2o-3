@@ -203,7 +203,7 @@ h2o.save_to_hive <- function(data, jdbc_url, table_name, format="csv", table_pat
 #' @param object an \linkS4class{H2OModel} object.
 #' @param path string indicating the directory the model will be written to.
 #' @param force logical, indicates how to deal with files that already exist.
-#' @param export_cv_predictions logical, indicates whether the exported model 
+#' @param export_cross_validation_predictions logical, indicates whether the exported model 
 #'        artifacts should also include CV Holdout Frame predictions
 #' @seealso \code{\link{h2o.loadModel}} for loading a model to H2O from disk
 #' @examples
@@ -217,14 +217,14 @@ h2o.save_to_hive <- function(data, jdbc_url, table_name, format="csv", table_pat
 #' # h2o.saveModel(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
 #' @export
-h2o.saveModel <- function(object, path="", force=FALSE, export_cv_predictions=FALSE) {
+h2o.saveModel <- function(object, path="", force=FALSE, export_cross_validation_predictions=FALSE) {
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
-  if(!is.logical(export_cv_predictions) || length(export_cv_predictions) != 1L || is.na(export_cv_predictions)) stop("`export_cv_predictions` must be TRUE or FALSE")
+  if(!is.logical(export_cross_validation_predictions) || length(export_cross_validation_predictions) != 1L || is.na(export_cross_validation_predictions)) stop("`export_cross_validation_predictions` must be TRUE or FALSE")
   path <- file.path(path, object@model_id)
   res <- .h2o.__remoteSend(paste0("Models.bin/",object@model_id),dir=path,
-                           force=force,export_cv_predictions=export_cv_predictions,h2oRestApiVersion=99)
+                           force=force,export_cross_validation_predictions=export_cross_validation_predictions,h2oRestApiVersion=99)
   res$dir
 }
 
@@ -319,7 +319,7 @@ h2o.saveModelDetails <- function(object, path="", force=FALSE) {
 #'
 #' @param grid_directory A character string containing the path to the folder for the grid to be saved to.
 #' @param grid_id A chracter string with identification of the grid to be saved.
-#' @param export_cv_predictions A boolean flag indicating whether exported model artifacts should also include CV holdout Frame predictions.
+#' @param export_cross_validation_predictions A boolean flag indicating whether exported model artifacts should also include CV holdout Frame predictions.
 #' @return Returns an object that is a subclass of \linkS4class{H2OGrid}.
 #' @examples
 #' \dontrun{
@@ -347,10 +347,10 @@ h2o.saveModelDetails <- function(object, path="", force=FALSE) {
 #'grid <- h2o.loadGrid(grid_path)
 #' }
 #' @export
-h2o.saveGrid <- function(grid_directory, grid_id, export_cv_predictions = FALSE){
+h2o.saveGrid <- function(grid_directory, grid_id, export_cross_validation_predictions = FALSE){
   params <- list()
   params[["grid_directory"]] <- grid_directory
-  params[["export_cv_predictions"]] <- export_cv_predictions
+  params[["export_cross_validation_predictions"]] <- export_cross_validation_predictions
   
   url <- paste0("Grid.bin/", grid_id,"/export")
   

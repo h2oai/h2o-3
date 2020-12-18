@@ -14,7 +14,7 @@ def model_download_with_cv():
     prostate_gbm.train(x=["AGE", "RACE", "PSA", "DCAPS"], y="CAPSULE", training_frame=prostate)
     path = pyunit_utils.locate("results")
 
-    model_path = h2o.download_model(prostate_gbm, path=path, export_cv_predictions=True)
+    model_path = h2o.download_model(prostate_gbm, path=path, export_cross_validation_predictions=True)
     assert os.path.isfile(model_path), "Expected model artifact {0} to exist, but it does not.".format(model_path)
 
     h2o.remove_all()
