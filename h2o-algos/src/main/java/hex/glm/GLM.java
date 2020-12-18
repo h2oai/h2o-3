@@ -1527,7 +1527,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   _state.objective() + _parms._objective_epsilon) && !_checkPointFirstIter) {
             _state._lsNeeded = true;
           } else {
-            if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood)) {
+            if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood) && !_checkPointFirstIter) {
               Log.info("DONE after " + (iterCnt-1) + " iterations (1)");
               return;
             }
