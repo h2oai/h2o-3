@@ -1513,10 +1513,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private void fitIRLSM(Solver s) {
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
-      double [] betaCnd = _state.beta();
+      double [] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
       LineSearchSolver ls = null;
-      boolean firstIter = true;
-      int iterCnt = 0;
+      int iterCnt = _checkPointFirstIter?_state._iter:0;
+      boolean firstIter = iterCnt == 0;
       try {
         while (true) {
           iterCnt++;
@@ -1534,6 +1534,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                     :ADMM_solve(gram.gram,gram.xy); // this will shrink betaCnd if needed but this call may be skipped
           }
           firstIter = false;
+          _checkPointFirstIter = false;
           long t3 = System.currentTimeMillis();
           if(_state._lsNeeded) {
             if(ls == null)
