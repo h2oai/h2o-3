@@ -50,7 +50,8 @@ import static water.fvec.Vec.T_STR;
 public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   static NumberFormat lambdaFormatter = new DecimalFormat(".##E0");
   static NumberFormat devFormatter = new DecimalFormat(".##");
-
+  private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+  
   public static final int SCORING_INTERVAL_MSEC = 15000; // scoreAndUpdateModel every minute unless score every iteration is set
   public int[] _randC;  // contains categorical column levels for random columns for HGLM
   public String _generatedWeights = null;
@@ -61,6 +62,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public int[][] _gamColIndices = null; // corresponding column indices in dataInfo
   public static int _totalBetaLen;
   private boolean _earlyStopEnabled = false;
+  private boolean _checkPointFirstIter = false;  // indicate first iteration for checkpoint model
 
   public GLM(boolean startup_once){super(new GLMParameters(),startup_once);}
   public GLM(GLMModel.GLMParameters parms) {
@@ -229,13 +231,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private transient DataInfo _validDinfo;
   // time per iteration in ms
 
-  private static class ScoringHistory {
+  static class ScoringHistory {
     private ArrayList<Integer> _scoringIters = new ArrayList<>();
     private ArrayList<Long> _scoringTimes = new ArrayList<>();
     private ArrayList<Double> _likelihoods = new ArrayList<>();
     private ArrayList<Double> _objectives = new ArrayList<>();
     private ArrayList<Double> _convergence = new ArrayList<>(); // HGLM: ratio of sum(eta0-eta.i)^2/sum(eta.i^2)
     private ArrayList<Double> _sumEtaiSquare = new ArrayList<>();  // HGLM: sum(eta.i^2)
+    
+    public ArrayList<Integer> getScoringIters() { return _scoringIters;}
+    public ArrayList<Long> getScoringTimes() { return _scoringTimes;}
+    public ArrayList<Double> getLikelihoods() { return _likelihoods;}
+    public ArrayList<Double> getObjectives() { return _objectives;}
     
     public synchronized void addIterationScore(int iter, double likelihood, double obj) {
       if (_scoringIters.size() > 0 && _scoringIters.get(_scoringIters.size() - 1) == iter)
@@ -260,11 +267,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       String[] ctypes = new String[]{"string", "string", "int", "double", "double"};
       String[] cformats = new String[]{"%s", "%s", "%d", "%.5f", "%.5f"};
       TwoDimTable res = new TwoDimTable("Scoring History", "", new String[_scoringIters.size()], cnames, ctypes, cformats, "");
-      int j = 0;
-      DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
       for (int i = 0; i < _scoringIters.size(); ++i) {
         int col = 0;
-        res.set(i, col++, fmt.print(_scoringTimes.get(i)));
+        res.set(i, col++, DATE_TIME_FORMATTER.print(_scoringTimes.get(i)));
         res.set(i, col++, PrettyPrint.msecs(_scoringTimes.get(i) - _scoringTimes.get(0), true));
         res.set(i, col++, _scoringIters.get(i));
         res.set(i, col++, _likelihoods.get(i));
@@ -278,11 +283,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       String[] ctypes = new String[]{"string", "string", "int", "double", "double"};
       String[] cformats = new String[]{"%s", "%s", "%d", "%.5f", "%.5f"};
       TwoDimTable res = new TwoDimTable("Scoring History", "", new String[_scoringIters.size()], cnames, ctypes, cformats, "");
-      int j = 0;
-      DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
       for (int i = 0; i < _scoringIters.size(); ++i) {
         int col = 0;
-        res.set(i, col++, fmt.print(_scoringTimes.get(i)));
+        res.set(i, col++, DATE_TIME_FORMATTER.print(_scoringTimes.get(i)));
         res.set(i, col++, PrettyPrint.msecs(_scoringTimes.get(i) - _scoringTimes.get(0), true));
         res.set(i, col++, _scoringIters.get(i));
         res.set(i, col++, _sumEtaiSquare.get(i));
@@ -290,9 +293,24 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       return res;
     }
+
+    void restoreFromCheckpoint(TwoDimTable sHist, int[] colIndices, boolean hglm) {
+      int numRows = sHist.getRowDim();
+      for (int rowInd = 0; rowInd < numRows; rowInd++) {  // if lambda_search is enabled, _sc is not updated
+        _scoringIters.add((Integer) sHist.get(rowInd, colIndices[0]));
+        _scoringTimes.add(DATE_TIME_FORMATTER.parseMillis((String) sHist.get(rowInd, colIndices[1])));
+        _likelihoods.add((Double) sHist.get(rowInd, colIndices[2]));
+        _objectives.add((Double) sHist.get(rowInd, colIndices[3]));
+        if (hglm) {  // for HGLM family
+          _convergence.add((Double) sHist.get(rowInd, colIndices[4]));
+          _sumEtaiSquare.add((Double) sHist.get(rowInd, colIndices[5]));
+        }
+      }
+    }
+    
   }
 
-  private static class LambdaSearchScoringHistory {
+  static class LambdaSearchScoringHistory {
     ArrayList<Long> _scoringTimes = new ArrayList<>();
     private ArrayList<Double> _lambdas = new ArrayList<>();
     private ArrayList<Integer> _lambdaIters = new ArrayList<>();
