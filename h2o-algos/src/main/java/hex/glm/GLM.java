@@ -2,7 +2,6 @@ package hex.glm;
 
 import hex.*;
 import hex.glm.GLMModel.GLMOutput;
-import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.*;
 import hex.glm.GLMModel.GLMWeightsFun;
 import hex.glm.GLMModel.Submodel;
@@ -2276,27 +2275,46 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double [] devHistoryTrain = new double[5];
       double [] devHistoryTest = new double[5];
 
-      if(!_parms._lambda_search & !_parms._HGLM)
-        updateProgress(false);
       if (!_parms._HGLM) {  // only need these for non HGLM
         _ginfoStart = GLMUtils.copyGInfo(_state.ginfo());
         _betaDiffStart = _state.getBetaDiff();
       }
+
+      if (_parms.hasCheckpoint()) { // restore _state parameters
+        _state.copyCheckModel2State(_model._output, _gamColIndices);
+        if (_model._output._submodels.length == 1)
+          _model._output._submodels = null; // null out submodel only for single alpha/lambda values
+      }
+
+      if(!_parms._lambda_search & !_parms._HGLM)
+        updateProgress(false);
+      
       // alpha, lambda search loop
+      int alphaStart = 0;
+      int lambdaStart = 0;
       int submodelCount = 0;
+      if (_parms.hasCheckpoint() && _model._output._submodels != null) {  // multiple alpha/lambdas or lambda search
+        submodelCount = Family.gaussian.equals(_parms._family)?_model._output._submodels.length
+                :_model._output._submodels.length-1;
+        alphaStart = submodelCount / _parms._lambda.length;
+        lambdaStart = submodelCount % _parms._lambda.length;
+      }
       _model._output._lambda_array_size = _parms._lambda.length;
-      for (int alphaInd = 0; alphaInd < _parms._alpha.length; alphaInd++) {
+      for (int alphaInd = alphaStart; alphaInd < _parms._alpha.length; alphaInd++) {
         _state.setAlpha(_parms._alpha[alphaInd]);   // loop through the alphas
-        if ((!_parms._HGLM) && (alphaInd > 0)) // no need for cold start during the first iteration
+        if ((!_parms._HGLM) && (alphaInd > 0) && !_checkPointFirstIter) // no need for cold start during the first iteration
           coldStart(devHistoryTrain, devHistoryTest);  // reset beta, lambda, currGram
-        for (int i = 0; i < _parms._lambda.length; ++i) {  // for lambda search, can quit before it is done
+        for (int i = lambdaStart; i < _parms._lambda.length; ++i) {  // for lambda search, can quit before it is done
           if (_job.stop_requested() || (timeout() && _model._output._submodels.length > 0))
             break;  //need at least one submodel on timeout to avoid issues.
           if (_parms._max_iterations != -1 && _state._iter >= _parms._max_iterations) 
-            break;// iterations accumulate across all lambda/alpha values
-          if ((!_parms._HGLM && (_parms._cold_start || (!_parms._lambda_search && _parms._cold_start))) && (i > 0)) // default: cold_start for non lambda_search
+            break;  // iterations accumulate across all lambda/alpha values when coldstart = false
+          if ((!_parms._HGLM && (_parms._cold_start || (!_parms._lambda_search && _parms._cold_start))) && (i > 0) 
+                  && !_checkPointFirstIter) // default: cold_start for non lambda_search
             coldStart(devHistoryTrain, devHistoryTest);
           Submodel sm = computeSubmodel(submodelCount, _parms._lambda[i], nullDevTrain, nullDevValid);
+          if (_checkPointFirstIter)
+            _checkPointFirstIter = false;
           double trainDev = sm.devianceTrain; // this is stupid, they are always -1 except for lambda_search=True
           double testDev = sm.devianceValid;
           devHistoryTest[submodelCount % devHistoryTest.length] = 
