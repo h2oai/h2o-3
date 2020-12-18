@@ -476,7 +476,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     if(_response != null) {
       if(!isClassifier() && _response.isCategorical())
         error("_response", H2O.technote(2, "Regression requires numeric response, got categorical."));
-      if ((_parms._solver.equals(Solver.GRADIENT_DESCENT_LH) || _parms._solver.equals(Solver.GRADIENT_DESCENT_SQERR)) && !_parms._family.equals(Family.ordinal))
+      if ((Solver.GRADIENT_DESCENT_LH.equals(_parms._solver) || Solver.GRADIENT_DESCENT_LH.equals(_parms._solver)) 
+              && !Family.ordinal.equals(_parms._family))
         error("_solver", "Solvers GRADIENT_DESCENT_LH and GRADIENT_DESCENT_SQERR are only " +
                 "supported for ordinal regression.  Do not choose them unless you specify your family to be ordinal");
       switch (_parms._family) {
@@ -507,7 +508,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if (!_response.isInt())
             warn("_family", "Poisson and Negative Binomial expect non-negative integer response," +
                     " got floats.");
-          if (_parms._family.equals(Family.negativebinomial))
+          if (Family.negativebinomial.equals(_parms._family))
             if (_parms._theta <= 0 || _parms._theta > 1)
               error("_family", "Illegal Negative Binomial theta value.  Valid theta values be > 0" +
                       " and <= 1.");
@@ -601,9 +602,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               _parms.imputeMissing(),
               _parms.makeImputer(), 
               false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms.interactionSpec());
-      _totalBetaLen = _parms._family.equals(Family.multinomial) || _parms._family.equals(Family.ordinal)?
+      _totalBetaLen = Family.multinomial.equals(_parms._family) || Family.ordinal.equals(_parms._family)?
               _dinfo.fullN()*nclasses()+1:_dinfo.fullN()+1;
-      if (_parms._glmType.equals(GLMType.gam))
+      if (GLMType.gam.equals(_parms._glmType))
          _gamColIndices = extractAdaptedFrameIndices(_dinfo._adaptedFrame, _gamColnames, _dinfo._numOffsets[0]-_dinfo._cats);
         
       if (_parms._max_iterations == -1) { // fill in default max iterations
@@ -1344,7 +1345,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private void fitIRLSM_multinomial(Solver s) {
       assert _dinfo._responses == 3 : "IRLSM for multinomial needs extra information encoded in additional reponses, expected 3 response vecs, got " + _dinfo._responses;
 
-      if (s.equals(Solver.COORDINATE_DESCENT)) {
+      if (Solver.COORDINATE_DESCENT.equals(s)) {
         fitCOD_multinomial(s);
       } else {
         double[] beta = _state.betaMultinomial();
@@ -1756,7 +1757,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             break;
           case GRADIENT_DESCENT_LH:
           case GRADIENT_DESCENT_SQERR:
-            if (_parms._family.equals(Family.ordinal))
+            if (Family.ordinal.equals(_parms._family))
               fitIRLSM_ordinal_default(solver);
             break;
           case L_BFGS:
@@ -1960,8 +1961,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         int colLength = _randC[k];
         for (int col=0; col < colLength; col++) {
           int index = k*colLength+col;
-          if (tfamily.equals(Family.gaussian)) {  // only implementation now
-            if (tlink.equals(Link.identity)) {
+          if (Family.gaussian.equals(tfamily)) {  // only implementation now
+            if (Link.identity.equals(tlink)) {
               vals[1] += Math.log(Math.abs(glmfun.linkInvDeriv(glmfun.link(u[index]))));
               vals[0] -= Math.log(Math.sqrt(2*Math.PI))+Math.log(Math.sqrt(phi[index]))+u[index]*u[index]/(2*phi[index]);
             }
@@ -2920,7 +2921,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     used by multinomial with COD.
      */
     public GLMGradientInfo getMultinomialLikelihood(double[] beta) {
-      assert _parms._family.equals(Family.multinomial) : "GLMGradientInfo.getMultinomialLikelihood is only used by multinomial GLM";
+      assert Family.multinomial.equals(_parms._family) : "GLMGradientInfo.getMultinomialLikelihood is only used by multinomial GLM";
       assert _betaMultinomial != null : "Multinomial coefficents cannot be null.";
 
       int off = 0;
@@ -2934,7 +2935,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       for (double[] b : _betaMultinomial) {
         l2pen += ArrayUtils.l2norm2(b, _dinfo._intercept);
       }
-      double smoothval = _parms._glmType.equals(GLMType.gam)?calSmoothNess(_betaMultinomial, _penaltyMatrix, 
+      double smoothval = GLMType.gam.equals(_parms._glmType)?calSmoothNess(_betaMultinomial, _penaltyMatrix, 
               _gamColIndices):0;
       return new GLMGradientInfo(gt._likelihood, gt._likelihood * _parms._obj_reg + .5 * _l2pen * l2pen + 
               smoothval, null);
@@ -2970,7 +2971,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           for (int i = _dinfo.fullN(); i < beta.length; i += _dinfo.fullN() + 1)
             grad[i] = 0;
         }
-        double smoothVal = _parms._glmType.equals(GLMType.gam)?calSmoothNess(_betaMultinomial, _penaltyMatrix,
+        double smoothVal = GLMType.gam.equals(_parms._glmType)?calSmoothNess(_betaMultinomial, _penaltyMatrix,
                 _gamColIndices):0.0;
         return new GLMGradientInfo(gt._likelihood, gt._likelihood * _parms._obj_reg + .5 * _l2pen * l2pen + 
                 smoothVal, grad);
@@ -2985,7 +2986,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         else if(_parms._family == Family.gaussian && _parms._link == Link.identity)
           gt = new GLMGaussianGradientTask(_job == null?null:_job._key,_dinfo,_parms,_l2pen, beta, _penaltyMatrix,
                   _gamColIndices).doAll(_dinfo._adaptedFrame);
-        else if (_parms._family.equals(Family.negativebinomial))
+        else if (Family.negativebinomial.equals(_parms._family))
           gt =  new GLMNegativeBinomialGradientTask(_job == null?null:_job._key,_dinfo,
                   _parms,_l2pen, beta, _penaltyMatrix, _gamColIndices).doAll(_dinfo._adaptedFrame);
         else if(_parms._family == Family.poisson && _parms._link == Link.log)
@@ -3002,7 +3003,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (!_parms._intercept) // no intercept, null the ginfo
           gradient[gradient.length - 1] = 0;
         
-        double gamSmooth = _parms._glmType.equals(GLMType.gam)?
+        double gamSmooth = GLMType.gam.equals(_parms._glmType)?
                 calSmoothNess(expandVec(beta, _dinfo._activeCols, _totalBetaLen), _penaltyMatrix, _gamColIndices):0;
         double obj = likelihood * _parms._obj_reg + .5 * _l2pen * ArrayUtils.l2norm2(beta, true)+gamSmooth;
         if (_bc != null && _bc._betaGiven != null && _bc._rho != null)
@@ -3014,7 +3015,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     @Override
     public GradientInfo getObjective(double[] beta) {
       double l = new GLMResDevTask(_job._key,_dinfo,_parms,beta).doAll(_dinfo._adaptedFrame)._likelihood;
-      double smoothness = _parms._glmType.equals(GLMType.gam)?
+      double smoothness = GLMType.gam.equals(_parms._glmType)?
               calSmoothNess(expandVec(beta, _dinfo._activeCols, _totalBetaLen), _penaltyMatrix, _gamColIndices):0;
       return new GLMGradientInfo(l,l*_parms._obj_reg + .5*_l2pen*ArrayUtils.l2norm2(beta,true)
               +smoothness,null);
