@@ -54,27 +54,28 @@ public final class PersistFS extends Persist {
       return null; // No value
     }
     try (FileInputStream s = new FileInputStream(f)) {
-        AutoBuffer ab = new AutoBuffer(s.getChannel(), true, Value.ICE);
-        byte[] b = ab.getA1(v._max);
-        ab.close();
-        return b;
-      }
+      AutoBuffer ab = new AutoBuffer(s.getChannel(), true, Value.ICE);
+      byte[] b = ab.getA1(v._max);
+      ab.close();
+      return b;
+    }
   }
 
   // Store Value v to disk.
-  @Override public void store(Value v) throws IOException {
+  @Override
+  public void store(Value v) throws IOException {
     assert !v.isPersisted();
     File dirs = new File(_dir, getIceDirectory(v._key));
-    if( !dirs.mkdirs() && !dirs.exists() )
-      throw new java.io.IOException("mkdirs failed making "+dirs);
-    try(FileOutputStream s = new FileOutputStream(getFile(v))) {
-        byte[] m = v.memOrLoad(); // we are not single threaded anymore
-        if( m != null && m.length != v._max ) {
-          Log.warn("Value size mismatch? " + v._key + " byte[].len=" + m.length+" v._max="+v._max);
-          v._max = m.length; // Implies update of underlying POJO, then re-serializing it without K/V storing it
-        }
-        new AutoBuffer(s.getChannel(), false, Value.ICE).putA1(m, m.length).close();
-      } catch( AutoBuffer.AutoBufferException abe ) {
+    if (!dirs.mkdirs() && !dirs.exists())
+      throw new java.io.IOException("mkdirs failed making " + dirs);
+    try (FileOutputStream s = new FileOutputStream(getFile(v))) {
+      byte[] m = v.memOrLoad(); // we are not single threaded anymore
+      if (m != null && m.length != v._max) {
+        Log.warn("Value size mismatch? " + v._key + " byte[].len=" + m.length + " v._max=" + v._max);
+        v._max = m.length; // Implies update of underlying POJO, then re-serializing it without K/V storing it
+      }
+      new AutoBuffer(s.getChannel(), false, Value.ICE).putA1(m, m.length).close();
+    } catch (AutoBuffer.AutoBufferException abe) {
       throw abe._ioe;
     }
   }

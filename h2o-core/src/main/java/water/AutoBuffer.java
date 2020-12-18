@@ -399,7 +399,10 @@ public final class AutoBuffer {
   // only on the writer-side.
   public static class AutoBufferException extends RuntimeException {
     public final IOException _ioe;
-    AutoBufferException( IOException ioe ) { _ioe = ioe; }
+    AutoBufferException( IOException ioe ) { 
+      super(ioe); 
+      _ioe = ioe; 
+    }
   }
 
   // For reads, just assert all was read and close and release resources.
