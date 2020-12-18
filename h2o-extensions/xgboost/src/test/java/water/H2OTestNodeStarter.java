@@ -12,5 +12,4 @@ public class H2OTestNodeStarter extends H2OStarter {
   public static void main(String[] args) {
     start(args, System.getProperty("user.dir"));
   }
-
 }
