@@ -203,102 +203,115 @@ public class BuildHistogram extends MRTask<BuildHistogram> {
       int sz = (int)(espc[i] - espc[i-1]);
       if(sz > largestChunkSz) largestChunkSz = sz;
     }
-    final int fLargestChunkSz = largestChunkSz;
     if(_weightIdx == -1){
       double [] ws = new double[largestChunkSz];
       Arrays.fill(ws,1);
       Arrays.fill(_ws,ws);
     }
-    final AtomicInteger cidx = new AtomicInteger(0);
-    // First do the phase 1 on all local data
-    new LocalMR(new MrFun(){
-      // more or less copied from ScoreBuildHistogram
-      private void map(int id, Chunk [] chks) {
-        final C4VolatileChunk nids = (C4VolatileChunk) chks[_nidIdx];
-        // Pass 1: Score a prior partially-built tree model, and make new Node
-        // assignments to every row.  This involves pulling out the current
-        // assigned DecidedNode, "scoring" the row against that Node's decision
-        // criteria, and assigning the row to a new child UndecidedNode (and
-        // giving it an improved prediction).
-        int [] nnids;
-        if( _leaf > 0)            // Prior pass exists?
-          nnids = score_decide(chks,nids.getValues());
-        else {                     // Just flag all the NA rows
-          nnids = new int[nids._len];
-          int [] is = nids.getValues();
-          for (int row = 0; row < nids._len; row++) {
-            if (isDecidedRow(is[row]))
-              nnids[row] = DECIDED_ROW;
-          }
-        }
-        // Pass 2: accumulate all rows, cols into histograms
-        // Sort the rows by NID, so we visit all the same NIDs in a row
-        // Find the count of unique NIDs in this chunk
-        int nh[] = (_nhs[id] = new int[_numLeafs + 1]);
-        for (int i : nnids)
-          if (i >= 0)
-            nh[i + 1]++;
-        // Rollup the histogram of rows-per-NID in this chunk
-        for (int i = 0; i <_numLeafs; i++) nh[i + 1] += nh[i];
-        // Splat the rows into NID-groups
-        int rows[] = (_rss[id] = new int[nnids.length]);
-        for (int row = 0; row < nnids.length; row++)
-          if (nnids[row] >= 0)
-            rows[nh[nnids[row]]++] = row;
+    new LocalMR(new PhaseOne(), new PhaseTwo(this, largestChunkSz)).fork();
+  }
+  
+  private class PhaseOne extends MrFun<PhaseOne> {
+    
+    private final AtomicInteger cidx = new AtomicInteger(0);
 
-      }
-      @Override
-      protected void map(int id) {
-        Vec[] vecs = _fr2.vecs();
-        for(id = cidx.getAndIncrement(); id < _cids.length; id = cidx.getAndIncrement()) {
-          int cidx = _cids[id];
-          Chunk [] chks = _chks[id];
-          for (int i = 0; i < chks.length; ++i)
-            chks[i] = vecs[i].chunkForChunkIdx(cidx);
-          map(id,chks);
-          chks[_nidIdx].close(cidx,_fs);
-          Chunk resChk = chks[_workIdx];
-          int len = resChk.len();
-          if(resChk instanceof C8DVolatileChunk){
-            _ys[id] = ((C8DVolatileChunk)resChk).getValues();
-          } else _ys[id] = resChk.getDoubles(MemoryManager.malloc8d(len), 0, len);
-          if(_weightIdx != -1){
-            _ws[id] = chks[_weightIdx].getDoubles(MemoryManager.malloc8d(len), 0, len);
-          }
+    private void map(int id, Chunk [] chks) {
+      final C4VolatileChunk nids = (C4VolatileChunk) chks[_nidIdx];
+      // Pass 1: Score a prior partially-built tree model, and make new Node
+      // assignments to every row.  This involves pulling out the current
+      // assigned DecidedNode, "scoring" the row against that Node's decision
+      // criteria, and assigning the row to a new child UndecidedNode (and
+      // giving it an improved prediction).
+      int [] nnids;
+      if( _leaf > 0)            // Prior pass exists?
+        nnids = score_decide(chks,nids.getValues());
+      else {                     // Just flag all the NA rows
+        nnids = new int[nids._len];
+        int [] is = nids.getValues();
+        for (int row = 0; row < nids._len; row++) {
+          if (isDecidedRow(is[row]))
+            nnids[row] = DECIDED_ROW;
         }
       }
-    },new H2O.H2OCountedCompleter(this) {
-      public void onCompletion(CountedCompleter cc){
-        final int ncols = _ncols;
-        final int [] active_cols = _activeCols == null?null:new int[Math.max(1,_activeCols.cardinality())];
-        int nactive_cols = active_cols == null?ncols:active_cols.length;
-        final int numWrks = _hcs.length*nactive_cols < 16*1024?H2O.NUMCPUS:Math.min(H2O.NUMCPUS,Math.max(4*H2O.NUMCPUS/nactive_cols,1));
-        final int rem = H2O.NUMCPUS-numWrks*ncols;
-        BuildHistogram.this.addToPendingCount(1+nactive_cols);
-        if(active_cols != null) {
-          int j = 0;
-          for (int i = 0; i < ncols; ++i)
-            if (_activeCols.contains(i))
-              active_cols[j++] = i;
+      // Pass 2: accumulate all rows, cols into histograms
+      // Sort the rows by NID, so we visit all the same NIDs in a row
+      // Find the count of unique NIDs in this chunk
+      int nh[] = (_nhs[id] = new int[_numLeafs + 1]);
+      for (int i : nnids)
+        if (i >= 0)
+          nh[i + 1]++;
+      // Rollup the histogram of rows-per-NID in this chunk
+      for (int i = 0; i <_numLeafs; i++) nh[i + 1] += nh[i];
+      // Splat the rows into NID-groups
+      int rows[] = (_rss[id] = new int[nnids.length]);
+      for (int row = 0; row < nnids.length; row++)
+        if (nnids[row] >= 0)
+          rows[nh[nnids[row]]++] = row;
+
+    }
+    
+    @Override
+    protected void map(int id) {
+      Vec[] vecs = _fr2.vecs();
+      for(id = cidx.getAndIncrement(); id < _cids.length; id = cidx.getAndIncrement()) {
+        int cidx = _cids[id];
+        Chunk [] chks = _chks[id];
+        for (int i = 0; i < chks.length; ++i)
+          chks[i] = vecs[i].chunkForChunkIdx(cidx);
+        map(id,chks);
+        chks[_nidIdx].close(cidx,_fs);
+        Chunk resChk = chks[_workIdx];
+        int len = resChk.len();
+        if(resChk instanceof C8DVolatileChunk){
+          _ys[id] = ((C8DVolatileChunk)resChk).getValues();
+        } else _ys[id] = resChk.getDoubles(MemoryManager.malloc8d(len), 0, len);
+        if(_weightIdx != -1){
+          _ws[id] = chks[_weightIdx].getDoubles(MemoryManager.malloc8d(len), 0, len);
         }
-        // MRTask (over columns) launching MrTasks (over number of workers) for each column.
-        // We want FJ to start processing all the columns before parallelizing within column to reduce memory overhead.
-        // (running single column in n threads means n-copies of the histogram)
-        // This is how it works:
-        //    1) Outer MRTask walks down it's tree, forking tasks with exponentially decreasing number of columns until reaching its left most leaf for columns 0.
-        //       At this point, the local fjq for this thread has a task for processing half of columns at the bottom, followed by task for 1/4 of columns and so on.
-        //       Other threads start stealing work from the bottom.
-        //    2) forks the leaf task and (because its polling from the top) executes the LocalMr for the column 0.
-        // This way we should have columns as equally distributed as possible without resorting to shared priority queue
-        new LocalMR(new MrFun() {
-          @Override
-          protected void map(int c) {
-            c = active_cols == null?c:active_cols[c];
-            new LocalMR(new ComputeHistogramTask(_hcs.length == 0?new DHistogram[0]:_hcs[c],c,fLargestChunkSz,new AtomicInteger()),numWrks + (c < rem?1:0), BuildHistogram.this).fork();
-          }
-        },nactive_cols, BuildHistogram.this).fork();
       }
-    }).fork();
+    }
+  }
+  
+  private class PhaseTwo extends H2O.H2OCountedCompleter {
+
+    final int largestChunkSz;
+
+    PhaseTwo(H2O.H2OCountedCompleter cc, int largestChunkSz) {
+      super(cc);
+      this.largestChunkSz = largestChunkSz;
+    }
+    
+    @Override
+    public void onCompletion(CountedCompleter cc){
+      final int ncols = _ncols;
+      final int [] active_cols = _activeCols == null?null:new int[Math.max(1,_activeCols.cardinality())];
+      int nactive_cols = active_cols == null?ncols:active_cols.length;
+      final int numWrks = _hcs.length*nactive_cols < 16*1024?H2O.NUMCPUS:Math.min(H2O.NUMCPUS,Math.max(4*H2O.NUMCPUS/nactive_cols,1));
+      final int rem = H2O.NUMCPUS-numWrks*ncols;
+      BuildHistogram.this.addToPendingCount(1+nactive_cols);
+      if(active_cols != null) {
+        int j = 0;
+        for (int i = 0; i < ncols; ++i)
+          if (_activeCols.contains(i))
+            active_cols[j++] = i;
+      }
+      // MRTask (over columns) launching MrTasks (over number of workers) for each column.
+      // We want FJ to start processing all the columns before parallelizing within column to reduce memory overhead.
+      // (running single column in n threads means n-copies of the histogram)
+      // This is how it works:
+      //    1) Outer MRTask walks down it's tree, forking tasks with exponentially decreasing number of columns until reaching its left most leaf for columns 0.
+      //       At this point, the local fjq for this thread has a task for processing half of columns at the bottom, followed by task for 1/4 of columns and so on.
+      //       Other threads start stealing work from the bottom.
+      //    2) forks the leaf task and (because its polling from the top) executes the LocalMr for the column 0.
+      // This way we should have columns as equally distributed as possible without resorting to shared priority queue
+      new LocalMR(new MrFun() {
+        @Override
+        protected void map(int c) {
+          c = active_cols == null?c:active_cols[c];
+          new LocalMR(new ComputeHistogramTask(_hcs.length == 0?new DHistogram[0]:_hcs[c],c,largestChunkSz,new AtomicInteger()),numWrks + (c < rem?1:0), BuildHistogram.this).fork();
+        }
+      },nactive_cols, BuildHistogram.this).fork();
+    }
   }
 
   private static void mergeHistos(DHistogram [] hcs, DHistogram [] hcs2){
