@@ -13,10 +13,10 @@ import hex.optimization.OptimizationUtils.GradientSolver;
 import water.H2O;
 import water.Job;
 import water.MemoryManager;
+import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MathUtils;
-import water.fvec.Frame;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -93,7 +93,57 @@ public final class ComputationState {
     _gamBetaIndices = gamColInd;
     _lambdaNull = (_parms._lambda==null) && !(_parms._lambda_search);
   }
+  
+  // copy over parameters from _model to _state for checkpointing
+  // jest of this method is to restore the _state to be the same as before
+  void copyCheckModel2State(GLMModel model, int[][] _gamColIndices) {
+    GLMModel.GLMOutput modelOutput = model._output;
+    int submodelInd;
+    int coefLen = _nclasses > 2 ? (_dinfo.fullN() + 1) * _nclasses : (_dinfo.fullN() + 1);
+    if (modelOutput._submodels.length > 1)  // lambda search or multiple alpha/lambda cases
+      submodelInd = modelOutput._submodels.length - 1; // submodel where the model building ends
+    else  // no lambda search or multiple alpha/lambda case
+      submodelInd = 0;
 
+    setIter(modelOutput._submodels[submodelInd].iteration);
+    setAlpha(modelOutput._submodels[submodelInd].alpha_value);
+
+    if (submodelInd > 0) {
+      int preCurrSubmodelInd = Family.gaussian.equals(_parms._family) ? submodelInd : (submodelInd - 1);
+      _activeData._activeCols = modelOutput._submodels[preCurrSubmodelInd].idxs;
+      double[] betaExpand = Family.multinomial.equals(_parms._family)
+              ? ArrayUtils.expandAndScatter(modelOutput._submodels[preCurrSubmodelInd].beta, coefLen, _activeData._activeCols)
+              : expandBeta(modelOutput._submodels[preCurrSubmodelInd].beta);
+      GLMGradientInfo ginfo = new GLMGradientSolver(_job, _parms, _dinfo, 0, activeBC(), _penaltyMatrix,
+              _gamColIndices).getGradient(betaExpand);  // gradient obtained with zero penalty
+
+      _activeData._activeCols = null;
+      updateState(betaExpand, ginfo);
+      setLambdaSimple(_parms._lambda[preCurrSubmodelInd]);
+    }
+    // this part must be done for single model before setting coefficients
+    if (!Family.gaussian.equals(_parms._family))  // will build for new lambda for gaussian
+      setLambda(modelOutput._submodels[submodelInd].lambda_value);
+
+    // update _state with last submodelInd coefficients
+    double[] expandedBeta = modelOutput._submodels[submodelInd].idxs == null
+            ? modelOutput._submodels[submodelInd].beta
+            : ArrayUtils.expandAndScatter(modelOutput._submodels[submodelInd].beta, coefLen,
+            modelOutput._submodels[submodelInd].idxs);
+    GLMGradientInfo ginfo = new GLMGradientSolver(_job, _parms, _dinfo, 0, activeBC(),
+            _penaltyMatrix, _gamColIndices).getGradient(expandedBeta);  // gradient obtained with zero penalty
+    updateState(expandedBeta, ginfo);
+    // make sure model._betaCndCheckpoint is of the right size
+    if (model._betaCndCheckpoint != null) {
+      if (_activeData._activeCols == null || (_activeData._activeCols.length != model._betaCndCheckpoint.length)) {
+        double[] betaCndCheckpoint = ArrayUtils.expandAndScatter(model._betaCndCheckpoint, coefLen,
+                modelOutput._submodels[submodelInd].idxs); // expand betaCndCheckpoint out
+        if (_activeData._activeCols != null) // contract the betaCndCheckpoint to the right activeCol length
+          betaCndCheckpoint = extractSubRange(betaCndCheckpoint.length, 0, activeData()._activeCols, betaCndCheckpoint);
+        model._betaCndCheckpoint = betaCndCheckpoint;  
+      }
+    }
+  }
 
   public void set_sumEtaSquareConvergence(double[] sumInfo) {
     _sumEtaSquareConvergence = sumInfo;
@@ -711,9 +761,10 @@ public final class ComputationState {
     _priorw_wpsi = wpsi;  // store prior_weight and calculated wpsi value for coefficients of random columns
     _iterHGLM_GLMMME = 0;
   }
-
-  public double [] expandBeta(double [] beta) {
-    if(_activeData._activeCols == null)
+  
+  public double [] expandBeta(double [] beta) { // for multinomials
+    int fullCoefLen = (_dinfo.fullN() + 1) * _nclasses;
+    if(_activeData._activeCols == null || beta.length == fullCoefLen)
       return beta;
     return ArrayUtils.expandAndScatter(beta, (_dinfo.fullN() + 1) * _nclasses,_activeData._activeCols);
   }
