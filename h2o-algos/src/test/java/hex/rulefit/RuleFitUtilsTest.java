@@ -13,8 +13,12 @@ import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 import static hex.tree.TreeUtils.getResponseLevelIndex;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -144,24 +148,19 @@ public class RuleFitUtilsTest extends TestUtil {
             Set<Rule> treeRules =  Rule.extractRulesFromTree(sharedTreeSubgraph, 0);
             assertEquals(treeRules.size(), 8);
 
-            Condition condition1 = new Condition(0, Condition.Type.Categorical, Condition.Operator.In, -1.0, new String[] {"f1995", "f1996", "f1997", "f1998", "f1999", "f2000"}, new int[] {8, 9, 10, 11, 12, 13}, "fYear", false);
-            Condition condition2 = new Condition(5, Condition.Type.Numerical, Condition.Operator.LessThan, 228.5, null, null, "Distance", false);
-            Condition condition3 = new Condition(2, Condition.Type.Categorical, Condition.Operator.In, -1.0, new String[] {"f24", "f25", "f26", "f27", "f28", "f29", "f3", "f30", "f31", "f4", "f5", "f6", "f7", "f8", "f9"},
-                    new int[] {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30},"fDayofMonth", true);
-            Condition[] conditions = new Condition[] {condition1, condition2, condition3};
-
-            Rule rule = new Rule(conditions, 2.0, "whatever");
-
-            assertEquals(treeRules.contains(rule),true);
-
-            condition1 = new Condition(0, Condition.Type.Categorical, Condition.Operator.In, -1.0, new String[] {"f1995", "f1996", "f1997", "f1998", "f1999", "f2000"}, new int[] {8, 9, 10, 11, 12, 13}, "fYear", false);
-            condition2 = new Condition(5, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 228.5, null, null,"Distance", true);
-            condition3 = new Condition(5, Condition.Type.Numerical, Condition.Operator.LessThan, 362.5, null, null,"Distance", false);
-            conditions = new Condition[] {condition1, condition2, condition3};
-
-            rule = new Rule(conditions, 2.0, "whatever");
-            
-            assertEquals(treeRules.contains(rule),true);
+            List<String> languageRules = treeRules.stream().map(it -> it.languageRule).sorted().collect(Collectors.toList());
+            // Note: this hard-coded list of expected rules is sensitive to changes in the upstream algo
+            List<String> expectedRules = Arrays.asList(
+                    "(fYear in {f1987, f1988, f1989, f1990, f1991}) & (fYear in {f1987, f1988}) & (fYear in {f1987})",
+                    "(fYear in {f1987, f1988, f1989, f1990, f1991}) & (fYear in {f1987, f1988}) & (fYear in {f1988})",
+                    "(fYear in {f1987, f1988, f1989, f1990, f1991}) & (fYear in {f1989, f1990, f1991, f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000}) & (fDayOfWeek in {f1, f2, f3, f4} or fDayOfWeek is NA)",
+                    "(fYear in {f1987, f1988, f1989, f1990, f1991}) & (fYear in {f1989, f1990, f1991, f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000}) & (fDayOfWeek in {f5, f6, f7})",
+                    "(fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA) & (Distance < 211.5) & (fYear in {f1987, f1988, f1989, f1990, f1991, f1992, f1993} or fYear is NA)",
+                    "(fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA) & (Distance < 211.5) & (fYear in {f1994, f1995, f1996, f1997, f1998, f1999, f2000})",
+                    "(fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA) & (Distance >= 211.5 or Distance is NA) & (Distance < 348.5)",
+                    "(fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA) & (Distance >= 211.5 or Distance is NA) & (Distance >= 348.5 or Distance is NA)"
+            );
+            assertEquals(expectedRules, languageRules);
 
             List<Rule> wholeModelRules = Rule.extractRulesListFromModel(isofor, 0, 1);
             assertEquals(wholeModelRules.size(), 8);
