@@ -1665,7 +1665,7 @@ public class DRFTest extends TestUtil {
       }
       int idx = ArrayUtils.minIndex(loglosses);
       Log.info("Optimal randomization: " + histoType[idx]);
-      Assert.assertTrue(4 == idx); //Quantiles are best
+      Assert.assertEquals(SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal, histoType[idx]); //Quantiles are best
     } finally {
       if (drf!=null) drf.delete();
       if (tfr!=null) tfr.delete();
