@@ -23,3 +23,13 @@ if [[ ! -f /opt/h2oai/h2o_installed ]]; then
     sudo unzip -d /opt/h2oai "/tmp/${H2O_ZIP_FILE}"
     sudo touch /opt/h2oai/h2o_installed 
 fi
+
+# Install Simba BQ JDBC drivers
+if [[ ! -f "/opt/h2oai/${H2O_VERSION}/jdbc/release-notes.txt" ]]; then
+  sudo mkdir -p "/opt/h2oai/${H2O_VERSION}/jdbc"
+  curl https://storage.googleapis.com/simba-bq-release/jdbc/SimbaJDBCDriverforGoogleBigQuery42_1.2.12.1015.zip -o /tmp/jdbc.zip
+  sudo unzip -d "/opt/h2oai/${H2O_VERSION}/jdbc" /tmp/jdbc.zip
+fi
+
+sudo mv /tmp/h2ocluster-sa-key.json "/opt/h2oai/${H2O_VERSION}/h2ocluster-sa-key.json" 
+

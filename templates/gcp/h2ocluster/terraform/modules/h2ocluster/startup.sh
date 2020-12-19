@@ -40,10 +40,6 @@ echo "${IP_ADDRESSES[*]}" | tr ' ' '\n' > /tmp/instance_ips
 echo "${IP_ADDRESSES[*]}" | tr ' ' '\n' | sed 's/$/:54321/' > /tmp/flatfile
 # Flatfile generated- but do it at the proper place later
 
-# install dependencies
-unzip -v || { echo "Installing Unzip"; yum install -y unzip; }
-java -version || { echo "Installing Java JDK"; yum install -y java-1.8.0-openjdk-devel; }
-
 H2O_URL=$(curl --silent -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/h2o-url)
 echo "${H2O_URL}" > /tmp/h2o_url
 
@@ -54,23 +50,12 @@ echo "${H2O_VERSION}" > /tmp/h2o_version
 H2O_HOME_DIR="/opt/h2oai/${H2O_VERSION}"
 echo "${H2O_HOME_DIR}" > /tmp/h2o_home_dir
 
-# Start installing H2O
-mkdir -p /opt/h2oai
-# if flag file h2o_installed is not found install H2O
-if [[ ! -f /opt/h2oai/h2o_installed ]]; then
-    curl "${H2O_URL}" -o "/tmp/${H2O_ZIP_FILE}"
-    unzip -d /opt/h2oai "/tmp/${H2O_ZIP_FILE}"
-    touch /opt/h2oai/h2o_installed 
-fi
 
 # Run H2O
 memTotalKb=$(cat /proc/meminfo | grep MemTotal | sed 's/MemTotal:[ \t]*//' | sed 's/ kB//')
 memTotalMb=$[ $memTotalKb / 1024 ]
 tmp=$[ $memTotalMb * 90 ]
 xmxMb=$[ $tmp / 100 ]
-
-# Signal Startup script completion
-gcloud compute instances add-metadata ${INSTANCE} --metadata startup-complete=TRUE --zone=${ZONE} 
 
 # run H2O in flatfile approach. 
 cp /tmp/flatfile "${H2O_HOME_DIR}/flatfile.txt" 

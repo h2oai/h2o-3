@@ -9,7 +9,7 @@ vpc_private_subnet_id = " https://www.googleapis.com/compute/v1/projects/steamwi
 
 h2o_cluster_instance_count = "3"
 h2o_cluster_instance_machine_type = "e2-highmem-4"
-h2o_cluster_instance_boot_disk_image = "rhel-7-v20201112"
+h2o_cluster_instance_boot_disk_image = "packer-h2o-3-32-0-2-1608368566"
 h2o_cluster_instance_boot_disk_type = "pd-ssd"
 h2o_cluster_instance_boot_disk_size  = 30
 
