@@ -13,10 +13,10 @@ import hex.optimization.OptimizationUtils.GradientSolver;
 import water.H2O;
 import water.Job;
 import water.MemoryManager;
+import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MathUtils;
-import water.fvec.Frame;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -96,7 +96,8 @@ public final class ComputationState {
 
   // copy over parameters from _model to _state for checkpointing
   // jest of this method is to restore the _state to be the same as before
-  void copyCheckModel2State(GLMModel.GLMOutput modelOutput, int[][] _gamColIndices) {
+  void copyCheckModel2State(GLMModel model, int[][] _gamColIndices) {
+    GLMModel.GLMOutput modelOutput = model._output;
     int submodelInd;
     int coefLen = _nclasses > 2 ? (_dinfo.fullN() + 1) * _nclasses : (_dinfo.fullN() + 1);
     if (modelOutput._submodels.length > 1)  // lambda search or multiple alpha/lambda cases
@@ -132,6 +133,16 @@ public final class ComputationState {
     GLMGradientInfo ginfo = new GLMGradientSolver(_job, _parms, _dinfo, 0, activeBC(),
             _penaltyMatrix, _gamColIndices).getGradient(expandedBeta);  // gradient obtained with zero penalty
     updateState(expandedBeta, ginfo);
+    // make sure model._betaCndCheckpoint is of the right size
+    if (model._betaCndCheckpoint != null) {
+      if (_activeData._activeCols == null || (_activeData._activeCols.length != model._betaCndCheckpoint.length)) {
+        double[] betaCndCheckpoint = ArrayUtils.expandAndScatter(model._betaCndCheckpoint, coefLen,
+                modelOutput._submodels[submodelInd].idxs); // expand betaCndCheckpoint out
+        if (_activeData._activeCols != null) // contract the betaCndCheckpoint to the right activeCol length
+          betaCndCheckpoint = extractSubRange(betaCndCheckpoint.length, 0, activeData()._activeCols, betaCndCheckpoint);
+        model._betaCndCheckpoint = betaCndCheckpoint;  
+      }
+    }
   }
 
   public void set_sumEtaSquareConvergence(double[] sumInfo) {
@@ -743,10 +754,10 @@ public final class ComputationState {
     _priorw_wpsi = wpsi;  // store prior_weight and calculated wpsi value for coefficients of random columns
     _iterHGLM_GLMMME = 0;
   }
-
+  
   public double [] expandBeta(double [] beta) { // for multinomials
     int fullCoefLen = (_dinfo.fullN() + 1) * _nclasses;
-    if(_activeData._activeCols != null || beta.length == fullCoefLen)
+    if(_activeData._activeCols == null || beta.length == fullCoefLen)
       return beta;
     return ArrayUtils.expandAndScatter(beta, fullCoefLen, _activeData._activeCols);
   }

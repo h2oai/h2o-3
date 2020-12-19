@@ -1529,10 +1529,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           } else {
             if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood) && !_checkPointFirstIter) {
               Log.info("DONE after " + (iterCnt-1) + " iterations (1)");
+              _model._betaCndCheckpoint = betaCnd;
               return;
             }
-            betaCnd = s == Solver.COORDINATE_DESCENT?COD_solve(gram,_state._alpha,_state.lambda())
-                    :ADMM_solve(gram.gram,gram.xy); // this will shrink betaCnd if needed but this call may be skipped
+            if (!_checkPointFirstIter)
+              betaCnd = s == Solver.COORDINATE_DESCENT ? COD_solve(gram, _state._alpha, _state.lambda())
+                      : ADMM_solve(gram.gram, gram.xy); // this will shrink betaCnd if needed but this call may be skipped
           }
           firstIter = false;
           _checkPointFirstIter = false;
@@ -2295,7 +2297,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
 
       if (_parms.hasCheckpoint()) { // restore _state parameters
-        _state.copyCheckModel2State(_model._output, _gamColIndices);
+        _state.copyCheckModel2State(_model, _gamColIndices);
         if (_model._output._submodels.length == 1)
           _model._output._submodels = null; // null out submodel only for single alpha/lambda values
       }
