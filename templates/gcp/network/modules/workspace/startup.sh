@@ -43,4 +43,4 @@ chmod +x /usr/bin/jq
 echo 'PATH="/opt/h2ocluster/terraform:$PATH"' > /etc/profile.d/h2ocluster.sh
 
 # Signal Startup script completion
-gcloud compute instances add-metadata ${INSTANCE} --metadata startup-complete=TRUE --zone=${ZONE}
+# gcloud compute instances add-metadata ${INSTANCE} --metadata startup-complete=TRUE --zone=${ZONE}
