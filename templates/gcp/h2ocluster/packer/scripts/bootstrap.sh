@@ -32,4 +32,4 @@ if [[ ! -f "/opt/h2oai/${H2O_VERSION}/jdbc/release-notes.txt" ]]; then
 fi
 
 sudo mv /tmp/h2ocluster-sa-key.json "/opt/h2oai/${H2O_VERSION}/h2ocluster-sa-key.json" 
-
+sudo chown root:root "/opt/h2oai/${H2O_VERSION}/h2ocluster-sa-key.json" 
