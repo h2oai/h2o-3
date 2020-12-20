@@ -59,6 +59,6 @@ xmxMb=$[ $tmp / 100 ]
 
 # run H2O in flatfile approach. 
 cp /tmp/flatfile "${H2O_HOME_DIR}/flatfile.txt" 
-java -Xmx${xmxMb}m -jar "${H2O_HOME_DIR}/h2o.jar" -flatfile "${H2O_HOME_DIR}/flatfile.txt" -name "${IG_NAME}"
+java -Xmx${xmxMb}m -cp  "${H2O_HOME_DIR}"/jdbc/*:"${H2O_HOME_DIR}"/h2o.jar -flatfile "${H2O_HOME_DIR}/flatfile.txt" -name "${IG_NAME}"
 
 
