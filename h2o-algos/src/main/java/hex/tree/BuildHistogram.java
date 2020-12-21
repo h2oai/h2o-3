@@ -153,7 +153,7 @@ public class BuildHistogram extends MRTask<BuildHistogram> {
   // assigned DecidedNode, "scoring" the row against that Node's decision
   // criteria, and assigning the row to a new child UndecidedNode (and
   // giving it an improved prediction).
-  protected int[] score_decide(Chunk chks[], int nnids[]) {
+  protected int[] scoreDecide(Chunk chks[], int nnids[]) {
     int [] res = nnids.clone();
     for( int row=0; row<nnids.length; row++ ) { // Over all rows
       int nid = nnids[row];          // Get Node to decide from
@@ -208,10 +208,10 @@ public class BuildHistogram extends MRTask<BuildHistogram> {
       Arrays.fill(ws,1);
       Arrays.fill(_ws,ws);
     }
-    new LocalMR(new PhaseOne(), new PhaseTwo(this, largestChunkSz)).fork();
+    new LocalMR(new ScorePhase(), new BuildPhase(this, largestChunkSz)).fork();
   }
   
-  private class PhaseOne extends MrFun<PhaseOne> {
+  private class ScorePhase extends MrFun<ScorePhase> {
     
     private final AtomicInteger cidx = new AtomicInteger(0);
 
@@ -224,7 +224,7 @@ public class BuildHistogram extends MRTask<BuildHistogram> {
       // giving it an improved prediction).
       int [] nnids;
       if( _leaf > 0)            // Prior pass exists?
-        nnids = scoreDecide(chks,nids.getValues());
+        nnids = scoreDecide(chks, nids.getValues());
       else {                     // Just flag all the NA rows
         nnids = new int[nids._len];
         int [] is = nids.getValues();
@@ -271,11 +271,11 @@ public class BuildHistogram extends MRTask<BuildHistogram> {
     }
   }
   
-  private class PhaseTwo extends H2O.H2OCountedCompleter {
+  private class BuildPhase extends H2O.H2OCountedCompleter {
 
     final int largestChunkSz;
 
-    PhaseTwo(H2O.H2OCountedCompleter cc, int largestChunkSz) {
+    BuildPhase(H2O.H2OCountedCompleter cc, int largestChunkSz) {
       super(cc);
       this.largestChunkSz = largestChunkSz;
     }
@@ -285,7 +285,7 @@ public class BuildHistogram extends MRTask<BuildHistogram> {
       final int ncols = _ncols;
       final int [] active_cols = _activeCols == null?null:new int[Math.max(1,_activeCols.cardinality())];
       int nactive_cols = active_cols == null?ncols:active_cols.length;
-      final int numWrks = _hcs.length*nactive_cols < 16*1024?H2O.NUMCPUS:Math.min(H2O.NUMCPUS,Math.max(4*H2O.NUMCPUS/nactive_cols,1));
+      final int numWrks = _hcs.length * nactive_cols < 16 * 1024 ? H2O.NUMCPUS : Math.min(H2O.NUMCPUS, Math.max(4 * H2O.NUMCPUS / nactive_cols, 1));
       final int rem = H2O.NUMCPUS-numWrks*ncols;
       BuildHistogram.this.addToPendingCount(1+nactive_cols);
       if(active_cols != null) {
@@ -307,19 +307,13 @@ public class BuildHistogram extends MRTask<BuildHistogram> {
         @Override
         protected void map(int c) {
           c = active_cols == null ? c : active_cols[c];
-          new LocalMR(new ComputeHistogramTask(_hcs.length == 0?new DHistogram[0]:_hcs[c],c,largestChunkSz,new AtomicInteger()),numWrks + (c < rem?1:0), BuildHistogram.this).fork();
+          ComputeHistogramTask task = new ComputeHistogramTask(
+              _hcs.length == 0 ? new DHistogram[0] : _hcs[c],
+              c, largestChunkSz, new AtomicInteger()
+          );
+          new LocalMR(task, numWrks + (c < rem ? 1 : 0), BuildHistogram.this).fork();
         }
-      },nactive_cols, BuildHistogram.this).fork();
-    }
-  }
-
-  private static void mergeHistos(DHistogram [] hcs, DHistogram [] hcs2){
-    // Distributed histograms need a little work
-    for( int i=0; i< hcs.length; i++ ) {
-      DHistogram hs1 = hcs[i], hs2 = hcs2[i];
-      if( hs1 == null ) hcs[i] = hs2;
-      else if( hs2 != null )
-        hs1.add(hs2);
+      }, nactive_cols, BuildHistogram.this).fork();
     }
   }
 
@@ -333,14 +327,14 @@ public class BuildHistogram extends MRTask<BuildHistogram> {
 
     public boolean isDone(){return _done || (_done = _cidx.get() >= _cids.length);}
 
-    ComputeHistogramTask(DHistogram [] hcs, int col, int maxChunkSz,AtomicInteger cidx){
+    ComputeHistogramTask(DHistogram[] hcs, int col, int maxChunkSz, AtomicInteger cidx) {
       _lh = hcs; _col = col; _maxChunkSz = maxChunkSz;
       _cidx = cidx;
     }
 
     @Override
     public ComputeHistogramTask makeCopy() {
-      return new ComputeHistogramTask(ArrayUtils.deepClone(_lh),_col,_maxChunkSz,_cidx);
+      return new ComputeHistogramTask(ArrayUtils.deepClone(_lh), _col, _maxChunkSz, _cidx);
     }
 
     @Override
@@ -395,8 +389,20 @@ public class BuildHistogram extends MRTask<BuildHistogram> {
     @Override
     protected void reduce(ComputeHistogramTask cc) {
       assert _lh != cc._lh;
-      mergeHistos(_lh, cc._lh);
+      merge(_lh, cc._lh);
     }
+
+    private void merge(DHistogram[] hcs, DHistogram[] hcs2) {
+      // Distributed histograms need a little work
+      for( int i=0; i< hcs.length; i++ ) {
+        DHistogram hs1 = hcs[i];
+        DHistogram hs2 = hcs2[i];
+        if( hs1 == null ) hcs[i] = hs2;
+        else if( hs2 != null )
+          hs1.add(hs2);
+      }
+    }
+
   }
 
   @Override public void postGlobal(){
