@@ -161,14 +161,4 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__CLIENT_VERSION_FILENAME <- "client_info.txt"
 
 # Return True if installed h2o package location contain .h2o.__CLIENT_VERSION_FILENAME file
-# In case of any error return False always
-.h2o.__CLIENT_VERSION <- function() {
-  tryCatch(
-    return(
-      file.exists(
-        paste0(path.package("h2o", quiet = FALSE), .Platform$file.sep, .h2o.__CLIENT_VERSION_FILENAME)
-      )
-    ),
-    error = function(e) return(FALSE)
-  )
-}
+.h2o.__CLIENT_VERSION <- system.file(.h2o.__CLIENT_VERSION_FILENAME, package = "h2o") != ""
