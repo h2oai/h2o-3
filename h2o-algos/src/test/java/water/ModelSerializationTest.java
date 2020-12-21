@@ -28,10 +28,13 @@ import water.runner.H2ORunner;
 import water.util.Log;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.ar;
+import static water.TestUtil.assertFrameEquals;
+import static water.TestUtil.parse_test_file;
 
 @CloudSize(1)
 @RunWith(H2ORunner.class)
-public class ModelSerializationTest extends TestUtil {
+public class ModelSerializationTest {
 
   @Test public void testSimpleModel() throws IOException {
     // Create a model
