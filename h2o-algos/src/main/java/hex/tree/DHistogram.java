@@ -2,6 +2,10 @@ package hex.tree;
 
 import hex.Distribution;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.uplift.ChiSquaredDivergence;
+import hex.tree.uplift.Divergence;
+import hex.tree.uplift.EuclideanDistance;
+import hex.tree.uplift.KLDivergence;
 import org.apache.log4j.Logger;
 import water.*;
 import water.fvec.Frame;
@@ -68,13 +72,14 @@ public final class DHistogram extends Iced<DHistogram> {
                                  //      - 6 if gamma denominator is needed
                                  //      - 7 if gamma nominator is needed (tweedie constraints)
                                  // also see functions hasPreds() and hasDenominator()
-  protected boolean _useUplift; 
+  protected final boolean _useUplift; 
   protected double [] _valsUplift; // if not null always dimension 4: 
                                   // 0 treatment group nominator 
                                   // 1 treatment group denominator
                                   // 2 control group nominator
                                   // 3 control group denominator
   protected final int _valsDimUplift = 4;
+  protected final Divergence _upliftMetric;
                                   
   private final Distribution _dist;
 
@@ -119,6 +124,8 @@ public final class DHistogram extends Iced<DHistogram> {
     _initNA = initNA;
     _minSplitImprovement = minSplitImprovement;
     _histoType = histogramType;
+    _useUplift = false;
+    _upliftMetric = null;
     _seed = seed;
     while (_histoType == SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin) {
       SharedTreeModel.SharedTreeParameters.HistogramType[] h = SharedTreeModel.SharedTreeParameters.HistogramType.values();
@@ -150,7 +157,8 @@ public final class DHistogram extends Iced<DHistogram> {
 
   public DHistogram(String name, final int nbins, int nbinsCats, byte isInt, double min, double maxEx, boolean initNA,
                     double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey,
-                    Constraints cs, boolean useUplift) {
+                    Constraints cs, boolean useUplift, SharedTreeModel.SharedTreeParameters.UpliftMetricType upliftMetricType
+      ) {
     assert nbins >= 1;
     assert nbinsCats >= 1;
     assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
@@ -203,6 +211,20 @@ public final class DHistogram extends Iced<DHistogram> {
     }
     _nbin = (char) xbins;
     _useUplift = useUplift;
+    if (useUplift) {
+      switch (upliftMetricType) {
+        case ChiSquared:
+          _upliftMetric = new ChiSquaredDivergence();
+          break;
+        case Euclidean:
+          _upliftMetric = new EuclideanDistance();
+          break;
+        default:
+          _upliftMetric = new KLDivergence();
+      }
+    } else {
+      _upliftMetric = null;
+    }
     assert(_nbin>0);
     assert(_vals == null);
 
@@ -550,7 +572,7 @@ public final class DHistogram extends Iced<DHistogram> {
           }
         }
       }
-      if(_useUplift){
+      if(_useUplift) {
         _valsUplift[binDimStart]     += uplift[k] * wy;          // treatment nominator
         _valsUplift[binDimStart + 1] += uplift[k];              // treatment denominator
         _valsUplift[binDimStart + 2] += (1 - uplift[k]) * wy;    // control nominator
