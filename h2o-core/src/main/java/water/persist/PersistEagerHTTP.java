@@ -22,8 +22,8 @@ public class PersistEagerHTTP extends Persist {
       files.add(path);
       keys.add(destination_key.toString());
     } catch (Exception e) {
-      Log.debug("Loading from `" + path + "` failed.", e);
-      fails.add(path); // Fails for e.g. broken sockets silently swallow exceptions and just record the failed path
+      Log.err("Loading from `" + path + "` failed.", e);
+      fails.add(path);
     }
   }
 
