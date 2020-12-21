@@ -32,7 +32,7 @@ mv h2ocluster /opt
 mv /opt/h2ocluster/terraform/h2ocluster.sh /opt/h2ocluster/terraform/h2ocluster
 chown -R root:root /opt/h2ocluster
 chmod o+x /opt/h2ocluster/terraform/h2ocluster
-chmod o+r /opt/h2ocluster/terraform/gcpkey.json
+chmod o+r /opt/h2ocluster/terraform/workspace-sa-key.json
 popd
 
 # install jq
