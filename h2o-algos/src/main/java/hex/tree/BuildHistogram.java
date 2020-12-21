@@ -224,7 +224,7 @@ public class BuildHistogram extends MRTask<BuildHistogram> {
       // giving it an improved prediction).
       int [] nnids;
       if( _leaf > 0)            // Prior pass exists?
-        nnids = score_decide(chks,nids.getValues());
+        nnids = scoreDecide(chks,nids.getValues());
       else {                     // Just flag all the NA rows
         nnids = new int[nids._len];
         int [] is = nids.getValues();
@@ -247,7 +247,6 @@ public class BuildHistogram extends MRTask<BuildHistogram> {
       for (int row = 0; row < nnids.length; row++)
         if (nnids[row] >= 0)
           rows[nh[nnids[row]]++] = row;
-
     }
     
     @Override
@@ -307,7 +306,7 @@ public class BuildHistogram extends MRTask<BuildHistogram> {
       new LocalMR(new MrFun() {
         @Override
         protected void map(int c) {
-          c = active_cols == null?c:active_cols[c];
+          c = active_cols == null ? c : active_cols[c];
           new LocalMR(new ComputeHistogramTask(_hcs.length == 0?new DHistogram[0]:_hcs[c],c,largestChunkSz,new AtomicInteger()),numWrks + (c < rem?1:0), BuildHistogram.this).fork();
         }
       },nactive_cols, BuildHistogram.this).fork();
