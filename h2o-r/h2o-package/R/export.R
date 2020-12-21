@@ -204,7 +204,8 @@ h2o.save_to_hive <- function(data, jdbc_url, table_name, format="csv", table_pat
 #' @param path string indicating the directory the model will be written to.
 #' @param force logical, indicates how to deal with files that already exist.
 #' @param export_cross_validation_predictions logical, indicates whether the exported model 
-#'        artifacts should also include CV Holdout Frame predictions
+#'        artifacts should also include CV Holdout Frame predictions.  Default is not to export 
+#'        the predictions.
 #' @seealso \code{\link{h2o.loadModel}} for loading a model to H2O from disk
 #' @examples
 #' \dontrun{

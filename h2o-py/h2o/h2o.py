@@ -521,8 +521,8 @@ def save_grid(grid_directory, grid_id, export_cross_validation_predictions=False
 
     :param grid_directory: A string containing the path to the folder for the grid to be saved to.
     :param grid_id: A character string with identification of the Grid in H2O.
-    :param export_cross_validation_predictions: A boolean flag indicating whether the models exported from the grid should be saved
-        with CV Holdout Frame predictions. 
+    :param export_cross_validation_predictions: A boolean flag indicating whether the models exported from the grid 
+        should be saved with CV Holdout Frame predictions. Default is not to export the predictions. 
 
     :examples:
 
@@ -1416,7 +1416,7 @@ def save_model(model, path="", force=False, export_cross_validation_predictions=
     :param path: a path to save the model at (hdfs, s3, local)
     :param force: if True overwrite destination directory in case it exists, or throw exception if set to False.
     :param export_cross_validation_predictions: logical, indicates whether the exported model
-        artifact should also include CV Holdout Frame predictions
+        artifact should also include CV Holdout Frame predictions.  Default is not to export the predictions.
 
     :returns: the path of the saved model
 
@@ -1447,7 +1447,7 @@ def download_model(model, path="", export_cross_validation_predictions=False):
     :param model: The model object to download.
     :param path: a path to the directory where the model should be saved.
     :param export_cross_validation_predictions: logical, indicates whether the exported model
-        artifact should also include CV Holdout Frame predictions
+        artifact should also include CV Holdout Frame predictions.  Default is not to include the predictions.
 
     :returns: the path of the downloaded model
 
