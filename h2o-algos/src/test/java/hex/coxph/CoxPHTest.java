@@ -17,7 +17,7 @@ import static water.TestUtil.parse_test_file;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
-public class CoxPHTest extends Iced<CoxPHTest> {
+public class CoxPHTest {
 
   @Test
   public void testCoxPHEfron1Var() {
@@ -189,6 +189,20 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       Scope.exit();
     }
   }
+  
+  private static class DecomposeAgeTask extends MRTask {
+    @Override
+    public void map(Chunk c, NewChunk nc0, NewChunk nc1) {
+      for (int i = 0; i < c._len; i++) {
+        double v = c.atd(i);
+        if (i % 2 == 0) {
+          nc0.addNum(v); nc1.addNum(1);
+        } else {
+          nc0.addNum(1); nc1.addNum(v);
+        }
+      }
+    }
+  }
 
   @Test
   public void testCoxPHEfron1Interaction() {
@@ -197,19 +211,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       final Frame fr = parse_and_track_test_file("smalldata/coxph_test/heart.csv");
 
       // Decompose a "age" column into two components: "age1" and "age2"
-      final Frame ext = new MRTask() {
-        @Override
-        public void map(Chunk c, NewChunk nc0, NewChunk nc1) {
-          for (int i = 0; i < c._len; i++) {
-            double v = c.atd(i);
-            if (i % 2 == 0) {
-              nc0.addNum(v); nc1.addNum(1);
-            } else {
-              nc0.addNum(1); nc1.addNum(v);
-            }
-          }
-        }
-      }.doAll(new byte[]{Vec.T_NUM, Vec.T_NUM}, fr.vec("age"))
+      final Frame ext = new DecomposeAgeTask().doAll(new byte[]{Vec.T_NUM, Vec.T_NUM}, fr.vec("age"))
               .outputFrame(Key.<Frame>make(), new String[]{"age1", "age2"}, null);
       Scope.track(ext);
       fr.add(ext);
