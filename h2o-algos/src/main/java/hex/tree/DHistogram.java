@@ -302,13 +302,8 @@ public final class DHistogram extends Iced {
     if (_histoType==SharedTreeModel.SharedTreeParameters.HistogramType.Random) {
       // every node makes the same split points
       Random rng = RandomUtils.getRNG((Double.doubleToRawLongBits(((_step+0.324)*_min+8.3425)+89.342*_maxEx) + 0xDECAF*_nbin + 0xC0FFEE*_isInt + _seed));
-      assert(_nbin>1);
-      _splitPts = new double[_nbin];
-      _splitPts[0] = 0;
-      _splitPts[_nbin - 1] = _nbin-1;
-      for (int i = 1; i < _nbin-1; ++i)
-         _splitPts[i] = rng.nextFloat() * (_nbin-1);
-      Arrays.sort(_splitPts);
+      assert _nbin > 1;
+      _splitPts = makeRandomSplitPoints(_nbin, rng);
     }
     else if (_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal) {
       assert (_splitPts == null);
@@ -573,6 +568,15 @@ public final class DHistogram extends Iced {
         lh.wYYClear(b);
       }
     }
+  }
+
+  static double[] makeRandomSplitPoints(int nbin, Random rng) {
+    final double[] splitPts = new double[nbin];
+    splitPts[0] = 0;
+    for (int i = 1; i < nbin; i++)
+      splitPts[i] = rng.nextFloat() * nbin;
+    Arrays.sort(splitPts);
+    return splitPts;
   }
 
 }
