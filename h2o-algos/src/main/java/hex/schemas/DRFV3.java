@@ -59,7 +59,8 @@ public class DRFV3 extends SharedTreeV3<DRF, DRFV3, DRFV3.DRFParametersV3> {
                 "check_constant_response",
                 "gainslift_bins",
                 "auc_type",
-                "uplift_column"
+                "uplift_column",
+                "uplift_metric"
         };
 
         // Input fields
