@@ -65,3 +65,9 @@ variable h2o_cluster_random_string {
 variable h2o_cluster_instance_description {
   type = string
 }
+variable h2o_cluster_instance_ssh_user {
+  type = string
+}
+variable h2o_cluster_instance_ssh_pubkey_filepath {
+  type = string
+}

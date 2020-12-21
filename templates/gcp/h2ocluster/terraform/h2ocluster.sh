@@ -40,6 +40,12 @@ if [[ ! -f "${h2ocluster_tfdata}/plugins/registry.terraform.io/hashicorp/google/
   popd
 fi
 
+# Initialize ssh keys for h2o cluster machines
+if [[ ! -f "${HOME}/.ssh/google_compute_engine" ]]; then
+  ssh-keygen -t rsa -f "${HOME}/.ssh/google_compute_engine" -C "${USER}" -q -N ""
+fi
+
+
 # Prefix for all clusters. Dont change this value
 readonly prefix="h2o"
 
@@ -139,6 +145,8 @@ exec_create () {
       terraform apply \
       -var "h2o_cluster_instance_user=${username}" \
       -var "h2o_cluster_random_string=${randstr}" \
+      -var "h2o_cluster_instance_ssh_user=${USER}" \
+      -var "h2o_cluster_instance_ssh_pubkey_filepath=${HOME}/.ssh/google_compute_engine.pub" \
       -var "h2o_cluster_instance_description='${cluster_description}'" \
       -state="${h2ocluster_tfstate}/${cluster_name}.tfstate" && \
     popd && \
@@ -231,6 +239,8 @@ exec_destroy() {
       terraform destroy \
       -var "h2o_cluster_instance_user=${username}" \
       -var "h2o_cluster_random_string=${randstr}" \
+      -var "h2o_cluster_instance_ssh_user=${USER}" \
+      -var "h2o_cluster_instance_ssh_pubkey_filepath=${HOME}/.ssh/google_compute_engine.pub" \
       -var "h2o_cluster_instance_description='${cluster_description}'" \
       -state="${h2ocluster_tfstate}/${cluster_name}.tfstate" && \
     popd && \
