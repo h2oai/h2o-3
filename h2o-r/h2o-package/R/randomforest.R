@@ -94,6 +94,7 @@
 #'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @param uplift_column Define column which will be use for computing uplift gain to select best split for a tree. The column has to
 #'        devide dataset into treatment (value 1) and control (value 0) group.
+#' @param uplift_metric Divergence metric used to find best split when building an upplift tree.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
@@ -168,6 +169,7 @@ h2o.randomForest <- function(x,
                              gainslift_bins = -1,
                              auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                              uplift_column = NULL,
+                             uplift_metric = NULL,
                              verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -286,6 +288,8 @@ h2o.randomForest <- function(x,
     parms$auc_type <- auc_type
   if (!missing(uplift_column))
     parms$uplift_column <- uplift_column
+  if (!missing(uplift_metric))
+    parms$uplift_metric <- uplift_metric
 
   if (!missing(distribution)) {
     warning("Argument distribution is deprecated and has no use for Random Forest.")
@@ -350,6 +354,7 @@ h2o.randomForest <- function(x,
                                              gainslift_bins = -1,
                                              auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                              uplift_column = NULL,
+                                             uplift_metric = NULL,
                                              segment_columns = NULL,
                                              segment_models_id = NULL,
                                              parallelism = 1)
@@ -472,6 +477,8 @@ h2o.randomForest <- function(x,
     parms$auc_type <- auc_type
   if (!missing(uplift_column))
     parms$uplift_column <- uplift_column
+  if (!missing(uplift_metric))
+    parms$uplift_metric <- uplift_metric
 
   if (!missing(distribution)) {
     warning("Argument distribution is deprecated and has no use for Random Forest.")

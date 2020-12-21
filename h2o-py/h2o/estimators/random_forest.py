@@ -81,6 +81,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                  gainslift_bins=-1,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  uplift_column=None,  # type: Optional[str]
+                 uplift_metric=None,  # type: Optional[str]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -269,6 +270,9 @@ class H2ORandomForestEstimator(H2OEstimator):
                The column has to devide dataset into treatment (value 1) and control (value 0) group.
                Defaults to ``None``.
         :type uplift_column: str, optional
+        :param uplift_metric: Divergence metric used to find best split when building an upplift tree.
+               Defaults to ``None``.
+        :type uplift_metric: str, optional
         """
         super(H2ORandomForestEstimator, self).__init__()
         self._parms = {}
@@ -323,6 +327,7 @@ class H2ORandomForestEstimator(H2OEstimator):
         self.gainslift_bins = gainslift_bins
         self.auc_type = auc_type
         self.uplift_column = uplift_column
+        self.uplift_metric = uplift_metric
 
     @property
     def training_frame(self):
@@ -1836,6 +1841,20 @@ class H2ORandomForestEstimator(H2OEstimator):
     def uplift_column(self, uplift_column):
         assert_is_type(uplift_column, None, str)
         self._parms["uplift_column"] = uplift_column
+
+    @property
+    def uplift_metric(self):
+        """
+        Divergence metric used to find best split when building an upplift tree.
+
+        Type: ``str``.
+        """
+        return self._parms.get("uplift_metric")
+
+    @uplift_metric.setter
+    def uplift_metric(self, uplift_metric):
+        assert_is_type(uplift_metric, None, str)
+        self._parms["uplift_metric"] = uplift_metric
 
     offset_column = deprecated_property('offset_column', None)
 
