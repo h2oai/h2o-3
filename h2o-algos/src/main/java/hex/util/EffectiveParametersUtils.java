@@ -5,7 +5,6 @@ import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 
-
 public class EffectiveParametersUtils {
     
     public static void initFoldAssignment(
@@ -65,6 +64,14 @@ public class EffectiveParametersUtils {
     ) {
         if (params._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.AUTO) {
             params._categorical_encoding = scheme;
+        }
+    }
+    
+    public static void initUpliftMetric(
+        SharedTreeModel.SharedTreeParameters params
+    ) {
+        if (params._uplift_metric == SharedTreeModel.SharedTreeParameters.UpliftMetricType.AUTO) {
+            params._uplift_metric = SharedTreeModel.SharedTreeParameters.UpliftMetricType.KL;
         }
     }
 }

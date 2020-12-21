@@ -2,7 +2,7 @@ package hex.tree;
 
 import hex.Distribution;
 import hex.genmodel.utils.DistributionFamily;
-import hex.tree.uplift.KullbackMetric;
+import hex.tree.uplift.Divergence;
 import jsr166y.RecursiveAction;
 import org.apache.log4j.Logger;
 import water.AutoBuffer;
@@ -835,6 +835,7 @@ public class DTree extends Iced {
     final boolean hasDenom = hs.hasDenominator();
     final boolean hasNomin = hs.hasNominator();
     final boolean useUplift = hs.useUplift();
+    final Divergence upliftMetric = hs._upliftMetric;
 
     // Histogram arrays used for splitting, these are either the original bins
     // (for an ordered predictor), or sorted by the mean response (for an
@@ -1039,7 +1040,7 @@ public class DTree extends Iced {
     if(useUplift) {
       pBefore = nomhiTreat[0] / denhiTreat[0];
       qBefore = nomhiContr[0] / denhiContr[0];
-      bestUpliftGain = KullbackMetric.metric(pBefore , qBefore);
+      bestUpliftGain = upliftMetric.node(pBefore , qBefore);
     }
     // if there are any NAs, then try to split them from the non-NAs
     if (wNA>=min_rows) {
@@ -1050,7 +1051,7 @@ public class DTree extends Iced {
         double qLeft = nomhiContr[0] / denhiContr[0];
         double pRight = nomTreatNA / denomTreatNA;
         double qRight = nomContrNA / denomContrNA;
-        bestUpliftGain = KullbackMetric.gain(pBefore, qBefore, pLeft, qLeft, pRight, qRight);
+        bestUpliftGain = upliftMetric.gain(pBefore, qBefore, pLeft, qLeft, pRight, qRight, 0, 0);
       }
       double seAll = (wYYhi[0] + wYYNA) - (wYhi[0] + wYNA) * (wYhi[0] + wYNA) / (whi[0] + wNA);
       double seNA = wYYNA - wYNA * wYNA / wNA;
@@ -1103,7 +1104,7 @@ public class DTree extends Iced {
           double qLeft = nomhiContr[b] / denhiContr[b];
           double pRight = nomloTreat[b] / denloTreat[b];
           double qRight = nomloContr[b] / denloContr[b];
-          upliftGain = KullbackMetric.gain(pBefore, qBefore, pLeft, qLeft, pRight, qRight);
+          upliftGain = upliftMetric.gain(pBefore, qBefore, pLeft, qLeft, pRight, qRight, 0, 0);
           condition = upliftGain > bestUpliftGain; 
         } else {
           condition = (selo + sehi < best_seL + best_seR) || // Strictly less error?
@@ -1168,7 +1169,7 @@ public class DTree extends Iced {
             double qLeft = (nomhiContr[b] + nomContrNA) / (denhiContr[b] + denomContrNA);
             double pRight = nomloTreat[b] / denloTreat[b];
             double qRight = nomloContr[b] / denloContr[b];
-            upliftGain = KullbackMetric.gain(pBefore, qBefore, pLeft, qLeft, pRight, qRight);
+            upliftGain = upliftMetric.gain(pBefore, qBefore, pLeft, qLeft, pRight, qRight, 0, 0);
             condition = upliftGain > bestUpliftGain;
           } else {
             condition = (selo + sehi < best_seL + best_seR) || // Strictly less error?
@@ -1237,7 +1238,7 @@ public class DTree extends Iced {
             double qLeft = nomhiContr[b] / denhiContr[b];
             double pRight = (nomloTreat[b] + nomTreatNA) / (denloTreat[b] + denomTreatNA);
             double qRight = (nomloContr[b] + nomContrNA) / (denloContr[b] + denomContrNA);
-            upliftGain = KullbackMetric.gain(pBefore, qBefore, pLeft, qLeft, pRight, qRight);
+            upliftGain = upliftMetric.gain(pBefore, qBefore, pLeft, qLeft, pRight, qRight, 0, 0);
             condition = upliftGain > bestUpliftGain;
           } else {
             condition = (selo + sehi < best_seL + best_seR) || // Strictly less error?
