@@ -16,7 +16,7 @@ RUN microdnf clean all
 
 # Copy H2O-3 artifact into the container
 RUN mkdir -p /opt/h2oai/h2o-3/
-COPY build/h2o.jar /opt/h2oai/h2o-3/
+COPY h2o.jar /opt/h2oai/h2o-3/
 
 # Copy project's license into the container (required by Red Hat for certification)
 RUN mkdir /licenses

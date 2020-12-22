@@ -1,8 +1,0 @@
-# Dockerignore reducing time cost of context upload during docker build for docker/public/Dockerfile-h2o-release.
-# This Dockerfile requires whole H2O folder as context, as it uses multiple files across the project.
-
-# Ignore everything by default 
-*
-# Selectively enable files required.
-!build/h2o.jar
-!LICENSE
