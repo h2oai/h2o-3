@@ -50,6 +50,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/inde
     
 #### Docs
 <ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7822'>PUBDEV-7822</a>] -         
+Added non-tree-based models to the variable importance page in the user guide.
+</li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7869'>PUBDEV-7869</a>] -         Updated the AutoML citation in the User Guide to point to the H2O AutoML ICML AutoML workshop paper.
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7882'>PUBDEV-7882</a>] -         Updated Python docstring examples about cross-validation.
