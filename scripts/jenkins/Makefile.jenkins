@@ -520,14 +520,25 @@ check-leaks:
 	fi
 
 h2o-k8s-docker-build:
-	 docker build -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -f docker/public/Dockerfile-h2o-release build/
+	 cp LICENSE build/LICENSE
+	 docker build --build-arg H2O_VERSION=$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -f docker/public/Dockerfile-h2o-release build/
+	 rm build/LICENSE
 
 h2o-k8s-docker-push:
 	docker login -u $(DOCKERHUB_USERNAME) -p $(DOCKERHUB_PASSWORD)
 	docker push $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
-
+	
+h2o-k8s-docker-push-redhat:
+	echo ${H2O_RED_HAT_REGISTRY_KEY} | docker login -u unused scan.connect.redhat.com --password-stdin
+	docker tag $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) scan.connect.redhat.com/$(H2O_RED_HAT_PID)/h2oai/h2o:$(DOCKER_IMAGE_TAG)
+	docker push scan.connect.redhat.com/$(H2O_RED_HAT_PID)/h2oai/h2o:$(DOCKER_IMAGE_TAG)
+	$(eval DIGEST := $(shell docker images --no-trunc --quiet scan.connect.redhat.com/$(H2O_RED_HAT_PID)/h2oai/h2o:$(DOCKER_IMAGE_TAG)))
+	python scripts/jenkins/red_hat/red_hat_docker_certification.py --api_key $(H2O_RED_HAT_APIKEY) --pid $(H2O_RED_HAT_PID) --tag $(DOCKER_IMAGE_TAG) $(DIGEST)
+	
 h2o-k8s-docker-build-latest:
-	docker build -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_LATEST_TAG) -f docker/public/Dockerfile-h2o-release build/
+	cp LICENSE build/LICENSE
+	docker build --build-arg H2O_VERSION=$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_LATEST_TAG) -f docker/public/Dockerfile-h2o-release build/
+	rm build/LICENSE
 
 h2o-k8s-docker-push-latest: h2o-k8s-docker-push
 	docker push $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_LATEST_TAG)

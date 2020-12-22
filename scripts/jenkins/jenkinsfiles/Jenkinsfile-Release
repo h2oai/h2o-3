@@ -286,7 +286,12 @@ try {
                         try {
                             pipelineContext.getBuildSummary().addStageSummary(this, BUILD_H2O_DOCKER_STAGE_NAME, env.BUILD_NUMBER_DIR)
                             pipelineContext.getBuildSummary().setStageDetails(this, BUILD_H2O_DOCKER_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
-                            withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKERHUB_PASSWORD', usernameVariable: 'DOCKERHUB_USERNAME')]) {
+                            withCredentials([
+                                  usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKERHUB_PASSWORD', usernameVariable: 'DOCKERHUB_USERNAME'),
+                                  string(credentialsId: 'H2O_RED_HAT_REGISTRY_KEY', variable: 'H2O_RED_HAT_REGISTRY_KEY'),
+                                  string(credentialsId: 'H2O_RED_HAT_PID', variable: 'H2O_RED_HAT_PID'),
+                                  string(credentialsId: 'H2O_RED_HAT_APIKEY', variable: 'H2O_RED_HAT_APIKEY')
+                                  ]) {
                                 if (params.TEST_RELEASE) {
                                     env["DOCKER_IMAGE_NAME"] = "opsh2oai/h2o-open-source-k8s-test"
                                     // Test release goes to opsh2oai namespace
@@ -306,7 +311,7 @@ try {
                                         env["DOCKER_IMAGE_TAG"] = "nightly"
                                         sh """
                                           cd ${env.BUILD_NUMBER_DIR}
-                                          make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build h2o-k8s-docker-push
+                                          make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build h2o-k8s-docker-push-redhat h2o-k8s-docker-push
                                         """
                                     } else {
                                         env["DOCKER_IMAGE_TAG"] = env["PROJECT_VERSION"]
@@ -316,14 +321,15 @@ try {
                                             env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
                                             sh """
                                               cd ${env.BUILD_NUMBER_DIR}
-                                              make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build-latest h2o-k8s-docker-push-latest
+                                              make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build-latest h2o-k8s-docker-push-latest h2o-k8s-docker-push-redhat
                                             """
                                         } else {
                                             // If the build is not a test build and is an ordinary release, update the latest tag.
                                             // The "latest" tag means stable. If UPDATE_LATEST is set to false do not update the latest tag and push only the version tag.
+                                            // Push to Red Hat either way
                                             sh """
                                               cd ${env.BUILD_NUMBER_DIR}
-                                              make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build h2o-k8s-docker-push
+                                              make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build h2o-k8s-docker-push-redhat h2o-k8s-docker-push
                                             """
                                         }
                                     }
