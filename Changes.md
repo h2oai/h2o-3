@@ -2,6 +2,63 @@
 
 ## H2O
 
+### Zermelo (3.32.0.3) - 12/23/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/index.html</a>
+
+#### Bug
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7773'>PUBDEV-7773</a>] -         The `pca_impl` parameter is no longer passed to PCA MOJO.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7896'>PUBDEV-7896</a>] -         Keys no longer removed during the `h2o.removeAll()` command.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7902'>PUBDEV-7902</a>] -         Starting GridSearch in a fresh cluster with new hyperparameters that overlap old ones will no longer cause the old models to be trained again.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7914'>PUBDEV-7914</a>] -         GridSearch no longer hangs indefinitely when not using the default value for paralellism.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7921'>PUBDEV-7921</a>] -         Fixed the parent dir lookup for HDFS grid imports.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7928'>PUBDEV-7928</a>] -         Fixed the CustomDistribution test error.
+</li>
+</ul>
+    
+#### New Feature
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-5923'>PUBDEV-5923</a>] -         Cross-Validation predictions now saved alongside the model.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7269'>PUBDEV-7269</a>] -         Added multinomial and grid search support for AUC/PR AUC metrics.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7861'>PUBDEV-7861</a>] -         Now offers a standalone R client that doesn’t include the h2o jar.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7880'>PUBDEV-7880</a>] -  Fixed randomized split point for `histogram_type=“Random”` when nbins=2.       
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7916'>PUBDEV-7916</a>] -         Single quote regime for CSV parser exposed for importing & uploading files.
+</li>
+</ul>
+    
+#### Improvement
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7737'>PUBDEV-7737</a>] -         Added MOJO support for CoxPH.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7753'>PUBDEV-7753</a>] -         REST API disabled on non-leader Kubernetes nodes.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7875'>PUBDEV-7875</a>] -         GLM now uses proper logging instead of printlines.
+</li>
+</ul>
+    
+#### Docs
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7869'>PUBDEV-7869</a>] -         Updated the AutoML citation in the User Guide to point to the H2O AutoML ICML AutoML workshop paper.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7882'>PUBDEV-7882</a>] -         Updated Python docstring examples about cross-validation.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7905'>PUBDEV-7905</a>] -         Corrected `k` parameter description for PCA.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7922'>PUBDEV-7922</a>] -         Corrected the RuleFit Python example.
+</li>
+</ul>
+
+
 ### Zermelo (3.32.0.2) - 11/17/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/2/index.html</a>
