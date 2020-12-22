@@ -520,7 +520,7 @@ def load_grid(grid_file_path, load_params_references=False):
     return get_grid(response["name"])
 
 
-def save_grid(grid_directory, grid_id, save_params_references=False):
+def save_grid(grid_directory, grid_id, save_params_references=False, export_cross_validation_predictions=False):
     """
     Export a Grid and it's all its models into the given folder
 
@@ -528,6 +528,8 @@ def save_grid(grid_directory, grid_id, save_params_references=False):
     :param grid_id: A character string with identification of the Grid in H2O.
     :param save_params_references: True if objects referenced by grid parameters
       (e.g. training frame, calibration frame) should also be saved. 
+    :param export_cross_validation_predictions: A boolean flag indicating whether the models exported from the grid 
+      should be saved with CV Holdout Frame predictions. Default is not to export the predictions.
 
     :examples:
 
@@ -556,10 +558,14 @@ def save_grid(grid_directory, grid_id, save_params_references=False):
     """
     assert_is_type(grid_directory, str)
     assert_is_type(grid_id, str)
-    api(
-        "POST /3/Grid.bin/" + grid_id + "/export", 
-        {"grid_directory": grid_directory, "save_params_references": save_params_references}
-    )
+    assert_is_type(save_params_references, bool)
+    assert_is_type(export_cross_validation_predictions, bool)
+    params = {
+        "grid_directory": grid_directory,
+        "save_params_references": save_params_references,
+        "export_cross_validation_predictions": export_cross_validation_predictions
+    }
+    api("POST /3/Grid.bin/" + grid_id + "/export", params)
     return grid_directory + "/" + grid_id
 
 
@@ -1414,7 +1420,7 @@ def download_all_logs(dirname=".", filename=None, container=None):
     return api("GET /3/Logs/download%s" % type, save_to=save_to)
 
 
-def save_model(model, path="", force=False):
+def save_model(model, path="", force=False, export_cross_validation_predictions=False):
     """
     Save an H2O Model object to disk. (Note that ensemble binary models can now be saved using this method.)
     The owner of the file saved is the user by which H2O cluster was executed.
@@ -1422,6 +1428,8 @@ def save_model(model, path="", force=False):
     :param model: The model object to save.
     :param path: a path to save the model at (hdfs, s3, local)
     :param force: if True overwrite destination directory in case it exists, or throw exception if set to False.
+    :param export_cross_validation_predictions: logical, indicates whether the exported model
+        artifact should also include CV Holdout Frame predictions.  Default is not to export the predictions.
 
     :returns: the path of the saved model
 
@@ -1438,17 +1446,21 @@ def save_model(model, path="", force=False):
     assert_is_type(model, ModelBase)
     assert_is_type(path, str)
     assert_is_type(force, bool)
+    assert_is_type(export_cross_validation_predictions, bool)
     path = os.path.join(os.getcwd() if path == "" else path, model.model_id)
-    return api("GET /99/Models.bin/%s" % model.model_id, data={"dir": path, "force": force})["dir"]
+    data = {"dir": path, "force": force, "export_cross_validation_predictions": export_cross_validation_predictions}
+    return api("GET /99/Models.bin/%s" % model.model_id, data=data)["dir"]
 
 
-def download_model(model, path=""):
+def download_model(model, path="", export_cross_validation_predictions=False):
     """
     Download an H2O Model object to the machine this python session is currently connected to.
     The owner of the file saved is the user by which python session was executed.
 
     :param model: The model object to download.
     :param path: a path to the directory where the model should be saved.
+    :param export_cross_validation_predictions: logical, indicates whether the exported model
+        artifact should also include CV Holdout Frame predictions.  Default is not to include the predictions.
 
     :returns: the path of the downloaded model
 
@@ -1460,12 +1472,16 @@ def download_model(model, path=""):
     >>> my_model.train(y = "CAPSULE",
     ...                x = ["AGE", "RACE", "PSA", "GLEASON"],
     ...                training_frame = h2o_df)
-    >>> h2o.download_model(my_model, path='', force=True)
+    >>> h2o.download_model(my_model, path='')
     """
     assert_is_type(model, ModelBase)
     assert_is_type(path, str)
+    assert_is_type(export_cross_validation_predictions, bool)
     path = os.path.join(os.getcwd() if path == "" else path, model.model_id)
-    return api("GET /3/Models.fetch.bin/%s" % model.model_id, save_to=path)
+    return api("GET /3/Models.fetch.bin/%s" % model.model_id,
+               data={"export_cross_validation_predictions": export_cross_validation_predictions}, 
+               save_to=path)
+
 
 def upload_model(path):
     """

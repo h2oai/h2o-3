@@ -39,7 +39,7 @@ import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
  *
  *  @author <a href="mailto:cliffc@h2o.ai"></a>
  */
-public final class AutoBuffer {
+public final class AutoBuffer implements AutoCloseable {
 
   // Maximum size of an array we allow to allocate (the value is designed
   // to mimic the behavior of OpenJDK libraries)
@@ -410,21 +410,25 @@ public final class AutoBuffer {
   // bytes out.  If the write is to an H2ONode and is short, send via UDP.
   // AutoBuffer close calls order; i.e. a reader close() will block until the
   // writer does a close().
-  public final int close() {
+  @Override
+  public final void close() {
     //if( _size > 2048 ) System.out.println("Z="+_zeros+" / "+_size+", A="+_arys);
-    if( isClosed() ) return 0;            // Already closed
+    if( isClosed() ) return;            // Already closed
     assert _h2o != null || _chan != null || _is != null; // Byte-array backed should not be closed
 
     try {
       if( _chan == null ) {     // No channel?
         if( _read ) {
           if( _is != null ) _is.close();
-          return 0;
+          return;
         } else {                // Write
           // For small-packet write, send via UDP.  Since nothing is sent until
           // now, this close() call trivially orders - since the reader will not
           // even start (much less close()) until this packet is sent.
-          if( _bb.position() < MTU) return udpSend();
+          if( _bb.position() < MTU) {
+            udpSend();
+            return;
+          }
           // oops - Big Write, switch to TCP and finish out there
         }
       }
@@ -473,7 +477,6 @@ public final class AutoBuffer {
 //      TimeLine.record_IOclose(this,_persist); // Profile AutoBuffer connections
       assert isClosed();
     }
-    return 0;
   }
 
   // Need a sock for a big read or write operation.
