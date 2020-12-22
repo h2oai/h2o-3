@@ -1,6 +1,7 @@
 package water.api;
 
 import hex.Model;
+import hex.ModelExportOption;
 import hex.grid.Grid;
 import water.*;
 import water.api.schemas3.GridExportV3;
@@ -63,7 +64,8 @@ public class GridImportExportHandler extends Handler {
 
     final Grid serializedGrid = (Grid) possibleGrid;
     serializedGrid.exportBinary(gridExportV3.grid_directory);
-    serializedGrid.exportModelsBinary(gridExportV3.grid_directory);
+    ModelExportOption[] options = gridExportV3.getModelExportOptions();
+    serializedGrid.exportModelsBinary(gridExportV3.grid_directory, options);
 
     return new KeyV3.GridKeyV3(serializedGrid._key);
   }
