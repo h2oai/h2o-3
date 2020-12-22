@@ -30,6 +30,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/inde
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7861'>PUBDEV-7861</a>] -         Now offers a standalone R client that doesn’t include the h2o jar.
 </li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7871'>PUBDEV-7871</a>] -         Created a Red Hat certification for H2O Docker Image.
+</li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7880'>PUBDEV-7880</a>] -  Fixed randomized split point for `histogram_type=“Random”` when nbins=2.       
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7916'>PUBDEV-7916</a>] -         Single quote regime for CSV parser exposed for importing & uploading files.
