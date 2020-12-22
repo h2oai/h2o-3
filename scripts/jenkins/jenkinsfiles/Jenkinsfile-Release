@@ -286,10 +286,12 @@ try {
                         try {
                             pipelineContext.getBuildSummary().addStageSummary(this, BUILD_H2O_DOCKER_STAGE_NAME, env.BUILD_NUMBER_DIR)
                             pipelineContext.getBuildSummary().setStageDetails(this, BUILD_H2O_DOCKER_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
-                            withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKERHUB_PASSWORD', usernameVariable: 'DOCKERHUB_USERNAME'),
+                            withCredentials([
+                                  usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKERHUB_PASSWORD', usernameVariable: 'DOCKERHUB_USERNAME'),
                                   string(credentialsId: 'H2O_RED_HAT_REGISTRY_KEY', variable: 'H2O_RED_HAT_REGISTRY_KEY'),
                                   string(credentialsId: 'H2O_RED_HAT_PID', variable: 'H2O_RED_HAT_PID'),
-                                  string(credentialsId: 'H2O_RED_HAT_APIKEY', variable: 'H2O_RED_HAT_APIKEY')]) {
+                                  string(credentialsId: 'H2O_RED_HAT_APIKEY', variable: 'H2O_RED_HAT_APIKEY')
+                                  ]) {
                                 if (params.TEST_RELEASE) {
                                     env["DOCKER_IMAGE_NAME"] = "opsh2oai/h2o-open-source-k8s-test"
                                     // Test release goes to opsh2oai namespace
