@@ -11,6 +11,6 @@ public interface StreamWriter {
    * The implementation write its content to given output stream.
    * @param os  output stream provided by framework
    */
-  void writeTo(OutputStream os);
+  void writeTo(OutputStream os, StreamWriteOption... options);
 
 }

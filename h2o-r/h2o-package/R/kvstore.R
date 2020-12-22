@@ -542,6 +542,8 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
 #'
 #' @param model An H2OModel
 #' @param path The path where binary file should be downloaded. Downloaded to current directory by default.
+#' @param export_cross_validation_predictions A boolean flag indicating whether the download model should be
+#'      saved with CV Holdout Frame predictions. Default is not to export the predictions. 
 #'
 #' @examples
 #' \dontrun{
@@ -552,7 +554,7 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
 #' h2o.download_model(my_model)  # save to the current working directory
 #' }
 #' @export
-h2o.download_model <- function(model, path=NULL) {
+h2o.download_model <- function(model, path=NULL, export_cross_validation_predictions=FALSE) {
 
     if(!is.null(path) && !(is.character(path))){
       stop("The 'path' variable should be of type character")
@@ -562,6 +564,9 @@ h2o.download_model <- function(model, path=NULL) {
     }
     if(is.null(path)){
       path = getwd()
+    }
+    if(!is.logical(export_cross_validation_predictions)){
+      stop("The 'export_cross_validation_predictions' variable should be of type logical")
     }
     
     #Get model id
@@ -573,7 +578,8 @@ h2o.download_model <- function(model, path=NULL) {
     
     #Path to save model, if `path` is provided
     file_path <- file.path(path, paste0(modelname))
-    writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), file_path, useBytes = TRUE)
+    parms <- list(export_cross_validation_predictions=export_cross_validation_predictions)
+    writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE, parms = parms), file_path, useBytes = TRUE)
     
     return(paste0(file_path))
 }
