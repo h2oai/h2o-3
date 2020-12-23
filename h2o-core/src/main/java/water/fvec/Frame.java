@@ -891,6 +891,9 @@ public class Frame extends Lockable<Frame> {
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     long[] espc = ab.getA8();
     _keys = new Vec.VectorGroup().addVecs(_keys.length);
+    // I am modifying self => I need to make an update
+    // This is more of a workaround, readAll_impl methods are not expected to modify self
+    DKV.put(this, fs);
     int rowLayout = Vec.ESPC.rowLayout(_keys[0], espc);
     for (Key<Vec> key : _keys) {
       Vec v = ab.get();
