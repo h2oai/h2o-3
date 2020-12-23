@@ -318,6 +318,10 @@ public class Env extends Iced {
     
     // Reset model threshold
     init(new AstModelResetThreshold());
+
+    // Permutation Variable Importance
+    init(new AstPermutationVarImp());
+    init(new AstOneAtaTimeMorris());
     
     // Filters
     init(new AstDropDuplicates());
