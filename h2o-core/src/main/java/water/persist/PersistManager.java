@@ -44,7 +44,7 @@ public class PersistManager {
           "^((?!\\/_delta_log\\/).)*$"; // skip "Delta Lake" log files
 
   private final String[] importFilesPatterns;
-  
+
   /** Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file" */
   public interface Schemes {
     String FILE = "file";
