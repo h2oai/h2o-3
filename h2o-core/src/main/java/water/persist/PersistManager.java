@@ -40,7 +40,7 @@ public class PersistManager {
   private static final String PROP_ENABLE_HDFS_FALLBACK = SYSTEM_PROP_PREFIX + "persist.enable.hdfs.fallback";
 
   private static final String PROP_IMPORT_FILES_PATTERNS = SYSTEM_PROP_PREFIX + "persist.importFile.patterns";
-  private static final String PROP_IMPORT_FILES_PATTERNS_DEFAULT = 
+  private static final String DEFAULT_IMPORT_FILES_PATTERNS = 
           "^((?!\\/_delta_log\\/).)*$"; // skip "Delta Lake" log files
 
   private final String[] importFilesPatterns;
@@ -109,7 +109,7 @@ public class PersistManager {
     for (int i = 0; i < stats.length; i++) {
       stats[i] = new PersistStatsEntry();
     }
-    importFilesPatterns = System.getProperty(PROP_IMPORT_FILES_PATTERNS, PROP_IMPORT_FILES_PATTERNS_DEFAULT).split(";");
+    importFilesPatterns = System.getProperty(PROP_IMPORT_FILES_PATTERNS, DEFAULT_IMPORT_FILES_PATTERNS).split(";");
 
     if (iceRoot == null) {
       Log.err("ice_root must be specified.  Exiting.");
