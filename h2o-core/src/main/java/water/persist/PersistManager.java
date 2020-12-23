@@ -7,6 +7,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.FileVec;
 import water.fvec.Vec;
 import water.parser.BufferedString;
+import water.util.ArrayUtils;
 import water.util.FileUtils;
 import water.util.Log;
 import water.persist.Persist.PersistEntry;
@@ -38,6 +39,12 @@ public class PersistManager {
    * layer forwards the request through HDFS API. */
   private static final String PROP_ENABLE_HDFS_FALLBACK = SYSTEM_PROP_PREFIX + "persist.enable.hdfs.fallback";
 
+  private static final String PROP_IMPORT_FILES_PATTERNS = SYSTEM_PROP_PREFIX + "persist.importFile.patterns";
+  private static final String PROP_IMPORT_FILES_PATTERNS_DEFAULT = 
+          "^((?!\\/_delta_log\\/).)*$"; // skip "Delta Lake" log files
+
+  private final String[] importFilesPatterns;
+  
   /** Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file" */
   public interface Schemes {
     String FILE = "file";
@@ -102,6 +109,7 @@ public class PersistManager {
     for (int i = 0; i < stats.length; i++) {
       stats[i] = new PersistStatsEntry();
     }
+    importFilesPatterns = System.getProperty(PROP_IMPORT_FILES_PATTERNS, PROP_IMPORT_FILES_PATTERNS_DEFAULT).split(";");
 
     if (iceRoot == null) {
       Log.err("ice_root must be specified.  Exiting.");
@@ -401,18 +409,33 @@ public class PersistManager {
       I[Value.HDFS].importFiles(path, pattern, files, keys, fails, dels);
     }
 
-    if(pattern != null && !pattern.isEmpty()) {
-      files.retainAll(matchPattern(path,files,pattern)); //New files ArrayList after matching pattern of choice
-      keys.retainAll(matchPattern(path,keys,pattern)); //New keys ArrayList after matching pattern of choice
-      //New fails ArrayList after matching pattern of choice. Only show failures that match pattern
-      if(!fails.isEmpty()) {
-        fails.retainAll(matchPattern(path, fails, pattern));
-      }
+    final String[] patterns = pattern != null && !pattern.isEmpty() ? 
+            ArrayUtils.append(importFilesPatterns, pattern) : importFilesPatterns; 
+    for (String p : patterns) {
+      if (p != null && !p.isEmpty())
+        filterFiles(p, path, files, keys, fails);
     }
-
   }
 
-
+  void filterFiles(String pattern, String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails) {
+    files.retainAll(matchPattern(path, files, pattern)); //New files ArrayList after matching pattern of choice
+    List<String> retainKeys = matchPattern(path, keys, pattern);
+    if (retainKeys.size() != keys.size()) {
+      Futures fs = new Futures();
+      @SuppressWarnings("unchecked")
+      List<String> removed = ((List<String>) keys.clone());
+      removed.removeAll(retainKeys);
+      for (String r : removed)
+        Keyed.remove(Key.make(r), fs, true);
+      fs.blockForPending();
+      keys.retainAll(retainKeys); //New keys ArrayList after matching pattern of choice
+    }
+    //New fails ArrayList after matching pattern of choice. Only show failures that match pattern
+    if (!fails.isEmpty()) {
+      fails.retainAll(matchPattern(path, fails, pattern));
+    }
+  }
+  
   // -------------------------------
   // Node Persistent Storage helpers
   // -------------------------------
@@ -749,15 +772,13 @@ public class PersistManager {
    * @param matchStr The regular expression to use on the string after prefix
    * @return list containing the matching entries
    */
-  public ArrayList<String> matchPattern(String prefix, ArrayList<String> fileList, String matchStr){
-    ArrayList<String> result = new ArrayList<String>();
+  private ArrayList<String> matchPattern(String prefix, ArrayList<String> fileList, String matchStr){
+    ArrayList<String> result = new ArrayList<>();
     Pattern pattern = Pattern.compile(matchStr);
-    if (matchStr != null) {
-      for(String s : fileList){
-        Matcher matcher = pattern.matcher(afterPrefix(s,prefix));
-        if (matcher.find()) {
-          result.add(s);
-        }
+    for (String s : fileList) {
+      Matcher matcher = pattern.matcher(afterPrefix(s,prefix));
+      if (matcher.find()) {
+        result.add(s);
       }
     }
     return result;
