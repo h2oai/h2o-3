@@ -69,8 +69,6 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   static public final int DECIDED_ROW = -1;
   /** Marker for sampled out rows */
   static public final int OUT_OF_BAG = -2;
-  /** Marker for rows without a response */
-  static public final int MISSING_RESPONSE = -1;
   /** Marker for a fresh tree */
   static public final int UNDECIDED_CHILD_NODE_ID = -1; //Integer.MIN_VALUE;
 
@@ -114,20 +112,17 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     // criteria, and assigning the row to a new child UndecidedNode (and
     // giving it an improved prediction).
     int nnids[] = new int[nids._len];
-    if( _leaf > 0)            // Prior pass exists?
+    if(_leaf > 0)            // Prior pass exists?
       score_decide(chks,nids,nnids);
     else                      // Just flag all the NA rows
-      for( int row=0; row<nids._len; row++ ) {
-        if( weight.atd(row) == 0) continue;
-        if( isDecidedRow((int)nids.atd(row)) )
+      for(int row=0; row<nids._len; row++ ) {
+        if(weight.atd(row) == 0) continue;
+        if(isDecidedRow((int)nids.atd(row)) )
           nnids[row] = DECIDED_ROW;
       }
 
     // Pass 2: accumulate all rows, cols into histograms
-//    if (_subset)
-//      accum_subset(chks,wrks,weight,nnids); //for debugging - simple code
-//    else
-      accum_all   (chks,wrks,weight,nnids); //generally faster
+    accumAll(chks,wrks,weight,nnids);
   }
 
   @Override public void reduce( ScoreBuildHistogram sbh ) {
@@ -180,10 +175,18 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     }
   }
 
-// For debugging - simple code
-  // All rows, some cols, accumulate histograms
-  private void accum_subset(Chunk chks[], Chunk wrks, Chunk weight, int nnids[]) {
-    for( int row=0; row<nnids.length; row++ ) { // Over all rows
+
+
+  /**
+   * For debugging - simple code
+   * All rows, some cols, accumulate histograms
+   * @param chks
+   * @param wrks
+   * @param weight
+   * @param nnids
+   */
+  private void accumSubset(Chunk chks[], Chunk wrks, Chunk weight, int nnids[]) {
+    for( int row = 0; row < nnids.length; row++ ) { // Over all rows
       int nid = nnids[row];                     // Get Node to decide from
       if( nid >= 0 ) {        // row already predicts perfectly or OOB
         double w = weight.atd(row);
@@ -216,50 +219,49 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
    *
    * @param chks predictors, actual response (ignored)
    * @param wrks predicted response
-   * @param weight observation weights
+   * @param weights observation weights
    * @param nnids node ids
    */
-  private void accum_all(Chunk chks[], Chunk wrks, Chunk weight, int nnids[]) {
+  private void accumAll(Chunk chks[], Chunk wrks, Chunk weights, int nnids[]) {
     // Sort the rows by NID, so we visit all the same NIDs in a row
     // Find the count of unique NIDs in this chunk
-    int nh[] = new int[_hcs.length+1];
+    int[] newHistograms = new int[_hcs.length+1];
     for( int i : nnids )
       if( i >= 0 )
-        nh[i+1]++;
+        newHistograms[i+1]++;
     // Rollup the histogram of rows-per-NID in this chunk
-    for( int i=0; i<_hcs.length; i++ ) nh[i+1] += nh[i];
+    for( int i=0; i<_hcs.length; i++ ) newHistograms[i+1] += newHistograms[i];
     // Splat the rows into NID-groups
     int rows[] = new int[nnids.length];
-    for( int row=0; row<nnids.length; row++ )
+    for( int row = 0; row < nnids.length; row++ )
       if( nnids[row] >= 0 )
-        rows[nh[nnids[row]]++] = row;
+        rows[newHistograms[nnids[row]]++] = row;
     // rows[] has Chunk-local ROW-numbers now, in-order, grouped by NID.
-    // nh[] lists the start of each new NID, and is indexed by NID+1.
-    final DHistogram hcs[][] = _hcs;
+    // newHistograms[] lists the start of each new NID, and is indexed by NID+1.
+    final DHistogram[][] hcs = _hcs;
     if( hcs.length==0 ) return; // Unlikely fast cutout
     // Local temp arrays, no atomic updates.
-    LocalHisto lh = new LocalHisto(Math.max(_nbins,_nbins_cats));
-    final int cols = _ncols;
+    LocalHisto localHistogram = new LocalHisto(Math.max(_nbins,_nbins_cats));
     final int hcslen = hcs.length;
     // these arrays will be re-used for all cols and nodes
     double[] ws = new double[chks[0]._len];
     double[] cs = new double[chks[0]._len];
     double[] ys = new double[chks[0]._len];
-    weight.getDoubles(ws,0,ws.length);
-    wrks.getDoubles(ys,0,ys.length);
-    for (int c = 0; c < cols; c++) {
+    weights.getDoubles(ws,0, ws.length);
+    wrks.getDoubles(ys,0, ys.length);
+    for (int col = 0; col < _ncols; col++) {
       boolean extracted = false;
       for (int n = 0; n < hcslen; n++) {
-        int sCols[] = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
-        if (sCols == null || ArrayUtils.find(sCols,c) >= 0) {
+        int[] scoredCols = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
+        if (scoredCols == null || ArrayUtils.find(scoredCols, col) >= 0) {
           if (!extracted) {
-            chks[c].getDoubles(cs, 0, cs.length);
+            chks[col].getDoubles(cs, 0, cs.length);
             extracted = true;
           }
-          DHistogram h = hcs[n][c];
-          if( h==null ) continue; // Ignore untracked columns in this split
-          lh.resizeIfNeeded(h._nbin);
-          h.updateSharedHistosAndReset(lh, ws, cs, ys, rows, nh[n], n == 0 ? 0 : nh[n - 1]);
+          DHistogram histogram = hcs[n][col];
+          if( histogram == null ) continue; // Ignore untracked columns in this split
+          localHistogram.resizeIfNeeded(histogram._nbin);
+          histogram.updateSharedHistosAndReset(localHistogram, ws, cs, ys, rows, newHistograms[n], n == 0 ? 0 : newHistograms[n - 1]);
         }
       }
     }

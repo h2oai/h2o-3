@@ -299,11 +299,6 @@ public class GBMTest extends TestUtil {
             },
             false, DistributionFamily.bernoulli);
 
-//    basicGBM("./smalldata/gbm_test/alphabet_cattest.csv",
-//            new PrepData() { int prep(Frame fr) { return fr.find("y"); }
-//            },
-//            false, DistributionFamily.modified_huber);
-
     basicGBM("./smalldata/airlines/allyears2k_headers.zip",
             new PrepData() { int prep(Frame fr) {
               for( String s : ignored_aircols ) fr.remove(s).remove();
@@ -321,9 +316,11 @@ public class GBMTest extends TestUtil {
 //             new PrepData() { int prep(Frame fr) { return fr.numCols()-1; } });
   }
 
+  /**
+   * Classification with Bernoulli family
+   */
   @Test public void testBasicGBMFamily() {
     Scope.enter();
-    // Classification with Bernoulli family
     basicGBM("./smalldata/logreg/prostate.csv",
             new PrepData() {
               int prep(Frame fr) {
@@ -336,7 +333,6 @@ public class GBMTest extends TestUtil {
     Scope.exit();
   }
 
-  // ==========================================================================
   public GBMModel.GBMOutput basicGBM(String fname, PrepData prep, boolean validation, DistributionFamily family) {
     GBMModel gbm = null;
     Frame fr = null, fr2= null, vfr=null;
@@ -1052,8 +1048,6 @@ public class GBMTest extends TestUtil {
       rb.join();
       tfr.delete();
       tfr = DKV.get(dest).get();
-//      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
-//      DKV.put(tfr);
       for (String s : new String[]{
               "DepTime", "ArrTime", "ActualElapsedTime",
               "AirTime", "ArrDelay", "DepDelay", "Cancelled",

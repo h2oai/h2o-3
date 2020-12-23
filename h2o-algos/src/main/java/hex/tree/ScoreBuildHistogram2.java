@@ -58,7 +58,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  */
 public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
-  transient int []   _cids;
+  transient int []   _cids; 
   transient Chunk[][] _chks;
   transient double [][] _ys;
   transient double [][] _ws;
@@ -122,9 +122,9 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   // giving it an improved prediction).
   protected int[] score_decide(Chunk chks[], int nnids[]) {
     int [] res = nnids.clone();
-    for( int row=0; row<nnids.length; row++ ) { // Over all rows
+    for( int row = 0; row < nnids.length; row++ ) { // Over all rows
       int nid = nnids[row];          // Get Node to decide from
-      if( isDecidedRow(nid)) {               // already done
+      if(isDecidedRow(nid)) {               // already done
         res[row] -= _leaf;
         continue;
       }
@@ -237,16 +237,16 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     },new H2O.H2OCountedCompleter(this){
       public void onCompletion(CountedCompleter cc){
         final int ncols = _ncols;
-        final int [] active_cols = _activeCols == null?null:new int[Math.max(1,_activeCols.cardinality())];
-        int nactive_cols = active_cols == null?ncols:active_cols.length;
-        final int numWrks = _hcs.length*nactive_cols < 16*1024?H2O.NUMCPUS:Math.min(H2O.NUMCPUS,Math.max(4*H2O.NUMCPUS/nactive_cols,1));
-        final int rem = H2O.NUMCPUS-numWrks*ncols;
-        ScoreBuildHistogram2.this.addToPendingCount(1+nactive_cols);
-        if(active_cols != null) {
+        final int [] activeCols = _activeCols == null ? null : new int[Math.max(1, _activeCols.cardinality())];
+        int nactiveCols = activeCols == null ? ncols : activeCols.length;
+        final int numWrks = _hcs.length * nactiveCols < 16 * 1024 ? H2O.NUMCPUS : Math.min(H2O.NUMCPUS, Math.max(4 * H2O.NUMCPUS / nactiveCols, 1));
+        final int rem = H2O.NUMCPUS - numWrks * ncols;
+        ScoreBuildHistogram2.this.addToPendingCount(1 + nactiveCols);
+        if(activeCols != null) {
           int j = 0;
           for (int i = 0; i < ncols; ++i)
             if (_activeCols.contains(i))
-              active_cols[j++] = i;
+              activeCols[j++] = i;
         }
         // MRTask (over columns) launching MrTasks (over number of workers) for each column.
         // We want FJ to start processing all the columns before parallelizing within column to reduce memory overhead.
@@ -260,10 +260,10 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
         new LocalMR(new MrFun() {
           @Override
           protected void map(int c) {
-            c = active_cols == null?c:active_cols[c];
-            new LocalMR(new ComputeHistoThread(_hcs.length == 0?new DHistogram[0]:_hcs[c],c,fLargestChunkSz,new AtomicInteger()),numWrks + (c < rem?1:0),ScoreBuildHistogram2.this).fork();
+            c = activeCols == null ? c : activeCols[c];
+            new LocalMR(new ComputeHistoThread(_hcs.length == 0 ? new DHistogram[0] : _hcs[c], c, fLargestChunkSz, new AtomicInteger()),numWrks + (c < rem ? 1 : 0),ScoreBuildHistogram2.this).fork();
           }
-        },nactive_cols,ScoreBuildHistogram2.this).fork();
+        }, nactiveCols,ScoreBuildHistogram2.this).fork();
       }
     }).fork();
   }
@@ -281,7 +281,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   private class ComputeHistoThread extends MrFun<ComputeHistoThread> {
     final int _maxChunkSz;
     final int _col;
-    final DHistogram [] _lh;
+    final DHistogram[] _histograms;
 
     AtomicInteger _cidx;
     private boolean _done;
@@ -289,13 +289,15 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     public boolean isDone(){return _done || (_done = _cidx.get() >= _cids.length);}
 
     ComputeHistoThread(DHistogram [] hcs, int col, int maxChunkSz,AtomicInteger cidx){
-      _lh = hcs; _col = col; _maxChunkSz = maxChunkSz;
+      _histograms = hcs; 
+      _col = col; 
+      _maxChunkSz = maxChunkSz;
       _cidx = cidx;
     }
 
     @Override
     public ComputeHistoThread makeCopy() {
-      return new ComputeHistoThread(ArrayUtils.deepClone(_lh),_col,_maxChunkSz,_cidx);
+      return new ComputeHistoThread(ArrayUtils.deepClone(_histograms),_col,_maxChunkSz,_cidx);
     }
 
     @Override
@@ -317,40 +319,40 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
 
     private void computeChunk(int id, double[] cs, double[] ws, double[] resp, double[] preds){
       int [] nh = _nhs[id];
-      int [] rs = _rss[id];
+      int [] rows = _rss[id];
       Chunk resChk = _chks[id][_workIdx];
       int len = resChk._len;
       double [] ys = ScoreBuildHistogram2.this._ys[id];
       if(_weightIdx != -1) _chks[id][_weightIdx].getDoubles(ws, 0, len);
-      final int hcslen = _lh.length;
+      final int hcslen = _histograms.length;
       boolean extracted = false;
       for (int n = 0; n < hcslen; n++) {
-        int sCols[] = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
+        int[] sCols = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
         if (sCols == null || ArrayUtils.find(sCols, _col) >= 0) {
-          DHistogram h = _lh[n];
+          DHistogram histogram = _histograms[n];
           int hi = nh[n];
           int lo = (n == 0 ? 0 : nh[n - 1]);
-          if (hi == lo || h == null) continue; // Ignore untracked columns in this split
-          if (h._vals == null) h.init();
+          if (hi == lo || histogram == null) continue; // Ignore untracked columns in this split
+          if (histogram._vals == null) histogram.init();
           if (! extracted) {
             _chks[id][_col].getDoubles(cs, 0, len);
-            if (h._vals_dim >= 6) {
+            if (histogram._vals_dim >= 6) {
               _chks[id][_respIdx].getDoubles(resp, 0, len);
-              if (h._vals_dim == 7) {
+              if (histogram._vals_dim == 7) {
                 _chks[id][_predsIdx].getDoubles(preds, 0, len);
               }
             }
             extracted = true;
           }
-          h.updateHisto(ws, resp, cs, ys, preds, rs, hi, lo);
+          histogram.updateHisto(ws, resp, cs, ys, preds, rows, hi, lo);
         }
       }
     }
 
     @Override
     protected void reduce(ComputeHistoThread cc) {
-      assert _lh != cc._lh;
-      mergeHistos(_lh, cc._lh);
+      assert _histograms != cc._histograms : "Reduced historams should not be same.";
+      mergeHistos(_histograms, cc._histograms);
     }
   }
 

@@ -7,7 +7,9 @@ import water.util.RandomUtils;
 
 import java.util.Random;
 
-// Deterministic sampling
+/**
+ *  Deterministic sampling
+ */
 public class Sample extends MRTask<Sample> {
   final DTree _tree;
   final double _rate;
@@ -23,7 +25,7 @@ public class Sample extends MRTask<Sample> {
   public void map(Chunk nids, Chunk ys) {
     C4VolatileChunk nids2 = (C4VolatileChunk) nids;
     Random rand = RandomUtils.getRNG(_tree._seed);
-    int [] is = nids2.getValues();
+    int[] is = nids2.getValues();
     for (int row = 0; row < nids._len; row++) {
       boolean skip = ys.isNA(row);
       if (!skip) {

@@ -437,9 +437,19 @@ public abstract class SharedTree<
     assert isSupervised();
     return ScoreKeeper.ProblemType.forSupervised(_nclass > 1);
   }
-  
-  // --------------------------------------------------------------------------
-  // Build an entire layer of all K trees
+
+  /**
+   * Build an entire layer of all K trees
+   * @param fr Training frame
+   * @param nbins number of allowed bins in histogram
+   * @param nbins_cats number of allowed bins in histogram for categorical columns
+   * @param ktrees class trees (for regression ktrees.lenght = 1, for binomial classification ktrees = 1 or 2, 
+   *               for multinomial classification ktrees.length = nclass)
+   * @param leafs leafs offsets
+   * @param hcs histograms of previous tree layer to be used for build another tree layer
+   * @param build_tree_one_node option to specify that the algorithm will run on a single node
+   * @return
+   */
   protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, int nbins_cats, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {
     // Build K trees, one per class.
 
@@ -449,7 +459,7 @@ public abstract class SharedTree<
     // but is NOT over all the data.
     ScoreBuildOneTree sb1ts[] = new ScoreBuildOneTree[_nclass];
     Vec vecs[] = fr.vecs();
-    for( int k=0; k<_nclass; k++ ) {
+    for( int k = 0; k < _nclass; k++ ) {
       final DTree tree = ktrees[k]; // Tree for class K
       if( tree == null ) continue;
       // Build a frame with just a single tree (& work & nid) columns, so the
@@ -483,9 +493,9 @@ public abstract class SharedTree<
       // Add temporary workspace vectors (optional weights are taken over from fr)
       int respIdx = fr2.find(_parms._response_column);
       int weightIdx = fr2.find(_parms._weights_column);
-      int predsIdx = fr2.numCols(); fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]); //tree predictions
-      int workIdx =  fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
-      int nidIdx  =  fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
+      int predsIdx = fr2.numCols(); fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]); // tree predictions
+      int workIdx =  fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); // target value to fit (copy of actual response for DRF, residual for GBM)
+      int nidIdx  =  fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); // node indices for tree construction
       if (LOG.isTraceEnabled()) LOG.trace("Building a layer for class " + k + ":\n" + fr2.toTwoDimTable());
       // Async tree building
       // step 1: build histograms
@@ -494,12 +504,12 @@ public abstract class SharedTree<
               respIdx, weightIdx, predsIdx, workIdx, nidIdx));
     }
     // Block for all K trees to complete.
-    boolean did_split=false;
-    for( int k=0; k<_nclass; k++ ) {
+    boolean didSplit = false;
+    for( int k = 0; k < _nclass; k++ ) {
       final DTree tree = ktrees[k]; // Tree for class K
       if( tree == null ) continue;
       sb1ts[k].join();
-      if( sb1ts[k]._did_split ) did_split=true;
+      if( sb1ts[k]._did_split ) didSplit = true;
       if (LOG.isTraceEnabled()) {
         LOG.trace("Done with this layer for class " + k + ":\n" + new Frame(
                 new String[]{"TREE", "WORK", "NIDS"},
@@ -511,18 +521,23 @@ public abstract class SharedTree<
         ).toTwoDimTable());
       }
     }
-    // The layer is done.
-    return did_split ? hcs : null;
+    // The layer is done. Returns updated histograms for another layer.
+    return didSplit ? hcs : null;
   }
 
+  /**
+   * Task to score and build one tree
+   * step 1: build histograms
+   * step 2: split nodes
+   */
   private static class ScoreBuildOneTree extends H2OCountedCompleter {
-    final SharedTree _st;
-    final int _k;               // The tree
-    final int _nbins;           // Numerical columns: Number of histogram bins
-    final int _nbins_cats;      // Categorical columns: Number of histogram bins
+    final SharedTree _sharedTree; // Tree used for making decision nodes
+    final int _k;                // The index of the tree
+    final int _nbins;            // Numerical columns: Number of histogram bins
+    final int _nbins_cats;       // Categorical columns: Number of histogram bins
     final DTree _tree;
-    final int _leafOffsets[/*nclass*/]; //Index of the first leaf node. Leaf indices range from _leafOffsets[k] to _tree._len-1
-    final DHistogram _hcs[/*nclass*/][][];
+    final int[/*nclass*/] _leafOffsets; //Index of the first leaf node. Leaf indices range from _leafOffsets[k] to _tree._len-1
+    final DHistogram[/*nclass*/][][] _hcs; // Histograms to work with data
     final Frame _fr2;
     final boolean _build_tree_one_node;
     final float[] _improvPerVar;      // Squared Error improvement per variable per split
@@ -537,7 +552,7 @@ public abstract class SharedTree<
 
     ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family,
                       int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdx) {
-      _st   = st;
+      _sharedTree = st;
       _k    = k;
       _nbins= nbins;
       _nbins_cats= nbins_cats;
@@ -563,8 +578,7 @@ public abstract class SharedTree<
       // Pass 2: Build new summary DHistograms on the new child Nodes every row
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
-//      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _weightIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
-      new ScoreBuildHistogram2(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, 
+      new ScoreBuildHistogram2(this,_k, _sharedTree._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, 
               _respIdx, _weightIdx, _predsIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
@@ -573,9 +587,9 @@ public abstract class SharedTree<
       int tmax = _tree.len();   // Number of total splits in tree K
       for (int leaf = leafOffset; leaf < tmax; leaf++) { // Visit all the new splits (leaves)
         DTree.UndecidedNode udn = _tree.undecided(leaf);
-        if (LOG.isTraceEnabled()) LOG.trace((_st._nclass==1?"Regression":("Class "+_st._response.domain()[_k]))+",\n  Undecided node:"+udn);
+        if (LOG.isTraceEnabled()) LOG.trace((_sharedTree._nclass==1?"Regression":("Class "+ _sharedTree._response.domain()[_k]))+",\n  Undecided node:"+udn);
         // Replace the Undecided with the Split decision
-        DTree.DecidedNode dn = _st.makeDecided(udn, sbh._hcs[leaf - leafOffset], udn._cs);
+        DTree.DecidedNode dn = _sharedTree.makeDecided(udn, sbh._hcs[leaf - leafOffset], udn._cs);
         if (LOG.isTraceEnabled()) LOG.trace(dn + "\n" + dn._split);
         if (dn._split == null) udn.doNotSplit();
         else {

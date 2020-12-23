@@ -302,10 +302,14 @@ public final class DHistogram extends Iced {
     if (_histoType==SharedTreeModel.SharedTreeParameters.HistogramType.Random) {
       // every node makes the same split points
       Random rng = RandomUtils.getRNG((Double.doubleToRawLongBits(((_step+0.324)*_min+8.3425)+89.342*_maxEx) + 0xDECAF*_nbin + 0xC0FFEE*_isInt + _seed));
-      assert _nbin > 1;
-      _splitPts = makeRandomSplitPoints(_nbin, rng);
-    }
-    else if (_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal) {
+      assert(_nbin>1);
+      _splitPts = new double[_nbin];
+      _splitPts[0] = 0;
+      _splitPts[_nbin - 1] = _nbin-1;
+      for (int i = 1; i < _nbin-1; ++i)
+         _splitPts[i] = rng.nextFloat() * (_nbin-1);
+      Arrays.sort(_splitPts);
+    } else if (_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal) {
       assert (_splitPts == null);
       if (_globalQuantilesKey != null) {
         HistoQuantiles hq = DKV.getGet(_globalQuantilesKey);
@@ -328,8 +332,7 @@ public final class DHistogram extends Iced {
           }
         }
       }
-    }
-    else assert(_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive);
+    } else assert(_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive);
     if (_splitPts != null) {
       // Inject canonical representation of zero - convert "negative zero" to 0.0d
       // This is for PUBDEV-7161 - Arrays.binarySearch used in bin() method is not able to find a negative zero,
@@ -463,36 +466,36 @@ public final class DHistogram extends Iced {
 
   /**
    * Update counts in appropriate bins. Not thread safe, assumed to have private copy.
+   * Gather all the data for this set of rows, for 1 column and 1 split/NID
+   * Gather min/max, wY, sum-squares and predictions.
    * @param ws observation weights
    * @param resp original response (response column of the outer model, needed to calculate Gamma denominator) 
    * @param cs column data
    * @param ys response column of the regression tree (eg. GBM residuals, not the original model response!)
    * @param preds current model predictions (optional, provided only if needed)
-   * @param rows rows sorted by leaf assignemnt
+   * @param rows rows sorted by leaf assignment
    * @param hi  upper bound on index into rows array to be processed by this call (exclusive)
    * @param lo  lower bound on index into rows array to be processed by this call (inclusive)
    */
   void updateHisto(double[] ws, double resp[], double[] cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
-    // Gather all the data for this set of rows, for 1 column and 1 split/NID
-    // Gather min/max, wY and sum-squares.
-    
-    for(int r = lo; r< hi; ++r) {
+    for(int r = lo; r < hi; ++r) {
       final int k = rows[r];
       final double weight = ws[k];
       if (weight == 0)
         continue;
-      double col_data = cs[k];
-      if (col_data < _min2) _min2 = col_data;
-      if (col_data > _maxIn) _maxIn = col_data;
+      double colData = cs[k];
+      if (colData < _min2) _min2 = colData;
+      if (colData > _maxIn) _maxIn = colData;
       double y = ys[k];
-      assert (!Double.isNaN(y));
+      assert (!Double.isNaN(y)) : "Response column or residuals should not be null.";
       double wy = weight * y;
       double wyy = wy * y;
-      int b = bin(col_data);
+      int b = bin(colData);
       final int binDimStart = _vals_dim*b;
       _vals[binDimStart + 0] += weight;
       _vals[binDimStart + 1] += wy;
       _vals[binDimStart + 2] += wyy;
+      // Additional information to have be stored for monotone constraints
       if (_vals_dim >= 5 && !Double.isNaN(resp[k])) { // FIXME (PUBDEV-7553): This needs to be applied even with monotone constraints disabled
         if (_dist._family.equals(DistributionFamily.quantile)) {
           _vals[binDimStart + 3] += _dist.deviance(weight, y, _pred1);
