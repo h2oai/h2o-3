@@ -448,7 +448,7 @@ def _get_algorithm(model,  treat_xrt_as_algorithm=False):
                 algo = "drf"
             return algo
         else:
-            model = h2o.get_model()
+            model = h2o.get_model(model)
     if treat_xrt_as_algorithm and model.algo == "drf":
         if model.actual_params.get("histogram_type") == "Random":
             return "xrt"
