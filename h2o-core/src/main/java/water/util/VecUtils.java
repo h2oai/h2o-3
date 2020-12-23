@@ -863,4 +863,46 @@ public class VecUtils {
     }
   }
 
+  /**
+   * Randomly shuffle a Vec using Fisher Yates shuffle 
+   * https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
+   */
+  public static class ShuffleVecTask extends MRTask<ShuffleVecTask> {
+    @Override public void map(Chunk ic, Chunk nc) {
+      Random rng = new Random();
+      for (int i = 1; i < ic._len ; i++) {
+        int j = rng.nextInt(i); // inclusive upper bound <0,i>
+        switch (ic.vec().get_type()) {
+          case Vec.T_BAD: break; /* NOP */
+          case Vec.T_UUID:
+            if (j != i) nc.setAny(i, ic.at16l(j));
+            nc.setAny(j, ic.at16l(i));
+            break;
+          case Vec.T_STR:
+            if (j != i) nc.setAny(i, ic.stringAt(j));
+            nc.setAny(j, ic.stringAt(i));
+            break;
+          case Vec.T_NUM: /* fallthrough */
+          case Vec.T_CAT:
+          case Vec.T_TIME:
+            if (j != i) nc.setAny(i, ic.atd(j));
+            nc.setAny(j, ic.atd(i));
+            break;
+          default:
+            throw new IllegalArgumentException("Unsupported vector type: " + ic.vec().get_type());
+        }
+      }
+    }
+  }
+
+  /**
+   * Randomly shuffle a Vec. 
+   * @param iVec original Vec
+   * @param srcVec a copy of original Vec, to be shuffled
+   * @return shuffled Vec
+   */
+  public static Vec ShuffleVec(Vec iVec, Vec srcVec) {
+    new ShuffleVecTask().doAll(iVec, srcVec);
+    return srcVec;
+  }
 }
