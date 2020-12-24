@@ -240,23 +240,49 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       throw (t instanceof DistributedException)?new DistributedException(t.getMessage(),t.getCause()):new DistributedException(t);
     return _dt;
   }
+  private static int getThreadPriority() {
+    Thread cThr = Thread.currentThread();
+    return (cThr instanceof FJWThr) ? ((FJWThr)cThr)._priority : -1;
+  }
+  private boolean canDoManagedBlock() {
+    final int priority = getThreadPriority();
+    return _dt.priority() > priority || (_dt.priority() == priority && _dt instanceof MRTask);
+  }
   // Similar to FutureTask.get() but does not throw any checked exceptions.
   // Returns null for canceled tasks, including those where the target dies.
   // Throws a DException if the remote throws, wrapping the original exception.
   @Override public V get() {
-    // check priorities - FJ task can only block on a task with higher priority!
-    Thread cThr = Thread.currentThread();
-    int priority = (cThr instanceof FJWThr) ? ((FJWThr)cThr)._priority : -1;
-    assert _dt.priority() > priority || (_dt.priority() == priority && _dt instanceof MRTask)
-      : "*** Attempting to block on task (" + _dt.getClass() + ") with equal or lower priority. Can lead to deadlock! " + _dt.priority() + " <=  " + priority;
+    return get(false);
+  }
+  public V get(boolean allowDirectBlock) {
     if( _done ) return result(); // Fast-path shortcut, or throw if exception
-    // Use FJP ManagedBlock for this blocking-wait - so the FJP can spawn
-    // another thread if needed.
-    try { ForkJoinPool.managedBlock(this); } catch( InterruptedException ignore ) { }
+    // check priorities - FJ task can only block on a task with higher priority!
+    final boolean canDoManagedBlock = canDoManagedBlock();
+    final boolean doDirectBlock = !canDoManagedBlock && allowDirectBlock;
+    try {
+      if (doDirectBlock) {
+        // Only block directly if the caller allows it (knows the blocking
+        // will be short and we will recover quickly), direct blocking has
+        // performance implications (worker threads are not replaced in the 
+        // FJ thread-pool).
+        block();
+      } else {
+        // Use FJP ManagedBlock for this blocking-wait - so the FJP can spawn
+        // another thread if needed.
+        final int priority = getThreadPriority();
+        // The assert should reveal the issue in our CI tests, however,
+        // in production with asserts disabled we rather continue as the 
+        // risk of actual deadlock is low (and failing here would definitely
+        // not give the user the result they want).
+        assert canDoManagedBlock : "*** Attempting to block on task (" + _dt.getClass() + ") with equal or lower priority. Can lead to deadlock! " + _dt.priority() + " <=  " + priority;
+        ForkJoinPool.managedBlock(this);
+      }
+    } catch( InterruptedException ignore ) { }
     if( _done ) return result(); // Fast-path shortcut or throw if exception
     assert isCancelled();
     return null;
   }
+
   // Return true if blocking is unnecessary, which is true if the Task isDone.
   @Override public boolean isReleasable() {  return isDone();  }
   // Possibly blocks the current thread.  Returns true if isReleasable would

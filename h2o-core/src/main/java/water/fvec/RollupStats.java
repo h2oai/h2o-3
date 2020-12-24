@@ -356,7 +356,7 @@ final class RollupStats extends Iced {
           rpcNew.call().get();
           _pendingRollups.remove(rskey);
         } else // rollups computation is already in progress, wait for it to finish
-          rpcOld.get();
+          rpcOld.get(true);
       } catch( Throwable t ) {
         System.err.println("Remote rollups failed with an exception, wrapping and rethrowing: "+t);
         throw new RuntimeException(t);
