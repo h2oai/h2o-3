@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Zermelo (3.32.0.3) - 12/23/2020
+### Zermelo (3.32.0.3) - 12/24/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/index.html</a>
 
@@ -10,7 +10,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/inde
 <ul>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7773'>PUBDEV-7773</a>] -         The `pca_impl` parameter is no longer passed to PCA MOJO.
 </li>
-<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7896'>PUBDEV-7896</a>] -         Keys no longer removed during the `h2o.removeAll()` command.
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7896'>PUBDEV-7896</a>] -         Objects to be retained no longer removed during the `h2o.removeAll()` command.
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7902'>PUBDEV-7902</a>] -         Starting GridSearch in a fresh cluster with new hyperparameters that overlap old ones will no longer cause the old models to be trained again.
 </li>
@@ -24,7 +24,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/inde
     
 #### New Feature
 <ul>
-<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-5923'>PUBDEV-5923</a>] -         Cross-Validation predictions now saved alongside the model.
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-5923'>PUBDEV-5923</a>] -         Cross-Validation predictions can now be saved alongside the model.
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7269'>PUBDEV-7269</a>] -         Added multinomial and grid search support for AUC/PR AUC metrics.
 </li>
@@ -32,7 +32,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/inde
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7871'>PUBDEV-7871</a>] -         Created a Red Hat certification for H2O Docker Image.
 </li>
-<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7880'>PUBDEV-7880</a>] -  Fixed randomized split point for `histogram_type=“Random”` when nbins=2.       
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7880'>PUBDEV-7880</a>] -         Fixed randomized split points for `histogram_type=“Random”` when nbins=2.       
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7916'>PUBDEV-7916</a>] -         Single quote regime for CSV parser exposed for importing & uploading files.
 </li>
@@ -40,8 +40,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/inde
     
 #### Improvement
 <ul>
-<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7737'>PUBDEV-7737</a>] -         Added MOJO support for CoxPH.
-</li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7753'>PUBDEV-7753</a>] -         REST API disabled on non-leader Kubernetes nodes.
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7875'>PUBDEV-7875</a>] -         GLM now uses proper logging instead of printlines.
