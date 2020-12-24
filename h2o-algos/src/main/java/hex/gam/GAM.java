@@ -30,6 +30,7 @@ import static hex.gam.MatrixFrameUtils.GamUtils.*;
 import static hex.genmodel.utils.ArrayUtils.flat;
 import static hex.glm.GLMModel.GLMParameters.Family.multinomial;
 import static hex.glm.GLMModel.GLMParameters.Family.ordinal;
+import static hex.glm.GLMModel.GLMParameters.GLMType.gam;
 
 
 public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel.GAMModelOutput> {
@@ -195,6 +196,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
   }
   
   private void validateGamParameters() {
+    if (_parms._max_iterations == 0)
+      error("_max_iterations", H2O.technote(2, "if specified, must be >= 1."));
     if (_parms._family == GLMParameters.Family.AUTO) {
       if (nclasses() == 1 & _parms._link != GLMParameters.Link.family_default && _parms._link != GLMParameters.Link.identity
               && _parms._link != GLMParameters.Link.log && _parms._link != GLMParameters.Link.inverse && _parms._link != null) {
@@ -550,6 +553,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         if ((_parms._scale != null) && (_parms._scale[find] != 1.0))
           _penalty_mat_center[find] = ArrayUtils.mult(_penalty_mat_center[find], _parms._scale[find]);
       }
+      glmParam._glmType = gam;
       return new GLM(glmParam, _penalty_mat_center,  _gamColNamesCenter).trainModel().get();
     }
     
