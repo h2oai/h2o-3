@@ -32,7 +32,7 @@ mv h2ocluster /opt
 mv /opt/h2ocluster/terraform/h2ocluster.sh /opt/h2ocluster/terraform/h2ocluster
 chown -R root:root /opt/h2ocluster
 chmod o+x /opt/h2ocluster/terraform/h2ocluster
-chmod o+r /opt/h2ocluster/terraform/gcpkey.json
+chmod o+r /opt/h2ocluster/terraform/workspace-sa-key.json
 popd
 
 # install jq
@@ -43,4 +43,4 @@ chmod +x /usr/bin/jq
 echo 'PATH="/opt/h2ocluster/terraform:$PATH"' > /etc/profile.d/h2ocluster.sh
 
 # Signal Startup script completion
-gcloud compute instances add-metadata ${INSTANCE} --metadata startup-complete=TRUE --zone=${ZONE}
+# gcloud compute instances add-metadata ${INSTANCE} --metadata startup-complete=TRUE --zone=${ZONE}

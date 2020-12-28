@@ -34,6 +34,12 @@ variable h2o_cluster_instance_subnet {
 variable h2o_cluster_instance_user {
   type = string
 }
+variable h2o_cluster_instance_ssh_user {
+  type = string
+}
+variable h2o_cluster_instance_ssh_pubkey_filepath {
+  type = string
+}
 variable h2o_cluster_instance_description {
   type = string
 }

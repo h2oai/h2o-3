@@ -32,4 +32,8 @@ module "h2o-cluster" {
   
   # h2o details
   h2o_download_url = var.h2o_download_url
+  
+  # ssh details
+  h2o_cluster_instance_ssh_user = var.h2o_cluster_instance_ssh_user
+  h2o_cluster_instance_ssh_pubkey_filepath = var.h2o_cluster_instance_ssh_pubkey_filepath
 }
