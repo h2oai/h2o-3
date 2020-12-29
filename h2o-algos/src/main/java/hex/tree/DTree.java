@@ -1020,7 +1020,8 @@ public class DTree extends Iced {
               if (wNA != 0 && i == 0) {         // NAs go left
                   wYYloNA = wYYNA; wYloNA = wYNA; wloNA = wNA; nomloNA = nomNA; denloNA = denNA;
                   tmpNasplit  = DHistogram.NASplitDir.NALeft;
-              } else if (wNA != 0 && i == 1) {  // NAs go right
+              // NAs go right
+              } else if ((wNA != 0) && (i == 1)) {
                   wYYhiNA = wYYNA; wYhiNA = wYNA; whiNA = wNA; nomhiNA = nomNA; denhiNA = denNA; 
                   tmpNasplit = DHistogram.NASplitDir.NARight;
               }
@@ -1032,54 +1033,55 @@ public class DTree extends Iced {
               //                    = wYY - wY^2/N
               double selo = wYYlo[b] + wYYloNA - (wYlo[b] + wYloNA) * (wYlo[b] + wYloNA) / (wlo[b] + wloNA);
               double sehi = wYYhi[b] + wYYhiNA - (wYhi[b] + wYhiNA) * (wYhi[b] + wYhiNA) / (whi[b] + whiNA);
-
               if (selo < 0) selo = 0;    // Roundoff error; sometimes goes negative
               if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
               if ((selo + sehi < best_seL + best_seR) || // Strictly less error?
                       // Or tied MSE, then pick split towards middle bins
                       (selo + sehi == best_seL + best_seR && Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
+                if ((wlo[b] + wloNA) >= min_rows && (whi[b] + whiNA) >= min_rows) {
                   double tmpPredLeft;
                   double tmpPredRight;
                   if (constraint != 0 && dist._family.equals(DistributionFamily.quantile)) {
-                      int quantileBinLeft = 0;
-                      int quantileBinRight = 0;
-                      for (int bin = 1; bin <= nbins; bin++) {
-                          // left tree prediction quantile
-                          if (bin <= b) {
-                              double n = wlo[b];
-                              double quantilePosition = dist._quantileAlpha * n;
-                              if (quantilePosition < wlo[bin]) {
-                                  quantileBinLeft = bin;
-                                  bin = b + 1;
-                              }
-                          // right tree prediction quantile
-                          } else {
-                              double n = (wlo[nbins] - wlo[b]);
-                              double quantilePosition = dist._quantileAlpha * n;
-                              if (quantilePosition < wlo[bin] - wlo[b]) {
-                                  quantileBinRight = bin;
-                                  break;
-                              }
-                          }
+                    int quantileBinLeft = 0;
+                    int quantileBinRight = 0;
+                    for (int bin = 1; bin <= nbins; bin++) {
+                      // left tree prediction quantile
+                      if (bin <= b) {
+                        double n = wlo[b];
+                        double quantilePosition = dist._quantileAlpha * n;
+                        if (quantilePosition < wlo[bin]) {
+                          quantileBinLeft = bin;
+                          bin = b + 1;
+                        }
+                        // right tree prediction quantile
+                      } else {
+                        double n = (wlo[nbins] - wlo[b]);
+                        double quantilePosition = dist._quantileAlpha * n;
+                        if (quantilePosition < wlo[bin] - wlo[b]) {
+                          quantileBinRight = bin;
+                          break;
+                        }
                       }
-                      tmpPredLeft = wYlo[quantileBinLeft] + wYloNA;
-                      tmpPredRight = wYlo[quantileBinRight] - wYlo[b] + wYhiNA;
+                    }
+                    tmpPredLeft = wYlo[quantileBinLeft] + wYloNA;
+                    tmpPredRight = wYlo[quantileBinRight] - wYlo[b] + wYhiNA;
                   } else {
-                      tmpPredLeft = hasDenom ? (nomlo[b] + nomloNA) / (denlo[b] + denloNA) : (wYlo[b] + wYloNA) / (wlo[b] + wloNA);
-                      tmpPredRight = hasDenom ? (nomhi[b] + nomhiNA) / (denhi[b] + denhiNA) : (wYhi[b] + wYhiNA) / (whi[b] + whiNA);
+                    tmpPredLeft = hasDenom ? (nomlo[b] + nomloNA) / (denlo[b] + denloNA) : (wYlo[b] + wYloNA) / (wlo[b] + wloNA);
+                    tmpPredRight = hasDenom ? (nomhi[b] + nomhiNA) / (denhi[b] + denhiNA) : (wYhi[b] + wYhiNA) / (whi[b] + whiNA);
                   }
                   if (constraint == 0 || (constraint * tmpPredLeft <= constraint * tmpPredRight)) {
-                      best = b;
-                      nLeft = wlo[best] + wloNA;
-                      nRight = whi[best] + whiNA;
-                      predLeft = wYlo[best] + wYloNA;
-                      predRight = wYhi[best] + wYhiNA;
-                      nasplit = tmpNasplit;
-                      best_seL = selo;
-                      best_seR = sehi;
-                      tree_p0 = tmpPredLeft;
-                      tree_p1 = tmpPredRight;
+                    best = b;
+                    nLeft = wlo[best] + wloNA;
+                    nRight = whi[best] + whiNA;
+                    predLeft = wYlo[best] + wYloNA;
+                    predRight = wYhi[best] + wYhiNA;
+                    nasplit = tmpNasplit;
+                    best_seL = selo;
+                    best_seR = sehi;
+                    tree_p0 = tmpPredLeft;
+                    tree_p1 = tmpPredRight;
                   }
+                }
               }
               if(wNA == 0){
                   break;
@@ -1093,7 +1095,7 @@ public class DTree extends Iced {
       bestSplit = new Split(col, best, nasplit, null, equal, seBefore, best_seL, best_seR, nLeft, nRight, predLeft/nLeft, predRight/nRight, tree_p0, tree_p1);
       return validateBestSplit(bestSplit, hs, min_rows, constraint, min, max, tot, useBounds, pr1lo, pr1hi, pr2lo, pr2hi, idxs);
   }
-
+  
   /**
    * Validate best split
    */
