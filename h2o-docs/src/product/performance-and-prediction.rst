@@ -1800,7 +1800,7 @@ Examples:
 AUCPR Curve
 '''''''''''
 
-The area under the precision-recall curve graph represents how well a binary classification model is able to distinguish between precision recall pairs or points. The AUCPR does not care about True Negatives and is much more sensative to True Positives, False Positives, and False Negatives than AUC.
+The area under the precision-recall curve graph represents how well a binary classification model is able to distinguish between precision recall pairs or points. The AUCPR does not care about True Negatives and is much more sensitive to True Positives, False Positives, and False Negatives than AUC.
 
 .. figure:: images/aucpr_curve.png
   :alt: Precision Recall Curve
