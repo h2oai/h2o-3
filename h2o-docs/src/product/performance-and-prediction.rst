@@ -1797,6 +1797,82 @@ Examples:
         perf = pros_gbm.model_performance(test)
         perf.plot(type = "roc")
 
+AUCPR Curve
+'''''''''''
+
+The area under the precision-recall curve graph represents how well a binary classification model is able to distinguish between precision recall pairs or points. The AUCPR does not care about True Negatives and is much more sensative to True Positives, False Positives, and False Negatives than AUC.
+
+.. figure:: images/aucpr_curve.png
+  :alt: Precision Recall Curve
+  :scale: 35%
+
+Examples:
+
+.. tabs::
+   .. code-tab:: r R
+
+        # import the prostate dataset:
+        pros <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+        # set the factors:
+        pros[, 2] <- as.factor(pros[, 2])
+        pros[, 4] <- as.factor(pros[, 4])
+        pros[, 5] <- as.factor(pros[, 5])
+        pros[, 6] <- as.factor(pros[, 6])
+        pros[, 9] <- as.factor(pros[, 9])
+
+        # set the predictors and response column:
+        predictors <- c("AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
+        response <- "CAPSULE"
+
+        # split the data into training and validation sets:
+        pros_splits <- h2o.splitFrame(data = pros, ratio = 0.8, seed = 1234)
+        train <- pros_splits[[1]]
+        valid <- pros_splits[[2]]
+
+        # build and train the model:
+        glm_model <- h2o.glm(x=predictors, y=response, 
+                             family="binomial", lambda=0, 
+                             compute_p_values=TRUE, 
+                             training_frame=train, 
+                             validation_frame=valid)
+
+        # build the precision recall curve:
+        perf <- h2o.performance(glm_model, valid)
+        plot(perf, type = "pr")
+
+
+   .. code-tab:: python
+
+        # import H2OGeneralizedLinearEstimator and the prostate dataset:
+        from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+        # set the factors:
+        pros[1] = pros[1].asfactor()
+        pros[3] = pros[3].asfactor()
+        pros[4] = pros[4].asfactor()
+        pros[5] = pros[5].asfactor()
+        pros[8] = pros[8].asfactor()
+
+        # set the predictors and response column:
+        predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+        response = "CAPSULE"
+
+        # split the data into training and validation sets:
+        train, valid = pros.split_frame(ratios=[.8], seed=1234)
+
+        # build and train the model:
+        glm_model = H2OGeneralizedLinearEstimator(family= "binomial",
+                                                  lambda_ = 0,
+                                                  compute_p_values = True)
+        glm_model.train(predictors, response, training_frame=train, validation_frame=valid)
+
+        # build the precision recall curve:
+        perf = glm_model.model_performance(valid)
+        perf.plot(type = "pr")
+
+
 Hit Ratio
 '''''''''
 
