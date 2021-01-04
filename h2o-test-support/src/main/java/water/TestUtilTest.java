@@ -58,7 +58,7 @@ public class TestUtilTest extends TestUtil {
       f.remove("col_3");
       File exportedFile = new File(tmp.getRoot(), "export.csv");
       writeFrameToCSV(exportedFile.getAbsolutePath(), f, true, false);
-      Frame imported = Scope.track(parse_test_file(exportedFile.getAbsolutePath()));
+      Frame imported = Scope.track(parseTestFile(exportedFile.getAbsolutePath()));
       assertFrameEquals(f, imported, 0);
     } finally {
       Scope.exit();

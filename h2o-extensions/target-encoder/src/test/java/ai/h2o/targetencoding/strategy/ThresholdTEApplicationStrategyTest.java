@@ -18,7 +18,7 @@ public class ThresholdTEApplicationStrategyTest extends water.TestUtil {
   public void shouldReturnCatColumnsWithCardinalityHigherThanThresholdTest() {
     Scope.enter();
     try {
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
 
       String responseColumnName = "survived";
@@ -35,7 +35,7 @@ public class ThresholdTEApplicationStrategyTest extends water.TestUtil {
     Scope.enter();
 
     try {
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
       
       //Cardinality of the cabin column is 186
@@ -58,7 +58,7 @@ public class ThresholdTEApplicationStrategyTest extends water.TestUtil {
     Scope.enter();
 
     try {
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
       String foldColumnName = "fold";
       int threshold = 187;
       int nfoldsHigherThanThreshold = 200;

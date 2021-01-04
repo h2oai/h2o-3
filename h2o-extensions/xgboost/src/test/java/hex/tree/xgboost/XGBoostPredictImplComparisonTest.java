@@ -61,7 +61,7 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
     public void testPredictionsAreSame() {
         Scope.enter();
         try {
-            Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+            Frame tfr = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
             // define special columns
             Scope.track(tfr.replace(1, tfr.vecs()[1].toCategoricalVec()));   // Convert CAPSULE to categorical
             Scope.track(tfr.replace(3, tfr.vecs()[3].toCategoricalVec()));   // Convert RACE to categorical

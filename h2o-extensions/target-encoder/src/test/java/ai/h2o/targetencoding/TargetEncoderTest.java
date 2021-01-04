@@ -27,7 +27,7 @@ public class TargetEncoderTest {
   public void test_all_non_ignored_categorical_predictors_are_encoded_by_default() {
     try {
       Scope.enter();
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
       
       String target = "survived";

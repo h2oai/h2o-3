@@ -1,12 +1,10 @@
 package water.api;
 
 import hex.*;
-import hex.schemas.ModelBuilderSchema;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.api.schemas3.ModelParametersSchemaV3;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -29,7 +27,7 @@ public class APIThrPriorTest extends TestUtil {
     Vec vec = null;
     try {
       // Get some keys & frames loaded
-      fr = parse_test_file(Key.make("iris.hex"),"smalldata/iris/iris_wheader.csv");
+      fr = parseTestFile(Key.make("iris.hex"),"smalldata/iris/iris_wheader.csv");
       vec = Vec.makeZero(100);
 
       // Basic test plan:

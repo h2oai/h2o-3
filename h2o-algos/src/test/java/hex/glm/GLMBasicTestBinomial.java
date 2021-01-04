@@ -46,11 +46,11 @@ public class GLMBasicTestBinomial extends TestUtil {
   public void testFractionalBinomial() {
     try {
       Scope.enter();
-      Frame trainData = parse_test_file("smalldata/glm_test/fraction_binommialOrig.csv");
+      Frame trainData = parseTestFile("smalldata/glm_test/fraction_binommialOrig.csv");
       Scope.track(trainData);
       List<String> cnames = Arrays.asList(trainData.names());
       boolean rightDataset = cnames.contains("y") && cnames.contains("z") && cnames.contains("conc");
-      Frame trainDataB = parse_test_file("smalldata/glm_test/fractional_binomial1.csv");
+      Frame trainDataB = parseTestFile("smalldata/glm_test/fractional_binomial1.csv");
       Scope.track(trainDataB);
       List<String> cnamesB = Arrays.asList(trainDataB.names());
       rightDataset = rightDataset && cnamesB.contains("z") && cnames.contains("y");
@@ -89,9 +89,9 @@ public class GLMBasicTestBinomial extends TestUtil {
   public void testFractionalBinomialMojo() {
     try {
       Scope.enter();
-      final Frame trainData = parse_test_file("smalldata/glm_test/fraction_binommialOrig.csv");
+      final Frame trainData = parseTestFile("smalldata/glm_test/fraction_binommialOrig.csv");
       Scope.track(trainData);
-      final Frame te = parse_test_file("smalldata/glm_test/fraction_binommialOrig.csv");
+      final Frame te = parseTestFile("smalldata/glm_test/fraction_binommialOrig.csv");
       Scope.track(te);
       
       final GLMParameters parms = new GLMParameters();
@@ -569,7 +569,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 
     try {
    //   train = parse_test_file("smalldata/glm_test/multinomial_3_class.csv");
-      train = parse_test_file("smalldata/glm_test/binomial_1000Rows.csv");
+      train = parseTestFile("smalldata/glm_test/binomial_1000Rows.csv");
       String[] names = train._names;
       Vec[] en = train.remove(new int[] {0,1,2,3,4,5,6});
       for (int cind = 0; cind <7; cind++) {
@@ -1479,11 +1479,11 @@ public class GLMBasicTestBinomial extends TestUtil {
   @BeforeClass
   public static void setup() {
     stall_till_cloudsize(1);
-    _prostateTrain = parse_test_file("smalldata/glm_test/prostate_cat_train.csv");
-    _prostateTest  = parse_test_file("smalldata/glm_test/prostate_cat_test.csv");
-    _prostateTrainUpsampled = parse_test_file("smalldata/glm_test/prostate_cat_train_upsampled.csv");
-    _abcd = parse_test_file("smalldata/glm_test/abcd.csv");
-    Frame _airlines = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
+    _prostateTrain = parseTestFile("smalldata/glm_test/prostate_cat_train.csv");
+    _prostateTest  = parseTestFile("smalldata/glm_test/prostate_cat_test.csv");
+    _prostateTrainUpsampled = parseTestFile("smalldata/glm_test/prostate_cat_train_upsampled.csv");
+    _abcd = parseTestFile("smalldata/glm_test/abcd.csv");
+    Frame _airlines = parseTestFile("smalldata/airlines/AirlinesTrain.csv.zip");
     _airlines.remove("IsDepDelayed_REC").remove();
     Key k  = Key.make("airliens_rebalanced");
     H2O.submitTask(new RebalanceDataSet(_airlines,k,1)).join(); // need this to match the random split from R

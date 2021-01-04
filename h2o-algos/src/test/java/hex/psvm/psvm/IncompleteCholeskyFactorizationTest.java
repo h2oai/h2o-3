@@ -19,10 +19,10 @@ public class IncompleteCholeskyFactorizationTest extends TestUtil  {
   public void testSmallICF() {
     Frame icf = null;
     Frame expected = null;
-    Frame fr = parse_test_file("./smalldata/splice/splice.svm");
+    Frame fr = parseTestFile("./smalldata/splice/splice.svm");
     try {
       icf = H2O.runOnLeaderNode(new ICFTask(fr))._icf;
-      expected = parse_test_file("./smalldata/splice/splice_icf3.csv");
+      expected = parseTestFile("./smalldata/splice/splice_icf3.csv");
       assertTrue(compareFrames(expected, icf, 1e-6));
     } finally {
       if (expected != null)

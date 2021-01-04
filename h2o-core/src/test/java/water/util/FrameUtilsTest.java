@@ -190,7 +190,7 @@ public class FrameUtilsTest extends TestUtil {
   public void testEnumLimitedEncoding() {
     Scope.enter();
     try {
-      Frame fr = parse_test_file("./smalldata/prostate/prostate.csv");
+      Frame fr = parseTestFile("./smalldata/prostate/prostate.csv");
       Scope.track(fr);
       fr.toCategoricalCol("AGE");
       
@@ -235,7 +235,7 @@ public class FrameUtilsTest extends TestUtil {
   public void testCalculateWeightMeanSTD() {
     Scope.enter();
     try {
-      Frame trainData = parse_test_file("smalldata/prostate/prostate.csv");
+      Frame trainData = parseTestFile("smalldata/prostate/prostate.csv");
       Scope.track(trainData);
       Vec orig = trainData.remove(trainData.numCols() - 1);
       Vec[] weights = new Vec[2];

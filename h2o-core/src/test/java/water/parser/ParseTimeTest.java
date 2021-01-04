@@ -28,7 +28,7 @@ public class ParseTimeTest extends TestUtil {
   // Parse click & query times from a subset of kaggle bestbuy data
   @Test public void testTimeParse1() {
     // File items will be converted to ms in UTC
-    Frame fr = parse_test_file("smalldata/junit/test_time.csv");
+    Frame fr = parseTestFile("smalldata/junit/test_time.csv");
     Frame fr2 = fr.subframe(new String[]{"click_time","query_time"});
     double[][] exp = new double[][] {  // These ms counts all presume UTC
       d(1314920692533L, 1314920639752L ),
@@ -65,7 +65,7 @@ public class ParseTimeTest extends TestUtil {
     };
 
     // File items will be converted to ms in UTC
-    ParserTest.testParsed(parse_test_file("smalldata/junit/ven-11.csv"),exp,exp.length);
+    ParserTest.testParsed(parseTestFile("smalldata/junit/ven-11.csv"),exp,exp.length);
   }
 
   @Test public void testTimeParse3() {

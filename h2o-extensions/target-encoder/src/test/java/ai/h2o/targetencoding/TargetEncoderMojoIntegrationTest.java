@@ -6,7 +6,6 @@ import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.targetencoder.EncodingMap;
-import hex.genmodel.algos.targetencoder.EncodingMaps;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
@@ -56,7 +55,7 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
 
     try {
       Scope.enter();
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
 
       String target = "survived";
       asFactor(fr, target);
@@ -125,7 +124,7 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
 
     try {
       Scope.enter();
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
 
       String target = "pclass";
       asFactor(fr, target);
@@ -197,7 +196,7 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
 
     try {
       Scope.enter();
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
 
       String target = "fare";
       Scope.track(fr);
@@ -274,7 +273,7 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
 
       Scope.enter();
       try {
-        Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+        Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
         String target = "survived";
         asFactor(fr, target);
         Scope.track(fr);
@@ -354,7 +353,7 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
     
     try {
       Scope.enter();
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
 
       String target = "survived";
@@ -419,7 +418,7 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
     File mojoFile = folder.newFile(mojoFileName);
     try {
       Scope.enter();
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
       String target = "survived";
       asFactor(fr, target);
       Scope.track(fr);
@@ -493,7 +492,7 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
     File mojoFile = folder.newFile(mojoFileName);
     try {
       Scope.enter();
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
       String target = "survived";
       asFactor(fr, target);
       Scope.track(fr);
@@ -564,7 +563,7 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
     File mojoFile = folder.newFile(mojoFileName);
     try {
       Scope.enter();
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
       String target = "survived";
       asFactor(fr, target);
       Scope.track(fr);
@@ -635,7 +634,7 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
     File mojoFile = folder.newFile(mojoFileName);
     try {
       Scope.enter();
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
       String target = "survived";
       asFactor(fr, target);
       Scope.track(fr);
@@ -694,7 +693,7 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
     File mojoFile = folder.newFile(mojoFileName);
     try {
       Scope.enter();
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
       String target = "survived";
       asFactor(fr, target);
       Scope.track(fr);

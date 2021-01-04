@@ -63,7 +63,7 @@ public class KMeansTest extends TestUtil {
     KMeansModel kmm = null;
     Frame fr = null, fr2= null;
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      fr = parseTestFile("smalldata/iris/iris_wheader.csv");
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
@@ -95,7 +95,7 @@ public class KMeansTest extends TestUtil {
     KMeansModel kmm = null;
     Frame fr = null, fr2= null;
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader_correct.csv");
+      fr = parseTestFile("smalldata/iris/iris_wheader_correct.csv");
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
@@ -125,7 +125,7 @@ public class KMeansTest extends TestUtil {
     KMeansModel kmm2 = null;
     Frame fr = null;
     try {
-      fr = parse_test_file("smalldata/junit/weather.csv");
+      fr = parseTestFile("smalldata/junit/weather.csv");
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
@@ -189,7 +189,7 @@ public class KMeansTest extends TestUtil {
     KMeansModel kmm = null;
     Frame fr = null, fr2 = null;
     try {
-      fr = parse_test_file("smalldata/pca_test/USArrests.csv");
+      fr = parseTestFile("smalldata/pca_test/USArrests.csv");
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
@@ -235,7 +235,7 @@ public class KMeansTest extends TestUtil {
   @Test public void testBadCluster() {
     Frame fr = null;
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      fr = parseTestFile("smalldata/iris/iris_wheader.csv");
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
@@ -385,7 +385,7 @@ public class KMeansTest extends TestUtil {
     KMeansModel kmm = null;
     Frame fr = null, fr2= null;
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      fr = parseTestFile("smalldata/iris/iris_wheader.csv");
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
       parms._k = 3;
@@ -412,7 +412,7 @@ public class KMeansTest extends TestUtil {
     KMeansModel kmm = null;
     Frame fr = null, fr2= null;
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      fr = parseTestFile("smalldata/iris/iris_wheader.csv");
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
       parms._k = 3;
@@ -439,7 +439,7 @@ public class KMeansTest extends TestUtil {
       Frame fr = null, fr2= null;
       Frame tr = null, te= null;
       try {
-        fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+        fr = parseTestFile("smalldata/iris/iris_wheader.csv");
 
         SplitFrame sf = new SplitFrame(fr,new double[] { 0.5, 0.5 },new Key[] { Key.make("train.hex"), Key.make("test.hex")});
         // Invoke the job
@@ -490,7 +490,7 @@ public class KMeansTest extends TestUtil {
           Frame fr = null, fr2= null;
           Frame train = null, valid = null;
           try {
-            fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+            fr = parseTestFile("smalldata/iris/iris_wheader.csv");
 
             if (missing) {
               // insert 10% missing values - check the math
@@ -586,7 +586,7 @@ public class KMeansTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      tfr = parseTestFile("smalldata/iris/iris_wheader.csv");
       DKV.put(tfr);
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = tfr._key;
@@ -630,7 +630,7 @@ public class KMeansTest extends TestUtil {
   public void testTimeColumnPubdev6264() {
     try {
       Scope.enter();
-      Frame f = Scope.track(parse_test_file("smalldata/chicago/chicagoAllWeather.csv"));
+      Frame f = Scope.track(parseTestFile("smalldata/chicago/chicagoAllWeather.csv"));
 
       assertEquals("Time", f.vec("date").get_type_str());
 
@@ -663,7 +663,7 @@ public class KMeansTest extends TestUtil {
     KMeansModel kmeans = null;
     Frame fr = null;
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      fr = parseTestFile("smalldata/iris/iris_wheader.csv");
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;

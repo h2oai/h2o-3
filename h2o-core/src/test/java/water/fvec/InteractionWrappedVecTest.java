@@ -19,7 +19,7 @@ public class InteractionWrappedVecTest extends TestUtil {
     try {
 
       // interact species and sepal len -- all levels (expanded length is 3)
-      fr = parse_test_file(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
+      fr = parseTestFile(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
       interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, false, fr.vec(0)._key, fr.vec(4)._key);
       Assert.assertTrue(interactionVec.expandedLength()==3);
       interactionVec.remove();
@@ -45,7 +45,7 @@ public class InteractionWrappedVecTest extends TestUtil {
     InteractionWrappedVec interactionVec=null;
     int FAKEMAXFORTEST=1000;
     try {
-      fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
+      fr = parseTestFile(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
       interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, false, fr.vec(8)._key, fr.vec(16)._key);
       CreateInteractions.createInteractionDomain cid = new CreateInteractions.createInteractionDomain(false,false);
       cid.doAll(fr.vec(8),fr.vec(16));
@@ -88,7 +88,7 @@ public class InteractionWrappedVecTest extends TestUtil {
     String[] A = new String[]{"US", "UA", "WN", "HP"};
     String[] B = new String[]{"PIT", "DEN"};
     try {
-      fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
+      fr = parseTestFile(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
       interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, A, B, true, true, false, fr.vec(8)._key, fr.vec(16)._key);
 
       int[] a = new int[A.length];

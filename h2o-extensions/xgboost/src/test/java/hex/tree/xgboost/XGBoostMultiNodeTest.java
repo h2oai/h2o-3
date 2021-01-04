@@ -3,7 +3,6 @@ package hex.tree.xgboost;
 import hex.KeyValue;
 import hex.SplitFrame;
 import org.junit.Assume;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.H2O;
@@ -22,7 +21,7 @@ import static org.junit.Assert.assertNotNull;
 public class XGBoostMultiNodeTest extends TestUtil  {
 
     private Frame[] loadData() {
-        Frame df = Scope.track(parse_test_file("smalldata/demos/bank-additional-full.csv"));
+        Frame df = Scope.track(parseTestFile("smalldata/demos/bank-additional-full.csv"));
         SplitFrame splits = new SplitFrame(df, new double[]{0.7, 0.3}, null);
         splits.exec().get();
         return new Frame[] {

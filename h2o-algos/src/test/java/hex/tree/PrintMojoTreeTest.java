@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.parseTestFile;
 
 public class PrintMojoTreeTest {
 
@@ -50,7 +51,7 @@ public class PrintMojoTreeTest {
   public void testMojoCategoricalPrint() throws IOException {
     try {
       Scope.enter();
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/iris/iris.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/iris/iris.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -93,7 +94,7 @@ public class PrintMojoTreeTest {
   public void testMojoCategoricalPrint_limitedLevels() throws IOException {
     try {
       Scope.enter();
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/iris/iris.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/iris/iris.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -132,7 +133,7 @@ public class PrintMojoTreeTest {
   public void testMojoCategoricalPrint_internalRepresentationOutput() throws IOException {
     try {
       Scope.enter();
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/iris/iris.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/iris/iris.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -227,7 +228,7 @@ public class PrintMojoTreeTest {
   public void testMojoCategoricalJson() throws IOException {
     try {
       Scope.enter();
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/testng/airlines.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/testng/airlines.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -247,7 +248,7 @@ public class PrintMojoTreeTest {
   public void testMojoCategoricalOneHotJson() throws IOException {
     try {
       Scope.enter();
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/testng/airlines.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/testng/airlines.csv"));
 
       GBMModel.GBMParameters p = new GBMModel.GBMParameters();
       p._train = train._key;
@@ -269,7 +270,7 @@ public class PrintMojoTreeTest {
   public void testMojoGBMJson() throws IOException {
     try {
       Scope.enter();
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/extdata/prostate.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/extdata/prostate.csv"));
 
       GBMModel.GBMParameters p = new GBMModel.GBMParameters();
       p._train = train._key;
@@ -291,7 +292,7 @@ public class PrintMojoTreeTest {
     try {
       Scope.enter();
       String[] expectedFileNames = {"exampleh2o.png"};
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/testng/airlines.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/testng/airlines.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -315,7 +316,7 @@ public class PrintMojoTreeTest {
       expectedFileNames[0]="Tree1_ClassNO.png";
       expectedFileNames[1]="Tree0_ClassNO.png";
       
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/testng/airlines.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/testng/airlines.csv"));
 
       GBMModel.GBMParameters p = new GBMModel.GBMParameters();
       p._train = train._key;
@@ -340,7 +341,7 @@ public class PrintMojoTreeTest {
       String[] expectedFileNames = new String[2];
       expectedFileNames[0]="Tree1.png";
       expectedFileNames[1]="Tree0.png";
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/extdata/prostate.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/extdata/prostate.csv"));
 
       GBMModel.GBMParameters p = new GBMModel.GBMParameters();
       p._train = train._key;

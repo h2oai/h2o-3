@@ -39,7 +39,7 @@ public class KMeansGridTest extends TestUtil {
     Grid<KMeansModel.KMeansParameters> grid = null;
     Frame fr = null;
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      fr = parseTestFile("smalldata/iris/iris_wheader.csv");
 
       // 4-dimensional hyperparameter search
       HashMap<String, Object[]> hyperParms = new HashMap<>();
@@ -120,7 +120,7 @@ public class KMeansGridTest extends TestUtil {
     Grid grid = null;
     Frame fr = null;
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      fr = parseTestFile("smalldata/iris/iris_wheader.csv");
       fr.remove("class").remove();
       DKV.put(fr);
 
@@ -166,7 +166,7 @@ public class KMeansGridTest extends TestUtil {
                                      ard(7.0, 3.2, 4.7, 1.4),
                                      ard(6.5, 3.0, 5.8, 2.2)));
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      fr = parseTestFile("smalldata/iris/iris_wheader.csv");
       fr.remove("class").remove();
       DKV.put(fr);
 
@@ -214,7 +214,7 @@ public class KMeansGridTest extends TestUtil {
                                      ard(7.0, 3.2, 4.7, 1.4),
                                      ard(6.5, 3.0, 5.8, 2.2)));
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      fr = parseTestFile("smalldata/iris/iris_wheader.csv");
       fr.remove("class").remove();
       DKV.put(fr);
 

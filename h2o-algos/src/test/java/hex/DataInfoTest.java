@@ -9,7 +9,6 @@ import water.fvec.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
@@ -27,7 +26,7 @@ public class DataInfoTest extends TestUtil {
 
 
   @Test public void testAirlines1() { // just test that it works at all
-    Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
+    Frame fr = parseTestFile(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
     try {
       DataInfo dinfo = new DataInfo(
               fr.clone(),  // train
@@ -53,7 +52,7 @@ public class DataInfoTest extends TestUtil {
 
 
   @Test public void testAirlines2() {
-    Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
+    Frame fr = parseTestFile(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
     try {
       Frame interactions = Model.makeInteractions(fr, false, Model.InteractionPair.generatePairwiseInteractionsFromList(8, 16, 2), true, true,true);
       int len=0;
@@ -107,7 +106,7 @@ public class DataInfoTest extends TestUtil {
   }
 
   @Test public void testAirlines3() {
-    Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
+    Frame fr = parseTestFile(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
     try {
       Frame interactions = Model.makeInteractions(fr, false, Model.InteractionPair.generatePairwiseInteractionsFromList(8, 16, 2), false, true, true);
       int len=0;
@@ -161,7 +160,7 @@ public class DataInfoTest extends TestUtil {
   @Test public void testAirlinesInteractionSpec() {
     try {
       Scope.enter();
-      Frame fr = Scope.track(parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip"));
+      Frame fr = Scope.track(parseTestFile(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip"));
       Model.InteractionSpec interactionSpec = Model.InteractionSpec.create(
               null,
               new StringPair[]{new StringPair("UniqueCarrier", "Origin"), new StringPair("Origin", "DayofMonth")},
@@ -196,7 +195,7 @@ public class DataInfoTest extends TestUtil {
   }
 
   @Test public void testIris1() {  // test that getting sparseRows and denseRows produce the same results
-    Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
+    Frame fr = parseTestFile(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
     fr.swap(1,4);
     Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(0, 1);
     DataInfo di=null;
@@ -228,7 +227,7 @@ public class DataInfoTest extends TestUtil {
   }
 
   @Test public void testIris2() {  // test that getting sparseRows and denseRows produce the same results
-    Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
+    Frame fr = parseTestFile(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
     fr.swap(1,4);
     Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(0, 1);
     DataInfo di=null;
@@ -259,7 +258,7 @@ public class DataInfoTest extends TestUtil {
   }
 
   @Test public void testIris3() {  // test that getting sparseRows and denseRows produce the same results
-    Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
+    Frame fr = parseTestFile(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
     fr.swap(2,4);
     Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(0, 1, 2, 3);
     DataInfo di=null;
@@ -290,7 +289,7 @@ public class DataInfoTest extends TestUtil {
   }
 
   @Test public void testAirlines4() {
-    Frame fr = parse_test_file(Key.make("a0.hex"), "smalldata/airlines/allyears2k_headers.zip");
+    Frame fr = parseTestFile(Key.make("a0.hex"), "smalldata/airlines/allyears2k_headers.zip");
     // fixme need to rebalance to 1 chunk, otherwise the test does not pass!
     Key k = Key.make("a.hex");
     H2O.submitTask(new RebalanceDataSet(fr,k,1)).join();
@@ -325,7 +324,7 @@ public class DataInfoTest extends TestUtil {
   }
 
   @Test public void testAirlines5() {
-    Frame fr = parse_test_file(Key.make("a0.hex"), "smalldata/airlines/allyears2k_headers.zip");
+    Frame fr = parseTestFile(Key.make("a0.hex"), "smalldata/airlines/allyears2k_headers.zip");
     // fixme need to rebalance to 1 chunk, otherwise the test does not pass!
     Key k = Key.make("a.hex");
     H2O.submitTask(new RebalanceDataSet(fr,k,1)).join();
@@ -360,7 +359,7 @@ public class DataInfoTest extends TestUtil {
   }
 
   @Test public void testCoefNames() throws IOException { // just test that it works at all
-    Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
+    Frame fr = parseTestFile(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
     DataInfo dinfo = null;
     try {
       dinfo = new DataInfo(
@@ -406,7 +405,7 @@ public class DataInfoTest extends TestUtil {
   @Test public void testInteractionsForcedAllFactors() {
     try {
       Scope.enter();
-      Frame fr = Scope.track(parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip"));
+      Frame fr = Scope.track(parseTestFile(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip"));
       Frame sfr = fr.subframe(new String[]{"Origin", "Distance"});
       Model.InteractionSpec interactionSpec = Model.InteractionSpec.create(
               new String[]{"Origin", "Distance"}, null, new String[] {"Distance"});
@@ -440,7 +439,7 @@ public class DataInfoTest extends TestUtil {
   @Test public void testInteractionsSkip1stFactor() {
     try {
       Scope.enter();
-      Frame fr = Scope.track(parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip"));
+      Frame fr = Scope.track(parseTestFile(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip"));
       Frame sfr = fr.subframe(new String[]{"Origin", "Distance", "IsDepDelayed"});
       Model.InteractionSpec interactionSpec = Model.InteractionSpec.create(
               new String[]{"Origin", "Distance"}, null, new String[]{"Origin"});
@@ -486,7 +485,7 @@ public class DataInfoTest extends TestUtil {
   public void testGetCategoricalIdFromInteraction() {
     try {
       Scope.enter();
-      Frame fr = Scope.track(parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip"));
+      Frame fr = Scope.track(parseTestFile(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip"));
       Frame sfr = fr.subframe(new String[]{"Origin", "Distance", "IsDepDelayed"});
       Model.InteractionSpec interactionSpec = Model.InteractionSpec.create(
               new String[]{"Origin", "Distance"}, null, new String[]{"Origin"});

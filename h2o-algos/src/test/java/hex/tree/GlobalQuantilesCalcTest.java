@@ -19,7 +19,7 @@ public class GlobalQuantilesCalcTest extends TestUtil {
   public void testGlobalQuantiles() {
     try {
       Scope.enter();
-      Frame fr = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
+      Frame fr = Scope.track(parseTestFile("smalldata/logreg/prostate.csv"));
       fr.remove("CAPSULE");
       fr.remove("RACE");
       fr.remove("DCAPS");

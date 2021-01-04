@@ -20,7 +20,7 @@ public class NaiveBayesTest extends TestUtil {
     NaiveBayesModel model = null;
     Frame train = null, score = null;
     try {
-      train = parse_test_file(Key.make("iris_wheader.hex"), "smalldata/iris/iris_wheader.csv");
+      train = parseTestFile(Key.make("iris_wheader.hex"), "smalldata/iris/iris_wheader.csv");
       NaiveBayesParameters parms = new NaiveBayesParameters();
       parms._train = train._key;
       parms._laplace = 0;
@@ -43,7 +43,7 @@ public class NaiveBayesTest extends TestUtil {
     Frame fr = null, fr2 = null;
     Frame tr = null, te  = null;
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      fr = parseTestFile("smalldata/iris/iris_wheader.csv");
 
       SplitFrame sf = new SplitFrame(fr,new double[] { 0.5, 0.5 },new Key[] { Key.make("train.hex"), Key.make("test.hex") });
 
@@ -81,7 +81,7 @@ public class NaiveBayesTest extends TestUtil {
 
     try {
       Scope.enter();
-      train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
+      train = parseTestFile(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
         Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategoricalVec()));
       train.remove("ID").remove();
@@ -112,7 +112,7 @@ public class NaiveBayesTest extends TestUtil {
 
     try {
       Scope.enter();
-      train = parse_test_file(Key.make("covtype.hex"), "smalldata/covtype/covtype.20k.data");
+      train = parseTestFile(Key.make("covtype.hex"), "smalldata/covtype/covtype.20k.data");
       Scope.track(train.replace(54, train.vecs()[54].toCategoricalVec()));   // Change response to categorical
       DKV.put(train);
 

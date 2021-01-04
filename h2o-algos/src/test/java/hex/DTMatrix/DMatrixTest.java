@@ -14,7 +14,6 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.VecUtils;
 
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
@@ -65,7 +64,7 @@ public class DMatrixTest extends TestUtil {
     @Test public void testMatrixTransposeNA() throws InterruptedException, ExecutionException {
         Frame train = null, tTrain = null;
         try {
-            train = parse_test_file(Key.make("prostate_cat.hex"), "smalldata/pca_test/decathlon.csv");
+            train = parseTestFile(Key.make("prostate_cat.hex"), "smalldata/pca_test/decathlon.csv");
             train.remove(12).remove();    // remove categorical columns
             train.remove(11).remove();
             train.remove(10).remove();

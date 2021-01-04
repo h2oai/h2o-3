@@ -4,6 +4,7 @@ import hex.genmodel.utils.IOUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.Scope;
+import water.TestUtil;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.FileUtils;
@@ -13,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.Assert.assertEquals;
 import static water.TestUtil.ar;
-import static water.TestUtil.parse_test_file;
+import static water.TestUtil.parseTestFile;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -116,7 +117,7 @@ public class FrameCSVStreamTest {
         Scope.enter();
         String data = "./smalldata/airlines/AirlinesTrain.csv";
         try {
-            Frame fr = parse_test_file(data);
+            Frame fr = parseTestFile(data);
             Scope.track(fr);
 
             final Frame.CSVStreamParams csvStreamParams = new Frame.CSVStreamParams()

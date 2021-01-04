@@ -65,7 +65,7 @@ public class AUCTest extends TestUtil {
 
     // Now from a large test file
     double ROCR_auc = 0.7244389;
-    Frame fr = parse_test_file("smalldata/junit/auc.csv.gz");
+    Frame fr = parseTestFile("smalldata/junit/auc.csv.gz");
     // Slow; used to confirm the accuracy as we increase bin counts
     //for( int i=10; i<1000; i+=10 ) {
     //  AUC2 auc = new AUC2(i,fr.vec("V1"),fr.vec("V2"));

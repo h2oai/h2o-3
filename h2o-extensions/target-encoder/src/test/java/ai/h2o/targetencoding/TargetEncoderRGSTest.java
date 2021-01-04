@@ -89,7 +89,7 @@ public class TargetEncoderRGSTest{
 
       Scope.enter();
       try {
-        Frame trainingFrame = parse_test_file("./smalldata/gbm_test/titanic.csv");
+        Frame trainingFrame = parseTestFile("./smalldata/gbm_test/titanic.csv");
         Scope.track(trainingFrame);
         String responseColumn = "survived";
         asFactor(trainingFrame, responseColumn);

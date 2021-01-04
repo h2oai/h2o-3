@@ -12,8 +12,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.Assert.*;
-import static water.TestUtil.parse_and_track_test_file;
-import static water.TestUtil.parse_test_file;
+import static water.TestUtil.parseAndTrackTestFile;
+import static water.TestUtil.parseTestFile;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -23,7 +23,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
   public void testCoxPHEfron1Var() {
     try {
       Scope.enter();
-      final Frame fr = parse_and_track_test_file("smalldata/coxph_test/heart.csv");
+      final Frame fr = parseAndTrackTestFile("smalldata/coxph_test/heart.csv");
 
       final CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
       parms._calc_cumhaz = true;
@@ -59,7 +59,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
   public void testCoxPHEfron1VarScoring() {
     try {
       Scope.enter();
-      final Frame fr = parse_and_track_test_file("smalldata/coxph_test/heart.csv");
+      final Frame fr = parseAndTrackTestFile("smalldata/coxph_test/heart.csv");
 
       CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
       parms._calc_cumhaz = true;
@@ -86,7 +86,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
   public void testCoxPHBreslow1Var()  {
     try {
       Scope.enter();
-      final Frame fr = parse_and_track_test_file("smalldata/coxph_test/heart.csv");
+      final Frame fr = parseAndTrackTestFile("smalldata/coxph_test/heart.csv");
 
       final CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
       parms._calc_cumhaz = true;
@@ -122,7 +122,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
   public void testCoxPHEfron1VarNoStart() {
     try {
       Scope.enter();
-      final Frame fr = parse_and_track_test_file("smalldata/coxph_test/heart.csv");
+      final Frame fr = parseAndTrackTestFile("smalldata/coxph_test/heart.csv");
 
       final CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
       parms._calc_cumhaz = true;
@@ -158,7 +158,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
   public void testCoxPHBreslow1VarNoStart() {
     try {
       Scope.enter();
-      final Frame fr = parse_and_track_test_file("smalldata/coxph_test/heart.csv");
+      final Frame fr = parseAndTrackTestFile("smalldata/coxph_test/heart.csv");
 
       final CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
       parms._calc_cumhaz = true;
@@ -194,7 +194,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
   public void testCoxPHEfron1Interaction() {
     try {
       Scope.enter();
-      final Frame fr = parse_and_track_test_file("smalldata/coxph_test/heart.csv");
+      final Frame fr = parseAndTrackTestFile("smalldata/coxph_test/heart.csv");
 
       // Decompose a "age" column into two components: "age1" and "age2"
       final Frame ext = new MRTask() {
@@ -252,7 +252,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
     Key<Frame> rebalancedKey = Key.make();
     try {
       Scope.enter();
-      Frame fr = parse_and_track_test_file("smalldata/coxph_test/heart.csv");
+      Frame fr = parseAndTrackTestFile("smalldata/coxph_test/heart.csv");
       fr = Scope.track(rebalanceToAllNodes(fr, rebalancedKey));
 
       CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
@@ -324,7 +324,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
   public void testJavaScoringNumeric() {
     try {
       Scope.enter();
-      Frame fr = Scope.track(parse_test_file("smalldata/coxph_test/heart.csv"));
+      Frame fr = Scope.track(parseTestFile("smalldata/coxph_test/heart.csv"));
       testJavaScoring(fr);
     } finally {
       Scope.exit();
@@ -335,7 +335,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
   public void testJavaScoringCategorical() {
     try {
       Scope.enter();
-      Frame fr = Scope.track(parse_test_file("smalldata/coxph_test/heart.csv"))
+      Frame fr = Scope.track(parseTestFile("smalldata/coxph_test/heart.csv"))
               .toCategoricalCol("surgery")
               .toCategoricalCol("transplant");
       testJavaScoring(fr);

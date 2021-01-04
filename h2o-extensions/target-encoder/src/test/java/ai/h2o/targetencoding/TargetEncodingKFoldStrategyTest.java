@@ -34,7 +34,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
   public void test_TE_using_KFold_leakage_strategy(){
     try {
       Scope.enter();
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
 
       String foldColumn = "fold_column";

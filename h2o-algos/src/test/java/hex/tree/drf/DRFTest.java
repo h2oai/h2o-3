@@ -473,7 +473,7 @@ public class DRFTest extends TestUtil {
     Frame test = null, res = null;
     DRFModel model = null;
     try {
-      frTrain = parse_test_file(fnametrain);
+      frTrain = parseTestFile(fnametrain);
       Vec removeme = unifyFrame(drf, frTrain, prep, classification);
       if (removeme != null) Scope.track(removeme);
       DKV.put(frTrain._key, frTrain);
@@ -505,7 +505,7 @@ public class DRFTest extends TestUtil {
 
       hex.ModelMetrics mm;
       if (fnametest != null) {
-        frTest = parse_test_file(fnametest);
+        frTest = parseTestFile(fnametest);
         pred = model.score(frTest);
         mm = hex.ModelMetrics.getFromDKV(model, frTest);
         // Check test set CM
@@ -514,7 +514,7 @@ public class DRFTest extends TestUtil {
       }
       Assert.assertEquals("Number of trees differs!", ntree, model._output._ntrees);
 
-      test = parse_test_file(fnametrain);
+      test = parseTestFile(fnametrain);
       res = model.score(test);
 
       // Build a POJO, validate same results
@@ -560,7 +560,7 @@ public class DRFTest extends TestUtil {
         Scope.enter();
         try {
           // Load data, hack frames
-          tfr = parse_test_file("/Users/ludirehak/Downloads/train.csv.zip");
+          tfr = parseTestFile("/Users/ludirehak/Downloads/train.csv.zip");
 
           DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
           parms._train = tfr._key;
@@ -606,7 +606,7 @@ public class DRFTest extends TestUtil {
             long startTime = System.currentTimeMillis();
             Scope.enter();
             // Load data, hack frames
-            Frame tfr = parse_test_file("/Users/ludirehak/Downloads/train.csv.zip");
+            Frame tfr = parseTestFile("/Users/ludirehak/Downloads/train.csv.zip");
 
             DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
             parms._train = tfr._key;
@@ -676,7 +676,7 @@ public class DRFTest extends TestUtil {
     for (int i=0; i<N; ++i) {
       Scope.enter();
       // Load data, hack frames
-      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+      tfr = parseTestFile("smalldata/covtype/covtype.20k.data");
 
       // rebalance to 256 chunks
       Key dest = Key.make("df.rebalanced.hex");
@@ -721,7 +721,7 @@ public class DRFTest extends TestUtil {
     Scope.enter();
     try {
       // Load data, hack frames
-      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+      tfr = parseTestFile("smalldata/covtype/covtype.20k.data");
 
       // rebalance to 256 chunks
       Key dest = Key.make("df.rebalanced.hex");
@@ -771,7 +771,7 @@ public class DRFTest extends TestUtil {
     Scope.enter();
     try {
       // Load data, hack frames
-      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      tfr = parseTestFile("./smalldata/airlines/allyears2k_headers.zip");
 
       // rebalance to fixed number of chunks
       Key dest = Key.make("df.rebalanced.hex");
@@ -834,8 +834,8 @@ public class DRFTest extends TestUtil {
     Scope.enter();
     try {
       // Load data, hack frames
-      tfr = parse_test_file(Key.make("air.hex"), "/users/arno/sz_bench_data/train-1m.csv");
-      test = parse_test_file(Key.make("airt.hex"), "/users/arno/sz_bench_data/test.csv");
+      tfr = parseTestFile(Key.make("air.hex"), "/users/arno/sz_bench_data/train-1m.csv");
+      test = parseTestFile(Key.make("airt.hex"), "/users/arno/sz_bench_data/test.csv");
 //      for (int i : new int[]{0,1,2}) {
 //        tfr.vecs()[i] = tfr.vecs()[i].toCategoricalVec();
 //        test.vecs()[i] = test.vecs()[i].toCategoricalVec();
@@ -887,7 +887,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/no_weights.csv");
+      tfr = parseTestFile("smalldata/junit/no_weights.csv");
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
@@ -921,7 +921,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/weights_all_ones.csv");
+      tfr = parseTestFile("smalldata/junit/weights_all_ones.csv");
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
@@ -956,7 +956,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/weights_all_twos.csv");
+      tfr = parseTestFile("smalldata/junit/weights_all_twos.csv");
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
@@ -991,7 +991,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/weights_all_tiny.csv");
+      tfr = parseTestFile("smalldata/junit/weights_all_tiny.csv");
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
@@ -1026,7 +1026,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/no_weights_shuffled.csv");
+      tfr = parseTestFile("smalldata/junit/no_weights_shuffled.csv");
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
@@ -1061,7 +1061,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/weights.csv");
+      tfr = parseTestFile("smalldata/junit/weights.csv");
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
@@ -1109,7 +1109,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      tfr = parseTestFile("./smalldata/airlines/allyears2k_headers.zip");
       for (String s : new String[]{
               "DepTime", "ArrTime", "ActualElapsedTime",
               "AirTime", "ArrDelay", "DepDelay", "Cancelled",
@@ -1154,7 +1154,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      tfr = parseTestFile("./smalldata/airlines/allyears2k_headers.zip");
       for (String s : new String[]{
               "DepTime", "ArrTime", "ActualElapsedTime",
               "AirTime", "ArrDelay", "DepDelay", "Cancelled",
@@ -1196,7 +1196,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/weights.csv");
+      tfr = parseTestFile("smalldata/junit/weights.csv");
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
@@ -1244,7 +1244,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      tfr = parseTestFile("./smalldata/airlines/allyears2k_headers.zip");
       for (String s : new String[]{
               "DepTime", "ArrTime", "ActualElapsedTime",
               "AirTime", "ArrDelay", "DepDelay", "Cancelled",
@@ -1295,8 +1295,8 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/weights.csv");
-      vfr = parse_test_file("smalldata/junit/weights.csv");
+      tfr = parseTestFile("smalldata/junit/weights.csv");
+      vfr = parseTestFile("smalldata/junit/weights.csv");
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
@@ -1335,7 +1335,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+      tfr = parseTestFile("smalldata/junit/cars_20mpg.csv");
       tfr.remove("name").remove(); // Remove unique id
       tfr.remove("economy").remove();
       old = tfr.remove("economy_20mpg");
@@ -1385,7 +1385,7 @@ public class DRFTest extends TestUtil {
     for (int i=1; i<=6; ++i) {
       Scope.enter();
       try {
-        tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+        tfr = parseTestFile("smalldata/junit/cars_20mpg.csv");
         tfr.remove("name").remove(); // Remove unique id
         tfr.remove("economy").remove();
         old = tfr.remove("economy_20mpg");
@@ -1425,7 +1425,7 @@ public class DRFTest extends TestUtil {
     DRFModel drf1 = null;
     Scope.enter();
     try {
-        tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+        tfr = parseTestFile("smalldata/junit/cars_20mpg.csv");
         tfr.remove("name").remove(); // Remove unique id
         tfr.remove("economy").remove();
         old = tfr.remove("economy_20mpg");
@@ -1466,7 +1466,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/junit/cars.csv");
+      tfr = parseTestFile("./smalldata/junit/cars.csv");
       for (String s : new String[]{
               "name",
       }) {
@@ -1502,7 +1502,7 @@ public class DRFTest extends TestUtil {
     Frame tfr = null;
     Key[] ksplits = new Key[0];
     try{
-      tfr=parse_test_file("./smalldata/gbm_test/ecology_model.csv");
+      tfr= parseTestFile("./smalldata/gbm_test/ecology_model.csv");
       SplitFrame sf = new SplitFrame(tfr,new double[] { 0.5, 0.5 }, new Key[] { Key.make("train.hex"), Key.make("test.hex")});
       // Invoke the job
       sf.exec().get();
@@ -1578,7 +1578,7 @@ public class DRFTest extends TestUtil {
     DRFModel drf = null;
     try {
       Scope.enter();
-      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+      tfr = parseTestFile("smalldata/covtype/covtype.20k.data");
       int resp = 54;
 //      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
 //      int resp = 784;
@@ -1628,7 +1628,7 @@ public class DRFTest extends TestUtil {
     DRFModel drf = null;
     try {
       Scope.enter();
-      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+      tfr = parseTestFile("smalldata/covtype/covtype.20k.data");
       int resp = 54;
 //      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
 //      int resp = 784;
@@ -1681,7 +1681,7 @@ public class DRFTest extends TestUtil {
     DRFModel drf = null;
     try {
       Scope.enter();
-      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+      tfr = parseTestFile("smalldata/covtype/covtype.20k.data");
       int resp = 54;
 //      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
 //      int resp = 784;
@@ -1720,7 +1720,7 @@ public class DRFTest extends TestUtil {
     Frame tfr=null;
     DRFModel drf = null;
     try {
-        tfr = parse_test_file(Key.make("iris.hex"), "./smalldata/iris/iris.csv");
+        tfr = parseTestFile(Key.make("iris.hex"), "./smalldata/iris/iris.csv");
         tfr.add("constantCol",tfr.anyVec().makeCon(1));
         DKV.put(tfr);
         DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
@@ -1742,7 +1742,7 @@ public class DRFTest extends TestUtil {
   @Test public void testScoreFeatureFrequencies() {
     Scope.enter();
     try {
-      Frame train = parse_test_file("./smalldata/logreg/prostate.csv");
+      Frame train = parseTestFile("./smalldata/logreg/prostate.csv");
       train.toCategoricalCol("CAPSULE");
       Scope.track(train);
 
@@ -1954,7 +1954,7 @@ public class DRFTest extends TestUtil {
             Scope.enter();
             final String response = "CAPSULE";
             final String testFile = "./smalldata/logreg/prostate.csv";
-            Frame fr = parse_test_file(testFile)
+            Frame fr = parseTestFile(testFile)
                     .toCategoricalCol("RACE")
                     .toCategoricalCol("GLEASON")
                     .toCategoricalCol(response);
@@ -2007,7 +2007,7 @@ public class DRFTest extends TestUtil {
                                 "--output", pojoScoringOutput.getAbsolutePath(),
                                 "--decimal"}, (GenModel) pojoClass.newInstance());
                 predictor.run();
-                Frame scoredWithPojo = Scope.track(parse_test_file(pojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+                Frame scoredWithPojo = Scope.track(parseTestFile(pojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
                     @Override
                     public ParseSetup transformSetup(ParseSetup guessedSetup) {
                         return guessedSetup.setCheckHeader(1);
@@ -2027,7 +2027,7 @@ public class DRFTest extends TestUtil {
                                 "--output", mojoScoringOutput.getAbsolutePath(),
                                 "--decimal"}, (GenModel) mojoModel);
                 predictor.run();
-                Frame scoredWithMojo = Scope.track(parse_test_file(mojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+                Frame scoredWithMojo = Scope.track(parseTestFile(mojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
                     @Override
                     public ParseSetup transformSetup(ParseSetup guessedSetup) {
                         return guessedSetup.setCheckHeader(1);

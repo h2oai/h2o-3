@@ -68,15 +68,15 @@ public class GLMBasicTestRegression extends TestUtil {
     outputKey = Key.make("upsampled.hex");
     _upsampled = ParseDataset.parse(outputKey, nfs._key);
     DKV.put(_upsampled._key, _upsampled);
-    _prostateTrain = parse_test_file("smalldata/glm_test/prostate_cat_train.csv");
-    _airlines = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
+    _prostateTrain = parseTestFile("smalldata/glm_test/prostate_cat_train.csv");
+    _airlines = parseTestFile("smalldata/airlines/AirlinesTrain.csv.zip");
     Vec v = _airlines.remove("IsDepDelayed");
     Vec v2 = v.makeCopy(null);
     _airlines.add("IsDepDelayed",v2);
     v.remove();
     DKV.put(_airlines._key,_airlines);
 //    System.out.println("made copy of vec " + v._key + " -> " + v2._key + ", in DKV? src =" + ((DKV.get(v._key) != null)) + ", dst = " + (DKV.get(v2._key) != null));
-    _airlinesMM = parse_test_file(Key.make("AirlinesMM"), "smalldata/airlines/AirlinesTrainMM.csv.zip");
+    _airlinesMM = parseTestFile(Key.make("AirlinesMM"), "smalldata/airlines/AirlinesTrainMM.csv.zip");
     v = _airlinesMM.remove("IsDepDelayed");
     _airlinesMM.add("IsDepDelayed",v.makeCopy(null));
     v.remove();

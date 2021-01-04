@@ -11,12 +11,13 @@ import org.junit.runner.RunWith;
 import water.H2O;
 import water.Key;
 import water.Scope;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
 import static org.junit.Assert.assertEquals;
-import static water.TestUtil.parse_test_file;
+import static water.TestUtil.parseTestFile;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -30,7 +31,7 @@ public class XGBoostUploadMatrixTaskTest {
         }
         Scope.enter();
         try {
-            Frame df = parse_test_file("bigdata/laptop/higgs_head_2M.csv");
+            Frame df = parseTestFile("bigdata/laptop/higgs_head_2M.csv");
             Scope.track(df);
 
             XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -65,7 +66,7 @@ public class XGBoostUploadMatrixTaskTest {
         }
         Scope.enter();
         try {
-            Frame df = parse_test_file("bigdata/laptop/higgs_head_2M.csv");
+            Frame df = parseTestFile("bigdata/laptop/higgs_head_2M.csv");
             Scope.track(df);
 
             XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();

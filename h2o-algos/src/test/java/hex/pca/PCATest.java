@@ -67,7 +67,7 @@ public class PCATest extends TestUtil {
     PCAModel model = null;
     Frame train = null, score = null, scoreR = null;
     try {
-      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      train = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       pcaParameters._train = train._key;
       pcaParameters._k = 4;
       pcaParameters._transform = DataInfo.TransformType.NONE;
@@ -78,7 +78,7 @@ public class PCATest extends TestUtil {
       boolean[] flippedEig = TestUtil.checkEigvec(eigvec, model._output._eigenvectors, 1e-5);
 
       score = model.score(train);
-      scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
+      scoreR = parseTestFile(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
 //      TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
       TestUtil.checkProjection(scoreR, score, 1e-6, flippedEig);    // Flipped cols must match those from eigenvectors
 
@@ -99,7 +99,7 @@ public class PCATest extends TestUtil {
     PCAModel modelK = null;
     Frame train = null, score = null, scoreK = null;
     try {
-      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      train = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       Scope.track(train);
       pcaParameters._train = train._key;
       pcaParameters._transform = DataInfo.TransformType.NONE;
@@ -128,7 +128,7 @@ public class PCATest extends TestUtil {
     Frame tr = null, te= null;
 
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      fr = parseTestFile("smalldata/iris/iris_wheader.csv");
       SplitFrame sf = new SplitFrame(fr,new double[] { 0.5, 0.5 },new Key[] { Key.make("train.hex"), Key.make("test.hex")});
 
       // Invoke the job
@@ -163,7 +163,7 @@ public class PCATest extends TestUtil {
     long seed = 12345;
 
     try {
-      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      train = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       // Add missing values to the training data
       if (missing_fraction > 0) {
         Frame frtmp = new Frame(Key.<Frame>make(), train.names(), train.vecs());
@@ -193,7 +193,7 @@ public class PCATest extends TestUtil {
     PCAModel model = null;
     Frame train = null, score = null;
     try {
-      train = parse_test_file(Key.make("prostate_cat.hex"), "smalldata/prostate/prostate_cat.csv");
+      train = parseTestFile(Key.make("prostate_cat.hex"), "smalldata/prostate/prostate_cat.csv");
       for (int i = train.numCols() - 1; i > 0; i--) {
         Vec v = train.vec(i);
         if (v.get_type() != Vec.T_CAT) {
@@ -228,7 +228,7 @@ public class PCATest extends TestUtil {
     Scope.enter();
     Frame train = null;
     try {
-      train = parse_test_file(Key.make("prostate_cat.hex"), "smalldata/prostate/prostate_cat.csv");
+      train = parseTestFile(Key.make("prostate_cat.hex"), "smalldata/prostate/prostate_cat.csv");
       Scope.track(train);
 
       pcaParameters._train = train._key;
@@ -259,8 +259,8 @@ public class PCATest extends TestUtil {
     Scope.enter();
 
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      tr = parse_test_file("smalldata/iris/iris_wheader_bad_cnames.csv");
+      fr = parseTestFile("smalldata/iris/iris_wheader.csv");
+      tr = parseTestFile("smalldata/iris/iris_wheader_bad_cnames.csv");
       Scope.track(fr);
       Scope.track(tr);
 
@@ -299,7 +299,7 @@ public class PCATest extends TestUtil {
 
     Frame train = null;
     try {
-      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");   // TODO: Move this outside loop
+      train = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");   // TODO: Move this outside loop
       for (DataInfo.TransformType std : new DataInfo.TransformType[] {
           DataInfo.TransformType.DEMEAN,
           DataInfo.TransformType.STANDARDIZE }) {
@@ -343,7 +343,7 @@ public class PCATest extends TestUtil {
     PCAModel model = null;
     Frame train = null, score = null, scoreR = null;
     try {
-      train = parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
+      train = parseTestFile(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
       pcaParameters._train = train._key;
       pcaParameters._k = 7;
       pcaParameters._transform = DataInfo.TransformType.NONE;
@@ -355,7 +355,7 @@ public class PCATest extends TestUtil {
       boolean[] flippedEig = TestUtil.checkEigvec(eigvec, model._output._eigenvectors, 1e-5);
 
       score = model.score(train);
-      scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/iris_PCAscore.csv");
+      scoreR = parseTestFile(Key.make("scoreR.hex"), "smalldata/pca_test/iris_PCAscore.csv");
       TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
 
       // Build a POJO, validate same results
@@ -458,7 +458,7 @@ public class PCATest extends TestUtil {
   public void testPCAPipeline() throws IOException {
     try {
       Scope.enter();
-      Frame train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      Frame train = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       Scope.track(train);
 
       pcaParameters._train = train._key;

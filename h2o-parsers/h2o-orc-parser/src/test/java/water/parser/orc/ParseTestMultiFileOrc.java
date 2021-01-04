@@ -47,7 +47,7 @@ public class ParseTestMultiFileOrc extends TestUtil {
         };
         Scope.enter();
         try {
-            Frame csv_frame = Scope.track(parse_test_file(CSV_FILE, "\\N", 0, null, pst));
+            Frame csv_frame = Scope.track(parseTestFile(CSV_FILE, "\\N", 0, null, pst));
             byte[] types = csv_frame.types();
             for (int index = 0; index < types.length; index++) {
                 if (types[index] == 0)

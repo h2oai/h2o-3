@@ -45,7 +45,7 @@ public class DRFConcurrent2Test extends TestUtil {
     Assume.assumeTrue(H2O.getCloudSize() == 1); // don't test in multi-node, not worth it - this tests already takes a long time
     Frame fr = null;
     try {
-      fr = parse_test_file("./smalldata/jira/pubdev_7193.csv", new TestUtil.ParseSetupTransformer() {
+      fr = parseTestFile("./smalldata/jira/pubdev_7193.csv", new TestUtil.ParseSetupTransformer() {
         @Override
         public ParseSetup transformSetup(ParseSetup guessedSetup) {
           return guessedSetup.setCheckHeader(1);

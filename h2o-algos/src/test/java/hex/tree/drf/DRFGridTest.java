@@ -38,7 +38,7 @@ public class DRFGridTest extends TestUtil {
     Frame fr = null;
     Vec old = null;
     try {
-      fr = parse_test_file("smalldata/junit/cars.csv");
+      fr = parseTestFile("smalldata/junit/cars.csv");
       fr.remove("name").remove(); // Remove unique id
       old = fr.remove("cylinders");
       fr.add("cylinders", old.toCategoricalVec()); // response to last column
@@ -125,7 +125,7 @@ public class DRFGridTest extends TestUtil {
     Frame fr = null;
     Vec old = null;
     try {
-      fr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+      fr = parseTestFile("smalldata/junit/cars_20mpg.csv");
       fr.remove("name").remove(); // Remove unique id
       old = fr.remove("economy");
       fr.add("economy", old); // response to last column
@@ -176,7 +176,7 @@ public class DRFGridTest extends TestUtil {
     DRFModel drfRebuilt = null;
     Frame fr = null;
     try {
-      fr = parse_test_file("smalldata/junit/cars.csv");
+      fr = parseTestFile("smalldata/junit/cars.csv");
       fr.remove("name").remove();
       Vec old = fr.remove("economy (mpg)");
       fr.add("economy (mpg)", old); // response to last column
@@ -302,7 +302,7 @@ public class DRFGridTest extends TestUtil {
   public void testCollisionOfDRFParamsChecksum() {
     Frame fr = null;
     try {
-      fr = parse_test_file("smalldata/junit/cars.csv");
+      fr = parseTestFile("smalldata/junit/cars.csv");
       fr.remove("name").remove();
       Vec old = fr.remove("economy (mpg)");
       fr.add("economy (mpg)", old); // response to last column

@@ -13,7 +13,7 @@ import water.runner.H2ORunner;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static water.TestUtil.parse_test_file;
+import static water.TestUtil.parseTestFile;
 import static water.TestUtil.toMojo;
 
 @RunWith(H2ORunner.class)
@@ -24,7 +24,7 @@ public class MojoDeserializationTest {
     public void testMonotoneConstraintDeserialization() {
         Scope.enter();
         try {
-            Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
+            Frame f = Scope.track(parseTestFile("smalldata/logreg/prostate.csv"));
             f.replace(f.find("CAPSULE"), f.vec("CAPSULE").toNumericVec());
             DKV.put(f);
 
