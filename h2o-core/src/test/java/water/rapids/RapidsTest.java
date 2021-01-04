@@ -45,7 +45,7 @@ public class RapidsTest{
     Session session = new Session();
     Scope.enter();
     try {
-      final Frame iris = parse_test_file(Key.make("iris_spearman"), "smalldata/junit/iris.csv");
+      final Frame iris = parseTestFile(Key.make("iris_spearman"), "smalldata/junit/iris.csv");
       Scope.track_generic(iris);
       final Val spearmanMatrix = Rapids.exec("(cor iris_spearman iris_spearman \"complete.obs\" \"Spearman\")", session);
       assertTrue(spearmanMatrix instanceof ValFrame);
@@ -332,7 +332,7 @@ public class RapidsTest{
     //Frame fr = new Frame(ahex, null, new Vec[]{r.remove(0)});
     //r.delete();
     //DKV.put(ahex, fr);
-    Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
+    Frame fr = parseTestFile(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
     fr.remove(4).remove();
     DKV.put(fr);
     try {
@@ -356,7 +356,7 @@ public class RapidsTest{
   }
 
   @Test public void testProstate_assign_frame_scalar() {
-    Frame fr = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
+    Frame fr = parseTestFile(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
     try {
       Val val = Rapids.exec("(tmp= py_1 (:= prostate.hex -1 1 (== (cols_py prostate.hex 1) 0)))");
       if (val instanceof ValFrame ) {
@@ -370,7 +370,7 @@ public class RapidsTest{
   }
 
   @Test public void testCombo() {
-    Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
+    Frame fr = parseTestFile(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
     String tree = "(tmp= py_2 (:= (tmp= py_1 (cbind a.hex (== (cols_py a.hex 4.0 ) \"Iris-setosa\" ) ) ) (as.factor (cols_py py_1 5.0 ) ) 5.0 [] ) )";
     //String tree = "(:= (tmp= py_1 a.hex) (h2o.runif a.hex -1) 4 [])";
     Val val = Rapids.exec(tree);
@@ -455,8 +455,8 @@ public class RapidsTest{
     Frame f1=null, f2=null, mergeRes=null, ans=null;
 
     try {
-      f1 = parse_test_file(f1Name);
-      f2 = parse_test_file(f2Name);
+      f1 = parseTestFile(f1Name);
+      f2 = parseTestFile(f2Name);
       if (f1.numCols() < f2.numCols()) {
         f1.setNames(new String[]{"int1", "stringf1", "stringf1-2", "intf1-2"});
         f2.setNames(new String[]{"int1", "stringf2", "stringf2-2", "stringf2-3", "intf2-5", "intf2-3", "intf2-4", "stringf2-4"});
@@ -466,7 +466,7 @@ public class RapidsTest{
       }
       DKV.put(f1);
       DKV.put(f2);
-      ans = parse_test_file(ansName);
+      ans = parseTestFile(ansName);
       Scope.track(ans);
       for (int col : stringCols) // change enum column back to string columns
         ans.replace(col, ans.vec(col).toStringVec()).remove();
@@ -586,7 +586,7 @@ public class RapidsTest{
     Session ses = new Session();
     Frame fr = null;
     try {
-      fr = parse_test_file(Key.make("a.hex"),"smalldata/airlines/AirlinesTrainMM.csv.zip");
+      fr = parseTestFile(Key.make("a.hex"),"smalldata/airlines/AirlinesTrainMM.csv.zip");
       System.out.printf(fr.toString());
       Rapids.exec("(h2o.runif a.hex -1)->flow_1",ses);
       Rapids.exec("(tmp= f.25 (rows a.hex (<  flow_1 0.25) ) )",ses);
@@ -604,8 +604,8 @@ public class RapidsTest{
     String oldtz = Rapids.exec("(getTimeZone)").getStr();
     Session ses = new Session();
     try {
-      parse_test_file(Key.make("weather.hex"),"smalldata/chicago/chicagoAllWeather.csv");
-      parse_test_file(Key.make( "crimes.hex"),"smalldata/chicago/chicagoCrimes10k.csv.zip");
+      parseTestFile(Key.make("weather.hex"),"smalldata/chicago/chicagoAllWeather.csv");
+      parseTestFile(Key.make( "crimes.hex"),"smalldata/chicago/chicagoCrimes10k.csv.zip");
       String fname = "smalldata/chicago/chicagoCensus.csv";
       File f = FileUtils.getFile(fname);
       NFSFileVec nfs = NFSFileVec.make(f);
@@ -736,7 +736,7 @@ public class RapidsTest{
   }
 
   @Test public void test_frameKeyStartsWithNumber() {
-    Frame fr = parse_test_file(Key.make("123STARTSWITHDIGITS"), "smalldata/logreg/prostate.csv");
+    Frame fr = parseTestFile(Key.make("123STARTSWITHDIGITS"), "smalldata/logreg/prostate.csv");
     try {
       Val val = Rapids.exec("(cols_py 123STARTSWITHDIGITS 'ID')");
       Assert.assertNotNull(val);

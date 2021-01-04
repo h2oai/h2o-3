@@ -20,7 +20,7 @@ public class ParseFolderTest extends TestUtil {
     Frame k1 = null, k2 = null;
     try {
       k2 = parse_test_folder("smalldata/junit/parse_folder" );
-      k1 = parse_test_file  ("smalldata/junit/parse_folder_gold.csv");
+      k1 = parseTestFile("smalldata/junit/parse_folder_gold.csv");
       TestUtil.assertBitIdentical(k1, k2);
     } finally {
       if( k1 != null ) k1.delete();
@@ -35,12 +35,12 @@ public class ParseFolderTest extends TestUtil {
     int[] skippedColumns = new int[] {0,1};
 
     try {
-      k1 = parse_test_file  ("smalldata/junit/parse_folder_gold.csv");
+      k1 = parseTestFile("smalldata/junit/parse_folder_gold.csv");
       k2 = parse_test_folder("smalldata/junit/parse_folder" );
       Scope.track(k1,k2);
       TestUtil.assertBitIdentical(k1,k2);
 
-      k3 = parse_test_file  ("smalldata/junit/parse_folder_gold.csv", skippedColumns);
+      k3 = parseTestFile("smalldata/junit/parse_folder_gold.csv", skippedColumns);
       k4 = parse_test_folder("smalldata/junit/parse_folder", skippedColumns);
       Scope.track(k3,k4);
       TestUtil.assertBitIdentical(k3,k4);

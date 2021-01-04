@@ -42,7 +42,7 @@ public class DatasetCornerCasesTest extends TestUtil {
   private void testOneLineDataset(String filename) {
     Frame fr = null;
     try {
-      fr = parse_test_file(filename);
+      fr = parseTestFile(filename);
       Assert.assertEquals("Number of chunks == 1", 1, fr.anyVec().nChunks());
       Assert.assertEquals("Number of rows   == 2", 2, fr.numRows());
       Assert.assertEquals("Number of cols   == 9", 9, fr.numCols());

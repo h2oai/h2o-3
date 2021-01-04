@@ -31,7 +31,7 @@ public class AstRectangleFrameSliceAssignTest extends TestUtil {
 
   @Test
   public void testAssignFrameSlice() throws Exception {
-    final Frame data = parse_test_file(Key.make("data"), "smalldata/airlines/allyears2k_headers.zip");
+    final Frame data = parseTestFile(Key.make("data"), "smalldata/airlines/allyears2k_headers.zip");
     Frame output = null;
     try {
       String rapids = "(tmp= tst (:= data (rows (cols data [8.0, 11.0] ) [10000.0:" + _nRows + ".0] ) [8.0, 11.0] [0.0:" + _nRows + ".0] ) )";
@@ -59,7 +59,7 @@ public class AstRectangleFrameSliceAssignTest extends TestUtil {
 
   @Test
   public void testAssignFrameSlice_domainsDiffer() throws Exception {
-    final Frame data = parse_test_file(Key.make("data"), "smalldata/airlines/allyears2k_headers.zip");
+    final Frame data = parseTestFile(Key.make("data"), "smalldata/airlines/allyears2k_headers.zip");
     Frame output = null;
     try {
       String rapids = "(tmp= tst (:= data (rows (cols data [8.0] ) [10000.0:" + _nRows + ".0] ) [16.0] [0.0:" + _nRows + ".0] ) )";

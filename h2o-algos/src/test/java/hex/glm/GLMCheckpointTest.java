@@ -30,7 +30,7 @@ public class GLMCheckpointTest extends TestUtil {
   public void testRestoreScoringHistory() {
     try {
       Scope.enter();
-      Frame train = parse_test_file("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv");
+      Frame train = parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv");
       // set cat columns
       int numCols = train.numCols();
       int enumCols = (numCols-1)/2;
@@ -63,7 +63,7 @@ public class GLMCheckpointTest extends TestUtil {
   public void testRestoreLambdaScoringHistory() {
     try {
       Scope.enter();
-      Frame train = parse_test_file("smalldata/glm_test/binomial_20_cols_10KRows.csv");
+      Frame train = parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv");
       // set cat columns
       int numCols = train.numCols();
       int enumCols = (numCols-1)/2;

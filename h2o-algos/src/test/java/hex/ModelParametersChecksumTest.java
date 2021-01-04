@@ -28,7 +28,7 @@ public class ModelParametersChecksumTest extends TestUtil {
     Frame fr = null;
 
     try {
-      fr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+      fr = parseTestFile("smalldata/junit/cars_20mpg.csv");
       fr.replace(fr.find("cylinders"), fr.vec("cylinders").toCategoricalVec()).remove();
 
       DRFModel.DRFParameters p1 = new DRFModel.DRFParameters();

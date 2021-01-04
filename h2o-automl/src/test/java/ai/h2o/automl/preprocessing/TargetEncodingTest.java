@@ -3,7 +3,6 @@ package ai.h2o.automl.preprocessing;
 import ai.h2o.automl.*;
 import ai.h2o.automl.dummy.DummyModel;
 import ai.h2o.automl.preprocessing.PreprocessingStepDefinition.Type;
-import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import ai.h2o.targetencoding.TargetEncoderPreprocessor;
@@ -204,7 +203,7 @@ public class TargetEncodingTest {
         try {
             Scope.enter();
             AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-            Frame fr = parse_test_file("./smalldata/titanic/titanic_expanded.csv"); Scope.track(fr);
+            Frame fr = parseTestFile("./smalldata/titanic/titanic_expanded.csv"); Scope.track(fr);
             SplitFrame sf = new SplitFrame(fr, new double[] { 0.7, 0.3 }, new Key[]{Key.make("titanic_train"), Key.make("titanic_test")});
             sf.exec().get();
             Frame train = sf._destination_frames[0].get(); Scope.track(train);

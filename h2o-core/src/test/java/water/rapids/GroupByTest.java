@@ -1,6 +1,5 @@
 package water.rapids;
 
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -208,7 +207,7 @@ public class GroupByTest extends TestUtil {
   //       6  17367
   //   10000   9493
   @Test public void testSplitCats() throws InterruptedException {
-    Frame cov = parse_test_file(Key.make("cov"),"smalldata/covtype/covtype.altered.gz");
+    Frame cov = parseTestFile(Key.make("cov"),"smalldata/covtype/covtype.altered.gz");
     System.out.println(cov.toString(0,10));
 
     Val v_ddply = Rapids.exec("(ddply cov [54] nrow)");
@@ -246,7 +245,7 @@ public class GroupByTest extends TestUtil {
   public void testGroupbyTableSpeed() {
     try {
       Scope.enter();
-      Frame ids = parse_test_file(Key.make("cov"), "smalldata/junit/id_cols.csv");
+      Frame ids = parseTestFile(Key.make("cov"), "smalldata/junit/id_cols.csv");
       ids.toCategoricalCol(0);
       Scope.track(ids);
       System.out.println(ids.toString(0, 10));
@@ -271,7 +270,7 @@ public class GroupByTest extends TestUtil {
   public void testPubDev6319() {
     Scope.enter();
     try {
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
 
       String aggregateColumn = "survived";
@@ -317,7 +316,7 @@ public class GroupByTest extends TestUtil {
   }
 
   private Frame chkTree(String tree, String fname, float d) {
-    Frame fr = parse_test_file(Key.make("hex"),fname);
+    Frame fr = parseTestFile(Key.make("hex"),fname);
     Val val = Rapids.exec(tree);
     System.out.println(val.toString());
     if( val instanceof ValFrame )
@@ -326,7 +325,7 @@ public class GroupByTest extends TestUtil {
   }
   private Frame chkTree(String tree, String fname) { return chkTree(tree,fname,false); }
   private Frame chkTree(String tree, String fname, boolean expectThrow) {
-    Frame fr = parse_test_file(Key.make("hex"),fname);
+    Frame fr = parseTestFile(Key.make("hex"),fname);
     try {
       Val val = Rapids.exec(tree);
       System.out.println(val.toString());

@@ -22,7 +22,7 @@ public class PartialDependenceTest extends TestUtil {
     PartialDependence partialDependence = null;
     try {
       // Frame
-      fr = parse_test_file("smalldata/prostate/prostate.csv");
+      fr = parseTestFile("smalldata/prostate/prostate.csv");
       for (String s : new String[]{"RACE","GLEASON","DPROS","DCAPS","CAPSULE"}) {
         Vec v = fr.remove(s);
         fr.add(s, v.toCategoricalVec());
@@ -67,7 +67,7 @@ public class PartialDependenceTest extends TestUtil {
     PartialDependence partialDependenceW = null;
     try {
       // Frame
-      fr = parse_test_file("smalldata/prostate/prostate.csv");
+      fr = parseTestFile("smalldata/prostate/prostate.csv");
       for (String s : new String[]{"RACE","GLEASON","DPROS","DCAPS","CAPSULE"}) {
         Vec v = fr.remove(s);
         fr.add(s, v.toCategoricalVec());
@@ -127,7 +127,7 @@ public class PartialDependenceTest extends TestUtil {
     Scope.enter();
     try {
       // Frame
-      Frame fr = parse_test_file("smalldata/prostate/prostate.csv");
+      Frame fr = parseTestFile("smalldata/prostate/prostate.csv");
       for (String s : new String[]{"RACE","GLEASON","DPROS","DCAPS","CAPSULE"}) { // convert to enum columns
         Vec v = fr.remove(s);
         fr.add(s, v.toCategoricalVec());
@@ -249,7 +249,7 @@ public class PartialDependenceTest extends TestUtil {
     PartialDependence partialDependence = null;
     try {
       // Frame
-      fr = parse_test_file("smalldata/prostate/prostate.csv");
+      fr = parseTestFile("smalldata/prostate/prostate.csv");
       for (String s : new String[]{"RACE","GLEASON","DPROS","DCAPS","CAPSULE"}) {
         Vec v = fr.remove(s);
         fr.add(s, v.toCategoricalVec());
@@ -289,7 +289,7 @@ public class PartialDependenceTest extends TestUtil {
     PartialDependence partialDependence = null;
     try {
       // Frame
-      fr = parse_test_file("smalldata/prostate/prostate.csv");
+      fr = parseTestFile("smalldata/prostate/prostate.csv");
       for (String s : new String[]{"RACE","GLEASON","DPROS","DCAPS","CAPSULE"}) {
         Vec v = fr.remove(s);
         fr.add(s, v.toCategoricalVec());
@@ -336,7 +336,7 @@ public class PartialDependenceTest extends TestUtil {
     PartialDependence partialDependenceW = null;
     try {
       // Frame
-      fr = parse_test_file("smalldata/prostate/prostate.csv");
+      fr = parseTestFile("smalldata/prostate/prostate.csv");
       for (String s : new String[]{"RACE","GLEASON","DPROS","DCAPS","CAPSULE"}) {
         Vec v = fr.remove(s);
         fr.add(s, v.toCategoricalVec());
@@ -393,7 +393,7 @@ public class PartialDependenceTest extends TestUtil {
     PartialDependence partialDependence = null;
     try {
       // Frame
-      fr = parse_test_file("smalldata/prostate/prostate.csv");
+      fr = parseTestFile("smalldata/prostate/prostate.csv");
       for (String s : new String[]{"RACE","GLEASON","DPROS","DCAPS","CAPSULE"}) {
         Vec v = fr.remove(s);
         fr.add(s, v.toCategoricalVec());
@@ -431,7 +431,7 @@ public class PartialDependenceTest extends TestUtil {
     PartialDependence partialDependence = null;
     try {
       // Frame
-        fr = parse_test_file("smalldata/junit/weather.csv");
+        fr = parseTestFile("smalldata/junit/weather.csv");
 
       // Model
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();

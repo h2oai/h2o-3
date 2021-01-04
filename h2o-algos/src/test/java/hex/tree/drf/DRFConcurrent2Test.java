@@ -45,7 +45,7 @@ public class DRFConcurrent2Test extends TestUtil {
     Assume.assumeTrue(H2O.getCloudSize() == 1); // don't test in multi-node, not worth it - this tests already takes a long time
     Frame fr = null;
     try {
-      fr = parse_test_file("./smalldata/jira/pubdev_7193.csv", setup -> setup.setCheckHeader(1));
+      fr = parseTestFile("./smalldata/jira/pubdev_7193.csv", setup -> setup.setCheckHeader(1));
 
       ExecutorService executor = Executors.newFixedThreadPool(2);
       List<Callable<DRFModel>> runnables = new ArrayList<>();

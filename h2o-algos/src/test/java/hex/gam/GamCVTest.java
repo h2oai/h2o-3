@@ -32,7 +32,7 @@ public class GamCVTest extends TestUtil {
   public void testCVBinomial() {
     try {
       Scope.enter();
-      Frame train = parse_test_file("smalldata/glm_test/binomial_20_cols_10KRows.csv");
+      Frame train = parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv");
       Random rnd = RandomUtils.getRNG(train.byteSize());
       // change training data frame
       int response_index = train.numCols() - 1;
@@ -94,7 +94,7 @@ public class GamCVTest extends TestUtil {
   public void testCVMultinomial() {
     try {
       Scope.enter();
-      Frame train = parse_test_file("smalldata/iris/iris_train.csv");
+      Frame train = parseTestFile("smalldata/iris/iris_train.csv");
       DKV.put(train);
       Scope.track(train);
 
@@ -145,7 +145,7 @@ public class GamCVTest extends TestUtil {
   public void testCVRegression() {
     try {
       Scope.enter();
-      Frame train = parse_test_file("smalldata/iris/iris_train.csv");
+      Frame train = parseTestFile("smalldata/iris/iris_train.csv");
       DKV.put(train);
       Scope.track(train);
 

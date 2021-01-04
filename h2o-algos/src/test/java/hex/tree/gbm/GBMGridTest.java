@@ -12,7 +12,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.test.util.GridTestUtils;
 import water.util.ArrayUtils;
-import water.util.IcedHashMap;
 
 import java.util.*;
 
@@ -32,7 +31,7 @@ public class GBMGridTest extends TestUtil {
     Frame fr = null;
     Vec old = null;
     try {
-      fr = parse_test_file("smalldata/junit/cars.csv");
+      fr = parseTestFile("smalldata/junit/cars.csv");
       fr.remove("name").remove(); // Remove unique id
       old = fr.remove("cylinders");
       fr.add("cylinders", old.toCategoricalVec()); // response to last column
@@ -121,7 +120,7 @@ public class GBMGridTest extends TestUtil {
     Frame fr = null;
     Vec old = null;
     try {
-      fr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+      fr = parseTestFile("smalldata/junit/cars_20mpg.csv");
       fr.remove("name").remove(); // Remove unique id
       old = fr.remove("economy");
       fr.add("economy", old); // response to last column
@@ -171,7 +170,7 @@ public class GBMGridTest extends TestUtil {
     Frame fr = null;
     Vec old = null;
     try {
-      fr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+      fr = parseTestFile("smalldata/junit/cars_20mpg.csv");
       fr.remove("name").remove(); // Remove unique id
       old = fr.remove("economy");
       fr.add("economy", old); // response to last column
@@ -224,7 +223,7 @@ public class GBMGridTest extends TestUtil {
     Frame fr = null;
     Vec old = null;
     try {
-      fr = parse_test_file("smalldata/junit/cars.csv");
+      fr = parseTestFile("smalldata/junit/cars.csv");
       fr.remove("name").remove();
       old = fr.remove("economy (mpg)");
 

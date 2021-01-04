@@ -35,7 +35,7 @@ public class ZGroupByMedianTest extends TestUtil {
 
   private Frame chkTree(String tree, String fname) { return chkTree(tree,fname,false); }
   private Frame chkTree(String tree, String fname, boolean expectThrow) {
-    Frame fr = parse_test_file(Key.make("hex"),fname);
+    Frame fr = parseTestFile(Key.make("hex"),fname);
     try {
       Val val = Rapids.exec(tree);
       System.out.println(val.toString());

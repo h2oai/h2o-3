@@ -162,7 +162,7 @@ public class GLRMTest extends TestUtil {
     long seed = 1234;
 
     try {
-      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      train = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._gamma_x = parms._gamma_y = 0.5;
@@ -193,7 +193,7 @@ public class GLRMTest extends TestUtil {
     GLRMModel model = null;
     Frame train = null;
     try {
-      train = parse_test_file(Key.make("benign.hex"), "smalldata/logreg/benign.csv");
+      train = parseTestFile(Key.make("benign.hex"), "smalldata/logreg/benign.csv");
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 10;
@@ -233,7 +233,7 @@ public class GLRMTest extends TestUtil {
     GLRMModel model = null;
     Frame train = null;
     try {
-      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      train = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 4;
@@ -265,7 +265,7 @@ public class GLRMTest extends TestUtil {
     GLRMModel model = null;
     Frame train = null;
     try {
-      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      train = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 4;
@@ -308,7 +308,7 @@ public class GLRMTest extends TestUtil {
     for (double missing_fraction : new double[]{0, 0.1, 0.25, 0.5, 0.75, 0.9}) {
       try {
         Scope.enter();
-        train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+        train = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
 
         // Add missing values to the training data
         if (missing_fraction > 0) {
@@ -364,7 +364,7 @@ public class GLRMTest extends TestUtil {
     Frame train = null;
 
     try {
-      train = parse_test_file(Key.make("benign.hex"), "smalldata/logreg/benign.csv");
+      train = parseTestFile(Key.make("benign.hex"), "smalldata/logreg/benign.csv");
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 12;
@@ -466,7 +466,7 @@ public class GLRMTest extends TestUtil {
 
     try {
       Scope.enter();
-      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      train = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 4;
@@ -569,7 +569,7 @@ public class GLRMTest extends TestUtil {
     GLRMModel gmodel = null;
 
     try {
-      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      train = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       for (DataInfo.TransformType std : new DataInfo.TransformType[] {
               DataInfo.TransformType.DEMEAN,
               DataInfo.TransformType.STANDARDIZE }) {
@@ -636,7 +636,7 @@ public class GLRMTest extends TestUtil {
     double tolerance = 1e-6;
 
     try {
-      train = parse_test_file(Key.make("Prostrate_CAT"), "smalldata/prostate/prostate_cat.csv");
+      train = parseTestFile(Key.make("Prostrate_CAT"), "smalldata/prostate/prostate_cat.csv");
       train.vec(0).setNA(0);          // set NAs
       train.vec(3).setNA(10);
       train.vec(5).setNA(20);
@@ -690,7 +690,7 @@ public class GLRMTest extends TestUtil {
     double tolerance = 1e-6;
 
     try {
-      train = parse_test_file(Key.make("deacathlon"), "smalldata/pca_test/decathlon.csv");
+      train = parseTestFile(Key.make("deacathlon"), "smalldata/pca_test/decathlon.csv");
       Scope.track(train);
       DKV.put(train);
 

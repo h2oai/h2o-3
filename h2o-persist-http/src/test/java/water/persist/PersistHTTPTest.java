@@ -10,7 +10,6 @@ import water.parser.ParseDataset;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Optional;
 
 
 import static org.mockito.Mockito.mock;
@@ -29,7 +28,7 @@ public class PersistHTTPTest extends TestUtil {
     try {
       Scope.enter();
 
-      Frame f = Scope.track(parse_test_file(Key.make("prostate.hex"), "smalldata/prostate/prostate.csv"));
+      Frame f = Scope.track(parseTestFile(Key.make("prostate.hex"), "smalldata/prostate/prostate.csv"));
 
       final String localUrl = H2O.getURL(H2O.ARGS.jks != null ? "https" : "http") + "/3/DownloadDataset.bin?frame_id=" + f._key.toString();
 
@@ -67,7 +66,7 @@ public class PersistHTTPTest extends TestUtil {
     try {
       Scope.enter();
 
-      Frame f = Scope.track(parse_test_file(Key.make("prostate.hex"), "smalldata/prostate/prostate.csv"));
+      Frame f = Scope.track(parseTestFile(Key.make("prostate.hex"), "smalldata/prostate/prostate.csv"));
 
       final String remoteUrl = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv";
       final long expectedSize = 9254L;

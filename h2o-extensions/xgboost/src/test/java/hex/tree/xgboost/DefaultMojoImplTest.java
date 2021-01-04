@@ -80,7 +80,7 @@ public class DefaultMojoImplTest extends TestUtil {
 
 
   private static XGBoostModel trainModel(Booster booster) {
-    Frame tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+    Frame tfr = parseTestFile("./smalldata/prostate/prostate.csv");
     Scope.track(tfr);
     Scope.track(tfr.replace(1, tfr.vecs()[1].toCategoricalVec()));   // Convert CAPSULE to categorical
     Scope.track(tfr.replace(3, tfr.vecs()[3].toCategoricalVec()));   // Convert RACE to categorical

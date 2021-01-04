@@ -27,7 +27,7 @@ public class XGBoostParamsTest extends TestUtil {
     final Locale originalLocale = Locale.getDefault();
     try {
       Scope.enter();
-      Frame traningFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+      Frame traningFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
       Scope.track_generic(traningFrame);
       String response = "Distance";
 

@@ -55,15 +55,15 @@ public class TargetEncodingBinomialBenchmark extends TestUtil {
     Frame fr, test;
     switch (name) {
       case "airlines":
-        fr = parse_test_file(Key.make("airlines_train"), "smalldata/airlines/AirlinesTrain.csv.zip");
-        test = parse_test_file(Key.make("airlines_test"), "smalldata/airlines/AirlinesTest.csv.zip");
+        fr = parseTestFile(Key.make("airlines_train"), "smalldata/airlines/AirlinesTrain.csv.zip");
+        test = parseTestFile(Key.make("airlines_test"), "smalldata/airlines/AirlinesTest.csv.zip");
         target = "IsDepDelayed";
         foldColumn = "fold";
         teColumns = new String[]{"Origin", "Dest"};
         ignoredColumns = new String[] {"IsDepDelayed_REC"};
         break;
       case "titanic":
-        fr = parse_test_file(Key.make("airlines_train"), "smalldata/titanic/titanic_expanded.csv");
+        fr = parseTestFile(Key.make("airlines_train"), "smalldata/titanic/titanic_expanded.csv");
         test = null;
         target = "survived";
         foldColumn = "fold";

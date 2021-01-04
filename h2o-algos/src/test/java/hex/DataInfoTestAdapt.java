@@ -29,7 +29,7 @@ public class DataInfoTestAdapt extends TestUtil {
     boolean standardize=false;  // golden frame is standardized before splitting, while frame we want to check would be standardized post-split (not exactly what we want!)
     boolean skipMissing=true;
     try {
-      fr = parse_test_file(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
+      fr = parseTestFile(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
       fr.swap(3, 4);
       expanded = GLMModel.GLMOutput.expand(fr, interactions, useAll, standardize,skipMissing);   // here's the "golden" frame
 
@@ -75,7 +75,7 @@ public class DataInfoTestAdapt extends TestUtil {
     boolean standardize=false;  // golden frame is standardized before splitting, while frame we want to check would be standardized post-split (not exactly what we want!)
     boolean skipMissing=false;
     try {
-      frA = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
+      frA = parseTestFile(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
       fr = frA.subframe(keepColumns);
       expanded = GLMModel.GLMOutput.expand(fr, interactions, useAll, standardize, skipMissing);   // here's the "golden" frame
 

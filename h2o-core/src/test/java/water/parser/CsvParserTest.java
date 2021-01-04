@@ -435,7 +435,7 @@ public class CsvParserTest extends TestUtil {
     public void testAirlinesTrain() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/airlines_train.csv", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/testng/airlines_train.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(24421, frame.numRows()); // 24,423 rows in total. Last row is empty, first one is header
@@ -449,7 +449,7 @@ public class CsvParserTest extends TestUtil {
     public void testAirQuality() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/airquality_train1.csv", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/testng/airquality_train1.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(77, frame.numRows()); // 79 rows in total. Last row is empty, first one is header
@@ -463,7 +463,7 @@ public class CsvParserTest extends TestUtil {
     public void testCars() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/cars_train.csv", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/testng/cars_train.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(331, frame.numRows()); // 333 rows in total. Last row is empty, first one is header
@@ -477,7 +477,7 @@ public class CsvParserTest extends TestUtil {
     public void testHiggs5k() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/higgs_train_5k.csv", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/testng/higgs_train_5k.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(5000, frame.numRows()); //5002 rows in total. Last row is empty, first one is header
@@ -491,7 +491,7 @@ public class CsvParserTest extends TestUtil {
     public void testHousing() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/housing_train.csv", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/testng/housing_train.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(413, frame.numRows()); // 415 rows in total. Last row is empty, first one is header
@@ -505,7 +505,7 @@ public class CsvParserTest extends TestUtil {
     public void testInsurance() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/insurance_gamma_dense_train.csv", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/testng/insurance_gamma_dense_train.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(45, frame.numRows()); // 47 rows in total. Last row is empty, first one is header
@@ -519,7 +519,7 @@ public class CsvParserTest extends TestUtil {
     public void testIris() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/iris.csv", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/testng/iris.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(150, frame.numRows()); // 152 rows in total. Last row is empty, first one is header
@@ -533,7 +533,7 @@ public class CsvParserTest extends TestUtil {
     public void testAgaricus() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/xgboost/demo/data/agaricus.txt.train", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/xgboost/demo/data/agaricus.txt.train", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(6513, frame.numRows()); // 6514 rows in total. Last row is empty, no header.
@@ -547,7 +547,7 @@ public class CsvParserTest extends TestUtil {
     public void testFeatmap() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/xgboost/demo/data/featmap.txt", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/xgboost/demo/data/featmap.txt", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(126, frame.numRows()); // 127 lines in total, no header, last row empty
@@ -561,7 +561,7 @@ public class CsvParserTest extends TestUtil {
     public void testDiabetes() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("smalldata/diabetes/diabetes_train.csv", setupTransformer);
+        final Frame frame = parseTestFile("smalldata/diabetes/diabetes_train.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(50001, frame.numRows()); // 50,003 rows in total. Last row is empty, first one is header.
@@ -611,7 +611,7 @@ public class CsvParserTest extends TestUtil {
     public void testMultilineQuotes() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("smalldata/csv-test/quoted_multiline.csv", setupTransformer);
+        final Frame frame = parseTestFile("smalldata/csv-test/quoted_multiline.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(44, frame.numRows());
@@ -625,7 +625,7 @@ public class CsvParserTest extends TestUtil {
     public void testQuotedNoHeader() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("smalldata/csv-test/quoted_no_header.csv", setupTransformer);
+        final Frame frame = parseTestFile("smalldata/csv-test/quoted_no_header.csv", setupTransformer);
         Log.info(frame.toString());
         Scope.track(frame);
         assertEquals(6, frame.numRows());
@@ -639,7 +639,7 @@ public class CsvParserTest extends TestUtil {
             return guessedSetup;
           }
         };
-        final Frame smallChunkSizeResultFrame = TestUtil.parse_test_file("smalldata/csv-test/quoted_no_header.csv", smallChunkSizeTransformer);
+        final Frame smallChunkSizeResultFrame = parseTestFile("smalldata/csv-test/quoted_no_header.csv", smallChunkSizeTransformer);
         Scope.track(smallChunkSizeResultFrame);
         Log.info(smallChunkSizeResultFrame.toString());
         assertEquals(6, smallChunkSizeResultFrame.numRows());

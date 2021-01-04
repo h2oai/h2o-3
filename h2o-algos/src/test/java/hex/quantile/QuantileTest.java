@@ -1,6 +1,5 @@
 package hex.quantile;
 
-import hex.ModelBuilder;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -22,9 +21,9 @@ public class QuantileTest extends TestUtil {
     try {
       long start = System.currentTimeMillis();
       System.out.println("Start Parse");
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      //fr = parse_test_file("../../datasets/UCI/UCI-large/covtype/covtype.data");
-      //fr = parse_test_file("../../datasets/billion_rows.csv.gz");
+      fr = parseTestFile("smalldata/iris/iris_wheader.csv");
+      //fr = parseTestFile("../../datasets/UCI/UCI-large/covtype/covtype.data");
+      //fr = parseTestFile("../../datasets/billion_rows.csv.gz");
       System.out.println("Done Parse: "+(System.currentTimeMillis()-start));
 
       QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
@@ -459,8 +458,8 @@ public class QuantileTest extends TestUtil {
     Frame fr1 = null;
     Frame fr2 = null;
     try {
-      fr1 = parse_test_file("smalldata/junit/no_weights.csv");
-      fr2 = parse_test_file("smalldata/junit/no_weights_shuffled.csv");
+      fr1 = parseTestFile("smalldata/junit/no_weights.csv");
+      fr2 = parseTestFile("smalldata/junit/no_weights_shuffled.csv");
 
       for (QuantileModel.CombineMethod comb : new QuantileModel.CombineMethod[]{
               QuantileModel.CombineMethod.AVERAGE,
@@ -506,8 +505,8 @@ public class QuantileTest extends TestUtil {
     Frame fr1 = null;
     Frame fr2 = null;
     try {
-      fr1 = parse_test_file("smalldata/junit/no_weights.csv");
-      fr2 = parse_test_file("smalldata/junit/weights_all_ones.csv");
+      fr1 = parseTestFile("smalldata/junit/no_weights.csv");
+      fr2 = parseTestFile("smalldata/junit/weights_all_ones.csv");
 
       for (QuantileModel.CombineMethod comb : new QuantileModel.CombineMethod[]{
               QuantileModel.CombineMethod.AVERAGE,
@@ -555,8 +554,8 @@ public class QuantileTest extends TestUtil {
     Frame fr1 = null;
     Frame fr2 = null;
     try {
-      fr1 = parse_test_file("smalldata/junit/no_weights.csv");
-      fr2 = parse_test_file("smalldata/junit/weights.csv");
+      fr1 = parseTestFile("smalldata/junit/no_weights.csv");
+      fr2 = parseTestFile("smalldata/junit/weights.csv");
 
       for (QuantileModel.CombineMethod comb : new QuantileModel.CombineMethod[]{
               QuantileModel.CombineMethod.AVERAGE,
@@ -604,8 +603,8 @@ public class QuantileTest extends TestUtil {
     Frame fr1 = null;
     Frame fr2 = null;
     try {
-      fr1 = parse_test_file("smalldata/junit/weights_all_twos.csv");
-      fr2 = parse_test_file("smalldata/junit/weights_all_ones.csv");
+      fr1 = parseTestFile("smalldata/junit/weights_all_twos.csv");
+      fr2 = parseTestFile("smalldata/junit/weights_all_ones.csv");
 
       for (QuantileModel.CombineMethod comb : new QuantileModel.CombineMethod[]{
               QuantileModel.CombineMethod.AVERAGE,
@@ -654,8 +653,8 @@ public class QuantileTest extends TestUtil {
     Frame fr1 = null;
     Frame fr2 = null;
     try {
-      fr1 = parse_test_file("smalldata/junit/weights_all_tiny.csv");
-      fr2 = parse_test_file("smalldata/junit/weights_all_ones.csv");
+      fr1 = parseTestFile("smalldata/junit/weights_all_tiny.csv");
+      fr2 = parseTestFile("smalldata/junit/weights_all_ones.csv");
 
       for (QuantileModel.CombineMethod comb : new QuantileModel.CombineMethod[]{
               QuantileModel.CombineMethod.AVERAGE,

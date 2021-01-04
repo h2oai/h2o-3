@@ -70,7 +70,7 @@ public class GBMCheckpointTest extends TestUtil {
                                             boolean classification,
                                             int ntreesInPriorModel, int ntreesInNewModel,
                                             float sampleRateInPriorModel, float sampleRateInNewModel) {
-    Frame f = parse_test_file(dataset);
+    Frame f = parseTestFile(dataset);
     Vec v = f.remove("economy"); if (v!=null) v.remove(); //avoid overfitting for binomial case for cars dataset
     DKV.put(f);
     // If classification turn response into categorical
@@ -143,8 +143,8 @@ public class GBMCheckpointTest extends TestUtil {
 
   @Ignore("PUBDEV-1829")
   public void testCheckpointReconstruction4BinomialPUBDEV1829() {
-    Frame tr = parse_test_file("smalldata/jira/gbm_checkpoint_train.csv");
-    Frame val = parse_test_file("smalldata/jira/gbm_checkpoint_valid.csv");
+    Frame tr = parseTestFile("smalldata/jira/gbm_checkpoint_train.csv");
+    Frame val = parseTestFile("smalldata/jira/gbm_checkpoint_valid.csv");
 
     Vec old = null;
 

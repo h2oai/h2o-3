@@ -38,7 +38,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
   @BeforeClass
   public static void setup() {
     stall_till_cloudsize(1);
-    _covtype = parse_test_file("smalldata/covtype/covtype.20k.data");
+    _covtype = parseTestFile("smalldata/covtype/covtype.20k.data");
     _covtype.replace(_covtype.numCols()-1,_covtype.lastVec().toCategoricalVec()).remove();
     DKV.put(_covtype);
     Key[] keys = new Key[]{Key.make("train"),Key.make("test")};
@@ -272,7 +272,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
                 0.01013967640490087, -0.03999288928633559, 0.012385348397898913, -0.0017922461738315199,
                 -1.159667420372168};
         try {
-          train = parse_test_file("smalldata/glm_test/multinomial_3_class.csv");
+          train = parseTestFile("smalldata/glm_test/multinomial_3_class.csv");
           Scope.track(train);
           params._response_column = "response";
           params._train = train._key;

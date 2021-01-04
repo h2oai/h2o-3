@@ -13,7 +13,6 @@ import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -32,7 +31,7 @@ public class RuleFitUtilsTest extends TestUtil {
     public void testConditionAndRule() {
         try {
             Scope.enter();
-            final Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+            final Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
             Scope.track(fr);
 
             Condition condition = new Condition(0, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2, null, null, "pclass", false );
@@ -80,7 +79,7 @@ public class RuleFitUtilsTest extends TestUtil {
             String[] expectedFileNames = new String[2];
             expectedFileNames[0]="Tree1.png";
             expectedFileNames[1]="Tree0.png";
-            Frame train = Scope.track(TestUtil.parse_test_file("smalldata/extdata/prostate.csv"));
+            Frame train = Scope.track(parseTestFile("smalldata/extdata/prostate.csv"));
 
             GBMModel.GBMParameters p = new GBMModel.GBMParameters();
             p._train = train._key;
@@ -130,7 +129,7 @@ public class RuleFitUtilsTest extends TestUtil {
     public void extractRulesFromTreeFromModelTesCategorical() {
         try {
             Scope.enter();
-            Frame train = Scope.track(TestUtil.parse_test_file("smalldata/testng/airlines.csv"));
+            Frame train = Scope.track(parseTestFile("smalldata/testng/airlines.csv"));
 
             IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
             p._train = train._key;

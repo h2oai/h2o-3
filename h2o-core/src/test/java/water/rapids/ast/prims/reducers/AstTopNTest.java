@@ -49,10 +49,10 @@ public class AstTopNTest extends TestUtil {
     Frame topLong = null, topFloat = null, bottomLong = null, bottomFloat = null;
 
     // load in the datasets with the answers
-    _train = parse_test_file(Key.make("topbottom"), "smalldata/jira/TopBottomN.csv.zip");
-    topFloat = parse_test_file(Key.make("top20"), "smalldata/jira/Top20Per.csv.zip");
+    _train = parseTestFile(Key.make("topbottom"), "smalldata/jira/TopBottomN.csv.zip");
+    topFloat = parseTestFile(Key.make("top20"), "smalldata/jira/Top20Per.csv.zip");
     topLong = topFloat.extractFrame(0, 1);
-    bottomFloat = parse_test_file(Key.make("bottom20"), "smalldata/jira/Bottom20Per.csv.zip");
+    bottomFloat = parseTestFile(Key.make("bottom20"), "smalldata/jira/Bottom20Per.csv.zip");
     bottomLong = bottomFloat.extractFrame(0, 1);
 
     Scope.track(_train);

@@ -17,7 +17,7 @@ public class DRFConcurrentTest extends TestUtil  {
   public void testBuildSingle() {
     Scope.enter();
     try {
-      Frame fr = parse_test_file(Key.make("prostate_single.hex"), "smalldata/logreg/prostate.csv");
+      Frame fr = parseTestFile(Key.make("prostate_single.hex"), "smalldata/logreg/prostate.csv");
       fr.remove("ID").remove();
       Scope.track(fr);
       DKV.put(fr);
@@ -31,7 +31,7 @@ public class DRFConcurrentTest extends TestUtil  {
   public void testBuildConcurrent() {
     Scope.enter();
     try {
-      Frame fr = parse_test_file(Key.make("prostate_concurrent.hex"), "smalldata/logreg/prostate.csv");
+      Frame fr = parseTestFile(Key.make("prostate_concurrent.hex"), "smalldata/logreg/prostate.csv");
       Scope.track(fr);
       fr.remove("ID").remove();
       DKV.put(fr);

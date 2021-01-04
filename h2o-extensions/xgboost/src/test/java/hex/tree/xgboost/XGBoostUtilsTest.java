@@ -22,12 +22,7 @@ import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.VecUtils;
 
-import javax.swing.text.html.Option;
-import java.io.*;
-import java.net.URL;
 import java.security.SecureRandom;
-import java.text.NumberFormat;
-import java.text.ParseException;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -48,9 +43,9 @@ public class XGBoostUtilsTest extends TestUtil {
       try {
         Scope.enter();
         final String response = "cylinders";
-        final Frame frame = TestUtil.parse_test_file("smalldata/junit/cars.csv");
+        final Frame frame = parseTestFile("smalldata/junit/cars.csv");
         Scope.track(frame);
-        final Frame testFrame = TestUtil.parse_test_file("smalldata/testng/cars_test.csv");
+        final Frame testFrame = parseTestFile("smalldata/testng/cars_test.csv");
         Scope.track(testFrame);
 
         testCSRPredictions(frame, response, testFrame);
@@ -65,9 +60,9 @@ public class XGBoostUtilsTest extends TestUtil {
         Scope.enter();
         final String response = "IsDepDelayed";
 
-        final Frame frame = TestUtil.parse_test_file("smalldata/testng/airlines.csv");
+        final Frame frame = parseTestFile("smalldata/testng/airlines.csv");
         Scope.track(frame);
-        final Frame testFrame = TestUtil.parse_test_file("smalldata/testng/airlines_test.csv");
+        final Frame testFrame = parseTestFile("smalldata/testng/airlines_test.csv");
         Scope.track(testFrame);
 
         testCSRPredictions(frame, response, testFrame );
@@ -82,9 +77,9 @@ public class XGBoostUtilsTest extends TestUtil {
         Scope.enter();
         final String response = "Ozone";
 
-        final Frame frame = TestUtil.parse_test_file("smalldata/testng/airquality_train1.csv");
+        final Frame frame = parseTestFile("smalldata/testng/airquality_train1.csv");
         Scope.track(frame);
-        final Frame testFrame = TestUtil.parse_test_file("smalldata/testng/airquality_validation1.csv");
+        final Frame testFrame = parseTestFile("smalldata/testng/airquality_validation1.csv");
         Scope.track(testFrame);
 
         testCSRPredictions(frame, response, testFrame );
@@ -99,9 +94,9 @@ public class XGBoostUtilsTest extends TestUtil {
         Scope.enter();
         final String response = "GLEASON";
 
-        final Frame frame = TestUtil.parse_test_file("smalldata/testng/prostate_train.csv");
+        final Frame frame = parseTestFile("smalldata/testng/prostate_train.csv");
         Scope.track(frame);
-        final Frame testFrame = TestUtil.parse_test_file("smalldata/testng/prostate_test.csv");
+        final Frame testFrame = parseTestFile("smalldata/testng/prostate_test.csv");
         Scope.track(testFrame);
 
         testCSRPredictions(frame, response, testFrame );

@@ -92,8 +92,8 @@ public class SortTest extends TestUtil {
     Frame fr = null, res = null, ans = null;
     try {
 
-      fr = parse_test_file(f1Name);
-      ans = parse_test_file(f2Name);
+      fr = parseTestFile(f1Name);
+      ans = parseTestFile(f2Name);
       Scope.track(fr);
       Scope.track(ans);
       res = fr.sort(sortingIndices);
@@ -205,7 +205,7 @@ public class SortTest extends TestUtil {
     Scope.enter();
     Frame fr=null, sorted=null;
     try {
-      fr = parse_test_file("sort_crash.csv");
+      fr = parseTestFile("sort_crash.csv");
       sorted = fr.sort(new int[]{0});
       Scope.track(fr);
       Scope.track(sorted);
@@ -300,7 +300,7 @@ public class SortTest extends TestUtil {
     Scope.enter();
     Frame fr = null, sortedInt = null, sortedFloat = null;
     try {
-      fr = parse_test_file(fileWithPath);
+      fr = parseTestFile(fileWithPath);
       if (addNas) {
         Random _rand = new Random();
         int randRange = Math.min(10, (int)fr.numRows());
@@ -335,7 +335,7 @@ public class SortTest extends TestUtil {
     Scope.enter();
     Frame fr, sortedInt;
     try {
-      fr = parse_test_file("smalldata/synthetic/integerFrame.csv");
+      fr = parseTestFile("smalldata/synthetic/integerFrame.csv");
       sortedInt = fr.sort(new int[]{0}, new int[]{-1});
       Scope.track(fr);
       Scope.track(sortedInt);

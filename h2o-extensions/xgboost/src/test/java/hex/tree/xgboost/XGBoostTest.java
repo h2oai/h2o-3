@@ -456,7 +456,7 @@ public class XGBoostTest extends TestUtil {
   }
   
   public static Frame loadWeather(String response) {
-    Frame df = parse_test_file("./smalldata/junit/weather.csv");
+    Frame df = parseTestFile("./smalldata/junit/weather.csv");
     int responseIdx = df.find(response);
     Scope.track(df.replace(responseIdx, df.vecs()[responseIdx].toCategoricalVec()));
     // remove columns correlated with the response
@@ -639,7 +639,7 @@ public class XGBoostTest extends TestUtil {
     Scope.enter();
     try {
       // Parse frame into H2O
-      tfr = parse_test_file("./smalldata/junit/cars.csv");
+      tfr = parseTestFile("./smalldata/junit/cars.csv");
       FrameMetadata metadataBefore = new FrameMetadata(tfr);
       DKV.put(tfr);
 
@@ -699,7 +699,7 @@ public class XGBoostTest extends TestUtil {
     Scope.enter();
     try {
       // Parse frame into H2O
-      tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+      tfr = parseTestFile("./smalldata/prostate/prostate.csv");
       FrameMetadata metadataBefore = new FrameMetadata(tfr);
 
       Scope.track(tfr.replace(1, tfr.vecs()[1].toCategoricalVec()));   // Convert CAPSULE to categorical
@@ -754,7 +754,7 @@ public class XGBoostTest extends TestUtil {
     XGBoostModel model = null;
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+      tfr = parseTestFile("./smalldata/prostate/prostate.csv");
       Scope.track(tfr.replace(8, tfr.vecs()[8].toCategoricalVec()));   // Convert GLEASON to categorical
       DKV.put(tfr);
 
@@ -785,7 +785,7 @@ public class XGBoostTest extends TestUtil {
     XGBoostModel model = null;
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+      tfr = parseTestFile("./smalldata/prostate/prostate.csv");
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = tfr._key;
@@ -826,7 +826,7 @@ public class XGBoostTest extends TestUtil {
     XGBoostModel noWeightsModel = null;
     Scope.enter();
     try {
-      Frame airlinesFrame = Scope.track(parse_test_file("./smalldata/testng/airlines.csv"));
+      Frame airlinesFrame = Scope.track(parseTestFile("./smalldata/testng/airlines.csv"));
       airlinesFrame.replace(0, airlinesFrame.vecs()[0].toCategoricalVec()).remove();
 
       final Vec weightsVector = createRandomBinaryWeightsVec(airlinesFrame.numRows(), 10);
@@ -876,7 +876,7 @@ public class XGBoostTest extends TestUtil {
     XGBoostModel noWeightsModel = null;
     Scope.enter();
     try {
-      Frame prostateFrame = parse_test_file("./smalldata/prostate/prostate.csv");
+      Frame prostateFrame = parseTestFile("./smalldata/prostate/prostate.csv");
       prostateFrame.replace(8, prostateFrame.vecs()[8].toCategoricalVec()).remove();   // Convert GLEASON to categorical
       Scope.track(prostateFrame);
 
@@ -926,7 +926,7 @@ public class XGBoostTest extends TestUtil {
     XGBoostModel noWeightsModel = null;
     Scope.enter();
     try {
-      Frame irisFrame = parse_test_file("./smalldata/extdata/iris.csv");
+      Frame irisFrame = parseTestFile("./smalldata/extdata/iris.csv");
       irisFrame.replace(4, irisFrame.vecs()[4].toCategoricalVec()).remove();
       Scope.track(irisFrame);
 
@@ -976,7 +976,7 @@ public class XGBoostTest extends TestUtil {
     XGBoostModel model = null;
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+      tfr = parseTestFile("./smalldata/prostate/prostate.csv");
       DKV.put(tfr);
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -1011,7 +1011,7 @@ public class XGBoostTest extends TestUtil {
       XGBoostModel model = null;
       try {
         // Parse frame into H2O
-        tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+        tfr = parseTestFile("./smalldata/prostate/prostate.csv");
         FrameMetadata metadataBefore = new FrameMetadata(tfr);
 
         // split into train/test
@@ -1063,7 +1063,7 @@ public class XGBoostTest extends TestUtil {
     Scope.enter();
     try {
       // Parse frame into H2O
-      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
+      tfr = parseTestFile("bigdata/laptop/mnist/train.csv.gz");
       FrameMetadata metadataBefore = new FrameMetadata(tfr);
       Scope.track(tfr.replace(784, tfr.vecs()[784].toCategoricalVec()));   // Convert response 'C785' to categorical
       DKV.put(tfr);
@@ -1157,7 +1157,7 @@ public class XGBoostTest extends TestUtil {
     Scope.enter();
     try {
       // Parse frame into H2O
-      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
+      tfr = parseTestFile("bigdata/laptop/mnist/train.csv.gz");
       FrameMetadata metadataBefore = new FrameMetadata(tfr);
       Scope.track(tfr.replace(784, tfr.vecs()[784].toCategoricalVec()));   // Convert response 'C785' to categorical
       DKV.put(tfr);
@@ -1208,7 +1208,7 @@ public class XGBoostTest extends TestUtil {
     Scope.enter();
     try {
       // Parse frame into H2O
-      tfr = parse_test_file("csc.csv");
+      tfr = parseTestFile("csc.csv");
       FrameMetadata metadataBefore = new FrameMetadata(tfr);
       String response = "response";
 
@@ -1246,7 +1246,7 @@ public class XGBoostTest extends TestUtil {
       XGBoostModel model = null;
       try {
         // Parse frame into H2O
-        tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+        tfr = parseTestFile("./smalldata/prostate/prostate.csv");
         FrameMetadata metadataBefore = new FrameMetadata(tfr);
 
         // split into train/test
@@ -1303,7 +1303,7 @@ public class XGBoostTest extends TestUtil {
     XGBoostModel denseModel = null;
     XGBoostModel sparseModel = null;
     try {
-      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      Frame tfr = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = tfr._key;
@@ -1395,7 +1395,7 @@ public class XGBoostTest extends TestUtil {
   public void testMojoBoosterDump() throws IOException { 
     Scope.enter();
     try {
-      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      Frame tfr = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
       Scope.track(tfr.replace(1, tfr.vecs()[1].toCategoricalVec()));   // Convert CAPSULE to categorical
       Scope.track(tfr.replace(3, tfr.vecs()[3].toCategoricalVec()));   // Convert RACE to categorical
@@ -1422,7 +1422,7 @@ public class XGBoostTest extends TestUtil {
   public void testMojoSerializable() throws IOException {
     Scope.enter();
     try {
-      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      Frame tfr = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = tfr._key;
@@ -1454,7 +1454,7 @@ public class XGBoostTest extends TestUtil {
     try {
       final String response = "cylinders";
 
-      Frame f = parse_test_file("./smalldata/junit/cars.csv");
+      Frame f = parseTestFile("./smalldata/junit/cars.csv");
       f.replace(f.find(response), f.vecs()[f.find(response)].toCategoricalVec()).remove();
       DKV.put(Scope.track(f));
 
@@ -1485,7 +1485,7 @@ public class XGBoostTest extends TestUtil {
     Scope.enter();
     try {
       final String response = "power (hp)";
-      Frame f = parse_test_file("./smalldata/junit/cars.csv");
+      Frame f = parseTestFile("./smalldata/junit/cars.csv");
       f.replace(f.find(response), f.vecs()[f.find("cylinders")].toNumericVec()).remove();
       DKV.put(Scope.track(f));
 
@@ -1522,7 +1522,7 @@ public class XGBoostTest extends TestUtil {
     try {
       final String response = "power (hp)";
 
-      Frame f = parse_test_file("smalldata/junit/cars.csv");
+      Frame f = parseTestFile("smalldata/junit/cars.csv");
       Scope.track(f);
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -1546,7 +1546,7 @@ public class XGBoostTest extends TestUtil {
   public void testMakeDataInfo() {
     Scope.enter();
     try {
-      Frame f = parse_test_file("smalldata/junit/cars.csv");
+      Frame f = parseTestFile("smalldata/junit/cars.csv");
       Scope.track(f);
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -1693,7 +1693,7 @@ public class XGBoostTest extends TestUtil {
   public void testScoreContributionsBernoulli() throws IOException, PredictException {
     try {
       Scope.enter();
-      Frame fr = Scope.track(parse_test_file("smalldata/junit/titanic_alt.csv"));
+      Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
       fr.replace(fr.find("survived"), fr.vec("survived").toCategoricalVec());
       DKV.put(fr);
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -1737,8 +1737,8 @@ public class XGBoostTest extends TestUtil {
   @Test public void testPredictWithCalibration() {
     Scope.enter();
     try {
-      Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
-      Frame calib = parse_test_file("smalldata/gbm_test/ecology_eval.csv");
+      Frame train = parseTestFile("smalldata/gbm_test/ecology_model.csv");
+      Frame calib = parseTestFile("smalldata/gbm_test/ecology_eval.csv");
 
       // Fix training set
       train.remove("Site").remove();     // Remove unique ID
@@ -1767,7 +1767,7 @@ public class XGBoostTest extends TestUtil {
       XGBoostModel model = job.trainModel().get();
       Scope.track_generic(model);
 
-      Frame pred = parse_test_file("smalldata/gbm_test/ecology_eval.csv");
+      Frame pred = parseTestFile("smalldata/gbm_test/ecology_eval.csv");
       pred.remove("Angaus").remove();    // No response column during scoring
       Scope.track(pred);
       Frame res = Scope.track(model.score(pred));
@@ -1988,7 +1988,7 @@ public class XGBoostTest extends TestUtil {
   public void testXGBoostMaximumDepth() {
     Scope.enter();
     try {
-      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      Frame tfr = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = tfr._key;
@@ -2010,7 +2010,7 @@ public class XGBoostTest extends TestUtil {
   public void testXGBoostFeatureInteractions() {
     Scope.enter();
     try {
-      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      Frame tfr = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = tfr._key;
@@ -2168,7 +2168,7 @@ public class XGBoostTest extends TestUtil {
     Scope.enter();
     try {
       // create 2 similar trees and check whether they have similar feature interactions 
-      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      Frame tfr = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = tfr._key;

@@ -75,7 +75,7 @@ public class CStrChunkTest extends TestUtil {
   public void test_writer(){
     Frame frame = null;
     try {
-      frame = parse_test_file("smalldata/junit/iris.csv");
+      frame = parseTestFile("smalldata/junit/iris.csv");
 
       //Create a label vector
       byte[] typeArr = {Vec.T_STR};

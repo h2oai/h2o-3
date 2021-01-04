@@ -172,7 +172,7 @@ public class Word2VecTest extends TestUtil {
   public void testW2V_SG_HSM() {
     assumeThat("word2vec test enabled", System.getProperty("testW2V"), is(notNullValue())); // ignored by default
 
-    Frame fr = parse_test_file("bigdata/laptop/text8.gz", "NA", 0, new byte[]{Vec.T_STR});
+    Frame fr = parseTestFile("bigdata/laptop/text8.gz", "NA", 0, new byte[]{Vec.T_STR});
     Word2VecModel w2vm = null;
     try {
       Word2VecModel.Word2VecParameters p = new Word2VecModel.Word2VecParameters();
@@ -199,7 +199,7 @@ public class Word2VecTest extends TestUtil {
   @Test public void testW2V_CBOW_HSM() {
     assumeThat("word2vec test enabled", System.getProperty("testW2V"), is(notNullValue())); // ignored by default
 
-    Frame fr = parse_test_file("bigdata/laptop/text8.gz", "NA", 0, new byte[]{Vec.T_STR});
+    Frame fr = parseTestFile("bigdata/laptop/text8.gz", "NA", 0, new byte[]{Vec.T_STR});
     Word2VecModel w2vm = null;
     try {
       Word2VecModel.Word2VecParameters parms = new Word2VecModel.Word2VecParameters();
