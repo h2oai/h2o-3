@@ -57,7 +57,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *    exp(nthreads-pre-column) = max(1,H2O.NUMCPUS - num_cols)
  *
  */
-public class BuildHistogram extends MRTask<BuildHistogram> {
+public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
 
   /** Marker for already decided row. */
   public static final int DECIDED_ROW = -1;
@@ -109,7 +109,7 @@ public class BuildHistogram extends MRTask<BuildHistogram> {
   final int _respIdx;
   final int _predsIdx;
 
-  public BuildHistogram(H2O.H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram[][] hcs, DistributionFamily family, 
+  public ScoreBuildHistogram(H2O.H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram[][] hcs, DistributionFamily family, 
                               int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdx, Frame fr2) {
     super(cc);
     _k    = k;
@@ -287,7 +287,7 @@ public class BuildHistogram extends MRTask<BuildHistogram> {
       int nactive_cols = active_cols == null?ncols:active_cols.length;
       final int numWrks = _hcs.length * nactive_cols < 16 * 1024 ? H2O.NUMCPUS : Math.min(H2O.NUMCPUS, Math.max(4 * H2O.NUMCPUS / nactive_cols, 1));
       final int rem = H2O.NUMCPUS-numWrks*ncols;
-      BuildHistogram.this.addToPendingCount(1+nactive_cols);
+      ScoreBuildHistogram.this.addToPendingCount(1+nactive_cols);
       if(active_cols != null) {
         int j = 0;
         for (int i = 0; i < ncols; ++i)
@@ -311,9 +311,9 @@ public class BuildHistogram extends MRTask<BuildHistogram> {
               _hcs.length == 0 ? new DHistogram[0] : _hcs[c],
               c, largestChunkSz, new AtomicInteger()
           );
-          new LocalMR(task, numWrks + (c < rem ? 1 : 0), BuildHistogram.this).fork();
+          new LocalMR(task, numWrks + (c < rem ? 1 : 0), ScoreBuildHistogram.this).fork();
         }
-      }, nactive_cols, BuildHistogram.this).fork();
+      }, nactive_cols, ScoreBuildHistogram.this).fork();
     }
   }
 
@@ -359,7 +359,7 @@ public class BuildHistogram extends MRTask<BuildHistogram> {
       int [] rs = _rss[id];
       Chunk resChk = _chks[id][_workIdx];
       int len = resChk._len;
-      double [] ys = BuildHistogram.this._ys[id];
+      double [] ys = ScoreBuildHistogram.this._ys[id];
       if(_weightIdx != -1) _chks[id][_weightIdx].getDoubles(ws, 0, len);
       final int hcslen = _lh.length;
       boolean extracted = false;
