@@ -574,8 +574,8 @@ public abstract class GLMTask  {
       ArrayUtils.mult(_gradient,_reg);
       for(int j = 0; j < _beta.length - 1; ++j)
         _gradient[j] += _currentLambda * _beta[j];  // add L2 constraint for gradient
-      if ((_penalty_mat != null) && (_gamBetaIndices != null))
-        updateGradGam(_gradient, _penalty_mat, _gamBetaIndices, _beta, _dinfo._activeCols);  // update contribution from gam smoothness constraint
+      if ((_penalty_mat != null) && (_gamBetaIndices != null))  // update contribution from gam smoothness constraint
+        updateGradGam(_gradient, _penalty_mat, _gamBetaIndices, _beta, _dinfo._activeCols);
     }
   }
 
