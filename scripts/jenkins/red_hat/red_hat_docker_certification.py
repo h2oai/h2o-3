@@ -22,10 +22,18 @@ def has_scan_errors(digest, pid, api_key):
     response = None
     while response is None:
         intermediate_response = requests.get(url=url, headers=headers)
+        print("Intermediate response: {}".format(intermediate_response.status_code))
         if intermediate_response.status_code == 200:
-            response = intermediate_response
+            try:
+                intermediate_response.json()["data"]["results"]
+                response = intermediate_response
+            except (KeyError, TypeError):
+                # Do effectively nothing if image check results are missing in the response
+                # There are various states the Red Hat API responses with 200, yet the payload may differ
+                # causing KeyError or TypeError when trying to access scan results
+                response = None
         else:
-            time.sleep(5)
+            time.sleep(30)
 
     # Iterate over scan results, print them and search for erroneous states
     scan_err_present = False
@@ -58,7 +66,8 @@ def publish(digest, pid, api_key, tag):
 
     response = requests.post(url, headers=headers)
 
-    if response.status_code != 201:
+    # Official API documentation only declares 201, yet HTTP 200 may be returned as well
+    if response.status_code != 201 and response.status_code != 200:
         print("Unable to publish, invalid status code: {}.".format(response.status_code))
         print(response)
         print(response.content)
