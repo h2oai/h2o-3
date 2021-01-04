@@ -283,13 +283,13 @@ def grid_ft_resume(train, grid_id, params, hyper_parameters, start_grid, resume_
     grid = start_grid(grid_id, export_dir, train, params, hyper_parameters)
     grid_in_progress = None
     times_waited = 0
-    while (times_waited < 300) and (grid_in_progress is None or len(grid_in_progress.model_ids) == 0):
+    while (times_waited < 3_000) and (grid_in_progress is None or len(grid_in_progress.model_ids) == 0):
         time.sleep(0.1)  # give it tome to train some models
         times_waited += 1
         try:
             grid_in_progress = h2o.get_grid(grid_id)
         except IndexError:
-            if times_waited % 10 == 0:
+            if times_waited % 100 == 0:
                 print("no models trained yet after %ss" % (times_waited / 10))
     grid.cancel()
 
