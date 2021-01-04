@@ -37,7 +37,7 @@ public class SegmentModelsBuilderTest extends TestUtil {
   public void buildSegmentModels() {
     try {
       Scope.enter();
-      Frame fr = Scope.track(parse_test_file("./smalldata/junit/iris.csv"));
+      Frame fr = Scope.track(parseTestFile("./smalldata/junit/iris.csv"));
 
       Frame segments = new Frame(Key.make());
       segments.add("class", Vec.makeVec(new long[]{2,0,1}, fr.vec("class").domain(), Vec.VectorGroup.VG_LEN1.addVec()));

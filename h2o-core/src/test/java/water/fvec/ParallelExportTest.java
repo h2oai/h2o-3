@@ -23,7 +23,7 @@ public class ParallelExportTest extends TestUtil {
 
     @Test
     public void testParallelExport() throws IOException {
-        Frame fr = parse_test_file("smalldata/testng/airlines.csv");
+        Frame fr = parseTestFile("smalldata/testng/airlines.csv");
         assertTrue(fr.anyVec().nChunks() > 1);
         try {
             File targetSingle = new File(tmpFolder.getRoot(), "export_single.csv");

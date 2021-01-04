@@ -78,14 +78,14 @@ public class ParseTestParquet extends TestUtil {
   }
 
   private Frame parse_parquet(String fname) {
-    return TestUtil.parse_test_file(fname, psTransformer);
+    return parseTestFile(fname, psTransformer);
   }
 
   @Test
   public void testParseSimple() {
     Frame expected = null, actual = null;
     try {
-      expected = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
+      expected = parseTestFile("smalldata/airlines/AirlinesTrain.csv.zip");
       actual = parse_parquet("smalldata/parser/parquet/airlines-simple.snappy.parquet");
 
       assertEquals(Arrays.asList(expected._names), Arrays.asList(actual._names));
@@ -108,7 +108,7 @@ public class ParseTestParquet extends TestUtil {
               .withDataForCol(0, new String[]{"Michal"})
               .withDataForCol(1, new double[]{10.34})
               .build();
-      actual = parse_test_file("smalldata/parser/parquet/hive-decimal.parquet");
+      actual = parseTestFile("smalldata/parser/parquet/hive-decimal.parquet");
       assertFrameEquals(expected, actual, 0);
     } finally {
       if (expected != null) expected.delete();
@@ -134,7 +134,7 @@ public class ParseTestParquet extends TestUtil {
       ParseDataset pd = ParseDataset.forkParseDataset(Key.<Frame>make(), keys, guessedSetup, true);
       actual = pd._job.get();
 
-      expected = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
+      expected = parseTestFile("smalldata/airlines/AirlinesTrain.csv.zip");
       expected.replace(1, expected.vec(1).toStringVec()).remove();
 
       // type is String instead of Enum
@@ -171,7 +171,7 @@ public class ParseTestParquet extends TestUtil {
 
       // type stayed the same
       assertEquals("Numeric", actual.typesStr()[9]);
-      expected = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
+      expected = parseTestFile("smalldata/airlines/AirlinesTrain.csv.zip");
       assertEquals(Arrays.asList(expected._names), Arrays.asList(actual._names));
       assertEquals(Arrays.asList(expected.typesStr()), Arrays.asList(actual.typesStr()));
       assertBitIdentical(expected, actual);
@@ -281,7 +281,7 @@ public class ParseTestParquet extends TestUtil {
         try {
           File f = super.generatedFile = prepareFile();
           System.out.println("File generated into: " + f.getCanonicalPath());
-            return parse_test_file(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, new byte[]{Vec.T_STR}, psTransformer);
+            return parseTestFile(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, new byte[]{Vec.T_STR}, psTransformer);
         } catch (IOException e) {
           throw new RuntimeException("Cannot prepare test frame from file: " + file, e);
         }

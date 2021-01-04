@@ -32,7 +32,7 @@ public class ParseUUIDTest  extends TestUtil {
             l(         8,0x8000000000000000L,0x0000000000000000L,0),
             l(         9,0xFFFFFFFFFFFFFFFFL,0xFFFFFFFFFFFFFFFFL,1),
     };
-    Frame fr = parse_test_file("smalldata/junit/test_uuid.csv");
+    Frame fr = parseTestFile("smalldata/junit/test_uuid.csv");
     Vec vecs[] = fr.vecs();
     try {
       Assert.assertEquals(exp.length,fr.numRows());

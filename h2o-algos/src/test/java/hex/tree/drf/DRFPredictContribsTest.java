@@ -37,7 +37,7 @@ public class DRFPredictContribsTest extends TestUtil {
     public void testPredictContribsGaussian() {
         try {
             Scope.enter();
-            Frame fr = Scope.track(parse_test_file("smalldata/junit/titanic_alt.csv"));
+            Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
             DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
             parms._train = fr._key;
             parms._distribution = gaussian;
@@ -68,7 +68,7 @@ public class DRFPredictContribsTest extends TestUtil {
     public void testScoreContributionsGaussian() throws IOException, PredictException {
         try {
             Scope.enter();
-            Frame fr = Scope.track(parse_test_file("smalldata/junit/titanic_alt.csv"));
+            Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
             DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
             parms._train = fr._key;
             parms._distribution = gaussian;
@@ -118,7 +118,7 @@ public class DRFPredictContribsTest extends TestUtil {
     public void testPredictContribsBinomial() {
         try {
             Scope.enter();
-            Frame fr = Scope.track(parse_test_file("smalldata/junit/titanic_alt.csv"));
+            Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
             int ci = fr.find("survived"); // Change survived to categorical
             fr.toCategoricalCol(ci);
             
@@ -153,7 +153,7 @@ public class DRFPredictContribsTest extends TestUtil {
     public void testScoreContributionsBinomial() throws IOException, PredictException {
         try {
             Scope.enter();
-            Frame fr = Scope.track(parse_test_file("smalldata/junit/titanic_alt.csv"));
+            Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
             int ci = fr.find("survived"); // Change survived to categorical
             fr.toCategoricalCol(ci);
             

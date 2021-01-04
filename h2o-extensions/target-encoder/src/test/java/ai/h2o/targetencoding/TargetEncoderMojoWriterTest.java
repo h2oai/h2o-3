@@ -29,7 +29,7 @@ public class TargetEncoderMojoWriterTest extends TestUtil {
     String fileNameForMojo = "test_mojo_te.zip";
     try {
       Scope.enter();
-      Frame trainFrame = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame trainFrame = parseTestFile("./smalldata/gbm_test/titanic.csv");
       Scope.track(trainFrame);
       TargetEncoderModel.TargetEncoderParameters p = new TargetEncoderModel.TargetEncoderParameters();
       String responseColumnName = "survived";

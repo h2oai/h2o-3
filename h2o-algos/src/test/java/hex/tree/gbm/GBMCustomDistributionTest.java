@@ -32,7 +32,7 @@ public class GBMCustomDistributionTest extends TestUtil {
         final CFuncRef func = bernoulliCustomDistribution();
         try {
             Scope.enter();
-            fr = parse_test_file("./smalldata/gbm_test/alphabet_cattest.csv");
+            fr = parseTestFile("./smalldata/gbm_test/alphabet_cattest.csv");
             int idx = fr.find("y");
             if (!fr.vecs()[idx].isCategorical()) {
                 Scope.track(fr.replace(idx, fr.vecs()[idx].toCategoricalVec()));
@@ -46,7 +46,7 @@ public class GBMCustomDistributionTest extends TestUtil {
             parms._distribution = DistributionFamily.bernoulli;
             gbm_default = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
 
-            fr2 = parse_test_file("./smalldata/gbm_test/alphabet_cattest.csv");
+            fr2 = parseTestFile("./smalldata/gbm_test/alphabet_cattest.csv");
             int idx2 = fr2.find("y");
             if (!fr2.vecs()[idx2].isCategorical()) {
                 Scope.track(fr2.replace(idx2, fr2.vecs()[idx2].toCategoricalVec()));

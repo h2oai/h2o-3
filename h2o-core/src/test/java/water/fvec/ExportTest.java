@@ -26,7 +26,7 @@ public class ExportTest extends TestUtil {
   }
 
   @Test public void testExport() throws IOException {
-    Frame fr = parse_test_file("smalldata/airlines/airlineUUID.csv");
+    Frame fr = parseTestFile("smalldata/airlines/airlineUUID.csv");
     Key rebalancedKey = Key.make("rebalanced");
     Frame rebalanced = null;
     Frame imported = null;

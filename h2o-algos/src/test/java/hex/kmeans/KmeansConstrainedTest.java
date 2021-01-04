@@ -68,7 +68,7 @@ public class KmeansConstrainedTest extends TestUtil {
                     ard(6.9,3.1,5.4,2.1,2)
             ));
 
-            tfr = parse_test_file("./smalldata/iris/iris_wheader.csv");
+            tfr = parseTestFile("./smalldata/iris/iris_wheader.csv");
             DKV.put(tfr);
             KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
             parms._train = tfr._key;
@@ -100,7 +100,7 @@ public class KmeansConstrainedTest extends TestUtil {
         Frame fr = null, points=null, predict1=null, predict2=null, predict3=null, predict4=null;
         try {
             Scope.enter();
-            fr = Scope.track(parse_test_file("./smalldata/iris/iris_wheader.csv"));
+            fr = Scope.track(parseTestFile("./smalldata/iris/iris_wheader.csv"));
 
             points = ArrayUtils.frame(ard(
                     ard(4.9, 3.0, 1.4, 0.2),
@@ -218,7 +218,7 @@ public class KmeansConstrainedTest extends TestUtil {
         Frame fr = null, points = null;
         try {
             Scope.enter();
-            fr = Scope.track(parse_test_file("./smalldata/chicago/chicagoAllWeather.csv"));
+            fr = Scope.track(parseTestFile("./smalldata/chicago/chicagoAllWeather.csv"));
             points = ArrayUtils.frame(ard(
                     ard(0.9223065747871615,1.016292569726567,1.737905586557139,-0.2732881352142627,0.8408705963844509,-0.2664469441473223,-0.2881728818872508),
                     ard(-1.4846149848792978,-1.5780763628717547,-1.330641758390853,-1.3664503532612082,-1.0180638458160431,-1.1194221247071547,-1.2345088149586547),
@@ -265,7 +265,7 @@ public class KmeansConstrainedTest extends TestUtil {
         Frame fr = null, points = null;
         try {
             Scope.enter();
-            fr = Scope.track(parse_test_file("bigdata/laptop/mnist/train.csv.gz"));
+            fr = Scope.track(parseTestFile("bigdata/laptop/mnist/train.csv.gz"));
 
             KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
             parms._train = fr._key;

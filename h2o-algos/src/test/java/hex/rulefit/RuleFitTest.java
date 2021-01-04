@@ -39,7 +39,7 @@ public class RuleFitTest extends TestUtil {
         GLMModel glmModel = null;
         Frame fr = null, fr2 = null, fr3 = null;
         try {
-            fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+            fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
 
             String responseColumnName = "survived";
             asFactor(fr, responseColumnName);
@@ -132,7 +132,7 @@ public class RuleFitTest extends TestUtil {
         GLMModel glmModel = null;
         Frame fr = null, fr2 = null, fr3 = null;
         try {
-            fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+            fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
 
             String responseColumnName = "survived";
             asFactor(fr, responseColumnName);
@@ -228,7 +228,7 @@ public class RuleFitTest extends TestUtil {
         // https://github.com/h2oai/h2o-tutorials/blob/8df6b492afa172095e2595922f0b67f8d715d1e0/best-practices/explainable-models/rulefit_analysis.ipynb
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file("./smalldata/gbm_test/titanic.csv"));
+            final Frame fr = Scope.track(parseTestFile("./smalldata/gbm_test/titanic.csv"));
 
             String responseColumnName = "survived";
             asFactor(fr, responseColumnName);
@@ -321,7 +321,7 @@ public class RuleFitTest extends TestUtil {
         // the same as above but uses rules + linear terms
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file("./smalldata/gbm_test/titanic.csv"));
+            final Frame fr = Scope.track(parseTestFile("./smalldata/gbm_test/titanic.csv"));
             String responseColumnName = "survived";
             asFactor(fr, responseColumnName);
             asFactor(fr, "pclass");
@@ -417,7 +417,7 @@ public class RuleFitTest extends TestUtil {
     public void testCarsRules() {
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file("./smalldata/junit/cars.csv"));
+            final Frame fr = Scope.track(parseTestFile("./smalldata/junit/cars.csv"));
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
             params._response_column = "power (hp)";
@@ -486,7 +486,7 @@ public class RuleFitTest extends TestUtil {
         // only linear variables are important in this case
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file( "./smalldata/junit/cars.csv"));
+            final Frame fr = Scope.track(parseTestFile( "./smalldata/junit/cars.csv"));
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
             params._response_column = "power (hp)";
@@ -546,7 +546,7 @@ public class RuleFitTest extends TestUtil {
     public void testCarsLongRules() {
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file("./smalldata/junit/cars.csv"));
+            final Frame fr = Scope.track(parseTestFile("./smalldata/junit/cars.csv"));
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
             params._response_column = "power (hp)";
@@ -600,7 +600,7 @@ public class RuleFitTest extends TestUtil {
         // example from http://statweb.stanford.edu/~jhf/ftp/RuleFit.pdf but need to experiment with setup
         try {
             Scope.enter();
-            final Frame fr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+            final Frame fr = parseTestFile("./smalldata/gbm_test/BostonHousing.csv");
             Scope.track(fr);
 
             String responseColumnName = fr.lastVecName();
@@ -652,7 +652,7 @@ public class RuleFitTest extends TestUtil {
     public void testDiabetesWithWeights() {
         try {
             Scope.enter();
-            final Frame fr = parse_test_file("./smalldata/diabetes/diabetes_text_train.csv");
+            final Frame fr = parseTestFile("./smalldata/diabetes/diabetes_text_train.csv");
             Scope.track(fr);
             final Vec weightsVector = createRandomBinaryWeightsVec(fr.numRows(), 10);
             final String weightsColumnName = "weights";
@@ -709,7 +709,7 @@ public class RuleFitTest extends TestUtil {
     public void testMulticlass() {
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file("smalldata/iris/iris_train.csv"));
+            final Frame fr = Scope.track(parseTestFile("smalldata/iris/iris_train.csv"));
            
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 12345;

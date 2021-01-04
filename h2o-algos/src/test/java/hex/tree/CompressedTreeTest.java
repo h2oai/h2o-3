@@ -127,7 +127,7 @@ public class CompressedTreeTest extends TestUtil  {
   }
 
   private GBMModel trainGbm(final int ntrees) {
-    Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
+    Frame f = Scope.track(parseTestFile("smalldata/logreg/prostate.csv"));
 
     final String response = "CAPSULE";
     f.replace(f.find(response), f.vec(response).toCategoricalVec()).remove();

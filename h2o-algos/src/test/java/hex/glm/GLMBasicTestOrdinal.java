@@ -38,9 +38,9 @@ public class GLMBasicTestOrdinal extends TestUtil {
   public void testCheckGradientBinomial() {
     try {
       Scope.enter();
-      Frame trainBinomialEnum = parse_test_file("smalldata/glm_ordinal_logit/ordinal_binomial_training_set_enum_small.csv");
+      Frame trainBinomialEnum = parseTestFile("smalldata/glm_ordinal_logit/ordinal_binomial_training_set_enum_small.csv");
       convert2Enum(trainBinomialEnum, new int[]{0, 1, 2, 3, 4, 5, 6, 34}); // convert enum columns
-      Frame trainBinomial = parse_test_file("smalldata/glm_ordinal_logit/ordinal_binomial_training_set_small.csv");
+      Frame trainBinomial = parseTestFile("smalldata/glm_ordinal_logit/ordinal_binomial_training_set_small.csv");
       convert2Enum(trainBinomial, new int[]{34});
       Scope.track(trainBinomialEnum);
       Scope.track(trainBinomial);
@@ -115,7 +115,7 @@ public class GLMBasicTestOrdinal extends TestUtil {
   public void testOrdinalMultinomial() {
     try {
       Scope.enter();
-      Frame trainMultinomial = Scope.track(parse_test_file("smalldata/glm_ordinal_logit/ordinal_multinomial_training_set_small.csv"));
+      Frame trainMultinomial = Scope.track(parseTestFile("smalldata/glm_ordinal_logit/ordinal_multinomial_training_set_small.csv"));
       convert2Enum(trainMultinomial, new int[]{25});
 
       final int iterNum = new Random().nextInt(10) + 2;   // number of iterations to test

@@ -42,7 +42,7 @@ public class DeepLearningIrisTest extends TestUtil {
 
     Frame frame = null;
     try {
-      frame = parse_test_file(Key.make("iris.hex"),PATH);
+      frame = parseTestFile(Key.make("iris.hex"),PATH);
 
       for (int repeat = 0; repeat < 5; ++repeat) {
         // Testing different things

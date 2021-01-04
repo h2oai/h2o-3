@@ -8,6 +8,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import water.DKV;
 import water.Scope;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.runner.CloudSize;
@@ -19,7 +20,7 @@ import static hex.gam.GamTestPiping.getModel;
 import static hex.gam.GamTestPiping.massageFrame;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
 import static org.junit.Assert.assertTrue;
-import static water.TestUtil.parse_test_file;
+import static water.TestUtil.parseTestFile;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -31,7 +32,7 @@ public class GamMojoModelTest {
   public void testQuasibinomial() {
     Scope.enter();
     try {
-      final Frame fr = Scope.track(parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv"));
+      final Frame fr = Scope.track(parseTestFile("smalldata/glm_test/prostate_cat_replaced.csv"));
       DKV.put(fr);
       final GAMModel.GAMParameters params = new GAMModel.GAMParameters();
       params._response_column = "CAPSULE";
@@ -60,11 +61,11 @@ public class GamMojoModelTest {
       String[] ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C14",
               "C15", "C16", "C17", "C18", "C19", "C20"};
       String[] gamCols = new String[]{"C11", "C12", "C13"};
-      Frame trainBinomial = Scope.track(massageFrame(parse_test_file("smalldata/glm_test/binomial_20_cols_10KRows.csv"),
+      Frame trainBinomial = Scope.track(massageFrame(parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv"),
               binomial));
       DKV.put(trainBinomial);
       GAMModel binomialModel = getModel(binomial,
-              parse_test_file("smalldata/glm_test/binomial_20_cols_10KRows.csv"), "C21",
+              parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv"), "C21",
               gamCols, ignoredCols, new int[]{5, 5, 5}, new int[]{0, 0, 0}, false, true,
               new double[]{1, 1, 1}, new double[]{0, 0, 0}, new double[]{0, 0, 0}, true, null,
               null, false);
@@ -86,10 +87,10 @@ public class GamMojoModelTest {
       String[] ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C14",
               "C15", "C16", "C17", "C18", "C19", "C20"};
       String[] gamCols = new String[]{"C11", "C12", "C13"};
-      Frame trainGaussian = Scope.track(massageFrame(parse_test_file("smalldata/glm_test/gaussian_20cols_10000Rows.csv"), gaussian));
+      Frame trainGaussian = Scope.track(massageFrame(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"), gaussian));
       DKV.put(trainGaussian);
       GAMModel gaussianmodel = getModel(gaussian,
-              parse_test_file("smalldata/glm_test/gaussian_20cols_10000Rows.csv"), "C21",
+              parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"), "C21",
               gamCols, ignoredCols, new int[]{5, 5, 5}, new int[]{0, 0, 0}, false, true,
               new double[]{1, 1, 1}, new double[]{0, 0, 0}, new double[]{0, 0, 0}, true, null,null, true);
       Scope.track_generic(gaussianmodel);
@@ -112,10 +113,10 @@ public class GamMojoModelTest {
       // multinomial
       String[] ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"};
       String[] gamCols = new String[]{"C6", "C7", "C8"};
-      Frame trainMultinomial = Scope.track(massageFrame(parse_test_file("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"), multinomial));
+      Frame trainMultinomial = Scope.track(massageFrame(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"), multinomial));
       DKV.put(trainMultinomial);
       GAMModel multinomialModel = getModel(multinomial,
-              parse_test_file("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"),
+              parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"),
               "C11", gamCols, ignoredCols, new int[]{5, 5, 5}, new int[]{0, 0, 0}, false,
               true, new double[]{1, 1, 1}, new double[]{0, 0, 0}, new double[]{0, 0, 0},
               true, null,null, false);
@@ -132,7 +133,7 @@ public class GamMojoModelTest {
   public void testTweedie() {
     Scope.enter();
     try {
-      final Frame fr = Scope.track(parse_test_file("smalldata/glm_test/auto.csv"));
+      final Frame fr = Scope.track(parseTestFile("smalldata/glm_test/auto.csv"));
       final GAMModel.GAMParameters params = new GAMModel.GAMParameters();
       params._response_column = "y";
       params._family = tweedie;

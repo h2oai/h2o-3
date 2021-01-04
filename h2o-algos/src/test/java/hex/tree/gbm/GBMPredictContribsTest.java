@@ -33,7 +33,7 @@ public class GBMPredictContribsTest extends TestUtil {
   public void testPredictContribsGaussian() {
     try {
       Scope.enter();
-      Frame fr = Scope.track(parse_test_file("smalldata/junit/titanic_alt.csv"));
+      Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = fr._key;
       parms._distribution = gaussian;
@@ -65,7 +65,7 @@ public class GBMPredictContribsTest extends TestUtil {
   public void testScoreContributionsGaussian() throws IOException, PredictException  {
     try {
       Scope.enter();
-      Frame fr = Scope.track(parse_test_file("smalldata/junit/titanic_alt.csv"));
+      Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = fr._key;
       parms._distribution = gaussian;

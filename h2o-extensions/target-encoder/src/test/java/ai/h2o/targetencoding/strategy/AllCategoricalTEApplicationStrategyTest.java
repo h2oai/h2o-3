@@ -19,7 +19,7 @@ public class AllCategoricalTEApplicationStrategyTest extends water.TestUtil {
   @Test public void shouldReturnAllCategoricalColumnTest() {
     Scope.enter();
     try {
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
 
       String responseColumnName = "survived";
@@ -34,7 +34,7 @@ public class AllCategoricalTEApplicationStrategyTest extends water.TestUtil {
   @Test public void emptyIfNoCategoricalColumns() {
     Scope.enter();
     try {
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
       String responseColumnName = "survived";
 

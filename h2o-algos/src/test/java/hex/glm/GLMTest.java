@@ -2,7 +2,6 @@ package hex.glm;
 
 import hex.*;
 import hex.DataInfo.TransformType;
-import hex.genmodel.algos.glm.GlmMojoModel;
 import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
@@ -125,7 +124,7 @@ public class GLMTest  extends TestUtil {
   public void testCoeffs(Family family, String fileName, String responseColumn) {
     try {
       Scope.enter();
-      Frame train = parse_test_file(fileName);
+      Frame train = parseTestFile(fileName);
       // set cat columns
       int numCols = train.numCols();
       int enumCols = (numCols-1)/2;
@@ -420,7 +419,7 @@ public class GLMTest  extends TestUtil {
     Frame fr = null;
     DataInfo dinfo = null;
     try {
-      fr = parse_test_file(parsed, "smalldata/junit/mixcat_train.csv");
+      fr = parseTestFile(parsed, "smalldata/junit/mixcat_train.csv");
       GLMParameters params = new GLMParameters(Family.binomial, Family.binomial.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
       // params._response = fr.find(params._response_column);
       params._train = parsed;
@@ -574,7 +573,7 @@ public class GLMTest  extends TestUtil {
     Vec origRes = null;
     for (Family family : new Family[]{Family.multinomial, Family.AUTO}) {
       try {
-        fr = parse_test_file(parsed, "smalldata/covtype/covtype.20k.data");
+        fr = parseTestFile(parsed, "smalldata/covtype/covtype.20k.data");
         fr.remove("C21").remove();
         fr.remove("C29").remove();
         GLMParameters params = new GLMParameters(family/*Family.multinomial*/);
@@ -622,7 +621,7 @@ public class GLMTest  extends TestUtil {
     GLMModel model = null;
     Frame score = null;
     try {
-      fr = parse_test_file(parsed, "smalldata/junit/cars.csv");
+      fr = parseTestFile(parsed, "smalldata/junit/cars.csv");
       GLMParameters params = new GLMParameters(Family.poisson, Family.poisson.defaultLink, new double[]{0}, new double[]{0},0,0);
       params._response_column = "power (hp)";
       // params._response = fr.find(params._response_column);
@@ -681,7 +680,7 @@ public class GLMTest  extends TestUtil {
   // Leask xval keys
 //  @Test public void testXval() {
 //    GLMModel model = null;
-//    Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
+//    Frame fr = parseTestFile("smalldata/glm_test/prostate_cat_replaced.csv");
 //    Frame score = null;
 //    try{
 //      Scope.enter();
@@ -743,7 +742,7 @@ public class GLMTest  extends TestUtil {
     Key parsed = Key.make("prostate_parsed");
     Key modelKey = Key.make("prostate_model");
 
-    Frame fr = parse_test_file(parsed, "smalldata/logreg/prostate.csv");
+    Frame fr = parseTestFile(parsed, "smalldata/logreg/prostate.csv");
     Key betaConsKey = Key.make("beta_constraints");
 
     String[] cfs1 = new String[]{"AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON", "Intercept"};
@@ -818,8 +817,8 @@ public class GLMTest  extends TestUtil {
   public void testInteractionPairs_airlines() {
     Scope.enter();
     try {
-      Frame train = Scope.track(parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip"));
-      Frame test = Scope.track(parse_test_file("smalldata/airlines/AirlinesTest.csv.zip"));
+      Frame train = Scope.track(parseTestFile("smalldata/airlines/AirlinesTrain.csv.zip"));
+      Frame test = Scope.track(parseTestFile("smalldata/airlines/AirlinesTest.csv.zip"));
       GLMParameters params = new GLMParameters();
       params._family = Family.binomial;
       params._response_column = "IsDepDelayed";
@@ -846,7 +845,7 @@ public class GLMTest  extends TestUtil {
     Key parsed = Key.make("airlines_parsed");
     Key<GLMModel> modelKey = Key.make("airlines_model");
 
-    Frame fr = parse_test_file(parsed, "smalldata/airlines/AirlinesTrain.csv.zip");
+    Frame fr = parseTestFile(parsed, "smalldata/airlines/AirlinesTrain.csv.zip");
     try {
       // H2O differs on intercept and race, same residual deviance though
       GLMParameters params = new GLMParameters();
@@ -874,7 +873,7 @@ public class GLMTest  extends TestUtil {
     Key parsed = Key.make("airlines_parsed");
     Key<GLMModel> modelKey = Key.make("airlines_model");
 
-    Frame fr = parse_test_file(parsed, "smalldata/airlines/AirlinesTrain.csv.zip");
+    Frame fr = parseTestFile(parsed, "smalldata/airlines/AirlinesTrain.csv.zip");
 
     try {
       // H2O differs on intercept and race, same residual deviance though
@@ -902,7 +901,7 @@ public class GLMTest  extends TestUtil {
     Key parsed = Key.make("anomaly_parsed");
     Key<GLMModel> modelKey = Key.make("anomaly_model");
 
-    Frame fr = parse_test_file(parsed, "smalldata/anomaly/ecg_discord_train.csv");
+    Frame fr = parseTestFile(parsed, "smalldata/anomaly/ecg_discord_train.csv");
     try {
       // H2O differs on intercept and race, same residual deviance though
       GLMParameters params = new GLMParameters();
@@ -929,7 +928,7 @@ public class GLMTest  extends TestUtil {
     Key parsed = Key.make("anomaly_parsed");
     Key<GLMModel> modelKey = Key.make("anomaly_model");
 
-    Frame fr = parse_test_file(parsed, "smalldata/anomaly/ecg_discord_train.csv");
+    Frame fr = parseTestFile(parsed, "smalldata/anomaly/ecg_discord_train.csv");
 
     try {
       // H2O differs on intercept and race, same residual deviance though
@@ -966,7 +965,7 @@ public class GLMTest  extends TestUtil {
     Key<GLMModel> modelKey = Key.make("prostate_model");
     GLMModel model = null;
 
-    Frame fr = parse_test_file(parsed, "smalldata/logreg/prostate.csv");
+    Frame fr = parseTestFile(parsed, "smalldata/logreg/prostate.csv");
     fr.remove("ID").remove();
     DKV.put(fr._key, fr);
     Key betaConsKey = Key.make("beta_constraints");
@@ -1013,13 +1012,13 @@ public class GLMTest  extends TestUtil {
 //  @Test public void testSparseCategoricals() {
 //    GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
 //
-//    Frame frMM = parse_test_file("smalldata/glm_tets/train-2.csv");
+//    Frame frMM = parseTestFile("smalldata/glm_tets/train-2.csv");
 //
 ////    Vec xy = frG.remove("xy");
 //    frMM.remove("").remove();
 //    frMM.add("IsDepDelayed", frMM.remove("IsDepDelayed"));
 //    DKV.put(frMM._key,frMM);
-//    Frame fr = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip"), res = null;
+//    Frame fr = parseTestFile("smalldata/airlines/AirlinesTrain.csv.zip"), res = null;
 //    //  Distance + Origin + Dest + UniqueCarrier
 //    String [] ignoredCols = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "DepTime","ArrTime","IsDepDelayed_REC"};
 //    try{
@@ -1212,7 +1211,7 @@ public class GLMTest  extends TestUtil {
 
   @Test @Ignore public void testConstantColumns(){
     GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
-    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/allyears2k_headers.zip");
+    Frame fr = parseTestFile(Key.make("Airlines"), "smalldata/airlines/allyears2k_headers.zip");
     Vec y = fr.vec("IsDepDelayed").makeCopy(null);
     fr.replace(fr.find("IsDepDelayed"),y).remove();
       Vec weights = fr.anyVec().makeZero();
@@ -1246,15 +1245,15 @@ public class GLMTest  extends TestUtil {
   @Test
   public void testAirlines() {
     GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
-    Frame frMM = parse_test_file(Key.make("AirlinesMM"), "smalldata/airlines/AirlinesTrainMM.csv.zip");
-    Frame frG = parse_test_file(Key.make("gram"), "smalldata/airlines/gram_std.csv");
+    Frame frMM = parseTestFile(Key.make("AirlinesMM"), "smalldata/airlines/AirlinesTrainMM.csv.zip");
+    Frame frG = parseTestFile(Key.make("gram"), "smalldata/airlines/gram_std.csv");
     Vec xy = frG.remove("xy");
     frMM.remove("C1").remove();
     Vec v;
     frMM.add("IsDepDelayed", (v = frMM.remove("IsDepDelayed")).makeCopy(null));
     v.remove();
     DKV.put(frMM._key, frMM);
-    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"), res = null;
+    Frame fr = parseTestFile(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"), res = null;
     fr.add("IsDepDelayed",(v =fr.remove("IsDepDelayed")).makeCopy(null));
     v.remove();
     DKV.put(fr._key,fr);
@@ -1378,7 +1377,7 @@ public class GLMTest  extends TestUtil {
   @Test
   public void test_COD_Airlines_SingleLambda() {
     GLMModel model1 = null;
-    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
+    Frame fr = parseTestFile(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
     String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
     try {
       Scope.enter();
@@ -1415,7 +1414,7 @@ public class GLMTest  extends TestUtil {
   @Test
   public void test_COD_Airlines_SingleLambda_CovUpdates() {
     GLMModel model1 = null;
-    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
+    Frame fr = parseTestFile(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
     String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
     try {
       Scope.enter();
@@ -1448,7 +1447,7 @@ public class GLMTest  extends TestUtil {
   @Test
   public void test_COD_Airlines_LambdaSearch() {
     GLMModel model1 = null;
-    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
+    Frame fr = parseTestFile(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
     String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
     try {
       Scope.enter();
@@ -1483,7 +1482,7 @@ public class GLMTest  extends TestUtil {
   @Test
   public void test_COD_Airlines_LambdaSearch_CovUpdates() {
     GLMModel model1 = null;
-    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
+    Frame fr = parseTestFile(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
     String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
     try {
       Scope.enter();
@@ -1645,7 +1644,7 @@ public class GLMTest  extends TestUtil {
    */
   @Test public void testProstate() throws InterruptedException, ExecutionException {
     GLMModel model = null, model2 = null, model3 = null, model4 = null;
-    Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
+    Frame fr = parseTestFile("smalldata/glm_test/prostate_cat_replaced.csv");
     try{
       Scope.enter();
       // R results
@@ -1762,7 +1761,7 @@ public class GLMTest  extends TestUtil {
 
     // test it behaves like binomial on binary data
     GLMModel model = null;
-    Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
+    Frame fr = parseTestFile("smalldata/glm_test/prostate_cat_replaced.csv");
     try {
       Scope.enter();
       // R results
@@ -1800,7 +1799,7 @@ public class GLMTest  extends TestUtil {
   }
   @Test public void testSynthetic() throws Exception {
     GLMModel model = null;
-    Frame fr = parse_test_file("smalldata/glm_test/glm_test2.csv");
+    Frame fr = parseTestFile("smalldata/glm_test/glm_test2.csv");
     Frame score = null;
     try {
       Scope.enter();
@@ -1834,8 +1833,8 @@ public class GLMTest  extends TestUtil {
   @Test //PUBDEV-1839
   public void testCitibikeReproPUBDEV1839() throws Exception {
     GLMModel model = null;
-    Frame tfr = parse_test_file("smalldata/jira/pubdev_1839_repro_train.csv");
-    Frame vfr = parse_test_file("smalldata/jira/pubdev_1839_repro_test.csv");
+    Frame tfr = parseTestFile("smalldata/jira/pubdev_1839_repro_train.csv");
+    Frame vfr = parseTestFile("smalldata/jira/pubdev_1839_repro_test.csv");
 
     try {
       Scope.enter();
@@ -1857,8 +1856,8 @@ public class GLMTest  extends TestUtil {
   @Test
   public void testCitibikeReproPUBDEV1953() throws Exception {
     GLMModel model = null;
-    Frame tfr = parse_test_file("smalldata/glm_test/citibike_small_train.csv");
-    Frame vfr = parse_test_file("smalldata/glm_test/citibike_small_test.csv");
+    Frame tfr = parseTestFile("smalldata/glm_test/citibike_small_train.csv");
+    Frame vfr = parseTestFile("smalldata/glm_test/citibike_small_test.csv");
 
     try {
       Scope.enter();
@@ -1880,7 +1879,7 @@ public class GLMTest  extends TestUtil {
 
   @Test public void testXval(){
     GLMModel model = null;
-    Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
+    Frame fr = parseTestFile("smalldata/glm_test/prostate_cat_replaced.csv");
     try{
       GLMParameters params = new GLMParameters(Family.binomial);
       params._response_column = "CAPSULE";
@@ -1907,7 +1906,7 @@ public class GLMTest  extends TestUtil {
    */
   @Test public void testCustomLambdaSearch(){
     Key pros = Key.make("prostate");
-    Frame f = parse_test_file(pros, "smalldata/glm_test/prostate_cat_replaced.csv");
+    Frame f = parseTestFile(pros, "smalldata/glm_test/prostate_cat_replaced.csv");
 
     for(Family fam:new Family[]{Family.multinomial,Family.binomial}) {
       for (double alpha : new double[]{0, .5, 1}) {
@@ -1986,7 +1985,7 @@ public class GLMTest  extends TestUtil {
     Key parsed = Key.make("arcene_parsed");
     Key<GLMModel> modelKey = Key.make("arcene_model");
     GLMModel model = null;
-    Frame fr = parse_test_file(parsed, "smalldata/glm_test/arcene.csv");
+    Frame fr = parseTestFile(parsed, "smalldata/glm_test/arcene.csv");
     try{
       Scope.enter();
       // test LBFGS with l1 pen
@@ -2052,7 +2051,7 @@ public class GLMTest  extends TestUtil {
    */
   @Test public void testBigPOJO() {
     GLMModel model = null;
-    Frame fr = parse_test_file(Key.make("arcene_parsed"), "smalldata/glm_test/arcene.csv"), res=null;
+    Frame fr = parseTestFile(Key.make("arcene_parsed"), "smalldata/glm_test/arcene.csv"), res=null;
     try{
       Scope.enter();
       // test LBFGS with l1 pen
@@ -2080,7 +2079,7 @@ public class GLMTest  extends TestUtil {
     Scope.enter();
     GLMModel model = null;
     try {
-      Frame fr = parse_test_file("smalldata/glm_test/Abalone.gz");
+      Frame fr = parseTestFile("smalldata/glm_test/Abalone.gz");
       Scope.track(fr);
       GLMParameters params = new GLMParameters(Family.gaussian);
       params._train = fr._key;
@@ -2126,7 +2125,7 @@ public class GLMTest  extends TestUtil {
       GLMModel gbm = null;
 
       try {
-        tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+        tfr = parseTestFile("./smalldata/gbm_test/BostonHousing.csv");
         GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
         parms._train = tfr._key;
         String resp = tfr.lastVecName();
@@ -2298,7 +2297,7 @@ public class GLMTest  extends TestUtil {
     Key parsed = Key.make("prostate_parsed");
     Key modelKey = Key.make("prostate_model");
 
-    Frame fr = Scope.track(parse_test_file(parsed, "smalldata/logreg/prostate.csv"));
+    Frame fr = Scope.track(parseTestFile(parsed, "smalldata/logreg/prostate.csv"));
     fr.toCategoricalCol("AGE");
     Key betaConsKey = Key.make("beta_constraints");
 

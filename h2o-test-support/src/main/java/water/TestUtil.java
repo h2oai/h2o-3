@@ -412,23 +412,43 @@ public class TestUtil extends Iced {
       return null;
     }
   }
+  
+  /**
+   * @deprecated use {@link #parseTestFile(String)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  public static Frame parse_test_file(String fname) {
+    return parseTestFile(fname);
+  }
+
+  /**
+   * @deprecated use {@link #parseTestFile(String, int[])} instead
+   * 
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  public static Frame parse_test_file(String fname, int[] skipped_columns) {
+    return parseTestFile(fname, skipped_columns);
+  }
 
   /** Find & parse a CSV file.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
-  public static Frame parse_test_file( String fname) {
-    return parse_test_file(Key.make(), fname);
+  public static Frame parseTestFile(String fname) {
+    return parseTestFile(Key.make(), fname);
   }
 
-  public static Frame parse_test_file( String fname, int[] skipped_columns) {
-    return parse_test_file(Key.make(), fname, skipped_columns);
+  public static Frame parseTestFile(String fname, int[] skipped_columns) {
+    return parseTestFile(Key.make(), fname, skipped_columns);
   }
   
   /** Find & parse & track in {@link Scope} a CSV file.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
-  public static Frame parse_and_track_test_file(String fname) {
-    return Scope.track(parse_test_file(Key.make(), fname));
+  public static Frame parseAndTrackTestFile(String fname) {
+    return Scope.track(parseTestFile(Key.make(), fname));
   }
 
   public static NFSFileVec makeNfsFileVec(String fname) {
@@ -463,12 +483,32 @@ public class TestUtil extends Iced {
       }
     }
   }
-
-  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup) {
-    return parse_test_file(outputKey, fname, guessSetup, null);
+  
+  /**
+   * @deprecated use {@link #parseTestFile(Key, String, boolean)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(Key outputKey, String fname, boolean guessSetup) {
+    return parseTestFile(outputKey, fname, guessSetup);
+  }
+  
+  protected Frame parseTestFile(Key outputKey, String fname, boolean guessSetup) {
+    return parseTestFile(outputKey, fname, guessSetup, null);
   }
 
-  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup, int[] skippedColumns) {
+  /**
+   * @deprecated use {@link #parseTestFile(Key, String, boolean, int[])} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(Key outputKey, String fname, boolean guessSetup, int[] skippedColumns) {
+    return parseTestFile(outputKey, fname, guessSetup, skippedColumns);
+  }
+  
+  protected Frame parseTestFile(Key outputKey, String fname, boolean guessSetup, int[] skippedColumns) {
     NFSFileVec nfs = makeNfsFileVec(fname);
     ParseSetup guessParseSetup = ParseSetup.guessSetup(new Key[]{nfs._key},false,1);
     if (skippedColumns != null) {
@@ -478,27 +518,87 @@ public class TestUtil extends Iced {
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 
-  public static Frame parse_test_file( Key outputKey, String fname) {
-    return parse_test_file(outputKey, fname, new int[]{});
+  /**
+   * @deprecated use {@link #parseTestFile(Key, String)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(Key outputKey, String fname) {
+    return parseTestFile(outputKey, fname);
+  }
+  
+  public static Frame parseTestFile(Key outputKey, String fname) {
+    return parseTestFile(outputKey, fname, new int[]{});
   }
 
-  public static Frame parse_test_file( Key outputKey, String fname, int[] skippedColumns) {
-    return parse_test_file(outputKey, fname, null, skippedColumns);
+  /**
+   * @deprecated use {@link #parseTestFile(Key, String, int[])} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(Key outputKey, String fname, int[] skippedColumns) {
+    return parseTestFile(outputKey, fname, skippedColumns);
   }
 
-  public static Frame parse_test_file(String fname, ParseSetupTransformer transformer) {
-    return parse_test_file(Key.make(), fname, transformer);
+  public static Frame parseTestFile(Key outputKey, String fname, int[] skippedColumns) {
+    return parseTestFile(outputKey, fname, null, skippedColumns);
+  }
+  
+  /**
+   * @deprecated use {@link #parseTestFile(String, ParseSetupTransformer)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(String fname, ParseSetupTransformer transformer) {
+    return parseTestFile(fname, transformer);
+  }
+  
+  public static Frame parseTestFile(String fname, ParseSetupTransformer transformer) {
+    return parseTestFile(Key.make(), fname, transformer);
   }
 
-  public static Frame parse_test_file(String fname, ParseSetupTransformer transformer, int[] skippedColumns) {
-    return parse_test_file(Key.make(), fname, transformer, skippedColumns);
+  /**
+   * @deprecated use {@link #parseTestFile(String, ParseSetupTransformer, int[])} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */  
+  @Deprecated
+  protected Frame parse_test_file(String fname, ParseSetupTransformer transformer, int[] skippedColumns) {
+    return parseTestFile(fname, transformer, skippedColumns);
   }
 
-  public static Frame parse_test_file( Key outputKey, String fname, ParseSetupTransformer transformer) {
-    return parse_test_file(outputKey, fname, transformer, null);
+  public static Frame parseTestFile(String fname, ParseSetupTransformer transformer, int[] skippedColumns) {
+    return parseTestFile(Key.make(), fname, transformer, skippedColumns);
   }
 
-  public static Frame parse_test_file( Key outputKey, String fname, ParseSetupTransformer transformer, int[] skippedColumns) {
+  /**
+   * @deprecated use {@link #parseTestFile(Key, String, ParseSetupTransformer)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(Key outputKey, String fname, ParseSetupTransformer transformer) {
+    return parseTestFile(outputKey, fname, transformer);
+  }
+
+  public static Frame parseTestFile(Key outputKey, String fname, ParseSetupTransformer transformer) {
+    return parseTestFile(outputKey, fname, transformer, null);
+  }
+
+  /**
+   * @deprecated use {@link #parseTestFile(Key outputKey, String fname, ParseSetupTransformer transformer, int[] skippedColumns)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(Key outputKey, String fname, ParseSetupTransformer transformer, int[] skippedColumns) {
+    return parseTestFile(outputKey, fname, transformer, skippedColumns);
+  }
+
+  public static Frame parseTestFile(Key outputKey, String fname, ParseSetupTransformer transformer, int[] skippedColumns) {
     NFSFileVec nfs = makeNfsFileVec(fname);
     ParseSetup guessedSetup = ParseSetup.guessSetup(new Key[]{nfs._key}, false, ParseSetup.GUESS_HEADER);
     if (skippedColumns != null) {
@@ -511,15 +611,47 @@ public class TestUtil extends Iced {
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, guessedSetup);
   }
 
-  protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types) {
-    return parse_test_file(fname, na_string, check_header, column_types, null, null);
+  /**
+   * @deprecated use {@link #parseTestFile(String fname, String na_string, int check_header, byte[] column_types)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(String fname, String na_string, int check_header, byte[] column_types) {
+    return parseTestFile(fname, na_string, check_header, column_types);
+  }
+  
+  protected Frame parseTestFile(String fname, String na_string, int check_header, byte[] column_types) {
+    return parseTestFile(fname, na_string, check_header, column_types, null, null);
   }
 
-  protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer) {
-    return parse_test_file( fname, na_string, check_header, column_types, transformer,null);
+
+  /**
+   * @deprecated use {@link #parseTestFile(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer) {
+    return parseTestFile(fname, na_string, check_header, column_types, transformer);
+  }
+  
+  protected Frame parseTestFile(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer) {
+    return parseTestFile( fname, na_string, check_header, column_types, transformer,null);
   }
 
-  protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer, int[] skippedColumns) {
+
+  /**
+   * @deprecated use {@link #parseTestFile(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer, int[] skippedColumns)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer, int[] skippedColumns) {
+    return parseTestFile(fname, na_string, check_header, column_types, transformer, skippedColumns);
+  }
+  
+  protected Frame parseTestFile(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer, int[] skippedColumns) {
     NFSFileVec nfs = makeNfsFileVec(fname);
 
     Key[] res = {nfs._key};
@@ -556,11 +688,11 @@ public class TestUtil extends Iced {
 
   }
 
-  /** Find & parse a folder of CSV files.  NPE if file not found.
-   *  @param fname Test filename
-   *  @return      Frame or NPE */
-  protected Frame parse_test_folder( String fname ) {
-    return parse_test_folder(fname, null);
+    /** Find & parse a folder of CSV files.  NPE if file not found.
+     *  @param fname Test filename
+     *  @return      Frame or NPE */
+  protected Frame parseTestFolder(String fname ) {
+    return parseTestFolder(fname, null);
   }
 
   /** Find & parse a folder of CSV files.  NPE if file not found.
@@ -1199,7 +1331,7 @@ public class TestUtil extends Iced {
     }
 
     public Frame prepare() {
-      return TestUtil.parse_test_file(file);
+      return parseTestFile(file);
     }
 
     public void done(Frame frame) {}
@@ -1233,7 +1365,7 @@ public class TestUtil extends Iced {
         if (f.isDirectory()) {
           return parse_test_folder(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, null, psTransformer);
         } else {
-          return parse_test_file(f.getCanonicalPath(), psTransformer);
+          return parseTestFile(f.getCanonicalPath(), psTransformer);
         }
       } catch (IOException e) {
         throw new RuntimeException("Cannot prepare test frame from file: " + file, e);
@@ -1251,7 +1383,7 @@ public class TestUtil extends Iced {
 
   public static class Datasets {
     public static Frame iris() {
-      return parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
+      return parseTestFile(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
     }
   }
 

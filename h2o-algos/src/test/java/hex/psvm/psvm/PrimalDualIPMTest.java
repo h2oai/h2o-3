@@ -15,14 +15,14 @@ public class PrimalDualIPMTest extends TestUtil {
 
   @Test
   public void testSolve_splice() {
-    Frame icf = parse_test_file("./smalldata/splice/splice_icf100.csv.gz");
+    Frame icf = parseTestFile("./smalldata/splice/splice_icf100.csv.gz");
     Frame fr = null;
     Frame expected = null;
     Vec response = null;
     Vec result = null;
     try {
-      fr = parse_test_file("./smalldata/splice/splice.svm");
-      expected = parse_test_file("./smalldata/splice/splice_icf100_x.csv");
+      fr = parseTestFile("./smalldata/splice/splice.svm");
+      expected = parseTestFile("./smalldata/splice/splice_icf100_x.csv");
 
       response = icf.anyVec().align(fr.vec("C1")); // make sure the response has the same layout as the ICF Frame
       

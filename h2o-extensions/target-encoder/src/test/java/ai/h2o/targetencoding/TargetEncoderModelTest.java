@@ -29,9 +29,9 @@ public class TargetEncoderModelTest extends TestUtil{
   public void testTargetEncoderModel_nonDefault_blendingParameters() {
     try {
       Scope.enter();
-      Frame train = parse_test_file("./smalldata/testng/airlines_train.csv");
+      Frame train = parseTestFile("./smalldata/testng/airlines_train.csv");
       Scope.track(train);
-      Frame test = parse_test_file("./smalldata/testng/airlines_test.csv");
+      Frame test = parseTestFile("./smalldata/testng/airlines_test.csv");
       Scope.track(test);
 
       TargetEncoderParameters params = new TargetEncoderParameters();
@@ -66,9 +66,9 @@ public class TargetEncoderModelTest extends TestUtil{
   public void testTargetEncoderModel_defaultBlendingParameters() {
     try {
       Scope.enter();
-      Frame train = parse_test_file("./smalldata/testng/airlines_train.csv");
+      Frame train = parseTestFile("./smalldata/testng/airlines_train.csv");
       Scope.track(train);
-      Frame test = parse_test_file("./smalldata/testng/airlines_test.csv");
+      Frame test = parseTestFile("./smalldata/testng/airlines_test.csv");
       Scope.track(test);
 
       TargetEncoderParameters params = new TargetEncoderParameters();
@@ -152,7 +152,7 @@ public class TargetEncoderModelTest extends TestUtil{
   public void testTargetEncoderModel_dropNonCategoricalCols() {
     try {
       Scope.enter();
-      Frame train = parse_test_file("./smalldata/testng/airlines_train.csv");
+      Frame train = parseTestFile("./smalldata/testng/airlines_train.csv");
       Scope.track(train);
 
       TargetEncoderParameters params = new TargetEncoderParameters();
@@ -251,7 +251,7 @@ public class TargetEncoderModelTest extends TestUtil{
   public void test_columns_order_has_no_effect() {
     try {
       Scope.enter();
-      final Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      final Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
       RowIndexTask.addRowIndex(fr);
 

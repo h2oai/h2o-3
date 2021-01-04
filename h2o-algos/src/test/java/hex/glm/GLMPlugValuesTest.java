@@ -252,7 +252,7 @@ public class GLMPlugValuesTest extends TestUtil {
   public void testPlugValues_zeros() {
     Scope.enter();
     try {
-      Frame fr = parse_test_file("smalldata/junit/cars.csv");
+      Frame fr = parseTestFile("smalldata/junit/cars.csv");
       Scope.track(fr);
       fr.remove("name");
       DKV.put(fr);

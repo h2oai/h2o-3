@@ -3,12 +3,13 @@ package hex.pca;
 import hex.DataInfo;
 import water.DKV;
 import water.Key;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.util.FrameUtils;
 
 import static hex.pca.JMHConfiguration.logLevel;
 import static hex.pca.PCAModel.PCAParameters.Method.GramSVD;
-import static water.TestUtil.parse_test_file;
+import static water.TestUtil.parseTestFile;
 import static water.TestUtil.stall_till_cloudsize;
 
 public class PCAJMH {
@@ -34,7 +35,7 @@ public class PCAJMH {
      * 1) ./gradlew syncSmalldata
      * 2) unzip SDSS_quasar.txt.zip
      */
-      trainingFrame = parse_test_file(Key.make(hexKey), dataSetFilePath);
+      trainingFrame = parseTestFile(Key.make(hexKey), dataSetFilePath);
       // Add missing values to the training data
       Frame frame = new Frame(Key.<Frame>make(), trainingFrame.names(), trainingFrame.vecs());
       DKV.put(frame._key, frame); // Need to put the frame (to be modified) into DKV for MissingInserter to pick up
