@@ -839,7 +839,7 @@ public class GenericModelTest extends TestUtil {
 
         final Frame originalModelPredictions = originalModel.score(testFrame);
         Scope.track(originalModelPredictions);
-        assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions, 0.000001));
+        assertTrue(TestUtil.compareFrames(originalModelPredictions, genericModelPredictions, 0.000001, 0.00001));
     }
 
     @Test
