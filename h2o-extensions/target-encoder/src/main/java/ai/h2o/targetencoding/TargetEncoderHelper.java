@@ -1,10 +1,7 @@
 package ai.h2o.targetencoding;
 
 import water.*;
-import water.fvec.CategoricalWrappedVec;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.fvec.task.FillNAWithLongValueTask;
 import water.fvec.task.FilterByValueTask;
 import water.fvec.task.IsNotNaTask;
@@ -25,11 +22,8 @@ import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.TwoDimTable;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-
-import static ai.h2o.targetencoding.EncodingsComponents.NO_TARGET_CLASS;
+import java.util.*;
+import java.util.stream.IntStream;
 
 /**
  * This is a helper class for target encoding related logic,
@@ -38,11 +32,11 @@ import static ai.h2o.targetencoding.EncodingsComponents.NO_TARGET_CLASS;
  */
 public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
 
-  static String NUMERATOR_COL = "numerator";
-  static String DENOMINATOR_COL = "denominator";
-  static String TARGETCLASS_COL = "targetclass";
+  static final String NUMERATOR_COL = "numerator";
+  static final String DENOMINATOR_COL = "denominator";
+  static final String TARGETCLASS_COL = "targetclass";
 
-  static String NA_POSTFIX = "_NA";
+  static final int NO_TARGET_CLASS = -1; // value used as a substitute for the target class in regression problems.
   
   private static final Logger logger = LoggerFactory.getLogger(TargetEncoderHelper.class);
 
@@ -81,8 +75,149 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
       if (fr != null && fr != encodings) fr.delete();
     }
   }
+  
+  static String createFeatureInteraction(Frame fr, String[] colGroup, boolean encodeUnseenAsNA) {
+    if (colGroup.length == 1) {
+      return colGroup[0];
+    } else {
+      return addInteractionColumn(fr, colGroup, encodeUnseenAsNA);
+    }
+  }
 
+  private static String addInteractionColumn(Frame fr, String[] columns, boolean encodeUnseenAsNA) {
+    String interactionColName = String.join("*", columns);  // any limit to col name length?
+    int[] cols = Arrays.stream(columns).mapToInt(fr::find).toArray();
+    Vec interactionCol = createInteractionColumn(fr, cols, encodeUnseenAsNA);
+    fr.add(interactionColName, interactionCol);
+    return interactionColName;
+  }
+  
+  private static Vec createInteractionColumn(Frame fr, int[] interactingColumnsIdx, boolean encodeUnseenAsNA) {
+    String[][] interactingDomains = new String[interactingColumnsIdx.length][];
+    Vec[] interactingVecs = new Vec[interactingColumnsIdx.length];
+    String[][] allDomains = fr.domains();
+    for (int i=0; i<interactingColumnsIdx.length; i++) {
+      interactingDomains[i] = allDomains[i];
+      interactingVecs[i] = fr.vec(interactingColumnsIdx[i]);
+    }
+    final InteractionsEncoder encoder = new InteractionsEncoder(interactingDomains, encodeUnseenAsNA);
+    Vec interactionCol = new MRTask() {
+      @Override
+      public void map(Chunk[] cs, NewChunk nc) {
+        for (int row=0; row < nc.len(); row++) {
+          int[] interactingValues = new int[cs.length];
+          for (int i=0; i<cs.length; i++) {
+            interactingValues[i] = cs[i].isNA(row) ? -1 : (int)cs[i].at8(row);
+          }
+          int val = encoder.encode(interactingValues);
+          if (val < 0) 
+            nc.addNA();
+          else
+            nc.addCategorical(val);
+        }
+      }
+    }.doAll(new byte[] {Vec.T_CAT}, interactingVecs).outputFrame(null, null, new String[][] {encoder._interactionDomain}).lastVec();
+    return interactionCol;
+  }
+  
+ 
   /**
+   * The interaction value is simply encoded as:
+   *  val = val1 + (val2 * card1) + … + (valN * card1 * … * cardN-1)
+   * where val1, val2, …, valN are the interacting values
+   * and card1, …, cardN are the extended domain cardinalities (taking NAs into account) for interacting columns.
+   */
+  static class InteractionsEncoder {
+    static final String UNSEEN = "_UNSEEN_";
+    static final String NA = "_NA_";
+    
+    private boolean _encodeUnseenAsNA;
+    private String[][] _interactingDomains;
+    private String[] _interactionDomain;
+    private int[] _encodingFactors;
+
+    InteractionsEncoder(String[][] interactingDomains, boolean encodeUnseenAsNA) {
+      _encodeUnseenAsNA = encodeUnseenAsNA;
+      _interactingDomains = interactingDomains;
+      _interactionDomain = createInteractionDomain();
+      _encodingFactors = createEncodingFactors();
+    }
+    
+    
+    int encode(int[] interactingValues) {
+      int value = 0;
+      for (int i=0; i < interactingValues.length; i++) {
+        int domainCard = _interactingDomains[i].length;
+        int interactionFactor = _encodingFactors[i];
+        int ival = interactingValues[i];
+        if (ival >= domainCard) ival = domainCard;  // unseen value during training
+        if (ival < 0) ival = _encodeUnseenAsNA ? domainCard : domainCard + 1;  // NA
+        value += ival * interactionFactor;
+      }
+      return value;
+    }
+    
+    int encodeStr(String[] interactingValues) {
+      int[] values = new int[interactingValues.length];
+      for (int i=0; i < interactingValues.length; i++) {
+        String[] domain = _interactingDomains[i];
+        String val = interactingValues[i];
+        int ival = ArrayUtils.find(domain, val);
+        if (ival < 0) {
+          values[i] = (val == null || NA.equals(val)) ? -1 : domain.length;  //emulates distinction between NA and unseen.
+        } else {
+          values[i] = ival;
+        }
+      }
+      return encode(values);
+    }
+    
+    int[] decode(int interactionValue) {
+      int[] values = new int[_encodingFactors.length];
+      int value = interactionValue;
+      for (int i = _encodingFactors.length-1; i >= 0; i--) {
+        int factor = _encodingFactors[i];
+        values[i] = value / factor;
+        value %= factor;
+      }
+      return values;
+    }
+    
+    String[] decodeStr(int interactionValue) {
+      int[] values = decode(interactionValue);
+      String[] catValues = new String[values.length];
+      for (int i=0; i<values.length; i++) {
+        String[] domain = _interactingDomains[i];
+        catValues[i] = i < domain.length ? domain[i]
+                : i == domain.length ? (_encodeUnseenAsNA ? NA : UNSEEN)
+                : NA;
+      }
+      return catValues;
+    }
+
+    private int[] createEncodingFactors() {
+      int[] factors = new int[_interactingDomains.length];
+      int multiplier = 1;
+      for (int i=0; i < _interactingDomains.length - 1; i++) {
+        int domainCard = _interactingDomains[i].length;
+        int interactionFactor = _encodeUnseenAsNA ? domainCard + 1 : domainCard + 2;  // +1 for potential unseen values, +1 for NAs (see #interactionDomain)
+        factors[i] = multiplier;
+        multiplier *= interactionFactor;
+      }
+      return factors;
+    }
+
+    private String[] createInteractionDomain() {
+      int card = 1;
+      for (String[] domain : _interactingDomains)
+        card *= (_encodeUnseenAsNA ? domain.length + 1 : domain.length + 2);  // +1 for potential unseen values, +1 for NAs
+      return IntStream.range(0,  card).mapToObj(Integer::toString).toArray(String[]::new);
+    }
+
+  }
+
+
+    /**
    * If a fold column is provided, this produces a frame of shape
    * (unique(col, fold_col), 4) with columns [{col}, {fold_col}, numerator, denominator]
    * Otherwise, it produces a frame of shape

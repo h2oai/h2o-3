@@ -51,7 +51,7 @@ public class TargetEncodingExceptionsHandlingTest extends TestUtil {
         Scope.track_generic(teSpy.trainModel().get());
         fail("should not be raised");
       } catch (NullPointerException ex) {
-        assertEquals("prepareEncodingMap", ex.getStackTrace()[0].getMethodName());
+        assertEquals("computeImpl", ex.getStackTrace()[0].getMethodName());
       }
     } finally {
       Scope.exit();

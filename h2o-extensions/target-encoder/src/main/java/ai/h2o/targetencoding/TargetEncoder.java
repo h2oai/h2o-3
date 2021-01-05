@@ -18,12 +18,13 @@ import water.util.IcedHashMap;
 import java.util.*;
 
 import static ai.h2o.targetencoding.TargetEncoderHelper.*;
+import static ai.h2o.targetencoding.TargetEncoderModel.NA_POSTFIX;
 
 public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncoderParameters, TargetEncoderOutput> {
 
   private static final Logger logger = LoggerFactory.getLogger(TargetEncoder.class);
   private TargetEncoderModel _targetEncoderModel;
-  private String[] _columnsToEncode;
+  private String[][] _columnsToEncode;
   
   public TargetEncoder(TargetEncoderParameters parms) {
     super(parms);
@@ -50,24 +51,43 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
       if (_parms._data_leakage_handling == DataLeakageHandlingStrategy.KFold && _parms._fold_column == null)
         error("_fold_column", "Fold column is required when using KFold leakage handling strategy.");
 
-      final List<String> colsToIgnore = Arrays.asList(
-              _parms._response_column, 
-              _parms._fold_column,
-              _parms._weights_column, 
-              _parms._offset_column
-      );
       final Frame train = train();
-      final List<String> columnsToEncode = new ArrayList<>(train.numCols());
-      for (int i=0; i<train.numCols(); i++) {
-        String colName = train.name(i);
-        if (colsToIgnore.contains(colName)) continue;
-        if (!train.vec(i).isCategorical()) {
-          warn("_train", "Column `"+colName+"` is not categorical and will therefore be ignored by target encoder.");
-          continue;
+      
+      _columnsToEncode = _parms._columns_to_encode;
+      if (_columnsToEncode == null) { // detects columns that can be encoded
+        final List<String> colsToIgnore = Arrays.asList(
+                _parms._response_column,
+                _parms._fold_column,
+                _parms._weights_column,
+                _parms._offset_column
+        );
+        final List<String[]> columnsToEncode = new ArrayList<>(train.numCols());
+        for (int i = 0; i < train.numCols(); i++) {
+          String colName = train.name(i);
+          if (colsToIgnore.contains(colName)) continue;
+          if (!train.vec(i).isCategorical()) {
+            warn("_train", "Column `" + colName + "` is not categorical and will therefore be ignored by target encoder.");
+            continue;
+          }
+          columnsToEncode.add(new String[] {colName});
         }
-        columnsToEncode.add(colName);
+        _columnsToEncode = columnsToEncode.toArray(new String[0][]);
+      } else { // validates column groups (which can be single columns)
+        Set<String> validated = new HashSet<>();
+        for (String[] colGroup: _columnsToEncode) {
+          if (colGroup.length != new HashSet<>(Arrays.asList(colGroup)).size()) {
+            error("_columns_to_encode", "Columns interaction "+Arrays.toString(colGroup)+" contains duplicate columns.");
+          }
+          for (String col: colGroup) {
+            if (!validated.contains(col)) {
+              if (!train.vec(col).isCategorical()) {
+                error("_columns_to_encode", "Column "+col+" must first be converted into categorical to be used by target encoder.");
+              }
+              validated.add(col);
+            }
+          }
+        }
       }
-      _columnsToEncode = columnsToEncode.toArray(new String[0]);
     }
   }
 
@@ -88,19 +108,27 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
         if (error_count() > 0)
           throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(TargetEncoder.this);
 
-        TargetEncoderOutput emptyOutput =
-                new TargetEncoderOutput(TargetEncoder.this, new IcedHashMap<>());
+        TargetEncoderOutput emptyOutput = new TargetEncoderOutput(TargetEncoder.this);
         TargetEncoderModel model = new TargetEncoderModel(dest(), _parms, emptyOutput);
         _targetEncoderModel = model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
-
-        IcedHashMap<String, Frame> _targetEncodingMap = prepareEncodingMap();
+        
+        Frame workingFrame = new Frame(train());
+        ColumnsMapping[] columnsToEncodeMapping = new ColumnsMapping[_columnsToEncode.length];
+        for (int i=0; i < columnsToEncodeMapping.length; i++) {
+          String[] colGroup = _columnsToEncode[i];
+          String encodingCol = createFeatureInteraction(workingFrame, colGroup, _parms._encode_unseen_as_na_in_interactions);
+          columnsToEncodeMapping[i] = new ColumnsMapping(colGroup, encodingCol);
+        }
+        
+        String[] singleColumnsToEncode = Arrays.stream(columnsToEncodeMapping).map(ColumnsMapping::toSingle).toArray(String[]::new);
+        IcedHashMap<String, Frame> _targetEncodingMap = prepareEncodingMap(workingFrame, singleColumnsToEncode);
 
         for (Map.Entry<String, Frame> entry : _targetEncodingMap.entrySet()) {
           Frame encodings = entry.getValue();
           Scope.untrack(encodings);
         }
 
-        _targetEncoderModel._output = new TargetEncoderOutput(TargetEncoder.this, _targetEncodingMap);
+        _targetEncoderModel._output = new TargetEncoderOutput(TargetEncoder.this, _targetEncodingMap,  columnsToEncodeMapping);
         _job.update(1);
       } catch (Exception e) {
         if (_targetEncoderModel != null) {
@@ -121,18 +149,17 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
     }
 
 
-    private IcedHashMap<String, Frame> prepareEncodingMap() {
+    private IcedHashMap<String, Frame> prepareEncodingMap(Frame fr, String[] columnsToEncode) {
       Frame workingFrame = null;
       try {
-        int targetIdx = train().find(_parms._response_column);
-        int foldColIdx = _parms._fold_column == null ? -1 : train().find(_parms._fold_column);
+        int targetIdx = fr.find(_parms._response_column);
+        int foldColIdx = _parms._fold_column == null ? -1 : fr.find(_parms._fold_column);
         
-        //TODO Loosing data here, we should use clustering to assign instances with some reasonable target values.
-        workingFrame = filterOutNAsFromTargetColumn(train(), targetIdx);
+        workingFrame = filterOutNAsFromTargetColumn(fr, targetIdx);
 
         IcedHashMap<String, Frame> columnToEncodings = new IcedHashMap<>();
 
-        for (String columnToEncode : _columnsToEncode) { // TODO: parallelize
+        for (String columnToEncode : columnsToEncode) { // TODO: parallelize
           int colIdx = workingFrame.find(columnToEncode);
           imputeCategoricalColumn(workingFrame, colIdx, columnToEncode + NA_POSTFIX);
           Frame encodings = buildEncodingsFrame(workingFrame, colIdx, targetIdx, foldColIdx, nclasses());
