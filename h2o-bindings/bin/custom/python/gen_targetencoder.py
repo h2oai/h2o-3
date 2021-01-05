@@ -68,12 +68,24 @@ import h2o
 import warnings
 from h2o.exceptions import H2ODeprecationWarning
 from h2o.utils.metaclass import deprecated_property
+from h2o.utils.typechecks import U
 """,
     __init__setparams="""
 elif pname in self._deprecated_params_:
     setattr(self, pname, pvalue)  # property handles the redefinition
 """,
     __class__=class_extensions,
+)
+
+overrides = dict(
+    columns_to_encode=dict(
+        setter="""
+assert_is_type({pname}, None, [U(str, [str])])
+if {pname}:  # standardize as a nested list
+    {pname} = [[g] if isinstance(g, str) else g for g in {pname}]
+self._parms["{sname}"] = {pname}
+"""
+    )
 )
 
 examples = dict(

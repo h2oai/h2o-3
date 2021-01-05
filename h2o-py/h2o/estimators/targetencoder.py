@@ -10,6 +10,7 @@ import h2o
 import warnings
 from h2o.exceptions import H2ODeprecationWarning
 from h2o.utils.metaclass import deprecated_property
+from h2o.utils.typechecks import U
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
@@ -24,8 +25,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
 
     algo = "targetencoder"
     param_names = {"model_id", "training_frame", "fold_column", "response_column", "ignored_columns",
-                   "keep_original_categorical_columns", "blending", "inflection_point", "smoothing",
-                   "data_leakage_handling", "noise", "seed"}
+                   "columns_to_encode", "keep_original_categorical_columns", "blending", "inflection_point",
+                   "smoothing", "data_leakage_handling", "noise", "seed"}
 
     def __init__(self, **kwargs):
         super(H2OTargetEncoderEstimator, self).__init__()
@@ -131,6 +132,24 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     def ignored_columns(self, ignored_columns):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
+
+
+    @property
+    def columns_to_encode(self):
+        """
+        List of categorical columns or groups of categorical columns to encode. When groups of columns are specified,
+        each group is encoded as a single column (interactions are created internally).
+
+        Type: ``List[List[str]]``.
+        """
+        return self._parms.get("columns_to_encode")
+
+    @columns_to_encode.setter
+    def columns_to_encode(self, columns_to_encode):
+        assert_is_type(columns_to_encode, None, [U(str, [str])])
+        if columns_to_encode:  # standardize as a nested list
+            columns_to_encode = [[g] if isinstance(g, str) else g for g in columns_to_encode]
+        self._parms["columns_to_encode"] = columns_to_encode
 
 
     @property
