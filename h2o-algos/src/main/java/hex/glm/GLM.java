@@ -521,6 +521,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
     if (expensive) {
+      if (_parms._max_iterations == 0)
+        error("_max_iterations", H2O.technote(2, "if specified, must be >= 1."));
       if (error_count() > 0) return;
       if (_parms._lambda_search && (_parms._stopping_rounds > 0)) {
         error("early stop", " cannot run when lambda_search=True.  Lambda_search has its own " +
