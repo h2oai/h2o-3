@@ -53,7 +53,7 @@ public class ParseTestMultiFileOrc extends TestUtil {
                 if (types[index] == 0)
                     types[index] = 4;
             }
-            Frame orc_frame = Scope.track(parse_test_folder(ORC_DIR, null, 0, types, pst));
+            Frame orc_frame = Scope.track(parseTestFolder(ORC_DIR, null, 0, types, pst));
             assertIdenticalUpToRelTolerance(csv_frame, orc_frame, 1e-5);
         } finally {
             Scope.exit();

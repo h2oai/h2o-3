@@ -19,7 +19,7 @@ public class ParseFolderTest extends TestUtil {
   @Test public void testProstate() {
     Frame k1 = null, k2 = null;
     try {
-      k2 = parse_test_folder("smalldata/junit/parse_folder" );
+      k2 = parseTestFolder("smalldata/junit/parse_folder" );
       k1 = parseTestFile("smalldata/junit/parse_folder_gold.csv");
       TestUtil.assertBitIdentical(k1, k2);
     } finally {
@@ -36,12 +36,12 @@ public class ParseFolderTest extends TestUtil {
 
     try {
       k1 = parseTestFile("smalldata/junit/parse_folder_gold.csv");
-      k2 = parse_test_folder("smalldata/junit/parse_folder" );
+      k2 = parseTestFolder("smalldata/junit/parse_folder" );
       Scope.track(k1,k2);
       TestUtil.assertBitIdentical(k1,k2);
 
       k3 = parseTestFile("smalldata/junit/parse_folder_gold.csv", skippedColumns);
-      k4 = parse_test_folder("smalldata/junit/parse_folder", skippedColumns);
+      k4 = parseTestFolder("smalldata/junit/parse_folder", skippedColumns);
       Scope.track(k3,k4);
       TestUtil.assertBitIdentical(k3,k4);
     } finally {
@@ -57,7 +57,7 @@ public class ParseFolderTest extends TestUtil {
     int[] skippedColumns = new int[] {0,1,2,3,4,5,6,7,8};
 
     try {
-      k1 = parse_test_folder("smalldata/junit/parse_folder", skippedColumns);
+      k1 = parseTestFolder("smalldata/junit/parse_folder", skippedColumns);
       Assert.assertTrue("Error:  Should have thrown an exception but did not!", 1 == 2);
     } catch (Exception ex) {
       System.out.println(ex);

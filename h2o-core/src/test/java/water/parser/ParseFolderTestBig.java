@@ -20,7 +20,7 @@ public class ParseFolderTestBig extends TestUtil {
   public void testCovtype() {
     Frame k1 = null, k2 = null;
     try {
-      k2 = parse_test_folder("datasets/parse_folder_test");
+      k2 = parseTestFolder("datasets/parse_folder_test");
       k1 = parseTestFile("datasets/UCI/UCI-large/covtype/covtype.data");
       TestUtil.assertBitIdentical(k1,k2);
     } finally {
