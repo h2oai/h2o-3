@@ -948,11 +948,11 @@ public class GLMBasicTestRegression extends TestUtil {
 
     try {
       long seed = 1234;
-      f1 = TestUtil.generate_enum_only(2, numRows, nclass, 0, seed);
+      f1 = TestUtil.generateEnumOnly(2, numRows, nclass, 0, seed);
       Scope.track(f1);
-      f2 = TestUtil.generate_real_only(4, numRows, 0, seed);
+      f2 = TestUtil.generateRealOnly(4, numRows, 0, seed);
       Scope.track(f2);
-      f3 = TestUtil.generate_int_only(1, numRows, 10, 0, seed);
+      f3 = TestUtil.generateIntOnly(1, numRows, 10, 0, seed);
       Scope.track(f3);
       fr = f1.add(f2).add(f3);  // complete frame generation
       Scope.track(fr);
@@ -1006,11 +1006,11 @@ public class GLMBasicTestRegression extends TestUtil {
 
     try {
       long seed = 1234;
-      f1 = TestUtil.generate_enum_only(2, numRows, nclass, 0, seed);
+      f1 = TestUtil.generateEnumOnly(2, numRows, nclass, 0, seed);
       Scope.track(f1);
-      f2 = TestUtil.generate_real_only(4, numRows, 0, seed);
+      f2 = TestUtil.generateRealOnly(4, numRows, 0, seed);
       Scope.track(f2);
-      f3 = TestUtil.generate_int_only(1, numRows, 10, 0, seed);
+      f3 = TestUtil.generateIntOnly(1, numRows, 10, 0, seed);
       Scope.track(f3);
       fr = f1.add(f2).add(f3);  // complete frame generation
       Scope.track(fr);
@@ -1192,11 +1192,11 @@ public class GLMBasicTestRegression extends TestUtil {
 
     try {
       long seed = 1234;
-      f1 = TestUtil.generate_enum_only(2, numRows, nclass, 0, seed);
+      f1 = TestUtil.generateEnumOnly(2, numRows, nclass, 0, seed);
       Scope.track(f1);
-      f2 = TestUtil.generate_real_only(4, numRows, 0, seed);
+      f2 = TestUtil.generateRealOnly(4, numRows, 0, seed);
       Scope.track(f2);
-      f3 = TestUtil.generate_int_only(1, numRows, 10, 0, seed);
+      f3 = TestUtil.generateIntOnly(1, numRows, 10, 0, seed);
       Scope.track(f3);
       fr = f1.add(f2).add(f3);  // complete frame generation
       Scope.track(fr);

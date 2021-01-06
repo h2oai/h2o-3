@@ -25,9 +25,9 @@ public class MungingTest extends TestUtil {
       Random generator = new Random();
       int numRowsG = generator.nextInt(10000) + 15000 + 200;
       int groupby_factors = generator.nextInt(5) + 2;
-      Frame groupbyCols = TestUtil.generate_enum_only(2, numRowsG, groupby_factors, 0);
+      Frame groupbyCols = TestUtil.generateEnumOnly(2, numRowsG, groupby_factors, 0);
       Scope.track(groupbyCols);
-      Frame sortCols = TestUtil.generate_int_only(2, numRowsG, groupby_factors*2, 0.01);
+      Frame sortCols = TestUtil.generateIntOnly(2, numRowsG, groupby_factors*2, 0.01);
       Scope.track(sortCols);
       Frame train = groupbyCols.add(sortCols);  // complete frame generation
       Scope.track(train);

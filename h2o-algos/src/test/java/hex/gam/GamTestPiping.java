@@ -91,7 +91,7 @@ public class GamTestPiping extends TestUtil {
   public void testKnotsFromFrame() {
     try {
       Scope.enter();
-      Frame knotsFrame = generate_real_only(1, 5, 0);
+      Frame knotsFrame = generateRealOnly(1, 5, 0);
       Scope.track(knotsFrame);
       final double[][] knots = new double[][]{{-1.9990569949269443}, {-0.9814307533427584}, {0.025991586992542004}, 
               {1.0077098743127828}, {1.999422899675758}};

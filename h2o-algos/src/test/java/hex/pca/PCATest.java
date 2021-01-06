@@ -426,7 +426,7 @@ public class PCATest extends TestUtil {
   public void testPCAPredMojoPojoNumericsOnly() {
     Scope.enter();
     try {
-      Frame trainPCA = generate_real_only(8, 8000, 0.0, 12345);
+      Frame trainPCA = generateRealOnly(8, 8000, 0.0, 12345);
       SplitFrame sf = new SplitFrame(trainPCA, new double[]{0.8,0.2}, new Key[] {Key.make("train.hex"), Key.make("test.hex")});
       sf.exec().get();
       Key[] ksplits = sf._destination_frames;

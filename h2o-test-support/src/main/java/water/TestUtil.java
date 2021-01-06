@@ -168,13 +168,13 @@ public class TestUtil extends Iced {
    * @param num_factor
    * @return
    */
-  protected static Frame generate_enum_only(int numCols, int numRows, int num_factor, double missingfrac) {
+  protected static Frame generateEnumOnly(int numCols, int numRows, int num_factor, double missingfrac) {
     long seed = System.currentTimeMillis();
     System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
-    return generate_enum_only(numCols, numRows, num_factor, missingfrac, seed);
+    return generateEnumOnly(numCols, numRows, num_factor, missingfrac, seed);
   }
 
-  protected static Frame generate_enum_only(int numCols, int numRows, int num_factor, double missingfrac, long seed) {
+  protected static Frame generateEnumOnly(int numCols, int numRows, int num_factor, double missingfrac, long seed) {
     CreateFrame cf = new CreateFrame();
     cf.rows= numRows;
     cf.cols = numCols;
@@ -189,13 +189,13 @@ public class TestUtil extends Iced {
     return cf.execImpl().get();
   }
 
-  protected static Frame generate_real_only(int numCols, int numRows, double missingfrac) {
+  protected static Frame generateRealOnly(int numCols, int numRows, double missingfrac) {
     long seed = System.currentTimeMillis();
     System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
-    return generate_real_only(numCols, numRows, missingfrac, seed);
+    return generateRealOnly(numCols, numRows, missingfrac, seed);
   }
 
-  protected static Frame generate_real_only(int numCols, int numRows, double missingfrac, long seed) {
+  protected static Frame generateRealOnly(int numCols, int numRows, double missingfrac, long seed) {
     CreateFrame cf = new CreateFrame();
     cf.rows= numRows;
     cf.cols = numCols;
@@ -211,13 +211,13 @@ public class TestUtil extends Iced {
     return cf.execImpl().get();
   }
 
-  protected static Frame generate_int_only(int numCols, int numRows, int integer_range, double missingfrac) {
+  protected static Frame generateIntOnly(int numCols, int numRows, int integer_range, double missingfrac) {
     long seed = System.currentTimeMillis();
     System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
-    return generate_int_only(numCols, numRows, integer_range, missingfrac, seed);
+    return generateIntOnly(numCols, numRows, integer_range, missingfrac, seed);
   }
 
-  protected static Frame generate_int_only(int numCols, int numRows, int integer_range, double missingfrac, long seed) {
+  protected static Frame generateIntOnly(int numCols, int numRows, int integer_range, double missingfrac, long seed) {
     CreateFrame cf = new CreateFrame();
     cf.rows= numRows;
     cf.cols = numCols;
