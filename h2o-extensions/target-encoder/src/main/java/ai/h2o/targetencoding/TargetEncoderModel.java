@@ -129,7 +129,9 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       for (Map.Entry<String, Frame> entry : _target_encoding_map.entrySet()) {
         String teColumn = entry.getKey();
         Frame encodingsFrame = entry.getValue();
-        boolean hasNAs = _parms.train().vec(teColumn).cardinality() < encodingsFrame.vec(teColumn).cardinality(); //XXX: _parms.train().vec(teColumn).naCnt() > 0 ?
+        int teColCard = _parms.train().vec(teColumn) == null ? -1 : _parms.train().vec(teColumn).cardinality();
+        // if teColumn is a transient (generated for interactions), it can't have NAs as they're all encoded.
+        boolean hasNAs = teColCard > 0 && teColCard < encodingsFrame.vec(teColumn).cardinality(); //XXX: _parms.train().vec(teColumn).naCnt() > 0 ?
         col2HasNAs.put(teColumn, hasNAs);
       }
       return col2HasNAs;
@@ -404,7 +406,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
           }
         } // end for each target 
         
-        if (_parms._keep_interaction_columns && colGroup.length > 1)
+        if (!_parms._keep_interaction_columns && colGroup.length > 1)
           tmps.add(workingFrame.remove(colIdx));
       } // end for each columnToEncode
       
