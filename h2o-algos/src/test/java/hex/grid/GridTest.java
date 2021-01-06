@@ -171,7 +171,7 @@ public class GridTest extends TestUtil {
     try {
       Scope.enter();
 
-      final Frame trainingFrame = parse_and_track_test_file("./smalldata/coxph_test/heart.csv");
+      final Frame trainingFrame = parseAndTrackTestFile("./smalldata/coxph_test/heart.csv");
       trainingFrame.add("w1", Vec.makeCon(0.2, trainingFrame.numRows()));
       trainingFrame.add("w2", Vec.makeCon(0.2, trainingFrame.numRows()));
       trainingFrame.add("w3", Vec.makeRepSeq(trainingFrame.numRows(), 11));

@@ -195,19 +195,39 @@ public class TestUtil extends Iced {
   }
 
   /**
+   * @deprecated use {@link #generateEnumOnly(int, int, int, double)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated 
+  protected static Frame generate_enum_only(int numCols, int numRows, int num_factor, double missingfrac) {
+    return generateEnumOnly(numCols, numRows, num_factor, missingfrac);
+  }
+
+  /**
    * generate random frames containing enum columns only
    * @param numCols
    * @param numRows
    * @param num_factor
    * @return
    */
-  protected static Frame generate_enum_only(int numCols, int numRows, int num_factor, double missingfrac) {
+  protected static Frame generateEnumOnly(int numCols, int numRows, int num_factor, double missingfrac) {
     long seed = System.currentTimeMillis();
     System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
-    return generate_enum_only(numCols, numRows, num_factor, missingfrac, seed);
+    return generateEnumOnly(numCols, numRows, num_factor, missingfrac, seed);
   }
 
+  /**
+   * @deprecated use {@link #generateEnumOnly(int, int, int, double, long)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
   protected static Frame generate_enum_only(int numCols, int numRows, int num_factor, double missingfrac, long seed) {
+    return generateEnumOnly(numCols, numRows, num_factor, missingfrac, seed);
+  }
+  
+  protected static Frame generateEnumOnly(int numCols, int numRows, int num_factor, double missingfrac, long seed) {
     CreateFrame cf = new CreateFrame();
     cf.rows= numRows;
     cf.cols = numCols;
@@ -221,14 +241,34 @@ public class TestUtil extends Iced {
     System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
     return cf.execImpl().get();
   }
-
+  
+  /**
+   * @deprecated use {@link #generateRealOnly(int, int, double)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
   protected static Frame generate_real_only(int numCols, int numRows, double missingfrac) {
-    long seed = System.currentTimeMillis();
-    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
-    return generate_real_only(numCols, numRows, missingfrac, seed);
+    return generateRealOnly(numCols, numRows, missingfrac);
   }
 
+  protected static Frame generateRealOnly(int numCols, int numRows, double missingfrac) {
+    long seed = System.currentTimeMillis();
+    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
+    return generateRealOnly(numCols, numRows, missingfrac, seed);
+  }
+  
+  /**
+   * @deprecated use {@link #generateRealOnly(int, int, double, long)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
   protected static Frame generate_real_only(int numCols, int numRows, double missingfrac, long seed) {
+    return generateRealOnly(numCols, numRows, missingfrac, seed);
+  }
+
+  protected static Frame generateRealOnly(int numCols, int numRows, double missingfrac, long seed) {
     CreateFrame cf = new CreateFrame();
     cf.rows= numRows;
     cf.cols = numCols;
@@ -244,13 +284,33 @@ public class TestUtil extends Iced {
     return cf.execImpl().get();
   }
 
+  /**
+   * @deprecated use {@link #generateIntOnly(int, int, int, double)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
   protected static Frame generate_int_only(int numCols, int numRows, int integer_range, double missingfrac) {
+    return generateIntOnly(numCols, numRows, integer_range, missingfrac);
+  }
+  
+  protected static Frame generateIntOnly(int numCols, int numRows, int integer_range, double missingfrac) {
     long seed = System.currentTimeMillis();
     System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
-    return generate_int_only(numCols, numRows, integer_range, missingfrac, seed);
+    return generateIntOnly(numCols, numRows, integer_range, missingfrac, seed);
   }
 
+  /**
+   * @deprecated use {@link #generateIntOnly(int, int, int, double, long)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
   protected static Frame generate_int_only(int numCols, int numRows, int integer_range, double missingfrac, long seed) {
+    return generateIntOnly(numCols, numRows, integer_range, missingfrac, seed);
+  }
+  
+  protected static Frame generateIntOnly(int numCols, int numRows, int integerRange, double missingfrac, long seed) {
     CreateFrame cf = new CreateFrame();
     cf.rows= numRows;
     cf.cols = numCols;
@@ -261,7 +321,7 @@ public class TestUtil extends Iced {
     cf.string_fraction = 0;
     cf.has_response=false;
     cf.missing_fraction = missingfrac;
-    cf.integer_range = integer_range;
+    cf.integer_range = integerRange;
     cf.seed = seed;
     System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
     return cf.execImpl().get();
