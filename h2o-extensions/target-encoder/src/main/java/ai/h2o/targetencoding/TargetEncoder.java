@@ -43,6 +43,7 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
   @Override
   public void init(boolean expensive) {
     disableIgnoreConstColsFeature(expensive);
+    ignoreUnusedColumns(expensive);
     super.init(expensive);
     assert _parms._nfolds == 0 : "nfolds usage forbidden in TargetEncoder";
     
@@ -96,6 +97,22 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
     if (expensive && logger.isInfoEnabled())
       logger.info("We don't want to ignore any columns during target encoding transformation " + 
               "therefore `_ignore_const_cols` parameter was set to `false`");
+  }
+
+  /**
+   * autosets _ignored_columns when using _columns_to_encode param.
+   * This ensures consistency when using the second param, 
+   * otherwise the metadata saved in the model (_domains, _names...) can be different, 
+   * and the score/predict result frame is also adapted differently.
+   * @param expensive
+   */
+  private void ignoreUnusedColumns(boolean expensive) {
+    if (!expensive || _parms._columns_to_encode == null || _parms.train() == null) return;
+    Set<String> usedColumns = new HashSet<>(Arrays.asList(_parms.getNonPredictors()));
+    for (String[] colGroup: _parms._columns_to_encode) usedColumns.addAll(Arrays.asList(colGroup));
+    Set<String> unusedColumns = new HashSet<>(Arrays.asList(_parms.train()._names));
+    unusedColumns.removeAll(usedColumns);
+    _parms._ignored_columns = unusedColumns.toArray(new String[0]);
   }
   
   

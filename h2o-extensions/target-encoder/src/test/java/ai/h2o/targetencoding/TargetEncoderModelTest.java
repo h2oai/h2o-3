@@ -26,6 +26,61 @@ import static org.junit.Assert.*;
 public class TargetEncoderModelTest extends TestUtil{
 
   @Test
+  public void testTargetEncoderModel_columnsToEncode() {
+    try {
+      Scope.enter();
+      Frame train = parse_test_file("./smalldata/testng/airlines_train.csv");
+      Scope.track(train);
+      Frame test = parse_test_file("./smalldata/testng/airlines_test.csv");
+      Scope.track(test);
+
+      TargetEncoderParameters paramsImplicit = new TargetEncoderParameters();
+      paramsImplicit._response_column = "IsDepDelayed";
+      paramsImplicit._ignored_columns = ignoredColumns(train, "Origin", paramsImplicit._response_column);
+      paramsImplicit._train = train._key;
+      paramsImplicit._seed = 0XFEED;
+
+
+      TargetEncoder teImplicit = new TargetEncoder(paramsImplicit);
+      final TargetEncoderModel teModelImplicit = teImplicit.trainModel().get();
+      Scope.track_generic(teModelImplicit);
+      assertNotNull(teModelImplicit);
+      final Frame encodedImplicit = teModelImplicit.score(test);
+      Scope.track(encodedImplicit);
+
+      assertNotNull(encodedImplicit);
+      assertEquals(train.numCols() + 1, encodedImplicit.numCols());
+      final int encodedColIdx = ArrayUtils.indexOf(encodedImplicit.names(), "Origin_te");
+      assertNotEquals(-1, encodedColIdx);
+      assertTrue(encodedImplicit.vec(encodedColIdx).isNumeric());
+
+
+      TargetEncoderParameters paramsExplicit = (TargetEncoderParameters)paramsImplicit.clone();
+      paramsExplicit._ignored_columns = null;
+      paramsExplicit._columns_to_encode = new String[][] {
+              new String[]{"Origin"},
+      };
+      TargetEncoder teExplicit = new TargetEncoder(paramsExplicit);
+      final TargetEncoderModel teModelExplicit = teExplicit.trainModel().get();
+      Scope.track_generic(teModelExplicit);
+      assertNotNull(teModelExplicit);
+      final Frame encodedExplicit = teModelExplicit.score(test);
+      Scope.track(encodedExplicit);
+
+      assertNotNull(encodedExplicit);
+      assertEquals(train.numCols() + 1, encodedExplicit.numCols());
+      final int encodedColIdx2 = ArrayUtils.indexOf(encodedExplicit.names(), "Origin_te");
+      assertNotEquals(-1, encodedColIdx2);
+      assertTrue(encodedExplicit.vec(encodedColIdx2).isNumeric());
+      
+      assertFrameEquals(encodedExplicit, encodedImplicit, 1e-6);
+      
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  @Test
   public void testTargetEncoderModel_nonDefault_blendingParameters() {
     try {
       Scope.enter();
