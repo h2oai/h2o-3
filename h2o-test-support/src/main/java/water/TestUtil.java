@@ -688,17 +688,37 @@ public class TestUtil extends Iced {
 
   }
 
-    /** Find & parse a folder of CSV files.  NPE if file not found.
-     *  @param fname Test filename
-     *  @return      Frame or NPE */
-  protected Frame parseTestFolder(String fname ) {
-    return parseTestFolder(fname, null);
+  /**
+   * @deprecated use {@link #parseTestFolder(String)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_folder(String fname) {
+    return parseTestFolder(fname);
   }
-
+  
   /** Find & parse a folder of CSV files.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
-  protected Frame parse_test_folder( String fname, int[] skippedColumns ) {
+  protected Frame parseTestFolder(String fname) {
+    return parseTestFolder(fname, null);
+  }
+
+  /**
+   * @deprecated use {@link #parseTestFolder(String, int[])} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_folder(String fname, int[] skippedColumns) {
+    return parseTestFolder(fname, skippedColumns);
+  }
+  
+  /** Find & parse a folder of CSV files.  NPE if file not found.
+   *  @param fname Test filename
+   *  @return      Frame or NPE */
+  protected Frame parseTestFolder(String fname, int[] skippedColumns ) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
     Arrays.sort(files);
@@ -710,6 +730,19 @@ public class TestUtil extends Iced {
     keys.toArray(res);
     return ParseDataset.parse(skippedColumns, Key.make(), res);
   }
+
+
+  /**
+   * @deprecated use {@link #parseTestFolder(String, String, int, byte[], ParseSetupTransformer)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_folder(String fname, String na_string, int check_header, byte[] column_types,
+                                  ParseSetupTransformer transformer) {
+    return parseTestFolder(fname, na_string, check_header, column_types, transformer);
+  }
+  
   /**
    * Parse a folder with csv files when a single na_string is specified.
    *
@@ -717,9 +750,20 @@ public class TestUtil extends Iced {
    * @param na_string string for NA in a column
    * @return
    */
-  protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types,
-                                            ParseSetupTransformer transformer) {
-    return parse_test_folder(fname, na_string, check_header, column_types, transformer, null);
+  protected static Frame parseTestFolder(String fname, String na_string, int check_header, byte[] column_types,
+                                         ParseSetupTransformer transformer) {
+    return parseTestFolder(fname, na_string, check_header, column_types, transformer, null);
+  }
+  
+  /**
+   * @deprecated use {@link #parseTestFolder(String, String, int, byte[], ParseSetupTransformer, int[])} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_folder(String fname, String na_string, int check_header, byte[] column_types,
+                                    ParseSetupTransformer transformer, int[] skipped_columns) {
+    return parseTestFolder(fname, na_string, check_header, column_types, transformer, skipped_columns);
   }
 
   /**
@@ -729,8 +773,8 @@ public class TestUtil extends Iced {
    * @param na_string string for NA in a column
    * @return
    */
-  protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types,
-                                            ParseSetupTransformer transformer, int[] skipped_columns) {
+  protected static Frame parseTestFolder(String fname, String na_string, int check_header, byte[] column_types,
+                                         ParseSetupTransformer transformer, int[] skipped_columns) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
     Arrays.sort(files);
@@ -1363,7 +1407,7 @@ public class TestUtil extends Iced {
         File f = generatedFile = prepareFile();
         System.out.println("File generated into: " + f.getCanonicalPath());
         if (f.isDirectory()) {
-          return parse_test_folder(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, null, psTransformer);
+          return parseTestFolder(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, null, psTransformer);
         } else {
           return parseTestFile(f.getCanonicalPath(), psTransformer);
         }

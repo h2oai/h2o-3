@@ -541,7 +541,7 @@ public class ParserTestARFF extends TestUtil {
   public void testFolder1() {
     Frame k1 = null, k2 = null;
     try {
-      k2 = parse_test_folder("smalldata/junit/arff/folder1/");
+      k2 = parseTestFolder("smalldata/junit/arff/folder1/");
       k1 = parseTestFile("smalldata/junit/arff/iris.arff");
       TestUtil.assertBitIdentical(k1, k2);
       Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
@@ -556,7 +556,7 @@ public class ParserTestARFF extends TestUtil {
   public void testFolder2() {
     Frame k1 = null, k2 = null;
     try {
-      k2 = parse_test_folder("smalldata/junit/arff/folder2/" );
+      k2 = parseTestFolder("smalldata/junit/arff/folder2/" );
       k1 = parseTestFile("smalldata/junit/arff/iris.arff");
       TestUtil.assertBitIdentical(k1, k2);
       Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
@@ -571,7 +571,7 @@ public class ParserTestARFF extends TestUtil {
   public void testFolder3() {
     Frame k1 = null, k2 = null;
     try {
-      k2 = parse_test_folder("smalldata/junit/arff/folder3/" );
+      k2 = parseTestFolder("smalldata/junit/arff/folder3/" );
       k1 = parseTestFile("smalldata/junit/arff/iris.arff");
       TestUtil.assertBitIdentical(k1, k2);
       Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
@@ -586,7 +586,7 @@ public class ParserTestARFF extends TestUtil {
   public void testFolder4() {
     Frame k1 = null, k2 = null;
     try {
-      k2 = parse_test_folder("smalldata/junit/arff/folder4/" );
+      k2 = parseTestFolder("smalldata/junit/arff/folder4/" );
       k1 = parseTestFile("smalldata/junit/arff/iris.arff");
       TestUtil.assertBitIdentical(k1, k2);
       Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
