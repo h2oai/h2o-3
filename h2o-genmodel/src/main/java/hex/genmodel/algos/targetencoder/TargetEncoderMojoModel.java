@@ -23,6 +23,7 @@ public class TargetEncoderMojoModel extends MojoModel {
 
   List<String> _nonPredictors;
   Map<String, EncodingMap> _encodingsByCol;
+  List<ColumnsMapping> _inoutMapping;
   boolean _keepOriginalCategoricalColumns;
   
   /**
