@@ -3,6 +3,9 @@ package ai.h2o.targetencoding;
 import water.Iced;
 import water.util.ArrayUtils;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 /**
@@ -15,38 +18,36 @@ class InteractionsEncoder extends Iced {
     static final String UNSEEN = "_UNSEEN_";
     static final String NA = "_NA_";
 
-    boolean _encodeUnseenAsNA;
-    String[][] _interactingDomains;
-    String[] _interactionDomain;
-    int[] _encodingFactors;
+    private boolean _encodeUnseenAsNA;
+    private String[][] _interactingDomains;
+    private int[] _encodingFactors;
 
     InteractionsEncoder(String[][] interactingDomains, boolean encodeUnseenAsNA) {
         _encodeUnseenAsNA = encodeUnseenAsNA;
         _interactingDomains = interactingDomains;
-        _interactionDomain = createInteractionDomain();
         _encodingFactors = createEncodingFactors();
     }
 
 
-    int encode(int[] interactingValues) {
-        int value = 0;
+    long encode(int[] interactingValues) {
+        long value = 0;
         for (int i = 0; i < interactingValues.length; i++) {
             int domainCard = _interactingDomains[i].length;
             int interactionFactor = _encodingFactors[i];
             int ival = interactingValues[i];
             if (ival >= domainCard) ival = domainCard;  // unseen value during training
             if (ival < 0) ival = _encodeUnseenAsNA ? domainCard : (domainCard + 1);  // NA
-            value += ival * interactionFactor;
+            value += (long)ival * interactionFactor;
         }
         return value;
     }
 
-    int encodeStr(String[] interactingValues) {
+    long encodeStr(String[] interactingValues) {
         int[] values = new int[interactingValues.length];
         for (int i = 0; i < interactingValues.length; i++) {
             String[] domain = _interactingDomains[i];
             String val = interactingValues[i];
-            int ival = val==null ? -1 : ArrayUtils.find(domain, val);
+            int ival = val==null ? -1 : Arrays.binarySearch(domain, val);
             if (ival < 0 && val != null) {  //emulates distinction between NA and unseen.
                 values[i] = domain.length; 
             } else {
@@ -56,18 +57,18 @@ class InteractionsEncoder extends Iced {
         return encode(values);
     }
 
-    int[] decode(int interactionValue) {
+    int[] decode(long interactionValue) {
         int[] values = new int[_encodingFactors.length];
-        int value = interactionValue;
+        long value = interactionValue;
         for (int i = _encodingFactors.length - 1; i >= 0; i--) {
             int factor = _encodingFactors[i];
-            values[i] = value / factor;
+            values[i] = (int)(value / factor);
             value %= factor;
         }
         return values;
     }
 
-    String[] decodeStr(int interactionValue) {
+    String[] decodeStr(long interactionValue) {
         int[] values = decode(interactionValue);
         String[] catValues = new String[values.length];
         for (int i = 0; i < values.length; i++) {
@@ -90,13 +91,6 @@ class InteractionsEncoder extends Iced {
             multiplier *= interactionFactor;
         }
         return factors;
-    }
-
-    private String[] createInteractionDomain() {
-        int card = 1;
-        for (String[] domain : _interactingDomains)
-            card *= (_encodeUnseenAsNA ? (domain.length + 1) : (domain.length + 2));  // +1 for potential unseen values, +1 for NAs
-        return IntStream.range(0, card).mapToObj(Integer::toString).toArray(String[]::new);
     }
 
 }

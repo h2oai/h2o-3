@@ -38,7 +38,7 @@ public class TargetEncoderFeatureInteractionTest {
             final TargetEncoderModel teModel = te.trainModel().get();
             Scope.track_generic(teModel);
             assertNotNull(teModel);
-            printOutFrameAsTable(teModel._output._target_encoding_map.get("fYear*fMonth"));
+            printOutFrameAsTable(teModel._output._target_encoding_map.get("fYear~fMonth"));
             final Frame encoded = teModel.score(test);
             printOutFrameAsTable(encoded);
             Scope.track(encoded);
@@ -47,7 +47,7 @@ public class TargetEncoderFeatureInteractionTest {
             assertEquals(train.numCols() + 2, encoded.numCols());
             final int[] encodedColIdx = new int[] {
                     ArrayUtils.indexOf(encoded.names(), "Origin_te"),
-                    ArrayUtils.indexOf(encoded.names(), "fYear*fMonth_te"),
+                    ArrayUtils.indexOf(encoded.names(), "fYear~fMonth_te"),
             };
             for (int colIdx : encodedColIdx) {
                 assertNotEquals(-1, colIdx);

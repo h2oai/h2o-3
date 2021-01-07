@@ -579,5 +579,25 @@ public class TargetEncodingHelperTest extends TestUtil {
       Scope.exit();
     }
   }
+  
+  @Test
+  public void test_addInteractionColumn() {
+    try {
+      Scope.enter();
+      Frame fr = new TestFrameBuilder()
+              .withColNames("cat1", "cat2", "cat3")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b",  "c", "a",  "b", "c", null))
+              .withDataForCol(1, ar("A", "B", null, "A",  "B", "A",  "B"))
+              .withDataForCol(2, ar("0", "1",  "2", "3", null, "0",  "1"))
+              .build();
+
+      createFeatureInteraction(fr, fr.names(), true);
+      printOutFrameAsTable(fr);
+      System.out.println("Domain: "+Arrays.toString(fr.lastVec().domain()));
+    } finally {
+      Scope.exit();
+    }
+  }
 
 }

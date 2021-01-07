@@ -21,6 +21,7 @@ import water.rapids.vals.ValStrs;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.TwoDimTable;
+import water.util.VecUtils;
 
 import java.util.*;
 
@@ -84,7 +85,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
   }
 
   private static String addInteractionColumn(Frame fr, String[] columns, boolean encodeUnseenAsNA) {
-    String interactionColName = String.join("*", columns);  // any limit to col name length?
+    String interactionColName = String.join("~", columns);  // any limit to col name length?
     int[] cols = Arrays.stream(columns).mapToInt(fr::find).toArray();
     Vec interactionCol = createInteractionColumn(fr, cols, encodeUnseenAsNA);
     fr.add(interactionColName, interactionCol);
@@ -108,14 +109,15 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
           for (int i=0; i<cs.length; i++) {
             interactingValues[i] = cs[i].isNA(row) ? -1 : (int)cs[i].at8(row);
           }
-          int val = encoder.encode(interactingValues);
+          long val = encoder.encode(interactingValues);
           if (val < 0) 
             nc.addNA();
           else
-            nc.addCategorical(val);
+            nc.addNum(val);
         }
       }
-    }.doAll(new byte[] {Vec.T_CAT}, interactingVecs).outputFrame(null, null, new String[][] {encoder._interactionDomain}).lastVec();
+    }.doAll(new byte[] {Vec.T_NUM}, interactingVecs).outputFrame().lastVec();
+    interactionCol = VecUtils.toCategoricalVec(interactionCol);
     return interactionCol;
   }
 
