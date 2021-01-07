@@ -22,10 +22,10 @@ def test_gbm_effective_parameters():
     response = "economy_20mpg"
     train, valid = cars.split_frame(ratios=[.8], seed=1234)
 
-    gbm1 = H2OGradientBoostingEstimator(seed=1234, stopping_rounds=3)
+    gbm1 = H2OGradientBoostingEstimator(seed=1234, stopping_rounds=3, score_tree_interval=5)
     gbm1.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
 
-    gbm2 = H2OGradientBoostingEstimator(seed=1234, stopping_rounds=3, distribution="bernoulli", stopping_metric="logloss",
+    gbm2 = H2OGradientBoostingEstimator(seed=1234, stopping_rounds=3, score_tree_interval=5, distribution="bernoulli", stopping_metric="logloss",
                                         histogram_type="UniformAdaptive", categorical_encoding="Enum")
     gbm2.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
 
