@@ -314,7 +314,9 @@ public final class ComputationState {
         assert _u == null || _activeData.activeCols().length == _u.length;
         _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, cols));
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
-        _gslvr = new GLMGradientSolver(_job,_parms,_activeData,(1-_alpha)*_lambda,_bc);
+        _gslvr = _penaltyMatrix == null ? new GLMGradientSolver(_job,_parms,_activeData,(1-_alpha)*_lambda,_bc) 
+                : new GLMGradientSolver(_job, _parms, _dinfo, (1 - _alpha) * _lambda, _bc, _penaltyMatrix,
+                _gamBetaIndices);
         assert _beta.length == cols.length;
         return;
       }
@@ -529,7 +531,8 @@ public final class ComputationState {
     }
     int [] activeCols = _activeData.activeCols();
     if(beta != _beta || _ginfo == null) {
-      _gslvr = new GLMGradientSolver(_job, _parms, _dinfo, (1 - _alpha) * _lambda, _bc, _penaltyMatrix, 
+      _gslvr = _penaltyMatrix == null ? new GLMGradientSolver(_job, _parms, _dinfo, (1 - _alpha) * _lambda, _bc)
+              : new GLMGradientSolver(_job, _parms, _dinfo, (1 - _alpha) * _lambda, _bc, _penaltyMatrix, 
               _gamBetaIndices);
       _ginfo = _gslvr.getGradient(beta);
     }
@@ -578,7 +581,9 @@ public final class ComputationState {
         _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, newCols));
         _activeData = _dinfo.filterExpandedColumns(newCols);
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
-        _gslvr = new GLMGradientSolver(_job, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
+        _gslvr = _penaltyMatrix == null ? new GLMGradientSolver(_job, _parms, _activeData, 
+                (1 - _alpha) * _lambda, _activeBC) : new GLMGradientSolver(_job, _parms, _activeData, 
+                (1 - _alpha) * _lambda, _activeBC, _penaltyMatrix, _gamBetaIndices);
         return false;
       }
     }
@@ -594,7 +599,9 @@ public final class ComputationState {
       _ginfo._gradient = ArrayUtils.removeIds(_ginfo._gradient,cols);
     _activeData = _dinfo.filterExpandedColumns(activeCols);
     _activeBC = _bc.filterExpandedColumns(activeCols);
-    _gslvr = new GLMGradientSolver(_job, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
+    _gslvr = _penaltyMatrix == null ? new GLMGradientSolver(_job, _parms, _activeData,
+            (1 - _alpha) * _lambda, _activeBC) : new GLMGradientSolver(_job, _parms, _activeData,
+            (1 - _alpha) * _lambda, _activeBC, _penaltyMatrix, _gamBetaIndices);
     _currGram = null;
     return activeCols;
   }
