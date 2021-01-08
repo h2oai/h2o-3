@@ -112,8 +112,7 @@ def test_models_not_predicting_some_classes_dont_corrupt_resulting_SE_model():
         se.train(data.x, data.y, data.train)
         results = scores_and_preds(se, data.test)
         print(results)
-        assert data.domain != results.test_pclasses, "expected predictions not to include all target domain"
-        assert len(results.test_pclasses) == 1
+        assert data.domain == results.test_pclasses, "expected predicted classes {} but got {}".format(data.domain, results.test_pclasses)
 
     def check_stackedensemble_with_GLM_metalearner_with_standardization_disabled(data, models):
         se = H2OStackedEnsembleEstimator(base_models=models,
