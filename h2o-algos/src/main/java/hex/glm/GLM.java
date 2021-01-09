@@ -39,6 +39,7 @@ import java.text.NumberFormat;
 import java.util.*;
 
 import static hex.ModelMetrics.calcVarImp;
+import static hex.glm.GLMModel.GLMParameters.GLMType.gam;
 import static hex.glm.GLMUtils.*;
 import static water.fvec.Vec.T_STR;
 
@@ -568,7 +569,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms.interactionSpec());
       _totalBetaLen = _parms._family.equals(Family.multinomial) || _parms._family.equals(Family.ordinal)?
               _dinfo.fullN()*nclasses()+1:_dinfo.fullN()+1;
-      if (_parms._glmType.equals(GLMType.gam))
+      if (gam.equals(_parms._glmType))
          _gamColIndices = extractAdaptedFrameIndices(_dinfo._adaptedFrame, _gamColnames, _dinfo._numOffsets[0]-_dinfo._cats);
         
       if (_parms._max_iterations == -1) { // fill in default max iterations
@@ -628,8 +629,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._early_stopping = false; // PUBDEV-4641: early stopping does not work correctly with non-negative option
       _state.setBC(bc);
       if(hasOffsetCol() && _parms._intercept) { // fit intercept
-        GLMGradientSolver gslvr = new GLMGradientSolver(_job,_parms, _dinfo.filterExpandedColumns(new int[0]), 
-                0, _state.activeBC(), _penaltyMatrix, _gamColIndices);
+        GLMGradientSolver gslvr = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job,_parms, 
+                _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC(), _penaltyMatrix, _gamColIndices) 
+                : new GLMGradientSolver(_job,_parms, _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC());
         double [] x = new L_BFGS().solve(gslvr,new double[]{-_offset.mean()}).coefs;
         Log.info(LogMsg("fitted intercept = " + x[0]));
         x[0] = _parms.linkInv(x[0]);
@@ -656,8 +658,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           } else
             System.arraycopy(_parms._startval, 0, beta, 0, beta.length);
         }
-        GLMGradientInfo ginfo = new GLMGradientSolver(_job, _parms, _dinfo, 0, _state.activeBC(), 
-                _penaltyMatrix, _gamColIndices).getGradient(beta);  // gradient obtained with zero penalty
+        GLMGradientInfo ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _dinfo, 0, 
+                _state.activeBC(), _penaltyMatrix, _gamColIndices).getGradient(beta) : new GLMGradientSolver(_job, 
+                _parms, _dinfo, 0, _state.activeBC()).getGradient(beta);  // gradient obtained with zero penalty
         _lmax = lmax(ginfo._gradient);
         _gmax = _lmax*Math.max(1e-2, _parms._alpha[0]); // each alpha should have its own best lambda
         _state.setLambdaMax(_lmax);
@@ -874,7 +877,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   @Override protected GLMDriver trainModelImpl() { return _driver = new GLMDriver(); }
 
   private final double lmax(double[] grad) {
-    if (_parms._glmType==GLMType.gam) { // do not take into account gam col gradients.  They can be too big
+    if (gam.equals(_parms._glmType)) { // do not take into account gam col gradients.  They can be too big
       int totGamCols = 0;
       for (int numG = 0; numG < _penaltyMatrix.length; numG++) {
            totGamCols += _penaltyMatrix[numG].length;
@@ -2899,7 +2902,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       for (double[] b : _betaMultinomial) {
         l2pen += ArrayUtils.l2norm2(b, _dinfo._intercept);
       }
-      double smoothval = _parms._glmType.equals(GLMType.gam)?calSmoothNess(_betaMultinomial, _penaltyMatrix, 
+      double smoothval = gam.equals(_parms._glmType)?calSmoothNess(_betaMultinomial, _penaltyMatrix, 
               _gamColIndices):0;
       return new GLMGradientInfo(gt._likelihood, gt._likelihood * _parms._obj_reg + .5 * _l2pen * l2pen + 
               smoothval, null);
@@ -2935,7 +2938,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           for (int i = _dinfo.fullN(); i < beta.length; i += _dinfo.fullN() + 1)
             grad[i] = 0;
         }
-        double smoothVal = _parms._glmType.equals(GLMType.gam)?calSmoothNess(_betaMultinomial, _penaltyMatrix,
+        double smoothVal = gam.equals(_parms._glmType)?calSmoothNess(_betaMultinomial, _penaltyMatrix,
                 _gamColIndices):0.0;
         return new GLMGradientInfo(gt._likelihood, gt._likelihood * _parms._obj_reg + .5 * _l2pen * l2pen + 
                 smoothVal, grad);
@@ -2967,7 +2970,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (!_parms._intercept) // no intercept, null the ginfo
           gradient[gradient.length - 1] = 0;
         
-        double gamSmooth = _parms._glmType.equals(GLMType.gam)?
+        double gamSmooth = gam.equals(_parms._glmType)?
                 calSmoothNess(expandVec(beta, _dinfo._activeCols, _totalBetaLen), _penaltyMatrix, _gamColIndices):0;
         double obj = likelihood * _parms._obj_reg + .5 * _l2pen * ArrayUtils.l2norm2(beta, true)+gamSmooth;
         if (_bc != null && _bc._betaGiven != null && _bc._rho != null)
@@ -2979,7 +2982,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     @Override
     public GradientInfo getObjective(double[] beta) {
       double l = new GLMResDevTask(_job._key,_dinfo,_parms,beta).doAll(_dinfo._adaptedFrame)._likelihood;
-      double smoothness = _parms._glmType.equals(GLMType.gam)?
+      double smoothness = gam.equals(_parms._glmType)?
               calSmoothNess(expandVec(beta, _dinfo._activeCols, _totalBetaLen), _penaltyMatrix, _gamColIndices):0;
       return new GLMGradientInfo(l,l*_parms._obj_reg + .5*_l2pen*ArrayUtils.l2norm2(beta,true)
               +smoothness,null);
