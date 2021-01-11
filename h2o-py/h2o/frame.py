@@ -137,7 +137,8 @@ class H2OFrame(Keyed):
 
         # create a temporary file that will be written to
         tmp_handle, tmp_path = tempfile.mkstemp(suffix=".csv")
-        tmp_file = os.fdopen(tmp_handle, 'w')
+        print("encoding: " + sys.getfilesystemencoding())
+        tmp_file = os.fdopen(tmp_handle, 'w', encoding="utf-8")
         # create a new csv writer object thingy
         csv_writer = csv.writer(tmp_file, dialect="excel", quoting=csv.QUOTE_NONNUMERIC)
         csv_writer.writerow(column_names)

@@ -4169,20 +4169,23 @@ as.h2o.data.frame <- function(x, destination_frame="", use_datatable=TRUE, ...) 
   class.map <- h2o.class.map()
   types[types %in% names(class.map)] <- class.map[types[types %in% names(class.map)]]
   verbose <- getOption("h2o.verbose", FALSE)
+  print(Sys.getlocale())
   if (verbose) pt <- proc.time()[[3]]
   if (use_datatable && getOption("h2o.fwrite", TRUE) && use.package("data.table")) {
-    data.table::fwrite(x, tmpf, na="NA_h2o", row.names=FALSE, showProgress=FALSE)
+    data.table::fwrite(x, tmpf, na="NA_h2o", row.names=FALSE, showProgress=FALSE)#, fileEncoding="UTF-8")
     fun <- "fwrite"
   } else {
-    write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
+    write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")#, fileEncoding="UTF-8")
     fun <- "write.csv"
   }
+  #print(tmpf)
   if (verbose) cat(sprintf("writing csv to disk using '%s' took %.2fs\n", fun, proc.time()[[3]]-pt))
   #if (verbose) pt <- proc.time()[[3]] # timings inside
   h2f <- h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
                         col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x)))
   #if (verbose) cat(sprintf("uploading csv to h2o using 'h2o.uploadFile' took %.2fs\n", proc.time()[[3]]-pt))
   file.remove(tmpf)
+  #file.copy(tmpf, ".")
   h2f
 }
 
