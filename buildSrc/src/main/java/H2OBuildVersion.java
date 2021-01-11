@@ -265,7 +265,7 @@ public class H2OBuildVersion {
       System.out.println("");
       System.out.println("ERROR:  H2OBuildVersion emitBuildVersionJavaFileIfNecessary failed");
       System.out.println("");
-      System.out.println(e);
+      e.printStackTrace();
       System.out.println("");
       System.exit(1);
     }
