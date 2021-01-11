@@ -411,7 +411,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** Read-Lock both training and validation User frames. */
     public void read_lock_frames(Job job) {
-      Key k = job._key;
+      @SuppressWarnings("unchecked")
+      Key<Job> k = job._key;
       Frame tr = train();
       if (tr != null)
         read_lock_frame(tr, k);
@@ -419,7 +420,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         read_lock_frame(_valid.get(), k);
     }
 
-    private void read_lock_frame(Frame fr, Key k) {
+    private void read_lock_frame(Frame fr, Key<Job> k) {
       if (_is_cv_model)
         fr.write_lock_to_read_lock(k);
       else

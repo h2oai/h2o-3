@@ -116,12 +116,14 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
         assert !old.is_wlocked(_job_key) : "Key "+_key+" already locked (or deleted); lks="+Arrays.toString(old._lockers); // No double locking by same job
         if( old.is_locked(_job_key) ) // read-locked by self? (double-write-lock checked above)
           old.set_unlocked(old._lockers,_job_key); // Remove read-lock; will atomically upgrade to write-lock
-        if( !old.is_unlocked() ) // Blocking for some other Job to finish???
-          throw new IllegalArgumentException(old.getClass()+" "+_key+" is already in use.  Unable to use it now.  Consider using a different destination name.");
+        if( !old.is_unlocked() ) { // Blocking for some other Job to finish???
+          throw new IllegalArgumentException(old.getClass() + " " + _key + " is already in use. Unable to use it now.  Consider using a different destination name.");
+        }
+        // Update & set the new value
       }
-      // Update & set the new value
-      set_write_lock(_job_key);
-      return Lockable.this;
+      Lockable l = old != null ? old : Lockable.this;
+      l.set_write_lock(_job_key);
+      return l;
     }
   }
 
