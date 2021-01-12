@@ -106,22 +106,23 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   }
 
   // Obtain the write-lock on _key, which may already exist, using the current 'this'.
-  private final class PriorWriteLock extends TAtomic<Lockable> {
+  private final class PriorWriteLock extends TAtomic<Lockable<T>> {
     private final Key<Job> _job_key; // Job doing the locking
-    private Lockable _old;              // Return the old thing, for deleting later
+    private Lockable<T> _old;              // Return the old thing, for deleting later
     private PriorWriteLock( Key<Job> job_key ) { _job_key = job_key; }
-    @Override public Lockable atomic(Lockable old) {
+    @Override public Lockable<T> atomic(Lockable<T> old) {
       _old = old;
       if( old != null ) {       // Prior Lockable exists?
         assert !old.is_wlocked(_job_key) : "Key "+_key+" already locked (or deleted); lks="+Arrays.toString(old._lockers); // No double locking by same job
         if( old.is_locked(_job_key) ) // read-locked by self? (double-write-lock checked above)
           old.set_unlocked(old._lockers,_job_key); // Remove read-lock; will atomically upgrade to write-lock
         if( !old.is_unlocked() ) { // Blocking for some other Job to finish???
-          throw new IllegalArgumentException(old.getClass() + " " + _key + " is already in use. Unable to use it now.  Consider using a different destination name.");
+          throw new IllegalArgumentException(old.getClass() + " " + _key + " is already in use by " + Arrays.toString(old._lockers) +
+                  ". Unable to use it now. Consider using a different destination name.");
         }
-        // Update & set the new value
       }
-      Lockable l = old != null ? old : Lockable.this;
+      // Update & set the new value
+      Lockable<T> l = old != null ? old : Lockable.this;
       l.set_write_lock(_job_key);
       return l;
     }
