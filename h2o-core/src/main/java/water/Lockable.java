@@ -212,8 +212,8 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
     return (T)this;
   }
 
-  // Freshen 'this' and unlock
-  private class Unlock extends TAtomic<Lockable> {
+  // Unlock and if write-locked also freshen 'this'
+  private class Unlock extends TAtomic<Lockable<T>> {
     final Key<Job> _job_key;    // Job doing the unlocking
     // Most uses want exact semantics: assert if not locked when unlocking.
     // Crash-cleanup code sometimes has a hard time knowing if the crash was
@@ -221,12 +221,16 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
     // in all situations.
     final boolean _exact;       // Complain if not locked when unlocking
     Unlock( Key<Job> job_key, boolean exact ) { _job_key = job_key; _exact = exact;}
-    @Override public Lockable atomic(Lockable old) {
+    @Override public Lockable<T> atomic(Lockable<T> old) {
       assert !_exact || old != null : "Trying to unlock null!";
       assert !_exact || old.is_locked(_job_key) : "Can't unlock: Not locked!";
-      if( _exact || old.is_locked(_job_key) )
-        set_unlocked(old._lockers,_job_key);
-      return Lockable.this;
+      final Lockable<T> l = old == null || old.is_wlocked() ?
+              Lockable.this : old;
+      if (_exact || l.is_locked(_job_key)) {
+        // Update & set the new value
+        l.set_unlocked(old._lockers, _job_key);
+      }
+      return l;
     }
   }
 
