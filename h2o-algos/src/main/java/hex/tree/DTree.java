@@ -329,7 +329,7 @@ public class DTree extends Iced {
         final boolean hasNAs = (_nasplit == DHistogram.NASplitDir.NALeft && way == 0 || 
                 _nasplit == DHistogram.NASplitDir.NARight && way == 1) && h.hasNABin();
 
-        nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, hasNAs,h._seed*0xDECAF+(way+1), parms, h._globalQuantilesKey, cs, h._checkFloatSplits);
+        nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, hasNAs,h._seed*0xDECAF+(way+1), parms, h._globalQuantilesKey, cs, h._checkFloatSplits, h.useUplift());
         cnt++;                    // At least some chance of splitting
       }
       return cnt == 0 ? null : nhists;
@@ -587,11 +587,7 @@ public class DTree extends Iced {
           useBounds = false;
           dist = null;
         }
-        if(_hs[_col].useUplift()) {
-          _s = findBestSplitPointUplift(_hs[_col], _col, _tree._parms._min_rows, constraint, min, max, useBounds, dist);
-        } else {
           _s = findBestSplitPoint(_hs[_col], _col, _tree._parms._min_rows, constraint, min, max, useBounds, dist);
-        }
         return _s;
       }
     }
@@ -862,7 +858,6 @@ public class DTree extends Iced {
     assert ab.position() == sz;
     return new CompressedTree(ab.buf(), _seed,tid,cls);
   }
-  
 
   static Split findBestSplitPoint(DHistogram hs, int col, double min_rows, int constraint, double min, double max, 
                                   boolean useBounds, Distribution dist) {
