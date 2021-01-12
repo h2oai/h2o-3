@@ -75,14 +75,17 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   // only for debugging purposes
   final boolean _reduceHistoPrecision; // if enabled allows to test that histograms are 100% reproducible when reproducibleHistos are enabled
   transient Consumer<DHistogram[][]> _hcsMonitor;
+  final int _treatmentIdx;
 
   public ScoreBuildHistogram2(ScoreBuildOneTree sb, int treeNum, int k, int ncols, int nbins, DTree tree, int leaf,
                               DHistogram[][] hcs, DistributionFamily family,
-                              int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdxs) {
-    super(sb, k, ncols, nbins, tree, leaf, hcs, family, weightIdx, workIdx, nidIdxs);
+                              int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdxs, int treatmentIdx) {
+    super(sb, k, ncols, nbins, tree, leaf, hcs, family, weightIdx, workIdx, nidIdxs, treatmentIdx);
+    
     _numLeafs = _hcs.length;
     _respIdx = respIdx;
     _predsIdx = predsIdx;
+    _treatmentIdx = treatmentIdx;
 
     int hcslen = _hcs.length;
     IcedBitSet activeCols = new IcedBitSet(ncols);
@@ -393,6 +396,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       Object cs = null;
       double[] resp = null;
       double[] preds = null;
+      double[] treatment = null;
       final int maxWorkId = _allocator.getMaxId(id);
       for(int i = _allocator.allocateWork(id); i < maxWorkId; i = _allocator.allocateWork(id)) {
         if (cs == null) {
@@ -401,11 +405,14 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           if (_predsIdx >= 0)
             preds = MemoryManager.malloc8d(_maxChunkSz);
         }
-        cs = computeChunk(i, cs, _ws[i], resp, preds);
+        if(_treatmentIdx >= 0){
+          treatment = MemoryManager.malloc8d(_maxChunkSz);
+        }
+        cs = computeChunk(i, cs, _ws[i], resp, preds, treatment);
       }
     }
 
-    private Object computeChunk(int id, Object cs, double[] ws, double[] resp, double[] preds){
+    private Object computeChunk(int id, Object cs, double[] ws, double[] resp, double[] preds, double[] treatment){
       int [] nh = _nhs[id];
       int [] rs = _rss[id];
       Chunk resChk = _chks[id][_workIdx];
@@ -429,9 +436,13 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
                 _chks[id][_predsIdx].getDoubles(preds, 0, len);
               }
             }
+            if(h._useUplift){
+              _chks[id][_respIdx].getDoubles(resp, 0, len);
+              _chks[id][_treatmentIdx].getDoubles(treatment, 0, len);
+            }
             extracted = true;
           }
-          h.updateHisto(ws, resp, cs, ys, preds, rs, hi, lo);
+          h.updateHisto(ws, resp, cs, ys, preds, rs, hi, lo, treatment);
         }
       }
       return cs;

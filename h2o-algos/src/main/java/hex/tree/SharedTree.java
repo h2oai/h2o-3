@@ -8,6 +8,7 @@ import hex.util.CheckpointUtils;
 import hex.util.LinearAlgebraUtils;
 import jsr166y.CountedCompleter;
 import org.apache.log4j.Logger;
+import org.apache.log4j.Priority;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
@@ -81,6 +82,9 @@ public abstract class SharedTree<
   private transient SharedTreeDebugParams _debugParms;
 
   public boolean isSupervised(){return true;}
+
+  public boolean _isUplift;
+  public boolean isUplift(){return _isUplift;}
 
   @Override public boolean haveMojo() { return true; }
   @Override public boolean havePojo() { 
@@ -163,9 +167,10 @@ public abstract class SharedTree<
         error("_min_rows", "The dataset size is too small to split for min_rows=" + _parms._min_rows
                 + ": must have at least " + 2*_parms._min_rows + " (weighted) rows, but have only " + sumWeights + ".");
     }
-    if( _train != null )
-      _ncols = _train.numCols()-(isSupervised()?1:0)-numSpecialCols();
-
+    if( _train != null ) {
+      _ncols = _train.numCols() - (isSupervised() ? 1 : 0) - numSpecialCols();
+    }
+    
     PlattScalingHelper.initCalibration(this, _parms, expensive);
 
     _orig_projection_array = LinearAlgebraUtils.toEigenProjectionArray(_origTrain, _train, expensive);
@@ -183,6 +188,16 @@ public abstract class SharedTree<
       warn("_parallel_main_model_building",
               "Parallel main model will be disabled because use_best_cv_iteration is specified.");
     }
+    _isUplift = _parms._treatment_column != null;
+  }
+
+  @Override
+  public String[] specialColNames() {
+    String[] colNames = super.specialColNames();
+    if(_parms._treatment_column != null) {
+      return ArrayUtils.append(colNames, _parms._treatment_column);
+    }
+    return colNames;
   }
 
   protected void validateRowSampleRate() {
@@ -505,7 +520,7 @@ public abstract class SharedTree<
   }
   
   // --------------------------------------------------------------------------
-  // Build an entire layer of all K trees
+  // Build an entire layer of uplift tree
   protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {
     // Build K trees, one per class.
 
@@ -513,16 +528,25 @@ public abstract class SharedTree<
     // Nearly all leaves will split one more level.  This loop nest is
     //           O( #active_splits * #bins * #ncols )
     // but is NOT over all the data.
+    DTree tmpTree =  new DTree(ktrees[0]);
     ScoreBuildOneTree sb1ts[] = new ScoreBuildOneTree[_nclass];
     Vec vecs[] = fr.vecs();
     for( int k=0; k<_nclass; k++ ) {
-      final DTree tree = ktrees[k]; // Tree for class K
-      if( tree == null ) continue;
+      DTree tree = ktrees[k]; // Tree for class K
       // Build a frame with just a single tree (& work & nid) columns, so the
       // nested MRTask ScoreBuildHistogram in ScoreBuildOneTree does not try
       // to close other tree's Vecs when run in parallel.
-      final String[] fr2cols = Arrays.copyOf(fr._names,_ncols+1);
-      final Vec[] fr2vecs = Arrays.copyOf(vecs,_ncols+1);
+      if(isUplift() && k==1){
+        ktrees[k] = new DTree(tmpTree);
+        tree = ktrees[k]; // Tree for class K
+      }
+      if( tree == null ) continue;
+      int selectedCol = _ncols + 1;
+      if(isUplift()){
+        selectedCol++;
+      }
+      final String[] fr2cols = Arrays.copyOf(fr._names, selectedCol);
+      final Vec[] fr2vecs = Arrays.copyOf(vecs, selectedCol);
       if (DEBUG_PUBDEV_6686) {
         boolean hasNull = false;
         for (Vec v : fr2vecs) {
@@ -549,6 +573,7 @@ public abstract class SharedTree<
       // Add temporary workspace vectors (optional weights are taken over from fr)
       int respIdx = fr2.find(_parms._response_column);
       int weightIdx = fr2.find(_parms._weights_column);
+      int treatmentIdx = fr2.find(_parms._treatment_column);
       int predsIdx = fr2.numCols(); fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]); //tree predictions
       int workIdx =  fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
       int nidIdx  =  fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
@@ -556,8 +581,8 @@ public abstract class SharedTree<
       // Async tree building
       // step 1: build histograms
       // step 2: split nodes
-      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, 
-              respIdx, weightIdx, predsIdx, workIdx, nidIdx));
+      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k, nbins, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, 
+              respIdx, weightIdx, predsIdx, workIdx, nidIdx, treatmentIdx));
     }
     // Block for all K trees to complete.
     boolean did_split=false;
@@ -568,6 +593,65 @@ public abstract class SharedTree<
       if( sb1ts[k]._did_split ) did_split=true;
       if (LOG.isTraceEnabled()) {
         LOG.trace("Done with this layer for class " + k + ":\n" + new Frame(
+                new String[]{"TREE", "WORK", "NIDS"},
+                new Vec[]{
+                        vecs[idx_tree(k)],
+                        vecs[idx_work(k)],
+                        vecs[idx_nids(k)]
+                }
+        ).toTwoDimTable());
+      }
+    }
+    // The layer is done.
+    return did_split ? hcs : null;
+  }
+
+  protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, final DTree tree, final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {
+    // Build K trees, one per class.
+
+    // Build up the next-generation tree splits from the current histograms.
+    // Nearly all leaves will split one more level.  This loop nest is
+    //           O( #active_splits * #bins * #ncols )
+    // but is NOT over all the data.
+    ScoreBuildOneTree sb1t = null;
+    Vec vecs[] = fr.vecs();
+    // Build a frame with just a single tree (& work & nid) columns, so the
+    // nested MRTask ScoreBuildHistogram in ScoreBuildOneTree does not try
+    // to close other tree's Vecs when run in parallel.
+    int k = 0;
+    if( tree != null ) { 
+      int selectedCol = _ncols + 2;
+      if(isUplift()){
+        selectedCol++;
+      }
+      final String[] fr2cols = Arrays.copyOf(fr._names, selectedCol);
+      final Vec[] fr2vecs = Arrays.copyOf(vecs, selectedCol);
+      Frame fr2 = new Frame(fr2cols, fr2vecs); //predictors, weights and the actual response
+      if (isSupervised() && fr2.find(_parms._response_column) == -1) {
+        fr2.add(_parms._response_column, fr.vec(_parms._response_column));
+      }
+
+      // Add temporary workspace vectors (optional weights are taken over from fr)
+      int respIdx = fr2.find(_parms._response_column);
+      int weightIdx = fr2.find(_parms._weights_column);
+      int treatmentIdx = fr2.find(_parms._treatment_column);
+      int predsIdx = fr2.numCols(); fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]); //tree predictions
+      int workIdx =  fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
+      int nidIdx  =  fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
+      if (LOG.isTraceEnabled()) LOG.trace("Building a layer for class " + k + ":\n" + fr2.toTwoDimTable());
+      // Async tree building
+      // step 1: build histograms
+      // step 2: split nodes
+      H2O.submitTask(sb1t = new ScoreBuildOneTree(this,k, nbins, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution,
+              respIdx, weightIdx, predsIdx, workIdx, nidIdx, treatmentIdx));
+    }
+    // Block for all K trees to complete.
+    boolean did_split=false;
+    if( sb1t != null ) {
+      sb1t.join();
+      if( sb1t._did_split ) did_split=true;
+      if (LOG.isTraceEnabled()) {
+        LOG.info("Done with this layer for class " + k + ":\n" + new Frame(
                 new String[]{"TREE", "WORK", "NIDS"},
                 new Vec[]{
                         vecs[idx_tree(k)],
@@ -597,11 +681,12 @@ public abstract class SharedTree<
     final int _predsIdx;
     final int _workIdx;
     final int _nidIdx;
+    final int _treatmentIdx;
 
     boolean _did_split;
 
     ScoreBuildOneTree(SharedTree st, int k, int nbins, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family,
-                      int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdx) {
+                      int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdx, int treatmentIdx) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
@@ -617,6 +702,7 @@ public abstract class SharedTree<
       _predsIdx = predsIdx;
       _workIdx = workIdx;
       _nidIdx = nidIdx;
+      _treatmentIdx = treatmentIdx;
     }
     @Override public void compute2() {
       // Fuse 2 conceptual passes into one:
@@ -629,7 +715,7 @@ public abstract class SharedTree<
       // per column.
       int treeNum = ((SharedTreeModel.SharedTreeOutput) _st._model._output)._ntrees;
       new ScoreBuildHistogram2(this, treeNum, _k, _st._ncols, _nbins, _tree, _leafOffsets[_k], _hcs[_k], _family,
-              _respIdx, _weightIdx, _predsIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
+              _respIdx, _weightIdx, _predsIdx, _workIdx, _nidIdx, _treatmentIdx).dfork2(null,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
       ScoreBuildHistogram sbh = (ScoreBuildHistogram) caller;
@@ -670,6 +756,7 @@ public abstract class SharedTree<
   protected int idx_work(int c) { return idx_tree(c) + _nclass; }
   protected int idx_nids(int c) { return idx_work(c) + _nclass; }
   protected int idx_oobt()      { return idx_nids(0) + _nclass; }
+  protected int idx_treatment()    { return _model._output.treatmentIdx(); }
 
   public Chunk chk_weight( Chunk chks[]      ) { return chks[idx_weight()]; }
   protected Chunk chk_offset( Chunk chks[]      ) { return chks[idx_offset()]; }
@@ -695,6 +782,7 @@ public abstract class SharedTree<
     public int work0Index;
     public int nids0Index;
     public int oobtIndex;
+    public int treatmentIndex;
 
     public FrameMap() {}  // For Externalizable interface
     public FrameMap(SharedTree t) {
@@ -705,6 +793,7 @@ public abstract class SharedTree<
       work0Index = t.idx_work(0);
       nids0Index = t.idx_nids(0);
       oobtIndex = t.idx_oobt();
+      treatmentIndex = t.idx_treatment();
     }
   }
 
@@ -799,7 +888,7 @@ public abstract class SharedTree<
       }
       out._model_summary = createModelSummaryTable(out._ntrees, out._treeStats);
       out._scoring_history = createScoringHistoryTable();
-      if (out._ntrees > 0 && isSupervised()) {    // Compute variable importances
+      if (out._ntrees > 0 && isSupervised() && !isUplift()) {    // Compute variable importances
         out._varimp = new hex.VarImp(_improvPerVar, out._names);
         out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
       }
@@ -859,7 +948,11 @@ public abstract class SharedTree<
     colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
-    colHeaders.add("Training RMSE"); colTypes.add("double"); colFormat.add("%.5f");
+    if(!_output.isUpliftBinomialClassifier()) {
+      colHeaders.add("Training RMSE");
+      colTypes.add("double");
+      colFormat.add("%.5f");
+    }
     if (_output.getModelCategory() == ModelCategory.Regression) {
       colHeaders.add("Training MAE"); colTypes.add("double"); colFormat.add("%.5f");
       if (!hasCustomDistribution) {
@@ -868,7 +961,7 @@ public abstract class SharedTree<
         colFormat.add("%.5f");
       }
     }
-    if (_output.isClassifier()) {
+    if (_output.isClassifier() && !_output.isUpliftBinomialClassifier()) {
       colHeaders.add("Training LogLoss"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Binomial) {
@@ -876,19 +969,26 @@ public abstract class SharedTree<
       colHeaders.add("Training pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
       colHeaders.add("Training Lift"); colTypes.add("double"); colFormat.add("%.5f");
     }
-    if(_output.isClassifier()){
+    if(_output.isClassifier() && !_output.isUpliftBinomialClassifier()){
       colHeaders.add("Training Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Multinomial) {
       colHeaders.add("Training AUC"); colTypes.add("double"); colFormat.add("%.5f");
       colHeaders.add("Training pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
     }
+    if(_output.isUpliftBinomialClassifier()){
+      colHeaders.add("Training AUUC"); colTypes.add("double"); colFormat.add("%.5f");
+    }
     if (hasCustomMetric) {
       colHeaders.add("Training Custom"); colTypes.add("double"); colFormat.add("%.5f");
     }
 
     if (_output._validation_metrics != null) {
-      colHeaders.add("Validation RMSE"); colTypes.add("double"); colFormat.add("%.5f");
+      if(!_output.isUpliftBinomialClassifier()) {
+        colHeaders.add("Validation RMSE");
+        colTypes.add("double");
+        colFormat.add("%.5f");
+      }
       if (_output.getModelCategory() == ModelCategory.Regression) {
         colHeaders.add("Validation MAE"); colTypes.add("double"); colFormat.add("%.5f");
         if (!hasCustomDistribution) {
@@ -897,7 +997,7 @@ public abstract class SharedTree<
           colFormat.add("%.5f");
         }
       }
-      if (_output.isClassifier()) {
+      if (_output.isClassifier() && !_output.isUpliftBinomialClassifier()) {
         colHeaders.add("Validation LogLoss"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (_output.getModelCategory() == ModelCategory.Binomial) {
@@ -905,12 +1005,15 @@ public abstract class SharedTree<
         colHeaders.add("Validation pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
         colHeaders.add("Validation Lift"); colTypes.add("double"); colFormat.add("%.5f");
       }
-      if(_output.isClassifier()){
+      if(_output.isClassifier() && !_output.isUpliftBinomialClassifier()){
         colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (_output.getModelCategory() == ModelCategory.Multinomial) {
         colHeaders.add("Validation AUC"); colTypes.add("double"); colFormat.add("%.5f");
         colHeaders.add("Validation pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
+      }
+      if(_output.isUpliftBinomialClassifier()){
+        colHeaders.add("Validation AUUC"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (hasCustomMetric) {
         colHeaders.add("Validation Custom"); colTypes.add("double"); colFormat.add("%.5f");
@@ -938,45 +1041,55 @@ public abstract class SharedTree<
       table.set(row, col++, PrettyPrint.msecs(_training_time_ms[i] - job.start_time(), true));
       table.set(row, col++, i);
       ScoreKeeper st = _scored_train[i];
-      table.set(row, col++, st._rmse);
+      if(!_output.isUpliftBinomialClassifier()) {
+        table.set(row, col++, st._rmse);
+      }
       if (_output.getModelCategory() == ModelCategory.Regression) {
         table.set(row, col++, st._mae);
         if (!hasCustomDistribution) {
           table.set(row, col++, st._mean_residual_deviance);
         }
       }
-      if (_output.isClassifier()) table.set(row, col++, st._logloss);
+      if (_output.isClassifier() && !_output.isUpliftBinomialClassifier()) table.set(row, col++, st._logloss);
       if (_output.getModelCategory() == ModelCategory.Binomial) {
         table.set(row, col++, st._AUC);
         table.set(row, col++, st._pr_auc);
         table.set(row, col++, st._lift);
       }
-      if (_output.isClassifier()) table.set(row, col++, st._classError);
+      if (_output.isClassifier() && !_output.isUpliftBinomialClassifier()) table.set(row, col++, st._classError);
       if (_output.getModelCategory() == ModelCategory.Multinomial) {
         table.set(row, col++, st._AUC);
         table.set(row, col++, st._pr_auc);
+      }
+      if (_output.isUpliftBinomialClassifier()){
+        table.set(row, col++, st._AUUC);
       }
       if (hasCustomMetric) table.set(row, col++, st._custom_metric);
 
       if (_output._validation_metrics != null) {
         st = _scored_valid[i];
-        table.set(row, col++, st._rmse);
+        if(!_output.isUpliftBinomialClassifier()) {
+          table.set(row, col++, st._rmse);
+        }
         if (_output.getModelCategory() == ModelCategory.Regression) {
           table.set(row, col++, st._mae);
           if (!hasCustomDistribution) {
             table.set(row, col++, st._mean_residual_deviance);
           }
         }
-        if (_output.isClassifier()) table.set(row, col++, st._logloss);
+        if (_output.isClassifier() && !_output.isUpliftBinomialClassifier()) table.set(row, col++, st._logloss);
         if (_output.getModelCategory() == ModelCategory.Binomial) {
           table.set(row, col++, st._AUC);
           table.set(row, col++, st._pr_auc);
           table.set(row, col++, st._lift);
         }
-        if (_output.isClassifier()) table.set(row, col++, st._classError);
+        if (_output.isClassifier() && !_output.isUpliftBinomialClassifier()) table.set(row, col++, st._classError);
         if (_output.getModelCategory() == ModelCategory.Multinomial) {
           table.set(row, col++, st._AUC);
           table.set(row, col++, st._pr_auc);
+        }
+        if (_output.isUpliftBinomialClassifier()){
+          table.set(row, col++, st._AUUC);
         }
         if (hasCustomMetric) table.set(row, col++, st._custom_metric);
       }

@@ -214,24 +214,24 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
      * Create a ModelMetrics for a given model and frame
      * @param m Model
      * @param f Frame
-     * @param frameWithWeights Frame that contains extra columns such as weights
+     * @param frameWithExtraColumns Frame that contains extra columns such as weights
      * @param preds Optional predictions (can be null), only used to compute Gains/Lift table for binomial problems  @return
      * @return ModelMetricsBinomial
      */
-    @Override public ModelMetrics makeModelMetrics(final Model m, final Frame f, 
-                                                   Frame frameWithWeights, final Frame preds) {
+    @Override public ModelMetrics makeModelMetrics(final Model m, final Frame f, Frame frameWithExtraColumns, final Frame preds) {
       Vec resp = null;
       Vec weight = null;
       if (_wcount > 0) {
-        if (preds!=null) {
-          if (frameWithWeights == null) 
-            frameWithWeights = f;
-          resp = m==null && frameWithWeights.vec(f.numCols()-1).isCategorical() ? 
-                  frameWithWeights.vec(f.numCols()-1) //work-around for the case where we don't have a model, assume that the last column is the actual response
+        if (preds != null) {
+          if (frameWithExtraColumns == null) {
+            frameWithExtraColumns = f;
+          }
+          resp = m == null && frameWithExtraColumns.vec(f.numCols()-1).isCategorical() ? 
+                  frameWithExtraColumns.vec(f.numCols()-1) //work-around for the case where we don't have a model, assume that the last column is the actual response
                   :
-                  frameWithWeights.vec(m._parms._response_column);
+                  frameWithExtraColumns.vec(m._parms._response_column);
           if (resp != null) {
-            weight = m==null?null : frameWithWeights.vec(m._parms._weights_column);
+            weight = m==null ? null : frameWithExtraColumns.vec(m._parms._weights_column);
           }
         }
       }
@@ -245,7 +245,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         if (preds != null) {
           if (resp != null) {
             final Optional<GainsLift> optionalGainsLift = calculateGainsLift(m, preds, resp, weight);
-            if(optionalGainsLift.isPresent()){
+            if (optionalGainsLift.isPresent()) {
               gl = optionalGainsLift.get();
             }
           }

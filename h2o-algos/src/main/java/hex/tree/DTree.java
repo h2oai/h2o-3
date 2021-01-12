@@ -2,6 +2,7 @@ package hex.tree;
 
 import hex.Distribution;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.uplift.Divergence;
 import jsr166y.RecursiveAction;
 import org.apache.log4j.Logger;
 import water.AutoBuffer;
@@ -84,6 +85,33 @@ public class DTree extends Iced {
     }
     _cols = activeCols;
   }
+  
+  public DTree(DTree tree){
+    _names = tree._names;
+    _ncols = tree._ncols;
+    _parms = tree._parms;
+    _ns = new Node[tree._ns.length];
+    for(int i=0; i<_ns.length; i++) {
+      Node node = tree._ns[i];
+      if(node  instanceof UndecidedNode) {
+        _ns[i] = new UndecidedNode((UndecidedNode)node, this);
+      } else if(node instanceof DecidedNode){
+        _ns[i] = new DecidedNode((DecidedNode)node, this);
+      } else if(node instanceof LeafNode) {
+        _ns[i] = new LeafNode((LeafNode)node, this);
+      } else {
+        _ns[i] = null;
+      }
+    }
+    _mtrys = tree._mtrys;
+    _mtrys_per_tree = tree._mtrys_per_tree;
+    _seed = tree._seed;
+    _rand = tree._rand;
+    _cols = tree._cols;
+    _leaves = tree._leaves;
+    _len = tree._len;
+    _depth = tree._depth;
+  }
 
   public final Node root() { return _ns[0]; }
   // One-time local init after wire transfer
@@ -120,6 +148,12 @@ public class DTree extends Iced {
       _nid = tree.newIdx(this);
     }
 
+    Node( DTree tree, int pid, int nid, boolean copy) {
+        _tree = tree;
+        _pid = pid;
+        _nid = nid;
+    }
+    
     // Recursively print the decision-line from tree root to this child.
     StringBuilder printLine(StringBuilder sb ) {
       if( _pid== NO_PARENT) return sb.append("[root]");
@@ -148,6 +182,8 @@ public class DTree extends Iced {
     final double _n0,  _n1;     // (Weighted) Rows in each final split
     final double _p0,  _p1;     // Predicted value for each split
     final double _tree_p0, _tree_p1;
+    final double _p0Treat, _p0Contr, _p1Treat, _p1Contr; // uplift predictions
+    final double _n0Treat, _n0Contr, _n1Treat, _n1Contr;
 
     public Split(int col, int bin, DHistogram.NASplitDir nasplit, IcedBitSet bs, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1, double tree_p0, double tree_p1) {
       assert nasplit != DHistogram.NASplitDir.None;
@@ -161,7 +197,26 @@ public class DTree extends Iced {
       _n0 = n0;  _n1 = n1;  _se0 = se0;  _se1 = se1;
       _p0 = p0;  _p1 = p1;
       _tree_p0 = tree_p0; _tree_p1 = tree_p1;
+      _p0Treat = _p0Contr = _p1Treat = _p1Contr = 0;
+      _n0Treat = _n0Contr = _n1Treat = _n1Contr = 0;
     }
+
+    public Split(int col, int bin, DHistogram.NASplitDir nasplit, IcedBitSet bs, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1, double tree_p0, double tree_p1, 
+                 double p0Treat, double p0Contr, double p1Treat, double p1Contr, double n0Treat, double n0Contr, double n1Treat, double n1Contr) {
+      assert(nasplit!= DHistogram.NASplitDir.None);
+      assert(equal!=1); //no longer done
+      // FIXME: Disabled for testing PUBDEV-6495:
+      // assert se > se0+se1 || se==Double.MAX_VALUE; // No point in splitting unless error goes down
+      assert(col>=0);
+      assert(bin>=0);
+      _col = col;  _bin = bin; _nasplit = nasplit; _bs = bs;  _equal = equal;  _se = se;
+      _n0 = n0;  _n1 = n1;  _se0 = se0;  _se1 = se1;
+      _p0 = p0;  _p1 = p1;
+      _tree_p0 = tree_p0; _tree_p1 = tree_p1;
+      _p0Treat = p0Treat; _p0Contr = p0Contr; _p1Treat = p1Treat; _p1Contr = p1Contr;
+      _n0Treat = n0Treat; _n0Contr = n0Contr; _n1Treat = n1Treat; _n1Contr = n1Contr;
+    }
+    
     public final double pre_split_se() { return _se; }
     public final double se() { return _se0+_se1; }
     public final int   col() { return _col; }
@@ -277,7 +332,7 @@ public class DTree extends Iced {
           min = h._min;         // Then no improvement over last go
           maxEx = h._maxEx;
         } else {                // Else pick up tighter observed bounds
-          min = h.find_min();   // Tracked inclusive lower bound
+          min = h.findMin();   // Tracked inclusive lower bound
           if( h.find_maxIn() == min )
             continue; // This column will not split again
           maxEx = h.find_maxEx(); // Exclusive max
@@ -363,6 +418,13 @@ public class DTree extends Iced {
       _hs = hs; //these histograms have no bins yet (just constructed)
       _cs = cs;
       _scoreCols = scoreCols();
+    }
+    
+    public UndecidedNode(UndecidedNode node, DTree tree){
+      super(tree, node._pid, node._nid, true);
+      _hs = node._hs; //these histograms have no bins yet (just constructed)
+      _cs = node._cs;
+      _scoreCols = node._scoreCols;
     }
 
     // Pick a random selection of columns to compute best score.
@@ -505,10 +567,21 @@ public class DTree extends Iced {
     transient int _size = 0;  // Compressed byte size of this subtree
     transient int _nnodes = 0; // Number of nodes in this subtree
 
+    public DecidedNode(DecidedNode node, DTree tree){
+      super(tree, node._pid, node._nid, true);
+      _split = node._split;
+      _splat = node._splat;
+      _nids = node._nids;
+      _nodeType = node._nodeType;
+      _size = node._size;
+      _nnodes = node._nnodes;
+    }
+    
     // Make a correctly flavored Undecided
     public UndecidedNode makeUndecidedNode(DHistogram hs[], Constraints cs) {
       return new UndecidedNode(_tree, _nid, hs, cs);
     }
+    
 
     // Pick the best column from the given histograms
     public Split bestCol(UndecidedNode u, DHistogram hs[], Constraints cs) {
@@ -559,12 +632,15 @@ public class DTree extends Iced {
       }
       private FindSplits(DHistogram[] hs, Constraints cs, int col, int nid) {
         _hs = hs; _cs = cs; _col = col; _nid = nid;
+        _useUplift = _hs[_col].useUplift();
       }
       final DHistogram[] _hs;
       final Constraints _cs;
       final int _col;
       final int _nid;
       DTree.Split _s;
+      final boolean _useUplift;
+      
       @Override public void compute() {
         computeSplit();
       }
@@ -586,7 +662,11 @@ public class DTree extends Iced {
           useBounds = false;
           dist = null;
         }
-        _s = findBestSplitPoint(_hs[_col], _col, _tree._parms._min_rows, constraint, min, max, useBounds, dist);
+        if(_useUplift){
+          _s = findBestSplitPointUplift(_hs[_col], _col, _tree._parms._min_rows, constraint, min, max, useBounds, dist);
+        } else {
+          _s = findBestSplitPoint(_hs[_col], _col, _tree._parms._min_rows, constraint, min, max, useBounds, dist);
+        }
         return _s;
       }
     }
@@ -653,6 +733,14 @@ public class DTree extends Iced {
 
     public double pred( int nid ) {
       return nid==0 ? _split._p0 : _split._p1;
+    }
+
+    public double predTreatment( int nid ) {
+      return nid==0 ? _split._p0Treat : _split._p1Treat;
+    }
+
+    public double predControl( int nid ) {
+      return nid==0 ? _split._p0Contr : _split._p1Contr;
     }
 
     @Override public String toString() {
@@ -795,6 +883,7 @@ public class DTree extends Iced {
         abAux.put4f((float)_split._se1);
         abAux.put4(_nids[0]);
         abAux.put4(_nids[1]);
+        
       }
 
       Node left = _tree.node(_nids[0]);
@@ -818,6 +907,10 @@ public class DTree extends Iced {
     public float _pred;
     public LeafNode( DTree tree, int pid ) { super(tree,pid); tree._leaves++; }
     public LeafNode( DTree tree, int pid, int nid ) { super(tree,pid,nid); tree._leaves++; }
+    public LeafNode( LeafNode node, DTree tree) {
+      super(tree,node._pid, node._nid, true);
+      _pred = node._pred;
+    }
     @Override public String toString() { return "Leaf#"+_nid+" = "+_pred; }
     @Override public final StringBuilder toString2(StringBuilder sb, int depth) {
       for( int d=0; d<depth; d++ ) sb.append("  ");
@@ -857,9 +950,9 @@ public class DTree extends Iced {
     assert ab.position() == sz;
     return new CompressedTree(ab.buf(), _seed,tid,cls);
   }
-  
 
-  static Split findBestSplitPoint(DHistogram hs, int col, double min_rows, int constraint, double min, double max, 
+
+  static Split findBestSplitPoint(DHistogram hs, int col, double min_rows, int constraint, double min, double max,
                                   boolean useBounds, Distribution dist) {
     if(hs._vals == null) {
       if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": histogram not filled yet.");
@@ -876,7 +969,7 @@ public class DTree extends Iced {
     // (for an ordered predictor), or sorted by the mean response (for an
     // unordered predictor, i.e. categorical predictor).
     double[]   vals =   hs._vals;
-    final int vals_dim = hs._vals_dim; 
+    final int vals_dim = hs._vals_dim;
     int idxs[] = null;          // and a reverse index mapping
 
     // For categorical (unordered) predictors, sort the bins by average
@@ -963,7 +1056,7 @@ public class DTree extends Iced {
 
     final double denNA = hasDenom ? hs.denNA() : wNA;
     final double nomNA = hasNomin ? hs.nomNA() : wYNA;
-    
+
     // Compute mean/var for cumulative bins from nbins to 0 inclusive.
     double   whi[] = MemoryManager.malloc8d(nbins+1);
     double  wYhi[] = MemoryManager.malloc8d(nbins+1);
@@ -1066,7 +1159,7 @@ public class DTree extends Iced {
                         Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
           double tmpPredLeft;
           double tmpPredRight;
-          if(constraint != 0 && dist._family.equals(DistributionFamily.quantile)) { 
+          if(constraint != 0 && dist._family.equals(DistributionFamily.quantile)) {
             int quantileBinLeft = 0;
             int quantileBinRight = 0;
             for (int bin = 1; bin <= nbins; bin++) {
@@ -1089,7 +1182,7 @@ public class DTree extends Iced {
               }
             }
             tmpPredLeft = wYlo[quantileBinLeft];
-            tmpPredRight = wYlo[quantileBinRight] - wYlo[b]; 
+            tmpPredRight = wYlo[quantileBinRight] - wYlo[b];
           } else {
             tmpPredLeft = hasDenom ? nomlo[b] / denlo[b] : wYlo[b] / wlo[b];
             tmpPredRight = hasDenom ? nomhi[b] / denhi[b] : wYhi[b] / whi[b];
@@ -1144,7 +1237,7 @@ public class DTree extends Iced {
                 }
                 tmpPredLeft = wYlo[quantileBinLeft] + wYNA;
                 tmpPredRight = wYlo[quantileBinRight] - wYlo[b];
-              } else { 
+              } else {
                 tmpPredLeft = hasDenom ? (nomlo[b] + nomNA) / (denlo[b] + denNA) : (wYlo[b] + wYNA) / (wlo[b] + wNA);
                 tmpPredRight = hasDenom ? nomhi[b] / denhi[b] : wYhi[b] / whi[b];
               }
@@ -1354,12 +1447,736 @@ public class DTree extends Iced {
     if (nasplit == DHistogram.NASplitDir.None) {
       nasplit = nLeft > nRight ? DHistogram.NASplitDir.Left : DHistogram.NASplitDir.Right;
     }
-    
+
     assert constraint == 0 || constraint * tree_p0 <= constraint * tree_p1;
     assert (Double.isNaN(min) || min <= tree_p0) && (Double.isNaN(max) || tree_p0 <= max);
     assert (Double.isNaN(min) || min <= tree_p1) && (Double.isNaN(max) || tree_p1 <= max);
 
     Split split = new Split(col, best, nasplit, bs, equal, seBefore, best_seL, best_seR, nLeft, nRight, node_p0, node_p1, tree_p0, tree_p1);
+    if (LOG.isTraceEnabled()) LOG.trace("splitting on " + hs._name + ": " + split);
+    return split;
+  }
+
+  static Split findBestSplitPointUplift(DHistogram hs, int col, double min_rows, int constraint, double min, double max,
+                                  boolean useBounds, Distribution dist) {
+    if(hs._valsUplift == null) {
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": histogram not filled yet.");
+      return null;
+    }
+    final int nbins = hs.nbins();
+    assert nbins >= 1;
+
+    final boolean hasPreds = hs.hasPreds();
+    final boolean hasDenom = hs.hasDenominator();
+    final boolean hasNomin = hs.hasNominator();
+    
+    
+    final boolean useUplift = hs.useUplift();
+    assert useUplift;
+    final Divergence upliftMetric = hs._upliftMetric;
+
+    // Histogram arrays used for splitting, these are either the original bins
+    // (for an ordered predictor), or sorted by the mean response (for an
+    // unordered predictor, i.e. categorical predictor).
+    double[]   vals =   hs._vals;
+    final int vals_dim = hs._vals_dim;
+    double[] valsUplift = hs._valsUplift;
+    final int valsUpliftDim = 4;
+    int idxs[] = null;          // and a reverse index mapping
+
+    // For categorical (unordered) predictors, sort the bins by average
+    // prediction then look for an optimal split.
+    if( hs._isInt == 2 && hs._step == 1 ) {
+      // Sort the index by average response
+      idxs = MemoryManager.malloc4(nbins+1); // Reverse index
+      for( int i=0; i<nbins+1; i++ ) idxs[i] = i; //index in 0..nbins-1
+      final double[] avgs = MemoryManager.malloc8d(nbins+1);
+      for( int i=0; i<nbins; i++ ) avgs[i] = hs.w(i)==0 ? -Double.MAX_VALUE /* value doesn't matter - see below for sending empty buckets (unseen levels) into the NA direction */: hs.wY(i) / hs.w(i); // Average response
+      avgs[nbins] = Double.MAX_VALUE;
+      ArrayUtils.sort(idxs, avgs);
+      // Fill with sorted data.  Makes a copy, so the original data remains in
+      // its original order.
+      vals = MemoryManager.malloc8d(vals_dim*nbins);
+      valsUplift = useUplift ? MemoryManager.malloc8d(4*nbins) : null;
+
+      for( int i=0; i<nbins; i++ ) {
+        int id = idxs[i];
+        vals[vals_dim*i+0] = hs._vals[vals_dim*id+0];
+        vals[vals_dim*i+1] = hs._vals[vals_dim*id+1];
+        vals[vals_dim*i+2] = hs._vals[vals_dim*id+2];
+        if (hasPreds) {
+          vals[vals_dim * i + 3] = hs._vals[vals_dim * id + 3];
+          vals[vals_dim * i + 4] = hs._vals[vals_dim * id + 4];
+          if (hasDenom)
+            vals[vals_dim * i + 5] = hs._vals[vals_dim * id + 5];
+          if (hasNomin)
+            vals[vals_dim * i + 6] = hs._vals[vals_dim * id + 6];
+          if (useUplift) {
+            valsUplift[valsUpliftDim * i] = valsUplift[valsUpliftDim * id];
+            valsUplift[valsUpliftDim * i + 1] = valsUplift[valsUpliftDim * id + 1];
+            valsUplift[valsUpliftDim * i + 2] = valsUplift[valsUpliftDim * id + 2];
+            valsUplift[valsUpliftDim * i + 3] = valsUplift[valsUpliftDim * id + 3];
+          }
+        }
+        if (LOG.isTraceEnabled()) LOG.trace(vals[3*i] + " obs have avg response [" + i + "]=" + avgs[id]);
+      }
+    }
+
+    // Compute mean/var for cumulative bins from 0 to nbins inclusive.
+    double   wlo[] = MemoryManager.malloc8d(nbins+1);
+    double  wYlo[] = MemoryManager.malloc8d(nbins+1);
+    double wYYlo[] = MemoryManager.malloc8d(nbins+1);
+    double pr1lo[] = hasPreds ? MemoryManager.malloc8d(nbins+1) : null;
+    double pr2lo[] = hasPreds ? MemoryManager.malloc8d(nbins+1) : null;
+    double denlo[] = hasDenom ? MemoryManager.malloc8d(nbins+1) : wlo;
+    double nomlo[] = hasNomin ? MemoryManager.malloc8d(nbins+1) : wYlo;
+    double[] numloTreat = null;
+    double[] resploTreat = null;
+    double[] numloContr = null;
+    double[] resploContr = null;
+    if(useUplift) {
+      numloTreat = MemoryManager.malloc8d(nbins + 1);
+      resploTreat = MemoryManager.malloc8d(nbins + 1);
+      numloContr = MemoryManager.malloc8d(nbins + 1);
+      resploContr = MemoryManager.malloc8d(nbins + 1);
+    }
+
+    for( int b = 1; b <= nbins; b++ ) {
+      int id = vals_dim * (b - 1);
+      double n0 = wlo[b - 1], n1 = vals[id + 0];
+      if( n0==0 && n1==0 )
+        continue;
+      double m0 =  wYlo[b - 1], m1 = vals[id + 1];
+      double s0 = wYYlo[b - 1], s1 = vals[id + 2];
+      wlo[b] = n0+n1;
+      wYlo[b] = m0+m1;
+      wYYlo[b] = s0+s1;
+      if (hasPreds) {
+        double p10 = pr1lo[b - 1], p11 = vals[id + 3];
+        double p20 = pr2lo[b - 1], p21 = vals[id + 4];
+        pr1lo[b] = p10 + p11;
+        pr2lo[b] = p20 + p21;
+        if (hasDenom) {
+          double d0 = denlo[b - 1], d1 = vals[id + 5];
+          denlo[b] = d0 + d1;
+        }
+        if (hasNomin) {
+          double d0 = nomlo[b - 1], d1 = vals[id + 6];
+          nomlo[b] = d0 + d1;
+        }
+      }
+      if(useUplift){
+        id = valsUpliftDim * (b - 1);
+        double nt0 = numloTreat[b - 1], nt1 = valsUplift[id];
+        numloTreat[b] = nt0 + nt1;
+        double dt0 = resploTreat[b - 1], dt1 = valsUplift[id + 1];
+        resploTreat[b] = dt0 + dt1;
+        double nc0 = numloContr[b - 1], nc1 = valsUplift[id + 2];
+        numloContr[b] = nc0 + nc1;
+        double dc0 = resploContr[b - 1], dc1 = valsUplift[id + 3];
+        resploContr[b] = dc0 + dc1;
+      }
+    }
+    final double wNA = hs.wNA();
+    double tot = wlo[nbins] + wNA; //total number of (weighted) rows
+    // Is any split possible with at least min_obs?
+    if( tot < 2*min_rows ) {
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": min_rows: total number of observations is " + tot);
+      return null;
+    }
+    // If we see zero variance, we must have a constant response in this
+    // column.  Normally this situation is cut out before we even try to split,
+    // but we might have NA's in THIS column...
+    double wYNA = hs.wYNA();
+    double wYYNA = hs.wYYNA();
+    double var = (wYYlo[nbins]+wYYNA)*tot - (wYlo[nbins]+wYNA)*(wYlo[nbins]+wYNA);
+    if( ((float)var) == 0f ) {
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": var = 0.");
+      return null;
+    }
+
+    final double denNA = hasDenom ? hs.denNA() : wNA;
+    final double nomNA = hasNomin ? hs.nomNA() : wYNA;
+
+    // Compute mean/var for cumulative bins from nbins to 0 inclusive.
+    double   whi[] = MemoryManager.malloc8d(nbins+1);
+    double  wYhi[] = MemoryManager.malloc8d(nbins+1);
+    double wYYhi[] = MemoryManager.malloc8d(nbins+1);
+    double pr1hi[] = hasPreds ? MemoryManager.malloc8d(nbins+1) : null;
+    double pr2hi[] = hasPreds ? MemoryManager.malloc8d(nbins+1) : null;
+    double denhi[] = hasDenom ? MemoryManager.malloc8d(nbins+1) : whi;
+    double nomhi[] = hasNomin ? MemoryManager.malloc8d(nbins+1) : wYhi;
+    double[] numhiTreat = null;
+    double[] resphiTreat = null;
+    double[] numhiContr = null;
+    double[] resphiContr = null;
+    if(useUplift){
+      numhiTreat = MemoryManager.malloc8d(nbins+1);
+      resphiTreat = MemoryManager.malloc8d(nbins+1);
+      numhiContr = MemoryManager.malloc8d(nbins+1);
+      resphiContr = MemoryManager.malloc8d(nbins+1);
+    }
+    for( int b = nbins-1; b >= 0; b-- ) {
+      int id = vals_dim * b;
+      double n0 = whi[b+1], n1 = vals[id];
+      if( n0==0 && n1==0 )
+        continue;
+      double m0 =  wYhi[b + 1], m1 = vals[id + 1];
+      double s0 = wYYhi[b + 1], s1 = vals[id + 2];
+      whi[b] = n0+n1;
+      wYhi[b] = m0+m1;
+      wYYhi[b] = s0+s1;
+      if (hasPreds) {
+        double p10 = pr1hi[b + 1], p11 = vals[id + 3];
+        double p20 = pr2hi[b + 1], p21 = vals[id + 4];
+        pr1hi[b] = p10 + p11;
+        pr2hi[b] = p20 + p21;
+        if (hasDenom) {
+          double d0 = denhi[b + 1], d1 = vals[id + 5];
+          denhi[b] = d0 + d1;
+        }
+        if (hasNomin) {
+          double d0 = nomhi[b + 1], d1 = vals[id + 6];
+          nomhi[b] = d0 + d1;
+        }
+      }
+      if(useUplift){
+        id = valsUpliftDim * b;
+        double nt0 = numhiTreat[b + 1], nt1 = valsUplift[id];
+        numhiTreat[b] = nt0 + nt1;
+        double dt0 = resphiTreat[b + 1], dt1 = valsUplift[id + 1];
+        resphiTreat[b] = dt0 + dt1;
+        double nc0 = numhiContr[b + 1], nc1 = valsUplift[id + 2];
+        numhiContr[b] = nc0 + nc1;
+        double dc0 = resphiContr[b + 1], dc1 = valsUplift[id + 3];
+        resphiContr[b] = dc0 + dc1;
+      }
+      assert MathUtils.compare(wlo[b]+ whi[b]+wNA,tot,1e-5,1e-5);
+    }
+
+    double best_seL=Double.MAX_VALUE;   // squared error for left side of the best split (so far)
+    double best_seR=Double.MAX_VALUE;   // squared error for right side of the best split (so far)
+    DHistogram.NASplitDir nasplit = DHistogram.NASplitDir.None;
+
+    // squared error of all non-NAs
+    double seNonNA = wYYhi[0] - wYhi[0]* wYhi[0]/ whi[0]; // Squared Error with no split
+    if (seNonNA < 0) seNonNA = 0;
+    double seBefore = seNonNA;
+
+    double nLeft = 0;
+    double nRight = 0;
+    double predLeft = 0;
+    double predRight = 0;
+    double tree_p0 = 0;
+    double tree_p1 = 0;
+
+    double numTreatNA = 0;
+    double respTreatNA = 0;
+    double numContrNA = 0;
+    double respContrNA = 0;
+    if(useUplift) {
+      numTreatNA = hs.numTreatmentNA();
+      respTreatNA = hs.respTreatmentNA();
+      numContrNA = hs.numControlNA();
+      respContrNA = hs.respControlNA();
+    }
+
+    double bestUpliftGain = Double.MIN_VALUE;
+    double nCT1 = 0;
+    double nCT0 = 0;
+    double prCT1 = 0;
+    double prCT0 = 0;
+    double prY1CT1 = 0;
+    double prY1CT0 = 0;
+    double bestNLCT1 = 0;
+    double bestNLCT0 = 0;
+    double bestNRCT1 = 0;
+    double bestNRCT0 = 0;
+    double bestPrLY1CT1 = 0;
+    double bestPrLY1CT0 = 0;
+    double bestPrRY1CT1 = 0;
+    double bestPrRY1CT0 = 0;
+    double nLCT1 = 0;
+    double nLCT0 = 0;
+    double prLY1CT1 = 0;
+    double prLY1CT0 = 0;
+    double nRCT1 = 0;
+    double nRCT0 = 0;
+    double prRY1CT1 = 0;
+    double prRY1CT0 = 0;
+
+    if(useUplift) {
+      nCT1 = numhiTreat[0];
+      nCT0 = numhiContr[0];
+      prCT1 = (nCT1 + 1)/(nCT0 + nCT1 + 2);
+      prCT0 = 1 - prCT1;
+      prY1CT1 = resphiTreat[0]/nCT1;
+      prY1CT0 = resphiContr[0]/nCT0;
+      bestUpliftGain = upliftMetric.node(prY1CT1 , prY1CT0); // normalization here?
+    }
+    // if there are any NAs, then try to split them from the non-NAs
+    if (wNA>=min_rows) {
+      if(useUplift) {
+        double prCT1All = (nCT1 + numTreatNA + 1)/(nCT0 + numContrNA + nCT1 + numTreatNA + 2);
+        double prCT0All = 1-prCT1All;
+        double prY1CT1All = (resphiTreat[0] + respTreatNA) / (nCT1 + numTreatNA);
+        double prY1CT0All = (resphiContr[0] + respContrNA) / (nCT0 + numContrNA);
+        double prLCT1 = (nCT1 + 1)/(nCT0 + nCT1 + 2);
+        double prLCT0 = 1 - prLCT1;
+        double prL = prLCT1 * prCT1All + prLCT0 * prCT0All;
+        double prR = 1 - prL;
+        nLCT1 = numhiTreat[0];
+        nLCT0 = numhiContr[0];
+        prLY1CT1 = (resphiTreat[0] + 1) / (numhiTreat[0] + 2);
+        prLY1CT0 = (resphiContr[0] + 1) / (numhiContr[0] + 2);
+        nRCT1 = numTreatNA;
+        nRCT0 = numContrNA;
+        prRY1CT1 = (respTreatNA + 1) / (numTreatNA + 2);
+        prRY1CT0 = (respContrNA + 1) / (numContrNA + 2);
+        bestUpliftGain = upliftMetric.value(prY1CT1All, prY1CT0All, prL, prLY1CT1, prLY1CT0, prR, prRY1CT1, prRY1CT0, prCT1All, prCT0All, prLCT1, prLCT0);
+        bestNLCT1 = nLCT1;
+        bestNLCT0 = nLCT0;
+        bestNRCT1 = nRCT1;
+        bestNRCT0 = nRCT0;
+        bestPrLY1CT1 = prLY1CT1;
+        bestPrLY1CT0 = prLY1CT0;
+        bestPrRY1CT1 = prRY1CT1;
+        bestPrRY1CT0 = prRY1CT0;
+      }
+      double seAll = (wYYhi[0] + wYYNA) - (wYhi[0] + wYNA) * (wYhi[0] + wYNA) / (whi[0] + wNA);
+      double seNA = wYYNA - wYNA * wYNA / wNA;
+      if (seNA < 0) seNA = 0;
+      best_seL = seNonNA;
+      best_seR = seNA;
+      nasplit = DHistogram.NASplitDir.NAvsREST;
+      seBefore = seAll;
+      nLeft = whi[0]; //all non-NAs
+      predLeft = wYhi[0];
+      nRight = wNA;
+      predRight = wYNA;
+      if (hasDenom) {
+        tree_p0 = nomhi[0] / denhi[0];
+        tree_p1 = denNA / nomNA;
+      } else {
+        tree_p0 = predLeft / nLeft;
+        tree_p1 = predRight / nRight;
+      }
+    }
+
+    // Now roll the split-point across the bins.  There are 2 ways to do this:
+    // split left/right based on being less than some value, or being equal/
+    // not-equal to some value.  Equal/not-equal makes sense for categoricals
+    // but both splits could work for any integral datatype.  Do the less-than
+    // splits first.
+    int best=0;                         // The no-split
+    byte equal=0;                       // Ranged check
+    for( int b=1; b<=nbins-1; b++ ) {
+      if( vals[vals_dim*b] == 0 ) continue; // Ignore empty splits
+      if( wlo[b]+wNA < min_rows ) continue;
+      if( whi[b]+wNA < min_rows ) break; // w1 shrinks at the higher bin#s, so if it fails once it fails always
+      // We're making an unbiased estimator, so that MSE==Var.
+      // Then Squared Error = MSE*N = Var*N
+      //                    = (wYY/N - wY^2)*N
+      //                    = wYY - N*wY^2
+      //                    = wYY - N*(wY/N)(wY/N)
+      //                    = wYY - wY^2/N
+
+      // no NAs
+      double upliftGain = Double.MIN_VALUE;
+      if (wNA==0) {
+        double selo = wYYlo[b] - wYlo[b] * wYlo[b] / wlo[b];
+        double sehi = wYYhi[b] - wYhi[b] * wYhi[b] / whi[b];
+        if (selo < 0) selo = 0;    // Roundoff error; sometimes goes negative
+        if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
+        boolean condition;
+        if(useUplift){
+          nCT1 = numhiTreat[b];
+          nCT0 = numhiContr[b];
+          prCT1 = (nCT1 + 1)/(nCT0 + nCT1 + 2);
+          prCT0 = 1-prCT1;
+          double prLCT1 = (numloTreat[b] + 1)/(numloTreat[b] + numhiTreat[b] + 2);
+          double prLCT0 = 1 - prLCT1;
+          double prL = prLCT1 * prCT1 + prLCT0 * prCT0;
+          double prR = 1 - prL;
+          nLCT1 = numloTreat[b];
+          nLCT0 = numloContr[b];
+          prLY1CT1 = (resploTreat[b] + 1) / (numloTreat[b] + 2);
+          prLY1CT0 = (resploContr[b] + 1) / (numloContr[b] + 2);
+          nRCT1 = numhiTreat[b];
+          nRCT0 = numhiContr[b];
+          prRY1CT1 = (resphiTreat[b] + 1) / (numhiTreat[b] + 2);
+          prRY1CT0 = (resphiContr[b] + 1) / (numhiContr[b] + 2);
+          upliftGain = upliftMetric.value(prY1CT1, prY1CT0, prL, prLY1CT1, prLY1CT0, prR, prRY1CT1, prRY1CT0, prCT1, prCT0, prLCT1, prLCT0);
+          condition = upliftGain > bestUpliftGain;
+        } else {
+          condition = (selo + sehi < best_seL + best_seR) || // Strictly less error?
+                  // Or tied MSE, then pick split towards middle bins
+                  (selo + sehi == best_seL + best_seR &&
+                          Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)));
+        }
+        if (condition) {
+          double tmpPredLeft;
+          double tmpPredRight;
+          if(constraint != 0 && dist._family.equals(DistributionFamily.quantile)) {
+            int quantileBinLeft = 0;
+            int quantileBinRight = 0;
+            for (int bin = 1; bin <= nbins; bin++) {
+              // left tree prediction quantile
+              if (bin <= b) {
+                double n = wlo[b];
+                double quantilePosition = dist._quantileAlpha * n;
+                if(quantilePosition < wlo[bin]){
+                  quantileBinLeft = bin;
+                  bin = b+1;
+                }
+                // right tree prediction quantile
+              } else {
+                double n = (wlo[nbins] - wlo[b]);
+                double quantilePosition = dist._quantileAlpha * n;
+                if (quantilePosition < wlo[bin] - wlo[b]) {
+                  quantileBinRight = bin;
+                  break;
+                }
+              }
+            }
+            tmpPredLeft = wYlo[quantileBinLeft];
+            tmpPredRight = wYlo[quantileBinRight] - wYlo[b];
+          } else {
+            tmpPredLeft = hasDenom ? nomlo[b] / denlo[b] : wYlo[b] / wlo[b];
+            tmpPredRight = hasDenom ? nomhi[b] / denhi[b] : wYhi[b] / whi[b];
+          }
+          if (constraint == 0 || (constraint * tmpPredLeft <= constraint * tmpPredRight)) {
+            best_seL = selo;
+            best_seR = sehi;
+            best = b;
+            nLeft = wlo[best];
+            nRight = whi[best];
+            predLeft = wYlo[best];
+            predRight = wYhi[best];
+            tree_p0 = tmpPredLeft;
+            tree_p1 = tmpPredRight;
+            bestUpliftGain = upliftGain;
+            bestNLCT1 = nLCT1;
+            bestNLCT0 = nLCT0;
+            bestNRCT1 = nRCT1;
+            bestNRCT0 = nRCT0;
+            bestPrLY1CT1 = prLY1CT1;
+            bestPrLY1CT0 = prLY1CT0;
+            bestPrRY1CT1 = prRY1CT1;
+            bestPrRY1CT0 = prRY1CT0;
+          }
+        }
+      } else {
+        // option 1: split the numeric feature and throw NAs to the left
+        {
+          double selo = wYYlo[b] + wYYNA - (wYlo[b] + wYNA) * (wYlo[b] + wYNA) / (wlo[b] + wNA);
+          double sehi = wYYhi[b] - wYhi[b] * wYhi[b] / whi[b];
+          if (selo < 0) selo = 0;    // Roundoff error; sometimes goes negative
+          if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
+          boolean condition;
+          if(useUplift){
+            nCT1 = numhiTreat[b] + numTreatNA;
+            nCT0 = numhiContr[b] + numContrNA;
+            prCT1 = (nCT1 + 1)/(nCT0 + nCT1 + 2);
+            prCT0 = 1 - prCT1;
+            double prLCT1 = (numloTreat[b] + numTreatNA + 1)/(numloTreat[b] + numTreatNA + numhiTreat[b] + 2);
+            double prLCT0 = 1 - prLCT1;
+            double prL = prLCT1 * prCT1 + prLCT0 * prCT0;
+            double prR = 1 - prL;
+            nLCT1 = numloTreat[b] + numTreatNA;
+            nLCT0 = numloContr[b] + numContrNA;
+            prLY1CT1 = (resploTreat[b] + respTreatNA + 1) / (numloTreat[b] + numTreatNA + 2);
+            prLY1CT0 = (resploContr[b] + respContrNA + 1) / (numloContr[b] + numContrNA + 2);
+            nRCT1 = numhiTreat[b];
+            nRCT0 = numhiContr[b];
+            prRY1CT1 = (resphiTreat[b] + 1) / (numhiTreat[b] + 2);
+            prRY1CT0 = (resphiContr[b] + 1) / (numhiContr[b] + 2);
+            upliftGain = upliftMetric.value(prY1CT1, prY1CT0, prL, prLY1CT1, prLY1CT0, prR, prRY1CT1, prRY1CT0, prCT1, prCT0, prLCT1, prLCT0);
+            condition = upliftGain > bestUpliftGain;
+          } else {
+            condition = (selo + sehi < best_seL + best_seR) || // Strictly less error?
+                    // Or tied MSE, then pick split towards middle bins
+                    (selo + sehi == best_seL + best_seR &&
+                            Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)));
+          }
+          if (condition) {
+            if((wlo[b] + wNA) >= min_rows && whi[b] >= min_rows) {
+              double tmpPredLeft;
+              double tmpPredRight;
+              if(constraint != 0 && dist._family.equals(DistributionFamily.quantile)) {
+                int quantileBinLeft = 0;
+                int quantileBinRight = 0;
+                for (int bin = 1; bin <= nbins; bin++) {
+                  // left tree prediction quantile
+                  if (bin <= b) {
+                    double n = wlo[b];
+                    double quantilePosition = dist._quantileAlpha * n;
+                    if(quantilePosition < wlo[bin]){
+                      quantileBinLeft = bin;
+                      bin = b+1;
+                    }
+                    // right tree prediction quantile
+                  } else {
+                    double n = (wlo[nbins] - wlo[b]);
+                    double quantilePosition = dist._quantileAlpha * n;
+                    if (quantilePosition < wlo[bin] - wlo[b]) {
+                      quantileBinRight = bin;
+                      break;
+                    }
+                  }
+                }
+                tmpPredLeft = wYlo[quantileBinLeft] + wYNA;
+                tmpPredRight = wYlo[quantileBinRight] - wYlo[b];
+              } else {
+                tmpPredLeft = hasDenom ? (nomlo[b] + nomNA) / (denlo[b] + denNA) : (wYlo[b] + wYNA) / (wlo[b] + wNA);
+                tmpPredRight = hasDenom ? nomhi[b] / denhi[b] : wYhi[b] / whi[b];
+              }
+              if (constraint == 0 || (constraint * tmpPredLeft <= constraint * tmpPredRight)) {
+                best_seL = selo;
+                best_seR = sehi;
+                best = b;
+                nLeft = wlo[best] + wNA;
+                nRight = whi[best];
+                predLeft = wYlo[best] + wYNA;
+                predRight = wYhi[best];
+                nasplit = DHistogram.NASplitDir.NALeft;
+                tree_p0 = tmpPredLeft;
+                tree_p1 = tmpPredRight;
+                bestUpliftGain = upliftGain;
+                bestNLCT1 = nLCT1;
+                bestNLCT0 = nLCT0;
+                bestNRCT1 = nRCT1;
+                bestNRCT0 = nRCT0;
+                bestPrLY1CT1 = prLY1CT1;
+                bestPrLY1CT0 = prLY1CT0;
+                bestPrRY1CT1 = prRY1CT1;
+                bestPrRY1CT0 = prRY1CT0;
+              }
+            }
+          }
+        }
+
+        // option 2: split the numeric feature and throw NAs to the right
+        {
+          double selo = wYYlo[b] - wYlo[b] * wYlo[b] / wlo[b];
+          double sehi = wYYhi[b]+wYYNA - (wYhi[b]+wYNA) * (wYhi[b]+wYNA) / (whi[b]+wNA);
+          if (selo < 0) selo = 0;    // Roundoff error; sometimes goes negative
+          if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
+          boolean condition;
+          if(useUplift){
+            double prLCT1 = (numloTreat[b] + 1)/(numloTreat[b] + numhiTreat[0] + numTreatNA + 2);
+            double prLCT0 = 1 - prLCT1;
+            double prL = prLCT1 * prCT1 + prLCT0 * prCT0;
+            double prR = 1 - prL;
+            nLCT1 = numloTreat[b];
+            nLCT0 = numloContr[b];
+            prLY1CT1 = (resploTreat[b] + respTreatNA + 1) / (numloTreat[b] + 2);
+            prLY1CT0 = (resploContr[b] + respContrNA + 1) / (numloContr[b] + 2);
+            nRCT1 = numhiTreat[b] + numTreatNA;
+            nRCT0 = numhiContr[b] + numContrNA;
+            prRY1CT1 = (resphiTreat[b] + 1) / (numhiTreat[b] + numTreatNA + 2);
+            prRY1CT0 = (resphiContr[b] + 1) / (numhiContr[b] + numContrNA + 2);
+            upliftGain = upliftMetric.value(prY1CT1, prY1CT0, prL, prLY1CT1, prLY1CT0, prR, prRY1CT1, prRY1CT0, prCT1, prCT0, prLCT1, prLCT0);
+            condition = upliftGain > bestUpliftGain;
+          } else {
+            condition = (selo + sehi < best_seL + best_seR) || // Strictly less error?
+                    // Or tied MSE, then pick split towards middle bins
+                    (selo + sehi == best_seL + best_seR &&
+                            Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)));
+          }
+          if (condition) {
+            if( wlo[b] >= min_rows && (whi[b] + wNA) >= min_rows ) {
+              double tmpPredLeft;
+              double tmpPredRight;
+              if(constraint != 0 && dist._family.equals(DistributionFamily.quantile)) {
+                int quantileBinLeft = 0;
+                int quantileBinRight = 0;
+                double ratio = 1;
+                double delta = 1;
+                for (int bin = 1; bin <= nbins; bin++) {
+                  // left tree prediction quantile
+                  if (bin <= b) {
+                    double n = wlo[b];
+                    double quantilePosition = dist._quantileAlpha * n;
+                    if(quantilePosition < wlo[bin]){
+                      quantileBinLeft = bin;
+                      bin = b+1;
+                    }
+                    // right tree prediction quantile
+                  } else {
+                    double n = (wlo[nbins] - wlo[b]);
+                    double quantilePosition = dist._quantileAlpha * n;
+                    if (quantilePosition < wlo[bin] - wlo[b]) {
+                      quantileBinRight = bin;
+                      break;
+                    }
+                  }
+                }
+                tmpPredLeft = wYlo[quantileBinLeft];
+                tmpPredRight = wYlo[quantileBinRight] - wYlo[b] + wYNA;
+              } else {
+                tmpPredLeft = hasDenom ? nomlo[b] / denlo[b] : wYlo[b] / wlo[b];
+                tmpPredRight = hasDenom ? (nomhi[b] + nomNA) / (denhi[b] + denNA) : (wYhi[b] + wYNA) / (whi[b] + wNA);
+              }
+              if (constraint == 0 || (constraint * tmpPredLeft <= constraint * tmpPredRight)) {
+                best_seL = selo;
+                best_seR = sehi;
+                best = b;
+                nLeft = wlo[best];
+                nRight = whi[best] + wNA;
+                predLeft = wYlo[best];
+                predRight = wYhi[best] + wYNA;
+                nasplit = DHistogram.NASplitDir.NARight;
+                tree_p0 = tmpPredLeft;
+                tree_p1 = tmpPredRight;
+                bestNLCT1 = nLCT1;
+                bestNLCT0 = nLCT0;
+                bestNRCT1 = nRCT1;
+                bestNRCT0 = nRCT0;
+                bestPrLY1CT1 = prLY1CT1;
+                bestPrLY1CT0 = prLY1CT0;
+                bestPrRY1CT1 = prRY1CT1;
+                bestPrRY1CT0 = prRY1CT0;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if( best==0 && nasplit== DHistogram.NASplitDir.None) {
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": no optimal split found:\n" + hs);
+      return null;
+    }
+
+    //if( se <= best_seL+best_se1) return null; // Ultimately roundoff error loses, and no split actually helped
+    if (!(best_seL+ best_seR < seBefore * (1- hs._minSplitImprovement))) {
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": not enough relative improvement: " + (1-(best_seL + best_seR) / seBefore) + "\n" + hs);
+      return null;
+    }
+
+    assert(Math.abs(tot - (nRight + nLeft)) < 1e-5*tot);
+
+    if( MathUtils.equalsWithinOneSmallUlp((float)(predLeft / nLeft),(float)(predRight / nRight)) ) {
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": Predictions for left/right are the same.");
+      return null;
+    }
+
+    if (nLeft < min_rows || nRight < min_rows) {
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": split would violate min_rows limit.");
+      return null;
+    }
+
+    // FIXME (PUBDEV-7553): these asserts do not hold because histogram doesn't skip rows with NA response
+    // assert hasNomin || nomLeft == predLeft;
+    // assert hasNomin || nomRight == predRight;
+
+    final double node_p0 = predLeft / nLeft;
+    final double node_p1 = predRight / nRight;
+
+    if (constraint != 0) {
+      if (constraint * tree_p0 > constraint * tree_p1) {
+        if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": split would violate monotone constraint.");
+        return null;
+      }
+    }
+
+    if (!Double.isNaN(min)) {
+      if (tree_p0 < min) {
+        if (! useBounds) {
+          if (LOG.isTraceEnabled()) LOG.trace("minimum constraint violated in the left split of " + hs._name + ": node will not split");
+          return null;
+        }
+        if (LOG.isTraceEnabled()) LOG.trace("minimum constraint violated in the left split of " + hs._name + ": left node will predict minimum bound: " + min);
+        tree_p0 = min;
+        if (nasplit == DHistogram.NASplitDir.NAvsREST) {
+          best_seL = pr1hi[0];
+        } else if (nasplit == DHistogram.NASplitDir.NALeft) {
+          best_seL = pr1lo[best] + hs.seP1NA();
+        } else {
+          best_seL = pr1lo[best];
+        }
+      }
+      if (tree_p1 < min) {
+        if (! useBounds) {
+          if (LOG.isTraceEnabled()) LOG.trace("minimum constraint violated in the right split of " + hs._name + ": node will not split");
+          return null;
+        }
+        if (LOG.isTraceEnabled()) LOG.trace("minimum constraint violated in the right split of " + hs._name + ": right node will predict minimum bound: " + min);
+        tree_p1 = min;
+        if (nasplit == DHistogram.NASplitDir.NAvsREST) {
+          best_seR = hs.seP1NA();
+        } else if (nasplit == DHistogram.NASplitDir.NARight) {
+          best_seR = pr1hi[best] + hs.seP1NA();
+        } else {
+          best_seR = pr1hi[best];
+        }
+      }
+    }
+    if (!Double.isNaN(max)) {
+      if (tree_p0 > max) {
+        if (! useBounds) {
+          if (LOG.isTraceEnabled()) LOG.trace("minimum constraint violated in the left split of " + hs._name + ": node will not split");
+          return null;
+        }
+        if (LOG.isTraceEnabled()) LOG.trace("maximum constraint violated in the left split of " + hs._name + ": left node will predict maximum bound: " + max);
+        tree_p0 = max;
+        if (nasplit == DHistogram.NASplitDir.NAvsREST) {
+          best_seL = pr2hi[0];
+        } else if (nasplit == DHistogram.NASplitDir.NALeft) {
+          best_seL = pr2lo[best] + hs.seP2NA();
+        } else {
+          best_seL = pr2lo[best];
+        }
+      }
+      if (tree_p1 > max) {
+        if (! useBounds) {
+          if (LOG.isTraceEnabled()) LOG.trace("minimum constraint violated in the right split of " + hs._name + ": node will not split");
+          return null;
+        }
+        if (LOG.isTraceEnabled()) LOG.trace("maximum constraint violated in the right split of " + hs._name + ": right node will predict maximum bound: " + max);
+        tree_p1 = max;
+        if (nasplit == DHistogram.NASplitDir.NAvsREST) {
+          best_seR = hs.seP2NA();
+        } else if (nasplit == DHistogram.NASplitDir.NARight) {
+          best_seR = pr2hi[best] + hs.seP2NA();
+        } else {
+          best_seR = pr2hi[best];
+        }
+      }
+    }
+
+    if (!(best_seL + best_seR < seBefore * (1- hs._minSplitImprovement))) {
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": not enough relative improvement: " + (1-(best_seL + best_seR) / seBefore) + "\n" + hs);
+      return null;
+    }
+
+    if( MathUtils.equalsWithinOneSmallUlp((float) tree_p0,(float) tree_p1) ) {
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": Predictions for left/right are the same.");
+      return null;
+    }
+
+
+    // For categorical (unordered) predictors, we sorted the bins by average
+    // prediction then found the optimal split on sorted bins
+    IcedBitSet bs = null;       // In case we need an arbitrary bitset
+    if( idxs != null ) {        // We sorted bins; need to build a bitset
+      final int off = (int) hs._min;
+      bs = new IcedBitSet(nbins, off);
+      equal = fillBitSet(hs, off, idxs, best, nbins, bs);
+      if (equal < 0)
+        return null;
+    }
+
+    // if still undecided (e.g., if there are no NAs in training), pick a good default direction for NAs in test time
+    if (nasplit == DHistogram.NASplitDir.None) {
+      nasplit = nLeft > nRight ? DHistogram.NASplitDir.Left : DHistogram.NASplitDir.Right;
+    }
+
+    assert constraint == 0 || constraint * tree_p0 <= constraint * tree_p1;
+    assert (Double.isNaN(min) || min <= tree_p0) && (Double.isNaN(max) || tree_p0 <= max);
+    assert (Double.isNaN(min) || min <= tree_p1) && (Double.isNaN(max) || tree_p1 <= max);
+    Split split = new Split(col, best, nasplit, bs, equal, seBefore, best_seL, best_seR, nLeft, nRight, node_p0, node_p1, tree_p0, tree_p1, bestPrLY1CT1, bestPrLY1CT0, bestPrRY1CT1, bestPrRY1CT0, bestNLCT1, bestNLCT0, bestNRCT1, bestNRCT0);
     if (LOG.isTraceEnabled()) LOG.trace("splitting on " + hs._name + ": " + split);
     return split;
   }

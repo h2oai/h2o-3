@@ -92,7 +92,7 @@ abstract public class AbstractBuildVersion {
       default:
         return null;
     }
-  }
+  } 
   
   public static AbstractBuildVersion getBuildVersion() {
     AbstractBuildVersion abv = AbstractBuildVersion.UNKNOWN_VERSION;

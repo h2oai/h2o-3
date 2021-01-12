@@ -20,7 +20,7 @@ public class DTreeTest {
     DHistogram hs = new DHistogram("test_hs", 2, 2, (byte) 0, 0, 2, false, true, 0.01,
             SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 123, null, null, false);
     hs.init();
-    hs.updateHisto(ws, null, cs, ys, null, rows, rows.length, 0);
+    hs.updateHisto(ws, null, cs, ys, null, rows, rows.length, 0, null);
 
     // 1. min_rows = #NAs
     DTree.Split s1 = DTree.findBestSplitPoint(hs, 0, 20, 0, Double.NaN, Double.NaN, false, null);
@@ -34,7 +34,7 @@ public class DTreeTest {
     DHistogram hsN = new DHistogram("test_hs", 2, 2, (byte) 0, 0, 2, false, true, -9,
             SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 123, null, null, false);
     hsN.init();
-    hsN.updateHisto(ws, null, cs, ys, null, rows, rows.length, 0);
+    hsN.updateHisto(ws, null, cs, ys, null, rows, rows.length, 0, null);
     DTree.Split s3 = DTree.findBestSplitPoint(hsN, 0, 21, 0, Double.NaN, Double.NaN, false, null);
     assertNotNull(s3); // split was made thanks to the negative split improvement
     assertEquals(s3._se, seNonNA(ws, cs, ys), 0); // SE is actually the non-NA SE
@@ -105,7 +105,7 @@ public class DTreeTest {
         se_max_pred += (max_pred - ys[i]) * (max_pred - ys[i]);
       }
     }
-    hs.updateHisto(ws, new double[N], cs, ys, null, rows, N, 0);
+    hs.updateHisto(ws, new double[N], cs, ys, null, rows, N, 0, null);
     
     if (na_percent == 1.0) {
       return new ExpectedSplitInfo(NASplitDir.NAvsREST, se, se_max_pred, se_min_pred);

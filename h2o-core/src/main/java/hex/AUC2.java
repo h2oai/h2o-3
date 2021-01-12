@@ -74,7 +74,7 @@ public class AUC2 extends Iced {
         return absMcc;
       } },
     // minimize max-per-class-error by maximizing min-per-class-accuracy.
-    // Report from max_criterion is the smallest correct rate for both classes.
+    // Report from maxCriterion is the smallest correct rate for both classes.
     // The max min-error-rate is 1.0 minus that.
     min_per_class_accuracy(false) { @Override double exec( double tp, double fp, double fn, double tn ) {
         return Math.min(tp/(tp+fn),tn/(tn+fp));
@@ -118,6 +118,7 @@ public class AUC2 extends Iced {
       }
       return mx;
     }
+    
     public static final ThresholdCriterion[] VALUES = values();
 
     public static AUC2.ThresholdCriterion fromString(String strRepr) {

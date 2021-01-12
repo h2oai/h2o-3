@@ -1038,6 +1038,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected transient Vec _offset; // Handy offset column
   protected transient Vec _weights; // observation weight column
   protected transient Vec _fold; // fold id column
+  protected transient Vec _treatment;
   protected transient String[] _origNames; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   protected transient String[][] _origDomains; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   protected transient double[] _orig_projection_array; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
@@ -1045,13 +1046,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public boolean hasOffsetCol(){ return _parms._offset_column != null;} // don't look at transient Vec
   public boolean hasWeightCol(){ return _parms._weights_column != null;} // don't look at transient Vec
   public boolean hasFoldCol()  { return _parms._fold_column != null;} // don't look at transient Vec
-  public int numSpecialCols()  { return (hasOffsetCol() ? 1 : 0) + (hasWeightCol() ? 1 : 0) + (hasFoldCol() ? 1 : 0); }
+  public boolean hasTreatmentCol() { return _parms._treatment_column != null;}
+  public int numSpecialCols()  { return (hasOffsetCol() ? 1 : 0) + (hasWeightCol() ? 1 : 0) + (hasFoldCol() ? 1 : 0) + (hasTreatmentCol() ? 1 : 0); }
   public String[] specialColNames() {
     String[] n = new String[numSpecialCols()];
     int i=0;
     if (hasOffsetCol()) n[i++]=_parms._offset_column;
     if (hasWeightCol()) n[i++]=_parms._weights_column;
     if (hasFoldCol())   n[i++]=_parms._fold_column;
+    if (hasTreatmentCol()) n[i++]=_parms._treatment_column;
     return n;
   }
   // no hasResponse, call isSupervised instead (response is mandatory if isSupervised is true)
@@ -1144,6 +1147,30 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _fold = null;
       assert(!hasFoldCol());
     }
+    if(_parms._treatment_column != null) {
+      Vec u = _train.remove(_parms._treatment_column);
+      if(u == null)
+        error("_treatment_column","Treatment column '" + _parms._treatment_column + "' not found in the training frame");
+      else {
+        _treatment = u;
+        if(!u.isCategorical())
+          error("_treatment_column","Invalid treatment column '" + _parms._treatment_column + "', treatment column must be categorical");
+        _weights = u;
+        if(u.naCnt() > 0)
+          error("_treatment_column","Treatment column cannot have missing values.");
+        if(u.isCategorical() && u.domain().length != 2)
+          error("_treatment_column","Treatment column must contains only 0 or 1");
+        if(u.min() != 0)
+          error("_treatment_column","Min. treatment column value must be 0");
+        if(u.max() != 1)
+          error("_treatment_column","Max. treatment column value must be 1");
+        _train.add(_parms._treatment_column, u);
+        ++res;
+      }
+    } else {
+      _treatment = null;
+      assert(!hasTreatmentCol());
+    }
     if(isSupervised() && _parms._response_column != null) {
       _response = _train.remove(_parms._response_column);
       if (_response == null) {
@@ -1156,6 +1183,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           error("_response_column", "Response column must be different from weights_column");
         if(_response == _fold)
           error("_response_column", "Response column must be different from fold_column");
+        if(_response == _treatment)
+          error("_response_column", "Response column must be different from treatment_column");
         _train.add(_parms._response_column, _response);
         ++res;
       }
