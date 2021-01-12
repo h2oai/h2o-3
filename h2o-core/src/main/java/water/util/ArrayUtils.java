@@ -101,6 +101,14 @@ public class ArrayUtils {
     return result;
   }
 
+  /***
+   * Find the index of an element val in the sorted array arr.
+   * 
+   * @param arr: sorted array
+   * @param val: value of element we are interested in
+   * @param <T>: data type
+   * @return index of element val or -1 if not found
+   */
   public static<T extends Comparable<T>> int indexOf(T[] arr, T val) {
     int highIndex = arr.length-1;
     int compare0 = val.compareTo(arr[0]); // small shortcut
@@ -431,6 +439,24 @@ public class ArrayUtils {
     for (int index=0; index < arraylen; index++)
       res[index] = ary[index][index];
     return res;
+  }
+
+  /***
+   * Return the index of an element val that is less than tol array from an element of the array arr.
+   * Note that arr does not need to be sorted.
+   * 
+   * @param arr: double array possibly containing an element of interest.
+   * @param val: val to be found in array arr
+   * @param tol: maximum difference between value of interest val and an element of array
+   * @return the index of element that is within tol away from val or -1 if not found
+   */
+  public static int locate(double[] arr, double val, double tol) {
+    int arrLen = arr.length;
+    for (int index = 0; index < arrLen; index++) {
+      if (Math.abs(arr[index]-val) < tol) 
+        return index;
+    }
+    return -1;
   }
   
   public static double[] multArrVec(double[][] ary, double[] nums, double[] res) {

@@ -205,7 +205,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
   }
 
-  public GLMModel addSubmodel(Submodel sm) {
+  public GLMModel addSubmodel(Submodel sm) { // copy from checkpoint model
     _output._submodels = ArrayUtils.append(_output._submodels,sm);
     _output.setSubmodelIdx(_output._submodels.length-1);
     return this;
@@ -233,12 +233,21 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     _output.setSubmodelIdx(id);
   }
 
-  public static class GLMParameters extends Model.Parameters {
+  protected GLMModel deepClone(Key<GLMModel> result) {
+    GLMModel newModel = IcedUtils.deepCopy(this);
+    newModel._key = result;
+    // Do not clone model metrics
+    newModel._output.clearModelMetrics(false);
+    newModel._output._training_metrics = null;
+    newModel._output._validation_metrics = null;
+    return newModel;
+  }
 
+  public static class GLMParameters extends Model.Parameters {
+    static final String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = {"_response_column", "_family", "_solver"};
     public enum MissingValuesHandling {
       MeanImputation, PlugValues, Skip
     }
-
     public String algoName() { return "GLM"; }
     public String fullName() { return "Generalized Linear Modeling"; }
     public String javaName() { return GLMModel.class.getName(); }
@@ -1101,6 +1110,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public final long    _nullDOF;
   public final double    _ySigma;
   public final long      _nobs;
+  public double[] _betaCndCheckpoint;  // store temporary beta coefficients for checkpointing purposes
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 
