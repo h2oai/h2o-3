@@ -52,7 +52,7 @@ public class VariableImportances implements Serializable {
         if (n <= 0 || n > _importances.length) {
             n = _importances.length;
         }
-        KeyValue[] sortedImportances = new KeyValue[_importances.length];
+        final KeyValue[] sortedImportances = new KeyValue[_importances.length];
         for (int i = 0; i < _importances.length; i++) {
             sortedImportances[i] = new KeyValue(_variables[i], _importances[i]);
         }

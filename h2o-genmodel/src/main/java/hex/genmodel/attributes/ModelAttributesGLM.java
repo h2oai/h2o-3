@@ -2,9 +2,9 @@ package hex.genmodel.attributes;
 
 import com.google.gson.JsonObject;
 import hex.genmodel.MojoModel;
-import hex.genmodel.attributes.parameters.IVariableImportancesHolder;
+import hex.genmodel.attributes.parameters.VariableImportancesHolder;
 
-public class ModelAttributesGLM extends ModelAttributes implements IVariableImportancesHolder {
+public class ModelAttributesGLM extends ModelAttributes implements VariableImportancesHolder {
 
   public final Table _coefficients_table;
   private final VariableImportances _variableImportances;

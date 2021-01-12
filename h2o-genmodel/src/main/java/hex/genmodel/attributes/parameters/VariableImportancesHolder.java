@@ -2,6 +2,6 @@ package hex.genmodel.attributes.parameters;
 
 import hex.genmodel.attributes.VariableImportances;
 
-public interface IVariableImportancesHolder {
+public interface VariableImportancesHolder {
     VariableImportances getVariableImportances();
 }

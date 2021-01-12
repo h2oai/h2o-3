@@ -534,7 +534,7 @@ public class EasyPredictModelWrapperTest {
   }
 
   @Test
-  public void testVariableImportances() throws Exception {
+  public void testVarimp() throws Exception {
     URL modelRes = MojoReaderBackendFactoryTest.class.getResource("algos/gbm/gbm_variable_importance.zip");
 
     MojoModel modelMojo = MojoModel.load(modelRes.getPath(), true);
