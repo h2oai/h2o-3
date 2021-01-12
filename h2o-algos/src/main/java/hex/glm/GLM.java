@@ -770,9 +770,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, standardizeQ ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, 
               _parms.missingValuesHandling() == MissingValuesHandling.Skip, 
               _parms.imputeMissing(),
-              _parms.makeImputer(), 
-              false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms.interactionSpec());
-      _totalBetaLen = multinomial.equals(_parms._family) || ordinal.equals(_parms._family)?
+              _parms.makeImputer(),
+              false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), hasUpliftCol(), _parms.interactionSpec());
+      _totalBetaLen = _parms._family.equals(Family.multinomial) || _parms._family.equals(Family.ordinal)?
               _dinfo.fullN()*nclasses()+1:_dinfo.fullN()+1;
 
       if (gam.equals(_parms._glmType))

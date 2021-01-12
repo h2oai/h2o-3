@@ -89,7 +89,7 @@ public class ThinPlateDistanceWithKnots extends MRTask<ThinPlateDistanceWithKnot
             DataInfo.TransformType.NONE, MissingValuesHandling.Skip == parms._missing_values_handling, 
             (parms._missing_values_handling == MissingValuesHandling.MeanImputation) || 
                     (parms._missing_values_handling == MissingValuesHandling.PlugValues), parms.makeImputer(), 
-            false, false, false, false, null);
+            false, false, false, false, false, null);
     // expand the frame with k-M columns which will contain the product of Xnmd*ZCS
     for (int colInd = 0; colInd < newColNum; colInd++) {
       fr.add(colNameStart+"_cs_"+colInd, fr.anyVec().makeZero());
