@@ -106,3 +106,7 @@ hex.schemas.MaxRGLMModelV3
 hex.schemas.MaxRGLMModelV3$MaxRGLMModelOutputV3
 hex.schemas.MaxRGLMV3
 hex.schemas.MaxRGLMV3$MaxRGLMParametersV3
+hex.schemas.UpliftDRFModelV3
+hex.schemas.UpliftDRFModelV3$UpliftDRFModelOutputV3
+hex.schemas.UpliftDRFV3
+hex.schemas.UpliftDRFV3$UpliftDRFParametersV3

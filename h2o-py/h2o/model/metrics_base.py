@@ -103,6 +103,7 @@ class MetricsBase(h2o_meta()):
         types_w_dim = ["ModelMetricsGLRM"]
         types_w_anomaly = ['ModelMetricsAnomaly']
         types_w_cox = ['ModelMetricsRegressionCoxPH']
+        types_w_uplift = ['ModelMetricsBinomialUplift']
 
         print()
         print(metric_type + ": " + self._algo)
@@ -116,7 +117,7 @@ class MetricsBase(h2o_meta()):
         else:
             print(reported_on.format("test"))
         print()
-        if metric_type not in types_w_anomaly:
+        if metric_type not in types_w_anomaly and metric_type not in types_w_uplift:
             print("MSE: " + str(self.mse()))
             print("RMSE: " + str(self.rmse()))
         if metric_type in types_w_mean_absolute_error:
@@ -198,6 +199,9 @@ class MetricsBase(h2o_meta()):
             print("Concordance score: " + str(self.concordance()))
             print("Concordant count: " + str(self.concordant()))
             print("Tied cout: " + str(self.tied_y()))
+        
+        if metric_type in types_w_uplift:
+            print("AUUC: " + str(self.auuc()))
         
         if self.custom_metric_name():
             print("{}: {}".format(self.custom_metric_name(), self.custom_metric_value()))
@@ -1462,7 +1466,6 @@ class H2OBinomialModelMetrics(MetricsBase):
         else:
             return recalls, precisions
 
-
     @property
     def fprs(self):
         """
@@ -1746,6 +1749,220 @@ class H2OBinomialModelMetrics(MetricsBase):
         return None
 
 
+class H2OBinomialUpliftModelMetrics(MetricsBase):
+    """
+    This class is available only for Uplift DRF model
+    This class is essentially an API for the AUUC object and Gains Uplift table.
+    """
+    
+    def __init__(self, metric_json, on=None, algo=""):
+        """
+          Create a new Binomial Metrics object (essentially a wrapper around some json)
+
+          :param metric_json: A blob of json holding all of the needed information
+          :param on: Metrics built on "training_data" or "validation_data" (default is "training_data")
+        """
+        super(H2OBinomialUpliftModelMetrics, self).__init__(metric_json, on, algo)
+        
+    def auuc(self):
+        """
+        Retrieve area under uplift curve (AUUC) value. 
+        
+        :returns: AUUC value.
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.auuc()
+        """
+        return self._metric_json['AUUC']
+    
+    def uplift(self, metric="auto"):
+        """
+        Retrieve uplift values for each bin. 
+        
+        :param metric AUUC metric type ("qini", "lift", "gain", default is "auto" which means "qini") 
+        
+        :returns: a list of uplift values.
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.uplift()
+        """
+        return self._metric_json["thresholds_and_metric_scores"][metric]
+
+    def n(self):
+        """
+        Retrieve numbers of observations in each bin. 
+        
+        :returns: a list of numbers of observation.
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.n()
+        """  
+        return self._metric_json["thresholds_and_metric_scores"]["n"]
+    
+    def thresholds(self):
+        """
+        Retrieve prediction thresholds for each bin. 
+        
+        :returns: a list of thresholds.
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.thresholds()
+        """
+        return self._metric_json["thresholds_and_metric_scores"]["thresholds"]
+
+    def gains_uplift(self):
+        """
+        Retrieve gains uplift table. 
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.gains_uplift()
+        """
+        if 'gains_uplift_table' in self._metric_json:
+            return self._metric_json['gains_uplift_table']
+        return None
+
+    def plot_auuc(self, server=False, save_to_file=None, plot=True, metric="auto"):
+        """
+        Plot Area Under Uplift Curve. 
+        
+        :param server: if True, generate plot inline using matplotlib's "Agg" backend.
+        :param save_to_file filename to save the plot to
+        :param plot True to plot curve, False to get a tuple of values at axis x and y of the plot 
+            (number of observations and uplift values)
+        :param metric AUUC metric type ("qini", "lift", "gain", default is "auto" which means "qini") 
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.plot_auuc(plot=True)
+        >>> n, uplift = uplift_model.plot_auuc(plot=False)
+        """
+        if plot:
+            plt = get_matplotlib_pyplot(server)
+            if plt is None:
+                return
+            plt.ylabel('Uplift')
+            plt.xlabel('Number of data')
+            plt.title('Area under Uplift curve - '+metric)
+            uplift = self.uplift(metric)
+            n = self.n()
+            plt.plot(n, uplift, 'b-')
+            plt.axis([min(n) - 0.02 * min(n), max(n) + 0.02 * max(n), 
+                      min(uplift) - 0.02 * min(uplift), max(uplift) + 0.02 * max(uplift)])
+            plt.grid(True)
+            plt.tight_layout()
+            if not server:
+                plt.show()
+            if save_to_file is not None:  # only save when a figure is actually plotted
+                plt.savefig(save_to_file)
+        else:
+            return self.n(), self.uplift(metric)
 
 
 class H2OAutoEncoderModelMetrics(MetricsBase):

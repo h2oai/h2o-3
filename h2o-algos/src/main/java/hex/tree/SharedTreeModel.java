@@ -99,7 +99,7 @@ public abstract class SharedTreeModel<
     public boolean _parallel_main_model_building = false;
 
     public boolean _use_best_cv_iteration = true; // when early stopping is enabled, cv models will pick the iteration that produced the best score instead of the stopping iteration
-
+    
     /** Fields which can NOT be modified if checkpoint is specified.
      * FIXME: should be defined in Schema API annotation
      */
@@ -143,6 +143,7 @@ public abstract class SharedTreeModel<
       case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
       case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain, _parms._auc_type);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
+      case BinomialUplift: return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain);
       default: throw H2O.unimpl();
     }
   }
@@ -613,6 +614,9 @@ public abstract class SharedTreeModel<
     adaptFrm.remove(_parms._fold_column);
     adaptFrm.remove(_parms._weights_column);
     adaptFrm.remove(_parms._offset_column);
+    if(_parms._treatment_column != null){
+      adaptFrm.remove(_parms._treatment_column);
+    }
 
     assert adaptFrm.numCols() == _output.nfeatures();
 

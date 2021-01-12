@@ -797,7 +797,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               (_dinfo.fullN()+1)*nclasses():_dinfo.fullN()+1;
       _betaLenPerClass = multinomial.equals(_parms._family) || ordinal.equals(_parms._family)?
               _totalBetaLen/nclasses():_totalBetaLen;
-
+      
       if (gam.equals(_parms._glmType))
          _gamColIndices = extractAdaptedFrameIndices(_dinfo._adaptedFrame, _gamColnames, _dinfo._numOffsets[0]-_dinfo._cats);
         

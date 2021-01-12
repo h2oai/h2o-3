@@ -31,6 +31,7 @@ public class ScoreKeeper extends Iced {
   public double _r2 = Double.NaN;
   public double _anomaly_score = Double.NaN;
   public double _anomaly_score_normalized = Double.NaN;
+  public double _AUUC;
 
   public ScoreKeeper() {}
 
@@ -108,6 +109,8 @@ public class ScoreKeeper extends Iced {
       _r2 = ((ModelMetricsOrdinal)m).r2();
     } else if (m instanceof ScoreKeeperAware) {
       ((ScoreKeeperAware) m).fillTo(this);
+    } else if (m instanceof ModelMetricsBinomialUplift){
+      _AUUC = ((ModelMetricsBinomialUplift)m).auuc();
     }
     if (m._custom_metric != null )
       _custom_metric =  m._custom_metric.value;

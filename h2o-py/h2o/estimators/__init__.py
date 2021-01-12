@@ -30,6 +30,7 @@ from .rulefit import H2ORuleFitEstimator
 from .stackedensemble import H2OStackedEnsembleEstimator
 from .svd import H2OSingularValueDecompositionEstimator
 from .targetencoder import H2OTargetEncoderEstimator
+from .uplift_random_forest import H2OUpliftRandomForestEstimator
 from .word2vec import H2OWord2vecEstimator
 from .xgboost import H2OXGBoostEstimator
 
@@ -63,5 +64,5 @@ __all__ = (
     "H2OKMeansEstimator", "H2OMaxRGLMEstimator", "H2ONaiveBayesEstimator", "H2OPrincipalComponentAnalysisEstimator",
     "H2OSupportVectorMachineEstimator", "H2ORandomForestEstimator", "H2ORuleFitEstimator",
     "H2OStackedEnsembleEstimator", "H2OSingularValueDecompositionEstimator", "H2OTargetEncoderEstimator",
-    "H2OWord2vecEstimator", "H2OXGBoostEstimator"
+    "H2OUpliftRandomForestEstimator", "H2OWord2vecEstimator", "H2OXGBoostEstimator"
 )

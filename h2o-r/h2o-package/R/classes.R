@@ -298,6 +298,9 @@ setClass("H2OUnknownModel",     contains="H2OModel")
 setClass("H2OBinomialModel",    contains="H2OModel")
 #' @rdname H2OModel-class
 #' @export
+setClass("H2OBinomialUpliftModel",    contains="H2OModel")
+#' @rdname H2OModel-class
+#' @export
 setClass("H2OMultinomialModel", contains="H2OModel")
 #' @rdname H2OModel-class
 #' @export
@@ -637,6 +640,16 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     } else {
       cat("\nGains/Lift Table: Extract with `h2o.gainsLift(<model>, <data>)` or `h2o.gainsLift(<model>, valid=<T/F>, xval=<T/F>)`")
     }
+})
+
+#' @rdname H2OModelMetrics-class
+#' @export
+setClass("H2OBinomialUpliftMetrics",    contains="H2OModelMetrics")
+#' @rdname H2OModelMetrics-class
+#' @export
+setMethod("show", "H2OBinomialUpliftMetrics", function(object) {
+    callNextMethod(object)  # call to the super
+    cat("AUUC:  ", object@metrics$AUUC, "\n", sep="")
 })
 
 #' @rdname H2OModelMetrics-class

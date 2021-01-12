@@ -28,7 +28,8 @@ public class Score extends CMetricScoringTask<Score> {
   final boolean _computeGainsLift;
   final ScoreIncInfo _sii;      // Incremental scoring (on a validation dataset), null indicates full scoring
   final Frame _preds;           // Prediction cache (typically not too many Vecs => it is not too costly embed the object in MRTask)
-  
+  final double[] _thresholds;   // Only for uplift metric builder to calculate AUUC
+
   /** Output parameter: Metric builder */
   ModelMetrics.MetricBuilder _mb;
 
@@ -50,6 +51,12 @@ public class Score extends CMetricScoringTask<Score> {
     _preds = computeGainsLift ? preds : null; // don't keep the prediction cache if we don't need to compute gainslift
     assert _kresp != null || !_bldr.isSupervised();
     assert (! _is_train) || (_sii == null);
+    // TODO: fix nbins from parameters
+    if(bldr.isUplift()) {
+      _thresholds = AUUC.calculateQuantileThresholds(AUUC.NBINS, preds.vec(0));
+    } else {
+      _thresholds = null;
+    }
   }
 
   @Override public void map(Chunk allchks[]) {
@@ -65,6 +72,7 @@ public class Score extends CMetricScoringTask<Score> {
     SharedTreeModel m = _bldr._model;
     Chunk weightsChunk = m._output.hasWeights() ? chks[m._output.weightsIdx()] : null;
     Chunk offsetChunk = m._output.hasOffset() ? chks[m._output.offsetIdx()] : null;
+    Chunk treatmentChunk = m._output.hasTreatment() ? chks[m._output.treatmentIdx()] : null;
     // Because of adaption - the validation training set has at least as many
     // classes as the training set (it may have more).  The Confusion Matrix
     // needs to be at least as big as the training set domain.
@@ -76,6 +84,10 @@ public class Score extends CMetricScoringTask<Score> {
     }
     final int nclass = _bldr.nclasses();
     _mb = m.makeMetricBuilder(domain);
+    // TODO is there better way? New makeMetricBuilder method? 
+    if(_bldr.isUplift()){
+      ((ModelMetricsBinomialUplift.MetricBuilderBinomialUplift) _mb).resetThresholds(_thresholds);
+    }
     // If this is a score-on-train AND DRF, then oobColIdx makes sense,
     // otherwise this field is unused.
     final int oobColIdx = _bldr.idx_oobt();
@@ -111,10 +123,19 @@ public class Score extends CMetricScoringTask<Score> {
         // for binomial the predicted class is not needed
         // and it even cannot be returned because the threshold is calculated based on model metrics that are not known yet
         // (we are just building the metrics)
-        cdists[0] = -1;
+        if(_bldr.isUplift()) {
+          cdists[0] = cdists[1] - cdists[2];
+        } else {
+          cdists[0] = -1;
+        }
       }
       val[0] = (float)ys.atd(row);
-      _mb.perRow(cdists, val, weight, offset, m);
+      if(!_bldr.isUplift()) {
+        _mb.perRow(cdists, val, weight, offset, m);
+      } else {
+        double treatment = treatmentChunk.atd(row);
+        _mb.perRow(cdists, val, treatment, weight, offset, m);
+      }
 
       if (_preds != null) {
         _mb.cachePrediction(cdists, allchks, row, chks.length, m);
