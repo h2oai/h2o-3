@@ -68,7 +68,8 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "monotone_constraints",
       "check_constant_response",
       "gainslift_bins", 
-      "auc_type"
+      "auc_type",
+      "uplift_column"     
     };
 
     // Input fields

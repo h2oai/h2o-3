@@ -110,9 +110,8 @@ public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColum
     int ncolExp = numCols-1;
     DataInfo frInfo = new DataInfo(fr, null, 0, false,  DataInfo.TransformType.NONE, DataInfo.TransformType.NONE,
             MissingValuesHandling.Skip == parms._missing_values_handling,
-            (parms._missing_values_handling == MissingValuesHandling.MeanImputation) ||
-                    (parms._missing_values_handling == MissingValuesHandling.PlugValues), parms.makeImputer(),
-            false, false, false, false, null);
+            ((parms._missing_values_handling == MissingValuesHandling.MeanImputation) || (parms._missing_values_handling == MissingValuesHandling.PlugValues)), parms.makeImputer(),
+            false, false, false, false, false, null);
     for (int index=0; index < ncolExp; index++) {
       fr.add(colNameStart+"_"+index, fr.anyVec().makeZero()); // add numCols-1 columns to fr
     }

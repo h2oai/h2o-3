@@ -161,9 +161,10 @@ public abstract class SharedTree<
         error("_min_rows", "The dataset size is too small to split for min_rows=" + _parms._min_rows
                 + ": must have at least " + 2*_parms._min_rows + " (weighted) rows, but have only " + sumWeights + ".");
     }
-    if( _train != null )
-      _ncols = _train.numCols()-(isSupervised()?1:0)-numSpecialCols();
-
+    if( _train != null ) {
+      _ncols = _train.numCols() - (isSupervised() ? 1 : 0) - numSpecialCols();
+    }
+    
     PlattScalingHelper.initCalibration(this, _parms, expensive);
 
     _orig_projection_array = LinearAlgebraUtils.toEigenProjectionArray(_origTrain, _train, expensive);
@@ -181,6 +182,15 @@ public abstract class SharedTree<
       warn("_parallel_main_model_building",
               "Parallel main model will be disabled because use_best_cv_iteration is specified.");
     }
+  }
+
+  @Override
+  public String[] specialColNames() {
+    String[] colNames = super.specialColNames();
+    if(_parms._uplift_column != null) {
+      return ArrayUtils.append(colNames, _parms._uplift_column);
+    }
+    return colNames;
   }
 
   protected void validateRowSampleRate() {
@@ -547,6 +557,7 @@ public abstract class SharedTree<
       // Add temporary workspace vectors (optional weights are taken over from fr)
       int respIdx = fr2.find(_parms._response_column);
       int weightIdx = fr2.find(_parms._weights_column);
+      int upliftIdx = fr2.find(_parms._uplift_column);
       int predsIdx = fr2.numCols(); fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]); //tree predictions
       int workIdx =  fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
       int nidIdx  =  fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
@@ -555,7 +566,7 @@ public abstract class SharedTree<
       // step 1: build histograms
       // step 2: split nodes
       H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, 
-              respIdx, weightIdx, predsIdx, workIdx, nidIdx));
+              respIdx, weightIdx, predsIdx, workIdx, nidIdx, upliftIdx));
     }
     // Block for all K trees to complete.
     boolean did_split=false;
@@ -595,11 +606,12 @@ public abstract class SharedTree<
     final int _predsIdx;
     final int _workIdx;
     final int _nidIdx;
+    final int _upliftIdx;
 
     boolean _did_split;
 
     ScoreBuildOneTree(SharedTree st, int k, int nbins, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family,
-                      int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdx) {
+                      int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdx, int upliftIdx) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
@@ -615,6 +627,7 @@ public abstract class SharedTree<
       _predsIdx = predsIdx;
       _workIdx = workIdx;
       _nidIdx = nidIdx;
+      _upliftIdx = upliftIdx;
     }
     @Override public void compute2() {
       // Fuse 2 conceptual passes into one:
@@ -627,7 +640,7 @@ public abstract class SharedTree<
       // per column.
       int treeNum = ((SharedTreeModel.SharedTreeOutput) _st._model._output)._ntrees;
       new ScoreBuildHistogram2(this, treeNum, _k, _st._ncols, _nbins, _tree, _leafOffsets[_k], _hcs[_k], _family,
-              _respIdx, _weightIdx, _predsIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
+              _respIdx, _weightIdx, _predsIdx, _workIdx, _nidIdx, _upliftIdx).dfork2(null,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
       ScoreBuildHistogram sbh = (ScoreBuildHistogram) caller;
@@ -668,6 +681,7 @@ public abstract class SharedTree<
   protected int idx_work(int c) { return idx_tree(c) + _nclass; }
   protected int idx_nids(int c) { return idx_work(c) + _nclass; }
   protected int idx_oobt()      { return idx_nids(0) + _nclass; }
+  protected int idx_uplift()    { return _model._output.upliftIdx(); }
 
   public Chunk chk_weight( Chunk chks[]      ) { return chks[idx_weight()]; }
   protected Chunk chk_offset( Chunk chks[]      ) { return chks[idx_offset()]; }
@@ -693,6 +707,7 @@ public abstract class SharedTree<
     public int work0Index;
     public int nids0Index;
     public int oobtIndex;
+    public int upliftIndex;
 
     public FrameMap() {}  // For Externalizable interface
     public FrameMap(SharedTree t) {
@@ -703,6 +718,7 @@ public abstract class SharedTree<
       work0Index = t.idx_work(0);
       nids0Index = t.idx_nids(0);
       oobtIndex = t.idx_oobt();
+      upliftIndex = t.idx_uplift();
     }
   }
 

@@ -74,14 +74,16 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   final boolean _reproducibleHistos;
   // only for debugging purposes
   final boolean _reduceHistoPrecision; // if enabled allows to test that histograms are 100% reproducible when reproducibleHistos are enabled
+  final int _upliftIdx;
 
   public ScoreBuildHistogram2(ScoreBuildOneTree sb, int treeNum, int k, int ncols, int nbins, DTree tree, int leaf,
                               DHistogram[][] hcs, DistributionFamily family,
-                              int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdxs) {
-    super(sb, k, ncols, nbins, tree, leaf, hcs, family, weightIdx, workIdx, nidIdxs);
+                              int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdxs, int upliftIdx) {
+    super(sb, k, ncols, nbins, tree, leaf, hcs, family, weightIdx, workIdx, nidIdxs, upliftIdx);
     _numLeafs = _hcs.length;
     _respIdx = respIdx;
     _predsIdx = predsIdx;
+    _upliftIdx = upliftIdx;
 
     int hcslen = _hcs.length;
     IcedBitSet activeCols = new IcedBitSet(ncols);
@@ -371,6 +373,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       double[] preds = null;
       final int maxWorkId = _allocator.getMaxId(id);
       for(int i = _allocator.allocateWork(id); i < maxWorkId; i = _allocator.allocateWork(id)) {
+      double[] uplift = null;
         if (cs == null) {
           cs = MemoryManager.malloc8d(_maxChunkSz);
           if (_respIdx >= 0)
@@ -378,11 +381,14 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           if (_predsIdx >= 0)
             preds = MemoryManager.malloc8d(_maxChunkSz);
         }
-        computeChunk(i, cs, _ws[i], resp, preds);
+        if(_upliftIdx >= 0){
+           uplift = MemoryManager.malloc8d(_maxChunkSz);
+        }
+        computeChunk(i, cs, _ws[i], resp, preds, uplift);
       }
     }
 
-    private void computeChunk(int id, double[] cs, double[] ws, double[] resp, double[] preds){
+    private void computeChunk(int id, double[] cs, double[] ws, double[] resp, double[] preds, double[] uplift){
       int [] nh = _nhs[id];
       int [] rs = _rss[id];
       Chunk resChk = _chks[id][_workIdx];
@@ -406,9 +412,12 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
                 _chks[id][_predsIdx].getDoubles(preds, 0, len);
               }
             }
+            if(h._useUplift){ 
+              _chks[id][_upliftIdx].getDoubles(uplift, 0, len);
+            }
             extracted = true;
           }
-          h.updateHisto(ws, resp, cs, ys, preds, rs, hi, lo);
+          h.updateHisto(ws, resp, cs, ys, preds, rs, hi, lo, uplift);
         }
       }
     }

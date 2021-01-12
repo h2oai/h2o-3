@@ -1096,7 +1096,8 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL,
   model_metrics <- res$model_metrics
   metrics <- model_metrics[!(names(model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
   name <- "H2ORegressionMetrics"
-  if (!is.null(metrics$AUC) && is.null(metrics$hit_ratio_table)) name <- "H2OBinomialMetrics"
+  if (!is.null(metrics$AUUC)) name <- "H2OBinomialUpliftMetrics"
+  else if (!is.null(metrics$AUC) && is.null(metrics$hit_ratio_table)) name <- "H2OBinomialMetrics"
   else if (!is.null(distribution) && distribution == "ordinal") name <- "H2OOrdinalMetrics"
   else if (!is.null(metrics$hit_ratio_table)) name <- "H2OMultinomialMetrics"
   new(Class = name, metrics = metrics)
@@ -1166,6 +1167,63 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   }
   warning(paste0("No AUC for ", class(object)))
   invisible(NULL)
+}
+
+#' Retrieve the AUUC
+#'
+#' Retrieves the AUUC value from an \linkS4class{H2OBinomialUpliftMetrics}.
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training AUUC value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of AUUCs are returned, where the names are "train", "valid"
+#' or "xval".
+#'
+#' @param object An \linkS4class{H2OBinomialUpliftMetrics}
+#' @param train Retrieve the training AUUC
+#' @param valid Retrieve the validation AUUC
+#' @param xval Retrieve the cross-validation AUUC
+#' @seealso 
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' h2o.auuc(perf)
+#' }
+#' @export
+h2o.auuc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+    if( is(object, "H2OModelMetrics") ) return( object@metrics$AUUC )
+    if( is(object, "H2OModel") ) {
+        model.parts <- .model.parts(object)
+        if ( !train && !valid && !xval ) {
+            metric <- model.parts$tm@metrics$AUUC
+            if ( !is.null(metric) ) return(metric)
+        }
+        v <- c()
+        v_names <- c()
+        if ( train ) {
+            v <- c(v,model.parts$tm@metrics$AUUC)
+            v_names <- c(v_names,"train")
+        }
+        if ( valid ) {
+            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+            else {
+                v <- c(v,model.parts$vm@metrics$AUUC)
+                v_names <- c(v_names,"valid")
+            }
+        }
+        if ( xval ) {
+            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+            else {
+                v <- c(v,model.parts$xm@metrics$AUUC)
+                v_names <- c(v_names,"xval")
+            }
+        }
+        if ( !is.null(v) ) {
+            names(v) <- v_names
+            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+        }
+    }
+    warning(paste0("No AUUC for ", class(object)))
+    invisible(NULL)
 }
 
 #' Internal function that calculates a precise AUC from given
@@ -3976,6 +4034,23 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
     ydata <- rev(x@metrics$thresholds_and_metric_scores$precision)
     graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
   }
+}
+
+#' @export
+plot.H2OBinomialUpliftMetrics <- function(x, metric = "qini", main, ...) {
+    if(!metric %in% c("qini", "lift", "gain")) stop("metric must be 'qini' or 'lift' or 'gain'")
+    xaxis <- "False Positive Rate (TPR)"; yaxis = "True Positive Rate (FPR)"
+    if(missing(main)) {
+        main <- "Area under uplift curve"
+        if(x@on_train) {
+            main <- paste(main, "(on train)")
+        } else if (x@on_valid) {
+            main <- paste(main, "(on valid)")
+        }
+    }
+    xdata <- x@metrics$thresholds_and_metric_scores$n
+    ydata <- eval(parse(text=paste("x@metrics$thresholds_and_metric_scores$", metric, sep="")))
+    graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(min(ydata),max(ydata)), xlim=c(min(xdata),max(xdata)), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
 }
 
 #' @export

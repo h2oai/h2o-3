@@ -90,7 +90,7 @@ public abstract class SharedTreeModel<
     public boolean _parallel_main_model_building = false;
 
     public boolean _use_best_cv_iteration = true; // when early stopping is enabled, cv models will pick the iteration that produced the best score instead of the stopping iteration
-
+    
     /** Fields which can NOT be modified if checkpoint is specified.
      * FIXME: should be defined in Schema API annotation
      */

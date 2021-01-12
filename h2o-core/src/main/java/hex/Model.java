@@ -394,6 +394,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String _weights_column;
     public String _offset_column;
     public String _fold_column;
+    public String _uplift_column;
     
     // Check for constant response
     public boolean _check_constant_response = true;
@@ -1059,31 +1060,42 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     protected boolean _hasOffset; // weights and offset are kept at designated position in the names array
     protected boolean _hasWeights;// only need to know if we have them
     protected boolean _hasFold;// only need to know if we have them
+    protected boolean _hasUplift;
     public boolean hasOffset  () { return _hasOffset;}
     public boolean hasWeights () { return _hasWeights;}
     public boolean hasFold () { return _hasFold;}
+    public boolean hasUplift() { return _hasUplift;}
     public boolean hasResponse() { return isSupervised(); }
     public String responseName() { return isSupervised()?_names[responseIdx()]:null;}
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
     public String foldName  () { return _hasFold ?_names[foldIdx()]:null;}
     public InteractionBuilder interactionBuilder() { return null; }
-    // Vec layout is  [c1,c2,...,cn,w?,o?,r], cn are predictor cols, r is response, w and o are weights and offset, both are optional
+    // Vec layout is  [c1,c2,...,cn, w?, o?, f?, u?, r]
+    // cn are predictor cols, r is response, w is weights, o is offset, f is fold and u is uplift - these are optional
     public int weightsIdx() {
       if(!_hasWeights) return -1;
-      return _names.length - (isSupervised()?1:0) - (hasOffset()?1:0) - 1 - (hasFold()?1:0);
+      return _names.length - (isSupervised()?1:0) - (hasOffset()?1:0) - 1 - (hasFold()?1:0) - (hasUplift()?1:0);
     }
+    
     public int offsetIdx() {
       if(!_hasOffset) return -1;
-      return _names.length - (isSupervised()?1:0) - (hasFold()?1:0) - 1;
+      return _names.length - (isSupervised()?1:0) - (hasFold()?1:0) - 1 - (hasUplift()?1:0);
     }
+    
     public int foldIdx() {
       if(!_hasFold) return -1;
-      return _names.length - (isSupervised()?1:0) - 1;
+      return _names.length - (isSupervised()?1:0) - 1 -  (hasUplift()?1:0);
     }
+    
     public int responseIdx() {
       if(!isSupervised()) return -1;
       return _names.length-1;
+    } 
+    
+    public int upliftIdx() {
+      if(!_hasUplift) return -1;
+      return _names.length - (isSupervised()?1:0) - 1;
     }
 
     /** Names of levels for a categorical response column. */
