@@ -85,8 +85,8 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
     public final TargetEncoderParameters _parms;
     public final int _nclasses;
-    public final ColumnsMapping[] _columns_to_encode_mapping; // maps input columns (or groups of columns) to the single column being effectively encoded (= key in _target_encoding_map).
-    public final ColumnsMapping[] _encoded_columns_mapping; // maps input columns (or groups of columns) to their corresponding encoded one(s).
+    public final ColumnsMapping[] _input_to_encoding_column; // maps input columns (or groups of columns) to the single column being effectively encoded (= key in _target_encoding_map).
+    public final ColumnsMapping[] _input_to_output_columns; // maps input columns (or groups of columns) to their corresponding encoded one(s).
     public final IcedHashMap<String, Frame> _target_encoding_map;
     public final IcedHashMap<String, Boolean> _te_column_to_hasNAs; //XXX: Map is a wrong choice for this, IcedHashSet would be perfect though
     
@@ -100,8 +100,8 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       _parms = te._parms;
       _nclasses = te.nclasses();
       _target_encoding_map = teMap;
-      _columns_to_encode_mapping = columnsToEncodeMapping;
-      _encoded_columns_mapping = buildEncodedColumnsMapping();
+      _input_to_encoding_column = columnsToEncodeMapping;
+      _input_to_output_columns = buildEncodedColumnsMapping();
       _te_column_to_hasNAs = buildCol2HasNAsMap();
       _model_summary = constructSummary();
     }
@@ -110,9 +110,9 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
      * builds the name of encoded columns
      */
     private ColumnsMapping[] buildEncodedColumnsMapping() {
-      ColumnsMapping[] encMapping = new ColumnsMapping[_columns_to_encode_mapping.length];
+      ColumnsMapping[] encMapping = new ColumnsMapping[_input_to_encoding_column.length];
       for (int i=0; i < encMapping.length; i++) {
-        ColumnsMapping toEncode = _columns_to_encode_mapping[i];
+        ColumnsMapping toEncode = _input_to_encoding_column[i];
         String[] groupCols = toEncode.from();
         String columnToEncode = toEncode.toSingle();
         Frame encodings = _target_encoding_map.get(columnToEncode);
@@ -147,15 +147,15 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       TwoDimTable summary = new TwoDimTable(
               "Target Encoder model summary.",
               "Summary for target encoder model",
-              new String[_encoded_columns_mapping.length],
+              new String[_input_to_output_columns.length],
               new String[]{"Original name(s)", "Encoded column name(s)"},
               new String[]{"string", "string"},
               null,
               null
       );
       
-      for (int i = 0; i < _encoded_columns_mapping.length; i++) {
-        ColumnsMapping mapping = _encoded_columns_mapping[i];
+      for (int i = 0; i < _input_to_output_columns.length; i++) {
+        ColumnsMapping mapping = _input_to_output_columns[i];
         summary.set(i, 0, String.join(", ", mapping.from()));
         summary.set(i, 1, String.join(", ", mapping.to()));
       }
@@ -376,7 +376,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       workingFrame = data.deepCopy(Key.make().toString());
       tmpKey = workingFrame._key;
 
-      for (ColumnsMapping columnsToEncode: _output._columns_to_encode_mapping) { // TODO: parallelize this, should mainly require change in naming of num/den columns
+      for (ColumnsMapping columnsToEncode: _output._input_to_encoding_column) { // TODO: parallelize this, should mainly require change in naming of num/den columns
         String[] colGroup = columnsToEncode.from();
         String columnToEncode = columnsToEncode.toSingle();
         Frame encodings = _output._target_encoding_map.get(columnToEncode);
@@ -412,7 +412,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       
       if (!_parms._keep_original_categorical_columns) {
         Set<String> removed = new HashSet<>();
-        for (ColumnsMapping columnsToEncode: _output._columns_to_encode_mapping) {
+        for (ColumnsMapping columnsToEncode: _output._input_to_encoding_column) {
           for (String col: columnsToEncode.from()) {
             if (removed.contains(col)) continue;
             tmps.add(workingFrame.remove(col));

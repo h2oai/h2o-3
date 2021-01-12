@@ -151,7 +151,8 @@ ext {
     // Projects with micro-benchmarks
     ubenchProjects = [
       project(':h2o-core'),
-      project(':h2o-algos')
+      project(':h2o-algos'),
+      project(':h2o-ext-target-encoder')      
     ]
     
     //

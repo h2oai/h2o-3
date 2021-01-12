@@ -581,7 +581,7 @@ public class TargetEncodingHelperTest extends TestUtil {
   }
   
   @Test
-  public void test_addInteractionColumn() {
+  public void test_createFeatureInteraction() {
     try {
       Scope.enter();
       Frame fr = new TestFrameBuilder()
