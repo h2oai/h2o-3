@@ -57,7 +57,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   public Lockable write_lock() { return write_lock((Key<Job>)null); }
   public Lockable write_lock( Job job ) { return write_lock(job._key); }
   public Lockable write_lock( Key<Job> job_key ) {
-    Log.debug("write-lock "+_key+" by job "+job_key);
+    Log.warn("write-lock "+_key+" by job "+job_key);
     return ((PriorWriteLock)new PriorWriteLock(job_key).invoke(_key))._old;
   }
 
@@ -69,7 +69,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   public T delete_and_lock( Key<Job> job_key ) {
     Lockable old =  write_lock(job_key);
     if( old != null ) {
-      Log.debug("lock-then-clear "+_key+" by job "+job_key);
+      Log.warn("lock-then-clear "+_key+" by job "+job_key);
       old.remove_impl(new Futures(), false).blockForPending();  // internal delete, don't remove dependencies as they're often still needed.
     }
     return (T)this;
@@ -139,7 +139,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   /** Atomically get a read-lock on this, preventing future deletes or updates */
   public void read_lock( Key<Job> job_key ) { 
     if( _key != null ) {
-      Log.debug("shared-read-lock "+_key+" by job "+job_key);
+      Log.warn("shared-read-lock "+_key+" by job "+job_key);
       new ReadLock(job_key).invoke(_key); 
     }
   }
@@ -160,7 +160,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   /** Atomically convert an existing write-lock on this to a read-lock, preventing future deletes or updates */
   public void write_lock_to_read_lock(Key<Job> job_key) {
     if( _key != null ) {
-      Log.debug("convert write-lock to read-lock " + _key + " by job " + job_key);
+      Log.warn("convert write-lock to read-lock " + _key + " by job " + job_key);
       new WriteLockToReadLock(job_key).invoke(_key);
     }
   }
@@ -209,7 +209,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   public T unlock( Key<Job> job_key ) { return unlock(job_key,true); }
   public T unlock( Key<Job> job_key, boolean exact ) {
     if( _key != null ) {
-      Log.debug("unlock "+_key+" by job "+job_key);
+      Log.warn("unlock "+_key+" by job "+job_key);
       new Unlock(job_key,exact).invoke(_key);
     }
     return (T)this;
