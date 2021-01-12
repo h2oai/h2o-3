@@ -18,10 +18,7 @@ import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
 import water.rapids.vals.ValStr;
 import water.rapids.vals.ValStrs;
-import water.util.ArrayUtils;
-import water.util.FrameUtils;
-import water.util.TwoDimTable;
-import water.util.VecUtils;
+import water.util.*;
 
 import java.util.*;
 
@@ -92,7 +89,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
     return interactionColName;
   }
   
-  private static Vec createInteractionColumn(Frame fr, int[] interactingColumnsIdx, boolean encodeUnseenAsNA) {
+  static Vec createInteractionColumn(Frame fr, int[] interactingColumnsIdx, boolean encodeUnseenAsNA) {
     String[][] interactingDomains = new String[interactingColumnsIdx.length][];
     Vec[] interactingVecs = new Vec[interactingColumnsIdx.length];
     String[][] allDomains = fr.domains();
@@ -101,25 +98,37 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
       interactingVecs[i] = fr.vec(interactingColumnsIdx[i]);
     }
     final InteractionsEncoder encoder = new InteractionsEncoder(interactingDomains, encodeUnseenAsNA);
-    Vec interactionCol = new MRTask() {
-      @Override
-      public void map(Chunk[] cs, NewChunk nc) {
-        for (int row=0; row < cs[0].len(); row++) {
-          int[] interactingValues = new int[cs.length];
-          for (int i=0; i<cs.length; i++) {
-            interactingValues[i] = cs[i].isNA(row) ? -1 : (int)cs[i].at8(row);
-          }
-          long val = encoder.encode(interactingValues);
-          if (val < 0) 
-            nc.addNA();
-          else
-            nc.addNum(val);
-        }
-      }
-    }.doAll(new byte[] {Vec.T_NUM}, interactingVecs).outputFrame().lastVec();
+    Vec interactionCol = new CreateInteractionAsLongTask(encoder).doAll(new byte[] {Vec.T_NUM}, interactingVecs).outputFrame().lastVec();
     interactionCol = VecUtils.toCategoricalVec(interactionCol);
     return interactionCol;
   }
+
+  private static class CreateInteractionAsLongTask extends MRTask {
+    final InteractionsEncoder _encoder;
+    
+    public CreateInteractionAsLongTask(InteractionsEncoder encoder) {
+      _encoder = encoder;
+    }
+
+    @Override
+    public void map(Chunk[] cs, NewChunk nc) {
+      Set<Long> domain = new HashSet<>();
+      for (int row=0; row < cs[0].len(); row++) {
+        int[] interactingValues = new int[cs.length];
+        for (int i=0; i<cs.length; i++) {
+          interactingValues[i] = cs[i].isNA(row) ? -1 : (int)cs[i].at8(row);
+        }
+        long val = _encoder.encode(interactingValues);
+        if (val < 0) {
+          nc.addNA();
+        } else {
+          nc.addNum(val);
+          domain.add(val);
+        }
+      }
+    }
+  }
+
 
 
   /**
