@@ -2,7 +2,6 @@ package water.k8s.api;
 
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
-import water.k8s.lookup.KubernetesFlatfileLookup;
 import water.k8s.probe.KubernetesLeaderNodeProbeHandler;
 
 import java.io.IOException;
@@ -56,7 +55,6 @@ public class KubernetesRestApi extends RouterNanoHTTPD implements AutoCloseable 
     public void addMappings() {
         super.addMappings();
         addRoute("/kubernetes/isLeaderNode", KubernetesLeaderNodeProbeHandler.class);
-        addRoute("/kubernetes/flatfile", KubernetesFlatfileLookup.class);
     }
 
     @Override

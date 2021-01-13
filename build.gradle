@@ -89,7 +89,8 @@ ext {
       project(':h2o-logger'),
       project(':h2o-genmodel-ext-jgrapht'),
       project(':h2o-k8s'),
-      project(':h2o-genmodel-ext-deepwater')
+      project(':h2o-genmodel-ext-deepwater'),
+      project(':h2o-clustering')
     ]
 
     javaProjects = [
@@ -127,7 +128,8 @@ ext {
       project(':h2o-logger'),
       project(':h2o-genmodel-ext-jgrapht'),
       project(':h2o-k8s'), 
-      project(':h2o-genmodel-ext-deepwater')
+      project(':h2o-genmodel-ext-deepwater'),
+      project(':h2o-clustering')
     ]
 
     rProjects = [

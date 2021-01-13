@@ -4,7 +4,6 @@ import water.init.AbstractEmbeddedH2OConfig;
 import water.init.EmbeddedConfigProvider;
 import water.k8s.api.KubernetesRestApi;
 import water.k8s.lookup.KubernetesDnsLookup;
-import water.k8s.lookup.KubernetesFlatfileLookup;
 import water.k8s.lookup.KubernetesLookup;
 import water.k8s.lookup.LookupConstraintsBuilder;
 import water.util.Log;
@@ -51,13 +50,8 @@ public class KubernetesEmbeddedConfigProvider implements EmbeddedConfigProvider 
         } catch (NumberFormatException e) {
             Log.info(String.format("'%s' environment variable not set.", K8S_DESIRED_CLUSTER_SIZE_KEY));
         }
-        
-        final KubernetesLookup kubernetesDnsDiscovery;
-        if (System.getenv("H2O_KUBERNETES_SERVICE_DNS") != null){
-            kubernetesDnsDiscovery = new KubernetesFlatfileLookup();
-        } else {
-            kubernetesDnsDiscovery = KubernetesDnsLookup.fromH2ODefaults();
-        }
+
+        final KubernetesLookup kubernetesDnsDiscovery = KubernetesDnsLookup.fromH2ODefaults();
         return kubernetesDnsDiscovery.lookupNodes(lookupConstraintsBuilder.build());
     }
 
@@ -96,7 +90,7 @@ public class KubernetesEmbeddedConfigProvider implements EmbeddedConfigProvider 
      * Kubernetes. Otherwise false.
      */
     public static boolean isRunningOnKubernetes() {
-        return KubernetesDnsLookup.isLookupPossible() || System.getenv("H2O_KUBERNETES_SERVICE_DNS") != null;
+        return KubernetesDnsLookup.isLookupPossible();
     }
 
     /**
