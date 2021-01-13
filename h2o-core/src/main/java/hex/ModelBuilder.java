@@ -45,7 +45,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   private Countdown _build_model_countdown;
   private Countdown _build_step_countdown;
-  private void startClock() {
+  final void startClock() {
     _build_model_countdown = Countdown.fromSeconds(_parms._max_runtime_secs);
     _build_model_countdown.start();
   }
