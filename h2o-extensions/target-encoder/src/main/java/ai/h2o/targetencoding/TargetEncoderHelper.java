@@ -73,23 +73,27 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
     }
   }
   
-  static String createFeatureInteraction(Frame fr, String[] colGroup, boolean encodeUnseenAsNA) {
+  static String createFeatureInteraction(Frame fr, String[] colGroup) {
+    return createFeatureInteraction(fr, colGroup, null);
+  }
+  
+  static String createFeatureInteraction(Frame fr, String[] colGroup, String[] interactionDomain) {
     if (colGroup.length == 1) {
       return colGroup[0];
     } else {
-      return addInteractionColumn(fr, colGroup, encodeUnseenAsNA);
+      return addInteractionColumn(fr, colGroup, interactionDomain);
     }
   }
 
-  private static String addInteractionColumn(Frame fr, String[] columns, boolean encodeUnseenAsNA) {
-    String interactionColName = String.join("~", columns);  // any limit to col name length?
-    int[] cols = Arrays.stream(columns).mapToInt(fr::find).toArray();
-    Vec interactionCol = createInteractionColumn(fr, cols, encodeUnseenAsNA);
+  private static String addInteractionColumn(Frame fr, String[] interactingColumns, String[] interactionDomain) {
+    String interactionColName = String.join("~", interactingColumns);  // any limit to col name length?
+    int[] cols = Arrays.stream(interactingColumns).mapToInt(fr::find).toArray();
+    Vec interactionCol = createInteractionColumn(fr, cols, interactionDomain);
     fr.add(interactionColName, interactionCol);
     return interactionColName;
   }
   
-  static Vec createInteractionColumn(Frame fr, int[] interactingColumnsIdx, boolean encodeUnseenAsNA) {
+  static Vec createInteractionColumn(Frame fr, int[] interactingColumnsIdx, String[] interactionDomain) {
     String[][] interactingDomains = new String[interactingColumnsIdx.length][];
     Vec[] interactingVecs = new Vec[interactingColumnsIdx.length];
     String[][] allDomains = fr.domains();
@@ -97,22 +101,28 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
       interactingDomains[i] = allDomains[i];
       interactingVecs[i] = fr.vec(interactingColumnsIdx[i]);
     }
-    final InteractionsEncoder encoder = new InteractionsEncoder(interactingDomains, encodeUnseenAsNA);
-    Vec interactionCol = new CreateInteractionAsLongTask(encoder).doAll(new byte[] {Vec.T_NUM}, interactingVecs).outputFrame().lastVec();
-    interactionCol = VecUtils.toCategoricalVec(interactionCol);
+    final InteractionsEncoder encoder = new InteractionsEncoder(interactingDomains, true);
+    byte interactionType = interactionDomain == null ? Vec.T_NUM : Vec.T_CAT;
+    Vec interactionCol = new CreateInteractionTask(encoder, interactionDomain)
+            .doAll(new byte[] {interactionType}, interactingVecs)
+            .outputFrame(null, null, new String[][]{interactionDomain})
+            .lastVec();
+    if (interactionType != Vec.T_CAT)
+      interactionCol = VecUtils.toCategoricalVec(interactionCol); // the domain is obtained from CollectDoubleDomain, so it is sorted by numerical value, and then converted to String
     return interactionCol;
   }
 
-  private static class CreateInteractionAsLongTask extends MRTask {
+  private static class CreateInteractionTask extends MRTask<CreateInteractionTask> {
     final InteractionsEncoder _encoder;
+    final long[] _interactionDomain; // sorted by construction (see createInteractionColumn), or null
     
-    public CreateInteractionAsLongTask(InteractionsEncoder encoder) {
+    public CreateInteractionTask(InteractionsEncoder encoder,  String[] interactionDomain) {
       _encoder = encoder;
+      _interactionDomain = interactionDomain == null ? null : Arrays.stream(interactionDomain).mapToLong(Long::parseLong).toArray();
     }
 
     @Override
     public void map(Chunk[] cs, NewChunk nc) {
-      Set<Long> domain = new HashSet<>();
       for (int row=0; row < cs[0].len(); row++) {
         int[] interactingValues = new int[cs.length];
         for (int i=0; i<cs.length; i++) {
@@ -121,14 +131,18 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
         long val = _encoder.encode(interactingValues);
         if (val < 0) {
           nc.addNA();
-        } else {
+        } else if (_interactionDomain == null){
           nc.addNum(val);
-          domain.add(val);
+        } else {
+          int catVal = Arrays.binarySearch(_interactionDomain, val);
+          if (catVal < 0) 
+            nc.addNA();
+          else
+            nc.addCategorical(catVal);
         }
       }
     }
   }
-
 
 
   /**

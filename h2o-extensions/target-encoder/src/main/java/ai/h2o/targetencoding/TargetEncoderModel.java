@@ -47,7 +47,6 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     public boolean _keep_original_categorical_columns = true; // not a good default, but backwards compatible.
     
     boolean _keep_interaction_columns = false; // not exposed: convenient for testing.
-    boolean _encode_unseen_as_na_in_interactions = true; // not exposed: trying different strategies.
     
     @Override
     public String algoName() {
@@ -85,23 +84,23 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
     public final TargetEncoderParameters _parms;
     public final int _nclasses;
-    public final ColumnsMapping[] _input_to_encoding_column; // maps input columns (or groups of columns) to the single column being effectively encoded (= key in _target_encoding_map).
+    public final ColumnsToSingleMapping[] _input_to_encoding_column; // maps input columns (or groups of columns) to the single column being effectively encoded (= key in _target_encoding_map).
     public final ColumnsMapping[] _input_to_output_columns; // maps input columns (or groups of columns) to their corresponding encoded one(s).
     public final IcedHashMap<String, Frame> _target_encoding_map;
     public final IcedHashMap<String, Boolean> _te_column_to_hasNAs; //XXX: Map is a wrong choice for this, IcedHashSet would be perfect though
     
     
     public TargetEncoderOutput(TargetEncoder te) {
-      this(te, new IcedHashMap<>(), new ColumnsMapping[]{});
+      this(te, new IcedHashMap<>(), new ColumnsToSingleMapping[]{});
     }
     
-    public TargetEncoderOutput(TargetEncoder te, IcedHashMap<String, Frame> teMap, ColumnsMapping[] columnsToEncodeMapping) {
+    public TargetEncoderOutput(TargetEncoder te, IcedHashMap<String, Frame> teMap, ColumnsToSingleMapping[] columnsToEncodeMapping) {
       super(te);
       _parms = te._parms;
       _nclasses = te.nclasses();
       _target_encoding_map = teMap;
       _input_to_encoding_column = columnsToEncodeMapping;
-      _input_to_output_columns = buildEncodedColumnsMapping();
+      _input_to_output_columns = buildInOutColumnsMapping();
       _te_column_to_hasNAs = buildCol2HasNAsMap();
       _model_summary = constructSummary();
     }
@@ -109,10 +108,10 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     /**
      * builds the name of encoded columns
      */
-    private ColumnsMapping[] buildEncodedColumnsMapping() {
+    private ColumnsMapping[] buildInOutColumnsMapping() {
       ColumnsMapping[] encMapping = new ColumnsMapping[_input_to_encoding_column.length];
       for (int i=0; i < encMapping.length; i++) {
-        ColumnsMapping toEncode = _input_to_encoding_column[i];
+        ColumnsToSingleMapping toEncode = _input_to_encoding_column[i];
         String[] groupCols = toEncode.from();
         String columnToEncode = toEncode.toSingle();
         Frame encodings = _target_encoding_map.get(columnToEncode);
@@ -376,12 +375,12 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       workingFrame = data.deepCopy(Key.make().toString());
       tmpKey = workingFrame._key;
 
-      for (ColumnsMapping columnsToEncode: _output._input_to_encoding_column) { // TODO: parallelize this, should mainly require change in naming of num/den columns
+      for (ColumnsToSingleMapping columnsToEncode: _output._input_to_encoding_column) { // TODO: parallelize this, should mainly require change in naming of num/den columns
         String[] colGroup = columnsToEncode.from();
         String columnToEncode = columnsToEncode.toSingle();
         Frame encodings = _output._target_encoding_map.get(columnToEncode);
         
-        createFeatureInteraction(workingFrame, colGroup, _parms._encode_unseen_as_na_in_interactions);
+        createFeatureInteraction(workingFrame, colGroup, columnsToEncode.toDomain());
         int colIdx = workingFrame.find(columnToEncode);
         if (colIdx < 0) {
           logger.warn("Column "+columnToEncode+" is missing in frame "+data._key);
@@ -443,13 +442,6 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       noiseLevel = targetVec.isNumeric() ? defaultNoiseLevel * (targetVec.max() - targetVec.min()) : defaultNoiseLevel;
     }
     return noiseLevel;
-  }
-
-  Map<String, Frame> sortByColumnIndex(final Map<String, Frame> encodingMap) {
-    Map<String, Integer> nameToIdx = nameToIndex(_output._names);
-    Map<String, Frame> sorted = new TreeMap<>(Comparator.comparingInt(nameToIdx::get));
-    sorted.putAll(encodingMap);
-    return sorted;
   }
 
   /**

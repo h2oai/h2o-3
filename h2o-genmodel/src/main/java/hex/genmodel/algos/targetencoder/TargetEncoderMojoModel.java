@@ -14,6 +14,15 @@ public class TargetEncoderMojoModel extends MojoModel {
   public static double computeBlendedEncoding(double lambda, double posteriorMean, double priorMean) {
     return lambda * posteriorMean + (1 - lambda) * priorMean;
   }
+  
+  static Map<String, Integer> name2Idx(String[] columns) {
+    Map<String, Integer> nameToIdx = new HashMap<>(columns.length);
+    for (int i = 0; i < columns.length; i++) {
+      nameToIdx.put(columns[i], i);
+    }
+    return nameToIdx;
+  }
+
 
   public final Map<String, Integer> _columnNameToIdx;
   public Map<String, Boolean> _teColumn2HasNAs; // tells if a given encoded column has NAs
@@ -23,6 +32,8 @@ public class TargetEncoderMojoModel extends MojoModel {
 
   List<String> _nonPredictors;
   Map<String, EncodingMap> _encodingsByCol;
+  List<ColumnsToSingleMapping> _inencMapping;
+  List<ColumnsMapping> _inoutMapping;
   boolean _keepOriginalCategoricalColumns;
   
   /**
@@ -37,12 +48,24 @@ public class TargetEncoderMojoModel extends MojoModel {
     _columnNameToIdx = name2Idx(columns);
   }
   
-  static Map<String, Integer> name2Idx(String[] columns) {
-    Map<String, Integer> nameToIdx = new HashMap<>(columns.length);
-    for (int i = 0; i < columns.length; i++) {
-      nameToIdx.put(columns[i], i);
+  void init() {
+    if (_inencMapping.isEmpty() && _inoutMapping.isEmpty()) { // backwards compatibility for old mojos
+      for (String col : _encodingsByCol.keySet()) {
+        String[] in = new String[]{col};
+//        String[] domain = getDomainValues(col);
+        _inencMapping.add(new ColumnsToSingleMapping(in, col, null));
+        String[] out = new String[getNumEncColsPerPredictor()];
+        if (out.length > 1) {
+          for (int i = 0; i < out.length; i++) {
+            out[i] = col+"_"+(i+1)+"_te";  // better than nothing: (i+1) is the categorical value of the matching target
+          }
+        } else {
+          out[0] = col+"_te";
+        }
+        _inoutMapping.add(new ColumnsMapping(in, out));
+      }
     }
-    return nameToIdx;
+    
   }
   
   protected void setEncodings(EncodingMaps encodingMaps) {
@@ -67,11 +90,19 @@ public class TargetEncoderMojoModel extends MojoModel {
     if (_encodingsByCol == null) throw new IllegalStateException("Encoding map is missing.");
       
     int predsIdx = 0;
-    for (Map.Entry<String, EncodingMap> columnToEncodings : _encodingsByCol.entrySet() ) {
-      String teColumn = columnToEncodings.getKey();
-      EncodingMap encodings = columnToEncodings.getValue();
-      int colIdx = _columnNameToIdx.get(teColumn);
-      double category = row[colIdx]; 
+    for (ColumnsToSingleMapping colMap : _inencMapping) {
+      String[] colGroup = colMap.from();
+      String teColumn = colMap.toSingle();
+      EncodingMap encodings = _encodingsByCol.get(teColumn);
+      int[] colsIdx = columnsIndices(colGroup);
+      
+      double category;
+      if (colsIdx.length == 1) {
+        category = row[colsIdx[0]];
+      } else {
+        assert colMap.toDomainAsNum() != null : "Missing domain for interaction between columns "+Arrays.toString(colGroup);  
+        category = interactionValue(row, colsIdx, colMap.toDomainAsNum());
+      }
       
       int filled;
       if (Double.isNaN(category)) {
@@ -89,6 +120,32 @@ public class TargetEncoderMojoModel extends MojoModel {
   public EncodingMap getEncodings(String column) {
     return _encodingsByCol.get(column);
   } 
+  
+  private int[] columnsIndices(String[] names) {
+    int[] indices = new int[names.length];
+    for (int i=0; i < indices.length; i++) {
+      indices[i] = _columnNameToIdx.get(names[i]);
+    }
+    return indices;
+  }
+
+  /**
+   * a condensed version of the encoding logic as implemented for the training phase in {@link ai.h2o.targetencoding.InteractionsEncoder} 
+   */
+  private double interactionValue(double[] row, int[] colsIdx, long[] interactionDomain) {
+    // computing interaction value (see InteractionsEncoder)
+    long interaction = 0;
+    long multiplier = 1;
+    for (int i=0; i<colsIdx.length; i++) {
+      double val = row[i];
+      int domainCard = getDomainValues(i).length;
+      if (Double.isNaN(val) || val >= domainCard) val = domainCard;
+      interaction += multiplier*val;
+      multiplier *= (domainCard+1);
+    }
+    int catVal = Arrays.binarySearch(interactionDomain, interaction);
+    return catVal < 0 ? Double.NaN : catVal;
+  }
 
   private double computeEncodedValue(double[] numDen, double priorMean) {
     double posteriorMean = numDen[0] / numDen[1];

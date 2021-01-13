@@ -592,7 +592,7 @@ public class TargetEncodingHelperTest extends TestUtil {
               .withDataForCol(2, ar("0", "1",  "2", "3", null, "0",  "1"))
               .build();
 
-      createFeatureInteraction(fr, fr.names(), true);
+      createFeatureInteraction(fr, fr.names());
       printOutFrameAsTable(fr);
       System.out.println("Domain: "+Arrays.toString(fr.lastVec().domain()));
     } finally {

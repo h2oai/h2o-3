@@ -20,7 +20,7 @@ class InteractionsEncoder extends Iced {
 
     private boolean _encodeUnseenAsNA;
     private String[][] _interactingDomains;
-    private int[] _encodingFactors;
+    private long[] _encodingFactors;
 
     InteractionsEncoder(String[][] interactingDomains, boolean encodeUnseenAsNA) {
         _encodeUnseenAsNA = encodeUnseenAsNA;
@@ -33,11 +33,11 @@ class InteractionsEncoder extends Iced {
         long value = 0;
         for (int i = 0; i < interactingValues.length; i++) {
             int domainCard = _interactingDomains[i].length;
-            int interactionFactor = _encodingFactors[i];
+            long interactionFactor = _encodingFactors[i];
             int ival = interactingValues[i];
             if (ival >= domainCard) ival = domainCard;  // unseen value during training
             if (ival < 0) ival = _encodeUnseenAsNA ? domainCard : (domainCard + 1);  // NA
-            value += (long)ival * interactionFactor;
+            value += ival * interactionFactor;
         }
         return value;
     }
@@ -61,7 +61,7 @@ class InteractionsEncoder extends Iced {
         int[] values = new int[_encodingFactors.length];
         long value = interactionValue;
         for (int i = _encodingFactors.length - 1; i >= 0; i--) {
-            int factor = _encodingFactors[i];
+            long factor = _encodingFactors[i];
             values[i] = (int)(value / factor);
             value %= factor;
         }
@@ -81,9 +81,9 @@ class InteractionsEncoder extends Iced {
         return catValues;
     }
 
-    private int[] createEncodingFactors() {
-        int[] factors = new int[_interactingDomains.length];
-        int multiplier = 1;
+    private long[] createEncodingFactors() {
+        long[] factors = new long[_interactingDomains.length];
+        long multiplier = 1;
         for (int i = 0; i < _interactingDomains.length; i++) {
             int domainCard = _interactingDomains[i].length;
             int interactionFactor = _encodeUnseenAsNA ? (domainCard + 1) : (domainCard + 2);  // +1 for potential unseen values, +1 for NAs (see #interactionDomain)

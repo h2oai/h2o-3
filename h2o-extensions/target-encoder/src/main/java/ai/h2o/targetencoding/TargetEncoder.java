@@ -130,14 +130,15 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
         _targetEncoderModel = model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
         
         Frame workingFrame = new Frame(train());
-        ColumnsMapping[] columnsToEncodeMapping = new ColumnsMapping[_columnsToEncode.length];
+        ColumnsToSingleMapping[] columnsToEncodeMapping = new ColumnsToSingleMapping[_columnsToEncode.length];
         for (int i=0; i < columnsToEncodeMapping.length; i++) {
           String[] colGroup = _columnsToEncode[i];
-          String encodingCol = createFeatureInteraction(workingFrame, colGroup, _parms._encode_unseen_as_na_in_interactions);
-          columnsToEncodeMapping[i] = new ColumnsMapping(colGroup, encodingCol);
+          String interactionCol = createFeatureInteraction(workingFrame, colGroup);
+          String[] interactionDomain = workingFrame.vec(interactionCol).domain();
+          columnsToEncodeMapping[i] = new ColumnsToSingleMapping(colGroup, interactionCol, interactionDomain);
         }
         
-        String[] singleColumnsToEncode = Arrays.stream(columnsToEncodeMapping).map(ColumnsMapping::toSingle).toArray(String[]::new);
+        String[] singleColumnsToEncode = Arrays.stream(columnsToEncodeMapping).map(ColumnsToSingleMapping::toSingle).toArray(String[]::new);
         IcedHashMap<String, Frame> _targetEncodingMap = prepareEncodingMap(workingFrame, singleColumnsToEncode);
 
         for (Map.Entry<String, Frame> entry : _targetEncodingMap.entrySet()) {

@@ -5,6 +5,7 @@ import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import hex.ModelMojoWriter;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.IcedHashMap;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -15,8 +16,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static ai.h2o.targetencoding.TargetEncoderHelper.*;
-import static hex.genmodel.algos.targetencoder.TargetEncoderMojoReader.ENCODING_MAP_PATH;
-import static hex.genmodel.algos.targetencoder.TargetEncoderMojoReader.MISSING_VALUES_PRESENCE_MAP_PATH;
+import static hex.genmodel.algos.targetencoder.TargetEncoderMojoReader.*;
 
 public class TargetEncoderMojoWriter extends ModelMojoWriter<TargetEncoderModel, TargetEncoderParameters, TargetEncoderOutput> {
     
@@ -59,14 +59,9 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter<TargetEncoderModel,
             model._output.responseName()
     }).filter(Objects::nonNull).collect(Collectors.toList());
     writekv("non_predictors", String.join(";", nonPredictors));
-
-    //XXX: additional file unnecessary, we could just write the list/set of columns with NAs
-    Map<String, Boolean> col2HasNAs = output._te_column_to_hasNAs;
-    startWritingTextFile(MISSING_VALUES_PRESENCE_MAP_PATH);
-    for(Entry<String, Boolean> entry: col2HasNAs.entrySet()) {
-      writelnkv(entry.getKey(), entry.getValue() ? "1" : "0");
-    }
-    finishWritingTextFile();
+    writeColumnsHasNAs(output._te_column_to_hasNAs, MISSING_VALUES_PRESENCE_MAP_PATH);
+    writeColumnsMapping(output._input_to_encoding_column, INPUT_ENCODING_COLUMNS_MAPPING_PATH);
+    writeColumnsMapping(output._input_to_output_columns, INPUT_OUTPUT_COLUMNS_MAPPING_PATH);
   }
 
   /**
@@ -119,6 +114,31 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter<TargetEncoderModel,
         throw new IllegalStateException("Failed to group encoding maps by fold column", ex);
       }
     }
+  }
+
+  //XXX: additional file unnecessary, we could just write the list/set of columns with NAs
+  private void writeColumnsHasNAs(IcedHashMap<String, Boolean> col2HasNAs, String fileName) throws IOException {
+    startWritingTextFile(fileName);
+    for(Entry<String, Boolean> entry: col2HasNAs.entrySet()) {
+      writelnkv(entry.getKey(), entry.getValue() ? "1" : "0");
+    }
+    finishWritingTextFile();
+  }
+  
+  
+  private void writeColumnsMapping(ColumnsMapping[] mapping, String fileName) throws IOException {
+    startWritingTextFile(fileName);
+    for (ColumnsMapping entry : mapping) {
+      writeln("[from]");
+      for (String s : entry.from()) writeln(s);
+      writeln("[to]");
+      for (String s : entry.to()) writeln(s);
+      if (entry instanceof ColumnsToSingleMapping && entry.from().length > 1) { //write to_domain only if the to column is new (interaction col).
+        writeln("[to_domain]");
+        for (String s : ((ColumnsToSingleMapping) entry).toDomain()) writeln(s);
+      }
+    }
+    finishWritingTextFile();
   }
   
 }
