@@ -135,7 +135,8 @@ def test_glm():
     params = {
         "missing_values_handling": "PlugValues", 
         "plug_values": means,
-        "beta_constraints": beta_constraints
+        "beta_constraints": beta_constraints,
+        "nfolds": 5
     }
     hyper_params = {
         'alpha': [0.01, 0.3, 0.5, 0.7, 0.9],
