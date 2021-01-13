@@ -48,6 +48,7 @@ public class CVModelBuilder {
             }
             LOG.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
             prepare(modelBuilders[i]);
+            modelBuilders[i].startClock();
             submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
             if (++nRunning == parallelization) { //piece-wise advance in training the models
                 while (nRunning > 0) try {
