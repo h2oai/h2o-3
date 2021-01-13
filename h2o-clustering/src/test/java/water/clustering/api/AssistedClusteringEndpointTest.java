@@ -42,7 +42,7 @@ public class AssistedClusteringEndpointTest {
     }
 
     @Test
-    public void testFlatfileParsing() throws Exception {
+    public void testFlatFileParsing() throws Exception {
         final String flatfile = "1200:0000:AB00:1234:0000:2552:7777:1313\n" +
                 "[1200:0000:AB00:1234:0000:2552:7777:1313]:54321\n" +
                 "9.255.255.255\n" +

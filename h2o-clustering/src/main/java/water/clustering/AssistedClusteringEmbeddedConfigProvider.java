@@ -11,7 +11,11 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-
+/**
+ * Provides {@link AssistedClusteringEmbeddedConfig} as a result of external assist. The resulting
+ * embedded config provides a flatfile assembled by external service, given to H2O. 
+ * This EmbeddedConfig has no timeout and will wait indefinitely until a flatfifle is received.
+ */
 public class AssistedClusteringEmbeddedConfigProvider implements EmbeddedConfigProvider {
     private static final Logger LOG = Logger.getLogger(AssistedClusteringEmbeddedConfigProvider.class);
 
@@ -22,15 +26,18 @@ public class AssistedClusteringEmbeddedConfigProvider implements EmbeddedConfigP
     @Override
     public void init() {
         final Consumer<String> flatFileCallback = s -> {
+            // Make sure to set the flatfile first and then notify, as the flatfile is immediately used
+            // to produce a resulting config
             flatfile = s;
             synchronized (notification) {
                 notification.notify();
             }
         };
-
+        
         try (final AssistedClusteringRestApi assistedClusteringRestApi = startAssistedClusteringRestApi(flatFileCallback)
                 .orElseThrow(() -> new IllegalStateException("Assisted clustering Rest API unable to start."))) {
             try {
+                // Blocks until a flatfile is received. 
                 synchronized (notification) {
                     notification.wait();
                 }
@@ -43,7 +50,7 @@ public class AssistedClusteringEmbeddedConfigProvider implements EmbeddedConfigP
     }
 
     /**
-     * Start REST API listening to incoming list of Pod IPs
+     * Start REST API listening to incoming request with a flatfile
      */
     private Optional<AssistedClusteringRestApi> startAssistedClusteringRestApi(final Consumer<String> flatFileCallback) {
         Log.info("Starting assisted clustering REST API services");

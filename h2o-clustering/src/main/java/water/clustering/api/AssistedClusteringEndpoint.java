@@ -13,6 +13,16 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 
+/**
+ * A REST Endpoint waiting for external assist to POST a flatifle with H2O nodes.
+ * Once successfully submitted, this endpoint will no longer accept any new calls. 
+ * It is the caller's responsibility to submit a valid flatfile.
+ * 
+ * There is no parsing or validation done on the flatfile, except for basic emptiness checks.
+ * The logic for IPv4/IPv6 parsing is hidden in {@link water.init.NetworkInit} class and is therefore hidden 
+ * from this class. As this module is intended to insertable onto classpath of any H2O, it does not rely on
+ * specific NetworkInit implementation.
+ */
 public class AssistedClusteringEndpoint extends RouterNanoHTTPD.DefaultHandler {
 
     private static final Logger LOG = Logger.getLogger(AssistedClusteringEndpoint.class);
@@ -50,6 +60,7 @@ public class AssistedClusteringEndpoint extends RouterNanoHTTPD.DefaultHandler {
             LOG.error("Received incorrect Kubernetes flatfile request.", e);
             return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, RESPONSE_MIME_TYPE, null);
         }
+        // The text/plain content-type is stored as `postData` by HTTPD in the map.
         final String postBody = map.get("postData");
 
         if (postBody != null) {
@@ -62,7 +73,7 @@ public class AssistedClusteringEndpoint extends RouterNanoHTTPD.DefaultHandler {
                 } else {
                     final Consumer<String> flatFileConsumer = (Consumer<String>) uriResource.initParameter(Consumer.class);
                     flatFileConsumer.accept(postBody);
-                    flatFileReceived.set(true);
+                    flatFileReceived.set(true); // Do not accept any new requests once the flatfile has been received.
                 }
             } finally {
                 writeLock.unlock();

@@ -65,6 +65,8 @@ public class AssistedClusteringEmbeddedConfigProviderTest {
         con.setDoOutput(true);
         con.setRequestMethod("POST");
 
+        // REST API must be started first. This is a matter of milliseconds, therefore 10 retries in 10 seconds
+        // are more than enough.
         for (int i = 0; i < 10; i++) {
             try (OutputStream outputStream = con.getOutputStream()) {
                 outputStream.write(flatfile.getBytes(StandardCharsets.UTF_8));
@@ -79,7 +81,8 @@ public class AssistedClusteringEmbeddedConfigProviderTest {
                 con.disconnect();
             }
         }
-
+        
+        // If a connection is not established, report HTTP 500 status code
         return 500;
     }
 

@@ -2,12 +2,14 @@ package water.clustering.api;
 
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
-import water.util.Log;
 
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+/**
+ * Rest API definition for the assisted clustering function.
+ */
 public class AssistedClusteringRestApi extends RouterNanoHTTPD implements AutoCloseable {
 
     /**
@@ -32,16 +34,19 @@ public class AssistedClusteringRestApi extends RouterNanoHTTPD implements AutoCl
         addMappings();
     }
 
+    /**
+     * @return Either user-defined port via environment variable or default port to bind the REST API to.
+     */
     private static int getPort() {
-        final String customKubernetesPort = System.getenv(ASSISTED_CLUSTERING_PORT_KEY);
+        final String customPort = System.getenv(ASSISTED_CLUSTERING_PORT_KEY);
 
-        if (customKubernetesPort == null) {
+        if (customPort == null) {
             return DEFAULT_PORT;
         }
         try {
-            return Integer.parseInt(customKubernetesPort);
+            return Integer.parseInt(customPort);
         } catch (NumberFormatException e) {
-            final String errorMessage = String.format("Non-usable port for K8S REST API to bind to: '%s'", customKubernetesPort);
+            final String errorMessage = String.format("Non-usable port for K8S REST API to bind to: '%s'", customPort);
             throw new IllegalArgumentException(errorMessage, e);
         }
     }
