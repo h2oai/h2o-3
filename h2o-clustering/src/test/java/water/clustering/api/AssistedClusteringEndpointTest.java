@@ -26,19 +26,19 @@ public class AssistedClusteringEndpointTest {
         }
     }
 
-    private AssistedClusteringRestApi kubernetesRestApi;
+    private AssistedClusteringRestApi assistedClusteringRestApi;
     private FlatFileEventConsumer flatFileEventConsumer;
 
     @Before
     public void setUp() throws Exception {
         this.flatFileEventConsumer = new FlatFileEventConsumer();
-        kubernetesRestApi = new AssistedClusteringRestApi(this.flatFileEventConsumer);
-        kubernetesRestApi.start();
+        assistedClusteringRestApi = new AssistedClusteringRestApi(this.flatFileEventConsumer);
+        assistedClusteringRestApi.start();
     }
 
     @After
     public void tearDown() {
-        kubernetesRestApi.close();
+        assistedClusteringRestApi.close();
     }
 
     @Test

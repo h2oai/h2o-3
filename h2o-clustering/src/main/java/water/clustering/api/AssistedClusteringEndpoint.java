@@ -57,7 +57,7 @@ public class AssistedClusteringEndpoint extends RouterNanoHTTPD.DefaultHandler {
         try {
             session.parseBody(map);
         } catch (IOException | NanoHTTPD.ResponseException e) {
-            LOG.error("Received incorrect Kubernetes flatfile request.", e);
+            LOG.error("Received incorrect flatfile request.", e);
             return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, RESPONSE_MIME_TYPE, null);
         }
         // The text/plain content-type is stored as `postData` by HTTPD in the map.
