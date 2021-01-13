@@ -2001,7 +2001,7 @@ def learning_curve_plot(
     plt.ylabel(metric)
     handles, labels = plt.gca().get_legend_handles_labels()
     by_label = OrderedDict(zip(labels, handles))
-    plt.legend(by_label.values(), by_label.keys())
+    plt.legend(list(by_label.values()), list(by_label.keys()))
 
     return plt.gcf()
 
