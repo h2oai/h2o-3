@@ -19,34 +19,11 @@ import java.util.function.Consumer;
 public class AssistedClusteringEmbeddedConfigProvider implements EmbeddedConfigProvider {
     private static final Logger LOG = Logger.getLogger(AssistedClusteringEmbeddedConfigProvider.class);
 
-    private AssistedClusteringEmbeddedConfig assistedClusteringEmbeddedConfig;
     private String flatfile;
     private final Object notification = new Object();
 
     @Override
     public void init() {
-        final Consumer<String> flatFileCallback = s -> {
-            // Make sure to set the flatfile first and then notify, as the flatfile is immediately used
-            // to produce a resulting config
-            flatfile = s;
-            synchronized (notification) {
-                notification.notify();
-            }
-        };
-        
-        try (final AssistedClusteringRestApi assistedClusteringRestApi = startAssistedClusteringRestApi(flatFileCallback)
-                .orElseThrow(() -> new IllegalStateException("Assisted clustering Rest API unable to start."))) {
-            try {
-                // Blocks until a flatfile is received. 
-                synchronized (notification) {
-                    notification.wait();
-                }
-                assistedClusteringEmbeddedConfig = new AssistedClusteringEmbeddedConfig(flatfile);
-            } catch (InterruptedException e) {
-                LOG.error(e.getMessage(), e);
-                throw new IllegalStateException(e);
-            }
-        }
     }
 
     /**
@@ -74,6 +51,27 @@ public class AssistedClusteringEmbeddedConfigProvider implements EmbeddedConfigP
 
     @Override
     public AbstractEmbeddedH2OConfig getConfig() {
-        return assistedClusteringEmbeddedConfig;
+        final Consumer<String> flatFileCallback = s -> {
+            // Make sure to set the flatfile first and then notify, as the flatfile is immediately used
+            // to produce a resulting config
+            flatfile = s;
+            synchronized (notification) {
+                notification.notify();
+            }
+        };
+
+        try (final AssistedClusteringRestApi assistedClusteringRestApi = startAssistedClusteringRestApi(flatFileCallback)
+                .orElseThrow(() -> new IllegalStateException("Assisted clustering Rest API unable to start."))) {
+            try {
+                // Blocks until a flatfile is received. 
+                synchronized (notification) {
+                    notification.wait();
+                }
+                return new AssistedClusteringEmbeddedConfig(flatfile);
+            } catch (InterruptedException e) {
+                LOG.error(e.getMessage(), e);
+                throw new IllegalStateException(e);
+            }
+        }
     }
 }
