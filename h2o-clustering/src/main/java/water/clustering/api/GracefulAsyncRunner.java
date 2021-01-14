@@ -21,7 +21,7 @@ public class GracefulAsyncRunner extends NanoHTTPD.DefaultAsyncRunner {
         while (getRunning().size() > 0) {
             synchronized (this) {
                 try {
-                    this.wait();
+                    this.wait(1000 * 60); // One minute timeout
                 } catch (InterruptedException e) {
                     LOG.error(e.getMessage(), e);
                 }
