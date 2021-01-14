@@ -68,7 +68,7 @@ public class AssistedClusteringEndpoint extends RouterNanoHTTPD.DefaultHandler {
             try {
                 writeLock.lock();
                 if (flatFileReceived.get()) {
-                    return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.FORBIDDEN, RESPONSE_MIME_TYPE,
+                    return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, RESPONSE_MIME_TYPE,
                             "Flatfile already provided.");
                 } else {
                     final Consumer<String> flatFileConsumer = (Consumer<String>) uriResource.initParameter(Consumer.class);
