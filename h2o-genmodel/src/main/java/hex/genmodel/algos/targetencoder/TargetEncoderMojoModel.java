@@ -69,9 +69,7 @@ public class TargetEncoderMojoModel extends MojoModel {
   }
   
   protected void setEncodings(EncodingMaps encodingMaps) {
-    // Order of entries is not defined in sets(hash map). So we need some source of consistency.
-    // Following will guarantee order of transformations. Ascending order based on index of te column in the input
-    _encodingsByCol = sortByColumnIndex(encodingMaps);
+    _encodingsByCol = encodingMaps.encodingMap();
   }
 
   @Override
@@ -136,12 +134,12 @@ public class TargetEncoderMojoModel extends MojoModel {
     // computing interaction value (see InteractionsEncoder)
     long interaction = 0;
     long multiplier = 1;
-    for (int i=0; i<colsIdx.length; i++) {
-      double val = row[i];
-      int domainCard = getDomainValues(i).length;
+    for (int colIdx : colsIdx) {
+      double val = row[colIdx];
+      int domainCard = getDomainValues(colIdx).length;
       if (Double.isNaN(val) || val >= domainCard) val = domainCard;
-      interaction += multiplier*val;
-      multiplier *= (domainCard+1);
+      interaction += multiplier * val;
+      multiplier *= (domainCard + 1);
     }
     int catVal = Arrays.binarySearch(interactionDomain, interaction);
     return catVal < 0 ? Double.NaN : catVal;
@@ -198,26 +196,6 @@ public class TargetEncoderMojoModel extends MojoModel {
     } else {
       preds[startIdx] = encodings.getPriorMean();
       return 1;
-    }
-  }
-
-  Map<String, EncodingMap> sortByColumnIndex(final EncodingMaps encodingMaps) {
-    Map<String, EncodingMap> sorted = new TreeMap<>(new ColumnComparator(_columnNameToIdx));
-    sorted.putAll(encodingMaps.encodingMap());
-    return sorted;
-  }
-  
-  private static class ColumnComparator implements Comparator<String>, Serializable {
-    
-    private Map<String, Integer> _columnToIdx;
-
-    public ColumnComparator(Map<String, Integer> _columnToIdx) {
-      this._columnToIdx = _columnToIdx;
-    }
-
-    @Override
-    public int compare(String lhs, String rhs) {
-      return Integer.compare(_columnToIdx.get(lhs), _columnToIdx.get(rhs));
     }
   }
 

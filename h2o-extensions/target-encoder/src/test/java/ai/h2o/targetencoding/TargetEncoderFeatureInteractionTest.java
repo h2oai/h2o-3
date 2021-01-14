@@ -5,13 +5,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.Scope;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertTrue;
-import static water.TestUtil.parse_test_file;
-import static water.TestUtil.printOutFrameAsTable;
+import static water.TestUtil.*;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -53,6 +53,29 @@ public class TargetEncoderFeatureInteractionTest {
                 assertNotEquals(-1, colIdx);
                 assertTrue(encoded.vec(colIdx).isNumeric());
             }
+        } finally {
+            Scope.exit();
+        }
+    }
+    
+    
+    @Test
+    public void test_interaction_during_scoring_is_consistent_with_interaction_during_training() {
+        try {
+            Scope.enter();
+            Frame fr = parse_test_file("./smalldata/testng/airlines_train.csv");
+            Scope.track(fr);
+            String[] interacting = new String[] {"Origin", "fYear", "fMonth"};
+            int interactionColIdx = TargetEncoderHelper.createFeatureInteraction(fr, interacting);
+            Vec interactionTraining = fr.vec(interactionColIdx);
+            fr.remove(interactionColIdx);
+
+            String[] interactionDomain = interactionTraining.domain();
+            interactionColIdx = TargetEncoderHelper.createFeatureInteraction(fr, interacting, interactionDomain);
+            Vec interactionScoring = fr.vec(interactionColIdx);
+            
+            assertArrayEquals(interactionDomain, interactionScoring.domain());
+            assertVecEquals(interactionTraining, interactionScoring, 1e-6);
         } finally {
             Scope.exit();
         }

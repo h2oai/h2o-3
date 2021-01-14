@@ -380,8 +380,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
         String columnToEncode = columnsToEncode.toSingle();
         Frame encodings = _output._target_encoding_map.get(columnToEncode);
         
-        createFeatureInteraction(workingFrame, colGroup, columnsToEncode.toDomain());
-        int colIdx = workingFrame.find(columnToEncode);
+        int colIdx = createFeatureInteraction(workingFrame, colGroup, columnsToEncode.toDomain());
         if (colIdx < 0) {
           logger.warn("Column "+columnToEncode+" is missing in frame "+data._key);
           continue;

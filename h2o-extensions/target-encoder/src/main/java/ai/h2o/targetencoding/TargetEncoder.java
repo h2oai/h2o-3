@@ -81,9 +81,9 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
           }
           for (String col: colGroup) {
             if (!validated.contains(col)) {
-              if (!train.vec(col).isCategorical()) {
-                error("_columns_to_encode", "Column "+col+" must first be converted into categorical to be used by target encoder.");
-              }
+              Vec vec = train.vec(col);
+              if (vec == null) error("_columns_to_encode", "Column "+col+" from interaction "+Arrays.toString(colGroup)+" is not categorical or is missing in the training frame.");
+              else if (!vec.isCategorical()) error("_columns_to_encode", "Column "+col+" from interaction "+Arrays.toString(colGroup)+" must first be converted into categorical to be used by target encoder.");
               validated.add(col);
             }
           }
@@ -133,9 +133,9 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
         ColumnsToSingleMapping[] columnsToEncodeMapping = new ColumnsToSingleMapping[_columnsToEncode.length];
         for (int i=0; i < columnsToEncodeMapping.length; i++) {
           String[] colGroup = _columnsToEncode[i];
-          String interactionCol = createFeatureInteraction(workingFrame, colGroup);
+          int interactionCol = createFeatureInteraction(workingFrame, colGroup);
           String[] interactionDomain = workingFrame.vec(interactionCol).domain();
-          columnsToEncodeMapping[i] = new ColumnsToSingleMapping(colGroup, interactionCol, interactionDomain);
+          columnsToEncodeMapping[i] = new ColumnsToSingleMapping(colGroup, workingFrame.name(interactionCol), interactionDomain);
         }
         
         String[] singleColumnsToEncode = Arrays.stream(columnsToEncodeMapping).map(ColumnsToSingleMapping::toSingle).toArray(String[]::new);

@@ -72,34 +72,37 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
       if (fr != null && fr != encodings) fr.delete();
     }
   }
-  
-  static String createFeatureInteraction(Frame fr, String[] colGroup) {
+
+  /**
+   * @return the index of the interaction column for the group, or the index of the column if the group has only one.
+   */
+  static int createFeatureInteraction(Frame fr, String[] colGroup) {
     return createFeatureInteraction(fr, colGroup, null);
   }
   
-  static String createFeatureInteraction(Frame fr, String[] colGroup, String[] interactionDomain) {
+  static int createFeatureInteraction(Frame fr, String[] colGroup, String[] interactionDomain) {
     if (colGroup.length == 1) {
-      return colGroup[0];
+      return fr.find(colGroup[0]);
     } else {
       return addInteractionColumn(fr, colGroup, interactionDomain);
     }
   }
 
-  private static String addInteractionColumn(Frame fr, String[] interactingColumns, String[] interactionDomain) {
+  private static int addInteractionColumn(Frame fr, String[] interactingColumns, String[] interactionDomain) {
     String interactionColName = String.join("~", interactingColumns);  // any limit to col name length?
     int[] cols = Arrays.stream(interactingColumns).mapToInt(fr::find).toArray();
     Vec interactionCol = createInteractionColumn(fr, cols, interactionDomain);
     fr.add(interactionColName, interactionCol);
-    return interactionColName;
+    return fr.numCols()-1;
   }
   
   static Vec createInteractionColumn(Frame fr, int[] interactingColumnsIdx, String[] interactionDomain) {
     String[][] interactingDomains = new String[interactingColumnsIdx.length][];
     Vec[] interactingVecs = new Vec[interactingColumnsIdx.length];
-    String[][] allDomains = fr.domains();
     for (int i=0; i<interactingColumnsIdx.length; i++) {
-      interactingDomains[i] = allDomains[i];
-      interactingVecs[i] = fr.vec(interactingColumnsIdx[i]);
+      Vec vec = fr.vec(interactingColumnsIdx[i]);
+      interactingVecs[i] = vec;
+      interactingDomains[i] = vec.domain();
     }
     final InteractionsEncoder encoder = new InteractionsEncoder(interactingDomains, true);
     byte interactionType = interactionDomain == null ? Vec.T_NUM : Vec.T_CAT;
