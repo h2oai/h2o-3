@@ -10,7 +10,7 @@ import org.apache.log4j.Logger;
  * and the objects destroyed. However, there might still be a thread running - sending HTTP response to the assist which
  * sent the flatfile. The {@link fi.iki.elonen.NanoHTTPD.DefaultAsyncRunner} does not wait for existing connections
  * to be properly terminated and shuts them down.
- * 
+ * <p>
  * This implementation overrides that behavior and waits until all connections are closed before shutdown.
  */
 public class GracefulAsyncRunner extends NanoHTTPD.DefaultAsyncRunner {
@@ -23,8 +23,7 @@ public class GracefulAsyncRunner extends NanoHTTPD.DefaultAsyncRunner {
                 try {
                     this.wait(1000 * 60); // One minute timeout
                 } catch (InterruptedException e) {
-                    super.closeAll();
-                    Thread.currentThread().interrupt();
+                    LOG.error("Waiting for asyncRunner to gracefully shutdown interrupted. Closing all connections now.", e);
                 }
             }
         }

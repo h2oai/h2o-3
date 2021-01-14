@@ -69,8 +69,8 @@ public class AssistedClusteringEmbeddedConfigProvider implements EmbeddedConfigP
                 }
                 return new AssistedClusteringEmbeddedConfig(flatfile);
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return null;
+                LOG.error(e.getMessage(), e);
+                throw new IllegalStateException(e);
             }
         }
     }
