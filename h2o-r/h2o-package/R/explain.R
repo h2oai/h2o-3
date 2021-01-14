@@ -2457,11 +2457,12 @@ h2o.learning_curve_plot <- function(model,
   )
   inverse_metric_mapping <- stats::setNames(names(metric_mapping), metric_mapping)
 
-  metric <- match.arg(metric)
+  metric <- match.arg(arg = if (missing(metric) || tolower(metric) == "auto") "AUTO" else tolower(metric),
+                      choices = eval(formals()$metric))
 
   if (!model@algorithm %in% c("stackedensemble", "glm", "gam", "glrm", "deeplearning",
                               "drf", "gbm", "xgboost", "coxph", "isolationforest")) {
-    stop("Algorithm ", model@algoritm, " doesn't support learning curve plot!")
+    stop("Algorithm ", model@algorithm, " doesn't support learning curve plot!")
   }
 
   if ("stackedensemble" == model@algorithm)
@@ -2513,11 +2514,10 @@ h2o.learning_curve_plot <- function(model,
   } else if (model@algorithm %in% c("drf", "gbm", "xgboost")) {
     allowed_timesteps <- c("number_of_trees")
   }
-
   if (metric == "AUTO") {
     metric <- allowed_metrics[[1]]
   } else {
-    metric <- metric_mapping[[tolower(metric)]]
+    metric <- metric_mapping[[metric]]
   }
 
   if (!(metric %in% allowed_metrics)) {
@@ -2529,7 +2529,7 @@ h2o.learning_curve_plot <- function(model,
   if (metric %in% c("objective", "convergence", "loglik", "mean_anomaly_score")) {
     training_metric <- metric
     validation_metric <- "UNDEFINED"
-  } else if ("deviance" == metric) {
+  } else if ("deviance" == metric && model@algorithm %in% c("gam", "glm")) {
     training_metric <- "deviance_train"
     validation_metric <- "deviance_test"
   } else {
@@ -2551,7 +2551,8 @@ h2o.learning_curve_plot <- function(model,
       model = "Main Model",
       type = "Training",
       x = sh[[timestep]],
-      metric = sh[[training_metric]]
+      metric = sh[[training_metric]],
+      stringsAsFactors = FALSE
     )
   if (validation_metric %in% names(sh)) {
     scoring_history <- rbind(
@@ -2573,9 +2574,10 @@ h2o.learning_curve_plot <- function(model,
         cv_scoring_history,
         data.frame(
           model = paste0("CV-", csh_idx),
-          type = "CV-Training",
+          type = "Training (CV Models)",
           x = csh[[timestep]],
-          metric = csh[[training_metric]]
+          metric = csh[[training_metric]],
+          stringsAsFactors = FALSE
         )
       )
       if (validation_metric %in% names(csh)) {
@@ -2583,9 +2585,10 @@ h2o.learning_curve_plot <- function(model,
           cv_scoring_history,
           data.frame(
             model = paste0("CV-", csh_idx),
-            type = "CV-Validation",
+            type = "Cross-validation",
             x = csh[[timestep]],
-            metric = csh[[validation_metric]]
+            metric = csh[[validation_metric]],
+            stringsAsFactors = FALSE
           )
         )
       }
@@ -2604,8 +2607,8 @@ h2o.learning_curve_plot <- function(model,
     if (nrow(cvsh_len)  <= 1) {
       cv_ribbon <- FALSE
       cv_lines <- FALSE
-    } else if (mean(cvsh_len$`CV-Training`[-nrow(cvsh_len)] == cvsh_len$`CV-Training`[-1]) < 0.5 ||
-        mean(cvsh_len$`CV-Training`) < 2) {
+    } else if (mean(cvsh_len[["Training (CV Models)"]][-nrow(cvsh_len)] == cvsh_len$`Training (CV Models)`[-1]) < 0.5 ||
+        mean(cvsh_len$`Training (CV Models)`) < 2) {
       if (is.null(cv_ribbon)) {
         cv_ribbon <- FALSE
       }
@@ -2621,18 +2624,18 @@ h2o.learning_curve_plot <- function(model,
     cvsh <- rbind(
       data.frame(
         x = cvsh$x,
-        mean = cvsh[["CV-Training_mean"]],
-        type = "CV-Training",
-        lower_bound = cvsh[["CV-Training_mean"]] - cvsh[["CV-Training_sd"]],
-        upper_bound = cvsh[["CV-Training_mean"]] + cvsh[["CV-Training_sd"]]
+        mean = cvsh[["Training (CV Models)_mean"]],
+        type = "Training (CV Models)",
+        lower_bound = cvsh[["Training (CV Models)_mean"]] - cvsh[["Training (CV Models)_sd"]],
+        upper_bound = cvsh[["Training (CV Models)_mean"]] + cvsh[["Training (CV Models)_sd"]]
       ),
-      if ("CV-Validation_mean" %in% names(cvsh))
+      if ("Cross-validation_mean" %in% names(cvsh))
         data.frame(
           x = cvsh$x,
-          mean = cvsh[["CV-Validation_mean"]],
-          type = "CV-Validation",
-          lower_bound = cvsh[["CV-Validation_mean"]] - cvsh[["CV-Validation_sd"]],
-          upper_bound = cvsh[["CV-Validation_mean"]] + cvsh[["CV-Validation_sd"]]
+          mean = cvsh[["Cross-validation_mean"]],
+          type = "Cross-validation",
+          lower_bound = cvsh[["Cross-validation_mean"]] - cvsh[["Cross-validation_sd"]],
+          upper_bound = cvsh[["Cross-validation_mean"]] + cvsh[["Cross-validation_sd"]]
         )
     )
     cv_scoring_history <- cv_scoring_history[!(is.na(cv_scoring_history$x) |
@@ -2644,12 +2647,12 @@ h2o.learning_curve_plot <- function(model,
     cv_lines <- FALSE
   }
 
-  colors <- c("Training" = "#ff6000", "Validation" = "#785ff0",
-              "CV-Training" = "#ffb000", "CV-Validation" = "#648fff")
-  shape <- c("Training" = 16, "Validation" = 16,
-              "CV-Training" = NA, "CV-Validation" = NA)
-  fill <- c("Training" = NA, "Validation" = NA,
-              "CV-Training" = "#ffb000", "CV-Validation" = "#648fff")
+  colors <- c("Training" = "#785ff0", "Training (CV Models)" = "#648fff",
+              "Validation"  = "#ff6000", "Cross-validation" = "#ffb000")
+  shape <- c("Training" = 16, "Training (CV Models)" = NA,
+             "Validation" = 16, "Cross-validation" = NA)
+  fill <- c("Training" = NA, "Training (CV Models)" = "#648fff",
+            "Validation" = NA, "Cross-validation" = "#ffb000")
 
   scoring_history <- scoring_history[!(is.na(scoring_history$x) |
     is.na(scoring_history$metric) |
@@ -2662,6 +2665,7 @@ h2o.learning_curve_plot <- function(model,
   else
     labels <- sort(unique(scoring_history$type))
 
+  labels <- names(colors)[names(colors) %in% labels]
   p <- ggplot2::ggplot(ggplot2::aes_string(
     x = "x",
     y = "metric",
@@ -2695,16 +2699,16 @@ h2o.learning_curve_plot <- function(model,
     ggplot2::geom_point() +
     ggplot2::geom_vline(ggplot2::aes_(
       xintercept = selected_timestep_value,
-      linetype = paste("Selected", timestep)
-    )) +
+      linetype = paste0("Selected\n", timestep)
+    ), color = "#2FBB24") +
     ggplot2::labs(
       x = timestep,
       y = metric,
       title = "Learning Curve",
-      subtitle = paste("for", model@model_id)
+      subtitle = paste("for", .shorten_model_ids(model@model_id))
     ) +
-    ggplot2::scale_color_manual(values = colors) +
-    ggplot2::scale_fill_manual(values = colors) +
+   ggplot2::scale_color_manual(values = colors, breaks=names(colors), labels = names(colors)) +
+   ggplot2::scale_fill_manual(values = colors, breaks=names(colors), labels = names(colors)) +
     ggplot2::guides(color=ggplot2::guide_legend(
       override.aes = list(
         shape=shape[labels],

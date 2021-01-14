@@ -1873,7 +1873,7 @@ def learning_curve_plot(
     elif model.algo in ["drf", "gbm", "xgboost"]:
         allowed_timesteps = ["number_of_trees"]
 
-    if metric == "AUTO":
+    if metric.lower() == "auto":
         metric = allowed_metrics[0]
     else:
         metric = metric_mapping[metric.lower()]
@@ -1881,12 +1881,12 @@ def learning_curve_plot(
     if metric not in allowed_metrics:
         raise H2OValueError("for {}, metric must be one of: {}".format(
             model.algo.upper(),
-            ", ".join(inverse_metric_mappping[m] for m in allowed_metrics)
+            ", ".join(inverse_metric_mappping[m.lower()] for m in allowed_metrics)
         ))
 
     timestep = allowed_timesteps[0]
 
-    if "deviance" == metric:
+    if "deviance" == metric and model.algo in ["glm", "gam"]:
         training_metric = "deviance_train"
         validation_metric = "deviance_test"
     elif metric in ("objective", "convergence", "loglik", "mean_anomaly_score"):
@@ -1908,8 +1908,8 @@ def learning_curve_plot(
         selected_timestep_value = model.actual_params["epochs"]
 
     if colormap is None:
-        col_train, col_valid = "#ff6000", "#785ff0"
-        col_cv_train, col_cv_valid = "#ffb000", "#648fff"
+        col_train, col_valid = "#785ff0", "#ff6000"
+        col_cv_train, col_cv_valid = "#648fff", "#ffb000"
     else:
         col_train, col_valid, col_cv_train, col_cv_valid = plt.get_cmap(colormap, 4)(list(range(4)))
 
@@ -1942,7 +1942,7 @@ def learning_curve_plot(
             ))[:, 1]
             if cv_ribbon or len_train.mean() > 2 and np.mean(len_train[:-1] == len_train[1:]) >= 0.5:
                 plt.plot(mean_train[:, 0], mean_train[:, 1], c=col_cv_train,
-                         label="CV-Training")
+                         label="Training (CV Models)")
                 plt.fill_between(mean_train[:, 0],
                                  mean_train[:, 1] - sd_train,
                                  mean_train[:, 1] + sd_train,
@@ -1957,7 +1957,7 @@ def learning_curve_plot(
                         key=lambda k: k[0]
                     ))[:, 1]
                     plt.plot(mean_valid[:,0], mean_valid[:, 1], c=col_cv_valid,
-                             label="CV-Validation")
+                             label="Cross-validation")
                     plt.fill_between(mean_valid[:, 0],
                                      mean_valid[:, 1] - sd_valid,
                                      mean_valid[:, 1] + sd_valid,
@@ -1970,13 +1970,13 @@ def learning_curve_plot(
                 cvsh = _preprocess_scoring_history(model, cvsh)
                 plt.plot(cvsh[timestep],
                          cvsh[training_metric],
-                         label="CV-Training",
+                         label="Training (CV Models)",
                          c=col_cv_train,
                          linestyle="dotted")
                 if validation_metric in cvsh.col_header:
                     plt.plot(cvsh[timestep],
                              cvsh[validation_metric],
-                             label="CV-Validation",
+                             label="Cross-validation",
                              c=col_cv_valid,
                              linestyle="dotted"
                              )
@@ -1994,14 +1994,18 @@ def learning_curve_plot(
                  c=col_valid)
 
     if selected_timestep_value is not None:
-        plt.axvline(x=selected_timestep_value, label="Selected {}".format(timestep), c="black")
+        plt.axvline(x=selected_timestep_value, label="Selected\n{}".format(timestep), c="#2FBB24")
 
-    plt.title("Learning Curve\nfor {}".format(model.model_id))
+    plt.title("Learning Curve\nfor {}".format(_shorten_model_ids([model.model_id])[0]))
     plt.xlabel(timestep)
     plt.ylabel(metric)
     handles, labels = plt.gca().get_legend_handles_labels()
-    by_label = OrderedDict(zip(labels, handles))
-    plt.legend(list(by_label.values()), list(by_label.keys()))
+    labels_and_handles = dict(zip(labels, handles))
+    labels_and_handles_ordered = OrderedDict()
+    for lbl in ["Training", "Training (CV Models)", "Validation", "Cross-validation", "Selected\n{}".format(timestep)]:
+        if lbl in labels_and_handles:
+            labels_and_handles_ordered[lbl] = labels_and_handles[lbl]
+    plt.legend(list(labels_and_handles_ordered.values()), list(labels_and_handles_ordered.keys()))
 
     return plt.gcf()
 

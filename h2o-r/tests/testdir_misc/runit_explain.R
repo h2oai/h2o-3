@@ -19,7 +19,8 @@ explanation_test_single_model_regression <- function() {
 
   gbm <- h2o.gbm(y = y,
                  training_frame = train,
-                 seed = 1234)
+                 seed = 1234,
+                 model_id = "my_awesome_model")
 
   # test shap summary
   expect_ggplot(h2o.shap_summary_plot(gbm, train))
@@ -42,6 +43,10 @@ explanation_test_single_model_regression <- function() {
 
   # test learning curve plot
   expect_ggplot(h2o.learning_curve_plot(gbm))
+  for (metric in c("auto", "rmse", "deviance")) {
+    expect_ggplot(h2o.learning_curve_plot(gbm, metric = metric))
+    expect_ggplot(h2o.learning_curve_plot(gbm, metric = toupper(metric)))
+  }
 
   # test explanation
   expect_true("H2OExplanation" %in% class(h2o.explain(gbm, train)))
@@ -105,6 +110,8 @@ explanation_test_list_of_models_regression <- function() {
                     training_frame = train,
                     seed = 1234)
   models <- lapply(aml@leaderboard$model_id, h2o.getModel)
+  gbm <- h2o.gbm(y=y, training_frame = train, model_id = "my_awesome_model")
+  models <- c(models, gbm)
 
   # test model correlation
   expect_ggplot(h2o.model_correlation_heatmap(models, train))
@@ -152,7 +159,8 @@ explanation_test_single_model_binomial_classification <- function() {
 
   gbm <- h2o.gbm(y = y,
                  training_frame = train,
-                 seed = 1234)
+                 seed = 1234,
+                 model_id = "my_awesome_model")
 
   # test shap summary
   expect_ggplot(h2o.shap_summary_plot(gbm, train))
@@ -240,6 +248,8 @@ explanation_test_list_of_models_binomial_classification <- function() {
                     training_frame = train,
                     seed = 1234)
   models <- lapply(aml@leaderboard$model_id, h2o.getModel)
+  gbm <- h2o.gbm(y=y, training_frame = train, model_id = "my_awesome_model")
+  models <- c(models, gbm)
 
   # test model correlation
   expect_ggplot(h2o.model_correlation_heatmap(models, train))
@@ -287,7 +297,8 @@ explanation_test_single_model_multinomial_classification <- function() {
 
   gbm <- h2o.gbm(y = y,
                  training_frame = train,
-                 seed = 1234)
+                 seed = 1234,
+                 model_id = "my_awesome_model")
 
   # test shap summary
   expect_error(h2o.shap_summary_plot(gbm, train), "java.lang.UnsupportedOperationException: Calculating contributions is currently not supported for multinomial models.")
@@ -375,6 +386,8 @@ explanation_test_list_of_models_multinomial_classification <- function() {
                     training_frame = train,
                     seed = 1234)
   models <- lapply(aml@leaderboard$model_id, h2o.getModel)
+  gbm <- h2o.gbm(y=y, training_frame = train, model_id = "my_awesome_model")
+  models <- c(models, gbm)
 
   # test model correlation
   expect_ggplot(h2o.model_correlation_heatmap(models, train))
