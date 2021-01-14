@@ -8,11 +8,14 @@ import hex.grid.HyperSpaceSearchCriteria.CartesianSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.Strategy;
 import water.exceptions.H2OIllegalArgumentException;
+import water.util.ArrayUtils;
 import water.util.PojoUtils;
 
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+
+import static hex.grid.HyperSpaceWalker.BaseWalker.SUBSPACES;
 
 public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSpaceSearchCriteria> {
 
@@ -78,6 +81,18 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
    */
   String[] getHyperParamNames();
   String[] getAllHyperParamNamesInSubspaces();
+  
+  default String[] getAllHyperParamNames() {
+    String[] hyperNames = getHyperParamNames();
+    String[] allHyperNames = hyperNames;
+    String[] hyperParamNamesSubspace = getAllHyperParamNamesInSubspaces();
+    if (hyperParamNamesSubspace.length > 0) {
+      allHyperNames = ArrayUtils.append(ArrayUtils.remove(hyperNames, SUBSPACES), hyperParamNamesSubspace);
+    }
+    return allHyperNames;
+  }
+  
+  Map<String, Object[]> getHyperParams();
 
   /**
    * Return estimated maximum size of hyperspace, not subject to any early stopping criteria.
@@ -210,7 +225,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       validateParams(_hyperParams, false);
       Arrays.stream(_hyperParamSubspaces).forEach(subspace -> validateParams(subspace, true));
     } // BaseWalker()
-
+    
     @Override
     public String[] getHyperParamNames() {
       return _hyperParamNames;
@@ -218,6 +233,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     
     public String[] getAllHyperParamNamesInSubspaces() {
       return _hyperParamNamesSubspace;
+    }
+
+    @Override
+    public Map<String, Object[]> getHyperParams() {
+      return _hyperParams;
     }
 
     @Override

@@ -631,7 +631,7 @@ public class GridTest extends TestUtil {
 
   @Test
   public void testGetModelKeys() {
-    Grid<?> grid = new Grid<>(null, null, null, null);
+    Grid<?> grid = new Grid<>(null, null, null, null, null, null, 0);
     grid.putModel(3, Key.make("2"));
     grid.putModel(2, Key.make("1"));
     grid.putModel(1, Key.make("3"));

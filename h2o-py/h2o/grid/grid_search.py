@@ -354,6 +354,22 @@ class H2OGridSearch(h2o_meta(Keyed)):
         parms["x"] = x
         self.build_model(parms)
 
+    def resume(self, recovery_dir=None):
+        """
+        Resume previously stopped grid training.
+
+        :param recovery_dir: When specified, the grid and all necessary data (frames, models) will be saved to this
+            directory (use HDFS or other distributed file-system). Should the cluster crash during training, the grid
+            can be reloaded from this directory via ``h2o.load_grid``, and training can be resumed.
+        """
+        parms = {
+            "grid_id": self.grid_id,
+            "recovery_dir": recovery_dir
+        }
+        algo = self.model._compute_algo()  # unique to grid search
+        grid = H2OJob(h2o.api("POST /99/Grid/%s/resume" % algo, data=parms), job_type=(algo + " Grid Build"))
+        self._handle_build_finish(grid)
+
     def build_model(self, algo_params):
         """(internal)"""
         if algo_params["training_frame"] is None:
@@ -397,10 +413,11 @@ class H2OGridSearch(h2o_meta(Keyed)):
 
         if self._future:
             self._job = grid
-            return
+        else:
+            self._handle_build_finish(grid, rest_ver)
 
+    def _handle_build_finish(self, grid, rest_ver=None):
         grid.poll()
-
         grid_json = h2o.api("GET /99/Grids/%s" % (grid.dest_key))
         failure_messages_stacks = ""
         error_index = 0

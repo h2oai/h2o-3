@@ -60,12 +60,10 @@ class GridReloadTest(unittest.TestCase):
             cluster_2 = utils.start_cluster(cluster_2_name)
             h2o.connect(url=cluster_2)
             loaded = h2o.load_grid("%s/%s" % (work_dir, grid_id), load_params_references=True)
-            loaded_train = h2o.H2OFrame.get_frame(train.frame_id)
             print("models after first run:")
             for x in sorted(loaded.model_ids):
                 print(x)
-            loaded.hyper_params = hyper_parameters
-            loaded.train(x=list(range(4)), y=4, training_frame=loaded_train)
+            loaded.resume()
             print("models after second run:")
             for x in sorted(loaded.model_ids):
                 print(x)

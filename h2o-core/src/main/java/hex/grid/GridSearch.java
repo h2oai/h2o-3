@@ -172,16 +172,7 @@ public final class GridSearch<MP extends Model.Parameters> {
   }
   
   private Grid createNewGrid() {
-    String[] hyperNames = _hyperSpaceWalker.getHyperParamNames();
-    String[] allHyperNames = hyperNames;
-    String[] hyperParamNamesSubspace = _hyperSpaceWalker.getAllHyperParamNamesInSubspaces();
-    if (hyperParamNamesSubspace.length > 0) {
-      allHyperNames = ArrayUtils.append(ArrayUtils.remove(hyperNames, SUBSPACES), hyperParamNamesSubspace);
-    }
-    Grid grid = new Grid<>(_result,
-        _hyperSpaceWalker.getParams(),
-        allHyperNames,
-        _hyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy());
+    Grid grid = new Grid<>(_result, _hyperSpaceWalker, _parallelism);
     grid.delete_and_lock(_job);
     return grid;
   }

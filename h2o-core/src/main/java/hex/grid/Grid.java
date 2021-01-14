@@ -13,9 +13,6 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.net.URI;
 import java.util.*;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Objects;
 
 import static hex.grid.GridSearch.IGNORED_FIELDS_PARAM_HASH;
 
@@ -33,7 +30,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    *
    * @see hex.schemas.GridSchemaV99
    */
-  public static final Grid GRID_PROTO = new Grid(null, null, null, null);
+  public static final Grid GRID_PROTO = new Grid(null, null, null, new HashMap<>(), null, null, 0);
 
   // A cache of double[] hyper-parameters mapping to Models.
   private final IcedHashMap<IcedLong, Key<Model>> _models = new IcedHashMap<>();
@@ -45,6 +42,9 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
 
   // Names of used hyper parameters for this grid search.
   private final String[] _hyper_names;
+  private HyperParameters _hyper_params;
+  private int _parallelism;
+  private HyperSpaceSearchCriteria _search_criteria;
 
   private final FieldNaming _field_naming_strategy;
 
@@ -174,12 +174,50 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * @param params     initial parameters used by grid search
    * @param hyperNames names of used hyper parameters
    */
-  protected Grid(Key key, MP params, String[] hyperNames, FieldNaming fieldNaming) {
+  protected Grid(
+      Key key, MP params, 
+      String[] hyperNames,
+      Map<String, Object[]> hyperParams,
+      HyperSpaceSearchCriteria searchCriteria,
+      FieldNaming fieldNaming,
+      int parallelism
+  ) {
     super(key);
     _params = params != null ? (MP) params.clone() : null;
     _hyper_names = hyperNames;
-      _field_naming_strategy = fieldNaming;
-      _failures = new IcedHashMap<>();
+    _failures = new IcedHashMap<>();
+    _field_naming_strategy = fieldNaming;
+    update(hyperParams, searchCriteria, parallelism);
+  }
+  
+  protected Grid(Key key, HyperSpaceWalker<MP, ?> walker, int parallelism) {
+    this(
+        key,
+        walker.getParams(),
+        walker.getAllHyperParamNames(),
+        walker.getHyperParams(),
+        walker.search_criteria(),
+        walker.getParametersBuilderFactory().getFieldNamingStrategy(),
+        parallelism
+    );
+  }
+
+  public void update(Map<String,Object[]> hyperParams, HyperSpaceSearchCriteria searchCriteria, int parallelism) {
+    _hyper_params = new HyperParameters(hyperParams);
+    _search_criteria = searchCriteria;
+    _parallelism = parallelism;
+  }
+  
+  public Map<String, Object[]> getHyperParams() {
+    return _hyper_params.getValues();
+  }
+
+  public HyperSpaceSearchCriteria getSearchCriteria() {
+    return _search_criteria;
+  }
+
+  public int getParallelism() {
+    return _parallelism;
   }
 
   /**
