@@ -54,6 +54,7 @@ public class AssistedClusteringEmbeddedConfigProviderTest {
         });
 
         final int responseCode = callFlatfileEndpoint(flatfile);
+        assertEquals(200, responseCode);
         flatFileTest.get();
     }
 

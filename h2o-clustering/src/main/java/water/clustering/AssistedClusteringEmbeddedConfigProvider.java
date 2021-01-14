@@ -9,22 +9,20 @@ import water.util.Log;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.concurrent.SynchronousQueue;
 import java.util.function.Consumer;
 
 /**
  * Provides {@link AssistedClusteringEmbeddedConfig} as a result of external assist. The resulting
- * embedded config provides a flatfile assembled by external service, given to H2O. 
+ * embedded config provides a flatfile assembled by external service, given to H2O.
  * This EmbeddedConfig has no timeout and will wait indefinitely until a flatfifle is received.
  */
 public class AssistedClusteringEmbeddedConfigProvider implements EmbeddedConfigProvider {
     private static final Logger LOG = Logger.getLogger(AssistedClusteringEmbeddedConfigProvider.class);
-
-    private String flatfile;
-    private final Object notification = new Object();
+    private final SynchronousQueue<String> flatFileQueue = new SynchronousQueue<>();
 
     @Override
-    public void init() {
-    }
+    public void init() {}
 
     /**
      * Start REST API listening to incoming request with a flatfile
@@ -52,26 +50,21 @@ public class AssistedClusteringEmbeddedConfigProvider implements EmbeddedConfigP
     @Override
     public AbstractEmbeddedH2OConfig getConfig() {
         final Consumer<String> flatFileCallback = s -> {
-            // Make sure to set the flatfile first and then notify, as the flatfile is immediately used
-            // to produce a resulting config
-            flatfile = s;
-            synchronized (notification) {
-                notification.notify();
+            try {
+                flatFileQueue.put(s);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         };
 
         try (final AssistedClusteringRestApi assistedClusteringRestApi = startAssistedClusteringRestApi(flatFileCallback)
                 .orElseThrow(() -> new IllegalStateException("Assisted clustering Rest API unable to start."))) {
-            try {
-                // Blocks until a flatfile is received. 
-                synchronized (notification) {
-                    notification.wait();
-                }
-                return new AssistedClusteringEmbeddedConfig(flatfile);
-            } catch (InterruptedException e) {
-                LOG.error(e.getMessage(), e);
-                throw new IllegalStateException(e);
-            }
+            final String flatfile = flatFileQueue.take();
+            return new AssistedClusteringEmbeddedConfig(flatfile);
+        } catch (InterruptedException e) {
+            LOG.error(e.getMessage(), e);
+            throw new IllegalStateException("Interruption occured during waiting for a flatfile.", e);
         }
+
     }
 }

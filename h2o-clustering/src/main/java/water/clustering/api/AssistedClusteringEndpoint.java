@@ -7,6 +7,8 @@ import org.apache.log4j.Logger;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -28,6 +30,7 @@ public class AssistedClusteringEndpoint extends RouterNanoHTTPD.DefaultHandler {
     private static final Logger LOG = Logger.getLogger(AssistedClusteringEndpoint.class);
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final AtomicBoolean flatFileReceived;
+    private final ExecutorService flatFileConsumerCallbackExecutor = Executors.newSingleThreadExecutor();
 
     public AssistedClusteringEndpoint() {
         flatFileReceived = new AtomicBoolean(false);
@@ -72,7 +75,8 @@ public class AssistedClusteringEndpoint extends RouterNanoHTTPD.DefaultHandler {
                             "Flatfile already provided.");
                 } else {
                     final Consumer<String> flatFileConsumer = (Consumer<String>) uriResource.initParameter(Consumer.class);
-                    flatFileConsumer.accept(postBody);
+                    // Do not block response with internal handling
+                    flatFileConsumerCallbackExecutor.submit(() -> flatFileConsumer.accept(postBody));
                     flatFileReceived.set(true); // Do not accept any new requests once the flatfile has been received.
                 }
             } finally {
