@@ -882,12 +882,9 @@ public class EasyPredictModelWrapper implements Serializable {
         throw new IllegalStateException("Model attributes are not available. Did you load metadata from model? MojoModel.load(\"model\", true)");
       } else if (attributes instanceof VariableImportancesHolder) {
         return ((VariableImportancesHolder) attributes).getVariableImportances().topN(n);
-      } else {
-        throw new IllegalStateException("Model does not support variable importance");
       }
-    } else {
-      throw new IllegalStateException("Model does not support variable importance");
     }
+    throw new IllegalStateException("Model does not support variable importance");
   }
 
   //----------------------------------------------------------------------
