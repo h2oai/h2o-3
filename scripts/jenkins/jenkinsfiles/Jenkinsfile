@@ -69,6 +69,13 @@ try {
                 } else {
                   // building regular PR
                   scmEnv = checkout scm
+                  sh """
+                    echo ${env.CHANGE_ID}
+                    cd scripts/jenkins/
+                    if [ -e "pr_patches/${env.CHANGE_ID}.patch" ]; then
+                      patch -p1 <"pr_patches/${env.CHANGE_ID}.patch"
+                    fi
+                  """
                 }
               }
             }
