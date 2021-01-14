@@ -12,7 +12,7 @@ build-h2o-3:
 	@echo "+--Building--+"
 	./gradlew build -x test $$ADDITIONAL_GRADLE_OPTS
 	@echo "+--Git Diff Check--+"
-	if [[ $$(git diff 2>&1) ]]; then \
+	if [[ $$(git diff HEAD -- . ':!/scripts/jenkins' 2>&1) ]]; then \
 		echo "Non-zero git diff or git error after running gradlew build:"; \
 		git diff; \
 		exit 1; \
