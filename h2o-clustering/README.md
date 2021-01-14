@@ -29,7 +29,7 @@ A flatfile with an IPv6 and IPv4 address with ports defined in both cases (manda
 
 ## Distribution
 
-It is assumed this module is part of H2O by default. However, as it only relies on the contract of
+It is assumed this module is NOT part of H2O by default. It must be put onto the classpath manually. As it only relies on the contract of
 `AbstractEmbeddedH2OConfig`, which is considered to be fixed, it is possible to put this module on a classpath
 of even older H2Os which contain `AbstractEmbeddedH2OConfig`. This enables assisted clustering even to legacy
 H2O versions.
