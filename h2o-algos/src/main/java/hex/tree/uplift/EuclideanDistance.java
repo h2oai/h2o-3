@@ -10,7 +10,7 @@ public class EuclideanDistance extends Divergence {
     }
 
     @Override
-    double norm(
+    public double norm(
         double prCT1, double prCT0,
         double prLCT1, double prLCT0
     ) {
@@ -20,5 +20,4 @@ public class EuclideanDistance extends Divergence {
         double giniCT0 = 2 * prLCT0 * (1 - prLCT0);
         return giniCT * eucliCT + giniCT1 * prCT1 + giniCT0 * prCT0 + 0.5;
     }
-
 }

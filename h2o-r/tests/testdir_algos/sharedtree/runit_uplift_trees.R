@@ -11,9 +11,7 @@ test.uplift <- function() {
     ### simulate data for uplift modeling
 
     set.seed(123)
-    train <- sim_pte(n = 1000, p = 6, rho = 0, sigma = sqrt(2), beta.den = 4)
-    train$treat <- ifelse(train$treat == 1, 1, 0)
-
+    train <- sim_pte(n = 100, p = 6, rho = 0, sigma = sqrt(2), beta.den = 4)
     ntrees <- 10
 
     print("Train data summary")
@@ -31,7 +29,7 @@ test.uplift <- function() {
     min_bucket_ct0 = 10,
     min_bucket_ct1 = 10,
     verbose = TRUE)
-
+    
     print("Uplift model summary")
     print(summary(modelUplift))
 

@@ -97,8 +97,8 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help = "Define column which will be use for computing uplift gain to select best split for a tree. The column has to devide dataset into treatment (value 1) and control (value 0) group.", gridable = false, level = API.Level.secondary)
     public String uplift_column;
     
-    @API(help = "Divergence metric used to find best split when building an upplift tree.", level = API.Level.secondary)
-    public String uplift_metric;
+    @API(help = "Divergence metric used to find best split when building an upplift tree.", level = API.Level.secondary, values = { "AUTO", "KL", "Euclidean", "ChiSquared"})
+    public SharedTreeParameters.UpliftMetricType uplift_metric;
     
   }
 }
