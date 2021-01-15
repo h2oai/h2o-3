@@ -15,7 +15,7 @@ spec:
         app: h2o-assisted
     spec:
       containers:
-        - name: <name>
+        - name: "h2o-assisted"
           image: "harbor.h2o.ai/opsh2oai/h2o-3-k8s-runner:4"
           command: ['/bin/bash', '-c', 'java -XX:+UseContainerSupport -XX:MaxRAMPercentage=90 -cp h2o.jar:h2o-clustering.jar water.H2OApp']
           ports:
