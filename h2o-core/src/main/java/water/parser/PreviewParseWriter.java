@@ -20,6 +20,7 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
   protected String [][] _data = new String[MAX_PREVIEW_LINES][];
   private IcedHashMap<String,String>[] _domains;  //used in leiu of a HashSet
   int [] _nnums;
+  int [] _nposints;
   int [] _nstrings;
   int [] _ndates;
   int [] _nUUID;
@@ -48,26 +49,14 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
       _nUUID = new int[n];
       _ndates = new int[n];
       _nnums = new int[n];
+      _nposints = new int[n];
       _nempty = new int[n];
       _domains = new IcedHashMap[n];
       for(int i = 0; i < n; ++i)
         _domains[i] = new IcedHashMap<>();
       for(int i =0; i < MAX_PREVIEW_LINES; i++)
         _data[i] = new String[n];
-    } /*else if (n > _ncols) { // resize
-        _nzeros = Arrays.copyOf(_nzeros, n);
-        _nstrings = Arrays.copyOf(_nstrings, n);
-        _nUUID = Arrays.copyOf(_nUUID, n);
-        _ndates = Arrays.copyOf(_ndates, n);
-        _nnums = Arrays.copyOf(_nnums, n);
-        _nempty = Arrays.copyOf(_nempty, n);
-        _domains = Arrays.copyOf(_domains, n);
-        for (int i=_ncols; i < n; i++)
-          _domains[i] = new HashSet<String>();
-        for(int i =0; i < MAX_PREVIEW_LINES; i++)
-          _data[i] = Arrays.copyOf(_data[i], n);
-        _ncols = n;
-      }*/
+    }
   }
   @Override public void newLine() { ++_nlines; }
   @Override public boolean isString(int colIdx) { return false; }
@@ -75,6 +64,8 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
     if(colIdx < _ncols) {
       if (number == 0)
         ++_nzeros[colIdx];
+      else if (number > 0 && exp >= 0)
+        ++_nposints[colIdx];
       else
         ++_nnums[colIdx];
       if (_nlines < MAX_PREVIEW_LINES)
@@ -85,6 +76,8 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
     if(colIdx < _ncols) {
       if (d == 0)
         ++_nzeros[colIdx];
+      else if (d > 0 && (long) d == d)
+        ++_nposints[colIdx];
       else
         ++_nnums[colIdx];
       if (_nlines < MAX_PREVIEW_LINES)
@@ -142,6 +135,7 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
       types[i] = PreviewParseWriter.guessType(
         _nlines,
         _nnums[i],
+        _nposints[i],
         _nstrings[i],
         _ndates[i],
         _nUUID[i],
@@ -160,6 +154,7 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
   public static byte guessType(
       int nlines,
       int nnums,
+      int nposints,
       int nstrings,
       int ndates,
       int nUUID,
@@ -171,9 +166,9 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
     //Very redundant tests, but clearer and not speed critical
     
     // is it clearly numeric?
-    if ((nnums + nzeros) >= ndates
-        && (nnums + nzeros) >= nUUID
-        && nnums >= nstrings) { // 0s can be an NA among categoricals, ignore
+    if ((nnums + nposints + nzeros) >= ndates
+        && (nnums + nposints + nzeros) >= nUUID
+        && nnums + nposints >= nstrings) { // 0s can be an NA among categoricals, ignore
           return Vec.T_NUM;
     }
     
@@ -185,28 +180,28 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
               domain.contains("na") ||
               domain.contains("Na") ||
               domain.contains("N/A") ||
-              nstrings < nnums+nzeros) ? Vec.T_NUM : Vec.T_CAT;
+              nstrings < nnums+nposints+nzeros) ? Vec.T_NUM : Vec.T_CAT;
     }
     
     // with NA, but likely numeric
-    if (domain.size() <= 1 && (nnums + nzeros) > ndates + nUUID) {
+    if (domain.size() <= 1 && (nnums + nposints + nzeros) > ndates + nUUID) {
       return Vec.T_NUM;
     }
     
     // Datetime
-    if (ndates > nUUID && ndates > (nnums + nzeros) && (ndates > nstrings || domain.size() <= 1)) {
+    if (ndates > nUUID && ndates > (nnums + nposints + nzeros) && (ndates > nstrings || domain.size() <= 1)) {
       return Vec.T_TIME;
     }
     
     // UUID
-    if (nUUID > ndates && nUUID > (nnums + nzeros) && (nUUID > nstrings || domain.size() <= 1)) {
+    if (nUUID > ndates && nUUID > (nnums + nposints + nzeros) && (nUUID > nstrings || domain.size() <= 1)) {
       return Vec.T_UUID;
     }
     
     // Strings, almost no dups
     if (nstrings > ndates
         && nstrings > nUUID
-        && nstrings > (nnums + nzeros)
+        && nstrings > (nnums + nposints + nzeros)
         && domain.size() >= 0.95 * nstrings) {
       return Vec.T_STR;
     }
@@ -219,7 +214,7 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
       return Vec.T_CAT;
     }
     // categorical mixed with numbers
-    if (nstrings >= (nnums + nzeros) // mostly strings
+    if (nstrings >= (nnums + nposints + nzeros) // mostly strings
         && (domain.size() <= 0.95 * nstrings)) { // but not all unique
       return Vec.T_CAT;
     }
