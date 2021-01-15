@@ -14,7 +14,7 @@ public class KLDivergence extends Divergence {
     }
     
     @Override
-    double norm(
+    public double norm(
         double prCT1, double prCT0, 
         double prLCT1, double prLCT0
     ) {
