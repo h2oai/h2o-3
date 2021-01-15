@@ -40,6 +40,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
     stall_till_cloudsize(1);
     _covtype = parse_test_file("smalldata/covtype/covtype.20k.data");
     _covtype.replace(_covtype.numCols()-1,_covtype.lastVec().toCategoricalVec()).remove();
+    DKV.put(_covtype);
     Key[] keys = new Key[]{Key.make("train"),Key.make("test")};
     H2O.submitTask(new FrameSplitter(_covtype, new double[]{.8},keys,null)).join();
     _train = DKV.getGet(keys[0]);
