@@ -386,18 +386,21 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   public final T doAll( Vec vec, boolean run_local ) { return doAll(null,vec, run_local); }
   public final T doAll(byte[] types, Vec vec, boolean run_local ) { return doAll(types,new Frame(vec), run_local); }
 
-  /** Invokes the map/reduce computation over the given Frame. This call is
-   *  blocking.  
+  /** 
+   * Invokes the map/reduce computation over the given Frame. This call is
+   * blocking.  
    */
   public final T doAll( Frame fr, boolean run_local) { return doAll(null,fr, run_local); }
   
-  /** Invokes the map/reduce computation over the given Frame. This call is
-   *  blocking. The run is performed globally.
+  /** 
+   * Invokes the map/reduce computation over the given Frame. This call is
+   * blocking. The run is performed across the cluster.
    */
   public final T doAll( Frame fr ) { return doAll(null,fr, false); }
 
-  /** Invokes the map/reduce computation over the given Frame. This call is
-   *  blocking. The run is performed globally.
+  /** 
+   * Invokes the map/reduce computation over the given Frame. This call is
+   * blocking. The run is performed across the cluster.
    *  
    * @param outputTypes The type of output Vec instances to create. See {@link Vec.T_STR}, {@link Vec.T_NUM}, 
    *    {@link Vec.T_CAT} and other byte constatnts in {@link Vec} to see possible values.
@@ -410,8 +413,9 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     return doAll(types, inputFrame, false);
   }
 
-  /** Invokes the map/reduce computation over the given Frame.  This call is
-   *  blocking. The run is performed globally.
+  /** 
+   * Invokes the map/reduce computation over the given Frame.  This call is
+   * blocking. The run is performed across the cluster.
    *  
    * @param outputType The type of one output Vec instance to create. See {@link Vec.T_STR}, {@link Vec.T_NUM}, 
    *    {@link Vec.T_CAT} and other byte constatnts in {@link Vec} to see possible values.
@@ -424,15 +428,16 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     return doAll(new byte[]{outputType}, inputFrame, false);
   }
 
-  /** Invokes the map/reduce computation over the given Frame.  This call is
-   *  blocking. 
+  /** 
+   * Invokes the map/reduce computation over the given Frame.  This call is
+   * blocking. 
    *
    * @param outputTypes The type of output Vec instances to create. See {@link Vec.T_STR}, {@link Vec.T_NUM}, 
    *    {@link Vec.T_CAT} and other byte constatnts in {@link Vec} to see possible values.
    *
    * @param inputFrame Perform the computation on this Frame instance.  
    *
-   * @param runLocal Run locally by copying data, or run globally?
+   * @param runLocal Run locally by copying data, or run across the cluster?
    *
    * @return this
    */
@@ -509,7 +514,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *
    * @param inputFrame Perform the computation on this Frame instance.  
    * 
-   * @param runLocal Run locally by copying data, or run globally?
+   * @param runLocal Run locally by copying data, or run across the cluster?
    *           
    * @return this
    */
@@ -535,8 +540,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     return _run_local;
   }
 
-  /** Block for and get any final results from a dfork'd MRTask.
-   *  Note: the desired name 'get' is final in ForkJoinTask.  */
+  /** 
+   * Block for and get any final results from a dfork'd MRTask.
+   * Note: the desired name 'get' is final in ForkJoinTask.  
+   */
   public final T getResult(boolean fjManagedBlock) {
     assert getCompleter()==null; // No completer allowed here; FJ never awakens threads with completers
     do {
@@ -558,8 +565,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     assert _topGlobal:"lost top global flag";
     return self();
   }
-  /** Block for and get any final results from a dfork'd MRTask.
-   *  Note: the desired name 'get' is final in ForkJoinTask.  */
+  /** 
+   * Block for and get any final results from a dfork'd MRTask.
+   *  Note: the desired name 'get' is final in ForkJoinTask.
+   */
   public final T getResult() {return getResult(true);}
 
   // Return true if blocking is unnecessary, which is true if the Task isDone.
