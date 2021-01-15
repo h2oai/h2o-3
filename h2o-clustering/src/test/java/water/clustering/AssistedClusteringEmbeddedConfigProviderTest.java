@@ -25,7 +25,7 @@ public class AssistedClusteringEmbeddedConfigProviderTest {
     public EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
     @Test
-    public void testActivation() throws Exception {
+    public void testEmbeddedConfigActivation() throws Exception {
         environmentVariables.set("H2O_ASSISTED_CLUSTERING_REST", "True");
 
         final ExecutorService executor = Executors.newFixedThreadPool(1);

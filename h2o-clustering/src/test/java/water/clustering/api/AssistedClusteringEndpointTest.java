@@ -16,16 +16,6 @@ import static org.junit.Assert.*;
 
 public class AssistedClusteringEndpointTest {
 
-    private class FlatFileEventConsumer implements Consumer<String> {
-
-        private Optional<String> lastValueReceived = Optional.empty();
-
-        public void accept(final String ips) {
-            assertNotNull(ips);
-            lastValueReceived = Optional.of(ips);
-        }
-    }
-
     private AssistedClusteringRestApi assistedClusteringRestApi;
     private FlatFileEventConsumer flatFileEventConsumer;
 
@@ -49,7 +39,7 @@ public class AssistedClusteringEndpointTest {
                 "9.255.255.255:54321";
         final int responseCode = callFlatfileEndpoint(flatfile);
         assertEquals(200, responseCode);
-        final Optional<String> lastValueReceived = this.flatFileEventConsumer.lastValueReceived;
+        final Optional<String> lastValueReceived = this.flatFileEventConsumer.getLastValueReceived();
         assertTrue(lastValueReceived.isPresent());
         assertEquals(flatfile, lastValueReceived.get());
     }

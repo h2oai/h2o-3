@@ -33,3 +33,8 @@ It is assumed this module is NOT part of H2O by default. It must be put onto the
 `AbstractEmbeddedH2OConfig`, which is considered to be fixed, it is possible to put this module on a classpath
 of even older H2Os which contain `AbstractEmbeddedH2OConfig`. This enables assisted clustering even to legacy
 H2O versions.
+
+
+## Testing
+
+This module, besides its own test suite, is tested in Kubernetes environment inside the `h2o-k8s` module.

@@ -22,7 +22,18 @@ public class AssistedClusteringEmbeddedConfigProvider implements EmbeddedConfigP
     private final SynchronousQueue<String> flatFileQueue = new SynchronousQueue<>();
 
     @Override
-    public void init() {}
+    public void init() {
+        final Consumer<String> flatFileCallback = s -> {
+            try {
+                flatFileQueue.put(s);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        };
+        final AssistedClusteringRestApi assistedClusteringRestApi = startAssistedClusteringRestApi(flatFileCallback)
+                .orElseThrow(() -> new IllegalStateException("Assisted clustering Rest API unable to start."));
+        
+    }
 
     /**
      * Start REST API listening to incoming request with a flatfile
@@ -49,16 +60,7 @@ public class AssistedClusteringEmbeddedConfigProvider implements EmbeddedConfigP
 
     @Override
     public AbstractEmbeddedH2OConfig getConfig() {
-        final Consumer<String> flatFileCallback = s -> {
-            try {
-                flatFileQueue.put(s);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        };
-
-        try (final AssistedClusteringRestApi assistedClusteringRestApi = startAssistedClusteringRestApi(flatFileCallback)
-                .orElseThrow(() -> new IllegalStateException("Assisted clustering Rest API unable to start."))) {
+        try {
             final String flatfile = flatFileQueue.take();
             return new AssistedClusteringEmbeddedConfig(flatfile);
         } catch (InterruptedException e) {
@@ -67,4 +69,6 @@ public class AssistedClusteringEmbeddedConfigProvider implements EmbeddedConfigP
         }
 
     }
+    
+    
 }

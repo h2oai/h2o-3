@@ -21,6 +21,10 @@ public class AssistedClusteringEmbeddedConfig extends AbstractEmbeddedH2OConfig 
     }
 
     @Override
+    public void notifyAboutCloudSize(final InetAddress ip, final int port, final InetAddress leaderIp, final int leaderPort, final int size) {
+    }
+
+    @Override
     public boolean providesFlatfile() {
         return true;
     }

@@ -22,8 +22,17 @@ kubectl logs h2o-h2o-3-test-connection
 kubectl get ingresses
 kubectl describe pods
 timeout 120s bash h2o-cluster-check.sh
-export EXIT_STATUS=$?
+export CLUSTER_EXIT_CODE=$?
 kubectl get pods
 kubectl get nodes
+helm uninstall h2o 
+envsubst < h2o-assisted-template.yaml >> h2o-assisted.yaml
+kubectl apply -f h2o-assisted.yaml
+kubectl wait --for=condition=ready --selector app=h2o-assisted pods
+python assisted-clustering.py --namespace default h2o-assisted
+export ASSISTED_EXIT_CODE=$?
+kubectl get pods
+
 k3d delete
+export EXIT_STATUS=$(if [ "$CLUSTER_EXIT_CODE" -eq "1" ] || [ "$ASSISTED_EXIT_CODE" -eq "1" ]; then echo "1"; else echo "0"; fi)
 exit $EXIT_STATUS

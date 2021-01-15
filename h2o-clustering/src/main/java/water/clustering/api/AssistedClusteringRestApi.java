@@ -46,7 +46,7 @@ public class AssistedClusteringRestApi extends RouterNanoHTTPD implements AutoCl
         try {
             return Integer.parseInt(customPort);
         } catch (NumberFormatException e) {
-            final String errorMessage = String.format("Non-usable port for K8S REST API to bind to: '%s'", customPort);
+            final String errorMessage = String.format("Unusable port for Assisted clustering REST API to bind to: '%s'", customPort);
             throw new IllegalArgumentException(errorMessage, e);
         }
     }
@@ -55,6 +55,7 @@ public class AssistedClusteringRestApi extends RouterNanoHTTPD implements AutoCl
     public void addMappings() {
         super.addMappings();
         addRoute("/clustering/flatfile", AssistedClusteringEndpoint.class, this.flatFileConsumer);
+        addRoute("/cluster/status", H2OClusterStatusEndpoint.class);
     }
 
     /**

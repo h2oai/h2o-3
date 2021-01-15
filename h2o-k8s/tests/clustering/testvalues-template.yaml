@@ -19,5 +19,5 @@ volumeMounts:
     mountPath: "h2o.jar"
 image:
   name: "harbor.h2o.ai/opsh2oai/h2o-3-k8s-runner"
-  tag: "3"
+  tag: "4"
   command: "['/bin/bash', '-c', 'java -XX:+UseContainerSupport -XX:MaxRAMPercentage=90 -jar h2o.jar']"
