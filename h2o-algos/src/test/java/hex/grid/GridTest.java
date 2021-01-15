@@ -164,12 +164,12 @@ public class GridTest extends TestUtil {
       trainingFrame.add("w1", Vec.makeCon(0.2, trainingFrame.numRows()));
       trainingFrame.add("w2", Vec.makeCon(0.2, trainingFrame.numRows()));
       trainingFrame.add("w3", Vec.makeRepSeq(trainingFrame.numRows(), 11));
+      DKV.put(trainingFrame);
       Scope.track(trainingFrame);
       
       HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
         put("_weights_column", new String[] {"w1", "w2", "w3"});
       }};
-      
 
       CoxPHModel.CoxPHParameters params = new CoxPHModel.CoxPHParameters();
       params._train = trainingFrame._key;
@@ -178,14 +178,9 @@ public class GridTest extends TestUtil {
       params._response_column = "event";
       params._ignored_columns = new String[]{"id"};
 
-
-      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, 5);
-      Scope.track_generic(gs);
-      final Grid grid = gs.get();
+      final Grid grid = GridSearch.startGridSearch(null, params, hyperParms, 1).get();
       Scope.track_generic(grid);
 
-
-      System.out.println(grid);
       assertEquals(3, grid.getModelCount());
     } finally {
       Scope.exit();
