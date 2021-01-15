@@ -157,8 +157,7 @@ public final class DHistogram extends Iced<DHistogram> {
 
   public DHistogram(String name, final int nbins, int nbinsCats, byte isInt, double min, double maxEx, boolean initNA,
                     double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey,
-                    Constraints cs, boolean useUplift, SharedTreeModel.SharedTreeParameters.UpliftMetricType upliftMetricType
-      ) {
+                    Constraints cs, boolean useUplift, SharedTreeModel.SharedTreeParameters.UpliftMetricType upliftMetricType) {
     assert nbins >= 1;
     assert nbinsCats >= 1;
     assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
@@ -313,7 +312,6 @@ public final class DHistogram extends Iced<DHistogram> {
   public void addWAtomic(int i, double wDelta) {  // used by AutoML
     AtomicUtils.DoubleArray.add(_vals, _vals_dim*i+0, wDelta);
   }
-  
 
   public double wNA()   { return _vals[_vals_dim*_nbin+0]; }
   
@@ -337,15 +335,14 @@ public final class DHistogram extends Iced<DHistogram> {
   
   public double nomNA() { return _vals[_vals_dim*_nbin+6]; }
 
-  public double denTreatmentNA() { return _valsUplift[_valsDimUplift*_nbin]; }
+  public double numTreatmentNA() { return _valsUplift[_valsDimUplift*_nbin]; }
+  
+  public double respTreatmentNA() { return _valsUplift[_valsDimUplift*_nbin+1]; }
+  
+  public double numControlNA() { return _valsUplift[_valsDimUplift*_nbin+2]; }
 
-  public double nomTreatmentNA() { return _valsUplift[_valsDimUplift*_nbin+1]; }
-
-  public double denControlNA() { return _valsUplift[_valsDimUplift*_nbin+2]; }
-
-  public double nomControlNA() { return _valsUplift[_valsDimUplift*_nbin+3]; }
-
-
+  public double respControlNA() { return _valsUplift[_valsDimUplift*_nbin+3]; }
+  
 
   final boolean hasPreds() {
     return _vals_dim >= 5;
@@ -487,7 +484,7 @@ public final class DHistogram extends Iced<DHistogram> {
   public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, boolean hasNAs, 
                                 long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey, Constraints cs) {
     return new DHistogram(name, nbins, parms._nbins_cats, isInt, min, maxEx, hasNAs, 
-            parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, cs);
+            parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, cs, parms._uplift_column != null, parms._uplift_metric);
   }
 
   /**
@@ -573,11 +570,12 @@ public final class DHistogram extends Iced<DHistogram> {
         }
       }
       if(_useUplift) {
-        _valsUplift[binDimStart]     += uplift[k] * wy;          // treatment nominator
-        _valsUplift[binDimStart + 1] += uplift[k];              // treatment denominator
-        _valsUplift[binDimStart + 2] += (1 - uplift[k]) * wy;    // control nominator
-        _valsUplift[binDimStart + 3] += (1 - uplift[k]);        // control denominator
-      }
+        // Note: Only for binomial, response should be (0, 1)
+        _valsUplift[binDimStart] += uplift[k];              // treatment number
+        _valsUplift[binDimStart + 1] += resp[k];            // treatment response == 1 
+        _valsUplift[binDimStart + 2] += (1 - uplift[k]);    // control number
+        _valsUplift[binDimStart + 3] += (1 - resp[k]);      // control response == 1
+      } 
     }
   }
 
