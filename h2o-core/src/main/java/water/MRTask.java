@@ -6,6 +6,7 @@ import water.fvec.*;
 import water.util.DistributedException;
 import water.util.PrettyPrint;
 import water.fvec.Vec.VectorGroup;
+import water.fvec.Vec;
 
 import java.util.Arrays;
 
@@ -402,23 +403,23 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * Invokes the map/reduce computation over the given Frame. This call is
    * blocking. The run is performed across the cluster.
    *  
-   * @param outputTypes The type of output Vec instances to create. See {@link Vec.T_STR}, {@link Vec.T_NUM}, 
-   *    {@link Vec.T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
    *
    * @param inputFrame Perform the computation on this Frame instance.  
    *
    * @return this
    */
   public final T doAll( byte[] outputTypes, Frame inputFrame) {
-    return doAll(types, inputFrame, false);
+    return doAll(outputTypes, inputFrame, false);
   }
 
   /** 
    * Invokes the map/reduce computation over the given Frame.  This call is
    * blocking. The run is performed across the cluster.
    *  
-   * @param outputType The type of one output Vec instance to create. See {@link Vec.T_STR}, {@link Vec.T_NUM}, 
-   *    {@link Vec.T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   * @param outputType The type of one output Vec instance to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
    *
    * @param inputFrame Perform the computation on this Frame instance.  
    *
@@ -432,8 +433,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * Invokes the map/reduce computation over the given Frame.  This call is
    * blocking. 
    *
-   * @param outputTypes The type of output Vec instances to create. See {@link Vec.T_STR}, {@link Vec.T_NUM}, 
-   *    {@link Vec.T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
    *
    * @param inputFrame Perform the computation on this Frame instance.  
    *
@@ -477,8 +478,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * which <code>getResult</code> may be invoked by the caller to block for pending
    * computation to complete.
    *
-   * @param outputTypes The type of output Vec instances to create. See {@link Vec.T_STR}, {@link Vec.T_NUM}, 
-   *    {@link Vec.T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
    *
    * @param vecs The input set of Vec instances upon which computation is performed.
    *             
@@ -509,8 +510,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  Because it does not raise priority, these can be tail-call chained together
    *  for any length.
    *  
-   * @param outputTypes The type of output Vec instances to create. See {@link Vec.T_STR}, {@link Vec.T_NUM}, 
-   *    {@link Vec.T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
    *
    * @param inputFrame Perform the computation on this Frame instance.  
    * 
