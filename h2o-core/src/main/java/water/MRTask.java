@@ -386,14 +386,58 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   public final T doAll( Vec vec, boolean run_local ) { return doAll(null,vec, run_local); }
   public final T doAll(byte[] types, Vec vec, boolean run_local ) { return doAll(types,new Frame(vec), run_local); }
 
-  /** Invokes the map/reduce computation over the given Frame.  This call is
-   *  blocking.  */
+  /** Invokes the map/reduce computation over the given Frame. This call is
+   *  blocking.  
+   */
   public final T doAll( Frame fr, boolean run_local) { return doAll(null,fr, run_local); }
+  
+  /** Invokes the map/reduce computation over the given Frame. This call is
+   *  blocking. The run is performed globally.
+   */
   public final T doAll( Frame fr ) { return doAll(null,fr, false); }
-  public final T doAll( byte[] types, Frame fr) {return doAll(types,fr,false);}
-  public final T doAll( byte type, Frame fr) {return doAll(new byte[]{type},fr,false);}
-  public final T doAll( byte[] types, Frame fr, boolean run_local) {
-    dfork(types,fr, run_local);
+
+  /** Invokes the map/reduce computation over the given Frame. This call is
+   *  blocking. The run is performed globally.
+   *  
+   * @param outputTypes The type of output Vec instances to create. See {@link Vec.T_STR}, {@link Vec.T_NUM}, 
+   *    {@link Vec.T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   *
+   * @param inputFrame Perform the computation on this Frame instance.  
+   *
+   * @return this
+   */
+  public final T doAll( byte[] outputTypes, Frame inputFrame) {
+    return doAll(types, inputFrame, false);
+  }
+
+  /** Invokes the map/reduce computation over the given Frame.  This call is
+   *  blocking. The run is performed globally.
+   *  
+   * @param outputType The type of one output Vec instance to create. See {@link Vec.T_STR}, {@link Vec.T_NUM}, 
+   *    {@link Vec.T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   *
+   * @param inputFrame Perform the computation on this Frame instance.  
+   *
+   * @return this
+   */
+  public final T doAll( byte outputType, Frame inputFrame) {
+    return doAll(new byte[]{outputType}, inputFrame, false);
+  }
+
+  /** Invokes the map/reduce computation over the given Frame.  This call is
+   *  blocking. 
+   *
+   * @param outputTypes The type of output Vec instances to create. See {@link Vec.T_STR}, {@link Vec.T_NUM}, 
+   *    {@link Vec.T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   *
+   * @param inputFrame Perform the computation on this Frame instance.  
+   *
+   * @param runLocal Run locally by copying data, or run globally?
+   *
+   * @return this
+   */
+  public final T doAll( byte[] outputTypes, Frame inputFrame, boolean runLocal) {
+    dfork(outputTypes,inputFrame, runLocal);
     return getResult();
   }
   // Output is several vecs of the same type
@@ -428,11 +472,16 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * which <code>getResult</code> may be invoked by the caller to block for pending
    * computation to complete.
    *
-   * @param types The type of output Vec instances to create.
+   * @param outputTypes The type of output Vec instances to create. See {@link Vec.T_STR}, {@link Vec.T_NUM}, 
+   *    {@link Vec.T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   *
    * @param vecs The input set of Vec instances upon which computation is performed.
+   *             
    * @return this
    */
-  public final T dfork( byte[] types, Vec... vecs) { return dfork(types,new Frame(vecs),false); }
+  public final T dfork( byte[] outputTypes, Vec... vecs) { 
+    return dfork(outputTypes, new Frame(vecs), false); 
+  }
 
   public final T dfork(Vec... vecs){ return dfork(null,new Frame(vecs),false); }
   /**
@@ -441,25 +490,37 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * by the caller to block for pending computation to complete. This call produces no
    * output Vec instances or Frame instances.
    *
-   * @param fr Perform the computation on this Frame instance.
+   * @param inputFrame Perform the computation on this Frame instance.  
+   *
    * @return this
    */
-  public final T dfork(Frame fr){ return dfork(null,fr,false); }
+  public final T dfork(Frame inputFrame) { 
+    return dfork(null, inputFrame, false); 
+  }
 
   /** Fork the task in strictly non-blocking fashion.
    *  Same functionality as dfork, but does not raise priority, so user is should
    *  *never* block on it.
    *  Because it does not raise priority, these can be tail-call chained together
    *  for any length.
+   *  
+   * @param outputTypes The type of output Vec instances to create. See {@link Vec.T_STR}, {@link Vec.T_NUM}, 
+   *    {@link Vec.T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   *
+   * @param inputFrame Perform the computation on this Frame instance.  
+   * 
+   * @param runLocal Run locally by copying data, or run globally?
+   *           
+   * @return this
    */
-  public final T dfork( byte[] types, Frame fr, boolean run_local) {
+  public final T dfork(byte[] outputTypes, Frame inputFrame, boolean runLocal) {
     _topGlobal = true;
-    _output_types = types;
-    if( types != null && types.length > 0 )
-      _vid = fr.anyVec().group().reserveKeys(types.length);
-    _fr = fr;                   // Record vectors to work on
+    _output_types = outputTypes;
+    if( outputTypes != null && outputTypes.length > 0 )
+      _vid = inputFrame.anyVec().group().reserveKeys(outputTypes.length);
+    _fr = inputFrame;                   // Record vectors to work on
     _nlo = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
-    _run_local = run_local;     // Run locally by copying data, or run globally?
+    _run_local = runLocal;     // Run locally by copying data, or run globally?
     assert checkRunLocal() : "MRTask is expected to be running in a local-mode but _run_local = false";
     setupLocal0();              // Local setup
     H2O.submitTask(this);       // Begin normal execution on a FJ thread
