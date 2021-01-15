@@ -28,11 +28,11 @@ spec:
               mountPath: "h2o-clustering.jar"
           resources:
             limits:
-              cpu: '<num-cpu>'
-              memory: <memory>
+              cpu: '1'
+              memory: "256Mi"
             requests:
-              cpu: '<num-cpu>'
-              memory: <memory>
+              cpu: '1'
+              memory: "256Mi"
           env:
           - name: H2O_ASSISTED_CLUSTERING_RESTs
             value: 'True'
