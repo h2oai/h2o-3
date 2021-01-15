@@ -393,26 +393,26 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * Invokes the map/reduce computation over the given Frame. This call is
    * blocking.  
    *
-   * @param inputFrame Perform the computation on this Frame instance.  
+   * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect. 
    *
    * @param runLocal Run locally by copying data, or run across the cluster?
    *                 
    * @return this
    */
-  public final T doAll( Frame inputFrame, boolean runLocal) { 
-    return doAll(null, inputFrame, runLocal); 
+  public final T doAll( Frame fr, boolean runLocal) { 
+    return doAll(null, fr, runLocal); 
   }
   
   /** 
    * Invokes the map/reduce computation over the given Frame. This call is
    * blocking. The run is performed across the cluster.
    * 
-   * @param inputFrame Perform the computation on this Frame instance.
+   * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect. 
    *
    * @return this
    */
-  public final T doAll(Frame inputFrame ) { 
-    return doAll(null, inputFrame, false); 
+  public final T doAll(Frame fr ) { 
+    return doAll(null, fr, false); 
   }
 
   /** 
@@ -422,12 +422,12 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
    *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
    *
-   * @param inputFrame Perform the computation on this Frame instance.  
+   * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect.   
    *
    * @return this
    */
-  public final T doAll(byte[] outputTypes, Frame inputFrame) {
-    return doAll(outputTypes, inputFrame, false);
+  public final T doAll(byte[] outputTypes, Frame fr) {
+    return doAll(outputTypes, fr, false);
   }
 
   /** 
@@ -437,12 +437,12 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * @param outputType The type of one output Vec instance to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
    *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
    *
-   * @param inputFrame Perform the computation on this Frame instance.  
+   * @param fr  Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect. 
    *
    * @return this
    */
-  public final T doAll(byte outputType, Frame inputFrame) {
-    return doAll(new byte[]{outputType}, inputFrame, false);
+  public final T doAll(byte outputType, Frame fr) {
+    return doAll(new byte[]{outputType}, fr, false);
   }
 
   /** 
@@ -452,14 +452,14 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
    *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
    *
-   * @param inputFrame Perform the computation on this Frame instance.  
+   * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect. 
    *
    * @param runLocal Run locally by copying data, or run across the cluster?
    *
    * @return this
    */
-  public final T doAll(byte[] outputTypes, Frame inputFrame, boolean runLocal) {
-    dfork(outputTypes,inputFrame, runLocal);
+  public final T doAll(byte[] outputTypes, Frame fr, boolean runLocal) {
+    dfork(outputTypes,fr, runLocal);
     return getResult();
   }
 
@@ -472,14 +472,14 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * @param outputType The type of all the output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
    *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
    *
-   * @param inputFrame Perform the computation on this Frame instance.  
+   * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect.   
    *
    * @return this
    */ 
-  public final T doAll(int numverOfOutputs, byte outputType, Frame inputFrame) {
+  public final T doAll(int numverOfOutputs, byte outputType, Frame fr) {
     byte[] types = new byte[numverOfOutputs];
     Arrays.fill(types, outputType);
-    return doAll(types, inputFrame,false);
+    return doAll(types, fr,false);
   }
 
   // Special mode doing 1 map per key.  No frame
@@ -511,7 +511,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
    *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
    *
-   * @param vecs The input set of Vec instances upon which computation is performed.
+   * @param vecs The set of Vec instances upon which computation is performed.
    *             
    * @return this
    */
@@ -526,12 +526,12 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * by the caller to block for pending computation to complete. This call produces no
    * output Vec instances or Frame instances.
    *
-   * @param inputFrame Perform the computation on this Frame instance.  
+   * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect. 
    *
    * @return this
    */
-  public final T dfork(Frame inputFrame) { 
-    return dfork(null, inputFrame, false); 
+  public final T dfork(Frame fr) { 
+    return dfork(null, fr, false); 
   }
 
   /** Fork the task in strictly non-blocking fashion.
@@ -543,18 +543,18 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
    *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
    *
-   * @param inputFrame Perform the computation on this Frame instance.  
+   * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect. 
    * 
    * @param runLocal Run locally by copying data, or run across the cluster?
    *           
    * @return this
    */
-  public final T dfork(byte[] outputTypes, Frame inputFrame, boolean runLocal) {
+  public final T dfork(byte[] outputTypes, Frame fr, boolean runLocal) {
     _topGlobal = true;
     _output_types = outputTypes;
     if( outputTypes != null && outputTypes.length > 0 )
-      _vid = inputFrame.anyVec().group().reserveKeys(outputTypes.length);
-    _fr = inputFrame;                   // Record vectors to work on
+      _vid = fr.anyVec().group().reserveKeys(outputTypes.length);
+    _fr = fr;                   // Record vectors to work on
     _nlo = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
     _run_local = runLocal;     // Run locally by copying data, or run globally?
     assert checkRunLocal() : "MRTask is expected to be running in a local-mode but _run_local = false";
