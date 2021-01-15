@@ -439,8 +439,7 @@ class ModelMetricsHandler extends Handler {
             Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions().setOutputFormat(outputFormat);
             mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j, options);
           } else {
-            throw new NotImplementedException("Sorting of shap value is not yet implemented");
-            //mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), parms._top_n, parms._top_bottom_n, parms._abs, j);
+            mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), parms._top_n, parms._top_bottom_n, parms._abs, j);
           }
         } else if (s.deep_features_hidden_layer < 0 && s.deep_features_hidden_layer_name == null) {
           parms._model.score(parms._frame, parms._predictions_name, j, false, CFuncRef.from(s.custom_metric_func));

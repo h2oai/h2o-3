@@ -127,12 +127,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     Frame scoreContributions(Frame frame, Key<Frame> destination_key);
+
     default Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j) {
       return scoreContributions(frame, destination_key, j, new ContributionsOptions());
     }
     default Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options) {
       return scoreContributions(frame, destination_key);
     }
+
+    Frame scoreContributions(Frame frame, Key<Frame> destination_key, int topN, int topBottomN, boolean abs, Job<Frame> j);
   }
 
   public interface ExemplarMembers {

@@ -3,6 +3,7 @@ package hex.tree;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.algos.tree.*;
+import hex.genmodel.attributes.parameters.KeyValue;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -11,6 +12,7 @@ import water.fvec.Vec;
 import water.util.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import hex.Model;
 import water.Key;
@@ -20,7 +22,9 @@ public abstract class SharedTreeModelWithContributions<
         P extends SharedTreeModel.SharedTreeParameters,
         O extends SharedTreeModel.SharedTreeOutput
         > extends SharedTreeModel<M, P, O> implements Model.Contributions {
-    
+
+  private transient final ContributionComposer contributionComposer = new ContributionComposer();
+
   public SharedTreeModelWithContributions(Key<M> selfKey, P parms, O output) {
         super(selfKey, parms, output);
     }
@@ -30,13 +34,7 @@ public abstract class SharedTreeModelWithContributions<
     return scoreContributions(frame, destination_key, null);
   }
 
-  @Override
-  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j) {
-    if (_output.nclasses() > 2) {
-      throw new UnsupportedOperationException(
-              "Calculating contributions is currently not supported for multinomial models.");
-    }
-
+  private Frame cleanFrame(Frame frame) {
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
     // remove non-feature columns
@@ -44,6 +42,17 @@ public abstract class SharedTreeModelWithContributions<
     adaptFrm.remove(_parms._fold_column);
     adaptFrm.remove(_parms._weights_column);
     adaptFrm.remove(_parms._offset_column);
+    return adaptFrm;
+  }
+
+  @Override
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j) {
+    if (_output.nclasses() > 2) {
+      throw new UnsupportedOperationException(
+              "Calculating contributions is currently not supported for multinomial models.");
+    }
+
+    Frame adaptFrm = cleanFrame(frame);
 
     final String[] outputNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
     
@@ -53,14 +62,55 @@ public abstract class SharedTreeModelWithContributions<
             .outputFrame(destination_key, outputNames, null);
   }
 
+  @Override
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, int topN, int topBottomN, boolean abs, Job<Frame> j) {
+    if (_output.nclasses() > 2) {
+      throw new UnsupportedOperationException(
+              "Calculating contributions is currently not supported for multinomial models.");
+    }
+
+    Frame adaptFrm = cleanFrame(frame);
+    final String[] contribNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
+
+    int topNAdjusted = contributionComposer.checkAndAdjustInput(topN, adaptFrm.names().length);
+    int topBottomNAdjusted = contributionComposer.checkAndAdjustInput(topBottomN, adaptFrm.names().length);
+
+    int outputSize = Math.min((topNAdjusted+topBottomNAdjusted)*2, adaptFrm.names().length*2);
+    String[] names = new String[outputSize];
+    byte[] types = new byte[outputSize];
+
+    for (int i = 0, topFeatureIterator = 1, bottomFeatureIterator = 1; i < outputSize; i+=2, topFeatureIterator++) {
+      if (topFeatureIterator <= topNAdjusted) {
+        names[i] = "top_feature_" + topFeatureIterator;
+        names[i+1] = "top_value_" + topFeatureIterator;
+      } else {
+        names[i] = "bottom_top_feature_" + bottomFeatureIterator;
+        names[i+1] = "bottom_top_value_" + bottomFeatureIterator;
+        bottomFeatureIterator++;
+      }
+      types[i] = Vec.T_STR;
+      types[i+1] = Vec.T_NUM;
+    }
+
+    final String[] outputNames = ArrayUtils.append(names, "BiasTerm");
+    types = ArrayUtils.append(types, Vec.T_NUM);
+
+    return getScoreContributionsSoringTask(this, contribNames, topN, topBottomN, abs)
+            .withPostMapAction(JobUpdatePostMap.forJob(j))
+            .doAll(types, adaptFrm)
+            .outputFrame(destination_key, outputNames, null);
+  }
+
   protected abstract ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model);
-  
+
+  protected abstract ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, String[] contribNames, int topN, int topBottomN, boolean abs);
+
   public class ScoreContributionsTask extends MRTask<ScoreContributionsTask> {
-    private final Key<SharedTreeModel> _modelKey;
-    
-    private transient SharedTreeModel _model;
-    private transient SharedTreeOutput _output;
-    private transient TreeSHAPPredictor<double[]> _treeSHAP;
+    protected final Key<SharedTreeModel> _modelKey;
+
+    protected transient SharedTreeModel _model;
+    protected transient SharedTreeOutput _output;
+    protected transient TreeSHAPPredictor<double[]> _treeSHAP;
 
     public ScoreContributionsTask(SharedTreeModel model) {
       _modelKey = model._key;
@@ -101,22 +151,71 @@ public abstract class SharedTreeModelWithContributions<
         for (int i = 0; i < chks.length; i++) {
           input[i] = chks[i].atd(row);
         }
-        for (int i = 0; i < contribs.length; i++) {
-          contribs[i] = 0;
-        }
+        Arrays.fill(contribs, 0);
 
         // calculate Shapley values
         _treeSHAP.calculateContributions(input, contribs, 0, -1, workspace);
-        
+
+        doModelSpecificComputation(contribs);
+
         // Add contribs to new chunk
         addContribToNewChunk(contribs, nc);
       }
     }
 
+    protected void doModelSpecificComputation(float[] contribs) {/*For children*/}
+
     protected void addContribToNewChunk(float[] contribs, NewChunk[] nc) {
       for (int i = 0; i < nc.length; i++) {
         nc[i].addNum(contribs[i]);
       }
+    }
+  }
+
+  public class ScoreContributionsSortingTask extends ScoreContributionsTask {
+
+    private transient String[] _contribNames;
+    private transient int _topN;
+    private transient int _topBottomN;
+    private transient boolean _abs;
+
+    public ScoreContributionsSortingTask(SharedTreeModel model, String[] contribNames, int topN, int topBottomN, boolean abs) {
+      super(model);
+      _topN = topN;
+      _topBottomN = topBottomN;
+      _abs = abs;
+      _contribNames = contribNames;
+    }
+
+    @Override
+    public void map(Chunk chks[], NewChunk[] nc) {
+      double[] input = MemoryManager.malloc8d(chks.length);
+      float[] contribs = MemoryManager.malloc4f(chks.length+1);
+
+      Object workspace = _treeSHAP.makeWorkspace();
+
+      for (int row = 0; row < chks[0]._len; row++) {
+        for (int i = 0; i < chks.length; i++) {
+          input[i] = chks[i].atd(row);
+        }
+        Arrays.fill(contribs, 0);
+
+        // calculate Shapley values
+        _treeSHAP.calculateContributions(input, contribs, 0, -1, workspace);
+        doModelSpecificComputation(contribs);
+        KeyValue[] contribsSorted = contributionComposer.composeContributions(contribs, _contribNames, _topN, _topBottomN, _abs);
+
+        // Add contribs to new chunk
+        addContribToNewChunk(contribsSorted, nc);
+      }
+    }
+
+    protected void addContribToNewChunk(KeyValue[] contribs, NewChunk[] nc) {
+      for (int i = 0, inputPointer = 0; i < nc.length-1; i+=2, inputPointer++) {
+        nc[i].addStr(contribs[inputPointer].key);
+        nc[i+1].addNum(contribs[inputPointer].value);
+      }
+      nc[nc.length-1].addNum(contribs[contribs.length-1].value); // bias
     }
   }
 }
