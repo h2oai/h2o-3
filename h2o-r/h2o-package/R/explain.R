@@ -2389,12 +2389,16 @@ h2o.ice_plot <- function(model,
 
 #' Learning Curve Plot
 #'
-#' Create learning curve plot for an H2O Model.
+#' Create learning curve plot for an H2O Model. Learning curves show error metric dependence on
+#' learning progress, e.g., RMSE vs number of trees trained so far in GBM. There can be up to 4 curves
+#' showing Training, Validation, Training on CV Models, and Cross-validation error.
 #'
 #' @param model an H2O model
 #' @param metric Metric to be used for the learning curve plot. These should mostly correspond with stopping metric.
-#' @param cv_ribbon if True, plot the CV mean as a and CV standard deviation as a ribbon around the mean
-#' @param cv_lines if True, plot scoring history for individual CV models
+#' @param cv_ribbon if True, plot the CV mean as a and CV standard deviation as a ribbon around the mean,
+#'                  if NULL, it will attempt to automatically determine if this is suitable visualisation
+#' @param cv_lines if True, plot scoring history for individual CV models, if NULL, it will attempt to
+#'                 automatically determine if this is suitable visualisation
 #'
 #' @return A ggplot2 object
 #' @examples
@@ -2456,6 +2460,7 @@ h2o.learning_curve_plot <- function(model,
     sumetaieta02 = "sumetaieta02"
   )
   inverse_metric_mapping <- stats::setNames(names(metric_mapping), metric_mapping)
+  inverse_metric_mapping[["custom"]] <- "custom, custom_increasing"
 
   metric <- match.arg(arg = if (missing(metric) || tolower(metric) == "auto") "AUTO" else tolower(metric),
                       choices = eval(formals()$metric))
@@ -2490,17 +2495,17 @@ h2o.learning_curve_plot <- function(model,
   } else if (model@algorithm == "glrm") {
     allowed_metrics <- c("objective")
     allowed_timesteps <- "iterations"
-  } else if (model@algorithm %in% c("deeplearning", "drf", "gbm")) {
+  } else if (model@algorithm %in% c("deeplearning", "drf", "gbm", "xgboost")) {
     if (is(model, "H2OBinomialModel")) {
-      allowed_metrics <- c("logloss", "auc", "classification_error", "rmse")
+      allowed_metrics <- c("logloss", "auc", "classification_error", "rmse", "lift", "auc", "pr_auc")
     } else if (is(model, "H2OMultinomialModel") || is(model, "H2OOrdinalModel")) {
-        allowed_metrics <- c("classification_error", "logloss", "rmse")
+        allowed_metrics <- c("logloss", "classification_error", "rmse", "auc", "pr_auc")
     } else if (is(model, "H2ORegressionModel")) {
-        allowed_metrics <- c("rmse","deviance","mae")
+        allowed_metrics <- c("rmse", "deviance", "mae")
     }
-  } else if (model@algorithm == "xgboost") {
-    allowed_timesteps <- "number_of_trees"
-    allowed_metrics <- c("rmse", "logloss", "auc", "pr_auc", "lift", "classification_error")
+    if (model@algorithm %in% c("drf", "gbm")) {
+      allowed_metrics <- c(allowed_metrics, "custom")
+    }
   } else if (model@algorithm == "coxph") {
     allowed_timesteps <- "iterations"
     allowed_metrics <- "loglik"

@@ -1771,12 +1771,16 @@ def learning_curve_plot(
     """
     Learning curve
 
-    Create learning curve plot for an H2O Model.
+    Create learning curve plot for an H2O Model. Learning curves show error metric dependence on
+    learning progress, e.g., RMSE vs number of trees trained so far in GBM. There can be up to 4 curves
+    showing Training, Validation, Training on CV Models, and Cross-validation error.
 
     :param model: an H2O model
     :param metric: a stopping metric
-    :param cv_ribbon: if True, plot the CV mean as a and CV standard deviation as a ribbon around the mean
-    :param cv_lines: if True, plot scoring history for individual CV models
+    :param cv_ribbon: if True, plot the CV mean as a and CV standard deviation as a ribbon around the mean,
+                      if None, it will attempt to automatically determine if this is suitable visualisation
+    :param cv_lines: if True, plot scoring history for individual CV models, if None, it will attempt to
+                     automatically determine if this is suitable visualisation
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
     :return: a matplotlib figure
@@ -1827,6 +1831,7 @@ def learning_curve_plot(
                       'negative_log_likelihood': 'negative_log_likelihood',
                       'sumetaieta02': 'sumetaieta02'}
     inverse_metric_mappping = {v: k for k, v in metric_mapping.items()}
+    inverse_metric_mappping["custom"] = "custom, custom_increasing"
 
     # Using the value from output to keep it simple - only one version required - (no need to use pandas for small data)
     scoring_history = model._model_json["output"]["scoring_history"] or model._model_json["output"].get("glm_scoring_history")
@@ -1850,17 +1855,16 @@ def learning_curve_plot(
     elif model.algo == "glrm":
         allowed_metrics = ["objective"]
         allowed_timesteps = ["iterations"]
-    elif model.algo in ("deeplearning", "drf", "gbm"):
+    elif model.algo in ("deeplearning", "drf", "gbm", "xgboost"):
         model_category = model._model_json["output"]["model_category"]
         if "Binomial" == model_category:
-            allowed_metrics = ["logloss", "auc", "classification_error", "rmse"]
+            allowed_metrics = ["logloss", "auc", "classification_error", "rmse", "lift", "pr_auc"]
         elif model_category in ["Multinomial", "Ordinal"]:
-            allowed_metrics = ["classification_error", "logloss", "rmse"]
+            allowed_metrics = ["logloss", "classification_error", "rmse", "pr_auc", "auc"]
         elif "Regression" == model_category:
-            allowed_metrics = ["rmse","deviance","mae"]
-    elif model.algo == "xgboost":
-        allowed_timesteps = ["number_of_trees"]
-        allowed_metrics = ["rmse", "logloss", "auc", "pr_auc", "lift", "classification_error"]
+            allowed_metrics = ["rmse", "deviance", "mae"]
+        if model.algo in ["drf", "gbm"]:
+            allowed_metrics += ["custom"]
     elif model.algo == "coxph":
         allowed_metrics = ["loglik"]
         allowed_timesteps = ["iterations"]
@@ -1956,7 +1960,7 @@ def learning_curve_plot(
                         [(k, np.std(v)) for k, v in cvsh_valid.items()],
                         key=lambda k: k[0]
                     ))[:, 1]
-                    plt.plot(mean_valid[:,0], mean_valid[:, 1], c=col_cv_valid,
+                    plt.plot(mean_valid[:, 0], mean_valid[:, 1], c=col_cv_valid,
                              label="Cross-validation")
                     plt.fill_between(mean_valid[:, 0],
                                      mean_valid[:, 1] - sd_valid,
