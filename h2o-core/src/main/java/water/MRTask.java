@@ -379,8 +379,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   // Support for fluid-programming with strong types
   protected T self() { return (T)this; }
 
-  /** Invokes the map/reduce computation over the given Vecs.  This call is
-   *  blocking. */
+  /** 
+   * Invokes the map/reduce computation over the given Vecs. This call is
+   * blocking. 
+   */
   public final T doAll( Vec... vecs ) { return doAll(null,vecs); }
   public final T doAll(byte[] types, Vec... vecs ) { return doAll(types,new Frame(vecs), false); }
   public final T doAll(byte type, Vec... vecs ) { return doAll(new byte[]{type},new Frame(vecs), false); }
@@ -390,14 +392,28 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   /** 
    * Invokes the map/reduce computation over the given Frame. This call is
    * blocking.  
+   *
+   * @param inputFrame Perform the computation on this Frame instance.  
+   *
+   * @param runLocal Run locally by copying data, or run across the cluster?
+   *                 
+   * @return this
    */
-  public final T doAll( Frame fr, boolean run_local) { return doAll(null,fr, run_local); }
+  public final T doAll( Frame inputFrame, boolean runLocal) { 
+    return doAll(null, inputFrame, runLocal); 
+  }
   
   /** 
    * Invokes the map/reduce computation over the given Frame. This call is
    * blocking. The run is performed across the cluster.
+   * 
+   * @param inputFrame Perform the computation on this Frame instance.
+   *
+   * @return this
    */
-  public final T doAll( Frame fr ) { return doAll(null,fr, false); }
+  public final T doAll(Frame inputFrame ) { 
+    return doAll(null, inputFrame, false); 
+  }
 
   /** 
    * Invokes the map/reduce computation over the given Frame. This call is
@@ -410,7 +426,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *
    * @return this
    */
-  public final T doAll( byte[] outputTypes, Frame inputFrame) {
+  public final T doAll(byte[] outputTypes, Frame inputFrame) {
     return doAll(outputTypes, inputFrame, false);
   }
 
@@ -425,7 +441,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *
    * @return this
    */
-  public final T doAll( byte outputType, Frame inputFrame) {
+  public final T doAll(byte outputType, Frame inputFrame) {
     return doAll(new byte[]{outputType}, inputFrame, false);
   }
 
@@ -442,15 +458,28 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *
    * @return this
    */
-  public final T doAll( byte[] outputTypes, Frame inputFrame, boolean runLocal) {
+  public final T doAll(byte[] outputTypes, Frame inputFrame, boolean runLocal) {
     dfork(outputTypes,inputFrame, runLocal);
     return getResult();
   }
-  // Output is several vecs of the same type
-  public final T doAll( int nouts, byte type, Frame fr) {
-    byte[] types = new byte[nouts];
-    Arrays.fill(types, type);
-    return doAll(types,fr,false);
+
+  /**
+   * Invokes the map/reduce computation over the given Frame.  This call is
+   * blocking. 
+   * 
+   * @param numverOfOutputs Number of output vectors for the computation. All of them will have the same type.
+   *
+   * @param outputType The type of all the output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   *
+   * @param inputFrame Perform the computation on this Frame instance.  
+   *
+   * @return this
+   */ 
+  public final T doAll(int numverOfOutputs, byte outputType, Frame inputFrame) {
+    byte[] types = new byte[numverOfOutputs];
+    Arrays.fill(types, outputType);
+    return doAll(types, inputFrame,false);
   }
 
   // Special mode doing 1 map per key.  No frame
@@ -458,6 +487,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     dfork(keys);
     return getResult();         // Block For All
   }
+  
   // Special mode doing 1 map per key.  No frame
   public void dfork(Key... keys ) {
     _topGlobal = true;
@@ -479,7 +509,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * computation to complete.
    *
    * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
-   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
    *
    * @param vecs The input set of Vec instances upon which computation is performed.
    *             
