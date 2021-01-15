@@ -412,7 +412,8 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
                 _chks[id][_predsIdx].getDoubles(preds, 0, len);
               }
             }
-            if(h._useUplift){ 
+            if(h._useUplift){
+              _chks[id][_respIdx].getDoubles(resp, 0, len);
               _chks[id][_upliftIdx].getDoubles(uplift, 0, len);
             }
             extracted = true;

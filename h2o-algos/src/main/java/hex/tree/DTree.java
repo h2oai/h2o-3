@@ -1434,15 +1434,15 @@ public class DTree extends Iced {
     double pr2lo[] = hasPreds ? MemoryManager.malloc8d(nbins+1) : null;
     double denlo[] = hasDenom ? MemoryManager.malloc8d(nbins+1) : wlo;
     double nomlo[] = hasNomin ? MemoryManager.malloc8d(nbins+1) : wYlo;
-    double[] denloTreat = null;
-    double[] nomloTreat = null;
-    double[] denloContr = null;
-    double[] nomloContr = null;
+    double[] numloTreat = null;
+    double[] resploTreat = null;
+    double[] numloContr = null;
+    double[] resploContr = null;
     if(useUplift){
-      nomloTreat = MemoryManager.malloc8d(nbins+1);
-      denloTreat = MemoryManager.malloc8d(nbins+1);
-      nomloContr = MemoryManager.malloc8d(nbins+1);
-      denloContr = MemoryManager.malloc8d(nbins+1);
+      resploTreat = MemoryManager.malloc8d(nbins+1);
+      numloTreat = MemoryManager.malloc8d(nbins+1);
+      resploContr = MemoryManager.malloc8d(nbins+1);
+      numloContr = MemoryManager.malloc8d(nbins+1);
     }
     for( int b=1; b<=nbins; b++ ) {
       int id = vals_dim*(b-1);
@@ -1469,14 +1469,14 @@ public class DTree extends Iced {
         }
       }
       if(useUplift){
-        double nt0 = nomloTreat[b - 1], nt1 = valsUplift[id];
-        nomloTreat[b] = nt0 + nt1;
-        double dt0 = denloTreat[b - 1], dt1 = valsUplift[id + 1];
-        nomloTreat[b] = dt0 + dt1;
-        double nc0 = nomloContr[b - 1], nc1 = valsUplift[id + 2];
-        nomloContr[b] = nc0 + nc1;
-        double dc0 = denloContr[b - 1], dc1 = valsUplift[id + 3];
-        nomloContr[b] = dc0 + dc1;
+        double nt0 = numloTreat[b - 1], nt1 = valsUplift[id];
+        numloTreat[b] = nt0 + nt1;
+        double dt0 = resploTreat[b - 1], dt1 = valsUplift[id + 1];
+        resploTreat[b] = dt0 + dt1;
+        double nc0 = numloContr[b - 1], nc1 = valsUplift[id + 2];
+        numloContr[b] = nc0 + nc1;
+        double dc0 = resploContr[b - 1], dc1 = valsUplift[id + 3];
+        resploContr[b] = dc0 + dc1;
       }
     }
     final double wNA = hs.wNA();
@@ -1508,15 +1508,15 @@ public class DTree extends Iced {
     double pr2hi[] = hasPreds ? MemoryManager.malloc8d(nbins+1) : null;
     double denhi[] = hasDenom ? MemoryManager.malloc8d(nbins+1) : whi;
     double nomhi[] = hasNomin ? MemoryManager.malloc8d(nbins+1) : wYhi;
-    double[] denhiTreat = null;
-    double[] nomhiTreat = null;
-    double[] denhiContr = null;
-    double[] nomhiContr = null;
+    double[] numhiTreat = null;
+    double[] resphiTreat = null;
+    double[] numhiContr = null;
+    double[] resphiContr = null;
     if(useUplift){
-      nomhiTreat = MemoryManager.malloc8d(nbins+1);
-      denhiTreat = MemoryManager.malloc8d(nbins+1);
-      nomhiContr = MemoryManager.malloc8d(nbins+1);
-      denhiContr = MemoryManager.malloc8d(nbins+1);
+      numhiTreat = MemoryManager.malloc8d(nbins+1);
+      resphiTreat = MemoryManager.malloc8d(nbins+1);
+      numhiContr = MemoryManager.malloc8d(nbins+1);
+      resphiContr = MemoryManager.malloc8d(nbins+1);
     }
     for( int b = nbins-1; b >= 0; b-- ) {
       int id = vals_dim*b;
@@ -1543,14 +1543,14 @@ public class DTree extends Iced {
         }
       }
       if(useUplift){
-        double nt0 = nomhiTreat[b + 1], nt1 = valsUplift[id];
-        nomhiTreat[b] = nt0 + nt1;
-        double dt0 = denhiTreat[b + 1], dt1 = valsUplift[id + 1];
-        nomhiTreat[b] = dt0 + dt1;
-        double nc0 = nomhiContr[b + 1], nc1 = valsUplift[id + 2];
-        nomhiContr[b] = nc0 + nc1;
-        double dc0 = denhiContr[b + 1], dc1 = valsUplift[id + 3];
-        nomhiContr[b] = dc0 + dc1;
+        double nt0 = numhiTreat[b + 1], nt1 = valsUplift[id];
+        numhiTreat[b] = nt0 + nt1;
+        double dt0 = resphiTreat[b + 1], dt1 = valsUplift[id + 1];
+        resphiTreat[b] = dt0 + dt1;
+        double nc0 = numhiContr[b + 1], nc1 = valsUplift[id + 2];
+        numhiContr[b] = nc0 + nc1;
+        double dc0 = resphiContr[b + 1], dc1 = valsUplift[id + 3];
+        resphiContr[b] = dc0 + dc1;
       }
       assert MathUtils.compare(wlo[b]+ whi[b]+wNA,tot,1e-5,1e-5);
     }
@@ -1571,29 +1571,50 @@ public class DTree extends Iced {
     double tree_p0 = 0;
     double tree_p1 = 0;
 
-    double nomTreatNA = hs.nomTreatmentNA();
-    double denomTreatNA = hs.denTreatmentNA();
-    double nomContrNA = hs.nomControlNA();
-    double denomContrNA = hs.denControlNA();
-
-    double bestUpliftGain = 0;
-    double pBefore = -1;
-    double qBefore = -1;
+    double numTreatNA = 0;
+    double respTreatNA = 0;
+    double numContrNA = 0;
+    double respContrNA = 0;
     if(useUplift) {
-      pBefore = nomhiTreat[0] / denhiTreat[0];
-      qBefore = nomhiContr[0] / denhiContr[0];
-      bestUpliftGain = upliftMetric.node(pBefore , qBefore);
+      numTreatNA = hs.numTreatmentNA();
+      respTreatNA = hs.respTreatmentNA();
+      numContrNA = hs.numControlNA();
+      respContrNA = hs.respControlNA();
+    }
+
+    double bestUpliftGain = Double.MIN_VALUE;
+    double nCT1 = 0;
+    double nCT0 = 0;
+    double prCT1 = 0;
+    double prCT0 = 0;
+    double prY1CT1 = 0;
+    double prY1CT0 = 0;
+    
+    if(useUplift) {
+      nCT1 = numhiTreat[0];
+      nCT0 = numhiContr[0];
+      prCT1 = (nCT1 + 1)/(nCT0 + nCT1 + 2);
+      prCT0 = 1-prCT1;
+      prY1CT1 = resphiTreat[0]/nCT1;
+      prY1CT0 = resphiContr[0]/nCT0;
+      bestUpliftGain = upliftMetric.node(prY1CT1 , prY1CT0) / upliftMetric.norm(prCT1, prCT0, 1, 1);
     }
     // if there are any NAs, then try to split them from the non-NAs
     if (wNA>=min_rows) {
       if(useUplift) {
-        pBefore = (nomhiTreat[0] + nomTreatNA) / (denhiTreat[0] + denomTreatNA);
-        qBefore = (nomhiContr[0] + nomContrNA) / (denhiContr[0] + denomContrNA);
-        double pLeft = nomhiTreat[0] / denhiTreat[0];
-        double qLeft = nomhiContr[0] / denhiContr[0];
-        double pRight = nomTreatNA / denomTreatNA;
-        double qRight = nomContrNA / denomContrNA;
-        bestUpliftGain = upliftMetric.gain(pBefore, qBefore, pLeft, qLeft, pRight, qRight, 0, 0);
+        double prCT1All = (nCT1 + numTreatNA + 1)/(nCT0 + numContrNA + nCT1 + numTreatNA + 2);
+        double prCT0All = 1-prCT1All;
+        double prY1CT1All = (resphiTreat[0] + respTreatNA) / (nCT1 + numTreatNA);
+        double prY1CT0All = (resphiContr[0] + respContrNA) / (nCT0 + numContrNA);
+        double prLCT1 = (nCT1 + 1)/(nCT0 + nCT1 + 2);
+        double prLCT0 = 1 - prLCT1;
+        double prL = prLCT1 * prCT1All + prLCT0 * prCT0All;
+        double prR = 1 - prL;
+        double prLY1CT1 = (resphiTreat[0] + 1) / (numhiTreat[0] + 2);
+        double prLY1CT0 = (resphiContr[0] + 1) / (numhiContr[0] + 2);
+        double prRY1CT1 = (respTreatNA + 1) / (numTreatNA + 2);
+        double prRY1CT0 = (respContrNA + 1) / (numContrNA + 2);
+        bestUpliftGain = upliftMetric.value(prY1CT1All, prY1CT0All, prL, prLY1CT1, prLY1CT0, prR, prRY1CT1, prRY1CT0, prCT1All, prCT0All, prLCT1, prLCT0);
       }
       double seAll = (wYYhi[0] + wYYNA) - (wYhi[0] + wYNA) * (wYhi[0] + wYNA) / (whi[0] + wNA);
       double seNA = wYYNA - wYNA * wYNA / wNA;
@@ -1642,11 +1663,19 @@ public class DTree extends Iced {
         if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
         boolean condition;
         if(useUplift){
-          double pLeft = nomhiTreat[b] / denhiTreat[b];
-          double qLeft = nomhiContr[b] / denhiContr[b];
-          double pRight = nomloTreat[b] / denloTreat[b];
-          double qRight = nomloContr[b] / denloContr[b];
-          upliftGain = upliftMetric.gain(pBefore, qBefore, pLeft, qLeft, pRight, qRight, 0, 0);
+          nCT1 = numhiTreat[0];
+          nCT0 = numhiContr[0];
+          prCT1 = (nCT1 + 1)/(nCT0 + nCT1 + 2);
+          prCT0 = 1-prCT1;
+          double prLCT1 = (numloTreat[b] + 1)/(numloTreat[b] + numhiTreat[b] + 2);
+          double prLCT0 = 1 - prLCT1;
+          double prL = prLCT1 * prCT1 + prLCT0 * prCT0;
+          double prR = 1 - prL;
+          double prLY1CT1 = (resploTreat[b] + 1) / (numloTreat[b] + 2);
+          double prLY1CT0 = (resploContr[b] + 1) / (numloContr[b] + 2);
+          double prRY1CT1 = (resphiTreat[b] + 1) / (numhiTreat[b] + 2);
+          double prRY1CT0 = (resphiContr[b] + 1) / (numhiContr[b] + 2);
+          upliftGain = upliftMetric.value(prY1CT1, prY1CT0, prL, prLY1CT1, prLY1CT0, prR, prRY1CT1, prRY1CT0, prCT1, prCT0, prLCT1, prLCT0);
           condition = upliftGain > bestUpliftGain; 
         } else {
           condition = (selo + sehi < best_seL + best_seR) || // Strictly less error?
@@ -1707,11 +1736,19 @@ public class DTree extends Iced {
           if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
           boolean condition;
           if(useUplift){
-            double pLeft = (nomhiTreat[b] + nomTreatNA) / (denhiTreat[b] + denomTreatNA);
-            double qLeft = (nomhiContr[b] + nomContrNA) / (denhiContr[b] + denomContrNA);
-            double pRight = nomloTreat[b] / denloTreat[b];
-            double qRight = nomloContr[b] / denloContr[b];
-            upliftGain = upliftMetric.gain(pBefore, qBefore, pLeft, qLeft, pRight, qRight, 0, 0);
+            nCT1 = numhiTreat[0] + numTreatNA;
+            nCT0 = numhiContr[0] + numContrNA;
+            prCT1 = (nCT1 + 1)/(nCT0 + nCT1 + 2);
+            prCT0 = 1-prCT1;
+            double prLCT1 = (numloTreat[b] + numTreatNA + 1)/(numloTreat[b] + numTreatNA + numhiTreat[b] + 2);
+            double prLCT0 = 1 - prLCT1;
+            double prL = prLCT1 * prCT1 + prLCT0 * prCT0;
+            double prR = 1 - prL;
+            double prLY1CT1 = (resploTreat[b] + 1) / (numloTreat[b] + 2);
+            double prLY1CT0 = (resploContr[b] + 1) / (numloContr[b] + 2);
+            double prRY1CT1 = (resphiTreat[b] + respTreatNA + 1) / (numhiTreat[b] + numTreatNA + 2);
+            double prRY1CT0 = (resphiContr[b] + respContrNA + 1) / (numhiContr[b] + numContrNA + 2);
+            upliftGain = upliftMetric.value(prY1CT1, prY1CT0, prL, prLY1CT1, prLY1CT0, prR, prRY1CT1, prRY1CT0, prCT1, prCT0, prLCT1, prLCT0);
             condition = upliftGain > bestUpliftGain;
           } else {
             condition = (selo + sehi < best_seL + best_seR) || // Strictly less error?
@@ -1776,11 +1813,15 @@ public class DTree extends Iced {
           if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
           boolean condition;
           if(useUplift){
-            double pLeft = nomhiTreat[b] / denhiTreat[b];
-            double qLeft = nomhiContr[b] / denhiContr[b];
-            double pRight = (nomloTreat[b] + nomTreatNA) / (denloTreat[b] + denomTreatNA);
-            double qRight = (nomloContr[b] + nomContrNA) / (denloContr[b] + denomContrNA);
-            upliftGain = upliftMetric.gain(pBefore, qBefore, pLeft, qLeft, pRight, qRight, 0, 0);
+            double prLCT1 = (numloTreat[b] + 1)/(numloTreat[b] + numhiTreat[0] + numTreatNA + 2);
+            double prLCT0 = 1 - prLCT1;
+            double prL = prLCT1 * prCT1 + prLCT0 * prCT0;
+            double prR = 1 - prL;
+            double prLY1CT1 = (resploTreat[b] + respTreatNA + 1) / (numloTreat[b] + numTreatNA + 2);
+            double prLY1CT0 = (resploContr[b] + respContrNA + 1) / (numloContr[b] + numContrNA + 2);
+            double prRY1CT1 = (resphiTreat[b] + 1) / (numhiTreat[b] + 2);
+            double prRY1CT0 = (resphiContr[b] + 1) / (numhiContr[0] + 2);
+            upliftGain = upliftMetric.value(prY1CT1, prY1CT0, prL, prLY1CT1, prLY1CT0, prR, prRY1CT1, prRY1CT0, prCT1, prCT0, prLCT1, prLCT0);
             condition = upliftGain > bestUpliftGain;
           } else {
             condition = (selo + sehi < best_seL + best_seR) || // Strictly less error?

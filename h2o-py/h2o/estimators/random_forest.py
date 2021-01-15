@@ -1847,13 +1847,13 @@ class H2ORandomForestEstimator(H2OEstimator):
         """
         Divergence metric used to find best split when building an upplift tree.
 
-        Type: ``str``.
+        One of: ``"auto"``, ``"kl"``, ``"euclidean"``, ``"chi_squared"``.
         """
         return self._parms.get("uplift_metric")
 
     @uplift_metric.setter
     def uplift_metric(self, uplift_metric):
-        assert_is_type(uplift_metric, None, str)
+        assert_is_type(uplift_metric, None, Enum("auto", "kl", "euclidean", "chi_squared"))
         self._parms["uplift_metric"] = uplift_metric
 
     offset_column = deprecated_property('offset_column', None)

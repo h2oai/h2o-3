@@ -430,7 +430,6 @@ public final class DHistogram extends Iced<DHistogram> {
   public void addWAtomic(int i, double wDelta) {  // used by AutoML
     AtomicUtils.DoubleArray.add(_vals, _vals_dim*i+0, wDelta);
   }
-  
 
   public double wNA()   { return _vals[_vals_dim*_nbin+0]; }
   
@@ -454,15 +453,14 @@ public final class DHistogram extends Iced<DHistogram> {
   
   public double nomNA() { return _vals[_vals_dim*_nbin+6]; }
 
-  public double denTreatmentNA() { return _valsUplift[_valsDimUplift*_nbin]; }
+  public double numTreatmentNA() { return _valsUplift[_valsDimUplift*_nbin]; }
+  
+  public double respTreatmentNA() { return _valsUplift[_valsDimUplift*_nbin+1]; }
+  
+  public double numControlNA() { return _valsUplift[_valsDimUplift*_nbin+2]; }
 
-  public double nomTreatmentNA() { return _valsUplift[_valsDimUplift*_nbin+1]; }
-
-  public double denControlNA() { return _valsUplift[_valsDimUplift*_nbin+2]; }
-
-  public double nomControlNA() { return _valsUplift[_valsDimUplift*_nbin+3]; }
-
-
+  public double respControlNA() { return _valsUplift[_valsDimUplift*_nbin+3]; }
+  
 
   final boolean hasPreds() {
     return _vals_dim >= 5;
@@ -636,11 +634,12 @@ public final class DHistogram extends Iced<DHistogram> {
         }
       }
       if(_useUplift) {
-        _valsUplift[binDimStart]     += uplift[k] * wy;          // treatment nominator
-        _valsUplift[binDimStart + 1] += uplift[k];              // treatment denominator
-        _valsUplift[binDimStart + 2] += (1 - uplift[k]) * wy;    // control nominator
-        _valsUplift[binDimStart + 3] += (1 - uplift[k]);        // control denominator
-      }
+        // Note: Only for binomial, response should be (0, 1)
+        _valsUplift[binDimStart] += uplift[k];              // treatment number
+        _valsUplift[binDimStart + 1] += resp[k];            // treatment response == 1 
+        _valsUplift[binDimStart + 2] += (1 - uplift[k]);    // control number
+        _valsUplift[binDimStart + 3] += (1 - resp[k]);      // control response == 1
+      } 
     }
   }
 

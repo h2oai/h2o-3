@@ -94,7 +94,8 @@
 #'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @param uplift_column Define column which will be use for computing uplift gain to select best split for a tree. The column has to
 #'        devide dataset into treatment (value 1) and control (value 0) group.
-#' @param uplift_metric Divergence metric used to find best split when building an upplift tree.
+#' @param uplift_metric Divergence metric used to find best split when building an upplift tree. Must be one of: "AUTO", "KL",
+#'        "Euclidean", "ChiSquared".
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
@@ -169,7 +170,7 @@ h2o.randomForest <- function(x,
                              gainslift_bins = -1,
                              auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                              uplift_column = NULL,
-                             uplift_metric = NULL,
+                             uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
                              verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -354,7 +355,7 @@ h2o.randomForest <- function(x,
                                              gainslift_bins = -1,
                                              auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                              uplift_column = NULL,
-                                             uplift_metric = NULL,
+                                             uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
                                              segment_columns = NULL,
                                              segment_models_id = NULL,
                                              parallelism = 1)
