@@ -1,6 +1,8 @@
 package hex.grid;
 
 import hex.Model;
+import hex.coxph.CoxPH;
+import hex.coxph.CoxPHModel;
 import hex.faulttolerance.Recovery;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
@@ -12,8 +14,10 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import water.*;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.test.dummy.DummyModelParameters;
 
+import javax.sound.midi.Soundbank;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -146,6 +150,43 @@ public class GridTest extends TestUtil {
       Scope.track_generic(grid);
 
       assertEquals(ntreesArr.length * maxDepthArr.length, grid.getModelCount());
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  @Test
+  public void testCoxPHGridSearch() {
+    try {
+      Scope.enter();
+
+      final Frame trainingFrame = parse_and_track_test_file("./smalldata/coxph_test/heart.csv");
+      trainingFrame.add("w1", Vec.makeCon(0.2, trainingFrame.numRows()));
+      trainingFrame.add("w2", Vec.makeCon(0.2, trainingFrame.numRows()));
+      trainingFrame.add("w3", Vec.makeRepSeq(trainingFrame.numRows(), 11));
+      Scope.track(trainingFrame);
+      
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_weights_column", new String[] {"w1", "w2", "w3"});
+      }};
+      
+
+      CoxPHModel.CoxPHParameters params = new CoxPHModel.CoxPHParameters();
+      params._train = trainingFrame._key;
+      params._start_column = "start";
+      params._stop_column = "stop";
+      params._response_column = "event";
+      params._ignored_columns = new String[]{"id"};
+
+
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, 5);
+      Scope.track_generic(gs);
+      final Grid grid = gs.get();
+      Scope.track_generic(grid);
+
+
+      System.out.println(grid);
+      assertEquals(3, grid.getModelCount());
     } finally {
       Scope.exit();
     }
