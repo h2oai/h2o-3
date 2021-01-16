@@ -27,9 +27,11 @@ kubectl get pods
 kubectl get nodes
 helm uninstall h2o 
 envsubst < h2o-assisted-template.yaml >> h2o-assisted.yaml
+envsubst < h2o-python-clustering-template.yaml >> h2o-python-clustering.yaml
 kubectl apply -f h2o-assisted.yaml
-kubectl wait --for=condition=ready --selector app=h2o-assisted pods
-python assisted-clustering.py --namespace default h2o-assisted
+kubectl wait --timeout=180 --for=condition=ready --selector app=h2o-assisted pods
+kubectl apply -f h2o-python-clustering.yaml
+timeout 120s bash h2o-cluster-check.sh
 export ASSISTED_EXIT_CODE=$?
 kubectl get pods
 

@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: h2o-assisted
+  labels:
+    app: h2o-assisted
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: h2o-assisted
+  template:
+    metadata:
+      labels:
+        app: h2o-assisted
+    spec:
+      containers:
+        - name: "h2o-assisted"
+          image: "harbor.h2o.ai/opsh2oai/h2o-3-k8s-runner:4"
+          command: ['/bin/bash', '-c', 'python assisted-clustering.py --namespace default h2o-assisted']
+          volumeMounts:
+            - name: python-clustering-script
+              mountPath: "assisted-clustering.py"
+          resources:
+            limits:
+              cpu: '1'
+              memory: "256Mi"
+            requests:
+              cpu: '1'
+              memory: "256Mi"
+          env:
+          - name: H2O_ASSISTED_CLUSTERING_RESTs
+            value: 'True'
+      volumes:
+        - name: python-clustering-script
+          hostPath:
+            path: $H2O_BASE/h2o-k8s/tests/clustering/assisted-clustering.py
+            type: File
+---
+apiVersion: v1
+kind: Service
+metadata:
+ name: h2o-assisted
+ namespace: default
+ labels:
+   app: h2o-assisted
+spec:
+ type: ClusterIP
+ clusterIP: None
+ selector:
+   app.kubernetes.io/name: h2o-3
+   app.kubernetes.io/instance: h2o
+ ports:
+   - protocol: TCP
+     port: 80
+     targetPort: 54321
+---
+kind: Ingress
+metadata:
+ name: h2o-assisted
+ namespace: default
+ labels:
+   app: h2o-assisted
+ annotations:
+   kubernetes.io/ingress.class: traefik
+spec:
+ rules:
+   - host: ""
+     http:
+       paths:
+         - path: /
+           backend:
+             serviceName: h2o-assisted
+             servicePort: 80

@@ -43,5 +43,5 @@ spec:
             type: File
         - name: assisted-clustering-volume
           hostPath:
-            path: $H2O_BASE/clustering/build/libs/h2o-clustering.jar
+            path: $H2O_BASE/h2o-clustering/build/libs/h2o-clustering.jar
             type: File
