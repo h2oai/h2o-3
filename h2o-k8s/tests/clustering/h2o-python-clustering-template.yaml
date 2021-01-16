@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: h2o-assisted
+  name: h2o-assisted-python
   labels:
-    app: h2o-assisted
+    app: h2o-assisted-python
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: h2o-assisted
+      app: h2o-assisted-python
   template:
     metadata:
       labels:
-        app: h2o-assisted
+        app: h2o-assisted-python
     spec:
       containers:
-        - name: "h2o-assisted"
+        - name: "h2o-assisted-python"
           image: "harbor.h2o.ai/opsh2oai/h2o-3-k8s-runner:4"
           command: ['/bin/bash', '-c', 'python assisted-clustering.py --namespace default h2o-assisted']
           volumeMounts:
@@ -23,13 +23,13 @@ spec:
               mountPath: "assisted-clustering.py"
           resources:
             limits:
-              cpu: '1'
+              cpu: '100m'
               memory: "256Mi"
             requests:
-              cpu: '1'
+              cpu: '100m'
               memory: "256Mi"
           env:
-          - name: H2O_ASSISTED_CLUSTERING_RESTs
+          - name: H2O_ASSISTED_CLUSTERING_REST
             value: 'True'
       volumes:
         - name: python-clustering-script
@@ -48,13 +48,13 @@ spec:
  type: ClusterIP
  clusterIP: None
  selector:
-   app.kubernetes.io/name: h2o-3
-   app.kubernetes.io/instance: h2o
+   app: h2o-assisted
  ports:
    - protocol: TCP
      port: 80
      targetPort: 54321
 ---
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
  name: h2o-assisted
