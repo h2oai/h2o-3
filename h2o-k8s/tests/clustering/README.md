@@ -52,3 +52,15 @@ before the outer Docker is killed. This is an important step, as in case host Do
 cluster could have lived on.
 
 
+## Assisted clustering test scenario
+
+Assisted clustering doesn't require the presence of a headless service in order to perform clustering. This implies
+there are less resources allocated and process of clustering (often most importantly the speed o it) is dependent on
+external assistance. In Kubernetes environment, such assistant is most often an [H2O Operator](https://github.com/h2oai/h2o-kubernetes).
+Assisted clustering itself is not restricte to Kubernetes - it is a generic mechanism to be leveraged in any envirnment
+suitable. Details are to be found in the [h2o-clustering](../../../h2o-clustering/README.md) module.
+
+As H2O Operator is tested in its own repository, the test suite uses a separate script `assisted-clustering.py` deployed
+inside the Kubernetes cluster in a POD. Once the script is ran, it finds H2O pods by given deployment name within given
+namespace. It then collects all ClusterIP addresses (internal Kubernetes IP address) of all H2O pods from given deployment
+and sends these in a form of H2O flatfile to each node. Then verifies each H2O node inside each pod reports the same status.

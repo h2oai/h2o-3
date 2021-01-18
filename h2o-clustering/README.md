@@ -37,4 +37,24 @@ H2O versions.
 
 ## Testing
 
-This module, besides its own test suite, is tested in Kubernetes environment inside the `h2o-k8s` module.
+This module, besides its own test suite, is tested in Kubernetes environment inside the [h2o-k8s](../h2o-k8s/tests/clustering/README.md)
+module.
+
+## Cluster status endpoint
+
+There is an endpoint for H2O Cluster status provided by this module, located via `GET /cluster/status`. 
+If H2O has not clustered yet, the endpoint `HTTP 204` - No content, according to [RFC-2616](https://tools.ietf.org/html/rfc2616#section-10.2.5).
+Once H2O cluster is formed, this endpoint returns `HTTP 200` with a JSON containing two arrays - a list of healthy nodes and a list of
+unhealthy nodes.
+
+Any node of the cluster can be queried and each will return the same response.
+
+
+Example `curl --location --request GET 'localhost:8080/cluster/status'`:
+
+```json
+{
+"healthy_nodes": ["192.168.0.149:54321"],
+"unhealthy_nodes": []
+}
+```

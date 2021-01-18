@@ -48,21 +48,6 @@ public class H2OClusterStatusEndpointTest {
     @CloudSize(1)
     public static class ClusteredTests {
 
-        private AssistedClusteringRestApi assistedClusteringRestApi;
-        private FlatFileEventConsumer flatFileEventConsumer;
-
-        @Before
-        public void setUp() throws Exception {
-            this.flatFileEventConsumer = new FlatFileEventConsumer();
-            assistedClusteringRestApi = new AssistedClusteringRestApi(this.flatFileEventConsumer);
-            assistedClusteringRestApi.start();
-        }
-
-        @After
-        public void tearDown() {
-            assistedClusteringRestApi.close();
-        }
-
         @Test
         public void testClusterStatusEndpoint() throws Exception {
             final Response response = callClusterStatusEndpoint();
