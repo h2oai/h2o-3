@@ -20,15 +20,15 @@ test.uplift <- function() {
     print("Uplift fit model")
     # fit upliftRF
     modelUplift <- upliftRF(y ~ X1 + X2 + X3 + X4 + X5 + X6 + trt(treat),
-    data = train,
-    split_method = "KL",
-    mtry = 6,
-    ntree = ntrees,
-    #interaction.depth = 10,
-    minsplit = 10,
-    min_bucket_ct0 = 10,
-    min_bucket_ct1 = 10,
-    verbose = TRUE)
+        data = train,
+        split_method = "KL",
+        mtry = 6,
+        ntree = 10,
+        #interaction.depth = 10,
+        minsplit = 10,
+        min_bucket_ct0 = 10,
+        min_bucket_ct1 = 10,
+        verbose = TRUE)
     
     print("Uplift model summary")
     print(summary(modelUplift))
@@ -37,31 +37,26 @@ test.uplift <- function() {
     print("Uplift predict on test data")
     test <- sim_pte(n = 200, p = 20, rho = 0, sigma =  sqrt(2), beta.den = 4)
     test$treat <- ifelse(test$treat == 1, 1, 0)
-    predUplift <- predict(modelUplift, train)
+
+    predUplift <- predict(modelUplift, test)
+    print(head(predUplift))
+
+    #print("Uplift performance")
+    #perf <- performance(predUplift[, 1], predUplift[, 2], test$y, test$treat, direction = 1)
+    #print(perf)
+    #plot(perf[, 8] ~ perf[, 1], type ="l", xlab = "Decile", ylab = "uplift")
 
     # fit h2o RF
-    print("Train h2o uplift model")
-    trainH2o <- train
-    trainH2o$treat <- as.factor(train$treat)
-    trainH2o$y <- as.factor(train$y)
-    trainH2o <- as.h2o(trainH2o)
-
-    modelH2o <- h2o.upliftRandomForest(
-    x = c("X1", "X2", "X3", "X4", "X5", "X6"), y = "y",
-    training_frame = trainH2o,
-    uplift_column = "treat",
-    uplift_metric = "KL",
-    auuc_type = "qini",
-    distribution = "bernoulli",
-    gainslift_bins = 10,
-    ntrees = ntrees,
-    max_depth = 10,
-    min_rows = 10,
-    nbins = 100,
-    seed = 42)
-
-    print(h2o.varimp(modelH2o))
-    print(modelH2o)
+    trainH2o <- as.h2o(train)
+    modelH2o <- h2o.randomForest(x = c("X1", "X2", "X3", "X4", "X5", "X6"), y = "y",
+        training_frame = trainH2o,
+        uplift_column = "treat",
+        uplift_metric = "KL",
+        ntrees = 10,
+        max_depth = 10,
+        min_rows = 10,
+        nbins = 100,
+        seed = 42)
 
     # predict upliftRF on new data for treatment group
     print("H2O uplift predict on test data")
