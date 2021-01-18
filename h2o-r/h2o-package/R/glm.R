@@ -17,6 +17,8 @@
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
+#' @param checkpoint Model checkpoint to resume training with.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
@@ -103,7 +105,6 @@
 #' @param interactions A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
 #' @param interaction_pairs A list of pairwise (first order) column interactions.
 #' @param obj_reg Likelihood divider in objective value computation, default is 1/nobs Defaults to -1.
-#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
@@ -174,6 +175,8 @@ h2o.glm <- function(x,
                     model_id = NULL,
                     validation_frame = NULL,
                     nfolds = 0,
+                    checkpoint = NULL,
+                    export_checkpoints_dir = NULL,
                     seed = -1,
                     keep_cross_validation_models = TRUE,
                     keep_cross_validation_predictions = FALSE,
@@ -221,7 +224,6 @@ h2o.glm <- function(x,
                     interactions = NULL,
                     interaction_pairs = NULL,
                     obj_reg = -1,
-                    export_checkpoints_dir = NULL,
                     stopping_rounds = 0,
                     stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                     stopping_tolerance = 0.001,
@@ -277,6 +279,10 @@ h2o.glm <- function(x,
     parms$model_id <- model_id
   if (!missing(validation_frame))
     parms$validation_frame <- validation_frame
+  if (!missing(checkpoint))
+    parms$checkpoint <- checkpoint
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(seed))
     parms$seed <- seed
   if (!missing(keep_cross_validation_models))
@@ -365,8 +371,6 @@ h2o.glm <- function(x,
     parms$interaction_pairs <- interaction_pairs
   if (!missing(obj_reg))
     parms$obj_reg <- obj_reg
-  if (!missing(export_checkpoints_dir))
-    parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(stopping_rounds))
     parms$stopping_rounds <- stopping_rounds
   if (!missing(stopping_metric))
@@ -418,6 +422,8 @@ h2o.glm <- function(x,
                                     training_frame,
                                     validation_frame = NULL,
                                     nfolds = 0,
+                                    checkpoint = NULL,
+                                    export_checkpoints_dir = NULL,
                                     seed = -1,
                                     keep_cross_validation_models = TRUE,
                                     keep_cross_validation_predictions = FALSE,
@@ -465,7 +471,6 @@ h2o.glm <- function(x,
                                     interactions = NULL,
                                     interaction_pairs = NULL,
                                     obj_reg = -1,
-                                    export_checkpoints_dir = NULL,
                                     stopping_rounds = 0,
                                     stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                                     stopping_tolerance = 0.001,
@@ -526,6 +531,10 @@ h2o.glm <- function(x,
 
   if (!missing(validation_frame))
     parms$validation_frame <- validation_frame
+  if (!missing(checkpoint))
+    parms$checkpoint <- checkpoint
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(seed))
     parms$seed <- seed
   if (!missing(keep_cross_validation_models))
@@ -614,8 +623,6 @@ h2o.glm <- function(x,
     parms$interaction_pairs <- interaction_pairs
   if (!missing(obj_reg))
     parms$obj_reg <- obj_reg
-  if (!missing(export_checkpoints_dir))
-    parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(stopping_rounds))
     parms$stopping_rounds <- stopping_rounds
   if (!missing(stopping_metric))

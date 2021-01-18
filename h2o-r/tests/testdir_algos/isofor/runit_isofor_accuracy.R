@@ -31,7 +31,7 @@ test.IsolationForest.accuracy <- function() {
     # rate of outlier misclassification should be low
     cm <- h2o.confusionMatrix(glm_model)
     print(cm)
-    expect_equal(cm["YES", "Error"], 0.10, tolerance = .10, scale = 1)
+    expect_equal(cm["YES", "Error"], 0.10, tolerance = .15, scale = 1)
 }
 
 doTest("IsolationForest: Test Accuracy", test.IsolationForest.accuracy)
