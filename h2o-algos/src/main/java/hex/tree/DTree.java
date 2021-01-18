@@ -896,19 +896,20 @@ public class DTree extends Iced {
     double[] resploTreat = null;
     double[] numloContr = null;
     double[] resploContr = null;
-    if(useUplift){
-      resploTreat = MemoryManager.malloc8d(nbins+1);
-      numloTreat = MemoryManager.malloc8d(nbins+1);
-      resploContr = MemoryManager.malloc8d(nbins+1);
-      numloContr = MemoryManager.malloc8d(nbins+1);
+    if(useUplift) {
+      numloTreat = MemoryManager.malloc8d(nbins + 1);
+      resploTreat = MemoryManager.malloc8d(nbins + 1);
+      numloContr = MemoryManager.malloc8d(nbins + 1);
+      resploContr = MemoryManager.malloc8d(nbins + 1);
     }
-    for( int b=1; b<=nbins; b++ ) {
-      int id = vals_dim*(b-1);
-      double n0 =   wlo[b-1], n1 = vals[id+0];
+      
+    for( int b = 1; b <= nbins; b++ ) {
+      int id = vals_dim * (b - 1);
+      double n0 = wlo[b - 1], n1 = vals[id + 0];
       if( n0==0 && n1==0 )
         continue;
-      double m0 =  wYlo[b-1], m1 = vals[id+1];
-      double s0 = wYYlo[b-1], s1 = vals[id+2];
+      double m0 =  wYlo[b - 1], m1 = vals[id + 1];
+      double s0 = wYYlo[b - 1], s1 = vals[id + 2];
       wlo[b] = n0+n1;
       wYlo[b] = m0+m1;
       wYYlo[b] = s0+s1;
@@ -927,6 +928,7 @@ public class DTree extends Iced {
         }
       }
       if(useUplift){
+        id = valsUpliftDim * (b - 1);
         double nt0 = numloTreat[b - 1], nt1 = valsUplift[id];
         numloTreat[b] = nt0 + nt1;
         double dt0 = resploTreat[b - 1], dt1 = valsUplift[id + 1];
@@ -977,7 +979,7 @@ public class DTree extends Iced {
       resphiContr = MemoryManager.malloc8d(nbins+1);
     }
     for( int b = nbins-1; b >= 0; b-- ) {
-      int id = vals_dim*b;
+      int id = vals_dim * b;
       double n0 = whi[b+1], n1 = vals[id];
       if( n0==0 && n1==0 )
         continue;
@@ -1001,6 +1003,7 @@ public class DTree extends Iced {
         }
       }
       if(useUplift){
+        id = valsUpliftDim * b;
         double nt0 = numhiTreat[b + 1], nt1 = valsUplift[id];
         numhiTreat[b] = nt0 + nt1;
         double dt0 = resphiTreat[b + 1], dt1 = valsUplift[id + 1];
@@ -1052,10 +1055,10 @@ public class DTree extends Iced {
       nCT1 = numhiTreat[0];
       nCT0 = numhiContr[0];
       prCT1 = (nCT1 + 1)/(nCT0 + nCT1 + 2);
-      prCT0 = 1-prCT1;
+      prCT0 = 1 - prCT1;
       prY1CT1 = resphiTreat[0]/nCT1;
       prY1CT0 = resphiContr[0]/nCT0;
-      bestUpliftGain = upliftMetric.node(prY1CT1 , prY1CT0) / upliftMetric.norm(prCT1, prCT0, 1, 1);
+      bestUpliftGain = upliftMetric.node(prY1CT1 , prY1CT0); // normalization here?
     }
     // if there are any NAs, then try to split them from the non-NAs
     if (wNA>=min_rows) {
@@ -1101,10 +1104,10 @@ public class DTree extends Iced {
     // splits first.
     int best=0;                         // The no-split
     byte equal=0;                       // Ranged check
-    for( int b=1; b<=nbins-1; b++ ) {
+    for( int b = 1; b <= nbins-1; b++ ) {
       if( vals[vals_dim*b] == 0 ) continue; // Ignore empty splits
-      if( wlo[b]+wNA < min_rows ) continue;
-      if( whi[b]+wNA < min_rows ) break; // w1 shrinks at the higher bin#s, so if it fails once it fails always
+      if( wlo[b] + wNA < min_rows ) continue;
+      if( whi[b] + wNA < min_rows ) break; // w1 shrinks at the higher bin#s, so if it fails once it fails always
       // We're making an unbiased estimator, so that MSE==Var.
       // Then Squared Error = MSE*N = Var*N
       //                    = (wYY/N - wY^2)*N
@@ -1121,8 +1124,8 @@ public class DTree extends Iced {
         if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
         boolean condition;
         if(useUplift){
-          nCT1 = numhiTreat[0];
-          nCT0 = numhiContr[0];
+          nCT1 = numhiTreat[b];
+          nCT0 = numhiContr[b];
           prCT1 = (nCT1 + 1)/(nCT0 + nCT1 + 2);
           prCT0 = 1-prCT1;
           double prLCT1 = (numloTreat[b] + 1)/(numloTreat[b] + numhiTreat[b] + 2);
@@ -1194,8 +1197,8 @@ public class DTree extends Iced {
           if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
           boolean condition;
           if(useUplift){
-            nCT1 = numhiTreat[0] + numTreatNA;
-            nCT0 = numhiContr[0] + numContrNA;
+            nCT1 = numhiTreat[b] + numTreatNA;
+            nCT0 = numhiContr[b] + numContrNA;
             prCT1 = (nCT1 + 1)/(nCT0 + nCT1 + 2);
             prCT0 = 1-prCT1;
             double prLCT1 = (numloTreat[b] + numTreatNA + 1)/(numloTreat[b] + numTreatNA + numhiTreat[b] + 2);
@@ -1294,8 +1297,6 @@ public class DTree extends Iced {
               if(constraint != 0 && dist._family.equals(DistributionFamily.quantile)) {
                 int quantileBinLeft = 0;
                 int quantileBinRight = 0;
-                double ratio = 1;
-                double delta = 1;
                 for (int bin = 1; bin <= nbins; bin++) {
                   // left tree prediction quantile
                   if (bin <= b) {
