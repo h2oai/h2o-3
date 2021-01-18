@@ -1,39 +1,28 @@
-package hex.gam;
+package hex.gam.CVScore;
 
 import hex.DMatrix;
 import hex.DataInfo;
+import hex.gam.GAM;
+import hex.gam.GAMModel;
 import hex.glm.ComputationState;
 import hex.glm.GLMModel;
 import hex.glm.GLMTask;
 import hex.gram.Gram;
 import hex.util.LinearAlgebraUtils;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
-
 import java.util.ArrayList;
 
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 import static hex.glm.GLMUtils.extractAdaptedFrameIndices;
 
-/***
- * Here I am going to test the following:
- * - model matrix formation with centering
- */
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-
-public class GamCVLambdaTest extends TestUtil{
-    
+public class CVScoreGenerator extends TestUtil {
     public float getCVScore(double scale){
         float vg = 0.0f;
         try {
@@ -101,16 +90,13 @@ public class GamCVLambdaTest extends TestUtil{
             return vg;
         }
     }
-    
-    @Test
-    public void test() {
-//        [1e-5, 0.0001, 0.001, 0.01, 0.1, 1, 10, 1e2, 1e3, 1e4]
-        float[] cvScores = new float[10];
-        float[] scale = new float[]{1e-5f, 0.0001f, 0.001f, 0.01f, 0.1f, 1, 10, 1e2f, 1e3f, 1e4f};
+
+    public float[] test(float[] scale) {
+        float[] cvScores = new float[scale.length];
         for(int i = 0; i < scale.length; i++) {
             cvScores[i] = getCVScore(scale[i]);
         }
-        System.out.println();
+        return cvScores;
     }
 
     public ComputationState.GramXY computeNewGram(int [][] _gamBetaIndices, double[][][] _penaltyMatrix, ComputationState state, GLMModel.GLMParameters _parms, DataInfo activeData, double [] beta, GLMModel.GLMParameters.Solver s){
