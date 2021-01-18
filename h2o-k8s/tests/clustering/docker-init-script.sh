@@ -38,7 +38,6 @@ kubectl describe pods
 timeout 120s bash h2o-cluster-check.sh
 export ASSISTED_EXIT_CODE=$?
 kubectl get pods
-rm $H2O_BASE/h2o-clustering/build/libs/h2o-clustering.jar
 
 k3d delete
 export EXIT_STATUS=$(if [ "$CLUSTER_EXIT_CODE" -eq 1 ] || [ "$ASSISTED_EXIT_CODE" -eq 1 ]; then echo 1; else echo 0; fi)
