@@ -12,7 +12,7 @@ import java.util.TreeMap;
  */
 public class HyperParameters extends Iced<HyperParameters> {
 
-    private volatile Map<String, Object[]> values;
+    private transient Map<String, Object[]> values;
 
     public HyperParameters(Map<String, Object[]> values) {
         this.values = values;

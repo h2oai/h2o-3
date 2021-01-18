@@ -70,7 +70,7 @@ public class GridSearchHandler<G extends Grid<MP>,
         grid.getHyperParams(),
         new DefaultModelParametersBuilderFactory<MP, P>(),
         grid.getSearchCriteria(),
-        null, 
+        null,
         grid.getParallelism()
     );
     gss.hyper_parameters = null;
