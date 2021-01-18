@@ -43,7 +43,7 @@ public class H2OClusterStatusEndpoint extends RouterNanoHTTPD.DefaultHandler {
      * No external libraries are used, as those would make this independent embedded config heavier.
      * No transitive dependencies from h2o-core module are used, as that would create an indirect dependency
      * and prevent future upgrades on API level.
-     * 
+     * <p>
      * Example output:
      * {
      * "healthy_nodes": ["192.168.0.149:54321"],
@@ -83,9 +83,11 @@ public class H2OClusterStatusEndpoint extends RouterNanoHTTPD.DefaultHandler {
         }
 
         return String.format("{\n" +
+                        "\"leader_node\": \"%s\",\n" +
                         "\"healthy_nodes\": [%s],\n" +
                         "\"unhealthy_nodes\": [%s]\n" +
-                        "}", healthyNodesStringArray.toString(),
+                        "}", H2O.CLOUD.leader().getIpPortString(),
+                healthyNodesStringArray.toString(),
                 unhealthyNodesStringArray.toString());
     }
 }

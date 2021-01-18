@@ -54,7 +54,8 @@ Example `curl --location --request GET 'localhost:8080/cluster/status'`:
 
 ```json
 {
-"healthy_nodes": ["192.168.0.149:54321"],
-"unhealthy_nodes": []
+  "leader_node": "192.168.0.149:54321",
+  "healthy_nodes": ["192.168.0.149:54321"],
+  "unhealthy_nodes": []
 }
 ```

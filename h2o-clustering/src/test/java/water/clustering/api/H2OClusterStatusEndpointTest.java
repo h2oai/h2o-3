@@ -53,7 +53,7 @@ public class H2OClusterStatusEndpointTest {
             final Response response = callClusterStatusEndpoint();
             assertEquals(200, response.responseCode);
             assertTrue(response.responseBody.contains("\"unhealthy_nodes\": []"));
-            assertTrue(response.responseBody.matches("\\{\n\"healthy_nodes\": \\[\"\\d{1,4}\\.\\d{1,4}\\.\\d{1,4}\\.\\d{1,4}:\\d{1,5}\"\\],\n\"unhealthy_nodes\": \\[\\]\n\\}"));
+            assertTrue(response.responseBody.matches("\\{\n\"leader_node\": \"\\d{1,4}\\.\\d{1,4}\\.\\d{1,4}\\.\\d{1,4}:\\d{1,5}\",\n\"healthy_nodes\": \\[\"\\d{1,4}\\.\\d{1,4}\\.\\d{1,4}\\.\\d{1,4}:\\d{1,5}\"\\],\n\"unhealthy_nodes\": \\[\\]\n\\}"));
         }
 
     }
