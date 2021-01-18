@@ -32,7 +32,16 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     final String _strata_column = "__strata";
     public String[] _stratify_by;
 
-    public enum CoxPHTies { efron, breslow }
+    /**
+     * True if model scoring should not be performed during the computation.
+     * This setting is mainly to support tests scenarios with {@link #_single_node_mode} set
+     * to true.
+     * 
+     * If true, no {@link CoxPHOutput#_training_metrics} is not computed and it's null.
+     */
+    boolean _skip_scoring = false;
+    
+    public enum CoxPHTies { efron, breslow;}
 
     public CoxPHTies _ties = CoxPHTies.efron;
 
@@ -48,6 +57,12 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
     public boolean _calc_cumhaz = true; // support survfit
 
+    /**
+     * If true, computation is performed with jobs that
+     * 
+     * Thus setting effects the main CoxPH computation only. Model metrics computation doesn't honour this setting - 
+     * {@link ModelMetricsRegressionCoxPH#concordance()} computation ignores it.
+     */
     public boolean _single_node_mode = false;
 
     String[] responseCols() {

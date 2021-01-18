@@ -1,5 +1,7 @@
 package hex.coxph;
 
+import hex.ModelMetricsBinomial;
+import hex.ModelMetricsRegressionCoxPH;
 import hex.StringPair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,6 +52,13 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       assertEquals(model._output._total_event,    75);
       assertEquals(model._output._wald_test,      4.6343882547245,      1e-8);
       assertEquals(model._output._var_cumhaz_2_matrix.rows(), 110);
+
+      ModelMetricsRegressionCoxPH mm = (ModelMetricsRegressionCoxPH) model._output._training_metrics;
+      assertNotNull(mm);
+      
+      //TODO better assertions
+      
+
     } finally {
       Scope.exit();
     }
@@ -264,6 +273,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       parms._response_column = "event";
       parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant"};
       parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
+      parms._skip_scoring = true;
       assertEquals("Surv(start, stop, event) ~ age", parms.toFormula(fr));
 
       System.setProperty("sys.ai.h2o.debug.checkRunLocal", Boolean.TRUE.toString());

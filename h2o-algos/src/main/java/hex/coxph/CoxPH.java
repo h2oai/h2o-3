@@ -579,6 +579,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         // The model to be built
         CoxPHModel.CoxPHOutput output = new CoxPHModel.CoxPHOutput(CoxPH.this, dinfo._adaptedFrame, train(), strataMap);
         model = new CoxPHModel(_result, _parms, output);
+        model.setInputParms(_input_parms);
         model.delete_and_lock(_job);
 
         initStats(model, dinfo, time);
@@ -615,7 +616,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           final double newLoglik = calcLoglik(dinfo, cs, _parms, coxMR)._logLik;
           Log.info("LogLik: iter=" + i + ", time=" + loglikTimer.toString() + ", logLig=" + newLoglik);
           model._output._scoring_history = sc.addIterationScore(i, newLoglik).to2dTable(i+1);
-
+          
           if (newLoglik > logLik) {
             if (i == 0)
               calcCounts(model, coxMR);
@@ -660,6 +661,13 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         if (iterTimer != null) {
           Log.info("CoxPH Last Iteration: " + iterTimer.toString());
         }
+       
+        if (!_parms._skip_scoring) {
+          model.update(_job);
+          model.score(_parms.train()).delete();
+          model._output._training_metrics = ModelMetrics.getFromDKV(model, _parms.train());
+        }
+        
         model.update(_job);
       } finally {
         if (model != null) model.unlock(_job);
