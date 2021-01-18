@@ -1,5 +1,6 @@
 package hex.coxph;
 
+import hex.ModelMetricsRegressionCoxPH;
 import hex.StringPair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,6 +51,12 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       assertEquals(model._output._total_event,    75);
       assertEquals(model._output._wald_test,      4.6343882547245,      1e-8);
       assertEquals(model._output._var_cumhaz_2_matrix.rows(), 110);
+
+      final ModelMetricsRegressionCoxPH mm = (ModelMetricsRegressionCoxPH) model._output._training_metrics;
+      assertEquals(0.5806350696073831, mm.concordance(), 0.00001d);
+      assertEquals(2676, mm.discordant());
+      assertEquals(10, mm.tiedY());
+      
     } finally {
       Scope.exit();
     }
@@ -77,6 +84,11 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       assertNotNull(model);
       final Frame linearPredictors = Scope.track(model.score(fr));
       assertEquals(fr.numRows(), linearPredictors.numRows());
+
+      final ModelMetricsRegressionCoxPH mm = (ModelMetricsRegressionCoxPH) model._output._training_metrics;
+      assertEquals(0.5806350696073831, mm.concordance(), 0.00001d);
+      assertEquals(2676, mm.discordant());
+      assertEquals(10, mm.tiedY());
     } finally {
       Scope.exit();
     }
@@ -264,12 +276,18 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       parms._response_column = "event";
       parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant"};
       parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
+      
+      // Concordance computation can't support single node so it's disabled for this test
+      System.setProperty("sys.ai.h2o.debug.skipScoring", Boolean.TRUE.toString());
+      System.setProperty("sys.ai.h2o.debug.checkRunLocal", Boolean.TRUE.toString());
+
       assertEquals("Surv(start, stop, event) ~ age", parms.toFormula(fr));
 
-      System.setProperty("sys.ai.h2o.debug.checkRunLocal", Boolean.TRUE.toString());
       parms._single_node_mode = true;
       CoxPH builder = new CoxPH(parms);
-      CoxPHModel model = builder.trainModel().get();
+      CoxPHModel model = builder
+              .trainModel()
+              .get();
       Scope.track_generic(model);
 
       assertEquals(model._output._coef[0],        0.0307077486571334,   1e-8);
@@ -284,6 +302,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       assertEquals(model._output._wald_test,      4.6343882547245,      1e-8);
       assertEquals(model._output._var_cumhaz_2_matrix.rows(), 110);
     } finally {
+      System.setProperty("sys.ai.h2o.debug.skipScoring", Boolean.FALSE.toString());
       System.setProperty("sys.ai.h2o.debug.checkRunLocal", Boolean.FALSE.toString());
       Scope.exit();
     }

@@ -107,10 +107,12 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       if (_parms._interaction_pairs != null) {
         for (StringPair pair : _parms._interaction_pairs) {
           if (pair._a != null && !pair._a.isEmpty() && _train.vec(pair._a) == null) {
-            error("interaction_pairs", pair._a + " not found in the training frame");
+            error("interaction_pairs", pair._a + " not found in the training frame with columns" 
+                    + Arrays.toString(_train.names()));
           }
           if (pair._b != null && !pair._b.isEmpty() && _train.vec(pair._b) == null) {
-            error("interaction_pairs", pair._b + " not found in the training frame");
+            error("interaction_pairs", pair._b + " not found in the training frame with columns"
+                    + Arrays.toString(_train.names()));
           }
         }
       }
@@ -615,7 +617,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           final double newLoglik = calcLoglik(dinfo, cs, _parms, coxMR)._logLik;
           Log.info("LogLik: iter=" + i + ", time=" + loglikTimer.toString() + ", logLig=" + newLoglik);
           model._output._scoring_history = sc.addIterationScore(i, newLoglik).to2dTable(i+1);
-
+          
           if (newLoglik > logLik) {
             if (i == 0)
               calcCounts(model, coxMR);
@@ -660,6 +662,15 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         if (iterTimer != null) {
           Log.info("CoxPH Last Iteration: " + iterTimer.toString());
         }
+        
+        final boolean _skip_scoring = H2O.getSysBoolProperty("debug.skipScoring", false); 
+        
+        if (!_skip_scoring) {
+          model.update(_job);
+          model.score(_parms.train()).delete();
+          model._output._training_metrics = ModelMetrics.getFromDKV(model, _parms.train());
+        }
+        
         model.update(_job);
       } finally {
         if (model != null) model.unlock(_job);
