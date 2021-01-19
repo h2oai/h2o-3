@@ -10,7 +10,7 @@ import java.util.zip.GZIPOutputStream;
 
 public class CompressionFactory extends Iced<CompressionFactory> {
 
-  private String _name;
+  private final String _name;
 
   private CompressionFactory(String name) {
     _name = name;
@@ -54,6 +54,10 @@ public class CompressionFactory extends Iced<CompressionFactory> {
     CompressionFactory cf = new CompressionFactory(name);
     cf.checkAvailability();
     return cf;
+  }
+
+  public String getName() {
+    return _name;
   }
 
 }

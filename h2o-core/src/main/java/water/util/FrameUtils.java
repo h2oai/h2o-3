@@ -364,11 +364,12 @@ public class FrameUtils {
         _nParts = _frame.anyVec().nChunks();
         int processed = 0;
         String compression = H2O.getSysProperty("export.csv.cache.compression", "none");
-        Log.info("Using `" + compression + "` for interim CSV export files.");
         CompressionFactory compressor = CompressionFactory.make(compression);
         DecompressionFactory decompressor = DecompressionFactory.make(compression);
         String cacheStorage = H2O.getSysProperty("export.csv.cache.storage", "memory");
         CsvChunkCache cache = "memory".equals(cacheStorage) ? new DkvCsvChunkCache() : new FileSystemCsvChunkCache();
+        Log.info("Using compression=`" + compressor.getName() + 
+                "` and cache=`" + cache.getName() + "` for interim partial CSV export files.");
         ChunkExportTask chunkExportTask = cache.makeExportTask(_frame, _csv_parms, compressor);
         H2O.submitTask(new LocalMR(chunkExportTask, H2O.NUMCPUS));
         try (FileOutputStream os = new FileOutputStream(_path)) {
@@ -413,12 +414,19 @@ public class FrameUtils {
     }
 
     private interface CsvChunkCache {
+      String getName();
       ChunkExportTask makeExportTask(Frame f, Frame.CSVStreamParams csvParams, CompressionFactory compressor);
       InputStream getChunkCsvStream(ChunkExportTask task, int cid) throws IOException;
       void releaseCache(ChunkExportTask task, int cid);
     } 
     
     private class FileSystemCsvChunkCache implements CsvChunkCache {
+
+      @Override
+      public String getName() {
+        return "FileSystem";
+      }
+
       @Override
       public ChunkExportTask makeExportTask(Frame f, Frame.CSVStreamParams csvParams, CompressionFactory compressor) {
         return new ChunkExportTask(f, f._names, csvParams, compressor);
@@ -444,6 +452,11 @@ public class FrameUtils {
 
       public DkvCsvChunkCache() {
         _vecKey = Vec.newKey();
+      }
+
+      @Override
+      public String getName() {
+        return "DKV";
       }
 
       @Override

@@ -40,6 +40,9 @@ public class FramesV3 extends RequestSchemaV3<Frames, FramesV3> {
   @API(help="Number of part files to use (1=single file,-1=automatic)",json=false)
   public int num_parts = 1;
 
+  @API(help="Use parallel export to a single file (doesn't apply when num_parts != 1, creates temporary files in the destination directory)",json=false)
+  public boolean parallel;
+
   @API(help="Compression method (default none; gzip, bzip2 and snappy available depending on runtime environment)")
   public String compression;
 

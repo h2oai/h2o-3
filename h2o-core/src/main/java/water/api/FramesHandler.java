@@ -248,7 +248,8 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
             .setSeparator(s.separator)
             .setHeaders(s.header)
             .setQuoteColumnNames(s.quote_header);
-    s.job = new JobV3(Frame.export(fr, s.path, s.frame_id.key().toString(), s.force, s.num_parts, s.compression, csvParms));
+    s.job = new JobV3(Frame.export(fr, s.path, s.frame_id.key().toString(),
+            s.force, s.num_parts, s.parallel, s.compression, csvParms));
     return s;
   }
 
