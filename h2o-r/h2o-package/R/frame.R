@@ -2940,7 +2940,7 @@ cor <- function (x, ...)
 #'
 #' @param frame An H2OFrame object to drop duplicates on.
 #' @param columns Columns to compare during the duplicate detection process.
-#' @param keep Which rows to keep. The "first" value (default) keeps the first row and delets the rest. 
+#' @param keep Which rows to keep. The "first" value (default) keeps the first row and deletes the rest. 
 #' The "last" keeps the last row.
 #' @examples
 #' \dontrun{
