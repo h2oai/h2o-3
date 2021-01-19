@@ -1727,6 +1727,7 @@ public class Frame extends Lockable<Frame> {
 
     byte[] getBytesForRow() {
       StringBuilder sb = new StringBuilder();
+      final BufferedString unescapedTempStr = new BufferedString();
       for (int i = 0; i < _curChks.length; i++) {
         Vec v = _curChks[i]._vec;
         if (i > 0) sb.append(_parms._separator);
@@ -1737,7 +1738,6 @@ public class Frame extends Lockable<Frame> {
           } else if (v.isUUID()) sb.append(PrettyPrint.UUID(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
           else if (v.isInt()) sb.append(_curChks[i].at8(_chkRow));
           else if (v.isString()) {
-            final BufferedString unescapedTempStr = new BufferedString();
             final String escapedString = escapeQuotesForCsv(_curChks[i].atStr(unescapedTempStr, _chkRow).toString());
             sb.append('"').append(escapedString).append('"');
           } else {
