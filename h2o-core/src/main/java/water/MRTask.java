@@ -380,14 +380,75 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   protected T self() { return (T)this; }
 
   /** 
-   * Invokes the map/reduce computation over the given Vecs. This call is
-   * blocking. 
+   * Invokes the map/reduce computation over the given {@link Vec}s. This call is
+   * blocking.
+   * 
+   * @param vecs Perform the computation over this vectors. They can be possibly mutated as side-effect.
+   *             
+   * @return this
    */
-  public final T doAll( Vec... vecs ) { return doAll(null,vecs); }
-  public final T doAll(byte[] types, Vec... vecs ) { return doAll(types,new Frame(vecs), false); }
-  public final T doAll(byte type, Vec... vecs ) { return doAll(new byte[]{type},new Frame(vecs), false); }
-  public final T doAll( Vec vec, boolean run_local ) { return doAll(null,vec, run_local); }
-  public final T doAll(byte[] types, Vec vec, boolean run_local ) { return doAll(types,new Frame(vec), run_local); }
+  public final T doAll( Vec... vecs) {
+    return doAll(null,vecs);
+  }
+  
+  /**
+   * Invokes the map/reduce computation over the given {@link Vec}s. This call is
+   * blocking.
+   * 
+   * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   *
+   * @param vecs Perform the computation over this vectors. They can be possibly mutated as side-effect.
+   *
+   * @return this
+   */ 
+  public final T doAll(byte[] outputTypes, Vec... vecs) { 
+    return doAll(outputTypes, new Frame(vecs),  false); 
+  }
+
+  /**
+   * Invokes the map/reduce computation over the given {@link Vec}s. This call is
+   * blocking.
+   *
+   * @param outputType The type of output Vec instance to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   *
+   * @param vecs Perform the computation over this vectors. They can be possibly mutated as side-effect.
+   *
+   * @return this
+   */
+  public final T doAll(byte outputType, Vec... vecs) { 
+    return doAll(new byte[]{outputType}, new Frame(vecs),  false); 
+  }
+
+  /**
+   * Invokes the map/reduce computation over the given {@link Vec}. This call is blocking.
+   *    
+   * @param vec Perform the computation over this vector. It can be possibly mutated as side-effect.
+   *            
+   * @param runLocal Run locally by copying data, or run across the cluster?
+   * 
+   * @return this
+   */ 
+  public final T doAll(Vec vec, boolean runLocal) {
+    return doAll(null, vec, runLocal); 
+  }
+  
+  /**
+   * Invokes the map/reduce computation over the given {@link Vec}. This call is blocking.
+   * 
+   * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   * 
+   * @param vec Perform the computation over this vector. It can be possibly mutated as side-effect.
+   *
+   * @param runLocal Run locally by copying data, or run across the cluster?
+   *
+   * @return this
+   */
+  public final T doAll(byte[] outputTypes, Vec vec, boolean runLocal) { 
+    return doAll(outputTypes, new Frame(vec), runLocal);
+  }
 
   /** 
    * Invokes the map/reduce computation over the given Frame. This call is
@@ -459,7 +520,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * @return this
    */
   public final T doAll(byte[] outputTypes, Frame fr, boolean runLocal) {
-    dfork(outputTypes,fr, runLocal);
+    dfork(outputTypes, fr, runLocal);
     return getResult();
   }
 
@@ -467,7 +528,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * Invokes the map/reduce computation over the given Frame.  This call is
    * blocking. 
    * 
-   * @param numverOfOutputs Number of output vectors for the computation. All of them will have the same type.
+   * @param numberOfOutputs Number of output vectors for the computation. All of them will have the same type.
    *
    * @param outputType The type of all the output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
    *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
@@ -476,10 +537,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *
    * @return this
    */ 
-  public final T doAll(int numverOfOutputs, byte outputType, Frame fr) {
-    byte[] types = new byte[numverOfOutputs];
+  public final T doAll(int numberOfOutputs, byte outputType, Frame fr) {
+    byte[] types = new byte[numberOfOutputs];
     Arrays.fill(types, outputType);
-    return doAll(types, fr,false);
+    return doAll(types, fr, false);
   }
 
   // Special mode doing 1 map per key.  No frame
