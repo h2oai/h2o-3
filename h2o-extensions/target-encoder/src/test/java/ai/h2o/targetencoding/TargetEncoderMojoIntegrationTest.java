@@ -278,6 +278,7 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
       teParams._response_column = target;
       teParams._columns_to_encode = new String[][] { 
               new String[] {"sex"},
+              new String[] {"cabin", "embarked"},
               new String[] {"cabin", "embarked", "boat"}
       };
       teParams._noise = 0;
@@ -312,18 +313,20 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
       Frame transformations = Scope.track(teModel.transform(Scope.track(asFrame(row))));
       printOutFrameAsTable(transformations);
       double sexEnc =  transformations.vec("sex_te").at(0);
-      double interactionEnc = transformations.vec("cabin~embarked~boat_te").at(0);
+      double interaction1Enc = transformations.vec("cabin~embarked_te").at(0);
+      double interaction2Enc = transformations.vec("cabin~embarked~boat_te").at(0);
 
       // Let's load model that we just have written and use it for prediction.
       TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFile.getPath());
       EasyPredictModelWrapper teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel);
 
       double[] predictions = teModelWrapper.predictTargetEncoding(asRowData(row)).transformations;
-      assertEquals(2, predictions.length);
+      assertEquals(3, predictions.length);
 
       // Because of the random swap we need to know which index is lower so that we know order of transformations/predictions
       assertEquals(sexEnc, predictions[0], 1e-5);
-      assertEquals(interactionEnc, predictions[1], 1e-5);
+      assertEquals(interaction1Enc, predictions[1], 1e-5);
+      assertEquals(interaction2Enc, predictions[2], 1e-5);
     } finally {
       Scope.exit();
     }

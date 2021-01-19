@@ -5,8 +5,6 @@ import org.junit.runner.RunWith;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
-import java.util.stream.IntStream;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 

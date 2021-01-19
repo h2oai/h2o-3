@@ -79,7 +79,12 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
   static int createFeatureInteraction(Frame fr, String[] colGroup) {
     return createFeatureInteraction(fr, colGroup, null);
   }
-  
+
+  /**
+   * @param interactionDomain the domain of the generated interaction column, if already known, 
+   *                          for example when computing interaction for predictions.
+   * @return the index of the interaction column for the group, or the index of the column if the group has only one.
+   */
   static int createFeatureInteraction(Frame fr, String[] colGroup, String[] interactionDomain) {
     if (colGroup.length == 1) {
       return fr.find(colGroup[0]);

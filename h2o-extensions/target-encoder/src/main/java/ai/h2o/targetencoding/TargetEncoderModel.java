@@ -380,6 +380,10 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
         String columnToEncode = columnsToEncode.toSingle();
         Frame encodings = _output._target_encoding_map.get(columnToEncode);
         
+        // passing the interaction domain obtained during training:
+        // - this ensures that the interaction column will have the same domain as in training (no need to call adaptTo on the new Vec).
+        // - this improves speed when creating the interaction column (no need to extract the domain).
+        // - unseen values/interactions are however represented as NAs in the new column, which is acceptable as TE encodes them in the same way anyway.
         int colIdx = createFeatureInteraction(workingFrame, colGroup, columnsToEncode.toDomain());
         if (colIdx < 0) {
           logger.warn("Column "+columnToEncode+" is missing in frame "+data._key);

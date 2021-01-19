@@ -82,7 +82,7 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
           for (String col: colGroup) {
             if (!validated.contains(col)) {
               Vec vec = train.vec(col);
-              if (vec == null) error("_columns_to_encode", "Column "+col+" from interaction "+Arrays.toString(colGroup)+" is not categorical or is missing in the training frame.");
+              if (vec == null) error("_columns_to_encode", "Column "+col+" from interaction "+Arrays.toString(colGroup)+" is not categorical or is missing from the training frame.");
               else if (!vec.isCategorical()) error("_columns_to_encode", "Column "+col+" from interaction "+Arrays.toString(colGroup)+" must first be converted into categorical to be used by target encoder.");
               validated.add(col);
             }
@@ -112,6 +112,9 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
     for (String[] colGroup: _parms._columns_to_encode) usedColumns.addAll(Arrays.asList(colGroup));
     Set<String> unusedColumns = new HashSet<>(Arrays.asList(_parms.train()._names));
     unusedColumns.removeAll(usedColumns);
+    Set<String> ignoredColumns = _parms._ignored_columns == null ? new HashSet<>() : new HashSet<>(Arrays.asList(_parms._ignored_columns));
+    // ensures consistency when _ignored_columns is provided, `init` will then validate that columns listed in `_columns_to_encode` were not ignored.
+    unusedColumns.addAll(ignoredColumns); 
     _parms._ignored_columns = unusedColumns.toArray(new String[0]);
   }
   

@@ -47,7 +47,7 @@ class InteractionsEncoder extends Iced {
         for (int i = 0; i < interactingValues.length; i++) {
             String[] domain = _interactingDomains[i];
             String val = interactingValues[i];
-            int ival = val==null ? -1 : Arrays.binarySearch(domain, val);
+            int ival = val==null ? -1 : ArrayUtils.find(domain, val);
             if (ival < 0 && val != null) {  //emulates distinction between NA and unseen.
                 values[i] = domain.length; 
             } else {
@@ -86,7 +86,7 @@ class InteractionsEncoder extends Iced {
         long multiplier = 1;
         for (int i = 0; i < _interactingDomains.length; i++) {
             int domainCard = _interactingDomains[i].length;
-            int interactionFactor = _encodeUnseenAsNA ? (domainCard + 1) : (domainCard + 2);  // +1 for potential unseen values, +1 for NAs (see #interactionDomain)
+            int interactionFactor = _encodeUnseenAsNA ? (domainCard + 1) : (domainCard + 2);  // +1 for NAs, +1 for potential unseen values
             factors[i] = multiplier;
             multiplier *= interactionFactor;
         }
