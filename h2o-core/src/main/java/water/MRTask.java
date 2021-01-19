@@ -396,7 +396,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * blocking.
    * 
    * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
-   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
    *
    * @param vecs Perform the computation over this vectors. They can be possibly mutated as side-effect.
    *
@@ -411,7 +411,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * blocking.
    *
    * @param outputType The type of output Vec instance to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
-   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
    *
    * @param vecs Perform the computation over this vectors. They can be possibly mutated as side-effect.
    *
@@ -438,7 +438,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * Invokes the map/reduce computation over the given {@link Vec}. This call is blocking.
    * 
    * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
-   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
    * 
    * @param vec Perform the computation over this vector. It can be possibly mutated as side-effect.
    *
@@ -481,7 +481,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * blocking. The run is performed across the cluster.
    *  
    * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
-   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
    *
    * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect.   
    *
@@ -496,7 +496,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * blocking. The run is performed across the cluster.
    *  
    * @param outputType The type of one output Vec instance to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
-   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
    *
    * @param fr  Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect. 
    *
@@ -511,7 +511,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * blocking. 
    *
    * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
-   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
    *
    * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect. 
    *
@@ -531,7 +531,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * @param numberOfOutputs Number of output vectors for the computation. All of them will have the same type.
    *
    * @param outputType The type of all the output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
-   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
    *
    * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect.   
    *
@@ -602,7 +602,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  for any length.
    *  
    * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
-   *    {@link Vec#T_CAT} and other byte constatnts in {@link Vec} to see possible values.
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
    *
    * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect. 
    * 
