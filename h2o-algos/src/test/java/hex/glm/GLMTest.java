@@ -2288,4 +2288,76 @@ public class GLMTest  extends TestUtil {
       Scope.exit();
     }
   }
+
+  /**
+   * testBounds() from this file adjusted to use AGE as categorical column
+   */
+  @Test
+  public void testBoundsCategoricalCol() {
+    Scope.enter();
+
+    Key parsed = Key.make("prostate_parsed");
+    Key modelKey = Key.make("prostate_model");
+
+    Frame fr = Scope.track(parse_test_file(parsed, "smalldata/logreg/prostate.csv"));
+    fr.toCategoricalCol("AGE");
+    Key betaConsKey = Key.make("beta_constraints");
+
+    FVecFactory.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n AGE, -.5, .5\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5\nGLEASON, -.5, .5");
+    Frame betaConstraints = Scope.track(ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey));
+
+    try {
+      // H2O differs on intercept and race, same residual deviance though
+      GLMParameters params = new GLMParameters();
+      params._standardize = true;
+      params._family = Family.binomial;
+      params._beta_constraints = betaConstraints._key;
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID"};
+      params._train = fr._key;
+      params._objective_epsilon = 0;
+      params._alpha = new double[]{1};
+      params._lambda = new double[]{0.001607};
+      params._obj_reg = 1.0/380;
+      GLM glm = new GLM( params, modelKey);
+      GLMModel model = glm.trainModel().get();
+      Scope.track_generic(model);
+      assertTrue(glm.isStopped());
+      ModelMetricsBinomialGLM val = (ModelMetricsBinomialGLM) model._output._training_metrics;
+      assertEquals(512.2888, val._nullDev, 1e-1);
+      assertTrue(val._resDev <= 388.5);
+      model.delete();
+      params._lambda = new double[]{0};
+      params._alpha = new double[]{0};
+      FVecFactory.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5\n AGE, -.5, .5");
+      betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
+      glm = new GLM( params, modelKey);
+      model = glm.trainModel().get();
+      Scope.track_generic(model);
+      assertTrue(glm.isStopped());
+      double[] beta = model.beta();
+      System.out.println("beta = " + Arrays.toString(beta));
+      fr.add("CAPSULE", fr.remove("CAPSULE"));
+      fr.remove("ID").remove();
+      DKV.put(fr._key, fr);
+      DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
+      GLMGradientTask lt = new GLMBinomialGradientTask(null,dinfo,params,0,beta).doAll(dinfo._adaptedFrame);
+      double [] grad = lt._gradient;
+      String [] names = model.dinfo().coefNames();
+      BufferedString tmpStr = new BufferedString();
+      outer:
+      for (int i = 0; i < names.length; ++i) {
+        for (int j = 0; j < betaConstraints.numRows(); ++j) {
+          if (betaConstraints.vec("names").atStr(tmpStr, j).toString().equals(names[i])) {
+            if (Math.abs(beta[i] - betaConstraints.vec("lower_bounds").at(j)) < 1e-4 || Math.abs(beta[i] - betaConstraints.vec("upper_bounds").at(j)) < 1e-4) {
+              continue outer;
+            }
+          }
+        }
+        assertEquals(0, grad[i], 1e-2);
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
 }

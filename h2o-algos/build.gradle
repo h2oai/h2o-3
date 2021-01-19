@@ -51,7 +51,7 @@ dependencies {
   testCompile project(":h2o-test-support")
   testCompile project(":h2o-genmodel-ext-jgrapht")
   testRuntimeOnly project(":${defaultWebserverModule}")
-  testCompileOnly "javax.servlet:javax.servlet-api:3.0.1"
+  testCompileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

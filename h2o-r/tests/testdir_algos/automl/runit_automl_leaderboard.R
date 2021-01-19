@@ -61,7 +61,7 @@ automl.leaderboard.suite <- function() {
                            project_name = "r_aml_lb_multinomial_test",
                            exclude_algos = exclude_algos)
         aml@leaderboard
-        expect_equal(names(aml@leaderboard),c("model_id", "mean_per_class_error", "logloss", "rmse", "mse"))
+        expect_equal(names(aml@leaderboard),c("model_id", "mean_per_class_error", "logloss", "rmse", "mse", "auc", "aucpr"))
         model_ids <- as.vector(aml@leaderboard$model_id)
         # check that no excluded algos are present in leaderboard
         exclude_algo_count <- sum(sapply(exclude_algos, function(i) sum(grepl(i, model_ids))))
@@ -104,7 +104,7 @@ automl.leaderboard.suite <- function() {
         fr <- as.h2o(iris)
         aml <- h2o.automl(y = 5, training_frame = fr, max_models = 5,
                           project_name = "r_aml_customlb")
-        std_columns <- c("model_id", "mean_per_class_error", "logloss", "rmse", "mse")
+        std_columns <- c("model_id", "mean_per_class_error", "logloss", "rmse", "mse", "auc", "aucpr")
         expect_equal(names(aml@leaderboard), std_columns)
         expect_equal(names(h2o.get_leaderboard(aml)), std_columns)
         expect_equal(names(h2o.get_leaderboard(aml, extra_columns='unknown')), std_columns)

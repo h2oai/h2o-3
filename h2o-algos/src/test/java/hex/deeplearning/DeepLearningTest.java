@@ -2282,7 +2282,7 @@ public class DeepLearningTest extends TestUtil {
         Vec labels = small.vec("C785"); //actual
         String[] fullDomain = train.vec("C785").domain(); //actual
 
-        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(preds, labels, fullDomain);
+        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(preds, labels, fullDomain, MultinomialAucType.NONE);
         Log.info(mm.toString());
       }
     } catch(Throwable t) {
@@ -2329,7 +2329,7 @@ public class DeepLearningTest extends TestUtil {
       Vec labels = train.vec("pclass"); //actual
       String[] fullDomain = train.vec("pclass").domain(); //actual
 
-      ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(preds, labels, fullDomain);
+      ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(preds, labels, fullDomain, MultinomialAucType.NONE);
       Log.info(mm.toString());
     } finally {
       if (model!=null)  model.delete();

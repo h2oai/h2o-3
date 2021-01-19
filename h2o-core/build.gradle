@@ -16,7 +16,7 @@ dependencies {
   compile 'org.javassist:javassist:3.25.0-GA'
   compile "org.apache.commons:commons-math3:3.3"
   compile "commons-io:commons-io:2.4"
-  compileOnly "javax.servlet:javax.servlet-api:3.0.1"
+  compileOnly "javax.servlet:javax.servlet-api:3.1.0"
   compile("com.github.wendykierp:JTransforms:3.1") { exclude module: "junit" }
   compile project(":h2o-jaas-pam")
 
@@ -41,7 +41,7 @@ dependencies {
 
   testCompile project(':h2o-test-support')
   testRuntimeOnly project(":${defaultWebserverModule}")
-  testCompileOnly "javax.servlet:javax.servlet-api:3.0.1"
+  testCompileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

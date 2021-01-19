@@ -356,6 +356,34 @@ public class CsvParserTest extends TestUtil {
       assertEquals("abcde,", outWriter._data[1][0]);
       assertFalse(outWriter.hasErrors());
     }
+
+    /**
+     * Mixed single quote presence - some tokens are enclosed in single quotes, some are not.
+     * Single quotes explicitly enabled.
+     * The single-quoted token has a delimiter inside.
+     */
+    @Test
+    public void testParseSingleQuotesMixed() {
+      ParseSetup parseSetup = new ParseSetup();
+      parseSetup._parse_type = DefaultParserProviders.CSV_INFO;
+      parseSetup._check_header = ParseSetup.NO_HEADER;
+      parseSetup._separator = ',';
+      parseSetup._column_types = new byte[]{Vec.T_STR};
+      parseSetup._column_names = new String[]{"Name"};
+      parseSetup._number_columns = 2;
+      parseSetup._single_quotes = true;
+      parseSetup._nonDataLineMarkers = new byte[0];
+      CsvParser csvParser = new CsvParser(parseSetup, null);
+
+      final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf("C1, C2\n'quo,ted',unquoted"), 0);
+      final PreviewParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+      final PreviewParseWriter outWriter = (PreviewParseWriter) csvParser.parseChunk(0, byteAryData, parseWriter);
+
+      assertEquals(2, outWriter.lineNum());
+      assertEquals("quo,ted", outWriter._data[2][0]);
+      assertEquals("unquoted", outWriter._data[2][1]);
+      assertFalse(outWriter.hasErrors());
+    }
   }
 
 

@@ -22,6 +22,6 @@ def h2o_H2OFrame_all():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_all())
+    pyunit_utils.standalone_test(h2o_H2OFrame_all)
 else:
     h2o_H2OFrame_all()

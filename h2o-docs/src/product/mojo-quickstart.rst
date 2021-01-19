@@ -745,6 +745,18 @@ Example
     mojo_str = h2o.print_mojo(mojo_path)
     mojo_dict = json.loads(mojo_str)
 
+Converting MOJOs to ONNX format
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To convert a H2O MOJO into the ONNX format, use the `onnxmltools <https://github.com/onnx/onnxmltools>`__ python package. Currently, only a subset of H2O MOJOs can be converted to the ONNX format:
+
+- supported algorithms: GBM
+- supports multinomial distribution with 3 or more classes (use binomial otherwise)
+- does not support poisson, gamma, or tweedie distributions
+- does not support models with categorical splits
+
+For examples and further documentation, check the onnxmltools project on `github <https://github.com/onnx/onnxmltools>`__.
+
 FAQ
 ~~~
 

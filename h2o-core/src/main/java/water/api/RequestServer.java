@@ -765,7 +765,8 @@ public class RequestServer extends HttpServlet {
     }
     if (s instanceof StreamingSchema) {
       StreamingSchema ss = (StreamingSchema) s;
-      NanoResponse r = new NanoStreamResponse(http_response_header, MIME_DEFAULT_BINARY, ss.getStreamWriter());
+      StreamWriter sw = ss.getStreamWriter();
+      NanoResponse r = new NanoStreamResponse(http_response_header, MIME_DEFAULT_BINARY, sw);
       // Needed to make file name match class name
       r.addHeader("Content-Disposition", "attachment; filename=\"" + ss.getFilename() + "\"");
       return r;

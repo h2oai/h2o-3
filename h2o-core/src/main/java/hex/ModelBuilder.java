@@ -21,12 +21,6 @@ import java.util.*;
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
 
-  private ModelBuilderListener _modelBuilderListener;
-
-  public void setModelBuilderListener(final ModelBuilderListener modelBuilderListener) {
-    this._modelBuilderListener = modelBuilderListener;
-  }
-
   public ToEigenVec getToEigenVec() { return null; }
   public boolean shouldReorder(Vec v) { return _parms._categorical_encoding.needsResponse() && isSupervised(); }
 
@@ -231,6 +225,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     protected Driver(){ super(); }
     protected Driver(H2O.H2OCountedCompleter completer){ super(completer); }
+    
+    private ModelBuilderListener _callback;
+
+    public void setCallback(ModelBuilderListener callback) {
+      this._callback = callback;
+    }
+
     // Pull the boilerplate out of the computeImpl(), so the algo writer doesn't need to worry about the following:
     // 1) Scope (unless they want to keep data, then they must call Scope.untrack(Key<Vec>[]))
     // 2) Train/Valid frame locking and unlocking
@@ -253,16 +254,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     @Override
     public void onCompletion(CountedCompleter caller) {
       setFinalState();
-      if (_modelBuilderListener != null) {
-        _modelBuilderListener.onModelSuccess(_result.get());
+      if (_callback != null) {
+        _callback.onModelSuccess(_result.get());
       }
     }
 
     @Override
     public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
       setFinalState();
-      if (_modelBuilderListener != null) {
-        _modelBuilderListener.onModelFailure(ex, _parms);
+      if (_callback != null) {
+        _callback.onModelFailure(ex, _parms);
       }
       return true;
     }
@@ -272,8 +273,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     public final void computeParameters() {
       M model = _result.get();
       if (model != null) {
-        //set input parameters
+        model.write_lock(_job);
         model.setInputParms(_input_parms);
+        model.update(_job);
+        model.unlock(_job);
       }
     }
   }
@@ -285,7 +288,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (res != null && res._output != null) {
       res._output._job = _job;
       res._output.stopClock();
-//      res.unlock(_job == null ? null : _job._key, false); // last resort: dirty way to force unlock to be able to reacquire lock
       res.write_lock(_job);
       res.update(_job);
       res.unlock(_job);
@@ -355,37 +357,45 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Method to launch training of a Model, based on its parameters. */
   final public Job<M> trainModel() {
+    return trainModel(null);
+  }
+
+  final public Job<M> trainModel(final ModelBuilderListener callback) {
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     startClock();
-    if( !nFoldCV() )
-      return _job.start(trainModelImpl(), _parms.progressUnits(), _parms._max_runtime_secs);
+    if (!nFoldCV()) {
+      Driver driver = trainModelImpl();
+      driver.setCallback(callback);
+      return _job.start(driver, _parms.progressUnits(), _parms._max_runtime_secs);
+    } else {
+      // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
+      return _job.start(new H2O.H2OCountedCompleter() {
+                          @Override
+                          public void compute2() {
+                            computeCrossValidation();
+                            tryComplete();
+                          }
 
-    // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
-    return _job.start(new H2O.H2OCountedCompleter() {
-                        @Override
-                        public void compute2() {
-                          computeCrossValidation();
-                          tryComplete();
-                          if (_modelBuilderListener != null) {
-                            _modelBuilderListener.onModelSuccess(_job.get());
+                          @Override
+                          public void onCompletion(CountedCompleter caller) {
+                            if (callback != null) callback.onModelSuccess(_result.get());
                           }
-                        }
-                        @Override
-                        public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-                          Log.warn("Model training job "+_job._description+" completed with exception: "+ex);
-                          try {
-                            Keyed.remove(_job._result); //ensure there's no incomplete model left for manipulation after crash or cancellation
-                          } catch (Exception logged) {
-                            Log.warn("Exception thrown when removing result from job "+ _job._description, logged);
+
+                          @Override
+                          public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+                            Log.warn("Model training job " + _job._description + " completed with exception: " + ex);
+                            if (callback != null) callback.onModelFailure(ex, _parms);
+                            try {
+                              Keyed.remove(_job._result); // ensure there's no incomplete model left for manipulation after crash or cancellation
+                            } catch (Exception logged) {
+                              Log.warn("Exception thrown when removing result from job " + _job._description, logged);
+                            }
+                            return true;
                           }
-                          if (_modelBuilderListener != null) {
-                            _modelBuilderListener.onModelFailure(ex, _parms);
-                          }
-                          return true;
-                        }
-                      },
-            (nFoldWork()+1/*main model*/) * _parms.progressUnits(), _parms._max_runtime_secs);
+                        },
+          (nFoldWork() + 1/*main model*/) * _parms.progressUnits(), _parms._max_runtime_secs);
+    }
   }
 
   /**
@@ -1459,11 +1469,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (isClassifier()) {
         if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance && !getClass().getSimpleName().contains("GLM")) {
           error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
-        }
-        if (nclasses()!=2 && (_parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC || _parms._stopping_metric
-                == ScoreKeeper.StoppingMetric.AUCPR)) {
-          error("_stopping_metric", "Stopping metric cannot be AUC or AUCPR for multinomial " +
-                  "classification.");
         }
       } else {
         if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.misclassification ||

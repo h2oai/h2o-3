@@ -67,12 +67,8 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "export_checkpoints_dir",
       "monotone_constraints",
       "check_constant_response",
-      "gainslift_bins"
-//      "use_new_histo_tsk",
-//      "col_block_sz",
-//      "min_threads",
-//      "shared_histo",
-//      "unordered"
+      "gainslift_bins", 
+      "auc_type",
     };
 
     // Input fields

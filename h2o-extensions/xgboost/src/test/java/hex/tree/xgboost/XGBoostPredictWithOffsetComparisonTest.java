@@ -14,6 +14,9 @@ import water.fvec.Vec;
 import java.util.Arrays;
 import java.util.Collection;
 
+import static hex.tree.xgboost.XGBoostPredictImplComparisonTest.getRelDelta;
+import static hex.tree.xgboost.XGBoostPredictImplComparisonTest.usesGpu;
+
 @RunWith(Parameterized.class)
 public class XGBoostPredictWithOffsetComparisonTest extends TestUtil {
 
@@ -86,28 +89,17 @@ public class XGBoostPredictWithOffsetComparisonTest extends TestUtil {
             System.setProperty("sys.ai.h2o.xgboost.predict.native.enable", "false");
             Frame predsJava = Scope.track(model.score(testFrame));
 
-            assertFrameEquals(predsNative, predsJava, 1e-10, getRelDelta(parms));
+            if (usesGpu(parms)) {
+                // for GPU only compare probabilities, actual class labels may be different due to precision
+                // differences
+                predsNative = Scope.track(predsNative.subframe(1, predsNative.numCols()));
+                predsJava = Scope.track(predsJava.subframe(1, predsJava.numCols()));
+            }
+            assertFrameEquals(predsNative, predsJava, 1e-10, getRelDelta(parms, booster));
         } finally {
             System.clearProperty("sys.ai.h2o.xgboost.predict.native.enable");
             Scope.exit();
         }
-    }
-
-    private Double getRelDelta(XGBoostModel.XGBoostParameters parms) {
-        if (usesGpu(parms)) {
-            // train/predict on gpu is non-deterministic
-            return 1e-3;
-        } else if ("gblinear".equals(booster)) {
-            return 1e-6;
-        } else {
-            return null;
-        }
-    }
-
-    private boolean usesGpu(XGBoostModel.XGBoostParameters parms) {
-        return parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu ||
-            (parms._backend == XGBoostModel.XGBoostParameters.Backend.auto &&
-                XGBoost.hasGPU(H2O.CLOUD.members()[0], 0));
     }
 
 }

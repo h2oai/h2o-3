@@ -36,12 +36,25 @@ public abstract class MojoModel extends GenModel {
    * @throws IOException if `file` does not exist, or cannot be read, or does not represent a valid model.
    */
   public static MojoModel load(String file) throws IOException {
+    return load(file, false);
+  }
+
+  /**
+   * Primary factory method for constructing MojoModel instances.
+   *
+   * @param file Name of the zip file (or folder) with the model's data. This should be the data retrieved via
+   *             the `GET /3/Models/{model_id}/mojo` endpoint.
+   * @param readMetadata read additional model metadata (metrics...) if enabled, otherwise skip metadata parsing  
+   * @return New `MojoModel` object.
+   * @throws IOException if `file` does not exist, or cannot be read, or does not represent a valid model.
+   */
+  public static MojoModel load(String file, boolean readMetadata) throws IOException {
     File f = new File(file);
     if (!f.exists())
       throw new FileNotFoundException("File " + file + " cannot be found.");
     MojoReaderBackend cr = f.isDirectory()? new FolderMojoReaderBackend(file)
-                                          : new ZipfileMojoReaderBackend(file);
-    return ModelMojoReader.readFrom(cr);
+            : new ZipfileMojoReaderBackend(file);
+    return ModelMojoReader.readFrom(cr, readMetadata);
   }
 
   /**

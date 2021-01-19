@@ -30,7 +30,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
                    "validation_frame", "response_column", "ignored_columns", "ignore_const_cols",
                    "score_each_iteration", "balance_classes", "class_sampling_factors", "max_after_balance_size",
                    "max_confusion_matrix_size", "laplace", "min_sdev", "eps_sdev", "min_prob", "eps_prob",
-                   "compute_metrics", "max_runtime_secs", "export_checkpoints_dir", "gainslift_bins"}
+                   "compute_metrics", "max_runtime_secs", "export_checkpoints_dir", "gainslift_bins", "auc_type"}
 
     def __init__(self, **kwargs):
         super(H2ONaiveBayesEstimator, self).__init__()
@@ -780,5 +780,21 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     def gainslift_bins(self, gainslift_bins):
         assert_is_type(gainslift_bins, None, int)
         self._parms["gainslift_bins"] = gainslift_bins
+
+
+    @property
+    def auc_type(self):
+        """
+        Set default multinomial AUC type.
+
+        One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``
+        (default: ``"auto"``).
+        """
+        return self._parms.get("auc_type")
+
+    @auc_type.setter
+    def auc_type(self, auc_type):
+        assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
+        self._parms["auc_type"] = auc_type
 
 

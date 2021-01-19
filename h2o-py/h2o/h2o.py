@@ -6,7 +6,6 @@ h2o -- module for using H2O services.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from .utils.compatibility import *  # NOQA
 
 import os
 import subprocess
@@ -41,8 +40,9 @@ from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
 from .job import H2OJob
 from .model.model_base import ModelBase
-from .utils.metaclass import Deprecated as deprecated
+from .utils.compatibility import *  # NOQA
 from .utils.config import H2OConfigReader
+from .utils.metaclass import Deprecated as deprecated
 from .utils.shared_utils import check_frame_id, gen_header, py_tmp_key, quoted
 from .utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 
@@ -354,7 +354,7 @@ def _import_multi(paths, pattern):
 
 
 def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None, skipped_columns=None):
+                na_strings=None, skipped_columns=None, quotechar=None):
     """
     Upload a dataset from the provided local path to the H2O cluster.
 
@@ -384,6 +384,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
+    :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -401,18 +402,20 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    assert_is_type(quotechar, None, U("'", '"'))
     assert (skipped_columns==None) or isinstance(skipped_columns, list), \
         "The skipped_columns should be an list of column names!"
 
     check_frame_id(destination_frame)
     if path.startswith("~"):
         path = os.path.expanduser(path)
-    return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns)
+    return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns,
+                                    quotechar)
 
 
 def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
                 na_strings=None, pattern=None, skipped_columns=None, custom_non_data_line_markers=None,
-                partition_by=None):
+                partition_by=None, quotechar=None):
     """
     Import a dataset that is already on the cluster.
 
@@ -448,9 +451,10 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
     :param pattern: Character string containing a regular expression to match file(s) in the folder if `path` is a
-        directory.
+        directory.  
     :param skipped_columns: an integer list of column indices to skip and not parsed into the final frame from the import file.
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
+    :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -472,6 +476,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
     assert_is_type(partition_by, None, [str], str)
+    assert_is_type(quotechar, None, U("'", '"'))
     assert isinstance(skipped_columns, (type(None), list)), "The skipped_columns should be an list of column names!"
     check_frame_id(destination_frame)
     patharr = path if isinstance(path, list) else [path]
@@ -482,7 +487,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         return lazy_import(path, pattern)
     else:
         return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings,
-                                        skipped_columns, custom_non_data_line_markers, partition_by)
+                                        skipped_columns, custom_non_data_line_markers, partition_by, quotechar)
 
 
 def load_grid(grid_file_path):
@@ -525,12 +530,14 @@ def load_grid(grid_file_path):
     return get_grid(response["name"])
 
 
-def save_grid(grid_directory, grid_id):
+def save_grid(grid_directory, grid_id, export_cross_validation_predictions=False):
     """
     Export a Grid and it's all its models into the given folder
 
     :param grid_directory: A string containing the path to the folder for the grid to be saved to.
-    :param grid_id: A chracter string with identification of the Grid in H2O. 
+    :param grid_id: A character string with identification of the Grid in H2O.
+    :param export_cross_validation_predictions: A boolean flag indicating whether the models exported from the grid 
+        should be saved with CV Holdout Frame predictions. Default is not to export the predictions. 
 
     :examples:
 
@@ -559,7 +566,9 @@ def save_grid(grid_directory, grid_id):
     """
     assert_is_type(grid_directory, str)
     assert_is_type(grid_id, str)
-    api("POST /3/Grid.bin/" + grid_id + "/export", {"grid_directory": grid_directory})
+    assert_is_type(export_cross_validation_predictions, bool)
+    params = {"grid_directory": grid_directory, "export_cross_validation_predictions": export_cross_validation_predictions}
+    api("POST /3/Grid.bin/" + grid_id + "/export", params)
     return grid_directory + "/" + grid_id
 
 def import_hive_table(database=None, table=None, partitions=None, allow_multi_format=False):
@@ -705,7 +714,7 @@ def import_sql_select(connection_url, select_query, username, password, optimize
 
 def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, column_names=None,
                 column_types=None, na_strings=None, skipped_columns=None, custom_non_data_line_markers=None,
-                partition_by=None):
+                partition_by=None, quotechar=None):
     """
     Retrieve H2O's best guess as to what the structure of the data file is.
 
@@ -713,7 +722,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     the data. This method allows a user to perform corrective measures by updating the
     returning dictionary from this method. This dictionary is then fed into `parse_raw` to
     produce the H2OFrame instance.
-
+ 
     :param raw_frames: a collection of imported file frames
     :param destination_frame: The unique hex key assigned to the imported file. If none is given, a key will
         automatically be generated.
@@ -742,6 +751,8 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
+    :param partition_by: A list of columns the dataset has been partitioned by. None by default.
+    :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
 
     :returns: a dictionary containing parse parameters guessed by the H2O backend.
 
@@ -774,13 +785,15 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     assert_is_type(column_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
     assert_is_type(partition_by, None, [str], str)
+    assert_is_type(quotechar, None, U("'", '"'))
     check_frame_id(destination_frame)
 
     # The H2O backend only accepts things that are quoted
     if is_type(raw_frames, str): raw_frames = [raw_frames]
 
     # temporary dictionary just to pass the following information to the parser: header, separator
-    kwargs = {"check_header": header, "source_frames": [quoted(frame_id) for frame_id in raw_frames]}
+    kwargs = {"check_header": header, "source_frames": [quoted(frame_id) for frame_id in raw_frames],
+              "single_quotes": quotechar == "'"}
     if separator:
         kwargs["separator"] = ord(separator)
 
@@ -980,6 +993,29 @@ def deep_copy(data, xid):
     duplicate._ex._cache._id = xid
     duplicate._ex._children = None
     return duplicate
+
+
+def models():
+    """
+    Retrieve the IDs all the Models.
+
+    :returns: Handles of all the models present in the cluster
+
+    :examples:
+
+    >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+    >>> airlines["Year"]= airlines["Year"].asfactor()
+    >>> airlines["Month"]= airlines["Month"].asfactor()
+    >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+    >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+    >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+    >>> model1 = H2OGeneralizedLinearEstimator(family="binomial")
+    >>> model1.train(y=response, training_frame=airlines)
+    >>> model2 = H2OXGBoostEstimator(family="binomial")
+    >>> model2.train(y=response, training_frame=airlines)
+    >>> model_list = h2o.get_models()
+    """
+    return [json["model_id"]["name"] for json in api("GET /3/Models")["models"]]
 
 
 def get_model(model_id):
@@ -1386,7 +1422,7 @@ def download_all_logs(dirname=".", filename=None, container=None):
     return api("GET /3/Logs/download%s" % type, save_to=save_to)
 
 
-def save_model(model, path="", force=False):
+def save_model(model, path="", force=False, export_cross_validation_predictions=False):
     """
     Save an H2O Model object to disk. (Note that ensemble binary models can now be saved using this method.)
     The owner of the file saved is the user by which H2O cluster was executed.
@@ -1394,6 +1430,8 @@ def save_model(model, path="", force=False):
     :param model: The model object to save.
     :param path: a path to save the model at (hdfs, s3, local)
     :param force: if True overwrite destination directory in case it exists, or throw exception if set to False.
+    :param export_cross_validation_predictions: logical, indicates whether the exported model
+        artifact should also include CV Holdout Frame predictions.  Default is not to export the predictions.
 
     :returns: the path of the saved model
 
@@ -1410,17 +1448,21 @@ def save_model(model, path="", force=False):
     assert_is_type(model, ModelBase)
     assert_is_type(path, str)
     assert_is_type(force, bool)
+    assert_is_type(export_cross_validation_predictions, bool)
     path = os.path.join(os.getcwd() if path == "" else path, model.model_id)
-    return api("GET /99/Models.bin/%s" % model.model_id, data={"dir": path, "force": force})["dir"]
+    data = {"dir": path, "force": force, "export_cross_validation_predictions": export_cross_validation_predictions}
+    return api("GET /99/Models.bin/%s" % model.model_id, data=data)["dir"]
 
 
-def download_model(model, path=""):
+def download_model(model, path="", export_cross_validation_predictions=False):
     """
     Download an H2O Model object to the machine this python session is currently connected to.
     The owner of the file saved is the user by which python session was executed.
 
     :param model: The model object to download.
     :param path: a path to the directory where the model should be saved.
+    :param export_cross_validation_predictions: logical, indicates whether the exported model
+        artifact should also include CV Holdout Frame predictions.  Default is not to include the predictions.
 
     :returns: the path of the downloaded model
 
@@ -1432,12 +1474,16 @@ def download_model(model, path=""):
     >>> my_model.train(y = "CAPSULE",
     ...                x = ["AGE", "RACE", "PSA", "GLEASON"],
     ...                training_frame = h2o_df)
-    >>> h2o.download_model(my_model, path='', force=True)
+    >>> h2o.download_model(my_model, path='')
     """
     assert_is_type(model, ModelBase)
     assert_is_type(path, str)
+    assert_is_type(export_cross_validation_predictions, bool)
     path = os.path.join(os.getcwd() if path == "" else path, model.model_id)
-    return api("GET /3/Models.fetch.bin/%s" % model.model_id, save_to=path)
+    return api("GET /3/Models.fetch.bin/%s" % model.model_id,
+               data={"export_cross_validation_predictions": export_cross_validation_predictions}, 
+               save_to=path)
+
 
 def upload_model(path):
     """
@@ -1481,13 +1527,14 @@ def load_model(path):
     return get_model(res["models"][0]["model_id"]["name"])
 
 
-def export_file(frame, path, force=False, sep=",", compression=None, parts=1):
+def export_file(frame, path, force=False, sep=",", compression=None, parts=1, header=True, quote_header=True):
     """
     Export a given H2OFrame to a path on the machine this python session is currently connected to.
 
     :param frame: the Frame to save to disk.
     :param path: the path to the save point on disk.
-    :param force: if True, overwrite any preexisting file with the same path
+    :param force: if True, overwrite any preexisting file with the same path.
+    :param sep: field delimiter for the output file.
     :param compression: how to compress the exported dataset (default none; gzip, bzip2 and snappy available)
     :param parts: enables export to multiple 'part' files instead of just a single file.
         Convenient for large datasets that take too long to store in a single file.
@@ -1495,6 +1542,8 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1):
         specify your desired maximum number of part files. Path needs to be a directory
         when exporting to multiple files, also that directory must be empty.
         Default is ``parts = 1``, which is to export to a single file.
+    :param header: if True, write out column names in the header line.
+    :param quote_header: if True, quote column names in the header.
 
     :examples:
 
@@ -1517,9 +1566,12 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1):
     assert_is_type(force, bool)
     assert_is_type(parts, int)
     assert_is_type(compression, str, None)
+    assert_is_type(header, bool)
+    assert_is_type(quote_header, bool)
     H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id), 
-               data={"path": path, "num_parts": parts, "force": force, "compression": compression, "separator": ord(sep)}),
-           "Export File").poll()
+               data={"path": path, "num_parts": parts, "force": force, 
+                     "compression": compression, "separator": ord(sep),
+                     "header": header, "quote_header": quote_header}), "Export File").poll()
 
 
 def cluster():
@@ -1833,7 +1885,7 @@ def load_dataset(relative_path):
     raise H2OValueError("Data file %s cannot be found" % relative_path)
 
 
-def make_metrics(predicted, actual, domain=None, distribution=None, weights=None):
+def make_metrics(predicted, actual, domain=None, distribution=None, weights=None, auc_type="NONE"):
     """
     Create Model Metrics from predicted and actual values in H2O.
 
@@ -1842,6 +1894,9 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
     :param domain: list of response factors for classification.
     :param distribution: distribution for regression.
     :param H2OFrame weights: an H2OFrame containing observation weights (optional).
+    :param auc_type: auc For multinomial classification you have to specify which type of agregated AUC/AUCPR 
+           will be used to calculate this metric. Possibilities are MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR, 
+           NONE and AUTO (OVO = One vs. One, OVR = One vs. Rest). Default is "NONE" (AUC and AUCPR are not calculated).
 
     :examples:
 
@@ -1876,11 +1931,15 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
     assert actual.ncol == 1, "`actual` frame should have exactly 1 column"
     assert_is_type(distribution, str, None)
     assert_satisfies(actual.ncol, actual.ncol == 1)
+    assert_is_type(auc_type, str)
+    allowed_auc_types = ["MACRO_OVO", "MACRO_OVR", "WEIGHTED_OVO", "WEIGHTED_OVR", "AUTO", "NONE"]
+    assert auc_type in allowed_auc_types, "auc_type should be "+(" ".join([str(type) for type in allowed_auc_types]))
     if domain is None and any(actual.isfactor()):
         domain = actual.levels()[0]
     params = {"domain": domain, "distribution": distribution}
     if weights is not None:
         params["weights_frame"] = weights.frame_id
+    params["auc_type"] = auc_type    
     res = api("POST /3/ModelMetrics/predictions_frame/%s/actuals_frame/%s" % (predicted.frame_id, actual.frame_id),
               data=params)
     return res["model_metrics"]
@@ -1938,7 +1997,7 @@ def _default_source_provider(obj):
     # First try to get source code via inspect
     try:
         return '    '.join(inspect.getsourcelines(obj)[0])
-    except (OSError, TypeError):
+    except (OSError, TypeError, IOError):
         # It seems like we are in interactive shell and
         # we do not have access to class source code directly
         # At this point we can:

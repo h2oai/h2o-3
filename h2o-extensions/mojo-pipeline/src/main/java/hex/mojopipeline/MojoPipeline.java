@@ -1,9 +1,12 @@
 package hex.mojopipeline;
 
+import ai.h2o.mojos.runtime.api.MojoPipelineService;
+import ai.h2o.mojos.runtime.api.PipelineLoader;
+import ai.h2o.mojos.runtime.api.PipelineLoaderFactory;
+import ai.h2o.mojos.runtime.api.backend.MemoryReaderBackend;
+import ai.h2o.mojos.runtime.api.backend.ReaderBackend;
 import ai.h2o.mojos.runtime.frame.*;
 import ai.h2o.mojos.runtime.lic.LicenseException;
-import ai.h2o.mojos.runtime.readers.MojoPipelineReaderBackendFactory;
-import ai.h2o.mojos.runtime.readers.MojoReaderBackend;
 import ai.h2o.mojos.runtime.frame.MojoColumn.Type;
 import water.*;
 import water.fvec.*;
@@ -20,34 +23,32 @@ import java.util.Arrays;
 public class MojoPipeline extends Iced<MojoPipeline> {
 
   private ByteVec _mojoData;
-  private transient ai.h2o.mojos.runtime.MojoPipeline _mojoPipeline;
+  private transient MojoPipelineMeta _mojoPipelineMeta;
 
   public MojoPipeline(ByteVec mojoData) {
     _mojoData = mojoData;
-    _mojoPipeline = readPipeline(_mojoData);
+    _mojoPipelineMeta = readPipelineMeta(_mojoData);
   }
 
   public Frame transform(Frame f, boolean allowTimestamps) {
     Frame adaptedFrame = adaptFrame(f, allowTimestamps);
     byte[] types = outputTypes();
     return new MojoPipelineTransformer(_mojoData._key).doAll(types, adaptedFrame)
-            .outputFrame(null, _mojoPipeline.getOutputMeta().getColumnNames(), null);
+            .outputFrame(null, _mojoPipelineMeta.outputFrameMeta.getColumnNames(), null);
   }
 
   private byte[] outputTypes() {
-    MojoFrameMeta outputMeta = _mojoPipeline.getOutputMeta();
-    for (Type type : outputMeta.getColumnTypes()) {
-      if (! type.isnumeric && type != Type.Bool) {
-        throw new UnsupportedOperationException("Output type `" + type.name() + "` is not supported.");
-      }
-    }
+    MojoFrameMeta outputMeta = _mojoPipelineMeta.outputFrameMeta;
     byte[] types = new byte[outputMeta.size()];
-    Arrays.fill(types, Vec.T_NUM);
+    int i = 0;
+    for (Type type : outputMeta.getColumnTypes()) {
+      types[i++] = type.isnumeric || type == Type.Bool ? Vec.T_NUM : Vec.T_STR;
+    }
     return types;
   }
 
   private Frame adaptFrame(Frame f, boolean allowTimestamps) {
-    return adaptFrame(f, _mojoPipeline.getInputMeta(), allowTimestamps);
+    return adaptFrame(f, _mojoPipelineMeta.inputFrameMeta, allowTimestamps);
   }
 
   private static Frame adaptFrame(Frame f, MojoFrameMeta inputMeta, boolean allowTimestamps) {
@@ -74,11 +75,35 @@ public class MojoPipeline extends Iced<MojoPipeline> {
   private static ai.h2o.mojos.runtime.MojoPipeline readPipeline(ByteVec mojoData) {
     try {
       try (InputStream input = mojoData.openStream(null);
-           MojoReaderBackend reader = MojoPipelineReaderBackendFactory.createReaderBackend(input)) {
-        return ai.h2o.mojos.runtime.MojoPipeline.loadFrom(reader);
+           ReaderBackend reader = MemoryReaderBackend.fromZipStream(input)) {
+        return MojoPipelineService.loadPipeline(reader);
       }
     } catch (IOException | LicenseException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  private static MojoPipelineMeta readPipelineMeta(ByteVec mojoData) {
+    try {
+      try (InputStream input = mojoData.openStream(null);
+           ReaderBackend reader = MemoryReaderBackend.fromZipStream(input)) {
+         final PipelineLoaderFactory factory = MojoPipelineService.INSTANCE.get(reader);
+        final PipelineLoader loader = factory.createLoader(reader, null);
+        return new MojoPipelineMeta(loader.getInput(), loader.getOutput());
+      }
+    } catch (IOException | LicenseException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static class MojoPipelineMeta {
+    final MojoFrameMeta inputFrameMeta;
+    final MojoFrameMeta outputFrameMeta;
+
+    private MojoPipelineMeta(MojoFrameMeta inputFrameMeta,
+                             MojoFrameMeta outputFrameMeta) {
+      this.inputFrameMeta = inputFrameMeta;
+      this.outputFrameMeta = outputFrameMeta;
     }
   }
 
@@ -132,6 +157,11 @@ public class MojoPipeline extends Iced<MojoPipeline> {
         MojoColumn column = transformed.getColumn(col);
         assert column.size() == cs[0].len();
         switch (column.getType()) {
+          case Str:
+            for (String s : (String[]) column.getData()) {
+              nc.addStr(s);
+            }
+            break;
           case Bool:
             for (byte d : (byte[]) column.getData()) {
               nc.addNum(d, 0);

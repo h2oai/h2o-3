@@ -50,7 +50,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                    "missing_values_handling", "quiet_mode", "autoencoder", "sparse", "col_major", "average_activation",
                    "sparsity_beta", "max_categorical_features", "reproducible", "export_weights_and_biases",
                    "mini_batch_size", "categorical_encoding", "elastic_averaging", "elastic_averaging_moving_rate",
-                   "elastic_averaging_regularization", "export_checkpoints_dir"}
+                   "elastic_averaging_regularization", "export_checkpoints_dir", "auc_type"}
 
     def __init__(self, **kwargs):
         super(H2ODeepLearningEstimator, self).__init__()
@@ -167,13 +167,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
         >>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_models=True,
-        ...                                   seed=1234)
+        ...                                    nfolds=5,
+        ...                                    seed=1234)
         >>> cars_dl.train(x=predictors,
         ...               y=response,
-        ...               training_frame=train,
-        ...               validation_frame=valid)
+        ...               training_frame=cars)
         >>> print(cars_dl.cross_validation_models())
         """
         return self._parms.get("keep_cross_validation_models")
@@ -197,12 +196,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
         >>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_predictions=True,
+        ...                                    nfolds=5,
         ...                                    seed=1234)
         >>> cars_dl.train(x=predictors,
         ...               y=response,
-        ...               training_frame=train)
+        ...               training_frame=cars)
         >>> print(cars_dl.cross_validation_predictions())
         """
         return self._parms.get("keep_cross_validation_predictions")
@@ -226,13 +225,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
         >>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_fold_assignment=True,
+        ...                                    nfolds=5,
         ...                                    seed=1234)
         >>> cars_dl.train(x=predictors,
         ...               y=response,
-        ...               training_frame=train,
-        ...               validation_frame=valid)
+        ...               training_frame=cars)
         >>> print(cars_dl.cross_validation_fold_assignment())
         """
         return self._parms.get("keep_cross_validation_fold_assignment")
@@ -2829,6 +2827,22 @@ class H2ODeepLearningEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+    @property
+    def auc_type(self):
+        """
+        Set default multinomial AUC type.
+
+        One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``
+        (default: ``"auto"``).
+        """
+        return self._parms.get("auc_type")
+
+    @auc_type.setter
+    def auc_type(self, auc_type):
+        assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
+        self._parms["auc_type"] = auc_type
 
 
 

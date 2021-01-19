@@ -16,8 +16,10 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
+import java.util.Arrays;
 import java.util.Random;
 
+import static hex.schemas.GLMModelV3.GLMModelOutputV3.calculateVarimpMultinomial;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -49,6 +51,37 @@ public class GLMBasicTestMultinomial extends TestUtil {
     if(_covtype != null)  _covtype.delete();
     if(_train != null) _train.delete();
     if(_test != null) _test.delete();
+  }
+  
+  @Test
+  public void testcalculateVarimpMultinomial() {
+    int numClass = 5;
+    int coeffLen = 25;
+    double[][] betaNorm = new double[numClass][coeffLen];
+    double[] magnitudes = new double[coeffLen];
+    double[] magnitudes_check = new double[coeffLen];
+    int[] indices = new int[coeffLen];
+    Random randObj = new Random(12345);
+    
+    for (int indexc = 0; indexc < numClass; indexc++) { // generate random double[][] array
+      for (int index = 0; index < coeffLen; index++) {
+        betaNorm[indexc][index] = randObj.nextDouble();
+      }
+    }
+    calculateVarimpMultinomial(magnitudes, indices, betaNorm);  // calculate magnitude and generate indices of descending sort
+    
+    for (int classInd = 0; classInd < numClass; classInd++) { // manually generate coefficient magnitudes
+      for (int coeffInd = 0; coeffInd < coeffLen; coeffInd++) {
+        magnitudes_check[coeffInd] = magnitudes_check[coeffInd] + Math.abs(betaNorm[classInd][coeffInd]);
+      }
+    }
+    // check to make sure magnitude calculation is correct
+    Assert.assertTrue("coefficient magnitude calculation is in error.", 
+            Arrays.equals(magnitudes, magnitudes_check));
+    
+    for (int index = 1; index < coeffLen; index++)  // check to make sure sorting is done correctly
+      Assert.assertTrue(magnitudes[indices[index-1]]+" should be >= "+magnitudes[indices[index]],
+              magnitudes[indices[index-1]] >= magnitudes[indices[index]]);
   }
 
   @Test

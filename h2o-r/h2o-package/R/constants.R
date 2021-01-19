@@ -54,7 +54,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
                    data.frame(type = "character", scalar = FALSE,  row.names = "VecSpecifier[]", stringsAsFactors = FALSE),
                    data.frame(type = "list",      scalar = FALSE, row.names = "KeyValue[]",   stringsAsFactors = FALSE),
                    data.frame(type = "list",      scalar = FALSE, row.names = "StringPair[]", stringsAsFactors = FALSE),
-                   data.frame(type = "list",        scalar = FALSE, row.names = "Key<Keyed>[]", stringsAsFactors = FALSE))
+                   data.frame(type = "list",      scalar = FALSE, row.names = "Key<Keyed>[]", stringsAsFactors = FALSE),
+                   data.frame(type = "list",      scalar = FALSE, row.names = "string[][]",   stringsAsFactors = FALSE))
 
 #' Capabilities endpoints
 .h2o.__ALL_CAPABILITIES  <- "Capabilities"
@@ -155,3 +156,9 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
          url
     }
 }
+
+# Client version of R package
+.h2o.__CLIENT_VERSION_FILENAME <- "client_info.txt"
+
+# Return True if installed h2o package location contain .h2o.__CLIENT_VERSION_FILENAME file
+.h2o.__CLIENT_VERSION <- system.file(.h2o.__CLIENT_VERSION_FILENAME, package = "h2o") != ""

@@ -276,6 +276,7 @@ class ModelMetricsHandler extends Handler {
     public String _actuals_frame;
     public String[] _domain;
     public DistributionFamily _distribution;
+    public MultinomialAucType _auc_type;
     public ModelMetrics _model_metrics;
   }
 
@@ -294,6 +295,12 @@ class ModelMetricsHandler extends Handler {
 
     @API(help="Distribution (for regression).", direction=API.Direction.INOUT, values = { "gaussian", "poisson", "gamma", "laplace" })
     public DistributionFamily distribution;
+    
+    @API(help = "Default AUC type (for multinomial classification).", 
+            valuesProvider = ModelParamsValuesProviders.MultinomialAucTypeSchemeValuesProvider.class,
+            level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true)
+    public MultinomialAucType auc_type;
+
 
     @API(help="Model Metrics.", direction=API.Direction.OUTPUT)
     public ModelMetricsBaseV3 model_metrics;
@@ -341,7 +348,7 @@ class ModelMetricsHandler extends Handler {
         ModelMetricsOrdinal mm = ModelMetricsOrdinal.make(pred, act.anyVec(), s.domain);
         s.model_metrics = new ModelMetricsOrdinalV3().fillFromImpl(mm);
       } else {
-        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred, act.anyVec(), weights, s.domain);
+        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred, act.anyVec(), weights, s.domain, s.auc_type);
         s.model_metrics = new ModelMetricsMultinomialV3().fillFromImpl(mm);
       }
     } else {

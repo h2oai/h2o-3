@@ -3,7 +3,10 @@ package hex.genmodel.attributes;
 import com.google.gson.*;
 import hex.genmodel.*;
 import hex.genmodel.attributes.parameters.ColumnSpecifier;
+import hex.genmodel.attributes.parameters.KeyValue;
 import hex.genmodel.attributes.parameters.ParameterKey;
+import water.logging.Logger;
+import water.logging.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.lang.reflect.Field;
@@ -17,6 +20,8 @@ import java.util.regex.Pattern;
  * Utility class for extracting model details from JSON
  */
 public class ModelJsonReader {
+    
+    private static final Logger LOG = LoggerFactory.getLogger(ModelJsonReader.class);
 
     public static final String MODEL_DETAILS_FILE = "experimental/modelDetails.json";
 
@@ -144,7 +149,7 @@ public class ModelJsonReader {
         Objects.requireNonNull(modelJson);
         JsonElement potentialTableJson = findInJson(modelJson, tablePath);
         if (potentialTableJson.isJsonNull()) {
-            System.err.println(String.format("Failed to extract element '%s' MojoModel dump.",
+            LOG.warn(String.format("Failed to extract element '%s' MojoModel dump.",
                     tablePath));
             return null;
         }
@@ -165,7 +170,7 @@ public class ModelJsonReader {
         final JsonElement jsonSourceObject = findInJson(from, elementPath);
 
         if (jsonSourceObject instanceof JsonNull) {
-            System.err.println(String.format("Element '%s' not found in JSON. Skipping. Object '%s' is not populated by values.",
+            LOG.warn(String.format("Element '%s' not found in JSON. Skipping. Object '%s' is not populated by values.",
                     elementPath, object.getClass().getName()));
             return;
         }
@@ -200,9 +205,11 @@ public class ModelJsonReader {
                         // Especially useful for numeric types.
                         final JsonElement typeElement = jsonSourceObj.get("type");
                         final TypeHint typeHint;
-                        if (type != null && !typeElement.isJsonNull()) {
+                        if (!typeElement.isJsonNull()) {
                             typeHint = TypeHint.fromStringIgnoreCase(typeElement.getAsString());
-                        } else typeHint = null;
+                        } else {
+                            typeHint = null;
+                        }
                         value = convertBasedOnJsonType(jsonElement, typeHint);
                     }
                 } else if (type.isAssignableFrom(double.class) || type.isAssignableFrom(Double.class)) {
@@ -237,15 +244,20 @@ public class ModelJsonReader {
      * used.
      */
     private enum TypeHint {
-        INT, FLOAT, DOUBLE, LONG, DOUBLE_ARR, FLOAT_ARR, STRING_ARR, INT_ARR, LONG_ARR;
+        INT, FLOAT, DOUBLE, LONG, DOUBLE_ARR, FLOAT_ARR, STRING_ARR, STRING_ARR_ARR, INT_ARR, LONG_ARR, OBJECT_ARR;
 
         private static TypeHint fromStringIgnoreCase(final String from) {
+            final Matcher matcher = ARRAY_PATTERN.matcher(from);
+            final boolean isArray = matcher.find();
+            final String transformedType = matcher.replaceAll("_ARR");
             try {
-                final Matcher matcher = ARRAY_PATTERN.matcher(from);
-                final String transformedType = matcher.replaceAll("_ARR");
                 return valueOf(transformedType.toUpperCase());
             } catch (IllegalArgumentException e) {
-                return null;
+                if (isArray) {
+                    return OBJECT_ARR;
+                } else {
+                    return null;
+                }
             }
         }
     }
@@ -269,6 +281,18 @@ public class ModelJsonReader {
                 convertTo = null;
             } else {
                 switch (typeHint) {
+                    case OBJECT_ARR:
+                        final Object[] arrO = new Object[array.size()];
+                        for (int i = 0; i < array.size(); i++) {
+                            JsonElement e = array.get(i);
+                            if (e.isJsonPrimitive()) {
+                                arrO[i] = convertBasedOnJsonType(e, null);
+                            } else {
+                                arrO[i] = convertJsonObject(e.getAsJsonObject());
+                            }
+                        }
+                        convertTo = arrO;
+                        break;
                     case DOUBLE_ARR:
                         final double[] arrD = new double[array.size()];
                         for (int i = 0; i < array.size(); i++) {
@@ -289,6 +313,17 @@ public class ModelJsonReader {
                             arrS[i] = array.get(i).getAsString();
                         }
                         convertTo = arrS;
+                        break;
+                    case STRING_ARR_ARR:
+                        final String[][] arrSS = new String[array.size()][];
+                        for (int i = 0; i < array.size(); i++) {
+                            final JsonArray arr2 = array.get(i).getAsJsonArray();
+                            arrSS[i] = new String[arr2.size()];
+                            for (int j = 0; j < arr2.size(); j++) {
+                                arrSS[i][j] = arr2.get(j).getAsString();
+                            }
+                        }
+                        convertTo = arrSS;
                         break;
                     case INT_ARR:
                         final int[] arrI = new int[array.size()];
@@ -360,7 +395,6 @@ public class ModelJsonReader {
             final String type = convertFrom.get("type").getAsString();
             final ParameterKey.Type convertedType = convertKeyType(type);
             final String url = convertFrom.get("URL").getAsString();
-
             return new ParameterKey(name, convertedType, url);
         } else if ("ColSpecifierV3".equals(schemaName)) {
             final String columnName = convertFrom.get("column_name").getAsString();
@@ -372,8 +406,14 @@ public class ModelJsonReader {
                 memberOfFrames = null;
             }
             return new ColumnSpecifier(columnName, memberOfFrames);
+        } else if ("KeyValueV3".equals(schemaName)) {
+            return new KeyValue(
+                convertFrom.get("key").getAsString(),
+                convertFrom.get("value").getAsDouble()
+            );
         } else {
-            throw new UnsupportedOperationException(String.format("Object not supported: \n %s ", convertFrom.toString()));
+            LOG.error(String.format("Error reading MOJO JSON: Object not supported: \n %s ", convertFrom.toString()));
+            return null;
         }
 
     }

@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from h2o.utils.compatibility import *  # NOQA
 
 import h2o
+from h2o.utils.ext_dependencies import get_matplotlib_pyplot
 from h2o.utils.shared_utils import can_use_pandas
 from .model_base import ModelBase
 from .metrics_base import *  # NOQA
@@ -105,12 +106,8 @@ class H2ODimReductionModel(ModelBase):
         is_server = kwargs.pop("server")
         if kwargs:
             raise ValueError("Unknown arguments %s to screeplot()" % ", ".join(kwargs.keys()))
-        try:
-            import matplotlib
-            if is_server: matplotlib.use('Agg')
-            import matplotlib.pyplot as plt
-        except ImportError:
-            print("matplotlib is required for this function!")
+        plt = get_matplotlib_pyplot(is_server)
+        if plt is None:
             return
 
         variances = [s ** 2 for s in self._model_json['output']['importance'].cell_values[0][1:]]

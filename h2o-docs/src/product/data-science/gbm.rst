@@ -45,7 +45,7 @@ Defining a GBM Model
 -  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate
    the accuracy of the model.
 
--  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation.
+-  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. This value defaults to 0 (no cross-validation).
 
 -  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
@@ -54,18 +54,17 @@ Defining a GBM Model
 -  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant
-   training columns, since no information can be gained from them. This
-   option is enabled by default.
+   training columns, since no information can be gained from them. This option is defaults to true (enabled).
 
--  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees to build.
+-  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees to build (defaults to 50).
 
 -  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth. Higher values will make the model more complex and can lead to overfitting. Setting this value to 0 specifies no limit. This value defaults to 5.
 
 -  `min_rows <algo-params/min_rows.html>`__: Specify the minimum number of observations for a leaf
-   (``nodesize`` in R).
+   (``nodesize`` in R). This value defaults to 10.
 
 -  `nbins <algo-params/nbins.html>`__: (Numerical/real/int only) Specify the number of bins for
-   the histogram to build, then split at the best point.
+   the histogram to build, then split at the best point (defaults to 20).
 
 -  `nbins_cats <algo-params/nbins_cats.html>`__: (Categorical/enums only) Specify the maximum number
    of bins for the histogram to build, then split at the best point.
@@ -74,18 +73,18 @@ Defining a GBM Model
    share bins. This value has a more significant impact on model fitness
    than **nbins**. Larger values may increase runtime, especially for
    deep trees and large clusters, so tuning may be required to find the
-   optimal value for your configuration.
+   optimal value for your configuration. This value defaults to 1024.
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for
    algorithm components dependent on randomization. The seed is
    consistent for each H2O instance so that you can create models with
-   the same starting conditions in alternative configurations.
+   the same starting conditions in alternative configurations. This value defaults to -1 (time-based random number).
 
--  `learn_rate <algo-params/learn_rate.html>`__: Specify the learning rate. The range is 0.0 to 1.0.
+-  `learn_rate <algo-params/learn_rate.html>`__: Specify the learning rate. The range is 0.0 to 1.0, and the default value is 0.1.
 
--  `learn_rate_annealing <algo-params/learn_rate_annealing.html>`__:  Specifies to reduce the **learn_rate** by this factor after every tree. So for *N* trees, GBM starts with **learn_rate** and ends with **learn_rate** * **learn\_rate\_annealing**^*N*. For example, instead of using **learn_rate=0.01**, you can now try **learn_rate=0.05** and **learn\_rate\_annealing=0.99**. This method would converge much faster with almost the same accuracy. Use caution not to overfit. 
+-  `learn_rate_annealing <algo-params/learn_rate_annealing.html>`__:  Specifies to reduce the **learn_rate** by this factor after every tree. So for *N* trees, GBM starts with **learn_rate** and ends with **learn_rate** * **learn\_rate\_annealing**^*N*. For example, instead of using **learn_rate=0.01**, you can now try **learn_rate=0.05** and **learn\_rate\_annealing=0.99**. This method would converge much faster with almost the same accuracy. Use caution not to overfit. This value defaults to 1.
 
--  `distribution <algo-params/distribution.html>`__: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, huber, or tweedie.
+-  `distribution <algo-params/distribution.html>`__: Specify the distribution (i.e., the loss function). The options are AUTO (default), bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, huber, or tweedie.
 
   - If the distribution is ``bernoulli``, the the response column must be 2-class categorical.
   - If the distribution is ``quasibinomial``, the response column must be numeric and binary. 
@@ -102,7 +101,7 @@ Defining a GBM Model
 
 -  `sample_rate_per_class <algo-params/sample_rate_per_class.html>`__: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with `sample_rate`). The range for this option is 0.0 to 1.0. Note that this method is sample without replacement.
 
--  `col_sample_rate <algo-params/col_sample_rate.html>`__: Specify the column sampling rate (y-axis). (Note that this method is sampling without replacement.) The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
+-  `col_sample_rate <algo-params/col_sample_rate.html>`__: Specify the column sampling rate (y-axis). (Note that this method is sampling without replacement.) The range is 0.0 to 1.0, and this value defaults to 1. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
    
 -  `col_sample_rate_change_per_level <algo-params/col_sample_rate_change_per_level.html>`__: This option specifies to change the column sampling rate as a function of the depth in the tree. This can be a value > 0.0 and <= 2.0 and defaults to 1. (Note that this method is sample without replacement.) For example:
 	
@@ -118,7 +117,7 @@ Defining a GBM Model
 
 -  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0 and defaults to 1. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split. Note that this method is sample without replacement.
 
--  `max_abs_leafnode_pred <algo-params/max_abs_leafnode_pred.html>`__: When building a GBM classification model, this option reduces overfitting by limiting the maximum absolute value of a leaf node prediction. This option defaults to Double.MAX_VALUE.
+-  `max_abs_leafnode_pred <algo-params/max_abs_leafnode_pred.html>`__: When building a GBM classification model, this option reduces overfitting by limiting the maximum absolute value of a leaf node prediction. This option defaults to 1.797693135e+308..
 
 -  `pred_noise_bandwidth <algo-params/pred_noise_bandwidth.html>`__: The bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions. If this parameter is specified with a value greater than 0, then every leaf node prediction is randomly scaled by a number drawn from a Normal distribution centered around 1 with a bandwidth given by this parameter. The default is 0 (disabled). 
 
@@ -133,7 +132,7 @@ Defining a GBM Model
   - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
   - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. Note that this requires a specified response column.
 
--  `min_split_improvement <algo-params/min_split_improvement.html>`__: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.  
+-  `min_split_improvement <algo-params/min_split_improvement.html>`__: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range, and this value defaults to 1e-05.
 
 -  `histogram_type <algo-params/histogram_type.html>`__: By default (AUTO) GBM bins from min...max in steps of (max-min)/N. Random split points or quantile-based split points can be selected as well. RoundRobin can be specified to cycle through all histogram types (one per tree). Use this option to specify the type of histogram to use for finding optimal split points:
 
@@ -144,16 +143,16 @@ Defining a GBM Model
 	- RoundRobin
 
 -  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score
-   during each iteration of the model training.
+   during each iteration of the model training. This value is disabled by default.
 
 -  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for **nfolds** is
    specified and **fold\_column** is not specified) Specify the
    cross-validation fold assignment scheme. The available options are
    AUTO (which is Random), Random, 
-   `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems).
+   `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems). This value defaults to AUTO.
 
 -  `score_tree_interval <algo-params/score_tree_interval.html>`__: Score the model after every so many trees.
-   Disabled if set to 0.
+   This is set to 0 (disabled) by default.
 
 -  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the
    cross-validation fold index assignment per observation.
@@ -172,15 +171,13 @@ Defining a GBM Model
    
     **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
--  `balance_classes <algo-params/balance_classes.html>`__: Specify whether to oversample the minority classes to balance the class distribution. This option is not enabled by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **max\_after\_balance\_size** parameter.
+-  `balance_classes <algo-params/balance_classes.html>`__: Specify whether to oversample the minority classes to balance the class distribution. This option is defaults to false (not enabled), and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **max\_after\_balance\_size** parameter.
 
--  **r2\_stopping**: ``r2_stopping`` is no longer supported and will be ignored if set - please use ``stopping_rounds``, ``stopping_metric``, and ``stopping_tolerance`` instead.
+-  **r2\_stopping**: ``r2_stopping`` is no longer supported and will be ignored if set - please use ``stopping_rounds``, ``stopping_metric``, and ``stopping_tolerance`` instead. This value defaults to 1.797693135e+308.
 
 -  `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for
    **stopping\_metric** doesn't improve for the specified number of
-   training rounds, based on a simple moving average. To disable this
-   feature, specify ``0``. The metric is computed on the validation data
-   (if provided); otherwise, training data is used.
+   training rounds, based on a simple moving average. This option is defaults 0 (no early stopping). The metric is computed on the validation data (if provided); otherwise, training data is used.
    
    **Note**: If cross-validation is enabled:
 
@@ -191,7 +188,7 @@ Defining a GBM Model
 -  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
    The available options are:
     
-    - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that custom and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
+    - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. 
     - ``anomaly_score`` (Isolation Forest only)
     - ``deviance``
     - ``logloss``
@@ -207,70 +204,71 @@ Defining a GBM Model
     - ``custom`` (Python client only)
     - ``custom_increasing`` (Python client only)
 
+  Note that ``custom`` and ``custom_increasing`` can only be used in GBM and DRF with the Python client.   
+
 -  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less
-   than this value.
+   than this value. This value defaults to 0.001.
 
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model
-   training. Use 0 to disable.
+   training.  This defaults to 0 (unlimited).
 
--  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used.
+-  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. This option is defaults to false (not enabled).
 
 -  `quantile_alpha <algo-params/quantile_alpha.html>`__: (Only applicable if *Quantile* is specified for
    **distribution**) Specify the quantile to be used for Quantile
-   Regression.
+   Regression. This value defaults to 0.5.
 
 -  `tweedie_power <algo-params/tweedie_power.html>`__: (Only applicable if *Tweedie* is specified for
    **distribution**) Specify the Tweedie power. The range is from 1 to
    2. For a normal distribution, enter ``0``. For Poisson distribution,
    enter ``1``. For a gamma distribution, enter ``2``. For a compound
    Poisson-gamma distribution, enter a value greater than 1 but less
-   than 2. For more information, refer to `Tweedie
+   than 2. This value defaults to 1.5. For more information, refer to `Tweedie
    distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
 
 - `upload_custom_distribution <algo-params/upload_custom_distribution.html>`__: Upload a custom distribution into a running H2O cluster.
 
 - `upload_custom_metric <algo-params/upload_custom_metric.html>`__: Upload a custom metric into a running H2O cluster.
 
--  `huber_alpha <algo-params/huber_alpha.html>`__: Specify the desired quantile for Huber/M-regression (the threshold between quadratic and linear loss). This value must be between 0 and 1.
+-  `huber_alpha <algo-params/huber_alpha.html>`__: Specify the desired quantile for Huber/M-regression (the threshold between quadratic and linear loss). This value must be between 0 and 1 and defaults to 0.9.
 
 -  `checkpoint <algo-params/checkpoint.html>`__: Enter a model key associated with a
    previously trained model. Use this option to build a new model as a
    continuation of a previously generated model.
 
--  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option is defaults to true (enabled).
 
--  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the
-   cross-validation predictions.
+-  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation predictions. This option is defaults to false (not enabled).
 
--  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. 
+-  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. This option is defaults to false (not enabled). 
 
 -  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. Note that this requires ``balance_classes=true``.
 
 -  `max_after_balance_size <algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of
    the training data after balancing class counts (**balance\_classes**
-   must be enabled). The value can be less than 1.0.
+   must be enabled). The value can be less than 1.0 and defaults to 5.0.
 
 -  `nbins_top_level <algo-params/nbins_top_level.html>`__: (For numerical/real/int columns only) Specify
    the minimum number of bins at the root level to use to build the
    histogram. This number will then be decreased by a factor of two per
-   level.
+   level. This value defaults to 1024.
 
--  `calibrate_model <algo-params/calibrate_model.html>`__: Use Platt scaling to calculate calibrated class probabilities. Defaults to False.
+-  `calibrate_model <algo-params/calibrate_model.html>`__: Use Platt scaling to calculate calibrated class probabilities. This option is defaults to false (not enabled).
 
 -  `calibration_frame <algo-params/calibration_frame.html>`__: Specifies the frame to be used for Platt scaling.
 
 -  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
 
--  `custom_distribution_func <algo-params/custom_distribution_func.html>`__: Optionally specify a custom distribution function. A demo for the custom distribution function is available here: https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/custom_loss_function_demo.ipynb
+-  `custom_distribution_func <algo-params/custom_distribution_func.html>`__: Optionally specify a custom distribution function. A demo for the custom distribution function is `available here <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/custom_loss_function_demo.ipynb>`__.
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
 -  `monotone_constraints <algo-params/monotone_constraints.html>`__: A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns. Also note that this option can only be used when the distribution is ``gaussian``, ``bernoulli``, ``tweedie`` or ``quantile``. A Python demo is available `here <https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/H2O_tutorial_gbm_monotonicity.ipynb>`__.
 
--  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not.
+-  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not. This option is defaults to true (enabled).
 
--  **verbose**: Print scoring history to the console. For GBM, metrics are per tree. This value defaults to FALSE.
+-  **verbose**: Print scoring history to the console. For GBM, metrics are per tree. This option is defaults to false (not enabled).
 
 - `gainslift_bins <algo-params/gainslift_bins.html>`__: The number of bins for a Gains/Lift table. The default value is ``-1`` and makes the binning automatic. To disable this feature, set to ``0``.
 
@@ -353,6 +351,30 @@ GBM Tuning Guide
 * `H2O Flow <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.flow>`__
 * `Blog <http://www.h2o.ai/blog/h2o-gbm-tuning-tutorial-for-r/>`__
 
+GBM Feature Interactions
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Ranks of features and feature interactions by various metrics implemented in `XGBFI <https://github.com/Far0n/xgbfi>`__ style.
+
+Metrics
+'''''''
+
+- **Gain:** Total gain of each feature or feature interaction
+- **FScore:** Amount of possible splits taken  on a feature or feature interaction
+- **wFScore:** Amount of possible splits taken on a feature or feature interaction weighted by the probability of the splits to take place
+- **Average wFScore:** wFScore divided by FScore
+- **Average Gain:** Gain divided by FScore
+- **Expected Gain:** Total gain of each feature or feature interaction weighted by the probability to gather the gain
+- **Average Tree Index**
+- **Average Tree Depth**
+
+**Additional features:**
+
+- Leaf Statistics
+- Split Value Histograms
+
+Usage is illustrated in the Examples section.
+
 Examples
 ~~~~~~~~
 
@@ -386,6 +408,9 @@ Below is a simple example showing how to build a Gradient Boosting Machine model
     # Generate predictions on a validation set (if necessary):
     pred <- h2o.predict(pros_gbm, newdata = prostate)
 
+    # Extract feature interactions:
+    feature_interactions <- h2o.feature_interaction(pros_gbm)
+
 
    .. code-tab:: python
    
@@ -412,6 +437,9 @@ Below is a simple example showing how to build a Gradient Boosting Machine model
 
     # Generate predictions on a test set (if necessary):
     pred = pros_gbm.predict(prostate)
+
+    # Extract feature interactions:
+    feature_interactions = pros_gbm.feature_interaction()
 
 
    .. code-tab:: scala

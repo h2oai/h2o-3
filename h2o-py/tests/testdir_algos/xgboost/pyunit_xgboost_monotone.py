@@ -3,7 +3,7 @@ sys.path.insert(1,"../../../")
 from tests import pyunit_utils
 from h2o.estimators.xgboost import *
 
-def get_native_parameters_test():
+def monotone_constraint_test():
     assert H2OXGBoostEstimator.available() is True
 
     # CPU Backend is forced for the results to be comparable
@@ -33,6 +33,6 @@ def get_native_parameters_test():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(get_native_parameters_test)
+    pyunit_utils.standalone_test(monotone_constraint_test)
 else:
-    get_native_parameters_test()
+    monotone_constraint_test()

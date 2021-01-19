@@ -441,7 +441,7 @@ class CustomDistribution extends Distribution {
     
     private CustomDistributionWrapper _wrapper;
     private static CustomDistribution _instance;
-    public static String _distributionDef;
+    private String _distributionDef;
     
     private CustomDistribution(Model.Parameters params){
         super(params);
@@ -453,9 +453,9 @@ class CustomDistribution extends Distribution {
     }
     
     public static CustomDistribution getCustomDistribution(Model.Parameters params){
-        if(_instance == null || params._custom_distribution_func != _distributionDef){
+        if(_instance == null || !params._custom_distribution_func.equals(_instance._distributionDef)){
             _instance = new CustomDistribution(params);
-        } 
+        }
         return _instance;
     }
 

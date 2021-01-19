@@ -22,7 +22,5 @@ def h2o_H2OFrame_insert_missing_values():
     fract_NAs = sum(h2oframe.nacnt())/(h2oframe.ncol*h2oframe.nrow)
     assert abs(fraction-fract_NAs) < 1e-2, "h2o.H2OFrame.insert_missing_values() command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_insert_missing_values())
-else:
-    h2o_H2OFrame_insert_missing_values()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_insert_missing_values)

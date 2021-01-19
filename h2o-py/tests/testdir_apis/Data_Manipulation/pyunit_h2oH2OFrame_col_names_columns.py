@@ -15,7 +15,5 @@ def h2o_H2OFrame_col_names():
     assert iris_wheader.col_names == expected_names == iris_wheader.columns, \
         "Expected {0} for column names but got {1}".format(expected_names, iris_wheader.col_names)
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_col_names())
-else:
-    h2o_H2OFrame_col_names()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_col_names)

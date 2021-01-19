@@ -44,7 +44,7 @@ gradle publish
 ### Sonatype & Public H2O Release Repository
 To publish artifacts into remote **Sonatype Release** and **Public H2O Release** repository please type:
 ```
-gradle -DdoRelease publish
+gradle -PdoRelease publish
 ```
 
 #### Public release repository configuration

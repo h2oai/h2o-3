@@ -68,10 +68,13 @@
 #' @param max_delta_step (same as max_abs_leafnode_pred) Maximum absolute value of a leaf node prediction Defaults to 0.0.
 #' @param monotone_constraints A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
 #'        decreasing constraint.
+#' @param interaction_constraints A set of allowed column interactions.
 #' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
 #' @param min_split_improvement (same as gamma) Minimum relative improvement in squared error reduction for a split to happen Defaults to 0.0.
 #' @param gamma (same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen
 #'        Defaults to 0.0.
+#' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
+#'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @param nthread Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O cluster limits (-nthreads
 #'        parameter). Defaults to maximum available Defaults to -1.
 #' @param save_matrix_directory Directory where to save matrices passed to XGBoost library. Useful for debugging.
@@ -168,9 +171,11 @@ h2o.xgboost <- function(x,
                         max_abs_leafnode_pred = 0.0,
                         max_delta_step = 0.0,
                         monotone_constraints = NULL,
+                        interaction_constraints = NULL,
                         score_tree_interval = 0,
                         min_split_improvement = 0.0,
                         gamma = 0.0,
+                        auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                         nthread = -1,
                         save_matrix_directory = NULL,
                         build_tree_one_node = FALSE,
@@ -296,12 +301,16 @@ h2o.xgboost <- function(x,
     parms$max_delta_step <- max_delta_step
   if (!missing(monotone_constraints))
     parms$monotone_constraints <- monotone_constraints
+  if (!missing(interaction_constraints))
+    parms$interaction_constraints <- interaction_constraints
   if (!missing(score_tree_interval))
     parms$score_tree_interval <- score_tree_interval
   if (!missing(min_split_improvement))
     parms$min_split_improvement <- min_split_improvement
   if (!missing(gamma))
     parms$gamma <- gamma
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
   if (!missing(nthread))
     parms$nthread <- nthread
   if (!missing(save_matrix_directory))
@@ -390,9 +399,11 @@ h2o.xgboost <- function(x,
                                         max_abs_leafnode_pred = 0.0,
                                         max_delta_step = 0.0,
                                         monotone_constraints = NULL,
+                                        interaction_constraints = NULL,
                                         score_tree_interval = 0,
                                         min_split_improvement = 0.0,
                                         gamma = 0.0,
+                                        auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                         nthread = -1,
                                         save_matrix_directory = NULL,
                                         build_tree_one_node = FALSE,
@@ -522,12 +533,16 @@ h2o.xgboost <- function(x,
     parms$max_delta_step <- max_delta_step
   if (!missing(monotone_constraints))
     parms$monotone_constraints <- monotone_constraints
+  if (!missing(interaction_constraints))
+    parms$interaction_constraints <- interaction_constraints
   if (!missing(score_tree_interval))
     parms$score_tree_interval <- score_tree_interval
   if (!missing(min_split_improvement))
     parms$min_split_improvement <- min_split_improvement
   if (!missing(gamma))
     parms$gamma <- gamma
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
   if (!missing(nthread))
     parms$nthread <- nthread
   if (!missing(save_matrix_directory))

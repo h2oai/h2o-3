@@ -158,6 +158,14 @@ public class ArrayUtils {
     return result;
   }
 
+  /***
+   * Find the index of an element val in the sorted array arr.
+   * 
+   * @param arr: sorted array
+   * @param val: value of element we are interested in
+   * @param <T>: data type
+   * @return index of element val or -1 if not found
+   */
   public static<T extends Comparable<T>> int indexOf(T[] arr, T val) {
     int highIndex = arr.length-1;
     int compare0 = val.compareTo(arr[0]); // small shortcut
@@ -505,6 +513,24 @@ public class ArrayUtils {
       res[index] = ary[index][index];
     return res;
   }
+
+  /***
+   * Return the index of an element val that is less than tol array from an element of the array arr.
+   * Note that arr does not need to be sorted.
+   * 
+   * @param arr: double array possibly containing an element of interest.
+   * @param val: val to be found in array arr
+   * @param tol: maximum difference between value of interest val and an element of array
+   * @return the index of element that is within tol away from val or -1 if not found
+   */
+  public static int locate(double[] arr, double val, double tol) {
+    int arrLen = arr.length;
+    for (int index = 0; index < arrLen; index++) {
+      if (Math.abs(arr[index]-val) < tol) 
+        return index;
+    }
+    return -1;
+  }
   
   public static double[] multArrVec(double[][] ary, double[] nums, double[] res) {
     if(ary == null || nums == null) return null;
@@ -740,6 +766,26 @@ public class ArrayUtils {
     return result;
   }
 
+  public static String toStringQuotedElements(Object[] a) {
+    if (a == null)
+      return "null";
+
+    int iMax = a.length - 1;
+    if (iMax == -1)
+      return "[]";
+
+    StringBuilder b = new StringBuilder();
+    b.append('[');
+    for (int i = 0; ; i++) {
+      b.append('"');
+      b.append(a[i]);
+      b.append('"');
+      if (i == iMax)
+        return b.append(']').toString();
+      b.append(", ");
+    }
+  }
+
   public static <T> boolean contains(T[] arr, T target) {
     if (null == arr) return false;
     for (T t : arr) {
@@ -938,6 +984,32 @@ public class ArrayUtils {
         return i;
     return -1;
   }
+
+
+  /**
+   * Find an element with prefix with linear search & return it's index if find exactly, 
+   *  -index-2 if find first occurrence with prefix or -1
+   */
+  public static int findWithPrefix(String[] array, String prefix) {
+    return findWithPrefix(array, prefix, 0);
+  }
+
+  /**
+   * Find an element with prefix with linear search & return it's index if find exactly, 
+   *  -index-2 if find first occurrence with prefix or -1
+   */
+  public static int findWithPrefix(String[] array, String prefix, int off) {
+    for (int i = off; i < array.length; i++) {
+      if(array[i].equals(prefix)){
+        return i;
+      }
+      if (array[i].startsWith(prefix)) {
+        return -i - 2;
+      }
+    }
+    return -1;
+  }
+  
   public static int find(long[] ls, long elem) {
     for(int i=0; i<ls.length; ++i )
       if( elem==ls[i] ) return i;
@@ -1519,9 +1591,14 @@ public class ArrayUtils {
    * @param values values
    */
   public static void sort(final int[] idxs, final double[] values) {
-    sort(idxs, values, 500);
+    sort(idxs, values, 500, 1);
   }
+  
   public static void sort(final int[] idxs, final double[] values, int cutoff) {
+    sort(idxs, values, cutoff, 1);
+  }
+  // set increasing to 1 for ascending sort and -1 for descending sort
+  public static void sort(final int[] idxs, final double[] values, int cutoff, int increasing) {
     if (idxs.length < cutoff) {
       //hand-rolled insertion sort
       for (int i = 0; i < idxs.length; i++) {
@@ -1538,7 +1615,8 @@ public class ArrayUtils {
       Arrays.sort(d, new Comparator<Integer>() {
         @Override
         public int compare(Integer x, Integer y) {
-          return values[x] < values[y] ? -1 : (values[x] > values[y] ? 1 : 0);
+          return values[x]*increasing < values[y]*increasing ? -1 : 
+                  (values[x]*increasing > values[y]*increasing ? 1 : 0);
         }
       });
       for (int i = 0; i < idxs.length; ++i) idxs[i] = d[i];
@@ -2107,5 +2185,27 @@ public class ArrayUtils {
         cnt++;
 
     return cnt;
+  }
+
+  public static String findLongestCommonPrefix(String inputArray[]) {
+    String referenceWord = inputArray[0];
+    String result = "";
+    for (int j = 1; j <= referenceWord.length(); j++) {
+      String prefix = referenceWord.substring(0, j);
+      if (isPresentInAllWords(prefix, inputArray) && result.length() < prefix.length()) {
+        result = prefix;
+      }
+    }
+    return result;
+  }
+
+  private static boolean isPresentInAllWords(String prefix, String[] words) {
+    int n = words.length, k;
+    for (k = 1; k < n; k++) {
+      if (!words[k].startsWith(prefix)) {
+        return false;
+      }
+    }
+    return true;
   }
 }

@@ -80,6 +80,7 @@
 #'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.
 #' @param link Link function. Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit".
 #'        Defaults to family_default.
+#' @param startval double array to initialize coefficients for GAM.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
 #' @param cold_start \code{Logical}. Only applicable to multiple alpha/lambda values when calling GLM from GAM.  If false, build
@@ -119,6 +120,8 @@
 #' @param bs Basis function type for each gam predictors, 0 for cr
 #' @param scale Smoothing parameter for gam predictors
 #' @param keep_gam_cols \code{Logical}. Save keys of model matrix Defaults to FALSE.
+#' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
+#'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @examples
 #' \dontrun{
 #' h2o.init()
@@ -171,6 +174,7 @@ h2o.gam <- function(x,
                     beta_epsilon = 0.0001,
                     gradient_epsilon = -1,
                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
+                    startval = NULL,
                     prior = -1,
                     cold_start = FALSE,
                     lambda_min_ratio = -1,
@@ -192,20 +196,17 @@ h2o.gam <- function(x,
                     knot_ids = NULL,
                     bs = NULL,
                     scale = NULL,
-                    keep_gam_cols = FALSE)
+                    keep_gam_cols = FALSE,
+                    auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
   validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
 
   # Validate other required args
-  # If x is missing, then assume user wants to use all columns as features.
+  # If x is missing, no predictors will be used.  Only the gam columns are present as predictors
   if (missing(x)) {
-     if (is.numeric(y)) {
-         x <- setdiff(col(training_frame), y)
-     } else {
-         x <- setdiff(colnames(training_frame), y)
-     }
+      x = NULL
   }
 
   # If gam_columns is missing, then assume user wants to use all columns as features for GAM.
@@ -303,6 +304,8 @@ h2o.gam <- function(x,
     parms$gradient_epsilon <- gradient_epsilon
   if (!missing(link))
     parms$link <- link
+  if (!missing(startval))
+    parms$startval <- startval
   if (!missing(prior))
     parms$prior <- prior
   if (!missing(cold_start))
@@ -345,6 +348,8 @@ h2o.gam <- function(x,
     parms$scale <- scale
   if (!missing(keep_gam_cols))
     parms$keep_gam_cols <- keep_gam_cols
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -411,6 +416,7 @@ h2o.gam <- function(x,
                                     beta_epsilon = 0.0001,
                                     gradient_epsilon = -1,
                                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
+                                    startval = NULL,
                                     prior = -1,
                                     cold_start = FALSE,
                                     lambda_min_ratio = -1,
@@ -433,6 +439,7 @@ h2o.gam <- function(x,
                                     bs = NULL,
                                     scale = NULL,
                                     keep_gam_cols = FALSE,
+                                    auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -446,13 +453,9 @@ h2o.gam <- function(x,
   validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
 
   # Validate other required args
-  # If x is missing, then assume user wants to use all columns as features.
+  # If x is missing, no predictors will be used.  Only the gam columns are present as predictors
   if (missing(x)) {
-     if (is.numeric(y)) {
-         x <- setdiff(col(training_frame), y)
-     } else {
-         x <- setdiff(colnames(training_frame), y)
-     }
+      x = NULL
   }
 
   # If gam_columns is missing, then assume user wants to use all columns as features for GAM.
@@ -548,6 +551,8 @@ h2o.gam <- function(x,
     parms$gradient_epsilon <- gradient_epsilon
   if (!missing(link))
     parms$link <- link
+  if (!missing(startval))
+    parms$startval <- startval
   if (!missing(prior))
     parms$prior <- prior
   if (!missing(cold_start))
@@ -590,6 +595,8 @@ h2o.gam <- function(x,
     parms$scale <- scale
   if (!missing(keep_gam_cols))
     parms$keep_gam_cols <- keep_gam_cols
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is

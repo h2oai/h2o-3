@@ -11,8 +11,7 @@ from tests import pyunit_utils
 def javapredict_pubdev_4531():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate_train_null_column_name.csv"))
     test = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate_train_null_column_name.csv"))
-    params = {'ntrees':20, 'max_depth':2,  'seed':42, 'training_frame':train,
-              'learn_rate':0.1, 'min_rows':10, 'distribution':"bernoulli"} # 651MB pojo
+    params = {'ntrees':2, 'seed':42, 'training_frame':train, 'distribution':"bernoulli"} # 651MB pojo
     train["CAPSULE"] = train["CAPSULE"].asfactor()
     test["CAPSULE"] = test["CAPSULE"].asfactor()
     print("Parameter list:")

@@ -3,7 +3,6 @@
 from __future__ import print_function
 
 import sys
-import warnings
 
 sys.path.insert(1, "../../../")  # allow us to run this standalone
 
@@ -57,7 +56,7 @@ def infer_distribution_helper(dist, expected_dist, kwargs1={}, kwargs2={}):
         "Expected distribution {} but got {}".format(expected_dist, se.metalearner().actual_params.get("distribution"))
 
 def infer_distribution_test():
-    from h2o.utils import CustomDistributionGeneric, CustomDistributionGaussian
+    from h2o.utils.distributions import CustomDistributionGeneric, CustomDistributionGaussian
 
     class CustomDistributionGaussian2(CustomDistributionGeneric):
         def link(self):
@@ -182,12 +181,12 @@ def infer_family_test():
         # family = list of links
         gaussian=["identity", "log", "inverse"],
         binomial=["logit"],
-        # fractionalbinomial=["logit"], # FIXME: fractional binomial distribution does not exists
+        # fractionalbinomial=["logit"], # fractional binomial distribution does not exists
         multinomial=[None],
-        # ordinal=["ologit"], # FIXME: ordinal distribution does not exists
+        # ordinal=["ologit"], # ordinal distribution does not exists
         quasibinomial=["logit"],
         poisson=["identity", "log"],
-        # negativebinomial=["identity", "log"], # FIXME: negative binomial distribution is not implemented
+        # negativebinomial=["identity", "log"], # negative binomial distribution is not implemented
         gamma=["identity", "log", "inverse"],
         tweedie=["tweedie"]
     )
@@ -297,12 +296,12 @@ def infer_mixed_family_and_dist_test():
         # family = list of links
         gaussian=["identity", "log", "inverse"],
         binomial=["logit"],
-        # fractionalbinomial=["logit"], # FIXME: fractional binomial distribution does not exists
+        # fractionalbinomial=["logit"], # fractional binomial distribution does not exists
         multinomial=[None],
-        # ordinal=["ologit"], # FIXME: ordinal distribution does not exists
+        # ordinal=["ologit"], # ordinal distribution does not exists
         quasibinomial=["logit"],
         poisson=["identity", "log"],
-        # negativebinomial=["identity", "log"], # FIXME: negative binomial distribution is not implemented
+        # negativebinomial=["identity", "log"], # negative binomial distribution is not implemented
         gamma=["identity", "log", "inverse"],
         tweedie=["tweedie"]
     )
@@ -319,7 +318,7 @@ def infer_mixed_family_and_dist_test():
 
     # should inherit the link if all GLMs share the same link
     infer_mixed_family_and_dist_helper("gamma", "gamma", True, expected_link="log", kwargs_glm=dict(link="log"))
-    # TODO: is this behaviour OK? What to do differently? (we are looking on first GLM base model not just first base model for link inference)
+    # We are looking on first GLM base model not just first base model for link inference
     infer_mixed_family_and_dist_helper("gamma", "gamma", False, expected_link="log", kwargs_glm=dict(link="log"))
 
     # should not change when we specify the default link
@@ -510,12 +509,11 @@ def basic_inference_works_for_DRF_and_NB_test():
                                                se_class_5.metalearner().actual_params.get("family"))
 
 
-if __name__ == "__main__":
-    pyunit_utils.run_tests([
-        infer_distribution_test,
-        infer_family_test,
-        infer_mixed_family_and_dist_test,
-        metalearner_obeys_metalearner_params_test,
-        infer_uses_defaults_when_base_model_doesnt_support_distributions_test,
-        basic_inference_works_for_DRF_and_NB_test,
-    ])
+pyunit_utils.run_tests([
+    infer_distribution_test,
+    infer_family_test,
+    infer_mixed_family_and_dist_test,
+    metalearner_obeys_metalearner_params_test,
+    infer_uses_defaults_when_base_model_doesnt_support_distributions_test,
+    basic_inference_works_for_DRF_and_NB_test,
+])

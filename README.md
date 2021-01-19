@@ -684,23 +684,26 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 <a name="Roadmap"></a>
 ## 10. Roadmap
 
-### H2O 3.30.1.1 - July 2020
-
-* Hive Data Export
-* XGBoost Stability/Resource utilization: Scaling cluster up for XGBoost
-* Isolation Forest Improvements (contamination, validation frame, grid search)
-* NLP Improvements: TF-IDF
-* Generalized Additive Models (improvements, not a beta anymore)
-* CoxPH additions (new metrics, baseline hazard function, MOJO)
-
-### H2O 3.32.0.1 - September 2020
+### H2O 3.32.0.1 - October 2020
 
 * RuleFit algorithm
-* Extended Isolation Forest Algoritm
+* GAM Improvements (Cross Validation, MOJO support)
 * Target Encoding for Regression and Multinomial problems
-* Kubernetes Improvements (REST API clustering, healthchecks)
-* GBM monotone constraints for quantile and laplace distributions
+* Target Encoding minimal integration into AutoML
+* Kubernetes Improvements (Helm Charts)
+* GBM monotone constraints for quantile and tweedie distributions
 * Performance optimizations (lower memory usage)
+* Model Explainability
+* Upgrade XGBoost to 1.2
+
+### H2O 3.34.0.1 - January 2021
+
+* Extended Isolation Forest Algorithm
+* Uplift Trees in GBM
+* Extracting & ranking feature interactions from GBM and XGBoost models
+* Externalized XGBoost on Kubernetes clusters
+* RuleFit MOJO
+* Support for MOJO2 Scoring
 
 <a name="Community"></a>
 ## 11. Community
@@ -782,6 +785,8 @@ Michal Kurka
 Veronika Maurerova
 Jan Sterba
 Jan Jendrusak
+Sebastien Poirier
+Tomáš Frýda
 ```
 
 <a name="Advisors"></a>

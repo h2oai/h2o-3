@@ -1,7 +1,7 @@
 package hex.tree.xgboost.rabit;
 
 import hex.tree.xgboost.rabit.util.LinkMap;
-import ml.dmlc.xgboost4j.java.IRabitTracker;
+import ai.h2o.xgboost4j.java.IRabitTracker;
 import org.apache.log4j.Logger;
 import water.H2O;
 

@@ -1,0 +1,11 @@
+ingress:
+  enabled: true
+  annotations: {}
+  hosts:
+    - host: ""
+      paths: ["/"]
+  tls: []
+h2o:
+  nodeCount: 3
+image:
+  tag: 3.30.1.2

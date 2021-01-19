@@ -80,7 +80,8 @@ public class Frame extends Lockable<Frame> {
     for( int i=0; i<keys.length; i++ )
       if( baseFrame.find(keys[i]) == -1 ) //only delete vecs that aren't shared
         Keyed.remove(keys[i]);
-    DKV.remove(tempFrame._key); //delete the frame header
+    if (tempFrame._key != null)
+      DKV.remove(tempFrame._key); //delete the frame header
   }
 
   /**
@@ -882,13 +883,25 @@ public class Frame extends Lockable<Frame> {
 
   /** Write out K/V pairs, in this case Vecs. */
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
-    for( Key k : _keys )
+    ab.putA8(anyVec().espc());
+    for (Key k : _keys)
       ab.putKey(k);
     return super.writeAll_impl(ab);
   }
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
-    for( Key k : _keys )
-      ab.getKey(k,fs);
+    long[] espc = ab.getA8();
+    _keys = new Vec.VectorGroup().addVecs(_keys.length);
+    // I am modifying self => I need to make an update
+    // This is more of a workaround, readAll_impl methods are not expected to modify self
+    DKV.put(this, fs);
+    int rowLayout = Vec.ESPC.rowLayout(_keys[0], espc);
+    for (Key<Vec> key : _keys) {
+      Vec v = ab.get();
+      v._key = key;
+      v._rowLayout = rowLayout;
+      v.readAll_impl(ab, fs);
+      DKV.put(v, fs);
+    }
     return super.readAll_impl(ab,fs);
   }
 
@@ -1077,8 +1090,14 @@ public class Frame extends Lockable<Frame> {
   }
 
   // Build real Vecs from loose Chunks, and finalize this Frame.  Called once
+  // after any number of [create,close]NewChunks. This method also unlocks the frame.
+  void finalizePartialFrame(long[] espc, String[][] domains, byte[] types) {
+    finalizePartialFrame(espc, domains, types, true);
+  }
+  
+  // Build real Vecs from loose Chunks, and finalize this Frame.  Called once
   // after any number of [create,close]NewChunks.
-  void finalizePartialFrame( long[] espc, String[][] domains, byte[] types ) {
+  void finalizePartialFrame(long[] espc, String[][] domains, byte[] types, boolean unlock) {
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
     int nchunk = espc.length;
@@ -1110,7 +1129,10 @@ public class Frame extends Lockable<Frame> {
       DKV.put(_keys[i],vec,fs);
     }
     fs.blockForPending();
-    unlock();
+    
+    if (unlock) {
+      unlock();
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -1548,6 +1570,7 @@ public class Frame extends Lockable<Frame> {
     public static final char DEFAULT_ESCAPE = '"';
 
     boolean _headers = true;
+    boolean _quoteColumnNames = true; 
     boolean _hexString = false;
     boolean _escapeQuotes = false;
     char _separator = DEFAULT_SEPARATOR;
@@ -1555,6 +1578,16 @@ public class Frame extends Lockable<Frame> {
 
     public CSVStreamParams setHeaders(boolean headers) {
       _headers = headers;
+      return this;
+    }
+
+    public CSVStreamParams noHeader() {
+      setHeaders(false);
+      return this;
+    }
+    
+    public CSVStreamParams setQuoteColumnNames(boolean quoteColumnNames) {
+      _quoteColumnNames = quoteColumnNames;
       return this;
     }
 
@@ -1617,9 +1650,9 @@ public class Frame extends Lockable<Frame> {
       }
       StringBuilder sb = new StringBuilder();
       if (names != null) {
-        sb.append('"').append(names[0]).append('"');
+        appendColumnName(sb, names[0]);
         for (int i = 1; i < names.length; i++)
-          sb.append(_parms._separator).append('"').append(names[i]).append('"');
+          appendColumnName(sb.append(_parms._separator), names[i]);
         sb.append('\n');
       }
       _line = StringUtils.bytesOf(sb);
@@ -1628,6 +1661,14 @@ public class Frame extends Lockable<Frame> {
       _escapedCategoricalVecDomains = escapeCategoricalVecDomains(_curChks);
     }
 
+    private void appendColumnName(StringBuilder sb, String name) {
+      if (_parms._quoteColumnNames)
+        sb.append('"');
+      sb.append(name);
+      if (_parms._quoteColumnNames)
+        sb.append('"');
+    }
+    
     private static Chunk[] firstChunks(Frame fr) {
       Vec anyvec = fr.anyVec();
       if (anyvec == null || anyvec.nChunks() == 0 || anyvec.length() == 0) {

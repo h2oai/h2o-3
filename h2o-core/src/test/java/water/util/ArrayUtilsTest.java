@@ -1,6 +1,9 @@
 package water.util;
 
+import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.Random;
 
 import static org.junit.Assert.*;
 import static water.util.ArrayUtils.*;
@@ -170,6 +173,26 @@ public class ArrayUtilsTest {
     double[] somenz = {-1.0, Double.MIN_VALUE, 0.0, Double.MAX_VALUE, 0.001, 0.0, 42.0};
     assertEquals(5, countNonzeros(somenz));
   }
+  
+  @Test
+  public void testSortIndices() {
+    Random randObj = new Random(12345);
+    int arrayLen = 100;
+    int[] indices = new int[arrayLen];
+    double[] values = new double[arrayLen];
+    for (int index = 0; index < arrayLen; index++)  // generate data array
+      values[index] = randObj.nextDouble();
+    
+    sort(indices, values, -1, 1); // sorting in ascending order
+    for (int index = 1; index < arrayLen; index++)  // check correct sorting in ascending order
+      Assert.assertTrue(values[indices[index-1]]+" should be <= "+values[indices[index]], 
+              values[indices[index-1]] <= values[indices[index]]); 
+    
+    sort(indices, values, -1, -1);  // sorting in descending order
+    for (int index = 1; index < arrayLen; index++)  // check correct sorting in descending order
+      Assert.assertTrue(values[indices[index-1]]+" should be >= "+values[indices[index]],
+              values[indices[index-1]] >= values[indices[index]]);  
+  }
 
   @Test
   public void testAddWithCoefficients() {
@@ -331,39 +354,59 @@ public class ArrayUtilsTest {
     double[] a = new double[]{1, 2.5, 2.25, -6.25, 4, 7};
     double[] b = new double[]{2, 2, 2, 2, 2, 2};
     double[] res = ArrayUtils.addSave(a, b);
-
+  
     assertArrayEquals("Wrong add", new double[]{3, 4.5, 4.25, -4.25, 6, 9}, res, 1e-3);
     assertArrayEquals("array A is not changed", new double[]{3, 4.5, 4.25, -4.25, 6, 9}, a, 1e-3);
     assertArrayEquals("array B is changed", new double[]{2, 2, 2, 2, 2, 2}, b, 1e-3);
-
+  
     a = new double[]{1, 2.5, 2.25, -6.25, 4, 7};
     b = new double[]{2, 2, 2};
     res = ArrayUtils.addSave(a, b);
-
+  
     assertArrayEquals("Wrong add", new double[]{3, 4.5, 4.25, -6.25, 4, 7}, res, 1e-3);
     assertArrayEquals("array A is not changed", new double[]{3, 4.5, 4.25, -6.25, 4, 7}, a, 1e-3);
     assertArrayEquals("array B is changed", new double[]{2, 2, 2}, b, 1e-3);
-
+  
     a = new double[]{1, 2.5, 2.25};
     b = new double[]{2, 2, 2, 2, 2};
     res = ArrayUtils.addSave(a, b);
-
+  
     assertArrayEquals("Wrong add", new double[]{3, 4.5, 4.25, 2, 2}, res, 1e-3);
     assertArrayEquals("array B is not changed", new double[]{3, 4.5, 4.25, 2, 2}, b, 1e-3);
     assertArrayEquals("array A is changed", new double[]{1, 2.5, 2.25}, a, 1e-3);
-
+  
     a = new double[]{1, 2.5, 2.25};
     b = null;
     res = ArrayUtils.addSave(a, b);
     assertArrayEquals("Wrong add", new double[]{1, 2.5, 2.25}, res, 1e-3);
     assertArrayEquals("array A is changed", new double[]{1, 2.5, 2.25}, a, 1e-3);
     assertTrue("Array B is changed", b == null);
-
+  
     a = null;
     b = new double[]{1, 2.5, 2.25};
     res = ArrayUtils.addSave(a, b);
     assertArrayEquals("Wrong add", new double[]{1, 2.5, 2.25}, res, 1e-3);
     assertArrayEquals("array B is changed", new double[]{1, 2.5, 2.25}, b, 1e-3);
     assertTrue("Array A is changed", a == null);
+  }
+  
+  @Test
+  public void testToStringQuotedElements(){
+    final Object[] names = new String[]{"", "T16384"};
+    final String outputString = toStringQuotedElements(names);
+    assertEquals("[\"\", \"T16384\"]", outputString);
+  }
+
+  @Test
+  public void testToStringQuotedElementsNullInput(){
+    final String outputString = toStringQuotedElements(null);
+    assertEquals("null", outputString);
+  }
+
+  @Test
+  public void testToStringQuotedElementsEmptyInput(){
+    final Object[] emptyNames = new String[0];
+    final String outputString = toStringQuotedElements(emptyNames);
+    assertEquals("[]", outputString);
   }
 }

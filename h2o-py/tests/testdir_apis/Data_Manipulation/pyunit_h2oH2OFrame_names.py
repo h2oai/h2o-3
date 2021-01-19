@@ -16,7 +16,5 @@ def h2o_H2OFrame_names():
     assert_is_type(newframe, list)
     assert len(newframe)==iris.ncol,  "h2o.H2OFrame.names command is not working."  # check return result
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_names())
-else:
-    h2o_H2OFrame_names()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_names)

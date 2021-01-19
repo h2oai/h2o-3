@@ -3,9 +3,7 @@ package hex.schemas;
 import hex.tree.xgboost.XGBoost;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.api.API;
-import water.api.schemas3.KeyV3;
-import water.api.schemas3.KeyValueV3;
-import water.api.schemas3.ModelParametersSchemaV3;
+import water.api.schemas3.*;
 
 
 public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XGBoostParametersV3> {
@@ -53,9 +51,11 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "max_abs_leafnode_pred", "max_delta_step",
 
         "monotone_constraints",
+        "interaction_constraints",
 
         "score_tree_interval",
         "min_split_improvement", "gamma",
+        "auc_type",    
 
         //runtime
         "nthread",
@@ -86,7 +86,8 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "dmatrix_type",
         "backend",
         "gpu_id",
-        "gainslift_bins"
+        "gainslift_bins",
+        "auc_type"
     };
 
     @API(help="(same as n_estimators) Number of trees.", gridable = true)
@@ -207,5 +208,8 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
 
     @API(help="Which GPU to use. ", level = API.Level.expert, gridable = false)
     public int gpu_id;
+
+    @API(help="A set of allowed column interactions.", level= API.Level.expert)
+    public String[][] interaction_constraints;
   }
 }

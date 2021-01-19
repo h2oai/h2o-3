@@ -166,3 +166,4 @@ water.api.schemas3.PingV3$NodeMemoryInfoV3
 water.api.schemas3.CloudLockV3
 water.api.schemas3.SegmentModelsV3
 water.api.schemas3.SegmentModelsParametersV3
+water.api.schemas3.FeatureInteractionV3

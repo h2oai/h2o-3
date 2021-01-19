@@ -2,10 +2,6 @@ package hex;
 
 import water.H2O;
 import water.Iced;
-import water.MRTask;
-import water.Scope;
-import water.fvec.Chunk;
-import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.TwoDimTable;
@@ -40,6 +36,7 @@ public class ConfusionMatrix extends Iced {
       return MAX_CM_CLASSES_DEFAULT;
     return parseMaxClasses(maxClassesSpec);
   }
+  
   static int parseMaxClasses(String maxClassesSpec) {
     try {
       int maxClasses = Integer.parseInt(maxClassesSpec);

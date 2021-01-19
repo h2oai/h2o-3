@@ -19,8 +19,8 @@
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @param algorithm The algorithm to use to generate rules. Must be one of: "AUTO", "DRF", "GBM". Defaults to AUTO.
-#' @param min_rule_length Minimum length of rules. Defaults to 1.
-#' @param max_rule_length Maximum length of rules. Defaults to 10.
+#' @param min_rule_length Minimum length of rules. Defaults to 3.
+#' @param max_rule_length Maximum length of rules. Defaults to 3.
 #' @param max_num_rules The maximum number of rules to return. defaults to -1 which means the number of rules is selected  by
 #'        diminishing returns in model deviance. Defaults to -1.
 #' @param model_type Specifies type of base learners in the ensemble. Must be one of: "rules_and_linear", "rules", "linear". Defaults to rules_and_linear.
@@ -31,6 +31,7 @@
 #'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
 #'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
+#' @param rule_generation_ntrees specifies the number of trees to build in the tree model. Defaults to 50. Defaults to 50.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -71,12 +72,13 @@ h2o.rulefit <- function(x,
                         model_id = NULL,
                         seed = -1,
                         algorithm = c("AUTO", "DRF", "GBM"),
-                        min_rule_length = 1,
-                        max_rule_length = 10,
+                        min_rule_length = 3,
+                        max_rule_length = 3,
                         max_num_rules = -1,
                         model_type = c("rules_and_linear", "rules", "linear"),
                         weights_column = NULL,
-                        distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
+                        distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
+                        rule_generation_ntrees = 50)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -116,6 +118,8 @@ h2o.rulefit <- function(x,
     parms$weights_column <- weights_column
   if (!missing(distribution))
     parms$distribution <- distribution
+  if (!missing(rule_generation_ntrees))
+    parms$rule_generation_ntrees <- rule_generation_ntrees
 
   # Error check and build model
   model <- .h2o.modelJob('rulefit', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -126,12 +130,13 @@ h2o.rulefit <- function(x,
                                         training_frame,
                                         seed = -1,
                                         algorithm = c("AUTO", "DRF", "GBM"),
-                                        min_rule_length = 1,
-                                        max_rule_length = 10,
+                                        min_rule_length = 3,
+                                        max_rule_length = 3,
                                         max_num_rules = -1,
                                         model_type = c("rules_and_linear", "rules", "linear"),
                                         weights_column = NULL,
                                         distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
+                                        rule_generation_ntrees = 50,
                                         segment_columns = NULL,
                                         segment_models_id = NULL,
                                         parallelism = 1)
@@ -176,6 +181,8 @@ h2o.rulefit <- function(x,
     parms$weights_column <- weights_column
   if (!missing(distribution))
     parms$distribution <- distribution
+  if (!missing(rule_generation_ntrees))
+    parms$rule_generation_ntrees <- rule_generation_ntrees
 
   # Build segment-models specific parameters
   segment_parms <- list()

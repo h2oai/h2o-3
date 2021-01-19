@@ -2,12 +2,14 @@ package hex.generic;
 
 import hex.Model;
 import hex.genmodel.attributes.parameters.ColumnSpecifier;
+import hex.genmodel.attributes.parameters.KeyValue;
 import hex.genmodel.attributes.parameters.ModelParameter;
 import hex.genmodel.attributes.parameters.ParameterKey;
 import water.Iced;
 import water.IcedWrapper;
 import water.Key;
 import water.api.schemas3.FrameV3;
+import water.api.schemas3.KeyValueV3;
 import water.api.schemas3.ModelParameterSchemaV3;
 import water.fvec.Frame;
 import water.util.Log;
@@ -73,6 +75,16 @@ public class GenericModelParameters extends Model.Parameters {
         } else if (original instanceof ColumnSpecifier) {
             final ColumnSpecifier columnSpecifier = (ColumnSpecifier) original;
             converted = new FrameV3.ColSpecifierV3(columnSpecifier.getColumnName(), columnSpecifier.getIsMemberOfFrames());
+        } else if (original instanceof KeyValue) {
+            final KeyValue keyValue = (KeyValue) original;
+            converted = new hex.KeyValue(keyValue.key, keyValue.value);
+        } else if (original instanceof Object[]) {
+            Object[] originalArr = (Object[]) original; 
+            Iced[] convertedArr = new Iced[originalArr.length];
+            for (int i = 0; i < originalArr.length; i++) {
+                convertedArr[i] = convertObjectToIced(originalArr.length);
+            }
+            converted = new IcedWrapper(convertedArr);
         } else {
             converted = new IcedWrapper(original);
         }

@@ -1,7 +1,7 @@
 package hex.tree.xgboost.matrix;
 
-import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.XGBoostError;
+import ai.h2o.xgboost4j.java.DMatrix;
+import ai.h2o.xgboost4j.java.XGBoostError;
 import water.Iced;
 
 import java.util.Arrays;

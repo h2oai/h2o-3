@@ -18,7 +18,5 @@ def h2o_H2OFrame_strafified_split():
     assert ((newframe=='train').sum()+(newframe=='test').sum())==h2oframe.nrow, \
         "h2o.H2OFrame.stratified_kfold_column() command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_strafified_split())
-else:
-    h2o_H2OFrame_strafified_split()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_strafified_split)

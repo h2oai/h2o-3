@@ -1,9 +1,6 @@
 package hex.gam;
 
-import hex.DataInfo;
-import hex.ModelBuilder;
-import hex.ModelCategory;
-import hex.ModelMetrics;
+import hex.*;
 import hex.gam.GAMModel.GAMParameters;
 import hex.gam.MatrixFrameUtils.GamUtils;
 import hex.gam.MatrixFrameUtils.GenerateGamMatrixOneColumn;
@@ -26,12 +23,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static hex.ModelMetrics.calcVarImp;
 import static hex.gam.GAMModel.cleanUpInputFrame;
 import static hex.gam.MatrixFrameUtils.GamUtils.AllocateType.*;
 import static hex.gam.MatrixFrameUtils.GamUtils.*;
 import static hex.genmodel.utils.ArrayUtils.flat;
 import static hex.glm.GLMModel.GLMParameters.Family.multinomial;
 import static hex.glm.GLMModel.GLMParameters.Family.ordinal;
+import static hex.glm.GLMModel.GLMParameters.GLMType.gam;
 
 
 public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel.GAMModelOutput> {
@@ -197,6 +196,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
   }
   
   private void validateGamParameters() {
+    if (_parms._max_iterations == 0)
+      error("_max_iterations", H2O.technote(2, "if specified, must be >= 1."));
     if (_parms._family == GLMParameters.Family.AUTO) {
       if (nclasses() == 1 & _parms._link != GLMParameters.Link.family_default && _parms._link != GLMParameters.Link.identity
               && _parms._link != GLMParameters.Link.log && _parms._link != GLMParameters.Link.inverse && _parms._link != null) {
@@ -552,6 +553,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         if ((_parms._scale != null) && (_parms._scale[find] != 1.0))
           _penalty_mat_center[find] = ArrayUtils.mult(_penalty_mat_center[find], _parms._scale[find]);
       }
+      glmParam._glmType = gam;
       return new GLM(glmParam, _penalty_mat_center,  _gamColNamesCenter).trainModel().get();
     }
     
@@ -579,7 +581,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         model._output._penaltyMatrices_center = _penalty_mat_center;
         model._output._penaltyMatrices = _penalty_mat;
       }
-      copyGLMCoeffs(glm, model, dinfo);  // copy over coefficient names and generate coefficients as beta = z*GLM_beta
+      copyGLMCoeffs(glm, model);  // copy over coefficient names and generate coefficients as beta = z*GLM_beta
       copyGLMtoGAMModel(model, glm);  // copy over fields from glm model to gam model
     }
     
@@ -629,9 +631,11 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       if (model.evalAutoParamsEnabled && model._parms._solver == GLMParameters.Solver.AUTO) {
         model._parms._solver = glmModel._parms._solver;
       }
+      model._output._varimp = new VarImp(glmModel._output._varimp._varimp, glmModel._output._varimp._names);
+      model._output._variable_importances = calcVarImp(model._output._varimp);
     }
     
-    void copyGLMCoeffs(GLMModel glm, GAMModel model, DataInfo dinfo) {
+    void copyGLMCoeffs(GLMModel glm, GAMModel model) {
       boolean multiClass = _parms._family == multinomial || _parms._family == ordinal;
       int totCoefNumsNoCenter = (multiClass?glm.coefficients().size()/nclasses():glm.coefficients().size())
               +_parms._gam_columns.length;

@@ -74,7 +74,7 @@ test-pyunit-demos:
 	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/build/dist/h2o-*.whl --wipeall --numclouds 1 --jvm.xmx 5g
 
 test-pyunit-small: lookup-automl-tests
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --excludelist .lookup.txt
+	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --excludelist .lookup.txt
 
 test-pyunit-single-node:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 1 --numnodes 1 --jvm.xmx 3g --testlist ../../tests/pyunitSingleNodeList
@@ -254,6 +254,7 @@ test-package-java:
 		h2o-k8s/src/ \
 		h2o-k8s/build/libs/h2o-k8s-*.jar \
 		h2o-k8s/tests/ \
+		h2o-helm/ \
 		scripts/run.py h2o-py/tests_rest_smoke scripts/test-xgb-gpu-smoke.sh \
 		sort_crash.csv tests/doOnlyJunitSmokeTestList \
 		jacoco/*.jar
@@ -510,14 +511,32 @@ check-leaks:
 	fi
 
 h2o-k8s-docker-build:
-	 docker build -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -f docker/public/Dockerfile-h2o-release build/
+	 cp LICENSE build/LICENSE
+	 docker build --build-arg H2O_VERSION=$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -f docker/public/Dockerfile-h2o-release build/
+	 rm build/LICENSE
 
 h2o-k8s-docker-push:
 	docker login -u $(DOCKERHUB_USERNAME) -p $(DOCKERHUB_PASSWORD)
 	docker push $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
-
+	
+h2o-k8s-docker-push-redhat:
+	echo ${H2O_RED_HAT_REGISTRY_KEY} | docker login -u unused scan.connect.redhat.com --password-stdin
+	docker tag $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) scan.connect.redhat.com/$(H2O_RED_HAT_PID)/h2oai/h2o:$(DOCKER_IMAGE_TAG)
+	docker push scan.connect.redhat.com/$(H2O_RED_HAT_PID)/h2oai/h2o:$(DOCKER_IMAGE_TAG)
+	$(eval DIGEST := $(shell docker images --no-trunc --quiet scan.connect.redhat.com/$(H2O_RED_HAT_PID)/h2oai/h2o:$(DOCKER_IMAGE_TAG)))
+	python scripts/jenkins/red_hat/red_hat_docker_certification.py --api_key $(H2O_RED_HAT_APIKEY) --pid $(H2O_RED_HAT_PID) --tag $(DOCKER_IMAGE_TAG) $(DIGEST)
+	
 h2o-k8s-docker-build-latest:
-	docker build -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_LATEST_TAG) -f docker/public/Dockerfile-h2o-release build/
+	cp LICENSE build/LICENSE
+	docker build --build-arg H2O_VERSION=$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_LATEST_TAG) -f docker/public/Dockerfile-h2o-release build/
+	rm build/LICENSE
 
 h2o-k8s-docker-push-latest: h2o-k8s-docker-push
 	docker push $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_LATEST_TAG)
+
+test-junit-rulefit:
+	DOONLY="hex.rulefit.RuleFitTest#testBestPracticeExampleWithLinearVariablesWithoutScope,hex.rulefit.RuleFitTest#testBestPracticeExampleWithoutScope,hex.rulefit.RuleFitTest#testBestPracticeExample,hex.rulefit.RuleFitTest#testBestPracticeExampleWithLinearVariables,hex.rulefit.RuleFitTest#testCarsRules,hex.rulefit.RuleFitTest#testCarsRulesAndLinear,hex.rulefit.RuleFitTest#testCarsLongRules,hex.rulefit.RuleFitTest#testBostonHousing,hex.rulefit.RuleFitTest#testDiabetesWithWeights" ./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-rulefit-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-rulefit

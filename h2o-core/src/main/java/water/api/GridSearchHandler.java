@@ -204,10 +204,8 @@ public class GridSearchHandler<G extends Grid<MP>,
         fields.add(name);
       } catch (NoSuchFieldException e) {
         throw new IllegalArgumentException("Cannot find field '" + name + "'" + " to value " + value, e);
-      } catch (IllegalAccessException e) {
+      } catch (RuntimeException | IllegalAccessException e) {
         throw new IllegalArgumentException("Cannot set field '" + name + "'" + " to value " + value, e);
-      } catch (RuntimeException e) {
-        throw new IllegalArgumentException("Cannot set field '" + name + "'" + " to value" + value, e);
       }
       return this;
     }

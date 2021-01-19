@@ -52,6 +52,7 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "beta_epsilon",
             "gradient_epsilon",
             "link",
+            "startval",  // initial starting values for fixed and randomized coefficients, double array
             "prior",
             "cold_start", // if true, will start GLM model from initial values and conditions
             "lambda_min_ratio",
@@ -76,7 +77,8 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "gam_columns",  // array: predictor column names array
             "bs", // array, name of basis functions used
             "scale", // array, smoothing parameter for GAM,
-            "keep_gam_cols"
+            "keep_gam_cols",
+            "auc_type"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
@@ -104,6 +106,9 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
 
     @API(help = "Regularization strength", level = Level.critical, gridable = true)
     public double[] lambda;
+
+    @API(help = "double array to initialize coefficients for GAM.", gridable=true)
+    public double[] startval;
 
     @API(help = "Use lambda search starting at lambda max, given lambda is then interpreted as lambda min", level = Level.critical)
     public boolean lambda_search;

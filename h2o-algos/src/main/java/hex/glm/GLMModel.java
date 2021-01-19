@@ -20,9 +20,12 @@ import water.udf.CFuncRef;
 import water.util.*;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
 
 import static hex.genmodel.utils.ArrayUtils.flat;
+import static hex.schemas.GLMModelV3.GLMModelOutputV3.calculateVarimpMultinomial;
+import static hex.schemas.GLMModelV3.calculateVarimpBase;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -33,7 +36,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   final static public double _OneOEPS = 1e6;
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double [] ymu, double ySigma, double lambda_max, long nobs) {
     super(selfKey, parms, job == null?new GLMOutput():new GLMOutput(job));
-    // modelKey, parms, null, Double.NaN, Double.NaN, Double.NaN, -1
     _ymu = ymu;
     _ySigma = ySigma;
     _lambda_max = lambda_max;
@@ -159,9 +161,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       domain = binomialClassNames;
     if (_parms._HGLM) {
       String[] domaint = new String[]{"HGLM_" + _parms._family.toString() + "_" + _parms._rand_family[0].toString()};
-      return new GLMMetricBuilder(domaint, null, null, 0, true, false);
+      return new GLMMetricBuilder(domaint, null, null, 0, true, false, MultinomialAucType.NONE);
     } else
-      return new GLMMetricBuilder(domain, _ymu, new GLMWeightsFun(_parms), _output.bestSubmodel().rank(), true, _parms._intercept);
+      return new GLMMetricBuilder(domain, _ymu, new GLMWeightsFun(_parms), _output.bestSubmodel().rank(), true, _parms._intercept, _parms._auc_type);
   }
 
   protected double [] beta_internal(){
@@ -203,7 +205,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
   }
 
-  public GLMModel addSubmodel(Submodel sm) {
+  public GLMModel addSubmodel(Submodel sm) { // copy from checkpoint model
     _output._submodels = ArrayUtils.append(_output._submodels,sm);
     _output.setSubmodelIdx(_output._submodels.length-1);
     return this;
@@ -231,19 +233,21 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     _output.setSubmodelIdx(id);
   }
 
-  public GLMModel clone2(){
-    GLMModel res = clone();
-    res._output = (GLMOutput)res._output.clone();
-    return res;
+  protected GLMModel deepClone(Key<GLMModel> result) {
+    GLMModel newModel = IcedUtils.deepCopy(this);
+    newModel._key = result;
+    // Do not clone model metrics
+    newModel._output.clearModelMetrics(false);
+    newModel._output._training_metrics = null;
+    newModel._output._validation_metrics = null;
+    return newModel;
   }
 
-
   public static class GLMParameters extends Model.Parameters {
-
+    static final String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = {"_response_column", "_family", "_solver"};
     public enum MissingValuesHandling {
       MeanImputation, PlugValues, Skip
     }
-
     public String algoName() { return "GLM"; }
     public String fullName() { return "Generalized Linear Modeling"; }
     public String javaName() { return GLMModel.class.getName(); }
@@ -1107,6 +1111,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public final long    _nullDOF;
   public final double    _ySigma;
   public final long      _nobs;
+  public double[] _betaCndCheckpoint;  // store temporary beta coefficients for checkpointing purposes
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 
@@ -1134,8 +1139,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     String[] _random_coefficient_names; // for HGLM
     String[] _random_column_names;
     public long _training_time_ms;
+    public TwoDimTable _variable_importances;
+    public VarImp _varimp;  // should contain the same content as standardized coefficients
     int _lambda_array_size; // store number of lambdas to iterate over
-    public int _lambda_1se = -1; // lambda_best+sd(lambda) submodel index; applicable if running lambda search with cv 
+    public int _lambda_1se = -1; // lambda_best+sd(lambda) submodel index; applicable if running lambda search with cv
+    public double _lambda_min = -1; // starting lambda value when lambda search is enabled
+    public double _lambda_max = -1; // minimum lambda value calculated when lambda search is enabled
     public int _selected_lambda_idx; // lambda index with best deviance
     public int _selected_alpha_idx;     // alpha index with best deviance
     public int _selected_submodel_idx;  // submodel index with best deviance
@@ -1185,6 +1194,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _multinomial;
     public boolean _ordinal;
 
+    public void setLambdas(GLMParameters parms) {
+      if (parms._lambda_search) {
+        _lambda_max = parms._lambda[0];
+        _lambda_min = parms._lambda[parms._lambda.length-1];
+      }
+    }
+    
     public int rank() { return _submodels[_selected_submodel_idx].rank();}
 
     public boolean isStandardized() {
@@ -1194,6 +1210,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public String[] coefficientNames() {
       return _coefficient_names;
     }
+    
+    
 
     // This method is to take the coefficient names of one class and extend it to
     // coefficient names for all N classes.
@@ -1423,6 +1441,32 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       assert submodel_index < _submodels.length : "submodel_index specified exceeds the submodels length.";
       return _submodels[submodel_index];
     }
+    
+    // calculate variable importance which is derived from the standardized coefficients
+    public VarImp calculateVarimp() {
+      String[] names = coefficientNames();
+      final double [] magnitudes = new double[names.length];
+      int len = magnitudes.length - 1;
+      if (len == 0) // GLM model contains only intercepts and no predictor coefficients.
+        return null;
+      
+      int[] indices = new int[len];
+      for (int i = 0; i < indices.length; ++i)
+        indices[i] = i;
+      float[] magnitudesSort = new float[len];  // stored sorted coefficient magnitudes
+      String[] namesSort = new String[len];
+      
+      if (_nclasses > 2)
+        calculateVarimpMultinomial(magnitudes, indices, getNormBetaMultinomial());
+      else
+        calculateVarimpBase(magnitudes, indices, getNormBeta());
+      
+      for (int index = 0; index < len; index++) {
+        magnitudesSort[index] = (float) magnitudes[indices[index]];
+        namesSort[index] = names[indices[index]];
+      }
+      return new VarImp(magnitudesSort, namesSort);
+    }
   }
 
 
@@ -1500,6 +1544,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       int lambdaSearch = 0;
       if (_parms._lambda_search) {
         lambdaSearch = 1;
+        iter = _output._submodels[_output._selected_submodel_idx].iteration;
         _output._model_summary.set(0, 3, "nlambda = " + _parms._nlambdas + ", lambda.max = " + MathUtils.roundToNDigits(_lambda_max, 4) + ", lambda.min = " + MathUtils.roundToNDigits(_output.lambda_best(), 4) + ", lambda.1se = " + MathUtils.roundToNDigits(_output.lambda_1se(), 4));
       }
       int intercept = _parms._intercept ? 1 : 0;

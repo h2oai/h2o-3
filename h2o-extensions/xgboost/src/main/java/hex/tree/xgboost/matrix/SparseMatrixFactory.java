@@ -1,8 +1,8 @@
 package hex.tree.xgboost.matrix;
 
 import hex.DataInfo;
-import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.XGBoostError;
+import ai.h2o.xgboost4j.java.DMatrix;
+import ai.h2o.xgboost4j.java.XGBoostError;
 import water.H2O;
 import water.LocalMR;
 import water.MrFun;

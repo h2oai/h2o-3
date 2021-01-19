@@ -14,14 +14,14 @@ class BuildConfig {
   private static final String DEFAULT_HADOOP_IMAGE_NAME_PREFIX = 'dev-build-hadoop-gradle'
   private static final String DEFAULT_RELEASE_IMAGE_NAME_PREFIX = 'dev-release-gradle'
 
-  public static final int DEFAULT_IMAGE_VERSION_TAG = 28
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 36
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/opsh2oai/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/opsh2oai/s3cmd'
 
   private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
-  private static final String HADOOP_IMAGE_VERSION_TAG = '80'
+  private static final String HADOOP_IMAGE_VERSION_TAG = '83'
 
-  private static final String K8S_TEST_IMAGE_VERSION_TAG = '1'
+  private static final String K8S_TEST_IMAGE_VERSION_TAG = '3' // Change the new Docker image in the K8S YAML template as well
 
   public static final String XGB_TARGET_MINIMAL = 'minimal'
   public static final String XGB_TARGET_OMP = 'omp'
@@ -99,12 +99,12 @@ class BuildConfig {
         [name: 'CentOS 7.3 OMP', dockerfile: 'xgb/centos/Dockerfile-centos-omp', fromImage: 'harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:centos7.3', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel()],
       ],
       'centos7.4': [
-        [name: 'CentOS 7.4 GPU', dockerfile: 'xgb/centos/Dockerfile-centos-gpu', fromImage: 'nvidia/cuda:9.0-devel-centos7', targetName: XGB_TARGET_GPU, nodeLabel: getGPUNodeLabel()],
+        [name: 'CentOS 7.4 GPU', dockerfile: 'xgb/centos/Dockerfile-centos-gpu', fromImage: 'nvidia/cuda:10.0-devel-centos7', targetName: XGB_TARGET_GPU, nodeLabel: getGPUNodeLabel()],
       ],
       'ubuntu16': [
         [name: 'Ubuntu 16.04 Minimal', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-minimal', fromImage: 'ubuntu:16.04', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel()],
         [name: 'Ubuntu 16.04 OMP', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-omp', fromImage: 'harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:ubuntu16', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel()],
-        [name: 'Ubuntu 16.04 GPU', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-gpu', fromImage: 'nvidia/cuda:9.0-devel-ubuntu16.04', targetName: XGB_TARGET_GPU, nodeLabel: getGPUNodeLabel()],
+        [name: 'Ubuntu 16.04 GPU', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-gpu', fromImage: 'nvidia/cuda:10.0-devel-ubuntu16.04', targetName: XGB_TARGET_GPU, nodeLabel: getGPUNodeLabel()],
       ],
       'ubuntu18': [
         [name: 'Ubuntu 18.04 Minimal', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-minimal', fromImage: 'ubuntu:18.04', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel()],

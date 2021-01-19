@@ -11,6 +11,7 @@ import water.TestUtil;
 import water.init.NetworkInit;
 
 import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
@@ -96,6 +97,15 @@ public class CustomHttpFilterTest extends TestUtil {
     when(request.getParameterMap()).thenReturn(new HashMap<String, String[]>());
 
     when(response.getOutputStream()).thenReturn(new ServletOutputStream() {
+
+      @Override
+      public boolean isReady() {
+        return true;
+      }
+
+      @Override
+      public void setWriteListener(WriteListener writeListener) {
+      }
 
       @Override public void write(int b) throws IOException {
       }

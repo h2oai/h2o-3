@@ -42,7 +42,7 @@ def pubdev_5265():
     with warnings.catch_warnings(record=True) as w:
         grouped_occurances = glm_estimator.predict(test_data=test_data).group_by((0)).count().get_frame() \
             .as_data_frame()
-        assert "Test/Validation dataset column 'explanatory' has levels not trained on: [4]" in str(w[-1].message)
+        assert "Test/Validation dataset column 'explanatory' has levels not trained on: [\"4\"]" in str(w[-1].message)
 
     # The very first value corresponding to 'A' in the explanatory variable column should be replaced by the mode value, which is 3.
     # As a result, 8 occurances of type C should be predicted

@@ -2940,7 +2940,7 @@ cor <- function (x, ...)
 #'
 #' @param frame An H2OFrame object to drop duplicates on.
 #' @param columns Columns to compare during the duplicate detection process.
-#' @param keep Which rows to keep. The "first" value (default) keeps the first row and delets the rest. 
+#' @param keep Which rows to keep. The "first" value (default) keeps the first row and deletes the rest. 
 #' The "last" keeps the last row.
 #' @examples
 #' \dontrun{
@@ -4354,7 +4354,10 @@ as.data.frame.H2OFrame <- function(x, ...) {
     if (identical(colClasses, NA_character_) || identical(colClasses, "")) colClasses <- NULL  # workaround for data.table length-1 bug #4237 fixed in v1.12.9
     df <- data.table::fread(ttt, sep = ",", blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, showProgress=FALSE, data.table=FALSE, ...)
     if (sum(dates))
-      for (i in which(dates)) data.table::setattr(df[[i]], "class", "POSIXct")
+      for (i in which(dates)) {
+        df[[i]] <- df[[i]] / 1000
+        data.table::setattr(df[[i]], "class", "POSIXct")
+      }
     fun <- "fread"
   } else {
     # Substitute NAs for blank cells rather than skipping
@@ -4365,7 +4368,10 @@ as.data.frame.H2OFrame <- function(x, ...) {
       df <- read.csv(ttt, blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
     }
     if (sum(dates))
-      for (i in which(dates)) class(df[[i]]) = "POSIXct"
+      for (i in which(dates)) {
+        df[[i]] <- df[[i]] / 1000
+        class(df[[i]]) <- "POSIXct"
+      }
     fun <- "read.csv"
   }
   if (!useCon && file.exists(ttt)) file.remove(ttt)  

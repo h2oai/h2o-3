@@ -24,8 +24,8 @@ classification.
     params=dict(
         model_type="Specifies type of base learners in the ensemble. Must be one of: \"rules_and_linear\", \"rules\", \"linear\". "
                    "Defaults to rules_and_linear.",
-        min_rule_length="Minimum length of rules. Defaults to 1.",
-        max_rule_length="Maximum length of rules. Defaults to 10."
+        min_rule_length="Minimum length of rules. Defaults to 3.",
+        max_rule_length="Maximum length of rules. Defaults to 3.",
     ),
     signatures=dict(
         model_type="c(\"rules_and_linear\", \"rules\", \"linear\")"

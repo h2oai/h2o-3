@@ -1,8 +1,7 @@
 ``inflection_point``
 --------------------
 
-- Available in Data Preparation for Target Encoding
-
+- Available in: Target Encoding
 
 Description
 ~~~~~~~~~~~
@@ -11,12 +10,12 @@ The inflection point value is used for blending and to calculate ``lambda``. Thi
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
-- `blended_avg <blended_avg.html>`__
-- `noise <noise.html>`__
+- `blending <blending.html>`__
 - `smoothing <smoothing.html>`__
-- `holdout_type <holdout_type.html>`__
+- `data_leakage_handling <data_leakage_handling.html>`__
+- `noise <noise.html>`__
 
 Example
 ~~~~~~~
 
-Refer to the `Target Encoding <../../data-munging/target-encoding.html>`__ data munging topic to view a detailed example.
+Refer to the `Target Encoding <../target-encoding.html>`__ topic to view a detailed example.

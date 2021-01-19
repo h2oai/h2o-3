@@ -27,13 +27,17 @@ Defining a RuleFit Model (Beta API)
 
 - **algorithm**: The algorithm to use to fit a tree ensemble. Must be one of: "AUTO", "DRF", or "GBM". Defaults to "DRF".
 
-- **min_rule_length**: Specify the minimal depth of trees to be fit. Defaults to 1.
+- **min_rule_length**: Specify the minimal depth of trees to be fit. Defaults to 3.
 
-- **max_rule_length**: Specify the maximal  depth of trees to be fit. Defaults to 10.
+- **max_rule_length**: Specify the maximal  depth of trees to be fit. Defaults to 3.
 
 - **max_num_rules**: The maximum number of rules to return. Defaults to -1, which means the number of rules are selected by diminishing returns in model deviance.
 
 - **model_type**: Specify the type of base learners in the ensemble. Must be one of: "rules_and_linear", "rules", or "linear". Defaults to "rules_and_linear".
+
+    - If the model_type is ``rules_and_linear``, the algorithm fits a linear model to the rule feature set joined with the original feature set.
+    - If the model_type is ``rules``, the algorithm fits a linear model only to the rule feature set (no linear terms can become important).
+    - If the model_type is ``linear``, the algorithm fits a linear model only to the original feature set (no rule terms can become important).
 
 - `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
 
@@ -110,7 +114,7 @@ Examples
 
 		import h2o
 		h2o.init()
-		from h2o.estimators import H2ORuleFitEstimators
+		from h2o.estimators import H2ORuleFitEstimator
 
 		# Import the titanic dataset and set the column types:
 		f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
@@ -133,7 +137,7 @@ Examples
 		print(rfit._model_json['output']['rule_importance'])
 
 		# Predict on the test data:
-		rfit.predict()
+		rfit.predict(test)
 
 
 References

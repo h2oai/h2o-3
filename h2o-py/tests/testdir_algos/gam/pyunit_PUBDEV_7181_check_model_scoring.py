@@ -14,7 +14,7 @@ def test_gam_model_predict():
     h2o_data["C1"] = h2o_data["C1"].asfactor()
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C21"
-    model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictGaussianGAM2.csv"))
+    model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictGaussianGAM3.csv"))
     buildModelCheckPredict(h2o_data, h2o_data,  model_test_data, myY, ["C11", "C12", "C13"], 'gaussian', 'gaussian')
     pred_gauss = buildModelCheckPredict(h2o_data, h2o_data,  model_test_data, myY, ["C11", "C12", "C13"], 'gaussian', 'gaussian')
     pred_auto_gauss = buildModelCheckPredict(h2o_data, h2o_data,  model_test_data, myY, ["C11", "C12", "C13"], 'AUTO', 'gaussian')
@@ -26,7 +26,7 @@ def test_gam_model_predict():
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C11"
     h2o_data["C11"] = h2o_data["C11"].asfactor()
-    model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictMultinomialGAM2.csv"))
+    model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictMultinomialGAM3.csv"))
     pred_multi = buildModelCheckPredict(h2o_data, h2o_data, model_test_data, myY, ["C6", "C7", "C8"], 'multinomial', 'multinomial')
     pred_auto_multi = buildModelCheckPredict(h2o_data, h2o_data, model_test_data, myY, ["C6", "C7", "C8"], 'AUTO', 'multinomial')
     pyunit_utils.compare_frames_local(pred_multi, pred_auto_multi, prob=1)
@@ -37,7 +37,7 @@ def test_gam_model_predict():
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C21"
     h2o_data["C21"] = h2o_data["C21"].asfactor()
-    model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictBinomialGAM2.csv"))
+    model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictBinomialGAM3.csv"))
     pred_bin = buildModelCheckPredict(h2o_data, h2o_data, model_test_data, myY, ["C11", "C12", "C13"], 'binomial', 'binomial')
     pred_auto_bin = buildModelCheckPredict(h2o_data, h2o_data, model_test_data, myY, ["C11", "C12", "C13"], 'AUTO', 'binomial')
     pyunit_utils.compare_frames_local(pred_bin, pred_auto_bin, prob=1)
@@ -67,6 +67,7 @@ def buildModelCheckPredict(train_data, test_data, model_test_data, myy, gamX, fa
     if pred.ncols < model_test_data.ncols:
         ncolT = model_test_data.ncols-1
         model_test_data = model_test_data.drop(ncolT)
+    model_test_data.set_names(pred.names)
     if (family == 'gaussian' or (family == 'AUTO' and actual_family == 'gaussian')):
         pyunit_utils.compare_frames_local(pred, model_test_data, prob=1)
     else:

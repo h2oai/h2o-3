@@ -23,7 +23,4 @@ def h2o_H2OFrame_logical_negation():
     assert clist.all(), "h2o.H2OFrame.logical_negation() command is not working."  # check return result
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_logical_negation())
-else:
-    h2o_H2OFrame_logical_negation()
+pyunit_utils.standalone_test(h2o_H2OFrame_logical_negation)

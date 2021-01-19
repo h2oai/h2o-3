@@ -1,7 +1,7 @@
 description = "H2O XGBoost support"
 
 ext {
-    xgboost4jVersion = "1.0.0.11"
+    xgboost4jVersion = "1.2.0.7"
 }
 
 dependencies {
@@ -11,7 +11,7 @@ dependencies {
     compile project(":h2o-genmodel-ext-xgboost")
     compile project(":h2o-ext-steam")
     compileOnly 'com.esotericsoftware.kryo:kryo:2.21'
-    compileOnly "javax.servlet:javax.servlet-api:3.0.1"
+    compileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
     compile "org.apache.httpcomponents:httpclient:${httpClientVersion}"
     compile "org.apache.httpcomponents:httpmime:${httpClientVersion}"
 
@@ -21,7 +21,8 @@ dependencies {
         exclude group: 'org.scala-lang', module: 'scala-compiler'
         exclude group: 'org.scala-lang', module: 'scala-reflect'
         exclude group: 'org.scala-lang', module: 'scala-library'
-        exclude group: 'com.typesafe.akka', module: 'akka-actor_2.11'
+        exclude group: 'com.typesafe.akka', module: 'akka-actor_2.12'
+        exclude group: 'org.scalatest', module: 'scalatest_2.12'
         exclude group: 'com.esotericsoftware.kryo', module: 'kryo'
     }
     compile "ai.h2o:xgboost4j-linux-gpuv4:${xgboost4jVersion}"

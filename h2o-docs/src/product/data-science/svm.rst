@@ -38,7 +38,7 @@ Defining an SVM Model
 
 -  **gamma**: Specify the coefficient of the kernel. This value defaults to -1.
 
--  **rank_ratio**: Specify the desired rank of the `Incomplete Cholesky Facorization <https://en.wikipedia.org/wiki/Incomplete_Cholesky_factorization>`__ (ICF) matrix expressed as an ration of number of input rows.
+-  **rank_ratio**: Specify the desired rank of the `Incomplete Cholesky Facorization <https://en.wikipedia.org/wiki/Incomplete_Cholesky_factorization>`__ (ICF) matrix expressed as an ration of number of input rows. This value defaults to -1.
 
 -  **positive_weight**: Specify the weight of the positive (+1) class of observations. This value defaults to 1.
 
@@ -46,7 +46,7 @@ Defining an SVM Model
 
 -  **sv_threshold**: Specify the threshold for accepting a candidate observation into the set of support vectors. This value defaults to 0.0001.
 
--  **fact_threshold**: Specify the convergence threshold of the `Incomplete Cholesky Facorization <https://en.wikipedia.org/wiki/Incomplete_Cholesky_factorization>`__ (ICF)
+-  **fact_threshold**: Specify the convergence threshold of the `Incomplete Cholesky Facorization <https://en.wikipedia.org/wiki/Incomplete_Cholesky_factorization>`__ (ICF). This value defaults to 1e-05.
 
 -  **feasible_threshold**: Specify the convergence threshold for primal-dual residuals in the `Interior Point Method <https://en.wikipedia.org/wiki/Interior-point_method>`__ (IPM) iteration. This value defaults to 0.001.
 
@@ -59,7 +59,7 @@ Defining an SVM Model
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for
    algorithm components dependent on randomization. The seed is
    consistent for each H2O instance so that you can create models with
-   the same starting conditions in alternative configurations.
+   the same starting conditions in alternative configurations. This value defaults to -1 (time-based random number).
 
 SVM Algorithm
 ~~~~~~~~~~~~~

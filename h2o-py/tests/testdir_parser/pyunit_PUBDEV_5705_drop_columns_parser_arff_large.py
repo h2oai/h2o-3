@@ -15,7 +15,7 @@ MAXTIME = datetime.datetime(2080, 8, 6, 8, 14, 59)
 def test_arff_parser_column_skip():
     # generate a big frame with all datatypes and save it to svmlight
     nrow = 10000
-    ncol = 98
+    ncol = 20
     seed = 12345
     frac1 = 0.16
     frac2 = 0.2
@@ -46,13 +46,13 @@ def test_arff_parser_column_skip():
     skip_random.sort()
 
     try:
-        loadFileSkipAll = h2o.upload_file(savefilenamewithpath, skipped_columns=skip_all)
+        h2o.upload_file(savefilenamewithpath, skipped_columns=skip_all)
         assert False, "Test should have thrown an exception due to all columns are skipped"  # should have failed here
     except:
         pass
 
     try:
-        importFileSkipAll = h2o.import_file(savefilenamewithpath, skipped_columns=skip_all)
+        h2o.import_file(savefilenamewithpath, skipped_columns=skip_all)
         assert False, "Test should have thrown an exception due to all columns are skipped"  # should have failed here
     except:
         pass

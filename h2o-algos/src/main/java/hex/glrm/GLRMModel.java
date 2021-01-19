@@ -203,6 +203,8 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
   }
 
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
+    ab.getKey(_output._init_key, fs);
+    ab.getKey(_output._representation_key, fs);
     return super.readAll_impl(ab, fs);
   }
 

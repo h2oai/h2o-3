@@ -8,6 +8,10 @@ import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.TreeBackedMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
+import hex.genmodel.attributes.ModelAttributes;
+import hex.genmodel.attributes.VariableImportances;
+import hex.genmodel.attributes.parameters.VariableImportancesHolder;
+import hex.genmodel.attributes.parameters.KeyValue;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
@@ -858,6 +862,29 @@ public class EasyPredictModelWrapper implements Serializable {
     System.arraycopy(preds, 2, p.reasonCodes, 0, p.reasonCodes.length);
 
     return p;
+  }
+
+  /**
+   *  See {@link #varimp(int)}
+   *  return descending sorted by relative importance array of all variables in the model
+   */
+  public KeyValue[] varimp() {
+    return varimp(-1);
+  }
+
+  /**
+   * See {@link VariableImportances#topN(int)}
+   */
+  public KeyValue[] varimp(int n) {
+    if (m instanceof MojoModel) {
+      ModelAttributes attributes = ((MojoModel) m)._modelAttributes;
+      if (attributes == null) {
+        throw new IllegalStateException("Model attributes are not available. Did you load metadata from model? MojoModel.load(\"model\", true)");
+      } else if (attributes instanceof VariableImportancesHolder) {
+        return ((VariableImportancesHolder) attributes).getVariableImportances().topN(n);
+      }
+    }
+    throw new IllegalStateException("Model does not support variable importance");
   }
 
   //----------------------------------------------------------------------

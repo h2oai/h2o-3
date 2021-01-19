@@ -13,11 +13,6 @@ fi
 
 IFS=',' read -r -a array <<< ${VERSIONS_TO_INSTALL}
 for python_version in "${array[@]}"; do
-  if [[ ${python_version} == '2.7' ]]; then
-    source /opt/rh/python27/enable
-    pip install pip wheel setuptools --upgrade
-    continue
-  fi
   echo "###### Installing Python ${python_version} ######"
   YUM_PY_VERSION=$(echo ${python_version} | tr -d '.')
   yum install -y rh-python${YUM_PY_VERSION}-python-devel

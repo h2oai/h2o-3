@@ -2,6 +2,229 @@
 
 ## H2O
 
+### Zermelo (3.32.0.3) - 12/24/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/index.html</a>
+
+#### Bug
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7773'>PUBDEV-7773</a>] -         The `pca_impl` parameter is no longer passed to PCA MOJO.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7896'>PUBDEV-7896</a>] -         Objects to be retained no longer removed during the `h2o.removeAll()` command.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7902'>PUBDEV-7902</a>] -         Starting GridSearch in a fresh cluster with new hyperparameters that overlap old ones will no longer cause the old models to be trained again.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7914'>PUBDEV-7914</a>] -         GridSearch no longer hangs indefinitely when not using the default value for paralellism.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7921'>PUBDEV-7921</a>] -         Fixed the parent dir lookup for HDFS grid imports.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7928'>PUBDEV-7928</a>] -         Fixed the CustomDistribution test error.
+</li>
+</ul>
+    
+#### New Feature
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-5923'>PUBDEV-5923</a>] -         Cross-Validation predictions can now be saved alongside the model.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7269'>PUBDEV-7269</a>] -         Added multinomial and grid search support for AUC/PR AUC metrics.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7861'>PUBDEV-7861</a>] -         Now offers a standalone R client that doesn’t include the h2o jar.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7871'>PUBDEV-7871</a>] -         Created a Red Hat certification for H2O Docker Image.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7880'>PUBDEV-7880</a>] -         Fixed randomized split points for `histogram_type=“Random”` when nbins=2.       
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7916'>PUBDEV-7916</a>] -         Single quote regime for CSV parser exposed for importing & uploading files.
+</li>
+</ul>
+    
+#### Improvement
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7753'>PUBDEV-7753</a>] -         REST API disabled on non-leader Kubernetes nodes.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7875'>PUBDEV-7875</a>] -         GLM now uses proper logging instead of printlines.
+</li>
+</ul>
+    
+#### Docs
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7822'>PUBDEV-7822</a>] -         
+Added non-tree-based models to the variable importance page in the user guide.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7869'>PUBDEV-7869</a>] -         Updated the AutoML citation in the User Guide to point to the H2O AutoML ICML AutoML workshop paper.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7882'>PUBDEV-7882</a>] -         Updated Python docstring examples about cross-validation.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7905'>PUBDEV-7905</a>] -         Corrected `k` parameter description for PCA.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7922'>PUBDEV-7922</a>] -         Corrected the RuleFit Python example.
+</li>
+</ul>
+
+
+### Zermelo (3.32.0.2) - 11/17/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/2/index.html</a>
+
+#### Bug
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7793'>PUBDEV-7793</a>] -         Implemented deserialization of monotone constraints.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7844'>PUBDEV-7844</a>] -         Updated required version of ggplot2 in R package to 3.3.0.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7866'>PUBDEV-7866</a>] -         Fixed the parsing of GLM’s `rand_family` params in MOJO JSON.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7876'>PUBDEV-7876</a>] -         Fixed NPE that resulted when starting a grid with SequentialWalker in AutoML exploitation phase.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7879'>PUBDEV-7879</a>] -         Fixed MOJO version check message.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7886'>PUBDEV-7886</a>] -         When grid search has parallelism enabled, it now includes CV models.
+</li>
+</ul>
+    
+#### New Feature
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7739'>PUBDEV-7739</a>] -         Added feature interactions and importance for XGBoost and GBM.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7774'>PUBDEV-7774</a>] -         Added new `interaction_constraints` parameter to XGBoost.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7838'>PUBDEV-7838</a>] -         Added an option to not have quotes in the header during exportFile.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7887'>PUBDEV-7887</a>] -         Added ability to retrieve a list of all the models in an H2O cluster.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7900'>PUBDEV-7900</a>] -         Added custom pod labels for HELM charts.
+</li>
+</ul>
+    
+#### Task
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7835'>PUBDEV-7835</a>] -         Added `lambda_min` & `lambda_max` parameters to GLMModelOutputs.
+</li>
+</ul>
+    
+#### Improvement
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7745'>PUBDEV-7745</a>] -         Added default values to all algorithm parameters in the User Guide.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7749'>PUBDEV-7749</a>] -         Fixed the discrepancies between the Target Encoding User Guide page and Client.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7834'>PUBDEV-7834</a>] -         Added ONNX support to the documentation.
+</li>
+</ul>
+    
+#### Engineering Story
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7846'>PUBDEV-7846</a>] -         Added a new method which properly locks H2O Frames during conversion from Spark Data Frames to H2O Frames in Sparkling Water.
+</li>
+</ul>
+    
+#### Docs
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7836'>PUBDEV-7836</a>] -         On the Grid Search User Guide page, fixed the missing syntax highlight in the Python example of the Random Grid Search section.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7837'>PUBDEV-7837</a>] -         Added `rule_generation_ntrees` parameter to the RuleFit page.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7877'>PUBDEV-7877</a>] -         Added documentation for GBM and XGBoost on feature interactions and importance.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7888'>PUBDEV-7888</a>] -         Added a Python example to the `stratify_by` parameter. 
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7898'>PUBDEV-7898</a>] -         Added a Feature Engineering section to the Data Manipulation page in the User Guide.
+</li>
+</ul>
+
+
+### Zermelo (3.32.0.1) - 10/8/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/1/index.html</a>
+
+#### Bug
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7667'>PUBDEV-7667</a>] -         Fixed StackedEnsemble’s retrieval of the seed parameter value.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7746'>PUBDEV-7746</a>] -         Deserialization values of MOJO ModelParameter now work when the Value Type is int[].
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7760'>PUBDEV-7760</a>] -         H2O no longer uses lazy-loading for sequential zip parse.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7762'>PUBDEV-7762</a>] -         Updated model_type argument names for Rulefit in R.
+</li>
+</ul>
+    
+#### New Feature
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7241'>PUBDEV-7241</a>] -         Quantile distributions added to monotone constraints.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7319'>PUBDEV-7319</a>] -          TargetEncoder integrated into ModelBuilder.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7755'>PUBDEV-7755</a>] -         Python client no longer instructs the user to declare a root handler in library mode.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7791'>PUBDEV-7791</a>] -         Hostname used as certificate alias to lookup machine-specific certificate allowing Hadoop users to connect to Flow over HTTPS.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7796'>PUBDEV-7796</a>] -         Added the model explainability interface for H2O models and AutoML objects in both R & Python.
+</li>
+<li>
+[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7720'>PUBDEV-7720</a>] -         Added the RuleFit algorithm for interpretability.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7808'>PUBDEV-7808</a>] -         Implemented a basic HELM chart.
+</li>
+</ul>
+    
+#### Task
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7763'>PUBDEV-7763</a>] -         Rulefit model added to algorithm section of UserGuide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7786'>PUBDEV-7786</a>] -         Added an Explainability page to the User Guide outlining the new `h2o.explain()` and `h2o.explain_row()` functions.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7804'>PUBDEV-7804</a>] -         Updated the AutoML User Guide page to include the new Explainability and Preprocessing sections.
+</li>
+</ul>
+    
+#### Improvement
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5932'>PUBDEV-5932</a>] -         Added support for Python 3.7+.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7717'>PUBDEV-7717</a>] -         Exposes names of score0 output values in MOJO.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7730'>PUBDEV-7730</a>] -         Added function to plot a Precision Recall Curve.
+</li>
+<li>
+[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7740'>PUBDEV-7740</a>] -         RuleFit model represented by the set of rules obtained from trees during training.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7765'>PUBDEV-7765</a>] -         Performance improved for exporting a Frame to CSV.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7769'>PUBDEV-7769</a>] -         GPU backend allowed in XGBoost when running multinode even when `build_tree_one_node` is enabled.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7787'>PUBDEV-7787</a>] -         Updated all URLs in R package to use HTTPS.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7790'>PUBDEV-7790</a>] -         Upgraded to XGBoost 1.2.0.
+</li>
+</ul>
+    
+#### Technical task
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7366'>PUBDEV-7366</a>] -         Added cross-validation to GAM allowing users to find the best alpha/lambda values when building a GAM model.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7672'>PUBDEV-7672</a>] -         Added TargetEncoder support for multiclass problems.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7743'>PUBDEV-7743</a>] -         Added new TargetEncoder parameter that allows users to remove original features automatically.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7778'>PUBDEV-7778</a>] -          Implemented minimal support for TargetEncoding in AutoML.
+</li>
+</ul>
+    
+#### Docs
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7541'>PUBDEV-7541</a>] -          Updated the descriptions of AutoML in R & Python packages.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7781'>PUBDEV-7781</a>] -         Made the default for `categorical_encoding` in XGBoost explicit in the documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7811'>PUBDEV-7811</a>] -         Updated the import datatype section of the Python FAQ in the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7815'>PUBDEV-7815</a>] -         Updated the default values for `min_rule_length` and `max_rule_length` on the RuleFit page of the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7816'>PUBDEV-7816</a>] -         Updated the `validation_frame` definition for unsupervised algorithms in the User Guide.
+</li>
+</ul>
+
 ### Zeno (3.30.1.3) - 9/28/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zeno/3/index.html</a>

@@ -5,11 +5,15 @@ import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
+import biz.k11i.xgboost.tree.RegTreeNodeStat;
 import hex.*;
 import hex.genmodel.algos.tree.*;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
+import hex.FeatureInteraction;
+import hex.FeatureInteractions;
+import hex.FeatureInteractionsCollector;
 import hex.tree.PlattScalingHelper;
 import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.PredictConfiguration;
@@ -22,7 +26,9 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
+import water.util.TwoDimTable;
 
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -32,7 +38,7 @@ import static hex.tree.xgboost.XGBoost.makeDataInfo;
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> 
-        implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions {
+        implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions, FeatureInteractionsCollector {
 
   private static final Logger LOG = Logger.getLogger(XGBoostModel.class);
 
@@ -96,6 +102,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public double _colsample_bytree = 1.0;
 
     public KeyValue[] _monotone_constraints;
+    public String[][] _interaction_constraints;
 
     public float _max_abs_leafnode_pred = 0;
     public float _max_delta_step = 0;
@@ -212,7 +219,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
       case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
-      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
+      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(), domain, _parms._auc_type);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       default: throw H2O.unimpl();
     }
@@ -461,13 +468,63 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("monotone_constraints", sb.toString());
       assert constraintsUsed == monotoneConstraints.size();
     }
-
+    
+    String[][] interactionConstraints = p._interaction_constraints;
+    if(interactionConstraints != null && interactionConstraints.length > 0) {
+      if(!p._categorical_encoding.equals(Parameters.CategoricalEncodingScheme.OneHotInternal)){
+        throw new IllegalArgumentException("No support interaction constraint for categorical encoding = " + p._categorical_encoding.toString()+". Constraint interactions are available only for ``AUTO`` (``one_hot_internal`` or ``OneHotInternal``) categorical encoding.");
+      }
+      params.put("interaction_constraints", createInteractions(interactionConstraints, coefNames, p));
+    }
+    
     LOG.info("XGBoost Parameters:");
     for (Map.Entry<String,Object> s : params.entrySet()) {
       LOG.info(" " + s.getKey() + " = " + s.getValue());
     }
     LOG.info("");
     return Collections.unmodifiableMap(params);
+  }
+  
+  private static String createInteractions(String[][] interaction_constraints, String[] coefNames, XGBoostParameters params){
+    StringBuilder sb = new StringBuilder();
+    sb.append("[");
+    for (String[] list : interaction_constraints) {
+      sb.append("[");
+      for (String item : list) {
+        if(item.equals(params._response_column)){
+          throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is used as response column and cannot be used in interaction.");
+        }
+        if(item.equals(params._weights_column)){
+          throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is used as weights column and cannot be used in interaction.");
+        }
+        if(item.equals(params._fold_column)){
+          throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is used as fold column and cannot be used in interaction.");
+        }
+        if(params._ignored_columns != null && ArrayUtils.find(params._ignored_columns, item) != -1) {
+          throw new IllegalArgumentException("'interaction_constraints': Column with the name '" + item + "'is set in ignored columns and cannot be used in interaction.");
+        }
+        // first find only name
+        int start = ArrayUtils.findWithPrefix(coefNames, item);
+        // find start index and add indices until end index
+        if (start == -1) {
+          throw new IllegalArgumentException("'interaction_constraints': Column with name '" + item + "' is not in the frame.");
+        } else if(start > -1){               // find exact position - no encoding  
+          sb.append(start).append(",");
+        } else {              // find first occur of the name with prefix - encoding
+          start = -start - 2;
+          assert coefNames[start].startsWith(item): "The column name should be find correctly.";
+          // iterate until find all encoding indices
+          int end = start;
+          while (end < coefNames.length && coefNames[end].startsWith(item)) {
+            sb.append(end).append(",");
+            end++;
+          }
+        }
+      }
+      sb.replace(sb.length() - 1, sb.length(), "],");
+    }
+    sb.replace(sb.length() - 1, sb.length(), "]");
+    return sb.toString();
   }
 
   public static BoosterParms createParams(XGBoostParameters p, int nClasses, String[] coefNames) {
@@ -671,20 +728,22 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
 
     final RegTreeNode[] treeNodes = treesInGroup[treeNumber].getNodes();
+    final RegTreeNodeStat[] treeNodeStats = treesInGroup[treeNumber].getStats();
     assert treeNodes.length >= 1;
 
     SharedTreeGraph sharedTreeGraph = new SharedTreeGraph();
     final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeGraph.makeSubgraph(_output._training_metrics._description);
 
     final XGBoostUtils.FeatureProperties featureProperties = XGBoostUtils.assembleFeatureNames(model_info.dataInfo()); // XGBoost's usage of one-hot encoding assumed
-    constructSubgraph(treeNodes, sharedTreeSubgraph.makeRootNode(), 0, sharedTreeSubgraph, featureProperties, true); // Root node is at index 0
+    constructSubgraph(treeNodes, treeNodeStats, sharedTreeSubgraph.makeRootNode(), 0, sharedTreeSubgraph, featureProperties, true); // Root node is at index 0
     return sharedTreeGraph;
   }
 
-  private static void constructSubgraph(final RegTreeNode[] xgBoostNodes, final SharedTreeNode sharedTreeNode,
+  private static void constructSubgraph(final RegTreeNode[] xgBoostNodes, final RegTreeNodeStat[] xgBoostNodeStats, final SharedTreeNode sharedTreeNode,
                                         final int nodeIndex, final SharedTreeSubgraph sharedTreeSubgraph,
                                         final XGBoostUtils.FeatureProperties featureProperties, boolean inclusiveNA) {
     final RegTreeNode xgBoostNode = xgBoostNodes[nodeIndex];
+    final RegTreeNodeStat xgBoostNodeStat = xgBoostNodeStats[nodeIndex];
     // Not testing for NaNs, as SharedTreeNode uses NaNs as default values.
     //No domain set, as the structure mimics XGBoost's tree, which is numeric-only
     if (featureProperties._oneHotEncoded[xgBoostNode.getSplitIndex()]) {
@@ -697,11 +756,14 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     sharedTreeNode.setPredValue(xgBoostNode.getLeafValue());
     sharedTreeNode.setInclusiveNa(inclusiveNA);
     sharedTreeNode.setNodeNumber(nodeIndex);
+    sharedTreeNode.setGain(xgBoostNodeStat.getGain());
+    sharedTreeNode.setWeight(xgBoostNodeStat.getCover());
+    
     if (!xgBoostNode.isLeaf()) {
       sharedTreeNode.setCol(xgBoostNode.getSplitIndex(), featureProperties._names[xgBoostNode.getSplitIndex()]);
-      constructSubgraph(xgBoostNodes, sharedTreeSubgraph.makeLeftChildNode(sharedTreeNode),
+      constructSubgraph(xgBoostNodes, xgBoostNodeStats, sharedTreeSubgraph.makeLeftChildNode(sharedTreeNode),
               xgBoostNode.getLeftChildIndex(), sharedTreeSubgraph, featureProperties, xgBoostNode.default_left());
-      constructSubgraph(xgBoostNodes, sharedTreeSubgraph.makeRightChildNode(sharedTreeNode),
+      constructSubgraph(xgBoostNodes, xgBoostNodeStats, sharedTreeSubgraph.makeRightChildNode(sharedTreeNode),
           xgBoostNode.getRightChildIndex(), sharedTreeSubgraph, featureProperties, !xgBoostNode.default_left());
     }
   }
@@ -783,5 +845,31 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     Predictor p = PredictorFactory.makePredictor(model_info._boosterBytes, false);
     XGBoostPojoWriter.make(p, namePrefix, _output, defaultThreshold()).renderJavaPredictBody(sb, fileCtx);
   }
+
+  public FeatureInteractions getFeatureInteractions(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
+
+    FeatureInteractions featureInteractions = new FeatureInteractions();
+    
+    for (int i = 0; i < this._parms._ntrees; i++) {
+      FeatureInteractions currentTreeFeatureInteractions = new FeatureInteractions();
+      SharedTreeGraph sharedTreeGraph = convert(i, null);
+      assert sharedTreeGraph.subgraphArray.size() == 1;
+      SharedTreeSubgraph tree = sharedTreeGraph.subgraphArray.get(0);
+      List<SharedTreeNode> interactionPath = new ArrayList<>();
+      Set<String> memo = new HashSet<>();
+      
+      FeatureInteractions.collectFeatureInteractions(tree.rootNode, interactionPath, 0, 0, 1, 0, 0,
+              currentTreeFeatureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, i, false);
+      featureInteractions.mergeWith(currentTreeFeatureInteractions);
+    }
+    
+    return featureInteractions;
+  }
+
+  @Override
+  public TwoDimTable[][] getFeatureInteractionsTable(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
+    return FeatureInteractions.getFeatureInteractionsTable(this.getFeatureInteractions(maxInteractionDepth,maxTreeDepth,maxDeepening));
+  }
+
 
 }

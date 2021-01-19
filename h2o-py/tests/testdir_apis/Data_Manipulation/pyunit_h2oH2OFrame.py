@@ -24,7 +24,5 @@ def h2o_H2OFrame():
     assert h2oframe.nrows==len(python_lists) and h2oframe.ncols==len(python_lists[0]), "h2o.H2OFrame() command is " \
                                                                                  "not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame())
-else:
-    h2o_H2OFrame()
+
+pyunit_utils.standalone_test(h2o_H2OFrame)

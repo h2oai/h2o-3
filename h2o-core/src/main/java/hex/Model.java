@@ -15,6 +15,7 @@ import hex.quantile.QuantileModel;
 import org.joda.time.DateTime;
 import water.*;
 import water.api.ModelsHandler;
+import water.api.StreamWriteOption;
 import water.api.StreamWriter;
 import water.api.StreamingSchema;
 import water.api.schemas3.KeyV3;
@@ -390,6 +391,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * Bins for Gains/Lift table, if applicable. Ignored if G/L are not calculated.
      */
     public int _gainslift_bins = -1;
+    
+    public MultinomialAucType _auc_type = MultinomialAucType.AUTO;
 
     // Public no-arg constructor for reflective creation
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
@@ -461,13 +464,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       long xs = 0x600DL;
       int count = 0;
       Field[] fields = Weaver.getWovenFields(this.getClass());
-      Arrays.sort(fields,
-              new Comparator<Field>() {
-                public int compare(Field field1, Field field2) {
-                  return field1.getName().compareTo(field2.getName());
-                }
-              });
-
+      Arrays.sort(fields, Comparator.comparing(Field::getName));
       for (Field f : fields) {
         if (ignoredFields != null && ignoredFields.contains(f.getName())) {
           // Do not include ignored fields in the final hash
@@ -507,7 +504,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           try {
             f.setAccessible(true);
             Object value = f.get(this);
-            if (value != null) {
+            if (value instanceof Enum) {
+              // use string hashcode for enums, otherwise the checksum would be different each run
+              xs = xs * P + (long)(value.toString().hashCode());
+            } else if (value != null) {
               xs = xs * P + (long)(value.hashCode());
             } else {
               xs = xs * P + P;
@@ -1079,11 +1079,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     scoringInfo.scored_xval = new ScoreKeeper(this._output._cross_validation_metrics);
     scoringInfo.validation = _output._validation_metrics != null;
     scoringInfo.cross_validation = _output._cross_validation_metrics != null;
-
-    if (this._output.isBinomialClassifier()) {
-      scoringInfo.training_AUC = this._output._training_metrics == null ? null: ((ModelMetricsBinomial)this._output._training_metrics)._auc;
-      scoringInfo.validation_AUC = this._output._validation_metrics == null ? null : ((ModelMetricsBinomial)this._output._validation_metrics)._auc;
-    }
   }
 
   // return the most up-to-date model metrics
@@ -1193,8 +1188,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
     if (mm == null) return Double.NaN;
-
-    return ((ModelMetricsBinomial)mm)._auc._auc;
+    if(mm instanceof ModelMetricsBinomial) {
+      return ((ModelMetricsBinomial) mm)._auc._auc;
+    } else if(mm instanceof ModelMetricsMultinomial) {
+      return ((ModelMetricsMultinomial) mm).auc();
+    }
+    return Double.NaN;
   }
 
   public double AUCPR() {
@@ -1203,8 +1202,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
     if (mm == null) return Double.NaN;
-
-    return ((ModelMetricsBinomial)mm)._auc._pr_auc;
+    if(mm instanceof ModelMetricsBinomial) {
+      return ((ModelMetricsBinomial) mm)._auc._pr_auc;
+    } else if(mm instanceof ModelMetricsMultinomial) {
+      return ((ModelMetricsMultinomial) mm).pr_auc();
+    }
+    return Double.NaN;
   }
 
   public double deviance() {
@@ -1459,7 +1462,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             if( isResponse && vec.domain() != null && ds.length == domains[i].length+vec.domain().length )
               throw new IllegalArgumentException("Test/Validation dataset has a categorical response column '"+names[i]+"' with no levels in common with the model");
             if (ds.length > domains[i].length)
-              msgs.add("Test/Validation dataset column '" + names[i] + "' has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
+              msgs.add("Test/Validation dataset column '" + names[i] + "' has levels not trained on: " + ArrayUtils.toStringQuotedElements(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
             vec = evec;
           }
         } else if(vec.isCategorical()) {
@@ -2454,7 +2457,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             FileOutputStream os = new FileOutputStream(ss.getFilename());
             ss.getStreamWriter().writeTo(os);
             os.close();
-            genmodel = MojoModel.load(filename);
+            genmodel = MojoModel.load(filename, true);
             features = MemoryManager.malloc8d(genmodel._names.length);
           } catch (IOException e1) {
             e1.printStackTrace();
@@ -2709,7 +2712,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     @Override
-    public void writeTo(OutputStream os) {
+    public void writeTo(OutputStream os, StreamWriteOption... options) {
       toJava(os, preview, true);
     }
   }
@@ -2838,6 +2841,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       ab.sourceName = targetUri.toString();
       @SuppressWarnings("unchecked")
       M model = (M) Keyed.readAll(ab);
+      Keyed.readAll(ab); // CV holdouts frame 
       ab.close();
       is.close();
       return model;
@@ -2860,11 +2864,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           final AutoBuffer ab = new AutoBuffer(inputStream);
           @SuppressWarnings("unchecked")
           M model = (M) Keyed.readAll(ab);
+          Keyed.readAll(ab); // CV holdouts frame 
           ab.close();
           return model;
         } 
     }
-
+    
   /**
    * Exports a binary model to a given location.
    * @param location target path, it can be on local filesystem, HDFS, S3...
@@ -2872,13 +2877,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @return URI representation of the target location
    * @throws water.api.FSIOException when writing fails
    */
-  public URI exportBinaryModel(String location, boolean force) throws IOException {
+  public final URI exportBinaryModel(String location, boolean force, ModelExportOption... options) throws IOException {
     OutputStream os = null;
     try {
       URI targetUri = FileUtils.getURI(location);
       Persist p = H2O.getPM().getPersistForURI(targetUri);
       os = p.create(targetUri.toString(), force);
-      writeTo(os);
+      writeTo(os, options);
       os.close();
       return targetUri;
     } finally {
@@ -2887,8 +2892,22 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   @Override
-  public final void writeTo(OutputStream os) {
-    writeAll(new AutoBuffer(os, true)).close();
+  public final void writeTo(OutputStream os, StreamWriteOption... options) {
+    try (AutoBuffer ab = new AutoBuffer(os, true)) {
+      writeAll(ab);
+      Frame holdoutFrame = null;
+      if (ArrayUtils.contains(options, ModelExportOption.INCLUDE_CV_PREDICTIONS) 
+              && _output._cross_validation_holdout_predictions_frame_id != null) {
+        holdoutFrame = DKV.getGet(_output._cross_validation_holdout_predictions_frame_id);
+        if (holdoutFrame == null)
+            Log.warn("CV holdout predictions frame is no longer available and won't be exported in the binary model file.");
+      }
+      if (holdoutFrame != null) {
+        holdoutFrame.writeAll(ab);
+      } else {
+        ab.put(null); // mark no holdout preds
+      }
+    }
   }
   
   /**

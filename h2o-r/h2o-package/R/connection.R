@@ -189,6 +189,8 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
   if (!h2o.clusterIsUp(tmpConn)) {
     if (!startH2O)
       stop("Cannot connect to H2O server. Please check that H2O is running at ", h2o.getBaseURL(tmpConn))
+    else if (.h2o.__CLIENT_VERSION)
+      stop("Client version of the library cannot be used to start a local H2O instance. Use h2o.connect(ip=\"hostname\", port=number) instead.")
     else if (ip == "localhost" || ip == "127.0.0.1") {
       cat("\nH2O is not running yet, starting it now...\n")
       
@@ -348,7 +350,10 @@ h2o.connect <- function(ip = "localhost", port = 54321, strict_version_check = T
 h2o.getConnection <- function() {
   conn <- .attemptConnection()
   if (is.null(conn))
-    stop("No active connection to an H2O cluster. Did you run `h2o.init()` ?")
+    if (.h2o.__CLIENT_VERSION)
+      stop("No active connection to an H2O cluster. Did you run `h2o.connect(ip=\"hostname\", port=number)` ?")
+    else
+      stop("No active connection to an H2O cluster. Did you run `h2o.init()` ?")
   conn
 }
 
@@ -490,17 +495,30 @@ h2o.clusterStatus <- function() {
   msg = paste0(
     "\n",
     "----------------------------------------------------------------------\n",
-    "\n",
-    "Your next step is to start H2O:\n",
-    "    > h2o.init()\n",
+    "\n")
+
+  if (.h2o.__CLIENT_VERSION)
+    msg = paste0(msg, "Your next step is to connect to H2O:\n", "    > h2o.connect(ip=\"hostname\", port=number)\n")
+  else
+    msg = paste0(msg, "Your next step is to start H2O:\n", "    > h2o.init()\n")
+
+  msg = paste0(
+    msg,
     "\n",
     "For H2O package documentation, ask for help:\n",
     "    > ??h2o\n",
-    "\n",
-    "After starting H2O, you can use the Web UI at http://localhost:54321\n",
-    "For more information visit https://docs.h2o.ai\n",
-    "\n",
-    "----------------------------------------------------------------------\n")
+    "\n")
+
+    if (!.h2o.__CLIENT_VERSION)
+      msg = paste0(
+        msg,
+        "After starting H2O, you can use the Web UI at http://localhost:54321\n",
+        "For more information visit https://docs.h2o.ai\n")
+
+    msg = paste0(
+      msg,
+      "\n",
+      "----------------------------------------------------------------------\n")
   packageStartupMessage(msg)
 
   # Shut down local H2O when user exits from R ONLY if h2o started from R
@@ -554,7 +572,7 @@ h2o.clusterStatus <- function() {
   if(any(grepl("GNU libgcj", jver))) {
     return("Sorry, GNU Java is not supported for H2O.")
   }
-  # NOTE for developers: keep the following blacklist in logically consistent with whitelist in java code - see water.H2O.checkUnsupportedJava, near line 1849
+  # NOTE for developers: keep the following blacklist in logically consistent with whitelist in java code - see the water.JavaVersionSupport.checkUnsupportedJava method
   if (any(grepl("^java version \"1\\.[1-7]\\.", jver))) {
     return(paste0("Your java is not supported: ", jver[1]))
   }

@@ -19,7 +19,4 @@ def h2o_H2OFrame_tolower():
         "h2o.H2OFrame.tolower() command is not working."
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_tolower())
-else:
-    h2o_H2OFrame_tolower()
+pyunit_utils.standalone_test(h2o_H2OFrame_tolower)

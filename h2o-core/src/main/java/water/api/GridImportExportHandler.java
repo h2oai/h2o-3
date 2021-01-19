@@ -1,6 +1,7 @@
 package water.api;
 
 import hex.Model;
+import hex.ModelExportOption;
 import hex.grid.Grid;
 import water.*;
 import water.api.schemas3.GridExportV3;
@@ -9,7 +10,6 @@ import water.api.schemas3.KeyV3;
 import water.persist.Persist;
 import water.util.FileUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -43,7 +43,8 @@ public class GridImportExportHandler extends Handler {
       }
       final Grid grid = (Grid) freezable;
 
-      loadGridModels(grid, new File(gridImportV3.grid_path).getParent());
+      final String gridDirectory = persist.getParent(gridUri.toString());
+      loadGridModels(grid, gridDirectory);
       DKV.put(grid);
       return new KeyV3.GridKeyV3(grid._key);
     }
@@ -63,7 +64,8 @@ public class GridImportExportHandler extends Handler {
 
     final Grid serializedGrid = (Grid) possibleGrid;
     serializedGrid.exportBinary(gridExportV3.grid_directory);
-    serializedGrid.exportModelsBinary(gridExportV3.grid_directory);
+    ModelExportOption[] options = gridExportV3.getModelExportOptions();
+    serializedGrid.exportModelsBinary(gridExportV3.grid_directory, options);
 
     return new KeyV3.GridKeyV3(serializedGrid._key);
   }
@@ -100,7 +102,6 @@ public class GridImportExportHandler extends Handler {
   }
 
   private static void loadGridModels(final Grid grid, final String gridDirectory) throws IOException {
-
     for (Key<Model> k : grid.getModelKeys()) {
       final Model<?, ?, ?> model = Model.importBinaryModel(gridDirectory + "/" + k.toString());
       assert model != null;

@@ -26,7 +26,7 @@ public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSuperv
   transient double[] _ds = new double[3];
   transient float[] _yact = new float[1];
 
-  public MetricBuilderGAM(String[] domain, double[] ymu, GLMModel.GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept, int nclass) {
+  public MetricBuilderGAM(String[] domain, double[] ymu, GLMModel.GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept, int nclass, MultinomialAucType aucType) {
     super(domain==null?0:domain.length, domain);
     _intercept = intercept;
     _computeMetrics = computeMetrics;
@@ -40,7 +40,7 @@ public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSuperv
       case fractionalbinomial:
         _metricBuilder = new ModelMetricsBinomial.MetricBuilderBinomial(domain); break;
       case multinomial:
-        _metricBuilder = new ModelMetricsMultinomial.MetricBuilderMultinomial(nclass, domain); break;
+        _metricBuilder = new ModelMetricsMultinomial.MetricBuilderMultinomial(nclass, domain, aucType); break;
       case ordinal:
         _metricBuilder = new ModelMetricsOrdinal.MetricBuilderOrdinal(nclass, domain); break;
       default:
@@ -165,7 +165,7 @@ public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSuperv
       mm = new ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM(m, f, metricsMultinomial._nobs, 
               metricsMultinomial._MSE, metricsMultinomial._domain, metricsMultinomial._sigma, metricsMultinomial._cm, 
               metricsMultinomial._hit_ratios, metricsMultinomial._logloss, residualDeviance(),_null_deviance, _aic, 
-              nullDOF(), resDOF(), _customMetric);
+              nullDOF(), resDOF(), metricsMultinomial._auc,  _customMetric);
     } else if (_glmf._family == GLMModel.GLMParameters.Family.ordinal) { // ordinal should have a different resDOF()
       ModelMetricsOrdinal metricsOrdinal = (ModelMetricsOrdinal) mm;
       mm = new ModelMetricsBinomialGLM.ModelMetricsOrdinalGLM(m, f, metricsOrdinal._nobs, metricsOrdinal._MSE, 

@@ -1,6 +1,8 @@
 package water.api;
 
+import hex.FeatureInteractionsCollector;
 import hex.Model;
+import hex.ModelExportOption;
 import hex.PartialDependence;
 import water.*;
 import water.api.schemas3.*;
@@ -12,6 +14,7 @@ import water.fvec.Frame;
 import water.persist.Persist;
 import water.util.FileUtils;
 import water.util.JCodeGen;
+import water.util.TwoDimTable;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +26,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     extends Handler {
 
   /** Class which contains the internal representation of the models list and params. */
-  public static final class Models extends Iced {
+  public static final class Models extends Iced<Models> {
     public Key model_id;
     public Model[] models;
     public boolean find_compatible_frames = false;
@@ -45,14 +48,13 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
      * For a given model return an array of the compatible frames.
      *
      * @param model The model to fetch the compatible frames for.
-     * @param all_frames An array of all the Frames in the DKV.
      * @param all_frames_cols A Map of Frame to a Set of its column names.
-     * @return
+     * @return all frames compatible with a given model
      */
-    private static Frame[] findCompatibleFrames(Model model, Frame[] all_frames, Map<Frame, Set<String>> all_frames_cols) {
-      List<Frame> compatible_frames = new ArrayList<Frame>();
+    private static Frame[] findCompatibleFrames(Model<?, ?, ?> model, Map<Frame, Set<String>> all_frames_cols) {
+      List<Frame> compatible_frames = new ArrayList<>();
 
-      Set<String> model_column_names = new HashSet(Arrays.asList(model._output._names));
+      Set<String> model_column_names = new HashSet<>(Arrays.asList(model._output._names));
 
       for (Map.Entry<Frame, Set<String>> entry : all_frames_cols.entrySet()) {
         Frame frame = entry.getKey();
@@ -77,7 +79,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   public ModelsV3 list(int version, ModelsV3 s) {
     Models m = s.createAndFillImpl();
     m.models = Model.fetchAll();
-    return (ModelsV3) s.fillFromImplWithSynopsis(m);
+    return s.fillFromImplWithSynopsis(m);
   }
 
   // TODO: almost identical to ModelsHandler; refactor
@@ -121,7 +123,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
       m.models = new Model[1];
       m.models[0] = model;
       m.find_compatible_frames = true;
-      Frame[] compatible = Models.findCompatibleFrames(model, Frame.fetchAll(), m.fetchFrameCols());
+      Frame[] compatible = Models.findCompatibleFrames(model, m.fetchFrameCols());
       s.compatible_frames = new FrameV3[compatible.length]; // TODO: FrameBaseV3
       ((ModelSchemaV3)s.models[0]).compatible_frames = new String[compatible.length];
       int i = 0;
@@ -157,10 +159,11 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   
   @SuppressWarnings("unused") // called from the RequestServer through reflection
   public StreamingSchema fetchBinaryModel(int version, ModelsV3 s) {
-    Model model = getFromDKV("key", s.model_id.key());
+    Model<?, ?, ?> model = getFromDKV("key", s.model_id.key());
     String filename = JCodeGen.toJavaId(s.model_id.key().toString());
-    StreamingSchema ss = new StreamingSchema(model, filename);
-    return ss;
+    StreamWriteOption[] options = s.getModelExportOptions();
+    StreamWriter sw = DelegatingStreamWriter.wrapWithOptions(model, options);
+    return new StreamingSchema(sw, filename);
   }
 
   @SuppressWarnings("unused") // called from the RequestServer through reflection
@@ -172,6 +175,28 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
       partialDependence = new PartialDependence(Key.<PartialDependence>make());
     s.fillImpl(partialDependence); //fill frame_id/model_id/nbins/etc.
     return new JobV3(partialDependence.execImpl());
+  }
+
+  @SuppressWarnings("unused")
+  public FeatureInteractionV3 makeFeatureInteraction(int version, FeatureInteractionV3 s) {
+    Model model = getFromDKV("key", s.model_id.key());
+    if (model instanceof FeatureInteractionsCollector) {
+      TwoDimTable[][] featureInteractions = ((FeatureInteractionsCollector) model).getFeatureInteractionsTable(s.max_interaction_depth, s.max_tree_depth, s.max_deepening);
+  
+      s.feature_interaction = new TwoDimTableV3[featureInteractions[0].length + featureInteractions[2].length + 1];
+      
+      for (int i = 0; i < featureInteractions[0].length; i++) {
+        s.feature_interaction[i] = new TwoDimTableV3().fillFromImpl(featureInteractions[0][i]);
+      }
+      s.feature_interaction[featureInteractions[0].length] = new TwoDimTableV3().fillFromImpl(featureInteractions[1][0]);
+      for (int i = 0; i < featureInteractions[2].length; i++) {
+        s.feature_interaction[i + featureInteractions[0].length + 1] = new TwoDimTableV3().fillFromImpl(featureInteractions[2][i]);
+      }
+      
+      return s;
+    } else {
+      throw H2O.unimpl(String.format("%s does not support feature interactions calculation", model._parms.fullName()));
+    }
   }
 
   @SuppressWarnings("unused") // called from the RequestServer through reflection
@@ -238,7 +263,8 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   public ModelExportV3 exportModel(int version, ModelExportV3 mexport) {
     Model model = getFromDKV("model_id", mexport.model_id.key());
     try {
-      URI targetUri = model.exportBinaryModel(mexport.dir, mexport.force); // mexport.dir: Really file, not dir
+      ModelExportOption[] options = mexport.getModelExportOptions();
+      URI targetUri = model.exportBinaryModel(mexport.dir, mexport.force, options); // mexport.dir: Really file, not dir
       // Send back
       mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri).getCanonicalPath() : targetUri.toString();
     } catch (IOException | FSIOException e) {

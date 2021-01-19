@@ -31,6 +31,10 @@
 #'        Parameter path will be considered to be a path to a directory
 #'        if export to multiple part files is desired. Part files conform
 #'        to naming scheme 'part-m-?????'.
+#' @param header logical, indicates whether to write the header line.
+#'        Default is to include the header in the output file.
+#' @param quote_header logical, indicates whether column names should be
+#'        quoted. Default is to use quotes.
 #'        
 #' @examples
 #'\dontrun{
@@ -44,7 +48,8 @@
 #' # h2o.exportFile(iris_hf, path = "s3n://path/in/s3/iris.csv")
 #' }
 #' @export
-h2o.exportFile <- function(data, path, force = FALSE, sep = ",", compression = NULL, parts = 1) {
+h2o.exportFile <- function(data, path, force = FALSE, sep = ",", compression = NULL, parts = 1,
+                           header = TRUE, quote_header = TRUE) {
   if (!is.H2OFrame(data))
     stop("`data` must be an H2OFrame object")
 
@@ -57,8 +62,13 @@ h2o.exportFile <- function(data, path, force = FALSE, sep = ",", compression = N
   if(!is.numeric(parts) || length(parts) != 1L || is.na(parts) || (! all.equal(parts, as.integer(parts))))
     stop("`parts` must be -1, 1 or any other positive integer number")
 
+  if(!is.logical(header) || length(header) != 1L || is.na(header))
+    stop("`header` must be TRUE or FALSE")
+
+  if(!is.logical(quote_header) || length(quote_header) != 1L || is.na(quote_header))
+    stop("`quote_header` must be TRUE or FALSE")
     
-  params <- list(path=path, num_parts=parts, force=force, separator=.asc(sep))
+  params <- list(path=path, num_parts=parts, force=force, separator=.asc(sep), header=header, quote_header=quote_header)
   if (! is.null(compression)) {
     params$compression <- compression
   }
@@ -193,6 +203,9 @@ h2o.save_to_hive <- function(data, jdbc_url, table_name, format="csv", table_pat
 #' @param object an \linkS4class{H2OModel} object.
 #' @param path string indicating the directory the model will be written to.
 #' @param force logical, indicates how to deal with files that already exist.
+#' @param export_cross_validation_predictions logical, indicates whether the exported model 
+#'        artifacts should also include CV Holdout Frame predictions.  Default is not to export 
+#'        the predictions.
 #' @seealso \code{\link{h2o.loadModel}} for loading a model to H2O from disk
 #' @examples
 #' \dontrun{
@@ -205,12 +218,14 @@ h2o.save_to_hive <- function(data, jdbc_url, table_name, format="csv", table_pat
 #' # h2o.saveModel(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
 #' @export
-h2o.saveModel <- function(object, path="", force=FALSE) {
+h2o.saveModel <- function(object, path="", force=FALSE, export_cross_validation_predictions=FALSE) {
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
+  if(!is.logical(export_cross_validation_predictions) || length(export_cross_validation_predictions) != 1L || is.na(export_cross_validation_predictions)) stop("`export_cross_validation_predictions` must be TRUE or FALSE")
   path <- file.path(path, object@model_id)
-  res <- .h2o.__remoteSend(paste0("Models.bin/",object@model_id),dir=path,force=force,h2oRestApiVersion=99)
+  res <- .h2o.__remoteSend(paste0("Models.bin/",object@model_id),dir=path,
+                           force=force,export_cross_validation_predictions=export_cross_validation_predictions,h2oRestApiVersion=99)
   res$dir
 }
 
@@ -305,6 +320,7 @@ h2o.saveModelDetails <- function(object, path="", force=FALSE) {
 #'
 #' @param grid_directory A character string containing the path to the folder for the grid to be saved to.
 #' @param grid_id A chracter string with identification of the grid to be saved.
+#' @param export_cross_validation_predictions A boolean flag indicating whether exported model artifacts should also include CV holdout Frame predictions.
 #' @return Returns an object that is a subclass of \linkS4class{H2OGrid}.
 #' @examples
 #' \dontrun{
@@ -332,9 +348,10 @@ h2o.saveModelDetails <- function(object, path="", force=FALSE) {
 #'grid <- h2o.loadGrid(grid_path)
 #' }
 #' @export
-h2o.saveGrid <- function(grid_directory, grid_id){
+h2o.saveGrid <- function(grid_directory, grid_id, export_cross_validation_predictions = FALSE){
   params <- list()
   params[["grid_directory"]] <- grid_directory
+  params[["export_cross_validation_predictions"]] <- export_cross_validation_predictions
   
   url <- paste0("Grid.bin/", grid_id,"/export")
   

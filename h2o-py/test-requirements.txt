@@ -30,3 +30,4 @@ sphinx_rtd_theme==0.2.4
 sphinxcontrib-osexample>=0.1.1
 shap==0.28.3
 boto3>=1.7.50
+lifelines>=0.19.5

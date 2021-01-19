@@ -24,7 +24,4 @@ def h2o_H2OFrame_set_name():
     assert h2oframe.names[0]==newName, "h2o.H2OFrame.set_name() command is not working."
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_set_name())
-else:
-    h2o_H2OFrame_set_name()
+pyunit_utils.standalone_test(h2o_H2OFrame_set_name)

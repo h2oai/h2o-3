@@ -14,7 +14,7 @@ from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
 from h2o.grid.metrics import *  # NOQA
 from h2o.utils.metaclass import Alias as alias, BackwardsCompatible, Deprecated as deprecated, h2o_meta
-from h2o.utils.shared_utils import quoted
+from h2o.utils.shared_utils import quoted, stringify_dict_as_map
 from h2o.utils.typechecks import assert_is_type, is_type
 
 
@@ -303,10 +303,10 @@ class H2OGridSearch(h2o_meta(Keyed)):
         parms = self._parms.copy()
         parms.update({k: v for k, v in algo_params.items() if k not in ["self", "params", "algo_params", "parms"]})
         # dictionaries have special handling in grid search, avoid the implicit conversion
-        parms["search_criteria"] = None if self.search_criteria is None else str(self.search_criteria)
+        parms["search_criteria"] = None if self.search_criteria is None else stringify_dict_as_map(self.search_criteria)
         parms["export_checkpoints_dir"] = self.export_checkpoints_dir
         parms["parallelism"] = self._parallelism
-        parms["hyper_parameters"] = None if self.hyper_params  is None else str(self.hyper_params) # unique to grid search
+        parms["hyper_parameters"] = None if self.hyper_params is None else stringify_dict_as_map(self.hyper_params) # unique to grid search
         parms.update({k: v for k, v in list(self.model._parms.items()) if v is not None})  # unique to grid search
         parms.update(params)
         if '__class__' in parms:  # FIXME: hackt for PY3

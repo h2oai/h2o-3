@@ -28,7 +28,8 @@
 #' @param data_leakage_handling Data leakage handling strategy used to generate the encoding. Supported options are: 1) "none" (default) - no
 #'        holdout, using the entire training frame. 2) "leave_one_out" - current row's response value is subtracted from
 #'        the per-level frequencies pre-calculated on the entire training frame. 3) "k_fold" - encodings for a fold are
-#'        generated based on out-of-fold data.  Must be one of: "LeaveOneOut", "KFold", "None". Defaults to None.
+#'        generated based on out-of-fold data.  Must be one of: "leave_one_out", "k_fold", "none", "LeaveOneOut",
+#'        "KFold", "None". Defaults to None.
 #' @param noise The amount of noise to add to the encoded column. Use 0 to disable noise, and -1 (=AUTO) to let the algorithm
 #'        determine a reasonable amount of noise. Defaults to 0.01.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
@@ -75,7 +76,7 @@ h2o.targetencoder <- function(x,
                               blending = FALSE,
                               inflection_point = 10,
                               smoothing = 20,
-                              data_leakage_handling = c("LeaveOneOut", "KFold", "None"),
+                              data_leakage_handling = c("leave_one_out", "k_fold", "none", "LeaveOneOut", "KFold", "None"),
                               noise = 0.01,
                               seed = -1,
                               ...)
@@ -147,7 +148,7 @@ h2o.targetencoder <- function(x,
                                               blending = FALSE,
                                               inflection_point = 10,
                                               smoothing = 20,
-                                              data_leakage_handling = c("LeaveOneOut", "KFold", "None"),
+                                              data_leakage_handling = c("leave_one_out", "k_fold", "none", "LeaveOneOut", "KFold", "None"),
                                               noise = 0.01,
                                               seed = -1,
                                               segment_columns = NULL,

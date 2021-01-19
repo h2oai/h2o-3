@@ -60,7 +60,7 @@ activate_R_${R_VERSION}
 
 function checkRInstallLog() {
   log_file=$1
-  if [ grep -E '(packages .* are not available)|(installation of package .* had non-zero exit status)' $log_file ]; then
+  if grep -E '(packages .* are not available)|(installation of package .* had non-zero exit status)' $log_file; then
     echo "Errors detected in R package installation."
     exit 1
   fi
@@ -68,17 +68,21 @@ function checkRInstallLog() {
 
 # Install dependencies
 echo "Installing dependencies for R ${R_VERSION}"
-/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58); \
+/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); \
   install.packages(c( \
-    'dplyr', 'text2vec', 'R.utils', 'AUC', 'mlbench', 'flexclust', 'randomForest', \
+    'dplyr', 'R.utils', 'AUC', 'mlbench', 'flexclust', 'randomForest', \
     'bit64', 'HDtweedie', 'jsonlite', 'statmod', 'devtools', 'roxygen2', 'testthat', 'Rcpp', 'fpc', 'RUnit', \
-    'ade4', 'e1071', 'ggplot2', 'LiblineaR', 'optparse', 'uuid', 'usethis', 'rgl', 'plot3Drgl' \
+    'ade4', 'e1071', 'ggplot2', 'LiblineaR', 'optparse', 'uuid', 'usethis', 'rgl', 'plot3Drgl',  \
+    'IRdisplay', 'plotly' \
   )) \
 " 2>&1 | tee R.install.1.log
 checkRInstallLog R.install.1.log
-# Latest XGBoost (from source)
-/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58); \
-  install.packages(c('xgboost'), type='source') \
+# Latest XGBoost (from source) does not compile; see https://0xdata.atlassian.net/browse/PUBDEV-7812
+#/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); \
+#  install.packages(c('xgboost'), type='source') \
+#" 2>&1 | tee R.install.2.log
+/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); library(devtools); \
+  install_version('xgboost', version = '1.0.0.2', build = TRUE); \
 " 2>&1 | tee R.install.2.log
 checkRInstallLog R.install.2.log
 # RCUrl 1.95-4.12 is the last to support R 3.3
@@ -86,28 +90,37 @@ checkRInstallLog R.install.2.log
 # slam 0.1-40 is the last to support R 3.3
 # latticeExtra (dependency of Hmisc) 0.6-28 is the last to support R 3.3
 # caTools (dependency of ROCR) requires R 3.6.0 in latest version
-/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58); library(devtools); \
+# text2vec requires R 3.6.0 in latest version
+/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); library(devtools); \
   install_version('RCurl', version = '1.95-4.12'); \
   install_version('survival', version = '2.44-1.1'); \
   install_version('slam', version = '0.1-40'); \
   install_version('latticeExtra', version = '0.6-28'); \
   install_version('caTools', version = '1.17.1.4'); \
+  install_version('text2vec', version = '0.5.0'); \
 " 2>&1 | tee R.install.3.log
 checkRInstallLog R.install.3.log
 # install packages that need special deps installed above
 # ROCR 1.0-7 is the last to support R 3.5 and below
 # Hmisc 4.3-0 is the last to support survival 2.44
-/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58); library(devtools); \
+/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); library(devtools); \
   install_version('ROCR', version = '1.0-7'); \
   install_version('Hmisc', version = '4.3-0'); \
 " 2>&1 | tee R.install.4.log
 checkRInstallLog R.install.4.log
+
 # dependecies from GitHub
-/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58); library(devtools); \
+# The R_REMOTES_UPGRADE=never disables automatic upgrade of dependencies.
+# mainly because of systemfonts that is not supported in newer versions by R 3.3
+# is also a dependency of pkgdown which would try otherwise to upgrade it to a version
+# which doesn't support R < 3.6
+R_REMOTES_UPGRADE=never
+/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); library(devtools); \
+  install_version('systemfonts', version = '0.2.3'); \
   install_version('glmnet', version = '2.0-2'); \
   install_version('gbm', version = '2.1.3'); \
   install_version('MLmetrics', version = '1.0.0'); \
-  install_github('r-lib/pkgdown', version = '1.3.0'); \
+  install_version('pkgdown', version = '1.3.0'); \
   install_github('Zelazny7/isofor') \
 " 2>&1 | tee R.install.5.log
 checkRInstallLog R.install.5.log

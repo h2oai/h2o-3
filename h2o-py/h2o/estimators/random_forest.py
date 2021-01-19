@@ -31,7 +31,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                    "sample_rate_per_class", "binomial_double_trees", "checkpoint", "col_sample_rate_change_per_level",
                    "col_sample_rate_per_tree", "min_split_improvement", "histogram_type", "categorical_encoding",
                    "calibrate_model", "calibration_frame", "distribution", "custom_metric_func",
-                   "export_checkpoints_dir", "check_constant_response", "gainslift_bins"}
+                   "export_checkpoints_dir", "check_constant_response", "gainslift_bins", "auc_type"}
 
     def __init__(self, **kwargs):
         super(H2ORandomForestEstimator, self).__init__()
@@ -1589,5 +1589,21 @@ class H2ORandomForestEstimator(H2OEstimator):
     def gainslift_bins(self, gainslift_bins):
         assert_is_type(gainslift_bins, None, int)
         self._parms["gainslift_bins"] = gainslift_bins
+
+
+    @property
+    def auc_type(self):
+        """
+        Set default multinomial AUC type.
+
+        One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``
+        (default: ``"auto"``).
+        """
+        return self._parms.get("auc_type")
+
+    @auc_type.setter
+    def auc_type(self, auc_type):
+        assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
+        self._parms["auc_type"] = auc_type
 
 

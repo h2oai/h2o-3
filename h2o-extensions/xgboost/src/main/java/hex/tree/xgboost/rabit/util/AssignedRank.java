@@ -7,7 +7,7 @@ import java.nio.ByteOrder;
 import java.util.List;
 
 /**
- * Java implementation of ml.dmlc.xgboost4j.scala.rabit.util.AssignedRank
+ * Java implementation of ai.h2o.xgboost4j.scala.rabit.util.AssignedRank
  */
 public class AssignedRank {
     private int rank;

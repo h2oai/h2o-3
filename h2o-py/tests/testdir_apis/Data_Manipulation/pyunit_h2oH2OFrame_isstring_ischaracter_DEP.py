@@ -26,7 +26,4 @@ def h2o_H2OFrame_isstring():
     assert sum(clist2)==col_num, "h2o.H2OFrame.ischaracter() command is not working."  # check return result
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_isstring())
-else:
-    h2o_H2OFrame_isstring()
+pyunit_utils.standalone_test(h2o_H2OFrame_isstring)

@@ -28,5 +28,12 @@ This section provides examples of common tasks performed when preparing data for
    data-munging/slicing-rows
    data-munging/sortcolumn
    data-munging/splitting-datasets
-   data-munging/target-encoding
    data-munging/tokenize
+
+Feature Engineering
+-------------------
+
+H2O also has methods for feature engineering. Target Encoding is a categorical encoding technique which replaces a categorical value with the mean of the target variable (especially useful for high-cardinality features).  Word2vec is a text processing method which converts a corpus of text into an output of word vectors.
+
+- `Target Encoding <data-science/target-encoding.html>`__
+- `Word2vec <data-science/word2vec.html>`__

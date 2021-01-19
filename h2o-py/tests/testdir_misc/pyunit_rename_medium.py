@@ -2,10 +2,10 @@ from __future__ import print_function
 import sys
 sys.path.insert(1, "../../")
 import h2o
-import tests
+from tests import pyunit_utils
 
 def rename_things():
-  fr = h2o.import_file(tests.locate("smalldata/logreg/prostate.csv"))
+  fr = h2o.import_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
   fr.frame_id = "mooochooo"
   print(h2o.ls())
   zz = fr[1:2]
@@ -20,5 +20,6 @@ def rename_things():
   print(h2o.ls())
   print(h2o.get_model("my_gbm_model_wwwww"))
   print(h2o.ls())
-if __name__ == "__main__":
-  tests.run_test(sys.argv, rename_things)
+
+
+pyunit_utils.standalone_test(rename_things)

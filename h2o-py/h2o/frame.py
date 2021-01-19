@@ -27,6 +27,7 @@ from h2o.expr import ExprNode
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
 from h2o.utils.config import get_config_value
+from h2o.utils.ext_dependencies import get_matplotlib_pyplot
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
                                     can_use_pandas, quote, normalize_slice, slice_is_normalized, check_frame_id)
@@ -421,26 +422,28 @@ class H2OFrame(Keyed):
 
 
     def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings,
-                      skipped_columns=None, custom_non_data_line_markers=None, partition_by=None):
+                      skipped_columns=None, custom_non_data_line_markers=None, partition_by=None, quotechar=None):
         if H2OFrame.__LOCAL_EXPANSION_ON_SINGLE_IMPORT__ and is_type(path, str) and "://" not in path:  # fixme: delete those 2 lines, cf. PUBDEV-5717
             path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path, pattern)
         self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                    skipped_columns, custom_non_data_line_markers, partition_by)
+                    skipped_columns, custom_non_data_line_markers, partition_by, quotechar)
         return self
 
 
-    def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns=None):
+    def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns=None,
+                      quotechar=None):
         ret = h2o.api("POST /3/PostFile", filename=path)
         rawkey = ret["destination_frame"]
-        self._parse(rawkey, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns)
+        self._parse(rawkey, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns,
+                    quotechar=quotechar)
         return self
 
 
     def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None,
-               na_strings=None, skipped_columns=None, custom_non_data_line_markers=None, partition_by=None):
+               na_strings=None, skipped_columns=None, custom_non_data_line_markers=None, partition_by=None, quotechar=None):
         setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                                skipped_columns, custom_non_data_line_markers, partition_by)
+                                skipped_columns, custom_non_data_line_markers, partition_by, quotechar)
         return self._parse_raw(setup)
 
 
@@ -449,7 +452,6 @@ class H2OFrame(Keyed):
         p = {"destination_frame": None,
              "parse_type": None,
              "separator": None,
-             "single_quotes": None,
              "check_header": None,
              "number_columns": None,
              "chunk_size": None,
@@ -3359,10 +3361,17 @@ class H2OFrame(Keyed):
         if measure is None: measure = "l2"
         return H2OFrame._expr(expr=ExprNode("distance", self, y, measure))._frame()
 
-    def drop_duplicates(self, columns, keep = "first"):
+    def drop_duplicates(self, columns, keep="first"):
+        """
+        Drops duplicated rows across specified columns.
+        :param columns: Columns to compare during the duplicate detection process.
+        :param keep: Which rows to keep. Two possible values: ["first", "last"]. The "first" value (default) keeps
+         the first row and deletes the rest. The "last" value keeps the last row.
+        :return: A new H2OFrame with rows deduplicated
+        """
         assert_is_type(columns, [int], [str])
-        assert_is_type(keep,  Enum("first", "last"))
-    
+        assert_is_type(keep, Enum("first", "last"))
+
         return H2OFrame._expr(expr=ExprNode("dropdup", self, columns, keep))._frame()
 
     def strdistance(self, y, measure=None, compare_empty=True):
@@ -3764,6 +3773,7 @@ class H2OFrame(Keyed):
         >>> iris.describe()
         >>> iris[0].hist(breaks=5,plot=False)
         """
+        import matplotlib
         server = kwargs.pop("server") if "server" in kwargs else False
         assert_is_type(breaks, int, [numeric], Enum("sturges", "rice", "sqrt", "doane", "fd", "scott"))
         assert_is_type(plot, bool)
@@ -3773,14 +3783,8 @@ class H2OFrame(Keyed):
         hist = H2OFrame._expr(expr=ExprNode("hist", self, breaks))._frame()
 
         if plot:
-            try:
-                import matplotlib
-                if server:
-                    matplotlib.use("Agg")
-                import matplotlib.pyplot as plt
-            except ImportError:
-                print("ERROR: matplotlib is required to make the histogram plot. "
-                      "Set `plot` to False, if a plot is not desired.")
+            plt = get_matplotlib_pyplot(server)
+            if plt is None:
                 return
 
             hist["widths"] = hist["breaks"].difflag1()

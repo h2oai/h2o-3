@@ -1,7 +1,7 @@
 ``smoothing``
 -------------
 
-- Available in Data Preparation for Target Encoding
+- Available in: Target Encoding
 
 Description
 ~~~~~~~~~~~
@@ -10,12 +10,12 @@ The smoothing value is used for blending and to calculate ``lambda``. Smoothing 
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
-- `blended_avg <blended_avg.html>`__
-- `noise <noise.html>`__
-- `holdout_type <holdout_type.html>`__
+- `blending <blending.html>`__
 - `inflection_point <inflection_point.html>`__
+- `data_leakage_handling <data_leakage_handling.html>`__
+- `noise <noise.html>`__
 
 Example
 ~~~~~~~
 
-Refer to the `Target Encoding <../../data-munging/target-encoding.html>`__ data munging topic to view a detailed example.
+Refer to the `Target Encoding <../target-encoding.html>`__ topic to view a detailed example.

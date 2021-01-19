@@ -14,7 +14,7 @@ H2O-generated MOJO and POJO models are intended to be easily embeddable in any J
 
 Users can refer to the Quick Start topics that follow for more information about generating POJOs and MOJOs.
 
-Developers can refer to the the `POJO and MOJO Model Javadoc <http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html>`__.
+Developers can refer to the `POJO and MOJO Model Javadoc <http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html>`__.
 
 .. include:: mojo-quickstart.rst
 

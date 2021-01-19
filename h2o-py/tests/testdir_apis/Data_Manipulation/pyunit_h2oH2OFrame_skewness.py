@@ -16,7 +16,5 @@ def h2o_H2OFrame_skewness():
     assert_is_type(newframe, list)
     assert len(newframe)==2, "h2o.H2OFrame.skewness() command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_skewness())
-else:
-    h2o_H2OFrame_skewness()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_skewness)

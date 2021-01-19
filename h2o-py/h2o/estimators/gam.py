@@ -36,11 +36,12 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                    "solver", "alpha", "lambda_", "lambda_search", "early_stopping", "nlambdas", "standardize",
                    "missing_values_handling", "plug_values", "compute_p_values", "remove_collinear_columns",
                    "intercept", "non_negative", "max_iterations", "objective_epsilon", "beta_epsilon",
-                   "gradient_epsilon", "link", "prior", "cold_start", "lambda_min_ratio", "beta_constraints",
-                   "max_active_predictors", "interactions", "interaction_pairs", "obj_reg", "export_checkpoints_dir",
-                   "stopping_rounds", "stopping_metric", "stopping_tolerance", "balance_classes",
-                   "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size", "max_runtime_secs",
-                   "custom_metric_func", "num_knots", "knot_ids", "gam_columns", "bs", "scale", "keep_gam_cols"}
+                   "gradient_epsilon", "link", "startval", "prior", "cold_start", "lambda_min_ratio",
+                   "beta_constraints", "max_active_predictors", "interactions", "interaction_pairs", "obj_reg",
+                   "export_checkpoints_dir", "stopping_rounds", "stopping_metric", "stopping_tolerance",
+                   "balance_classes", "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size",
+                   "max_runtime_secs", "custom_metric_func", "num_knots", "knot_ids", "gam_columns", "bs", "scale",
+                   "keep_gam_cols", "auc_type"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedAdditiveEstimator, self).__init__()
@@ -630,6 +631,21 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
 
 
     @property
+    def startval(self):
+        """
+        double array to initialize coefficients for GAM.
+
+        Type: ``List[float]``.
+        """
+        return self._parms.get("startval")
+
+    @startval.setter
+    def startval(self, startval):
+        assert_is_type(startval, None, [numeric])
+        self._parms["startval"] = startval
+
+
+    @property
     def prior(self):
         """
         Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
@@ -1001,6 +1017,22 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     def keep_gam_cols(self, keep_gam_cols):
         assert_is_type(keep_gam_cols, None, bool)
         self._parms["keep_gam_cols"] = keep_gam_cols
+
+
+    @property
+    def auc_type(self):
+        """
+        Set default multinomial AUC type.
+
+        One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``
+        (default: ``"auto"``).
+        """
+        return self._parms.get("auc_type")
+
+    @auc_type.setter
+    def auc_type(self, auc_type):
+        assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
+        self._parms["auc_type"] = auc_type
 
 
     @property

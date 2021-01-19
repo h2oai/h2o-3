@@ -1,6 +1,6 @@
 package hex.tree.xgboost.util;
 
-import ml.dmlc.xgboost4j.java.*;
+import ai.h2o.xgboost4j.java.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

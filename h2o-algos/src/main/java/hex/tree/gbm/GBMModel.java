@@ -1,8 +1,8 @@
 package hex.tree.gbm;
 
-import hex.DistributionFactory;
-import hex.KeyValue;
-import hex.Model;
+import hex.*;
+import hex.genmodel.algos.tree.SharedTreeNode;
+import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
 import hex.util.EffectiveParametersUtils;
@@ -14,11 +14,12 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.SBPrintStream;
+import water.util.TwoDimTable;
 
-import java.util.Arrays;
+import java.util.*;
 
 public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> 
-        implements Model.StagedPredictions {
+        implements Model.StagedPredictions, FeatureInteractionsCollector {
 
   public static class GBMParameters extends SharedTreeModel.SharedTreeParameters {
     public double _learn_rate;
@@ -268,6 +269,31 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
   @Override
   public GbmMojoWriter getMojo() {
     return new GbmMojoWriter(this);
+  }
+
+  public FeatureInteractions getFeatureInteractions(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
+    FeatureInteractions featureInteractions = new FeatureInteractions();
+
+    int nclasses = this._output._nclasses > 2 ? this._output._nclasses : 1;
+    for (int i = 0; i < this._parms._ntrees; i++) {
+      for (int j = 0; j < nclasses; j++) {
+        FeatureInteractions currentTreeFeatureInteractions = new FeatureInteractions();
+        SharedTreeSubgraph tree = this.getSharedTreeSubgraph(i, j);
+        List<SharedTreeNode> interactionPath = new ArrayList<>();
+        Set<String> memo = new HashSet<>();
+
+        FeatureInteractions.collectFeatureInteractions(tree.rootNode, interactionPath, 0, 0, 1, 0, 0, currentTreeFeatureInteractions,
+                memo, maxInteractionDepth, maxTreeDepth, maxDeepening, i, true);
+        featureInteractions.mergeWith(currentTreeFeatureInteractions);
+      }
+    }
+
+    return featureInteractions;
+  }
+
+  @Override
+  public TwoDimTable[][] getFeatureInteractionsTable(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
+    return FeatureInteractions.getFeatureInteractionsTable(this.getFeatureInteractions(maxInteractionDepth,maxTreeDepth,maxDeepening));
   }
 
 }

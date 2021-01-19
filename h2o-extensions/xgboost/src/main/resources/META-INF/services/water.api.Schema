@@ -4,3 +4,4 @@ hex.schemas.XGBoostV3
 hex.schemas.XGBoostV3$XGBoostParametersV3
 hex.schemas.XGBoostExecReqV3
 hex.schemas.XGBoostExecRespV3
+water.api.schemas3.FeatureInteractionV3

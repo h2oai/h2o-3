@@ -1,14 +1,33 @@
 package hex.tree.xgboost;
 
+import hex.Model;
+import hex.genmodel.algos.gbm.GbmMojoModel;
+import hex.genmodel.algos.xgboost.XGBoostMojoModel;
+import hex.genmodel.attributes.parameters.KeyValue;
+import hex.genmodel.attributes.parameters.ModelParameter;
+import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import water.DKV;
 import water.H2O;
+import water.Scope;
+import water.TestUtil;
+import water.fvec.Frame;
+import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.Map;
 
+import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static water.TestUtil.toMojo;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class XGBoostModelTest {
-
+  
   @Test
   public void testCreateParamsNThreads() {
     int maxNThreads = XGBoostModel.getMaxNThread();
@@ -48,7 +67,7 @@ public class XGBoostModelTest {
 
 
   @Test
-  public void gpuIncompatibleParametersGrowPolicy(){
+  public void gpuIncompatibleParametersGrowPolicy() {
     XGBoostModel.XGBoostParameters xgBoostParameters = new XGBoostModel.XGBoostParameters();
     xgBoostParameters._grow_policy = XGBoostModel.XGBoostParameters.GrowPolicy.lossguide;
 
@@ -57,4 +76,77 @@ public class XGBoostModelTest {
     assertEquals(incompatibleParams.get("grow_policy"), XGBoostModel.XGBoostParameters.GrowPolicy.lossguide);
   }
 
+  @Test
+  public void testCrossValidationWithWeights() {
+    Scope.enter();
+    try {
+      final Frame airlinesFrame = Scope.track(TestUtil.parse_test_file("./smalldata/testng/airlines.csv"));
+      airlinesFrame.replace(0, airlinesFrame.vecs()[0].toCategoricalVec()).remove();
+
+      final Vec weightsVector = TestUtil.createRandomBinaryWeightsVec(airlinesFrame.numRows(), 0xFEED);
+      final String weightsColumnName = "weights";
+      airlinesFrame.add(weightsColumnName, weightsVector);
+      DKV.put(airlinesFrame);
+
+      final XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "IsDepDelayed";
+      parms._train = airlinesFrame._key;
+      parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
+      parms._weights_column = weightsColumnName;
+      parms._nfolds = 5;
+      parms._keep_cross_validation_models = true;
+      parms._ignored_columns = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek"};
+
+      final XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
+      assertEquals(5, model._output._cross_validation_models.length);
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testIncludeInteractionConstraints() {
+    Scope.enter();
+    try {
+      final Frame airlinesFrame = Scope.track(TestUtil.parse_test_file("./smalldata/testng/airlines.csv"));
+      airlinesFrame.replace(0, airlinesFrame.vecs()[0].toCategoricalVec()).remove();
+      
+      DKV.put(airlinesFrame);
+      final XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "IsDepDelayed";
+      parms._train = airlinesFrame._key;
+      parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
+      parms._interaction_constraints = new String[][]{new String[]{"fYear", "fMonth"}, new String[]{"Origin", "Distance"}};
+      parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist;
+      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.AUTO;
+      parms._ntrees = 5;
+
+      final XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
+
+      Frame scored = Scope.track(model.score(airlinesFrame));
+      assertTrue(model.testJavaScoring(airlinesFrame, scored, 1e-6));
+
+      XGBoostMojoModel mojo = (XGBoostMojoModel) toMojo(model, "testIncludeInteractionConstraints", true);
+      ModelParameter[] paramsFromMojo = mojo._modelAttributes.getModelParameters();
+      boolean found = false;
+      for (ModelParameter p : paramsFromMojo) {
+        if (p.name.equals("interaction_constraints")) {
+          found = true;
+          assertTrue(p.getActualValue() instanceof String[][]);
+          String[][] value = (String[][]) p.getActualValue();
+          assertEquals(2, value.length);
+          assertArrayEquals(new String[]{"fYear", "fMonth"}, value[0]);
+          assertArrayEquals(new String[]{"Origin", "Distance"}, value[1]);
+        }
+      }
+      Assert.assertTrue("interaction constraints not found in mojo params", found);
+    } finally {
+      Scope.exit();
+    }
+  }
 }

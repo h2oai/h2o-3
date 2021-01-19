@@ -141,15 +141,31 @@ def stringify_dict(d):
     return stringify_list(["{'key': %s, 'value': %s}" % (_quoted(k), v) for k, v in d.items()])
 
 
+def stringify_dict_as_map(d):
+    return "{%s}" % ",".join(["%s: %s" % (_quoted(k), stringify_object(v, stringify_dict_as_map)) for k, v in d.items()])
+
+
 def stringify_list(arr):
     return "[%s]" % ",".join(stringify_list(item) if isinstance(item, list) else _str(item)
                              for item in arr)
 
+
+def stringify_object(o, dict_function=stringify_dict):
+    if isinstance(o, dict):
+        return dict_function(o)
+    elif isinstance(o, list):
+        return stringify_list(o)
+    else:
+        return _str(o)
+
+
 def _str(item):
     return _str_tuple(item) if isinstance(item, tuple) else str(item)
 
+
 def _str_tuple(t):
-    return "{%s}" % ",".join(["%s: %s" % (ti[0], str(ti[1])) for ti in zip(list(string.ascii_lowercase), t)])
+    return "{%s}" % ",".join(["%s: %s" % (ti[0], _str(ti[1])) for ti in zip(list(string.ascii_lowercase), t)])
+
 
 def _is_list(l):
     return isinstance(l, (tuple, list))

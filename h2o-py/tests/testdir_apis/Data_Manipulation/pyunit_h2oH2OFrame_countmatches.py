@@ -22,7 +22,5 @@ def h2o_H2OFrame_countmatches():
     nomatches = h2oframe.countmatches(['rain','pluck'])
     assert not(nomatches.any_na_rm()), "h2o.H2OFrame.countmatches() command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_countmatches())
-else:
-    h2o_H2OFrame_countmatches()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_countmatches)

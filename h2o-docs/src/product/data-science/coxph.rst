@@ -42,7 +42,7 @@ Defining a CoxPH Model
 
 -  `stratify_by <algo-params/stratify_by.html>`__: A list of columns to use for stratification.
 
--  `ties <algo-params/ties.html>`__: The approximation method for handling ties in the partial likelihood. This can be either **efron** (default) or **breslow**). See the :ref:`coxph_model_details` section below for more information about these options.
+-  `ties <algo-params/ties.html>`__: The approximation method for handling ties in the partial likelihood. This can be either **efron** (default) or **breslow**. See the :ref:`coxph_model_details` section below for more information about these options.
 
 -  `init <algo-params/init2.html>`__: (Optional) Initial values for the coefficients in the model. This value defaults to 0.
 
@@ -56,7 +56,7 @@ Defining a CoxPH Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
-- `single_node_mode <algo-params/single_node_mode.html>`__: Specify whether to run on a single node for fine-tuning of model parameters. Running on a single node reduces the effect of network overhead (for smaller datasets).
+- `single_node_mode <algo-params/single_node_mode.html>`__: Specify whether to run on a single node for fine-tuning of model parameters. Running on a single node reduces the effect of network overhead (for smaller datasets). This defaults to false.
 
 Cox Proportional Hazards Model Results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

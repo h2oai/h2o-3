@@ -440,6 +440,37 @@ public class GridTest extends TestUtil {
     );
   }
 
+  @Test
+  public void gridSearchChecksumMatch() {
+    try {
+      Scope.enter();
+
+      final Frame trainingFrame = parse_test_file("smalldata/iris/iris_train.csv");
+      Scope.track(trainingFrame);
+
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_ntrees", new Integer[]{5, 10});
+      }};
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = "species";
+
+      Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, hyperParms, 1);
+      Scope.track_generic(gridSearch);
+      final Grid grid = gridSearch.get();
+      Scope.track_generic(grid);
+      
+      for (Model m : grid.getModels()) {
+        Model foundModel = grid.getModel(m._input_parms);
+        assertNotNull("Expected to find the model in model cache.", foundModel);
+        assertEquals("The cached model is different from the expected model.", m, foundModel);
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
   @Test // this test is fine as with Cartesian we don't really have early stopping based on max_models ( always train whole hyper space)
   public void testParallelCartesian() {
     try {

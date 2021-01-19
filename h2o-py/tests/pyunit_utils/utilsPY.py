@@ -386,7 +386,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
         out_pojo_csv = os.path.join(tmpdir, "out_pojo.csv")
         cp_sep = ";" if sys.platform == "win32" else ":"
         java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
-                    "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
+                    "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--decimal",
                     "--pojo", pojoname, "--input", in_csv, "--output", out_pojo_csv, "--separator", separator]
         if setInvNumNA:
             java_cmd.append("--setConvertInvalidNum")
@@ -405,17 +405,10 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
         assert hc == pc, "Expected the same number of cols, but got {0} and {1}".format(hc, pc)
 
         # Value
-        for r in range(hr):
-            hp = predictions[r, 0]
-            if equality == "numeric":
-                pp = float.fromhex(predictions2[r, 0])
-                assert abs(hp - pp) < 1e-4, \
-                    "Expected predictions to be the same (within 1e-4) for row %d, but got %r and %r" % (r, hp, pp)
-            elif equality == "class":
-                pp = predictions2[r, 0]
-                assert hp == pp, "Expected predictions to be the same for row %d, but got %r and %r" % (r, hp, pp)
-            else:
-                raise ValueError
+        if not(equality == "class"or equality == "numeric"):
+            raise ValueError
+        compare_frames_local(predictions, predictions2, prob=1, tol=1e-4) # faster frame compare
+
 
 def javamunge(assembly, pojoname, test, compile_only=False):
     """
@@ -553,7 +546,7 @@ def pyunit_exec(test_name):
         pyunit = t.read()
     test_path = os.path.abspath(test_name)
     pyunit_c = compile(pyunit, test_path, 'exec')
-    exec(pyunit_c, dict(__name__='main', __file__=test_path))  # forcing module name to ensure that the test behaves the same way as when executed using `python my_test.py`
+    exec(pyunit_c, dict(__name__='__main__', __file__=test_path))  # forcing module name to ensure that the test behaves the same way as when executed using `python my_test.py`
 
 def standalone_test(test):
     if not h2o.connection() or not h2o.connection().connected:
@@ -3883,15 +3876,16 @@ def generatePandaEnumCols(pandaFtrain, cname, nrows):
     colLength = len(tempNames)
     newNames = ['a']*colLength
     newIndics = [0]*colLength
-    header = tempNames[0].split('.')[0]
-
-    for ind in range(colLength):
-        newIndics[ind] = int(tempNames[ind].split('.')[1][1:])
-    newIndics.sort()
-
-    for ind in range(colLength):
-        newNames[ind] = header+'.l'+str(newIndics[ind])  # generate correct order of names
-    ftemp = temp[newNames]
+    if "." in tempNames[0]:
+        header = tempNames[0].split('.')[0]
+        for ind in range(colLength):
+            newIndics[ind] = int(tempNames[ind].split('.')[1][1:])
+        newIndics.sort()
+        for ind in range(colLength):
+            newNames[ind] = header+'.l'+str(newIndics[ind])  # generate correct order of names
+        ftemp = temp[newNames]
+    else:
+        ftemp = temp
     ctemp = pd.concat([ftemp, zeroFrame], axis=1)
     return ctemp
 
@@ -4293,9 +4287,22 @@ def assertEqualCoeffDicts(coef1Dict, coef2Dict, tol = 1e-6):
     assert len(coef1Dict) == len(coef2Dict), "Length of first coefficient dict: {0}, length of second coefficient " \
                                              "dict: {1} and they are different.".format(len(coef1Dict, len(coef2Dict)))
     for key in coef1Dict:
-        assert abs(coef1Dict[key]-coef2Dict[key]) < tol, "Coefficient for {0} from first dict: {1}, from second dict:" \
-                                                         " {2} and they are different.".format(key, coef1Dict[key],
-                                                                                               coef2Dict[key])
+        val1 = coef1Dict[key]
+        val2 = coef2Dict[key]
+        if (math.isnan(val1)):
+            assert math.isnan(val2), "Coefficient for {0} from first dict: {1}, from second dict: {2} are different." \
+                                     "".format(key, coef1Dict[key], coef2Dict[key])
+        elif (math.isinf(val1)):
+            assert math.isinf(val2), "Coefficient for {0} from first dict: {1}, from second dict: {2} are different." \
+                                     "".format(key, coef1Dict[key], coef2Dict[key])
+        else:
+            assert abs(coef1Dict[key] - coef2Dict[key]) < tol, "Coefficient for {0} from first dict: {1}, from second" \
+                                                               " dict: {2} and they are different.".format(key,
+                                                                                                           coef1Dict[
+                                                                                                               key],
+                                                                                                           coef2Dict[
+                                                                                                               key])
+
 def assertEqualModelMetrics(metrics1, metrics2, tol = 1e-6,
                             keySet=["MSE", "AUC", "Gini", "null_deviance", "logloss", "RMSE",
                                     "pr_auc", "r2"]):

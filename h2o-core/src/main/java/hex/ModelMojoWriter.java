@@ -4,6 +4,7 @@ import hex.genmodel.AbstractMojoWriter;
 import hex.genmodel.descriptor.ModelDescriptor;
 import water.Key;
 import water.api.SchemaServer;
+import water.api.StreamWriteOption;
 import water.api.StreamWriter;
 import water.api.schemas3.ModelSchemaV3;
 
@@ -72,7 +73,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
    *    (extra model files written by the subclasses)
    * Each domain file is a plain text file with one line per category (not quoted).
    */
-  @Override public void writeTo(OutputStream os) {
+  @Override public void writeTo(OutputStream os, StreamWriteOption... option) {
     ZipOutputStream zos = new ZipOutputStream(os);
     try {
       writeTo(zos);

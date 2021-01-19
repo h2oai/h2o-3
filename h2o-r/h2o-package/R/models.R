@@ -18,23 +18,27 @@ NULL
 #' @param y response
 #' @param autoencoder autoencoder flag
 .verify_dataxy <- function(data, x, y, autoencoder = FALSE) {
-  if(!is.character(x) && !is.numeric(x))
+  if(!is.null(x) && !is.character(x) && !is.numeric(x)) # only check if x is not null
     stop('`x` must be column names or indices')
   if( !autoencoder )
     if(!is.character(y) && !is.numeric(y))
       stop('`y` must be a column name or index')
 
   cc <- colnames(chk.H2OFrame(data))
-
-  if(is.character(x)) {
-    if(!all(x %in% cc))
-      stop("Invalid column names: ", paste(x[!(x %in% cc)], collapse=','))
-    x_i <- match(x, cc)
+  
+  if (!is.null(x)) {
+    if(is.character(x)) {
+      if(!all(x %in% cc))
+        stop("Invalid column names: ", paste(x[!(x %in% cc)], collapse = ','))
+      x_i <- match(x, cc)
+    } else {
+      if(any( x < 1L | x > attr(x,'ncol')))
+        stop('out of range explanatory variable ', paste(x[x < 1L | x > length(cc)], collapse = ','))
+      x_i <- x
+      x <- cc[x_i]
+    }
   } else {
-    if(any( x < 1L | x > attr(x,'ncol')))
-      stop('out of range explanatory variable ', paste(x[x < 1L | x > length(cc)], collapse=','))
-    x_i <- x
-    x <- cc[x_i]
+    x_i <- NULL
   }
 
   x_ignore <- c()
@@ -50,7 +54,7 @@ NULL
       y <- cc[y]
     }
 
-    if(!autoencoder && (y %in% x)) {
+    if(!is.null(x) && !autoencoder && (y %in% x)) {
       warning('removing response variable from the explanatory variables')
       x <- setdiff(x,y)
     }
@@ -373,7 +377,9 @@ NULL
                             else if (all(is.na(x))) NA
                             else paste0('"',h2o.getId(x),'"')
                           })
-      if (type == "character")
+      if (paramDef$type == "string[][]"){
+        paramValue <- .collapse.list.of.list.string(paramValue)
+      } else if (type == "character")
         paramValue <- .collapse.char(paramValue)
       else if (paramDef$type == "StringPair[]")
         paramValue <- .collapse(sapply(paramValue, .collapse.tuple.string))
@@ -393,6 +399,14 @@ NULL
 
 .collapse.tuple.string <- function(x) {
   .collapse.tuple(x, .escape.string)
+}
+
+.collapse.list.of.list.string <- function(x){
+  parts <- c()
+  for (i in x) {
+    parts <- c(parts, paste0("[", paste0(i, collapse = ","), "]"))
+  }
+  paste0("[", paste0(parts, collapse = ","), "]")
 }
 
 .collapse.tuple.key_value <- function(x) {
@@ -985,6 +999,8 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' @param domain Vector with response factors for classification.
 #' @param distribution Distribution for regression.
 #' @param weights (optional) An H2OFrame containing observation weights.
+#' @param auc_type (optional) For multinomial classification you have to specify which type of agregated AUC/AUCPR will be used to calculate this metric. 
+#         Possibilities are MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR (OVO = One vs. One, OVR = One vs. Rest)
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
 #' \dontrun{
@@ -998,10 +1014,14 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' h2o.make_metrics(pred, prostate$CAPSULE)
 #' }
 #' @export
-h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL, weights=NULL) {
+h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL, weights=NULL, auc_type="NONE") {
   predicted <- .validate.H2OFrame(predicted, required=TRUE)
   actuals <- .validate.H2OFrame(actuals, required=TRUE)
   weights <- .validate.H2OFrame(weights, required=FALSE)
+  if (!is.character(auc_type)) stop("auc_type argument must be of type character")
+  if (!(auc_type %in% c("MACRO_OVO", "MACRO_OVR", "WEIGHTED_OVO", "WEIGHTED_OVR", "NONE", "AUTO"))) {
+    stop("auc_type argument must be MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR, NONE, AUTO")
+  }
   params <- list()
   params$predictions_frame <- h2o.getId(predicted)
   params$actuals_frame <- h2o.getId(actuals)
@@ -1023,12 +1043,13 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL,
     out <- paste0(out, "]")
     params[["domain"]] <- out
   }
+  params["auc_type"] <- auc_type  
   url <- paste0("ModelMetrics/predictions_frame/",params$predictions_frame,"/actuals_frame/",params$actuals_frame)
   res <- .h2o.__remoteSend(method = "POST", url, .params = params)
   model_metrics <- res$model_metrics
   metrics <- model_metrics[!(names(model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
   name <- "H2ORegressionMetrics"
-  if (!is.null(metrics$AUC)) name <- "H2OBinomialMetrics"
+  if (!is.null(metrics$AUC) && is.null(metrics$hit_ratio_table)) name <- "H2OBinomialMetrics"
   else if (!is.null(distribution) && distribution == "ordinal") name <- "H2OOrdinalMetrics"
   else if (!is.null(metrics$hit_ratio_table)) name <- "H2OMultinomialMetrics"
   new(Class = name, metrics = metrics)
@@ -1041,7 +1062,7 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL,
 #' than one parameter is set to TRUE, then a named vector of AUCs are returned, where the names are "train", "valid"
 #' or "xval".
 #'
-#' @param object An \linkS4class{H2OBinomialMetrics} object.
+#' @param object An \linkS4class{H2OBinomialMetrics} or \linkS4class{H2OMultinomialMetrics} object.
 #' @param train Retrieve the training AUC
 #' @param valid Retrieve the validation AUC
 #' @param xval Retrieve the cross-validation AUC
@@ -1112,6 +1133,73 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   .newExpr("perfectAUC", probs, acts)[1, 1]
 }
 
+#' Retrieve the all AUC values in a table (One to Rest, One to One, macro and weighted average) 
+#' for mutlinomial classification.
+#'
+#' Retrieves the AUC table from an \linkS4class{H2OMultinomialMetrics}.
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training AUC table is returned. If more
+#' than one parameter is set to TRUE, then a named vector of AUC tables are returned, where the names are "train", "valid"
+#' or "xval".
+#'
+#' @param object An \linkS4class{H2OMultinomialMetrics} object.
+#' @param train Retrieve the training AUC table
+#' @param valid Retrieve the validation AUC table
+#' @param xval Retrieve the cross-validation AUC table
+#' @seealso \code{\link{h2o.giniCoef}} for the Gini coefficient,
+#'          \code{\link{h2o.mse}} for MSE, and \code{\link{h2o.metric}} for the
+#'          various threshold metrics. See \code{\link{h2o.performance}} for
+#'          creating H2OModelMetrics objects.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(prostate_path)
+#'
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
+#' perf <- h2o.performance(model, prostate)
+#' h2o.multinomial_auc_table(perf)
+#' }
+#' @export
+h2o.multinomial_auc_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+    if( is(object, "H2OModelMetrics") ) return( object@metrics$multinomial_auc_table )
+    if( is(object, "H2OModel") ) {
+        model.parts <- .model.parts(object)
+        if ( !train && !valid && !xval ) {
+            metric <- model.parts$tm@metrics$multinomial_auc_table
+            if ( !is.null(metric) ) return(metric)
+        }
+        v <- c()
+        v_names <- c()
+        if ( train ) {
+            v <- c(v,model.parts$tm@metrics$multinomial_auc_table)
+            v_names <- c(v_names,"train")
+        }
+        if ( valid ) {
+            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+            else {
+                v <- c(v,model.parts$vm@metrics$multinomial_auc_table)
+                v_names <- c(v_names,"valid")
+            }
+        }
+        if ( xval ) {
+            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+            else {
+                v <- c(v,model.parts$xm@metrics$multinomial_auc_table)
+                v_names <- c(v_names,"xval")
+            }
+        }
+        if ( !is.null(v) ) {
+            names(v) <- v_names
+            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+        }
+    }
+    warning(paste0("Multinomial AUC table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).", class(object)))
+    invisible(NULL)
+}
+
 #' Retrieve the AUCPR (Area Under Precision Recall Curve)
 #'
 #' Retrieves the AUCPR value from an \linkS4class{H2OBinomialMetrics}.
@@ -1174,8 +1262,75 @@ h2o.aucpr <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
       if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
     }
   }
-  warning(paste0("No aucpr for ", class(object)))
+  warning(paste0("Multinomial PR AUC table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).", class(object)))
   invisible(NULL)
+}
+
+#' Retrieve the all PR AUC values in a table (One to Rest, One to One, macro and weighted average) 
+#' for mutlinomial classification.
+#'
+#' Retrieves the PR AUC table from an \linkS4class{H2OMultinomialMetrics}.
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training PR AUC table is returned. If more
+#' than one parameter is set to TRUE, then a named vector of PR AUC tables are returned, where the names are "train", "valid"
+#' or "xval".
+#'
+#' @param object An \linkS4class{H2OMultinomialMetrics} object.
+#' @param train Retrieve the training PR AUC table
+#' @param valid Retrieve the validation PR AUC table
+#' @param xval Retrieve the cross-validation PR AUC table
+#' @seealso \code{\link{h2o.giniCoef}} for the Gini coefficient,
+#'          \code{\link{h2o.mse}} for MSE, and \code{\link{h2o.metric}} for the
+#'          various threshold metrics. See \code{\link{h2o.performance}} for
+#'          creating H2OModelMetrics objects.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(prostate_path)
+#'
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
+#' perf <- h2o.performance(model, prostate)
+#' h2o.multinomial_aucpr_table(perf)
+#' }
+#' @export
+h2o.multinomial_aucpr_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+    if( is(object, "H2OModelMetrics") ) return( object@metrics$multinomial_aucpr_table )
+    if( is(object, "H2OModel") ) {
+        model.parts <- .model.parts(object)
+        if ( !train && !valid && !xval ) {
+            metric <- model.parts$tm@metrics$multinomial_aucpr_table
+            if ( !is.null(metric) ) return(metric)
+        }
+        v <- c()
+        v_names <- c()
+        if ( train ) {
+            v <- c(v,model.parts$tm@metrics$multinomial_aucpr_table)
+            v_names <- c(v_names,"train")
+        }
+        if ( valid ) {
+            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+            else {
+                v <- c(v,model.parts$vm@metrics$multinomial_aucpr_table)
+                v_names <- c(v_names,"valid")
+            }
+        }
+        if ( xval ) {
+            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+            else {
+                v <- c(v,model.parts$xm@metrics$multinomial_aucpr_table)
+                v_names <- c(v_names,"xval")
+            }
+        }
+        if ( !is.null(v) ) {
+            names(v) <- v_names
+            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+        }
+    }
+    warning(paste0("No PR AUC table for ", class(object)))
+    invisible(NULL)
 }
 
 #' @rdname h2o.aucpr
@@ -1972,18 +2127,6 @@ h2o.varimp <- function(object) {
   o <- object
   if( is(o, "H2OModel") ) {
     vi <- o@model$variable_importances
-    if( is.null(vi) && !is.null(object@model$standardized_coefficient_magnitudes)) { # may be glm
-      tvi <- object@model$standardized_coefficient_magnitudes
-      maxCoeff <- max(tvi$coefficients)
-      sumCoeff <- sum(tvi$coefficients)
-      scaledCoeff <- tvi$coefficients/maxCoeff
-      percentageC <- tvi$coefficients/sumCoeff
-      variable <- tvi$names
-      relative_importance <- tvi$coefficients
-      scaled_importance <- scaledCoeff
-      percentage <- percentageC
-      vi <- data.frame(variable, relative_importance, scaled_importance, percentage)
-      }  # no true variable importances, maybe glm coeffs? (return standardized table...)
     if( is.null(vi) ) {
       warning("This model doesn't have variable importances", call. = FALSE)
       return(invisible(NULL))
@@ -2086,6 +2229,63 @@ h2o.get_ntrees_actual <- function(object) {
         return(NULL)
     }
 }
+
+#' Feature interactions and importance, leaf statistics and split value histograms in a tabular form.
+#' Available for XGBoost and GBM.
+#'
+#' Metrics:
+#' Gain - Total gain of each feature or feature interaction.
+#' FScore - Amount of possible splits taken on a feature or feature interaction.
+#' wFScore - Amount of possible splits taken on a feature or feature interaction weighed by 
+#' the probability of the splits to take place.
+#' Average wFScore - wFScore divided by FScore.
+#' Average Gain - Gain divided by FScore.
+#' Expected Gain - Total gain of each feature or feature interaction weighed by the probability to gather the gain.
+#' Average Tree Index
+#' Average Tree Depth
+#'
+#' @param model A trained xgboost model.
+#' @param max_interaction_depth Upper bound for extracted feature interactions depth. Defaults to 100.
+#' @param max_tree_depth Upper bound for tree depth. Defaults to 100.
+#' @param max_deepening Upper bound for interaction start deepening (zero deepening => interactions 
+#' starting at root only). Defaults to -1.
+#'
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' boston <- h2o.importFile(
+#'        "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv",
+#'         destination_frame="boston"
+#'         )
+#' boston_xgb <- h2o.xgboost(training_frame = boston, y = "medv", seed = 1234)
+#' feature_interactions <- h2o.feature_interaction(boston_xgb)
+#' }
+#' @export
+h2o.feature_interaction <- function(model, max_interaction_depth = 100, max_tree_depth = 100, max_deepening = -1) {
+    o <- model
+    if (is(o, "H2OModel")) {
+        if (o@algorithm == "gbm" | o@algorithm == "xgboost"){
+            parms <- list()
+            parms$model_id <- model@model_id
+            parms$max_interaction_depth <- max_interaction_depth
+            parms$max_tree_depth <- max_tree_depth
+            parms$max_deepening <- max_deepening
+            
+            json <- .h2o.doSafePOST(urlSuffix = "FeatureInteraction", parms=parms)
+            source <- .h2o.fromJSON(jsonlite::fromJSON(json,simplifyDataFrame=FALSE))
+            
+            return(source$feature_interaction)
+        } else {
+            warning(paste0("No calculation available for this model"))
+            return(NULL)
+        }
+    } else {
+        warning(paste0("No calculation available for ", class(o)))
+        return(NULL)
+    }
+}
+
 
 #'
 #' Retrieve the respective weight matrix
@@ -3358,24 +3558,42 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
 
   #Ensure metric and timestep can be passed in as upper case (by converting to lower case) if not "AUTO"
   if(metric != "AUTO"){
-    metric = tolower(metric)
+    metric <- tolower(metric)
   }
 
   if(timestep != "AUTO"){
-    timestep = tolower(timestep)
+    timestep <- tolower(timestep)
   }
 
   # Separate functionality for GLM since output is different from other algos
-  if (x@algorithm == "glm") {
-    # H2OBinomialModel and H2ORegressionModel have the same output
-    # Also GLM has only one timestep option, which is `iteration`
-    timestep <- "iteration"
-    if (metric == "AUTO") {
-      metric <- "log_likelihood"
-    } else if (!(metric %in% c("log_likelihood", "objective"))) {
-      stop("for GLM, metric must be one of: log_likelihood, objective")
+  if (x@algorithm %in% c("gam", "glm")) {
+    if ("gam" == x@algorithm)
+      df <- as.data.frame(x@model$glm_scoring_history)
+    if (x@allparameters$lambda_search) {
+      allowed_metrics <- c("deviance_train", "deviance_test", "deviance_xval")
+      allowed_timesteps <- c("iteration", "duration")
+      df <- df[df["alpha"] == x@model$alpha_best,]
+    } else if (!is.null(x@allparameters$HGLM) && x@allparameters$HGLM) {
+      allowed_metrics <- c("convergence", "sumetaieta02")
+      allowed_timesteps <- c("iterations", "duration")
+    } else {
+      allowed_metrics <- c("objective", "negative_log_likelihood")
+      allowed_timesteps <- c("iterations", "duration")
     }
-    graphics::plot(df$iteration, df[,c(metric)], type="l", xlab = timestep, ylab = metric, main = "Validation Scoring History", ...)
+
+    if (timestep == "AUTO") {
+      timestep <- allowed_timesteps[[1]]
+    } else if (!(metric %in% allowed_timesteps)) {
+      stop("for ", toupper(x@algorithm), ", timestep must be one of: ", paste(allowed_timesteps, collapse = ", "))
+    }
+
+    if (metric == "AUTO") {
+      metric <- allowed_metrics[[1]]
+    } else if (!(metric %in% allowed_metrics)) {
+      stop("for ", toupper(x@algorithm),", metric must be one of: ", paste(allowed_metrics, collapse = ", "))
+    }
+
+    graphics::plot(df$iteration, df[, c(metric)], type="l", xlab = timestep, ylab = metric, main = "Validation Scoring History", ...)
   } else if (x@algorithm == "glrm") {
     timestep <- "iteration"
     if (metric == "AUTO") {
@@ -4248,21 +4466,77 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
         upper = y + stddev
         lower = y - stddev
         plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol="red", medlty=0, staplelty=0, boxlty=0, col="red", main = attr(pp,"description"), ylim  = c(min(lower), max(upper)))
-        polygon(c(x, rev(x)), c(lower, rev(upper)), col = adjustcolor("red", alpha.f = 0.1), border = F)
+        pp.plot.1d.plotNA(pp, type, "red")
+        polygon(pp.plot.1d.proccessDataForPolygon(c(pp[,1], rev(pp[,1])), c(lower, rev(upper))) , col = adjustcolor("red", alpha.f = 0.1), border = F)
         if(type == "enum"){
           x <- c(1:length(x))
           arrows(x, lower, x, upper, code=3, angle=90, length=0.1, col="red")
         }
       } else {
         plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol="red", medlty=0, staplelty=0, boxlty=0, col="red", main = attr(pp,"description"))
+        pp.plot.1d.plotNA(pp, type, "red")
       }
     } else {
       print("Partial Dependence not calculated--make sure nbins is as high as the level count")
     }
   }
+        
+  pp.plot.1d.plotNA <- function(pp, type, color) {
+    ## Plot NA value if numerical
+    NAsIds = which(is.na(pp[,1:1]))
+    if (type != "enum" && include_na && length(NAsIds) != 0) {
+        points(pp[,1:1],array(pp[NAsIds, 2:2], dim = c(length(pp[,1:1]), 1)), col=color, type="l", lty=5)
+        if (is.null(targets)) {
+          legend("topright", legend="NAN", col=color, lty=5, bty="n", ncol=length(pps))
+        }
+        return(TRUE)
+    } else {
+        return(FALSE)
+    }
+  }     
+         
+  pp.plot.1d.plotLegend.multinomial <- function(pp, targets, colors, lty, pch, has_NA) {
+    if (include_na && length(which(is.na(pp[,1:1]))) != 0) {
+      legendTargets <- c()
+      legendColors <- c()
+      legendLtys <- c()
+      legendPchs <- c()
+      legendBtys <- c()
+      for ( i in 1: length(targets)) {
+        # target label
+        legendTargets <- append(legendTargets, targets[i])
+        legendColors <- append(legendColors, colors[i])
+        legendLtys <- append(legendLtys, lty)
+        legendPchs <- append(legendPchs, pch)
+        legendBtys <- append(legendBtys, "n")
+        # target NAN line label
+        if (has_NA[i]) {
+          legendTargets <- append(legendTargets, paste(targets[i], " NAN"))
+          legendColors <- append(legendColors, colors[i])
+          legendLtys <- append(legendLtys, 5)
+        } 
+        legendPchs <- append(legendPchs, NULL)
+        legendBtys <- append(legendBtys, NULL)
+      }
+      legend("topright", legend=legendTargets, col=legendColors, lty=legendLtys, pch=legendPchs, bty=legendBtys, ncol=length(pps))
+    }  else {
+      legend("topright",legend=targets, col=colors, lty=lty, pch=pch, bty="n", ncol=length(pps))
+    }
+  }
+    
+  pp.plot.1d.proccessDataForPolygon <- function(X, Y) {
+    ## polygon can't handle NAs
+    NAsIds = which(is.na(X))
+    if (length(NAsIds) != 0) {
+      X = X[-NAsIds]
+      Y = Y[-NAsIds]
+    }
+    return(cbind(X, Y))
+  }        
 
   pp.plot.1d.multinomial <- function(pps) {
     colors <- rainbow(length(pps))
+    has_NA <- c()
     for(i in 1:length(pps)) {
       pp <- pps[[i]]
       if(!all(is.na(pp))) {
@@ -4290,7 +4564,8 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
           } else {
             points(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, col = color)
           }
-          polygon(c(x, rev(x)), c(lower, rev(upper)), col = adjustcolor(color, alpha.f = 0.1), border = F)   
+          has_NA <- append(has_NA, pp.plot.1d.plotNA(pp, type, color))
+          polygon(pp.plot.1d.proccessDataForPolygon(c(x, rev(x)), c(lower, rev(upper))), col = adjustcolor(color, alpha.f = 0.1), border = F)   
           if(type == "enum"){
             x <- c(1:length(x))
             arrows(x, lower, x, upper, code=3, angle=90, length=0.1, col=color)
@@ -4301,12 +4576,13 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
           } else {
             points(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, col = color) 
           }
+          has_NA <- append(has_NA, pp.plot.1d.plotNA(pp, type, color))
         }
-        legend("topright",legend=targets, col=colors, lty=lty, pch=pch, bty="n", ncol=length(pps))      
       } else {
         print("Partial Dependence not calculated--make sure nbins is as high as the level count")
       }
     }
+    pp.plot.1d.plotLegend.multinomial(pp, targets, colors, lty, pch, has_NA)
   }      
         
   pp.plot.2d <- function(pp, nBins=nbins, user_cols=NULL, user_num_splits=NULL) {
