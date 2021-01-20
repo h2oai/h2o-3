@@ -380,14 +380,14 @@ public class ArrayUtilsTest {
     res = ArrayUtils.addSave(a, b);
     assertArrayEquals("Wrong add", new double[]{1, 2.5, 2.25}, res, 1e-3);
     assertArrayEquals("array A is changed", new double[]{1, 2.5, 2.25}, a, 1e-3);
-    assertTrue("Array B is changed", b == null);
+    assertNull("Array B is changed", b);
   
     a = null;
     b = new double[]{1, 2.5, 2.25};
     res = ArrayUtils.addSave(a, b);
     assertArrayEquals("Wrong add", new double[]{1, 2.5, 2.25}, res, 1e-3);
     assertArrayEquals("array B is changed", new double[]{1, 2.5, 2.25}, b, 1e-3);
-    assertTrue("Array A is changed", a == null);
+    assertNull("Array A is changed", a);
   }
   
   @Test

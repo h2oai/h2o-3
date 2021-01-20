@@ -4,6 +4,7 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.psvm.psvm.MatrixUtils;
 import jsr166y.CountedCompleter;
+import org.apache.log4j.Logger;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -19,6 +20,8 @@ import java.util.Random;
 public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationForestModel,
         ExtendedIsolationForestModel.ExtendedIsolationForestParameters,
         ExtendedIsolationForestModel.ExtendedIsolationForestOutput> {
+
+    private static final Logger LOG = Logger.getLogger(ExtendedIsolationForest.class);
 
     transient IsolationTree[] _iTrees;
     transient Random _rand;
@@ -123,13 +126,13 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
      * It is the most simple array implementation of binary tree.
      */
     public static class IsolationTree extends Iced<IsolationTree> {
-        private Node[] _nodes;
+        private final Node[] _nodes;
 
-        private Key<Frame> _frameKey;
-        private int _heightLimit;
-        private long _seed;
-        private int _extensionLevel;
-        private int _treeNum;
+        private final Key<Frame> _frameKey;
+        private final int _heightLimit;
+        private final long _seed;
+        private final int _extensionLevel;
+        private final int _treeNum;
 
         public IsolationTree(Key<Frame> frame, int _heightLimit, long _seed, int _extensionLevel, int _treeNum) {
             this._frameKey = frame;
@@ -154,7 +157,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 Scope.track(frame);
                 _nodes[0] = new Node(frame._key, frame.numRows(), 0);
                 for (int i = 0; i < _nodes.length; i++) {
-                    Log.debug(i, " from ", _nodes.length, " is being prepared on tree ", _treeNum);
+                    LOG.debug(i + " from " + _nodes.length + " is being prepared on tree " + _treeNum);
                     Node node = _nodes[i];
                     if (node == null || node._external) {
                         continue;
@@ -203,29 +206,31 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         }        
 
         /**
-         * Helper method. Print nodes size of the tree.
+         * Helper method. Print nodes' size of the tree.
          */
-        public void print() {
+        public void logNodesNumRows() {
+            StringBuilder logMessage = new StringBuilder();
             for (int i = 0; i < _nodes.length; i++) {
                 if (_nodes[i] == null)
-                    Log.debug(". ");
+                    logMessage.append(". ");
                 else
-                    Log.debug(_nodes[i]._numRows + " ");
+                    logMessage.append(_nodes[i]._numRows + " ");
             }
-            Log.debug("");
+            LOG.debug(logMessage.toString());
         }
 
         /**
-         * Helper method. Print height of each node in trees. Root is 0.
+         * Helper method. Print height (length of path from root) of each node in trees. Root is 0.
          */
-        public void printHeight() {
+        public void logNodesHeight() {
+            StringBuilder logMessage = new StringBuilder();
             for (int i = 0; i < _nodes.length; i++) {
                 if (_nodes[i] == null)
-                    Log.debug(". ");
+                    logMessage.append(". ");
                 else
-                    Log.debug(_nodes[i]._height + " ");
+                    logMessage.append(_nodes[i]._height + " ");
             }
-            Log.debug("");
+            LOG.debug(logMessage.toString());
         }
 
         /**
@@ -248,12 +253,12 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 else
                     break;
             }
-            score += node._height + averagePathLengthOfUnsuccesfullSearch(node._numRows);
+            score += node._height + averagePathLengthOfUnsuccessfullSearch(node._numRows);
             return score;
         }
 
         /**
-         * IsolationTree Node. Naming convetion comes from Algorithm 2 (iTree) in paper.
+         * IsolationTree Node. Naming convention comes from Algorithm 2 (iTree) in paper.
          * frameKey should be always empty after buildTree() method because only number of rows in Frame is needed for
          * scoring (evaluation) stage.
          */
@@ -283,7 +288,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
          *
          * @param n number of elements
          */
-        public static double averagePathLengthOfUnsuccesfullSearch(long n) {
+        public static double averagePathLengthOfUnsuccessfullSearch(long n) {
             if (n <= 0)
                 return 0;
             if (n == 2)
@@ -315,9 +320,9 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
 
                 iTree = new IsolationTree(subSample._key, heightLimit, _parms._seed + randomUnit, _parms.extension_level, treeNum);
                 iTree.buildTree();
-                if (Log.isLoggingFor(Log.DEBUG)) {
-                    iTree.print();
-                    iTree.printHeight();   
+                if (LOG.isDebugEnabled()) {
+                    iTree.logNodesNumRows();
+                    iTree.logNodesHeight();
                 }
                 tryComplete();
             } finally {
@@ -336,12 +341,12 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         @Override
         public void onCompletion(CountedCompleter caller) {
             _job.update(1);
-            Log.info("Tree ", treeNum, " is done.");
+            LOG.info("Tree " + treeNum + " is done.");
         }
 
         @Override
         public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-            Log.err(ex);
+            LOG.error(ex);
             return true;
         }
     }

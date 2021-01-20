@@ -1,15 +1,12 @@
 package hex.tree.isoforextended;
 
-import joptsimple.internal.Strings;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
-import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.util.Log;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertTrue;
@@ -174,13 +171,13 @@ public class ExtendedIsolationForestTest extends TestUtil {
     @Test
     public void avgPathLengTest() {
         assertEquals(10.244770920116851,
-                ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccesfullSearch(256), 1e-5);
+                ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccessfullSearch(256), 1e-5);
         assertEquals(11.583643521303037,
-                ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccesfullSearch(500), 1e-5);
-        assertEquals(1, ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccesfullSearch(2), 1e-5);
-        assertEquals(0, ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccesfullSearch(1), 1e-5);
-        assertEquals(0, ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccesfullSearch(0), 1e-5);
-        assertEquals(0, ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccesfullSearch(-1), 1e-5);
+                ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccessfullSearch(500), 1e-5);
+        assertEquals(1, ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccessfullSearch(2), 1e-5);
+        assertEquals(0, ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccessfullSearch(1), 1e-5);
+        assertEquals(0, ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccessfullSearch(0), 1e-5);
+        assertEquals(0, ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccessfullSearch(-1), 1e-5);
     }
 
     @Test
