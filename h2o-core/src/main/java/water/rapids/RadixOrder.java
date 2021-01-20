@@ -27,8 +27,9 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
   final int _bytesUsed[];
   final BigInteger _base[];
   final int[] _ascending;  // 0 to sort ASC, 1 to sort DESC
+  final boolean _runLocal;
 
-  RadixOrder(Frame DF, boolean isLeft, int whichCols[], int id_maps[][], int[] ascending) {
+  RadixOrder(Frame DF, boolean isLeft, int whichCols[], int id_maps[][], int[] ascending, boolean runLocal) {
     _DF = DF;
     _isLeft = isLeft;
     _whichCols = whichCols;
@@ -40,6 +41,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     _isInt = new boolean[_whichCols.length];
     _isCategorical = new boolean[_whichCols.length];
     _ascending = ascending;
+    _runLocal = runLocal;
   }
 
   @Override
@@ -57,7 +59,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     Log.debug("Time to use rollup stats to determine biggestBit: " + ((t1=System.nanoTime()) - t0) / 1e9+" seconds."); t0=t1;
 
     if( _whichCols.length > 0 )
-      new RadixCount(_isLeft, _base[0], _shift[0], _whichCols[0], _id_maps, _ascending[0]).doAll(_DF.vec(_whichCols[0]));
+      new RadixCount(_isLeft, _base[0], _shift[0], _whichCols[0], _id_maps, _ascending[0]).doAll(_DF.vec(_whichCols[0]), _runLocal);
     Log.debug("Time of MSB count MRTask left local on each node (no reduce): " + ((t1=System.nanoTime()) - t0) / 1e9+" seconds."); t0=t1;
 
     // NOT TO DO:  we do need the full allocation of x[] and o[].  We need o[] anyway.  x[] will be compressed and dense.
@@ -71,7 +73,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     // TODO: fix closeLocal() blocking issue and revert to simpler usage of closeLocal()
     Key linkTwoMRTask = Key.make();
     if( _whichCols.length > 0 )
-      new SplitByMSBLocal(_isLeft, _base, _shift[0], keySize, batchSize, _bytesUsed, _whichCols, linkTwoMRTask, _id_maps, _ascending).doAll(_DF.vecs(_whichCols)); // postLocal needs DKV.put()
+      new SplitByMSBLocal(_isLeft, _base, _shift[0], keySize, batchSize, _bytesUsed, _whichCols, linkTwoMRTask, _id_maps, _ascending).doAll(new Frame(_DF.vecs(_whichCols)), _runLocal); // postLocal needs DKV.put()
     Log.debug("SplitByMSBLocal MRTask (all local per node, no network) took : " + ((t1=System.nanoTime()) - t0) / 1e9+" seconds."); t0=t1;
 
     if( _whichCols.length > 0 )
@@ -134,7 +136,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
         double colMin = col.min();
         double colMax = col.max();
         if (col.isInt()) {
-          GetLongStatsTask glst = GetLongStatsTask.getLongStats(col);
+          GetLongStatsTask glst = GetLongStatsTask.getLongStats(col, _runLocal);
           long colMini = glst._colMin;
           long colMaxi = glst._colMax;
 
@@ -168,8 +170,9 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
   private static class GetLongStatsTask extends MRTask<GetLongStatsTask> {
     long _colMin=Long.MAX_VALUE;
     long _colMax=Long.MIN_VALUE;
-    static GetLongStatsTask getLongStats(Vec col) {
-      return new GetLongStatsTask().doAll(col);
+    
+    static GetLongStatsTask getLongStats(Vec col, boolean runLocal) {
+      return new GetLongStatsTask().doAll(col, runLocal);
     }
     @Override public void map(Chunk c) {
       for(int i=0; i<c._len; ++i) {

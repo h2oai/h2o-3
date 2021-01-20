@@ -15,24 +15,36 @@ import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 public class Merge {
   
   public static int ASCENDING = 1;
-  public static int DESCENDING = -1; 
+  public static int DESCENDING = -1;
 
   public static Frame sort(final Frame fr, int col) {
-    return sort(fr, new int[]{col});
+    return sort(fr, col, false);
   }
   
+  public static Frame sort(final Frame fr, int col, boolean runLocal) {
+    return sort(fr, new int[]{col}, runLocal);
+  }
+
   public static Frame sort(final Frame fr, int[] cols) {
+    return sort(fr, cols, false);
+  }
+  
+  public static Frame sort(final Frame fr, int[] cols, boolean runLocal) {
     int numCol = cols.length;
     int[] ascending = new int[numCol];
     Arrays.fill(ascending,1);
 
-    return sort(fr, cols, ascending); // default is to sort in ascending order
+    return sort(fr, cols, ascending, runLocal); // default is to sort in ascending order
+  }
+
+  public static Frame sort(final Frame fr, int[] cols, int[] ascending) {
+    return sort(fr, cols, ascending, false);
   }
   
   // Radix-sort a Frame using the given columns as keys.
   // This is a fully distributed and parallel sort.
   // It is not currently an in-place sort, so the data is doubled and a sorted copy is returned.
-  public static Frame sort(final Frame fr, int[] cols, int[] ascending) {
+  public static Frame sort(final Frame fr, int[] cols, int[] ascending, boolean runLocal) {
     if( cols.length==0 )        // Empty key list
       return fr;                // Return original frame
     for( int col : cols )
@@ -49,34 +61,48 @@ public class Merge {
       }
     }
 
-    return Merge.merge(fr, new Frame(new Vec[0]), cols, new int[0], true/*allLeft*/, id_maps, ascending, new int[0]);
+    return Merge.merge(fr, new Frame(new Vec[0]), cols, new int[0], true/*allLeft*/, id_maps, ascending, new int[0], runLocal);
   }
-
 
 
   public static Frame merge(final Frame leftFrame, final Frame riteFrame, final int leftCols[], final int riteCols[],
                             boolean allLeft, int[][] id_maps) {
+    return merge(leftFrame, riteFrame, leftCols, riteCols, allLeft, id_maps, false);
+  }
+  
+  public static Frame merge(final Frame leftFrame, final Frame riteFrame, final int leftCols[], final int riteCols[], 
+                            boolean allLeft, int[][] id_maps, boolean runLocal) { 
     int[] ascendingL, ascendingR;
     if (leftCols != null && leftCols.length>0) {
       ascendingL = new int[leftCols.length];
       Arrays.fill(ascendingL, 1);
-    } else
+    } else {
       ascendingL = new int[0];
-
+    }
+    
     if (riteCols != null && riteCols.length > 0) {
       ascendingR = new int[riteCols.length];
       Arrays.fill(ascendingR, 1);
-    } else
+    } else {
       ascendingR = new int[0];
-
-
-    return merge(leftFrame, riteFrame, leftCols, riteCols, allLeft, id_maps, ascendingL, ascendingR);
+    }
+    
+    return merge(leftFrame, riteFrame, leftCols, riteCols, allLeft, id_maps, ascendingL, ascendingR, runLocal);
   }
+    
   // single-threaded driver logic.  Merge left and right frames based on common columns.
-  public static Frame merge(final Frame leftFrame, final Frame riteFrame, final int leftCols[], final int riteCols[],
+  public static Frame merge(final Frame leftFrame, final Frame riteFrame, final int leftCols[], final int riteCols[], 
                             boolean allLeft, int[][] id_maps, int[] ascendingL, int[] ascendingR) {
-    if (allLeft && (riteFrame.numRows()==0))
-      return sortOnly(leftFrame,  leftCols, id_maps, ascendingL);
+    return merge(leftFrame, riteFrame, leftCols, riteCols, allLeft, id_maps, ascendingL, ascendingR, false);
+  }
+    
+  // single-threaded driver logic.  Merge left and right frames based on common columns.
+  public static Frame merge(final Frame leftFrame, final Frame riteFrame, final int leftCols[], final int riteCols[], 
+                            boolean allLeft, int[][] id_maps, int[] ascendingL, int[] ascendingR, boolean runLocal) {
+    if (allLeft && (riteFrame.numRows()==0)) {
+      return sortOnly(leftFrame, leftCols, id_maps, ascendingL, runLocal);
+    }
+    
     final boolean hasRite = riteCols.length > 0;
 
     // if there are NaN or null values in the rite frames in the merge columns, it is decided by Matt Dowle to not
@@ -92,9 +118,9 @@ public class Merge {
     }
 
     Frame rightFrame = naPresent ? new RemoveNAsTask(riteCols)
-            .doAll(riteFrame.types(), riteFrame).outputFrame(riteFrame.names(), riteFrame.domains())
+            .doAll(riteFrame.types(), riteFrame, runLocal).outputFrame(riteFrame.names(), riteFrame.domains())
             : riteFrame;
-    
+
     // map missing levels to -1 (rather than increasing slots after the end)
     // for now to save a deep branch later
     for (int i=0; i<id_maps.length; i++) { // id_maps is for leftFrame.  
@@ -114,8 +140,8 @@ public class Merge {
     // and right in parallel was a little slower (97s) than one by one (89s).
     // empty frame will come back with base = Long.MIN_VALUE (-9223372036854775808).  
     // TODO: retest in future
-    RadixOrder leftIndex = createIndex(true ,leftFrame,leftCols,id_maps, ascendingL);
-    RadixOrder riteIndex = createIndex(false,rightFrame,riteCols,id_maps, ascendingR);
+    RadixOrder leftIndex = createIndex(true ,leftFrame,leftCols,id_maps, ascendingL, runLocal);
+    RadixOrder riteIndex = createIndex(false,rightFrame,riteCols,id_maps, ascendingR, runLocal);
 
     // TODO: start merging before all indexes had been created. Use callback?
     boolean leftFrameEmpty = (leftFrame.numRows()==0);
@@ -176,7 +202,7 @@ public class Merge {
       if (allLeft) {  // not worthy restricting length here unless store column max.
         for (int leftMSB = (int) leftMSBto + 1; leftMSB <= 255; leftMSB++) {
           BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame, leftMSB, leftShift, leftIndex._bytesUsed,
-                  leftIndex._base), new BinaryMerge.FFSB(rightFrame,/*rightMSB*/-1, riteShift, 
+                  leftIndex._base), new BinaryMerge.FFSB(rightFrame,/*rightMSB*/-1, riteShift,
                   riteIndex._bytesUsed, riteIndex._base), true);
           bmList.add(bm);
           fs.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(leftMSB), bm).call());
@@ -228,7 +254,7 @@ public class Merge {
     t0 = System.nanoTime();
     Log.info("Sending BinaryMerge async RPC calls in a queue ... ");
     fs.blockForPending();
-    
+
     Log.debug("took: " + (System.nanoTime() - t0) / 1e9+" seconds.");
     Log.debug("Removing DKV keys of left and right index.  ... ");
     // TODO: In future we won't delete but rather persist them as index on the table
@@ -316,9 +342,9 @@ public class Merge {
     t0 = System.nanoTime();
     Frame fr = new Frame(names, vecs);
     ChunkStitcher ff = new ChunkStitcher(chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
-    ff.doAll(fr);
+    ff.doAll(fr, runLocal);
     Log.debug("took: " + (System.nanoTime() - t0) / 1e9+" seconds");
-    
+
     return fr;
   }
 
@@ -395,7 +421,7 @@ public class Merge {
     }
   }
 
-  public static long allocateChunk(List<SortCombine> bmList, long chunkSizes[], int chunkLeftMSB[], 
+  public static long allocateChunk(List<SortCombine> bmList, long chunkSizes[], int chunkLeftMSB[],
                                    int chunkRightMSB[], int chunkBatch[]) {
     Log.info("Allocating and populating chunk info (e.g. size and batch number) ...");
     Long t0 = System.nanoTime();
@@ -425,9 +451,15 @@ public class Merge {
     Log.debug("took: " + (System.nanoTime() - t0) / 1e9 +" seconds.");
     return ansN;
   }
-  
-  public static Frame allocatePopulateChunk(List<SortCombine> bmList, Frame leftFrame, long ansN, long chunkSizes[], 
-                                            int chunkLeftMSB[], int chunkRightMSB[], int chunkBatch[]) {
+
+  public static Frame allocatePopulateChunk(List<SortCombine> bmList, Frame leftFrame, long ansN, long chunkSizes[],
+                                          int chunkLeftMSB[], int chunkRightMSB[], int chunkBatch[]) {
+    return allocatePopulateChunk(bmList, leftFrame, ansN, chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch, false);
+  }
+
+  public static Frame allocatePopulateChunk(List<SortCombine> bmList, Frame leftFrame, long ansN, long chunkSizes[],
+                                            int chunkLeftMSB[], int chunkRightMSB[], int chunkBatch[], 
+                                            boolean runLocal) {
     // Now we can stitch together the final frame from the raw chunks that were
     // put into the store
     Log.info("Allocating and populated espc ...");
@@ -464,13 +496,17 @@ public class Merge {
     t0 = System.nanoTime();
     Frame fr = new Frame(names, vecs);
     ChunkStitcher ff = new ChunkStitcher(chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
-    ff.doAll(fr);
+    ff.doAll(fr, runLocal);
     Log.debug("took: " + (System.nanoTime() - t0) / 1e9+" seconds.");
     return fr;
   }
 
   public static Frame sortOnly(final Frame leftFrame, final int leftCols[], int[][] id_maps, int[] ascendingL) {
-    createIndex(true, leftFrame, leftCols, id_maps, ascendingL);  // sort the columns.
+    return sortOnly(leftFrame, leftCols, id_maps, ascendingL, false); 
+  }
+  
+  public static Frame sortOnly(final Frame leftFrame, final int leftCols[], int[][] id_maps, int[] ascendingL, boolean runLocal) {
+    createIndex(true, leftFrame, leftCols, id_maps, ascendingL, runLocal);  // sort the columns.
     Log.info("Making BinaryMerge RPC calls ... ");
     List<SortCombine> bmList = gatherSameMSBRows(leftFrame); // For each MSB, gather sorted rows with same MSB into one spot
     Log.info("Allocating and populating chunk info (e.g. size and batch number) ...");
@@ -501,15 +537,15 @@ public class Merge {
     Log.debug("took: " + (System.nanoTime() - t0) / 1e9 + " seconds.");
     long finalRowNumber = allocateChunk(bmList, chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
     Log.info("Populate chunks and form final sorted frame ...");
-    return allocatePopulateChunk(bmList, leftFrame, finalRowNumber, chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
+    return allocatePopulateChunk(bmList, leftFrame, finalRowNumber, chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch, runLocal);
   }
-  
-  private static RadixOrder createIndex(boolean isLeft, Frame fr, int[] cols, int[][] id_maps, int[] ascending) {
+
+  private static RadixOrder createIndex(boolean isLeft, Frame fr, int[] cols, int[][] id_maps, int[] ascending, boolean runLocal) {
     Log.info("Creating "+(isLeft ? "left" : "right")+" index ...");
     long t0 = System.nanoTime();
-    RadixOrder idxTask = new RadixOrder(fr, isLeft, cols, id_maps, ascending);
+    RadixOrder idxTask = new RadixOrder(fr, isLeft, cols, id_maps, ascending, runLocal);
     H2O.submitTask(idxTask);    // each of those launches an MRTask
-    idxTask.join(); 
+    idxTask.join();
     Log.debug("*** Creating "+(isLeft ? "left" : "right")+" index took: " + (System.nanoTime() - t0) / 1e9 + " seconds ***");
     return idxTask;
   }
@@ -545,4 +581,3 @@ public class Merge {
     }
   }
 }
-

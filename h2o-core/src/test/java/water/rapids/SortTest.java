@@ -54,6 +54,22 @@ public class SortTest extends TestUtil {
       if( res != null ) res.delete();
     }
   }
+  
+  @Test public void testBasicSortJavaLocal() {
+    Frame fr = null, res = null;
+    try {
+      fr = buildFrame(1000,10);
+      fr.insertVec(0,"row",fr.remove(2));
+      System.setProperty("sys.ai.h2o.debug.checkRunLocal", Boolean.TRUE.toString());
+      res = Merge.sort(fr, new int[]{1,2}, true);
+      res.add("row",res.remove(0));
+      new CheckSort().doAll(res, true);
+    } finally {
+      if( fr  != null ) fr .delete();
+      if( res != null ) res.delete();
+      System.setProperty("sys.ai.h2o.debug.checkRunLocal", Boolean.FALSE.toString());
+    }
+  }
 
   @Test public void testBasicSortJava2() {
     Frame fr = null, res = null;
