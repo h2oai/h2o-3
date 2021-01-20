@@ -3385,10 +3385,17 @@ class H2OFrame(Keyed):
         if measure is None: measure = "l2"
         return H2OFrame._expr(expr=ExprNode("distance", self, y, measure))._frame()
 
-    def drop_duplicates(self, columns, keep = "first"):
+    def drop_duplicates(self, columns, keep="first"):
+        """
+        Drops duplicated rows across specified columns.
+        :param columns: Columns to compare during the duplicate detection process.
+        :param keep: Which rows to keep. Two possible values: ["first", "last"]. The "first" value (default) keeps
+         the first row and deletes the rest. The "last" value keeps the last row.
+        :return: A new H2OFrame with rows deduplicated
+        """
         assert_is_type(columns, [int], [str])
-        assert_is_type(keep,  Enum("first", "last"))
-    
+        assert_is_type(keep, Enum("first", "last"))
+
         return H2OFrame._expr(expr=ExprNode("dropdup", self, columns, keep))._frame()
 
     def strdistance(self, y, measure=None, compare_empty=True):
