@@ -1572,7 +1572,7 @@ public class Frame extends Lockable<Frame> {
     boolean _headers = true;
     boolean _quoteColumnNames = true; 
     boolean _hexString = false;
-    boolean _escapeQuotes = false;
+    boolean _escapeQuotes = true;
     char _separator = DEFAULT_SEPARATOR;
     char _escapeCharacter = DEFAULT_ESCAPE;
 
@@ -1727,7 +1727,7 @@ public class Frame extends Lockable<Frame> {
 
     byte[] getBytesForRow() {
       StringBuilder sb = new StringBuilder();
-      BufferedString tmpStr = new BufferedString();
+      final BufferedString unescapedTempStr = new BufferedString();
       for (int i = 0; i < _curChks.length; i++) {
         Vec v = _curChks[i]._vec;
         if (i > 0) sb.append(_parms._separator);
@@ -1738,7 +1738,7 @@ public class Frame extends Lockable<Frame> {
           } else if (v.isUUID()) sb.append(PrettyPrint.UUID(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
           else if (v.isInt()) sb.append(_curChks[i].at8(_chkRow));
           else if (v.isString()) {
-            final String escapedString = escapeQuotesForCsv(_curChks[i].atStr(tmpStr, _chkRow).toString());
+            final String escapedString = escapeQuotesForCsv(_curChks[i].atStr(unescapedTempStr, _chkRow).toString());
             sb.append('"').append(escapedString).append('"');
           } else {
             double d = _curChks[i].atd(_chkRow);
@@ -1787,7 +1787,7 @@ public class Frame extends Lockable<Frame> {
       Chunk anyChunk = _curChks[0];
 
       // Case 3:  Out of data.
-      if (anyChunk._start + _chkRow == anyChunk._vec.length()) {
+      if (anyChunk._start + _chkRow >= anyChunk._vec.length()) {
         return -1;
       }
 

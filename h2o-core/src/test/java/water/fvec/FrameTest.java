@@ -24,7 +24,7 @@ import static water.TestUtil.*;
  * Tests for Frame.java
  */
 @RunWith(H2ORunner.class)
-@CloudSize(2)
+@CloudSize(1)
 public class FrameTest {
   
   @Rule
@@ -474,6 +474,34 @@ public class FrameTest {
         for (int i = 0; i < origVecKeys.length; i++) { // all Vecs were re-keyed
           assertNotEquals(origVecKeys[i], frCopy.vec(i)._key);
         }
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testToCSVEscapedQuotes() throws Exception {
+    try {
+      Scope.enter();
+      final Frame frame = new TestFrameBuilder()
+              .withColNames("Name", "Description", "Location")
+              .withVecTypes(Vec.T_STR, Vec.T_STR, Vec.T_CAT) // One column is categorical intentionally
+              .withDataForCol(0, ar("Panam Palmer", "Judy Alvarez"))
+              .withDataForCol(1, ar("\"The Aldecaldos\" is her tribe", "Queen of \"braindances\""))
+              .withDataForCol(2, ar("Outside of Night City (\"Badlands\")", "Inside the Night City (\"Lizzie's bar\")")) // Notice the single quote there to test it's not escaped
+              .build();
+
+      // The default CSVStreamParams are used intentionally, as all strings and enums should be quoted
+      // by default
+      try (final InputStream csvStream = frame.toCSV(new Frame.CSVStreamParams())) {
+        final String csv = IOUtils.toString(csvStream);
+        assertNotNull(csv);
+        
+        final String expectedOutput= "\"Name\",\"Description\",\"Location\"\n" +
+                "\"Panam Palmer\",\"\"\"The Aldecaldos\"\" is her tribe\",\"Outside of Night City (\"\"Badlands\"\")\"\n" +
+                "\"Judy Alvarez\",\"Queen of \"\"braindances\"\"\",\"Inside the Night City (\"\"Lizzie's bar\"\")\"\n";
+        assertEquals(expectedOutput, csv);
       }
     } finally {
       Scope.exit();
