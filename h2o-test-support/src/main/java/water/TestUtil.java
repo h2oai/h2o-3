@@ -143,6 +143,23 @@ public class TestUtil extends Iced {
     new DKVCleaner().doAllNodes();
     _initial_keycnt = H2O.store_size();
   }
+  
+  public static void cleanupKeys(Class... objectType) {
+    for( Key k : H2O.localKeySet() ) {
+      Value value = Value.STORE_get(k);
+      if( value==null || value.isVecGroup() || value.isESPCGroup() || k == Job.LIST ||
+          value.isJob() || value.type() == TypeMap.PRIM_B ) {
+        // do nothing
+      } else {
+        for (Class c : objectType) {
+          if (c.isInstance(value.get())) {
+            DKV.remove(k);
+            break;
+          }
+        }
+      }
+    }
+  }
 
   public static void checkArrays(double[] expected, double[] actual, double threshold) {
     for(int i = 0; i < actual.length; i++) {

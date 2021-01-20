@@ -461,7 +461,7 @@ public final class GridSearch<MP extends Model.Parameters> {
   private void attemptGridSave(final Grid grid) {
     final String checkpointsDir = _hyperSpaceWalker.getParams()._export_checkpoints_dir;
     if (checkpointsDir == null) return;
-    grid.exportBinary(checkpointsDir);
+    grid.exportBinary(checkpointsDir, false);
   }
 
   static final Set<String> IGNORED_FIELDS_PARAM_HASH = Collections.singleton("_export_checkpoints_dir");

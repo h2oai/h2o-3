@@ -2,14 +2,17 @@ package hex.grid;
 
 import hex.*;
 import hex.faulttolerance.Recoverable;
+import hex.faulttolerance.Recovery;
 import water.*;
 import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
 import water.fvec.persist.PersistUtils;
+import water.persist.Persist;
 import water.util.*;
 import water.util.PojoUtils.FieldNaming;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.net.URI;
 import java.util.*;
@@ -553,38 +556,76 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * @return Path of the file written
    * @throws IOException Error serializing the grid.
    */
-  public String exportBinary(final String gridExportDir) {
+  public List<String> exportBinary(final String gridExportDir, final boolean exportModels, ModelExportOption... options) {
     Objects.requireNonNull(gridExportDir);
     assert _key != null;
     final String gridFilePath = gridExportDir + "/" + _key;
     final URI gridUri = FileUtils.getURI(gridFilePath);
     PersistUtils.write(gridUri, this::writeWithoutModels);
-    return gridFilePath;
+    List<String> result = new ArrayList<>();
+    result.add(gridFilePath);
+    if (exportModels) {
+      exportModelsBinary(result, gridExportDir, options);
+    }
+    return result;
   }
 
-  /**
-   * Saves all of the models present in this Grid. Models are named by their keys.
-   *
-   * @param exportDir Directory to export all the models to.
-   * @throws IOException Error exporting the models
-   */
-  public void exportModelsBinary(final String exportDir, ModelExportOption... options) throws IOException {
+  private void exportModelsBinary(final List<String> files, final String exportDir, ModelExportOption... options) {
     Objects.requireNonNull(exportDir);
     for (Model model : getModels()) {
-      model.exportBinaryModel(exportDir + "/" + model._key.toString(), true, options);
+      try {
+        String modelFile = exportDir + "/" + model._key.toString();
+        files.add(modelFile);
+        model.exportBinaryModel(modelFile, true, options);
+      } catch (IOException e) {
+        throw new RuntimeException("Failed to write grid model " + model._key.toString(), e);
+      }
+    }
+  }
+  
+  public static Grid importBinary(final String gridPath, final boolean loadReferences) {
+    final URI gridUri = FileUtils.getURI(gridPath);
+    if (!PersistUtils.exists(gridUri)) {
+      throw new IllegalArgumentException("Grid file not found " + gridUri);
+    }
+    final Persist persist = H2O.getPM().getPersistForURI(gridUri);
+    final String gridDirectory = persist.getParent(gridUri.toString());
+    final Grid grid = readGridBinary(gridUri, persist);
+    final Recovery<Grid> recovery = new Recovery<>(gridDirectory);
+    URI gridReferencesUri = FileUtils.getURI(recovery.referencesMetaFile(grid));
+    if (loadReferences && !PersistUtils.exists(gridReferencesUri)) {
+      throw new IllegalArgumentException("Requested to load with references, but the grid was saved without references.");
+    }
+    grid.importModelsBinary(gridDirectory);
+    if (loadReferences) {
+      recovery.loadReferences(grid);
+    }
+    DKV.put(grid);
+    return grid;
+  }
+  
+  private static Grid readGridBinary(final URI gridUri, Persist persist) {
+    try (final InputStream inputStream = persist.open(gridUri.toString())) {
+      final AutoBuffer gridAutoBuffer = new AutoBuffer(inputStream);
+      final Freezable freezable = gridAutoBuffer.get();
+      if (!(freezable instanceof Grid)) {
+        throw new IllegalArgumentException(String.format("Given file '%s' is not a Grid", gridUri.toString()));
+      }
+      return (Grid) freezable;
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to open grid file.", e);
     }
   }
 
-  /**
-   * Imports models referenced by this grid from given directory.
-   *
-   * @param exportDir Directory to import the models from.
-   * @throws IOException Error importing the models
-   */
-  public void importModelsBinary(final String exportDir) throws IOException {
+  private void importModelsBinary(final String exportDir) {
     for (Key<Model> k : _models.values()) {
-      final Model<?, ?, ?> model = Model.importBinaryModel(exportDir + "/" + k.toString());
-      assert model != null;
+      String modelFile = exportDir + "/" + k.toString();
+      try {
+        final Model<?, ?, ?> model = Model.importBinaryModel(modelFile);
+        assert model != null;
+      } catch (IOException e) {
+        throw new IllegalStateException("Unable to load model from " + modelFile, e);
+      }
     }
   }
 

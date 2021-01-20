@@ -1,8 +1,10 @@
 package hex.faulttolerance;
 
+import hex.ModelExportOption;
 import water.Key;
 import water.Keyed;
 
+import java.util.List;
 import java.util.Set;
 
 public interface Recoverable<T extends Keyed> {
@@ -16,7 +18,7 @@ public interface Recoverable<T extends Keyed> {
      * @param location directory where this recoverable will be written into a single file
      * @return path to where data was written
      */
-    String exportBinary(String location);
+    List<String> exportBinary(String location, boolean includingModels, ModelExportOption... options);
 
     /**
      * @return list of all keys of objects this recoverable needs to resume operation after recovery

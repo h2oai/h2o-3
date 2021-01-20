@@ -34,34 +34,8 @@ public class GridImportExportHandler extends Handler {
   public KeyV3.GridKeyV3 importGrid(final int version, final GridImportV3 gridImportV3) throws IOException {
     Objects.requireNonNull(gridImportV3);
     validateGridImportParameters(gridImportV3);
-
-    final URI gridUri = FileUtils.getURI(gridImportV3.grid_path);
-    if (!PersistUtils.exists(gridUri)) {
-      throw new IllegalArgumentException("File not found " + gridUri);
-    }
-    final Persist persist = H2O.getPM().getPersistForURI(gridUri);
-    final String gridDirectory = persist.getParent(gridUri.toString());
-    final Recovery<Grid> recovery = new Recovery<>(gridDirectory);
-    try (final InputStream inputStream = persist.open(gridUri.toString())) {
-      final AutoBuffer gridAutoBuffer = new AutoBuffer(inputStream);
-      final Freezable freezable = gridAutoBuffer.get();
-      if (!(freezable instanceof Grid)) {
-        throw new IllegalArgumentException(String.format("Given file '%s' is not a Grid", gridImportV3.grid_path));
-      }
-      final Grid grid = (Grid) freezable;
-      URI gridReferencesUri = FileUtils.getURI(recovery.referencesMetaFile(grid));
-      if (gridImportV3.load_params_references && !PersistUtils.exists(gridReferencesUri)) {
-        throw new IllegalArgumentException("Requested to load with references, but the grid was saved without references.");
-      }
-
-      grid.importModelsBinary(gridDirectory);
-      if (gridImportV3.load_params_references) {
-        recovery.loadReferences(grid);
-      }
-      DKV.put(grid);
-      return new KeyV3.GridKeyV3(grid._key);
-    }
-
+    Grid grid = Grid.importBinary(gridImportV3.grid_path, gridImportV3.load_params_references);
+    return new KeyV3.GridKeyV3(grid._key);
   }
 
   @SuppressWarnings("unused")
@@ -76,9 +50,8 @@ public class GridImportExportHandler extends Handler {
     }
 
     final Grid serializedGrid = (Grid) possibleGrid;
-    serializedGrid.exportBinary(gridExportV3.grid_directory);
     ModelExportOption[] options = gridExportV3.getModelExportOptions();
-    serializedGrid.exportModelsBinary(gridExportV3.grid_directory, options);
+    serializedGrid.exportBinary(gridExportV3.grid_directory, true, options);
     if (gridExportV3.save_params_references) {
       new Recovery<Grid>(gridExportV3.grid_directory).exportReferences(serializedGrid);
     }
