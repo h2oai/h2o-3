@@ -367,7 +367,7 @@ Install pip package manager:
 
     sudo easy_install pip
 
-Next install required pakcages:
+Next install required packages:
 
     sudo pip install wheel requests 'colorama>=0.3.8' future tabulate  
 
