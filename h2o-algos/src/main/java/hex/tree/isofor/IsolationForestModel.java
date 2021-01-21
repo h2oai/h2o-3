@@ -36,12 +36,14 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
       // _nbins_top_level = 2;
       _histogram_type = HistogramType.Random;
       _distribution = DistributionFamily.gaussian;
-
-      // early stopping
-      _stopping_tolerance = 0.01; // (default 0.001 is too low for the default criterion anomaly_score)
-
+      
       // IF specific
       _contamination = -1; // disabled
+    }
+
+    @Override
+    protected double defaultStoppingTolerance() {
+      return 0.01; // (inherited value 0.001 would be too low for the default criterion anomaly_score)
     }
   }
 

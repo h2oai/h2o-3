@@ -1,9 +1,6 @@
 package hex.tree.isofor;
 
-import hex.ConfusionMatrix;
-import hex.Model;
-import hex.ModelMetricsBinomial;
-import hex.ScoreKeeper;
+import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
@@ -53,9 +50,13 @@ public class IsolationForestTest extends TestUtil {
       p._min_rows = 1;
       p._sample_size = 5;
 
-      IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      IsolationForest isofor = new IsolationForest(p);
+      IsolationForestModel model = isofor.trainModel().get();
       assertNotNull(model);
       Scope.track_generic(model);
+
+      // trained with no warnings
+      assertEquals("", isofor.validationWarnings());
 
       Frame preds = Scope.track(model.score(train));
       assertArrayEquals(new String[]{"predict", "mean_length"}, preds.names());
