@@ -83,13 +83,17 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
   /**
    * @param interactionDomain the domain of the generated interaction column, if already known, 
    *                          for example when computing interaction for predictions.
-   * @return the index of the interaction column for the group, or the index of the column if the group has only one.
+   * @return the index of the interaction column for the group, 
+   * or the index of the column if the group has only one, 
+   * or -1 if one column in the interaction group is missing.
    */
   static int createFeatureInteraction(Frame fr, String[] colGroup, String[] interactionDomain) {
     if (colGroup.length == 1) {
       return fr.find(colGroup[0]);
-    } else {
+    } else if (new HashSet<>(Arrays.asList(fr.names())).containsAll(Arrays.asList(colGroup))) {
       return addInteractionColumn(fr, colGroup, interactionDomain);
+    } else { // skip interaction if one col is missing  (we could also replace missing columns with a col of NAs, but we don't do this today when a simple cat column is missing)
+      return -1;
     }
   }
 

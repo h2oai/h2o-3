@@ -15,7 +15,9 @@ import water.util.*;
 
 import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
+import java.util.stream.Collector;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static ai.h2o.targetencoding.TargetEncoderHelper.*;
 
@@ -288,12 +290,15 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   }
   
   private boolean canApplyTargetEncoding(Frame fr) {
-    String[] frColumns = fr.names();
-    Set<String> teColumns = _output._target_encoding_map.keySet();
-    boolean canApply = Arrays.stream(frColumns).anyMatch(teColumns::contains);
+    Set<String> frColumns = new HashSet<>(Arrays.asList(fr.names()));
+    boolean canApply = Arrays.stream(_output._input_to_encoding_column)
+            .map(m -> Arrays.asList(m.from()))
+            .anyMatch(frColumns::containsAll);
     if (!canApply) {
       logger.info("Frame "+fr._key+" has no columns to encode with TargetEncoder, skipping it: " +
-              "columns="+Arrays.toString(fr.names())+", target encoder columns="+_output._target_encoding_map.keySet());
+              "columns="+Arrays.toString(fr.names())+", " +
+              "target encoder columns="+Arrays.deepToString(Arrays.stream(_output._input_to_encoding_column).map(ColumnsMapping::from).toArray(String[][]::new))
+      );
     }
     return canApply;
   }
@@ -379,6 +384,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
         String[] colGroup = columnsToEncode.from();
         String columnToEncode = columnsToEncode.toSingle();
         Frame encodings = _output._target_encoding_map.get(columnToEncode);
+        assert encodings != null;
         
         // passing the interaction domain obtained during training:
         // - this ensures that the interaction column will have the same domain as in training (no need to call adaptTo on the new Vec).
@@ -386,9 +392,10 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
         // - unseen values/interactions are however represented as NAs in the new column, which is acceptable as TE encodes them in the same way anyway.
         int colIdx = createFeatureInteraction(workingFrame, colGroup, columnsToEncode.toDomain());
         if (colIdx < 0) {
-          logger.warn("Column "+columnToEncode+" is missing in frame "+data._key);
+          logger.warn("Column "+Arrays.toString(colGroup)+" is missing in frame "+data._key);
           continue;
         }
+        assert workingFrame.name(colIdx).equals(columnToEncode);
         
         // if not applying encodings to training data, then get rid of the foldColumn in encodings.
         if (dataLeakageHandlingStrategy != DataLeakageHandlingStrategy.KFold && encodings.find(foldColumn) >= 0) {
@@ -451,9 +458,10 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    * For model integration, we need to ensure that columns are offered to the model in a consistent order.
    * After TE encoding, columns are always in the following order:
    * <ol>
-   *     <li>non-categorical predictors</li>
+   *     <li>non-categorical predictors present in training frame</li>
    *     <li>TE-encoded predictors</li>
-   *     <li>remaining categorical predictors</li>
+   *     <li>remaining categorical predictors present in training frame</li>
+   *     <li>remaining predictors not present in training frame</li>
    *     <li>non-predictors</li>
    * </ol>
    * This way, categorical encoder can later encode the remaining categorical predictors 
@@ -465,17 +473,33 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     String[] toTheEnd = _parms.getNonPredictors();
     Map<String, Integer> nameToIdx = nameToIndex(fr);
     List<Integer> toAppendAfterNumericals = new ArrayList<>();
-    String[] columns = fr.names();
-    int[] newOrder = new int[columns.length];
+    String[] trainColumns = _parms.train().names();
+    Set<String> trainCols = new HashSet<>(Arrays.asList(trainColumns));
+    String[] notInTrainColumns = Arrays.stream(fr.names())
+            .filter(c -> !trainCols.contains(c))
+            .toArray(String[]::new);
+    int[] newOrder = new int[fr.numCols()];
     int offset = 0;
-    for (int i=0; i<columns.length; i++) {
-      if (ArrayUtils.contains(toTheEnd, columns[i])) continue;
-      Vec vec = fr.vec(i);
-      if (vec.isCategorical()) {
-        toAppendAfterNumericals.add(i); //first appending categoricals
-      } else {
-        newOrder[offset++] = i; //adding all non-categoricals first
+    for (String col : trainColumns) {
+      if (nameToIdx.containsKey(col) && !ArrayUtils.contains(toTheEnd, col)) {
+        int idx = nameToIdx.get(col);
+        if (fr.vec(idx).isCategorical()) {
+          toAppendAfterNumericals.add(idx); //first appending categoricals
+        } else {
+          newOrder[offset++] = idx; //adding all non-categoricals first
+        }
       }
+    }
+    String[] encodedColumns = Arrays.stream(_output._input_to_output_columns)
+            .flatMap(m -> Stream.of(m.to()))
+            .toArray(String[]::new);
+    Set<String> encodedCols = new HashSet<>(Arrays.asList(encodedColumns));
+    for (String col : encodedColumns) { // TE-encoded cols
+      assert nameToIdx.containsKey(col);
+      newOrder[offset++] = nameToIdx.get(col);
+    }
+    for (String col : notInTrainColumns) {
+      if (!encodedCols.contains(col)) toAppendAfterNumericals.add(nameToIdx.get(col)); // appending columns only in fr
     }
     for (String col : toTheEnd) { // then appending the trailing columns
       if (nameToIdx.containsKey(col)) toAppendAfterNumericals.add(nameToIdx.get(col));

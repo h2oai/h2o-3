@@ -29,11 +29,11 @@ public class TargetEncoderMojoModel extends MojoModel {
   public boolean _withBlending;
   public double _inflectionPoint;
   public double _smoothing;
+  public List<ColumnsToSingleMapping> _inencMapping;
+  public List<ColumnsMapping> _inoutMapping;
 
   List<String> _nonPredictors;
   Map<String, EncodingMap> _encodingsByCol;
-  List<ColumnsToSingleMapping> _inencMapping;
-  List<ColumnsMapping> _inoutMapping;
   boolean _keepOriginalCategoricalColumns;
   
   /**

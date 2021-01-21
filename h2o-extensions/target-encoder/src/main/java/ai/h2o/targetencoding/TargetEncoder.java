@@ -82,8 +82,8 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
           for (String col: colGroup) {
             if (!validated.contains(col)) {
               Vec vec = train.vec(col);
-              if (vec == null) error("_columns_to_encode", "Column "+col+" from interaction "+Arrays.toString(colGroup)+" is not categorical or is missing from the training frame.");
-              else if (!vec.isCategorical()) error("_columns_to_encode", "Column "+col+" from interaction "+Arrays.toString(colGroup)+" must first be converted into categorical to be used by target encoder.");
+              if (vec == null) error("_columns_to_encode", "Column `"+col+"` from interaction "+Arrays.toString(colGroup)+" is not categorical or is missing from the training frame.");
+              else if (!vec.isCategorical()) error("_columns_to_encode", "Column `"+col+"` from interaction "+Arrays.toString(colGroup)+" must first be converted into categorical to be used by target encoder.");
               validated.add(col);
             }
           }

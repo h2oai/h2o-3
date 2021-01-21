@@ -303,7 +303,7 @@ public class TargetEncoderModelTest extends TestUtil{
   }
   
   @Test
-  public void test_columns_order_has_no_effect() {
+  public void test_columns_order_has_no_effect_on_training() {
     try {
       Scope.enter();
       final Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
@@ -353,6 +353,62 @@ public class TargetEncoderModelTest extends TestUtil{
       assertEncodingMapsEqual(teModel1._output._target_encoding_map, teModel2._output._target_encoding_map);
 
       assertBitIdentical(sortedEncoded1, sortedReorderedEncoded2);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  @Test
+  public void test_columns_order_has_no_effect_on_transform() {
+    try {
+      Scope.enter();
+      final Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Scope.track(fr);
+      RowIndexTask.addRowIndex(fr);
+
+      String foldColumn = "fold_column";
+      int nfolds = 5;
+      addKFoldColumn(fr, foldColumn, nfolds, 1234L);
+      String responseColumnName = "survived";
+      asFactor(fr, responseColumnName);
+      String[] teColumns = new String[]{ "home.dest", "embarked" };
+
+      TargetEncoderParameters teParameters = new TargetEncoderParameters();
+      teParameters._train = fr._key;
+      teParameters._response_column = responseColumnName;
+      teParameters._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
+      teParameters._fold_column = foldColumn;
+      teParameters._seed = 42;
+      teParameters._ignored_columns = ignoredColumns(fr,
+              water.util.ArrayUtils.append(new String[]{ "home.dest", "embarked" }, teParameters._response_column, teParameters._fold_column));
+
+      TargetEncoder te = new TargetEncoder(teParameters);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+      Frame encodedOri = Scope.track(teModel.transform(fr));
+
+      int[] teColIdx = Stream.of(teColumns).mapToInt(fr::find).toArray();
+      Frame modFr = new Frame(fr);
+      modFr.swap(teColIdx[0], teColIdx[1]);
+      Frame encodedSwap = Scope.track(teModel.transform(modFr));
+
+      assertArrayEquals(encodedOri.names(), encodedSwap.names());
+      assertBitIdentical(encodedOri, encodedSwap);
+
+      modFr = new Frame(fr);
+      modFr.add("dummy", modFr.anyVec().makeCon(Vec.T_CAT));
+      Frame encodedPlusOne= Scope.track(teModel.transform(modFr));
+      assertNotNull(encodedPlusOne.vec("dummy"));
+      encodedPlusOne.remove("dummy");
+      assertBitIdentical(encodedOri, encodedPlusOne);
+
+      modFr = new Frame(fr);
+      modFr.remove("sex");
+      Frame encodedMinusOne= Scope.track(teModel.transform(modFr));
+      assertNull(encodedMinusOne.vec("sex"));
+      Frame oriMinusOne = new Frame(encodedOri);
+      oriMinusOne.remove("sex");
+      assertBitIdentical(oriMinusOne, encodedMinusOne);
     } finally {
       Scope.exit();
     }
@@ -428,6 +484,51 @@ public class TargetEncoderModelTest extends TestUtil{
       assertFalse(ArrayUtils.contains(transformed.names(), "categorical"));
 
       assertTrue(ArrayUtils.contains(fr.names(), "categorical"));
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  @Test
+  public void test_interactions_are_encoded_as_a_single_categorical_column() {
+    try {
+      Scope.enter();
+      final Frame fr = new TestFrameBuilder()
+              .withColNames("cat1", "cat2", "target")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b"))
+              .withDataForCol(1, ar("x", "x", "x", "y"))
+              .withDataForCol(2, ar("N", "Y", "N", "Y"))
+              .build();
+
+      TargetEncoderParameters params = new TargetEncoderParameters();
+      params._train = fr._key;
+      params._response_column = "target";
+      params._columns_to_encode = new String[][] {
+              new String[] {"cat1", "cat2"}
+      };
+      params._noise = 0;
+      params._seed = 0XFEED;
+      params._keep_original_categorical_columns = true;
+      params._keep_interaction_columns = true;
+
+      TargetEncoder te = new TargetEncoder(params);
+      final TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      Frame transformed = Scope.track(teModel.transform(fr));
+      assertTrue(ArrayUtils.contains(transformed.names(), "cat1"));
+      assertTrue(ArrayUtils.contains(transformed.names(), "cat2"));
+      assertTrue(ArrayUtils.contains(transformed.names(), "cat1~cat2")); // only because _keep_interaction_columns=true for the test
+      assertTrue(ArrayUtils.contains(transformed.names(), "cat1~cat2_te"));
+      
+      Vec interaction = transformed.vec("cat1~cat2");
+      assertEquals(3, interaction.domain().length);
+      assertArrayEquals(new String[] {"0", "1", "4"}, interaction.domain()); //[a, x] -> 0, [b, x] -> 1, [NA, x], [a, y], [b, y] -> 4, [NA, y]
+      assertVecEquals(vec(0, 1, 1, 2), interaction, 0);
+      
+      Vec interaction_te = transformed.vec("cat1~cat2_te");
+      assertVecEquals(dvec(0., .5, .5, 1.), interaction_te, 0);
     } finally {
       Scope.exit();
     }

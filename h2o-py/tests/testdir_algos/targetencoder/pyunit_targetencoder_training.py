@@ -138,7 +138,7 @@ def columns_listed_in_columns_to_encode_should_not_be_ignored_in_x():
     try:
         te.train(x=x, y=ds.target, training_frame=ds.train)
     except Exception as e:
-        assert "Column {} from interaction [{}] is not categorical or is missing from the training frame".format(ignored, ', '.join(two_inter)) in str(e)
+        assert "Column `{}` from interaction [{}] is not categorical or is missing from the training frame".format(ignored, ', '.join(two_inter)) in str(e)
 
     
 pu.run_tests([

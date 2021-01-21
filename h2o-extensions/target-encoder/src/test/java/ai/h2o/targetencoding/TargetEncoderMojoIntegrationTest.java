@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 import static ai.h2o.targetencoding.TargetEncoderHelper.addKFoldColumn;
 import static hex.genmodel.algos.targetencoder.TargetEncoderMojoModel.computeBlendedEncoding;
 import static hex.genmodel.algos.targetencoder.TargetEncoderMojoModel.computeLambda;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(JUnitQuickcheck.class)
@@ -323,14 +324,17 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
       double[] predictions = teModelWrapper.predictTargetEncoding(asRowData(row)).transformations;
       assertEquals(3, predictions.length);
 
-      // Because of the random swap we need to know which index is lower so that we know order of transformations/predictions
       assertEquals(sexEnc, predictions[0], 1e-5);
       assertEquals(interaction1Enc, predictions[1], 1e-5);
       assertEquals(interaction2Enc, predictions[2], 1e-5);
+      
+      for (int i=0; i<teModel._output._input_to_output_columns.length; i++) {
+        assertArrayEquals(teModel._output._input_to_output_columns[i].from(), loadedMojoModel._inoutMapping.get(i).from());
+        assertArrayEquals(teModel._output._input_to_output_columns[i].to(), loadedMojoModel._inoutMapping.get(i).to());
+      }
     } finally {
       Scope.exit();
     }
-    
   }
   
   @Test
