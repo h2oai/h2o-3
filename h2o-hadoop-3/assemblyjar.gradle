@@ -95,7 +95,7 @@ shadowJar {
     relocate 'org.joda.time', 'ai.h2o.org.joda.time'
     exclude hadoopShadowJarExcludes
     relocate 'com.google.common', 'ai.h2o.com.google.common'
-    relocate 'org.eclipse.jetty', 'ai.h2o.org.eclipse.jetty'
+    relocate 'org.eclipse.jetty', 'darkwater.org.eclipse.jetty'
     baseName = 'h2odriver'
     classifier = ''
     manifest {

@@ -1,3 +1,13 @@
+# Migrating to H2O 3.32.0.4
+
+Due to collision between System properties and H2O Args during as a result of `org.eclipse.jetty.*` packages shadowing,
+such packages are now shadowed to a new name package. Instead of shadowing with `ai.h2o` prefix, those are put into `darkwater.*`
+prefixed packags. LDAP Login module classes are not affected.
+
+- The original package names starting with `org.eclipse.jetty.*` have been shadowed by using `water` prefix, resulting in
+  `darkwater.org.eclipse.jetty.*` pattern.
+
+
 # Migrating to H2O 3.30.1.1
 
 Jetty version 8 has been dropped as default implementation of `h2o-webserver-iface` module, as it is not actively developed and supported anymore.
