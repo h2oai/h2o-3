@@ -193,23 +193,28 @@ h2o.grid <- function(algorithm,
 #' @param recovery_dir When specified the grid and all necessary data (frames, models) will be saved to this
 #'        directory (use HDFS or other distributed file-system). Should the cluster crash during training, the grid
 #'        can be reloaded from this directory via \code{h2o.loadGrid} and training can be resumed
+#' @param ...  Additional parameters to modify the resumed Grid.
 #' @export
-h2o.resumeGrid <- function(grid_id, recovery_dir=NULL) {
+h2o.resumeGrid <- function(grid_id, recovery_dir=NULL, ...) {
     grid <- h2o.getGrid(grid_id = grid_id)
     model_id <- grid@model_ids[[1]]
     model <- h2o.getModel(model_id = model_id)
     algorithm <- model@algorithm
-    params <- list(
-        grid_id=grid_id,
-        recovery_dir=recovery_dir
-    )
+    params <- list(...)
+    detach <- params$detach
+    params$detach <- NULL
+    params$grid_id <- grid_id
+    params$recovery_dir <- recovery_dir
     res <- .h2o.__remoteSend(.h2o.__GRID_RESUME(algorithm), h2oRestApiVersion = 99, .params = params, method = "POST")
     grid_id <- res$job$dest$name
-    job_key <- res$job$key$name
-    # Wait for grid job to finish
-    .h2o.__waitOnJob(job_key)
-
-    h2o.getGrid(grid_id = grid_id)
+    if (is.null(detach) || !detach) {
+        # Wait for grid job to finish
+        job_key <- res$job$key$name
+        .h2o.__waitOnJob(job_key)
+        h2o.getGrid(grid_id = grid_id)
+    } else {
+        grid_id
+    }
 }
 
 #' Get a grid object from H2O distributed K/V store. 

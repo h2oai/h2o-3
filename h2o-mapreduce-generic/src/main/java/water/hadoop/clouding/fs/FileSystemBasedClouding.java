@@ -30,8 +30,9 @@ public class FileSystemBasedClouding extends AbstractClouding {
 
   @Override
   public void notifyAboutCloudSize(InetAddress ip, int port, InetAddress leaderIp, int leaderPort, int size) {
-    if (size != _cloudSize)
+    if (size != _cloudSize) {
       return;
+    }
     Path path = toNodePath(ip, port, "leader");
     try {
       writeFile(path, h2oUri(leaderIp, leaderPort));
@@ -39,6 +40,7 @@ public class FileSystemBasedClouding extends AbstractClouding {
       e.printStackTrace();
       exit(162);
     }
+    cloudingFinished();
   }
 
   @Override

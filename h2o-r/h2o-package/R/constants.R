@@ -67,6 +67,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__CLOUD          <- "Cloud?skip_ticks=true"
 .h2o.__SHUTDOWN       <- "Shutdown"
 .h2o.__DOWNLOAD_LOGS  <- "3/Logs/download"
+.h2o.__RESUME         <- "3/Recovery/resume"
 
 #' Removal Endpoints
 .h2o.__DKV            <- "DKV"

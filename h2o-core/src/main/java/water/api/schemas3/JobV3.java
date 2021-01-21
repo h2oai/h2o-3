@@ -41,11 +41,15 @@ public class JobV3 extends SchemaV3<Job, JobV3> {
 
   @API(help="exception", direction=API.Direction.OUTPUT)
   public String [] warnings;
+
   @API(help="exception", direction=API.Direction.OUTPUT)
   public String exception;
 
   @API(help="stacktrace", direction=API.Direction.OUTPUT)
   public String stacktrace;
+
+  @API(help="recoverable", direction=API.Direction.OUTPUT)
+  public boolean auto_recoverable;
 
   @API(help="ready for view", direction=API.Direction.OUTPUT)
   public boolean ready_for_view;
@@ -91,6 +95,7 @@ public class JobV3 extends SchemaV3<Job, JobV3> {
       stacktrace = sw.toString();
     }
     msec = job.msec();
+    auto_recoverable = job.isRecoverable();
     ready_for_view = job.readyForView();
 
     Keyed dest_type;

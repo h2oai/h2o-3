@@ -169,3 +169,4 @@ water.api.schemas3.CloudLockV3
 water.api.schemas3.SegmentModelsV3
 water.api.schemas3.SegmentModelsParametersV3
 water.api.schemas3.FeatureInteractionV3
+water.api.RecoveryHandler$ResumeV3

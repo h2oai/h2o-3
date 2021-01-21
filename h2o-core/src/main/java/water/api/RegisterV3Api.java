@@ -508,6 +508,10 @@ public class RegisterV3Api extends AbstractRegister {
     context.registerEndpoint("export_grid",
             "POST /3/Grid.bin/{grid_id}/export", GridImportExportHandler.class, "exportGrid",
             "Export a Grid and its models.");
+
+    context.registerEndpoint("recovery_resume",
+            "POST /3/Recovery/resume", RecoveryHandler.class, "resume",
+            "Recover stored state and resume interrupted job.");
   }
 
   @Override

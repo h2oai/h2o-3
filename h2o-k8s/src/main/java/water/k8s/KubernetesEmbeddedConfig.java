@@ -10,9 +10,11 @@ import java.util.Collection;
 public class KubernetesEmbeddedConfig extends AbstractEmbeddedH2OConfig {
 
     private final String flatfile;
+    private final int cloudSize;
 
     public KubernetesEmbeddedConfig(final Collection<String> nodeIPs) {
         this.flatfile = writeFlatFile(nodeIPs);
+        this.cloudSize = nodeIPs.size();
     }
 
     private String writeFlatFile(final Collection<String> nodeIPs) {
@@ -35,6 +37,9 @@ public class KubernetesEmbeddedConfig extends AbstractEmbeddedH2OConfig {
     @Override
     public void notifyAboutCloudSize(InetAddress ip, int port, InetAddress leaderIp, int leaderPort, int size) {
         Log.info(String.format("Created cluster of size %d, leader node IP is '%s'", size, leaderIp.toString()));
+        if (size == cloudSize) {
+            cloudingFinished();
+        }
     }
 
     @Override

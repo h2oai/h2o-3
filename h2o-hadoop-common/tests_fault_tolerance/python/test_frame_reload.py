@@ -1,8 +1,4 @@
 from __future__ import print_function
-import sys
-import os
-sys.path.insert(1, os.path.join("..", "..", "..", "h2o-py"))
-from tests import pyunit_utils
 import fault_tolerance_utils as utils
 import h2o
 import unittest
@@ -11,8 +7,8 @@ import unittest
 class FrameReloadTest(unittest.TestCase):
 
     def test_frame_reload(self):
-        name_node = pyunit_utils.hadoop_namenode()
-        work_dir = "hdfs://%s%s" % (name_node, utils.get_workdir())
+        name_node = utils.hadoop_namenode()
+        work_dir = utils.get_workdir()
         dataset = "/datasets/mnist/train.csv.gz"
         
         saver_cluster_name = "saver-py" 

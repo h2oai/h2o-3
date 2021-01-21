@@ -15,6 +15,7 @@ class NetworkBasedClouding extends AbstractClouding {
   private volatile int _driverCallbackPort = -1;
   private volatile String _embeddedWebServerIp = "(Unknown)";
   private volatile int _embeddedWebServerPort = -1;
+  private volatile int _cloudSize = -1;
 
   void setDriverCallbackIp(String value) {
     _driverCallbackIp = value;
@@ -28,6 +29,7 @@ class NetworkBasedClouding extends AbstractClouding {
   public void init(Configuration conf) {
     _driverCallbackIp = conf.get(h2omapper.H2O_DRIVER_IP_KEY);
     _driverCallbackPort = conf.getInt(h2omapper.H2O_DRIVER_PORT_KEY, -1);
+    _cloudSize = conf.getInt(h2omapper.H2O_CLOUD_SIZE_KEY, -1);
   }
 
   private class BackgroundWriterThread extends Thread {
@@ -127,7 +129,6 @@ class NetworkBasedClouding extends AbstractClouding {
   public void notifyAboutCloudSize(InetAddress ip, int port, InetAddress leaderIp, int leaderPort, int size) {
     _embeddedWebServerIp = ip.getHostAddress();
     _embeddedWebServerPort = port;
-
     try {
       MapperToDriverMessage msg = new MapperToDriverMessage();
       msg.setDriverCallbackIpPort(_driverCallbackIp, _driverCallbackPort);
@@ -140,6 +141,9 @@ class NetworkBasedClouding extends AbstractClouding {
     catch (Exception e) {
       System.out.println("NetworkBasedClouding: notifyAboutCloudSize caught an Exception");
       e.printStackTrace();
+    }
+    if (size == _cloudSize) {
+      cloudingFinished();
     }
   }
 

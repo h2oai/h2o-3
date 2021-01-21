@@ -13,7 +13,6 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMap;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 import static hex.grid.HyperSpaceWalker.BaseWalker.SUBSPACES;
 import static water.api.API.Direction.INOUT;
@@ -59,6 +58,10 @@ public class GridSearchSchema<G extends Grid<MP>,
   @API(help= "Path to a directory where grid will save everything necessary to resume training after cluster crash.", 
       direction = INPUT)
   public String recovery_dir;
+
+  @API(help= "Key to use for the Job handling this GridSearch (internal use only).",
+      direction = INPUT)
+  public KeyV3.JobKeyV3 job_id;
   
   //
   // Outputs
@@ -140,7 +143,7 @@ public class GridSearchSchema<G extends Grid<MP>,
     }
 
     if (parms.containsKey("grid_id")) {
-      grid_id = new KeyV3.GridKeyV3(Key.<Grid>make(parms.getProperty("grid_id")));
+      grid_id = new KeyV3.GridKeyV3(Key.make(parms.getProperty("grid_id")));
       parms.remove("grid_id");
     }
 
@@ -165,6 +168,11 @@ public class GridSearchSchema<G extends Grid<MP>,
     if (parms.containsKey("recovery_dir")) {
       this.recovery_dir = parms.getProperty("recovery_dir");
       parms.remove("recovery_dir");
+    }
+
+    if (parms.containsKey("job_id")) {
+      this.job_id = new KeyV3.JobKeyV3(Key.make(parms.getProperty("job_id")));
+      parms.remove("job_id");
     }
 
     // Do not check validity of parameters, GridSearch is tolerant of bad

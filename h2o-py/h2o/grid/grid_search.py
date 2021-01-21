@@ -354,7 +354,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         parms["x"] = x
         self.build_model(parms)
 
-    def resume(self, recovery_dir=None):
+    def resume(self, recovery_dir=None, **kwargs):
         """
         Resume previously stopped grid training.
 
@@ -362,13 +362,12 @@ class H2OGridSearch(h2o_meta(Keyed)):
             directory (use HDFS or other distributed file-system). Should the cluster crash during training, the grid
             can be reloaded from this directory via ``h2o.load_grid``, and training can be resumed.
         """
-        parms = {
-            "grid_id": self.grid_id,
-            "recovery_dir": recovery_dir
-        }
-        algo = self.model._compute_algo()  # unique to grid search
-        grid = H2OJob(h2o.api("POST /99/Grid/%s/resume" % algo, data=parms), job_type=(algo + " Grid Build"))
-        self._handle_build_finish(grid)
+        parms = kwargs
+        if "detach" in kwargs.keys():
+            self._future = kwargs.pop("detach")
+        parms["grid_id"] = self.grid_id
+        parms["recovery_dir"] = recovery_dir
+        self._run_grid_job(parms, end_point="/resume")
 
     def build_model(self, algo_params):
         """(internal)"""
@@ -405,12 +404,13 @@ class H2OGridSearch(h2o_meta(Keyed)):
         ignored_columns = list(set(tframe.names) - set(x + [y, offset, folds, weights]))
         kwargs["ignored_columns"] = None if not ignored_columns else [quoted(col) for col in ignored_columns]
         kwargs = {k: H2OEstimator._keyify_if_h2oframe(kwargs[k]) for k in kwargs}
-        algo = self.model._compute_algo()  # unique to grid search
         if self.grid_id is not None: kwargs["grid_id"] = self.grid_id
         rest_ver = kwargs.pop("_rest_version") if "_rest_version" in kwargs else None
+        self._run_grid_job(kwargs, rest_ver=rest_ver)
 
-        grid = H2OJob(h2o.api("POST /99/Grid/%s" % algo, data=kwargs), job_type=(algo + " Grid Build"))
-
+    def _run_grid_job(self, params, end_point="", rest_ver=None):
+        algo = self.model._compute_algo()  # unique to grid search
+        grid = H2OJob(h2o.api("POST /99/Grid/%s%s" % (algo, end_point), data=params), job_type=(algo + " Grid Build"))
         if self._future:
             self._job = grid
         else:

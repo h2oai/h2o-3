@@ -222,7 +222,6 @@ public class FramePersist {
         public void map(Chunk c) {
             PersistUtils.read(getDataUri(metaUri, c.cidx()), ab -> readChunks(ab, c.cidx()));
             job.update(1);
-            
         }
 
         @SuppressWarnings("rawtypes")

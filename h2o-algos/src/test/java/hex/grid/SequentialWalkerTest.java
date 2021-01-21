@@ -1,10 +1,8 @@
 package hex.grid;
 
-import hex.ScoreKeeper;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.grid.HyperSpaceSearchCriteria.StoppingCriteria;
 import hex.tree.gbm.GBMModel;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.Job;

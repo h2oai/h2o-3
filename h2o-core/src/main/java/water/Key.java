@@ -367,7 +367,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   public void remove() { Keyed.remove(this); }
 
   /**
-   * @deprecated use {@link Keyed#remove(Key, Futures)} instead. Will be removed from version 3.30.
+   * @deprecated use {@link Keyed#remove(Futures)} instead. Will be removed from version 3.30.
    */
   public Futures remove(Futures fs) {
     return Keyed.remove(this, fs, true);

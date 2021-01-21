@@ -366,7 +366,7 @@ public class GridTest extends TestUtil {
       final Frame trainingFrame = parse_test_file(trainKey, "smalldata/iris/iris_train.csv");
       Scope.track(trainingFrame);
       Job<Grid> gs = GridSearch.startGridSearch(
-          gridKey, params, hyperParms,             
+          null, gridKey, params, hyperParms,             
           new GridSearch.SimpleParametersBuilderFactory(),
           new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
           recovery1, 1
@@ -394,7 +394,7 @@ public class GridTest extends TestUtil {
         assertNotNull(DKV.getGet(originalModelKey));
       }
       Job<Grid> gs2 = GridSearch.startGridSearch(
-          gridKey,
+          null, gridKey,
           loadedGrid1.getParams(),
           loadedGrid1.getHyperParams(),
           new GridSearch.SimpleParametersBuilderFactory(),
@@ -453,7 +453,7 @@ public class GridTest extends TestUtil {
       Recovery<Grid> recovery = new Recovery<>(recoveryDir);
       Key gridKey = Key.make("gridSearchWithRecovery_GRID");
       Job<Grid> gs = GridSearch.startGridSearch(
-          gridKey, params, hyperParms,
+          null, gridKey, params, hyperParms,
           new GridSearch.SimpleParametersBuilderFactory<>(),
           new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
           recovery, GridSearch.SEQUENTIAL_MODEL_BUILDING
@@ -539,7 +539,7 @@ public class GridTest extends TestUtil {
       Recovery<Grid> recovery = new Recovery<>(recoveryDir);
       Key gridKey = Key.make("gridSearchWithRecovery_GRID");
       Job<Grid> gs = GridSearch.startGridSearch(
-          gridKey, params, hyperParms,
+          null, gridKey, params, hyperParms,
           new GridSearch.SimpleParametersBuilderFactory<>(),
           new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
           recovery, GridSearch.SEQUENTIAL_MODEL_BUILDING
@@ -582,7 +582,7 @@ public class GridTest extends TestUtil {
       Recovery<Grid> recovery = new Recovery<>(recoveryDir);
       Key gridKey = Key.make("gridSearchWithRecoveryGlm");
       Job<Grid> gs = GridSearch.startGridSearch(
-          gridKey, params, hyperParms,
+          null, gridKey, params, hyperParms,
           new GridSearch.SimpleParametersBuilderFactory<>(),
           new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
           recovery, GridSearch.SEQUENTIAL_MODEL_BUILDING

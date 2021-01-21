@@ -19,7 +19,7 @@ def call(final pipelineContext, final stageConfig) {
             hdfs dfs -rm -r -f $workDir
             hdfs dfs -mkdir -p $workDir
             export HDFS_WORKSPACE=$workDir
-            export NAME_NODE=${stageConfig.customData.nameNode}.0xdata.loc
+            export NAME_NODE=${stageConfig.customData.nameNode}.0xdata.loc:8020
             export H2O_HOME=\$(pwd)
             export H2O_START_SCRIPT=scripts/jenkins/hadoop/start.sh
             export H2O_KILL_SCRIPT=scripts/jenkins/hadoop/kill.sh
