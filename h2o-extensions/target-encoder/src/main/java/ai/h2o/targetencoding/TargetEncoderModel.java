@@ -15,7 +15,6 @@ import water.util.*;
 
 import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
-import java.util.stream.Collector;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
