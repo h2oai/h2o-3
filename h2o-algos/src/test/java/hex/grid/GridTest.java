@@ -18,7 +18,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.test.dummy.DummyModelParameters;
 
-import javax.sound.midi.Soundbank;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -327,7 +326,9 @@ public class GridTest extends TestUtil {
         gs.stop();
         Scope.track_generic(grid);
         Thread.sleep(1000);
-        assert grid == gs.get();
+        try {
+          assertEquals(grid._key, gs.get()._key);
+        } catch (Job.JobCancelledException e) { /* expected */ }
         return grid;
       }
     }
@@ -415,6 +416,7 @@ public class GridTest extends TestUtil {
       }
     } finally {
       // canceled gbm build may leak some objects
+      Thread.sleep(100);
       cleanupKeys(GBMModel.class, CompressedTree.class, ModelMetrics.class);
       Scope.exit();
     }
@@ -608,7 +610,7 @@ public class GridTest extends TestUtil {
       Scope.track_generic(originalGrid);
       
       final String originalGridPath = exportDir + "/" + originalGrid._key.toString();
-      originalGrid.exportBinary(originalGridPath, true);
+      originalGrid.exportBinary(exportDir, true);
       assertTrue(Files.exists(Paths.get(originalGridPath)));
       for(Model model : originalGrid.getModels()){
         assertTrue(Files.exists(Paths.get(exportDir, model._key.toString())));  
