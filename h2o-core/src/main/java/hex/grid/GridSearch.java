@@ -172,16 +172,7 @@ public final class GridSearch<MP extends Model.Parameters> {
   }
   
   private Grid createNewGrid() {
-    String[] hyperNames = _hyperSpaceWalker.getHyperParamNames();
-    String[] allHyperNames = hyperNames;
-    String[] hyperParamNamesSubspace = _hyperSpaceWalker.getAllHyperParamNamesInSubspaces();
-    if (hyperParamNamesSubspace.length > 0) {
-      allHyperNames = ArrayUtils.append(ArrayUtils.remove(hyperNames, SUBSPACES), hyperParamNamesSubspace);
-    }
-    Grid grid = new Grid<>(_result,
-        _hyperSpaceWalker.getParams(),
-        allHyperNames,
-        _hyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy());
+    Grid grid = new Grid<>(_result, _hyperSpaceWalker, _parallelism);
     grid.delete_and_lock(_job);
     return grid;
   }
@@ -300,7 +291,7 @@ public final class GridSearch<MP extends Model.Parameters> {
         if (hyperSpaceIterator.hasNext(model)) {
           params = hyperSpaceIterator.nextModelParameters(model);
           final Key modelKey = grid.getModelKey(params.checksum(IGNORED_FIELDS_PARAM_HASH));
-          if(modelKey != null){
+          if (modelKey != null) {
             params = null;
           }
         } else {
@@ -324,15 +315,11 @@ public final class GridSearch<MP extends Model.Parameters> {
 
     List<ModelBuilder> startModels = new ArrayList<>();
 
-    final List<MP> mps = initialModelParameters(_parallelism, iterator);
-
-    for (int i = 0; i < mps.size(); i++) {
-      final MP nextModelParameters = mps.get(i);
+    while (startModels.size() < _parallelism && iterator.hasNext(null)) {
+      final MP nextModelParameters = iterator.nextModelParameters(null);
       final long checksum = nextModelParameters.checksum(IGNORED_FIELDS_PARAM_HASH);
       if (grid.getModelKey(checksum) == null) {
         startModels.add(ModelBuilder.make(nextModelParameters));
-      } else {
-        //TODO: Compensate for this scenario - we need to keep the level of paralelism at pre-set level
       }
     }
 
@@ -347,18 +334,6 @@ public final class GridSearch<MP extends Model.Parameters> {
   }
 
 
-  public List<MP> initialModelParameters(final int numParams, final HyperSpaceWalker.HyperSpaceIterator<MP> iterator) {
-    List<MP> parameters = new ArrayList<>(numParams);
-
-    for (int i = 0; i < numParams; i++) {
-      if (!iterator.hasNext(null)) {
-        break;
-      }
-      parameters.add(iterator.nextModelParameters(null));
-    }
-
-    return parameters;
-  }
   /**
    * Invokes grid search based on specified hyper space walk strategy.
    *
@@ -486,7 +461,7 @@ public final class GridSearch<MP extends Model.Parameters> {
   private void attemptGridSave(final Grid grid) {
     final String checkpointsDir = _hyperSpaceWalker.getParams()._export_checkpoints_dir;
     if (checkpointsDir == null) return;
-    grid.exportBinary(checkpointsDir);
+    grid.exportBinary(checkpointsDir, false);
   }
 
   static final Set<String> IGNORED_FIELDS_PARAM_HASH = Collections.singleton("_export_checkpoints_dir");

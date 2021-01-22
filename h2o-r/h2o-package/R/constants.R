@@ -147,6 +147,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 
 # Grid search 
 .h2o.__GRID <- function(algo) paste0("Grid/", algo)
+.h2o.__GRID_RESUME <- function(algo) paste0("Grid/", algo, "/resume")
 .h2o.__GRIDS <- function(grid_id, sort_by, decreasing) {
     if (missing(grid_id)) {
         "/Grids"

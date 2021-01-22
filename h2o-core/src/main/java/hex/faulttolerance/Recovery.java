@@ -48,7 +48,7 @@ public class Recovery<T extends Keyed> {
      * @param r a Recoverable to persist
      */
     public void onStart(final Recoverable<T> r) {
-        writtenFiles.add(r.exportBinary(storagePath));
+        writtenFiles.addAll(r.exportBinary(storagePath, true));
         exportReferences(r);
     }
 
@@ -63,7 +63,7 @@ public class Recovery<T extends Keyed> {
             String modelFile = recoveryFile(modelKey);
             modelKey.get().exportBinaryModel(modelFile, true);
             writtenFiles.add(modelFile);
-            r.exportBinary(storagePath);
+            r.exportBinary(storagePath, false);
         } catch (IOException e) {
             // this should not happen since storagePath should be writable because
             // grid was already written to it

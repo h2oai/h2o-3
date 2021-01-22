@@ -1,11 +1,12 @@
 package hex.grid;
 
 import hex.Model;
-import hex.coxph.CoxPH;
 import hex.coxph.CoxPHModel;
+import hex.ModelMetrics;
 import hex.faulttolerance.Recovery;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
+import hex.tree.CompressedTree;
 import hex.tree.gbm.GBMModel;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -17,7 +18,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.test.dummy.DummyModelParameters;
 
-import javax.sound.midi.Soundbank;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -317,6 +317,110 @@ public class GridTest extends TestUtil {
       Scope.exit();
     }
   }
+  
+  private static Grid waitForModelsToTrain(Job<Grid> gs, Key<Grid> gridKey, int numModels) throws InterruptedException {
+    while (gs.isRunning()) {
+      Thread.sleep(1000);
+      Grid grid = gridKey.get();
+      if (grid.getModels().length >= numModels) {
+        gs.stop();
+        Scope.track_generic(grid);
+        Thread.sleep(1000);
+        try {
+          assertEquals(grid._key, gs.get()._key);
+        } catch (Job.JobCancelledException e) { /* expected */ }
+        return grid;
+      }
+    }
+    return null;
+  }
+
+  @Test
+  public void gridSearchRecoveryModels() throws IOException, InterruptedException {
+    Key<Grid> gridKey = Key.make();
+    Key<Frame> trainKey = Key.make("iris_train");
+    HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+      put("_ntrees", new Integer[]{10, 50, 100, 200});
+      put("_max_depth", new Integer[]{5, 10, 20, 30, 40, 50});
+    }};
+    GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+    params._train = trainKey;
+    params._response_column = "species";
+    params._learn_rate = .01;
+    String recoveryDir1 = temporaryFolder.newFolder().getAbsolutePath();
+    Key<Model>[] grid1ModelKeys;
+    Recovery<Grid> recovery1 = new Recovery<>(recoveryDir1);
+    try {
+      Scope.enter();
+      final Frame trainingFrame = parse_test_file(trainKey, "smalldata/iris/iris_train.csv");
+      Scope.track(trainingFrame);
+      Job<Grid> gs = GridSearch.startGridSearch(
+          gridKey, params, hyperParms,             
+          new GridSearch.SimpleParametersBuilderFactory(),
+          new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
+          recovery1, 1
+      );
+      Scope.track_generic(gs);
+      Grid grid1 = waitForModelsToTrain(gs, gridKey, 1);
+      grid1ModelKeys = grid1.getModelKeys();
+      assertTrue("full grid should not have finished", grid1ModelKeys.length < 4*3*3);
+    } finally {
+      Scope.exit();
+    }
+    // resume #1
+    String recoveryDir2 = temporaryFolder.newFolder().getAbsolutePath();
+    Recovery<Grid> recovery2 = new Recovery<>(recoveryDir2);
+    Key<Model>[] resumedModelKeys;
+    try {
+      Scope.enter();
+      final File gridFile1 = new File(recoveryDir1, gridKey.toString());
+      final Grid loadedGrid1 = Grid.importBinary(gridFile1.getAbsolutePath(), true);
+      Scope.track_generic(loadedGrid1);
+      final Frame loadedTrain = trainKey.get();
+      assertNotNull(loadedTrain);
+      Scope.track(loadedTrain);
+      for (Key<Model> originalModelKey : grid1ModelKeys) {
+        assertNotNull(DKV.getGet(originalModelKey));
+      }
+      Job<Grid> gs2 = GridSearch.startGridSearch(
+          gridKey,
+          loadedGrid1.getParams(),
+          loadedGrid1.getHyperParams(),
+          new GridSearch.SimpleParametersBuilderFactory(),
+          loadedGrid1.getSearchCriteria(),
+          recovery2,
+          loadedGrid1.getParallelism()
+      );
+      Scope.track_generic(gs2);
+      Grid resumedGrid = waitForModelsToTrain(gs2, gridKey, grid1ModelKeys.length);
+      resumedModelKeys = resumedGrid.getModelKeys();
+      assertTrue("full grid should not have finished", resumedModelKeys.length < 4*3*3);
+    } finally {
+      Scope.exit();
+    }
+    // resume #2
+    try {
+      Scope.enter();
+      final File gridFile2 = new File(recoveryDir2, gridKey.toString());
+      final Grid loadedGrid2 = Grid.importBinary(gridFile2.getAbsolutePath(), true);
+      Scope.track_generic(loadedGrid2);
+      final Frame loadedTrain = trainKey.get();
+      assertNotNull(loadedTrain);
+      Scope.track(loadedTrain);
+      // check all models were recovered
+      for (Key<Model> modelKey : grid1ModelKeys) {
+        assertNotNull(DKV.getGet(modelKey));
+      }
+      for (Key<Model> modelKey : resumedModelKeys) {
+        assertNotNull(DKV.getGet(modelKey));
+      }
+    } finally {
+      // canceled gbm build may leak some objects
+      Thread.sleep(100);
+      cleanupKeys(GBMModel.class, CompressedTree.class, ModelMetrics.class);
+      Scope.exit();
+    }
+  }
 
   @Test
   public void gridSearchWithRecoverySuccess() throws IOException, InterruptedException {
@@ -394,9 +498,8 @@ public class GridTest extends TestUtil {
     final File serializedGridFile = new File(recoveryDir, originalGrid._key.toString());
     assertTrue(serializedGridFile.isFile());
 
-    final Grid grid = loadGridFromFile(serializedGridFile);
+    final Grid grid = Grid.importBinary(serializedGridFile.getAbsolutePath(), false);
     DKV.put(grid);
-    grid.importModelsBinary(recoveryDir);
     new Recovery<Grid>(recoveryDir).loadReferences(grid);
     assertArrayEquals("models are not reloaded with the grid", originalKeys, grid.getModelKeys());
     assertNotNull("training frame was not reloaded with the grid", train._key.get());
@@ -507,11 +610,8 @@ public class GridTest extends TestUtil {
       Scope.track_generic(originalGrid);
       
       final String originalGridPath = exportDir + "/" + originalGrid._key.toString();
-      originalGrid.exportBinary(originalGridPath);
+      originalGrid.exportBinary(exportDir, true);
       assertTrue(Files.exists(Paths.get(originalGridPath)));
-      
-      originalGrid.exportModelsBinary(exportDir);
-      
       for(Model model : originalGrid.getModels()){
         assertTrue(Files.exists(Paths.get(exportDir, model._key.toString())));  
       }
@@ -631,7 +731,7 @@ public class GridTest extends TestUtil {
 
   @Test
   public void testGetModelKeys() {
-    Grid<?> grid = new Grid<>(null, null, null, null);
+    Grid<?> grid = new Grid<>(null, null, null, null, null, null, 0);
     grid.putModel(3, Key.make("2"));
     grid.putModel(2, Key.make("1"));
     grid.putModel(1, Key.make("3"));

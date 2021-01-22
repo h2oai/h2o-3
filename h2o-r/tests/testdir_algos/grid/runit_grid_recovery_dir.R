@@ -22,6 +22,13 @@ test.grid.resume <- function() {
   # check the recovery dir is empty after grid success
   print(list.files(export_dir))
   expect_true(length(list.files(export_dir)) == 0)
+  grid_path <- h2o.saveGrid(export_dir, grid_id, save_params_references=TRUE)
+  h2o.removeAll()
+
+  grid <- h2o.loadGrid(grid_path, load_params_references = TRUE)
+  h2o.resumeGrid(grid@grid_id)
+  # no new models were trained
+  expect_equal(baseline_model_count, length(grid@model_ids))
 }
 
 doTest("Resume grid search after cluster restart", test.grid.resume)

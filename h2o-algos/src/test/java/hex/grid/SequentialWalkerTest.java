@@ -14,11 +14,9 @@ import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static water.TestUtil.parse_test_file;
 
 @RunWith(H2ORunner.class)
@@ -73,6 +71,27 @@ public class SequentialWalkerTest {
         } finally {
             Scope.exit();
         }
+    }
+
+    @Test
+    public void test_SequentialWalker_getHyperParams() {
+        GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();
+        Object[][] hyperParams = new Object[][] {
+            new Object[] {"_learn_rate", "_score_tree_interval"},
+            new Object[] {       0.5   ,                     2 },
+            new Object[] {       0.2   ,                     4 },
+            new Object[] {       0.1   ,                     8 }
+        };
+        SequentialWalker walker = new SequentialWalker<>(
+            gbmParameters,
+            hyperParams,
+            new GridSearch.SimpleParametersBuilderFactory<>(),
+            new HyperSpaceSearchCriteria.SequentialSearchCriteria()
+        );
+        Map<String, Object[]> exp = new HashMap<>();
+        assertEquals(new HashSet<>(Arrays.asList("_learn_rate", "_score_tree_interval")), walker.getHyperParams().keySet());
+        assertArrayEquals(new Object[] { 0.5, 0.2, 0.1 }, (Object[]) walker.getHyperParams().get("_learn_rate"));
+        assertArrayEquals(new Object[] { 2, 4, 8}, (Object[]) walker.getHyperParams().get("_score_tree_interval"));
     }
     
     @Test

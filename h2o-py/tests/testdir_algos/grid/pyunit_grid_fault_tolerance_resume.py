@@ -56,7 +56,7 @@ def test_gbm():
         "ntrees": [100, 110, 120, 130]
     }
     grid_ft_resume(
-        train, "GBM", params, hyper_params, gbm_start, gbm_resume
+        train, "GBM", params, hyper_params, gbm_start
     )
 
 
@@ -69,10 +69,6 @@ def gbm_start(grid_id, export_dir, train, params, hyper_parameters):
     )
     grid.start(x=list(range(2, train.ncol)), y="Angaus", training_frame=train, **params)
     return grid
-
-
-def gbm_resume(grid, train, params):
-    grid.train(x=list(range(2, train.ncol)), y="Angaus", training_frame=train, **params)
 
 
 def test_dl():
@@ -99,7 +95,7 @@ def test_dl():
         "rate": [.005, .006, .007]
     }
     grid_ft_resume(
-        train, "DEEP_LEARNING", params, hyper_params, dl_start, dl_resume
+        train, "DEEP_LEARNING", params, hyper_params, dl_start
     )
 
 
@@ -112,10 +108,6 @@ def dl_start(grid_id, export_dir, train, params, hyper_parameters):
     )
     grid.start(x=list(range(4)), y=4, training_frame=train, **params)
     return grid
-
-
-def dl_resume(grid, train, params):
-    grid.train(x=list(range(4)), y=4, training_frame=train, **params)
 
 
 def test_glm():
@@ -143,7 +135,7 @@ def test_glm():
         'lambda': [1e-5, 1e-6, 1e-7, 1e-8, 5e-5, 5e-6, 5e-7, 5e-8]
     }
     grid_ft_resume(
-        train, "GLM", params, hyper_params, glm_start, glm_resume
+        train, "GLM", params, hyper_params, glm_start
     )
 
 
@@ -159,13 +151,6 @@ def glm_start(grid_id, export_dir, train, params, hyper_parameters):
     )
     grid.start(x=x, y=y, training_frame=train, **params)
     return grid
-
-
-def glm_resume(grid, train, params):
-    y = "cylinders"
-    x = train.names
-    x.remove(y)
-    grid.train(x=x, y=y, training_frame=train, **params)
 
 
 def test_glrm():
@@ -185,7 +170,7 @@ def test_glrm():
         "gamma_y": [0.2, 2]
     }
     grid_ft_resume(
-        import_grlm_matrix(), "GLRM", params, hyper_params, glrm_start, glrm_resume
+        import_grlm_matrix(), "GLRM", params, hyper_params, glrm_start
     )
 
 
@@ -194,14 +179,11 @@ def glrm_start(grid_id, export_dir, train, params, hyper_parameters):
         H2OGeneralizedLowRankEstimator,
         grid_id=grid_id,
         hyper_params=hyper_parameters,
-        recovery_dir=export_dir
+        recovery_dir=export_dir,
+        parallelism=2
     )
     grid.start(x=train.names, training_frame=train, **params)
     return grid
-
-
-def glrm_resume(grid, train, params):
-    grid.train(x=train.names, training_frame=train, **params)
 
 
 def test_kmeans():
@@ -219,7 +201,7 @@ def test_kmeans():
         'seed': [1, 42, 1234]
     }
     grid_ft_resume(
-        import_iris2(), "K-means", params, hyper_params, kmeans_start, kmeans_resume
+        import_iris2(), "K-means", params, hyper_params, kmeans_start
     )
 
 
@@ -232,10 +214,6 @@ def kmeans_start(grid_id, export_dir, train, params, hyper_parameters):
     )
     grid.start(x=list(range(4)), training_frame=train, **params)
     return grid
-
-
-def kmeans_resume(grid, train, params):
-    grid.train(x=list(range(4)), training_frame=train, **params)
 
 
 def test_xgboost():
@@ -253,7 +231,7 @@ def test_xgboost():
         "ntrees": [50, 100, 150]
     }
     grid_ft_resume(
-        train, "XGBOOST", params, hyper_params, xgboost_start, xgboost_resume
+        train, "XGBOOST", params, hyper_params, xgboost_start
     )
 
 
@@ -262,17 +240,14 @@ def xgboost_start(grid_id, export_dir, train, params, hyper_parameters):
         H2OXGBoostEstimator,
         grid_id=grid_id,
         hyper_params=hyper_parameters,
-        recovery_dir=export_dir
+        recovery_dir=export_dir,
+        parallelism=2
     )
     grid.start(x=list(range(2, train.ncol)), y="Angaus", training_frame=train, **params)
     return grid
 
 
-def xgboost_resume(grid, train, params):
-    grid.train(x=list(range(2, train.ncol)), y="Angaus", training_frame=train, **params)
-
-
-def grid_ft_resume(train, grid_id, params, hyper_parameters, start_grid, resume_grid):
+def grid_ft_resume(train, grid_id, params, hyper_parameters, start_grid):
     print("TESTING %s\n-------------------" % grid_id)
     export_dir = tempfile.mkdtemp()
     print("Using directory %s" % export_dir)
@@ -307,9 +282,8 @@ def grid_ft_resume(train, grid_id, params, hyper_parameters, start_grid, resume_
     assert len(grid.model_ids) == old_grid_model_count
     loaded_train = h2o.H2OFrame.get_frame(train.frame_id)
     assert loaded_train is not None, "Train frame was not loaded"
-    loaded.hyper_params = hyper_parameters
     print("Starting final grid")
-    resume_grid(loaded, loaded_train, params)
+    loaded.resume()
     print("Newly grained grid has %d models:" % len(loaded.model_ids))
     for x in sorted(loaded.model_ids):
         print(x)
