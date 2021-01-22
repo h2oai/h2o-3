@@ -301,7 +301,6 @@ try {
                             throw e
                         }
                     }
-                }
 
                 final String CLEANUP_STAGE_NAME = 'Cleanup'
                 stage(CLEANUP_STAGE_NAME) {
