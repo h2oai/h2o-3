@@ -77,6 +77,9 @@ public abstract class SharedTree<
   protected transient Frame _validPredsCache;
 
   public boolean isSupervised(){return true;}
+  
+  public boolean _isUplift;
+  public boolean isUplift(){return _isUplift;}
 
   @Override public boolean haveMojo() { return true; }
   @Override public boolean havePojo() { 
@@ -180,6 +183,8 @@ public abstract class SharedTree<
       warn("_parallel_main_model_building",
               "Parallel main model will be disabled because use_best_cv_iteration is specified.");
     }
+    // TODO validate uplift input
+    _isUplift = _parms._uplift_column != null;
   }
 
   @Override
@@ -737,6 +742,7 @@ public abstract class SharedTree<
     double sum = score1(chks, weight, offset, fs, row);
     if( isClassifier()) {
       if( !Double.isInfinite(sum) && sum>0f && sum!=1f) ArrayUtils.div(fs, sum);
+      // TODO uplfit probability distribution corection?
       if (_parms._balance_classes)
         GenModel.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
     }

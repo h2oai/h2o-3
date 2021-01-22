@@ -945,6 +945,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _hasOffset = b.hasOffsetCol();
       _hasWeights = b.hasWeightCol();
       _hasFold = b.hasFoldCol();
+      _hasUplift = b.hasUpliftCol();
       _distribution = b._distribution;
       _priorClassDist = b._priorClassDist;
       _reproducibility_information_table = createReproducibilityInformationTable(b);
