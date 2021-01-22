@@ -1102,9 +1102,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
  /** Get a string representation of only the ERROR ValidationMessages (e.g., to use in an exception throw). */
   public String validationErrors() {
+    return validationMessage(Log.ERRR);
+  }
+
+  public String validationWarnings() {
+    return validationMessage(Log.WARN);
+  }
+
+  private String validationMessage(int level) {
     StringBuilder sb = new StringBuilder();
     for( ValidationMessage vm : _messages )
-      if( vm._log_level == Log.ERRR )
+      if( vm._log_level == level )
         sb.append(vm.toString()).append("\n");
     return sb.toString();
   }
