@@ -1,6 +1,5 @@
 package hex.coxph;
 
-import hex.ModelMetricsBinomial;
 import hex.ModelMetricsRegressionCoxPH;
 import hex.StringPair;
 import org.junit.Test;
@@ -53,12 +52,11 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       assertEquals(model._output._wald_test,      4.6343882547245,      1e-8);
       assertEquals(model._output._var_cumhaz_2_matrix.rows(), 110);
 
-      ModelMetricsRegressionCoxPH mm = (ModelMetricsRegressionCoxPH) model._output._training_metrics;
-      assertNotNull(mm);
+      final ModelMetricsRegressionCoxPH mm = (ModelMetricsRegressionCoxPH) model._output._training_metrics;
+      assertEquals(0.5806350696073831, mm.concordance(), 0.00001d);
+      assertEquals(2676, mm.discordant());
+      assertEquals(10, mm.tiedY());
       
-      //TODO better assertions
-      
-
     } finally {
       Scope.exit();
     }
@@ -86,6 +84,11 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       assertNotNull(model);
       final Frame linearPredictors = Scope.track(model.score(fr));
       assertEquals(fr.numRows(), linearPredictors.numRows());
+
+      final ModelMetricsRegressionCoxPH mm = (ModelMetricsRegressionCoxPH) model._output._training_metrics;
+      assertEquals(0.5806350696073831, mm.concordance(), 0.00001d);
+      assertEquals(2676, mm.discordant());
+      assertEquals(10, mm.tiedY());
     } finally {
       Scope.exit();
     }
@@ -279,7 +282,9 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       System.setProperty("sys.ai.h2o.debug.checkRunLocal", Boolean.TRUE.toString());
       parms._single_node_mode = true;
       CoxPH builder = new CoxPH(parms);
-      CoxPHModel model = builder.trainModel().get();
+      CoxPHModel model = builder
+              .trainModel()
+              .get();
       Scope.track_generic(model);
 
       assertEquals(model._output._coef[0],        0.0307077486571334,   1e-8);
