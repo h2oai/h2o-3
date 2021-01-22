@@ -258,7 +258,7 @@ try {
 
                                     sh """
                                       cd ${env.BUILD_NUMBER_DIR}
-                                      // Do not push to Red Hat for certification if the release is a test release
+                                      # Do not push to Red Hat for certification if the release is a test release
                                       make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build-latest h2o-k8s-docker-push-latest
                                     """
                                 } else {
