@@ -338,8 +338,8 @@ private setReleaseJobProperties(final pipelineContext) {
     def jobProperties = [
         disableConcurrentBuilds(),
         parameters([
-            booleanParam(defaultValue: !isReleaseBranch && env.BRANCH_NAME != 'master', description: "If set don't upload to PyPI and Conda, just build the packages if required; also push to ${TEST_RELEASE_BUCKET} instead of ${RELEASE_BUCKET}", name: 'TEST_RELEASE'),
-            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, update top-level latest links and latest DOCKER tag', name: 'UPDATE_LATEST'),
+            booleanParam(defaultValue: !isReleaseBranch && env.BRANCH_NAME != 'master', description: "If set, don't push to Red Hat registry for certification. Docker Hub test repository is used.", name: 'TEST_RELEASE'),
+            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, update latest DOCKER tag. Red Hat updates automatically.', name: 'UPDATE_LATEST'),
         ])
     ]
     if (env.BRANCH_NAME == 'master') {
@@ -353,14 +353,7 @@ private setReleaseJobProperties(final pipelineContext) {
 
     }
     properties(jobProperties)
-
-    if (!params.TEST_RELEASE && (env.BRANCH_NAME == 'master' || isReleaseBranch)) {
-        env.S3_ROOT = RELEASE_BUCKET
-    } else {
-        env.S3_ROOT = TEST_RELEASE_BUCKET
-    }
-    echo "Release will be pushed to ${env.S3_ROOT}"
-
+    
     if (env.BRANCH_NAME == 'master') {
         // we are building nightly build
         env.NIGHTLY_BUILD = true
