@@ -53,8 +53,7 @@ try {
                             <li><strong>Version:</strong> ${version}.${currentBuild.number}</li>
                             <li><strong>Node:</strong> ${env.NODE_NAME}</li>
                             <li><strong>Test Release:</strong> ${params.TEST_RELEASE}</li>
-                            <li><strong>Update Branch Latest Links</strong> ${params.UPDATE_LATEST_BRANCH}</li>
-                            <li><strong>Publish and certify H2O K8S Docker image:</strong> ${params.BUILD_H2O_DOCKER}</li>
+                            <li><strong>Update Top-level Latest Links</strong> ${params.UPDATE_LATEST}</li>
                             <li><strong>S3 Root:</strong> ${env.S3_ROOT}</li>
                         </ul>
                     """
@@ -341,7 +340,6 @@ private setReleaseJobProperties(final pipelineContext) {
         parameters([
             booleanParam(defaultValue: !isReleaseBranch && env.BRANCH_NAME != 'master', description: "If set don't upload to PyPI and Conda, just build the packages if required; also push to ${TEST_RELEASE_BUCKET} instead of ${RELEASE_BUCKET}", name: 'TEST_RELEASE'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, update top-level latest links and latest DOCKER tag', name: 'UPDATE_LATEST'),
-            booleanParam(defaultValue: true, description: 'If set, update latest links for this branch', name: 'UPDATE_LATEST_BRANCH'),
         ])
     ]
     if (env.BRANCH_NAME == 'master') {
