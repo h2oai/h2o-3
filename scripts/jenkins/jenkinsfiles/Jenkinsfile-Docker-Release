@@ -1,0 +1,422 @@
+@Library('test-shared-library') _
+
+def NODE_LABEL = 'master'
+
+def pipelineContext = null
+def result = 'FAILURE'
+
+try {
+    ansiColor('xterm') {
+        timestamps {
+
+            node(NODE_LABEL) {
+                def insideDocker = null
+
+                env.BUILD_NUMBER_DIR = currentBuild.number
+                env.DATA_DIR = "/home/0xdiag"
+
+                env.GRADLE_OPTS = "-Xmx4g -XX:MaxPermSize=512m"
+
+                env.PYTHON_VERSION = '3.5'
+                env.R_VERSION = '3.4.1'
+
+                sh 'printenv | sort'
+
+                final String CHECKOUT_STAGE_NAME = 'Checkout'
+                stage(CHECKOUT_STAGE_NAME) {
+
+                    def scmEnv = null
+                    dir(env.BUILD_NUMBER_DIR) {
+                        deleteDir()
+                        retryWithTimeout(60, 5) {
+                            scmEnv = checkout scm
+                        }
+
+                        env.THIS_BUILD_GIT_HASH_LONG = sh(script: 'git rev-parse --verify HEAD', returnStdout: true).trim()
+                        env.THIS_BUILD_GIT_HASH_SHORT = sh(script: 'git describe --always', returnStdout: true).trim()
+                    }
+
+                    insideDocker = load("${env.BUILD_NUMBER_DIR}/scripts/jenkins/groovy/insideDocker.groovy")
+
+                    def pipelineContextFactory = load("${env.BUILD_NUMBER_DIR}/scripts/jenkins/groovy/pipelineContext.groovy")
+                    pipelineContext = pipelineContextFactory(env.BUILD_NUMBER_DIR, 'MODE_RELEASE', scmEnv, true)
+                    env.BRANCH_NAME = env.BRANCH_NAME.replaceAll('/', '_')
+
+                    pipelineContext.getBuildSummary().addStageSummary(this, CHECKOUT_STAGE_NAME, env.BUILD_NUMBER_DIR)
+
+                    setReleaseJobProperties(pipelineContext)
+
+                    pipelineContext.getBuildSummary().addDetailsSection(this)
+                    final String version = sh(script: "cd ${env.BUILD_NUMBER_DIR} && cat gradle.properties | grep -Eo 'version=[0-9\\.]+' | grep -Eo '[0-9\\.]+'", returnStdout: true).trim()
+                    String releaseContent = """
+                        <ul>
+                            <li><strong>Version:</strong> ${version}.${currentBuild.number}</li>
+                            <li><strong>Node:</strong> ${env.NODE_NAME}</li>
+                            <li><strong>Test Release:</strong> ${params.TEST_RELEASE}</li>
+                            <li><strong>Update Branch Latest Links</strong> ${params.UPDATE_LATEST_BRANCH}</li>
+                            <li><strong>Publish and certify H2O K8S Docker image:</strong> ${params.BUILD_H2O_DOCKER}</li>
+                            <li><strong>S3 Root:</strong> ${env.S3_ROOT}</li>
+                        </ul>
+                    """
+                    pipelineContext.getBuildSummary().addSection(this, 'release', 'Release', releaseContent)
+
+                    pipelineContext.getBuildSummary().setStageDetails(this, CHECKOUT_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                    pipelineContext.getBuildSummary().markStageSuccessful(this, CHECKOUT_STAGE_NAME)
+                }
+
+                final String BUILD_STAGE_NAME = 'Build'
+                stage(BUILD_STAGE_NAME) {
+                    try {
+                        pipelineContext.getBuildSummary().addStageSummary(this, BUILD_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                        pipelineContext.getBuildSummary().setStageDetails(this, BUILD_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                        withCredentials([file(credentialsId: 'release-gradle.properties', variable: 'GRADLE_PROPERTIES_PATH'), file(credentialsId: 'release-secret-key-ring-file', variable: 'RING_FILE_PATH')]) {
+                            insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS', "-v ${GRADLE_PROPERTIES_PATH}:${GRADLE_PROPERTIES_PATH} -v ${RING_FILE_PATH}:${RING_FILE_PATH}") {
+                                printReleaseConfiguration(pipelineContext)
+                                sh """
+                                # Log commands.
+                                set -x
+                                # Stop on error.
+                                set -e
+
+                                export BUILD_HADOOP=true
+                                export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+                                echo "Activating Python ${env.PYTHON_VERSION}"
+                                . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
+
+                                mkdir -p ${env.BUILD_NUMBER_DIR}
+                                cd ${env.BUILD_NUMBER_DIR}
+
+                                # Log some stuff for debug purposes.
+                                date
+                                pwd
+                                env
+                                echo \$PATH
+                                which java
+                                java -version
+                                du -h
+
+                                # Update the build number.
+                                mkdir -p ci
+                                echo "BUILD_NUMBER=${currentBuild.number}" > gradle/buildnumber.properties
+                                echo "BUILD_BRANCH_NAME=${env.BRANCH_NAME}" > gradle/git.properties
+                                echo "BUILD_HASH=${env.THIS_BUILD_GIT_HASH_LONG}" >> gradle/git.properties
+                                echo "BUILD_HASH_SHORT=${env.THIS_BUILD_GIT_HASH_SHORT}" >> gradle/git.properties
+
+                                # Log some git stuff for debug purposes.
+                                echo
+                                echo GIT INFO
+                                echo
+                                git branch | grep '*' | sed 's/* //'
+                                git log -1 --format="%H"
+                                git describe --always --dirty
+                                git status
+
+                                # Do the build.
+                                if [ -n "${env.DATA_DIR}" ]; then
+                                    rm -f -r smalldata
+                                    ln -s "${env.DATA_DIR}/smalldata"
+                                    rm -f -r bigdata
+                                    ln -s "${env.DATA_DIR}/bigdata"
+                                else
+                                    ./gradlew syncSmalldata
+                                fi
+                                if [ \$DO_RELEASE ]; then
+                                    echo 'Copy gradle properties and modify gradle.properties'
+                                    cp ${GRADLE_PROPERTIES_PATH} \$GRADLE_USER_HOME/gradle.properties
+                                    chmod +w \$GRADLE_USER_HOME/gradle.properties
+                                    echo "signing.secretKeyRingFile=${RING_FILE_PATH}" >> \$GRADLE_USER_HOME/gradle.properties
+                                    chmod -w \$GRADLE_USER_HOME/gradle.properties
+                                fi
+                                ./gradlew build -x test
+                                ./gradlew buildH2oDevDist
+                            """
+                            }
+                        }
+                        pipelineContext.getBuildSummary().markStageSuccessful(this, BUILD_STAGE_NAME)
+                    } catch (Exception e) {
+                        pipelineContext.getBuildSummary().markStageFailed(this, BUILD_STAGE_NAME)
+                        throw e
+                    }
+                }
+
+                env.PROJECT_VERSION = sh(script: "cd ${env.BUILD_NUMBER_DIR} && cat target/project_version", returnStdout: true).trim()
+                env.SHA256_HASH = sh(script: "cd ${env.BUILD_NUMBER_DIR} && sha256sum target/h2o-*${currentBuild.number}.zip", returnStdout: true).trim()
+
+                if (!params.TEST_RELEASE) {
+                    final String TAG_STAGE_NAME = 'Create Git Tag'
+                    stage(TAG_STAGE_NAME) {
+                        try {
+                            pipelineContext.getBuildSummary().addStageSummary(this, TAG_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                            pipelineContext.getBuildSummary().setStageDetails(this, TAG_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                            sh """
+                                cd ${env.BUILD_NUMBER_DIR}
+                                git tag -a jenkins-${env.BRANCH_NAME}-${currentBuild.number} -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
+                            """
+                            sshagent (credentials: ['h2oOpsGitPrivateKey']) {
+                                if ((env.NIGHTLY_BUILD == null || env.NIGHTLY_BUILD.toLowerCase() == 'false')) {
+                                    sh """
+                                        cd ${env.BUILD_NUMBER_DIR}
+                                        echo "Process release tags"
+                                        git tag -d jenkins-rel-latest-stable
+                                        git push origin :refs/tags/jenkins-rel-latest-stable
+                                        git tag -a jenkins-rel-latest-stable -f -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
+                                        git tag -a jenkins-${env.PROJECT_VERSION} -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
+                                    """
+                                }
+                                sh """
+                                    cd ${env.BUILD_NUMBER_DIR}
+                                    git push --tags
+                                """
+                            }
+                            pipelineContext.getBuildSummary().markStageSuccessful(this, TAG_STAGE_NAME)
+                        } catch (Exception e) {
+                            pipelineContext.getBuildSummary().markStageFailed(this, TAG_STAGE_NAME)
+                            throw e
+                        }
+                    }
+                }
+
+                    def HELM_STAGE_NAME = 'Publish HELM to S3'
+                    stage(HELM_STAGE_NAME) {
+                        try {
+                            pipelineContext.getBuildSummary().addStageSummary(this, HELM_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                            pipelineContext.getBuildSummary().setStageDetails(this, HELM_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                            
+                            // Helm automatically installs latest chart if version is unspecified by the user, therefore there is no need for a latest tag
+                            THREE_DIGITS_VERSION = sh (
+                                script: "echo ${env.PROJECT_VERSION} | sed \"s/[0-9]*\\.\\([0-9]*\\.[0-9]*\\.[0-9]\\)*/\\1/g\"",
+                                returnStdout: true
+                            ).trim()
+                            
+                            if (params.TEST_RELEASE) {
+                                CHART_NAME = "h2o-test-3"
+                                BUCKET = "h2oai-test-charts"
+                                VERSION = THREE_DIGITS_VERSION
+                            } else{
+                                if(env.NIGHTLY_BUILD){
+                                    CHART_NAME = "h2o-3-nightly"
+                                    BUCKET = "h2oai-nightly-charts"
+                                    VERSION = THREE_DIGITS_VERSION
+                                } else {
+                                    CHART_NAME = "h2o-3"
+                                    BUCKET = "h2oai-charts"
+                                    VERSION = THREE_DIGITS_VERSION
+                                }
+                            }
+                            
+                            insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
+                                sh """
+                                    cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
+                                    aws s3 cp s3://${BUCKET}/index.yaml index.yaml
+                                """
+                            }
+                            
+                            withCredentials([file(credentialsId: 'release-gradle.properties', variable: 'GRADLE_PROPERTIES_PATH'), file(credentialsId: 'release-secret-key-ring-file', variable: 'RING_FILE_PATH')]) {
+                                insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS', "-v ${GRADLE_PROPERTIES_PATH}:${GRADLE_PROPERTIES_PATH} -v ${RING_FILE_PATH}:${RING_FILE_PATH}") {
+                                sh """
+                                    cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
+                                    sed -i "s/name: h2o-3/name: ${CHART_NAME}/" Chart.yaml
+                                    helm package . --app-version ${VERSION} --version ${VERSION}
+                                    mkdir h2o-3
+                                    mv ${CHART_NAME}-${VERSION}.tgz h2o-3/
+                                    helm repo index . --merge index.yaml
+                                """
+                                }
+                            }
+                            
+                            insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
+                                sh """
+                                    cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
+                                    aws s3 cp h2o-3/${CHART_NAME}-${VERSION}.tgz s3://${BUCKET}/h2o-3/${CHART_NAME}-${VERSION}.tgz --acl public-read
+                                    aws s3 cp index.yaml s3://${BUCKET}/index.yaml --acl public-read
+                                """
+                            }
+    
+                            pipelineContext.getBuildSummary().markStageSuccessful(this, HELM_STAGE_NAME)
+                        } catch (Exception e) {
+                            pipelineContext.getBuildSummary().markStageFailed(this, HELM_STAGE_NAME)
+                            throw e
+                        }
+                    }
+    
+                    def BUILD_H2O_DOCKER_STAGE_NAME = 'Build H2O Docker container'
+                    stage(BUILD_H2O_DOCKER_STAGE_NAME) {
+                        try {
+                            pipelineContext.getBuildSummary().addStageSummary(this, BUILD_H2O_DOCKER_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                            pipelineContext.getBuildSummary().setStageDetails(this, BUILD_H2O_DOCKER_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                            withCredentials([
+                                  usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKERHUB_PASSWORD', usernameVariable: 'DOCKERHUB_USERNAME'),
+                                  string(credentialsId: 'H2O_RED_HAT_REGISTRY_KEY', variable: 'H2O_RED_HAT_REGISTRY_KEY'),
+                                  string(credentialsId: 'H2O_RED_HAT_PID', variable: 'H2O_RED_HAT_PID'),
+                                  string(credentialsId: 'H2O_RED_HAT_APIKEY', variable: 'H2O_RED_HAT_APIKEY')
+                                  ]) {
+                                if (params.TEST_RELEASE) {
+                                    env["DOCKER_IMAGE_NAME"] = "opsh2oai/h2o-open-source-k8s-test"
+                                    // Test release goes to opsh2oai namespace
+                                    env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
+                                    // the most recent test build is always latest
+                                    env["DOCKER_IMAGE_TAG"] = env["BRANCH_NAME"] + "-" + currentBuild.number
+
+                                    sh """
+                                      cd ${env.BUILD_NUMBER_DIR}
+                                      // Do not push to Red Hat for certification if the release is a test release
+                                      make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build-latest h2o-k8s-docker-push-latest
+                                    """
+                                } else {
+                                    env["DOCKER_IMAGE_NAME"] = "h2oai/h2o-open-source-k8s"
+                                    // Normal releases go to h2oai/ namespace
+                                    if (env.NIGHTLY_BUILD) {
+                                        // If the build is not a test build and is nightly, then re-write the latest nightly
+                                        env["DOCKER_IMAGE_TAG"] = "nightly"
+                                        sh """
+                                          cd ${env.BUILD_NUMBER_DIR}
+                                          make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build h2o-k8s-docker-push-redhat h2o-k8s-docker-push
+                                        """
+                                    } else {
+                                        env["DOCKER_IMAGE_TAG"] = env["PROJECT_VERSION"]
+                                        if (params.UPDATE_LATEST) {
+                                            // If the build is not a test build and is an ordinary release, update the version tag.
+                                            // The "latest" tag means stable. If UPDATE_LATEST is set to true, also update the latest docker tag.
+                                            env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
+                                            sh """
+                                              cd ${env.BUILD_NUMBER_DIR}
+                                              // Red Hat automatically updates latest based on latest push
+                                              make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build-latest h2o-k8s-docker-push-redhat h2o-k8s-docker-push-latest
+                                            """
+                                        } else {
+                                            // If the build is not a test build and is an ordinary release, update the latest tag.
+                                            // The "latest" tag means stable. If UPDATE_LATEST is set to false do not update the latest tag and push only the version tag.
+                                            // Push to Red Hat either way
+                                            sh """
+                                              cd ${env.BUILD_NUMBER_DIR}
+                                              make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build h2o-k8s-docker-push-redhat h2o-k8s-docker-push
+                                            """
+                                        }
+                                    }
+                                }
+                            }
+                            pipelineContext.getBuildSummary().markStageSuccessful(this, BUILD_H2O_DOCKER_STAGE_NAME)
+                        } catch (Exception e) {
+                            pipelineContext.getBuildSummary().markStageFailed(this, BUILD_H2O_DOCKER_STAGE_NAME)
+                            throw e
+                        }
+                    }
+                }
+
+                final String CLEANUP_STAGE_NAME = 'Cleanup'
+                stage(CLEANUP_STAGE_NAME) {
+                    try {
+                        pipelineContext.getBuildSummary().addStageSummary(this, CLEANUP_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                        pipelineContext.getBuildSummary().setStageDetails(this, CLEANUP_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                        sh """
+                            cd ${env.BUILD_NUMBER_DIR}
+                            rm -rf target/*.zip
+                            rm -rf h2o-dist
+                            find . -name 'h2odriver-3.*.0.jar' -delete -print
+                        """
+                        pipelineContext.getBuildSummary().markStageSuccessful(this, CLEANUP_STAGE_NAME)
+                    } catch (Exception e) {
+                        pipelineContext.getBuildSummary().markStageFailed(this, CLEANUP_STAGE_NAME)
+                        throw e
+                    }
+                }
+            }
+        }
+    }
+    result = 'SUCCESS'
+} finally {
+    if (pipelineContext != null) {
+        pipelineContext.getEmailer().sendEmail(this, result, pipelineContext.getBuildSummary().getSummaryHTML(this), getRelevantRecipients(pipelineContext, result))
+    }
+}
+
+private setReleaseJobProperties(final pipelineContext) {
+
+    def TEST_RELEASE_BUCKET = 's3://test.0xdata.com/test-release/h2o'
+    def RELEASE_BUCKET = 's3://h2o-release/h2o'
+
+    final boolean isReleaseBranch = env.BRANCH_NAME.startsWith(pipelineContext.getBuildConfig().RELEASE_BRANCH_PREFIX)
+
+    def jobProperties = [
+        disableConcurrentBuilds(),
+        parameters([
+            booleanParam(defaultValue: !isReleaseBranch && env.BRANCH_NAME != 'master', description: "If set don't upload to PyPI and Conda, just build the packages if required; also push to ${TEST_RELEASE_BUCKET} instead of ${RELEASE_BUCKET}", name: 'TEST_RELEASE'),
+            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, update top-level latest links and latest DOCKER tag', name: 'UPDATE_LATEST'),
+            booleanParam(defaultValue: true, description: 'If set, update latest links for this branch', name: 'UPDATE_LATEST_BRANCH'),
+        ])
+    ]
+    if (env.BRANCH_NAME == 'master') {
+        // in case of master branch enable the periodical builds and buildDiscarder
+        jobProperties += pipelineTriggers(
+            [cron('30 23 * * *')]
+        )
+        jobProperties += buildDiscarder(
+            logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '25')
+        )
+
+    }
+    properties(jobProperties)
+
+    if (!params.TEST_RELEASE && (env.BRANCH_NAME == 'master' || isReleaseBranch)) {
+        env.S3_ROOT = RELEASE_BUCKET
+    } else {
+        env.S3_ROOT = TEST_RELEASE_BUCKET
+    }
+    echo "Release will be pushed to ${env.S3_ROOT}"
+
+    if (env.BRANCH_NAME == 'master') {
+        // we are building nightly build
+        env.NIGHTLY_BUILD = true
+    }
+    sh "printenv | sort"
+}
+
+private printReleaseConfiguration(final pipelineContext) {
+    echo """
+=======================================
+Configuration:
+---------------------------------------
+    SHA:                    | ${env.GIT_SHA}
+    Branch:                 | ${env.BRANCH_NAME}
+    Docker Image:           | ${pipelineContext.getBuildConfig().getReleaseImage()}
+    Test Release:           | ${params.TEST_RELEASE}
+=======================================
+"""
+}
+
+/**
+ * Creates Python script which checks if h2o module is of expected version. Script is saved in $(pwd)/h2o_test.py
+ * @param projectVersion expected h2o module version, like 3.16.0.2
+ */
+private prepareH2OVersionCheckScript(final String projectVersion) {
+    sh """
+echo '
+import h2o
+actual_version = h2o.__version__
+expected_version = "${projectVersion}"
+assert actual_version == expected_version, "Version should be %s but was %s" % (expected_version, actual_version)
+h2o.init()
+' > h2o_test.py
+"""
+}
+
+private getRelevantRecipients(final pipelineContext, final String result) {
+    def RELEASE_NIGHTLY_ALWAYS_RECIPIENTS = ['michalr@h2o.ai']
+    def RELEASE_NIGHTLY_FAILURE_RECIPIENTS = ['michalk@h2o.ai', 'anmol@h2o.ai'] + RELEASE_NIGHTLY_ALWAYS_RECIPIENTS
+    def RELEASE_ALWAYS_RECIPIENTS = ['michalk@h2o.ai', 'anmol@h2o.ai', 'michalr@h2o.ai']
+    def RELEASE_FAILURE_RECIPIENTS = [] + RELEASE_ALWAYS_RECIPIENTS
+
+    if (params.TEST_RELEASE) {
+        return ['michalr@h2o.ai']
+    }
+    if (result.toLowerCase() == pipelineContext.getBuildSummary().RESULT_SUCCESS) {
+        if (env.NIGHTLY_BUILD != null && env.NIGHTLY_BUILD.toLowerCase() == 'true') {
+            return RELEASE_NIGHTLY_ALWAYS_RECIPIENTS
+        }
+        return RELEASE_ALWAYS_RECIPIENTS
+    }
+    if (env.NIGHTLY_BUILD != null && env.NIGHTLY_BUILD.toLowerCase() == 'true') {
+        return RELEASE_NIGHTLY_FAILURE_RECIPIENTS
+    }
+    return RELEASE_FAILURE_RECIPIENTS
+}
