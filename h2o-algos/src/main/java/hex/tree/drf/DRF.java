@@ -90,7 +90,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       _improvPerVar = new float[_ncols];
       final int ntrees = _parms._ntrees;
       // Preallocate tree votes
-      if (_model._output.isClassifier()) {
+      //if (_model._output.isClassifier()) {
+      if (isClassifier()) {
         _treeMeasuresOnOOB  = new TreeMeasuresCollector.TreeVotes(ntrees);
         _treeMeasuresOnSOOB = new TreeMeasuresCollector.TreeVotes[_ncols];
         for (int i=0; i<_ncols; i++) _treeMeasuresOnSOOB[i] = new TreeMeasuresCollector.TreeVotes(ntrees);
@@ -186,7 +187,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           // The Boolean Optimization
           // This optimization assumes the 2nd tree of a 2-class system is the
           // inverse of the first (and that the same columns were picked)
-          if( k==1 && _nclass==2 && _model.binomialOpt()) continue;
+          if( k==1 && _nclass==2 && _model.binomialOpt() && !isUplift()) continue;
           ktrees[k] = new DTree(_train, _ncols, _mtry, _mtry_per_tree, rseed, _parms);
           new UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalQuantilesKeys(), null, true), null); // The "root" node
         }
@@ -208,37 +209,71 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
         // If we did not make any new splits, then the tree is split-to-death
         if( hcs == null ) break;
       }
-
       // Each tree bottomed-out in a DecidedNode; go 1 more level and insert
       // LeafNodes to hold predictions.
-      for( int k=0; k<_nclass; k++ ) {
-        DTree tree = ktrees[k];
-        if( tree == null ) continue;
-        int leaf = leafs[k] = tree.len();
-        for( int nid=0; nid<leaf; nid++ ) {
-          if( tree.node(nid) instanceof DecidedNode ) {
-            DecidedNode dn = tree.decided(nid);
-            if( dn._split == null ) { // No decision here, no row should have this NID now
-              if( nid==0 ) {               // Handle the trivial non-splitting tree
-                LeafNode ln = new LeafNode(tree, -1, 0);
-                ln._pred = (float)(isClassifier() ? _model._output._priorClassDist[k] : _initialPrediction);
+      if(isUplift()){
+        DTree treeTr = ktrees[0];
+        DTree treeCt = ktrees[1];
+        int leaf = leafs[0] = treeTr.len();
+        for (int nid = 0; nid < leaf; nid++) {
+          if (treeTr.node(nid) instanceof DecidedNode) {
+            DecidedNode dnTr = treeTr.decided(nid);
+            DecidedNode dnCt = treeCt.decided(nid);
+            if (dnTr._split == null) { // No decision here, no row should have this NID now
+              if (nid == 0) { // Handle the trivial non-splitting tree
+                LeafNode lnTr = new LeafNode(treeTr, -1, 0);
+                lnTr._pred = (float) (_model._output._priorClassDist[0]);
+                LeafNode lnCt = new LeafNode(treeCt, -1, 0);
+                lnCt._pred = (float) (_model._output._priorClassDist[1]);
               }
               continue;
             }
-            for( int i=0; i<dn._nids.length; i++ ) {
-              int cnid = dn._nids[i];
-              if( cnid == -1 || // Bottomed out (predictors or responses known constant)
-                      tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
-                      (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
-                              ((DecidedNode)tree.node(cnid))._split==null) ) {
-                LeafNode ln = new LeafNode(tree,nid);
-                ln._pred = (float)dn.pred(i);  // Set prediction into the leaf
-                dn._nids[i] = ln.nid(); // Mark a leaf here
+            for (int i = 0; i < dnTr._nids.length; i++) {
+              int cnid = dnTr._nids[i];
+              if (cnid == -1 || // Bottomed out (predictors or responses known constant)
+                      treeTr.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
+                      (treeTr.node(cnid) instanceof DecidedNode &&  // Or not possible to split
+                              ((DecidedNode) treeTr.node(cnid))._split == null)) {
+                LeafNode lnTr = new LeafNode(treeTr, nid);
+                lnTr._pred = (float) dnTr.predTreatment(i);  // Set prediction into the leaf
+                dnTr._nids[i] = lnTr.nid(); // Mark a leaf here
+                LeafNode lnCt = new LeafNode(treeCt, nid);
+                lnCt._pred = (float) dnCt.predControl(i);  // Set prediction into the leaf
+                dnCt._nids[i] = lnCt.nid(); // Mark a leaf here
               }
             }
           }
         }
-      } // -- k-trees are done
+      } else {
+        for (int k = 0; k < _nclass; k++) {
+          DTree tree = ktrees[k];
+          if (tree == null) continue;
+          int leaf = leafs[k] = tree.len();
+          for (int nid = 0; nid < leaf; nid++) {
+            if (tree.node(nid) instanceof DecidedNode) {
+              DecidedNode dn = tree.decided(nid);
+              if (dn._split == null) { // No decision here, no row should have this NID now
+                if (nid == 0) { // Handle the trivial non-splitting tree
+                  LeafNode ln = new LeafNode(tree, -1, 0);
+                  ln._pred = (float) (isClassifier() ? _model._output._priorClassDist[k] : _initialPrediction);
+                }
+                continue;
+              }
+              for (int i = 0; i < dn._nids.length; i++) {
+                int cnid = dn._nids[i];
+                if (cnid == -1 || // Bottomed out (predictors or responses known constant)
+                        tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
+                        (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
+                                ((DecidedNode) tree.node(cnid))._split == null)) {
+                  LeafNode ln = new LeafNode(tree, nid);
+                  ln._pred = (float) dn.pred(i);  // Set prediction into the leaf
+                  dn._nids[i] = ln.nid(); // Mark a leaf here
+                }
+              }
+            }
+          }
+        } // -- k-trees are done
+      }
     }
 
     // Collect and write predictions into leafs.
@@ -299,6 +334,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           if (importance && weight!=0) {
             if (wasOOBRow && !y.isNA(row)) {
               if (isClassifier()) {
+                // TODO solve for uplift
                 int treePred = getPrediction(rpred, _model._output._priorClassDist, data_row(chks, row, rowdata), _threshold);
                 int actuPred = (int) y.at8(row);
                 if (treePred==actuPred) rightVotes+=weight; // No miss !
@@ -335,8 +371,10 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     if (_nclass > 2 || (_nclass == 2 && !_model.binomialOpt())) {
       for (int k = 0; k < _nclass; k++)
         sum += (fs[k+1] = weight * chk_tree(chks, k).atd(row) / chk_oobt(chks).atd(row));
-    }
-    else if (_nclass==2 && _model.binomialOpt()) {
+    } else if(isUplift()) {
+      fs[0] = weight * chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row);
+      fs[1] = weight * chk_tree(chks, 1).atd(row) / chk_oobt(chks).atd(row);
+    } else if (_nclass==2 && _model.binomialOpt()) {
       fs[1] = weight * chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row);
       if (fs[1]>1 && fs[1]<=ONEBOUND)
         fs[1] = 1.0;
