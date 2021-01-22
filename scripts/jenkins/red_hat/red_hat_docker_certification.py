@@ -22,7 +22,7 @@ def has_scan_errors(digest, pid, api_key):
     response = None
     while response is None:
         intermediate_response = requests.get(url=url, headers=headers)
-        print("Intermediate response: {}".format(intermediate_response.status_code))
+        print("Intermediate response {}:\n{}".format(intermediate_response.status_code, intermediate_response.text))
         if intermediate_response.status_code == 200:
             try:
                 intermediate_response.json()["data"]["results"]
