@@ -391,9 +391,9 @@ h2o.init()
 }
 
 private getRelevantRecipients(final pipelineContext, final String result) {
-    def RELEASE_NIGHTLY_ALWAYS_RECIPIENTS = ['michalr@h2o.ai']
+    def RELEASE_NIGHTLY_ALWAYS_RECIPIENTS = ['michalr@h2o.ai', 'pavel@h2o.ai']
     def RELEASE_NIGHTLY_FAILURE_RECIPIENTS = ['michalk@h2o.ai', 'anmol@h2o.ai'] + RELEASE_NIGHTLY_ALWAYS_RECIPIENTS
-    def RELEASE_ALWAYS_RECIPIENTS = ['michalk@h2o.ai', 'anmol@h2o.ai', 'michalr@h2o.ai']
+    def RELEASE_ALWAYS_RECIPIENTS = ['michalk@h2o.ai', 'anmol@h2o.ai', 'michalr@h2o.ai', 'pavel@h2o.ai']
     def RELEASE_FAILURE_RECIPIENTS = [] + RELEASE_ALWAYS_RECIPIENTS
 
     if (params.TEST_RELEASE) {
