@@ -276,7 +276,10 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       parms._response_column = "event";
       parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant"};
       parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
+      
+      // Concordance computation can't support single mode so it's disabled for this test
       parms._skip_scoring = true;
+      
       assertEquals("Surv(start, stop, event) ~ age", parms.toFormula(fr));
 
       System.setProperty("sys.ai.h2o.debug.checkRunLocal", Boolean.TRUE.toString());

@@ -41,7 +41,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
      */
     boolean _skip_scoring = false;
     
-    public enum CoxPHTies { efron, breslow;}
+    public enum CoxPHTies { efron, breslow}
 
     public CoxPHTies _ties = CoxPHTies.efron;
 
@@ -58,7 +58,9 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     public boolean _calc_cumhaz = true; // support survfit
 
     /**
-     * If true, computation is performed with jobs that
+     * If true, computation is performed with local jobs.
+     * {@link MRTask#doAll(Vec, boolean)} and other overloaded variants are during the computation called with runLocal 
+     * set as true.
      * 
      * Thus setting effects the main CoxPH computation only. Model metrics computation doesn't honour this setting - 
      * {@link ModelMetricsRegressionCoxPH#concordance()} computation ignores it.
