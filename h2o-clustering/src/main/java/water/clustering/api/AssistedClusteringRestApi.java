@@ -16,7 +16,7 @@ public class AssistedClusteringRestApi extends RouterNanoHTTPD implements AutoCl
      * Default port to bind to / listen on.
      */
     private static final int DEFAULT_PORT = 8080;
-    public static final String ASSISTED_CLUSTERING_PORT_KEY = "ASSISTED_CLUSTERING_API_PORT";
+    public static final String ASSISTED_CLUSTERING_PORT_KEY = "H2O_ASSISTED_CLUSTERING_API_PORT";
     private final Consumer<String> flatFileConsumer;
 
 
@@ -24,7 +24,7 @@ public class AssistedClusteringRestApi extends RouterNanoHTTPD implements AutoCl
      * Creates, but not starts assisted clustering REST API. To start the REST API, please use
      * one of the start methods available.
      * <p>
-     * The REST API is bound to a default port of 8080, unless specified otherwise by the ASSISTED_CLUSTERING_API_PORT environment
+     * The REST API is bound to a default port of 8080, unless specified otherwise by the H2O_ASSISTED_CLUSTERING_API_PORT environment
      * variable.
      */
     public AssistedClusteringRestApi(Consumer<String> flatFileConsumer) {
