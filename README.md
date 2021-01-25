@@ -691,7 +691,7 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 ### H2O 3.34.0.1 - January 2021
 
 * Extended Isolation Forest Algorithm
-* Uplift Trees in GBM
+* Uplift Trees
 * Extracting & ranking feature interactions from GBM and XGBoost models
 * RuleFit MOJO, CoxPH MOJO
 * Support for MOJO2 Scoring
