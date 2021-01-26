@@ -387,8 +387,6 @@ class ModelBase(h2o_meta(Keyed)):
         model = self._model_json["output"]
         if "scoring_history" in model and model["scoring_history"] is not None:
             return model["scoring_history"].as_data_frame()
-        if "glm_scoring_history" in model and model["glm_scoring_history"] is not None:
-            return model["glm_scoring_history"].as_data_frame()
         print("No score history for this model")
 
     def ntrees_actual(self):
@@ -472,8 +470,6 @@ class ModelBase(h2o_meta(Keyed)):
         model = self._model_json["output"]
         if "model_summary" in model and model["model_summary"] is not None:
             return model["model_summary"]
-        if "glm_model_summary" in model and model["glm_model_summary"] is not None:
-            return model["glm_model_summary"]
         print("No model summary for this model")
 
     def show(self):
