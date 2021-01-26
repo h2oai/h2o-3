@@ -265,7 +265,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
   @Override
   public ModelMetricsRegressionCoxPH.MetricBuilderRegressionCoxPH makeMetricBuilder(String[] domain) {
-    return new ModelMetricsRegressionCoxPH.MetricBuilderRegressionCoxPH(_input_parms._start_column, _input_parms._stop_column, _input_parms.isStratified(), _input_parms._stratify_by);
+    return new ModelMetricsRegressionCoxPH.MetricBuilderRegressionCoxPH(_parms._start_column, _parms._stop_column, _parms.isStratified(), _parms._stratify_by);
   }
 
   public ModelSchemaV3 schema() { return new CoxPHModelV3(); }
