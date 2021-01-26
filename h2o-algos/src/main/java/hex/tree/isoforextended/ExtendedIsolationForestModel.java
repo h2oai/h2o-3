@@ -42,7 +42,7 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
 
         // compute score for given point
         double pathLength = 0;
-        for (ExtendedIsolationForest.IsolationTree iTree : _output.iTrees) {
+        for (IsolationTree iTree : _output.iTrees) {
             double iTreeScore = iTree.computePathLength(data);
             pathLength += iTreeScore;
             Log.debug("iTreeScore " + iTreeScore);
@@ -64,7 +64,7 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
      */
     private double anomalyScore(double pathLength) {
         return Math.pow(2, -1 * (pathLength / 
-                ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccessfullSearch(_parms._sample_size)));
+                IsolationTree.averagePathLengthOfUnsuccessfulSearch(_parms._sample_size)));
     }
 
     public static class ExtendedIsolationForestParameters extends Model.Parameters {
@@ -110,7 +110,7 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
         /** Number of trees actually in the model (as opposed to requested) */
         public int _ntrees;
         
-        public ExtendedIsolationForest.IsolationTree[] iTrees;
+        public IsolationTree[] iTrees;
         
         public ExtendedIsolationForestOutput(ExtendedIsolationForest b) {
             super(b);

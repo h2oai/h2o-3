@@ -1,5 +1,6 @@
 package hex.tree.isoforextended;
 
+import org.apache.log4j.Logger;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -8,10 +9,13 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertTrue;
 
 public class ExtendedIsolationForestTest extends TestUtil {
+    private static final Logger LOG = Logger.getLogger(ExtendedIsolationForestTest.class);
 
     @BeforeClass()
     public static void setup() {
@@ -171,13 +175,13 @@ public class ExtendedIsolationForestTest extends TestUtil {
     @Test
     public void avgPathLengTest() {
         assertEquals(10.244770920116851,
-                ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccessfullSearch(256), 1e-5);
+                IsolationTree.averagePathLengthOfUnsuccessfulSearch(256), 1e-5);
         assertEquals(11.583643521303037,
-                ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccessfullSearch(500), 1e-5);
-        assertEquals(1, ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccessfullSearch(2), 1e-5);
-        assertEquals(0, ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccessfullSearch(1), 1e-5);
-        assertEquals(0, ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccessfullSearch(0), 1e-5);
-        assertEquals(0, ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccessfullSearch(-1), 1e-5);
+                IsolationTree.averagePathLengthOfUnsuccessfulSearch(500), 1e-5);
+        assertEquals(1, IsolationTree.averagePathLengthOfUnsuccessfulSearch(2), 1e-5);
+        assertEquals(0, IsolationTree.averagePathLengthOfUnsuccessfulSearch(1), 1e-5);
+        assertEquals(0, IsolationTree.averagePathLengthOfUnsuccessfulSearch(0), 1e-5);
+        assertEquals(0, IsolationTree.averagePathLengthOfUnsuccessfulSearch(-1), 1e-5);
     }
 
     @Test
@@ -277,5 +281,50 @@ public class ExtendedIsolationForestTest extends TestUtil {
         } finally {
             Scope.exit();
         }
+    }
+
+    @Test
+    public void testIsolationTreeSmoke() {
+        Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+
+        long start = System.currentTimeMillis();
+        IsolationTree isolationTree = new IsolationTree(train._key, 9, 0xBEEF, 1, 0);
+        isolationTree.buildTree();
+        long end = System.currentTimeMillis();
+
+        long time = end - start;
+        if (time > 200) {
+            LOG.info("Tree building took a longer than it should.");
+        }
+
+        double pathLength = isolationTree.computePathLength(new double[]{0.0, 0.0}); // Normal Point
+        assertTrue("Path length should be longer. Normal point should not be isolated close to root.", pathLength >= 4);
+
+        pathLength = isolationTree.computePathLength(new double[]{5.0, 5.0}); //Anomaly
+        assertTrue("Path length should be close to 0 (Root)", pathLength <= 4);
+    }
+
+    @Test
+    public void testIsolationTreeLarge() {
+        Frame train = Scope.track(generate_real_only(32, 32768, 0, 0xBEEF));
+        double[] normalPoint = toNumericRow(train, 0);
+
+        long start = System.currentTimeMillis();
+        IsolationTree isolationTree = new IsolationTree(train._key, 16, 0xBEEF, 127, 0);
+        isolationTree.buildTree();
+        long end = System.currentTimeMillis();
+
+        long time = end - start;
+        if (time > 1000) {
+            LOG.info("Tree building took a longer than it should: " + time + "ms.");
+        }
+
+        double pathLength = isolationTree.computePathLength(normalPoint);
+        assertTrue("Path length should be longer. Normal point should not be isolated close to root.", pathLength >= 8);
+
+        double[] anomaly = new double[32];
+        Arrays.fill(anomaly, 10000.0);
+        pathLength = isolationTree.computePathLength(anomaly); //Anomaly
+        assertTrue("Path length should be close to 0 (Root)", pathLength <= 8);
     }
 }
