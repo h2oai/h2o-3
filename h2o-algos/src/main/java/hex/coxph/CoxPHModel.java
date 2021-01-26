@@ -32,15 +32,6 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     final String _strata_column = "__strata";
     public String[] _stratify_by;
 
-    /**
-     * True if model scoring should not be performed during the computation.
-     * This setting is mainly to support tests scenarios with {@link #_single_node_mode} set
-     * to true.
-     * 
-     * If true, no {@link CoxPHOutput#_training_metrics} is not computed and it's null.
-     */
-    boolean _skip_scoring = false;
-    
     public enum CoxPHTies { efron, breslow}
 
     public CoxPHTies _ties = CoxPHTies.efron;

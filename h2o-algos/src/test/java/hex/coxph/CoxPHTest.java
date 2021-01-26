@@ -277,12 +277,12 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant"};
       parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
       
-      // Concordance computation can't support single mode so it's disabled for this test
-      parms._skip_scoring = true;
-      
+      // Concordance computation can't support single node so it's disabled for this test
+      System.setProperty("sys.ai.h2o.debug.skipScoring", Boolean.TRUE.toString());
+      System.setProperty("sys.ai.h2o.debug.checkRunLocal", Boolean.TRUE.toString());
+
       assertEquals("Surv(start, stop, event) ~ age", parms.toFormula(fr));
 
-      System.setProperty("sys.ai.h2o.debug.checkRunLocal", Boolean.TRUE.toString());
       parms._single_node_mode = true;
       CoxPH builder = new CoxPH(parms);
       CoxPHModel model = builder
@@ -302,6 +302,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       assertEquals(model._output._wald_test,      4.6343882547245,      1e-8);
       assertEquals(model._output._var_cumhaz_2_matrix.rows(), 110);
     } finally {
+      System.setProperty("sys.ai.h2o.debug.skipScoring", Boolean.FALSE.toString());
       System.setProperty("sys.ai.h2o.debug.checkRunLocal", Boolean.FALSE.toString());
       Scope.exit();
     }
