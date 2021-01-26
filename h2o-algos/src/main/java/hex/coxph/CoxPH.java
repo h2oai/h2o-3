@@ -579,7 +579,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         // The model to be built
         CoxPHModel.CoxPHOutput output = new CoxPHModel.CoxPHOutput(CoxPH.this, dinfo._adaptedFrame, train(), strataMap);
         model = new CoxPHModel(_result, _parms, output);
-        model.setInputParms(_input_parms);
         model.delete_and_lock(_job);
 
         initStats(model, dinfo, time);
