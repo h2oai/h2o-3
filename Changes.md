@@ -2,6 +2,47 @@
 
 ## H2O
 
+### Zermelo (3.32.0.4) - 1/xx/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/4/index.html</a>
+
+<h2>        Bug
+</h2>
+<ul>
+<li>*[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7949'>PUBDEV-7949</a>] -         PDP Failing for High Cardinality even if user_splits defined
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7951'>PUBDEV-7951</a>] -         Fixed failing Delta Lake import for Python API.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7962'>PUBDEV-7962</a>] -         Fix Stacked Ensemble’s incorrect handling of fold column.
+</li>
+</ul>
+    
+<h2>        Task
+</h2>
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7917'>PUBDEV-7917</a>] -         Add checkpoint description to GLM
+</li>
+</ul>
+    
+<h2>        Improvement
+</h2>
+<ul>
+<li>*[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7737'>PUBDEV-7737</a>] -         CoxPH MOJO
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7953'>PUBDEV-7953</a>] -         Escape all quotes by default when writing CSV.
+</li>
+</ul>
+    
+<h2>        Docs
+</h2>
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7945'>PUBDEV-7945</a>] -         Add to docs that AUCPR plot can be done
+</li>
+<li>*[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7964'>PUBDEV-7964</a>] -         Update graphic to include Kubernetes
+</li>
+</ul>
+
+
 ### Zermelo (3.32.0.3) - 12/24/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/index.html</a>
