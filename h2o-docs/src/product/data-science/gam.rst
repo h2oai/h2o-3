@@ -391,6 +391,11 @@ Note that :math:`\lambda` will be another parameter for the user to choose using
 
 Hence, at this point, we can call our :ref:`GLM<glm>`. However, we still need to add the contribution of the penalty term to the gradient and hessian calculation.
 
+Thin Plate Regression Splines
+'''''''''''''''''''''''''''''
+
+For documentation on thin plate regression splines, refer `here <thin_plate_gam.html>`__.
+
 .. _scenario6:
 
 General GAM
