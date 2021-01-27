@@ -1037,6 +1037,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected transient Vec _offset; // Handy offset column
   protected transient Vec _weights; // observation weight column
   protected transient Vec _fold; // fold id column
+  protected transient Vec _uplift;
   protected transient String[] _origNames; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   protected transient String[][] _origDomains; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   protected transient double[] _orig_projection_array; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
@@ -1145,6 +1146,30 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _fold = null;
       assert(!hasFoldCol());
     }
+    if(_parms._uplift_column != null) {
+      Vec u = _train.remove(_parms._uplift_column);
+      if(u == null)
+        error("_uplift_column","Uplift column '" + _parms._uplift_column  + "' not found in the training frame");
+      else {
+        _uplift = u;
+        if(!u.isCategorical())
+          error("_uplift_column","Invalid uplift column '" + _parms._uplift_column  + "', uplift must be categorical");
+        _weights = u;
+        if(u.naCnt() > 0)
+          error("_uplift_columns","Uplift cannot have missing values.");
+        if(u.domain().length != 2)
+          error("_uplift_columns","Uplift must contains only 0 or 1");
+        if(u.min() != 0)
+          error("_uplift_columns","Max. uplift must be 0");
+        if(u.max() != 1)
+          error("_uplift_columns","Max. uplift must be 1");
+        _train.add(_parms._uplift_column, u);
+        ++res;
+      }
+    } else {
+      _uplift = null;
+      assert(!hasUpliftCol());
+    }
     if(isSupervised() && _parms._response_column != null) {
       _response = _train.remove(_parms._response_column);
       if (_response == null) {
@@ -1157,6 +1182,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           error("_response_column", "Response column must be different from weights_column");
         if(_response == _fold)
           error("_response_column", "Response column must be different from fold_column");
+        if(_response == _uplift)
+          error("_response_column", "Response column must be different from uplift_column");
         _train.add(_parms._response_column, _response);
         ++res;
       }

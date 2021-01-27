@@ -715,6 +715,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     @Override
+    public final String getUpliftColumn(){
+      return _uplift_column;
+    }
+
+    @Override
     public final int getMaxCategoricalLevels() {
       return _max_categorical_levels;
     }
@@ -989,7 +994,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** Returns number of input features (OK for most supervised methods, need to override for unsupervised!) */
     public int nfeatures() {
-      return _names.length - (_hasOffset?1:0)  - (_hasWeights?1:0) - (_hasFold?1:0) - (isSupervised()?1:0);
+      return _names.length - (_hasOffset?1:0)  - (_hasWeights?1:0) - (_hasFold?1:0) - (_hasUplift?1:0) - (isSupervised()?1:0);
     }
     /** Returns features used by the model */
     public String[] features() {
@@ -1549,10 +1554,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String getOffsetColumn();
     String getFoldColumn();
     String getResponseColumn();
+    String getUpliftColumn();
     double missingColumnsType();
     int getMaxCategoricalLevels();
     default String[] getNonPredictors() {
-      return Arrays.stream(new String[]{getWeightsColumn(), getOffsetColumn(), getFoldColumn(), getResponseColumn()})
+      return Arrays.stream(new String[]{getWeightsColumn(), getOffsetColumn(), getFoldColumn(), getResponseColumn(), getUpliftColumn()})
               .filter(Objects::nonNull)
               .toArray(String[]::new);
     }
@@ -1592,6 +1598,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final String offset = parms.getOffsetColumn();
     final String fold = parms.getFoldColumn();
     final String response = parms.getResponseColumn();
+    final String uplift = parms.getUpliftColumn();
+
 
     // whether we need to be careful with categorical encoding - the test frame could be either in original state or in encoded state
     // keep in sync with FrameUtils.categoricalEncoder: as soon as a categorical column has been encoded, we should check here.
@@ -1610,7 +1618,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         // As soon as the test frame contains at least one original pre-encoding predictor,
         // then we consider the frame as valid for predictions, and we'll later fill missing columns with NA
         Set<String> required = new HashSet<>(Arrays.asList(origNames));
-        required.removeAll(Arrays.asList(response, weights, fold));
+        required.removeAll(Arrays.asList(response, weights, fold, uplift));
         for (String name : test.names()) {
           if (required.contains(name)) {
             match = true;
@@ -1645,6 +1653,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       boolean isWeights = weights != null && names[i].equals(weights);
       boolean isOffset = offset != null && names[i].equals(offset);
       boolean isFold = fold != null && names[i].equals(fold);
+      boolean isUplift = uplift != null && names[i].equals(uplift);
       // If a training set column is missing in the test set, complain (if it's ok, fill in with NAs (or 0s if it's a fold-column))
       if (vec == null) {
         if (isResponse && computeMetrics)
@@ -1656,6 +1665,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             vec = test.anyVec().makeCon(1);
             toDelete.put(vec._key, "adapted missing vectors");
             msgs.add(H2O.technote(1, "Test/Validation dataset is missing weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
+          }
+          else if (isUplift && computeMetrics) {
+            throw new IllegalArgumentException("Test/Validation dataset is missing uplift column '" + uplift + "'");
           }
         } else if (expensive) {   // generate warning even for response columns.  Other tests depended on this.
           final double defval;
@@ -1671,7 +1683,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           vec = test.anyVec().makeCon(defval);
           toDelete.put(vec._key, "adapted missing vectors");
           String str = "Test/Validation dataset is missing column '" + names[i] + "': substituting in a column of " + defval;
-
           if (ArrayUtils.contains(parms.getNonPredictors(), names[i]))
             Log.info(str); // we are doing a "pure" predict (computeMetrics is false), don't complain to the user
           else
@@ -1713,7 +1724,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       test.restructure(names, vvecs, good);
 
     if (expensive && checkCategoricals) {
-      final boolean hasCategoricalPredictors = hasCategoricalPredictors(test, response, weights, offset, fold, names, domains);
+      final boolean hasCategoricalPredictors = hasCategoricalPredictors(test, response, weights, offset, fold, uplift, names, domains);
 
       // check if we first need to expand categoricals before calling this method again
       if (hasCategoricalPredictors) {
@@ -1731,7 +1742,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   private static boolean hasCategoricalPredictors(final Frame frame, final String responseName,
                                            final String wieghtsName, final String offsetName,
-                                           final String foldName, final String[] names,
+                                           final String foldName, final String upliftName, final String[] names,
                                            final String[][] domains) {
 
     boolean haveCategoricalPredictors = false;
@@ -1746,6 +1757,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if (frame.names()[i].equals(wieghtsName)) continue;
       if (frame.names()[i].equals(offsetName)) continue;
       if (frame.names()[i].equals(foldName)) continue;
+      if (frame.names()[i].equals(upliftName)) continue;
       // either the column of the test set is categorical (could be a numeric col that's already turned into a factor)
       if (frame.vec(i).get_type() == Vec.T_CAT) {
         haveCategoricalPredictors = true;
