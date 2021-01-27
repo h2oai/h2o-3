@@ -404,7 +404,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         private String[] _currentHyperParamNames = _currentHyperParams.keySet().toArray(new String[0]);
 
         @Override
-        public MP nextModelParameters(Model previousModel) {
+        public MP nextModelParameters(Model unused) {
           _currentHyperparamIndices = _currentHyperparamIndices == null ?
                   new int[_currentHyperParamNames.length] : nextModelIndices(_currentHyperparamIndices);
           
@@ -429,7 +429,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         }
 
         @Override
-        public boolean hasNext(Model previousModel) {
+        public boolean hasNext(Model unused) {
           // Checks to see that there is another valid combination of hyper parameters left in the hyperspace.
           if (_currentHyperparamIndices != null) {
             int[] hyperParamIndicesCopy = new int[_currentHyperparamIndices.length];
@@ -532,7 +532,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
         // TODO: override into a common subclass:
         @Override
-        public MP nextModelParameters(Model previousModel) {
+        public MP nextModelParameters(Model unused) {
           // NOTE: nextModel checks _visitedHyperparamIndices and does not return a duplicate set of indices.
           // NOTE: in RandomDiscreteValueWalker nextModelIndices() returns a new array each time, rather than
           // mutating the last one.
@@ -566,7 +566,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         }
 
         @Override
-        public boolean hasNext(Model previousModel) {
+        public boolean hasNext(Model unused) {
           // Note: we compare _currentPermutationNum to max_models, because it counts successfully created models, but
           // we compare _visitedPermutationHashes.size() to _maxHyperSpaceSize because we want to stop when we have attempted each combo.
           //

@@ -116,7 +116,7 @@ public class SequentialWalker<MP extends Model.Parameters> implements HyperSpace
             }
 
             @Override
-            public boolean hasNext(Model previousModel) {
+            public boolean hasNext(Model unused) {
                 return _index+1 < getMaxHyperSpaceSize();
             }
 
