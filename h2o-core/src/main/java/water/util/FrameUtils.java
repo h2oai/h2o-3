@@ -363,24 +363,24 @@ public class FrameUtils {
       if (_parallel && _nParts == 1) {
         _nParts = _frame.anyVec().nChunks();
         int processed = 0;
-        String compression = H2O.getSysProperty("export.csv.cache.compression", "none");
-        CompressionFactory compressor = CompressionFactory.make(compression);
-        DecompressionFactory decompressor = DecompressionFactory.make(compression);
-        String cacheStorage = H2O.getSysProperty("export.csv.cache.storage", "memory");
-        CsvChunkCache cache = "memory".equals(cacheStorage) ? new DkvCsvChunkCache() : new FileSystemCsvChunkCache();
+        final String compression = H2O.getSysProperty("export.csv.cache.compression", "none");
+        final CompressionFactory compressor = CompressionFactory.make(compression);
+        final DecompressionFactory decompressor = DecompressionFactory.make(compression);
+        final String cacheStorage = H2O.getSysProperty("export.csv.cache.storage", "memory");
+        final CsvChunkCache cache = "memory".equals(cacheStorage) ? new DkvCsvChunkCache() : new FileSystemCsvChunkCache();
         Log.info("Using compression=`" + compressor.getName() + 
                 "` and cache=`" + cache.getName() + "` for interim partial CSV export files.");
-        ChunkExportTask chunkExportTask = cache.makeExportTask(_frame, _csv_parms, compressor);
+        final ChunkExportTask chunkExportTask = cache.makeExportTask(_frame, _csv_parms, compressor);
         H2O.submitTask(new LocalMR(chunkExportTask, H2O.NUMCPUS));
         try (FileOutputStream os = new FileOutputStream(_path)) {
           byte[] buffer = new byte[BUFFER_SIZE];
-          boolean[] isChunkCompleted = new boolean[_nParts + 1];
+          final boolean[] isChunkCompleted = new boolean[_nParts + 1];
           while (processed != _nParts) {
-            int cid = chunkExportTask._completed.take();
+            final int cid = chunkExportTask._completed.take();
             isChunkCompleted[cid] = true;
             while (isChunkCompleted[processed]) {
-              try (InputStream rawInputStream = cache.getChunkCsvStream(chunkExportTask, processed);
-                   InputStream is = decompressor.wrapInputStream(rawInputStream)) {
+              try (final InputStream rawInputStream = cache.getChunkCsvStream(chunkExportTask, processed);
+                   final InputStream is = decompressor.wrapInputStream(rawInputStream)) {
                 IOUtils.copyLarge(is, os, buffer);
               } finally {
                 cache.releaseCache(chunkExportTask, processed);
@@ -393,13 +393,13 @@ public class FrameUtils {
           throw new RuntimeException("File export failed", e);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
-          throw new RuntimeException("File export failed", e);
+          throw new RuntimeException("File export interrupted", e);
         }
         tryComplete();
       } else if (_nParts == 1) {
         // Single file export, the file should be created by the node that was asked to export the data
         // (this is for non-distributed filesystems, we want the file to go to the local filesystem of the node)
-        Frame.CSVStream is = new Frame.CSVStream(_frame, _csv_parms);
+        final Frame.CSVStream is = new Frame.CSVStream(_frame, _csv_parms);
         exportCSVStream(is, _path, 0);
         tryComplete();
       } else {
@@ -408,7 +408,7 @@ public class FrameUtils {
           _nParts = calculateNParts(_csv_parms);
           assert _nParts > 0;
         }
-        int nChunksPerPart = ((_frame.anyVec().nChunks() - 1) / _nParts) + 1;
+        final int nChunksPerPart = ((_frame.anyVec().nChunks() - 1) / _nParts) + 1;
         new PartExportTask(this, _frame._names, nChunksPerPart, _csv_parms).dfork(_frame);
       }
     }
