@@ -6,8 +6,7 @@
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/4/index.html</a>
 
-<h2>        Bug
-</h2>
+#### Bug
 <ul>
 <li>*[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7949'>PUBDEV-7949</a>] -         PDP Failing for High Cardinality even if user_splits defined
 </li>
@@ -16,16 +15,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/4/inde
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7962'>PUBDEV-7962</a>] -         Fix Stacked Ensemble’s incorrect handling of fold column.
 </li>
 </ul>
+
     
-<h2>        Task
-</h2>
-<ul>
-<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7917'>PUBDEV-7917</a>] -         Add checkpoint description to GLM
-</li>
-</ul>
-    
-<h2>        Improvement
-</h2>
+#### Improvement
 <ul>
 <li>*[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7737'>PUBDEV-7737</a>] -         CoxPH MOJO
 </li>
@@ -33,10 +25,11 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/4/inde
 </li>
 </ul>
     
-<h2>        Docs
-</h2>
+#### Docs
 <ul>
-<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7945'>PUBDEV-7945</a>] -         Add to docs that AUCPR plot can be done
+<li>*[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7917'>PUBDEV-7917</a>] -         Add checkpoint description to GLM
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7945'>PUBDEV-7945</a>] -         Added to docs that AUCPR can be plotted.
 </li>
 <li>*[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7964'>PUBDEV-7964</a>] -         Update graphic to include Kubernetes
 </li>
