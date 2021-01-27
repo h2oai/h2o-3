@@ -366,12 +366,14 @@ public final class GridSearch<MP extends Model.Parameters> {
 
           reconcileMaxRuntime(grid._key, params);
 
+          Model currentModel = null;
           try {
             ScoringInfo scoringInfo = new ScoringInfo();
             scoringInfo.time_stamp_ms = System.currentTimeMillis();
 
             //// build the model!
-            model = buildModel(params, grid, ++counter, protoModelKey);
+            currentModel = buildModel(params, grid, ++counter, protoModelKey);
+            model = currentModel;
             if (model != null) {
               model.fillScoringInfo(scoringInfo);
               grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
@@ -380,7 +382,7 @@ public final class GridSearch<MP extends Model.Parameters> {
             }
           } catch (RuntimeException e) { // Catch everything
             if (Job.isCancelledException(e)) {
-              assert model == null;
+              assert currentModel == null;
               final long checksum = params.checksum(IGNORED_FIELDS_PARAM_HASH);
               final Key<Model>[] modelKeys = findModelsByChecksum(checksum);
               if (modelKeys.length == 1) {
@@ -395,12 +397,12 @@ public final class GridSearch<MP extends Model.Parameters> {
               Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
             }
 
-            grid.appendFailedModelParameters(model != null ? model._key : null, params, e);
+            grid.appendFailedModelParameters(currentModel != null ? currentModel._key : null, params, e);
           }
         } catch (IllegalArgumentException e) {
           Log.warn("Grid search: construction of model parameters failed! Exception: ", e);
           // Model parameters cannot be constructed for some reason
-          final Model failedModel = model;
+          final Model failedModel = model; // FIXME: Is this really the failed model? It can also be the _previus_ successful model.
           it.onModelFailure(failedModel, failedHyperParams -> grid.appendFailedModelParameters(failedModel != null ? failedModel._key : null, failedHyperParams, e));
         } finally {
           // Update progress by 1 increment
