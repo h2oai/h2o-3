@@ -109,10 +109,10 @@ public final class GridSearch<MP extends Model.Parameters> {
     // if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
     // skip it if no model limit it specified as the entire hyperspace can be extremely large.
     if (gridSize > 0 && maxModels() > 0) {
+      while (it.hasNext()) {
       Model model = null;
-      while (it.hasNext(model)) {
         try {
-          Model.Parameters parms = it.nextModelParameters(model);
+          Model.Parameters parms = it.nextModelParameters();
           gridWork += (parms._nfolds > 0 ? (parms._nfolds+1/*main model*/) : 1) *parms.progressUnits();
         } catch(Throwable ex) {
           //swallow invalid combinations
@@ -288,8 +288,8 @@ public final class GridSearch<MP extends Model.Parameters> {
       MP params = null;
 
       while (params == null) {
-        if (hyperSpaceIterator.hasNext(model)) {
-          params = hyperSpaceIterator.nextModelParameters(model);
+        if (hyperSpaceIterator.hasNext()) {
+          params = hyperSpaceIterator.nextModelParameters();
           final Key modelKey = grid.getModelKey(params.checksum(IGNORED_FIELDS_PARAM_HASH));
           if (modelKey != null) {
             params = null;
@@ -315,8 +315,8 @@ public final class GridSearch<MP extends Model.Parameters> {
 
     List<ModelBuilder> startModels = new ArrayList<>();
 
-    while (startModels.size() < _parallelism && iterator.hasNext(null)) {
-      final MP nextModelParameters = iterator.nextModelParameters(null);
+    while (startModels.size() < _parallelism && iterator.hasNext()) {
+      final MP nextModelParameters = iterator.nextModelParameters();
       final long checksum = nextModelParameters.checksum(IGNORED_FIELDS_PARAM_HASH);
       if (grid.getModelKey(checksum) == null) {
         startModels.add(ModelBuilder.make(nextModelParameters));
@@ -354,12 +354,12 @@ public final class GridSearch<MP extends Model.Parameters> {
       HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
       // Number of traversed model parameters
       int counter = grid.getModelCount();
-      while (it.hasNext(model)) {
+      while (it.hasNext()) {
         if (_job.stop_requested()) throw new Job.JobCancelledException();  // Handle end-user cancel request
 
         try {
           // Get parameters for next model
-          MP params = it.nextModelParameters(model);
+          MP params = it.nextModelParameters();
 
           // Sequential model building, should never propagate
           // exception up, just mark combination of model parameters as wrong

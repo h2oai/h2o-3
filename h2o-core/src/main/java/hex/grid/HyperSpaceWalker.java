@@ -30,21 +30,18 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      * <p>The method can optimize based on previousModel, but should be
      * able to handle null-value.</p>
      *
-     * @param previousModel  model generated for the previous point in hyper space, can be null.
-     *
      * @return model parameters for next point in hyper space or null if there is no such point.
      *
      * @throws IllegalArgumentException  when model parameters cannot be constructed
      * @throws java.util.NoSuchElementException if the iteration has no more elements
      */
-    MP nextModelParameters(Model previousModel);
+    MP nextModelParameters();
 
     /**
      * Returns true if the iterator can continue.  Takes into account strategy-specific stopping criteria, if any.
-     * @param previousModel  optional parameter which helps to determine next step, can be null
      * @return  true if the iterator can produce one more model parameters configuration.
      */
-    boolean hasNext(Model previousModel);
+    boolean hasNext();
 
     /**
      * Inform the Iterator that a model build failed in case it needs to adjust its internal state.
@@ -404,7 +401,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         private String[] _currentHyperParamNames = _currentHyperParams.keySet().toArray(new String[0]);
 
         @Override
-        public MP nextModelParameters(Model unused) {
+        public MP nextModelParameters() {
           _currentHyperparamIndices = _currentHyperparamIndices == null ?
                   new int[_currentHyperParamNames.length] : nextModelIndices(_currentHyperparamIndices);
           
@@ -429,7 +426,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         }
 
         @Override
-        public boolean hasNext(Model unused) {
+        public boolean hasNext() {
           // Checks to see that there is another valid combination of hyper parameters left in the hyperspace.
           if (_currentHyperparamIndices != null) {
             int[] hyperParamIndicesCopy = new int[_currentHyperparamIndices.length];
@@ -532,7 +529,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
         // TODO: override into a common subclass:
         @Override
-        public MP nextModelParameters(Model unused) {
+        public MP nextModelParameters() {
           // NOTE: nextModel checks _visitedHyperparamIndices and does not return a duplicate set of indices.
           // NOTE: in RandomDiscreteValueWalker nextModelIndices() returns a new array each time, rather than
           // mutating the last one.
@@ -566,7 +563,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         }
 
         @Override
-        public boolean hasNext(Model unused) {
+        public boolean hasNext() {
           // Note: we compare _currentPermutationNum to max_models, because it counts successfully created models, but
           // we compare _visitedPermutationHashes.size() to _maxHyperSpaceSize because we want to stop when we have attempted each combo.
           //

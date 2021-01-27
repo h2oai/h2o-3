@@ -111,12 +111,12 @@ public class SequentialWalker<MP extends Model.Parameters> implements HyperSpace
             private int _index = -1;
 
             @Override
-            public MP nextModelParameters(Model previousModel) {
+            public MP nextModelParameters() {
                 return getModelParams(_params, _hyperParams[++_index]);
             }
 
             @Override
-            public boolean hasNext(Model unused) {
+            public boolean hasNext() {
                 return _index+1 < getMaxHyperSpaceSize();
             }
 
