@@ -53,7 +53,7 @@ public class IsolationTree extends Iced<IsolationTree> {
             Scope.track(frame);
             _nodes[0] = new Node(frame._key, frame.numRows(), 0);
             for (int i = 0; i < _nodes.length; i++) {
-//                LOG.debug(i + " from " + _nodes.length + " is being prepared on tree " + _treeNum);
+                LOG.trace(i + " from " + _nodes.length + " is being prepared on tree " + _treeNum);
                 Node node = _nodes[i];
                 if (node == null || node._external) {
                     continue;

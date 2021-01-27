@@ -2,10 +2,8 @@ package hex.tree.isoforextended;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import jsr166y.CountedCompleter;
 import org.apache.log4j.Logger;
 import water.*;
-import water.fvec.Frame;
 import water.util.*;
 
 import java.util.Random;
@@ -105,7 +103,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
             model.delete_and_lock(_job);
             IsolationTreeForkJoinTask [] iTreeTasks = new IsolationTreeForkJoinTask[_parms._ntrees];
             for (int t = 0; t < _parms._ntrees; t++) {
-                iTreeTasks[t] = new IsolationTreeForkJoinTask(t);
+                iTreeTasks[t] = new IsolationTreeForkJoinTask(ExtendedIsolationForest.this, _train, t);
                 H2O.submitTask(iTreeTasks[t]);
             }
             for (int t = 0; t < _parms._ntrees; t++) {
@@ -113,60 +111,6 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
             }
             model.unlock(_job);
             addCustomInfo(model._output);
-        }
-    }
-
-    private class IsolationTreeForkJoinTask extends H2O.H2OCountedCompleter<IsolationTreeForkJoinTask> {
-
-        private IsolationTree iTree;
-        private int treeNum;
-        
-        public IsolationTreeForkJoinTask(int treeNum) {
-            super();
-            this.treeNum = treeNum;     
-        }
-
-        @Override
-        public void compute2() {
-            try {
-                Scope.enter();
-                int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
-                int randomUnit = _rand.nextInt();
-
-                Frame subSample = new SubSampleTask(_parms._sample_size, _parms._seed + randomUnit)
-                        .doAll(_train.types(), _train.vecs()).outputFrame(Key.make(), _train.names(), _train.domains());
-                Scope.track(subSample);
-
-                iTree = new IsolationTree(subSample._key, heightLimit, _parms._seed + randomUnit, _parms.extension_level, treeNum);
-                iTree.buildTree();
-                if (LOG.isDebugEnabled()) {
-                    iTree.logNodesNumRows();
-                    iTree.logNodesHeight();
-                }
-                tryComplete();
-            } finally {
-                Scope.exit();
-            }
-        }
-
-        /**
-         * Blocking call to obtain a result of computation.
-         */
-        public IsolationTree getResult() {
-            join();
-            return this.iTree;
-        }
-
-        @Override
-        public void onCompletion(CountedCompleter caller) {
-            _job.update(1);
-            LOG.info("Tree " + treeNum + " is done.");
-        }
-
-        @Override
-        public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-            LOG.error(ex);
-            return true;
         }
     }
 
