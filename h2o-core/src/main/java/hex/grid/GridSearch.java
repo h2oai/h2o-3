@@ -379,7 +379,19 @@ public final class GridSearch<MP extends Model.Parameters> {
               ScoringInfo.sort(grid.getScoringInfos(), sortingMetric());
             }
           } catch (RuntimeException e) { // Catch everything
-            if (!Job.isCancelledException(e)) {
+            if (Job.isCancelledException(e)) {
+              assert model == null;
+              final long checksum = params.checksum(IGNORED_FIELDS_PARAM_HASH);
+              final Key<Model>[] modelKeys = findModelsByChecksum(checksum);
+              if (modelKeys.length == 1) {
+                Keyed.removeQuietly(modelKeys[0]);
+              } else if (modelKeys.length > 1) {
+                Log.warn("Checksum " + checksum + " " +
+                        "identified more than one model to clean-up, keeping all: " + Arrays.toString(modelKeys) + 
+                        ". This could lead to a memory leak.");
+              } else
+                Log.debug("Model with param checksum " + checksum + " was cancelled before it was installed in DKV.");
+            } else {
               Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
             }
 
@@ -504,7 +516,28 @@ public final class GridSearch<MP extends Model.Parameters> {
     }
 
     // Is there a model with the same params in the DKV?
-    @SuppressWarnings("unchecked") final Key<Model>[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
+    Key<Model>[] modelKeys = findModelsByChecksum(checksum);
+
+    if (modelKeys.length > 0) {
+      onModel(grid, checksum, modelKeys[0]);
+      return modelKeys[0].get();
+    }
+
+    // Modify model key to have nice version with counter
+    // Note: Cannot create it before checking the cache since checksum would differ for each model
+    Key<Model> result = Key.make(protoModelKey + paramsIdx);
+    // Build a new model
+    assert grid.getModel(params) == null;
+    Model m = ModelBuilder.trainModelNested(_job, result, params, null);
+    assert checksum == m._input_parms.checksum(IGNORED_FIELDS_PARAM_HASH) : 
+        "Model checksum different from original params";
+    onModel(grid, checksum, result);
+    return m;
+  }
+
+  @SuppressWarnings("unchecked")
+  static Key<Model>[] findModelsByChecksum(final long checksum) {
+    return KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
       public boolean filter(KeySnapshot.KeyInfo k) {
         if (! Value.isSubclassOf(k._type, Model.class))
@@ -536,23 +569,7 @@ public final class GridSearch<MP extends Model.Parameters> {
         }
       }
     }).keys();
-
-    if (modelKeys.length > 0) {
-      onModel(grid, checksum, modelKeys[0]);
-      return modelKeys[0].get();
-    }
-
-    // Modify model key to have nice version with counter
-    // Note: Cannot create it before checking the cache since checksum would differ for each model
-    Key<Model> result = Key.make(protoModelKey + paramsIdx);
-    // Build a new model
-    assert grid.getModel(params) == null;
-    Model m = ModelBuilder.trainModelNested(_job, result, params, null);
-    assert checksum == m._input_parms.checksum(IGNORED_FIELDS_PARAM_HASH) : 
-        "Model checksum different from original params";
-    onModel(grid, checksum, result);
-    return m;
-  }
+  } 
   
   /**
    * Defines a key for a new Grid object holding results of grid search.
