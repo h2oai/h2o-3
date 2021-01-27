@@ -24,6 +24,8 @@ from h2o.h2o import (connect, init, api, connection,
                      get_timezone, set_timezone, list_timezones,
                      load_dataset, demo, make_metrics, flow, upload_custom_metric, upload_custom_distribution,
                      import_mojo, upload_mojo, print_mojo, load_grid, save_grid)
+
+from h2o.automl import get_automl  # has to be here after "from h2o.h2o" to prevent cycles
 # We have substantial amount of code relying on h2o.H2OFrame to exist. Thus, we make this class available from
 # root h2o module, without exporting it explicitly. In the future this import may be removed entirely, so that
 # one would have to import it from h2o.frames.
@@ -63,9 +65,9 @@ if (__version__.endswith("99999")):
 
 
 __all__ = ["connect", "init", "api", "connection", "upload_file", "lazy_import", "import_file", "import_sql_table",
-           "import_sql_select", "parse_setup", "parse_raw", "assign", "deep_copy", "models", "get_model", "get_grid", "get_frame",
-           "show_progress", "no_progress", "enable_expr_optimizations", "is_expr_optimizations_enabled", "log_and_echo",
-           "remove", "remove_all", "rapids", "ls", "frame", "import_hive_table",
+           "import_sql_select", "parse_setup", "parse_raw", "assign", "deep_copy", "models", "get_automl", "get_model",
+           "get_grid", "get_frame", "show_progress", "no_progress", "enable_expr_optimizations",
+           "is_expr_optimizations_enabled", "log_and_echo", "remove", "remove_all", "rapids", "ls", "frame", "import_hive_table",
            "frames", "download_pojo", "download_csv", "download_all_logs", "save_model", "download_model", "upload_model", "load_model", "export_file",
            "cluster_status", "cluster_info", "shutdown", "create_frame", "interaction", "as_list", "network_test",
            "set_timezone", "get_timezone", "list_timezones", "demo", "make_metrics", "cluster", "load_dataset", "flow",
