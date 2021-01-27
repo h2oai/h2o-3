@@ -4,11 +4,13 @@ import water.*;
 import water.api.FSIOException;
 import water.api.HDFSIOException;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.C1NChunk;
 import water.fvec.FileVec;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.util.ArrayUtils;
 import water.util.FileUtils;
+import water.util.FrameUtils;
 import water.util.Log;
 import water.persist.Persist.PersistEntry;
 
@@ -54,6 +56,7 @@ public class PersistManager {
     String S3A  = "s3a";
     String GCS  = "gs";
     String NFS  = "nfs";
+    String HEX  = "hex";
   }
 
   public static class PersistStatsEntry {
@@ -73,6 +76,7 @@ public class PersistManager {
   }
 
   private Persist[] I;
+  private PersistHex HEX = new PersistHex(); // not part of I because it cannot be a backend for DKV
   private PersistStatsEntry[] stats;
   public PersistStatsEntry[] getStats() { return stats; }
 
@@ -101,6 +105,17 @@ public class PersistManager {
   
   public boolean isGcsPath(String path) {
     return path.toLowerCase().startsWith("gs://");
+  }
+
+  public boolean isHexPath(String path) {
+    return path.toLowerCase().startsWith(Schemes.HEX + "://");
+  }
+
+  public String toHexPath(Key<?> key) {
+    if (! key.isChunkKey()) {
+      throw new IllegalArgumentException("Only Chunk keys are supported for HEX schema");
+    }
+    return PersistHex.HEX_PATH_PREFIX + key.toString();
   }
 
   public PersistManager(URI iceRoot) {
@@ -619,6 +634,8 @@ public class PersistManager {
       return os;
     } else if (isGcsPath(path)) {
       return I[Value.GCS].open(path);
+    } else if (isHexPath(path)) {
+      return HEX.open(path);
     }
 
     try {
@@ -704,6 +721,8 @@ public class PersistManager {
       return I[Value.HDFS].create(path, overwrite);
     } else if (isGcsPath(path)) {
       return I[Value.GCS].create(path, overwrite);
+    } else if (isHexPath(path)) {
+      return HEX.create(path, overwrite);
     }
 
     try {
