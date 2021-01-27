@@ -7,10 +7,10 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.FileVec;
 import water.fvec.Vec;
 import water.parser.BufferedString;
-import water.util.ArrayUtils;
 import water.util.FileUtils;
 import water.util.Log;
 import water.persist.Persist.PersistEntry;
+import water.util.fp.Function2;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -38,12 +38,6 @@ public class PersistManager {
    * if swift fs is regirestered properly under HDFS and user specifies swift based URI, the persist
    * layer forwards the request through HDFS API. */
   private static final String PROP_ENABLE_HDFS_FALLBACK = SYSTEM_PROP_PREFIX + "persist.enable.hdfs.fallback";
-
-  private static final String PROP_IMPORT_FILES_PATTERNS = SYSTEM_PROP_PREFIX + "persist.importFile.patterns";
-  private static final String DEFAULT_IMPORT_FILES_PATTERNS = 
-          "^((?!\\/_delta_log\\/).)*$"; // skip "Delta Lake" log files
-
-  private final String[] importFilesPatterns;
 
   /** Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file" */
   public interface Schemes {
@@ -109,7 +103,6 @@ public class PersistManager {
     for (int i = 0; i < stats.length; i++) {
       stats[i] = new PersistStatsEntry();
     }
-    importFilesPatterns = System.getProperty(PROP_IMPORT_FILES_PATTERNS, DEFAULT_IMPORT_FILES_PATTERNS).split(";");
 
     if (iceRoot == null) {
       Log.err("ice_root must be specified.  Exiting.");
@@ -409,17 +402,49 @@ public class PersistManager {
       I[Value.HDFS].importFiles(path, pattern, files, keys, fails, dels);
     }
 
-    final String[] patterns = pattern != null && !pattern.isEmpty() ? 
-            ArrayUtils.append(importFilesPatterns, pattern) : importFilesPatterns; 
-    for (String p : patterns) {
-      if (p != null && !p.isEmpty())
-        filterFiles(p, path, files, keys, fails);
+    if (pattern != null && !pattern.isEmpty())
+      filterFiles((prefix, elements) -> matchPattern(prefix, elements, pattern), path, files, keys, fails);
+    filterMetadataFiles(path, files, keys, fails);
+  }
+
+  private void filterMetadataFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails) {
+    filterFiles(new DeltaLakeMetadataFilter(), path, files, keys, fails);
+  }
+
+  static class DeltaLakeMetadataFilter implements Function2<String, ArrayList<String>, ArrayList<String>> {
+    private static final String DELTA_LOG_DIRNAME = "_delta_log";
+    @Override
+    public ArrayList<String> apply(String unused, ArrayList<String> ids) {
+      ArrayList<String> filteredIds = new ArrayList<>(ids.size());
+      Exception firstFailure = null;
+      int failureCount = 0;
+      for (String id : ids) {
+        try {
+          URI uri = URI.create(id);
+          String path = uri.getPath();
+          if (path != null) {
+            String[] segments = path.split("/");
+            if (segments.length > 1 && DELTA_LOG_DIRNAME.equalsIgnoreCase(segments[segments.length - 2]))
+              continue;
+          }
+        } catch (Exception e) {
+          failureCount++;
+          firstFailure = firstFailure == null ? e : firstFailure;
+          Log.trace("Cannot create uri", e);
+        }
+        filteredIds.add(id);
+      }
+      if (firstFailure != null) {
+        Log.warn("There were " + failureCount + " failures during file filtering (only the first one logged)", firstFailure);
+      }
+      return filteredIds;
     }
   }
 
-  void filterFiles(String pattern, String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails) {
-    files.retainAll(matchPattern(path, files, pattern)); //New files ArrayList after matching pattern of choice
-    List<String> retainKeys = matchPattern(path, keys, pattern);
+  private void filterFiles(Function2<String, ArrayList<String>, ArrayList<String>> matcher,
+                           String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails) {
+    files.retainAll(matcher.apply(path, files)); //New files ArrayList after matching pattern of choice
+    List<String> retainKeys = matcher.apply(path, keys);
     if (retainKeys.size() != keys.size()) {
       Futures fs = new Futures();
       @SuppressWarnings("unchecked")
@@ -432,7 +457,7 @@ public class PersistManager {
     }
     //New fails ArrayList after matching pattern of choice. Only show failures that match pattern
     if (!fails.isEmpty()) {
-      fails.retainAll(matchPattern(path, fails, pattern));
+      fails.retainAll(matcher.apply(path, fails));
     }
   }
   
