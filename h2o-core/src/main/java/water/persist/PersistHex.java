@@ -5,13 +5,12 @@ import water.H2O;
 import water.Key;
 import water.Value;
 import water.fvec.C1NChunk;
-import water.util.FrameUtils;
-import water.util.Log;
 
 import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class PersistHex extends Persist {
 
@@ -26,6 +25,7 @@ public class PersistHex extends Persist {
   }
 
   InputStream open(Key<?> key) {
+    Objects.requireNonNull(key);
     byte[] bytes = ((C1NChunk) DKV.getGet(key)).getBytes();
     return new ByteArrayInputStream(bytes);
   }
