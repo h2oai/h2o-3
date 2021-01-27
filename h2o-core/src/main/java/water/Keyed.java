@@ -2,6 +2,7 @@ package water;
 
 import water.api.schemas3.KeyV3;
 import water.fvec.*;
+import water.util.Log;
 
 /** Iced, with a Key.  Support for DKV removal. */
 public abstract class Keyed<T extends Keyed> extends Iced<T> {
@@ -56,6 +57,15 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
     Value val = DKV.get(k);
     if (val==null) return;
     ((Keyed)val.get()).remove();
+  }
+  public static void removeQuietly(Key k) {
+    try {
+      remove(k);
+    } catch (Exception e) {
+      String reason = e.getMessage() != null ? " Reason: " + e.getMessage() : "";
+      Log.warn("Failed to correctly release memory associated with key=" + k + "." + reason);
+      Log.debug("Failed to remove key " + k, e);
+    }
   }
   /** Remove the Keyed object associated to the key, and all subparts. */
   public static Futures remove( Key k, Futures fs, boolean cascade) {

@@ -366,12 +366,14 @@ public final class GridSearch<MP extends Model.Parameters> {
 
           reconcileMaxRuntime(grid._key, params);
 
+          Model currentModel = null;
           try {
             ScoringInfo scoringInfo = new ScoringInfo();
             scoringInfo.time_stamp_ms = System.currentTimeMillis();
 
             //// build the model!
-            model = buildModel(params, grid, ++counter, protoModelKey);
+            currentModel = buildModel(params, grid, ++counter, protoModelKey);
+            model = currentModel;
             if (model != null) {
               model.fillScoringInfo(scoringInfo);
               grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
@@ -379,16 +381,28 @@ public final class GridSearch<MP extends Model.Parameters> {
               ScoringInfo.sort(grid.getScoringInfos(), sortingMetric());
             }
           } catch (RuntimeException e) { // Catch everything
-            if (!Job.isCancelledException(e)) {
+            if (Job.isCancelledException(e)) {
+              assert currentModel == null;
+              final long checksum = params.checksum(IGNORED_FIELDS_PARAM_HASH);
+              final Key<Model>[] modelKeys = findModelsByChecksum(checksum);
+              if (modelKeys.length == 1) {
+                Keyed.removeQuietly(modelKeys[0]);
+              } else if (modelKeys.length > 1) {
+                Log.warn("Checksum " + checksum + " " +
+                        "identified more than one model to clean-up, keeping all: " + Arrays.toString(modelKeys) + 
+                        ". This could lead to a memory leak.");
+              } else
+                Log.debug("Model with param checksum " + checksum + " was cancelled before it was installed in DKV.");
+            } else {
               Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
             }
 
-            grid.appendFailedModelParameters(model != null ? model._key : null, params, e);
+            grid.appendFailedModelParameters(currentModel != null ? currentModel._key : null, params, e);
           }
         } catch (IllegalArgumentException e) {
           Log.warn("Grid search: construction of model parameters failed! Exception: ", e);
           // Model parameters cannot be constructed for some reason
-          final Model failedModel = model;
+          final Model failedModel = model; // FIXME: Is this really the failed model? It can also be the _previus_ successful model.
           it.onModelFailure(failedModel, failedHyperParams -> grid.appendFailedModelParameters(failedModel != null ? failedModel._key : null, failedHyperParams, e));
         } finally {
           // Update progress by 1 increment
@@ -504,7 +518,28 @@ public final class GridSearch<MP extends Model.Parameters> {
     }
 
     // Is there a model with the same params in the DKV?
-    @SuppressWarnings("unchecked") final Key<Model>[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
+    Key<Model>[] modelKeys = findModelsByChecksum(checksum);
+
+    if (modelKeys.length > 0) {
+      onModel(grid, checksum, modelKeys[0]);
+      return modelKeys[0].get();
+    }
+
+    // Modify model key to have nice version with counter
+    // Note: Cannot create it before checking the cache since checksum would differ for each model
+    Key<Model> result = Key.make(protoModelKey + paramsIdx);
+    // Build a new model
+    assert grid.getModel(params) == null;
+    Model m = ModelBuilder.trainModelNested(_job, result, params, null);
+    assert checksum == m._input_parms.checksum(IGNORED_FIELDS_PARAM_HASH) : 
+        "Model checksum different from original params";
+    onModel(grid, checksum, result);
+    return m;
+  }
+
+  @SuppressWarnings("unchecked")
+  static Key<Model>[] findModelsByChecksum(final long checksum) {
+    return KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
       public boolean filter(KeySnapshot.KeyInfo k) {
         if (! Value.isSubclassOf(k._type, Model.class))
@@ -536,23 +571,7 @@ public final class GridSearch<MP extends Model.Parameters> {
         }
       }
     }).keys();
-
-    if (modelKeys.length > 0) {
-      onModel(grid, checksum, modelKeys[0]);
-      return modelKeys[0].get();
-    }
-
-    // Modify model key to have nice version with counter
-    // Note: Cannot create it before checking the cache since checksum would differ for each model
-    Key<Model> result = Key.make(protoModelKey + paramsIdx);
-    // Build a new model
-    assert grid.getModel(params) == null;
-    Model m = ModelBuilder.trainModelNested(_job, result, params, null);
-    assert checksum == m._input_parms.checksum(IGNORED_FIELDS_PARAM_HASH) : 
-        "Model checksum different from original params";
-    onModel(grid, checksum, result);
-    return m;
-  }
+  } 
   
   /**
    * Defines a key for a new Grid object holding results of grid search.
