@@ -125,14 +125,18 @@ public final class GridSearch<MP extends Model.Parameters> {
     // Install this as job functions
     return _job.start(new H2O.H2OCountedCompleter() {
       @Override public void compute2() {
-        beforeGridStart(grid);
-        if (_parallelism == 1) {
-          gridSearch(grid);
-        } else if (_parallelism > 1) {
-          parallelGridSearch(grid);
-        } else {
-          throw new IllegalArgumentException(String.format("Grid search parallelism level must be >= 1. Give value is '%d'.",
-                  _parallelism));
+        try {
+          beforeGridStart(grid);
+          if (_parallelism == 1) {
+            gridSearch(grid);
+          } else if (_parallelism > 1) {
+            parallelGridSearch(grid);
+          } else {
+            throw new IllegalArgumentException(String.format("Grid search parallelism level must be >= 1. Give value is '%d'.",
+                    _parallelism));
+          }
+        } finally {
+          grid.unlock(_job);
         }
         afterGridCompleted(grid);
         tryComplete();
@@ -329,7 +333,6 @@ public final class GridSearch<MP extends Model.Parameters> {
     grid.update(_job);
 
     attemptGridSave(grid);
-    grid.unlock(_job);
   }
 
 
@@ -341,84 +344,75 @@ public final class GridSearch<MP extends Model.Parameters> {
    * @param grid grid object to save results; grid already locked
    */
   private void gridSearch(Grid<MP> grid) {
-    // Prepare nice model key and override default key by appending model counter
-    //String protoModelKey = _hyperSpaceWalker.getParams()._model_id == null
-    //                       ? grid._key + "_model_"
-    //                       : _hyperSpaceWalker.getParams()._model_id.toString() + H2O.calcNextUniqueModelId("") + "_";
-    String protoModelKey = grid._key + "_model_";
+    final String protoModelKey = grid._key + "_model_";
+    // Get iterator to traverse hyper space
+    HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
+    // Number of traversed model parameters
+    int counter = grid.getModelCount();
+    while (it.hasNext()) {
+      Model model = null;
+      if (_job.stop_requested()) throw new Job.JobCancelledException();  // Handle end-user cancel request
 
-    try {
-      // Get iterator to traverse hyper space
-      HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
-      // Number of traversed model parameters
-      int counter = grid.getModelCount();
-      while (it.hasNext()) {
-        Model model = null;
-        if (_job.stop_requested()) throw new Job.JobCancelledException();  // Handle end-user cancel request
+      try {
+        // Get parameters for next model
+        MP params = it.nextModelParameters();
+
+        // Sequential model building, should never propagate
+        // exception up, just mark combination of model parameters as wrong
+
+        reconcileMaxRuntime(grid._key, params);
 
         try {
-          // Get parameters for next model
-          MP params = it.nextModelParameters();
+          ScoringInfo scoringInfo = new ScoringInfo();
+          scoringInfo.time_stamp_ms = System.currentTimeMillis();
 
-          // Sequential model building, should never propagate
-          // exception up, just mark combination of model parameters as wrong
+          //// build the model!
+          model = buildModel(params, grid, ++counter, protoModelKey);
+          if (model != null) {
+            model.fillScoringInfo(scoringInfo);
+            grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
 
-          reconcileMaxRuntime(grid._key, params);
-
-          try {
-            ScoringInfo scoringInfo = new ScoringInfo();
-            scoringInfo.time_stamp_ms = System.currentTimeMillis();
-
-            //// build the model!
-            model = buildModel(params, grid, ++counter, protoModelKey);
-            if (model != null) {
-              model.fillScoringInfo(scoringInfo);
-              grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
-
-              ScoringInfo.sort(grid.getScoringInfos(), sortingMetric());
-            }
-          } catch (RuntimeException e) { // Catch everything
-            if (Job.isCancelledException(e)) {
-              assert model == null;
-              final long checksum = params.checksum(IGNORED_FIELDS_PARAM_HASH);
-              final Key<Model>[] modelKeys = findModelsByChecksum(checksum);
-              if (modelKeys.length == 1) {
-                Keyed.removeQuietly(modelKeys[0]);
-              } else if (modelKeys.length > 1) {
-                Log.warn("Checksum " + checksum + " " +
-                        "identified more than one model to clean-up, keeping all: " + Arrays.toString(modelKeys) + 
-                        ". This could lead to a memory leak.");
-              } else
-                Log.debug("Model with param checksum " + checksum + " was cancelled before it was installed in DKV.");
-            } else {
-              Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
-            }
-
-            grid.appendFailedModelParameters(model != null ? model._key : null, params, e);
+            ScoringInfo.sort(grid.getScoringInfos(), sortingMetric());
           }
-        } catch (IllegalArgumentException e) {
-          Log.warn("Grid search: construction of model parameters failed! Exception: ", e);
-          // Model parameters cannot be constructed for some reason
-          final Key<Model> failedModelKey = model != null ? model._key : null;
-          it.onModelFailure(model, failedHyperParams -> grid.appendFailedModelParameters(failedModelKey, failedHyperParams, e));
-        } finally {
-          // Update progress by 1 increment
-          _job.update(1);
-          // Always update grid in DKV after model building attempt
-          grid.update(_job);
-          attemptGridSave(grid);
-        } // finally
+        } catch (RuntimeException e) { // Catch everything
+          if (Job.isCancelledException(e)) {
+            assert model == null;
+            final long checksum = params.checksum(IGNORED_FIELDS_PARAM_HASH);
+            final Key<Model>[] modelKeys = findModelsByChecksum(checksum);
+            if (modelKeys.length == 1) {
+              Keyed.removeQuietly(modelKeys[0]);
+            } else if (modelKeys.length > 1) {
+              Log.warn("Checksum " + checksum + " " +
+                      "identified more than one model to clean-up, keeping all: " + Arrays.toString(modelKeys) +
+                      ". This could lead to a memory leak.");
+            } else
+              Log.debug("Model with param checksum " + checksum + " was cancelled before it was installed in DKV.");
+          } else {
+            Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
+          }
 
-        if (model != null && grid.getScoringInfos() != null && // did model build and scoringInfo creation succeed?
-                _hyperSpaceWalker.stopEarly(model, grid.getScoringInfos())) {
-          Log.info("Convergence detected based on simple moving average of the loss function. Grid building completed.");
-          break;
+          grid.appendFailedModelParameters(model != null ? model._key : null, params, e);
         }
-      } // while (it.hasNext(model))
-      Log.info("For grid: " + grid._key + " built: " + grid.getModelCount() + " models.");
-    } finally {
-      grid.unlock(_job);
-    }
+      } catch (IllegalArgumentException e) {
+        Log.warn("Grid search: construction of model parameters failed! Exception: ", e);
+        // Model parameters cannot be constructed for some reason
+        final Key<Model> failedModelKey = model != null ? model._key : null;
+        it.onModelFailure(model, failedHyperParams -> grid.appendFailedModelParameters(failedModelKey, failedHyperParams, e));
+      } finally {
+        // Update progress by 1 increment
+        _job.update(1);
+        // Always update grid in DKV after model building attempt
+        grid.update(_job);
+        attemptGridSave(grid);
+      } // finally
+
+      if (model != null && grid.getScoringInfos() != null && // did model build and scoringInfo creation succeed?
+              _hyperSpaceWalker.stopEarly(model, grid.getScoringInfos())) {
+        Log.info("Convergence detected based on simple moving average of the loss function. Grid building completed.");
+        break;
+      }
+    } // while (it.hasNext(model))
+    Log.info("For grid: " + grid._key + " built: " + grid.getModelCount() + " models.");
   }
 
   /**
