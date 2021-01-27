@@ -529,6 +529,14 @@ h2o.get_automl <- function(project_name) {
     if (!is.na(key)) training_info[key] <- state$event_log[i, 'value']
   }
 
+  .get_best <- function (pattern) {
+    model_ids <- state$leaderboard$model_id
+    matches <- as.numeric(as.list(h2o.grep(pattern, model_ids)))
+    if (length(matches) == 0)
+      return(NULL)
+    return(model_ids[matches[[1]], 1])
+  }
+
   # Make AutoML object
   automl <- new("H2OAutoML",
              project_name = state$project,
@@ -536,7 +544,16 @@ h2o.get_automl <- function(project_name) {
              leaderboard = state$leaderboard,
              event_log = state$event_log,
              modeling_steps = state$modeling_steps,
-             training_info = training_info
+             training_info = training_info,
+             best_models = list(
+               base_model = .get_best("^(?!StackedEnsemble_)"),
+               deep_learning = .get_best("^DeepLearning_"),
+               drf = .get_best("^(DRF|XRT)_"),
+               gbm = .get_best("^GBM_"),
+               glm = .get_best("^GLM_"),
+               stacked_ensemble = .get_best("^StackedEnsemble_"),
+               xgboost = .get_best("^XGBoost_")
+             )
   )
   attr(automl, "id") <- state$automl_id
   return(automl)

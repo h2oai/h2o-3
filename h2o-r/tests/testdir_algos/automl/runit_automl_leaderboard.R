@@ -120,6 +120,30 @@ automl.leaderboard.suite <- function() {
         expect_true(all(sapply(lb_ext["predict_time_per_row_ms"], function(v) v > 0)))
     }
 
+
+    test.get_best_model_per_family <- function() {
+        fr <- as.h2o(iris)
+        aml <- h2o.automl(y = 5, training_frame = fr, max_models = 11,
+                          project_name = "r_aml_customlb")
+        expect_true(sum(is.null(aml@best_models)) <= 1 && length(aml@best_models) >= 7)
+
+        model_ids <- as.character(as.list(aml@leaderboard$model_id))
+        seen <- character()
+
+        top_models <- as.character(unname(aml@best_models))
+        for (model_id in model_ids) {
+            model_type <- strsplit(model_id, "_")[[1]][[1]]
+            if (!model_type %in% seen) {
+                expect_true(model_id %in% top_models)
+
+                if (model_type %in% c("DRF", "XRT"))
+                  seen <- c(seen, c("DRF", "XRT"))
+                else
+                  seen <- c(seen, model_type)
+            }
+        }
+    }
+
     makeSuite(
       test.binomial,
       test.regression,
@@ -127,6 +151,7 @@ automl.leaderboard.suite <- function() {
       test.empty_leaderboard,
       test.all_algos,
       test.custom_leaderboard,
+      test.get_best_model_per_family,
     )
 }
 

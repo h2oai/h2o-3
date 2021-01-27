@@ -316,6 +316,29 @@ def test_custom_leaderboard():
     assert (lb_ext["predict_time_per_row_ms"].as_data_frame().values > 0).all()
 
 
+def test_get_best_model_per_family():
+    ds = prepare_data('binomial')
+    aml = H2OAutoML(project_name="py_aml_custom_lb_test",
+                    max_models=11,
+                    seed=automl_seed)
+    aml.train(y=ds.target, training_frame=ds.train)
+
+    top_models = list(aml.best_models.values())
+    nones = [v is None for v in top_models]
+    assert sum(nones) <= 1 and len(nones) >= 7
+    model_ids = aml.leaderboard.as_data_frame()["model_id"]
+    seen = set()
+    for model_id in model_ids:
+        model_type = model_id.split("_")[0]
+        if model_type not in seen:
+            assert model_id in top_models
+            if model_type in ("DRF", "XRT"):
+                seen.add("DRT")
+                seen.add("XRT")
+            else:
+                seen.add(model_type)
+
+
 pyunit_utils.run_tests([
     test_warn_on_empty_leaderboard,
     test_leaderboard_for_binomial,
@@ -331,4 +354,5 @@ pyunit_utils.run_tests([
     test_AUTO_stopping_metric_with_auc_sorting_metric,
     test_AUTO_stopping_metric_with_custom_sorting_metric,
     test_custom_leaderboard,
+    test_get_best_model_per_family,
 ])

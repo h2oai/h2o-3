@@ -125,3 +125,25 @@ class H2OAutoMLBaseMixin:
         :return: an H2OFrame with detailed events occurred during the AutoML training.
         """
         pass
+
+    @property
+    def best_models(self):
+        """
+        Get best model of each family.
+
+        :return: a dictionary containing best models per family
+        """
+        def _best(pattern):
+            matches = self.leaderboard["model_id"].grep(pattern)
+            if matches.nrow == 0:
+                return None
+            return self.leaderboard[int(matches[0, :]), "model_id"]
+        return dict(
+            base_model=_best("^(?!StackedEnsemble_)"),
+            deep_learning=_best("^DeepLearning_"),
+            drf=_best("^(DRF|XRT)_"),
+            gbm=_best("^GBM_"),
+            glm=_best("^GLM_"),
+            stacked_ensemble=_best("^StackedEnsemble_"),
+            xgboost=_best("^XGBoost_")
+        )

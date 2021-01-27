@@ -922,7 +922,8 @@ setClass("H2OAutoML", slots = c(project_name = "character",
                                 leaderboard = "H2OFrame",
                                 event_log = "H2OFrame",
                                 modeling_steps = "list",
-                                training_info = "list"),
+                                training_info = "list",
+                                best_models = "list"),
                       contains = "Keyed")
 #' @rdname h2o.keyof
 setMethod("h2o.keyof", signature("H2OAutoML"), function(object) attr(object, "id"))
