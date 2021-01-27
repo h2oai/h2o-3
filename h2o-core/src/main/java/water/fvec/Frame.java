@@ -1761,7 +1761,7 @@ public class Frame extends Lockable<Frame> {
               //   https://stat.ethz.ch/pipermail/r-devel/2014-April/068778.html
               //   http://stackoverflow.com/questions/23072988/preserve-old-pre-3-1-0-type-convert-behavior
               double d = _curChks[i].atd(_chkRow);
-              String s = _parms._hexString ? Double.toHexString(d):Double.toString(d);
+              String s = _parms._hexString ? Double.toHexString(d) : RyuDouble.doubleToString(d);
               sb.append(s);
               break;
             case CAT:
