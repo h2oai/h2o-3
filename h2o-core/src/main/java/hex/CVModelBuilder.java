@@ -51,13 +51,16 @@ public class CVModelBuilder {
             modelBuilders[i].startClock();
             submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
             if (++nRunning == parallelization) { //piece-wise advance in training the models
-                while (nRunning > 0) try {
-                    int waitForTaskIndex = i + 1 - nRunning;
-                    submodel_tasks[waitForTaskIndex].join();
-                    finished(modelBuilders[waitForTaskIndex]);
-                    nRunning--;
-                } catch (RuntimeException t) {
-                    if (rt == null) rt = t;
+                while (nRunning > 0) {
+                    try {
+                        int waitForTaskIndex = i + 1 - nRunning;
+                        submodel_tasks[waitForTaskIndex].join();
+                        finished(modelBuilders[waitForTaskIndex]);
+                    } catch (RuntimeException t) {
+                        if (rt == null) rt = t;
+                    } finally {
+                        nRunning--; // need to decrement regardless even if there is an exception, otherwise looping...
+                    }
                 }
                 if (rt != null) throw rt;
             }
