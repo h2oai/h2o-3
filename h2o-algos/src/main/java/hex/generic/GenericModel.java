@@ -70,7 +70,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             case WordEmbedding:
                 return unsupportedMetricsBuilder();
             case CoxPH:
-                return unsupportedMetricsBuilder();
+                return new ModelMetricsRegressionCoxPH.MetricBuilderRegressionCoxPH("start", "stop", false, new String[0]);
             case AnomalyDetection:
                 return new ModelMetricsAnomaly.MetricBuilderAnomaly();
             default:

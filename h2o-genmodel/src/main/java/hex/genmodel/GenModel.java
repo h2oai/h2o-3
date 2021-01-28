@@ -134,6 +134,10 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
       case Regression:
         outputNames = new String[]{"predict"};
         break;
+        
+      case CoxPH:
+        outputNames = new String[]{"lp"};
+        break;
 
       default:
         throw new UnsupportedOperationException("Getting output column names for model category '" + 
