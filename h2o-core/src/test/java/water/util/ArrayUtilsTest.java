@@ -316,7 +316,7 @@ public class ArrayUtilsTest {
   public void testToStringQuotedElements_with_max_items() {
     final Object[] names = IntStream.range(1, 10).mapToObj(Integer::toString).toArray();
     final String outputString = toStringQuotedElements(names, 5);
-    assertEquals("[\"1\", \"2\", ... , \"8\", \"9\"]", outputString);
+    assertEquals("[\"1\", \"2\", \"3\", ... , \"8\", \"9\"]", outputString);
   }
 
   @Test
