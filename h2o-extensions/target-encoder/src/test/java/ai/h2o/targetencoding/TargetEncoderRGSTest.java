@@ -56,8 +56,8 @@ public class TargetEncoderRGSTest{
 
         HyperSpaceIterator<TargetEncoderParameters> iterator = walker.iterator();
         int count = 0;
-        while (iterator.hasNext(null)) {
-          TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters(null);
+        while (iterator.hasNext()) {
+          TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters();
           System.out.println(targetEncoderParameters._blending + ":" + targetEncoderParameters._noise + ":" + targetEncoderParameters._inflection_point + ":" + targetEncoderParameters._smoothing);
           count++;
         }
