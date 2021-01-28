@@ -8,7 +8,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/4/inde
 
 #### Bug
 <ul>
-<li>*[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7949'>PUBDEV-7949</a>] -         PDP Failing for High Cardinality even if user_splits defined
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7949'>PUBDEV-7949</a>] -         Partial Dependence Plot no longer failing for High Cardinality even when `user_splits` is defined.
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7951'>PUBDEV-7951</a>] -         Fixed failing Delta Lake import for Python API.
 </li>
