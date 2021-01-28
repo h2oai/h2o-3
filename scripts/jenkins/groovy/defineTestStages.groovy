@@ -82,7 +82,8 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py3.7 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.7',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      nodeLabel: 'docker && !mr-0xc8 && !micro' // temporary workaround, AutoML tests are timing out on micro_21 nodes
     ],
     [
       stageName: 'R3.5 Init Java 8', target: 'test-r-init', rVersion: '3.5.3', javaVersion: 8,
@@ -159,7 +160,8 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Java 8 AutoML JUnit', target: 'test-junit-automl-jenkins', pythonVersion: '2.7', javaVersion: 8,
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      nodeLabel: 'docker && !mr-0xc8 && !micro' // temporary workaround, AutoML tests are timing out on micro_21 nodes
     ],
     [
       stageName: 'Java 8 XGBoost Multinode JUnit', target: 'test-junit-xgb-multi-jenkins', pythonVersion: '2.7', javaVersion: 8,
@@ -328,7 +330,8 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py3.6 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.6',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      nodeLabel: 'docker && !mr-0xc8 && !micro' // temporary workaround, AutoML tests are timing out on micro_21 nodes
     ],
     [
       stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.6',
@@ -403,7 +406,8 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py2.7 AutoML', target: 'test-pyunit-automl', pythonVersion: '2.7',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      nodeLabel: 'docker && !mr-0xc8 && !micro' // temporary workaround, AutoML tests are timing out on micro_21 nodes
     ],
     [
       stageName: 'Py2.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '2.7',
