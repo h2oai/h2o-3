@@ -19,6 +19,7 @@ but always shows user-added customer algorithm code as gray.
 
 .. image:: images/h2o_stack.png
    :alt: H2O stack
+   :scale: 50%
    
 
 REST API Clients
