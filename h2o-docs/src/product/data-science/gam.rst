@@ -394,7 +394,13 @@ Hence, at this point, we can call our :ref:`GLM<glm>`. However, we still need to
 Thin Plate Regression Splines
 '''''''''''''''''''''''''''''
 
-For documentation on thin plate regression splines, refer `here <thin_plate_gam.html>`__.
+For documentation on thin plate regression splines, refer here:
+
+.. toctree::
+    :maxdepth: 1
+
+    thin_plate_gam
+
 
 .. _scenario6:
 
