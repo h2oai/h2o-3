@@ -126,24 +126,33 @@ class H2OAutoMLBaseMixin:
         """
         pass
 
-    @property
-    def best_models(self):
+    def best_models(self, model_type):
         """
         Get best model of each family.
-
-        :return: a dictionary containing best models per family
+        :arg model_type: one of "base_model", "deep_learning", "drf", "gbm", "glm", "stacked_ensemble", "xgboost"
+        :return: a model or None if none of a given family is present
         """
         def _best(pattern):
             matches = self.leaderboard["model_id"].grep(pattern)
             if matches.nrow == 0:
                 return None
-            return self.leaderboard[int(matches[0, :]), "model_id"]
-        return dict(
-            base_model=_best("^(?!StackedEnsemble_)"),
-            deep_learning=_best("^DeepLearning_"),
-            drf=_best("^(DRF|XRT)_"),
-            gbm=_best("^GBM_"),
-            glm=_best("^GLM_"),
-            stacked_ensemble=_best("^StackedEnsemble_"),
-            xgboost=_best("^XGBoost_")
+            return h2o.get_model(self.leaderboard[int(matches[0, :]), "model_id"])
+
+        patterns = dict(
+            base_model="^(?!StackedEnsemble_)",
+            deep_learning="^DeepLearning_",
+            drf="^(DRF|XRT)_",
+            gbm="^GBM_",
+            glm="^GLM_",
+            stacked_ensemble="^StackedEnsemble_",
+            xgboost="^XGBoost_"
         )
+
+        if model_type not in patterns.keys():
+            from h2o.exceptions import H2OValueError
+            raise H2OValueError("Incorrect model_type specified \"{}\". Has to be one of \"{}\"".format(
+                model_type,
+                '", "'.join(sorted(list(patterns.keys())))
+            ))
+
+        return _best(patterns[model_type])

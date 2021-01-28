@@ -130,11 +130,11 @@ automl.leaderboard.suite <- function() {
         model_ids <- as.character(as.list(aml@leaderboard$model_id))
         seen <- character()
 
-        top_models <- as.character(unname(aml@best_models))
+        top_model_ids <- sapply(unname(aml@best_models), function(m) if (is.null(m)) NULL else m@model_id)
         for (model_id in model_ids) {
             model_type <- strsplit(model_id, "_")[[1]][[1]]
             if (!model_type %in% seen) {
-                expect_true(model_id %in% top_models)
+                expect_true(model_id %in% top_model_ids)
 
                 if (model_type %in% c("DRF", "XRT"))
                   seen <- c(seen, c("DRF", "XRT"))

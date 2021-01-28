@@ -323,15 +323,17 @@ def test_get_best_model_per_family():
                     seed=automl_seed)
     aml.train(y=ds.target, training_frame=ds.train)
 
-    top_models = list(aml.best_models.values())
+    top_models = [aml.best_models(mtype) for mtype in ["base_model", "deep_learning", "drf",
+                                                       "gbm", "glm", "stacked_ensemble", "xgboost"]]
     nones = [v is None for v in top_models]
     assert sum(nones) <= 1 and len(nones) >= 7
     model_ids = aml.leaderboard.as_data_frame()["model_id"]
     seen = set()
+    top_model_ids = [m.model_id for m in top_models if m is not None]
     for model_id in model_ids:
         model_type = model_id.split("_")[0]
         if model_type not in seen:
-            assert model_id in top_models
+            assert model_id in top_model_ids
             if model_type in ("DRF", "XRT"):
                 seen.add("DRT")
                 seen.add("XRT")

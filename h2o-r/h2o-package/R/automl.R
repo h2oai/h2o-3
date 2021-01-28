@@ -534,7 +534,7 @@ h2o.get_automl <- function(project_name) {
     matches <- as.numeric(as.list(h2o.grep(pattern, model_ids)))
     if (length(matches) == 0)
       return(NULL)
-    return(model_ids[matches[[1]], 1])
+    return(h2o.getModel(model_ids[matches[[1]], 1]))
   }
 
   # Make AutoML object
