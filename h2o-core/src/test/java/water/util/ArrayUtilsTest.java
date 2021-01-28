@@ -316,7 +316,7 @@ public class ArrayUtilsTest {
   public void testToStringQuotedElements_with_max_items() {
     final Object[] names = IntStream.range(1, 10).mapToObj(Integer::toString).toArray();
     final String outputString = toStringQuotedElements(names, 5);
-    assertEquals("[\"1\", \"2\", \"3\", ... , \"8\", \"9\"]", outputString);
+    assertEquals("[\"1\", \"2\", \"3\", ...4 not printed..., \"8\", \"9\"]", outputString);
   }
 
   @Test
@@ -324,8 +324,8 @@ public class ArrayUtilsTest {
     final Object[] names = IntStream.range(1, 4).mapToObj(Integer::toString).toArray();
     assertEquals("[\"1\", \"2\", \"3\"]", toStringQuotedElements(names, -1));
     assertEquals("[\"1\", \"2\", \"3\"]", toStringQuotedElements(names, 0));
-    assertEquals("[\"1\", ... ]", toStringQuotedElements(names, 1));
-    assertEquals("[\"1\", ... , \"3\"]", toStringQuotedElements(names, 2));
+    assertEquals("[\"1\", ...2 not printed...]", toStringQuotedElements(names, 1));
+    assertEquals("[\"1\", ...1 not printed..., \"3\"]", toStringQuotedElements(names, 2));
     assertEquals("[\"1\", \"2\", \"3\"]", toStringQuotedElements(names, 3));
     assertEquals("[\"1\", \"2\", \"3\"]", toStringQuotedElements(names, 4));
   }
