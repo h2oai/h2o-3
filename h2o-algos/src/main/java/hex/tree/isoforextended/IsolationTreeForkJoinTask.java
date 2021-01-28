@@ -34,12 +34,12 @@ class IsolationTreeForkJoinTask extends H2O.H2OCountedCompleter<IsolationTreeFor
                     .doAll(train.types(), train.vecs()).outputFrame(Key.make(), train.names(), train.domains());
             Scope.track(subSample);
 
-            iTree = new IsolationTree(subSample._key, heightLimit, eif._parms._seed + randomUnit, eif._parms.extension_level, treeNum);
-            iTree.buildTree();
-            if (LOG.isDebugEnabled()) {
-                iTree.logNodesNumRows();
-                iTree.logNodesHeight();
-            }
+//            iTree = new IsolationTree(subSample._key, heightLimit, eif._parms._seed + randomUnit, eif._parms.extension_level, treeNum);
+//            iTree.buildTree();
+//            if (LOG.isDebugEnabled()) {
+//                iTree.logNodesNumRows();
+//                iTree.logNodesHeight();
+//            }
             tryComplete();
         } finally {
             Scope.exit();

@@ -4,6 +4,7 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import org.apache.log4j.Logger;
 import water.*;
+import water.fvec.Frame;
 import water.util.*;
 
 import java.util.Random;
@@ -96,20 +97,33 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
 
         @Override
         public void computeImpl() {
+            buildIsolationTreeEnsemble();
+        }
+
+        private void buildIsolationTreeEnsemble() {
             _rand = RandomUtils.getRNG(_parms._seed);
             _iTrees = new IsolationTree[_parms._ntrees];
             ExtendedIsolationForestModel model = new ExtendedIsolationForestModel(dest(), _parms,
                     new ExtendedIsolationForestModel.ExtendedIsolationForestOutput(ExtendedIsolationForest.this));
-            model.delete_and_lock(_job);
-            IsolationTreeForkJoinTask [] iTreeTasks = new IsolationTreeForkJoinTask[_parms._ntrees];
-            for (int t = 0; t < _parms._ntrees; t++) {
-                iTreeTasks[t] = new IsolationTreeForkJoinTask(ExtendedIsolationForest.this, _train, t);
-                H2O.submitTask(iTreeTasks[t]);
+            model.delete_and_lock(_job); // todo avalenta what is it good for?
+
+            int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
+            int randomUnit = _rand.nextInt();
+
+            Frame subSample = new SubSampleTask(_parms._sample_size, _parms._seed + randomUnit)
+                    .doAll(_train.types(), _train.vecs()).outputFrame(null, _train.names(), _train.domains());
+            double[][] subSampleArray = FrameUtils.asDoubles(subSample);
+
+            for (int tid = 0; tid < _parms._ntrees; tid++) {
+                Timer timer = new Timer();
+                IsolationTree isolationTree = new IsolationTree(subSampleArray, heightLimit, _parms._seed + _rand.nextInt(), _parms.extension_level, tid);
+                isolationTree.buildTree();
+                _iTrees[tid] = isolationTree;
+                _job.update(1);
+                LOG.info((tid + 1) + ". tree was built in " + timer.toString());
             }
-            for (int t = 0; t < _parms._ntrees; t++) {
-                _iTrees[t] = iTreeTasks[t].getResult();
-            }
-            model.unlock(_job);
+
+            model.unlock(_job); // todo avalenta what is it good for?
             addCustomInfo(model._output);
         }
     }

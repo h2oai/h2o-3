@@ -8,6 +8,7 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.util.FrameUtils;
 
 import java.util.Arrays;
 
@@ -50,21 +51,19 @@ public class ExtendedIsolationForestTest extends TestUtil {
         }
     }
 
-    /**
-     * Big data equals 65536 x 128
-     */
     @Test
     @Ignore("Expensive")
     public void testBasicBigData() {
         try {
             Scope.enter();
-            Frame train = Scope.track(generate_real_only(128, 65536, 0, 0xCAFFE));
+            Frame train = Scope.track(generate_real_only(128, 100_000, 0, 0xCAFFE));
 
             ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
                     new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 100;
+            p._sample_size = 20_000;
             p.extension_level = train.numCols() - 1;
 
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
@@ -285,46 +284,75 @@ public class ExtendedIsolationForestTest extends TestUtil {
 
     @Test
     public void testIsolationTreeSmoke() {
-        Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
 
-        long start = System.currentTimeMillis();
-        IsolationTree isolationTree = new IsolationTree(train._key, 9, 0xBEEF, 1, 0);
-        isolationTree.buildTree();
-        long end = System.currentTimeMillis();
+            long start = System.currentTimeMillis();
+            IsolationTree isolationTree = new IsolationTree(FrameUtils.asDoubles(train), 9, 0xBEEF, 1, 0);
+            isolationTree.buildTree();
+            long end = System.currentTimeMillis();
+            isolationTree.logNodesNumRows();
 
-        long time = end - start;
-        if (time > 200) {
-            LOG.info("Tree building took a longer than it should.");
+            long time = end - start;
+            if (time > 200) {
+                LOG.info("Tree building took a longer than it should.");
+            }
+
+            double pathLength = isolationTree.computePathLength(new double[]{0.0, 0.0}); // Normal Point
+            assertTrue("Path length should be longer. Normal point should not be isolated close to root but is pathLength = " + pathLength, pathLength >= 4);
+
+            pathLength = isolationTree.computePathLength(new double[]{5.0, 5.0}); //Anomaly
+            assertTrue("Path length should be close to 0 (Root) but is pathLength = " + pathLength, pathLength <= 4);
+
+        } finally {
+            Scope.exit();
         }
-
-        double pathLength = isolationTree.computePathLength(new double[]{0.0, 0.0}); // Normal Point
-        assertTrue("Path length should be longer. Normal point should not be isolated close to root.", pathLength >= 4);
-
-        pathLength = isolationTree.computePathLength(new double[]{5.0, 5.0}); //Anomaly
-        assertTrue("Path length should be close to 0 (Root)", pathLength <= 4);
     }
 
     @Test
     public void testIsolationTreeLarge() {
-        Frame train = Scope.track(generate_real_only(32, 32768, 0, 0xBEEF));
-        double[] normalPoint = toNumericRow(train, 0);
+        try {
+            Scope.enter();
+            Frame train = Scope.track(generate_real_only(32, 32768, 0, 0xBEEF));
+            double[] normalPoint = toNumericRow(train, 0);
 
-        long start = System.currentTimeMillis();
-        IsolationTree isolationTree = new IsolationTree(train._key, 16, 0xBEEF, 127, 0);
-        isolationTree.buildTree();
-        long end = System.currentTimeMillis();
+            long start = System.currentTimeMillis();
+            IsolationTree isolationTree = new IsolationTree(FrameUtils.asDoubles(train), 16, 0xBEEF, 127, 0);
+            isolationTree.buildTree();
+            long end = System.currentTimeMillis();
+            isolationTree.logNodesNumRows();
 
-        long time = end - start;
-        if (time > 1000) {
-            LOG.info("Tree building took a longer than it should: " + time + "ms.");
+            long time = end - start;
+            if (time > 1000) {
+                LOG.info("Tree building took a longer than it should: " + time + "ms.");
+            }
+
+            double pathLength = isolationTree.computePathLength(normalPoint);
+            assertTrue("Path length should be longer. Normal point should not be isolated close to root but is pathLength = " + pathLength, pathLength >= 8);
+
+            double[] anomaly = new double[32];
+            Arrays.fill(anomaly, 10000.0);
+            pathLength = isolationTree.computePathLength(anomaly); //Anomaly
+            assertTrue("Path length should be close to 0 (Root) but is pathLength = " + pathLength, pathLength <= 8);
+
+        } finally {
+            Scope.exit();
         }
+    }
 
-        double pathLength = isolationTree.computePathLength(normalPoint);
-        assertTrue("Path length should be longer. Normal point should not be isolated close to root.", pathLength >= 8);
+    @Test
+    public void testExtendedIsolationTreeSplit() {
+        double[][] data = new double[][]{{2.0, 1.0, -1.0}, {5.0, 6.0, -6.0}, {6.0, 0.0, -8.0}};
+        double[] p = new double[]{1.0, 4.0, -1.0};
+        double[] n = new double[]{-0.25, 0.0, 0.25};
 
-        double[] anomaly = new double[32];
-        Arrays.fill(anomaly, 10000.0);
-        pathLength = isolationTree.computePathLength(anomaly); //Anomaly
-        assertTrue("Path length should be close to 0 (Root)", pathLength <= 8);
+        IsolationTree.FilteredData split = IsolationTree.extendedIsolationForestSplit(data, p, n);
+
+        // Result of (data - p) * n
+        // assertArrayEquals("Result is not correct", new double[]{1.5, 0.25, -1.25}, ret.getRes(), 1e-3);
+
+        assertArrayEquals("Result is not correct", new double[]{-1.0}, split.getLeft()[0], 1e-3);
+        assertArrayEquals("Result is not correct", new double[]{2.0, 1.0}, split.getRight()[0], 1e-3);
     }
 }

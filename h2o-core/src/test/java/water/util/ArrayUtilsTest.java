@@ -409,4 +409,11 @@ public class ArrayUtilsTest {
     final String outputString = toStringQuotedElements(emptyNames);
     assertEquals("[]", outputString);
   }
+
+  @Test
+  public void testMinMax() {
+    double[] array = new double[]{1.0, 4.0, -1.0};
+    double[] res = minMaxValue(array);
+    assertArrayEquals("Result is not correct", new double[]{-1.0, 4.0}, res, 0);
+  }
 }

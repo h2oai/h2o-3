@@ -923,6 +923,25 @@ public class VecUtils {
   }
 
   /**
+   *
+   * @return Array dimension of array.lengt with values from uniform distribution with bounds taken from array.
+   *         For example first value of the result is from Unif(First column min value, First column max value)
+   */
+  public static double[] uniformDistrFromArray(double[][] array, long seed) {
+    double[] p = new double[array.length];
+    Random random = RandomUtils.getRNG(seed);
+
+    for (int col = 0; col < array.length; col++) {
+      double[] minMax = ArrayUtils.minMaxValue(array[col]);
+      double min = minMax[0];
+      double max = minMax[1];
+      p[col] = min + random.nextDouble() * (max - min);
+    }
+
+    return p;
+  }
+
+  /**
    * Map reduce version of uniformDistrFromFrame(frame, seed)
    */
   public static Vec uniformDistrFromFrameMR(Frame frame, long seed) {

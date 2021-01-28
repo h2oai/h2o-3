@@ -1,13 +1,7 @@
 package hex.tree.isoforextended;
 
-import hex.psvm.psvm.MatrixUtils;
 import org.apache.log4j.Logger;
-import water.DKV;
 import water.Iced;
-import water.Key;
-import water.Scope;
-import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 import water.util.VecUtils;
@@ -24,14 +18,14 @@ public class IsolationTree extends Iced<IsolationTree> {
 
     private final Node[] _nodes;
 
-    private final Key<Frame> _frameKey;
+    private final double[][] _data;
     private final int _heightLimit;
     private final long _seed;
     private final int _extensionLevel;
     private final int _treeNum;
 
-    public IsolationTree(Key<Frame> frame, int _heightLimit, long _seed, int _extensionLevel, int _treeNum) {
-        this._frameKey = frame;
+    public IsolationTree(double[][] data, int _heightLimit, long _seed, int _extensionLevel, int _treeNum) {
+        this._data = data;
         this._heightLimit = _heightLimit;
         this._seed = _seed;
         this._extensionLevel = _extensionLevel;
@@ -47,49 +41,34 @@ public class IsolationTree extends Iced<IsolationTree> {
      * Therefore nodeFrames are removed from DKV after filtering.
      */
     public void buildTree() {
-        try {
-            Scope.enter();
-            Frame frame = DKV.get(_frameKey).get();
-            Scope.track(frame);
-            _nodes[0] = new Node(frame._key, frame.numRows(), 0);
-            for (int i = 0; i < _nodes.length; i++) {
-                LOG.trace(i + " from " + _nodes.length + " is being prepared on tree " + _treeNum);
-                Node node = _nodes[i];
-                if (node == null || node._external) {
-                    continue;
-                }
-                Frame nodeFrame = node.getFrame();
-                Scope.track(nodeFrame);
-                int currentHeight = node._height;
-                if (node._height >= _heightLimit || nodeFrame.numRows() <= 1) {
-                    node._external = true;
-                    node._numRows = nodeFrame.numRows();
-                    node._height = currentHeight;
-                } else {
-                    currentHeight++;
+        _nodes[0] = new Node(_data, _data[0].length, 0);
+        for (int i = 0; i < _nodes.length; i++) {
+            LOG.trace(i + " from " + _nodes.length + " is being prepared on tree " + _treeNum);
+            Node node = _nodes[i];
+            if (node == null || node._external) {
+                continue;
+            }
+            double[][] nodeData = node._data;
+            int currentHeight = node._height;
+            if (node._height >= _heightLimit || nodeData[0].length <= 1) {
+                node._external = true;
+                node._numRows = nodeData[0].length;
+                node._height = currentHeight;
+            } else {
+                currentHeight++;
 
-                    node._p = VecUtils.uniformDistrFromFrame(nodeFrame, _seed + i);
-                    node._n = ArrayUtils.gaussianVector(
-                            nodeFrame.numCols(), _seed + i, nodeFrame.numCols() - _extensionLevel - 1);
-                    Frame sub = MatrixUtils.subtractionMtv(nodeFrame, node._p);
-                    Vec mul = MatrixUtils.productMtvMath(sub, node._n);
-                    Frame left = new FilterLtTask(mul, 0)
-                            .doAll(nodeFrame.types(), nodeFrame)
-                            .outputFrame(Key.make(), nodeFrame._names, nodeFrame.domains());
-                    Frame right = new FilterGteTask(mul, 0)
-                            .doAll(nodeFrame.types(), nodeFrame)
-                            .outputFrame(Key.make(), nodeFrame._names, nodeFrame.domains());
-                    Scope.track(left, right);
+                node._p = VecUtils.uniformDistrFromArray(nodeData, _seed + i);
+                node._n = ArrayUtils.gaussianVector(
+                        nodeData.length, _seed + i, nodeData.length - _extensionLevel - 1);
 
-                    if (rightChildIndex(i) < _nodes.length) {
-                        _nodes[leftChildIndex(i)] = new Node(left._key, left.numRows(), currentHeight);
-                        _nodes[rightChildIndex(i)] = new Node(right._key, right.numRows(), currentHeight);
-                    }
+                FilteredData ret = extendedIsolationForestSplit(nodeData, node._p, node._n);
+
+                if (rightChildIndex(i) < _nodes.length) {
+                    _nodes[leftChildIndex(i)] = new Node(ret.left, ret.left[0].length, currentHeight);
+                    _nodes[rightChildIndex(i)] = new Node(ret.right, ret.right[0].length, currentHeight);
                 }
             }
-        }
-        finally {
-            Scope.exit();
+            nodeData = null; // attempt to inform Java GC the data are not longer needed
         }
     }
 
@@ -155,26 +134,34 @@ public class IsolationTree extends Iced<IsolationTree> {
 
     /**
      * IsolationTree Node. Naming convention comes from Algorithm 2 (iTree) in paper.
-     * frameKey should be always empty after buildTree() method because only number of rows in Frame is needed for
+     * _data should be always null after buildTree() method because only number of rows in data is needed for
      * scoring (evaluation) stage.
      */
     private static class Node extends Iced<Node> {
-        private Key<Frame> _frameKey;
+
+        /**
+         * Data in this node. After computation should be null, because only _numRows is important.
+         */
+        private double[][] _data;
+
+        /**
+         * Random slope
+         */
         private double[] _n;
+
+        /**
+         * Random intercept point
+         */
         private double[] _p;
 
         private int _height;
         private boolean _external = false;
-        private long _numRows;
+        private int _numRows;
 
-        public Node(Key<Frame> _frameKey, long _numRows, int currentHeight) {
-            this._frameKey = _frameKey;
+        public Node(double[][] data, int numRows, int currentHeight) {
+            this._data = data;
+            this._numRows = numRows;
             this._height = currentHeight;
-            this._numRows = _numRows;
-        }
-
-        Frame getFrame() {
-            return DKV.getGet(_frameKey);
         }
     }
 
@@ -190,5 +177,65 @@ public class IsolationTree extends Iced<IsolationTree> {
         if (n == 2)
             return 1;
         return 2 * MathUtils.harmonicNumberEstimation(n - 1) - (2.0 * (n - 1.0)) / n;
+    }
+
+    /**
+     * Compute Extended Isolation Forest split point and filter input data with this split point in the same time.
+     * <p>
+     * See Algorithm 2 (iTree) in the paper.
+     *
+     * @return Object containing data for Left and Right branch of the tree.
+     */
+    public static FilteredData extendedIsolationForestSplit(double[][] data, double[] p, double[] n) {
+        double[] res = new double[data[0].length];
+        int leftLength = 0;
+        int rightLength = 0;
+
+        for (int row = 0; row < data[0].length; row++) {
+            for (int col = 0; col < data.length; col++) {
+                res[row] += (data[col][row] - p[col]) * n[col];
+            }
+            if (res[row] < 0) {
+                leftLength++;
+            } else {
+                rightLength++;
+            }
+        }
+
+        double[][] left = new double[data.length][leftLength];
+        double[][] right = new double[data.length][rightLength];
+
+        for (int row = 0, rowLeft = 0, rowRight = 0; row < data[0].length; row++) {
+            if (res[row] < 0) {
+                for (int col = 0; col < data.length; col++) {
+                    left[col][rowLeft] = data[col][row];
+                }
+                rowLeft++;
+            } else {
+                for (int col = 0; col < data.length; col++) {
+                    right[col][rowRight] = data[col][row];
+                }
+                rowRight++;
+            }
+        }
+        return new FilteredData(left, right);
+    }
+
+    public static class FilteredData {
+        private final double[][] left;
+        private final double[][] right;
+
+        public FilteredData(double[][] left, double[][] right) {
+            this.left = left;
+            this.right = right;
+        }
+
+        public double[][] getLeft() {
+            return left;
+        }
+
+        public double[][] getRight() {
+            return right;
+        }
     }
 }

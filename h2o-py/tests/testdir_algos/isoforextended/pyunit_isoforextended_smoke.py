@@ -11,7 +11,7 @@ def extended_isolation_forest():
 
     train = h2o.import_file(pyunit_utils.locate("smalldata/anomaly/single_blob.csv"))
 
-    eif_model = H2OExtendedIsolationForestEstimator(ntrees=7, seed=12, sample_size=5)
+    eif_model = H2OExtendedIsolationForestEstimator(ntrees=100, seed=0xBEEF, sample_size=256, extension_level=1)
     eif_model.train(training_frame=train)
     anomaly_score = eif_model.predict(train)
     anomaly = anomaly_score['anomaly_score'].as_data_frame(use_pandas=True)["anomaly_score"]
@@ -21,16 +21,16 @@ def extended_isolation_forest():
     # The output of the EIF algorithm is based on randomly generated values. 
     # If the randomization is changed, then the output can be slightly different and it is fine to update them.
     # The link to source paper: https://arxiv.org/pdf/1811.02141.pdf
-    assert (abs(anomaly[0] - 0.54)) <= 0.05, \
-        "Not expected output: Expected value is about 0.54 but given but given " + str(anomaly[0])
-    assert (abs(anomaly[5] - 0.47)) <= 0.05, \
-        "Not expected output: Expected value is about 0.47 but given but given " + str(anomaly[5])
-    assert (abs(anomaly[33] - 0.46)) <= 0.05, \
-        "Not expected output: Expected value is about 0.46 but given but given " + str(anomaly[33])
-    assert (abs(anomaly[256] - 0.50)) <= 0.05, \
-        "Not expected output: Expected value is about 0.50 but given but given " + str(anomaly[256])
-    assert (abs(anomaly[499] - 0.50)) <= 0.05, \
-        "Not expected output: Expected value is about 0.50 but given but given " + str(anomaly[499])
+    assert anomaly[0] >= 0.60, \
+        "Not expected output: Anomaly point should have higher score" + str(anomaly[0])
+    assert anomaly[5] <= 0.55, \
+        "Not expected output: Anomaly point should have higher score about 0.5 " + str(anomaly[5])
+    assert anomaly[33] <= 0.55, \
+        "Not expected output: Anomaly point should have higher score about 0.5 " + str(anomaly[33])
+    assert anomaly[256] <= 0.55, \
+        "Not expected output: Anomaly point should have higher score about 0.5 " + str(anomaly[256])
+    assert anomaly[499] <= 0.55, \
+        "Not expected output: Anomaly point should have higher score about 0.5 " + str(anomaly[499])
                                   
                                                              
 if __name__ == "__main__":        

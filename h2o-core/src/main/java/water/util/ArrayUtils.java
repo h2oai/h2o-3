@@ -504,7 +504,6 @@ public class ArrayUtils {
     }
     return res;
   }
-
   public static double[] diagArray(double[][] ary) {
     if(ary == null) return null;
     int arraylen = ary.length;
@@ -949,6 +948,22 @@ public class ArrayUtils {
       if (from[i]<result) result = from[i];
     return result;
   }
+
+  /**
+   * Find minimum and maximum in array in the same time
+   *
+   * @return Array with 2 fields. First field is minimum and second field is maximum.
+   */
+  public static double[] minMaxValue(double[] from) {
+    double min = from[0];
+    double max = from[0];
+    for (int i = 1; i < from.length; ++i) {
+      if (from[i] < min) min = from[i];
+      if (from[i] > max) max = from[i];
+    }
+    return new double[]{min, max};
+  }
+
   public static long maxValue(long[] from) {
     long result = from[0];
     for (int i = 1; i<from.length; ++i)

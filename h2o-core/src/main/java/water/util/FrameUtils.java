@@ -175,8 +175,22 @@ public class FrameUtils {
   }
 
   public static double [] asDoubles(Vec v){
-    if(v.length() > 100000) throw new IllegalArgumentException("Vec is too big to be extracted into array");
+    if(v.length() > 100_000) throw new IllegalArgumentException("Vec is too big to be extracted into array");
     return new Vec2ArryTsk((int)v.length()).doAll(v).res;
+  }
+
+  public static double [][] asDoubles(Frame frame){
+    if (frame.numRows() > 100_000)
+      throw new IllegalArgumentException("Frame is too big to be extracted into array");
+
+    double [][] frameArray = new double[frame.numCols()][(int) frame.numRows()];
+
+    for (int i = 0; i < frame.numCols(); i++) {
+      Vec v = frame.vec(i);
+      frameArray[i] = new Vec2ArryTsk((int)v.length()).doAll(v).res;
+    }
+
+    return frameArray;
   }
 
   private static class Vec2IntArryTsk extends MRTask<Vec2IntArryTsk> {
