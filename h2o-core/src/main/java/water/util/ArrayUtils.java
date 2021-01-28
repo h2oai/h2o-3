@@ -721,7 +721,7 @@ public class ArrayUtils {
       if (idx >= 0)
         b.append('"').append(a[idx]).append('"');
       else
-        b.append("...").append(a.length - maxItems).append(" not printed...");
+        b.append("...").append(a.length - maxItems).append(" not listed...");
       if (i < max-1) b.append(", ");
     }
     return b.append(']').toString();
