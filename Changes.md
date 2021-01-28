@@ -31,7 +31,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/4/inde
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7945'>PUBDEV-7945</a>] -         Added to docs that AUCPR can be plotted.
 </li>
-<li>*[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7964'>PUBDEV-7964</a>] -         Update graphic to include Kubernetes
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7964'>PUBDEV-7964</a>] -        Updated the Customer Algorithm graphic for the Architecture section of the User Guide.
 </li>
 </ul>
 
