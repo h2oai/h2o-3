@@ -100,7 +100,9 @@ def comparison_test_dense():
         print("Comparing H2OXGBoost metrics with native XGBoost metrics when DMatrix is set to sparse.....")
         h2o_metrics = [h2oModelD.training_model_metrics()["AUC"], h2oModelD.training_model_metrics()["pr_auc"]]
         xgboost_metrics = [evals_result['train']['auc'][ntrees-1], evals_result['train']['aucpr'][ntrees-1]]
-        pyunit_utils.summarize_metrics_binomial(h2o_metrics, xgboost_metrics, ["auc", "aucpr"])
+        # calculation of AUC/AUCPR is H2O is sensitive to to #CPU cores - we relax the tolerance to accommodate
+        # for differences on Jenkins test nodes
+        pyunit_utils.summarize_metrics_binomial(h2o_metrics, xgboost_metrics, ["auc", "aucpr"], tolerance=5e-4)
         
     else:
         print("********  Test skipped.  This test cannot be performed in multinode environment.")
