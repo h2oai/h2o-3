@@ -82,7 +82,7 @@ These activities are performed by someone who have Cloud Admin privileges. In th
     - `h2ocluster-sa`
         - Terraform creates this
         - This SA will be assigned to each VM instance that forms the H2O cluster nodes
-        - Access to google cloud 
+        - Access to google cloud storage and BigQuery
 - Create a [Service Account for this Project](https://cloud.google.com/iam/docs/creating-managing-service-accounts#creating)
     ```bash
     gcloud iam service-accounts create steamwithdataproc-sa \
@@ -103,9 +103,9 @@ These activities are performed by someone who have Cloud Admin privileges. In th
 
 - Create a [service account key for use with terraform](https://cloud.google.com/iam/docs/creating-managing-service-account-keys#creating_service_account_keys). First create a directory structure as shown in the tree command. `cat` is used to check if the key file got created
     ```bash
-    $ cd gcp/network
-    $ gcloud iam service-accounts keys create gcpkey.json --iam-account steamwithdataproc-sa@steamwithdataproc.iam.gserviceaccount.com
-    # cat gcpkey.json
+    cd gcp/network
+    gcloud iam service-accounts keys create gcpkey.json --iam-account steamwithdataproc-sa@steamwithdataproc.iam.gserviceaccount.com
+    cat gcpkey.json
     ```
 
 - This service account key can now be used in Terraform by setting the environment variable `GOOGLE_APPLICATION_CREDENTIALS` [see](https://registry.terraform.io/providers/hashicorp/google/latest/docs/guides/getting_started#adding-credentials) for more information. Alternatively it could also be mentioned in the Terraform code
@@ -206,9 +206,44 @@ Step 2: Creating H2O clusters
     - Workspace machine use `http://10.100.1.2:54321`
     - Local machine/laptop with ssh forwarding use  `http://localhost:8888`
 
+Step 3: Accessing data from Cloud Storage and BigQuery
+------------------------------------------------------
 
-Step 3: Optional create a custom H2O-3 image 
------------------------------------------------
+Here we will upload some data into S3 bucket and then import it in to H2O-3 cluster. We will also create a BQ table and import it into H2O-3
+
+#### Create data file in cloud storage and import it to H2O-3
+- Create a GCS bucket 
+    - `gsutil mb -p steamwithdataproc -c NEARLINE -l US-WEST1 -b on gs://h2ocluster-train-data`
+- Upload some data files to the bucket
+    - `gsutil cp  ~/Workspace/Office/Datasets/flights_delay/allyears2k.csv gs://h2ocluster-train-data/flights-delay/`
+    - `gsutil cp  ~/Workspace/Office/Datasets/flights_delay/airlines_all.05p.csv gs://h2ocluster-train-data/flights-delay/`
+- To import this GCS file in H2O-3, create a new Flow Notebook, and in the cell enter the expression `importFiles ['gs://h2ocluster-train-data/flights-delay/allyears2k.csv']`. Run the cell byt hitting `ctrl+Enter`.
+- It will indicate that 1 file is imported, click the `Parse these files..` button
+- A new section will show up, set necessary datatype changes for the columns and then click the `Parse` button at the bottom of the section.
+- A job will run which will generate a `.hex` file. This is the H2O-3 dataframe. Click the `View` button to get frame summary.
+- In the section that opens click `View Data` to see the imported data in H2O-3
+
+#### Create table in BQ and import it to H2O-3
+- When using `bq` command for the first time it initialized and asked for the default project. My project is named `steamwithdataproc` so I selected the same.
+- To list datasets in this project `bq ls steamwithdataproc:`, the last part defining the project can be removed if default project is set
+- Create airlines dataset `bq --location=us-west1 mk steamwithdataproc:airlines`
+- Verify it got created `bq ls --format=pretty`
+- Adding a table to the dataset and [loading data in it](https://cloud.google.com/bigquery/docs/loading-data-cloud-storage-csv#loading_csv_data_into_a_table)
+    - `bq --location=us-west1 load --autodetect --null_marker="NA" --source_format=CSV steamwithdataproc:airlines.allyears2k ~/Workspace/Office/Datasets/flights_delay/allyears2k.csv`
+    - `bq ls --format=pretty steamwithdataproc:airlines`
+    - `bq show --format=pretty steamwithdataproc:airlines.allyears2k` will describe the table
+- To import this data into H2O-3, create a new notebook and click Data >> Import SQL Table. In the section that opens up enter the below information to read data from the above table.
+    - JDBC URL: `jdbc:bigquery://https://www.googleapis.com/bigquery/v2:443;ProjectId=steamwithdataproc;OAuthType=3;Location=us-west1;LogLevel=4;LogPath=/tmp/h2o-bigquery-logs;`
+    - Table: `steamwithdataproc.airlines.allyears2k`
+    - Fetch mode can be Single or Distributed
+    - Leave all other fields empty
+- Click the Import Button. It will open a new section. Click View button in this section.
+- A new section will open that shows the progress of the import job.
+- Once the job is 100% completed, click the View button to get the frame summary. Finally, click the View Data button to verify that the data was imported.
+
+
+Optional Step: Create and use a custom H2O-3 image 
+--------------------------------------------------
 - To speed up the cluster creation times you can use an image with H2O preloaded on it.
 - To create such an image, on the Workspace machine follow the instructions below
   - `cd /opt/h2ocluster/packer/`
