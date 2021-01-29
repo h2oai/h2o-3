@@ -14,6 +14,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib, Model.BigScoreChunkPredict {
 
@@ -26,7 +27,7 @@ public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib,
   private final XGBoostModelInfo _modelInfo;
   private final XGBoostModel.XGBoostParameters _parms;
   private final DataInfo _dataInfo;
-  private final BoosterParms _boosterParms;
+  private final Map<String, Object> _scoringParams;
   private final XGBoostOutput _output;
 
   private final float[][] _preds;
@@ -35,7 +36,6 @@ public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib,
       XGBoostModelInfo modelInfo,
       XGBoostModel.XGBoostParameters parms,
       DataInfo di,
-      BoosterParms boosterParms,
       double threshold,
       XGBoostOutput output,
       Frame fr,
@@ -44,10 +44,10 @@ public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib,
     _modelInfo = modelInfo;
     _parms = parms;
     _dataInfo = di;
-    _boosterParms = boosterParms;
     _threshold = threshold;
     _output = output;
-    
+    _scoringParams = new HashMap<>();
+    _scoringParams.put("nthread", 1); // scoring is parallelized on H2O side
     _responseIndex = fr.find(_parms._response_column);
     _offsetIndex = fr.find(_parms._offset_column);
     _preds = scoreChunk(chks, XGBoostPredict.OutputType.PREDICT);
@@ -91,7 +91,7 @@ public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib,
       }
       // Initialize Booster
       booster = BoosterHelper.loadModel(_modelInfo._boosterBytes);
-      booster.setParams(_boosterParms.get());
+      booster.setParams(_scoringParams);
       int treeLimit = 0;
       if (_parms._booster == XGBoostModel.XGBoostParameters.Booster.dart) {
         // DART with treeLimit=0 returns non-deterministic random predictions

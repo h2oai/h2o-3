@@ -14,26 +14,23 @@ public class XGBoostNativeBigScorePredict implements XGBoostBigScorePredict {
   private final XGBoostModel.XGBoostParameters _parms;
   private final XGBoostOutput _output;
   private final DataInfo _dataInfo;
-  private final BoosterParms _boosterParms;
   private final double _threshold;
   
 
   public XGBoostNativeBigScorePredict(
       XGBoostModelInfo modelInfo, XGBoostModel.XGBoostParameters parms,
-      XGBoostOutput output, DataInfo dataInfo, BoosterParms boosterParms, 
-      double threshold
+      XGBoostOutput output, DataInfo dataInfo, double threshold
   ) {
     _modelInfo = modelInfo;
     _parms = parms;
     _output = output;
     _dataInfo = dataInfo;
-    _boosterParms = boosterParms;
     _threshold = threshold;
   }
 
   @Override
   public XGBoostPredict initMap(Frame fr, Chunk[] chks) {
-    return new XGBoostNativeBigScoreChunkPredict(_modelInfo, _parms, _dataInfo, _boosterParms, _threshold, _output, fr, chks);
+    return new XGBoostNativeBigScoreChunkPredict(_modelInfo, _parms, _dataInfo, _threshold, _output, fr, chks);
   }
 
 }
