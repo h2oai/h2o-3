@@ -6,6 +6,7 @@ import water.fvec.*;
 import java.text.DecimalFormat;
 import java.util.*;
 
+import static java.lang.StrictMath.max;
 import static java.lang.StrictMath.sqrt;
 import static water.util.RandomUtils.getRNG;
 
@@ -692,25 +693,38 @@ public class ArrayUtils {
     }
     return result;
   }
-
+  
   public static String toStringQuotedElements(Object[] a) {
+    return toStringQuotedElements(a, -1);
+  }
+  
+  public static String toStringQuotedElements(Object[] a, int maxItems) {
     if (a == null)
       return "null";
 
-    int iMax = a.length - 1;
-    if (iMax == -1)
+    if (a.length == 0)
       return "[]";
+    
+    int max = a.length;
+    int ellipsisIdx = max+1;
+    if (maxItems > 0 && maxItems < a.length)  {
+      max = maxItems + 1;
+      ellipsisIdx = max / 2;
+    }
 
     StringBuilder b = new StringBuilder();
     b.append('[');
-    for (int i = 0; ; i++) {
-      b.append('"');
-      b.append(a[i]);
-      b.append('"');
-      if (i == iMax)
-        return b.append(']').toString();
-      b.append(", ");
+    for (int i = 0; i < max; i++) {
+      int idx = i == ellipsisIdx ? -1 
+              : i < ellipsisIdx ? i 
+              : a.length - max + i;
+      if (idx >= 0)
+        b.append('"').append(a[idx]).append('"');
+      else
+        b.append("...").append(a.length - maxItems).append(" not listed...");
+      if (i < max-1) b.append(", ");
     }
+    return b.append(']').toString();
   }
 
   public static <T> boolean contains(T[] arr, T target) {

@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Random;
+import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
 import static water.util.ArrayUtils.*;
@@ -310,4 +311,23 @@ public class ArrayUtilsTest {
     final String outputString = toStringQuotedElements(emptyNames);
     assertEquals("[]", outputString);
   }
+  
+  @Test
+  public void testToStringQuotedElements_with_max_items() {
+    final Object[] names = IntStream.range(1, 10).mapToObj(Integer::toString).toArray();
+    final String outputString = toStringQuotedElements(names, 5);
+    assertEquals("[\"1\", \"2\", \"3\", ...4 not listed..., \"8\", \"9\"]", outputString);
+  }
+
+  @Test
+  public void testToStringQuotedElements_with_max_items_corner_cases() {
+    final Object[] names = IntStream.range(1, 4).mapToObj(Integer::toString).toArray();
+    assertEquals("[\"1\", \"2\", \"3\"]", toStringQuotedElements(names, -1));
+    assertEquals("[\"1\", \"2\", \"3\"]", toStringQuotedElements(names, 0));
+    assertEquals("[\"1\", ...2 not listed...]", toStringQuotedElements(names, 1));
+    assertEquals("[\"1\", ...1 not listed..., \"3\"]", toStringQuotedElements(names, 2));
+    assertEquals("[\"1\", \"2\", \"3\"]", toStringQuotedElements(names, 3));
+    assertEquals("[\"1\", \"2\", \"3\"]", toStringQuotedElements(names, 4));
+  }
+
 }
