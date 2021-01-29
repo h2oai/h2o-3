@@ -1345,9 +1345,17 @@ public class ArrayUtils {
     System.arraycopy(b,0,tmp,a.length,b.length);
     return tmp;
   }
+  
   public static int[] append(int[] a, int b) {
     if( a==null || a.length == 0) return  new int[]{b};
     int[] tmp = Arrays.copyOf(a,a.length+1);
+    tmp[a.length] = b;
+    return tmp;
+  }
+  
+  public static double[] append(double[] a, double b) {
+    if( a==null || a.length == 0) return  new double[]{b};
+    double[] tmp = Arrays.copyOf(a,a.length+1);
     tmp[a.length] = b;
     return tmp;
   }

@@ -44,6 +44,16 @@ public class ArrayUtilsTest {
     assertArrayEquals(sut, append(sut, empty));
     assertArrayEquals(expected, append(sut, sut2));
   }
+  
+  @Test
+  public void testAppendDouble() {
+    double[] sut = {1.0, 2.0, 3.0};
+    double[] expected = {1.0, 2.0, 3.0, 3.0};
+    double[] empty = {};
+    assertArrayEquals(expected, append(sut, 3.0), 0.0);
+    assertArrayEquals(new double[]{3.0}, append(empty, 3.0), 0.0);
+    assertArrayEquals(new double[]{3.0}, append(null, 3.0), 0.0);
+  }
 
   @Test
   public void testAppendLongs() {
