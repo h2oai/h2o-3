@@ -162,7 +162,7 @@ The ``h2o.explain_row()`` function provides model explanations for a single row 
         h2o.explain_row(aml, test, row_index = 1)
 
         # Explain first row with a single H2O model (e.g. leader model from AutoML)
-        h2o.explain_row(aml@leader, row_index = 1)
+        h2o.explain_row(aml@leader, test, row_index = 1)
 
    .. code-tab:: python
 
