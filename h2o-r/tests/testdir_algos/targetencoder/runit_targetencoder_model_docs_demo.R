@@ -3,7 +3,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test.model.targetencoder <- function() {
     test_that_te_is_helpful_for_titanic_gbm_xval <- function() {
-        f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
+        f <- locate('smalldata/gbm_test/titanic.csv')
         titanic <- h2o.importFile(f)
 
         # Set response column as a factor
