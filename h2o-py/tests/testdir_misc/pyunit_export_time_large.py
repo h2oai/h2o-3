@@ -28,9 +28,9 @@ def test_export_not_asynchronous():
     export_size1 = os.stat(export_path).st_size
 
     pandas_df_exported = pd.read_csv(export_path)
-    pandas_df_exported = pandas_df_exported.drop(columns=['starttime', 'stoptime']) # H2O exports these as timestamps
-    pandas_df_orig = pd.read_csv(orig_path, dtype={'birth year': np.float64}, na_values="\N")
-    pandas_df_orig = pandas_df_orig.drop(columns=['starttime', 'stoptime'])
+    pandas_df_exported = pandas_df_exported.drop(columns=['starttime', 'stoptime', 'birth year']) # H2O exports these as timestamps, 'birth year' has a weird NA sequence
+    pandas_df_orig = pd.read_csv(orig_path)
+    pandas_df_orig = pandas_df_orig.drop(columns=['starttime', 'stoptime', 'birth year'])
 
     pd.testing.assert_frame_equal(pandas_df_orig, pandas_df_exported)
     export_size2 = os.stat(export_path).st_size
