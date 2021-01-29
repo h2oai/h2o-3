@@ -341,10 +341,10 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
         if (Double.isNaN(s)) {
           // unknown strata
           nc.addNA();
-          continue;
+        } else {
+          double lp = r.innerProduct(_coef) - _lpBase[(int) s];
+          nc.addNum(lp);
         }
-        double lp = r.innerProduct(_coef) - _lpBase[(int) s];
-        nc.addNum(lp);
       }
     }
   }
