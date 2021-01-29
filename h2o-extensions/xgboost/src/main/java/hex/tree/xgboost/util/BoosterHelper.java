@@ -25,7 +25,11 @@ public class BoosterHelper {
     if (boosterBytes == null) {
       throw new IllegalArgumentException("Booster not initialized!");
     }
-    return loadModel(new ByteArrayInputStream(boosterBytes));
+    try {
+      return XGBoost.loadModel(boosterBytes);
+    } catch (XGBoostError | IOException e) {
+      throw new IllegalStateException("Failed to load booster.", e);
+    }
   }
 
   /**
