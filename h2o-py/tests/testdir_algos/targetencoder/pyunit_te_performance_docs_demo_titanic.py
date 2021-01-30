@@ -13,7 +13,7 @@ from h2o.estimators import H2OGradientBoostingEstimator
 def test_that_te_is_helpful_for_titanic_gbm_xval():
 
     #Import the titanic dataset
-    titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+    titanic = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"))
 
     # Set response column as a factor
     titanic['survived'] = titanic['survived'].asfactor()

@@ -7,7 +7,7 @@ from tests import pyunit_utils
 
 def pubdev_5023_rm_metalearner():
     # Import a sample binary outcome dataset into H2O
-    data = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+    data = h2o.import_file(pyunit_utils.locate("smalldata/higgs/higgs_train_10k.csv"))
 
     # Identify predictors and response
     x = data.columns
