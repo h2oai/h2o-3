@@ -848,13 +848,21 @@ public class GenericModelTest extends TestUtil {
 
         System.out.println("originalModel = " + originalModel);
         System.out.println("genericModel = " + genericModel);
-        
+
         final Frame originalModelPredictions = originalModel.score(testFrame);
         Scope.track(originalModelPredictions);
         System.out.println("originalModelPredictions = " + originalModelPredictions);
-        for (long i = 0; i < originalModelPredictions.numRows(); i++) {
-            System.out.println("originalModelPredictions("+ i + ") = " + originalModelPredictions.vec(0).at(i)
-              + ", genericModelPredictions("+ i + ") = " + originalModelPredictions.vec(0).at(i));
+        for (int i = 0; i < originalModelPredictions.numCols(); i++) {
+            System.out.println("---------------------------------------------");
+            System.out.println("vec " + i);
+            
+            for (long j = 0; j < originalModelPredictions.numRows(); j++) {
+                final double orig = originalModelPredictions.vec(i).at(j);
+                final double gene = genericModelPredictions.vec(i).at(j);
+                final boolean b = Math.abs(orig - gene) < 0.00000001;
+                System.out.println("" + b + " originalModelPredictions("+ j + ") = " + orig
+                        + ", genericModelPredictions("+ j + ") = " + gene);
+            }
         }
         assertTrue(TestUtil.compareFrames(originalModelPredictions, genericModelPredictions, 0.000001, 0.00001));
     }

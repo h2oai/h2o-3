@@ -1370,7 +1370,9 @@ public class TestUtil extends Iced {
       final Vec f1Vec = f1.vec(vecNum);
       final Vec f2Vec = f2.vec(vecNum);
 
-      assertVecEquals(f1Vec, f2Vec, delta, relativeDelta);
+      final String name = f1.name(vecNum ) + " vs " + f2.name(vecNum) + " ";
+
+      assertVecEquals(name, f1Vec, f2Vec, delta, relativeDelta);
     }
 
     return true;
