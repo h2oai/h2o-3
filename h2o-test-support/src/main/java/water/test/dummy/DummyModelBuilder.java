@@ -3,6 +3,7 @@ package water.test.dummy;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import jsr166y.CountedCompleter;
 import water.Job;
 
 public class DummyModelBuilder
@@ -36,6 +37,14 @@ public class DummyModelBuilder
           if (model != null)
             model.unlock(_job);
         }
+      }
+
+      @Override
+      public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+        if (_parms._on_exception_action != null) {
+          _parms._on_exception_action.run(_parms);
+        }
+        return super.onExceptionalCompletion(ex, caller);
       }
     };
   }

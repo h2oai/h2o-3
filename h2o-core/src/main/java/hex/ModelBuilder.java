@@ -413,7 +413,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     startClock();
-    if( !nFoldCV() ) trainModelImpl().compute2();
+    if( !nFoldCV() ) H2O.submitTask(trainModelImpl()).join();
     else computeCrossValidation();
     return _result.get();
   }

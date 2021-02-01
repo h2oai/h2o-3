@@ -16,7 +16,10 @@ import org.junit.rules.TemporaryFolder;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.parser.BufferedString;
+import water.test.dummy.DummyAction;
 import water.test.dummy.DummyModelParameters;
+import water.test.dummy.MessageInstallAction;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -910,5 +913,34 @@ public class GridTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testCanceledModelWillBeFinalized() {
+    Key proofKey = Key.make();
+    try {
+      Scope.enter();
+
+      Frame trainingFrame = TestFrameCatalog.oneChunkFewRows();
+
+      Map<String, Object[]> hyperParms = Collections.singletonMap(
+              "_cancel_job", new Boolean[]{true}
+      );
+      
+      DummyModelParameters params = new DummyModelParameters();
+      params._train = trainingFrame._key;
+      params._on_exception_action = new MessageInstallAction(proofKey, "onExceptionalCompletionCalled");
+
+      Grid grid = GridSearch.startGridSearch(null, params, hyperParms).get();
+      Scope.track_generic(grid);
+
+      // Currently `onExceptionalCompletion` is executed after the model training already completed
+      // Sleep a little to make sure that we have enough time to run it
+      try { Thread.sleep(500); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+      
+      assertEquals("Computed onExceptionalCompletionCalled", DKV.getGet(proofKey).toString());
+    } finally {
+      Scope.exit();
+      DKV.remove(proofKey);
+    }
+  }
 
 }
