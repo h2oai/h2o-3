@@ -4,7 +4,7 @@ import water.DKV;
 import water.Key;
 import water.parser.BufferedString;
 
-class MessageInstallAction extends DummyAction<MessageInstallAction> {
+public class MessageInstallAction extends DummyAction<MessageInstallAction> {
   private final Key _trgt;
   private final String _msg;
   

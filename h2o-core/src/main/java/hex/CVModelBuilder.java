@@ -52,13 +52,19 @@ public class CVModelBuilder {
             submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
             if (++nRunning == parallelization) { //piece-wise advance in training the models
                 while (nRunning > 0) {
+                    final int waitForTaskIndex = i + 1 - nRunning;
                     try {
-                        int waitForTaskIndex = i + 1 - nRunning;
                         submodel_tasks[waitForTaskIndex].join();
                         finished(modelBuilders[waitForTaskIndex]);
                     } catch (RuntimeException t) {
-                        if (rt == null) rt = t;
+                        if (rt == null) {
+                            LOG.info("Exception from CV model #" + waitForTaskIndex + " will be reported as main exception.");
+                            rt = t;
+                        } else {
+                            LOG.warn("CV model #" + waitForTaskIndex + " failed, the exception will not be reported", t);
+                        }
                     } finally {
+                        LOG.info("Completed " + modelType + " model " + waitForTaskIndex + " / " + N + ".");
                         nRunning--; // need to decrement regardless even if there is an exception, otherwise looping...
                     }
                 }
@@ -71,7 +77,14 @@ public class CVModelBuilder {
                 assert task != null;
                 task.join();
             } catch (RuntimeException t) {
-                if (rt == null) rt = t;
+                if (rt == null) {
+                    LOG.info("Exception from CV model #" + i + " will be reported as main exception.");
+                    rt = t;
+                } else {
+                    LOG.warn("CV model #" + i + " failed, the exception will not be reported", t);
+                }
+            } finally {
+                LOG.info("Completed " + modelType + " model " + i + " / " + N + ".");
             }
         if (rt != null) throw rt;
     }
