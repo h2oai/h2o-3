@@ -2,6 +2,40 @@
 
 ## H2O
 
+### Zermelo (3.32.0.4) - 2/1/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/4/index.html</a>
+
+#### Bug
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7949'>PUBDEV-7949</a>] -         Partial Dependence Plot no longer failing for High Cardinality even when `user_splits` is defined.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7951'>PUBDEV-7951</a>] -         Fixed failing Delta Lake import for Python API.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7962'>PUBDEV-7962</a>] -         Fix Stacked Ensemble’s incorrect handling of fold column.
+</li>
+</ul>
+
+    
+#### Improvement
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7737'>PUBDEV-7737</a>] -         Added MOJO support for CoxPH.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7953'>PUBDEV-7953</a>] -         Escape all quotes by default when writing CSV.
+</li>
+</ul>
+    
+#### Docs
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7945'>PUBDEV-7945</a>] -         Added to docs that AUCPR can be plotted.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7964'>PUBDEV-7964</a>] -         Updated the Customer Algorithm graphic for the Architecture section of the User Guide.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7983'>PUBDEV-7983</a>] -         Updated the copyright year to 2021.
+</li>
+</ul>
+
+
 ### Zermelo (3.32.0.3) - 12/24/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/3/index.html</a>
