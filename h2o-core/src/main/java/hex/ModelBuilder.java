@@ -224,7 +224,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   abstract protected class Driver extends H2O.H2OCountedCompleter<Driver> {
 
     protected Driver(){ super(); }
-    protected Driver(H2O.H2OCountedCompleter completer){ super(completer); }
     
     private ModelBuilderListener _callback;
 
@@ -413,7 +412,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     startClock();
-    if( !nFoldCV() ) H2O.submitTask(trainModelImpl()).join();
+    if( !nFoldCV() ) submitTrainModelTask().join();
     else computeCrossValidation();
     return _result.get();
   }
@@ -456,6 +455,51 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Model-specific implementation of model training
    * @return A F/J Job, which, when executed, does the build.  F/J is NOT started.  */
   abstract protected Driver trainModelImpl();
+
+  private static class Barrier extends CountedCompleter {
+    @Override public void compute() { }
+  }
+
+  /**
+   * Simple wrapper around model task Driver, its main purpose is to make
+   * sure onExceptionalCompletion is not called after join method finishes (similarly how Job behaves).
+   */
+  class TrainModelTaskController {
+    private final Driver _driver;
+    private final Barrier _barrier;
+
+    TrainModelTaskController(Driver driver, Barrier barrier) {
+      _driver = driver;
+      _barrier = barrier;
+    }
+
+    /**
+     * Block for Driver to finish
+     */
+    void join() {
+      _barrier.join();
+    }
+
+    void cancel(boolean mayInterruptIfRunning) {
+      _driver.cancel(mayInterruptIfRunning);
+    }
+  }
+
+  /**
+   * Submits the model Driver task for execution, blocking on a barrier
+   * that is only completed after the Driver is fully finished (including
+   * possible calls to onExceptionalCompletion).
+   * 
+   * @return controller object that can be used to wait for completion or 
+   *  to cancel the execution.
+   */
+  TrainModelTaskController submitTrainModelTask() {
+    Driver d = trainModelImpl();
+    Barrier b = new Barrier();
+    d.setCompleter(b);
+    H2O.submitTask(d);
+    return new TrainModelTaskController(d, b);
+  }
 
   @Deprecated protected int nModelsInParallel() { return 0; }
   /**
@@ -751,8 +795,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Log.info("Building main model.");
     Log.info("Remaining time for main model (ms): " + max_runtime_millis);
     _build_step_countdown = new Countdown(max_runtime_millis, true);
-    H2O.H2OCountedCompleter mm = H2O.submitTask(trainModelImpl());
-    mm.join();  // wait for completion
+    submitTrainModelTask().join();
     _build_step_countdown = null;
   }
 
