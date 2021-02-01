@@ -756,16 +756,19 @@ public class GenericModelTest extends TestUtil {
     
     @Test
     public void testJavaScoring_mojo_cox_ph_categorical() throws IOException {
-        try {
-            Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/coxph_test/heart.csv").toCategoricalCol("transplant");
-            Scope.track(trainingFrame);
-            final Frame testFrame = parse_test_file("./smalldata/coxph_test/heart_test.csv").toCategoricalCol("transplant");
-            Scope.track(testFrame);
-            testJavaScoringCoxPH(trainingFrame, testFrame, new String[0]);
-        } finally {
-            Scope.exit();
+        for (int i = 0; i < 1000; i++) {
+            try {
+                Scope.enter();
+                final Frame trainingFrame = parse_test_file("./smalldata/coxph_test/heart.csv").toCategoricalCol("transplant");
+                Scope.track(trainingFrame);
+                final Frame testFrame = parse_test_file("./smalldata/coxph_test/heart_test.csv").toCategoricalCol("transplant");
+                Scope.track(testFrame);
+                testJavaScoringCoxPH(trainingFrame, testFrame, new String[0]);
+            } finally {
+                Scope.exit();
+            }
         }
+    
     }
  
     @Test
@@ -843,8 +846,16 @@ public class GenericModelTest extends TestUtil {
         final boolean equallyScored = genericModel.testJavaScoring(testFrame, genericModelPredictions, 0);
         assertTrue(equallyScored);
 
+        System.out.println("originalModel = " + originalModel);
+        System.out.println("genericModel = " + genericModel);
+        
         final Frame originalModelPredictions = originalModel.score(testFrame);
         Scope.track(originalModelPredictions);
+        System.out.println("originalModelPredictions = " + originalModelPredictions);
+        for (long i = 0; i < originalModelPredictions.numRows(); i++) {
+            System.out.println("originalModelPredictions("+ i + ") = " + originalModelPredictions.vec(0).at(i)
+              + ", genericModelPredictions("+ i + ") = " + originalModelPredictions.vec(0).at(i));
+        }
         assertTrue(TestUtil.compareFrames(originalModelPredictions, genericModelPredictions, 0.000001, 0.00001));
     }
     
