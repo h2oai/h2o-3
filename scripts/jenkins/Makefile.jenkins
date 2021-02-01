@@ -52,6 +52,11 @@ lookup-automl-tests: init-lookup
 	find h2o-r/tests -name '*automl*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
 	find h2o-py/tests -name '*automl*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 
+lookup-fault-tolerance-tests:
+	mkdir -p h2o-{r,py}/tests
+	find h2o-r/tests -name '*fault_tolerance*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
+	find h2o-py/tests -name '*fault_tolerance*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
+
 lookup-demos-tests: init-lookup
 	mkdir -p h2o-{r,py}/tests/testdir_demos
 	find h2o-r/tests/testdir_demos -name '*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
@@ -77,7 +82,7 @@ test-py-demos:
 test-pyunit-demos:
 	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/build/dist/h2o-*.whl --wipeall --numclouds 1 --jvm.xmx 5g
 
-test-pyunit-small: lookup-automl-tests
+test-pyunit-small: lookup-automl-tests lookup-fault-tolerance-tests
 	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --excludelist .lookup.txt
 
 test-pyunit-single-node:
@@ -88,6 +93,9 @@ test-pyunit-xgboost-stress:
 
 test-pyunit-automl: lookup-automl-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 6 --jvm.xmx 3g --testlist .lookup.txt
+
+test-pyunit-fault-tolerance: init-lookup lookup-fault-tolerance-tests
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 1 --numnodes 3 --jvm.xmx 3g --testlist .lookup.txt
 
 test-pyunit-medium-large:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g

@@ -85,6 +85,10 @@ def call(final pipelineContext) {
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
+      stageName: 'Py3.7 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.7',
+      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
       stageName: 'R3.5 Init Java 8', target: 'test-r-init', rVersion: '3.5.3', javaVersion: 8,
       timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
       image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-r-3.5.3-jdk-8:${pipelineContext.getBuildConfig().DEFAULT_IMAGE_VERSION_TAG}"
@@ -327,6 +331,10 @@ def call(final pipelineContext) {
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
+      stageName: 'Py3.6 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.6',
+      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
       stageName: 'Py3.6 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.6',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
@@ -400,6 +408,10 @@ def call(final pipelineContext) {
     [
       stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py2.7 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '2.7',
+      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py2.7 AutoML', target: 'test-pyunit-automl', pythonVersion: '2.7',
