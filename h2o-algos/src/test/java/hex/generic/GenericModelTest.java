@@ -757,6 +757,7 @@ public class GenericModelTest extends TestUtil {
     @Test
     public void testJavaScoring_mojo_cox_ph_categorical() throws IOException {
         for (int i = 0; i < 1000; i++) {
+            System.out.println(">>>>>>>>. " + i);
             try {
                 Scope.enter();
                 final Frame trainingFrame = parse_test_file("./smalldata/coxph_test/heart.csv").toCategoricalCol("transplant");
