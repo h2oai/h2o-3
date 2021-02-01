@@ -2,12 +2,10 @@ package hex;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
-import water.H2O;
-import water.Key;
-import water.Scope;
-import water.TestFrameCatalog;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
@@ -15,6 +13,7 @@ import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.test.dummy.DummyModelBuilder;
 import water.test.dummy.DummyModelParameters;
+import water.test.dummy.MessageInstallAction;
 import water.util.ReflectionUtils;
 
 import java.io.File;
@@ -35,6 +34,9 @@ public class ModelBuilderTest {
   @Rule
   public transient TemporaryFolder tmp = new TemporaryFolder();
 
+  @Rule
+  public transient ExpectedException ee = ExpectedException.none();
+  
   @Test
   public void testRebalancePubDev5400() {
     try {
@@ -303,6 +305,50 @@ public class ModelBuilderTest {
         "columns from multiple params combined", 
         new HashSet<>(asList("c4", "c5", "response")), params.getUsedColumns(trainNames)
     );
+  }
+
+  @Test
+  public void testTrainModelNestedExecutesOnExceptionalCompletionSynchronously() {
+    Key proofKey = Key.make();
+    try {
+      Scope.enter();
+      Frame trainingFrame = TestFrameCatalog.oneChunkFewRows();
+
+      DummyModelParameters params = new DummyModelParameters();
+      params._response_column = trainingFrame.name(0);
+      params._train = trainingFrame._key;
+      params._cancel_job = true;
+      params._on_exception_action = new DelayedMessageInstallAction(proofKey, "onExceptionalCompletion", 1000);
+
+      ee.expect(Job.JobCancelledException.class);
+      try {
+        new DummyModelBuilder(params).trainModelNested(trainingFrame);
+      } finally {
+        assertEquals("Computed onExceptionalCompletion", DKV.getGet(proofKey).toString());
+      }
+    } finally {
+      Scope.exit();
+      DKV.remove(proofKey);
+    }
+  }
+
+  private static class DelayedMessageInstallAction extends MessageInstallAction {
+    private final int _delay_millis;
+
+    DelayedMessageInstallAction(Key trgt, String msg, int delayMillis) {
+      super(trgt, msg);
+      _delay_millis = delayMillis;
+    }
+
+    @Override
+    protected String run(DummyModelParameters parms) {
+      try {
+        Thread.sleep(_delay_millis);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+      return super.run(parms);
+    }
   }
 
 }

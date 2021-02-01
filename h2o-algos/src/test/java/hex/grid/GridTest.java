@@ -931,10 +931,6 @@ public class GridTest extends TestUtil {
 
       Grid grid = GridSearch.startGridSearch(null, params, hyperParms).get();
       Scope.track_generic(grid);
-
-      // Currently `onExceptionalCompletion` is executed after the model training already completed
-      // Sleep a little to make sure that we have enough time to run it
-      try { Thread.sleep(500); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
       
       assertEquals("Computed onExceptionalCompletionCalled", DKV.getGet(proofKey).toString());
     } finally {

@@ -1,7 +1,7 @@
 package hex;
 
 import org.apache.log4j.Logger;
-import water.H2O;
+import hex.ModelBuilder.TrainModelTaskController;
 import water.Job;
 
 /**
@@ -37,7 +37,7 @@ public class CVModelBuilder {
 
     public void bulkBuildModels() {
         final int N = modelBuilders.length;
-        H2O.H2OCountedCompleter[] submodel_tasks = new H2O.H2OCountedCompleter[N];
+        TrainModelTaskController[] submodel_tasks = new TrainModelTaskController[N];
         int nRunning = 0;
         RuntimeException rt = null;
         for (int i = 0; i < N; ++i) {
@@ -49,7 +49,7 @@ public class CVModelBuilder {
             LOG.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
             prepare(modelBuilders[i]);
             modelBuilders[i].startClock();
-            submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
+            submodel_tasks[i] = modelBuilders[i].submitTrainModelTask();
             if (++nRunning == parallelization) { //piece-wise advance in training the models
                 while (nRunning > 0) {
                     final int waitForTaskIndex = i + 1 - nRunning;
@@ -73,7 +73,7 @@ public class CVModelBuilder {
         }
         for (int i = 0; i < N; ++i) //all sub-models must be completed before the main model can be built
             try {
-                final H2O.H2OCountedCompleter task = submodel_tasks[i];
+                final TrainModelTaskController task = submodel_tasks[i];
                 assert task != null;
                 task.join();
             } catch (RuntimeException t) {
@@ -89,8 +89,8 @@ public class CVModelBuilder {
         if (rt != null) throw rt;
     }
 
-    private void stopAll(H2O.H2OCountedCompleter[] tasks) {
-        for (H2O.H2OCountedCompleter task : tasks) {
+    private void stopAll(TrainModelTaskController[] tasks) {
+        for (TrainModelTaskController task : tasks) {
             if (task != null) {
                 task.cancel(true);
             }
