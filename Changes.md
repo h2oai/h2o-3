@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Zermelo (3.32.0.4) - 1/xx/2020
+### Zermelo (3.32.0.4) - 2/1/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/4/index.html</a>
 
@@ -27,11 +27,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/4/inde
     
 #### Docs
 <ul>
-<li>*[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7917'>PUBDEV-7917</a>] -         Add checkpoint description to GLM
-</li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7945'>PUBDEV-7945</a>] -         Added to docs that AUCPR can be plotted.
 </li>
-<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7964'>PUBDEV-7964</a>] -        Updated the Customer Algorithm graphic for the Architecture section of the User Guide.
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7964'>PUBDEV-7964</a>] -         Updated the Customer Algorithm graphic for the Architecture section of the User Guide.
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7983'>PUBDEV-7983</a>] -         Updated the copyright year to 2021.
 </li>
