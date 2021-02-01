@@ -108,19 +108,19 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
             model.delete_and_lock(_job); // todo avalenta what is it good for?
 
             int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
-            int randomUnit = _rand.nextInt();
-
-            Frame subSample = new SubSampleTask(_parms._sample_size, _parms._seed + randomUnit)
-                    .doAll(_train.types(), _train.vecs()).outputFrame(null, _train.names(), _train.domains());
-            double[][] subSampleArray = FrameUtils.asDoubles(subSample);
 
             for (int tid = 0; tid < _parms._ntrees; tid++) {
+                int randomUnit = _rand.nextInt();
+                Frame subSample = new SubSampleTask(_parms._sample_size, _parms._seed + randomUnit)
+                        .doAll(_train.types(), _train.vecs()).outputFrame(null, _train.names(), _train.domains());
+                double[][] subSampleArray = FrameUtils.asDoubles(subSample);
+
                 Timer timer = new Timer();
                 IsolationTree isolationTree = new IsolationTree(subSampleArray, heightLimit, _parms._seed + _rand.nextInt(), _parms.extension_level, tid);
                 isolationTree.buildTree();
                 _iTrees[tid] = isolationTree;
                 _job.update(1);
-                LOG.info((tid + 1) + ". tree was built in " + timer.toString());
+                LOG.info((tid + 1) + ". tree was built in " + timer.toString() + ". Free memory: " + PrettyPrint.bytes(H2O.CLOUD.free_mem()));
             }
 
             model.unlock(_job); // todo avalenta what is it good for?

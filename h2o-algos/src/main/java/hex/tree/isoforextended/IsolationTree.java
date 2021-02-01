@@ -43,7 +43,7 @@ public class IsolationTree extends Iced<IsolationTree> {
     public void buildTree() {
         _nodes[0] = new Node(_data, _data[0].length, 0);
         for (int i = 0; i < _nodes.length; i++) {
-            LOG.trace(i + " from " + _nodes.length + " is being prepared on tree " + _treeNum);
+            LOG.trace((i + 1) + " from " + _nodes.length + " is being prepared on tree " + _treeNum);
             Node node = _nodes[i];
             if (node == null || node._external) {
                 continue;
