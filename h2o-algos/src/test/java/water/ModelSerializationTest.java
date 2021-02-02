@@ -306,6 +306,7 @@ public class ModelSerializationTest {
       ExtendedIsolationForestModel.ExtendedIsolationForestParameters eifParams =
               new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
       eifParams._train = frame._key;
+      eifParams._ignored_columns = ignoredColumns;
       eifParams._ntrees = ntrees;
       eifParams.extension_level = extensionLevel;
       eifParams._score_each_iteration = true;
