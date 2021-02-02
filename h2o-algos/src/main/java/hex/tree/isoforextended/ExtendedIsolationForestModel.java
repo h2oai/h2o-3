@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
 import hex.tree.isofor.ModelMetricsAnomaly;
+import org.apache.log4j.Logger;
 import water.Key;
 import water.fvec.Frame;
 import water.util.Log;
@@ -14,6 +15,7 @@ import water.util.Log;
  */
 public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestModel, ExtendedIsolationForestModel.ExtendedIsolationForestParameters, 
         ExtendedIsolationForestModel.ExtendedIsolationForestOutput> {
+    private static final Logger LOG = Logger.getLogger(ExtendedIsolationForestModel.class);
 
     public ExtendedIsolationForestModel(Key<ExtendedIsolationForestModel> selfKey, ExtendedIsolationForestParameters parms,
                                         ExtendedIsolationForestOutput output) {
@@ -45,12 +47,12 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
         for (IsolationTree iTree : _output.iTrees) {
             double iTreeScore = iTree.computePathLengthRecursive(data);
             pathLength += iTreeScore;
-            Log.debug("iTreeScore " + iTreeScore);
+            LOG.debug("iTreeScore " + iTreeScore);
         }
         pathLength = pathLength / _output.iTrees.length;
-        Log.debug("pathLength " + pathLength);
+        LOG.debug("pathLength " + pathLength);
         double anomalyScore = anomalyScore(pathLength);
-        Log.debug("Anomaly score " + anomalyScore);
+        LOG.debug("Anomaly score " + anomalyScore);
         preds[0] = anomalyScore;
         preds[1] = pathLength;
         return preds;
