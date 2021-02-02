@@ -85,6 +85,7 @@ public class GridTest extends TestUtil {
 
   @Test
   public void testParallelUserStopRequest() {
+    Key dest = Key.make();
     try {
       Scope.enter();
 
@@ -105,14 +106,21 @@ public class GridTest extends TestUtil {
       params._seed = 42;
 
       Job<Grid> gridSearch = GridSearch.startGridSearch(           
-          null, params, hyperParms,
+          dest, params, hyperParms,
           new GridSearch.SimpleParametersBuilderFactory(),
           new HyperSpaceSearchCriteria.CartesianSearchCriteria(), 
           2
       );
       Scope.track_generic(gridSearch);
       gridSearch.stop();
-      final Grid grid = gridSearch.get();
+
+      try {
+        gridSearch.get();
+      } catch (Exception e) {
+        assertTrue(Job.isCancelledException(e));
+      }
+
+      final Grid grid = DKV.getGet(dest);
       Scope.track_generic(grid);
       
       for(Model m : grid.getModels()){
