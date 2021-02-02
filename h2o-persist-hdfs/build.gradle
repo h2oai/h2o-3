@@ -14,6 +14,7 @@ dependencies {
         transitive = true
     }
     compile("org.apache.hadoop:hadoop-aws:$defaultHadoopVersion")
+    compile("com.google.guava:guava:24.1.1")
 
     testCompile project(":h2o-test-support")
     testRuntimeOnly project(":${defaultWebserverModule}")
