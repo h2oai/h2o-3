@@ -2,11 +2,14 @@ package hex.tree.isoforextended;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import hex.tree.SharedTree;
 import org.apache.log4j.Logger;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.*;
 
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -18,7 +21,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         ExtendedIsolationForestModel.ExtendedIsolationForestParameters,
         ExtendedIsolationForestModel.ExtendedIsolationForestOutput> {
 
-    private static final Logger LOG = Logger.getLogger(ExtendedIsolationForest.class);
+    transient private static final Logger LOG = Logger.getLogger(ExtendedIsolationForest.class);
 
     transient IsolationTree[] _iTrees;
     transient Random _rand;
@@ -42,6 +45,11 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
     public ExtendedIsolationForest(boolean startup_once) {
         super(new ExtendedIsolationForestModel.ExtendedIsolationForestParameters(), startup_once);
     }
+    
+    @Override
+    protected void checkMemoryFootPrint_impl() {
+        // TODO valenad implement memory check
+    }
 
     @Override
     public void init(boolean expensive) {
@@ -58,6 +66,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                         + sampleSizeMax + "] but it is " + _parms._sample_size);
             }
         }
+        checkMemoryFootPrint();
     }
 
     @Override
@@ -97,6 +106,9 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
 
         @Override
         public void computeImpl() {
+            init(true);
+            if( error_count() > 0 )
+                throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(ExtendedIsolationForest.this);
             buildIsolationTreeEnsemble();
         }
 

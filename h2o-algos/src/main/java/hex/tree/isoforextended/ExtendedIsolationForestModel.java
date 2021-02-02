@@ -107,13 +107,12 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
 
     public static class ExtendedIsolationForestOutput extends Model.Output {
 
-        /** Number of trees actually in the model (as opposed to requested) */
         public int _ntrees;
         
         public IsolationTree[] iTrees;
         
-        public ExtendedIsolationForestOutput(ExtendedIsolationForest b) {
-            super(b);
+        public ExtendedIsolationForestOutput(ExtendedIsolationForest eif) {
+            super(eif);
         }
 
         @Override
