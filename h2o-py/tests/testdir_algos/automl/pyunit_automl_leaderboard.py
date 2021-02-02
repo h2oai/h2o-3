@@ -323,8 +323,8 @@ def test_get_best_model_per_family():
                     seed=automl_seed)
     aml.train(y=ds.target, training_frame=ds.train)
 
-    top_models = [aml.best_models(mtype) for mtype in ["base_model", "deep_learning", "drf",
-                                                       "gbm", "glm", "stacked_ensemble", "xgboost"]]
+    top_models = [aml.get_best_model(mtype) for mtype in ["deep_learning", "drf", "gbm", "glm",
+                                                          "stacked_ensemble", "xgboost", "xrt"]]
     nones = [v is None for v in top_models]
     assert sum(nones) <= 1 and len(nones) >= 7
     model_ids = aml.leaderboard.as_data_frame()["model_id"]

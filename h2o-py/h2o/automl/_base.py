@@ -126,14 +126,27 @@ class H2OAutoMLBaseMixin:
         """
         pass
 
-    def best_models(self, model_type):
+    def get_best_model(self, algorithm, criterion=None):
         """
-        Get best model of each family.
-        :arg model_type: one of "base_model", "deep_learning", "drf", "gbm", "glm", "stacked_ensemble", "xgboost"
+        Get best model of a given family/algorithm.
+
+        :param algorithm: One of "base_model", "deep_learning", "drf", "gbm", "glm", "stacked_ensemble", "xgboost", "xrt"
+        :param criterion: Criterium can be one of the metrics reported in leaderboard, if None pick the first metric
+                          for each task from the following list:
+                            * Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle
+                            * Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse
+                            * Multinomial metrics: mean_per_class_error, logloss, rmse, mse, auc, aucpr
         :return: a model or None if none of a given family is present
+        :examples:
+        >>> # Set up an H2OAutoML object
+        >>> aml = H2OAutoML(max_runtime_secs=30)
+        >>> # Launch an AutoML run
+        >>> aml.train(y=y, training_frame=train)
+        >>> gbm = aml.get_best_model("gbm")
         """
-        def _best(pattern):
-            matches = self.leaderboard["model_id"].grep(pattern)
+        def _best(leaderboard, pattern, criterion, ascending):
+            # type: (h2o.H2OFrame, str, str, bool) -> h2o.model.ModelBase
+            matches = leaderboard.sort(by=criterion, ascending=ascending)["model_id"].grep(pattern)
             if matches.nrow == 0:
                 return None
             return h2o.get_model(self.leaderboard[int(matches[0, :]), "model_id"])
@@ -145,14 +158,39 @@ class H2OAutoMLBaseMixin:
             gbm="^GBM_",
             glm="^GLM_",
             stacked_ensemble="^StackedEnsemble_",
-            xgboost="^XGBoost_"
+            xgboost="^XGBoost_",
+            xrt="^XRT_"
         )
 
-        if model_type not in patterns.keys():
+        higher_is_better = ["auc", "aucpr"]
+
+        if criterion is None:
+            model_category = self.leader._model_json["output"]["model_category"]
+            if "Regression" == model_category:
+                criterion = "mean_residual_deviance"
+            elif "Binomial" == model_category:
+                criterion = "auc"
+            else:
+                criterion = "mean_per_class_error"
+
+        criteria = {col.lower(): col for col in self.leaderboard.columns}
+
+        if criterion.lower() not in criteria.keys():
+            from h2o.exceptions import H2OValueError
+            raise H2OValueError("Criterion \"{}\" is not present in the leaderboard!".format(criterion))
+
+        criterion = criteria[criterion]
+
+        if algorithm.lower() not in patterns.keys():
             from h2o.exceptions import H2OValueError
             raise H2OValueError("Incorrect model_type specified \"{}\". Has to be one of \"{}\"".format(
-                model_type,
+                algorithm,
                 '", "'.join(sorted(list(patterns.keys())))
             ))
 
-        return _best(patterns[model_type])
+        return _best(
+            leaderboard=self.leaderboard,
+            pattern=patterns[algorithm.lower()],
+            criterion=criterion,
+            ascending=criterion.lower() not in higher_is_better
+        )

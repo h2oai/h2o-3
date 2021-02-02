@@ -125,12 +125,14 @@ automl.leaderboard.suite <- function() {
         fr <- as.h2o(iris)
         aml <- h2o.automl(y = 5, training_frame = fr, max_models = 11,
                           project_name = "r_aml_customlb")
-        expect_true(sum(is.null(aml@best_models)) <= 1 && length(aml@best_models) >= 7)
-
         model_ids <- as.character(as.list(aml@leaderboard$model_id))
         seen <- character()
 
-        top_model_ids <- sapply(unname(aml@best_models), function(m) if (is.null(m)) NULL else m@model_id)
+        top_model_ids <- sapply(c("deep_learning", "drf", "gbm", "glm", "stacked_ensemble", "xgboost", "xrt"), function(algo) {
+            m <- h2o.get_best_model(aml, algo)
+            if (is.null(m)) NULL else m@model_id
+        })
+        expect_true(sum(sapply(top_model_ids, is.null)) <= 1 && length(top_model_ids) == 7)
         for (model_id in model_ids) {
             model_type <- strsplit(model_id, "_")[[1]][[1]]
             if (!model_type %in% seen) {

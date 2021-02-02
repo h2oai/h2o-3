@@ -529,14 +529,6 @@ h2o.get_automl <- function(project_name) {
     if (!is.na(key)) training_info[key] <- state$event_log[i, 'value']
   }
 
-  .get_best <- function (pattern) {
-    model_ids <- state$leaderboard$model_id
-    matches <- as.numeric(as.list(h2o.grep(pattern, model_ids)))
-    if (length(matches) == 0)
-      return(NULL)
-    return(h2o.getModel(model_ids[matches[[1]], 1]))
-  }
-
   # Make AutoML object
   automl <- new("H2OAutoML",
              project_name = state$project,
@@ -544,17 +536,7 @@ h2o.get_automl <- function(project_name) {
              leaderboard = state$leaderboard,
              event_log = state$event_log,
              modeling_steps = state$modeling_steps,
-             training_info = training_info,
-             best_models = list(
-               base_model = .get_best("^(?!StackedEnsemble_)"),
-               deep_learning = .get_best("^DeepLearning_"),
-               drf = .get_best("^(DRF|XRT)_"),
-               gbm = .get_best("^GBM_"),
-               glm = .get_best("^GLM_"),
-               stacked_ensemble = .get_best("^StackedEnsemble_"),
-               xgboost = .get_best("^XGBoost_")
-             )
-  )
+             training_info = training_info)
   attr(automl, "id") <- state$automl_id
   return(automl)
 }
@@ -596,4 +578,79 @@ h2o.getAutoML <- function(project_name) {
 h2o.get_leaderboard <- function(object, extra_columns=NULL) {
   if (!.is.H2OAutoML(object)) stop("Only H2OAutoML instances are currently supported.")
   return(.automl.fetch_leaderboard(attr(object, 'id'), extra_columns))
+}
+
+
+#' Get best model of a given family/algorithm.
+#' @param algorithm One of "base_model", "deep_learning", "drf", "gbm", "glm", "stacked_ensemble", "xgboost", "xrt"
+#' @param criterion Criterium can be one of the metrics reported in leaderboard, if NULL pick the first metric
+#'                  for each task from the following list:
+#'                  * Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle
+#'                  * Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse
+#'                  * Multinomial metrics: mean_per_class_error, logloss, rmse, mse, auc, aucpr
+#' @return a model or None if none of a given family is present
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.importFile(path = prostate_path, header = TRUE)
+#' y <- "CAPSULE"
+#' prostate[,y] <- as.factor(prostate[,y])  #convert to factor for classification
+#' aml <- h2o.automl(y = y, training_frame = prostate, max_runtime_secs = 30)
+#' gbm <- h2o.get_best_model(aml, "gbm")
+#' }
+#' @export
+h2o.get_best_model <- function(object, algorithm, criterion=NULL) {
+  .get_best <- function (leaderboard, pattern, criterion, ascending) {
+    leaderboard <- do.call(h2o.arrange, list(
+      leaderboard,
+      if(ascending) criterion else bquote(desc(.(criterion)))))
+
+    model_ids <- leaderboard$model_id
+    matches <- as.numeric(as.list(h2o.grep(pattern, model_ids)))
+    if (length(matches) == 0)
+      return(NULL)
+    return(h2o.getModel(model_ids[matches[[1]], 1]))
+  }
+
+  patterns <- list(
+    base_model = "^(?!StackedEnsemble_)",
+    deep_learning = "^DeepLearning_",
+    drf = "^(DRF|XRT)_",
+    gbm = "^GBM_",
+    glm = "^GLM_",
+    stacked_ensemble = "^StackedEnsemble_",
+    xgboost = "^XGBoost_",
+    xrt = "^XRT_"
+  )
+
+  higher_is_better <- c("auc", "aucpr")
+
+  if (!tolower(algorithm) %in% names(patterns)) {
+    stop(paste0("Unknown algorithm \"", algorithm, "\"!"))
+  }
+
+  if (is.null(criterion)) {
+    if (is(object@leader, "H2ORegressionModel")) {
+      criterion <- "mean_residual_deviance"
+    } else if (is(object@leader, "H2OBinomialModel")) {
+      criterion <- "auc"
+    } else {
+      criterion <- "mean_per_class_error"
+    }
+  }
+
+  criteria <- stats::setNames(sapply(names(object@leaderboard), as.symbol), sapply(names(object@leaderboard), tolower))
+
+  if (!tolower(criterion) %in% names(criteria)) {
+    stop("Criterion \"", criterion,"\" not present in the leaderboard!")
+  }
+
+  return(.get_best(
+    leaderboard = object@leaderboard,
+    pattern = patterns[[algorithm]],
+    criterion = criteria[[tolower(criterion)]],
+    ascending = !tolower(criterion) %in% higher_is_better
+  ))
 }
