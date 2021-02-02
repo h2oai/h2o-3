@@ -10,9 +10,12 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +30,8 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
+@CloudSize(1)
+@RunWith(H2ORunner.class)
 public class PrintMojoTreeTest {
 
   @Rule
@@ -36,7 +41,6 @@ public class PrintMojoTreeTest {
 
   @Before
   public void setUp() throws Exception {
-    TestUtil.stall_till_cloudsize(1);
     originalSecurityManager = System.getSecurityManager();
     System.setSecurityManager(new PreventExitSecurityManager());
   }
@@ -59,6 +63,7 @@ public class PrintMojoTreeTest {
       p._ntrees = 1;
 
       IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      Scope.track_generic(model);
       final File modelFile = folder.newFile();
       model.exportMojo(modelFile.getAbsolutePath(), true);
 
@@ -102,6 +107,7 @@ public class PrintMojoTreeTest {
       p._ntrees = 1;
 
       IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      Scope.track_generic(model);
       final File modelFile = folder.newFile();
       model.exportMojo(modelFile.getAbsolutePath(), true);
 
@@ -141,6 +147,7 @@ public class PrintMojoTreeTest {
       p._ntrees = 1;
 
       IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      Scope.track_generic(model);
       final File modelFile = folder.newFile();
       model.exportMojo(modelFile.getAbsolutePath(), true);
 
@@ -237,6 +244,7 @@ public class PrintMojoTreeTest {
       p._ignored_columns = new String[] { "Origin", "Dest", "IsDepDelayed" };
 
       IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      Scope.track_generic(model);
       assertMojoJSONEqualsFixture(model, "categorical.json");
     } finally {
       Scope.exit();
@@ -259,6 +267,7 @@ public class PrintMojoTreeTest {
       p._ignored_columns = new String[] { "Origin", "Dest" };
 
       GBMModel model = new GBM(p).trainModel().get();
+      Scope.track_generic(model);
       assertMojoJSONEqualsFixture(model, "categoricalOneHot.json");
     } finally {
       Scope.exit();
@@ -280,6 +289,7 @@ public class PrintMojoTreeTest {
       p._max_depth = 3;
 
       GBMModel model = new GBM(p).trainModel().get();
+      Scope.track_generic(model);
       assertMojoJSONEqualsFixture(model, "gbmProstate.json");
     } finally {
       Scope.exit();
@@ -301,6 +311,7 @@ public class PrintMojoTreeTest {
       p._ignored_columns = new String[] { "Origin", "Dest", "IsDepDelayed" };
 
       IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      Scope.track_generic(model);
       assertMojoPngGenerated(model, expectedFileNames);
     } finally {
       Scope.exit();
@@ -327,6 +338,7 @@ public class PrintMojoTreeTest {
       p._ignored_columns = new String[] { "Origin", "Dest" };
 
       GBMModel model = new GBM(p).trainModel().get();
+      Scope.track_generic(model);
       assertMojoPngGenerated(model, expectedFileNames);
     } finally {
       Scope.exit();
@@ -351,6 +363,7 @@ public class PrintMojoTreeTest {
       p._max_depth = 3;
 
       GBMModel model = new GBM(p).trainModel().get();
+      Scope.track_generic(model);
       assertMojoPngGenerated(model, expectedFileNames);
     } finally {
       Scope.exit();

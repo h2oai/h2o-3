@@ -8,9 +8,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 
 import java.io.ByteArrayOutputStream;
@@ -21,8 +24,9 @@ import java.security.Permission;
 
 import static org.junit.Assert.*;
 
-
-public class PredictCsvTest extends TestUtil{
+@CloudSize(1)
+@RunWith(H2ORunner.class)
+public class PredictCsvTest {
 
   @Rule
   public TemporaryFolder folder = new TemporaryFolder();
@@ -31,7 +35,6 @@ public class PredictCsvTest extends TestUtil{
 
   @Before
   public void setUp() {
-    TestUtil.stall_till_cloudsize(1);
     originalSecurityManager = System.getSecurityManager();
     System.setSecurityManager(new PreventExitSecurityManager());
   }
@@ -113,6 +116,7 @@ public class PredictCsvTest extends TestUtil{
       p._ntrees = 1;
 
       GBMModel model = new GBM(p).trainModel().get();
+      Scope.track_generic(model);
       final File modelFile = folder.newFile();
       model.exportMojo(modelFile.getAbsolutePath(), true);
 
