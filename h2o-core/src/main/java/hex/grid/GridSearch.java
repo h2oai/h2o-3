@@ -472,7 +472,10 @@ public final class GridSearch<MP extends Model.Parameters> {
     grid.exportBinary(checkpointsDir, false);
   }
 
-  static final Set<String> IGNORED_FIELDS_PARAM_HASH = Collections.singleton("_export_checkpoints_dir");
+  static final Set<String> IGNORED_FIELDS_PARAM_HASH = new HashSet<>(Arrays.asList(
+          "_export_checkpoints_dir",
+          "_max_runtime_secs"        // We are modifying ourselves in Grid Search code
+  ));
 
   /**
    * Build a model based on specified parameters and save it to resulting Grid object.
