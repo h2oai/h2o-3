@@ -829,6 +829,7 @@ public class GenericModelTest extends TestUtil {
         final CoxPHModel originalModel = job.trainModel().get();
 
         System.out.println("originalModel._output._coef = " + Arrays.toString(originalModel._output._coef));
+        System.out.println("originalModel._output._coef_names = " + Arrays.toString(originalModel._output._coef_names));
         
         Scope.track_generic(originalModel);
 
