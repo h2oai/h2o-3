@@ -138,7 +138,7 @@ public class TestUtil extends Iced {
       }
       if( print_max < leaked_keys ) System.err.println("... and "+(leaked_keys-print_max)+" more leaked keys");
     }
-    assertTrue("Keys leaked: " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
+    assertEquals("Keys leaked: " + leaked_keys + ", cnt = " + cnt, 0, cnt);
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
     new DKVCleaner().doAllNodes();
     _initial_keycnt = H2O.store_size();
