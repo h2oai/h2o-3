@@ -425,7 +425,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     abstract boolean abort(Job job);
     abstract void update(Job job);
     @Override public Job atomic(Job job) {
-      assert job != null : "Race on creation";
+      assert job != null : "Race on creation (key=" + _key + ")";
       if( abort(job) ) return null;
       update(job);
       return job;
