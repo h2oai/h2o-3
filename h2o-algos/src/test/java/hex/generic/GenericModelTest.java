@@ -29,6 +29,7 @@ import water.runner.H2ORunner;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import static hex.genmodel.utils.DistributionFamily.AUTO;
 import static org.junit.Assert.*;
@@ -826,6 +827,9 @@ public class GenericModelTest extends TestUtil {
 
         CoxPH job = new CoxPH(parms);
         final CoxPHModel originalModel = job.trainModel().get();
+
+        System.out.println("originalModel._output._coef = " + Arrays.toString(originalModel._output._coef));
+        
         Scope.track_generic(originalModel);
 
         // FIXME: for debugging issues on jenkins
