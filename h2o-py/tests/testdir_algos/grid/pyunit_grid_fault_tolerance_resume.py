@@ -2,7 +2,6 @@ import sys
 import os
 import tempfile
 import time
-import random
 import numpy as np
 
 sys.path.insert(1, os.path.join("..", "..", ".."))
@@ -33,6 +32,8 @@ def import_iris2():
 def import_cars():
     cars = h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     cars = cars.drop(0)
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+    cars.impute("economy_20mpg", method="mode")
     return cars
 
 
@@ -112,23 +113,27 @@ def dl_start(grid_id, export_dir, train, params, hyper_parameters):
 
 def test_glm():
     train = import_cars()
-    means = train.mean()
-    bc = []
-    y = "cylinders"
+    y = "economy_20mpg"
     x = train.names
     x.remove(y)
+    plugs = train.mean()
+    plugs = plugs.drop(y)
+    bc = []
     for n in x:
         if train[n].isnumeric()[0]:
-            lower_bound = random.uniform(-1, 1)
-            upper_bound = lower_bound + random.random()
+            lower_bound = -100000 # "-Infinity"
+            upper_bound = 100000  # "+Infinity"
             bc.append([n, lower_bound, upper_bound])
     beta_constraints = h2o.H2OFrame(bc)
     beta_constraints.set_names(["names", "lower_bounds", "upper_bounds"])
+    # we want to show that frames to represent parameters (plug_values, beta_constraints) are check-pointed as well
     params = {
+        "family": 'binomial',
         "missing_values_handling": "PlugValues", 
-        "plug_values": means,
+        "plug_values": plugs,
         "beta_constraints": beta_constraints,
-        "nfolds": 5
+        "nfolds": 5,
+        "seed": 42
     }
     hyper_params = {
         'alpha': [0.01, 0.3, 0.5, 0.7, 0.9],
@@ -140,7 +145,7 @@ def test_glm():
 
 
 def glm_start(grid_id, export_dir, train, params, hyper_parameters):
-    y = "cylinders"
+    y = "economy_20mpg"
     x = train.names
     x.remove(y)
     grid = H2OGridSearch(
@@ -176,7 +181,7 @@ def test_glrm():
 
 def glrm_start(grid_id, export_dir, train, params, hyper_parameters):
     grid = H2OGridSearch(
-        H2OGeneralizedLowRankEstimator,
+        H2OGeneralizedLowRankEstimator(seed=42),
         grid_id=grid_id,
         hyper_params=hyper_parameters,
         recovery_dir=export_dir,
