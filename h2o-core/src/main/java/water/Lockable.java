@@ -222,8 +222,8 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
     final boolean _exact;       // Complain if not locked when unlocking
     Unlock( Key<Job> job_key, boolean exact ) { _job_key = job_key; _exact = exact;}
     @Override public Lockable<T> atomic(Lockable<T> old) {
-      assert !_exact || old != null : "Trying to unlock null!";
-      assert !_exact || old.is_locked(_job_key) : "Can't unlock: Not locked!";
+      assert !_exact || old != null : "Trying to unlock null! (key = " + _key + ")";
+      assert !_exact || old.is_locked(_job_key) : "Can't unlock: Object " + _key + " is not locked!";
       final Lockable<T> l = old == null || old.is_wlocked() ?
               Lockable.this : old;
       if (_exact || l.is_locked(_job_key)) {
