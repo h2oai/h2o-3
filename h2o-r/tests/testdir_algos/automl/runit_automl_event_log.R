@@ -23,8 +23,7 @@ automl.event_log.test <- function() {
     expect_gt(as.integer(aml@training_info['stop_epoch']), as.integer(aml@training_info['start_epoch']))
     stop_dt <- as.POSIXlt(as.integer(aml@training_info['stop_epoch']), origin="1970-01-01")
     now <- as.POSIXlt(Sys.time())
-    expect_equal(stop_dt$mday, now$mday)
-    expect_equal(stop_dt$hour, now$hour)
+    expect_lte(abs(stop_dt - now),  60) # test that stop_epoch is time encoded as unix epoch
     expect_lte(abs(as.integer(aml@training_info['duration_secs']) - (as.integer(aml@training_info['stop_epoch']) - as.integer(aml@training_info['start_epoch']))), 1)
 }
 
