@@ -757,6 +757,11 @@ public class GenericModelTest extends TestUtil {
     @Test
     public void testJavaScoring_mojo_cox_ph_categorical() throws IOException {
         for (int i = 0; i < 1000; i++) {
+
+            System.out.println("====================================================================");
+            System.out.println("====================================================================");
+            System.out.println("====================================================================");
+            System.out.println("====================================================================");
             System.out.println(">>>>>>>>. " + i);
             try {
                 Scope.enter();
@@ -839,6 +844,9 @@ public class GenericModelTest extends TestUtil {
         final Generic generic = new Generic(genericModelParameters);
         final GenericModel genericModel = trainAndCheck(generic);
         Scope.track_generic(genericModel);
+
+        System.out.println("genericModelParameters = " + genericModelParameters);
+        System.out.println("originalModel._input_parm = " + originalModel._input_parms);
 
         final Frame genericModelPredictions = genericModel.score(testFrame);
         Scope.track_generic(genericModelPredictions);
