@@ -10,13 +10,13 @@ import water.util.VecUtils;
  * IsolationTree class implements Algorithm 2 (iTree) and Algorithm 3 (pathLength)
  * from the Extended Isolation Forest paper.
  *
- * The binary tree recursive implementation is replaced by array implementation.
- * It is the most simple array implementation of binary tree.
+ * @author Adam Valenta
  */
 public class IsolationTree extends Iced<IsolationTree> {
     private static final Logger LOG = Logger.getLogger(IsolationTree.class);
 
-    private final Node[] _nodes;
+    private Node[] _nodes;
+    private Node _root;
 
     private final double[][] _data;
     private final int _heightLimit;
@@ -30,17 +30,15 @@ public class IsolationTree extends Iced<IsolationTree> {
         this._seed = _seed;
         this._extensionLevel = _extensionLevel;
         this._treeNum = _treeNum;
-
-        int maxNumNodesInTree = (int) Math.pow(2, _heightLimit) - 1;
-        this._nodes = new Node[maxNumNodesInTree];
     }
 
     /**
      * Implementation of Algorithm 2 (iTree) from paper.
-     * Algorithm not need exact row vectors in scoring (evaluation) stage but just number of rows in node.
-     * Therefore nodeFrames are removed from DKV after filtering.
      */
     public void buildTree() {
+        int maxNumNodesInTree = (int) Math.pow(2, _heightLimit) - 1;
+        this._nodes = new Node[maxNumNodesInTree];
+        
         _nodes[0] = new Node(_data, _data[0].length, 0);
         for (int i = 0; i < _nodes.length; i++) {
             LOG.trace((i + 1) + " from " + _nodes.length + " is being prepared on tree " + _treeNum);
@@ -84,6 +82,9 @@ public class IsolationTree extends Iced<IsolationTree> {
      * Helper method. Print nodes' size of the tree.
      */
     public void logNodesNumRows() {
+        if (_nodes == null) {
+            LOG.debug("Not available for buildTreeRecursive()");
+        }
         StringBuilder logMessage = new StringBuilder();
         for (int i = 0; i < _nodes.length; i++) {
             if (_nodes[i] == null)
@@ -98,6 +99,9 @@ public class IsolationTree extends Iced<IsolationTree> {
      * Helper method. Print height (length of path from root) of each node in trees. Root is 0.
      */
     public void logNodesHeight() {
+        if (_nodes == null) {
+            LOG.debug("Not available for buildTreeRecursive()");
+        }
         StringBuilder logMessage = new StringBuilder();
         for (int i = 0; i < _nodes.length; i++) {
             if (_nodes[i] == null)
@@ -133,6 +137,50 @@ public class IsolationTree extends Iced<IsolationTree> {
     }
 
     /**
+     * Implementation of Algorithm 2 (iTree) from paper.
+     */
+    public void buildTreeRecursive() {
+        this._root = buildTreeRecursive(_data, 0, _heightLimit);
+    }
+
+    private Node buildTreeRecursive(double[][] data, int currentHeight, int heightLimit) {
+        Node node = new Node(data, data[0].length, currentHeight);
+        if (currentHeight >= heightLimit || data[0].length <= 1) {
+            node._external = true;
+            node._numRows = data[0].length;
+        } else {
+            currentHeight++;
+            node._p = VecUtils.uniformDistrFromArray(data, _seed + currentHeight);
+            node._n = ArrayUtils.gaussianVector(data.length, _seed + currentHeight, data.length - _extensionLevel - 1);
+            FilteredData ret = extendedIsolationForestSplit(data, node._p, node._n);
+            node._left = buildTreeRecursive(ret.left, currentHeight, heightLimit);
+            node._right = buildTreeRecursive(ret.right, currentHeight, heightLimit);
+        }
+        return node;
+    }
+
+    /**
+     * Implementation of Algorithm 3 (pathLength) from paper.
+     */
+    public double computePathLengthRecursive(final double[] row) {
+        return computePathLengthRecursive(row, _root);
+    }
+
+    private double computePathLengthRecursive(final double[] row, Node node) {
+        if (node._external) {
+            return node._height + averagePathLengthOfUnsuccessfulSearch(node._numRows);
+        } else {
+            double[] sub = ArrayUtils.subtract(row, node._p);
+            double mul = ArrayUtils.innerProduct(sub,node._n);
+            if (mul <= 0) {
+                return computePathLengthRecursive(row, node._left);
+            } else {
+                return computePathLengthRecursive(row, node._right);
+            }
+        }
+    }
+
+    /**
      * IsolationTree Node. Naming convention comes from Algorithm 2 (iTree) in paper.
      * _data should be always null after buildTree() method because only number of rows in data is needed for
      * scoring (evaluation) stage.
@@ -157,6 +205,9 @@ public class IsolationTree extends Iced<IsolationTree> {
         private int _height;
         private boolean _external = false;
         private int _numRows;
+        
+        private Node _left;
+        private Node _right;
 
         public Node(double[][] data, int numRows, int currentHeight) {
             this._data = data;
@@ -195,7 +246,7 @@ public class IsolationTree extends Iced<IsolationTree> {
             for (int col = 0; col < data.length; col++) {
                 res[row] += (data[col][row] - p[col]) * n[col];
             }
-            if (res[row] < 0) {
+            if (res[row] <= 0) {
                 leftLength++;
             } else {
                 rightLength++;
@@ -206,7 +257,7 @@ public class IsolationTree extends Iced<IsolationTree> {
         double[][] right = new double[data.length][rightLength];
 
         for (int row = 0, rowLeft = 0, rowRight = 0; row < data[0].length; row++) {
-            if (res[row] < 0) {
+            if (res[row] <= 0) {
                 for (int col = 0; col < data.length; col++) {
                     left[col][rowLeft] = data[col][row];
                 }

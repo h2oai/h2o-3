@@ -43,7 +43,7 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
         // compute score for given point
         double pathLength = 0;
         for (IsolationTree iTree : _output.iTrees) {
-            double iTreeScore = iTree.computePathLength(data);
+            double iTreeScore = iTree.computePathLengthRecursive(data);
             pathLength += iTreeScore;
             Log.debug("iTreeScore " + iTreeScore);
         }

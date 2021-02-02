@@ -340,6 +340,65 @@ public class ExtendedIsolationForestTest extends TestUtil {
             Scope.exit();
         }
     }
+    
+    @Test
+    public void testIsolationTreeSmokeRecursive() {
+        System.out.println("ExtendedIsolationForestTest.testIsolationTreeSmokeRecursive");
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+            
+            long start = System.currentTimeMillis();
+            IsolationTree isolationTree = new IsolationTree(FrameUtils.asDoubles(train), 9, 0xBEEF, 1, 0);
+            isolationTree.buildTreeRecursive();
+            long end = System.currentTimeMillis();
+            
+            long time = end - start;
+            if (time > 200) {
+                LOG.info("Tree building took a longer than it should.");
+            }
+            
+            double pathLength = isolationTree.computePathLengthRecursive(new double[]{0.0, 0.0}); // Normal Point
+            assertTrue("Path length should be longer. Normal point should not be isolated close to root but is pathLength = " + pathLength, pathLength >= 4);
+            
+            pathLength = isolationTree.computePathLengthRecursive(new double[]{5.0, 5.0}); //Anomaly
+            assertTrue("Path length should be close to 0 (Root) but is pathLength = " + pathLength, pathLength <= 4);
+            
+        } finally {
+            Scope.exit();
+        }
+    }
+    
+    @Test
+    public void testIsolationTreeLargeRecursive() {
+        System.out.println("ExtendedIsolationForestTest.testIsolationTreeLargeRecursive");
+        try {
+            Scope.enter();
+            Frame train = Scope.track(generate_real_only(32, 32768, 0, 0xBEEF));
+            double[] normalPoint = toNumericRow(train, 0);
+            
+            long start = System.currentTimeMillis();
+            IsolationTree isolationTree = new IsolationTree(FrameUtils.asDoubles(train), 16, 0xBEEF, 127, 0);
+            isolationTree.buildTreeRecursive();
+            long end = System.currentTimeMillis();
+            
+            long time = end - start;
+            if (time > 1000) {
+                LOG.info("Tree building took a longer than it should: " + time + "ms.");
+            }
+            
+            double pathLength = isolationTree.computePathLengthRecursive(normalPoint);
+            assertTrue("Path length should be longer. Normal point should not be isolated close to root but is pathLength = " + pathLength, pathLength >= 8);
+            
+            double[] anomaly = new double[32];
+            Arrays.fill(anomaly, 10000.0);
+            pathLength = isolationTree.computePathLengthRecursive(anomaly); //Anomaly
+            assertTrue("Path length should be close to 0 (Root) but is pathLength = " + pathLength, pathLength <= 8);
+            
+        } finally {
+            Scope.exit();
+        }
+    }
 
     @Test
     public void testExtendedIsolationTreeSplit() {

@@ -117,7 +117,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
 
                 Timer timer = new Timer();
                 IsolationTree isolationTree = new IsolationTree(subSampleArray, heightLimit, _parms._seed + _rand.nextInt(), _parms.extension_level, tid);
-                isolationTree.buildTree();
+                isolationTree.buildTreeRecursive();
                 _iTrees[tid] = isolationTree;
                 _job.update(1);
                 LOG.info((tid + 1) + ". tree was built in " + timer.toString() + ". Free memory: " + PrettyPrint.bytes(H2O.CLOUD.free_mem()));
