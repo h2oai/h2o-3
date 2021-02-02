@@ -185,8 +185,8 @@ def glrm_start(grid_id, export_dir, train, params, hyper_parameters):
         H2OGeneralizedLowRankEstimator,
         grid_id=grid_id,
         hyper_params=hyper_parameters,
-        recovery_dir=export_dir,
-        parallelism=2
+        recovery_dir=export_dir
+        #, parallelism=2
     )
     grid.start(x=train.names, training_frame=train, **params)
     return grid
@@ -246,8 +246,8 @@ def xgboost_start(grid_id, export_dir, train, params, hyper_parameters):
         H2OXGBoostEstimator,
         grid_id=grid_id,
         hyper_params=hyper_parameters,
-        recovery_dir=export_dir,
-        parallelism=2
+        recovery_dir=export_dir
+        #,parallelism=2 FIXME
     )
     grid.start(x=list(range(2, train.ncol)), y="Angaus", training_frame=train, **params)
     return grid
