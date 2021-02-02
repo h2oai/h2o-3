@@ -2,7 +2,6 @@ import sys
 import os
 import tempfile
 import time
-import random
 import numpy as np
 
 sys.path.insert(1, os.path.join("..", "..", ".."))
@@ -182,11 +181,11 @@ def test_glrm():
 
 def glrm_start(grid_id, export_dir, train, params, hyper_parameters):
     grid = H2OGridSearch(
-        H2OGeneralizedLowRankEstimator,
+        H2OGeneralizedLowRankEstimator(seed=42),
         grid_id=grid_id,
         hyper_params=hyper_parameters,
-        recovery_dir=export_dir
-        #, parallelism=2
+        recovery_dir=export_dir,
+        parallelism=2
     )
     grid.start(x=train.names, training_frame=train, **params)
     return grid
@@ -246,8 +245,8 @@ def xgboost_start(grid_id, export_dir, train, params, hyper_parameters):
         H2OXGBoostEstimator,
         grid_id=grid_id,
         hyper_params=hyper_parameters,
-        recovery_dir=export_dir
-        #,parallelism=2 FIXME
+        recovery_dir=export_dir,
+        parallelism=2
     )
     grid.start(x=list(range(2, train.ncol)), y="Angaus", training_frame=train, **params)
     return grid
@@ -298,9 +297,6 @@ def grid_ft_resume(train, grid_id, params, hyper_parameters, start_grid):
     
 
 def grid_ft_resume_test():
-    test_dl()
-    test_gbm()
-    test_glm()
     test_glrm()
     test_kmeans()
     test_xgboost()
