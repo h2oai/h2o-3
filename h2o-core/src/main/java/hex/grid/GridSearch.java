@@ -328,11 +328,14 @@ public final class GridSearch<MP extends Model.Parameters> {
 
     if(!startModels.isEmpty()) {
       parallelModelBuilder.run(startModels);
-      parallelModelBuilder.join();
+      parallelModelBuilder.join(); // Warning: keep in mind this is not being executed as a F/J task, it just looks like one
     }
     grid.update(_job);
 
     attemptGridSave(grid);
+    if (_job.stop_requested()) {
+      throw new Job.JobCancelledException();
+    }
   }
 
 
