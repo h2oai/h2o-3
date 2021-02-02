@@ -581,7 +581,9 @@ h2o.get_leaderboard <- function(object, extra_columns=NULL) {
 }
 
 
-#' Get best model of a given family/algorithm.
+#' Get best model of a given family/algorithm from an AutoML object.
+#'
+#' @param object H2OAutoML object
 #' @param algorithm One of "base_model", "deep_learning", "drf", "gbm", "glm", "stacked_ensemble", "xgboost", "xrt"
 #' @param criterion Criterium can be one of the metrics reported in leaderboard, if NULL pick the first metric
 #'                  for each task from the following list:
@@ -601,7 +603,10 @@ h2o.get_leaderboard <- function(object, extra_columns=NULL) {
 #' gbm <- h2o.get_best_model(aml, "gbm")
 #' }
 #' @export
-h2o.get_best_model <- function(object, algorithm, criterion=NULL) {
+h2o.get_best_model <- function(object,
+                               algorithm = c("base_model", "deep_learning", "drf", "gbm",
+                                             "glm", "stacked_ensemble", "xgboost", "xrt"),
+                               criterion = NULL) {
   .get_best <- function (leaderboard, pattern, criterion, ascending) {
     leaderboard <- do.call(h2o.arrange, list(
       leaderboard,
@@ -625,6 +630,7 @@ h2o.get_best_model <- function(object, algorithm, criterion=NULL) {
     xrt = "^XRT_"
   )
 
+  algorithm <- match.arg(algorithm)
   higher_is_better <- c("auc", "aucpr")
 
   if (!tolower(algorithm) %in% names(patterns)) {
@@ -644,7 +650,7 @@ h2o.get_best_model <- function(object, algorithm, criterion=NULL) {
   criteria <- stats::setNames(sapply(names(object@leaderboard), as.symbol), sapply(names(object@leaderboard), tolower))
 
   if (!tolower(criterion) %in% names(criteria)) {
-    stop("Criterion \"", criterion,"\" not present in the leaderboard!")
+    stop("Criterion \"", criterion,"\" is not present in the leaderboard!")
   }
 
   return(.get_best(

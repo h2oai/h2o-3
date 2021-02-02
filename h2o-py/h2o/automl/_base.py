@@ -128,7 +128,7 @@ class H2OAutoMLBaseMixin:
 
     def get_best_model(self, algorithm, criterion=None):
         """
-        Get best model of a given family/algorithm.
+        Get best model of a given family/algorithm from an AutoML object.
 
         :param algorithm: One of "base_model", "deep_learning", "drf", "gbm", "glm", "stacked_ensemble", "xgboost", "xrt"
         :param criterion: Criterium can be one of the metrics reported in leaderboard, if None pick the first metric
