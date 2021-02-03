@@ -2,14 +2,16 @@ package hex.tree.isoforextended;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.tree.SharedTree;
 import org.apache.log4j.Logger;
-import water.*;
+import water.H2O;
+import water.Job;
+import water.Key;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.*;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -136,8 +138,34 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
             }
 
             model.unlock(_job); // todo avalenta what is it good for?
+            model._output._model_summary = createModelSummaryTable();
             addCustomInfo(model._output);
         }
+    }
+
+    public TwoDimTable createModelSummaryTable() {
+        List<String> colHeaders = new ArrayList<>();
+        List<String> colTypes = new ArrayList<>();
+        List<String> colFormat = new ArrayList<>();
+
+        colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
+        colHeaders.add("Size of Subsample"); colTypes.add("long"); colFormat.add("%d");
+        colHeaders.add("Extension Level"); colTypes.add("long"); colFormat.add("%d");
+
+        final int rows = 1;
+        TwoDimTable table = new TwoDimTable(
+                "Model Summary", null,
+                new String[rows],
+                colHeaders.toArray(new String[0]),
+                colTypes.toArray(new String[0]),
+                colFormat.toArray(new String[0]),
+                "");
+        int row = 0;
+        int col = 0;
+        table.set(row, col++, _parms._ntrees);
+        table.set(row, col++, _parms._sample_size);
+        table.set(row, col, _parms.extension_level);
+        return table;
     }
 
 }
