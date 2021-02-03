@@ -661,8 +661,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           Log.info("CoxPH Last Iteration: " + iterTimer.toString());
         }
         
-        final boolean _skip_scoring = Boolean.parseBoolean(
-                System.getProperty("sys.ai.h2o.debug.skipScoring", Boolean.FALSE.toString())); 
+        final boolean _skip_scoring = H2O.getSysBoolProperty("sys.ai.h2o.debug.skipScoring", false); 
         
         if (!_skip_scoring) {
           model.update(_job);
