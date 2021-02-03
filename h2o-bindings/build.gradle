@@ -25,7 +25,7 @@ dependencies {
 
     testCompile project(":h2o-app")
     testCompile project(":h2o-web")
-    testCompile project(":h2o-avro-parser")
+    //testCompile project(":h2o-avro-parser")
     testCompile "junit:junit:${junitVersion}"
 
     // Generator dependencies
