@@ -484,6 +484,20 @@ public class ArrayUtils {
     return nums;
   }
 
+  /**
+   *
+   * @param data vector (1 x n)
+   * @param p vector (1 x n)
+   * @param n vector (1 x n)
+   * @return Result of matrix operation (data - p) * n
+   */
+  public static double subAndMul(double[] data, double[] p, double[] n) {
+    double res = 0;
+    for (int col=0; col<data.length; col++)
+      res += (data[col] - p[col]) * n[col];
+    return res;
+  }
+
   public static double[] invert(double[] ary) {
     if(ary == null) return null;
     for(int i=0;i<ary.length;i++) ary[i] = 1. / ary[i];

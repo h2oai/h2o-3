@@ -120,8 +120,7 @@ public class IsolationTree extends Iced<IsolationTree> {
         Node node = _nodes[0];
         double score = 0;
         while (!node._external) {
-            double[] sub = ArrayUtils.subtract(row, node._p);
-            double mul = ArrayUtils.innerProduct(sub, node._n);
+            double mul = ArrayUtils.subAndMul(row,node._p, node._n);
             if (mul <= 0) {
                 position = leftChildIndex(position);
             } else {
@@ -170,8 +169,7 @@ public class IsolationTree extends Iced<IsolationTree> {
         if (node._external) {
             return node._height + averagePathLengthOfUnsuccessfulSearch(node._numRows);
         } else {
-            double[] sub = ArrayUtils.subtract(row, node._p);
-            double mul = ArrayUtils.innerProduct(sub,node._n);
+            double mul = ArrayUtils.subAndMul(row,node._p, node._n);
             if (mul <= 0) {
                 return computePathLengthRecursive(row, node._left);
             } else {

@@ -416,4 +416,19 @@ public class ArrayUtilsTest {
     double[] res = minMaxValue(array);
     assertArrayEquals("Result is not correct", new double[]{-1.0, 4.0}, res, 0);
   }
+
+  @Test
+  public void testSubAndMul() {
+    double[] row = new double[]{2.0, 5.0, 6.0};
+    double[] p = new double[]{1.0, 4.0, -1.0};
+    double[] n = new double[]{-0.25, 0, 0.25};
+    double res = subAndMul(row, p, n);
+
+    assertEquals("Result is not correct", 1.5, res, 1e-3);
+
+    double[] sub = ArrayUtils.subtract(row, p);
+    double res2 = ArrayUtils.innerProduct(sub, n);
+
+    assertEquals("Result is not correct", res, res2, 1e-3);
+  }
 }
