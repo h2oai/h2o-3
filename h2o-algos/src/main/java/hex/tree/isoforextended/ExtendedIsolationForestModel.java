@@ -7,7 +7,6 @@ import hex.tree.isofor.ModelMetricsAnomaly;
 import org.apache.log4j.Logger;
 import water.Key;
 import water.fvec.Frame;
-import water.util.Log;
 
 /**
  * 
@@ -40,19 +39,18 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
 
     @Override
     protected double[] score0(double[] data, double[] preds) {
-        if (_output._ntrees >= 1) preds[1] = preds[0] / _output._ntrees;
-
+        assert _output._iTrees != null : "Output has no trees, check if trees are properly set to the output.";
         // compute score for given point
         double pathLength = 0;
-        for (IsolationTree iTree : _output.iTrees) {
+        for (IsolationTree iTree : _output._iTrees) {
             double iTreeScore = iTree.computePathLengthRecursive(data);
             pathLength += iTreeScore;
-            LOG.debug("iTreeScore " + iTreeScore);
+            LOG.trace("iTreeScore " + iTreeScore);
         }
         pathLength = pathLength / _output._ntrees;
-        LOG.debug("pathLength " + pathLength);
+        LOG.trace("pathLength " + pathLength);
         double anomalyScore = anomalyScore(pathLength);
-        LOG.debug("Anomaly score " + anomalyScore);
+        LOG.trace("Anomaly score " + anomalyScore);
         preds[0] = anomalyScore;
         preds[1] = pathLength;
         return preds;
@@ -112,7 +110,7 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
         public int _ntrees;
         public long _sample_size;
         
-        public IsolationTree[] iTrees;
+        public IsolationTree[] _iTrees;
         
         public ExtendedIsolationForestOutput(ExtendedIsolationForest eif) {
             super(eif);

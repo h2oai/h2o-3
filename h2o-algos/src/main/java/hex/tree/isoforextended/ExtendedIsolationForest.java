@@ -25,7 +25,6 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
 
     transient private static final Logger LOG = Logger.getLogger(ExtendedIsolationForest.class);
 
-    transient IsolationTree[] _iTrees;
     transient Random _rand;
 
     // Called from an http request
@@ -98,12 +97,6 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         return false;
     }
 
-    protected void addCustomInfo(ExtendedIsolationForestModel.ExtendedIsolationForestOutput out) {
-        if (_iTrees != null) {
-            out.iTrees = _iTrees;
-        }
-    }
-
     private class ExtendedIsolationForestDriver extends Driver {
 
         @Override
@@ -116,10 +109,10 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
 
         private void buildIsolationTreeEnsemble() {
             _rand = RandomUtils.getRNG(_parms._seed);
-            _iTrees = new IsolationTree[_parms._ntrees];
             ExtendedIsolationForestModel model = new ExtendedIsolationForestModel(dest(), _parms,
                     new ExtendedIsolationForestModel.ExtendedIsolationForestOutput(ExtendedIsolationForest.this));
             model.delete_and_lock(_job); // todo valenad what is it good for?
+            model._output._iTrees = new IsolationTree[_parms._ntrees];
 
             int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
 
@@ -132,14 +125,13 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 Timer timer = new Timer();
                 IsolationTree isolationTree = new IsolationTree(subSampleArray, heightLimit, _parms._seed + _rand.nextInt(), _parms.extension_level, tid);
                 isolationTree.buildTreeRecursive();
-                _iTrees[tid] = isolationTree;
+                model._output._iTrees[tid] = isolationTree;
                 _job.update(1);
                 LOG.info((tid + 1) + ". tree was built in " + timer.toString() + ". Free memory: " + PrettyPrint.bytes(H2O.CLOUD.free_mem()));
             }
 
             model.unlock(_job); // todo valenad what is it good for?
             model._output._model_summary = createModelSummaryTable();
-            addCustomInfo(model._output);
         }
     }
 
