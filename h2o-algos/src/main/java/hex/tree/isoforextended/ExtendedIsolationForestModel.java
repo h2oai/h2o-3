@@ -40,7 +40,7 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
 
     @Override
     protected double[] score0(double[] data, double[] preds) {
-        if (_parms._ntrees >= 1) preds[1] = preds[0] / _parms._ntrees;
+        if (_output._ntrees >= 1) preds[1] = preds[0] / _output._ntrees;
 
         // compute score for given point
         double pathLength = 0;
@@ -49,7 +49,7 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
             pathLength += iTreeScore;
             LOG.debug("iTreeScore " + iTreeScore);
         }
-        pathLength = pathLength / _output.iTrees.length;
+        pathLength = pathLength / _output._ntrees;
         LOG.debug("pathLength " + pathLength);
         double anomalyScore = anomalyScore(pathLength);
         LOG.debug("Anomaly score " + anomalyScore);
@@ -66,7 +66,7 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
      */
     private double anomalyScore(double pathLength) {
         return Math.pow(2, -1 * (pathLength / 
-                IsolationTree.averagePathLengthOfUnsuccessfulSearch(_parms._sample_size)));
+                IsolationTree.averagePathLengthOfUnsuccessfulSearch(_output._sample_size)));
     }
 
     public static class ExtendedIsolationForestParameters extends Model.Parameters {
@@ -110,11 +110,14 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
     public static class ExtendedIsolationForestOutput extends Model.Output {
 
         public int _ntrees;
+        public long _sample_size;
         
         public IsolationTree[] iTrees;
         
         public ExtendedIsolationForestOutput(ExtendedIsolationForest eif) {
             super(eif);
+            _ntrees = eif._parms._ntrees;
+            _sample_size = eif._parms._sample_size;
         }
 
         @Override
