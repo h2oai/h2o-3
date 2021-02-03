@@ -985,10 +985,10 @@ assertCorrectSkipColumns <-
            allFrameTypes,
            columns_skipped=1) {
     if (use_import) {
-      wholeFrame <<-
+      wholeFrame <-
         h2o.importFile(inputFileName, skipped_columns = skip_columns)
     } else  {
-      wholeFrame <<-
+      wholeFrame <-
         h2o.uploadFile(inputFileName, skipped_columns = skip_columns)
     }
     # time type gets lost when exporting to, e.g., csv and importing it back
