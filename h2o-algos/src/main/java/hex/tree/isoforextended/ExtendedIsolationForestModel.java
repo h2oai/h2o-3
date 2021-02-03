@@ -89,19 +89,26 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
             return _ntrees;
         }
 
-        // Number of trees in the forest
+        /**
+         * Number of trees in the forest
+         */
         public int _ntrees;
 
-        // Maximum is N - 1 (N = numCols). Minimum is 0. EIF with extension_level = 0 behaves like Isolation Forest.
-        public int extension_level;
+        /**
+         * Maximum is N - 1 (N = numCols). Minimum is 0. EIF with extension_level = 0 behaves like Isolation Forest.
+         */
+        public int _extension_level;
 
+        /**
+         * Number of randomly selected rows from original data before each tree build.
+         */
         public long _sample_size;
 
         public ExtendedIsolationForestParameters() {
             super();
             _ntrees = 100;
             _sample_size = 256;
-            extension_level = 0;
+            _extension_level = 0;
         }        
     }
 

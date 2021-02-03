@@ -24,6 +24,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         ExtendedIsolationForestModel.ExtendedIsolationForestOutput> {
 
     transient private static final Logger LOG = Logger.getLogger(ExtendedIsolationForest.class);
+    public static final int MAX_NTREES = 100000; // todo valenad consult the size
 
     transient Random _rand;
 
@@ -57,15 +58,18 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         super.init(expensive);
         if (_parms.train() != null) {
             long extensionLevelMax = _parms.train().numCols() - 1;
-            if (_parms.extension_level < 0 || _parms.extension_level > extensionLevelMax) {
-                throw new IllegalStateException("Parameter extension_level must be in interval [0, "
-                        + extensionLevelMax + "] but it is " + _parms.extension_level);
+            if (_parms._extension_level < 0 || _parms._extension_level > extensionLevelMax) {
+                error("extension_level", "Parameter extension_level must be in interval [0, "
+                        + extensionLevelMax + "] but it is " + _parms._extension_level);
             }
             long sampleSizeMax = _parms.train().numRows();
             if (_parms._sample_size < 0 || _parms._sample_size > sampleSizeMax) {
-                throw new IllegalStateException("Parameter sample_size must be in interval [0, "
+                error("sample_size","Parameter sample_size must be in interval [0, "
                         + sampleSizeMax + "] but it is " + _parms._sample_size);
             }
+            if( _parms._ntrees < 0 || _parms._ntrees > MAX_NTREES)
+                error("ntrees", "Parameter ntrees must be in interval [1, "
+                        + MAX_NTREES + "] but it is " + _parms._ntrees);
         }
         checkMemoryFootPrint();
     }
@@ -123,7 +127,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 double[][] subSampleArray = FrameUtils.asDoubles(subSample);
 
                 Timer timer = new Timer();
-                IsolationTree isolationTree = new IsolationTree(subSampleArray, heightLimit, _parms._seed + _rand.nextInt(), _parms.extension_level, tid);
+                IsolationTree isolationTree = new IsolationTree(subSampleArray, heightLimit, _parms._seed + _rand.nextInt(), _parms._extension_level, tid);
                 isolationTree.buildTreeRecursive();
                 model._output._iTrees[tid] = isolationTree;
                 _job.update(1);
@@ -156,7 +160,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         int col = 0;
         table.set(row, col++, _parms._ntrees);
         table.set(row, col++, _parms._sample_size);
-        table.set(row, col, _parms.extension_level);
+        table.set(row, col, _parms._extension_level);
         return table;
     }
 

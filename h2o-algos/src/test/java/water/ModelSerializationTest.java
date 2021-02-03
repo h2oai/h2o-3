@@ -308,7 +308,7 @@ public class ModelSerializationTest {
       eifParams._train = frame._key;
       eifParams._ignored_columns = ignoredColumns;
       eifParams._ntrees = ntrees;
-      eifParams.extension_level = extensionLevel;
+      eifParams._extension_level = extensionLevel;
       eifParams._score_each_iteration = true;
 
       return new ExtendedIsolationForest(eifParams).trainModel().get();
