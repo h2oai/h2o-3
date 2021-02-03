@@ -53,7 +53,7 @@ public class JobsHandler extends Handler {
     }
     j.stop(); // Request Job stop
     long start = System.currentTimeMillis();
-    Log.info("Waiting for job " + c.job_id.key() + " to finishe execution.");
+    Log.info("Waiting for job " + c.job_id.key() + " to finish execution.");
     try {
       j.get(); // Wait for Job to complete 
     } catch (Exception e) {
