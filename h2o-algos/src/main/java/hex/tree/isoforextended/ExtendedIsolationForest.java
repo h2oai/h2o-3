@@ -119,7 +119,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
             _iTrees = new IsolationTree[_parms._ntrees];
             ExtendedIsolationForestModel model = new ExtendedIsolationForestModel(dest(), _parms,
                     new ExtendedIsolationForestModel.ExtendedIsolationForestOutput(ExtendedIsolationForest.this));
-            model.delete_and_lock(_job); // todo avalenta what is it good for?
+            model.delete_and_lock(_job); // todo valenad what is it good for?
 
             int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
 
@@ -137,7 +137,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 LOG.info((tid + 1) + ". tree was built in " + timer.toString() + ". Free memory: " + PrettyPrint.bytes(H2O.CLOUD.free_mem()));
             }
 
-            model.unlock(_job); // todo avalenta what is it good for?
+            model.unlock(_job); // todo valenad what is it good for?
             model._output._model_summary = createModelSummaryTable();
             addCustomInfo(model._output);
         }

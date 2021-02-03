@@ -254,7 +254,7 @@ public class IsolationTree extends Iced<IsolationTree> {
         }
 
         double[][] left = new double[data.length][leftLength];
-        double[][] right = new double[data.length][rightLength];
+        double[][] right = new double[data.length][rightLength]; // todo valenad do not create empty array
 
         for (int row = 0, rowLeft = 0, rowRight = 0; row < data[0].length; row++) {
             if (res[row] <= 0) {
