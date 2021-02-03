@@ -652,9 +652,9 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           calcCumhaz_0(model, coxMR);
         }
 
-        if (iterTimer != null)
+        if (iterTimer != null) {
           Log.info("CoxPH Last Iteration: " + iterTimer.toString());
-
+        }
         model.update(_job);
       } finally {
         if (model != null) model.unlock(_job);
