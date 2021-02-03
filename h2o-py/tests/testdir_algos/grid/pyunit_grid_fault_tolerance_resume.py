@@ -297,6 +297,9 @@ def grid_ft_resume(train, grid_id, params, hyper_parameters, start_grid):
     
 
 def grid_ft_resume_test():
+    test_dl()
+    test_gbm()
+    test_glm()
     test_glrm()
     test_kmeans()
     test_xgboost()
