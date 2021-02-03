@@ -304,17 +304,18 @@ def test_custom_leaderboard():
     assert aml.leaderboard.names == std_columns
     assert get_leaderboard(aml).names == std_columns
     assert get_leaderboard(aml, extra_columns=[]).names == std_columns
-    assert get_leaderboard(aml, extra_columns='ALL').names == std_columns + ["training_time_ms", "predict_time_per_row_ms"]
+    assert get_leaderboard(aml, extra_columns='ALL').names == std_columns + ["training_time_ms", "predict_time_per_row_ms", "algo"]
     assert get_leaderboard(aml, extra_columns="unknown").names == std_columns
     assert get_leaderboard(aml, extra_columns=["training_time_ms"]).names == std_columns + ["training_time_ms"]
     assert get_leaderboard(aml, extra_columns=["predict_time_per_row_ms", "training_time_ms"]).names == std_columns + ["predict_time_per_row_ms", "training_time_ms"]
     assert get_leaderboard(aml, extra_columns=["unknown", "training_time_ms"]).names == std_columns + ["training_time_ms"]
     lb_ext = get_leaderboard(aml, extra_columns='ALL')
     print(lb_ext)
-    assert all(lb_ext[:, 1:].isnumeric()), "metrics and extension columns should all be numeric"
+    assert all(lb_ext[:, [c for c in lb_ext.columns if c not in ("model_id", "algo")]].isnumeric()), "metrics and extension columns should all be numeric"
     assert (lb_ext["training_time_ms"].as_data_frame().values >= 0).all()
     assert (lb_ext["predict_time_per_row_ms"].as_data_frame().values > 0).all()
-
+    assert (lb_ext["algo"].as_data_frame().isin(["DRF", "DeepLearning", "GBM",
+                                                 "GLM", "StackedEnsemble", "XGBoost"]).all().all())
 
 def test_get_best_model_per_family():
     ds = prepare_data('binomial')
@@ -323,22 +324,39 @@ def test_get_best_model_per_family():
                     seed=automl_seed)
     aml.train(y=ds.target, training_frame=ds.train)
 
-    top_models = [aml.get_best_model(mtype) for mtype in ["deep_learning", "drf", "gbm", "glm",
-                                                          "stacked_ensemble", "xgboost", "xrt"]]
-    nones = [v is None for v in top_models]
-    assert sum(nones) <= 1 and len(nones) >= 7
+    def _check_best_models(model_ids, criterion):
+        top_models = [aml.get_best_model(mtype, criterion) for mtype in ["deep_learning", "drf", "gbm", "glm",
+                                                              "stacked_ensemble", "xgboost"]]
+        nones = [v is None for v in top_models]
+        assert sum(nones) <= 1 and len(nones) >= 6
+        seen = set()
+        top_model_ids = [m.model_id for m in top_models if m is not None]
+        for model_id in model_ids:
+            model_type = model_id.split("_")[0]
+            if model_type not in seen:
+                assert model_id in top_model_ids
+                if model_type in ("DRF", "XRT"):
+                    seen.add("DRT")
+                    seen.add("XRT")
+                else:
+                    seen.add(model_type)
+    # Check default criterion
     model_ids = aml.leaderboard.as_data_frame()["model_id"]
-    seen = set()
-    top_model_ids = [m.model_id for m in top_models if m is not None]
-    for model_id in model_ids:
-        model_type = model_id.split("_")[0]
-        if model_type not in seen:
-            assert model_id in top_model_ids
-            if model_type in ("DRF", "XRT"):
-                seen.add("DRT")
-                seen.add("XRT")
-            else:
-                seen.add(model_type)
+    _check_best_models(model_ids, None)
+
+    # Check it works for custom criterion (MSE)
+    model_ids = aml.leaderboard.sort(by="mse").as_data_frame()["model_id"]
+    _check_best_models(model_ids, "mse")
+
+    # Check it works for without specifying a model type
+    assert aml.get_best_model().model_id == aml.leaderboard[0, "model_id"]
+
+    # Check it works with just criterion
+    assert aml.get_best_model(criterion="mse").model_id == aml.leaderboard.sort(by="mse")[0, "model_id"]
+
+    # Check it works with extra_cols
+    top_model = h2o.automl.get_leaderboard(aml, extra_columns=["training_time_ms"]).sort(by="training_time_ms")[0, "model_id"]
+    assert aml.get_best_model(criterion="training_time_ms", extra_columns=["training_time_ms"]).model_id == top_model
 
 
 pyunit_utils.run_tests([

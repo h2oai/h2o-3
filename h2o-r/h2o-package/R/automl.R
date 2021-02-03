@@ -560,6 +560,7 @@ h2o.getAutoML <- function(project_name) {
 #' \item{'ALL': adds all columns below.}
 #' \item{'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).}
 #' \item{'predict_time_per_row_ms': column providing the average prediction time by the model for a single row.}
+#' \item{'algo': column providing the algorithm name for each model.}
 #' }
 #' @return An H2OFrame representing the leaderboard.
 #' @examples
@@ -584,12 +585,21 @@ h2o.get_leaderboard <- function(object, extra_columns=NULL) {
 #' Get best model of a given family/algorithm from an AutoML object.
 #'
 #' @param object H2OAutoML object
-#' @param algorithm One of "base_model", "deep_learning", "drf", "gbm", "glm", "stacked_ensemble", "xgboost", "xrt"
+#' @param algorithm One of "base_model", "deep_learning", "drf", "gbm", "glm", "stacked_ensemble", "xgboost"
 #' @param criterion Criterium can be one of the metrics reported in leaderboard, if NULL pick the first metric
-#'                  for each task from the following list:
-#'                  * Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle
-#'                  * Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse
-#'                  * Multinomial metrics: mean_per_class_error, logloss, rmse, mse, auc, aucpr
+#' for each task from the following list:
+#' \itemize{
+#' \item{Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle}
+#' \item{Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse}
+#' \item{Multinomial metrics: mean_per_class_error, logloss, rmse, mse, auc, aucpr}
+#' }
+#' @param extra_columns Character vector of extra columns that can be used as a criterion.
+#' Currently supported values are:
+#' \itemize{
+#' \item{'ALL': adds all columns below.}
+#' \item{'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).}
+#' \item{'predict_time_per_row_ms': column providing the average prediction time by the model for a single row.}
+#' }
 #' @return a model or None if none of a given family is present
 #' @examples
 #' \dontrun{
@@ -604,30 +614,19 @@ h2o.get_leaderboard <- function(object, extra_columns=NULL) {
 #' }
 #' @export
 h2o.get_best_model <- function(object,
-                               algorithm = c("base_model", "deep_learning", "drf", "gbm",
+                               algorithm = c("any", "base_model", "deep_learning", "drf", "gbm",
                                              "glm", "stacked_ensemble", "xgboost", "xrt"),
-                               criterion = NULL) {
-  .get_best <- function (leaderboard, pattern, criterion, ascending) {
-    leaderboard <- do.call(h2o.arrange, list(
-      leaderboard,
-      if(ascending) criterion else bquote(desc(.(criterion)))))
-
-    model_ids <- leaderboard$model_id
-    matches <- as.numeric(as.list(h2o.grep(pattern, model_ids)))
-    if (length(matches) == 0)
-      return(NULL)
-    return(h2o.getModel(model_ids[matches[[1]], 1]))
-  }
-
+                               criterion = NULL,
+                               extra_columns = NULL) {
   patterns <- list(
-    base_model = "^(?!StackedEnsemble_)",
-    deep_learning = "^DeepLearning_",
-    drf = "^(DRF|XRT)_",
-    gbm = "^GBM_",
-    glm = "^GLM_",
-    stacked_ensemble = "^StackedEnsemble_",
-    xgboost = "^XGBoost_",
-    xrt = "^XRT_"
+    base_model = "^(?!StackedEnsemble)",
+    deep_learning = "^DeepLearning$",
+    drf = "^DRF$",
+    gbm = "^GBM$",
+    glm = "^GLM$",
+    stacked_ensemble = "^StackedEnsemble$",
+    xgboost = "^XGBoost$",
+    any = ".*"
   )
 
   algorithm <- match.arg(algorithm)
@@ -637,26 +636,39 @@ h2o.get_best_model <- function(object,
     stop(paste0("Unknown algorithm \"", algorithm, "\"!"))
   }
 
-  if (is.null(criterion)) {
-    if (is(object@leader, "H2ORegressionModel")) {
-      criterion <- "mean_residual_deviance"
-    } else if (is(object@leader, "H2OBinomialModel")) {
-      criterion <- "auc"
-    } else {
-      criterion <- "mean_per_class_error"
-    }
+  if (is(object@leader, "H2ORegressionModel")) {
+    default_criterion <- "mean_residual_deviance"
+  } else if (is(object@leader, "H2OBinomialModel")) {
+    default_criterion <- "auc"
+  } else {
+    default_criterion <- "mean_per_class_error"
   }
 
-  criteria <- stats::setNames(sapply(names(object@leaderboard), as.symbol), sapply(names(object@leaderboard), tolower))
+  if ("all" %in% tolower(extra_columns)) {
+    extra_cols <- "ALL"
+  } else {
+    extra_cols <-  c("algo", extra_columns)
+  }
+  leaderboard <- h2o.get_leaderboard(object, extra_columns = extra_cols)
 
-  if (!tolower(criterion) %in% names(criteria)) {
-    stop("Criterion \"", criterion,"\" is not present in the leaderboard!")
+  criteria <- stats::setNames(sapply(names(leaderboard), as.symbol), sapply(names(leaderboard), tolower))
+
+  criterion <- c(criterion, default_criterion)
+  if (any(!tolower(criterion[[1]]) %in% names(criteria))) {
+    stop("Criterion \"", criterion[[1]],"\" is not present in the leaderboard!")
   }
 
-  return(.get_best(
-    leaderboard = object@leaderboard,
-    pattern = patterns[[algorithm]],
-    criterion = criteria[[tolower(criterion)]],
-    ascending = !tolower(criterion) %in% higher_is_better
-  ))
+  pattern <- patterns[[algorithm]]
+
+  criterion <- criteria[tolower(criterion)]
+  ascending <- !tolower(criterion) %in% higher_is_better
+
+  leaderboard <- do.call(h2o.arrange, c(
+    list(leaderboard),
+    ifelse(ascending, criterion, bquote(desc(.(criterion))))))
+  matches <- as.numeric(as.list(h2o.grep(pattern, leaderboard$algo)))
+
+  if (length(matches) == 0)
+    return(NULL)
+  return(h2o.getModel(leaderboard$model_id[matches[[1]], 1]))
 }

@@ -126,16 +126,21 @@ class H2OAutoMLBaseMixin:
         """
         pass
 
-    def get_best_model(self, algorithm, criterion=None):
+    def get_best_model(self, algorithm="any", criterion=None, extra_columns=[]):
         """
         Get best model of a given family/algorithm from an AutoML object.
 
-        :param algorithm: One of "base_model", "deep_learning", "drf", "gbm", "glm", "stacked_ensemble", "xgboost", "xrt"
+        :param algorithm: One of "any", "base_model", "deep_learning", "drf", "gbm", "glm", "stacked_ensemble", "xgboost"
         :param criterion: Criterium can be one of the metrics reported in leaderboard, if None pick the first metric
                           for each task from the following list:
                             * Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle
                             * Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse
                             * Multinomial metrics: mean_per_class_error, logloss, rmse, mse, auc, aucpr
+        :param extra_columns: List of extra columns that can be used as a criterion.
+                              Currently supported values are:
+                                - 'ALL': adds all columns below.
+                                - 'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).
+                                - 'predict_time_per_row_ms`: column providing the average prediction time by the model for a single row.
         :return: a model or None if none of a given family is present
         :examples:
         >>> # Set up an H2OAutoML object
@@ -144,42 +149,45 @@ class H2OAutoMLBaseMixin:
         >>> aml.train(y=y, training_frame=train)
         >>> gbm = aml.get_best_model("gbm")
         """
-        def _best(leaderboard, pattern, criterion, ascending):
-            # type: (h2o.H2OFrame, str, str, bool) -> h2o.model.ModelBase
-            matches = leaderboard.sort(by=criterion, ascending=ascending)["model_id"].grep(pattern)
-            if matches.nrow == 0:
-                return None
-            return h2o.get_model(self.leaderboard[int(matches[0, :]), "model_id"])
-
         patterns = dict(
-            base_model="^(?!StackedEnsemble_)",
-            deep_learning="^DeepLearning_",
-            drf="^(DRF|XRT)_",
-            gbm="^GBM_",
-            glm="^GLM_",
-            stacked_ensemble="^StackedEnsemble_",
-            xgboost="^XGBoost_",
-            xrt="^XRT_"
+            base_model="^(?!StackedEnsemble)",
+            deep_learning="^DeepLearning$",
+            drf="^DRF$",
+            gbm="^GBM$",
+            glm="^GLM$",
+            stacked_ensemble="^StackedEnsemble$",
+            xgboost="^XGBoost$",
+            any=".*"
         )
 
         higher_is_better = ["auc", "aucpr"]
+        model_category = self.leader._model_json["output"]["model_category"]
+        if "Regression" == model_category:
+            default_criterion = "mean_residual_deviance"
+        elif "Binomial" == model_category:
+            default_criterion = "auc"
+        else:
+            default_criterion = "mean_per_class_error"
 
         if criterion is None:
-            model_category = self.leader._model_json["output"]["model_category"]
-            if "Regression" == model_category:
-                criterion = "mean_residual_deviance"
-            elif "Binomial" == model_category:
-                criterion = "auc"
-            else:
-                criterion = "mean_per_class_error"
+            criterion = [default_criterion]
+        else:
+            # Deal with potential ties when not using the default criterion => use it to break the ties
+            criterion = [criterion, default_criterion]
 
-        criteria = {col.lower(): col for col in self.leaderboard.columns}
+        if "all" in [c.lower() for c in extra_columns]:
+            extra_cols = "ALL"
+        else:
+            extra_cols = extra_columns + ["algo"]
 
-        if criterion.lower() not in criteria.keys():
+        leaderboard = h2o.automl.get_leaderboard(self, extra_columns=extra_cols)
+        criteria = {col.lower(): col for col in leaderboard.columns}
+
+        if criterion[0].lower() not in criteria.keys():
             from h2o.exceptions import H2OValueError
             raise H2OValueError("Criterion \"{}\" is not present in the leaderboard!".format(criterion))
 
-        criterion = criteria[criterion]
+        criterion = [criteria[c] for c in criterion]
 
         if algorithm.lower() not in patterns.keys():
             from h2o.exceptions import H2OValueError
@@ -188,9 +196,8 @@ class H2OAutoMLBaseMixin:
                 '", "'.join(sorted(list(patterns.keys())))
             ))
 
-        return _best(
-            leaderboard=self.leaderboard,
-            pattern=patterns[algorithm.lower()],
-            criterion=criterion,
-            ascending=criterion.lower() not in higher_is_better
-        )
+        sorted_lb = leaderboard.sort(by=criterion, ascending=[c.lower() not in higher_is_better for c in criterion])
+        matches = sorted_lb[int(sorted_lb["algo"].grep(patterns[algorithm.lower()])[0, :]), :]["model_id"]
+        if matches.nrow == 0:
+            return None
+        return h2o.get_model(matches[0, "model_id"])
