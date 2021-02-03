@@ -3,8 +3,10 @@ package water.runner;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.internal.AssumptionViolatedException;
 import org.junit.internal.runners.model.EachTestNotifier;
+import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
@@ -19,17 +21,11 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 
 @Ignore
 public class H2ORunner extends BlockJUnit4ClassRunner {
-    private final TestClass testClass;
-    private final HashSet<String> doOnlyTestNames;
-    private final HashSet<String> ignoreTestsNames;
 
     /**
      * Creates a BlockJUnit4ClassRunner to run {@code klass}
@@ -39,10 +35,6 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
      */
     public H2ORunner(Class<?> klass) throws InitializationError {
         super(klass);
-        testClass = getTestClass();
-        doOnlyTestNames = new HashSet();
-        ignoreTestsNames = new HashSet();
-        createTestFilters();
     }
 
 
@@ -55,7 +47,7 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
 
     @Override
     protected Statement withAfterClasses(Statement statement) {
-        final List<FrameworkMethod> afters = testClass
+        final List<FrameworkMethod> afters = getTestClass()
                 .getAnnotatedMethods(AfterClass.class);
         return new H2ORunnerAfters(statement, afters, null);
     }
@@ -70,6 +62,23 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
         }
     }
 
+    @Override
+    protected List<TestRule> getTestRules(Object target) {
+        if (target instanceof TestUtil) {
+            return super.getTestRules(target);
+        }
+
+        List<TestRule> rules = new ArrayList<>(super.getTestRules(target));
+        // add rules defined in TestUtil
+        rules.addAll(new TestClass(DefaultRulesBlueprint.class)
+                .getAnnotatedFieldValues(DefaultRulesBlueprint.INSTANCE, Rule.class, TestRule.class));
+        return rules;
+    }
+
+    public static class DefaultRulesBlueprint extends TestUtil {
+        private static final DefaultRulesBlueprint INSTANCE = new DefaultRulesBlueprint(); 
+    }
+    
     /**
      * Runs a {@link Statement} that represents a leaf (aka atomic) test.
      */
@@ -158,9 +167,9 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
 
 
     private int fetchCloudSize() {
-        final CloudSize annotation = testClass.getAnnotation(CloudSize.class);
+        final CloudSize annotation = getTestClass().getAnnotation(CloudSize.class);
         if (annotation == null)
-            throw new IllegalStateException("@CloudSize annotation is missing for test class: " + testClass.getName());
+            throw new IllegalStateException("@CloudSize annotation is missing for test class: " + getTestClass().getName());
 
         final int cloudSize = annotation.value();
 
@@ -168,41 +177,6 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
             throw new IllegalStateException("@CloudSize annotation must specify sizes greater than zero. Given value: " + cloudSize);
 
         return cloudSize;
-    }
-
-    @Override
-    protected boolean isIgnored(FrameworkMethod child) {
-        final boolean isAnnotatedAsIgnored = super.isIgnored(child); // Marked as ignored by @Ignored annotation
-        final String testName = child.getDeclaringClass().getName() + "#" + child.getMethod().getName();
-        
-        final boolean isConfiguredAsIgnored = this.ignoreTestsNames.contains(testName);
-        final boolean isConfiguredAsDoOnly = this.doOnlyTestNames.contains(testName);
-
-        return isAnnotatedAsIgnored || (isConfiguredAsIgnored && !isConfiguredAsDoOnly) 
-                || (!this.doOnlyTestNames.isEmpty() && !isConfiguredAsDoOnly);
-    }
-
-    private void createTestFilters() {
-        final String ignoreTests = System.getProperty("ignore.tests");
-        if (ignoreTests != null) {
-            final String[] split = ignoreTests.split(",");
-            if (split.length != 1 && !split[0].equals("")) {
-                for (final String ignoredTestName : split) {
-                    this.ignoreTestsNames.add(ignoredTestName);
-                }
-            }
-        }
-
-        final String doOnlytestsInput = System.getProperty("doonly.tests");
-        if (doOnlytestsInput != null) {
-            final String[] split = doOnlytestsInput.split(",");
-            if (split.length != 1 && !split[0].equals("")) {
-                for (final String doOnlyTestName : split) {
-                    this.doOnlyTestNames.add(doOnlyTestName);
-                }
-            }
-        }
-
     }
 
 }
