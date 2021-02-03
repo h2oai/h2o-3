@@ -4,10 +4,13 @@ import org.apache.log4j.Logger;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.FrameUtils;
 
 import java.util.Arrays;
@@ -15,16 +18,34 @@ import java.util.Arrays;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertTrue;
 
+@CloudSize(1)
+@RunWith(H2ORunner.class)
 public class ExtendedIsolationForestTest extends TestUtil {
     private static final Logger LOG = Logger.getLogger(ExtendedIsolationForestTest.class);
 
-    @BeforeClass()
-    public static void setup() {
-        stall_till_cloudsize(1);
+    @Test
+    public void testBasicTrain() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
+                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._ntrees = 100;
+            p.extension_level = train.numCols() - 1;
+
+            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
+            ExtendedIsolationForestModel model = eif.trainModel().get();
+            Scope.track_generic(model);
+            assertNotNull(model);
+        } finally {
+            Scope.exit();
+        }
     }
 
     @Test
-    public void testBasic() {
+    public void testBasicTrainAndScore() {
         try {
             Scope.enter();
             Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
@@ -41,7 +62,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             ExtendedIsolationForestModel model = eif.trainModel().get();
             Scope.track_generic(model);
             assertNotNull(model);
-            
+
             Frame out = model.score(train);
             Scope.track_generic(out);
             assertArrayEquals(new String[]{"anomaly_score", "mean_length"}, out.names());
