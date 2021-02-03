@@ -275,7 +275,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
       
     DataInfo scoringInfo = _output.data_info.scoringInfo(_output._names, adaptFrm, nResponses, false);
 
-    CoxPHScore score = new CoxPHScore(scoringInfo, _output, _parms.isStratified());
+    CoxPHScore score = new CoxPHScore(scoringInfo, _output, _parms.isStratified(), null != _parms._offset_column);
     final Frame scored = score
                          .doAll(Vec.T_NUM, scoringInfo._adaptedFrame)
                          .outputFrame(Key.<Frame>make(destination_key), new String[]{"lp"}, null);
@@ -313,11 +313,11 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     private int _numStart;
     private boolean _hasStrata;
 
-    private CoxPHScore(DataInfo dinfo, CoxPHOutput o, boolean hasStrata) {
+    private CoxPHScore(DataInfo dinfo, CoxPHOutput o, boolean hasStrata, boolean hasOffsets) {
       final int strataCount = o._x_mean_cat.length;
       _dinfo = dinfo;
       _hasStrata = hasStrata;
-      _coef = o._coef;
+      _coef = hasOffsets ? ArrayUtils.append(o._coef, 1.0) : o._coef;
       _numStart = o._x_mean_cat[0].length;
       _lpBase = new double[strataCount];
       for (int s = 0; s < strataCount; s++) {
@@ -337,14 +337,14 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
           nc.addNA();
           continue;
         }
-        double s = _hasStrata ? chks[_dinfo.responseChunkId(0)].atd(rid) : 0;
-        if (Double.isNaN(s)) {
-          // unknown strata
+        final double s = _hasStrata ? chks[_dinfo.responseChunkId(0)].atd(rid) : 0;
+        final boolean unknownStrata = Double.isNaN(s);
+        if (unknownStrata) {
           nc.addNA();
-          continue;
+        } else {
+          final double lp = r.innerProduct(_coef) - _lpBase[(int) s];
+          nc.addNum(lp);
         }
-        double lp = r.innerProduct(_coef) - _lpBase[(int) s];
-        nc.addNum(lp);
       }
     }
   }
