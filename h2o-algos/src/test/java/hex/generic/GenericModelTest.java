@@ -757,7 +757,7 @@ public class GenericModelTest extends TestUtil {
     
     @Test
     public void testJavaScoring_mojo_cox_ph_categorical() throws IOException {
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 10000; i++) {
 
             System.out.println("====================================================================");
             System.out.println("====================================================================");
@@ -824,7 +824,8 @@ public class GenericModelTest extends TestUtil {
         parms._ignored_columns = new String[]{"id"};
         parms._stratify_by = stratifyBy;
         parms._use_all_factor_levels = true;
-        parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.breslow;
+//        parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.breslow;
+        parms._single_node_mode = true;
 
         CoxPH job = new CoxPH(parms);
         final CoxPHModel originalModel = job.trainModel().get();
