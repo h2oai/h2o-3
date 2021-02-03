@@ -824,8 +824,8 @@ public class GenericModelTest extends TestUtil {
         parms._ignored_columns = new String[]{"id"};
         parms._stratify_by = stratifyBy;
         parms._use_all_factor_levels = true;
-//        parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.breslow;
-        parms._single_node_mode = true;
+        parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.breslow;
+//        parms._single_node_mode = true;
 
         CoxPH job = new CoxPH(parms);
         final CoxPHModel originalModel = job.trainModel().get();
