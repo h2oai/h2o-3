@@ -218,7 +218,7 @@ class H2OClusteringModel(ModelBase):
         return list(m.values())[0] if len(m) == 1 else m
 
 
-    def centers(self):
+    def centers(self, as_table=False):
         """The centers for the KMeans model.
 
         :examples:
@@ -229,6 +229,8 @@ class H2OClusteringModel(ModelBase):
         >>> km.centers()
         """
         o = self._model_json["output"]
+        if as_table:
+            return o["centers"]
         cvals = o["centers"].cell_values
         centers = [list(cval[1:]) for cval in cvals]
         return centers
@@ -236,7 +238,7 @@ class H2OClusteringModel(ModelBase):
         
 
 
-    def centers_std(self):
+    def centers_std(self, as_table=False):
         """The standardized centers for the kmeans model.
 
         :examples:
@@ -247,6 +249,8 @@ class H2OClusteringModel(ModelBase):
         >>> km.centers_std()
         """
         o = self._model_json["output"]
+        if as_table:
+            return o["centers_std"]
         cvals = o["centers_std"].cell_values
         centers_std = [list(cval[1:]) for cval in cvals]
         centers_std = [list(x) for x in zip(*centers_std)]
