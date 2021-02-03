@@ -1,6 +1,7 @@
 package water.clustering;
 
 import org.apache.log4j.Logger;
+import water.H2O;
 import water.clustering.api.AssistedClusteringRestApi;
 import water.clustering.api.GracefulAsyncRunner;
 import water.init.AbstractEmbeddedH2OConfig;
@@ -48,7 +49,7 @@ public class AssistedClusteringEmbeddedConfigProvider implements EmbeddedConfigP
             return Optional.of(assistedClusteringRestApi);
         } catch (IOException e) {
             Log.err("Unable to start H2O assisted clustering REST API", e);
-            System.exit(1);
+            H2O.exit(1);
             return Optional.empty();
         }
     }
