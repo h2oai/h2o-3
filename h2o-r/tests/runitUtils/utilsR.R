@@ -992,7 +992,7 @@ assertCorrectSkipColumns <-
         h2o.uploadFile(inputFileName, skipped_columns = skip_columns)
     }
     # time type gets lost when exporting to, e.g., csv and importing it back
-    for (i in which(sapply(f1R[,names(wholeFrame)], class) == "POSIXct"))
+    for (i in which(sapply(f1R[names(wholeFrame)], class) == "POSIXct"))
       attr(wholeFrame, "types")[[i]] <- "time"
 
     expect_true(h2o.nrow(wholeFrame) == nrow(f1R))
