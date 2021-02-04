@@ -107,10 +107,12 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       if (_parms._interaction_pairs != null) {
         for (StringPair pair : _parms._interaction_pairs) {
           if (pair._a != null && !pair._a.isEmpty() && _train.vec(pair._a) == null) {
-            error("interaction_pairs", pair._a + " not found in the training frame");
+            error("interaction_pairs", pair._a + " not found in the training frame with columns" 
+                    + Arrays.toString(_train.names()));
           }
           if (pair._b != null && !pair._b.isEmpty() && _train.vec(pair._b) == null) {
-            error("interaction_pairs", pair._b + " not found in the training frame");
+            error("interaction_pairs", pair._b + " not found in the training frame with columns"
+                    + Arrays.toString(_train.names()));
           }
         }
       }
