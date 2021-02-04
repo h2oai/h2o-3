@@ -18,7 +18,9 @@ import water.rapids.ast.params.AstStr;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNums;
 import water.rapids.vals.ValStrs;
+import water.runner.CleanAllKeysTask;
 import water.runner.CloudSize;
+import water.runner.CollectBeforeTestKeysTask;
 import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.FileUtils;
@@ -284,22 +286,31 @@ public class RapidsTest{
   }
 
   @Test public void testRowApply() {
-    String tree = "(apply a.hex 1 sum)";
-    checkTree(tree);
+    for (int i = 0; i < 1000; i++) {
+      try {
+        new CollectBeforeTestKeysTask().doAllNodes();
 
-    tree = "(apply a.hex 1 max)";
-    checkTree(tree);
+        String tree = "(apply a.hex 1 sum)";
+        checkTree(tree);
 
-    tree = "(apply a.hex 1 {x . (sum x)})";
-    checkTree(tree);
+        tree = "(apply a.hex 1 max)";
+        checkTree(tree);
 
-    tree = "(apply a.hex 1 {x . (sum (* x x))})";
-    checkTree(tree);
+        tree = "(apply a.hex 1 {x . (sum x)})";
+        checkTree(tree);
 
-    // require lookup of 'y' outside the scope of the applied function.
-    // doubles all values.
-    tree = "({y . (apply a.hex 1 {x . (sum (* x y))})} 2)";
-    checkTree(tree);
+        tree = "(apply a.hex 1 {x . (sum (* x x))})";
+        checkTree(tree);
+
+        // require lookup of 'y' outside the scope of the applied function.
+        // doubles all values.
+        tree = "({y . (apply a.hex 1 {x . (sum (* x y))})} 2)";
+        checkTree(tree);
+      } finally {
+        H2ORunner.checkLeaks("hu", "ha");
+        new CleanAllKeysTask().doAllNodes();
+      }
+    }
   }
 
   @Test public void testMath() {
