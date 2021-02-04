@@ -66,12 +66,14 @@ public class CheckKeysTask extends MRTask<CheckKeysTask> {
     private LeakInfo makeLeakInfo(int keyIdx, Value value) {
         if (value == null)
             return null;
-        String vClass = value.className();
+        final String vClass = value.className();
+        final Key key = leakedKeys[keyIdx];
         switch (vClass) {
             case "water.fvec.RollupStats":
                 @SuppressWarnings("unchecked")
-                Key<Vec> vecKey = Vec.getVecKey(leakedKeys[keyIdx]);
-                return new LeakInfo(keyIdx, vecKey, String.valueOf(value.get()));
+                Key<Vec> vecKey = Vec.getVecKey(key);
+                int homeNodeId = key.home_node().index();
+                return new LeakInfo(keyIdx, vecKey, homeNodeId, String.valueOf(value.get()));
             default:
                 return null;
         }
@@ -81,18 +83,20 @@ public class CheckKeysTask extends MRTask<CheckKeysTask> {
         final int _keyIdx;
         final Key<Vec> _vecKey;
         final int _nodeId;
+        final int _homeNodeId;
         final String _info;
 
-        private LeakInfo(int keyIdx, Key<Vec> vecKey, String info) {
+        private LeakInfo(int keyIdx, Key<Vec> vecKey, int homeNodeId, String info) {
             _keyIdx = keyIdx;
             _vecKey = vecKey;
             _nodeId = H2O.SELF.index();
+            _homeNodeId = homeNodeId;
             _info = info;
         }
 
         @Override
         public String toString() {
-            return "nodeId=" + _nodeId + ", vecKey=" + String.valueOf(_vecKey) + ", _info='" + _info;
+            return "nodeId=" + _nodeId + ", homeNodeId=" + _homeNodeId + ", vecKey=" + _vecKey + ", _info='" + _info;
         }
     }
     
