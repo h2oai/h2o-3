@@ -105,17 +105,21 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
     }
 
     private void checkLeakedKeys(final Description description) {
+        checkLeaks(description.getClassName(), description.getMethodName());
+    }
+
+    public static void checkLeaks(String testClassName, String testMethodName) {
         final CheckKeysTask checkKeysTask = new CheckKeysTask().doAllNodes();
         if (checkKeysTask.leakedKeys.length == 0) {
             return;
         }
 
         printLeakedKeys(checkKeysTask.leakedKeys, checkKeysTask.leakInfos);
-        throw new IllegalStateException(String.format("Test method '%s.%s' leaked %d keys.", description.getTestClass().getName(), description.getMethodName(), checkKeysTask.leakedKeys.length));
+        throw new IllegalStateException(String.format(
+                "Test method '%s.%s' leaked %d keys.", testClassName, testMethodName, checkKeysTask.leakedKeys.length));
     }
 
-
-    private void printLeakedKeys(final Key[] leakedKeys, final CheckKeysTask.LeakInfo[] leakInfos) {
+    private static void printLeakedKeys(final Key[] leakedKeys, final CheckKeysTask.LeakInfo[] leakInfos) {
         final Set<Key> leakedKeysSet = new HashSet<>(leakedKeys.length);
 
         leakedKeysSet.addAll(Arrays.asList(leakedKeys));
