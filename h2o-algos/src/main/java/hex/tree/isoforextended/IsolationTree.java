@@ -62,11 +62,21 @@ public class IsolationTree extends Iced<IsolationTree> {
                 FilteredData ret = extendedIsolationForestSplit(nodeData, node._p, node._n);
 
                 if (rightChildIndex(i) < _nodes.length) {
-                    _nodes[leftChildIndex(i)] = new Node(ret.left, ret.left[0].length, currentHeight);
-                    _nodes[rightChildIndex(i)] = new Node(ret.right, ret.right[0].length, currentHeight);
+                    if (ret.left != null) {
+                        _nodes[leftChildIndex(i)] = new Node(ret.left, ret.left[0].length, currentHeight);
+                    } else {
+                        _nodes[leftChildIndex(i)] = new Node(null, 0, currentHeight);
+                        _nodes[leftChildIndex(i)]._external = true;
+                    }
+                    if (ret.right != null) {
+                        _nodes[rightChildIndex(i)] = new Node(ret.right, ret.right[0].length, currentHeight);
+                    } else {
+                        _nodes[rightChildIndex(i)] = new Node(null, 0, currentHeight);
+                        _nodes[rightChildIndex(i)]._external = true;
+                    }
                 }
+                node._data = null; // attempt to inform Java GC the data are not longer needed
             }
-            nodeData = null; // attempt to inform Java GC the data are not longer needed
         }
     }
 
@@ -131,7 +141,7 @@ public class IsolationTree extends Iced<IsolationTree> {
             else
                 break;
         }
-        score += node._height + averagePathLengthOfUnsuccessfulSearch(node._numRows);
+        score = node._height + averagePathLengthOfUnsuccessfulSearch(node._numRows);
         return score;
     }
 
@@ -152,8 +162,19 @@ public class IsolationTree extends Iced<IsolationTree> {
             node._p = VecUtils.uniformDistrFromArray(data, _seed + currentHeight);
             node._n = ArrayUtils.gaussianVector(data.length, _seed + currentHeight, data.length - _extensionLevel - 1);
             FilteredData ret = extendedIsolationForestSplit(data, node._p, node._n);
-            node._left = buildTreeRecursive(ret.left, currentHeight, heightLimit);
-            node._right = buildTreeRecursive(ret.right, currentHeight, heightLimit);
+            if (ret.left != null) {
+                node._left = buildTreeRecursive(ret.left, currentHeight, heightLimit);
+            } else {
+                node._left = new Node(null, 0, currentHeight);
+                node._left._external = true;
+            }
+            if (ret.right != null) {
+                node._right = buildTreeRecursive(ret.right, currentHeight, heightLimit);
+            } else {
+                node._right = new Node(null, 0, currentHeight);
+                node._right._external = true;
+            }
+            node._data = null; // attempt to inform Java GC the data are not longer needed
         }
         return node;
     }
@@ -251,8 +272,15 @@ public class IsolationTree extends Iced<IsolationTree> {
             }
         }
 
-        double[][] left = new double[data.length][leftLength];
-        double[][] right = new double[data.length][rightLength]; // todo valenad do not create empty array
+        double[][] left = null;
+        if (leftLength > 0) {
+            left = new double[data.length][leftLength];
+        }
+
+        double[][] right = null;
+        if (rightLength > 0) {
+            right = new double[data.length][rightLength];
+        }
 
         for (int row = 0, rowLeft = 0, rowRight = 0; row < data[0].length; row++) {
             if (res[row] <= 0) {
