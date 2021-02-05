@@ -22,7 +22,7 @@ public class IsolationTree extends Iced<IsolationTree> {
     private final int _heightLimit;
     private final long _seed;
     private final int _extensionLevel;
-    private final int _treeNum;
+    final int _treeNum;
 
     public IsolationTree(double[][] data, int _heightLimit, long _seed, int _extensionLevel, int _treeNum) {
         this._data = data;

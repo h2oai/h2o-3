@@ -22,7 +22,7 @@ import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
-@CloudSize(1)
+@CloudSize(2)
 @RunWith(H2ORunner.class)
 public class ExtendedIsolationForestTest extends TestUtil {
     private static final Logger LOG = Logger.getLogger(ExtendedIsolationForestTest.class);
