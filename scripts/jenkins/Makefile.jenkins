@@ -6,19 +6,13 @@ JENKINS_MAKEFILE_PATH := scripts/jenkins/Makefile.jenkins
 build-h2o-3:
 	@echo "+--Building H2O-3--+"
 	@echo
-	@echo "+--Cleaning--+"
-	./gradlew clean $$ADDITIONAL_GRADLE_OPTS
-	@echo
-	@echo "+--Building--+"
-	./gradlew build -x test $$ADDITIONAL_GRADLE_OPTS
+	./gradlew --parallel clean build -x test $$ADDITIONAL_GRADLE_OPTS
 	@echo "+--Git Diff Check--+"
 	if [[ $$(git diff 2>&1) ]]; then \
 		echo "Non-zero git diff or git error after running gradlew build:"; \
 		git diff; \
 		exit 1; \
 	fi
-	@echo "+--Gradle Check--+"
-	./gradlew -PdoCheckStyle check -x test $$ADDITIONAL_GRADLE_OPTS
 
 warmup-caches:
 	@$(MAKE) -f $(THIS_FILE) build-h2o-3
