@@ -818,9 +818,15 @@ public class GenericModelTest extends TestUtil {
         CoxPH job = new CoxPH(parms);
         final CoxPHModel originalModel = job.trainModel().get();
         Scope.track_generic(originalModel);
-        final File originalModelMojoFile = File.createTempFile("mojo", "zip");
-        originalModel.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
 
+        // FIXME: for debugging issues on jenkins
+        originalModel.exportBinaryModel(modelExportFile("binary", "bin").getAbsolutePath(), true);
+
+        final File originalModelMojoFile = modelExportFile("mojo", "zip");
+        originalModel
+                .getMojo()
+                .writeTo(new FileOutputStream(originalModelMojoFile));
+        
         final Key mojoKey = importMojo(originalModelMojoFile.getAbsolutePath());
 
         // Create Generic model from given imported MOJO
@@ -841,7 +847,22 @@ public class GenericModelTest extends TestUtil {
         Scope.track(originalModelPredictions);
         assertTrue(TestUtil.compareFrames(originalModelPredictions, genericModelPredictions, 0.000001, 0.00001));
     }
-
+    
+    private File modelExportFile(String prefix, String suffix) throws IOException {
+        File sandboxDir = H2O.getCloudSize() > 1 ? new File("sandbox/multi") : new File("sandbox/single");
+        if (sandboxDir.isDirectory()) {
+            String name = "unknown";
+            for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+                if (ste.getMethodName().startsWith("test") && ste.getClassName().equals(getClass().getCanonicalName())) {
+                    name = ste.getMethodName();
+                }
+            }
+            return new File(sandboxDir, prefix + name + "." + suffix);
+        } else {
+            return File.createTempFile("mojo", "zip");
+        }
+    }
+    
     @Test
     public void downloadable_mojo_glm_binomial() throws IOException {
         try {
