@@ -108,7 +108,11 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
             init(true);
             if( error_count() > 0 )
                 throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(ExtendedIsolationForest.this);
-            buildIsolationTreeEnsemble();
+            try {
+                buildIsolationTreeEnsembleDistributed();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
         private void buildIsolationTreeEnsemble() {
@@ -130,12 +134,81 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 IsolationTree isolationTree = new IsolationTree(subSampleArray, heightLimit, _parms._seed + _rand.nextInt(), _parms._extension_level, tid);
                 isolationTree.buildTree();
                 model._output._iTrees[tid] = isolationTree;
+    
+                try {
+                    Thread.sleep((int) (_rand.nextDouble() * 3000));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                
                 _job.update(1);
                 LOG.info((tid + 1) + ". tree was built in " + timer.toString() + ". Free memory: " + PrettyPrint.bytes(H2O.CLOUD.free_mem()));
             }
 
             model.unlock(_job); // todo valenad what is it good for?
             model._output._model_summary = createModelSummaryTable();
+        }
+    
+        private void buildIsolationTreeEnsembleDistributed() throws InterruptedException {
+            _rand = RandomUtils.getRNG(_parms._seed);
+            ExtendedIsolationForestModel model = new ExtendedIsolationForestModel(dest(), _parms,
+                    new ExtendedIsolationForestModel.ExtendedIsolationForestOutput(ExtendedIsolationForest.this));
+            model.delete_and_lock(_job); // todo valenad what is it good for?
+            model._output._iTrees = new IsolationTree[_parms._ntrees];
+
+            IsolationTreeBuildingThread[] pool = new IsolationTreeBuildingThread[H2O.NUMCPUS];
+            
+            for (int tid = 0; tid < _parms._ntrees; tid+=H2O.NUMCPUS) {
+                for (int threadId = 0; threadId < pool.length; threadId++) {
+                    if ((tid + threadId) < _parms._ntrees) {
+                        int randomUnit = _rand.nextInt();
+                        Frame subSample = new SubSampleTask(_parms._sample_size, _parms._seed + randomUnit)
+                                .doAll(_train.types(), _train.vecs()).outputFrame();
+                        double[][] subSampleArray = FrameUtils.asDoubles(subSample);
+                        
+                        IsolationTreeBuildingThread isolationTreeBuildingThread = new IsolationTreeBuildingThread(tid + threadId, subSampleArray);
+                        isolationTreeBuildingThread.start();
+                        pool[threadId] = isolationTreeBuildingThread;
+                    }
+                }
+    
+                for (int threadId = 0; threadId < pool.length; threadId++) {
+                    if ((tid + threadId) < _parms._ntrees) {
+                        pool[threadId].join();
+                        model._output._iTrees[tid + threadId] = pool[threadId].getIsolationTree();
+                    }
+                }
+            }
+        
+            model.unlock(_job); // todo valenad what is it good for?
+            model._output._model_summary = createModelSummaryTable();
+        }
+        
+        private class IsolationTreeBuildingThread extends Thread {
+            private IsolationTree isolationTree;
+            
+            private int tid;
+            private double[][] subSample;
+    
+            public IsolationTreeBuildingThread(int tid, double[][] subSample) {
+                this.tid = tid;
+                this.subSample = subSample;
+            }
+    
+            public void run() {
+
+                int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
+
+                Timer timer = new Timer();
+                isolationTree = new IsolationTree(subSample, heightLimit, _parms._seed + _rand.nextInt(), _parms._extension_level, tid + 1);
+                isolationTree.buildTree();
+                _job.update(1);
+                LOG.info((tid + 1) + ". tree was built in " + timer.toString() + ". Free memory: " + PrettyPrint.bytes(H2O.CLOUD.free_mem()));
+            }
+    
+            public IsolationTree getIsolationTree() {
+                return isolationTree;
+            }
         }
     }
 

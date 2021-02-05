@@ -1,5 +1,7 @@
 package hex.tree.isoforextended;
 
+import hex.tree.isofor.IsolationForest;
+import hex.tree.isofor.IsolationForestModel;
 import org.apache.log4j.Logger;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -86,14 +88,14 @@ public class ExtendedIsolationForestTest extends TestUtil {
             p._extension_level = - 1;
 
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
-            ExtendedIsolationForestModel model = eif.trainModel().get();
+            eif.trainModel().get();
         } finally {
             Scope.exit();
         }
     }
 
     @Test
-    @Ignore("Expensive")
+//    @Ignore("Expensive")
     public void testBasicBigData() {
         try {
             Scope.enter();
@@ -103,8 +105,8 @@ public class ExtendedIsolationForestTest extends TestUtil {
                     new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._ntrees = 100;
-            p._sample_size = 20_000;
+            p._ntrees = 2000;
+            p._sample_size = 256;
             p._extension_level = train.numCols() - 1;
 
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
@@ -112,9 +114,40 @@ public class ExtendedIsolationForestTest extends TestUtil {
             Scope.track_generic(model);
             assertNotNull(model);
 
+//            Frame out = model.score(train);
+//            Scope.track_generic(out);
+//            assertArrayEquals(new String[]{"anomaly_score", "mean_length"}, out.names());
+//            assertEquals(train.numRows(), out.numRows());
+        } finally {
+            Scope.exit();
+        }
+    }
+    
+    @Test
+//    @Ignore("Expensive")
+    public void testBasicBigDataIF() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(generate_real_only(128, 100_000, 0, 0xCAFFE));
+            
+            IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._ntrees = 100;
+            p._min_rows = 1;
+            p._sample_size = 256;
+            p._max_depth = 8;
+//            p._stopping_rounds = 3;
+//            p._score_each_iteration = true;
+//            p._stopping_tolerance = 0.05;
+            
+            IsolationForestModel model = new IsolationForest(p).trainModel().get();
+            Scope.track_generic(model);
+            assertNotNull(model);
+            
             Frame out = model.score(train);
             Scope.track_generic(out);
-            assertArrayEquals(new String[]{"anomaly_score", "mean_length"}, out.names());
+//            assertArrayEquals(new String[]{"anomaly_score", "mean_length"}, out.names());
             assertEquals(train.numRows(), out.numRows());
         } finally {
             Scope.exit();
