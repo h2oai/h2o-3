@@ -1227,7 +1227,10 @@ final public class H2O {
   private static final ExtensionManager extManager = ExtensionManager.getInstance();
 
   /**
-   * Retrieves a value of an H2O system property
+   * Retrieves a value of an H2O system property.
+   * 
+   * H2O system properties have {@link OptArgs#SYSTEM_PROP_PREFIX} prefix.
+   * 
    * @param name property name
    * @param def default value
    * @return value of the system property or default value if property was not defined
@@ -1235,7 +1238,17 @@ final public class H2O {
   public static String getSysProperty(String name, String def) {
     return System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + name, def);
   }
-
+  
+  /**
+   * Retrieves a boolean value of an H2O system property.
+   *
+   * H2O system properties have {@link OptArgs#SYSTEM_PROP_PREFIX} prefix.
+   *
+   * @param name property name
+   * @param def default value
+   * @return value of the system property as boolean or default value if property was not defined. False returned if 
+   *    the system property value is set but it is not "true" or any upper/lower case variant of it.
+   */
   public static boolean getSysBoolProperty(String name, boolean def) {
     return Boolean.parseBoolean(getSysProperty(name, String.valueOf(def)));
   }
