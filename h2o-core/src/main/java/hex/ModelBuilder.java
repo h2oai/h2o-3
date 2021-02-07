@@ -15,6 +15,8 @@ import water.util.*;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.SynchronousQueue;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
@@ -539,6 +541,51 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return N;
   }
 
+  protected transient LinkedBlockingQueue<ModelTrainingListener.Event> _events;
+  protected transient ModelTrainingListener _iterationListener;
+  protected transient ModelTrainingCoordinator _coordinator;
+
+  private static final Set<String> UPDATE_IGNORED_PARMS = new HashSet<>(Arrays.asList(
+          "_stopping_rounds", "_max_runtime_secs"
+  ));
+  public class ModelTrainingCoordinator {
+
+    private final ModelBuilder<M, P, O>[] _cvModelBuilders;
+    private int _inProgress;
+
+
+    public ModelTrainingCoordinator(ModelBuilder<M, P, O>[] cvModelBuilders) {
+      _cvModelBuilders = cvModelBuilders;
+      _inProgress = _cvModelBuilders.length;
+    }
+
+    public void initStoppingParameters() {
+      cv_updateStoppingParameters();
+    }
+    
+    public ModelTrainingCoordinator updateParameters() {
+      try {
+        while (_inProgress > 0) {
+          ModelTrainingListener.Event e = _events.take();
+          switch (e) {
+            case ALL_DONE:
+              _inProgress--;
+              break;
+            case ONE_DONE:
+              if (cv_updateOptimalParameters(_cvModelBuilders))
+                return this;
+              break;
+          }
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RuntimeException("TODO - better message", e);
+      }
+      cv_computeAndSetOptimalParameters(_cvModelBuilders);
+      return null;
+    }
+  }
+
   /**
    * Default naive (serial) implementation of N-fold cross-validation
    * (builds N+1 models, all have train+validation metrics, the main model has N-fold cross-validated validation metrics)
@@ -561,15 +608,30 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
       cvModelBuilders = cv_makeFramesAndBuilders(N, weights);
 
+      final ModelBuilder<M, P, O>[] builders;
+      if (useParallelMainModelBuilding()) {
+        Log.info("Using parallel main model building");
+        _events = new LinkedBlockingQueue<>();
+        for (ModelBuilder<M, P, O> mb : cvModelBuilders) {
+          mb._iterationListener = new ModelTrainingListener(_events);
+        }
+        builders = Arrays.copyOf(cvModelBuilders, cvModelBuilders.length + 1);
+        _coordinator = new ModelTrainingCoordinator(cvModelBuilders);
+        builders[builders.length - 1] = this;
+      } else 
+        builders = cvModelBuilders;
+      
       // Step 4: Run all the CV models
-      cv_buildModels(N, cvModelBuilders);
+      cv_buildModels(N, builders);
 
       // Step 5: Score the CV models
       ModelMetrics.MetricBuilder mbs[] = cv_scoreCVModels(N, weights, cvModelBuilders);
 
-      // Step 6: Build the main model
-      long time_allocated_to_main_model = (long)(maxRuntimeSecsPerModel(N, nModelsInParallel(N)) * 1e3);
-      buildMainModel(time_allocated_to_main_model);
+      if (!useParallelMainModelBuilding()) {
+        // Step 6: Build the main model
+        long time_allocated_to_main_model = (long) (maxRuntimeSecsPerModel(N, nModelsInParallel(N)) * 1e3);
+        buildMainModel(time_allocated_to_main_model);
+      }
 
       // Step 7: Combine cross-validation scores; compute main model x-val
       // scores; compute gains/lifts
@@ -783,6 +845,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     fs.blockForPending();
     return mbs;
+  }
+
+  protected boolean useParallelMainModelBuilding() {
+    return false;
+  }
+
+  protected boolean cv_updateOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) {
+    throw new UnsupportedOperationException();
+  }
+
+  protected boolean cv_updateStoppingParameters() {
+    throw new UnsupportedOperationException();
   }
 
   // Step 6: build the main model
