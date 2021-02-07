@@ -11,21 +11,18 @@ public class CVModelBuilder {
     
     private static final Logger LOG = Logger.getLogger(CVModelBuilder.class);
 
-    private final String modelType;
     private final Job job;
     private final ModelBuilder<?, ?, ?>[] modelBuilders;
     private final int parallelization;
 
     /**
-     * @param modelType       text description of group of models being built (for logging purposes)
      * @param job             parent job (processing will be stopped if stop of a parent job was requested)
      * @param modelBuilders   list of model builders to run in bulk
      * @param parallelization level of parallelization (how many models can be built at the same time)
      */
     public CVModelBuilder(
-        String modelType, Job job, ModelBuilder<?, ?, ?>[] modelBuilders, int parallelization
+        Job job, ModelBuilder<?, ?, ?>[] modelBuilders, int parallelization
     ) {
-        this.modelType = modelType;
         this.job = job;
         this.modelBuilders = modelBuilders;
         this.parallelization = parallelization;
@@ -42,11 +39,11 @@ public class CVModelBuilder {
         RuntimeException rt = null;
         for (int i = 0; i < N; ++i) {
             if (job.stop_requested()) {
-                LOG.info("Skipping build of last " + (N - i) + " out of " + N + " " + modelType + " CV models");
+                LOG.info("Skipping build of last " + (N - i) + " out of " + N + " cross-validation models");
                 stopAll(submodel_tasks);
                 throw new Job.JobCancelledException();
             }
-            LOG.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
+            LOG.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
             prepare(modelBuilders[i]);
             modelBuilders[i].startClock();
             submodel_tasks[i] = modelBuilders[i].submitTrainModelTask();
@@ -64,7 +61,7 @@ public class CVModelBuilder {
                             LOG.warn("CV model #" + waitForTaskIndex + " failed, the exception will not be reported", t);
                         }
                     } finally {
-                        LOG.info("Completed " + modelType + " model " + waitForTaskIndex + " / " + N + ".");
+                        LOG.info("Completed cross-validation model " + waitForTaskIndex + " / " + N + ".");
                         nRunning--; // need to decrement regardless even if there is an exception, otherwise looping...
                     }
                 }
@@ -84,7 +81,7 @@ public class CVModelBuilder {
                     LOG.warn("CV model #" + i + " failed, the exception will not be reported", t);
                 }
             } finally {
-                LOG.info("Completed " + modelType + " model " + i + " / " + N + ".");
+                LOG.info("Completed cross-validation model " + i + " / " + N + ".");
             }
         if (rt != null) throw rt;
     }

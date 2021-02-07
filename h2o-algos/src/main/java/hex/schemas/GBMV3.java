@@ -69,6 +69,7 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "check_constant_response",
       "gainslift_bins", 
       "auc_type",
+      "parallel_main_model_building"
     };
 
     // Input fields
@@ -93,6 +94,11 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
     @API(help="Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions", level = API.Level.expert, gridable = true)
     public double pred_noise_bandwidth;
 
+    @API(help="Allows the main model in cross-validation setting to be built in parallel with the CV models. " +
+            "Disable if you want main model building to start only after the CV models are already fully built " +
+            "(eg. for clarity of logs, doesn't affect quality of the model.", level = API.Level.expert)
+    public boolean parallel_main_model_building;
+    
 //    // TODO debug only, remove!
 //    @API(help="Internal flag, use new version of histo tsk if set", level = API.Level.expert, gridable = false)
 //    public boolean use_new_histo_tsk;
