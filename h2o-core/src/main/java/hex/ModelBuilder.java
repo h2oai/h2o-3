@@ -545,9 +545,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected transient ModelTrainingListener _iterationListener;
   protected transient ModelTrainingCoordinator _coordinator;
 
-  private static final Set<String> UPDATE_IGNORED_PARMS = new HashSet<>(Arrays.asList(
-          "_stopping_rounds", "_max_runtime_secs"
-  ));
   public class ModelTrainingCoordinator {
 
     private final ModelBuilder<M, P, O>[] _cvModelBuilders;

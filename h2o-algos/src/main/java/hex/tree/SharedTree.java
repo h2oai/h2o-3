@@ -1102,9 +1102,13 @@ public abstract class SharedTree<
 
   private int computeOptimalNTrees(ModelBuilder<M, P, O>[] cvModelBuilders) {
     int sum = 0;
-    for( int i=0; i< cvModelBuilders.length; ++i )
-      sum += ((SharedTreeModel.SharedTreeOutput)DKV.<Model>getGet(cvModelBuilders[i].dest())._output)._ntrees;
-    return (int)((double)sum/cvModelBuilders.length);
+    for(ModelBuilder<M, P, O> mb : cvModelBuilders) {
+      M model = DKV.getGet(mb.dest());
+      if (model == null)
+        continue;
+      sum += model._output._ntrees;
+    }
+    return (int)((double)sum / cvModelBuilders.length);
   }
   
   @Override
