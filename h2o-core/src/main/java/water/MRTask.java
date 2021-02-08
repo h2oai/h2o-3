@@ -271,6 +271,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   //public void map( Chunk c0, Chunk c1, Chunk c2, NewChunk nc ) { }
   //public void map( Chunk c0, Chunk c1, Chunk c2, NewChunk nc1, NewChunk nc2 ) { }
 
+  /** Override with your map implementation.  This overload is given four
+   * <strong>local</strong> input Chunks.  All map variants are called, but only one
+   * is expected to be overridden. */
+  public void map( Chunk c0, Chunk c1, Chunk c2, Chunk c3) { }
+
   /** Override with your map implementation.  This overload is given an array
    *  of <strong>local</strong> input Chunks, for Frames with arbitrary column
    *  numbers.  All map variants are called, but only one is expected to be
