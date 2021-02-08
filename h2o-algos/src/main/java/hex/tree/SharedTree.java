@@ -165,6 +165,11 @@ public abstract class SharedTree<
     PlattScalingHelper.initCalibration(this, _parms, expensive);
 
     _orig_projection_array = LinearAlgebraUtils.toEigenProjectionArray(_origTrain, _train, expensive);
+    if (_parms._max_runtime_secs > 0 && _parms._parallel_main_model_building) {
+      _parms._parallel_main_model_building = false;
+      warn("_parallel_main_model_building", 
+              "Parallel main model will be disabled because max_runtime_secs is specified.");
+    }
   }
 
   protected void validateRowSampleRate() {
@@ -1085,12 +1090,14 @@ public abstract class SharedTree<
   }
 
   @Override protected boolean useParallelMainModelBuilding() {
-    return H2O.getSysBoolProperty("parallel", true);
+    if (_parms._max_runtime_secs > 0 && _parms._parallel_main_model_building)
+      throw new IllegalStateException("Parallel main model building shouldn't be be enabled when max_runtime_secs is specified.");
+    return _parms._parallel_main_model_building;
   }
   
   @Override public void cv_computeAndSetOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) {
     // Extract stopping conditions from each CV model, and compute the best stopping answer
-    if (!cv_updateStoppingParameters())
+    if (!cv_initStoppingParameters())
       return; // No exciting changes to stopping conditions
 
     _parms._ntrees = computeOptimalNTrees(cvModelBuilders);
@@ -1101,25 +1108,24 @@ public abstract class SharedTree<
   }
 
   private int computeOptimalNTrees(ModelBuilder<M, P, O>[] cvModelBuilders) {
-    int sum = 0;
+    int totalNTrees = 0;
     for(ModelBuilder<M, P, O> mb : cvModelBuilders) {
       M model = DKV.getGet(mb.dest());
       if (model == null)
         continue;
-      sum += model._output._ntrees;
+      totalNTrees += model._output._ntrees;
     }
-    return (int)((double)sum / cvModelBuilders.length);
+    return (int)((double)totalNTrees / cvModelBuilders.length);
   }
   
-  @Override
-  protected final boolean cv_updateOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) {
-    int ntreesOld = _ntrees;
+  @Override protected final boolean cv_updateOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) {
+    final int ntreesOld = _ntrees;
     _ntrees = computeOptimalNTrees(cvModelBuilders);
+    _parms._ntrees = _ntrees;
     return  _ntrees > ntreesOld;
   }
 
-  @Override 
-  protected final boolean cv_updateStoppingParameters() {
+  @Override protected final boolean cv_initStoppingParameters() {
     if( _parms._stopping_rounds == 0 && _parms._max_runtime_secs == 0) 
       return false;
 
@@ -1127,6 +1133,7 @@ public abstract class SharedTree<
     _parms._max_runtime_secs = 0;
 
     _ntrees = 1;
+    _parms._ntrees = _ntrees;
 
     return true;
   }

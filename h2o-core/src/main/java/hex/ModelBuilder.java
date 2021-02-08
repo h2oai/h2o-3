@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.SynchronousQueue;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
@@ -557,7 +556,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     public void initStoppingParameters() {
-      cv_updateStoppingParameters();
+      cv_initStoppingParameters();
     }
     
     public ModelTrainingCoordinator updateParameters() {
@@ -852,7 +851,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     throw new UnsupportedOperationException();
   }
 
-  protected boolean cv_updateStoppingParameters() {
+  protected boolean cv_initStoppingParameters() {
     throw new UnsupportedOperationException();
   }
 

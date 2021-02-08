@@ -102,6 +102,9 @@
 #' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
+#' @param parallel_main_model_building \code{Logical}. Allows the main model in cross-validation setting to be built in parallel with the CV models.
+#'        Disable if you want main model building to start only after the CV models are already fully built (eg. for
+#'        clarity of logs, doesn't affect quality of the model. Defaults to TRUE.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
@@ -177,6 +180,7 @@ h2o.gbm <- function(x,
                     check_constant_response = TRUE,
                     gainslift_bins = -1,
                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
+                    parallel_main_model_building = TRUE,
                     verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -318,6 +322,8 @@ h2o.gbm <- function(x,
     parms$gainslift_bins <- gainslift_bins
   if (!missing(auc_type))
     parms$auc_type <- auc_type
+  if (!missing(parallel_main_model_building))
+    parms$parallel_main_model_building <- parallel_main_model_building
 
   # Error check and build model
   model <- .h2o.modelJob('gbm', parms, h2oRestApiVersion=3, verbose=verbose)
@@ -380,6 +386,7 @@ h2o.gbm <- function(x,
                                     check_constant_response = TRUE,
                                     gainslift_bins = -1,
                                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
+                                    parallel_main_model_building = TRUE,
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -525,6 +532,8 @@ h2o.gbm <- function(x,
     parms$gainslift_bins <- gainslift_bins
   if (!missing(auc_type))
     parms$auc_type <- auc_type
+  if (!missing(parallel_main_model_building))
+    parms$parallel_main_model_building <- parallel_main_model_building
 
   # Build segment-models specific parameters
   segment_parms <- list()
