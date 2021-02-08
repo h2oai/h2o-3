@@ -111,7 +111,11 @@ public class Score extends CMetricScoringTask<Score> {
         // for binomial the predicted class is not needed
         // and it even cannot be returned because the threshold is calculated based on model metrics that are not known yet
         // (we are just building the metrics)
-        cdists[0] = -1;
+        if(_bldr.isUplift()) {
+          cdists[0] = cdists[1] - cdists[2];
+        } else {
+          cdists[0] = -1;
+        }
       }
       val[0] = (float)ys.atd(row);
       _mb.perRow(cdists, val, weight, offset, m);

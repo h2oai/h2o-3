@@ -13,12 +13,12 @@ public class MetricBuilderAnomalySupervised extends ModelMetricsBinomial.MetricB
    * Create a ModelMetrics for a given model and frame
    * @param m Model
    * @param f Frame
-   * @param frameWithWeights Frame that contains extra columns such as weights (not used by MetricBuilderAnomalySupervised)
+   * @param frameWithExtraColumns Frame that contains extra columns such as weights (not used by MetricBuilderAnomalySupervised)
    * @param preds optional predictions (can be null, not used by MetricBuilderAnomalySupervised)
    * @return ModelMetricsBinomial
    */
   @Override public ModelMetrics makeModelMetrics(final Model m, final Frame f,
-                                                 Frame frameWithWeights, final Frame preds) {
+                                                 Frame frameWithExtraColumns, final Frame preds) {
     final double sigma;
     final double mse;
     final double logloss;
@@ -35,7 +35,7 @@ public class MetricBuilderAnomalySupervised extends ModelMetricsBinomial.MetricB
       auc = AUC2.emptyAUC();
     }
     ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain,
-            sigma, auc, logloss, null, _customMetric);
+            sigma, auc, logloss, null, null, _customMetric);
     if (m != null) {
       m.addModelMetrics(mm);
     }

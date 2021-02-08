@@ -21,14 +21,16 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public final double _logloss;
   public double _mean_per_class_error;
   public final GainsLift _gainsLift;
+  public final GainsUplift _gainsUplift;
 
   public ModelMetricsBinomial(Model model, Frame frame, long nobs, double mse, String[] domain,
-                              double sigma, AUC2 auc, double logloss, GainsLift gainsLift,
+                              double sigma, AUC2 auc, double logloss, GainsLift gainsLift, GainsUplift uplift,
                               CustomMetric customMetric) {
     super(model, frame,  nobs, mse, domain, sigma, customMetric);
     _auc = auc;
     _logloss = logloss;
     _gainsLift = gainsLift;
+    _gainsUplift = uplift;
     _mean_per_class_error = cm() == null ? Double.NaN : cm().mean_per_class_error();
   }
 
@@ -53,6 +55,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     sb.append(" default threshold: " + (_auc == null ? 0.5 : (float)_auc.defaultThreshold()) + "\n");
     if (cm() != null) sb.append(" CM: " + cm().toASCII());
     if (_gainsLift != null) sb.append(_gainsLift);
+    if (_gainsUplift != null) sb.append(_gainsUplift);
     return sb.toString();
   }
 
@@ -127,8 +130,9 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       MetricBuilderBinomial mb = new BinomialMetrics(labels.domain()).doAll(fr)._mb;
       labels.remove();
       Frame preds = new Frame(targetClassProbs);
+      // todo solve for uplift here too, meantime null uplift vector is given
       ModelMetricsBinomial mm = (ModelMetricsBinomial) mb.makeModelMetrics(null, fr, preds, 
-              fr.vec("labels"), fr.vec("weights")); // use the Vecs from the frame (to make sure the ESPC is identical)
+              fr.vec("labels"), fr.vec("weights"), null); // use the Vecs from the frame (to make sure the ESPC is identical)
       mm._description = "Computed on user-given predictions and labels, using F1-optimal threshold: " + mm.auc_obj().defaultThreshold() + ".";
       return mm;
     } finally {
@@ -148,6 +152,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       double[] ds = new double[3];
       float[] acts = new float[1];
       for (int i=0;i<chks[0]._len;++i) {
+        // TODO: uplift
         ds[2] = chks[0].atd(i); //class 1 probs (user-given)
         ds[1] = chks[1].atd(i); //class 0 probs
         ds[0] = GenModel.getPrediction(ds, null, ds, Double.NaN/*ignored - uses AUC's default threshold*/); //label
@@ -214,47 +219,59 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
      * Create a ModelMetrics for a given model and frame
      * @param m Model
      * @param f Frame
-     * @param frameWithWeights Frame that contains extra columns such as weights
+     * @param frameWithExtraColumns Frame that contains extra columns such as weights
      * @param preds Optional predictions (can be null), only used to compute Gains/Lift table for binomial problems  @return
      * @return ModelMetricsBinomial
      */
     @Override public ModelMetrics makeModelMetrics(final Model m, final Frame f, 
-                                                   Frame frameWithWeights, final Frame preds) {
+                                                   Frame frameWithExtraColumns, final Frame preds) {
       Vec resp = null;
       Vec weight = null;
-      if (_wcount > 0) {
+      Vec uplift = null;
+      if (_wcount > 0 || m._output.hasUplift()) {
         if (preds!=null) {
-          if (frameWithWeights == null) 
-            frameWithWeights = f;
-          resp = m==null && frameWithWeights.vec(f.numCols()-1).isCategorical() ? 
-                  frameWithWeights.vec(f.numCols()-1) //work-around for the case where we don't have a model, assume that the last column is the actual response
+          if (frameWithExtraColumns == null) 
+            frameWithExtraColumns = f;
+          resp = m==null && frameWithExtraColumns.vec(f.numCols()-1).isCategorical() ? 
+                  frameWithExtraColumns.vec(f.numCols()-1) //work-around for the case where we don't have a model, assume that the last column is the actual response
                   :
-                  frameWithWeights.vec(m._parms._response_column);
+                  frameWithExtraColumns.vec(m._parms._response_column);
           if (resp != null) {
-            weight = m==null?null : frameWithWeights.vec(m._parms._weights_column);
+            weight = m==null?null : frameWithExtraColumns.vec(m._parms._weights_column);
+          }
+          if(m != null && m._parms._uplift_column != null){
+            uplift = frameWithExtraColumns.vec(m._parms._uplift_column);
           }
         }
       }
-      return makeModelMetrics(m, f, preds, resp, weight);
+      return makeModelMetrics(m, f, preds, resp, weight, uplift);
     }
 
     private ModelMetrics makeModelMetrics(final Model m, final Frame f, final Frame preds, 
-                                          final Vec resp, final Vec weight) {
+                                          final Vec resp, final Vec weight, Vec uplift) {
       GainsLift gl = null;
-      if (_wcount > 0) {
+      GainsUplift gul = null;
+      if (_wcount > 0 || m._output.hasUplift()) {
         if (preds != null) {
           if (resp != null) {
-            final Optional<GainsLift> optionalGainsLift = calculateGainsLift(m, preds, resp, weight);
-            if(optionalGainsLift.isPresent()){
-              gl = optionalGainsLift.get();
+            if(m._output.hasUplift()) {
+              final Optional<GainsUplift> optionalGainsUplift = calculateGainsUplift(m, preds, resp, weight, uplift);
+              if (optionalGainsUplift.isPresent()) {
+                gul = optionalGainsUplift.get();
+              }
+            } else {
+              final Optional<GainsLift> optionalGainsLift = calculateGainsLift(m, preds, resp, weight);
+              if (optionalGainsLift.isPresent()) {
+                gl = optionalGainsLift.get();
+              }
             }
           }
         }
       }
-      return makeModelMetrics(m, f, gl);
+      return makeModelMetrics(m, f, gl, gul);
     }
 
-    private ModelMetrics makeModelMetrics(Model m, Frame f, GainsLift gl) {
+    private ModelMetrics makeModelMetrics(Model m, Frame f, GainsLift gl, GainsUplift gul) {
       double mse = Double.NaN;
       double logloss = Double.NaN;
       double sigma = Double.NaN;
@@ -267,7 +284,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       } else {
         auc = new AUC2();
       }
-      ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, gl, _customMetric);
+      ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, gl, gul, _customMetric);
       if (m!=null) m.addModelMetrics(mm);
       return mm;
     }
@@ -293,6 +310,28 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       return Optional.of(gl);
     }
 
+    /**
+     * @param m       Model to calculate GainsUplift for
+     * @param preds   Predictions
+     * @param resp    Actual label
+     * @param weights Weights
+     * @param uplift  Uplift column               
+     * @return An Optional with GainsUplift instance if GainsUplift is not disabled (gainsUplift_bins = 0). Otherwise an
+     * empty Optional.
+     */
+    private Optional<GainsUplift> calculateGainsUplift(Model m, Frame preds, Vec resp, Vec weights, Vec uplift) {
+      final GainsUplift gl = new GainsUplift(preds.vec(0), resp, weights, uplift);
+      if (m != null && m._parms._gainslift_bins < -1) {
+        throw new IllegalArgumentException("Number of G/L bins must be greater or equal than -1.");
+      } else if (m != null && (m._parms._gainslift_bins > 0 || m._parms._gainslift_bins == -1)) {
+        gl._groups = m._parms._gainslift_bins;
+      } else if (m != null && m._parms._gainslift_bins == 0){
+        return Optional.empty();
+      }
+      gl.exec(m != null ? m._output._job : null);
+      return Optional.of(gl);
+    }
+
     @Override
     public Frame makePredictionCache(Model m, Vec response) {
       return new Frame(response.makeVolatileDoubles(1));
@@ -301,7 +340,11 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     @Override
     public void cachePrediction(double[] cdist, Chunk[] chks, int row, int cacheChunkIdx, Model m) {
       assert cdist.length == 3;
-      ((C8DVolatileChunk) chks[cacheChunkIdx]).getValues()[row] = cdist[cdist.length - 1];
+      if(m._output.hasUplift()){
+        ((C8DVolatileChunk) chks[cacheChunkIdx]).getValues()[row] = cdist[0];
+      } else {
+        ((C8DVolatileChunk) chks[cacheChunkIdx]).getValues()[row] = cdist[cdist.length - 1];
+      }
     }
 
     public String toString(){
