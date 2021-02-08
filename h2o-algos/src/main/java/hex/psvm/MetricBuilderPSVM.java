@@ -76,7 +76,7 @@ public class MetricBuilderPSVM<T extends MetricBuilderPSVM<T>> extends ModelMetr
     } else {
       auc = AUC2.emptyAUC();
     }
-    ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc, Double.NaN, null, _customMetric);
+    ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc, Double.NaN, null, null, _customMetric);
     if (m != null) m.addModelMetrics(mm);
     return mm;
   }
