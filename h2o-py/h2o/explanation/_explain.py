@@ -2143,24 +2143,22 @@ def explain(
         result["ice"]["description"] = display(Description("ice"))
         result["ice"]["plots"] = H2OExplanation()
         for column in columns_of_interest:
-            result["ice"]["plots"][columns] = H2OExplanation()
-            for model in models_to_show:
-                result["ice"]["plots"][columns][model] = H2OExplanation()
-                for target in targets:
-                    ice = display(
-                        ice_plot(
-                            model, column=column,
-                            target=target,
-                            **_custom_args(
-                                plot_overrides.get("ice_plot"),
-                                frame=frame,
-                                figsize=figsize,
-                                colormap=sequential_colormap
-                            )))
-                    if target is None:
-                        result["ice"]["plots"][columns][model] = ice
-                    else:
-                        result["ice"]["plots"][columns][model][target[0]] = ice
+            result["ice"]["plots"][column] = H2OExplanation()
+            for target in targets:
+                ice = display(
+                    ice_plot(
+                        models_to_show[0], column=column,
+                        target=target,
+                        **_custom_args(
+                            plot_overrides.get("ice_plot"),
+                            frame=frame,
+                            figsize=figsize,
+                            colormap=sequential_colormap
+                        )))
+                if target is None:
+                    result["ice"]["plots"][column] = ice
+                else:
+                    result["ice"]["plots"][column][target[0]] = ice
 
     return result
 
