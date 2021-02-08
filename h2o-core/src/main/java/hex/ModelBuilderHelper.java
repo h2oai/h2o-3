@@ -35,7 +35,7 @@ public class ModelBuilderHelper {
 
     @Override
     public void compute2() {
-      _mb.trainModel().get();
+      _mb.submitTrainModelTask().join();
       tryComplete();
     }
   }

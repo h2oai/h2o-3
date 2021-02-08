@@ -790,7 +790,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   // Step 4: Run all the CV models and launch the main model
   public void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
-    makeCVModelBuilder("cross-validation", cvModelBuilders, nModelsInParallel(N)).bulkBuildModels();
+    //makeCVModelBuilder("cross-validation", cvModelBuilders, nModelsInParallel(N)).bulkBuildModels();
+    ModelBuilderHelper.trainModelsParallel(cvModelBuilders, nModelsInParallel(N));
     cv_computeAndSetOptimalParameters(cvModelBuilders);
   }
   
