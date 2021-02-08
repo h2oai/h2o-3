@@ -150,6 +150,7 @@ public class DTree extends Iced {
     final double _p0,  _p1;     // Predicted value for each split
     final double _tree_p0, _tree_p1;
     final double _p0Treat, _p0Contr, _p1Treat, _p1Contr; // uplift predictions
+    final double _n0Treat, _n0Contr, _n1Treat, _n1Contr;
 
     public Split(int col, int bin, DHistogram.NASplitDir nasplit, IcedBitSet bs, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1, double tree_p0, double tree_p1) {
       assert nasplit != DHistogram.NASplitDir.None;
@@ -164,10 +165,11 @@ public class DTree extends Iced {
       _p0 = p0;  _p1 = p1;
       _tree_p0 = tree_p0; _tree_p1 = tree_p1;
       _p0Treat = _p0Contr = _p1Treat = _p1Contr = 0;
+      _n0Treat = _n0Contr = _n1Treat = _n1Contr = 0;
     }
 
     public Split(int col, int bin, DHistogram.NASplitDir nasplit, IcedBitSet bs, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1, double tree_p0, double tree_p1, 
-                 double p0Treat, double p0Contr, double p1Treat, double p1Contr) {
+                 double p0Treat, double p0Contr, double p1Treat, double p1Contr, double n0Treat, double n0Contr, double n1Treat, double n1Contr) {
       assert(nasplit!= DHistogram.NASplitDir.None);
       assert(equal!=1); //no longer done
       // FIXME: Disabled for testing PUBDEV-6495:
@@ -179,6 +181,7 @@ public class DTree extends Iced {
       _p0 = p0;  _p1 = p1;
       _tree_p0 = tree_p0; _tree_p1 = tree_p1;
       _p0Treat = p0Treat; _p0Contr = p0Contr; _p1Treat = p1Treat; _p1Contr = p1Contr;
+      _n0Treat = n0Treat; _n0Contr = n0Contr; _n1Treat = n1Treat; _n1Contr = n1Contr;
     }
     
     public final double pre_split_se() { return _se; }
@@ -1617,8 +1620,20 @@ public class DTree extends Iced {
     double prCT0 = 0;
     double prY1CT1 = 0;
     double prY1CT0 = 0;
+    double bestNLCT1 = 0;
+    double bestNLCT0 = 0;
+    double bestNRCT1 = 0;
+    double bestNRCT0 = 0;
+    double bestPrLY1CT1 = 0;
+    double bestPrLY1CT0 = 0;
+    double bestPrRY1CT1 = 0;
+    double bestPrRY1CT0 = 0;
+    double nLCT1 = 0;
+    double nLCT0 = 0;
     double prLY1CT1 = 0;
     double prLY1CT0 = 0;
+    double nRCT1 = 0;
+    double nRCT0 = 0;
     double prRY1CT1 = 0;
     double prRY1CT0 = 0;
     
@@ -1642,11 +1657,23 @@ public class DTree extends Iced {
         double prLCT0 = 1 - prLCT1;
         double prL = prLCT1 * prCT1All + prLCT0 * prCT0All;
         double prR = 1 - prL;
+        nLCT1 = numhiTreat[0];
+        nLCT0 = numhiContr[0];
         prLY1CT1 = (resphiTreat[0] + 1) / (numhiTreat[0] + 2);
         prLY1CT0 = (resphiContr[0] + 1) / (numhiContr[0] + 2);
+        nRCT1 = numTreatNA;
+        nRCT0 = numContrNA;
         prRY1CT1 = (respTreatNA + 1) / (numTreatNA + 2);
         prRY1CT0 = (respContrNA + 1) / (numContrNA + 2);
         bestUpliftGain = upliftMetric.value(prY1CT1All, prY1CT0All, prL, prLY1CT1, prLY1CT0, prR, prRY1CT1, prRY1CT0, prCT1All, prCT0All, prLCT1, prLCT0);
+        bestNLCT1 = nLCT1;
+        bestNLCT0 = nLCT0;
+        bestNRCT1 = nRCT1;
+        bestNRCT0 = nRCT0;
+        bestPrLY1CT1 = prLY1CT1;
+        bestPrLY1CT0 = prLY1CT0;
+        bestPrRY1CT1 = prRY1CT1;
+        bestPrRY1CT0 = prRY1CT0;
       }
       double seAll = (wYYhi[0] + wYYNA) - (wYhi[0] + wYNA) * (wYhi[0] + wYNA) / (whi[0] + wNA);
       double seNA = wYYNA - wYNA * wYNA / wNA;
@@ -1687,7 +1714,7 @@ public class DTree extends Iced {
       //                    = wYY - wY^2/N
 
       // no NAs
-      double upliftGain = 0;
+      double upliftGain = Double.MIN_VALUE;
       if (wNA==0) {
         double selo = wYYlo[b] - wYlo[b] * wYlo[b] / wlo[b];
         double sehi = wYYhi[b] - wYhi[b] * wYhi[b] / whi[b];
@@ -1703,8 +1730,12 @@ public class DTree extends Iced {
           double prLCT0 = 1 - prLCT1;
           double prL = prLCT1 * prCT1 + prLCT0 * prCT0;
           double prR = 1 - prL;
+          nLCT1 = numloTreat[b];
+          nLCT0 = numloContr[b];
           prLY1CT1 = (resploTreat[b] + 1) / (numloTreat[b] + 2);
           prLY1CT0 = (resploContr[b] + 1) / (numloContr[b] + 2);
+          nRCT1 = numhiTreat[b];
+          nRCT0 = numhiContr[b];
           prRY1CT1 = (resphiTreat[b] + 1) / (numhiTreat[b] + 2);
           prRY1CT0 = (resphiContr[b] + 1) / (numhiContr[b] + 2);
           upliftGain = upliftMetric.value(prY1CT1, prY1CT0, prL, prLY1CT1, prLY1CT0, prR, prRY1CT1, prRY1CT0, prCT1, prCT0, prLCT1, prLCT0);
@@ -1757,6 +1788,14 @@ public class DTree extends Iced {
             tree_p0 = tmpPredLeft;
             tree_p1 = tmpPredRight;
             bestUpliftGain = upliftGain;
+            bestNLCT1 = nLCT1;
+            bestNLCT0 = nLCT0;
+            bestNRCT1 = nRCT1;
+            bestNRCT0 = nRCT0;
+            bestPrLY1CT1 = prLY1CT1;
+            bestPrLY1CT0 = prLY1CT0;
+            bestPrRY1CT1 = prRY1CT1;
+            bestPrRY1CT0 = prRY1CT0;
           }
         }
       } else {
@@ -1771,15 +1810,19 @@ public class DTree extends Iced {
             nCT1 = numhiTreat[b] + numTreatNA;
             nCT0 = numhiContr[b] + numContrNA;
             prCT1 = (nCT1 + 1)/(nCT0 + nCT1 + 2);
-            prCT0 = 1-prCT1;
+            prCT0 = 1 - prCT1;
             double prLCT1 = (numloTreat[b] + numTreatNA + 1)/(numloTreat[b] + numTreatNA + numhiTreat[b] + 2);
             double prLCT0 = 1 - prLCT1;
             double prL = prLCT1 * prCT1 + prLCT0 * prCT0;
             double prR = 1 - prL;
-            prLY1CT1 = (resploTreat[b] + 1) / (numloTreat[b] + 2);
-            prLY1CT0 = (resploContr[b] + 1) / (numloContr[b] + 2);
-            prRY1CT1 = (resphiTreat[b] + respTreatNA + 1) / (numhiTreat[b] + numTreatNA + 2);
-            prRY1CT0 = (resphiContr[b] + respContrNA + 1) / (numhiContr[b] + numContrNA + 2);
+            nLCT1 = numloTreat[b] + numTreatNA;
+            nLCT0 = numloContr[b] + numContrNA;
+            prLY1CT1 = (resploTreat[b] + respTreatNA + 1) / (numloTreat[b] + numTreatNA + 2);
+            prLY1CT0 = (resploContr[b] + respContrNA + 1) / (numloContr[b] + numContrNA + 2);
+            nRCT1 = numhiTreat[b];
+            nRCT0 = numhiContr[b];
+            prRY1CT1 = (resphiTreat[b] + 1) / (numhiTreat[b] + 2);
+            prRY1CT0 = (resphiContr[b] + 1) / (numhiContr[b] + 2);
             upliftGain = upliftMetric.value(prY1CT1, prY1CT0, prL, prLY1CT1, prLY1CT0, prR, prRY1CT1, prRY1CT0, prCT1, prCT0, prLCT1, prLCT0);
             condition = upliftGain > bestUpliftGain;
           } else {
@@ -1832,6 +1875,14 @@ public class DTree extends Iced {
                 tree_p0 = tmpPredLeft;
                 tree_p1 = tmpPredRight;
                 bestUpliftGain = upliftGain;
+                bestNLCT1 = nLCT1;
+                bestNLCT0 = nLCT0;
+                bestNRCT1 = nRCT1;
+                bestNRCT0 = nRCT0;
+                bestPrLY1CT1 = prLY1CT1;
+                bestPrLY1CT0 = prLY1CT0;
+                bestPrRY1CT1 = prRY1CT1;
+                bestPrRY1CT0 = prRY1CT0;
               }
             }
           }
@@ -1849,10 +1900,14 @@ public class DTree extends Iced {
             double prLCT0 = 1 - prLCT1;
             double prL = prLCT1 * prCT1 + prLCT0 * prCT0;
             double prR = 1 - prL;
-            prLY1CT1 = (resploTreat[b] + respTreatNA + 1) / (numloTreat[b] + numTreatNA + 2);
-            prLY1CT0 = (resploContr[b] + respContrNA + 1) / (numloContr[b] + numContrNA + 2);
-            prRY1CT1 = (resphiTreat[b] + 1) / (numhiTreat[b] + 2);
-            prRY1CT0 = (resphiContr[b] + 1) / (numhiContr[0] + 2);
+            nLCT1 = numloTreat[b];
+            nLCT0 = numloContr[b];
+            prLY1CT1 = (resploTreat[b] + respTreatNA + 1) / (numloTreat[b] + 2);
+            prLY1CT0 = (resploContr[b] + respContrNA + 1) / (numloContr[b] + 2);
+            nRCT1 = numhiTreat[b] + numTreatNA;
+            nRCT0 = numhiContr[b] + numContrNA;
+            prRY1CT1 = (resphiTreat[b] + 1) / (numhiTreat[b] + numTreatNA + 2);
+            prRY1CT0 = (resphiContr[b] + 1) / (numhiContr[b] + numContrNA + 2);
             upliftGain = upliftMetric.value(prY1CT1, prY1CT0, prL, prLY1CT1, prLY1CT0, prR, prRY1CT1, prRY1CT0, prCT1, prCT0, prLCT1, prLCT0);
             condition = upliftGain > bestUpliftGain;
           } else {
@@ -1906,6 +1961,14 @@ public class DTree extends Iced {
                 nasplit = DHistogram.NASplitDir.NARight;
                 tree_p0 = tmpPredLeft;
                 tree_p1 = tmpPredRight;
+                bestNLCT1 = nLCT1;
+                bestNLCT0 = nLCT0;
+                bestNRCT1 = nRCT1;
+                bestNRCT0 = nRCT0;
+                bestPrLY1CT1 = prLY1CT1;
+                bestPrLY1CT0 = prLY1CT0;
+                bestPrRY1CT1 = prRY1CT1;
+                bestPrRY1CT0 = prRY1CT0;
               }
             }
           }
@@ -2045,7 +2108,7 @@ public class DTree extends Iced {
     assert constraint == 0 || constraint * tree_p0 <= constraint * tree_p1;
     assert (Double.isNaN(min) || min <= tree_p0) && (Double.isNaN(max) || tree_p0 <= max);
     assert (Double.isNaN(min) || min <= tree_p1) && (Double.isNaN(max) || tree_p1 <= max);
-    Split split = new Split(col, best, nasplit, bs, equal, seBefore, best_seL, best_seR, nLeft, nRight, node_p0, node_p1, tree_p0, tree_p1, prLY1CT1, prLY1CT0, prRY1CT1, prRY1CT0);
+    Split split = new Split(col, best, nasplit, bs, equal, seBefore, best_seL, best_seR, nLeft, nRight, node_p0, node_p1, tree_p0, tree_p1, bestPrLY1CT1, bestPrLY1CT0, bestPrRY1CT1, bestPrRY1CT0, bestNLCT1, bestNLCT0, bestNRCT1, bestNRCT0);
     if (LOG.isTraceEnabled()) LOG.trace("splitting on " + hs._name + ": " + split);
     return split;
   }

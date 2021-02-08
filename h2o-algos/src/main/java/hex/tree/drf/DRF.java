@@ -372,8 +372,9 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       for (int k = 0; k < _nclass; k++)
         sum += (fs[k+1] = weight * chk_tree(chks, k).atd(row) / chk_oobt(chks).atd(row));
     } else if(isUplift()) {
-      fs[0] = weight * chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row);
-      fs[1] = weight * chk_tree(chks, 1).atd(row) / chk_oobt(chks).atd(row);
+      fs[1] = weight * chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row);
+      fs[2] = weight * chk_tree(chks, 1).atd(row) / chk_oobt(chks).atd(row);
+      fs[0] = fs[1] - fs[2];
     } else if (_nclass==2 && _model.binomialOpt()) {
       fs[1] = weight * chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row);
       if (fs[1]>1 && fs[1]<=ONEBOUND)
