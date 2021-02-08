@@ -578,7 +578,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Thread.currentThread().interrupt();
         throw new RuntimeException("TODO - better message", e);
       }
-      cv_computeAndSetOptimalParameters(_cvModelBuilders);
+      cv_updateOptimalParameters(_cvModelBuilders);
       return null;
     }
   }
