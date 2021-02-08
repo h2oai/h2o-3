@@ -329,4 +329,34 @@ Ambari
   .. figure:: images/Logs_ambari2.png
      :alt: Ambari
 
+--------------
+
+File Separation
+---------------
+
+Files are separated into different pieces (.1, .2, .3) by their age. ``.log`` is the current log being written into, while ``log.1`` is the one before, ``log.2`` is older still, and so on. Each time ``.log`` reaches a certain size, it is renamed to ``log.1``, and ``log.1`` is renamed to ``log.2``, etc.
+
+  ::
+
+    -rw-r--r-- 1 ledell ledell    0 Feb  2 09:42 h2o_127.0.0.1_16537-6-fatal.log
+    -rw-r--r-- 1 ledell ledell    0 Feb  2 09:42 h2o_127.0.0.1_16537-5-error.log
+    -rw-r--r-- 1 ledell ledell 3.1M Feb  2 10:23  h2o_127.0.0.1_16537-3-info.log.3
+    -rw-r--r-- 1 ledell ledell 3.1M Feb  2 10:23 h2o_127.0.0.1_16537-2-debug.log.3
+    -rw-r--r-- 1 ledell ledell 1.1M Feb  2 10:30 h2o_127.0.0.1_16537-httpd.log.3
+    -rw-r--r-- 1 ledell ledell 3.1M Feb  2 10:35 h2o_127.0.0.1_16537-3-info.log.2
+    -rw-r--r-- 1 ledell ledell 3.1M Feb  2 10:35 h2o_127.0.0.1_16537-2-debug.log.2
+    -rw-r--r-- 1 ledell ledell 1.1M Feb  2 10:41 h2o_127.0.0.1_16537-1-trace.log.3
+    -rw-r--r-- 1 ledell ledell 1.1M Feb  2 10:54 h2o_127.0.0.1_16537-httpd.log.2
+    -rw-r--r-- 1 ledell ledell 1.1M Feb  2 11:18 h2o_127.0.0.1_16537-1-trace.log.2
+    -rw-r--r-- 1 ledell ledell 1.1M Feb  2 11:50 h2o_127.0.0.1_16537-httpd.log.1
+    -rw-r--r-- 1 ledell ledell 3.1M Feb  2 12:33 h2o_127.0.0.1_16537-3-info.log.1
+    -rw-r--r-- 1 ledell ledell 3.1M Feb  2 12:33 h2o_127.0.0.1_16537-2-debug.log.1
+    -rw-r--r-- 1 ledell ledell 1.1M Feb  2 12:33 h2o_127.0.0.1_16537-1-trace.log.1
+    -rw-r--r-- 1 ledell ledell 903K Feb  2 12:39 h2o_127.0.0.1_16537-httpd.log
+    -rw-r--r-- 1 ledell ledell  39K Feb  2 12:39 h2o_127.0.0.1_16537-4-warn.log
+    -rw-r--r-- 1 ledell ledell 286K Feb  2 12:39 h2o_127.0.0.1_16537-3-info.log
+    -rw-r--r-- 1 ledell ledell 286K Feb  2 12:39 h2o_127.0.0.1_16537-2-debug.log
+    -rw-r--r-- 1 ledell ledell 285K Feb  2 12:39 h2o_127.0.0.1_16537-1-trace.log
+
+
 
