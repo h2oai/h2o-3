@@ -1,7 +1,7 @@
 ``sample_size``
 ---------------
 
-- Available in: Isolation Forest
+- Available in: Isolation Forest, Extended Isolation Forest
 - Hyperparameter: yes
 
 Description

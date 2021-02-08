@@ -16,9 +16,7 @@ public class ExtendedIsolationForestV3 extends ModelBuilderSchema<
                 "training_frame",
                 "ignored_columns",
                 "ignore_const_cols",
-                "max_runtime_secs",
                 "categorical_encoding",
-                "export_checkpoints_dir",
 
                 // Extended Isolation Forest specific
                 "ntrees",

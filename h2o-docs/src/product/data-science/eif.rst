@@ -25,7 +25,7 @@ from the sub-sample of data to be split. The branching criteria for the data
 splitting for a given point :math:`x` is as follows:
 
 .. math::
-    (x - p) * n < 0
+    (x - p) * n ≤ 0
 
 Tutorials and Blogs
 ~~~~~~~~~~~~~~~~~~~
@@ -47,9 +47,7 @@ Defining an Extended Isolation Forest Model
 
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option defaults to true (enabled).
 
--  `ntrees <algo-params/ntrees.html>`__: (Required) Specify the number of trees (defaults to 50).
-
--  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. This option is set to 0 (disabled) by default.
+-  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees (defaults to 100).
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to -1 (time-based random number).
 
@@ -66,7 +64,7 @@ Defining an Extended Isolation Forest Model
   - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
   - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. Note that this requires a specified response column.
 
-- `extension_level <algo-params/extension_level.rst>`__: The number in range :math:`[0, P-1]`; where :math:`P` is the number of features. The minimum value of the hyperparameter is 0 (default), which corresponds to Isolation Forest behavior. The maximum is :math:`P-1` and stands for a full extension. As the ``extension_level`` is increased, the bias of standard Isolation Forest is reduced.
+- `extension_level <algo-params/extension_level.html>`__: The number in range :math:`[0, P-1]`; where :math:`P` is the number of features. The minimum value of the hyperparameter is 0 (default), which corresponds to Isolation Forest behavior. The maximum is :math:`P-1` and stands for a full extension. As the ``extension_level`` is increased, the bias of standard Isolation Forest is reduced.
 
 
 Examples
@@ -83,10 +81,15 @@ Below is a simple example showing how to build an Extended Isolation Forest mode
         # Import the prostate dataset
         prostate <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
 
+        # Set the predictors
+        predictors <- c("AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
+
         # Build an Extended Isolation forest model
-        model <- h2o.extendedIsolationForest(training_frame = prostate,
+        model <- h2o.extendedIsolationForest(x = predictors,
+                                             training_frame = prostate,
                                              model_id = "eif.hex",
                                              ntrees = 100,
+                                             sample_size = 256,
                                              extension_level = 8)
 
         # Calculate score
@@ -97,17 +100,23 @@ Below is a simple example showing how to build an Extended Isolation Forest mode
 
         import h2o
         from h2o.estimators import H2OExtendedIsolationForestEstimator
+        h2o.init()
         
         # Import the prostate dataset
-        h2o_df = h2o.importFile("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
-        
+        h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
+
+        # Set the predictors
+        predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+
         # Define an Extended Isolation forest model
         eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
                                                   ntrees = 100,
+                                                  sample_size = 256,
                                                   extension_level = 8)
 
         # Train Extended Isolation Forest
-        eif.train(training_frame = hf)
+        eif.train(x = predictors,
+                  training_frame = h2o_df)
 
         # Calculate score
         eif_result = eif.predict(h2o_df)
@@ -118,3 +127,4 @@ References
 ~~~~~~~~~~
 
 `S. Hariri, M. Carrasco Kind and R. J. Brunner, "Extended Isolation Forest," in IEEE Transactions on Knowledge and Data Engineering, doi: 10.1109/TKDE.2019.2947676. <http://dx.doi.org/10.1109/TKDE.2019.2947676>`__
+

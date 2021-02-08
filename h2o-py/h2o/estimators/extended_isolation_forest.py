@@ -16,16 +16,21 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
     """
     Extended Isolation Forest
 
-    Builds an Extended Isolation Forest model. Extended Isolation Forest algorithm samples the training frame
-    and in each iteration builds a tree that partitions the space of the sample observations until
-    it isolates each observation. Length of the path from root to a leaf node of the resulting tree
-    is used to calculate the anomaly score. Anomalies are easier to isolate and their average
-    tree path is expected to be shorter than paths of regular observations.
+    Builds an Extended Isolation Forest model. Extended Isolation Forest generalizes its predecessor algorithm, 
+    Isolation Forest. The original Isolation Forest algorithm suffers from bias due to tree branching. Extension of the 
+    algorithm mitigates the bias by adjusting the branching, and the original algorithm becomes just a special case.
+    Extended Isolation Forest's attribute "extension_level" allows leveraging the generalization. The minimum value is 0 and
+    means the Isolation Forest's behavior. Maximum value is (numCols - 1) and stands for full extension. The rest of the 
+    algorithm is analogical to the Isolation Forest algorithm. Each iteration builds a tree that partitions the sample 
+    observations' space until it isolates observation. The length of the path from root to a leaf node of the resulting tree
+    is used to calculate the anomaly score. Anomalies are easier to isolate, and their average
+    tree path is expected to be shorter than paths of regular observations. Anomaly score is a number between 0 and 1. 
+    A number closer to 0 is a normal point, and a number closer to 1 is a more anomalous point.
     """
 
     algo = "extendedisolationforest"
-    param_names = {"model_id", "training_frame", "ignored_columns", "ignore_const_cols", "max_runtime_secs",
-                   "categorical_encoding", "export_checkpoints_dir", "ntrees", "sample_size", "extension_level", "seed"}
+    param_names = {"model_id", "training_frame", "ignored_columns", "ignore_const_cols", "categorical_encoding",
+                   "ntrees", "sample_size", "extension_level", "seed"}
 
     def __init__(self, **kwargs):
         super(H2OExtendedIsolationForestEstimator, self).__init__()
@@ -51,10 +56,12 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
 
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> predictors = ["displacement","power","weight","acceleration","year"]
-        >>> cars_eif = H2OExtendedIsolationForestEstimator(seed = 1234)
+        >>> cars_eif = H2OExtendedIsolationForestEstimator(seed = 1234, 
+        ...                                                sample_size = 256, 
+        ...                                                extension_level = cars.dim[1] - 1)
         >>> cars_eif.train(x = predictors,
         ...                training_frame = cars)
-        >>> cars_eif.model_performance()
+        >>> print(cars_eif)
         """
         return self._parms.get("training_frame")
 
@@ -88,7 +95,7 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
         :examples:
 
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> predictors = ["displacement","power","weight","acceleration","year","const_1","const_2"]
         >>> cars["const_1"] = 6
         >>> cars["const_2"] = 7
         >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
@@ -104,33 +111,6 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
     def ignore_const_cols(self, ignore_const_cols):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
-
-
-    @property
-    def max_runtime_secs(self):
-        """
-        Maximum allowed runtime in seconds for model training. Use 0 to disable.
-
-        Type: ``float``  (default: ``0``).
-
-        :examples:
-
-        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> predictors = ["displacement","power","weight","acceleration","year"]
-        >>> cars_eif = H2OExtendedIsolationForestEstimator(max_runtime_secs = 10,
-        ...                                                ntrees = 10000,
-        ...                                                max_depth = 10,
-        ...                                                seed = 1234)
-        >>> cars_eif.train(x = predictors,
-        ...               training_frame = cars)
-        >>> cars_eif.model_performance()
-        """
-        return self._parms.get("max_runtime_secs")
-
-    @max_runtime_secs.setter
-    def max_runtime_secs(self, max_runtime_secs):
-        assert_is_type(max_runtime_secs, None, numeric)
-        self._parms["max_runtime_secs"] = max_runtime_secs
 
 
     @property
@@ -162,35 +142,6 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
 
 
     @property
-    def export_checkpoints_dir(self):
-        """
-        Automatically export generated models to this directory.
-
-        Type: ``str``.
-
-        :examples:
-
-        >>> import tempfile
-        >>> from os import listdir
-        >>> airlines = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip", destination_frame="air.hex")
-        >>> predictors = ["DayofMonth", "DayOfWeek"]
-        >>> checkpoints_dir = tempfile.mkdtemp()
-        >>> air_eif = H2OExtendedIsolationForestEstimator(max_depth = 3,
-        ...                                               seed = 1234,
-        ...                                               export_checkpoints_dir = checkpoints_dir)
-        >>> air_eif.train(x = predictors,
-        ...              training_frame = airlines)
-        >>> len(listdir(checkpoints_dir))
-        """
-        return self._parms.get("export_checkpoints_dir")
-
-    @export_checkpoints_dir.setter
-    def export_checkpoints_dir(self, export_checkpoints_dir):
-        assert_is_type(export_checkpoints_dir, None, str)
-        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
-
-
-    @property
     def ntrees(self):
         """
         Number of Extended Isolation Forest trees.
@@ -205,10 +156,10 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
         >>> label = ["20", "50", "80", "110", "140", "170", "200"]
         >>> for key, num in enumerate(tree_num):
         ...     titanic_eif = H2OExtendedIsolationForestEstimator(ntrees = num,
-        ...                                                       seed = 1234)
+        ...                                                       seed = 1234,
+        ...                                                       extension_level = titanic.dim[1] - 1)
         ...     titanic_eif.train(x = predictors,
         ...                      training_frame = titanic) 
-        ...     print(label[key], 'training score', titanic_eif.mse(train = True))
         """
         return self._parms.get("ntrees")
 
@@ -228,12 +179,10 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
         :examples:
 
         >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/ecg_discord_train.csv")
-        >>> test = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/ecg_discord_test.csv")
-        >>> extisofor_model = H2OExtendedIsolationForestEstimator(sample_size = 5,
-        ...                                                       ntrees=7)
-        >>> extisofor_model.train(training_frame = train)
-        >>> extisofor_model.model_performance()
-        >>> extisofor_model.model_performance(test)
+        >>> eif_model = H2OExtendedIsolationForestEstimator(sample_size = 5,
+        ...                                                 ntrees=7)
+        >>> eif_model.train(training_frame = train)
+        >>> print(eif_model)
         """
         return self._parms.get("sample_size")
 
@@ -254,11 +203,10 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
         :examples:
 
         >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/single_blob.csv")
-        >>> extisofor_model = H2OExtendedIsolationForestEstimator(extension_level = 1,
-        ...                                                       ntrees=7)
-        >>> extisofor_model.train(training_frame = train)
-        >>> extisofor_model.model_performance()
-        >>> extisofor_model.model_performance(test)
+        >>> eif_model = H2OExtendedIsolationForestEstimator(extension_level = 1,
+        ...                                                 ntrees=7)
+        >>> eif_model.train(training_frame = train)
+        >>> print(eif_model)
         """
         return self._parms.get("extension_level")
 
@@ -280,14 +228,14 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
-        >>> extisofor_w_seed = H2OExtendedIsolationForestEstimator(seed = 1234) 
-        >>> extisofor_w_seed.train(x = predictors,
+        >>> eif_w_seed = H2OExtendedIsolationForestEstimator(seed = 1234) 
+        >>> eif_w_seed.train(x = predictors,
         ...                        training_frame = airlines)
-        >>> extisofor_wo_seed = H2OExtendedIsolationForestEstimator()
-        >>> extisofor_wo_seed.train(x = predictors,
+        >>> eif_wo_seed = H2OExtendedIsolationForestEstimator()
+        >>> eif_wo_seed.train(x = predictors,
         ...                         training_frame = airlines)
-        >>> extisofor_w_seed.model_performance()
-        >>> extisofor_wo_seed.model_performance()
+        >>> print(eif_w_seed)
+        >>> print(eif_wo_seed)
         """
         return self._parms.get("seed")
 

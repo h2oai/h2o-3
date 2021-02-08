@@ -18,7 +18,7 @@ The branching criteria in Extended Isolation Forest for the data
 splitting for a given data point :math:`x` is as follows:
 
 .. math::
-    (x - p) * n < 0
+    (x - p) * n ≤ 0
 
 where:
  - :math:`x`, :math:`p`, and :math:`n` are vectors with :math:`P` features
@@ -47,17 +47,24 @@ Example
         # Import the prostate dataset
         prostate <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
 
-        # Simulate Isolation Forest behavior with Extended Isolation Forest algorithm
-        model_if <- h2o.extendedIsolationForest(training_frame = prostate,
+        # Set the predictors
+        predictors <- c("AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
+
+        # Build an Extended Isolation forest model
+        model_if <- h2o.extendedIsolationForest(x = predictors,
+                                                training_frame = prostate,
                                                 model_id = "eif_if.hex",
                                                 ntrees = 100,
+                                                sample_size = 256,
                                                 extension_level = 0)
 
         # Use full-extension
-        model_eif <- h2o.extendedIsolationForest(training_frame = prostate,
-                                                model_id = "eif.hex",
-                                                ntrees = 100,
-                                                extension_level = 8)
+        model_eif <- h2o.extendedIsolationForest(x = predictors,
+                                                 training_frame = prostate,
+                                                 model_id = "eif.hex",
+                                                 ntrees = 100,
+                                                 sample_size = 256,
+                                                 extension_level = 8)
 
         # Calculate score
         score_if <- h2o.predict(model_if, prostate)
@@ -70,10 +77,14 @@ Example
 
         import h2o
         from h2o.estimators import H2OExtendedIsolationForestEstimator
-        
+        h2o.init()
+
         # Import the prostate dataset
-        h2o_df = h2o.importFile("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
-        
+        h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
+
+        # Set the predictors
+        predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+
         # Simulate Isolation Forest behavior with Extended Isolation Forest algorithm
         eif_if = H2OExtendedIsolationForestEstimator(model_id = "eif_if.hex",
                                                      ntrees = 100,
@@ -84,11 +95,11 @@ Example
                                                        ntrees = 100,
                                                        extension_level = 8)
 
-        eif_if.train(training_frame = hf)
-        eif_full.train(training_frame = hf)
+        eif_if.train(x = predictors, training_frame = h2o_df)
+        eif_full.train(x = predictors, training_frame = h2o_df)
 
         # Calculate score
         eif_if_result = eif_if.predict(h2o_df)
         eif_full_result = eif_full.predict(h2o_df)
-        eif_if_result["anomaly_score"]
-        eif_full_result["anomaly_score"]
+        print(eif_if_result["anomaly_score"])
+        print(eif_full_result["anomaly_score"])
