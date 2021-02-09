@@ -872,7 +872,7 @@ public class GenericModelTest extends TestUtil {
             System.out.println("---------------------------------------------");
             System.out.println("vec " + i);
             
-            for (long j = 0; j < originalModelPredictions.numRows(); j++) {
+            for (long j = 0; j < originalModelPredictions.numRows() && j < 10; j++) {
                 final double orig = originalModelPredictions.vec(i).at(j);
                 final double gene = genericModelPredictions.vec(i).at(j);
                 final boolean b = Math.abs(orig - gene) < 0.00000001;

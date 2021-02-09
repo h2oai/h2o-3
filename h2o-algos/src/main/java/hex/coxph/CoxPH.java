@@ -604,6 +604,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           iterTimer = new Timer();
           model._output._iter = i;
 
+          System.out.println("i = " + i + " model._output._coef = " + Arrays.toString(model._output._coef));
+
           Timer aggregTimer = new Timer();
           coxMR = new CoxPHTask(dinfo, newCoef, time, (long) response().min() /* min event */,
                   n_offsets, has_start_column, dinfo._adaptedFrame.vec(_parms._strata_column), has_weights_column,
