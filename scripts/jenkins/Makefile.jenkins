@@ -77,19 +77,19 @@ test-pyunit-demos:
 	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/build/dist/h2o-*.whl --wipeall --numclouds 1 --jvm.xmx 5g
 
 test-pyunit-small: lookup-automl-tests lookup-fault-tolerance-tests
-	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --excludelist .lookup.txt
+	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 4g --excludelist .lookup.txt
 
 test-pyunit-single-node:
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 1 --numnodes 1 --jvm.xmx 3g --testlist ../../tests/pyunitSingleNodeList
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 1 --numnodes 1 --jvm.xmx 4g --testlist ../../tests/pyunitSingleNodeList
 
 test-pyunit-xgboost-stress:
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 1 --numnodes 5 --jvm.xmx 3g --testlist ../../tests/pyunitXGBoostStressTestList
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 1 --numnodes 5 --jvm.xmx 4g --testlist ../../tests/pyunitXGBoostStressTestList
 
 test-pyunit-automl: lookup-automl-tests
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 6 --jvm.xmx 3g --testlist .lookup.txt
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 6 --jvm.xmx 4g --testlist .lookup.txt
 
 test-pyunit-fault-tolerance: init-lookup lookup-fault-tolerance-tests
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 1 --numnodes 3 --jvm.xmx 3g --testlist .lookup.txt
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 1 --numnodes 3 --jvm.xmx 4g --testlist .lookup.txt
 
 test-pyunit-medium-large:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g
