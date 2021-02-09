@@ -52,6 +52,7 @@ public class IsolationTree extends Iced<IsolationTree> {
                 node._external = true;
                 node._numRows = nodeData[0].length;
                 node._height = currentHeight;
+                node._data = null; // attempt to inform Java GC the data are not longer needed
             } else {
                 currentHeight++;
 
