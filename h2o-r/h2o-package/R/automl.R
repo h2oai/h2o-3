@@ -594,10 +594,8 @@ h2o.get_leaderboard <- function(object, extra_columns=NULL) {
 #' \item{Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse}
 #' \item{Multinomial metrics: mean_per_class_error, logloss, rmse, mse, auc, aucpr}
 #' }
-#' @param extra_columns Character vector of extra columns that can be used as a criterion.
-#' Currently supported values are:
+#' The following additional leaderboard information can be also used as a criterion:
 #' \itemize{
-#' \item{'ALL': adds all columns below.}
 #' \item{'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).}
 #' \item{'predict_time_per_row_ms': column providing the average prediction time by the model for a single row.}
 #' }
@@ -617,8 +615,7 @@ h2o.get_leaderboard <- function(object, extra_columns=NULL) {
 h2o.get_best_model <- function(object,
                                algorithm = c("any", "basemodel", "deeplearning", "drf", "gbm",
                                              "glm", "stackedensemble", "xgboost"),
-                               criterion = NULL,
-                               extra_columns = NULL) {
+                               criterion = NULL) {
   patterns <- list(
     basemodel = "^(?!StackedEnsemble)",
     deeplearning = "^DeepLearning$",
@@ -646,10 +643,9 @@ h2o.get_best_model <- function(object,
     default_criterion <- "mean_per_class_error"
   }
 
-  if ("all" %in% tolower(extra_columns)) {
-    extra_cols <- "ALL"
-  } else {
-    extra_cols <-  c("algo", extra_columns)
+  extra_cols <- "algo"
+  if (!is.null(criterion) && criterion %in% c("training_time_ms", "predict_time_per_row_ms")) {
+    extra_cols <-  c(extra_cols, criterion)
   }
   leaderboard <- h2o.get_leaderboard(object, extra_columns = extra_cols)
 

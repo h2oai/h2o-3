@@ -362,7 +362,7 @@ def test_get_best_model_per_family():
 
     # Check it works with extra_cols
     top_model = h2o.automl.get_leaderboard(aml, extra_columns=["training_time_ms"]).sort(by="training_time_ms")[0, "model_id"]
-    assert aml.get_best_model(criterion="training_time_ms", extra_columns=["training_time_ms"]).model_id == top_model
+    assert aml.get_best_model(criterion="training_time_ms").model_id == top_model
 
 
 pyunit_utils.run_tests([

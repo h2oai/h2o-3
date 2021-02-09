@@ -126,21 +126,19 @@ class H2OAutoMLBaseMixin:
         """
         pass
 
-    def get_best_model(self, algorithm="any", criterion=None, extra_columns=[]):
+    def get_best_model(self, algorithm="any", criterion=None):
         """
         Get best model of a given family/algorithm for a given criterion from an AutoML object.
 
         :param algorithm: One of "any", "basemodel", "deeplearning", "drf", "gbm", "glm", "stackedensemble", "xgboost"
         :param criterion: Criterium can be one of the metrics reported in leaderboard, if None pick the first metric
                           for each task from the following list:
-                            * Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle
-                            * Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse
-                            * Multinomial metrics: mean_per_class_error, logloss, rmse, mse, auc, aucpr
-        :param extra_columns: List of extra columns that can be used as a criterion.
-                              Currently supported values are:
-                                - 'ALL': adds all columns below.
-                                - 'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).
-                                - 'predict_time_per_row_ms`: column providing the average prediction time by the model for a single row.
+                            - Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle
+                            - Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse
+                            - Multinomial metrics: mean_per_class_error, logloss, rmse, mse, auc, aucpr
+                          The following additional leaderboard information can be also used as a criterion:
+                            - 'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).
+                            - 'predict_time_per_row_ms`: column providing the average prediction time by the model for a single row.
         :return: a model or None if none of a given family is present
         :examples:
         >>> # Set up an H2OAutoML object
@@ -175,10 +173,9 @@ class H2OAutoMLBaseMixin:
             # Deal with potential ties when not using the default criterion => use it to break the ties
             criterion = [criterion.lower(), default_criterion]
 
-        if "all" in [c.lower() for c in extra_columns]:
-            extra_cols = "ALL"
-        else:
-            extra_cols = extra_columns + ["algo"]
+        extra_cols = ["algo"]
+        if criterion[0] in ("training_time_ms", "predict_time_per_row_ms"):
+            extra_cols.append(criterion[0])
 
         leaderboard = h2o.automl.get_leaderboard(self, extra_columns=extra_cols)
         criteria = {col.lower(): col for col in leaderboard.columns}

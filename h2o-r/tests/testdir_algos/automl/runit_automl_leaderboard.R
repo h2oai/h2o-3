@@ -162,7 +162,7 @@ automl.leaderboard.suite <- function() {
 
         # Check it works with extra_cols
         top_model <- h2o.arrange(h2o.get_leaderboard(aml, extra_columns = "training_time_ms"), training_time_ms)[1, "model_id"]
-        expect_equal(h2o.get_best_model(aml, criterion = "training_time_ms", extra_columns = "training_time_ms")@model_id, top_model)
+        expect_equal(h2o.get_best_model(aml, criterion = "training_time_ms")@model_id, top_model)
 
 }
 
