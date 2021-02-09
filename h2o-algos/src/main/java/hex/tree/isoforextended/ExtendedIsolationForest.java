@@ -67,11 +67,11 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 error("sample_size","Parameter sample_size must be in interval [0, "
                         + sampleSizeMax + "] but it is " + _parms._sample_size);
             }
-            if( _parms._ntrees < 0 || _parms._ntrees > MAX_NTREES)
+            if(_parms._ntrees < 0 || _parms._ntrees > MAX_NTREES)
                 error("ntrees", "Parameter ntrees must be in interval [1, "
                         + MAX_NTREES + "] but it is " + _parms._ntrees);
         }
-        checkMemoryFootPrint();
+        if (expensive && error_count() == 0) checkMemoryFootPrint();
     }
 
     @Override
