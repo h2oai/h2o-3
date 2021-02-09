@@ -348,6 +348,12 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       if (eventVec != null)
         f.add(_parms._response_column, eventVec);
 
+      if (null != _parms._interaction_pairs) {
+        for (StringPair interaction_pair : _parms._interaction_pairs) {
+          f.add(interaction_pair._a, train().vec(interaction_pair._a));
+          f.add(interaction_pair._b, train().vec(interaction_pair._b));
+        }
+      }
       return f;
     }
 
