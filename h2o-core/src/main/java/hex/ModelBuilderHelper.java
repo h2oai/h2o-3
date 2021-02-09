@@ -1,7 +1,9 @@
 package hex;
 
 import water.H2O;
+import water.Job;
 import water.ParallelizationTask;
+import water.util.Log;
 
 public class ModelBuilderHelper {
 
@@ -13,13 +15,17 @@ public class ModelBuilderHelper {
    * @param <E> type of ModelBuilder
    * @return finished ModelBuilders
    */
-  public static <E extends ModelBuilder<?, ?, ?>> E[] trainModelsParallel(E[] mbs, int parallelization) {
+  public static <E extends ModelBuilder<?, ?, ?>> E[] trainModelsParallel(E[] mbs, int parallelization, Job<?> j, int workIncrement) {
     TrainModelTask[] tasks = new TrainModelTask[mbs.length]; 
     for (int i = 0; i < mbs.length; i++) {
       tasks[i] = new TrainModelTask(mbs[i]);
     }
-    H2O.submitTask(new ParallelizationTask<>(tasks, parallelization, null)).join();
+    H2O.submitTask(new ParallelizationTask<>(tasks, parallelization, j, workIncrement)).join();
     return mbs;
+  }
+
+  public static <E extends ModelBuilder<?, ?, ?>> E[] trainModelsParallel(E[] mbs, int parallelization) {
+    return trainModelsParallel(mbs, parallelization, null, 0);
   }
 
   /**
@@ -35,7 +41,14 @@ public class ModelBuilderHelper {
 
     @Override
     public void compute2() {
-      _mb.submitTrainModelTask().join();
+      Log.info("Building " + _mb._desc + ".");
+      boolean success = false;
+      try {
+        _mb.submitTrainModelTask().join();
+        success = true;
+      } finally {
+        Log.info(_mb._desc + (success ? " completed successfully." : " failed."));
+      }
       tryComplete();
     }
   }

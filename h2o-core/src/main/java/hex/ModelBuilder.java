@@ -44,6 +44,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected Key<M> _result;  // Built Model key
   public final Key<M> dest() { return _result; }
 
+  public String _desc = "Main model";
+  
   private Countdown _build_model_countdown;
   private Countdown _build_step_countdown;
   final void startClock() {
@@ -604,22 +606,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
       cvModelBuilders = cv_makeFramesAndBuilders(N, weights);
 
-      final ModelBuilder<M, P, O>[] builders;
+      // Step 4: Run all the CV models
       if (useParallelMainModelBuilding()) {
-        Log.info("Using parallel main model building");
+        Log.info(_desc + " will be in parallel to the Cross-Validation models.");
         _events = new LinkedBlockingQueue<>();
         for (ModelBuilder<M, P, O> mb : cvModelBuilders) {
           mb._iterationListener = new ModelTrainingListener(_events);
         }
-        builders = Arrays.copyOf(cvModelBuilders, cvModelBuilders.length + 1);
+        final ModelBuilder<M, P, O>[] builders = Arrays.copyOf(cvModelBuilders, cvModelBuilders.length + 1);
         _coordinator = new ModelTrainingCoordinator(cvModelBuilders);
         builders[builders.length - 1] = this;
-      } else 
-        builders = cvModelBuilders;
+        ModelBuilderHelper.trainModelsParallel(builders, nModelsInParallel(N), _job, 0);
+      } else {
+        cv_buildModels(N, cvModelBuilders);
+      }
       
-      // Step 4: Run all the CV models
-      cv_buildModels(N, builders);
-
       // Step 5: Score the CV models
       ModelMetrics.MetricBuilder mbs[] = cv_scoreCVModels(N, weights, cvModelBuilders);
 
@@ -758,6 +759,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_mb._parms._max_runtime_secs = cv_max_runtime_secs;
       cv_mb.clearValidationErrors(); // each submodel gets its own validation messages and error_count()
       cv_mb._input_parms = (P) _parms.clone();
+      cv_mb._desc = "Cross-Validation model " + (i + 1) + " / " + N;
 
       // Error-check all the cross-validation Builders before launching any
       cv_mb.init(false);
@@ -790,8 +792,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   // Step 4: Run all the CV models and launch the main model
   public void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
-    //makeCVModelBuilder("cross-validation", cvModelBuilders, nModelsInParallel(N)).bulkBuildModels();
-    ModelBuilderHelper.trainModelsParallel(cvModelBuilders, nModelsInParallel(N));
+    makeCVModelBuilder("cross-validation", cvModelBuilders, nModelsInParallel(N)).bulkBuildModels();
     cv_computeAndSetOptimalParameters(cvModelBuilders);
   }
   
