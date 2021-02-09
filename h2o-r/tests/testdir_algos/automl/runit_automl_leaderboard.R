@@ -123,13 +123,15 @@ automl.leaderboard.suite <- function() {
 
 
     test.get_best_model_per_family <- function() {
-        fr <- as.h2o(iris)
-        aml <- h2o.automl(y = 5, training_frame = fr, max_models = 11,
+        fr <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+        fr["CAPSULE"] <- as.factor(fr["CAPSULE"])
+        aml <- h2o.automl(y = "CAPSULE", training_frame = fr, max_models = 11,
                           project_name = "r_aml_customlb")
         .check_best_model <- function(model_ids, criterion) {
             seen <- character()
 
-            top_model_ids <- sapply(c("deep_learning", "drf", "gbm", "glm", "stacked_ensemble", "xgboost"), function(algo) {
+            # test case insensitivity in algo specification
+            top_model_ids <- sapply(c("DEEPLEARNING", "drf", "GBM", "glm", "stackedensemble", "xgboost"), function(algo) {
                 m <- h2o.get_best_model(aml, algo, criterion = criterion)
                 if (is.null(m)) NULL else m@model_id
             })
@@ -145,8 +147,10 @@ automl.leaderboard.suite <- function() {
                 }
             }
         }
-        # check it works with default ordering
+        # check it works with default criterion
         .check_best_model(as.character(as.list(aml@leaderboard$model_id)), NULL)
+        # check it works with AUC criterion (the higher the better as opposed to loss functions) and test case insensitivity
+        .check_best_model(as.character(as.list(h2o.arrange(aml@leaderboard, desc(auc))$model_id)), "AUC")
         # check it works for MSE as a criterion
         .check_best_model(as.character(as.list(h2o.arrange(aml@leaderboard, mse)$model_id)), "mse")
 

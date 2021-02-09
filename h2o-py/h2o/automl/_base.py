@@ -128,9 +128,9 @@ class H2OAutoMLBaseMixin:
 
     def get_best_model(self, algorithm="any", criterion=None, extra_columns=[]):
         """
-        Get best model of a given family/algorithm from an AutoML object.
+        Get best model of a given family/algorithm for a given criterion from an AutoML object.
 
-        :param algorithm: One of "any", "base_model", "deep_learning", "drf", "gbm", "glm", "stacked_ensemble", "xgboost"
+        :param algorithm: One of "any", "basemodel", "deeplearning", "drf", "gbm", "glm", "stackedensemble", "xgboost"
         :param criterion: Criterium can be one of the metrics reported in leaderboard, if None pick the first metric
                           for each task from the following list:
                             * Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle
@@ -150,12 +150,12 @@ class H2OAutoMLBaseMixin:
         >>> gbm = aml.get_best_model("gbm")
         """
         patterns = dict(
-            base_model="^(?!StackedEnsemble)",
-            deep_learning="^DeepLearning$",
+            basemodel="^(?!StackedEnsemble)",
+            deeplearning="^DeepLearning$",
             drf="^DRF$",
             gbm="^GBM$",
             glm="^GLM$",
-            stacked_ensemble="^StackedEnsemble$",
+            stackedensemble="^StackedEnsemble$",
             xgboost="^XGBoost$",
             any=".*"
         )
@@ -173,7 +173,7 @@ class H2OAutoMLBaseMixin:
             criterion = [default_criterion]
         else:
             # Deal with potential ties when not using the default criterion => use it to break the ties
-            criterion = [criterion, default_criterion]
+            criterion = [criterion.lower(), default_criterion]
 
         if "all" in [c.lower() for c in extra_columns]:
             extra_cols = "ALL"

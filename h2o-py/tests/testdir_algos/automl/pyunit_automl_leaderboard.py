@@ -317,6 +317,7 @@ def test_custom_leaderboard():
     assert (lb_ext["algo"].as_data_frame().isin(["DRF", "DeepLearning", "GBM",
                                                  "GLM", "StackedEnsemble", "XGBoost"]).all().all())
 
+
 def test_get_best_model_per_family():
     ds = prepare_data('binomial')
     aml = H2OAutoML(project_name="py_aml_custom_lb_test",
@@ -325,8 +326,9 @@ def test_get_best_model_per_family():
     aml.train(y=ds.target, training_frame=ds.train)
 
     def _check_best_models(model_ids, criterion):
-        top_models = [aml.get_best_model(mtype, criterion) for mtype in ["deep_learning", "drf", "gbm", "glm",
-                                                              "stacked_ensemble", "xgboost"]]
+        # test case insensitivity in algo specification
+        top_models = [aml.get_best_model(mtype, criterion) for mtype in ["deeplearning", "drf", "gbm", "GLM",
+                                                                         "STaCKeDEnsEmblE", "xgboost"]]
         nones = [v is None for v in top_models]
         assert sum(nones) <= 1 and len(nones) >= 6
         seen = set()
@@ -343,6 +345,10 @@ def test_get_best_model_per_family():
     # Check default criterion
     model_ids = aml.leaderboard.as_data_frame()["model_id"]
     _check_best_models(model_ids, None)
+
+    # Check AUC criterion (the higher the better) and check case insensitivity
+    model_ids = aml.leaderboard.sort(by="auc", ascending=False).as_data_frame()["model_id"]
+    _check_best_models(model_ids, "AUC")
 
     # Check it works for custom criterion (MSE)
     model_ids = aml.leaderboard.sort(by="mse").as_data_frame()["model_id"]

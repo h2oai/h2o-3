@@ -536,7 +536,8 @@ h2o.get_automl <- function(project_name) {
              leaderboard = state$leaderboard,
              event_log = state$event_log,
              modeling_steps = state$modeling_steps,
-             training_info = training_info)
+             training_info = training_info
+  )
   attr(automl, "id") <- state$automl_id
   return(automl)
 }
@@ -582,10 +583,10 @@ h2o.get_leaderboard <- function(object, extra_columns=NULL) {
 }
 
 
-#' Get best model of a given family/algorithm from an AutoML object.
+#' Get best model of a given family/algorithm for a given criterion from an AutoML object.
 #'
 #' @param object H2OAutoML object
-#' @param algorithm One of "base_model", "deep_learning", "drf", "gbm", "glm", "stacked_ensemble", "xgboost"
+#' @param algorithm One of "any", "base_model", "deep_learning", "drf", "gbm", "glm", "stacked_ensemble", "xgboost"
 #' @param criterion Criterium can be one of the metrics reported in leaderboard, if NULL pick the first metric
 #' for each task from the following list:
 #' \itemize{
@@ -614,22 +615,23 @@ h2o.get_leaderboard <- function(object, extra_columns=NULL) {
 #' }
 #' @export
 h2o.get_best_model <- function(object,
-                               algorithm = c("any", "base_model", "deep_learning", "drf", "gbm",
-                                             "glm", "stacked_ensemble", "xgboost", "xrt"),
+                               algorithm = c("any", "basemodel", "deeplearning", "drf", "gbm",
+                                             "glm", "stackedensemble", "xgboost"),
                                criterion = NULL,
                                extra_columns = NULL) {
   patterns <- list(
-    base_model = "^(?!StackedEnsemble)",
-    deep_learning = "^DeepLearning$",
+    basemodel = "^(?!StackedEnsemble)",
+    deeplearning = "^DeepLearning$",
     drf = "^DRF$",
     gbm = "^GBM$",
     glm = "^GLM$",
-    stacked_ensemble = "^StackedEnsemble$",
+    stackedensemble = "^StackedEnsemble$",
     xgboost = "^XGBoost$",
     any = ".*"
   )
 
-  algorithm <- match.arg(algorithm)
+  algorithm <- match.arg(arg = if (missing(algorithm) || tolower(algorithm) == "any") "any" else tolower(algorithm),
+                         choices = eval(formals()$algorithm))
   higher_is_better <- c("auc", "aucpr")
 
   if (!tolower(algorithm) %in% names(patterns)) {
@@ -653,19 +655,19 @@ h2o.get_best_model <- function(object,
 
   criteria <- stats::setNames(sapply(names(leaderboard), as.symbol), sapply(names(leaderboard), tolower))
 
-  criterion <- c(criterion, default_criterion)
-  if (any(!tolower(criterion[[1]]) %in% names(criteria))) {
+  criterion <- unique(tolower(c(criterion, default_criterion)))
+  if (any(!criterion[[1]] %in% names(criteria))) {
     stop("Criterion \"", criterion[[1]],"\" is not present in the leaderboard!")
   }
 
   pattern <- patterns[[algorithm]]
 
-  criterion <- criteria[tolower(criterion)]
-  ascending <- !tolower(criterion) %in% higher_is_better
+  criterion <- criteria[criterion]
+  ascending <- !criterion %in% higher_is_better
 
   leaderboard <- do.call(h2o.arrange, c(
     list(leaderboard),
-    ifelse(ascending, criterion, bquote(desc(.(criterion))))))
+    ifelse(ascending, criterion, sapply(criterion, function(c) bquote(desc(.(c)))))))
   matches <- as.numeric(as.list(h2o.grep(pattern, leaderboard$algo)))
 
   if (length(matches) == 0)
