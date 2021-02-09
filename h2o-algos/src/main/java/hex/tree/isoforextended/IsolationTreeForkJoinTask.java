@@ -30,9 +30,9 @@ class IsolationTreeForkJoinTask extends H2O.H2OCountedCompleter<IsolationTreeFor
             int heightLimit = (int) Math.ceil(MathUtils.log2(eif._parms._sample_size));
             int randomUnit = eif._rand.nextInt();
 
-            Frame subSample = new SubSampleTask(eif._parms._sample_size, eif._parms._seed + randomUnit)
-                    .doAll(train.types(), train.vecs()).outputFrame(Key.make(), train.names(), train.domains());
-            Scope.track(subSample);
+//            Frame subSample = new SubSampleTask(eif._parms._sample_size, eif._parms._seed + randomUnit)
+//                    .doAll(train.types(), train.vecs()).outputFrame(Key.make(), train.names(), train.domains());
+//            Scope.track(subSample);
 
 //            iTree = new IsolationTree(subSample._key, heightLimit, eif._parms._seed + randomUnit, eif._parms.extension_level, treeNum);
 //            iTree.buildTree();

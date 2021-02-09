@@ -488,4 +488,42 @@ public class ExtendedIsolationForestTest extends TestUtil {
         assertArrayEquals("Result is not correct", new double[]{-1.0}, split.getLeft()[0], 1e-3);
         assertArrayEquals("Result is not correct", new double[]{2.0, 1.0}, split.getRight()[0], 1e-3);
     }
+
+    @Test
+    public void testSubSampleTaskSmoke() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+            int tries = 100;
+            long sum = 0;
+            for(int i = 0; i < tries; i++) {
+                Frame subSample = new SubSampleTask(256, train.numRows(), 0xBEEF + i).doAll(train.types(), train).outputFrame();
+                assertEquals("SubSample has different number of columns", train.numCols(), subSample.numCols());
+                sum += subSample.numRows();
+            }
+            double average = ((double) sum) / tries;
+            assertEquals("SubSample has different number of rows", 256, average, 2);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testSubSampleTaskLarge() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(generate_real_only(32, 32768, 0, 0xBEEF));
+            int tries = 100;
+            long sum = 0;
+            for(int i = 0; i < tries; i++) {
+                Frame subSample = new SubSampleTask(256, train.numRows(), 0xBEEF + i).doAll(train.types(), train).outputFrame();
+                assertEquals("SubSample has different number of columns", train.numCols(), subSample.numCols());
+                sum += subSample.numRows();
+            }
+            double average = ((double) sum) / tries;
+            assertEquals("SubSample has different number of rows", 256, average, 2);
+        } finally {
+            Scope.exit();
+        }
+    }
 }

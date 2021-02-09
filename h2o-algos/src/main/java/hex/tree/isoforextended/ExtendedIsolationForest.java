@@ -121,12 +121,12 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
             int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
 
             for (int tid = 0; tid < _parms._ntrees; tid++) {
+                Timer timer = new Timer();
                 int randomUnit = _rand.nextInt();
-                Frame subSample = new SubSampleTask(_parms._sample_size, _parms._seed + randomUnit)
-                        .doAll(_train.types(), _train.vecs()).outputFrame(null, _train.names(), _train.domains());
+                Frame subSample = new SubSampleTask(_parms._sample_size, _train.numRows(),_parms._seed + randomUnit)
+                        .doAll(_train.types(), _train.vecs()).outputFrame();
                 double[][] subSampleArray = FrameUtils.asDoubles(subSample);
 
-                Timer timer = new Timer();
                 IsolationTree isolationTree = new IsolationTree(subSampleArray, heightLimit, _parms._seed + _rand.nextInt(), _parms._extension_level, tid);
                 isolationTree.buildTree();
                 model._output._iTrees[tid] = isolationTree;

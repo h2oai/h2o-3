@@ -6,28 +6,26 @@ import water.fvec.NewChunk;
 import water.util.RandomUtils;
 
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Task to create random sub-sample of given Frame with defined subSampleSize
- * TODO avalenta make subsampling randomized and guarantee given size for small datasets
+ * Task to create random sub-sample of given Frame
  */
 public class SubSampleTask extends MRTask<SubSampleTask> {
 
-    private long subSampleSize;
-    private Random random;
+    private final long seed;
+    private final double sampleRate;
 
-    private AtomicInteger currentSubSampleSize = new AtomicInteger(-1);
+    public SubSampleTask(long subSampleSize, long frameNumRows, long seed) {
+        this.seed = seed;
+        this.sampleRate = ((double) subSampleSize) / frameNumRows;
 
-    public SubSampleTask(long subSampleSize, long seed) {
-        this.subSampleSize = subSampleSize;
-        this.random = RandomUtils.getRNG(seed);
     }
 
     @Override
     public void map(Chunk[] cs, NewChunk[] ncs) {
+        Random random = RandomUtils.getRNG(seed + cs[0].start());
         for (int row = 0; row < cs[0]._len; row++) {
-            if (random.nextBoolean() && (currentSubSampleSize.incrementAndGet() < subSampleSize)) {
+            if (random.nextDouble() <= sampleRate) {
                 for (int column = 0; column < cs.length; column++) {
                     ncs[column].addNum(cs[column].atd(row));
                 }
