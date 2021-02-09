@@ -11,7 +11,7 @@ from codecs import open
 import os
 import zipfile
 
-from h2o.h2o import (connect, init, api, connection,
+from h2o.h2o import (connect, init, api, connection, resume,
                      lazy_import, upload_file, import_file, import_sql_table, import_sql_select, import_hive_table,
                      parse_setup, parse_raw, assign, deep_copy, models, get_model, get_grid, get_frame,
                      show_progress, no_progress, enable_expr_optimizations, is_expr_optimizations_enabled,
@@ -62,7 +62,7 @@ if (__version__.endswith("99999")):
     print(__buildinfo__)
 
 
-__all__ = ["connect", "init", "api", "connection", "upload_file", "lazy_import", "import_file", "import_sql_table",
+__all__ = ["connect", "init", "api", "connection", "resume", "upload_file", "lazy_import", "import_file", "import_sql_table",
            "import_sql_select", "parse_setup", "parse_raw", "assign", "deep_copy", "models", "get_model", "get_grid", "get_frame",
            "show_progress", "no_progress", "enable_expr_optimizations", "is_expr_optimizations_enabled", "log_and_echo",
            "remove", "remove_all", "rapids", "ls", "frame", "import_hive_table",

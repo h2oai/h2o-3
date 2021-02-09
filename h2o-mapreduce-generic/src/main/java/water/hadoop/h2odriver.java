@@ -137,6 +137,7 @@ public class h2odriver extends Configured implements Tool {
   static String hiveToken = null;
   static CloudingMethod cloudingMethod = CloudingMethod.CALLBACKS;
   static String cloudingDir = null;
+  static String autoRecoveryDir = null;
   static boolean disableFlow = false;
   static boolean swExtBackend = false;
 
@@ -706,6 +707,7 @@ public class h2odriver extends Configured implements Tool {
       conf.set(h2omapper.H2O_CLOUDING_IMPL, NetworkBasedClouding.class.getName());
       conf.set(h2omapper.H2O_DRIVER_IP_KEY, driverCallbackPublicIp);
       conf.set(h2omapper.H2O_DRIVER_PORT_KEY, Integer.toString(_ss.getLocalPort()));
+      conf.setInt(h2omapper.H2O_CLOUD_SIZE_KEY, targetCloudSize());
     } 
 
     @Override
@@ -864,6 +866,7 @@ public class h2odriver extends Configured implements Tool {
                     "          [-extramempercent <0 to 20>]\n" +
                     "          [-nthreads <maximum typical worker threads, i.e. cpus to use>]\n" +
                     "          [-context_path <context_path> the context path for jetty]\n" +
+                    "          [-auto_recovery_dir <hdfs directory where to store recovery data>]\n" +
                     "          [-baseport <starting HTTP port for H2O nodes; default is 54321>]\n" +
                     "          [-flow_dir <server side directory or hdfs directory>]\n" +
                     "          [-ea]\n" +
@@ -1276,10 +1279,13 @@ public class h2odriver extends Configured implements Tool {
         hiveToken = args[i];
       } else if (s.equals("-clouding_method")) {
         i++; if (i >= args.length) { usage(); }
-        cloudingMethod = CloudingMethod.valueOf(args[i].toUpperCase()); 
+        cloudingMethod = CloudingMethod.valueOf(args[i].toUpperCase());
       } else if (s.equals("-clouding_dir")) {
         i++; if (i >= args.length) { usage(); }
         cloudingDir = args[i];
+      } else if (s.equals("-auto_recovery_dir")) {
+        i++; if (i >= args.length) { usage(); }
+        autoRecoveryDir = args[i];
       } else {
         error("Unrecognized option " + s);
       }
@@ -1814,6 +1820,9 @@ public class h2odriver extends Configured implements Tool {
     }
     if (disableFlow) {
       addMapperArg(conf, "-disable_flow");
+    }
+    if (autoRecoveryDir != null) {
+      addMapperArg(conf, "-auto_recovery_dir", autoRecoveryDir);
     }
     if (swExtBackend) {
       addMapperArg(conf, "-allow_clients");

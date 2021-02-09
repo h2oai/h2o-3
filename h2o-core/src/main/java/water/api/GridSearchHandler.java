@@ -64,15 +64,13 @@ public class GridSearchHandler<G extends Grid<MP>,
     }
     S gss = buildGridSearchSchema(algoURLName, parms);
     Grid<MP> grid = gss.grid_id.key().get();
-    Job<Grid> gsJob = GridSearch.startGridSearch(
-        gss.grid_id.key(),
-        grid.getParams(),
-        grid.getHyperParams(),
+    Key<Job> jobKey = gss.job_id != null ? gss.job_id.key() : null;
+    Recovery<Grid> recovery = getRecovery(gss);
+    Job<Grid> gsJob = GridSearch.resumeGridSearch(
+        jobKey, grid,
         new DefaultModelParametersBuilderFactory<MP, P>(),
-        grid.getSearchCriteria(),
-        null,
-        grid.getParallelism()
-    );
+        recovery
+    ); 
     gss.hyper_parameters = null;
     gss.job = new JobV3(gsJob);
     return gss;
@@ -131,13 +129,13 @@ public class GridSearchHandler<G extends Grid<MP>,
     // Get/create a grid for given frame
     Key<Grid> destKey = gss.grid_id != null ? gss.grid_id.key() : null;
     // Prepare recovery if requested
-    Recovery<Grid> recovery = null;
-    if (gss.recovery_dir != null) {
-      recovery = new Recovery<>(gss.recovery_dir);
-    }
+    Recovery<Grid> recovery = getRecovery(gss);
+    Key<Job> jobKey = gss.job_id != null ? gss.job_id.key() : null;
+
     // Create target grid search object (keep it private for now)
     // Start grid search and return the schema back with job key
     Job<Grid> gsJob = GridSearch.startGridSearch(
+        jobKey,
         destKey,
         params,
         sortedMap,
@@ -197,6 +195,15 @@ public class GridSearchHandler<G extends Grid<MP>,
     }
   }
 
+  private Recovery<Grid> getRecovery(GridSearchSchema gss) {
+    if (gss.recovery_dir != null) {
+      return new Recovery<>(gss.recovery_dir);
+    } else if (H2O.ARGS.auto_recovery_dir != null) {
+      return new Recovery<>(H2O.ARGS.auto_recovery_dir);
+    } else {
+      return null;
+    }
+  }
 
   public static class DefaultModelParametersBuilderFactory<MP extends Model.Parameters, PS extends ModelParametersSchemaV3>
       implements ModelParametersBuilderFactory<MP> {

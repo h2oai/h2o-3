@@ -41,6 +41,9 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   /** User description */
   public final String _description;
 
+  // whether this job is recoverable
+  private boolean _recoverable = false;
+  
   // whether the _result key is ready for view
   private boolean _ready_for_view = true;
 
@@ -58,22 +61,37 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   }
 
   /** Create a Job
-   *  @param key  Key of the final result
+   *  @param jobKey Key for this job
+   *  @param resultKey Key of the final result
    *  @param clz_of_T String class of the Keyed result
-   *  @param desc String description   */
-  public Job(Key<T> key, String clz_of_T, String desc) {
-    super(defaultJobKey());     // Passing in a brand new Job key
-    assert key==null || clz_of_T!=null;
-    _result = key;              // Result (destination?) key
+   *  @param desc String description   
+   *  @param recoverable Boolean indicating that this job is recoverable
+   */
+  public Job(Key<Job> jobKey, Key<T> resultKey, String clz_of_T, String desc, boolean recoverable) {
+    super(jobKey == null ? defaultJobKey() : jobKey);
+    assert resultKey==null || clz_of_T!=null;
+    _result = resultKey; // Result (destination?) key
     _typeid = clz_of_T==null ? 0 : TypeMap.getIcedId(clz_of_T);
-    _description = desc; 
+    _description = desc;
+    _recoverable = recoverable;
   }
 
+  /** Create a Job
+   *  @param key Key of the final result
+   *  @param clz_of_T String class of the Keyed result
+   *  @param desc String description   
+   */
+  public Job(Key<T> key, String clz_of_T, String desc) {
+    this(defaultJobKey(), key, clz_of_T, desc, false); // Passing in a brand new Job key
+  }
+
+
   /** Create a Job when a warning already exists due to bad model_id
-   *  @param key  Key of the final result
+   *  @param key Key of the final result
    *  @param clz_of_T String class of the Keyed result
    *  @param desc String description
-   *  @param warningStr String contains a warning on model_id*/
+   *  @param warningStr String contains a warning on model_id
+   */
   public Job(Key<T> key, String clz_of_T, String desc, String warningStr) {
     this(key, clz_of_T, desc);
     if (warningStr != null) {
@@ -132,6 +150,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     return _end_time - _start_time; // Stopped
   }
 
+  public boolean isRecoverable() { return _recoverable; };
   public boolean readyForView() { return _ready_for_view; }
   public void setReadyForView(boolean ready) { _ready_for_view = ready; }
 

@@ -44,12 +44,24 @@ while (( "$#" )); do
       contextPathArgs="-context_path $2"
       shift 2
       ;;
+    --auto-recovery-dir)
+      autoRecoveryDir=$2
+      shift 2
+      ;;
+    --auto-recovery-cleanup)
+      autoRecoveryCleanup=yes
+      shift
+      ;;
     --use-external-xgb)
       useExternalXGBoost=yes
       shift
       ;;
     --enable-login)
       enableLogin=yes
+      shift
+      ;;
+    --proxy)
+      proxy=yes
       shift
       ;;
     --disown)
@@ -70,8 +82,17 @@ if [ "${enableLogin}" = "yes" ]; then
   echo "jenkins:${clusterName}" >> ${clusterName}.realm.properties
   loginArgs="-hash_login -login_conf ${clusterName}.realm.properties"
 fi
+if [ "${proxy}" = "yes" ]; then 
+  proxyArgs="-proxy"
+fi
 if [ "${disown}" = "yes" ]; then 
   disownArgs="-disown"
+fi
+if [ "${autoRecoveryDir}" != "" ]; then
+  if [ "${autoRecoveryCleanup}" = "yes" ]; then
+    hdfs dfs -rm -r -f ${autoRecoveryDir}
+  fi
+  autoRecoveryArgs="-auto_recovery_dir ${autoRecoveryDir}"
 fi
 
 rm -fv ${notifyFile} ${driverLogFile}
@@ -79,20 +100,18 @@ hdfs dfs -rm -r -f ${cloudingDir}
 hadoop jar h2o-hadoop-*/h2o-${hadoopVersion}-assembly/build/libs/h2odriver.jar \
     -jobname ${jobName} -ea \
     -clouding_method filesystem -clouding_dir ${cloudingDir} \
-    -n ${nodes} -mapperXmx ${xmx} -baseport 54445 -timeout 360 \
-    ${contextPathArgs} \
-    ${loginArgs} \
-    ${xgbArgs} \
-    ${disownArgs} \
-    -notify ${notifyFile} \
+    -n ${nodes} -mapperXmx ${xmx} -baseport 54445 -timeout 720 \
+    ${contextPathArgs} ${loginArgs} ${xgbArgs} \
+    ${autoRecoveryArgs} ${disownArgs} \
+    -notify ${notifyFile} ${proxyArgs} \
     > ${driverLogFile} 2>&1 &
-for i in $(seq 36); do
+for i in $(seq 30); do
   if [ -f "${notifyFile}" ]; then
     echo "H2O started on $(cat ${notifyFile})"
     break
   fi
   echo "Waiting for H2O to come up ($i)..."
-  sleep 10
+  sleep 20
 done
 if [ ! -f "${notifyFile}" ]; then
   echo 'H2O failed to start!'

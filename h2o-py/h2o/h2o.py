@@ -310,6 +310,21 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     h2oconn.cluster.timezone = "UTC"
     h2oconn.cluster.show_status()
 
+
+def resume(recovery_dir=None):
+    """
+    Triggers auto-recovery resume - this will look into configured recovery dir and resume and
+    tasks that were interrupted by unexpected cluster stopping.
+
+    :param recovery_dir: A path to where cluster recovery data is stored, if blank, will use cluster's configuration.
+    """
+
+    params = {
+        "recovery_dir": recovery_dir
+    }
+    api(endpoint="POST /3/Recovery/resume", data=params)
+
+
 def lazy_import(path, pattern=None):
     """
     Import a single file or collection of files.

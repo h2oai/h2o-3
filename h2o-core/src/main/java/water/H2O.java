@@ -1,6 +1,7 @@
 package water;
 
 import hex.ModelBuilder;
+import hex.faulttolerance.Recovery;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
@@ -392,6 +393,12 @@ final public class H2O {
     public String ga_hadoop_ver = null;
 
     //-----------------------------------------------------------------------------------
+    // Recovery
+    //-----------------------------------------------------------------------------------
+    /** -auto_recovery_dir=hdfs://path/to/recovery; Where to store {@link hex.faulttolerance.Recoverable} job data */
+    public String auto_recovery_dir;
+
+    //-----------------------------------------------------------------------------------
     // Debugging
     //-----------------------------------------------------------------------------------
     /** -log_level=log_level; One of DEBUG, INFO, WARN, ERRR.  Default is INFO. */
@@ -640,6 +647,10 @@ final public class H2O {
       else if (s.matches("ga_opt_out")) {
         // JUnits pass this as a system property, but it usually a flag without an arg
         if (i+1 < args.length && args[i+1].equals("yes")) i++;
+      }
+      else if (s.matches("auto_recovery_dir")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.auto_recovery_dir = args[i];
       }
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
@@ -927,8 +938,9 @@ final public class H2O {
         H2O.exit(-1);
       }
     }
-    if (embeddedH2OConfig == null) { return; }
-    embeddedH2OConfig.notifyAboutCloudSize(ip, port, leaderIp, leaderPort, size);
+    if (embeddedH2OConfig != null) {
+      embeddedH2OConfig.notifyAboutCloudSize(ip, port, leaderIp, leaderPort, size);
+    }
   }
 
 

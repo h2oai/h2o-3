@@ -471,17 +471,6 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     return super.writeAll_impl(ab);
   }
 
-  /**
-   * By default, the method writeAll_impl saves all the Grid models as well into the binary file. For some use-cases,
-   * this is undesired (Grid checkpointing).
-   *
-   * @param autoBuffer AutoBuffer to serialize this instance of {@link Grid} to
-   * @return Reference to the instance of {@link AutoBuffer} given as a method argument.
-   */
-  protected AutoBuffer writeWithoutModels(final AutoBuffer autoBuffer){
-    return super.writeAll_impl(autoBuffer.put(this));
-  }
-
   @Override
   protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     throw H2O.unimpl();
@@ -561,7 +550,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     assert _key != null;
     final String gridFilePath = gridExportDir + "/" + _key;
     final URI gridUri = FileUtils.getURI(gridFilePath);
-    PersistUtils.write(gridUri, this::writeWithoutModels);
+    PersistUtils.write(gridUri, (ab) -> ab.put(this));
     List<String> result = new ArrayList<>();
     result.add(gridFilePath);
     if (exportModels) {

@@ -13,9 +13,9 @@ import unittest
 
 class GridReloadTest(unittest.TestCase):
 
-    def test_frame_reload(self):
-        name_node = pyunit_utils.hadoop_namenode()
-        work_dir = "hdfs://%s%s" % (name_node, utils.get_workdir())
+    def test_grid_reload(self):
+        name_node = utils.hadoop_namenode()
+        work_dir = utils.get_workdir()
         dataset = "/datasets/iris_wheader.csv"
 
         ntrees_opts = [100, 120, 130, 140]
@@ -29,6 +29,7 @@ class GridReloadTest(unittest.TestCase):
         }
 
         cluster_1_name = "grid1-py"
+        recovery_dir_1 = work_dir + "/recovery1"
         try:
             cluster_1 = utils.start_cluster(cluster_1_name)
             h2o.connect(url=cluster_1)
@@ -37,7 +38,7 @@ class GridReloadTest(unittest.TestCase):
                 H2OGradientBoostingEstimator,
                 grid_id=grid_id,
                 hyper_params=hyper_parameters,
-                recovery_dir=work_dir
+                recovery_dir=recovery_dir_1
             )
             print("starting initial grid and sleeping...")
             grid.start(x=list(range(4)), y=4, training_frame=train)
@@ -56,14 +57,15 @@ class GridReloadTest(unittest.TestCase):
             utils.stop_cluster(cluster_1_name)
 
         cluster_2_name = "grid2-py"
+        recovery_dir_2 = work_dir + "/recovery2"
         try:
             cluster_2 = utils.start_cluster(cluster_2_name)
             h2o.connect(url=cluster_2)
-            loaded = h2o.load_grid("%s/%s" % (work_dir, grid_id), load_params_references=True)
+            loaded = h2o.load_grid("%s/%s" % (recovery_dir_1, grid_id), load_params_references=True)
             print("models after first run:")
             for x in sorted(loaded.model_ids):
                 print(x)
-            loaded.resume()
+            loaded.resume(recovery_dir=recovery_dir_2)
             print("models after second run:")
             for x in sorted(loaded.model_ids):
                 print(x)
