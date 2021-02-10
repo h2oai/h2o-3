@@ -131,16 +131,18 @@ class H2OAutoMLBaseMixin:
         """
         Get best model of a given family/algorithm for a given criterion from an AutoML object.
 
-        :param algorithm: One of "basemodel", "deeplearning", "drf", "gbm", "glm", "stackedensemble", "xgboost"
-        :param criterion: Criterium can be one of the metrics reported in leaderboard, if None pick the first metric
-                          for each task from the following list:
+        :param algorithm: One of "basemodel", "deeplearning", "drf", "gbm", "glm", "stackedensemble", "xgboost".
+                          If None, pick the best model regardless of the algorithm.
+        :param criterion: Criterion can be one of the metrics reported in leaderboard. If set to None, the same ordering
+                          as in the leaderboard will be used.
+                          Avaliable criteria:
                             - Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle
                             - Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse
                             - Multinomial metrics: mean_per_class_error, logloss, rmse, mse, auc, aucpr
                           The following additional leaderboard information can be also used as a criterion:
                             - 'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).
                             - 'predict_time_per_row_ms`: column providing the average prediction time by the model for a single row.
-        :return: a model or None if none of a given family is present
+        :return: An H2OModel or None if no model of a given family is present
         :examples:
         >>> # Set up an H2OAutoML object
         >>> aml = H2OAutoML(max_runtime_secs=30)

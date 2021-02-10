@@ -586,9 +586,10 @@ h2o.get_leaderboard <- function(object, extra_columns=NULL) {
 #' Get best model of a given family/algorithm for a given criterion from an AutoML object.
 #'
 #' @param object H2OAutoML object
-#' @param algorithm One of "any", "base_model", "deep_learning", "drf", "gbm", "glm", "stacked_ensemble", "xgboost"
-#' @param criterion Criterium can be one of the metrics reported in leaderboard, if NULL pick the first metric
-#' for each task from the following list:
+#' @param algorithm One of "any", "basemodel", "deeplearning", "drf", "gbm", "glm", "stackedensemble", "xgboost"
+#' @param criterion Criterion can be one of the metrics reported in the leaderboard. If set to NULL, the same ordering
+#' as in the leaderboard will be used.
+#' Avaliable criteria:
 #' \itemize{
 #' \item{Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle}
 #' \item{Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse}
@@ -599,7 +600,7 @@ h2o.get_leaderboard <- function(object, extra_columns=NULL) {
 #' \item{'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).}
 #' \item{'predict_time_per_row_ms': column providing the average prediction time by the model for a single row.}
 #' }
-#' @return a model or None if none of a given family is present
+#' @return An H2OModel or NULL if no model of a given family is present
 #' @examples
 #' \dontrun{
 #' library(h2o)
