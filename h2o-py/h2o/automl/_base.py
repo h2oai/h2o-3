@@ -163,22 +163,21 @@ class H2OAutoMLBaseMixin:
         if criterion is not None:
             criterion = criterion.lower()
 
-        if algorithm is not None and "any" != algorithm:
+        if algorithm is not None:
             if algorithm.lower() not in ("basemodel", "deeplearning", "drf", "gbm",
                                          "glm", "stackedensemble", "xgboost"):
                 raise H2OValueError("Algorithm \"{}\" is not supported!".format(algorithm))
             algorithm = algorithm.lower()
-            if "basemodel" == algorithm:
-                algorithm = "^(?!stackedensemble)"
-        else:
-            algorithm = ".*"
 
         extra_cols = ["algo"]
         if criterion in ("training_time_ms", "predict_time_per_row_ms"):
             extra_cols.append(criterion)
 
         leaderboard = h2o.automl.get_leaderboard(self, extra_columns=extra_cols)
-        leaderboard = leaderboard[leaderboard["algo"].tolower().grep(algorithm, output_logical=True), :]
+        leaderboard = leaderboard if algorithm is None else (
+            leaderboard[leaderboard["algo"].tolower() == algorithm, :] if algorithm != "basemodel"
+            else leaderboard[leaderboard["algo"].tolower() != "stackedensemble", :])
+
         if leaderboard.nrow == 0:
             return None
 

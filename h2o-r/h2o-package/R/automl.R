@@ -635,10 +635,11 @@ h2o.get_best_model <- function(object,
   if (!is.null(criterion) && criterion %in% c("training_time_ms", "predict_time_per_row_ms")) {
     extra_cols <-  c(extra_cols, criterion)
   }
-  algorithm <- switch(algorithm, any=".*", basemodel="^(?!stackedensemble)", algorithm)
 
   leaderboard <- h2o.get_leaderboard(object, extra_columns = extra_cols)
-  leaderboard <- leaderboard[h2o.grep(algorithm, h2o.tolower(leaderboard["algo"]), output.logical = TRUE),]
+  leaderboard <- if ("any" == algorithm) leaderboard
+                 else if ("basemodel" != algorithm) leaderboard[h2o.tolower(leaderboard["algo"]) == algorithm, ]
+                 else leaderboard[h2o.tolower(leaderboard["algo"]) != "stackedensemble", ]
 
   if (nrow(leaderboard) == 0)
     return(NULL)
