@@ -73,7 +73,7 @@ examples = dict(
 """,
     ignore_const_cols="""
 >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> predictors = ["displacement","power","weight","acceleration","year"]
+>>> predictors = ["displacement","power","weight","acceleration","year","const_1","const_2"]
 >>> cars["const_1"] = 6
 >>> cars["const_2"] = 7
 >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
@@ -144,12 +144,10 @@ examples = dict(
 """,
     sample_size="""
 >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/ecg_discord_train.csv")
->>> test = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/ecg_discord_test.csv")
 >>> isofor_model = H2OIsolationForestEstimator(sample_size=5,
 ...                                            ntrees=7)
 >>> isofor_model.train(training_frame=train)
 >>> isofor_model.model_performance()
->>> isofor_model.model_performance(test)
 """,
     score_each_iteration="""
 >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
