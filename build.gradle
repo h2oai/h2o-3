@@ -233,6 +233,9 @@ subprojects {
             maven {
                 url "http://repository.mapr.com/maven/"
             }
+            maven {
+                url "https://repository.jboss.org/nexus/content/repositories/thirdparty-releases/"
+            }
         }
     }
 
