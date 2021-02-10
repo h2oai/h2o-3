@@ -164,6 +164,10 @@ automl.leaderboard.suite <- function() {
         top_model <- h2o.arrange(h2o.get_leaderboard(aml, extra_columns = "training_time_ms"), training_time_ms)[1, "model_id"]
         expect_equal(h2o.get_best_model(aml, criterion = "training_time_ms")@model_id, top_model)
 
+        # Check input validation
+        expect_error(h2o.get_best_model(iris))
+        expect_error(h2o.get_best_model(aml, algorithm = "GXboost"))
+        expect_error(h2o.get_best_model(aml, criterion = "lorem_ipsum_dolor_sit_amet"))
 }
 
     makeSuite(

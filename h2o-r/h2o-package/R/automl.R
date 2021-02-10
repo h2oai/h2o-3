@@ -616,57 +616,45 @@ h2o.get_best_model <- function(object,
                                algorithm = c("any", "basemodel", "deeplearning", "drf", "gbm",
                                              "glm", "stackedensemble", "xgboost"),
                                criterion = NULL) {
-  patterns <- list(
-    basemodel = "^(?!StackedEnsemble)",
-    deeplearning = "^DeepLearning$",
-    drf = "^DRF$",
-    gbm = "^GBM$",
-    glm = "^GLM$",
-    stackedensemble = "^StackedEnsemble$",
-    xgboost = "^XGBoost$",
-    any = ".*"
-  )
+  if (!.is.H2OAutoML(object))
+    stop("Only H2OAutoML instances are currently supported.")
 
   algorithm <- match.arg(arg = if (missing(algorithm) || tolower(algorithm) == "any") "any" else tolower(algorithm),
                          choices = eval(formals()$algorithm))
+
+  if (!is.null(criterion) && !(is.character(criterion) && length(criterion) == 1))
+    stop("Criterion has to be either NULL or character vector of length 1.")
+
   higher_is_better <- c("auc", "aucpr")
 
-  if (!tolower(algorithm) %in% names(patterns)) {
-    stop(paste0("Unknown algorithm \"", algorithm, "\"!"))
-  }
-
-  if (is(object@leader, "H2ORegressionModel")) {
-    default_criterion <- "mean_residual_deviance"
-  } else if (is(object@leader, "H2OBinomialModel")) {
-    default_criterion <- "auc"
-  } else {
-    default_criterion <- "mean_per_class_error"
-  }
+  if (!is.null(criterion))
+    criterion <- tolower(criterion)
 
   extra_cols <- "algo"
   if (!is.null(criterion) && criterion %in% c("training_time_ms", "predict_time_per_row_ms")) {
     extra_cols <-  c(extra_cols, criterion)
   }
+  algorithm <- switch(algorithm, any=".*", basemodel="^(?!stackedensemble)", algorithm)
+
   leaderboard <- h2o.get_leaderboard(object, extra_columns = extra_cols)
+  leaderboard <- leaderboard[h2o.grep(algorithm, h2o.tolower(leaderboard["algo"]), output.logical = TRUE),]
 
-  criteria <- stats::setNames(sapply(names(leaderboard), as.symbol), sapply(names(leaderboard), tolower))
+  if (nrow(leaderboard) == 0)
+    return(NULL)
 
-  criterion <- unique(tolower(c(criterion, default_criterion)))
-  if (any(!criterion[[1]] %in% names(criteria))) {
-    stop("Criterion \"", criterion[[1]],"\" is not present in the leaderboard!")
+  if (is.null(criterion)) {
+    return(h2o.getModel(leaderboard[1, "model_id"]))
   }
 
-  pattern <- patterns[[algorithm]]
+  if (!criterion %in% names(leaderboard)) {
+    stop("Criterion \"", criterion,"\" is not present in the leaderboard!")
+  }
 
-  criterion <- criteria[criterion]
-  ascending <- !criterion %in% higher_is_better
-
-  leaderboard <- do.call(h2o.arrange, c(
+  models_in_default_order <- as.character(as.list(leaderboard["model_id"]))
+  sorted_lb <- do.call(h2o.arrange, c(
     list(leaderboard),
-    ifelse(ascending, criterion, sapply(criterion, function(c) bquote(desc(.(c)))))))
-  matches <- as.numeric(as.list(h2o.grep(pattern, leaderboard$algo)))
-
-  if (length(matches) == 0)
-    return(NULL)
-  return(h2o.getModel(leaderboard$model_id[matches[[1]], 1]))
+    if(criterion %in% higher_is_better) bquote(desc(.(as.symbol(criterion)))) else as.symbol(criterion)))
+  selected_models <- as.character(as.list(sorted_lb[sorted_lb[,criterion] == sorted_lb[1, criterion],]["model_id"]))
+  picked_model <- models_in_default_order[models_in_default_order %in% selected_models][[1]]
+  return(h2o.getModel(picked_model))
 }

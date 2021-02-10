@@ -1,5 +1,8 @@
 from __future__ import print_function
 import sys, os
+
+from h2o.exceptions import H2OValueError
+
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 import random
@@ -363,6 +366,18 @@ def test_get_best_model_per_family():
     # Check it works with extra_cols
     top_model = h2o.automl.get_leaderboard(aml, extra_columns=["training_time_ms"]).sort(by="training_time_ms")[0, "model_id"]
     assert aml.get_best_model(criterion="training_time_ms").model_id == top_model
+
+    # Check validation works
+    try:
+        aml.get_best_model(algorithm="GXboost")
+        assert False, "Algorithm validation does not work!"
+    except H2OValueError:
+        pass
+    try:
+        aml.get_best_model(criterion="lorem_ipsum_dolor_sit_amet")
+        assert False, "Criterion validation does not work!"
+    except H2OValueError:
+        pass
 
 
 pyunit_utils.run_tests([
