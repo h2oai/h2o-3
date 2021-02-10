@@ -4,7 +4,7 @@ import org.apache.tools.ant.taskdefs.condition.Os
 // classpath
 buildscript {
     ext {
-        isCi = (System.getProperty("user.name").equals("jenkins")
+        isCi = (!rootProject.hasProperty("forcePublic")) && (System.getProperty("user.name").equals("jenkins")
                     || System.getenv("CI") != null
                     || (rootProject.hasProperty("doCI") && rootProject.doCI == "true"))
     }
@@ -15,7 +15,6 @@ buildscript {
         } else {
             maven { url 'https://plugins.gradle.org/m2/' }
             mavenCentral()
-            jcenter()
         }
     }
 
@@ -222,7 +221,6 @@ subprojects {
             }
         } else {
             mavenCentral()
-            jcenter()
             maven {
                 url "https://repository.cloudera.com/artifactory/cloudera-repos/"
             }
@@ -234,6 +232,9 @@ subprojects {
             }
             maven {
                 url "http://repository.mapr.com/maven/"
+            }
+            maven {
+                url "https://repository.jboss.org/nexus/content/repositories/thirdparty-releases/"
             }
         }
     }
