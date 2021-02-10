@@ -5,6 +5,7 @@ sys.path.insert(1, os.path.join("..", "..", ".."))
 import matplotlib
 matplotlib.use("Agg")  # remove warning from python2 (missing TKinter)
 import h2o
+import pandas
 import matplotlib.pyplot
 from tests import pyunit_utils
 from h2o.automl import H2OAutoML
@@ -102,9 +103,16 @@ def test_explanation_automl_regression():
     assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
+    assert len(aml.varimp(use_pandas=False)) == 3  # numpy.ndarray, colnames, rownames
+    assert isinstance(aml.varimp(use_pandas=True), pandas.DataFrame)
+
     # test model correlation heatmap plot
     assert isinstance(aml.model_correlation_heatmap(train), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
+
+    assert len(aml.model_correlation(train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
+    assert isinstance(aml.model_correlation(train, use_pandas=True), pandas.DataFrame)
+
 
     # test partial dependences
     for col in cols_to_test:
@@ -244,9 +252,16 @@ def test_explanation_automl_binomial_classification():
     assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
+    assert len(aml.varimp(use_pandas=False)) == 3  # numpy.ndarray, colnames, rownames
+    assert isinstance(aml.varimp(use_pandas=True), pandas.DataFrame)
+
     # test model correlation heatmap plot
     assert isinstance(aml.model_correlation_heatmap(train), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
+
+    assert len(aml.model_correlation(train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
+    assert isinstance(aml.model_correlation(train, use_pandas=True), pandas.DataFrame)
+
 
     # test partial dependences
     for col in cols_to_test:
@@ -382,9 +397,15 @@ def test_explanation_automl_multinomial_classification():
     assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
+    assert len(aml.varimp(use_pandas=False)) == 3  # numpy.ndarray, colnames, rownames
+    assert isinstance(aml.varimp(use_pandas=True), pandas.DataFrame)
+
     # test model correlation heatmap plot
     assert isinstance(aml.model_correlation_heatmap(train), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
+
+    assert len(aml.model_correlation(train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
+    assert isinstance(aml.model_correlation(train, use_pandas=True), pandas.DataFrame)
 
     # test partial dependences
     for col in cols_to_test:

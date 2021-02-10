@@ -2153,37 +2153,6 @@ h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   invisible(NULL)
 }
 
-#'
-#' Retrieve the variable importance.
-#'
-#' @param object An \linkS4class{H2OModel} object.
-#' @examples 
-#' \dontrun{
-#' library(h2o)
-#' h2o.init()
-#' 
-#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip"
-#' pros <- h2o.importFile(f)
-#' response <- "GLEASON"
-#' predictors <- c("ID", "AGE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
-#' model <- h2o.glm(x = predictors, y = response, training_frame = pros)
-#' h2o.varimp(model)
-#' }
-#' @export
-h2o.varimp <- function(object) {
-  o <- object
-  if( is(o, "H2OModel") ) {
-    vi <- o@model$variable_importances
-    if( is.null(vi) ) {
-      warning("This model doesn't have variable importances", call. = FALSE)
-      return(invisible(NULL))
-    }
-    vi
-  } else {
-    warning( paste0("No variable importances for ", class(o)) )
-    return(NULL)
-  }
-}
 
 #'
 #' Retrieve per-variable split information for a given Isolation Forest model.

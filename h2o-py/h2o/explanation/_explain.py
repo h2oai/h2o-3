@@ -1309,7 +1309,13 @@ def _has_varimp(model):
     :param model: model or a string containing model_id
     :returns: bool
     """
-    return _get_algorithm(model) not in ["stackedensemble", "naivebayes"]
+    if isinstance(model, h2o.model.ModelBase):
+        # check for cases when variable importance is disabled or
+        # when a model is stopped sooner than calculating varimp (xgboost can rarely have no varimp).
+        output = model._model_json["output"]
+        return "variable_importances" in list(output.keys()) and output["variable_importances"]
+    else:
+        return _get_algorithm(model) not in ["stackedensemble", "naivebayes"]
 
 
 def _get_xy(model):
@@ -1518,6 +1524,38 @@ def varimp_heatmap(
     >>> aml.varimp_heatmap()
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
+    varimps, model_ids,  x = varimp_matrix(models, cluster, top_n, False)
+
+    plt.figure(figsize=figsize)
+    plt.imshow(varimps, cmap=plt.get_cmap(colormap))
+    plt.xticks(range(len(model_ids)), model_ids,
+               rotation=45, rotation_mode="anchor", ha="right")
+    plt.yticks(range(len(x)), x)
+    plt.colorbar()
+    plt.xlabel("Model Id")
+    plt.ylabel("Feature")
+    plt.title("Variable Importance Heatmap")
+    plt.grid(False)
+    fig = plt.gcf()
+    return fig
+
+
+def varimp_matrix(
+        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
+        top_n=20,  # type: int
+        cluster=True,  # type: bool
+        use_pandas=True  # type: bool
+):
+    # type: (...) -> Union[pandas.DataFrame, Tuple[numpy.ndarray, List[str], List[str]]]
+    """
+        Get data that are used to build varimp_heatmap plot.
+
+        :param models: H2O AutoML object or list of H2O models
+        :param top_n: use just top n models (applies only when used with H2OAutoML)
+        :param cluster: if True, cluster the models and variables
+        :param use_pandas: if True, try to return pandas DataFrame. Otherwise return a triple (varimps, model_ids, variable_names)
+        :returns: either pandas DataFrame (if use_pandas == True) or a triple (varimps, model_ids, variable_names)
+    """
     if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
         model_ids = [model_id[0] for model_id in models.leaderboard[:, "model_id"]
             .as_data_frame(use_pandas=False, header=False) if _has_varimp(model_id[0])]
@@ -1532,13 +1570,9 @@ def varimp_heatmap(
     models = models[:min(len(models), top_n)]
     if len(models) == 0:
         raise RuntimeError("No model with variable importance")
-
     varimps = [_consolidate_varimps(model) for model in models]
-
     x, y = _get_xy(models[0])
-
     varimps = np.array([[varimp[col] for col in x] for varimp in varimps])
-
     if cluster and len(models) > 2:
         order = _calculate_clustering_indices(varimps)
         x = [x[i] for i in order]
@@ -1550,19 +1584,12 @@ def varimp_heatmap(
     else:
         varimps = varimps.transpose()
 
-    plt.figure(figsize=figsize)
-    plt.imshow(varimps, cmap=plt.get_cmap(colormap))
-    plt.xticks(range(len(models)), _shorten_model_ids([model.model_id for model in models]),
-               rotation=45, rotation_mode="anchor", ha="right")
-    plt.yticks(range(len(x)), x)
-    plt.colorbar()
-    plt.xlabel("Model Id")
-    plt.ylabel("Feature")
-    plt.title("Variable Importance Heatmap")
-    plt.grid(False)
-    plt.tight_layout(rect=[0, 0.02, 1, 0.98])
-    fig = plt.gcf()
-    return fig
+    model_ids = _shorten_model_ids([model.model_id for model in models])
+    if use_pandas:
+        import pandas
+        return pandas.DataFrame(varimps, columns=model_ids, index=x)
+
+    return varimps, model_ids, x
 
 
 def model_correlation_heatmap(
@@ -1615,51 +1642,15 @@ def model_correlation_heatmap(
     >>> aml.model_correlation_heatmap(test)
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
-    if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
-        model_ids = [model_id[0] for model_id in models.leaderboard[:, "model_id"]
-            .as_data_frame(use_pandas=False, header=False)]
-        models = [
-            h2o.get_model(model_id)
-            for model_id in model_ids[:min(top_n, len(model_ids))]
-        ]
-    else:
-        top_n = len(models)
-
-    is_classification = frame[models[0].actual_params["response_column"]].isfactor()[0]
-
-    models = models[:min(len(models), top_n)]
-    predictions = np.empty((len(models), frame.nrow),
-                           dtype=np.object if is_classification else np.float)
-    with no_progress():
-        for idx, model in enumerate(models):
-            predictions[idx, :] = np.array(model.predict(frame)["predict"]
-                                           .as_data_frame(use_pandas=False, header=False)) \
-                .reshape(frame.nrow)
-
-    if is_classification:
-        corr = np.zeros((len(models), len(models)))
-        for i in range(len(models)):
-            for j in range(len(models)):
-                if i <= j:
-                    corr[i, j] = (predictions[i, :] == predictions[j, :]).mean()
-                    corr[j, i] = corr[i, j]
-    else:
-        corr = np.corrcoef(predictions)
-
-    if cluster_models:
-        order = _calculate_clustering_indices(corr)
-        corr = corr[order, :]
-        corr = corr[:, order]
-        models = [models[i] for i in order]
+    corr, model_ids = model_correlation_matrix(models, frame, top_n, cluster_models, use_pandas=False)
 
     if triangular:
         corr = np.where(np.triu(np.ones_like(corr), k=1).astype(bool), float("nan"), corr)
 
     plt.figure(figsize=figsize)
     plt.imshow(corr, cmap=plt.get_cmap(colormap), clim=(0.5, 1))
-    plt.xticks(range(len(models)), _shorten_model_ids([model.model_id for model in models]),
-               rotation=45, rotation_mode="anchor", ha="right")
-    plt.yticks(range(len(models)), _shorten_model_ids([model.model_id for model in models]))
+    plt.xticks(range(len(model_ids)), model_ids, rotation=45, rotation_mode="anchor", ha="right")
+    plt.yticks(range(len(model_ids)), model_ids)
     plt.colorbar()
     plt.title("Model Correlation")
     plt.xlabel("Model Id")
@@ -1671,9 +1662,68 @@ def model_correlation_heatmap(
     for t in plt.gca().yaxis.get_ticklabels():
         if _interpretable(t.get_text()):
             t.set_color("red")
-    plt.tight_layout()
     fig = plt.gcf()
     return fig
+
+
+def model_correlation_matrix(
+        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
+        frame,  # type: h2o.H2OFrame
+        top_n=20,  # type: int
+        cluster_models=True,  # type: bool
+        use_pandas=True  # type: bool
+):
+    # type: (...) -> Union[pandas.DataFrame, Tuple[numpy.ndarray, List[str]]]
+    """
+    Get data that are used to build model_correlation_heatmap plot.
+
+    :param models: H2OAutoML object or a list of H2O models
+    :param frame: H2OFrame
+    :param top_n: show just top n models (applies only when used with H2OAutoML)
+    :param cluster_models: if True, cluster the models
+    :param use_pandas: if True, try to return pandas DataFrame. Otherwise return a tuple (correlation_matrix, model_ids)
+    :returns: either pandas DataFrame (if use_pandas == True) or a tuple (correlation_matrix, model_ids)
+    """
+    if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
+        model_ids = [model_id[0] for model_id in models.leaderboard[:, "model_id"]
+            .as_data_frame(use_pandas=False, header=False)]
+        models = [
+            h2o.get_model(model_id)
+            for model_id in model_ids[:min(top_n, len(model_ids))]
+        ]
+    else:
+        top_n = len(models)
+    is_classification = frame[models[0].actual_params["response_column"]].isfactor()[0]
+    models = models[:min(len(models), top_n)]
+    predictions = np.empty((len(models), frame.nrow),
+                           dtype=np.object if is_classification else np.float)
+    with no_progress():
+        for idx, model in enumerate(models):
+            predictions[idx, :] = np.array(model.predict(frame)["predict"]
+                                           .as_data_frame(use_pandas=False, header=False)) \
+                .reshape(frame.nrow)
+    if is_classification:
+        corr = np.zeros((len(models), len(models)))
+        for i in range(len(models)):
+            for j in range(len(models)):
+                if i <= j:
+                    corr[i, j] = (predictions[i, :] == predictions[j, :]).mean()
+                    corr[j, i] = corr[i, j]
+    else:
+        corr = np.corrcoef(predictions)
+    if cluster_models:
+        order = _calculate_clustering_indices(corr)
+        corr = corr[order, :]
+        corr = corr[:, order]
+        models = [models[i] for i in order]
+
+    model_ids = _shorten_model_ids([model.model_id for model in models])
+
+    if use_pandas:
+        import pandas
+        return pandas.DataFrame(corr, columns=model_ids, index=model_ids)
+
+    return corr, model_ids
 
 
 def residual_analysis_plot(
