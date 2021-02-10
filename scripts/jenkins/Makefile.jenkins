@@ -17,6 +17,9 @@ build-h2o-3:
 warmup-caches:
 	@$(MAKE) -f $(THIS_FILE) build-h2o-3
 
+test-build-h2o-public:
+	BUILD_HADOOP="true" ./gradlew --gradle-user-home $$HOME/.gradle_public clean build -x test -PforcePublic=true -PlocalNexusLocation=NO_NEXUS $$ADDITIONAL_GRADLE_OPTS
+
 compress-huge-logfiles:
 	find * -type f -name 'java*.out.txt' -exec gzip {} \;
 
