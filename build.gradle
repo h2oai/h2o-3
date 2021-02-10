@@ -15,7 +15,6 @@ buildscript {
         } else {
             maven { url 'https://plugins.gradle.org/m2/' }
             mavenCentral()
-            jcenter()
         }
     }
 
@@ -222,7 +221,6 @@ subprojects {
             }
         } else {
             mavenCentral()
-            jcenter()
             maven {
                 url "https://repository.cloudera.com/artifactory/cloudera-repos/"
             }
