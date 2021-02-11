@@ -302,6 +302,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       Vec[] vecs = train().vecs();
       String[] names = train().names();
 
+      System.out.println("names = " + Arrays.toString(names));
+
       for (int i = 0; i < names.length; i++) {
         if (names[i].equals(_parms._weights_column))
           weightVec = vecs[i];
