@@ -4293,4 +4293,36 @@ public class GBMTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testEarlyStoppingDoesNotNeedFinalScoring() {
+    GBMModel.GBMParameters parms = makeGBMParameters();
+    try {
+      Scope.enter();
+      Frame train = parse_test_file("smalldata/testng/cars_train.csv");
+      Scope.track(train);
+      Frame valid = parse_test_file("smalldata/testng/cars_test.csv");
+      Scope.track(valid);
+      parms._train = train._key;
+      parms._valid = valid._key;
+      parms._response_column = "cylinders";
+      parms._ntrees = 1000; // will only build few
+      parms._learn_rate = 1;
+      parms._min_rows = 1;
+      parms._stopping_metric = ScoreKeeper.StoppingMetric.MSE;
+      parms._stopping_rounds = 1;
+      parms._score_each_iteration = true;
+      parms._ignored_columns = new String[]{"name"};
+
+      GBMModel gbm = new GBM(parms).trainModel().get();
+      Scope.track_generic(gbm);
+
+      // +1 is for null model
+      assertEquals(gbm._output._ntrees + 1, gbm._output._scored_train.length);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
 }
