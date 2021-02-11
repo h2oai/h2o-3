@@ -517,9 +517,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected int nModelsInParallel(int folds, int defaultParallelization) {
     if (!_parms._parallelize_cross_validation) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
     int parallelization = defaultParallelization;
-    if (_train.byteSize() < 1e6) parallelization = folds; //for small data, parallelize over CV models
-    // TODO: apply better heuristic, estimating parallelization based on H2O.getCloudSize() and H2O.ARGS.nthreads
-    return Math.min(parallelization, H2O.getCloudSize()*H2O.ARGS.nthreads);
+    if (_train.byteSize() < 1e6) 
+      parallelization = folds; //for small data, parallelize over CV models
+    return Math.min(parallelization, H2O.ARGS.nthreads);
   }
 
   private double maxRuntimeSecsPerModel(int cvModelsCount, int parallelization) {
