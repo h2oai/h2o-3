@@ -1524,7 +1524,7 @@ def varimp_heatmap(
     >>> aml.varimp_heatmap()
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
-    varimps, model_ids,  x = varimp_matrix(models, cluster, top_n, False)
+    varimps, model_ids,  x = varimp_matrix(models=models, top_n=top_n, cluster=cluster, use_pandas=False)
 
     plt.figure(figsize=figsize)
     plt.imshow(varimps, cmap=plt.get_cmap(colormap))
@@ -1695,22 +1695,25 @@ def model_correlation_matrix(
         top_n = len(models)
     is_classification = frame[models[0].actual_params["response_column"]].isfactor()[0]
     models = models[:min(len(models), top_n)]
-    predictions = np.empty((len(models), frame.nrow),
-                           dtype=np.object if is_classification else np.float)
+    predictions = []
     with no_progress():
         for idx, model in enumerate(models):
-            predictions[idx, :] = np.array(model.predict(frame)["predict"]
-                                           .as_data_frame(use_pandas=False, header=False)) \
-                .reshape(frame.nrow)
+            predictions.append(model.predict(frame)["predict"])
+
     if is_classification:
         corr = np.zeros((len(models), len(models)))
         for i in range(len(models)):
             for j in range(len(models)):
                 if i <= j:
-                    corr[i, j] = (predictions[i, :] == predictions[j, :]).mean()
+                    corr[i, j] = (predictions[i] == predictions[j]).mean()[0]
                     corr[j, i] = corr[i, j]
     else:
-        corr = np.corrcoef(predictions)
+        try:
+            from io import StringIO
+        except ImportError:
+            from StringIO import StringIO
+        corr = np.genfromtxt(StringIO(predictions[0].cbind(predictions[1:]).cor().get_frame_data()),
+                             delimiter=",", missing_values="", skip_header=True)
     if cluster_models:
         order = _calculate_clustering_indices(corr)
         corr = corr[order, :]

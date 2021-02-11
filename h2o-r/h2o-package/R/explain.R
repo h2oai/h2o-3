@@ -1669,15 +1669,13 @@ h2o.model_correlation <- function(object, newdata, top_n = 20, cluster_models = 
   models_info <- .process_models_or_automl(object, newdata, require_multiple_models = TRUE, top_n_from_AutoML = top_n)
   models <- models_info$model_ids
   with_no_h2o_progress({
-    preds <-
-      sapply(models, function(m, df) {
+    preds <- do.call(h2o.cbind,
+      lapply(models, function(m, df) {
         m <- models_info$get_model(m)
-        list(predict = as.numeric(as.data.frame(stats::predict(m, df)[["predict"]])[["predict"]]))
-      }, newdata)
-    preds <- as.data.frame(do.call(cbind, preds))
+       as.numeric(stats::predict(m, df)[["predict"]])
+      }, newdata))
     names(preds) <- unlist(.model_ids(models))
   })
-
   if (models_info$is_classification) {
     model_ids <- .model_ids(models)
     res <- matrix(0, length(models), length(models),
@@ -1685,20 +1683,24 @@ h2o.model_correlation <- function(object, newdata, top_n = 20, cluster_models = 
     for (i in seq_along(model_ids)) {
       for (j in seq_along(model_ids)) {
         if (i <= j) {
-          res[i, j] <- mean(as.numeric(preds[[model_ids[i]]] == preds[[model_ids[j]]]))
+          res[i, j] <- mean(preds[[model_ids[i]]] == preds[[model_ids[j]]])
           res[j, i] <- res[i, j]
         }
       }
     }
     res <- as.data.frame(res)
   } else {
-    res <- as.data.frame(cor(preds))
+    res <- as.data.frame(h2o.cor(preds))
+    row.names(res) <- names(res)
   }
   ordered <- names(res)
   if (cluster_models) {
     ordered <- names(res)[stats::hclust(stats::dist(replace(res, is.na(res), 0)))$order]
   }
   res <- res[ordered, ordered]
+  # Remove rounding artifacts - even if the number shows as "1" it can has slightly higher value
+  # which messes up the plot showing that the value is outside of the range
+  res[res > 1] <- 1
   return(res)
 }
 
