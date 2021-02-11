@@ -43,7 +43,7 @@ for python_version in "${array[@]}"; do
   rm -rf /var/cache/apt/*
 
   echo "###### Installing pip for Python ${python_version} ######"
-  if [[ ${major} == "2" ]] || [[ ${python_version} == "3.5") ]]
+  if [[ ${major} == "2" ]] || [[ ${python_version} == "3.5" ]]
   then
     python${python_version} -m easy_install 'pip<21'
   else 
