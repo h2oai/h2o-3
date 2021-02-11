@@ -695,7 +695,8 @@ public abstract class SharedTree<
     if( _firstScore == 0 ) _firstScore=now;
     long sinceLastScore = now-_timeLastScoreStart;
     boolean updated = false;
-    _job.update(0,"Built " + _model._output._ntrees + " trees so far (out of " + _parms._ntrees + ").");
+    // the update message is prefix with model description (main model/cv model x/y) - CV is run in parallel - the updates are otherwise confusing 
+    _job.update(0,_desc + ": Built " + _model._output._ntrees + " trees so far (out of " + _parms._ntrees + ").");
 
     boolean timeToScore = (now-_firstScore < _parms._initial_score_interval) || // Score every time for 4 secs
         // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
@@ -1089,7 +1090,7 @@ public abstract class SharedTree<
     }
   }
 
-  @Override protected boolean useParallelMainModelBuilding() {
+  @Override protected boolean cv_canBuildMainModelInParallel() {
     if (_parms._max_runtime_secs > 0 && _parms._parallel_main_model_building)
       throw new IllegalStateException("Parallel main model building shouldn't be be enabled when max_runtime_secs is specified.");
     return _parms._parallel_main_model_building;

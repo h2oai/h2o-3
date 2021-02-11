@@ -845,7 +845,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return mbs;
   }
 
-  protected boolean useParallelMainModelBuilding() {
+  private boolean useParallelMainModelBuilding() {
+    return _parms._parallelize_cross_validation && cv_canBuildMainModelInParallel();
+  }
+
+  protected boolean cv_canBuildMainModelInParallel() {
     return false;
   }
 
