@@ -102,7 +102,7 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
         /**
          * Number of randomly selected rows from original data before each tree build.
          */
-        public long _sample_size;
+        public int _sample_size;
 
         public ExtendedIsolationForestParameters() {
             super();

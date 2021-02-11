@@ -29,7 +29,7 @@ public class ExtendedIsolationForestV3 extends ModelBuilderSchema<
         public int ntrees;
 
         @API(help = "Number of randomly sampled observations used to train each Extended Isolation Forest tree.", gridable = true)
-        public long sample_size;
+        public int sample_size;
 
         @API(help = "Maximum is N - 1 (N = numCols). Minimum is 0. Extended Isolation Forest " +
                 "with extension_Level = 0 behaves like Isolation Forest.", gridable = true)
