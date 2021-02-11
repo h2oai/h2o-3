@@ -26,7 +26,7 @@ RUN \
     rm /tmp/install_java_version \
         /tmp/install_java_version_local \
         /tmp/java-${JAVA_VERSION}-vars.sh \
-        /tmp/jdk-*.tar.gz
+        /tmp/jdk-*.tar.gz \
         /tmp/jdk1.8.0_171.zip && \
     chmod a+w /usr/lib/jvm/
 
