@@ -226,10 +226,6 @@ class BuildConfig {
       } else if (stageConfig.additionalTestPackages.contains(COMPONENT_JAVA)) {
         component = COMPONENT_JAVA
       }
-      // handle gpu suffix
-      if (stageConfig.dockerImageSuffix != null) {
-        suffix = "-" + stageConfig.dockerImageSuffix
-      }
     }
     def imageComponentName
     def version

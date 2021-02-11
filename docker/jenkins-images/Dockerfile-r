@@ -1,6 +1,5 @@
-ARG GPU_SUFFIX=''
 ARG FROM_VERSION
-FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-r-base${GPU_SUFFIX}:${FROM_VERSION}
+FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-r-base:${FROM_VERSION}
 
 ARG R_VERSION
 ENV R_VERSION=${R_VERSION}

@@ -1,6 +1,5 @@
-ARG GPU_SUFFIX=''
 ARG FROM_VERSION
-FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-jdk-8-base${GPU_SUFFIX}:${FROM_VERSION}
+FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-jdk-8-base:${FROM_VERSION}
 
 RUN \
   add-apt-repository -y ppa:deadsnakes && \
