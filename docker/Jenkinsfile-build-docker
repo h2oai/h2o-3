@@ -21,7 +21,6 @@ IMAGE_NAME_PREFIX = 'harbor.h2o.ai/opsh2oai/h2o-3'
 
 JDK_VERSIONS = ['8', '10', '11', '12', '13', '14', '15']
 JDK_VERSIONS_PY_R = ['8', '11', '15'] // stable + latest
-OPENJDK_VERSIONS = ['7']
 PYTHON_VERSIONS = ['2.7', '3.5', '3.6', '3.7', '3.8']
 R_VERSION = ['3.3.3', '3.4.1', '3.5.3', '3.6.2', '4.0.2']
 
@@ -80,9 +79,6 @@ ansiColor('xterm') {
         JDK_VERSIONS.each {version ->
             componentImages += "dev-jdk-${version}"
         }
-        OPENJDK_VERSIONS.each {version ->
-            componentImages += "dev-openjdk-${version}"
-        }
         componentImages += "dev-mojocompat"
         buildInParallel(pipelineContext, componentImages)
 
@@ -95,16 +91,10 @@ ansiColor('xterm') {
             JDK_VERSIONS_PY_R.each {jdkVersion ->
                 componentJdkImages += "dev-python-${version}-jdk-${jdkVersion}"
             }
-            OPENJDK_VERSIONS.each {jdkVersion ->
-                componentJdkImages += "dev-python-${version}-openjdk-${jdkVersion}"
-            }
         }
         R_VERSION.each {version ->
             JDK_VERSIONS_PY_R.each {jdkVersion ->
                 componentJdkImages += "dev-r-${version}-jdk-${jdkVersion}"
-            }
-            OPENJDK_VERSIONS.each {jdkVersion ->
-                componentJdkImages += "dev-r-${version}-openjdk-${jdkVersion}"
             }
         }
         buildInParallel(pipelineContext, componentJdkImages)
