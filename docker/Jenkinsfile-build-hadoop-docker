@@ -13,7 +13,6 @@ final List INTERNAL_CLUSTER_HADOOPS = [
 def pipelineContext = null
 def buildImageVersion = null
 def version = null
-def gradleVersion = null
 
 properties(
     [
@@ -42,7 +41,6 @@ node (NODE_LABEL) {
         try {
             buildImageVersion = pipelineContext.getBuildConfig().getDefaultImageVersion()
             version = pipelineContext.getBuildConfig().getHadoopImageVersion()
-            gradleVersion = pipelineContext.getBuildConfig().getCurrentGradleVersion()
             currentBuild.displayName += " v${version}"
 
             pipelineContext.getBuildSummary().addStageSummary(this, stageName, '')
@@ -105,7 +103,6 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                                         -f hadoop/${distribution.name}/Dockerfile \
                                         --build-arg PATH_PREFIX=hadoop/${distribution.name} \
                                         --build-arg H2O_BRANCH=${params.gitBranch} \
-                                        --build-arg GRADLE_VERSION=${gradleVersion} \
                                         --build-arg PARENT_VERSION=${buildImageVersion} \
                                         --build-arg VERSION=${distribution.version} \
                                         --build-arg REPO_VERSION=${repoVersion} \

@@ -5,7 +5,6 @@ THIS_FILE := $(lastword $(MAKEFILE_LIST))
 VERSION ?= dev
 PUSH ?= 0
 H2O_BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
-GRADLE_VERSION ?= $(shell cat ../gradle/wrapper/gradle-wrapper.properties | grep distributionUrl | egrep -o '([0-9]+\.+)+[0-9]+')
 NO_CACHE ?= --no-cache
 BASE_FROM_IMAGE := nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
 
@@ -458,59 +457,29 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-build-gradle-%: dev-build-base
+dev-build-hadoop: dev-build-base
 endif
-dev-build-gradle-%:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-build-gradle-$*:$(VERSION) \
-		$(NO_CACHE) \
-		-f jenkins-images/Dockerfile-build \
-		--build-arg FROM_VERSION=$(VERSION) \
-		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
-		.
-ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-build-gradle-$*:$(VERSION)
-endif
-
-ifneq ($(CI), 1)
-dev-benchmark-gradle-%: dev-build-gradle-$(GRADLE_VERSION)
-endif
-dev-benchmark-gradle-%:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-benchmark-gradle-$*:$(VERSION) \
-		$(NO_CACHE) \
-		-f jenkins-images/Dockerfile-benchmark \
-		--build-arg FROM_VERSION=$(VERSION) \
-		--build-arg GRADLE_VERSION=$(GRADLE_VERSION) \
-		.
-ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-benchmark-gradle-$*:$(VERSION)
-endif
-
-ifneq ($(CI), 1)
-dev-build-hadoop-gradle-%: dev-build-gradle-$(GRADLE_VERSION)
-endif
-dev-build-hadoop-gradle-%:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop-gradle-$*:$(VERSION) \
+dev-build-hadoop:
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop:$(VERSION) \
 		$(NO_CACHE) \
 		-f jenkins-images/Dockerfile-build-hadoop \
 		--build-arg FROM_VERSION=$(VERSION) \
 		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
-		--build-arg GRADLE_VERSION=$(GRADLE_VERSION) \
 		.
 ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop-gradle-$*:$(VERSION)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop:$(VERSION)
 endif
 
 ifneq ($(CI), 1)
-dev-release-gradle-%: dev-build-hadoop-gradle-$(GRADLE_VERSION)
+dev-release: dev-build-hadoop
 endif
-dev-release-gradle-%:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-release-gradle-$*:$(VERSION) \
+dev-release:
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-release:$(VERSION) \
 		$(NO_CACHE) \
 		-f jenkins-images/Dockerfile-release \
 		--build-arg FROM_VERSION=$(VERSION) \
 		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
-		--build-arg GRADLE_VERSION=$(GRADLE_VERSION) \
 		.
 ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-release-gradle-$*:$(VERSION)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-release:$(VERSION)
 endif

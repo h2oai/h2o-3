@@ -66,7 +66,6 @@ ansiColor('xterm') {
             }
         }
 
-        def gradleVersion = pipelineContext.getBuildConfig().getCurrentGradleVersion()
         buildInParallel(pipelineContext, ['dev-base'])
         buildInParallel(pipelineContext, ['dev-jdk-8-base', 'dev-jdk-others-base'])
         buildInParallel(pipelineContext, ['dev-python-base', 'dev-r-base'])
@@ -88,9 +87,8 @@ ansiColor('xterm') {
         buildInParallel(pipelineContext, componentImages)
 
         buildInParallel(pipelineContext, ["dev-build-base"])
-        buildInParallel(pipelineContext, ["dev-build-gradle"], gradleVersion)
-        buildInParallel(pipelineContext, ["dev-build-hadoop-gradle"], gradleVersion)
-        buildInParallel(pipelineContext, ["dev-release-gradle"], gradleVersion)
+        buildInParallel(pipelineContext, ["dev-build-hadoop"],)
+        buildInParallel(pipelineContext, ["dev-release"])
 
         def componentJdkImages = []
         PYTHON_VERSIONS.each {version ->
@@ -113,19 +111,16 @@ ansiColor('xterm') {
     }
 }
 
-private buildInParallel(final pipelineContext, final targets, final gradleVersion = null) {
+private buildInParallel(final pipelineContext, final targets) {
     parallel(targets.collectEntries { target ->
         [
-                (target): makeStage(pipelineContext, target, gradleVersion),
+                (target): makeStage(pipelineContext, target),
         ]
     })
 }
 
-private Closure makeStage(final pipelineContext, String target, final String gradleVersion) {
+private Closure makeStage(final pipelineContext, String target) {
     return {
-        if (gradleVersion != null) {
-            target = "$target-$gradleVersion"
-        }
         def buildImageStageName = "Build $target"
         buildSummary.stageWithSummary(buildImageStageName) {
             final String noCache = params.noCache ? "--no-cache" : ""
@@ -139,7 +134,6 @@ private Closure makeStage(final pipelineContext, String target, final String gra
                                 make \
                                     H2O_BRANCH=${params.h2oBranch} \
                                     VERSION=${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
-                                    GRADLE_VERSION=${gradleVersion} \
                                     PUSH=${params.publish} \
                                     NO_CACHE=${noCache} \
                                     ${target}

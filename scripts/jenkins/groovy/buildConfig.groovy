@@ -10,11 +10,11 @@ class BuildConfig {
 
   public static final String DOCKER_REGISTRY = 'harbor.h2o.ai'
 
-  private static final String DEFAULT_IMAGE_NAME_PREFIX = 'dev-build-gradle'
-  private static final String DEFAULT_HADOOP_IMAGE_NAME_PREFIX = 'dev-build-hadoop-gradle'
-  private static final String DEFAULT_RELEASE_IMAGE_NAME_PREFIX = 'dev-release-gradle'
+  private static final String DEFAULT_IMAGE_NAME_PREFIX = 'dev-build-base'
+  private static final String DEFAULT_HADOOP_IMAGE_NAME_PREFIX = 'dev-build-hadoop'
+  private static final String DEFAULT_RELEASE_IMAGE_NAME_PREFIX = 'dev-release'
 
-  public static final int DEFAULT_IMAGE_VERSION_TAG = 38
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 39
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/opsh2oai/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/opsh2oai/s3cmd'
 

@@ -31,3 +31,7 @@ RUN \
 
 # Set GRADLE USER env var
 ENV GRADLE_OPTS='-Dorg.gradle.daemon=false'
+# Warmup
+USER jenkins
+RUN BUILD_HADOOP=false /tmp/build-h2o-3
+USER root

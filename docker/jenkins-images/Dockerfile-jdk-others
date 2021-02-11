@@ -33,3 +33,8 @@ RUN \
 ENV \
   JAVA_HOME=/usr/lib/jvm/java-${JAVA_VERSION}-oracle \
   PATH=/usr/lib/jvm/java-${JAVA_VERSION}-oracle/bin:${PATH}
+
+# Warmup
+USER jenkins
+RUN BUILD_HADOOP=false /tmp/build-h2o-3
+USER root
