@@ -293,40 +293,12 @@ test-junit-xgb-multi-jenkins:
 test-junit-xgb-multi:
 	./gradlew h2o-ext-xgboost:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 
-test-junit-10-jenkins:
-	$(call sed_test_scripts)
-	@$(MAKE) -f $(THIS_FILE) test-junit-10
-
-test-junit-10:
+test-junit-1x:
 	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 
-test-junit-11-jenkins:
+test-junit-1x-jenkins:
 	$(call sed_test_scripts)
-	@$(MAKE) -f $(THIS_FILE) test-junit-11
-
-test-junit-11:
-	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode $$ADDITIONAL_GRADLE_OPTS
-
-test-junit-12-jenkins:
-	$(call sed_test_scripts)
-	@$(MAKE) -f $(THIS_FILE) test-junit-12
-
-test-junit-12:
-	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode $$ADDITIONAL_GRADLE_OPTS
-
-test-junit-13-jenkins:
-	$(call sed_test_scripts)
-	@$(MAKE) -f $(THIS_FILE) test-junit-13
-
-test-junit-14:
-	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode $$ADDITIONAL_GRADLE_OPTS
-
-test-junit-14-jenkins:
-	$(call sed_test_scripts)
-	@$(MAKE) -f $(THIS_FILE) test-junit-14
-
-test-junit-13:
-	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode $$ADDITIONAL_GRADLE_OPTS
+	@$(MAKE) -f $(THIS_FILE) test-junit-1x
 
 test-junit-smoke-jenkins:
 	$(call sed_test_scripts)
@@ -347,17 +319,17 @@ test-junit-7-smoke-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-junit-7-smoke
 
 test-junit-10-smoke:
-	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+	ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=10" DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-11-smoke:
-	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+	ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=11" DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-11-smoke-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-11-smoke
 
 test-junit-12-smoke:
-	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+	ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=12" DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-12-smoke-jenkins:
 	$(call sed_test_scripts)
@@ -371,9 +343,16 @@ test-junit-13-smoke-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-junit-13-smoke
 
 test-junit-14-smoke:
-	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+	ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=14" DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-14-smoke-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-12-smoke
+
+test-junit-15-smoke:
+	ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=15" DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-15-smoke-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-12-smoke
 
