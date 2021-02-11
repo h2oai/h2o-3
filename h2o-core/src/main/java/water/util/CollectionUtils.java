@@ -1,8 +1,6 @@
 package water.util;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  */
@@ -33,5 +31,24 @@ public class CollectionUtils {
   /** Convert a Collection of Strings[] to a plain array String[][]. */
   public static String[][] unboxStringArrays(Collection<String[]> coll) {
     return coll.toArray(new String[coll.size()][]);
+  }
+
+  /**
+   *  See {@link #setOfUniqueRandomNumbers(int, long, Random)}
+   */
+  public static HashSet<Long> setOfUniqueRandomNumbers(int sizeOfSet, long upperBound, long seed) {
+    return setOfUniqueRandomNumbers(sizeOfSet, upperBound, RandomUtils.getRNG(seed));
+  }
+
+  /**
+   * @return Set of unique random numbers from range [0, upperBound]
+   */
+  public static HashSet<Long> setOfUniqueRandomNumbers(int sizeOfSet, long upperBound, Random random) {
+    HashSet<Long> uniqueRandomNumber = new HashSet<>(sizeOfSet);
+    while (uniqueRandomNumber.size() < sizeOfSet) {
+      long generatedLong = (long) (random.nextFloat() * (upperBound));
+      uniqueRandomNumber.add(generatedLong);
+    }
+    return uniqueRandomNumber;
   }
 }

@@ -1185,11 +1185,12 @@ public class ArrayUtils {
     for(int i = 0; i < n; i++)
       result[i] = random.nextGaussian();
 
-    for (int i = 0; i < zeroNum; i++) {
-        int randomItem = Math.abs(random.nextInt());
-        randomItem = randomItem % n;
-        result[randomItem] = 0;
-      }    
+    if (zeroNum > 0) {
+      Set<Long> indexToMakeZero = CollectionUtils.setOfUniqueRandomNumbers(zeroNum, n, random);
+      for (Long index : indexToMakeZero) {
+        result[index.intValue()] = 0;
+      }
+    }
     return result;
   }  
 

@@ -330,7 +330,7 @@ public class ArrayUtilsTest {
   @Test
   public void testGaussianVector2() {
     double[] a = ArrayUtils.gaussianVector(5, 0xCAFFE, 2);
-    assertArrayEquals(new double[]{0.86685, 0, 1.65799, -0.16698, 0}, a, 1e-3);
+    assertArrayEquals(new double[]{0, 0.53975, 1.65799, -0.16698, 0}, a, 1e-3);
   }
 
   @Test
