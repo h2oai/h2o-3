@@ -440,8 +440,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
       if (get_params()._variable_importances) {
         if (!get_params()._quiet_mode) Log.info("Computing variable importances.");
-        final float[] vi = model_info().computeVariableImportances();
-        scoringInfo.variable_importances = new VarImp(vi, Arrays.copyOfRange(model_info().data_info().coefNames(), 0, vi.length));
+        scoringInfo.variable_importances = model_info().computeVariableImportances();
       }
 
       _timeLastScoreEnd = System.currentTimeMillis();
