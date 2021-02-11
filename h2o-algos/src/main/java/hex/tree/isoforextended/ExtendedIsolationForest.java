@@ -123,8 +123,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
             for (int tid = 0; tid < _parms._ntrees; tid++) {
                 Timer timer = new Timer();
                 int randomUnit = _rand.nextInt();
-                Frame subSample = new SubSampleTask(_parms._sample_size, _train.numRows(),_parms._seed + randomUnit)
-                        .doAll(_train.types(), _train.vecs()).outputFrame();
+                Frame subSample = SamplingUtils.sampleOfFixedSize(_train, _parms._sample_size, _parms._seed + randomUnit);
                 double[][] subSampleArray = FrameUtils.asDoubles(subSample);
 
                 IsolationTree isolationTree = new IsolationTree(subSampleArray, heightLimit, _parms._seed + _rand.nextInt(), _parms._extension_level, tid);

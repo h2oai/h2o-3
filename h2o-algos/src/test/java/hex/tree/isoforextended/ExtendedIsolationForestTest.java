@@ -497,7 +497,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             int tries = 100;
             long sum = 0;
             for(int i = 0; i < tries; i++) {
-                Frame subSample = new SubSampleTask(256, train.numRows(), 0xBEEF + i).doAll(train.types(), train).outputFrame();
+                Frame subSample = SamplingUtils.sampleOfApproxSize(train, 256, 0xBEEF + i);
                 assertEquals("SubSample has different number of columns", train.numCols(), subSample.numCols());
                 sum += subSample.numRows();
             }
@@ -516,13 +516,41 @@ public class ExtendedIsolationForestTest extends TestUtil {
             int tries = 100;
             long sum = 0;
             for(int i = 0; i < tries; i++) {
-                Frame subSample = new SubSampleTask(256, train.numRows(), 0xBEEF + i).doAll(train.types(), train).outputFrame();
+                Frame subSample = SamplingUtils.sampleOfApproxSize(train, 256, 0xBEEF + i);
                 assertEquals("SubSample has different number of columns", train.numCols(), subSample.numCols());
                 sum += subSample.numRows();
             }
             double average = ((double) sum) / tries;
             assertEquals("SubSample has different number of rows", 256, average, 2);
         } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testSubSampleFixedSizeSmoke() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+            Frame subSample = SamplingUtils.sampleOfFixedSize(train, 256, 0xBEEF);
+            assertEquals("SubSample has different number of columns", train.numCols(), subSample.numCols());
+            assertEquals("SubSample has different number of rows", 256, subSample.numRows());
+        }
+        finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testSubSampleFixedSizeLarge() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(generate_real_only(32, 32768, 0, 0xBEEF));
+            Frame subSample = SamplingUtils.sampleOfFixedSize(train, 256, 0xBEEF);
+            assertEquals("SubSample has different number of columns", train.numCols(), subSample.numCols());
+            assertEquals("SubSample has different number of rows", 256, subSample.numRows());
+        }
+        finally {
             Scope.exit();
         }
     }
