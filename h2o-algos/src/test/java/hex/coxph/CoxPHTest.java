@@ -205,6 +205,11 @@ public class CoxPHTest extends Iced<CoxPHTest> {
   @Test
   public void testCoxPHEfron1Interaction() {
     try {
+
+
+      System.out.println("-----------------------------------------------------");
+      System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+      
       Scope.enter();
       final Frame fr = parse_and_track_test_file("smalldata/coxph_test/heart.csv");
 
@@ -255,6 +260,9 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       assertEquals(model._output._total_event,    75);
       assertEquals(model._output._wald_test,      4.6343882547245,      1e-8);
     } finally {
+      System.out.println("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+      System.out.println("----------------------------------------------------------");
+      
       Scope.exit();
     }
   }
