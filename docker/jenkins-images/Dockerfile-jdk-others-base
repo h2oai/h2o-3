@@ -2,7 +2,7 @@ ARG FROM_VERSION
 FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-base:${FROM_VERSION}
 
 RUN \
-    curl -sL https://deb.nodesource.com/setup_10.x | bash - &&
+    curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
         python-virtualenv libkrb5-dev nodejs && \
