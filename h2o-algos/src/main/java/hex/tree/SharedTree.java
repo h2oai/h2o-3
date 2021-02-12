@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import static hex.tree.ScoreBuildHistogram.DECIDED_ROW;
+
 public abstract class SharedTree<
     M extends SharedTreeModel<M,P,O>, 
     P extends SharedTreeModel.SharedTreeParameters, 
@@ -328,6 +330,10 @@ public abstract class SharedTree<
         _train.add(names, vs);
         // Append number of trees participating in on-the-fly scoring
         _train.add("OUT_BAG_TREES", templateVec().makeZero());
+        
+        if (hasWeightCol()) {
+          new MarkDecidedRows().doAll(ArrayUtils.append(new Vec[]{_weights}, vs));
+        }
 
         if (_valid != null) {
           _validWorkspace = makeValidWorkspace();
@@ -370,6 +376,25 @@ public abstract class SharedTree<
       return isSupervised() ? _response : _train.anyVec();
     }
 
+    class MarkDecidedRows extends MRTask<MarkDecidedRows> {
+      @Override
+      public void map(Chunk[] cs) {
+        Chunk weight = cs[0];
+        for (int i = 0; i < weight._len; i++) {
+          if (weight.atd(i) == 0) {
+            for (int c = 1; c < cs.length; c++) {
+              cs[c].set(i, DECIDED_ROW);
+            }
+          }
+        }
+      }
+
+      @Override
+      protected boolean modifiesVolatileVecs() {
+        return true;
+      }
+    }
+    
     // Abstract classes implemented by the tree builders
     abstract protected M makeModel(Key<M> modelKey, P parms);
     abstract protected boolean doOOBScoring();
