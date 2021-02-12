@@ -217,7 +217,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  **force_load_balance**: Specify whether to force extra load balancing to increase training speed for small datasets and use all cores. This option is defaults to true (enabled).
 
--  **variable_importances**: Specify whether to compute variable importance. This option is defaults to false (not enabled).
+-  **variable_importances**: Specify whether to compute variable importance. This option is defaults to true.
 
 -  **replicate_training_data**: Specify whether to replicate the entire training dataset onto every node for faster training on small datasets. This option is defaults to true (enabled).
 
