@@ -302,7 +302,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       Vec[] vecs = train().vecs();
       String[] names = train().names();
 
-      System.out.println("names = " + Arrays.toString(names));
+      System.out.println("reorderTrainFrameColumns() names = " + Arrays.toString(names));
 
       for (int i = 0; i < names.length; i++) {
         if (names[i].equals(_parms._weights_column))
@@ -350,7 +350,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       if (eventVec != null)
         f.add(_parms._response_column, eventVec);
 
-      System.out.println("f.names() = " + Arrays.toString(f.names()));
+      System.out.println("reorderTrainFrameColumns() f.names() = " + Arrays.toString(f.names()));
       
       return f;
     }
@@ -575,12 +575,16 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         IcedHashMap<AstGroup.G, IcedInt> strataMap = new IcedHashMap<>();
         Frame f = reorderTrainFrameColumns(strataMap, time);
 
+        System.out.println("CoxPHDriver.computeImpl() f.names() = " + Arrays.toString(f.names()));
+
         int nResponses = (_parms.startVec() == null ? 2 : 3) + (_parms.isStratified() ? 1 : 0);
         final DataInfo dinfo = new DataInfo(f, null, nResponses, _parms._use_all_factor_levels, 
                 TransformType.DEMEAN, TransformType.NONE, true, false, false, 
                 hasWeightCol(), false, false, _parms.interactionSpec()).disableIntercept();
         Scope.track_generic(dinfo);
         DKV.put(dinfo);
+
+        System.out.println("CoxPHDriver.computeImpl() dinfo = " + dinfo);
 
         // The model to be built
         CoxPHModel.CoxPHOutput output = new CoxPHModel.CoxPHOutput(CoxPH.this, dinfo._adaptedFrame, train(), strataMap);
@@ -606,11 +610,17 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         Timer iterTimer = null;
         CoxPHTask coxMR = null;
         _job.update(1, "Running iteration 0");
+
+        System.out.println("CoxPHDriver.computeImpl() dinfo._adaptedFrame.names() = " + Arrays.toString(dinfo._adaptedFrame.names()));
         for (int i = 0; i <= model._parms._max_iterations; ++i) {
           iterTimer = new Timer();
           model._output._iter = i;
 
           Timer aggregTimer = new Timer();
+
+          System.out.print("i = " + i);
+          System.out.println("dinfo._adaptedFrame.names() = " + Arrays.toString(dinfo._adaptedFrame.names()));
+          
           coxMR = new CoxPHTask(dinfo, newCoef, time, (long) response().min() /* min event */,
                   n_offsets, has_start_column, dinfo._adaptedFrame.vec(_parms._strata_column), has_weights_column,
                   _parms._ties).doAll(dinfo._adaptedFrame, _parms._single_node_mode);
