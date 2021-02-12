@@ -4,14 +4,11 @@ FROM ${FROM_IMAGE}:${FROM_VERSION}
 
 ARG INSTALL_JAVA_VERSION
 ENV JAVA_VERSION=${INSTALL_JAVA_VERSION}
-COPY scripts/install_java_version scripts/install_java_version_local scripts/java-${JAVA_VERSION}-vars.sh \
-     jdk-15.0.2_linux-x64_bin.tar.gz \
-     jdk-14.0.2_linux-x64_bin.tar.gz \
-     jdk-13.0.2_linux-x64_bin.tar.gz \
-     jdk-12.0.2_linux-x64_bin.tar.gz \
-     jdk-11.0.3_linux-x64_bin.tar.gz \
-     jdk-10.0.2_linux-x64_bin.tar.gz \
-     jdk1.8.0_171.zip \
+COPY scripts/install_java_version scripts/install_java_version_local \
+     scripts/java-${JAVA_VERSION}-vars.sh \
+     scripts/build-h2o-3 \
+     jdk-${JAVA_VERSION}*.tar.gz \
+     jdk1.${JAVA_VERSION}*.zip \
      /tmp/
 RUN \
     chmod +x /tmp/install_java_version /tmp/java-${JAVA_VERSION}-vars.sh && \
