@@ -21,7 +21,7 @@ build-h2o-3:
 	./gradlew -PdoCheckStyle check -x test $$ADDITIONAL_GRADLE_OPTS
 
 warmup-caches:
-	./gradlew build compileTestJava -x test
+	./gradlew build compileTestJava -x test -x h2o-r:build $$ADDITIONAL_GRADLE_OPTS
 
 test-build-h2o-public:
 	BUILD_HADOOP="true" ./gradlew --gradle-user-home $$HOME/.gradle_public clean build -x test -PforcePublic=true -PlocalNexusLocation=NO_NEXUS $$ADDITIONAL_GRADLE_OPTS
