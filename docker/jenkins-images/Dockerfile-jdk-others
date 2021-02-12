@@ -20,11 +20,9 @@ RUN \
     else \
         /tmp/install_java_version ${JAVA_VERSION} /tmp/java-${JAVA_VERSION}-vars.sh; \
     fi && \
-    rm /tmp/install_java_version \
-        /tmp/install_java_version_local \
+    rm /tmp/install_java_* \
         /tmp/java-${JAVA_VERSION}-vars.sh \
-        /tmp/jdk-*.tar.gz \
-        /tmp/jdk1.8.0_171.zip && \
+        /tmp/jdk* && \
     chmod a+w /usr/lib/jvm/
 
 ENV \
