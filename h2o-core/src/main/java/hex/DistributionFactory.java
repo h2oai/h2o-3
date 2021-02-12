@@ -15,22 +15,22 @@ public class DistributionFactory {
     public static Distribution getDistribution(DistributionFamily family) {
         switch (family) {
             case bernoulli:
-                return new BernoulliDistribution(family);
+                return BernoulliDistribution.INSTANCE;
             case quasibinomial:
-                return new QuasibinomialDistribution(family);
+                return QuasibinomialDistribution.INSTANCE;
             case modified_huber:
-                return new ModifiedHuberDistribution(family);
+                return ModifiedHuberDistribution.INSTANCE;
             case multinomial:
-                return new MultinomialDistribution(family);
+                return MultinomialDistribution.INSTANCE;
             case AUTO: 
             case gaussian:
-                return new GaussianDistribution(family);
+                return GaussianDistribution.INSTANCE;
             case poisson:
-                return new PoissonDistribution(family);
+                return PoissonDistribution.INSTANCE;
             case gamma:
-                return new GammaDistribution(family);
+                return GammaDistribution.INSTANCE;
             case laplace:
-                return new LaplaceDistribution(family);
+                return LaplaceDistribution.INSTANCE;
             default:
                 throw H2O.unimpl("Try to get "+family+" which is not supported.");
         }
@@ -40,22 +40,22 @@ public class DistributionFactory {
         DistributionFamily family = params._distribution;
         switch (family) {
             case bernoulli:
-                return new BernoulliDistribution(family);
+                return BernoulliDistribution.INSTANCE;
             case quasibinomial:
-                return new QuasibinomialDistribution(family);
+                return QuasibinomialDistribution.INSTANCE;
             case modified_huber:
-                return new ModifiedHuberDistribution(family);
+                return ModifiedHuberDistribution.INSTANCE;
             case multinomial:
-                return new MultinomialDistribution(family);
+                return MultinomialDistribution.INSTANCE;
             case AUTO:    
             case gaussian:
-                return new GaussianDistribution(family);
+                return GaussianDistribution.INSTANCE;
             case poisson:
-                return new PoissonDistribution(family);
+                return PoissonDistribution.INSTANCE;
             case gamma:
-                return new GammaDistribution(family);
+                return GammaDistribution.INSTANCE;
             case laplace:
-                return new LaplaceDistribution(family);
+                return LaplaceDistribution.INSTANCE;
             case tweedie:
                 return new TweedieDistribution(params);
             case huber:
@@ -71,6 +71,8 @@ public class DistributionFactory {
 }
 
 class GaussianDistribution extends Distribution {
+
+    static GaussianDistribution INSTANCE = new GaussianDistribution(DistributionFamily.gaussian);
 
     public GaussianDistribution(DistributionFamily family){
         super(family);
@@ -109,6 +111,8 @@ class GaussianDistribution extends Distribution {
 
 class BernoulliDistribution extends Distribution {
 
+    static BernoulliDistribution INSTANCE = new BernoulliDistribution(DistributionFamily.bernoulli); 
+    
     public BernoulliDistribution(DistributionFamily family){ super(family, new LogitFunction()); }
 
     @Override
@@ -134,6 +138,8 @@ class BernoulliDistribution extends Distribution {
 }
 
 class QuasibinomialDistribution extends Distribution {
+
+    static QuasibinomialDistribution INSTANCE = new QuasibinomialDistribution(DistributionFamily.quasibinomial);
 
     public QuasibinomialDistribution(DistributionFamily family){
         super(family, new LogitFunction());
@@ -186,6 +192,8 @@ class QuasibinomialDistribution extends Distribution {
 }
 
 class ModifiedHuberDistribution extends Distribution {
+
+    static ModifiedHuberDistribution INSTANCE = new ModifiedHuberDistribution(DistributionFamily.modified_huber);
 
     public ModifiedHuberDistribution(DistributionFamily family){
         super(family, new LogitFunction());
@@ -242,6 +250,8 @@ class ModifiedHuberDistribution extends Distribution {
 
 class MultinomialDistribution extends Distribution {
 
+    static MultinomialDistribution INSTANCE = new MultinomialDistribution(DistributionFamily.multinomial);
+
     public MultinomialDistribution(DistributionFamily family){ super(family, new LogFunction()); }
 
     @Override
@@ -272,6 +282,8 @@ class MultinomialDistribution extends Distribution {
 }
 
 class PoissonDistribution extends Distribution {
+
+    static PoissonDistribution INSTANCE = new PoissonDistribution(DistributionFamily.poisson);
 
     public PoissonDistribution(DistributionFamily family){
         super(family, new LogFunction());
@@ -308,6 +320,8 @@ class PoissonDistribution extends Distribution {
 }
 
 class GammaDistribution extends Distribution {
+
+    static GammaDistribution INSTANCE = new GammaDistribution(DistributionFamily.poisson);
 
     public GammaDistribution(DistributionFamily family){
         super(family, new LogFunction());
@@ -404,6 +418,8 @@ class HuberDistribution extends Distribution {
 }
 
 class LaplaceDistribution extends Distribution {
+
+    static LaplaceDistribution INSTANCE = new LaplaceDistribution(DistributionFamily.laplace);
 
     public LaplaceDistribution(DistributionFamily family){
         super(family);
