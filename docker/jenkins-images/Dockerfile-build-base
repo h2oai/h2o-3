@@ -20,7 +20,7 @@ RUN \
     rm -rf /var/cache/apt/*
 
 COPY scripts/build-h2o-3 scripts/install_python_version /tmp/
-ENV PYTHON_VERSION=3.5
+ENV PYTHON_VERSION=3.6
 ARG H2O_BRANCH=master
 RUN \
     chown jenkins:jenkins /tmp/build-h2o-3 && \
