@@ -484,10 +484,12 @@ public abstract class Neurons {
   public static class Input extends Neurons {
 
     private DataInfo _dinfo; //training data
+    private DeepLearningModelInfo _minfo;
 
-    Input(DeepLearningParameters params, int units, final DataInfo d) {
+    Input(DeepLearningParameters params, int units, final DeepLearningModelInfo modelInfo) {
       super(units);
-      _dinfo = d;
+      _minfo = modelInfo;
+      _dinfo = modelInfo.data_info;
       _a = new Storage.DenseVector[params._mini_batch_size];
       for (int i=0;i<_a.length;++i) _a[i] = new Storage.DenseVector(units);
     }
@@ -588,11 +590,8 @@ public abstract class Neurons {
           final int cM = params._max_categorical_features;
 
           assert (_a[mb].size() == M);
-          MurmurHash murmur = MurmurHash.getInstance();
           for (int i = 0; i < numcat; ++i) {
-            ByteBuffer buf = ByteBuffer.allocate(4);
-            int hashval = murmur.hash(buf.putInt(cats[i]).array(), 4, (int)params._seed); // turn horizontalized categorical integer into another integer, based on seed
-            _a[mb].add(Math.abs(hashval % cM), 1f); // restrict to limited range
+            _a[mb].add(_minfo.categoryMapping[cats[i]], 1f); // restrict to limited range
           }
           for (int i = 0; i < nums.length; ++i)
             _a[mb].set(cM + i, Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : nums[i]);

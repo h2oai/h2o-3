@@ -2844,5 +2844,81 @@ public class DeepLearningTest extends TestUtil {
           Scope.exit();
       }
   }
+
+  @Test
+  public void testAlphabetMaxCategoricalFeaturesRegression(){
+        Scope.enter();
+        DeepLearningParameters dl = new DeepLearningParameters();
+        Frame frTest = null, pred = null;
+        Frame frTrain = null;
+        Frame test = null, res = null;
+        DeepLearningModel model = null;
+        final String fnametrain = "./smalldata/gbm_test/alphabet_cattest.csv";
+        final String fnametest = "./smalldata/gbm_test/alphabet_cattest.csv";
+        double expMSE = 0.2311270746046643;
+        try {
+            frTrain = parse_test_file(fnametrain);
+            Vec removeme = unifyFrame(dl, frTrain, new PrepData() {
+                @Override
+                int prep(Frame fr) {
+                    return fr.find("y");
+                }
+            }, false);
+            if (removeme != null) Scope.track(removeme);
+            DKV.put(frTrain._key, frTrain);
+            // Configure DL
+            dl._train = frTrain._key;
+            dl._response_column = ((Frame)DKV.getGet(dl._train)).lastVecName();
+            dl._seed = (1L<<32)|2;
+            dl._reproducible = true;
+            dl._epochs = 10;
+            dl._stopping_rounds = 0;
+            dl._activation = DeepLearningParameters.Activation.Rectifier;
+            dl._export_weights_and_biases = false;
+            dl._hidden = new int[]{10};
+            dl._max_categorical_features = 5;
+            dl._elastic_averaging = false;
+
+            // Invoke DL and block till the end
+            DeepLearning job = new DeepLearning(dl,Key.<DeepLearningModel>make("DL_model_alphabetMaxCatFeat"));
+            // Get the model
+            model = job.trainModel().get();
+            Log.info(model._output);
+            assertTrue(job.isStopped()); //HEX-1817
+
+            hex.ModelMetrics mm;
+            if (fnametest != null) {
+                frTest = parse_test_file(fnametest);
+                pred = model.score(frTest);
+                mm = hex.ModelMetrics.getFromDKV(model, frTest);
+                // Check test set CM
+            } else {
+                pred = model.score(frTrain);
+                mm = hex.ModelMetrics.getFromDKV(model, frTrain);
+            }
+
+            test = parse_test_file(fnametrain);
+            res = model.score(test);
+
+            assertTrue("Expected: " + expMSE + ", Got: " + mm.mse(), MathUtils.compare(expMSE, mm.mse(), 1e-8, 1e-8));
+            Log.info("\nOOB Training MSE: " + mm.mse());
+            Log.info("\nTraining MSE: " + hex.ModelMetrics.getFromDKV(model, test).mse());
+
+
+            hex.ModelMetrics.getFromDKV(model, test);
+
+            // Build a POJO, validate same results
+            assertTrue(model.testJavaScoring(test, res, 1e-5));
+
+        } finally {
+            if (frTrain!=null) frTrain.remove();
+            if (frTest!=null) frTest.remove();
+            if( model != null ) model.delete(); // Remove the model
+            if( pred != null ) pred.delete();
+            if( test != null ) test.delete();
+            if( res != null ) res.delete();
+            Scope.exit();
+        }
+    }
 }
 

@@ -7,6 +7,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.*;
 
@@ -686,16 +687,23 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
   // Helper for Deeplearning, note: we assume nums and cats are allocated already and being re-used
   static public void setInput(final double[] from, double[] to, double[] nums, int[] cats, int _nums, int _cats,
-                              int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels, boolean replaceMissingWithZero) {
+                              int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels,
+                              boolean replaceMissingWithZero, int[] categoryMapping) {
     setCats(from, nums, cats, _cats, _catOffsets, _normMul, _normSub, useAllFactorLevels);
 
-    assert(to.length == _nums + _catOffsets[_cats]);
     Arrays.fill(to, 0d);
-    for (int i = 0; i < _cats; ++i)
-      if (cats[i] >= 0)
-        to[cats[i]] = 1d; // one-hot encode categoricals
+    if (categoryMapping == null) {
+      assert (to.length == _nums + _catOffsets[_cats]);
+      for (int i = 0; i < _cats; ++i)
+        if (cats[i] >= 0)
+          to[cats[i]] = 1d; // one-hot encode categoricals
+    } else{
+      for (int i = 0; i < _cats; ++i)
+        if (cats[i] >= 0)
+          to[categoryMapping[cats[i]]] = 1d; // one-hot encode categoricals
+    }
     for (int i = 0; i < _nums; ++i)
-      to[_catOffsets[_cats] + i] = Double.isNaN(nums[i]) ? (replaceMissingWithZero ? 0 : Double.NaN) : nums[i];
+      to[to.length - _nums] = Double.isNaN(nums[i]) ? (replaceMissingWithZero ? 0 : Double.NaN) : nums[i];
   }
 
   // Helper for XGBoost Java

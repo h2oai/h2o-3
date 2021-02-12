@@ -76,6 +76,7 @@ public class DeeplearningMojoReader extends ModelMojoReader<DeeplearningMojoMode
         }
       }
     }
+    _model._category_mapping = readkv("category_mapping", null);
     _model.init();
   }
 

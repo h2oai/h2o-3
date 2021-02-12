@@ -147,6 +147,9 @@ final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
   final Frame _train;         // Prepared training frame
   final Frame _valid;         // Prepared validation frame
 
+  // Used iff max_categorical_features < # one-hot encoded cat features
+  // Maps category index to input neuron index
+  public int[] categoryMapping;
   /**
    * Dummy constructor, only to be used for deserialization from autobuffer
    */
@@ -244,6 +247,36 @@ final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
     rms_bias = new double[units.length-1];
     mean_weight = new double[units.length-1];
     rms_weight = new double[units.length-1];
+
+    if (params._max_categorical_features < dinfo.fullN() - dinfo._nums) {
+      assert data_info()._catOffsets[data_info()._cats] == dinfo.fullN() - dinfo._nums;
+      final int catNumber = data_info()._catOffsets[data_info()._cats];
+      categoryMapping = new int[catNumber];
+      MurmurHash murmur = MurmurHash.getInstance();
+      ByteBuffer buf = ByteBuffer.allocate(4);
+
+      String[] variableNames = new String[units[0]];
+      // Calculate the mapping and new coef names
+      for (int i = 0; i < catNumber; ++i) {
+        int hashval = murmur.hash(buf.putInt(0, i).array(), 4, (int) params._seed); // turn horizontalized categorical integer into another integer, based on seed
+        categoryMapping[i] = Math.abs(hashval % params._max_categorical_features); // restrict to limited range
+        final int inputIdx = categoryMapping[i];
+        final String coefName = data_info().coefNames()[i];
+
+        if (variableNames[inputIdx] == null) {
+          variableNames[inputIdx] = coefName;
+        } else {
+          // Concatenate category names and join them with ","
+          variableNames[inputIdx] += "," + coefName;
+        }
+      }
+
+      // Assign coef names to numerical features
+      System.arraycopy(data_info().coefNames(), data_info()._catOffsets[data_info()._cats],
+              variableNames, params._max_categorical_features,units[0] - params._max_categorical_features);
+      dinfo._coefNames = variableNames;
+
+    }
   }
 
   /**
@@ -656,34 +689,19 @@ final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
       }
       return new VarImp(vi, Arrays.copyOfRange(data_info().coefNames(), 0, vi.length));
     } else { // Categories are hashed and one input neuron can take value from multiple categories
+      assert categoryMapping != null;
       // Encode the categories
-      String[] variableNames = new String[units[0]];
       final int maxCategoricalFeatures = get_params()._max_categorical_features;
-      boolean[] multipleEntries = new boolean[maxCategoricalFeatures];
-      MurmurHash murmur = MurmurHash.getInstance();
-      ByteBuffer buf = ByteBuffer.allocate(4);
+      int[] numberOfEntries = new int[maxCategoricalFeatures];
+
       // Assign coef names to categorical features
       for (int i = 0; i < data_info()._catOffsets[data_info()._cats]; ++i) {
-        int inputIdx = Math.abs(murmur.hash(buf.putInt(0,i).array(), 4,
-                (int)get_params()._seed) % maxCategoricalFeatures);
-        final String coefName = data_info().coefNames()[i];
-
-        if (variableNames[inputIdx] == null) {
-          variableNames[inputIdx] = coefName;
-        } else {
-          // Concatenate category names and join them with ","
-          variableNames[inputIdx] += "," + coefName;
-          multipleEntries[inputIdx] = true;
-        }
+        numberOfEntries[categoryMapping[i]] += 1;
       }
-
-      // Assign coef names to numerical features
-      System.arraycopy(data_info().coefNames(), data_info()._catOffsets[data_info()._cats],
-              variableNames, maxCategoricalFeatures,units[0] - maxCategoricalFeatures);
 
       // Correct varimps that are not mapped to any input
       for (int i = 0; i < maxCategoricalFeatures; ++i) {
-        if (null == variableNames[i]) {
+        if (null == data_info().coefNames()[i]) {
           // No category got mapped to this input neuron
           vi[i] = 0;
         }
@@ -693,12 +711,11 @@ final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
       // into the same bin
       for (int i = 0; i < _saw_missing_cats.length; ++i) {
         assert (data_info._catMissing[i]); // have a missing bucket for each categorical
-        int missingIdx = Math.abs(murmur.hash(buf.putInt(0,data_info._catOffsets[i + 1] - 1).array(), 4,
-                (int)get_params()._seed) % maxCategoricalFeatures);
-        if (!multipleEntries[missingIdx] && !_saw_missing_cats[i])
+        int missingIdx = categoryMapping[data_info._catOffsets[i + 1] - 1];
+        if (numberOfEntries[missingIdx] == 1 && !_saw_missing_cats[i])
           vi[missingIdx] = 0;
       }
-      return new VarImp(vi, variableNames);
+      return new VarImp(vi, data_info().coefNames());
     }
   }
 

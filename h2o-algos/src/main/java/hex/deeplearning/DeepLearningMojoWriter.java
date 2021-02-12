@@ -69,6 +69,8 @@ public class DeepLearningMojoWriter extends ModelMojoWriter<DeepLearningModel,
       writekv("bias_layer"+index, _model_info.get_biases(index).raw());
     }
     writekv("hidden_dropout_ratios", all_drop_out_ratios);
+    if(_model_info.categoryMapping != null)
+      writekv("category_mapping", _model_info.categoryMapping);
     writekv("_genmodel_encoding", model.getGenModelEncoding());
     String[] origNames = model._output._origNames;
     if (origNames != null) {
