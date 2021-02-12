@@ -585,6 +585,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         DKV.put(dinfo);
 
         System.out.println("CoxPHDriver.computeImpl() dinfo = " + dinfo);
+        System.out.println("CoxPHDriver.computeImpl() dinfo_adaptedFrame.names() = " + Arrays.toString(dinfo._adaptedFrame.names()));
 
         // The model to be built
         CoxPHModel.CoxPHOutput output = new CoxPHModel.CoxPHOutput(CoxPH.this, dinfo._adaptedFrame, train(), strataMap);
