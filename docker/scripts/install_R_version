@@ -83,7 +83,7 @@ checkRInstallLog R.install.2.log
     'dplyr', 'R.utils', 'AUC', 'mlbench', 'flexclust', 'randomForest', \
     'bit64', 'HDtweedie', 'jsonlite', 'statmod', 'roxygen2', 'testthat', 'Rcpp', 'fpc', 'RUnit', \
     'ade4', 'e1071', 'ggplot2', 'LiblineaR', 'optparse', 'uuid', 'usethis', 'plot3Drgl',  \
-    'IRdisplay', 'plotly' \
+    'IRdisplay', 'plotly', 'uplift' \
   )) \
 " 2>&1 | tee R.install.3.log
 checkRInstallLog R.install.3.log
