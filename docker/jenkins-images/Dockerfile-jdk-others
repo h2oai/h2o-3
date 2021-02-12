@@ -30,6 +30,7 @@ ENV \
   PATH=/usr/lib/jvm/java-${JAVA_VERSION}-oracle/bin:${PATH}
 
 # Warmup
+ARG H2O_BRANCH=master
 USER jenkins
 RUN BUILD_HADOOP=false /tmp/build-h2o-3
 USER root
