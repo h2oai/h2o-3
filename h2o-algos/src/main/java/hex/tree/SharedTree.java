@@ -338,7 +338,7 @@ public abstract class SharedTree<
         initializeModelSpecifics();
         resumeFromCheckpoint(SharedTree.this);
         scoreAndBuildTrees(doOOBScoring());
-
+        postProcessModel();
       } finally {
         if( _model!=null ) _model.unlock(_job);
         for (Key<?> k : getGlobalQuantilesKeys()) Keyed.remove(k);
@@ -409,10 +409,10 @@ public abstract class SharedTree<
     protected final void scoreAndBuildTrees(boolean oob) {
       for( int tid=0; tid< _ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
-        boolean scored = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
+        final boolean scored = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
         if (scored && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, getProblemType(), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
-          doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
           _job.update(_ntrees-_model._output._ntrees); //finish
+          LOG.info(_model.toString()); // we don't know if doScoringAndSaveModel printed the model or not
           return;
         }
         Timer kb_timer = new Timer();
@@ -433,6 +433,14 @@ public abstract class SharedTree<
     }
   }
 
+  private void postProcessModel() {
+    // Model Calibration (only for the final model, not CV models)
+    if (_parms.calibrateModel() && (!_parms._is_cv_model)) {
+      _model._output._calib_model = PlattScalingHelper.buildCalibrationModel(SharedTree.this, _parms, _job, _model);
+      _model.update(_job);
+    }
+  }
+  
   protected ScoreKeeper.ProblemType getProblemType() {
     assert isSupervised();
     return ScoreKeeper.ProblemType.forSupervised(_nclass > 1);
@@ -747,12 +755,6 @@ public abstract class SharedTree<
 
     // Double update - after either scoring or variable importance
     if( updated ) _model.update(_job);
-
-    // Model Calibration (only for the final model, not CV models)
-    if (finalScoring && _parms.calibrateModel() && (!_parms._is_cv_model)) {
-      _model._output._calib_model = PlattScalingHelper.buildCalibrationModel(SharedTree.this, _parms, _job, _model);
-      _model.update(_job);
-    }
 
     return updated;
   }
