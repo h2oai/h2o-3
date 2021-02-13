@@ -454,7 +454,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       // sanity check
       for (int k = 0; k < _nclass; k++) {
-        if (ktrees[k]!=null) assert(vec_nids(_train,k).mean()==0);
+        if (ktrees[k]!=null) {
+          assert (_weights == null && vec_nids(_train, k).mean() == 0) || 
+                  (vec_nids(_train, k).nzCnt() == vec_nids(_train, k).length() - _weights.nzCnt());
+        }
       }
 
       // Grow the model by K-trees
@@ -1313,9 +1316,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         for (int row = 0; row < nids._len; row++) {
           int nid = nids_vals[row];
           nids_vals[row] = ScoreBuildHistogram.FRESH;
-          if (nid < 0) continue;
+          if (nid < 0) {
+            if (weights.atd(row) == 0)
+              nids_vals[row] = ScoreBuildHistogram.DECIDED_ROW;
+            continue;
+          }
           if (y.isNA(row)) continue;
-          if (weights.atd(row) == 0) continue;
           double factor = 1;
           if (_pred_noise_bandwidth != 0) {
             rand.setSeed(baseseed + nid); //bandwidth is a function of tree number, class and node id (but same for all rows in that node)

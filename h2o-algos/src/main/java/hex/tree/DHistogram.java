@@ -479,8 +479,7 @@ public final class DHistogram extends Iced {
     for(int r = lo; r< hi; ++r) {
       final int k = rows[r];
       final double weight = ws[k];
-      if (weight == 0)
-        continue;
+      assert weight != 0;
       double col_data = cs[k];
       if (col_data < _min2) _min2 = col_data;
       if (col_data > _maxIn) _maxIn = col_data;

@@ -331,9 +331,6 @@ public abstract class SharedTree<
         // Append number of trees participating in on-the-fly scoring
         _train.add("OUT_BAG_TREES", templateVec().makeZero());
         
-        if (hasWeightCol()) {
-          new MarkDecidedRows().doAll(ArrayUtils.append(new Vec[]{_weights}, vs));
-        }
 
         if (_valid != null) {
           _validWorkspace = makeValidWorkspace();
@@ -347,6 +344,9 @@ public abstract class SharedTree<
         _rand = RandomUtils.getRNG(_parms._seed);
 
         initializeModelSpecifics();
+        if (hasWeightCol()) {
+          new MarkDecidedRows().doAll(ArrayUtils.append(new Vec[]{_weights}, vs));
+        }
         resumeFromCheckpoint(SharedTree.this);
         scoreAndBuildTrees(doOOBScoring());
 
