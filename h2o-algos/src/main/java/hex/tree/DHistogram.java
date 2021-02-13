@@ -479,13 +479,13 @@ public final class DHistogram extends Iced {
     for(int r = lo; r< hi; ++r) {
       final int k = rows[r];
       final double weight = ws[k];
-      if (weight == 0)
-        continue;
-      double col_data = cs[k];
+      final double col_data = cs[k];
       if (col_data < _min2) _min2 = col_data;
       if (col_data > _maxIn) _maxIn = col_data;
-      double y = ys[k];
-      assert (!Double.isNaN(y));
+      final double y = ys[k];
+      assert weight != 0 || y == 0;
+      assert !Double.isNaN(y);
+
       double wy = weight * y;
       double wyy = wy * y;
       int b = bin(col_data);
@@ -493,7 +493,7 @@ public final class DHistogram extends Iced {
       _vals[binDimStart + 0] += weight;
       _vals[binDimStart + 1] += wy;
       _vals[binDimStart + 2] += wyy;
-      if (_vals_dim >= 5 && !Double.isNaN(resp[k])) { // FIXME (PUBDEV-7553): This needs to be applied even with monotone constraints disabled
+      if (_vals_dim >= 5 && !Double.isNaN(resp[k])) {
         if (_dist._family.equals(DistributionFamily.quantile)) {
           _vals[binDimStart + 3] += _dist.deviance(weight, y, _pred1);
           _vals[binDimStart + 4] += _dist.deviance(weight, y, _pred2);

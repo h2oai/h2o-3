@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import static hex.tree.ScoreBuildHistogram.DECIDED_ROW;
 import static hex.util.LinearAlgebraUtils.toEigenArray;
 
 /** Gradient Boosted Trees
@@ -203,6 +204,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // ----------------------
   private class GBMDriver extends Driver {
     private transient FrameMap frameMap;
+    private transient long _skippedCnt; // #observations that will be skipped because they have 0 weight or NA label in the training frame
 
     @Override
     protected Frame makeValidWorkspace() {
@@ -246,8 +248,61 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         new FillVecWithConstant(_initialPrediction)
                 .doAll(vec_tree(_train, 0), _parms._build_tree_one_node);  // Only setting tree-column 0
       }
+
+      // Mark all rows that either have zero weights or the label is NA as decided
+      // This is way we can avoid processing them when building trees
+      final long zeroWeights = hasWeightCol() ? _weights.length() - _weights.nzCnt() : 0; 
+      if (zeroWeights > 0 ||                // has some zero weights or 
+              response().naCnt() > 0) {     // there are NAs in the response
+        Vec[] vecs = new Vec[]{_response};
+        if (hasWeightCol())
+          vecs = ArrayUtils.append(vecs, _weights);
+        for (int k = 0; k < _nclass; k++)
+          vecs = ArrayUtils.append(vecs, _train.vec(frameMap.nids0Index + k));
+        _skippedCnt = new MarkDecidedRows().doAll(vecs).markedCnt;
+        assert _skippedCnt >= zeroWeights;
+        assert _skippedCnt >= response().naCnt();
+        assert _skippedCnt <= response().naCnt() + zeroWeights;
+      } else
+        _skippedCnt = 0;
     }
 
+    class MarkDecidedRows extends MRTask<MarkDecidedRows> {
+      int markedCnt;
+      @Override
+      public void map(Chunk[] cs) {
+        final int colStart;
+        final Chunk y;
+        final Chunk weights;
+        if (hasWeightCol()) {
+          y = cs[0];
+          weights = cs[1];
+          colStart = 2;
+        } else {
+          y = cs[0];
+          weights = new C0DChunk(1, cs[0]._len);
+          colStart = 1;
+        }
+        for (int row = 0; row < y._len; row++) {
+          if (weights.atd(row) == 0 || y.isNA(row)) {
+            markedCnt++;
+            for (int c = colStart; c < cs.length; c++) {
+              cs[c].set(row, DECIDED_ROW);
+            }
+          }
+        }
+      }
+
+      @Override
+      public void reduce(MarkDecidedRows mrt) {
+        markedCnt += mrt.markedCnt;
+      }
+
+      @Override
+      protected boolean modifiesVolatileVecs() {
+        return true;
+      }
+    }
 
     /**
      * Helper to compute the initial value for Laplace/Huber/Quantile (incl. optional offset and obs weights)
@@ -454,7 +509,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       // sanity check
       for (int k = 0; k < _nclass; k++) {
-        if (ktrees[k]!=null) assert(vec_nids(_train,k).mean()==0);
+        assert ktrees[k] != null || vec_nids(_train, k).nzCnt() == _skippedCnt;
       }
 
       // Grow the model by K-trees
@@ -1313,9 +1368,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         for (int row = 0; row < nids._len; row++) {
           int nid = nids_vals[row];
           nids_vals[row] = ScoreBuildHistogram.FRESH;
-          if (nid < 0) continue;
-          if (y.isNA(row)) continue;
-          if (weights.atd(row) == 0) continue;
+          if (nid < 0) {
+            if (weights.atd(row) == 0 || y.isNA(row))
+              nids_vals[row] = ScoreBuildHistogram.DECIDED_ROW;
+            continue;
+          }
           double factor = 1;
           if (_pred_noise_bandwidth != 0) {
             rand.setSeed(baseseed + nid); //bandwidth is a function of tree number, class and node id (but same for all rows in that node)
