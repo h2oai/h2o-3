@@ -509,7 +509,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       // sanity check
       for (int k = 0; k < _nclass; k++) {
-        assert ktrees[k] != null || vec_nids(_train, k).nzCnt() == _skippedCnt;
+        assert ktrees[k] == null || vec_nids(_train, k).nzCnt() == _skippedCnt;
       }
 
       // Grow the model by K-trees
