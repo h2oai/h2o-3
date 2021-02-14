@@ -257,8 +257,16 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         Vec[] vecs = new Vec[]{_response};
         if (hasWeightCol())
           vecs = ArrayUtils.append(vecs, _weights);
-        for (int k = 0; k < _nclass; k++)
-          vecs = ArrayUtils.append(vecs, _train.vec(frameMap.nids0Index + k));
+        for (int k = 0; k < _nclass; k++) {
+          Vec nidsVecK = vec_nids(_train, k);
+          if (nidsVecK.min() == DECIDED_ROW) {
+            // classes not present in the training frame are skipped
+            assert _model._output._distribution[k] == 0;
+            assert nidsVecK.isConst();
+            continue;
+          }
+          vecs = ArrayUtils.append(vecs, nidsVecK);
+        }
         _skippedCnt = new MarkDecidedRows().doAll(vecs).markedCnt;
         assert _skippedCnt >= zeroWeights;
         assert _skippedCnt >= response().naCnt();
