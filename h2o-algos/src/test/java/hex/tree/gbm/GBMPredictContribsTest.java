@@ -151,7 +151,7 @@ public class GBMPredictContribsTest extends TestUtil {
         Assert.assertEquals(expValPred, contribPred, 1e-6);
 
         // compare naive and actual contributions
-        Assert.assertArrayEquals(naiveContribs, ArrayUtils.toDouble(contribs), 1e-6);
+        Assert.assertArrayEquals(naiveContribs, ArrayUtils.toDouble(contribs), 1e-5);
       }
     }
   }
