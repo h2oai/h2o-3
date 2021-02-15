@@ -693,7 +693,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
           System.out.println("CoxPHDriver.computeImpl() _parms.train().names() = " + Arrays.toString(_parms.train().names()));
           
-          model.score(_parms.train()).delete();
+          model.score(dinfo._adaptedFrame).delete();
 
           System.out.println("CoxPHDriver.computeImpl scored");
           
