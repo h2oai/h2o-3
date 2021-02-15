@@ -24,11 +24,11 @@ def test_xgboost_effective_parameters():
     training_frame = h2o.get_frame('prostate_training')
     test_frame = h2o.get_frame('prostate_validation')
 
-    xgb1 = H2OXGBoostEstimator(training_frame=training_frame, learn_rate=0.7, booster='gbtree', seed=1, ntrees=2, stopping_rounds=5)
+    xgb1 = H2OXGBoostEstimator(training_frame=training_frame, learn_rate=0.7, booster='gbtree', seed=1, ntrees=100, stopping_rounds=2, score_each_iteration=True)
     xgb1.train(x=x, y=y, training_frame=training_frame, validation_frame=test_frame)
 
-    xgb2 = H2OXGBoostEstimator(training_frame=training_frame, learn_rate=0.7, booster='gbtree', seed=1, ntrees=2, distribution="bernoulli",
-                               categorical_encoding="OneHotInternal", stopping_rounds =5, stopping_metric='logloss')
+    xgb2 = H2OXGBoostEstimator(training_frame=training_frame, learn_rate=0.7, booster='gbtree', seed=1, ntrees=100, distribution="bernoulli",
+                               categorical_encoding="OneHotInternal", stopping_rounds=2, stopping_metric='logloss', score_each_iteration=True)
     xgb2.train(x=x, y=y, training_frame=training_frame, validation_frame=test_frame)
 
     assert xgb1.parms['distribution']['input_value'] == 'AUTO'
