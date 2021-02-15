@@ -622,7 +622,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
             if (i == 0)
               calcCounts(model, coxMR);
 
+            System.out.println("before calcModelStats newCoef = " + Arrays.toString(newCoef));
+
             calcModelStats(model, newCoef, cs);
+            System.out.println("after calcModelStats newCoef = " + Arrays.toString(newCoef));
 
             if (newLoglik == 0)
               model._output._lre = -Math.log10(Math.abs(logLik - newLoglik));
@@ -648,6 +651,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
           for (int j = 0; j < n_coef; ++j)
             newCoef[j] = oldCoef[j] - step[j];
+
+          System.out.println("newCoef = " + Arrays.toString(newCoef));
 
           model.update(_job);
           _job.update(1, "Iteration = " + i + "/" + model._parms._max_iterations + ", logLik = " + logLik);
