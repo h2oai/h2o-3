@@ -93,12 +93,6 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help="Check if response column is constant. If enabled, then an exception is thrown if the response column is a constant value." +
             "If disabled, then model will train regardless of the response column being a constant value or not.", level = API.Level.expert, direction = API.Direction.INOUT)
     public boolean check_constant_response;
-
-    @API(help = "Define column which will be use for computing uplift gain to select best split for a tree. The column has to devide dataset into treatment (value 1) and control (value 0) group.", gridable = false, level = API.Level.secondary)
-    public String uplift_column;
-    
-    @API(help = "Divergence metric used to find best split when building an upplift tree.", level = API.Level.secondary, values = { "AUTO", "KL", "Euclidean", "ChiSquared"})
-    public SharedTreeParameters.UpliftMetricType uplift_metric;
     
   }
 }
