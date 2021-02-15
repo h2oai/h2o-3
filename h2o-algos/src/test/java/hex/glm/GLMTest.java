@@ -1721,8 +1721,7 @@ public class GLMTest  extends TestUtil {
       assertEquals("res-devs don't match, " + ((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev + " != " + ((ModelMetricsBinomialGLM)mm3)._resDev,((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm3)._resDev,1e-4);
       fr.add("CAPSULE", fr.remove("CAPSULE"));
       fr.remove("ID").remove();
-      DKV.put(fr._key,fr);
-      DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
+      DKV.put(fr);
       model3.score(fr).delete();
       mm3 = ModelMetrics.getFromDKV(model3,fr);
       assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + mm3._MSE,model3._output._training_metrics._MSE,mm3._MSE,1e-8);
