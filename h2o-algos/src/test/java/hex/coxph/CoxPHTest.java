@@ -222,9 +222,10 @@ public class CoxPHTest extends Iced<CoxPHTest> {
           }
         }
       }.doAll(new byte[]{Vec.T_NUM, Vec.T_NUM}, fr.vec("age"))
-              .outputFrame(Key.<Frame>make(), new String[]{"age1", "age2"}, null);
+              .outputFrame(Key.make(), new String[]{"age1", "age2"}, null);
       Scope.track(ext);
       fr.add(ext);
+      DKV.put(fr);
 
       CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
       parms._calc_cumhaz = true;
