@@ -542,7 +542,6 @@ public class GLMBasicTestBinomial extends TestUtil {
    */
   @Test
   public void testCODGradients(){
-    Scope.enter();
     Frame train;
     GLMParameters params = new GLMParameters(Family.binomial);
     GLMModel model = null;
@@ -568,14 +567,16 @@ public class GLMBasicTestBinomial extends TestUtil {
             -10.450169230334527};
 
     try {
+      Scope.enter();
       train = parse_test_file("smalldata/glm_test/binomial_1000Rows.csv");
+      Scope.track(train);
       String[] names = train._names;
       Vec[] en = train.remove(new int[] {0,1,2,3,4,5,6});
       for (int cind = 0; cind <7; cind++) {
         train.add(names[cind], VecUtils.toCategoricalVec(en[cind]));
+        
       }
       DKV.put(train);
-      Scope.track(train);
       params._response_column = "C79";
       params._train = train._key;
       params._lambda = new double[]{4.881e-05};
@@ -1490,6 +1491,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     _airlines = DKV.getGet(k);
     String [] names = new String[]{"Origin", "Dest", "fDayofMonth", "fYear", "UniqueCarrier", "fDayOfWeek", "fMonth", "DepTime", "ArrTime", "Distance", "IsDepDelayed"};
     _airlines.restructure(names,_airlines.vecs(names));
+    DKV.put(_airlines);
     _airlinesTrain = new MRTask(){
       public void map(Chunk [] cs, NewChunk [] ncs){
         Random rnd = new Random(654321*(cs[0].cidx()+1));
