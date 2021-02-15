@@ -38,7 +38,7 @@ cloud = run.H2OCloud(
     output_dir=results_dir,
     test_ssl=False,
     ldap_config_path=None,
-    strict_port=False,
+    strict_port=False
 )
 atexit.register(lambda: cloud.stop())
 
