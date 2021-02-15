@@ -21,7 +21,7 @@ import static water.TestUtil.parse_test_file;
 @CloudSize(1)
 public class CoxPHTest extends Iced<CoxPHTest> {
 
-  //@Test
+  @Test
   public void testCoxPHEfron1Var() {
     try {
       Scope.enter();
@@ -63,7 +63,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
     }
   }
 
-  //@Test
+  @Test
   public void testCoxPHEfron1VarScoring() {
     try {
       Scope.enter();
@@ -95,7 +95,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
     }
   }
 
-  //@Test
+  @Test
   public void testCoxPHBreslow1Var()  {
     try {
       Scope.enter();
@@ -131,7 +131,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
     }
   }
 
-  //@Test
+  @Test
   public void testCoxPHEfron1VarNoStart() {
     try {
       Scope.enter();
@@ -167,7 +167,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
     }
   }
 
-  //@Test
+  @Test
   public void testCoxPHBreslow1VarNoStart() {
     try {
       Scope.enter();
@@ -282,7 +282,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
   }
 
 
-  //@Test
+  @Test
   public void testCoxPHSingleNodeMode() {
     Key<Frame> rebalancedKey = Key.make();
     try {
@@ -362,7 +362,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
     return fr;
   }
 
-  //@Test
+  @Test
   public void testJavaScoringNumeric() {
     try {
       Scope.enter();
@@ -373,7 +373,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
     }
   }
 
-  //@Test
+  @Test
   public void testJavaScoringCategorical() {
     try {
       Scope.enter();
