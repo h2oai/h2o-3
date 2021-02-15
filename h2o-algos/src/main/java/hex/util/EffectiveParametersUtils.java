@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
+import hex.tree.uplift.UpliftDRFModel;
 
 public class EffectiveParametersUtils {
     
@@ -67,11 +68,10 @@ public class EffectiveParametersUtils {
         }
     }
     
-    public static void initUpliftMetric(
-        SharedTreeModel.SharedTreeParameters params
+    public static void initUpliftMetric(UpliftDRFModel.UpliftDRFParameters params
     ) {
-        if (params._uplift_metric == SharedTreeModel.SharedTreeParameters.UpliftMetricType.AUTO) {
-            params._uplift_metric = SharedTreeModel.SharedTreeParameters.UpliftMetricType.KL;
+        if (params._uplift_metric == UpliftDRFModel.UpliftDRFParameters.UpliftMetricType.AUTO) {
+            params._uplift_metric = UpliftDRFModel.UpliftDRFParameters.UpliftMetricType.KL;
         }
     }
 }

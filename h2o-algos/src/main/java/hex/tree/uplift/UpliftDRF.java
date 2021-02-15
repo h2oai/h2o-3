@@ -21,6 +21,9 @@ import static hex.genmodel.GenModel.getPrediction;
 
 public class UpliftDRF extends DRF {
 
+    public enum UpliftMetricType { AUTO, KL, ChiSquared, Euclidean }
+    public UpliftMetricType _uplift_metric;
+
     // Called from an http request
     public UpliftDRF(hex.tree.drf.DRFModel.DRFParameters parms) {
         super(parms);
@@ -126,7 +129,7 @@ public class UpliftDRF extends DRF {
             // Adds a layer to the trees each pass.
             int depth=0;
             for( ; depth<_parms._max_depth; depth++ ) {
-                hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, _parms._build_tree_one_node);
+                hcs = buildLayer(_train, _parms._nbins, ktrees, leafs, hcs, _parms._build_tree_one_node);
                 // If we did not make any new splits, then the tree is split-to-death
                 if( hcs == null ) break;
             }

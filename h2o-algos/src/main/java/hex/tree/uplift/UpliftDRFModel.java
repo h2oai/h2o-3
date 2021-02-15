@@ -16,6 +16,10 @@ public class UpliftDRFModel extends SharedTreeModelWithContributions<UpliftDRFMo
         public String fullName() { return "Uplift Distributed Random Forest"; }
         public String javaName() { return UpliftDRFModel.class.getName(); }
         public boolean _binomial_double_trees = false;
+
+        public enum UpliftMetricType { AUTO, KL, ChiSquared, Euclidean }
+        public UpliftMetricType _uplift_metric;
+
         public int _mtries = -1; //number of columns to use per split. default depeonds on the algorithm and problem (classification/regression)
 
         public UpliftDRFParameters() {
@@ -50,6 +54,11 @@ public class UpliftDRFModel extends SharedTreeModelWithContributions<UpliftDRFMo
     @Override
     protected ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model) {
         return new ScoreContributionsTaskDRF(this);
+    }
+
+    @Override
+    protected ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, ContributionsOptions options) {
+        return null;
     }
 
     @Override protected boolean binomialOpt() { return !_parms._binomial_double_trees; }

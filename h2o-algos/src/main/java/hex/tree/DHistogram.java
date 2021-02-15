@@ -2,10 +2,7 @@ package hex.tree;
 
 import hex.Distribution;
 import hex.genmodel.utils.DistributionFamily;
-import hex.tree.uplift.ChiSquaredDivergence;
-import hex.tree.uplift.Divergence;
-import hex.tree.uplift.EuclideanDistance;
-import hex.tree.uplift.KLDivergence;
+import hex.tree.uplift.*;
 import org.apache.log4j.Logger;
 import water.*;
 import water.fvec.Frame;
@@ -157,7 +154,7 @@ public final class DHistogram extends Iced<DHistogram> {
 
   public DHistogram(String name, final int nbins, int nbinsCats, byte isInt, double min, double maxEx, boolean initNA,
                     double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey,
-                    Constraints cs, boolean useUplift, SharedTreeModel.SharedTreeParameters.UpliftMetricType upliftMetricType) {
+                    Constraints cs, boolean useUplift, UpliftDRFModel.UpliftDRFParameters.UpliftMetricType upliftMetricType) {
     assert nbins >= 1;
     assert nbinsCats >= 1;
     assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
@@ -483,8 +480,15 @@ public final class DHistogram extends Iced<DHistogram> {
   
   public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, boolean hasNAs, 
                                 long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey, Constraints cs) {
+
+    UpliftDRFModel.UpliftDRFParameters.UpliftMetricType upliftMetricType = null;
+    boolean useUplift = false;
+    if(parms instanceof UpliftDRFModel.UpliftDRFParameters){
+      upliftMetricType = ((UpliftDRFModel.UpliftDRFParameters) parms)._uplift_metric;
+      useUplift = true;
+    }
     return new DHistogram(name, nbins, parms._nbins_cats, isInt, min, maxEx, hasNAs, 
-            parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, cs, parms._uplift_column != null, parms._uplift_metric);
+            parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, cs, useUplift, upliftMetricType);
   }
 
   /**
