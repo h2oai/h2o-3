@@ -339,6 +339,7 @@ def algo_to_classname(algo):
     if algo == "kmeans": return "H2OKMeansEstimator"
     if algo == "naivebayes": return "H2ONaiveBayesEstimator"
     if algo == "drf": return "H2ORandomForestEstimator"
+    if algo == "upliftdrf": return "H2OUpliftRandomForestEstimator"
     if algo == "svd": return "H2OSingularValueDecompositionEstimator"
     if algo == "pca": return "H2OPrincipalComponentAnalysisEstimator"
     if algo == "stackedensemble": return "H2OStackedEnsembleEstimator"
@@ -446,7 +447,8 @@ def main():
         drf="random_forest",
         naivebayes="naive_bayes",
         isolationforest="isolation_forest",
-        extendedisolationforest="extended_isolation_forest"
+        extendedisolationforest="extended_isolation_forest",
+        upliftdrf="uplift_random_forest"
     )
     algo_to_category = dict(
         svd="Miscellaneous",
