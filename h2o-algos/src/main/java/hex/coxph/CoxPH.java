@@ -566,7 +566,11 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     public void computeImpl() {
       CoxPHModel model = null;
       try {
+        System.out.println("CoxPHDriver.computeImpl");
+        
         init(true);
+
+        System.out.println("CoxPHDriver.computeImpl inited");
 
         final double[] time = CollectTimes.collect(_parms.stopVec(), _parms._single_node_mode);
 
@@ -677,18 +681,35 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         if (iterTimer != null) {
           Log.info("CoxPH Last Iteration: " + iterTimer.toString());
         }
+
+        System.out.println("CoxPHDriver.computeImpl going to score");
         
         final boolean _skip_scoring = H2O.getSysBoolProperty("debug.skipScoring", false); 
         
         if (!_skip_scoring) {
+          System.out.println("CoxPHDriver.computeImpl updating for scoring...");
           model.update(_job);
+
+
+          System.out.println("CoxPHDriver.computeImpl() _parms.train().names() = " + Arrays.toString(_parms.train().names()));
+          
           model.score(_parms.train()).delete();
+
+          System.out.println("CoxPHDriver.computeImpl scored");
+          
           model._output._training_metrics = ModelMetrics.getFromDKV(model, _parms.train());
+
+          System.out.println("CoxPHDriver.computeImpl() model._output._training_metrics = " + model._output._training_metrics);
         }
+
+        System.out.println("CoxPHDriver.computeImpl scored");
+        
         
         model.update(_job);
       } finally {
+        System.out.println("CoxPHDriver.computeImpl() finaly model = " + model);
         if (model != null) model.unlock(_job);
+        System.out.println("CoxPHDriver.computeImpl unlocked");
       }
     }
 
