@@ -91,8 +91,6 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                  check_constant_response=True,  # type: bool
                  gainslift_bins=-1,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
-                 uplift_column=None,  # type: Optional[str]
-                 uplift_metric=None,  # type: Optional[str]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -306,13 +304,6 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :param auc_type: Set default multinomial AUC type.
                Defaults to ``"auto"``.
         :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
-        :param uplift_column: Define column which will be use for computing uplift gain to select best split for a tree.
-               The column has to devide dataset into treatment (value 1) and control (value 0) group.
-               Defaults to ``None``.
-        :type uplift_column: str, optional
-        :param uplift_metric: Divergence metric used to find best split when building an upplift tree.
-               Defaults to ``None``.
-        :type uplift_metric: str, optional
         """
         super(H2OGradientBoostingEstimator, self).__init__()
         self._parms = {}
@@ -375,8 +366,6 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         self.check_constant_response = check_constant_response
         self.gainslift_bins = gainslift_bins
         self.auc_type = auc_type
-        self.uplift_column = uplift_column
-        self.uplift_metric = uplift_metric
 
     @property
     def training_frame(self):
@@ -2147,34 +2136,5 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def auc_type(self, auc_type):
         assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
         self._parms["auc_type"] = auc_type
-
-    @property
-    def uplift_column(self):
-        """
-        Define column which will be use for computing uplift gain to select best split for a tree. The column has to
-        devide dataset into treatment (value 1) and control (value 0) group.
-
-        Type: ``str``.
-        """
-        return self._parms.get("uplift_column")
-
-    @uplift_column.setter
-    def uplift_column(self, uplift_column):
-        assert_is_type(uplift_column, None, str)
-        self._parms["uplift_column"] = uplift_column
-
-    @property
-    def uplift_metric(self):
-        """
-        Divergence metric used to find best split when building an upplift tree.
-
-        One of: ``"auto"``, ``"kl"``, ``"euclidean"``, ``"chi_squared"``.
-        """
-        return self._parms.get("uplift_metric")
-
-    @uplift_metric.setter
-    def uplift_metric(self, uplift_metric):
-        assert_is_type(uplift_metric, None, Enum("auto", "kl", "euclidean", "chi_squared"))
-        self._parms["uplift_metric"] = uplift_metric
 
 

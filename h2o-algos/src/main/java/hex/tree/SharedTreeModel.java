@@ -81,9 +81,6 @@ public abstract class SharedTreeModel<
 
     public boolean _calibrate_model = false; // Use Platt Scaling
     public Key<Frame> _calibration_frame;
-    
-    public enum UpliftMetricType { AUTO, KL, ChiSquared, Euclidean }
-    public UpliftMetricType _uplift_metric;
 
     @Override public long progressUnits() { return _ntrees + (_histogram_type==HistogramType.QuantilesGlobal || _histogram_type==HistogramType.RoundRobin ? 1 : 0); }
 

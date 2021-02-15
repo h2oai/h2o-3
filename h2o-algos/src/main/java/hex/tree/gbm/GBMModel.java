@@ -125,7 +125,6 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
     EffectiveParametersUtils.initFoldAssignment(_parms);
     EffectiveParametersUtils.initHistogramType(_parms);
     EffectiveParametersUtils.initCategoricalEncoding(_parms, Parameters.CategoricalEncodingScheme.Enum);
-    EffectiveParametersUtils.initUpliftMetric(_parms);
   }
   
   public void initActualParamValuesAfterOutputSetup(int nclasses, boolean isClassifier) {

@@ -55,8 +55,6 @@ public class UpliftDRFV3 extends SharedTreeV3<UpliftDRF, UpliftDRFV3, UpliftDRFV
                 "export_checkpoints_dir",
                 "check_constant_response",
                 "gainslift_bins",
-                "uplift_column",
-                "uplift_metric"
         };
 
         // Input fields
@@ -68,6 +66,13 @@ public class UpliftDRFV3 extends SharedTreeV3<UpliftDRF, UpliftDRFV3, UpliftDRFV
 
         @API(help = "Row sample rate per tree (from 0.0 to 1.0)", gridable = true)
         public double sample_rate;
+
+
+        @API(help = "Define column which will be use for computing uplift gain to select best split for a tree. The column has to devide dataset into treatment (value 1) and control (value 0) group.", gridable = false, level = API.Level.secondary)
+        public String uplift_column;
+
+        @API(help = "Divergence metric used to find best split when building an upplift tree.", level = API.Level.secondary, values = { "AUTO", "KL", "Euclidean", "ChiSquared"})
+        public UpliftDRFParameters.UpliftMetricType uplift_metric;
 
     }
 }
