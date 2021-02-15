@@ -728,8 +728,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         int n = 0;
         for (StringPair p : _pairs) {
           int aIdx = f.find(p._a);
-          if (aIdx == -1)
-            throw new IllegalArgumentException("Invalid interactions specified (first column is missing): " + p.toJsonString() + " in " + Arrays.toString(f.names()));
+          if (aIdx == -1) {
+            final IllegalArgumentException illegalArgumentException = new IllegalArgumentException("Invalid interactions specified (first column is missing): " + p.toJsonString() + " in " + Arrays.toString(f.names()));
+            System.out.println(illegalArgumentException);
+            illegalArgumentException.printStackTrace();
+            throw illegalArgumentException;
+          }
           int bIdx = f.find(p._b);
           if (bIdx == -1)
             throw new IllegalArgumentException("Invalid interactions specified (second column is missing): " + p.toJsonString() + " in " + Arrays.toString(f.names()));
