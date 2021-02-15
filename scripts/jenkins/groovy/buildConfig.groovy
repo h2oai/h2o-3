@@ -217,7 +217,6 @@ class BuildConfig {
     if (stageConfig.imageSpecifier)
       return getDevImageReference(stageConfig.imageSpecifier)
     def component = stageConfig.component
-    def suffix = ""
     if (component == COMPONENT_ANY) {
       if (stageConfig.additionalTestPackages.contains(COMPONENT_PY)) {
         component = COMPONENT_PY
@@ -250,7 +249,7 @@ class BuildConfig {
         throw new IllegalArgumentException("Cannot find image for component ${component}")
     }
 
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}${suffix}:${DEFAULT_IMAGE_VERSION_TAG}"
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getDevImageReference(final specifier) {
