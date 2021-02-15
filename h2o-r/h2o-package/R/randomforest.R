@@ -90,10 +90,6 @@
 #' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
-#' @param uplift_column Define column which will be use for computing uplift gain to select best split for a tree. The column has to
-#'        devide dataset into treatment (value 1) and control (value 0) group.
-#' @param uplift_metric Divergence metric used to find best split when building an upplift tree. Must be one of: "AUTO", "KL",
-#'        "Euclidean", "ChiSquared".
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
@@ -167,8 +163,6 @@ h2o.randomForest <- function(x,
                              check_constant_response = TRUE,
                              gainslift_bins = -1,
                              auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
-                             uplift_column = NULL,
-                             uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
                              verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -285,10 +279,6 @@ h2o.randomForest <- function(x,
     parms$gainslift_bins <- gainslift_bins
   if (!missing(auc_type))
     parms$auc_type <- auc_type
-  if (!missing(uplift_column))
-    parms$uplift_column <- uplift_column
-  if (!missing(uplift_metric))
-    parms$uplift_metric <- uplift_metric
 
   if (!missing(distribution)) {
     warning("Argument distribution is deprecated and has no use for Random Forest.")
@@ -352,8 +342,6 @@ h2o.randomForest <- function(x,
                                              check_constant_response = TRUE,
                                              gainslift_bins = -1,
                                              auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
-                                             uplift_column = NULL,
-                                             uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
                                              segment_columns = NULL,
                                              segment_models_id = NULL,
                                              parallelism = 1)
@@ -474,10 +462,6 @@ h2o.randomForest <- function(x,
     parms$gainslift_bins <- gainslift_bins
   if (!missing(auc_type))
     parms$auc_type <- auc_type
-  if (!missing(uplift_column))
-    parms$uplift_column <- uplift_column
-  if (!missing(uplift_metric))
-    parms$uplift_metric <- uplift_metric
 
   if (!missing(distribution)) {
     warning("Argument distribution is deprecated and has no use for Random Forest.")
