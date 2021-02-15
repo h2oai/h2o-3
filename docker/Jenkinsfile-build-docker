@@ -126,6 +126,7 @@ private Closure makeStage(final pipelineContext, String target) {
                     pullPreviousVersionIfRequired(pipelineContext, target)
                     sh """
                                 make \
+                                    CI=1 \
                                     H2O_BRANCH=${params.h2oBranch} \
                                     VERSION=${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
                                     PUSH=${params.publish} \
