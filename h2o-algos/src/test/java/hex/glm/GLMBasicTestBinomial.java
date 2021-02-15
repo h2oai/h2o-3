@@ -568,14 +568,13 @@ public class GLMBasicTestBinomial extends TestUtil {
             -10.450169230334527};
 
     try {
-   //   train = parse_test_file("smalldata/glm_test/multinomial_3_class.csv");
       train = parse_test_file("smalldata/glm_test/binomial_1000Rows.csv");
       String[] names = train._names;
       Vec[] en = train.remove(new int[] {0,1,2,3,4,5,6});
       for (int cind = 0; cind <7; cind++) {
         train.add(names[cind], VecUtils.toCategoricalVec(en[cind]));
-        Scope.track(en[cind]);
       }
+      DKV.put(train);
       Scope.track(train);
       params._response_column = "C79";
       params._train = train._key;
