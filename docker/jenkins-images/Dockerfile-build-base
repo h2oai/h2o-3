@@ -3,6 +3,7 @@ FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1:${FROM_VERSION}
 
 RUN \
     curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
+    add-apt-repository -y ppa:deadsnakes && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
         texlive \
