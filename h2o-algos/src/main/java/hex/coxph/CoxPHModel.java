@@ -32,7 +32,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     final String _strata_column = "__strata";
     public String[] _stratify_by;
 
-    public enum CoxPHTies { efron, breslow }
+    public enum CoxPHTies { efron, breslow}
 
     public CoxPHTies _ties = CoxPHTies.efron;
 
@@ -48,6 +48,14 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
     public boolean _calc_cumhaz = true; // support survfit
 
+    /**
+     * If true, computation is performed with local jobs.
+     * {@link MRTask#doAll(Vec, boolean)} and other overloaded variants are during the computation called with runLocal 
+     * set as true.
+     * 
+     * Thus setting effects the main CoxPH computation only. Model metrics computation doesn't honour this setting - 
+     * {@link ModelMetricsRegressionCoxPH#concordance()} computation ignores it.
+     */
     public boolean _single_node_mode = false;
 
     String[] responseCols() {
@@ -257,7 +265,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
   @Override
   public ModelMetricsRegressionCoxPH.MetricBuilderRegressionCoxPH makeMetricBuilder(String[] domain) {
-    return new ModelMetricsRegressionCoxPH.MetricBuilderRegressionCoxPH(_input_parms._start_column, _input_parms._stop_column, _input_parms.isStratified(), _input_parms._stratify_by);
+    return new ModelMetricsRegressionCoxPH.MetricBuilderRegressionCoxPH(_parms._start_column, _parms._stop_column, _parms.isStratified(), _parms._stratify_by);
   }
 
   public ModelSchemaV3 schema() { return new CoxPHModelV3(); }

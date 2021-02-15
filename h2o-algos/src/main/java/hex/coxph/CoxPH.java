@@ -617,7 +617,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           final double newLoglik = calcLoglik(dinfo, cs, _parms, coxMR)._logLik;
           Log.info("LogLik: iter=" + i + ", time=" + loglikTimer.toString() + ", logLig=" + newLoglik);
           model._output._scoring_history = sc.addIterationScore(i, newLoglik).to2dTable(i+1);
-
+          
           if (newLoglik > logLik) {
             if (i == 0)
               calcCounts(model, coxMR);
@@ -662,6 +662,15 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         if (iterTimer != null) {
           Log.info("CoxPH Last Iteration: " + iterTimer.toString());
         }
+        
+        final boolean _skip_scoring = H2O.getSysBoolProperty("debug.skipScoring", false); 
+        
+        if (!_skip_scoring) {
+          model.update(_job);
+          model.score(_parms.train()).delete();
+          model._output._training_metrics = ModelMetrics.getFromDKV(model, _parms.train());
+        }
+        
         model.update(_job);
       } finally {
         if (model != null) model.unlock(_job);
