@@ -1546,6 +1546,18 @@ public abstract class GLMTask  {
     public Gram getGram() {
       return _gram;
     }
+    
+    public double[] get_beta() {
+      return _beta;
+    }
+
+    public double[] get_xy() {
+      return _xy;
+    }
+
+    public double get_yy() {
+      return _yy;
+    }
 
     @Override
     protected void processRow(Row r) { // called for every row in the chunk
