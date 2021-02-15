@@ -703,7 +703,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
           to[categoryMapping[cats[i]]] = 1d; // one-hot encode categoricals
     }
     for (int i = 0; i < _nums; ++i)
-      to[to.length - _nums] = Double.isNaN(nums[i]) ? (replaceMissingWithZero ? 0 : Double.NaN) : nums[i];
+      to[to.length - _nums + i] = Double.isNaN(nums[i]) ? (replaceMissingWithZero ? 0 : Double.NaN) : nums[i];
   }
 
   // Helper for XGBoost Java

@@ -2874,10 +2874,9 @@ public class DeepLearningTest extends TestUtil {
             dl._epochs = 10;
             dl._stopping_rounds = 0;
             dl._activation = DeepLearningParameters.Activation.Rectifier;
-            dl._export_weights_and_biases = false;
+            dl._export_weights_and_biases = true;
             dl._hidden = new int[]{10};
             dl._max_categorical_features = 5;
-            dl._elastic_averaging = false;
 
             // Invoke DL and block till the end
             DeepLearning job = new DeepLearning(dl,Key.<DeepLearningModel>make("DL_model_alphabetMaxCatFeat"));

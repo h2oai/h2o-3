@@ -1064,9 +1064,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
     });
     JCodeGen.toStaticVar(sb, "CATEGORY_MAPPING", model_info.categoryMapping,
-            "Map categories to their hashed location on input layer");
+            "Array that maps categories to their hashed location on input layer");
     JCodeGen.toStaticVar(sb, "MAX_CATEGORICAL_FEATURES",
-            model_info.get_params()._max_categorical_features, "Number of hashed categorical features");
+            model_info.get_params()._max_categorical_features, "Maximum number of categorical features");
 
     return sb;
   }
