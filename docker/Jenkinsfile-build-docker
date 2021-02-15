@@ -67,12 +67,16 @@ ansiColor('xterm') {
 
         buildInParallel(pipelineContext, ['dev-base'])
         buildInParallel(pipelineContext, ['dev-jdk-8-base', 'dev-jdk-others-base'])
-        buildInParallel(pipelineContext, ['dev-python-base', 'dev-r-base'])
 
-        def componentImages = []
+        buildInParallel(pipelineContext, ['dev-python-base'])
+        def pythonImages = []
         PYTHON_VERSIONS.each {version ->
-            componentImages += "dev-python-${version}"
+            pythonImages += "dev-python-${version}"
         }
+        buildInParallel(pipelineContext, pythonImages)
+
+        buildInParallel(pipelineContext, ['dev-r-base'])
+        def componentImages = []
         R_VERSION.each {version ->
             componentImages += "dev-r-${version}"
         }

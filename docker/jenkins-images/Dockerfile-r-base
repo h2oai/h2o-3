@@ -1,5 +1,5 @@
 ARG FROM_VERSION
-FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-jdk-8-base:${FROM_VERSION}
+FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-python-2.7:${FROM_VERSION}
 
 RUN \
     echo "deb https://cloud.r-project.org/bin/linux/ubuntu xenial/" > /etc/apt/sources.list.d/cran.list && \

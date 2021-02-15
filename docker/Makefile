@@ -18,7 +18,6 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-base:$(VERSION)
 endif
 
-
 ifneq ($(CI), 1)
 dev-jdk-8-base: dev-base
 endif
@@ -60,7 +59,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-r-base: dev-jdk-8-base
+dev-r-base: dev-python-2.7
 endif
 dev-r-base:
 	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-base:$(VERSION) \
