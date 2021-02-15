@@ -1,12 +1,12 @@
 package hex.schemas;
 
-import hex.tree.drf.DRF;
-import hex.tree.drf.DRFModel.DRFParameters;
+import hex.tree.uplift.UpliftDRF;
+import hex.tree.uplift.UpliftDRFModel.UpliftDRFParameters;
 import water.api.API;
 
-public class DRFV3 extends SharedTreeV3<DRF, DRFV3, DRFV3.DRFParametersV3> {
+public class UpliftDRFV3 extends SharedTreeV3<UpliftDRF, UpliftDRFV3, UpliftDRFV3.UpliftDRFParametersV3> {
 
-    public static final class DRFParametersV3 extends SharedTreeV3.SharedTreeParametersV3<DRFParameters, DRFParametersV3> {
+    public static final class UpliftDRFParametersV3 extends SharedTreeV3.SharedTreeParametersV3<UpliftDRFParameters, UpliftDRFParametersV3> {
         static public String[] fields = new String[]{
                 "model_id",
                 "training_frame",
@@ -34,13 +34,11 @@ public class DRFV3 extends SharedTreeV3<DRF, DRFV3, DRFV3.DRFParametersV3> {
                 "nbins",
                 "nbins_top_level",
                 "nbins_cats",
-                "r2_stopping",
                 "stopping_rounds",
                 "stopping_metric",
                 "stopping_tolerance",
                 "max_runtime_secs",
                 "seed",
-                "build_tree_one_node",
                 "mtries",
                 "sample_rate",
                 "sample_rate_per_class",
@@ -48,7 +46,6 @@ public class DRFV3 extends SharedTreeV3<DRF, DRFV3, DRFV3.DRFParametersV3> {
                 "checkpoint",
                 "col_sample_rate_change_per_level",
                 "col_sample_rate_per_tree",
-                "min_split_improvement",
                 "histogram_type",
                 "categorical_encoding",
                 "calibrate_model",
@@ -58,7 +55,8 @@ public class DRFV3 extends SharedTreeV3<DRF, DRFV3, DRFV3.DRFParametersV3> {
                 "export_checkpoints_dir",
                 "check_constant_response",
                 "gainslift_bins",
-                "auc_type",
+                "uplift_column",
+                "uplift_metric"
         };
 
         // Input fields

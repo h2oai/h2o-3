@@ -39,7 +39,6 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
     EffectiveParametersUtils.initFoldAssignment(_parms);
     EffectiveParametersUtils.initHistogramType(_parms);
     EffectiveParametersUtils.initCategoricalEncoding(_parms, Parameters.CategoricalEncodingScheme.Enum);
-    EffectiveParametersUtils.initUpliftMetric(_parms);
   }
 
   public void initActualParamValuesAfterOutputSetup(boolean isClassifier) {
@@ -68,11 +67,7 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
     if (_output.nclasses() == 1) { // regression - compute avg over all trees
       if (N>=1) preds[0] /= N;
     } else { // classification
-      if(_output.hasUplift()) {
-        preds[1] /= N;
-        preds[2] /= N;
-        preds[0] = preds[1] - preds[2];
-      } else if (_output.nclasses() == 2 && binomialOpt()) {
+      if (_output.nclasses() == 2 && binomialOpt()) {
         if (N >= 1) {
           preds[1] /= N; //average probability
         }
@@ -89,7 +84,6 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
     if (_output.nclasses() == 1) { // Regression
       body.ip("preds[0] /= " + _output._ntrees + ";").nl();
     } else { // Classification
-      // TODO uplift implementation here
       if( _output.nclasses()==2 && binomialOpt()) { // Kept the initial prediction for binomial
         body.ip("preds[1] /= " + _output._ntrees + ";").nl();
         body.ip("preds[2] = 1.0 - preds[1];").nl();

@@ -73,6 +73,12 @@ Supervised
     :show-inheritance:
     :members:
 
+:mod:`H2OUpliftRandomForestEstimator`
+-------------------------------------
+.. autoclass:: h2o.estimators.uplift_random_forest.H2OUpliftRandomForestEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2OXGBoostEstimator`
 --------------------------
 .. autoclass:: h2o.estimators.xgboost.H2OXGBoostEstimator

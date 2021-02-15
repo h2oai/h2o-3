@@ -3,7 +3,7 @@ import os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
-from h2o.estimators.random_forest import H2ORandomForestEstimator
+from h2o.estimators.upliftdrf import H2OUpliftRandomForestEstimator
 from causalml.inference.tree import UpliftRandomForestClassifier
 
 
@@ -36,7 +36,7 @@ def uplift_compare():
     feature_cols = df_h2o.names[1:nfeat+1]
     uplift_column = df_h2o.names[nfeat+1]
     
-    drf = H2ORandomForestEstimator(
+    drf = H2OUpliftRandomForestEstimator(
         ntrees=ntree,
         max_depth=max_depth,
         uplift_column=uplift_column,
