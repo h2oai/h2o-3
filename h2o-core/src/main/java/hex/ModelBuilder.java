@@ -1209,9 +1209,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (expensive)
         error("_train", "Missing training frame");
       return;
+    } else {
+      // Catch the number #1 reason why a junit test is failing non-deterministically on a missing Vec: forgotten DKV update after a Frame is modified locally
+      new ObjectConsistencyChecker(_parms._train).doAllNodes();
     }
-    Frame tr = _train != null?_train:_parms.train();
-    if( tr == null ) { error("_train", "Missing training frame: "+_parms._train); return; }
+    Frame tr = _train != null ? _train : _parms.train();
+    if (tr == null) {
+      error("_train", "Missing training frame: "+_parms._train); 
+      return;
+    }
     setTrain(new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone()));
     if (expensive) {
       _parms.getOrMakeRealSeed();
