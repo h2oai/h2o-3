@@ -34,7 +34,9 @@ def create_h2o_cluster(deployment_name: str, namespace: str) -> [str]:
     :param namespace: Namespace the deployment belongs to.
     :return: A list of pod IPs (IPv4), each IP in a separate string.
     """
-    config.load_kube_config(config_file=os.getenv("KUBECONFIG"))
+    config_path = os.getenv("KUBECONFIG")
+    print("Loading kubeconfig from {}".format(config_path))
+    config.load_kube_config(config_file=config_path)
     deployment = wait_deployment_ready(deployment_name, namespace)
     print(deployment)
     return cluster_deployment_pods(deployment, namespace)
@@ -163,6 +165,7 @@ if __name__ == '__main__':
     args.add_argument("--namespace", required=True, help="Namespace the H2O has been deployed to",
                       type=str)
     parsed_args = args.parse_args()
+    print("Attempting to cluster H2O")
     deployment_name, namespace = parsed_args.deployment_name, parsed_args.namespace
 
     pod_ips = create_h2o_cluster(deployment_name, namespace)
