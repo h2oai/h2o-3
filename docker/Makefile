@@ -59,7 +59,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-r-base: dev-python-2.7
+dev-r-base: dev-python-3.6
 endif
 dev-r-base:
 	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-base:$(VERSION) \
