@@ -747,6 +747,7 @@ private void invokeStage(final pipelineContext, final body) {
   config.stageDir = pipelineContext.getUtils().stageNameToDirName(config.stageName)
 
   config.pythonVersion = config.pythonVersion ?: DEFAULT_PYTHON
+  config.activatePythonEnv = true // activate default python for run.py
   config.rVersion = config.rVersion ?: DEFAULT_R
   config.javaVersion = config.javaVersion ?: DEFAULT_JAVA
   config.timeoutValue = config.timeoutValue ?: DEFAULT_TIMEOUT
@@ -768,11 +769,6 @@ private void invokeStage(final pipelineContext, final body) {
       config.installRPackage = true
   }
 
-  if (config.pythonVersion == null) {
-    // activate default python for run.py
-    config.activatePythonEnv = true
-    config.pythonVersion = pipelineContext.getBuildConfig().DEFAULT_PYTHON_VERSION
-  }
   config.image = config.image ?: pipelineContext.getBuildConfig().getStageImage(config)
   if (config.healthCheckSuppressed == null) {
     config.healthCheckSuppressed = false
