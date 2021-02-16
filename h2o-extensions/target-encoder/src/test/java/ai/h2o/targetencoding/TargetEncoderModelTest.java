@@ -204,7 +204,7 @@ public class TargetEncoderModelTest extends TestUtil{
 
 
   @Test
-  public void testTargetEncoderModel_dropNonCategoricalCols() {
+  public void testTargetEncoderModel_ignoreNonCategoricalCols() {
     try {
       Scope.enter();
       Frame train = parseTestFile("./smalldata/testng/airlines_train.csv");
@@ -216,14 +216,21 @@ public class TargetEncoderModelTest extends TestUtil{
       params._ignored_columns = null;
       params._train = train._key;
       params._seed = 0XFEED;
-
-
+      
       TargetEncoder te = new TargetEncoder(params);
       final TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
       // Check categorical colums for not being removed
-      assertArrayEquals(new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "UniqueCarrier",
-              "Origin", "Dest", "IsDepDelayed"}, teModel._output._names);
+      assertArrayEquals(
+              new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "UniqueCarrier", "Origin", "Dest", "Distance", "IsDepDelayed"},
+              teModel._output._names
+      );
+      assertArrayEquals(
+              new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "UniqueCarrier", "Origin", "Dest"}, 
+              Arrays.stream(teModel._output._input_to_output_columns).flatMap(io -> Stream.of(io.from())).toArray(String[]::new)
+      );
+      Frame trans = teModel.transform(train);
+      System.out.println(Arrays.toString(trans._names));
     } finally {
       Scope.exit();
     }
@@ -519,15 +526,15 @@ public class TargetEncoderModelTest extends TestUtil{
       Frame transformed = Scope.track(teModel.transform(fr));
       assertTrue(ArrayUtils.contains(transformed.names(), "cat1"));
       assertTrue(ArrayUtils.contains(transformed.names(), "cat2"));
-      assertTrue(ArrayUtils.contains(transformed.names(), "cat1~cat2")); // only because _keep_interaction_columns=true for the test
-      assertTrue(ArrayUtils.contains(transformed.names(), "cat1~cat2_te"));
+      assertTrue(ArrayUtils.contains(transformed.names(), "cat1:cat2")); // only because _keep_interaction_columns=true for the test
+      assertTrue(ArrayUtils.contains(transformed.names(), "cat1:cat2_te"));
       
-      Vec interaction = transformed.vec("cat1~cat2");
+      Vec interaction = transformed.vec("cat1:cat2");
       assertEquals(3, interaction.domain().length);
       assertArrayEquals(new String[] {"0", "1", "4"}, interaction.domain()); //[a, x] -> 0, [b, x] -> 1, [NA, x], [a, y], [b, y] -> 4, [NA, y]
       assertVecEquals(vec(0, 1, 1, 2), interaction, 0);
       
-      Vec interaction_te = transformed.vec("cat1~cat2_te");
+      Vec interaction_te = transformed.vec("cat1:cat2_te");
       assertVecEquals(dvec(0., .5, .5, 1.), interaction_te, 0);
     } finally {
       Scope.exit();

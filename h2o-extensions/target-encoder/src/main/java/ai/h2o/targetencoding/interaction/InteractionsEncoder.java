@@ -1,12 +1,7 @@
-package ai.h2o.targetencoding;
+package ai.h2o.targetencoding.interaction;
 
 import water.Iced;
 import water.util.ArrayUtils;
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.IntStream;
 
 /**
  * The interaction value is simply encoded as:

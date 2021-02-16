@@ -19,6 +19,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static ai.h2o.targetencoding.TargetEncoderHelper.*;
+import static ai.h2o.targetencoding.interaction.InteractionSupport.addFeatureInteraction;
 
 public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> {
 
@@ -129,8 +130,9 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       for (Map.Entry<String, Frame> entry : _target_encoding_map.entrySet()) {
         String teColumn = entry.getKey();
         Frame encodingsFrame = entry.getValue();
-        int teColCard = _parms.train().vec(teColumn) == null ? -1 : _parms.train().vec(teColumn).cardinality();
-        // if teColumn is a transient (generated for interactions), it can't have NAs as they're all encoded.
+        int teColCard = _parms.train().vec(teColumn) == null 
+                ? -1  // justifies the >0 test below: if teColumn is a transient (generated for interactions and therefore not in train), it can't have NAs as they're all already encoded.
+                : _parms.train().vec(teColumn).cardinality();
         boolean hasNAs = teColCard > 0 && teColCard < encodingsFrame.vec(teColumn).cardinality(); //XXX: _parms.train().vec(teColumn).naCnt() > 0 ?
         col2HasNAs.put(teColumn, hasNAs);
       }
@@ -276,8 +278,8 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     for (int i=0; i<_output._names.length; i++) {
       String col = _output._names[i];
       String[] domain = _output._domains[i];
-      if (domain != null && ArrayUtils.contains(adaptFr.names(), col)) {
-        int toAdaptIdx = adaptFr.find(col);
+      int toAdaptIdx;
+      if (domain != null && (toAdaptIdx = adaptFr.find(col)) > 0) {
         Vec toAdapt = adaptFr.vec(toAdaptIdx);
         if (!Arrays.equals(toAdapt.domain(), domain)) {
           Vec adapted = toAdapt.adaptTo(domain);
@@ -389,7 +391,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
         // - this ensures that the interaction column will have the same domain as in training (no need to call adaptTo on the new Vec).
         // - this improves speed when creating the interaction column (no need to extract the domain).
         // - unseen values/interactions are however represented as NAs in the new column, which is acceptable as TE encodes them in the same way anyway.
-        int colIdx = createFeatureInteraction(workingFrame, colGroup, columnsToEncode.toDomain());
+        int colIdx = addFeatureInteraction(workingFrame, colGroup, columnsToEncode.toDomain());
         if (colIdx < 0) {
           logger.warn("Column "+Arrays.toString(colGroup)+" is missing in frame "+data._key);
           continue;
@@ -472,7 +474,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     String[] toTheEnd = _parms.getNonPredictors();
     Map<String, Integer> nameToIdx = nameToIndex(fr);
     List<Integer> toAppendAfterNumericals = new ArrayList<>();
-    String[] trainColumns = _parms.train().names();
+    String[] trainColumns = _output._names;
     Set<String> trainCols = new HashSet<>(Arrays.asList(trainColumns));
     String[] notInTrainColumns = Arrays.stream(fr.names())
             .filter(c -> !trainCols.contains(c))

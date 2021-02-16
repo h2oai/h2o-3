@@ -314,8 +314,8 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
       Frame transformations = Scope.track(teModel.transform(Scope.track(asFrame(row))));
       printOutFrameAsTable(transformations);
       double sexEnc =  transformations.vec("sex_te").at(0);
-      double interaction1Enc = transformations.vec("cabin~embarked_te").at(0);
-      double interaction2Enc = transformations.vec("cabin~embarked~boat_te").at(0);
+      double interaction1Enc = transformations.vec("cabin:embarked_te").at(0);
+      double interaction2Enc = transformations.vec("cabin:embarked:boat_te").at(0);
 
       // Let's load model that we just have written and use it for prediction.
       TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFile.getPath());

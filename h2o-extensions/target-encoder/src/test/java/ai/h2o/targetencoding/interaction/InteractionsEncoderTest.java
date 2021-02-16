@@ -1,4 +1,4 @@
-package ai.h2o.targetencoding;
+package ai.h2o.targetencoding.interaction;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

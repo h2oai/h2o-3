@@ -107,7 +107,7 @@ public class TargetEncoderTest {
         builder.trainModel().get();
         fail("should have thrown validation error");
       } catch(H2OModelBuilderIllegalArgumentException e) {
-        assertTrue(e.getMessage().contains("Column `age` from interaction [cabin, embarked, age] is not categorical or is missing from the training frame"));
+        assertTrue(e.getMessage().contains("Column `age` from interaction [cabin, embarked, age] must first be converted into categorical to be used by target encoder"));
       }
     } finally {
       Scope.exit();
@@ -175,8 +175,8 @@ public class TargetEncoderTest {
         assertTrue(encodingMap.containsKey(inputToEncodingColumn[i].toSingle()));
       }
       assertEquals("sex", inputToEncodingColumn[0].toSingle());
-      assertEquals("cabin~embarked", inputToEncodingColumn[1].toSingle());
-      assertEquals("cabin~embarked~boat", inputToEncodingColumn[2].toSingle());
+      assertEquals("cabin:embarked", inputToEncodingColumn[1].toSingle());
+      assertEquals("cabin:embarked:boat", inputToEncodingColumn[2].toSingle());
       
       assertArrayEquals(fr.vec("sex").domain(),  inputToEncodingColumn[0].toDomain());
       assertTrue(inputToEncodingColumn[1].toDomain().length > fr.vec("cabin").domain().length);
@@ -219,8 +219,8 @@ public class TargetEncoderTest {
         assertArrayEquals(teParameters._columns_to_encode[i], inputToOutputMapping[i].from());
       }
       assertArrayEquals(new  String[] {"sex_te"}, inputToOutputMapping[0].to());
-      assertArrayEquals(new String[] {"cabin~embarked_te"}, inputToOutputMapping[1].to());
-      assertArrayEquals(new String[] {"cabin~embarked~boat_te"}, inputToOutputMapping[2].to());
+      assertArrayEquals(new String[] {"cabin:embarked_te"}, inputToOutputMapping[1].to());
+      assertArrayEquals(new String[] {"cabin:embarked:boat_te"}, inputToOutputMapping[2].to());
       
     } finally {
       Scope.exit();
@@ -255,8 +255,8 @@ public class TargetEncoderTest {
         assertArrayEquals(teParameters._columns_to_encode[i], inputToOutputMapping[i].from());
       }
       assertArrayEquals(new String[] {"sex_Q_te", "sex_S_te"}, inputToOutputMapping[0].to());
-      assertArrayEquals(new String[] {"cabin~boat_Q_te", "cabin~boat_S_te"}, inputToOutputMapping[1].to());
-      assertArrayEquals(new String[] {"sex~cabin~boat_Q_te", "sex~cabin~boat_S_te"}, inputToOutputMapping[2].to());
+      assertArrayEquals(new String[] {"cabin:boat_Q_te", "cabin:boat_S_te"}, inputToOutputMapping[1].to());
+      assertArrayEquals(new String[] {"sex:cabin:boat_Q_te", "sex:cabin:boat_S_te"}, inputToOutputMapping[2].to());
 
     } finally {
       Scope.exit();

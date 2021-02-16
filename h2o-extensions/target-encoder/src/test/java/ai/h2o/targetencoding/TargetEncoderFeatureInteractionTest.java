@@ -5,7 +5,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.Scope;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
@@ -38,7 +37,7 @@ public class TargetEncoderFeatureInteractionTest {
             final TargetEncoderModel teModel = te.trainModel().get();
             Scope.track_generic(teModel);
             assertNotNull(teModel);
-            printOutFrameAsTable(teModel._output._target_encoding_map.get("fYear~fMonth"));
+            printOutFrameAsTable(teModel._output._target_encoding_map.get("fYear:fMonth"));
             final Frame encoded = teModel.score(test);
             printOutFrameAsTable(encoded);
             Scope.track(encoded);
@@ -47,7 +46,7 @@ public class TargetEncoderFeatureInteractionTest {
             assertEquals(train.numCols() + 2, encoded.numCols());
             final int[] encodedColIdx = new int[] {
                     ArrayUtils.indexOf(encoded.names(), "Origin_te"),
-                    ArrayUtils.indexOf(encoded.names(), "fYear~fMonth_te"),
+                    ArrayUtils.indexOf(encoded.names(), "fYear:fMonth_te"),
             };
             for (int colIdx : encodedColIdx) {
                 assertNotEquals(-1, colIdx);
@@ -59,26 +58,4 @@ public class TargetEncoderFeatureInteractionTest {
     }
     
     
-    @Test
-    public void test_interaction_during_scoring_is_consistent_with_interaction_during_training() {
-        try {
-            Scope.enter();
-            Frame fr = parse_test_file("./smalldata/testng/airlines_train.csv");
-            Scope.track(fr);
-            String[] interacting = new String[] {"Origin", "fYear", "fMonth"};
-            int interactionColIdx = TargetEncoderHelper.createFeatureInteraction(fr, interacting);
-            Vec interactionTraining = fr.vec(interactionColIdx);
-            fr.remove(interactionColIdx);
-
-            String[] interactionDomain = interactionTraining.domain();
-            interactionColIdx = TargetEncoderHelper.createFeatureInteraction(fr, interacting, interactionDomain);
-            Vec interactionScoring = fr.vec(interactionColIdx);
-            
-            assertArrayEquals(interactionDomain, interactionScoring.domain());
-            assertVecEquals(interactionTraining, interactionScoring, 1e-6);
-        } finally {
-            Scope.exit();
-        }
-    }
-
 }

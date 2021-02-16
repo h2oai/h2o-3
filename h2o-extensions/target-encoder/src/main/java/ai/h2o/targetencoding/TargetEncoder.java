@@ -3,6 +3,7 @@ package ai.h2o.targetencoding;
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderOutput;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
+import ai.h2o.targetencoding.interaction.InteractionSupport;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import water.DKV;
@@ -56,16 +57,11 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
       
       _columnsToEncode = _parms._columns_to_encode;
       if (_columnsToEncode == null) { // detects columns that can be encoded
-        final List<String> colsToIgnore = Arrays.asList(
-                _parms._response_column,
-                _parms._fold_column,
-                _parms._weights_column,
-                _parms._offset_column
-        );
+        final List<String> nonPredictors = Arrays.asList(_parms.getNonPredictors());
         final List<String[]> columnsToEncode = new ArrayList<>(train.numCols());
         for (int i = 0; i < train.numCols(); i++) {
           String colName = train.name(i);
-          if (colsToIgnore.contains(colName)) continue;
+          if (nonPredictors.contains(colName)) continue;
           if (!train.vec(i).isCategorical()) {
             warn("_train", "Column `" + colName + "` is not categorical and will therefore be ignored by target encoder.");
             continue;
@@ -136,7 +132,7 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
         ColumnsToSingleMapping[] columnsToEncodeMapping = new ColumnsToSingleMapping[_columnsToEncode.length];
         for (int i=0; i < columnsToEncodeMapping.length; i++) {
           String[] colGroup = _columnsToEncode[i];
-          int interactionCol = createFeatureInteraction(workingFrame, colGroup);
+          int interactionCol = InteractionSupport.addFeatureInteraction(workingFrame, colGroup);
           String[] interactionDomain = workingFrame.vec(interactionCol).domain();
           columnsToEncodeMapping[i] = new ColumnsToSingleMapping(colGroup, workingFrame.name(interactionCol), interactionDomain);
         }
@@ -254,16 +250,6 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
       return filterNotByValue(encodingsFrame, foldColumnIdx, foldValue);
     }
 
-  }
-
-  @Override
-  protected void ignoreInvalidColumns(int npredictors, boolean expensive) {
-    new FilterCols(npredictors){
-      @Override
-      protected boolean filter(Vec v) {
-        return !v.isCategorical();
-      }
-    }.doIt(train(), "Removing non-categorical columns found in the list of encoded columns.", expensive);
   }
 
   /**

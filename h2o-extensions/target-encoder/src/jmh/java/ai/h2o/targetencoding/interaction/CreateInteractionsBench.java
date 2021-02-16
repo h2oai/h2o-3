@@ -1,4 +1,4 @@
-package ai.h2o.targetencoding;
+package ai.h2o.targetencoding.interaction;
 
 import hex.Interaction;
 import org.openjdk.jmh.Main;
@@ -15,6 +15,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
+import static ai.h2o.targetencoding.interaction.InteractionSupport.createInteractionColumn;
 import static water.TestUtil.*;
 
 
@@ -249,7 +250,7 @@ public class CreateInteractionsBench {
             categoricalColsNames = IntStream.of(categoricalColsIdx).mapToObj(i -> fr.names()[i]).toArray(String[]::new);
             for (int i=2; i < 6; i++) {
                 int[] interactingCols = Arrays.copyOfRange(categoricalColsIdx, 0, i);
-                Vec interact = TargetEncoderHelper.createInteractionColumn(fr, interactingCols, null);
+                Vec interact = createInteractionColumn(fr, interactingCols, null);
                 interactionDomains.put(i, interact.domain());
             }
         }
@@ -274,7 +275,7 @@ public class CreateInteractionsBench {
     @Benchmark
     public void interactionEncoderTrain(DataPreparation data, Blackhole bh) {
         int[] interactingCols = Arrays.copyOfRange(data.categoricalColsIdx, 0, data.interactionSize);
-        Vec interact = TargetEncoderHelper.createInteractionColumn(data.fr, interactingCols, null);
+        Vec interact = createInteractionColumn(data.fr, interactingCols, null);
         bh.consume(interact);
     }
 
@@ -282,7 +283,7 @@ public class CreateInteractionsBench {
     public void interactionEncoderScore(DataPreparation data, Blackhole bh) {
         int[] interactingCols = Arrays.copyOfRange(data.categoricalColsIdx, 0, data.interactionSize);
         String[] interactionDomain = data.interactionDomains.get(data.interactionSize);
-        Vec interact = TargetEncoderHelper.createInteractionColumn(data.fr, interactingCols, interactionDomain);
+        Vec interact = createInteractionColumn(data.fr, interactingCols, interactionDomain);
         bh.consume(interact);
     }
 
