@@ -3,6 +3,7 @@ package water.runner;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import water.TestUtil;
 import water.fvec.Vec;
 import water.util.Log;
 
@@ -15,14 +16,10 @@ public class H2ORunnerPlayground {
 
   @Test
   public void testReportRollupsLeaks() {
-    Assume.assumeFalse(isCI()); // don't run this on CI
+    Assume.assumeFalse(TestUtil.isCI()); // don't run this on CI
     Vec v = Vec.makeZero((long) 1e6);
     Log.info("Created key: ", v._key.toString());
     assertEquals(0, v.min(), 0);
-  }
-
-  private static boolean isCI() {
-    return System.getProperty("user.name").equals("jenkins");
   }
 
 }
