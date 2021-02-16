@@ -20,16 +20,6 @@ RUN \
     apt-get autoremove -y && \
     rm -rf /var/cache/apt/*
 
-COPY scripts/build-h2o-3 scripts/install_python_version /tmp/
-ENV PYTHON_VERSION=3.6
-ARG H2O_BRANCH=master
-RUN \
-    chown jenkins:jenkins /tmp/build-h2o-3 && \
-    chmod a+x /tmp/build-h2o-3 /tmp/install_python_version && \
-    sync && \
-    /tmp/install_python_version ${PYTHON_VERSION} && \
-    rm /tmp/install_python_version
-
 # Set GRADLE USER env var
 ENV GRADLE_OPTS='-Dorg.gradle.daemon=false'
 # Warmup
