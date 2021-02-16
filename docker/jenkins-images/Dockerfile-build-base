@@ -20,6 +20,12 @@ RUN \
     apt-get autoremove -y && \
     rm -rf /var/cache/apt/*
 
+COPY scripts/build-h2o-3 /tmp/
+RUN \
+    chown jenkins:jenkins /tmp/build-h2o-3 && \
+    chmod a+x /tmp/build-h2o-3 && \
+    sync
+
 # Set GRADLE USER env var
 ENV GRADLE_OPTS='-Dorg.gradle.daemon=false'
 # Warmup
