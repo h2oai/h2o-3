@@ -27,7 +27,8 @@ Authors@R: c(
     person("Matt", "Dowle", role = c("ctb")),
     person("Yuan", "Tang", role = c("ctb")),    
     person("Lauren", "DiPerna", role = c("ctb")), 
-    person("Tomas", "Fryda", role = c("ctb")),        
+    person("Tomas", "Fryda", role = c("ctb")),
+    person("Veronika", "Maurerova", role=c("ctb")),        
     person("H2O.ai", role = c("cph", "fnd"))
     )
 Description: R interface for 'H2O', the scalable open source machine learning
@@ -112,3 +113,4 @@ Collate:
          'explain.R'
          'permutation_varimp.R'
          'zzz.R'
+         'upliftrandomforest.R'
