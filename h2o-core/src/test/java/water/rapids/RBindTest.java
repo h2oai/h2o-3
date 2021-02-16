@@ -3,6 +3,7 @@ package water.rapids;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
 import water.Key;
 import water.Keyed;
 import water.TestUtil;
@@ -95,6 +96,7 @@ public class RBindTest extends TestUtil {
   private Frame checkTree(String tree, boolean expectThrow) {
     Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
     fr.remove(4).remove();
+    DKV.put(fr);
     try {
       Val val = Rapids.exec(tree);
       Assert.assertFalse(expectThrow);

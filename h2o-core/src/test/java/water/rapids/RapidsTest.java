@@ -334,6 +334,7 @@ public class RapidsTest{
     //DKV.put(ahex, fr);
     Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
     fr.remove(4).remove();
+    DKV.put(fr);
     try {
       Val val = Rapids.exec(tree);
       Assert.assertNull(thrownMessage);
@@ -443,6 +444,7 @@ public class RapidsTest{
             {1,2,4,5,6,10}, {1,2,3,7,8,9}};
     //for (int index = 0; index < ansNames.length; index++) { // 0, 1 pass, 2,3 failed
     Random newRand = new Random();
+    newRand.setSeed(42);
     int index = newRand.nextInt(rapidStrings.length);
     testMergeStringOneSetting(f1Names[index], f2Names[index], ansNames[index], rapidStrings[index], stringColIndices[index]);
    // }
@@ -462,9 +464,13 @@ public class RapidsTest{
         f2.setNames(new String[]{"int1", "stringf1", "stringf1-2", "intf1-2"});
         f1.setNames(new String[]{"int1", "stringf2", "stringf2-2", "stringf2-3", "intf2-5", "intf2-3", "intf2-4", "stringf2-4"});
       }
+      DKV.put(f1);
+      DKV.put(f2);
       ans = parse_test_file(ansName);
-      for (int col=0; col < stringCols.length; col++) // change enum column back to string columns
-        ans.replace(stringCols[col], ans.vec(stringCols[col]).toStringVec()).remove();
+      Scope.track(ans);
+      for (int col : stringCols) // change enum column back to string columns
+        ans.replace(col, ans.vec(col).toStringVec()).remove();
+      DKV.put(ans);
       Scope.track(f1);
       Scope.track(f2);
       Scope.track(ans);

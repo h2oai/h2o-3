@@ -1,22 +1,26 @@
 package water.rapids;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.rapids.vals.ValFrame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
+@CloudSize(1)
+@RunWith(H2ORunner.class)
 public class GroupByTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testBasic() {
     Frame fr = null;
@@ -240,24 +244,27 @@ public class GroupByTest extends TestUtil {
 
   @Test
   public void testGroupbyTableSpeed() {
-    Frame ids = parse_test_file(Key.make("cov"),"smalldata/junit/id_cols.csv");
-    ids.replace(0,ids.anyVec().toCategoricalVec()).remove();
-    System.out.println(ids.toString(0,10));
+    try {
+      Scope.enter();
+      Frame ids = parse_test_file(Key.make("cov"), "smalldata/junit/id_cols.csv");
+      ids.toCategoricalCol(0);
+      Scope.track(ids);
+      System.out.println(ids.toString(0, 10));
 
-    long start = System.currentTimeMillis();
-    Val v_gb = Rapids.exec("(GB cov [0] nrow 0 \"all\")");
-    System.out.println("GB Time= "+(System.currentTimeMillis()-start)+"msec");
-    System.out.println(v_gb.toString());
-    v_gb.getFrame().delete();
-    
-    long start2 = System.currentTimeMillis();
-    Val v_tb = Rapids.exec("(table cov FALSE)");
-    System.out.println("Table Time= "+(System.currentTimeMillis()-start2)+"msec");
-    System.out.println(v_tb.toString());
-    v_tb.getFrame().delete();
+      long start = System.currentTimeMillis();
+      Val v_gb = Rapids.exec("(GB cov [0] nrow 0 \"all\")");
+      System.out.println("GB Time= " + (System.currentTimeMillis() - start) + "msec");
+      System.out.println(v_gb.toString());
+      Scope.track(v_gb.getFrame()).delete();
 
-    ids.delete();
-    Keyed.remove(Key.make("cov"));
+      long start2 = System.currentTimeMillis();
+      Val v_tb = Rapids.exec("(table cov FALSE)");
+      System.out.println("Table Time= " + (System.currentTimeMillis() - start2) + "msec");
+      System.out.println(v_tb.toString());
+      Scope.track(v_tb.getFrame()).delete();
+    } finally {
+      Scope.exit();
+    }
   }
   
   @Test
