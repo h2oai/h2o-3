@@ -108,6 +108,11 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
     if( x==0 ) x=1;
     return (_checksum=x);
   }
+  public final long checksum(boolean noCache) {
+    if (noCache)
+      return checksum_impl();
+    return checksum();
+  }
 
   // TODO: REMOVE THIS!  It's not necessary; we can do it with reflection.
   public Class<? extends KeyV3> makeSchema() { throw H2O.fail("Override in subclasses which can be the result of a Job"); }

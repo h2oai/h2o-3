@@ -25,12 +25,14 @@ def test_random_forrest_effective_parameters():
     train, calib = frame.split_frame(ratios=[.8], destination_frames=["eco_train", "eco_calib"], seed=42)
 
     rf1 = H2ORandomForestEstimator(ntrees=100, distribution="bernoulli", min_rows=10, max_depth=5, weights_column="Weights",
-                                   stopping_rounds = 3, calibrate_model=True, calibration_frame=calib, seed = 1234)
+                                   stopping_rounds = 3, calibrate_model=True, calibration_frame=calib, seed = 1234,
+                                   score_tree_interval = 5)
     rf1.train(x=list(range(2, train.ncol)), y="Angaus", training_frame=train)
 
     rf2 = H2ORandomForestEstimator(ntrees=100, distribution="bernoulli", min_rows=10, max_depth=5, weights_column="Weights",
                                    stopping_rounds = 3, stopping_metric='logloss', calibrate_model=True, calibration_frame=calib,
-                                   seed = 1234, categorical_encoding = 'Enum')
+                                   seed = 1234, categorical_encoding = 'Enum',
+                                   score_tree_interval = 5)
     rf2.train(x=list(range(2, train.ncol)), y="Angaus", training_frame=train)
 
     assert rf1.parms['stopping_metric']['input_value'] == 'AUTO'

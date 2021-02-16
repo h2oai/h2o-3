@@ -935,18 +935,17 @@ public class GLMBasicTestRegression extends TestUtil {
    * Test to verify that the dispersion parameter estimation for Tweedie families are calculated correctly.
    */
   @Test
-  public void testDispersionEstimat() {
-      Scope.enter();
-    Frame fr, f1, f2, f3, pred;
-    // get new coefficients, 7 classes and 53 predictor+intercept
-    Random rand = new Random();
-    rand.setSeed(12345);
-    int nclass = 4;
-    double threshold = 1e-10;
-    int numRows = 1000;
-    GLMModel model = null;
+  public void testDispersionEstimate() {
+    Scope.enter();
 
     try {
+      Frame fr, f1, f2, f3, pred;
+      // get new coefficients, 7 classes and 53 predictor+intercept
+      Random rand = new Random();
+      rand.setSeed(12345);
+      int nclass = 4;
+      double threshold = 1e-10;
+      int numRows = 1000;
       long seed = 1234;
       f1 = TestUtil.generate_enum_only(2, numRows, nclass, 0, seed);
       Scope.track(f1);
@@ -955,6 +954,7 @@ public class GLMBasicTestRegression extends TestUtil {
       f3 = TestUtil.generate_int_only(1, numRows, 10, 0, seed);
       Scope.track(f3);
       fr = f1.add(f2).add(f3);  // complete frame generation
+      DKV.put(fr);
       Scope.track(fr);
         GLMParameters params = new GLMParameters(Family.tweedie);
         params._response_column = fr._names[fr.numCols() - 1];
@@ -967,7 +967,7 @@ public class GLMBasicTestRegression extends TestUtil {
         params._tweedie_variance_power = 0;
         params._compute_p_values = true;
 
-        model = new GLM(params).trainModel().get();
+        GLMModel model = new GLM(params).trainModel().get();
         Scope.track_generic(model);
         pred = model.score(fr);
         Scope.track(pred);

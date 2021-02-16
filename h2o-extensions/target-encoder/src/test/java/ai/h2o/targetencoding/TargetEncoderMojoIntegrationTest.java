@@ -361,6 +361,7 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
       asFactor(fr, target);
       String foldColumn = "fold_column";
       addKFoldColumn(fr, foldColumn, 5, 1234L);
+      DKV.put(fr);
 
       TargetEncoderParameters teParams = new TargetEncoderParameters();
       teParams._fold_column = foldColumn;
