@@ -68,7 +68,7 @@ spec:
       volumes:
         - name: python-clustering-script
           hostPath:
-            path: /home/pavelp/projects/h2o-3/h2o-k8s/tests/clustering/assisted-clustering.py
+            path: $H2O_BASE/h2o-k8s/tests/clustering/assisted-clustering.py
             type: File
 ---
 apiVersion: v1
