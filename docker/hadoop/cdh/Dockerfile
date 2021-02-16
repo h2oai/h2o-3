@@ -6,6 +6,8 @@ MAINTAINER h2oai "h2o.ai"
 
 ARG VERSION
 ARG REPO_VERSION
+ARG APT_USERNAME
+ARG APT_PASSWORD
 RUN if [ -z $VERSION ]; then \
         echo "build-arg VERSION must be set"; \
         exit 1; \
@@ -30,8 +32,9 @@ RUN \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https curl wget software-properties-common git
 
-# Prepare Cloudera repository
 RUN \
+    echo "machine archive.cloudera.com login ${APT_USERNAME} password ${APT_PASSWORD}" > \
+        /etc/apt/auth.conf.d/cloudera.conf && \
     case ${VERSION} in \
     5*) \
         echo "# Packages for Cloudera's Distribution of Hadoop, Version 5\n\

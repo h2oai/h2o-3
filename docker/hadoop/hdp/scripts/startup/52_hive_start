@@ -12,7 +12,6 @@ then
 else
     sudo -E -u hdfs hadoop fs -mkdir -p /user/anonymous
     sudo -E -u hdfs hadoop fs -chown anonymous:anonymous /user/anonymous
-    sudo apt-get -y install tez
     sudo -E -u hdfs hadoop fs -mkdir -p /apps/tez
     sudo -E -u hdfs hadoop fs -copyFromLocal /usr/hdp/${HDP_VERSION}/tez/lib/tez.tar.gz /apps/tez
 fi
