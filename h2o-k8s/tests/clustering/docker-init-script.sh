@@ -43,6 +43,7 @@ kubectl wait --timeout=180s --for=condition=ready --selector app=h2o-assisted po
 kubectl apply -f h2o-python-clustering.yaml
 kubectl wait --timeout=180s --for=condition=ready --selector app=h2o-assisted-python pods
 # Show status of H2O assisted clustering-related resources for diagnostics
+echo "H2O Assisted Clustering Python script logs:"
 kubectl logs -l app=h2o-assisted-python
 kubectl get services
 kubectl get ingresses

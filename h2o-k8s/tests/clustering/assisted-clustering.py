@@ -17,6 +17,7 @@ def wait_deployment_ready(deployment_name: str, namespace: str) -> client.V1Depl
     :param namespace: Namespace the deployment belongs to.
     :return: An instance of V1Deployment, if found.
     """
+    print("Waiting for H2O deployment to be ready")
     v1_apps = client.AppsV1Api()
     w = watch.Watch()
     for deployment in w.stream(v1_apps.list_namespaced_deployment, namespace,
@@ -24,6 +25,7 @@ def wait_deployment_ready(deployment_name: str, namespace: str) -> client.V1Depl
         deployment = deployment["object"]
         status: client.V1DeploymentStatus = deployment.status
         if status.ready_replicas == status.replicas:
+            print("H2O deployment ready")
             return deployment
 
 
@@ -34,9 +36,8 @@ def create_h2o_cluster(deployment_name: str, namespace: str) -> [str]:
     :param namespace: Namespace the deployment belongs to.
     :return: A list of pod IPs (IPv4), each IP in a separate string.
     """
-    config_path = os.getenv("KUBECONFIG")
-    print("Loading kubeconfig from {}".format(config_path))
-    config.load_kube_config(config_file=config_path)
+    config.load_incluster_config()
+    print("Kubeconfig Loaded")
     deployment = wait_deployment_ready(deployment_name, namespace)
     print(deployment)
     return cluster_deployment_pods(deployment, namespace)
