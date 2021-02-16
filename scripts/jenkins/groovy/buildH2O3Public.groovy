@@ -1,6 +1,6 @@
 def call(final pipelineContext) {
 
-    final String PYTHON_VERSION = '3.5'
+    final String PYTHON_VERSION = '3.6'
     final String R_VERSION = '3.4.1'
     final String JAVA_VERSION = '8'
 
