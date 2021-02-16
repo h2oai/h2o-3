@@ -5,7 +5,9 @@ import fi.iki.elonen.router.RouterNanoHTTPD;
 import water.H2O;
 import water.H2ONode;
 
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 
 public class H2OClusterStatusEndpoint extends RouterNanoHTTPD.DefaultHandler {
 
@@ -28,9 +30,19 @@ public class H2OClusterStatusEndpoint extends RouterNanoHTTPD.DefaultHandler {
 
     @Override
     public NanoHTTPD.Response get(RouterNanoHTTPD.UriResource uriResource, Map<String, String> urlParams, NanoHTTPD.IHTTPSession session) {
-        // All nodes report ready state until the clustering process is finished. Since then, only the leader node is ready.
-        final boolean isClustered = H2O.CLOUD._memary.length == 0;
-        if (isClustered) {
+        // H2O cluster grows in time, even when a flat file is used. The H2O.CLOUD property might be updated with new nodes during
+        // the clustering process and doesn't necessarily have to contain all the nodes since the very beginning of the clustering process.
+        // From this endpoint's point of view, H2O is clustered if and only if the H2O cloud members contain all nodes defined in the
+        // flat file.
+
+        if (!H2O.isFlatfileEnabled()){
+            return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.NO_CONTENT, getMimeType(), null);
+        }
+        final Set<H2ONode> flatFile = H2O.getFlatfile();
+        final H2ONode[] cloudMembers = H2O.CLOUD.members();
+        final boolean clustered = flatFile != null && cloudMembers != null && flatFile.containsAll(Arrays.asList(cloudMembers));
+        
+        if (!clustered) {
             // If there is no cluster, there is no content to report.
             return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.NO_CONTENT, getMimeType(), null);
         } else {
@@ -59,8 +71,7 @@ public class H2OClusterStatusEndpoint extends RouterNanoHTTPD.DefaultHandler {
         final StringBuilder unhealthyNodesStringArray = new StringBuilder();
         int healthyNodeCount = 0;
         int unhealthyNodeCount = 0;
-        for (int i = 0; i < cloudMembers.length; i++) {
-            final H2ONode node = cloudMembers[i];
+        for (final H2ONode node : cloudMembers) {
             if (node.isHealthy()) {
                 healthyNodesStringArray.append('"');
                 healthyNodesStringArray.append(node.getIpPortString());

@@ -10,7 +10,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import static org.junit.Assert.*;
 
