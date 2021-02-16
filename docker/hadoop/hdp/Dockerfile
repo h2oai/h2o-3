@@ -30,7 +30,7 @@ RUN \
     apt-get install -y wget curl software-properties-common git && \
     chmod 700 /usr/sbin/add_hdp_repo.sh && \
     sync && \
-    /usr/sbin/add_hdp_repo.sh $VERSION && \
+    /usr/sbin/add_hdp_repo.sh $VERSION $APT_USERNAME $APT_PASSWORD && \
     rm /usr/sbin/add_hdp_repo.sh && \
     echo "machine archive.cloudera.com login ${APT_USERNAME} password ${APT_PASSWORD}" > \
         /etc/apt/auth.conf.d/cloudera.conf && \
