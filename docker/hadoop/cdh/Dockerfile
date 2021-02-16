@@ -31,7 +31,7 @@ ENV DISTRIBUTION='cdh' \
 COPY ${PATH_PREFIX}/scripts/sbin ${PATH_PREFIX}/../common/sbin scripts/install_python_version /usr/sbin/
 RUN \
     apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https curl wget software-properties-common git \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https curl wget software-properties-common git && \
     chmod 700 /usr/sbin/add_cdh_repo.sh && \
     sync && \
     /usr/sbin/add_cdh_repo.sh $VERSION $REPO_VERSION $APT_USERNAME $APT_PASSWORD && \
