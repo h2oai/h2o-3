@@ -7,7 +7,9 @@ H2O's core code is written in Java. Inside H2O, a Distributed Key/Value store is
 
 H2O’s REST API allows access to all the capabilities of H2O from an external program or script via JSON over HTTP. The Rest API is used by H2O’s web interface (Flow UI), R binding (H2O-R), and Python binding (H2O-Python).
 
-The speed, quality, ease-of-use, and model-deployment for the various cutting edge Supervised and Unsupervised algorithms like Deep Learning, Tree Ensembles, and GLRM make H2O a highly sought after API for big data data science. 
+The speed, quality, ease-of-use, and model-deployment for the various cutting edge Supervised and Unsupervised algorithms like Deep Learning, Tree Ensembles, and GLRM make H2O a highly sought after API for big data data science.
+
+H2O is licensed under the `Apache License, Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_.
 
 Requirements
 ------------
