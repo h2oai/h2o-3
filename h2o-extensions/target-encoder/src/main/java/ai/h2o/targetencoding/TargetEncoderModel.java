@@ -275,11 +275,12 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   
   private Frame adaptForEncoding(Frame fr) {
     Frame adaptFr = new Frame(fr);
+    Map<String, Integer> nameToIdx = nameToIndex(fr);
     for (int i=0; i<_output._names.length; i++) {
       String col = _output._names[i];
       String[] domain = _output._domains[i];
       int toAdaptIdx;
-      if (domain != null && (toAdaptIdx = adaptFr.find(col)) > 0) {
+      if (domain != null && (toAdaptIdx = nameToIdx.getOrDefault(col, -1)) >= 0) {
         Vec toAdapt = adaptFr.vec(toAdaptIdx);
         if (!Arrays.equals(toAdapt.domain(), domain)) {
           Vec adapted = toAdapt.adaptTo(domain);
@@ -496,8 +497,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
             .toArray(String[]::new);
     Set<String> encodedCols = new HashSet<>(Arrays.asList(encodedColumns));
     for (String col : encodedColumns) { // TE-encoded cols
-      assert nameToIdx.containsKey(col);
-      newOrder[offset++] = nameToIdx.get(col);
+        if (nameToIdx.containsKey(col)) newOrder[offset++] = nameToIdx.get(col);
     }
     for (String col : notInTrainColumns) {
       if (!encodedCols.contains(col)) toAppendAfterNumericals.add(nameToIdx.get(col)); // appending columns only in fr

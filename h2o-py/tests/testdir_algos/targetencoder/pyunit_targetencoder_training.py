@@ -123,8 +123,8 @@ def test_columns_groups_are_encoded_as_a_single_interaction():
     te_cols = [c for c in encoded.names if c.endswith("_te")]
     assert len(te_cols) == 3
     assert "{}_te".format(no_inter) in te_cols
-    assert "{}~{}_te".format(*two_inter) in te_cols
-    assert "{}~{}~{}_te".format(*three_inter) in te_cols
+    assert "{}:{}_te".format(*two_inter) in te_cols
+    assert "{}:{}:{}_te".format(*three_inter) in te_cols
     
     
 def columns_listed_in_columns_to_encode_should_not_be_ignored_in_x():
