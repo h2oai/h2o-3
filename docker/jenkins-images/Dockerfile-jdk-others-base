@@ -10,7 +10,7 @@ RUN \
     rm -rf /var/cache/apt/*
 
 COPY scripts/install_java_version scripts/install_python_version /tmp/
-ENV PYTHON_VERSION=2.7
+ENV PYTHON_VERSION=3.6
 ARG H2O_BRANCH='master'
 RUN \
     chmod +x /tmp/install_java_version /tmp/install_python_version && \
