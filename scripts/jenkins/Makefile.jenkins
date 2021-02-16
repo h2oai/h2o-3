@@ -261,6 +261,7 @@ test-package-java:
 		h2o-k8s/tests/clustering/assisted-clustering.py \
 		h2o-helm/ \
 		h2o-clustering/src/ \
+		h2o-clustering/build/libs/h2o-clustering.jar \
 		h2o-clustering/build/libs/h2o-clustering-*.jar \
 		h2o-clustering/tests/ \
 		scripts/run.py h2o-py/tests_rest_smoke scripts/test-xgb-gpu-smoke.sh \
