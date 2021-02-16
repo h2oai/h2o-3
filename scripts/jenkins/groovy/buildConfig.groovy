@@ -47,6 +47,7 @@ class BuildConfig {
 
   public static final String RELEASE_BRANCH_PREFIX = 'rel-'
 
+  public static final List DEFAULT_PYTHON_VERSION = "2.7"
   public static final List PYTHON_VERSIONS = ['2.7', '3.5', '3.6', '3.7', '3.8']
   public static final List R_VERSIONS = ['3.3.3', '3.4.1']
 
@@ -251,7 +252,7 @@ class BuildConfig {
 
     return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
-
+  
   String getDevImageReference(final specifier) {
     return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${specifier}:${DEFAULT_IMAGE_VERSION_TAG}"
   }

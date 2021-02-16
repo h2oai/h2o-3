@@ -768,10 +768,10 @@ private void invokeStage(final pipelineContext, final body) {
       config.installRPackage = true
   }
 
-  if (config.activatePythonEnv == null) {
-    config.activatePythonEnv = config.component == pipelineContext.getBuildConfig().COMPONENT_PY ||
-            config.component == pipelineContext.getBuildConfig().COMPONENT_JS ||
-            config.additionalTestPackages.contains(pipelineContext.getBuildConfig().COMPONENT_PY)
+  if (config.pythonVersion == null) {
+    // activate default python for run.py
+    config.activatePythonEnv = true
+    config.pythonVersion = pipelineContext.getBuildConfig().DEFAULT_PYTHON_VERSION
   }
   config.image = config.image ?: pipelineContext.getBuildConfig().getStageImage(config)
   if (config.healthCheckSuppressed == null) {
