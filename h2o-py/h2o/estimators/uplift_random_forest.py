@@ -68,6 +68,8 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                  export_checkpoints_dir=None,  # type: Optional[str]
                  check_constant_response=True,  # type: bool
                  gainslift_bins=-1,  # type: int
+                 uplift_column=None,  # type: Optional[str]
+                 uplift_metric=None,  # type: Optional[Literal["auto", "kl", "euclidean", "chi_squared"]]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -240,6 +242,13 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                binning.
                Defaults to ``-1``.
         :type gainslift_bins: int
+        :param uplift_column: Define column which will be use for computing uplift gain to select best split for a tree.
+               The column has to devide dataset into treatment (value 1) and control (value 0) group.
+               Defaults to ``None``.
+        :type uplift_column: str, optional
+        :param uplift_metric: Divergence metric used to find best split when building an upplift tree.
+               Defaults to ``None``.
+        :type uplift_metric: Literal["auto", "kl", "euclidean", "chi_squared"], optional
         """
         super(H2OUpliftRandomForestEstimator, self).__init__()
         self._parms = {}
@@ -290,6 +299,8 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self.export_checkpoints_dir = export_checkpoints_dir
         self.check_constant_response = check_constant_response
         self.gainslift_bins = gainslift_bins
+        self.uplift_column = uplift_column
+        self.uplift_metric = uplift_metric
 
     @property
     def training_frame(self):
@@ -951,5 +962,34 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     def gainslift_bins(self, gainslift_bins):
         assert_is_type(gainslift_bins, None, int)
         self._parms["gainslift_bins"] = gainslift_bins
+
+    @property
+    def uplift_column(self):
+        """
+        Define column which will be use for computing uplift gain to select best split for a tree. The column has to
+        devide dataset into treatment (value 1) and control (value 0) group.
+
+        Type: ``str``.
+        """
+        return self._parms.get("uplift_column")
+
+    @uplift_column.setter
+    def uplift_column(self, uplift_column):
+        assert_is_type(uplift_column, None, str)
+        self._parms["uplift_column"] = uplift_column
+
+    @property
+    def uplift_metric(self):
+        """
+        Divergence metric used to find best split when building an upplift tree.
+
+        Type: ``Literal["auto", "kl", "euclidean", "chi_squared"]``.
+        """
+        return self._parms.get("uplift_metric")
+
+    @uplift_metric.setter
+    def uplift_metric(self, uplift_metric):
+        assert_is_type(uplift_metric, None, Enum("auto", "kl", "euclidean", "chi_squared"))
+        self._parms["uplift_metric"] = uplift_metric
 
 
