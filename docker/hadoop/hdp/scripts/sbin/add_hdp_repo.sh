@@ -1,8 +1,10 @@
-#! /bin/bash
+#!/bin/bash -ex
 
-set -e
+VERSION=$1
+USERNAME=$2
+PASSWORD=$3
 
-case "${1}" in
+case "${VERSION}" in
   3.1)
     major_version="3"
     hdp_version="3.1.0.0"
@@ -46,9 +48,9 @@ esac
 export HDP_VERSION=${hdp_version}
 export UBUNTU_REPO_VERSION=${ubuntu_repo_version}
 
-echo -e "Building for HDP version ${GREEN}${hdp_version}${NC}"
+echo -e "Building for HDP version ${hdp_version}"
 
-wget --http-user=$2 --http-passwd=$3 \
+wget --http-user=${USERNAME} --http-passwd=${PASSWORD} \
   http://archive.cloudera.com/p/HDP/${major_version}.x/${hdp_version}/ubuntu${ubuntu_repo_version}/hdp.list \
   -O /etc/apt/sources.list.d/hdp.list
 gpg --keyserver keyserver.ubuntu.com --recv-keys B9733A7A07513CAD

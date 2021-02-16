@@ -1,6 +1,4 @@
-#! /bin/bash
-
-set -e
+#!/bin/bash -ex
 
 VERSION=$1
 REPO_VERSION=$2
@@ -13,7 +11,7 @@ case ${VERSION} in
 deb [arch=amd64] http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh${VERSION} contrib\n\
 deb-src http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh${VERSION} contrib\n" \
       > /etc/apt/sources.list.d/cloudera.list
-    wget --http-user=$2 --http-passwd=$3 \
+    wget --http-user=${USERNAME} --http-passwd=${PASSWORD} \
       http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh/archive.key \
       -O archive.key
     ;;
@@ -21,7 +19,7 @@ deb-src http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh${VER
     echo "# Packages for Cloudera's Distribution of Hadoop, Version ${REPO_VERSION}\n\
 deb [arch=amd64] http://archive.cloudera.com/cdh6/${REPO_VERSION}/ubuntu1604/apt xenial-cdh${REPO_VERSION} contrib\n" \
       > /etc/apt/sources.list.d/cloudera.list && \
-    wget --http-user=$USERNAME --http-passwd=$PASSWORD \
+    wget --http-user=${USERNAME} --http-passwd=${PASSWORD} \
       https://archive.cloudera.com/cdh6/${REPO_VERSION}/ubuntu1604/apt/archive.key \
       -O archive.key
     ;;
