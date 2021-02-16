@@ -634,6 +634,9 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
             if (model._output._lre >= model._parms._lre_min)
               break;
 
+            System.out.println("model._output._var_coef = " + Arrays.deepToString(model._output._var_coef));
+            System.out.println("cs._gradient = " + Arrays.toString(cs._gradient));
+
             Arrays.fill(step, 0);
             for (int j = 0; j < n_coef; ++j)
               for (int k = 0; k < n_coef; ++k)
