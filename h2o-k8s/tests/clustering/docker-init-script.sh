@@ -53,5 +53,9 @@ kubectl get pods
 # Make sure to delete the in-docker K3S cluster
 k3d delete
 # If at least one clustering phase failed, return exit code != 0 to make the stage fail
+echo "Cluster checks exit code:"
+echo $CLUSTER_EXIT_CODE
+echo "Assisted clustering checks exit code:"
+echo $ASSISTED_EXIT_CODE
 export EXIT_STATUS=$(if [ "$CLUSTER_EXIT_CODE" -ne 0 ] || [ "$ASSISTED_EXIT_CODE" -ne 0 ]; then echo 1; else echo 0; fi)
 exit $EXIT_STATUS
