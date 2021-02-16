@@ -1,9 +1,9 @@
 package hex.tree.isoforextended;
 
+import hex.tree.isoforextended.isolationtree.IsolationTree;
 import jsr166y.CountedCompleter;
 import org.apache.log4j.Logger;
 import water.H2O;
-import water.Key;
 import water.Scope;
 import water.fvec.Frame;
 import water.util.MathUtils;

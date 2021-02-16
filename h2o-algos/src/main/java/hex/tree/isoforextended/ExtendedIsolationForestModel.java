@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
 import hex.tree.isofor.ModelMetricsAnomaly;
+import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
 import org.apache.log4j.Logger;
 import water.Key;
 import water.fvec.Frame;
@@ -42,7 +43,7 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
         assert _output._iTrees != null : "Output has no trees, check if trees are properly set to the output.";
         // compute score for given point
         double pathLength = 0;
-        for (IsolationTree iTree : _output._iTrees) {
+        for (CompressedIsolationTree iTree : _output._iTrees) {
             double iTreeScore = iTree.computePathLength(data);
             pathLength += iTreeScore;
             LOG.trace("iTreeScore " + iTreeScore);
@@ -64,7 +65,7 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
      */
     private double anomalyScore(double pathLength) {
         return Math.pow(2, -1 * (pathLength / 
-                IsolationTree.averagePathLengthOfUnsuccessfulSearch(_output._sample_size)));
+                CompressedIsolationTree.averagePathLengthOfUnsuccessfulSearch(_output._sample_size)));
     }
 
     public static class ExtendedIsolationForestParameters extends Model.Parameters {
@@ -117,7 +118,7 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
         public int _ntrees;
         public long _sample_size;
         
-        public IsolationTree[] _iTrees;
+        public CompressedIsolationTree[] _iTrees;
         
         public ExtendedIsolationForestOutput(ExtendedIsolationForest eif) {
             super(eif);

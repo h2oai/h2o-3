@@ -2,6 +2,8 @@ package hex.tree.isoforextended;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
+import hex.tree.isoforextended.isolationtree.IsolationTree;
 import org.apache.log4j.Logger;
 import water.H2O;
 import water.Job;
@@ -10,6 +12,9 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.*;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -106,7 +111,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         @Override
         public void computeImpl() {
             init(true);
-            if( error_count() > 0 )
+            if(error_count() > 0)
                 throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(ExtendedIsolationForest.this);
             buildIsolationTreeEnsemble();
         }
@@ -116,7 +121,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
             ExtendedIsolationForestModel model = new ExtendedIsolationForestModel(dest(), _parms,
                     new ExtendedIsolationForestModel.ExtendedIsolationForestOutput(ExtendedIsolationForest.this));
             model.delete_and_lock(_job); // todo valenad what is it good for?
-            model._output._iTrees = new IsolationTree[_parms._ntrees];
+            model._output._iTrees = new CompressedIsolationTree[_parms._ntrees];
 
             int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
 
@@ -127,8 +132,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 double[][] subSampleArray = FrameUtils.asDoubles(subSample);
 
                 IsolationTree isolationTree = new IsolationTree(subSampleArray, heightLimit, _parms._seed + _rand.nextInt(), _parms._extension_level, tid);
-                isolationTree.buildTree();
-                model._output._iTrees[tid] = isolationTree;
+                model._output._iTrees[tid] = isolationTree.buildTree();
                 _job.update(1);
                 LOG.info((tid + 1) + ". tree was built in " + timer.toString() + ". Free memory: " + PrettyPrint.bytes(H2O.CLOUD.free_mem()));
             }
