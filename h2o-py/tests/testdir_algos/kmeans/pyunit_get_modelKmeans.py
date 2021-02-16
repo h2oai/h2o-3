@@ -1,14 +1,19 @@
 from __future__ import print_function
 from builtins import range
 import sys
-sys.path.insert(1,"../../../")
+sys.path.insert(1, "../../../")
 import h2o
+from h2o.estimators.kmeans import H2OKMeansEstimator
 from tests import pyunit_utils
 
 import numpy as np
 from sklearn.cluster import KMeans
-from sklearn.preprocessing import Imputer
-from h2o.estimators.kmeans import H2OKMeansEstimator
+try:
+    from sklearn.preprocessing import Imputer
+except ImportError:
+    from sklearn.impute import SimpleImputer
+    Imputer = SimpleImputer
+
 
 def get_modelKmeans():
   # Connect to a pre-existing cluster
@@ -36,8 +41,6 @@ def get_modelKmeans():
     km_sci.fit(benign_sci)
     print("sckit centers")
     print(km_sci.cluster_centers_)
-
-
 
 
 if __name__ == "__main__":

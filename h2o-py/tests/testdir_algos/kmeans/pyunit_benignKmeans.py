@@ -1,14 +1,19 @@
 from __future__ import print_function
 from builtins import range
 import sys
-sys.path.insert(1,"../../../")
+sys.path.insert(1, "../../../")
 import h2o
+from h2o.estimators.kmeans import H2OKMeansEstimator
 from tests import pyunit_utils
 
 import numpy as np
 from sklearn.cluster import KMeans
-from sklearn.preprocessing import Imputer
-from h2o.estimators.kmeans import H2OKMeansEstimator
+try:
+    from sklearn.preprocessing import Imputer
+except ImportError:
+    from sklearn.impute import SimpleImputer
+    Imputer = SimpleImputer
+
 
 def benignKmeans():
   # Connect to a pre-existing cluster
@@ -26,8 +31,6 @@ def benignKmeans():
 
   # Log.info(paste("H2O K-Means with ", i, " clusters:\n", sep = ""))
 
-
-
   for i in range(1,7):
     benign_h2o_km = H2OKMeansEstimator(k=i)
     benign_h2o_km.train(x = list(range(benign_h2o.ncol)), training_frame=benign_h2o)
@@ -38,7 +41,6 @@ def benignKmeans():
     benign_sci_km.fit(benign_sci)
     print("sckit centers")
     print(benign_sci_km.cluster_centers_)
-
 
 
 if __name__ == "__main__":
