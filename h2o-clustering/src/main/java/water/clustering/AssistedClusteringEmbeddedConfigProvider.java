@@ -31,7 +31,7 @@ public class AssistedClusteringEmbeddedConfigProvider implements EmbeddedConfigP
                 e.printStackTrace();
             }
         };
-        final AssistedClusteringRestApi assistedClusteringRestApi = startAssistedClusteringRestApi(flatFileCallback)
+        startAssistedClusteringRestApi(flatFileCallback)
                 .orElseThrow(() -> new IllegalStateException("Assisted clustering Rest API unable to start."));
         
     }
