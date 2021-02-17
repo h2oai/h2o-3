@@ -3,7 +3,6 @@ FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1:${FROM_VERSION}
 
 RUN \
     curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
-    add-apt-repository -y ppa:deadsnakes && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
         texlive \
@@ -12,15 +11,13 @@ RUN \
         texinfo \
         texlive-bibtex-extra \
         texlive-formats-extra \
-        texlive-generic-extra \
-        python-virtualenv \
-        nodejs \
-        libkrb5-dev && \
+        texlive-generic-extra && \
     apt-get clean && \
     apt-get autoremove -y && \
     rm -rf /var/cache/apt/*
 
 COPY scripts/build-h2o-3 /tmp/
+ARG H2O_BRANCH=master
 RUN \
     chown jenkins:jenkins /tmp/build-h2o-3 && \
     chmod a+x /tmp/build-h2o-3 && \
