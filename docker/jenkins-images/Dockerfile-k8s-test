@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM ubuntu:20.04
 
 RUN apt-get update \
 	&& apt-get install curl apt-utils unzip make jq gettext-base -y
@@ -17,7 +17,7 @@ RUN curl https://baltocdn.com/helm/signing.asc | apt-key add - \
     && apt-get install apt-transport-https --yes \
     && echo "deb https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list \
     && apt-get update \
-    && apt-get install helm -y
+    && apt-get install helm
 
 RUN rm /var/lib/apt/lists -rf
 

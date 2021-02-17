@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: h2o-assisted
+  labels:
+    app: h2o-assisted
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: h2o-assisted
+  template:
+    metadata:
+      labels:
+        app: h2o-assisted
+    spec:
+      containers:
+        - name: "h2o-assisted"
+          image: "harbor.h2o.ai/opsh2oai/h2o-3-k8s-runner:4"
+          command: ['/bin/bash', '-c', 'java -XX:+UseContainerSupport -XX:MaxRAMPercentage=90 -cp h2o.jar:h2o-clustering.jar water.H2OApp']
+          ports:
+            - containerPort: 54321
+              protocol: TCP
+          volumeMounts:
+            - name: h2o-volume
+              mountPath: "h2o.jar"
+            - name: assisted-clustering-volume
+              mountPath: "h2o-clustering.jar"
+          resources:
+            limits:
+              cpu: '200m'
+              memory: "256Mi"
+            requests:
+              cpu: '200m'
+              memory: "256Mi"
+          env:
+          - name: H2O_ASSISTED_CLUSTERING_REST
+            value: 'True'
+      volumes:
+        - name: h2o-volume
+          hostPath:
+            path: $H2O_BASE/build/h2o.jar
+            type: File
+        - name: assisted-clustering-volume
+          hostPath:
+            path: $H2O_BASE/h2o-clustering/build/libs/h2o-clustering.jar
+            type: File

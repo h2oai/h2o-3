@@ -26,8 +26,8 @@ public class KubernetesEmbeddedConfig extends AbstractEmbeddedH2OConfig {
             flatFileBuilder.append(H2O.H2O_DEFAULT_PORT); // All pods are expected to utilize the default H2O port
             flatFileBuilder.append("\n");
         });
-
         return flatFileBuilder.toString();
+        
     }
 
     @Override
