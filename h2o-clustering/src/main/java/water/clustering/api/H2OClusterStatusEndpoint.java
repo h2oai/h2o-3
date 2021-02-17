@@ -35,13 +35,14 @@ public class H2OClusterStatusEndpoint extends RouterNanoHTTPD.DefaultHandler {
         // From this endpoint's point of view, H2O is clustered if and only if the H2O cloud members contain all nodes defined in the
         // flat file.
 
-        if (!H2O.isFlatfileEnabled()){
+        if (!H2O.isFlatfileEnabled()) {
             return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.NO_CONTENT, getMimeType(), null);
         }
         final Set<H2ONode> flatFile = H2O.getFlatfile();
         final H2ONode[] cloudMembers = H2O.CLOUD.members();
-        final boolean clustered = flatFile != null && cloudMembers != null && flatFile.containsAll(Arrays.asList(cloudMembers));
-        
+        final boolean clustered = flatFile != null && cloudMembers != null && cloudMembers.length == flatFile.size()
+                && flatFile.containsAll(Arrays.asList(cloudMembers));
+
         if (!clustered) {
             // If there is no cluster, there is no content to report.
             return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.NO_CONTENT, getMimeType(), null);
