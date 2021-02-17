@@ -321,9 +321,12 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       Chunk resChk = _chks[id][_workIdx];
       int len = resChk._len;
       double [] ys = ScoreBuildHistogram2.this._ys[id];
+      int[] ics = null;
       if(_weightIdx != -1) _chks[id][_weightIdx].getDoubles(ws, 0, len);
       final int hcslen = _lh.length;
-      boolean extracted = false;
+      boolean isInt = true;
+      int vals_dim = 0;
+      DHistogram[] hs = new DHistogram[hcslen];
       for (int n = 0; n < hcslen; n++) {
         int sCols[] = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
         if (sCols == null || ArrayUtils.find(sCols, _col) >= 0) {
@@ -332,18 +335,36 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           int lo = (n == 0 ? 0 : nh[n - 1]);
           if (hi == lo || h == null) continue; // Ignore untracked columns in this split
           if (h._vals == null) h.init();
-          if (! extracted) {
-            _chks[id][_col].getDoubles(cs, 0, len);
-            if (h._vals_dim >= 6) {
-              _chks[id][_respIdx].getDoubles(resp, 0, len);
-              if (h._vals_dim == 7) {
-                _chks[id][_predsIdx].getDoubles(preds, 0, len);
-              }
-            }
-            extracted = true;
-          }
-          h.updateHisto(ws, resp, cs, ys, preds, rs, hi, lo);
+          isInt &= h._isInt != 0 && h._step == 1;
+          vals_dim = h._vals_dim;
+          hs[n] = h;
         }
+      }
+      if (vals_dim == 0)
+        return;
+      if (isInt) {
+        ics = new int[cs.length];
+        _chks[id][_col].getIntegers(ics, 0, len, Integer.MAX_VALUE);
+      } else {
+        _chks[id][_col].getDoubles(cs, 0, len);
+      }
+      if (vals_dim >= 6) {
+        _chks[id][_respIdx].getDoubles(resp, 0, len);
+        if (vals_dim == 7) {
+          _chks[id][_predsIdx].getDoubles(preds, 0, len);
+        }
+      }
+
+      for (int n = 0; n < hcslen; n++) {
+        DHistogram h = hs[n];
+        if (h == null)
+          continue;
+        int hi = nh[n];
+        int lo = (n == 0 ? 0 : nh[n - 1]);
+        if (isInt)
+          h.updateHistoInt(ws, resp, ics, ys, preds, rs, hi, lo);
+        else
+          h.updateHisto(ws, resp, cs, ys, preds, rs, hi, lo);
       }
     }
 

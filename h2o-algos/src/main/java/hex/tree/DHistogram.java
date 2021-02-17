@@ -513,6 +513,47 @@ public final class DHistogram extends Iced {
     }
   }
 
+  void updateHistoInt(double[] ws, double resp[], int[] ints, double[] ys, double[] preds, int[] rows, int hi, int lo){
+    // Gather all the data for this set of rows, for 1 column and 1 split/NID
+    // Gather min/max, wY and sum-squares.
+    final int minInt = (int) _min;
+    for(int r = lo; r< hi; ++r) {
+      final int k = rows[r];
+      final double weight = ws[k];
+      if (weight == 0)
+        continue; // Needed for DRF only
+      final int col_data = ints[k];
+      if (col_data < _min2) _min2 = col_data;
+      if (col_data > _maxIn && col_data != Integer.MAX_VALUE) _maxIn = col_data;
+      final double y = ys[k];
+      // these assertions hold for GBM, but not for DRF 
+      // assert weight != 0 || y == 0;
+      // assert !Double.isNaN(y);
+      double wy = weight * y;
+      double wyy = wy * y;
+      int b = col_data < Integer.MAX_VALUE ? col_data - minInt : _nbin;
+      final int binDimStart = _vals_dim*b;
+      _vals[binDimStart + 0] += weight;
+      _vals[binDimStart + 1] += wy;
+      _vals[binDimStart + 2] += wyy;
+      if (_vals_dim >= 5 && !Double.isNaN(resp[k])) {
+        if (_dist._family.equals(DistributionFamily.quantile)) {
+          _vals[binDimStart + 3] += _dist.deviance(weight, y, _pred1);
+          _vals[binDimStart + 4] += _dist.deviance(weight, y, _pred2);
+        } else {
+          _vals[binDimStart + 3] += weight * (_pred1 - y) * (_pred1 - y);
+          _vals[binDimStart + 4] += weight * (_pred2 - y) * (_pred2 - y);
+        }
+        if (_vals_dim >= 6) {
+          _vals[binDimStart + 5] += _dist.gammaDenom(weight, resp[k], y, preds[k]);
+          if (_vals_dim == 7) {
+            _vals[binDimStart + 6] += _dist.gammaNum(weight, resp[k], y, preds[k]);
+          }
+        }
+      }
+    }
+  }
+
   /**
    * Cast bin values *except for sums of weights and Na-bucket counters to floats to drop least significant bits.
    * Improves reproducibility (drop bits most affected by floating point error).
