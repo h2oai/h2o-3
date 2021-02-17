@@ -47,7 +47,7 @@ class BuildConfig {
 
   public static final String RELEASE_BRANCH_PREFIX = 'rel-'
 
-  public static final String DEFAULT_PYTHON_VERSION = '2.7'
+  public static final String DEFAULT_PYTHON_VERSION = '3.6'
   public static final List PYTHON_VERSIONS = ['2.7', '3.5', '3.6', '3.7', '3.8']
   public static final List R_VERSIONS = ['3.3.3', '3.4.1']
 
