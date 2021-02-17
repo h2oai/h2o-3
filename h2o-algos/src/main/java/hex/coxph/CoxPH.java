@@ -499,6 +499,11 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       o._var_cumhaz_2 = Key.make(model._key + "_var_cumhaz_2");
       o._var_cumhaz_2_matrix = new CoxPHModel.FrameMatrix(o._var_cumhaz_2, n_time, o._coef.length);
 
+      o._baseline_hazard = Key.make(model._key + "_baseline_hazard");
+      o._baseline_hazard_matrix = new CoxPHModel.FrameMatrix(o._baseline_hazard, n_time, o._coef.length);
+      o._baseline_surv = Key.make(model._key + "_baseline_surv");
+      o._baseline_surv_matrix = new CoxPHModel.FrameMatrix(o._baseline_surv, n_time, o._coef.length);
+
       final int n_coef = o._coef.length;
       int nz = 0;
       switch (p._ties) {
@@ -556,6 +561,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
       // install var_cumhaz Frame into DKV
       o._var_cumhaz_2_matrix.toFrame(o._var_cumhaz_2);
+      o._baseline_hazard_matrix.toFrame(o._baseline_hazard);
+      o._baseline_surv_matrix.toFrame(o._baseline_surv);
     }
 
     @Override

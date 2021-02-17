@@ -233,6 +233,12 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     double[] _var_cumhaz_1;
     FrameMatrix _var_cumhaz_2_matrix;
     Key<Frame> _var_cumhaz_2;
+    
+    Key<Frame> _baseline_hazard;
+    FrameMatrix _baseline_hazard_matrix;
+
+    Key<Frame> _baseline_surv;
+    FrameMatrix _baseline_surv_matrix;
 
     CoxPHParameters.CoxPHTies _ties;
     String _formula;
