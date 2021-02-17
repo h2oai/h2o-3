@@ -86,7 +86,7 @@ RUN chmod 700 /usr/sbin/startup.sh && \
     /usr/sbin/install_hive.sh && \
     ln -sf /usr/share/java/postgresql-jdbc4.jar /usr/lib/hive/lib/postgresql-jdbc4.jar
 
-# Copy hive configs
+# Copy hive configs
 COPY ${PATH_PREFIX}/../common/conf-hive/ /etc/${HIVE_PACKAGE}/conf/
 
 # Copy hive data

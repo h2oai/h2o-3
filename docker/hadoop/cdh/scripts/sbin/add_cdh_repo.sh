@@ -7,7 +7,7 @@ PASSWORD=$4
 
 case ${VERSION} in
   5*)
-    echo "# Packages for Cloudera's Distribution of Hadoop, Version 5\n\
+    echo -e "# Packages for Cloudera's Distribution of Hadoop, Version 5\n\
 deb [arch=amd64] http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh${VERSION} contrib\n\
 deb-src http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh${VERSION} contrib\n" \
       > /etc/apt/sources.list.d/cloudera.list
@@ -16,7 +16,7 @@ deb-src http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh${VER
       -O archive.key
     ;;
   6.*)
-    echo "# Packages for Cloudera's Distribution of Hadoop, Version ${REPO_VERSION}\n\
+    echo -e "# Packages for Cloudera's Distribution of Hadoop, Version ${REPO_VERSION}\n\
 deb [arch=amd64] http://archive.cloudera.com/cdh6/${REPO_VERSION}/ubuntu1604/apt xenial-cdh${REPO_VERSION} contrib\n" \
       > /etc/apt/sources.list.d/cloudera.list && \
     wget --http-user=${USERNAME} --http-passwd=${PASSWORD} \
