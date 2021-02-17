@@ -61,7 +61,9 @@ def call(final pipelineContext) {
   def PR_STAGES = [
     [
       stageName: 'Java 8 RuleFit', target: 'test-junit-rulefit-jenkins', pythonVersion: '2.7', javaVersion: 8,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-2.7-jdk-8"
     ],
     [
       stageName: 'Py2.7 Booklets', target: 'test-py-booklets', pythonVersion: '2.7',
@@ -69,7 +71,8 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py2.7 Init Java 8', target: 'test-py-init', pythonVersion: '2.7', javaVersion: 8,
-      timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      imageSpecifier: "python-2.7-jdk-8"
     ],
     [
       stageName: 'Py3.7 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.7',
@@ -138,7 +141,8 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'INFO Check', target: 'test-info',
-      timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_ANY, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R]
+      timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_ANY, 
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R]
     ],
     [
       stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
@@ -150,20 +154,27 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Java 8 JUnit', target: 'test-junit-jenkins', pythonVersion: '2.7', javaVersion: 8,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: 'python-2.7-jdk-11'
     ],
     [
       stageName: 'REST Smoke Test', target: 'test-rest-smoke', pythonVersion: '2.7', javaVersion: 8,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: 'python-2.7-jdk-8'
     ],
     [
       stageName: 'Java 8 AutoML JUnit', target: 'test-junit-automl-jenkins', pythonVersion: '2.7', javaVersion: 8,
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-2.7-jdk-8"
     ],
     [
       stageName: 'Java 8 XGBoost Multinode JUnit', target: 'test-junit-xgb-multi-jenkins', pythonVersion: '2.7', javaVersion: 8,
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-2.7-jdk-8"
     ],
     [
       stageName: 'R3.5 Generate Docs', target: 'r-generate-docs-jenkins', archiveFiles: false,
