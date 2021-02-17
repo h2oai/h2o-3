@@ -154,10 +154,10 @@ class Jetty9Helper {
 
         final SessionHandler sessionHandler = new SessionHandler();
         if (config.session_timeout > 0) {
-            sessionHandler.getSessionManager().setMaxInactiveInterval(config.session_timeout * 60);
+            sessionHandler.setMaxInactiveInterval(config.session_timeout * 60);
         }
         sessionHandler.setHandler(security);
-        jettyServer.setSessionIdManager(sessionHandler.getSessionManager().getSessionIdManager());
+        jettyServer.setSessionIdManager(sessionHandler.getSessionIdManager());
 
         // Pass-through to H2O if authenticated.
         jettyServer.setHandler(sessionHandler);
