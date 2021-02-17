@@ -109,7 +109,7 @@ ext {
       //project(':h2o-avro-parser'),
       //project(':h2o-orc-parser'),
       //project(':h2o-parquet-parser'),
-      //project(':h2o-parquet-v17-compat'),
+      //project(':h2o-parquet-parser-tests'),
       //project(':h2o-parquet-v17-compat'),
       project(':h2o-jaas-pam'),
       project(':h2o-automl'),
