@@ -1,8 +1,14 @@
 package hex.tree.isoforextended.isolationtree;
 
 import org.apache.log4j.Logger;
+import water.Iced;
 import water.util.ArrayUtils;
+import water.util.PrettyPrint;
 import water.util.VecUtils;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 
 /**
  * IsolationTree class implements Algorithm 2 (iTree)
@@ -10,19 +16,19 @@ import water.util.VecUtils;
  *
  * @author Adam Valenta
  */
-public class IsolationTree {
+public class IsolationTree extends Iced<IsolationTree> {
     private static final Logger LOG = Logger.getLogger(IsolationTree.class);
 
     private Node[] _nodes;
 
-    private final double[][] _data;
+    private double[][] _data;
     private final int _heightLimit;
     private final long _seed;
     private final int _extensionLevel;
     private final int _treeNum;
 
-    public IsolationTree(double[][] data, int _heightLimit, long _seed, int _extensionLevel, int _treeNum) {
-        this._data = data;
+    public IsolationTree(double[][] _data, int _heightLimit, long _seed, int _extensionLevel, int _treeNum) {
+        this._data = _data;
         this._heightLimit = _heightLimit;
         this._seed = _seed;
         this._extensionLevel = _extensionLevel;
@@ -50,7 +56,7 @@ public class IsolationTree {
                 node._external = true;
                 node._numRows = nodeData[0].length;
                 node._height = currentHeight;
-                node._data = null; // attempt to inform Java GC the data are not longer needed
+//                node._data = null; // attempt to inform Java GC the data are not longer needed
                 compressedIsolationTree.getNodes()[i] = new CompressedLeaf(node);
             } else {
                 if (rightChildIndex(i) < _nodes.length) {
@@ -82,9 +88,10 @@ public class IsolationTree {
                 } else {
                     compressedIsolationTree.getNodes()[i] = new CompressedLeaf(node);
                 }
-                node._data = null; // attempt to inform Java GC the data are not longer needed
+//                node._data = null; // attempt to inform Java GC the data are not longer needed
             }
         }
+//        _data = null;
         return compressedIsolationTree;
     }
 
@@ -123,13 +130,52 @@ public class IsolationTree {
         }
         LOG.debug(logMessage.toString());
     }
+    
+    /**
+     * Helper method. Print height (length of path from root) of each node in trees. Root is 0.
+     */
+    public void logNodesSize() {
+        StringBuilder logMessage = new StringBuilder();
+        for (int i = 0; i < _nodes.length; i++) {
+            logMessage.append(PrettyPrint.bytes(convertToBytes(_nodes[i]).length) + " ");
+        }
+        LOG.info(logMessage.toString());
+    }
+    
+    /**
+     * Helper method. Print height (length of path from root) of each node in trees. Root is 0.
+     */
+    public void nodesTotalSize() {
+        long size = 0;
+        for (int i = 0; i < _nodes.length; i++) {
+            size += convertToBytes(_nodes[i]).length;
+        }
+        LOG.info("node size average: " + PrettyPrint.bytes(size/_nodes.length));
+        LOG.info("Total node size: " + PrettyPrint.bytes(size));
+        LOG.info("Root: " + PrettyPrint.bytes(convertToBytes(_nodes[0]).length));
+        LOG.info("Root left: " + PrettyPrint.bytes(convertToBytes(_nodes[1]).length));
+        LOG.info("Root right: " + PrettyPrint.bytes(convertToBytes(_nodes[2]).length));
+        LOG.info("Node count: " + ((int) Math.pow(2, _heightLimit) - 1));
+//        LOG.
+    }
+    
+    private byte[] convertToBytes(Object object){
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutputStream out = new ObjectOutputStream(bos)) {
+            out.writeObject(object);
+            return bos.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new byte[0];
+    }
 
     /**
      * IsolationTree Node. Naming convention comes from Algorithm 2 (iTree) in paper.
      * _data should be always null after buildTree() method because only number of rows in data is needed for
      * scoring (evaluation) stage.
      */
-    public static class Node {
+    public static class Node extends Iced<Node>{
 
         /**
          * Data in this node. After computation should be null, because only _numRows is important.

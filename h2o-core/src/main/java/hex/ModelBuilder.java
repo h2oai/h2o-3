@@ -257,6 +257,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (_callback != null) {
         _callback.onModelSuccess(_result.get());
       }
+      Log.info("Model completed. Fee memory: " + PrettyPrint.bytes(H2O.CLOUD.free_mem()));
     }
 
     @Override

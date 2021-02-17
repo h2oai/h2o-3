@@ -6,10 +6,7 @@ import org.apache.log4j.Logger;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import water.DKV;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
@@ -17,7 +14,11 @@ import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.FrameUtils;
+import water.util.PrettyPrint;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
@@ -95,29 +96,40 @@ public class ExtendedIsolationForestTest extends TestUtil {
     }
 
     @Test
-    @Ignore("Expensive")
+//    @Ignore("Expensive")
     public void testBasicBigData() {
+        testBasicBigDataPrivate();
+//        testBasicBigDataPrivate();
+//        testBasicBigDataPrivate();
+    }
+    
+    private void testBasicBigDataPrivate() {
         try {
+            int P = 2;
+            int V = 256;
             Scope.enter();
-            Frame train = Scope.track(generate_real_only(128, 100_000, 0, 0xCAFFE));
-
+            Frame train = Scope.track(generate_real_only(P, 100_000, 0, 0xCAFFE));
+            
             ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
                     new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 100;
-            p._sample_size = 30_000;
+            p._sample_size = V;
             p._extension_level = train.numCols() - 1;
-
+            
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
             ExtendedIsolationForestModel model = eif.trainModel().get();
             Scope.track_generic(model);
             assertNotNull(model);
-
-            Frame out = model.score(train);
-            Scope.track_generic(out);
-            assertArrayEquals(new String[]{"anomaly_score", "mean_length"}, out.names());
-            assertEquals(train.numRows(), out.numRows());
+            LOG.info("Actual model size: " + PrettyPrint.bytes(convertToBytes(model).length));
+            LOG.info("Actual free mem  : " + PrettyPrint.bytes(H2O.CLOUD.free_mem()));
+            LOG.info("sample  : " + PrettyPrint.bytes(V*P* Double.BYTES));
+//
+//            Frame out = model.score(train);
+//            Scope.track_generic(out);
+//            assertArrayEquals(new String[]{"anomaly_score", "mean_length"}, out.names());
+//            assertEquals(train.numRows(), out.numRows());
         } finally {
             Scope.exit();
         }
@@ -365,7 +377,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
 
             long start = System.currentTimeMillis();
-            IsolationTree isolationTree = new IsolationTree(FrameUtils.asDoubles(train), 9, 0xBEEF, 1, 0);
+            IsolationTree isolationTree = new IsolationTree(FrameUtils.asDoubles(train),9, 0xBEEF, 1, 0);
             CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree();
             long end = System.currentTimeMillis();
             isolationTree.logNodesNumRows();
@@ -393,7 +405,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             double[] normalPoint = toNumericRow(train, 0);
 
             long start = System.currentTimeMillis();
-            IsolationTree isolationTree = new IsolationTree(FrameUtils.asDoubles(train), 16, 0xBEEF, 127, 0);
+            IsolationTree isolationTree = new IsolationTree(FrameUtils.asDoubles(train),16, 0xBEEF, 127, 0);
             CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree();
             long end = System.currentTimeMillis();
             isolationTree.logNodesNumRows();
@@ -494,5 +506,46 @@ public class ExtendedIsolationForestTest extends TestUtil {
         finally {
             Scope.exit();
         }
+    }
+    
+    @Test
+    public void isolationTreeSizeEstimation() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+        
+            long start = System.currentTimeMillis();
+            IsolationTree isolationTree = new IsolationTree(FrameUtils.asDoubles(train),9, 0xBEEF, 1, 0);
+            CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree();
+            long end = System.currentTimeMillis();
+            isolationTree.logNodesNumRows();
+            isolationTree.nodesTotalSize();
+            LOG.info("Isolation Tree size: " + PrettyPrint.bytes(convertToBytes(isolationTree).length));
+        
+            long time = end - start;
+            if (time > 200) {
+                LOG.info("Tree building took a longer than it should.");
+            }
+        
+            double pathLength = compressedIsolationTree.computePathLength(new double[]{0.0, 0.0}); // Normal Point
+            assertTrue("Path length should be longer. Normal point should not be isolated close to root but is pathLength = " + pathLength, pathLength >= 4);
+        
+            pathLength = compressedIsolationTree.computePathLength(new double[]{5.0, 5.0}); //Anomaly
+            assertTrue("Path length should be close to 0 (Root) but is pathLength = " + pathLength, pathLength <= 4);
+        } finally {
+            Scope.exit();
+        }
+    }
+    
+    
+    private byte[] convertToBytes(Object object){
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutputStream out = new ObjectOutputStream(bos)) {
+            out.writeObject(object);
+            return bos.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new byte[0];
     }
 }

@@ -125,6 +125,9 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
 
             int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
 
+            long modelsize = 0;
+            long treeSize = 0;
+            long startsWithMemory = H2O.CLOUD.free_mem();
             for (int tid = 0; tid < _parms._ntrees; tid++) {
                 Timer timer = new Timer();
                 int randomUnit = _rand.nextInt();
@@ -133,10 +136,24 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
 
                 IsolationTree isolationTree = new IsolationTree(subSampleArray, heightLimit, _parms._seed + _rand.nextInt(), _parms._extension_level, tid);
                 model._output._iTrees[tid] = isolationTree.buildTree();
+                int treeSizeL = convertToBytes(isolationTree).length;
+                LOG.info("Tree size: " + PrettyPrint.bytes(treeSizeL));
                 _job.update(1);
+                modelsize += convertToBytes(model._output._iTrees[tid]).length;
+                treeSize += treeSizeL;
+                isolationTree.nodesTotalSize();
+                if (startsWithMemory < H2O.CLOUD.free_mem()) {
+                    startsWithMemory = H2O.CLOUD.free_mem();
+                }
                 LOG.info((tid + 1) + ". tree was built in " + timer.toString() + ". Free memory: " + PrettyPrint.bytes(H2O.CLOUD.free_mem()));
             }
 
+            LOG.info("Model size: " + PrettyPrint.bytes(modelsize));
+            LOG.info("Trees size average: " + PrettyPrint.bytes(treeSize/_parms._ntrees));
+            LOG.info("Trees total size: " + PrettyPrint.bytes(treeSize));
+            LOG.info("Starts with mem: " + PrettyPrint.bytes(startsWithMemory) + " Ends with mem: " + PrettyPrint.bytes(H2O.CLOUD.free_mem()) + " Real memory usage: " + PrettyPrint.bytes(startsWithMemory - H2O.CLOUD.free_mem()));
+            LOG.info("Estimation memory usage: " + PrettyPrint.bytes(treeSize));
+            
             model.unlock(_job); // todo valenad what is it good for?
             model._output._model_summary = createModelSummaryTable();
         }
@@ -167,4 +184,15 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         return table;
     }
 
+    private byte[] convertToBytes(Object object){
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutputStream out = new ObjectOutputStream(bos)) {
+            out.writeObject(object);
+            return bos.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new byte[0];
+    }
+    
 }

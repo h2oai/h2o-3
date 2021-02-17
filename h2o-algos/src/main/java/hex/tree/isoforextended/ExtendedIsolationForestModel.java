@@ -40,20 +40,20 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
 
     @Override
     protected double[] score0(double[] data, double[] preds) {
-        assert _output._iTrees != null : "Output has no trees, check if trees are properly set to the output.";
-        // compute score for given point
-        double pathLength = 0;
-        for (CompressedIsolationTree iTree : _output._iTrees) {
-            double iTreeScore = iTree.computePathLength(data);
-            pathLength += iTreeScore;
-            LOG.trace("iTreeScore " + iTreeScore);
-        }
-        pathLength = pathLength / _output._ntrees;
-        LOG.trace("pathLength " + pathLength);
-        double anomalyScore = anomalyScore(pathLength);
-        LOG.trace("Anomaly score " + anomalyScore);
-        preds[0] = anomalyScore;
-        preds[1] = pathLength;
+//        assert _output._iTrees != null : "Output has no trees, check if trees are properly set to the output.";
+//        // compute score for given point
+//        double pathLength = 0;
+//        for (CompressedIsolationTree iTree : _output._iTrees) {
+//            double iTreeScore = iTree.computePathLength(data);
+//            pathLength += iTreeScore;
+//            LOG.trace("iTreeScore " + iTreeScore);
+//        }
+//        pathLength = pathLength / _output._ntrees;
+//        LOG.trace("pathLength " + pathLength);
+//        double anomalyScore = anomalyScore(pathLength);
+//        LOG.trace("Anomaly score " + anomalyScore);
+//        preds[0] = anomalyScore;
+//        preds[1] = pathLength;
         return preds;
     }
 
