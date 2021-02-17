@@ -150,7 +150,8 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Java 8 JUnit', target: 'test-junit-jenkins', pythonVersion: '2.7', javaVersion: 8,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: 'python-2.7-jdk-11'
     ],
     [
       stageName: 'REST Smoke Test', target: 'test-rest-smoke', pythonVersion: '2.7', javaVersion: 8,
@@ -304,7 +305,9 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Java 15 JUnit', target: 'test-junit-1x-jenkins', pythonVersion: '2.7', javaVersion: 15,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-2.7-jdk-15"
     ],
     [
       stageName: 'Py3.6 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.6',
@@ -338,7 +341,8 @@ def call(final pipelineContext) {
       stageName: 'Kubernetes', target: 'test-h2o-k8s', timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3-k8s:${pipelineContext.getBuildConfig().K8S_TEST_IMAGE_VERSION_TAG}",
-      customDockerArgs: ['-v /var/run/docker.sock:/var/run/docker.sock', '--network host'], addToDockerGroup: true, nodeLabel: "micro"
+      customDockerArgs: ['-v /var/run/docker.sock:/var/run/docker.sock', '--network host'], 
+      addToDockerGroup: true, nodeLabel: "micro"
     ]
   ]
 
@@ -371,11 +375,15 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Java 11 JUnit', target: 'test-junit-1x-jenkins', pythonVersion: '2.7', javaVersion: 11,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-2.7-jdk-11"
     ],
     [
       stageName: 'Java 15 JUnit', target: 'test-junit-latest-jenkins', pythonVersion: '2.7', javaVersion: 15,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-2.7-jdk-15"
     ],
     [
       stageName: 'Py2.7 Single Node', target: 'test-pyunit-single-node', pythonVersion: '2.7',
