@@ -133,7 +133,8 @@ public class ScoringInfo extends Iced<ScoringInfo> {
   public static TwoDimTable createScoringHistoryTable(ScoringInfo[] scoringInfos, boolean hasValidation, boolean hasCrossValidation, ModelCategory modelCategory, boolean isAutoencoder) {
     boolean hasEpochs = (scoringInfos instanceof HasEpochs[]);
     boolean hasSamples = (scoringInfos instanceof HasSamples[]);
-    boolean hasIterations = (scoringInfos instanceof HasIterations[]);
+    boolean hasIterations = (scoringInfos instanceof HasIterations[]) || (scoringInfos != null &&
+            scoringInfos.length > 0 && scoringInfos[0] instanceof HasIterations);
     boolean isClassifier = (modelCategory == ModelCategory.Binomial || modelCategory == ModelCategory.Multinomial
             || modelCategory == ModelCategory.Ordinal);
 

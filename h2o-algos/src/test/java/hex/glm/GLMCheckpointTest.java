@@ -48,7 +48,7 @@ public class GLMCheckpointTest extends TestUtil {
       GLMModel glm = new GLM(params).trainModel().get();
       Scope.track_generic(glm);
 
-      ScoringHistory manualScoringHistory = new ScoringHistory();
+      ScoringHistory manualScoringHistory = new ScoringHistory(false, false, false);
       TwoDimTable modelScoringHistory = glm._output._scoring_history;
       int[] colHeaderIndex = restoreScoringHistoryFromCheckpoint(modelScoringHistory, params, null,
               manualScoringHistory);

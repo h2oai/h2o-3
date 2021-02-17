@@ -122,6 +122,8 @@
 #'        balance_classes. Defaults to 5.0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
+#' @param generate_scoring_history \code{Logical}. If set to true, will generate scoring history for GLM.  This may significantly slow down the
+#'        algo. Defaults to FALSE.
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
@@ -232,6 +234,7 @@ h2o.glm <- function(x,
                     max_after_balance_size = 5.0,
                     max_runtime_secs = 0,
                     custom_metric_func = NULL,
+                    generate_scoring_history = FALSE,
                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -387,6 +390,8 @@ h2o.glm <- function(x,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
+  if (!missing(generate_scoring_history))
+    parms$generate_scoring_history <- generate_scoring_history
   if (!missing(auc_type))
     parms$auc_type <- auc_type
 
@@ -479,6 +484,7 @@ h2o.glm <- function(x,
                                     max_after_balance_size = 5.0,
                                     max_runtime_secs = 0,
                                     custom_metric_func = NULL,
+                                    generate_scoring_history = FALSE,
                                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
@@ -639,6 +645,8 @@ h2o.glm <- function(x,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
+  if (!missing(generate_scoring_history))
+    parms$generate_scoring_history <- generate_scoring_history
   if (!missing(auc_type))
     parms$auc_type <- auc_type
 

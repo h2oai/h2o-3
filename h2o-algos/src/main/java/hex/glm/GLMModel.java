@@ -65,11 +65,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   
   public ScoringInfo[] getScoringInfo() { return scoringInfo;}
   
-  public void addScoringInfo(GLMParameters parms, int nclasses, long currTime) {
-    ScoringInfo currInfo = new ScoringInfo();
+  public void addScoringInfo(GLMParameters parms, int nclasses, long currTime, int iter) {
+    if (scoringInfo != null && (((GLMScoringInfo) scoringInfo[scoringInfo.length-1]).iterations() >= iter)) {  // no duplication
+      return;
+    }
+    GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
     currInfo.cross_validation = parms._nfolds > 1;
+    currInfo.iterations = iter;
     currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
     if (_output._training_metrics != null) {
@@ -297,6 +301,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _stdOverride; // standardization override by beta constraints
     final static NormalDistribution _dprobit = new NormalDistribution(0,1);  // get the normal distribution
     public GLMType _glmType = GLMType.glm;
+    public boolean _generate_scoring_history = false; // if true, will generate scoring history but will slow algo down
     
     public void validate(GLM glm) {
       if (_solver.equals(Solver.COORDINATE_DESCENT_NAIVE) && _family.equals(Family.multinomial))
