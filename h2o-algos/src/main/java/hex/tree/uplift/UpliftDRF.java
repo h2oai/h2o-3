@@ -89,7 +89,7 @@ public class UpliftDRF extends DRF {
             growTrees(ktrees, leafs, _rand);
 
             // Move rows into the final leaf rows - fill "Tree" and OUT_BAG_TREES columns and zap the NIDs column
-            UpliftDRF.UpliftDRFDriver.CollectPreds cp = new UpliftDRF.UpliftDRFDriver.CollectPreds(ktrees,leafs,_model.defaultThreshold()).doAll(_train,_parms._build_tree_one_node);
+            UpliftCollectPreds cp = new UpliftCollectPreds(ktrees,leafs).doAll(_train,_parms._build_tree_one_node);
             
             // Grow the model by K-trees
             _model._output.addKTrees(ktrees);
@@ -170,18 +170,13 @@ public class UpliftDRF extends DRF {
         }
 
         // Collect and write predictions into leafs.
-        private class CollectPreds extends MRTask<UpliftDRF.UpliftDRFDriver.CollectPreds> {
+        private class UpliftCollectPreds extends MRTask<UpliftCollectPreds> {
             /* @IN  */ final DTree _trees[]; // Read-only, shared (except at the histograms in the Nodes)
-            /* @IN */  double _threshold;      // Sum of squares for this tree only
-            /* @OUT */ double rightVotes; // number of right votes over OOB rows (performed by this tree) represented by DTree[] _trees
             /* @OUT */ double allRows;    // number of all OOB rows (sampled by this tree)
-            /* @OUT */ float sse;      // Sum of squares for this tree only
-            CollectPreds(DTree trees[], int leafs[], double threshold) { _trees=trees; _threshold = threshold; }
-            final boolean importance = true;
+            
+            UpliftCollectPreds(DTree trees[], int leafs[]) { _trees=trees;}
             @Override public void map( Chunk[] chks ) {
-                final Chunk    y       = importance ? chk_resp(chks) : null; // Response
-                final double[] rpred   = importance ? new double[1+_nclass] : null; // Row prediction
-                final double[] rowdata = importance ? new double[_ncols] : null; // Pre-allocated row data
+                final Chunk    y       = chk_resp(chks); // Response
                 final Chunk   oobt  = chk_oobt(chks); // Out-of-bag rows counter over all trees
                 final Chunk   weights  = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len); // Out-of-bag rows counter over all trees
                 // Iterate over all rows
@@ -215,7 +210,6 @@ public class UpliftDRF extends DRF {
                                 //   - for classification: cumulative number of votes for this row
                                 //   - for regression: cumulative sum of prediction of each tree - has to be normalized by number of trees
                                 double prediction = ((DTree.LeafNode) tree.node(leafnid)).pred(); // Prediction for this k-class and this row
-                                if (importance) rpred[1 + k] = (float) prediction; // for both regression and classification
                                 ct.set(row, (float) (ct.atd(row) + prediction));
                             }
                         }
@@ -224,27 +218,15 @@ public class UpliftDRF extends DRF {
                     } /* end of k-trees iteration */
                     // For this tree this row is out-of-bag - i.e., a tree voted for this row
                     if (wasOOBRow) oobt.set(row, oobt.atd(row) + weight); // track number of trees
-                    if (importance && weight!=0) {
+                    if (weight!=0) {
                         if (wasOOBRow && !y.isNA(row)) {
-                            if (isClassifier()) {
-                                // TODO solve for uplift
-                                int treePred = getPrediction(rpred, _model._output._priorClassDist, data_row(chks, row, rowdata), _threshold);
-                                int actuPred = (int) y.at8(row);
-                                if (treePred==actuPred) rightVotes+=weight; // No miss !
-                            } else { // regression
-                                double treePred = rpred[1];
-                                double actuPred = y.atd(row);
-                                sse += (actuPred-treePred)*(actuPred-treePred);
-                            }
                             allRows+=weight;
                         }
                     }
                 }
             }
-            @Override public void reduce(UpliftDRF.UpliftDRFDriver.CollectPreds mrt) {
-                rightVotes += mrt.rightVotes;
+            @Override public void reduce(UpliftCollectPreds mrt) {
                 allRows    += mrt.allRows;
-                sse        += mrt.sse;
             }
         }
 
