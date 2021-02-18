@@ -1,6 +1,5 @@
 ARG PARENT_VERSION
-ARG GRADLE_VERSION
-FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop-gradle-${GRADLE_VERSION}:${PARENT_VERSION}
+FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop:${PARENT_VERSION}
 
 # maintainer details
 MAINTAINER h2oai "h2o.ai"
