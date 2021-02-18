@@ -43,8 +43,12 @@ for python_version in "${array[@]}"; do
   rm -rf /var/cache/apt/*
 
   echo "###### Installing pip for Python ${python_version} ######"
-  python${python_version} -m easy_install pip
-  #python${python_version} -m pip -U install pip
+  if [[ ${major} == "2" ]] || [[ ${python_version} == "3.5" ]]
+  then
+    python${python_version} -m easy_install 'pip<21'
+  else 
+    python${python_version} -m easy_install pip
+  fi
 
   echo "###### Creating Virtualenv for Python ${python_version} ######"
   python${python_version} -m pip install virtualenv
@@ -61,4 +65,4 @@ for python_version in "${array[@]}"; do
   su jenkins -c "mkdir -p ~/.config/matplotlib/ && echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc"
 done
 
-rm test-requirements.txt
+rm *-requirements*.txt

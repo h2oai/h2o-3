@@ -19,8 +19,8 @@ properties([
 
 IMAGE_NAME_PREFIX = 'harbor.h2o.ai/opsh2oai/h2o-3'
 
-JDK_VERSIONS = ['8', '10', '11', '12', '13', '14']
-OPENJDK_VERSIONS = ['7']
+JDK_VERSIONS = ['8', '10', '11', '12', '13', '14', '15']
+JDK_VERSIONS_PY_R = ['8', '11', '15'] // stable + latest
 PYTHON_VERSIONS = ['2.7', '3.5', '3.6', '3.7', '3.8']
 R_VERSION = ['3.3.3', '3.4.1', '3.5.3', '3.6.2', '4.0.2']
 
@@ -57,6 +57,7 @@ ansiColor('xterm') {
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-12/x64-linux/jdk-12.0.2_linux-x64_bin.tar.gz"
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-13/x64-linux/jdk-13.0.2_linux-x64_bin.tar.gz"
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-14/x64-linux/jdk-14.0.2_linux-x64_bin.tar.gz"
+                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-15/x64-linux/jdk-15.0.2_linux-x64_bin.tar.gz"
                         }
                     }
                     stash name: 'docker-sources'
@@ -64,71 +65,57 @@ ansiColor('xterm') {
             }
         }
 
-        def gradleVersion = pipelineContext.getBuildConfig().getCurrentGradleVersion()
         buildInParallel(pipelineContext, ['dev-base'])
         buildInParallel(pipelineContext, ['dev-jdk-8-base', 'dev-jdk-others-base'])
-        buildInParallel(pipelineContext, ['dev-python-base', 'dev-r-base'])
 
-        def componentImages = []
+        buildInParallel(pipelineContext, ['dev-python-base'])
+        def pythonImages = []
         PYTHON_VERSIONS.each {version ->
-            componentImages += "dev-python-${version}"
+            pythonImages += "dev-python-${version}"
         }
+        buildInParallel(pipelineContext, pythonImages)
+
+        buildInParallel(pipelineContext, ['dev-r-base'])
+        def componentImages = []
         R_VERSION.each {version ->
             componentImages += "dev-r-${version}"
         }
         JDK_VERSIONS.each {version ->
             componentImages += "dev-jdk-${version}"
         }
-        OPENJDK_VERSIONS.each {version ->
-            componentImages += "dev-openjdk-${version}"
-        }
         componentImages += "dev-mojocompat"
         buildInParallel(pipelineContext, componentImages)
 
         buildInParallel(pipelineContext, ["dev-build-base"])
-        buildInParallel(pipelineContext, ["dev-build-gradle"], gradleVersion)
-        buildInParallel(pipelineContext, ["dev-build-hadoop-gradle"], gradleVersion)
-        buildInParallel(pipelineContext, ["dev-release-gradle"], gradleVersion)
+        buildInParallel(pipelineContext, ["dev-build-hadoop"],)
+        buildInParallel(pipelineContext, ["dev-release"])
 
         def componentJdkImages = []
         PYTHON_VERSIONS.each {version ->
-            JDK_VERSIONS.each {jdkVersion ->
+            JDK_VERSIONS_PY_R.each {jdkVersion ->
                 componentJdkImages += "dev-python-${version}-jdk-${jdkVersion}"
-            }
-            OPENJDK_VERSIONS.each {jdkVersion ->
-                componentJdkImages += "dev-python-${version}-openjdk-${jdkVersion}"
             }
         }
         R_VERSION.each {version ->
-            JDK_VERSIONS.each {jdkVersion ->
+            JDK_VERSIONS_PY_R.each {jdkVersion ->
                 componentJdkImages += "dev-r-${version}-jdk-${jdkVersion}"
-            }
-            OPENJDK_VERSIONS.each {jdkVersion ->
-                componentJdkImages += "dev-r-${version}-openjdk-${jdkVersion}"
             }
         }
         buildInParallel(pipelineContext, componentJdkImages)
     }
 }
 
-private buildInParallel(final pipelineContext, final targets, final gradleVersion = null) {
+private buildInParallel(final pipelineContext, final targets) {
     parallel(targets.collectEntries { target ->
         [
-                (target): makeStage(pipelineContext, target, false, gradleVersion),
-                ("$target-gpu"): makeStage(pipelineContext, target, true, gradleVersion)
+                (target): makeStage(pipelineContext, target),
         ]
     })
 }
 
-private Closure makeStage(final pipelineContext, String target, final boolean useGpu, final String gradleVersion) {
+private Closure makeStage(final pipelineContext, String target) {
     return {
-        if (gradleVersion != null) {
-            target = "$target-$gradleVersion"
-        }
         def buildImageStageName = "Build $target"
-        if (useGpu) {
-            buildImageStageName = "$buildImageStageName GPU"
-        }
         buildSummary.stageWithSummary(buildImageStageName) {
             final String noCache = params.noCache ? "--no-cache" : ""
             node (DEFAULT_LABEL) {
@@ -139,10 +126,9 @@ private Closure makeStage(final pipelineContext, String target, final boolean us
                     pullPreviousVersionIfRequired(pipelineContext, target)
                     sh """
                                 make \
+                                    CI=1 \
                                     H2O_BRANCH=${params.h2oBranch} \
                                     VERSION=${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
-                                    GRADLE_VERSION=${gradleVersion} \
-                                    GPU=${useGpu} \
                                     PUSH=${params.publish} \
                                     NO_CACHE=${noCache} \
                                     ${target}

@@ -1,7 +1,5 @@
-ARG GPU_SUFFIX=''
 ARG FROM_VERSION
-ARG GRADLE_VERSION
-FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop-gradle-${GRADLE_VERSION}${GPU_SUFFIX}:${FROM_VERSION}
+FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop:${FROM_VERSION}
 
 # Install s3cmd
 ENV S3_CMD_VERSION '2.1.0'

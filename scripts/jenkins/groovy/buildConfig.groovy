@@ -10,11 +10,11 @@ class BuildConfig {
 
   public static final String DOCKER_REGISTRY = 'harbor.h2o.ai'
 
-  private static final String DEFAULT_IMAGE_NAME_PREFIX = 'dev-build-gradle'
-  private static final String DEFAULT_HADOOP_IMAGE_NAME_PREFIX = 'dev-build-hadoop-gradle'
-  private static final String DEFAULT_RELEASE_IMAGE_NAME_PREFIX = 'dev-release-gradle'
+  private static final String DEFAULT_IMAGE_NAME = 'dev-build-base'
+  private static final String DEFAULT_HADOOP_IMAGE_NAME = 'dev-build-hadoop'
+  private static final String DEFAULT_RELEASE_IMAGE_NAME = 'dev-release'
 
-  public static final int DEFAULT_IMAGE_VERSION_TAG = 36
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 39
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/opsh2oai/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/opsh2oai/s3cmd'
 
@@ -47,6 +47,7 @@ class BuildConfig {
 
   public static final String RELEASE_BRANCH_PREFIX = 'rel-'
 
+  public static final String DEFAULT_PYTHON_VERSION = '3.6'
   public static final List PYTHON_VERSIONS = ['2.7', '3.5', '3.6', '3.7', '3.8']
   public static final List R_VERSIONS = ['3.3.3', '3.4.1']
 
@@ -186,15 +187,15 @@ class BuildConfig {
     if (buildHadoop) {
       return getHadoopBuildImage()
     }
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_IMAGE_NAME_PREFIX}-${getCurrentGradleVersion()}:${DEFAULT_IMAGE_VERSION_TAG}"
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getHadoopBuildImage() {
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_HADOOP_IMAGE_NAME_PREFIX}-${getCurrentGradleVersion()}:${DEFAULT_IMAGE_VERSION_TAG}"
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_HADOOP_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getReleaseImage() {
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_RELEASE_IMAGE_NAME_PREFIX}-${getCurrentGradleVersion()}:${DEFAULT_IMAGE_VERSION_TAG}"
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_RELEASE_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getHadoopImageVersion() {
@@ -217,7 +218,6 @@ class BuildConfig {
     if (stageConfig.imageSpecifier)
       return getDevImageReference(stageConfig.imageSpecifier)
     def component = stageConfig.component
-    def suffix = ""
     if (component == COMPONENT_ANY) {
       if (stageConfig.additionalTestPackages.contains(COMPONENT_PY)) {
         component = COMPONENT_PY
@@ -225,10 +225,6 @@ class BuildConfig {
         component = COMPONENT_R
       } else if (stageConfig.additionalTestPackages.contains(COMPONENT_JAVA)) {
         component = COMPONENT_JAVA
-      }
-      // handle gpu suffix
-      if (stageConfig.dockerImageSuffix != null) {
-        suffix = "-" + stageConfig.dockerImageSuffix
       }
     }
     def imageComponentName
@@ -254,9 +250,9 @@ class BuildConfig {
         throw new IllegalArgumentException("Cannot find image for component ${component}")
     }
 
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}${suffix}:${DEFAULT_IMAGE_VERSION_TAG}"
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
-
+  
   String getDevImageReference(final specifier) {
     return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${specifier}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
