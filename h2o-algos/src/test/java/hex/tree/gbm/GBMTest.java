@@ -3918,7 +3918,7 @@ public class GBMTest extends TestUtil {
   }
 
   @Test
-  public void demonstratePubDev6356() {
+  public void testPubDev6356() {
     try {
       Scope.enter();
       final int N = 1000;
@@ -3983,10 +3983,8 @@ public class GBMTest extends TestUtil {
       assertEquals(1.0, gbm_NA.score(ard(1)), 0);
       assertEquals(2.0, gbm_NA.score(ard(2)), 0);
 
-      assertEquals(1.5, gbm_NA.score(ard(0)), 0); // Values x=0 shouldn't have been seen in training 
-                                                                      // because they only correspond to NA response
-                                                                      // but we still learned something about those rows!
-                                                                      // PUBDEV-6356 
+      assertEquals(1.0, gbm_NA.score(ard(0)), 0);  // Shows that values x=0 were not seen in training 
+                                                                      // (they only correspond to NA response)
     } finally {
       Scope.exit();
     }
