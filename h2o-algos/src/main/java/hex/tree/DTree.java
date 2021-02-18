@@ -141,22 +141,41 @@ public class DTree extends Iced {
   public static class Split extends Iced {
     final public int _col, _bin;// Column to split, bin where being split
     final DHistogram.NASplitDir _nasplit;
-    final IcedBitSet _bs;       // For binary y and categorical x (with >= 4 levels), split into 2 non-contiguous groups
-    final byte _equal;          // Split is 0: <, 2: == with group split (<= 32 levels), 3: == with group split (> 32 levels)
+    IcedBitSet _bs;       // For binary y and categorical x (with >= 4 levels), split into 2 non-contiguous groups
+    byte _equal;          // Split is 0: <, 2: == with group split (<= 32 levels), 3: == with group split (> 32 levels)
     final double _se;           // Squared error without a split
     final double _se0, _se1;    // Squared error of each subsplit
     final double _n0,  _n1;     // (Weighted) Rows in each final split
     final double _p0,  _p1;     // Predicted value for each split
     final double _tree_p0, _tree_p1;
 
-    public Split(int col, int bin, DHistogram.NASplitDir nasplit, IcedBitSet bs, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1, double tree_p0, double tree_p1) {
+    
+    transient DHistogram _hs;
+    transient int[] _idxs;
+    transient int _nbins;
+    
+    public Split pick() {
+      if( _idxs != null ) {
+        final int off = (int) _hs._min;
+        _bs = new IcedBitSet(_nbins, off);
+        _equal = fillBitSet(_hs, off, _idxs, _bin, _nbins, _bs);
+        if (_equal < 0)
+          return null;
+      }
+      return this;
+    }
+    
+    public Split(int col, int bin, DHistogram.NASplitDir nasplit, DHistogram hs, int[] idxs, int nbins, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1, double tree_p0, double tree_p1) {
+      _hs = hs;
+      _idxs = idxs;
+      _nbins = nbins;
       assert(nasplit!= DHistogram.NASplitDir.None);
       assert(equal!=1); //no longer done
       // FIXME: Disabled for testing PUBDEV-6495:
       // assert se > se0+se1 || se==Double.MAX_VALUE; // No point in splitting unless error goes down
       assert(col>=0);
       assert(bin>=0);
-      _col = col;  _bin = bin; _nasplit = nasplit; _bs = bs;  _equal = equal;  _se = se;
+      _col = col;  _bin = bin; _nasplit = nasplit;  _equal = equal;  _se = se;
       _n0 = n0;  _n1 = n1;  _se0 = se0;  _se1 = se1;
       _p0 = p0;  _p1 = p1;
       _tree_p0 = tree_p0; _tree_p1 = tree_p1;
@@ -513,7 +532,24 @@ public class DTree extends Iced {
       for( FindSplits fs : findSplits) {
         DTree.Split s = fs._s;
         if( s == null ) continue;
-        if (best == null || s.se() < best.se()) best = s;
+        if (best == null || s.se() < best.se()) {
+          best = s;
+        }
+      }
+      if (best == null)
+        return null;
+      best = best.pick();
+      if (best == null) {
+        for( FindSplits fs : findSplits) {
+          DTree.Split s = fs._s;
+          if( s == null ) continue;
+          if (best == null || s.se() < best.se()) {
+            s = s.pick();
+            if (s != null) {
+              best = s;
+            }
+          }
+        }
       }
       return best;
     }
@@ -1301,17 +1337,6 @@ public class DTree extends Iced {
     }
 
 
-    // For categorical (unordered) predictors, we sorted the bins by average
-    // prediction then found the optimal split on sorted bins
-    IcedBitSet bs = null;       // In case we need an arbitrary bitset
-    if( idxs != null ) {        // We sorted bins; need to build a bitset
-      final int off = (int) hs._min;
-      bs = new IcedBitSet(nbins, off);
-      equal = fillBitSet(hs, off, idxs, best, nbins, bs);
-      if (equal < 0)
-        return null;
-    }
-
     // if still undecided (e.g., if there are no NAs in training), pick a good default direction for NAs in test time
     if (nasplit == DHistogram.NASplitDir.None) {
       nasplit = nLeft > nRight ? DHistogram.NASplitDir.Left : DHistogram.NASplitDir.Right;
@@ -1320,7 +1345,7 @@ public class DTree extends Iced {
     assert constraint == 0 || constraint * tree_p0 <= constraint * tree_p1;
     assert (Double.isNaN(min) || min <= tree_p0) && (Double.isNaN(max) || tree_p0 <= max);
     assert (Double.isNaN(min) || min <= tree_p1) && (Double.isNaN(max) || tree_p1 <= max);
-    Split split = new Split(col, best, nasplit, bs, equal, seBefore, best_seL, best_seR, nLeft, nRight, node_p0, node_p1, tree_p0, tree_p1);
+    Split split = new Split(col, best, nasplit, hs, idxs, nbins, equal, seBefore, best_seL, best_seR, nLeft, nRight, node_p0, node_p1, tree_p0, tree_p1);
     if (LOG.isTraceEnabled()) LOG.trace("splitting on " + hs._name + ": " + split);
     return split;
   }
