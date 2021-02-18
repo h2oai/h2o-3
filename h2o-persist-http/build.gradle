@@ -2,7 +2,7 @@ description = "H2O Persist S3"
 
 dependencies {
   compile project(":h2o-core")
-  compile "org.apache.httpcomponents:httpclient:4.5.2"
+  compile "org.apache.httpcomponents:httpclient:4.5.13"
   testCompile "junit:junit:${junitVersion}"
   testCompile "org.mockito:mockito-core:2.18.0"
   testCompile project(path: ":h2o-core", configuration: "testArchives")

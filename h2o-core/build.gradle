@@ -42,7 +42,7 @@ dependencies {
   testCompile "com.google.guava:guava:16.0.1"
   testCompile "junit:junit:${junitVersion}"
   testCompile "org.mockito:mockito-core:2.18.0"
-  testCompile "org.apache.httpcomponents:httpclient:4.1"
+  testCompile "org.apache.httpcomponents:httpclient:4.5.13"
   testCompile "com.github.stefanbirkner:system-rules:1.18.0"
   testCompile "org.apache.derby:derby:10.14.2.0"
   testCompileOnly "javax.servlet:javax.servlet-api:3.0.1"
