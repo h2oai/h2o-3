@@ -15,9 +15,9 @@ include 'h2o-assemblies:genmodel'
 //include 'h2o-persist-s3'
 //include 'h2o-persist-http'
 include 'h2o-docs'
-include 'h2o-hadoop-common'
-include 'h2o-mapreduce-generic'
-include 'h2o-hive'
+//include 'h2o-hadoop-common'
+//include 'h2o-mapreduce-generic'
+//include 'h2o-hive'
 include 'h2o-genmodel'
 include 'h2o-bindings'
 include 'h2o-test-integ'
@@ -187,10 +187,10 @@ if (System.getProperty("user.name").equals("jenkins")
   // Compute targets
   def targets = System.getenv("H2O_TARGET") != null ? System.getenv("H2O_TARGET").split(",").collect { it.trim() } : allTargets
   // Include selected/all Hadoop targets
-  if (System.getenv("BUILD_HADOOP") != "false") {
-    targets.each { name ->
-      include "h2o-hadoop-2:h2o-${name}-assembly"
-      include "h2o-hadoop-3:h2o-${name}-assembly"
-    }
-  }
+  //if (System.getenv("BUILD_HADOOP") != "false") {
+  //  targets.each { name ->
+  //    include "h2o-hadoop-2:h2o-${name}-assembly"
+  //    include "h2o-hadoop-3:h2o-${name}-assembly"
+  //  }
+  //}
 }
