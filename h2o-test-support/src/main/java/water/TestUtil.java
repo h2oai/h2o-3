@@ -452,7 +452,8 @@ public class TestUtil extends Iced {
       fname = fname.substring(2);
     File f = new File(fname);
     if (! f.exists()) {
-      f.getParentFile().mkdirs();
+      if (f.getParentFile() != null)
+        f.getParentFile().mkdirs();
       File tmpFile = File.createTempFile(f.getName(), "tmp", f.getParentFile());
       org.apache.commons.io.FileUtils.copyURLToFile(
               new URL("https://h2o-public-test-data.s3.amazonaws.com/" + fname),
@@ -1500,6 +1501,10 @@ public class TestUtil extends Iced {
       boolean deleted = new File(filename).delete();
       if (!deleted) Log.warn("Failed to delete the file");
     }
+  }
+
+  public static boolean isCI() {
+    return System.getProperty("user.name").equals("jenkins");
   }
 
 }

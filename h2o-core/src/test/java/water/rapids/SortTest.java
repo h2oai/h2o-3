@@ -29,6 +29,7 @@ public class SortTest extends TestUtil {
       // Sort will be on columns 0 and 1, in that order, and is expected stable.
       fr = buildFrame(1000,10);
       fr.insertVec(0,"row",fr.remove(2));
+      DKV.put(fr);
       //
       Val val = Rapids.exec(tree);
       assertTrue( val instanceof ValFrame);
@@ -46,6 +47,7 @@ public class SortTest extends TestUtil {
     try {
       fr = buildFrame(1000,10);
       fr.insertVec(0,"row",fr.remove(2));
+      DKV.put(fr);
       res = Merge.sort(fr,new int[]{1,2});
       res.add("row",res.remove(0));
       new CheckSort().doAll(res);
@@ -62,6 +64,7 @@ public class SortTest extends TestUtil {
       String[] domain = new String[1000];
       for( int i=0; i<1000; i++ ) domain[i] = "D"+i;
       fr.vec(0).setDomain(domain);
+      DKV.put(fr);
       res = fr.sort(new int[]{0,1});
       new CheckSort().doAll(res);
     } finally {

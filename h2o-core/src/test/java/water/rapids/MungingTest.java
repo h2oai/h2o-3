@@ -2,6 +2,7 @@ package water.rapids;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -30,6 +31,7 @@ public class MungingTest extends TestUtil {
       Frame sortCols = TestUtil.generate_int_only(2, numRowsG, groupby_factors*2, 0.01);
       Scope.track(sortCols);
       Frame train = groupbyCols.add(sortCols);  // complete frame generation
+      DKV.put(train);
       Scope.track(train);
 
       String newCol = "new_rank_col";
