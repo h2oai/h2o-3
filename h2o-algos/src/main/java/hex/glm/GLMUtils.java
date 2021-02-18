@@ -112,20 +112,23 @@ public class GLMUtils {
       int penaltyMatSize = penalty_mat[gamColInd].length;
       for (int betaInd = 0; betaInd < penaltyMatSize; betaInd++) {  // derivative of each beta in penalty matrix
         int currentBetaIndex = gamBetaIndices[gamColInd][betaInd];
-        if (activeCols!=null) {
+        if (activeCols != null) {
           currentBetaIndex = ArrayUtils.find(activeCols, currentBetaIndex);
         }
-        double tempGrad = 2*beta[currentBetaIndex]*penalty_mat[gamColInd][betaInd][betaInd];
-        for (int rowInd=0; rowInd < penaltyMatSize; rowInd++) {
-          if (rowInd != betaInd) {
-            int currBetaInd = gamBetaIndices[gamColInd][rowInd];
-            if (activeCols!=null) {
-              currBetaInd = ArrayUtils.find(activeCols, currBetaInd);
+        if (currentBetaIndex >= 0) {  // only add if coefficient is active
+          double tempGrad = 2 * beta[currentBetaIndex] * penalty_mat[gamColInd][betaInd][betaInd];
+          for (int rowInd = 0; rowInd < penaltyMatSize; rowInd++) {
+            if (rowInd != betaInd) {
+              int currBetaInd = gamBetaIndices[gamColInd][rowInd];
+              if (activeCols != null) {
+                currBetaInd = ArrayUtils.find(activeCols, currBetaInd);
+              }
+              if (currBetaInd >= 0)
+                tempGrad += beta[currBetaInd] * penalty_mat[gamColInd][betaInd][rowInd];
             }
-            tempGrad += beta[currBetaInd] * penalty_mat[gamColInd][betaInd][rowInd];
           }
+          gradient[currentBetaIndex] += tempGrad;
         }
-        gradient[currentBetaIndex] += tempGrad;
       }
     }
   }
