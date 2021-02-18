@@ -16,7 +16,7 @@ include 'h2o-assemblies:genmodel'
 //include 'h2o-persist-s3'
 //include 'h2o-persist-http'
 include 'h2o-docs'
-include 'h2o-hadoop-common'
+//include 'h2o-hadoop-common'
 //include 'h2o-mapreduce-generic'
 //include 'h2o-hive'
 include 'h2o-genmodel'
@@ -102,12 +102,12 @@ if (System.getProperty("user.name").equals("jenkins")
   }
   logger.debug("Building hadoops " + targets)
   // Include selected/all Hadoop targets
-  if (System.getenv("BUILD_HADOOP") != "false") {
-    targets.each { name ->
-      include "h2o-hadoop-2:h2o-${name}-assembly"
-      include "h2o-hadoop-3:h2o-${name}-assembly"
-    }
-  }
+  //if (System.getenv("BUILD_HADOOP") != "false") {
+  //  targets.each { name ->
+  //    include "h2o-hadoop-2:h2o-${name}-assembly"
+  //    include "h2o-hadoop-3:h2o-${name}-assembly"
+  //  }
+  //}
 } else {
   logger.debug("Not building hadoop jars")
 }
