@@ -29,6 +29,7 @@ ENV DISTRIBUTION='cdh' \
     HIVE_HOME=/usr/lib/${HIVE_PACKAGE}
 
 COPY ${PATH_PREFIX}/scripts/sbin ${PATH_PREFIX}/../common/sbin scripts/install_python_version /usr/sbin/
+COPY ${PATH_PREFIX}/conf/cloudera.pref /etc/apt/preferences.d/cloudera.pref
 RUN \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https curl wget software-properties-common git && \
@@ -37,18 +38,16 @@ RUN \
     /usr/sbin/add_cdh_repo.sh $VERSION $REPO_VERSION $APT_USERNAME $APT_PASSWORD && \
     rm /usr/sbin/add_cdh_repo.sh && \
     echo "machine archive.cloudera.com login ${APT_USERNAME} password ${APT_PASSWORD}" > \
-        /etc/apt/auth.conf.d/cloudera.conf
-
-COPY ${PATH_PREFIX}/conf/cloudera.pref /etc/apt/preferences.d/cloudera.pref
-
-RUN apt-key add archive.key && \
+        /etc/apt/auth.conf.d/cloudera.conf \
+    apt-key add archive.key && \
     add-apt-repository -y ppa:deadsnakes && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
         postgresql libpostgresql-jdbc-java \
         hadoop-conf-pseudo python-pip python-dev python-virtualenv \
-        sudo unzip html2text slapd ldap-utils libkrb5-dev \
-        vim
+        sudo unzip html2text slapd ldap-utils libkrb5-dev vim && \
+    apt-get clean && \
+    rm -rf /var/cache/apt/*
 
 # Add Hive user
 RUN adduser --disabled-password --gecos "" hive

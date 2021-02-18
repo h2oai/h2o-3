@@ -40,13 +40,12 @@ RUN \
         hadoop-conf-pseudo python-pip python-dev python-virtualenv \
         postgresql libpostgresql-jdbc-java \
         sudo unzip html2text slapd ldap-utils libkrb5-dev \
-        vim
-
-# Install tez if necessary
-RUN \
+        vim && \
     if [[ $(ls /usr/hdp/ | grep -e '^2\|^3') =~ ^3 ]]; then \
         apt-get -y install tez ; \
-    fi
+    fi && \
+    apt-get clean && \
+    rm -rf /var/cache/apt/*
 
 # Create hive user
 RUN adduser --disabled-password --gecos "" hive
