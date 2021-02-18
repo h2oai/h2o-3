@@ -152,7 +152,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       double[] ds = new double[3];
       float[] acts = new float[1];
       for (int i=0;i<chks[0]._len;++i) {
-        // TODO: uplift
         ds[2] = chks[0].atd(i); //class 1 probs (user-given)
         ds[1] = chks[1].atd(i); //class 0 probs
         ds[0] = GenModel.getPrediction(ds, null, ds, Double.NaN/*ignored - uses AUC's default threshold*/); //label
@@ -340,11 +339,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     @Override
     public void cachePrediction(double[] cdist, Chunk[] chks, int row, int cacheChunkIdx, Model m) {
       assert cdist.length == 3;
-      if(m._output.hasUplift()){
-        ((C8DVolatileChunk) chks[cacheChunkIdx]).getValues()[row] = cdist[0];
-      } else {
-        ((C8DVolatileChunk) chks[cacheChunkIdx]).getValues()[row] = cdist[cdist.length - 1];
-      }
+      ((C8DVolatileChunk) chks[cacheChunkIdx]).getValues()[row] = cdist[cdist.length - 1];
     }
 
     public String toString(){

@@ -213,15 +213,15 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       }
       // Each tree bottomed-out in a DecidedNode; go 1 more level and insert
       // LeafNodes to hold predictions.
-      for (int k = 0; k < _nclass; k++) {
+      for(int k = 0; k < _nclass; k++) {
         DTree tree = ktrees[k];
-        if (tree == null) continue;
+        if(tree == null) continue;
         int leaf = leafs[k] = tree.len();
-        for (int nid = 0; nid < leaf; nid++) {
-          if (tree.node(nid) instanceof DecidedNode) {
+        for(int nid = 0; nid < leaf; nid++) {
+          if(tree.node(nid) instanceof DecidedNode) {
             DecidedNode dn = tree.decided(nid);
-            if (dn._split == null) { // No decision here, no row should have this NID now
-              if (nid == 0) { // Handle the trivial non-splitting tree
+            if(dn._split == null) { // No decision here, no row should have this NID now
+              if(nid == 0) { // Handle the trivial non-splitting tree
                 LeafNode ln = new LeafNode(tree, -1, 0);
                 ln._pred = (float) (isClassifier() ? _model._output._priorClassDist[k] : _initialPrediction);
               }
@@ -229,7 +229,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
             }
             for (int i = 0; i < dn._nids.length; i++) {
               int cnid = dn._nids[i];
-              if (cnid == -1 || // Bottomed out (predictors or responses known constant)
+              if(cnid == -1 || // Bottomed out (predictors or responses known constant)
                       tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
                       (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
                               ((DecidedNode) tree.node(cnid))._split == null)) {

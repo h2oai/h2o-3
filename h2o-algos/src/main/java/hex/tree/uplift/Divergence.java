@@ -1,6 +1,8 @@
 package hex.tree.uplift;
 
-public abstract class Divergence {
+import water.Iced;
+
+public abstract class Divergence extends Iced<Divergence> {
 
     /**
      * 

@@ -5,7 +5,7 @@ import hex.tree.SharedTreeMojoWriter;
 import java.io.IOException;
 
 /**
- * Mojo definition for DRF model.
+ * Mojo definition for Uplift DRF model.
  */
 public class UpliftDrfMojoWriter extends SharedTreeMojoWriter<UpliftDRFModel, UpliftDRFModel.UpliftDRFParameters, UpliftDRFModel.UpliftDRFOutput> {
 
@@ -22,6 +22,7 @@ public class UpliftDrfMojoWriter extends SharedTreeMojoWriter<UpliftDRFModel, Up
     protected void writeModelData() throws IOException {
         super.writeModelData();
         writekv("uplift_column", model._parms._uplift_column);
+        writekv("uplift_metric", model._parms._uplift_metric);
     }
 }
 
