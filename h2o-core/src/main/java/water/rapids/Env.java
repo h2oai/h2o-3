@@ -52,7 +52,10 @@ import java.util.HashMap;
  */
 public class Env extends Iced {
 
-  // for DEVELOPMENT/TESTING only
+  /** 
+   * for DEVELOPMENT/TESTING only - can be used to enable DKV object consistency check, this check is generally expensive
+   * and should only be used when hunting down bugs or for running tests on CI
+   */
   static final boolean DEV_CHECK_OBJECT_CONSISTENCY = H2O.getSysBoolProperty("rapids.checkObjectConsistency", false);
 
   // Session holds the ref-counts across multiple executions.
