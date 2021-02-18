@@ -68,7 +68,7 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
       if (N>=1) preds[0] /= N;
     } else { // classification
       if (_output.nclasses() == 2 && binomialOpt()) {
-        if (N >= 1) {
+        if (N>=1) {
           preds[1] /= N; //average probability
         }
         preds[2] = 1. - preds[1];
