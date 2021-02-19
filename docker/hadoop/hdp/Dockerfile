@@ -8,6 +8,8 @@ ARG VERSION
 ARG PATH_PREFIX='.'
 ARG PYTHON_VERSIONS='2.7,3.6'
 ARG HIVE_PACKAGE='hive'
+ARG APT_USERNAME
+ARG APT_PASSWORD
 
 ENV DISTRIBUTION='hdp' \
     MASTER='yarn-client' \
@@ -28,15 +30,22 @@ RUN \
     apt-get install -y wget curl software-properties-common git && \
     chmod 700 /usr/sbin/add_hdp_repo.sh && \
     sync && \
-    /usr/sbin/add_hdp_repo.sh $VERSION && \
+    /usr/sbin/add_hdp_repo.sh $VERSION $APT_USERNAME $APT_PASSWORD && \
     rm /usr/sbin/add_hdp_repo.sh && \
+    echo "machine archive.cloudera.com login ${APT_USERNAME} password ${APT_PASSWORD}" > \
+        /etc/apt/auth.conf.d/cloudera.conf && \
     add-apt-repository -y ppa:deadsnakes && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
         hadoop-conf-pseudo python-pip python-dev python-virtualenv \
         postgresql libpostgresql-jdbc-java \
         sudo unzip html2text slapd ldap-utils libkrb5-dev \
-        vim
+        vim && \
+    if [[ $(ls /usr/hdp/ | grep -e '^2\|^3') =~ ^3 ]]; then \
+        apt-get -y install tez ; \
+    fi && \
+    apt-get clean && \
+    rm -rf /var/cache/apt/*
 
 # Create hive user
 RUN adduser --disabled-password --gecos "" hive
@@ -99,7 +108,7 @@ RUN chmod 700 /usr/sbin/startup.sh && \
     sync && \
     /usr/sbin/install_hive.sh
 
-# Copy hive configs
+# Copy hive configs
 COPY ${PATH_PREFIX}/../common/conf-hive/ /etc/${HIVE_PACKAGE}/conf/
 COPY ${PATH_PREFIX}/conf-tez/ /etc/tez/conf/
 
