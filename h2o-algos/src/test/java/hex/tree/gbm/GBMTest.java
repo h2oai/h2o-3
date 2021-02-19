@@ -3995,18 +3995,7 @@ public class GBMTest extends TestUtil {
     GBMModel gbm = null;
     try {
       Scope.enter();
-      final Frame frame = new TestFrameBuilder()
-              .withName("getFeatureNamesTestFrame")
-              .withColNames("Fold", "ColA", "Response", "ColB", "Weight", "Offset", "ColC")
-              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_STR, Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
-              .withDataForCol(0, ard(0, 1, 0, 1, 0, 1, 0))
-              .withDataForCol(1, ard(Double.NaN, 1, 2, 3, 4, 5.6, 7))
-              .withDataForCol(2, ard(1, 2, 3, 4, 1, 2, 3))
-              .withDataForCol(3, ar("A", "B", "C", "E", "F", "I", "J"))
-              .withDataForCol(4, ard(0.25, 0.25, 0.5, 0.5, 0.5, 0.75, 0.75))
-              .withDataForCol(5, ard(0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2))
-              .withDataForCol(6, ar("A", "B,", "A", "C", "A", "B", "A"))
-              .build();
+      final Frame frame = TestFrameCatalog.specialColumns();
 
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = frame._key;
@@ -4020,6 +4009,10 @@ public class GBMTest extends TestUtil {
       gbm = new GBM(parms).trainModel().get();
       Scope.track_generic(gbm);
 
+      frame.remove("Fold").remove();
+      gbm.score(frame).remove();
+      assertArrayEquals(new String[0], gbm._warningsP); // predict warning
+      assertArrayEquals(new String[0], gbm._warnings);
       String[] expectedFeatures = new String[]{"ColA", "ColC"}; // Note: ColB is dropped becuase it is a String column
       
       // check model
@@ -4322,5 +4315,40 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testMissingFoldColumnIsNotReportedInScoring() {
+    try {
+      Scope.enter();
+      final Frame frame = TestFrameCatalog.specialColumns();
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = frame._key;
+      parms._response_column = "Response";
+      parms._fold_column = "Fold";
+      parms._weights_column = "Weight";
+      parms._offset_column = "Offset";
+      parms._ntrees = 1;
+      parms._min_rows = 0.1;
+      parms._keep_cross_validation_models = false;
+      parms._keep_cross_validation_predictions = false;
+      parms._keep_cross_validation_fold_assignment = false;
+
+      GBMModel gbm = new GBM(parms).trainModel().get();
+      Scope.track_generic(gbm);
+
+      assertArrayEquals(new String[0], gbm._warnings);
+      assertArrayEquals(null, gbm._warningsP); // no predict warning to begin with
+
+      final Frame test = TestFrameCatalog.specialColumns();
+      test.remove("Fold").remove();
+      DKV.put(test);
+
+      gbm.score(test).remove();
+
+      assertArrayEquals(new String[0], gbm._warningsP); // no predict warnings
+    } finally {
+      Scope.exit();
+    }
+  }
 
 }
