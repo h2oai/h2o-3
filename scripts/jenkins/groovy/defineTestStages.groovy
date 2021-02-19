@@ -319,12 +319,6 @@ def call(final pipelineContext) {
       imageSpecifier: "r-3.5.3-jdk-11"
     ],
     [
-      stageName: 'Java 15 JUnit', target: 'test-junit-1x-jenkins', pythonVersion: '2.7', javaVersion: 15,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-2.7-jdk-15"
-    ],
-    [
       stageName: 'Py3.6 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.6',
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
@@ -357,7 +351,7 @@ def call(final pipelineContext) {
       timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'Kubernetes', target: 'test-h2o-k8s', timeoutValue: 20,
+      stageName: 'Kubernetes', target: 'test-h2o-k8s', timeoutValue: 20, activatePythonEnv: false,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3-k8s:${pipelineContext.getBuildConfig().K8S_TEST_IMAGE_VERSION_TAG}",
       customDockerArgs: ['-v /var/run/docker.sock:/var/run/docker.sock', '--network host'], 
@@ -400,7 +394,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Java 15 JUnit', target: 'test-junit-latest-jenkins', pythonVersion: '2.7', javaVersion: 15,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-2.7-jdk-15"
     ],
@@ -635,7 +629,7 @@ def call(final pipelineContext) {
       final def stageDefinition = [
         stageName: "XGB on ${xgbEnv.name}", target: "test-xgb-smoke-${xgbEnv.targetName}-jenkins",
         timeoutValue: 15, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
-        additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_JAVA], pythonVersion: '3.6',
+        additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_JAVA], pythonVersion: '3.5',
         image: pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv),
         nodeLabel: xgbEnv.nodeLabel
       ]
@@ -781,7 +775,9 @@ private void invokeStage(final pipelineContext, final body) {
   config.stageDir = pipelineContext.getUtils().stageNameToDirName(config.stageName)
 
   config.pythonVersion = config.pythonVersion ?: DEFAULT_PYTHON
-  config.activatePythonEnv = true // activate default python for run.py
+  if (config.activatePythonEnv == null) {
+    config.activatePythonEnv = true // activate default python for run.py unless disabled
+  }
   config.rVersion = config.rVersion ?: DEFAULT_R
   config.javaVersion = config.javaVersion ?: DEFAULT_JAVA
   config.timeoutValue = config.timeoutValue ?: DEFAULT_TIMEOUT
