@@ -20,13 +20,14 @@ import static org.junit.Assert.*;
 
 public class AssistedClusteringEmbeddedConfigProviderTest {
 
-    private static final Logger LOG = Logger.getLogger(AssistedClusteringEmbeddedConfigProviderTest.class);
+    
     @Rule
     public EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
     @Test
     public void testEmbeddedConfigActivation() throws Exception {
         environmentVariables.set("H2O_ASSISTED_CLUSTERING_REST", "True");
+        environmentVariables.set("H2O_ASSISTED_CLUSTERING_API_PORT", "9423");
 
         final ExecutorService executor = Executors.newFixedThreadPool(1);
 
@@ -59,7 +60,7 @@ public class AssistedClusteringEmbeddedConfigProviderTest {
     }
 
     private static int callFlatfileEndpoint(final String flatfile) throws IOException, InterruptedException {
-        final URL url = new URL("http://localhost:8080/clustering/flatfile");
+        final URL url = new URL("http://localhost:9423/clustering/flatfile");
         final HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestProperty("Content-Length", String.valueOf(flatfile.length()));
         con.setRequestProperty("Content-Type", "text/plain");
