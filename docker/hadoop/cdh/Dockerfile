@@ -38,7 +38,7 @@ RUN \
     /usr/sbin/add_cdh_repo.sh $VERSION $REPO_VERSION $APT_USERNAME $APT_PASSWORD && \
     rm /usr/sbin/add_cdh_repo.sh && \
     echo "machine archive.cloudera.com login ${APT_USERNAME} password ${APT_PASSWORD}" > \
-        /etc/apt/auth.conf.d/cloudera.conf \
+        /etc/apt/auth.conf.d/cloudera.conf && \
     apt-key add archive.key && \
     add-apt-repository -y ppa:deadsnakes && \
     apt-get update && \
