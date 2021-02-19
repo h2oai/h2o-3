@@ -37,15 +37,22 @@ def without_strata(rossi):
     assert abs(py_concordance - metricsH2O.concordance()) < 0.001
     
     print(cph.baseline_survival_)
-    # print(cphH2O._model_json['output'].keys())
-    # print(cphH2O._model_json['output']['var_cumhaz_2'])
-    # print(len(cphH2O._model_json['output']['cumhaz_0']))
-    # print(cphH2O._model_json['output']['baseline_hazard'])
-    # frame = h2o.get_frame(cphH2O._model_json['output']['baseline_hazard']['name'])
+    print(cphH2O._model_json['output'].keys())
+    print(cphH2O._model_json['output']['var_cumhaz_2'])
+    print(len(cphH2O._model_json['output']['cumhaz_0']))
+    print(cphH2O._model_json['output']['baseline_hazard'])
 
+    frame = h2o.get_frame(cphH2O._model_json['output']['baseline_hazard']['name'])
+
+    print(len(cph.baseline_cumulative_hazard_.index))
     print(frame.nrows)
-    for i in range(0, frame.nrows):
-        print(frame.as_data_frame().loc[i, :])
+
+    print(frame.ncols)
+    print(len(cph.baseline_cumulative_hazard_.columns))
+    
+    print(cph.baseline_cumulative_hazard_.head(10))
+    print(frame.head())
+
 
 
 # There are different API versions for concordance in lifelines library

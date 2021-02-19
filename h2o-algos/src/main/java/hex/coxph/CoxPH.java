@@ -500,9 +500,9 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       o._var_cumhaz_2_matrix = new CoxPHModel.FrameMatrix(o._var_cumhaz_2, n_time, o._coef.length);
 
       o._baseline_hazard = Key.make(model._key + "_baseline_hazard");
-      o._baseline_hazard_matrix = new CoxPHModel.FrameMatrix(o._baseline_hazard, n_time, o._coef.length);
+      o._baseline_hazard_matrix = new CoxPHModel.FrameMatrix(o._baseline_hazard, n_time, coxMR._num_strata + 1);
       o._baseline_surv = Key.make(model._key + "_baseline_surv");
-      o._baseline_surv_matrix = new CoxPHModel.FrameMatrix(o._baseline_surv, n_time, o._coef.length);
+      o._baseline_surv_matrix = new CoxPHModel.FrameMatrix(o._baseline_surv, n_time, coxMR._num_strata + 1);
 
       final int n_coef = o._coef.length;
       int nz = 0;
@@ -552,6 +552,29 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           throw new IllegalArgumentException("_ties method must be either efron or breslow");
       }
 
+      double[] totalRisks = coxMR.totalRisk.clone();
+      double[] sumHaz = new double[totalRisks.length];
+
+      for (int i = sumHaz.length - 1; i >= 0; i--) {
+        sumHaz[i] = 0d;
+      }
+
+      for (int t = 0; t < coxMR._time.length; ++t) {
+        o._baseline_hazard_matrix.set(t,0, coxMR._time[t]);
+        o._baseline_surv_matrix.set(t,0, coxMR._time[t]);
+        for (int strata = 0; strata < coxMR._num_strata; strata++) {
+          double weightEvent = coxMR.countEvents[t]; //FIXME real weight
+
+          double sumRiskEvent = coxMR.sumRiskAllEvents[t];
+
+          double eventRisk = weightEvent / totalRisks[strata];
+          totalRisks[strata] -= sumRiskEvent;
+          sumHaz[strata] += eventRisk;
+          o._baseline_hazard_matrix.set(t, strata + 1, sumHaz[strata]);
+          o._baseline_surv_matrix.set(t, strata + 1, 1 - sumHaz[strata]);
+        }
+      }
+      
       for (int t = 1; t < o._cumhaz_0.length; ++t) {
         o._cumhaz_0[t]     = o._cumhaz_0[t - 1]     + o._cumhaz_0[t];
         o._var_cumhaz_1[t] = o._var_cumhaz_1[t - 1] + o._var_cumhaz_1[t];
@@ -559,7 +582,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           o._var_cumhaz_2_matrix.set(t, j, o._var_cumhaz_2_matrix.get(t - 1, j) + o._var_cumhaz_2_matrix.get(t, j));
       }
 
-      // install var_cumhaz Frame into DKV
+      // install MatricFrames into DKV
       o._var_cumhaz_2_matrix.toFrame(o._var_cumhaz_2);
       o._baseline_hazard_matrix.toFrame(o._baseline_hazard);
       o._baseline_surv_matrix.toFrame(o._baseline_surv);
@@ -709,10 +732,12 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     long[]       countEvents;
     double[]     sumXEvents;
     double[]     sumRiskEvents;
+    double[]     sumRiskAllEvents;
     double[][]   sumXRiskEvents;
     double[]     sumLogRiskEvents;
     double[]     rcumsumRisk;
     double[][]   rcumsumXRisk;
+    double[]     totalRisk;
 
     // Breslow only
     double[][][] rcumsumXXRisk;
@@ -745,11 +770,13 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       sizeEvents       = MemoryManager.malloc8d(n_time);
       countEvents      = MemoryManager.malloc8(n_time);
       sumRiskEvents    = MemoryManager.malloc8d(n_time);
+      sumRiskAllEvents = MemoryManager.malloc8d(n_time);
       sumLogRiskEvents = MemoryManager.malloc8d(n_time);
       rcumsumRisk      = MemoryManager.malloc8d(n_time);
-      sumXEvents =       MemoryManager.malloc8d(n_coef);
+      sumXEvents       = MemoryManager.malloc8d(n_coef);
       sumXRiskEvents   = MemoryManager.malloc8d(n_time, n_coef);
       rcumsumXRisk     = MemoryManager.malloc8d(n_time, n_coef);
+      totalRisk        = MemoryManager.malloc8d(_num_strata);
 
       if (_isBreslow) { // Breslow only
         rcumsumXXRisk = MemoryManager.malloc8d(n_time, n_coef, n_coef);
@@ -792,6 +819,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         logRisk += nums[j];
       final double risk = weight * Math.exp(logRisk);
       logRisk *= weight;
+      totalRisk[strataId] += risk;
+      sumRiskAllEvents[t2] /*[strataId]*/ += risk;
       if (event > 0) {
         countEvents[t2]++;
         sizeEvents[t2]       += weight;
@@ -853,10 +882,12 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       ArrayUtils.add(countEvents,      that.countEvents);
       ArrayUtils.add(sumXEvents,       that.sumXEvents);
       ArrayUtils.add(sumRiskEvents,    that.sumRiskEvents);
+      ArrayUtils.add(sumRiskAllEvents, that.sumRiskAllEvents);
       ArrayUtils.add(sumXRiskEvents,   that.sumXRiskEvents);
       ArrayUtils.add(sumLogRiskEvents, that.sumLogRiskEvents);
       ArrayUtils.add(rcumsumRisk,      that.rcumsumRisk);
       ArrayUtils.add(rcumsumXRisk,     that.rcumsumXRisk);
+      ArrayUtils.add(totalRisk,        that.totalRisk);
       if (_isBreslow) { // Breslow only
         ArrayUtils.add(rcumsumXXRisk,    that.rcumsumXXRisk);
       }
