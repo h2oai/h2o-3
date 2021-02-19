@@ -204,7 +204,8 @@ final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
         Log.warn("Suggestions:");
         Log.warn(" *) Limit the size of the first hidden layer");
         if (dinfo._cats > 0) {
-          Log.warn(" *) Limit the total number of one-hot encoded features with the parameter 'max_categorical_features'");
+          Log.warn(" *) Limit the total number of one-hot encoded features by setting 'categorical_encoding=\"enum_limited\"'");
+          Log.warn(" *) Limit the total number of one-hot encoded features with the parameter 'max_categorical_features' (experimental)");
           Log.warn(" *) Run h2o.interaction(...,pairwise=F) on high-cardinality categorical columns to limit the factor count, see http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/deep-learning.html#faq");
         }
         Log.warn("===================================================================================================================================");
