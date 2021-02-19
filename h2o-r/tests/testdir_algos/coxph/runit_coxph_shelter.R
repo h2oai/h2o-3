@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
-test.CoxPH.heart <- function() {
+test.CoxPH.shelter <- function() {
     shelter <- read.csv(file =locate("smalldata/coxph_test/shelter.csv"))
     coxph_features <- c("intake_condition","intake_type", "animal_breed", "chip_status", "surv_hours", "event")
     
@@ -47,4 +47,4 @@ test.CoxPH.heart <- function() {
     print(vcov(coxph.h2o))
 }
 
-doTest("CoxPH: Heart Test", test.CoxPH.heart)
+doTest("CoxPH: Animal Shelter Test", test.CoxPH.shelter)
