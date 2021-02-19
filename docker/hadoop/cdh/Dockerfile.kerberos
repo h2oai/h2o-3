@@ -6,7 +6,9 @@ ARG HIVE_PACKAGE='hive'
 RUN \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install krb5-kdc krb5-admin-server -y && \
-    update-rc.d krb5-kdc enable
+    update-rc.d krb5-kdc enable && \
+    apt-get clean && \
+    rm -rf /var/cache/apt/*
 
 ARG PATH_PREFIX
 COPY ${PATH_PREFIX}/../common/kerberos/krb5.conf /etc/krb5.conf
