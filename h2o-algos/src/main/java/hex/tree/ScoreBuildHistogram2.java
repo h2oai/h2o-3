@@ -321,7 +321,6 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       Chunk resChk = _chks[id][_workIdx];
       int len = resChk._len;
       double [] ys = ScoreBuildHistogram2.this._ys[id];
-      if(_weightIdx != -1) _chks[id][_weightIdx].getDoubles(ws, 0, len);
       final int hcslen = _lh.length;
       boolean extracted = false;
       for (int n = 0; n < hcslen; n++) {
