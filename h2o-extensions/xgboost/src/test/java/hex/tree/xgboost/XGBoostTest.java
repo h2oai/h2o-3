@@ -2249,6 +2249,40 @@ public class XGBoostTest extends TestUtil {
     
     return averageDistance / (i - missing);
   }
-  
 
+  @Test
+  public void testMissingFoldColumnIsNotReportedInScoring() {
+    try {
+      Scope.enter();
+      final Frame frame = TestFrameCatalog.specialColumns();
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = frame._key;
+      parms._response_column = "Response";
+      parms._fold_column = "Fold";
+      parms._weights_column = "Weight";
+      parms._offset_column = "Offset";
+      parms._ntrees = 1;
+      parms._min_rows = 0.1;
+      parms._keep_cross_validation_models = false;
+      parms._keep_cross_validation_predictions = false;
+      parms._keep_cross_validation_fold_assignment = false;
+
+      XGBoostModel xgb = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(xgb);
+
+      assertArrayEquals(new String[0], xgb._warnings);
+      assertArrayEquals(null, xgb._warningsP); // no predict warning to begin with
+
+      final Frame test = TestFrameCatalog.specialColumns();
+      test.remove("Fold").remove();
+      DKV.put(test);
+
+      xgb.score(test).remove();
+
+      assertArrayEquals(new String[0], xgb._warningsP); // no predict warnings
+    } finally {
+      Scope.exit();
+    }
+  }
 }

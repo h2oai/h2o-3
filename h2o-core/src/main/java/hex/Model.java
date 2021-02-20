@@ -1503,8 +1503,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           }
         } else if (expensive) {   // generate warning even for response columns.  Other tests depended on this.
           final double defval;
-          if (isWeights) defval = 1; // note: even though computeMetrics is false we should still have sensible weights (GLM skips rows with NA weights)
-          else if (isFold && domains[i] == null) defval = 0;
+          if (isWeights) 
+            defval = 1; // note: even though computeMetrics is false we should still have sensible weights (GLM skips rows with NA weights)
+          else 
+            if (isFold && domains[i] == null)
+              defval = 0;
           else {
             defval = parms.missingColumnsType();
             convNaN++;
