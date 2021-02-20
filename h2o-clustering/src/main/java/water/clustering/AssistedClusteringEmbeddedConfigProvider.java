@@ -22,6 +22,8 @@ public class AssistedClusteringEmbeddedConfigProvider implements EmbeddedConfigP
     private static final Logger LOG = Logger.getLogger(AssistedClusteringEmbeddedConfigProvider.class);
     private final SynchronousQueue<String> flatFileQueue = new SynchronousQueue<>();
 
+    private AssistedClusteringRestApi assistedClusteringRestApi;
+    
     @Override
     public void init() {
         final Consumer<String> flatFileCallback = s -> {
@@ -31,7 +33,7 @@ public class AssistedClusteringEmbeddedConfigProvider implements EmbeddedConfigP
                 e.printStackTrace();
             }
         };
-        startAssistedClusteringRestApi(flatFileCallback)
+        assistedClusteringRestApi = startAssistedClusteringRestApi(flatFileCallback)
                 .orElseThrow(() -> new IllegalStateException("Assisted clustering Rest API unable to start."));
         
     }
@@ -70,6 +72,13 @@ public class AssistedClusteringEmbeddedConfigProvider implements EmbeddedConfigP
         }
 
     }
-    
-    
+
+    void close() {
+        AssistedClusteringRestApi api = assistedClusteringRestApi;
+        assistedClusteringRestApi = null;
+        if (api != null) {
+            api.close();
+        }
+    }
+
 }

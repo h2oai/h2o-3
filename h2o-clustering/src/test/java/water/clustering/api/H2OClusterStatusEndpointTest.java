@@ -1,9 +1,8 @@
 package water.clustering.api;
 
 import org.apache.commons.io.IOUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.contrib.java.lang.system.EnvironmentVariables;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,12 +13,17 @@ import static org.junit.Assert.*;
 
 public class H2OClusterStatusEndpointTest {
 
+    @Rule
+    public EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
     private AssistedClusteringRestApi assistedClusteringRestApi;
     private FlatFileEventConsumer flatFileEventConsumer;
 
     @Before
     public void setUp() throws Exception {
+        environmentVariables.set("H2O_ASSISTED_CLUSTERING_REST", "true");
+        environmentVariables.set("H2O_ASSISTED_CLUSTERING_API_PORT", "9403");
+
         this.flatFileEventConsumer = new FlatFileEventConsumer();
         assistedClusteringRestApi = new AssistedClusteringRestApi(this.flatFileEventConsumer);
         assistedClusteringRestApi.start();
@@ -48,7 +52,7 @@ public class H2OClusterStatusEndpointTest {
     }
 
     private static Response callClusterStatusEndpoint() throws IOException {
-        final URL url = new URL("http://localhost:8080/cluster/status");
+        final URL url = new URL("http://localhost:9403/cluster/status");
         final HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestProperty("Content-Type", "text/plain");
         con.setDoOutput(true);
