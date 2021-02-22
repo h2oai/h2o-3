@@ -98,7 +98,7 @@ Defining a GLM Model
       - and the response is **Enum** with cardinality > 2, then the family is automatically determined as **multinomial**.
       - and the response is numeric (**Real** or **Int**), then the family is automatically determined as **gaussian**.
 
--  `rand_family <algo-params/rand_family.html>`__: The Random Component Family specified as an array. You must include one family for each random component. Currently only ``rand_family={"[gaussisan]"}`` is supported.
+-  `rand_family <algo-params/rand_family.html>`__: The Random Component Family specified as an array. You must include one family for each random component. Currently only ``rand_family=["gaussisan"]`` is supported.
 
 -  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if *Tweedie* is
    specified for **Family**) Specify the Tweedie variance power (defaults to 0).
