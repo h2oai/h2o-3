@@ -100,17 +100,18 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
    *  object by value.
    */
   protected long checksum_impl() { throw H2O.fail("Checksum not implemented by class "+this.getClass()); }
+  protected long checksum_impl(boolean noCache) { return checksum_impl(); }
   private long _checksum;
   // Efficiently fetch the checksum, setting on first access
   public final long checksum() {
     if( _checksum!=0 ) return _checksum;
-    long x = checksum_impl();
+    long x = checksum_impl(false);
     if( x==0 ) x=1;
     return (_checksum=x);
   }
   public final long checksum(boolean noCache) {
     if (noCache)
-      return checksum_impl();
+      return checksum_impl(noCache);
     return checksum();
   }
 

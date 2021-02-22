@@ -570,11 +570,11 @@ public class Frame extends Lockable<Frame> {
    *  files into the same offsets in some chunk this checksum will be
    *  consistent across reparses.
    *  @return 64-bit Frame checksum */
-  @Override protected long checksum_impl() {
+  @Override protected long checksum_impl(boolean noCache) {
     Vec[] vecs = vecs();
     long _checksum = 0;
     for( int i = 0; i < _names.length; ++i ) {
-      long vec_checksum = vecs[i].checksum();
+      long vec_checksum = vecs[i].checksum(noCache);
       _checksum ^= vec_checksum;
       long tmp = (2147483647L * i);
       _checksum ^= tmp;
