@@ -100,11 +100,11 @@ Defining a GLM Model
 
 -  `rand_family <algo-params/rand_family.html>`__: The Random Component Family specified as an array. You must include one family for each random component. Currently only ``rand_family=["gaussisan"]`` is supported.
 
--  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if *Tweedie* is
-   specified for **Family**) Specify the Tweedie variance power (defaults to 0).
+-  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if ``"tweedie"`` is
+   specified for ``family``) Specify the Tweedie variance power (defaults to 0).
 
--  `tweedie_link_power <algo-params/tweedie_link_power.html>`__: (Only applicable if *Tweedie* is specified
-   for **Family**) Specify the Tweedie link power (defaults to 1).
+-  `tweedie_link_power <algo-params/tweedie_link_power.html>`__: (Only applicable if ``"tweedie"`` is specified
+   for ``family``) Specify the Tweedie link power (defaults to 1).
 
 -  `theta <algo-params/theta.html>`__: Theta value (equal to 1/r) for use with the negative binomial family. This value must be > 0 and defaults to 1e-10.  
 
