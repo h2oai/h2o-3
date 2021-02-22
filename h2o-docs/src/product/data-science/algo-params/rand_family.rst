@@ -9,7 +9,7 @@ Description
 
 Hierarchical GLM (HGLM) fits generalized linear models with random effects, where the random effect can come from a conjugate exponential-family distribution (for example, Gaussian). The ``rand_family`` option specifies the Random Family Component as an array to be used in GLM when ``HGLM=True``. 
 
-**Note:** You must include one family for each random component. Only ``rand_family={"[gaussian"})`` is currently supported.
+**Note:** You must include one family for each random component. Only ``rand_family=["gaussian"]`` is currently supported.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
