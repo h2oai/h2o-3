@@ -62,7 +62,7 @@ public class UpliftDRFModel extends SharedTreeModelWithContributions<UpliftDRFMo
     }
 
     @Override protected boolean binomialOpt() { return !_parms._binomial_double_trees; }
-
+    
     /** Bulk scoring API for one row.  Chunks are all compatible with the model,
      *  and expect the last Chunks are for the final distribution and prediction.
      *  Default method is to just load the data into the tmp array, then call
