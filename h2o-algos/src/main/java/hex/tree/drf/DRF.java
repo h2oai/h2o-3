@@ -92,8 +92,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       _improvPerVar = new float[_ncols];
       final int ntrees = _parms._ntrees;
       // Preallocate tree votes
-      //if (_model._output.isClassifier()) {
-      if (isClassifier()) {
+      if (_model._output.isClassifier()) {
         _treeMeasuresOnOOB  = new TreeMeasuresCollector.TreeVotes(ntrees);
         _treeMeasuresOnSOOB = new TreeMeasuresCollector.TreeVotes[_ncols];
         for (int i=0; i<_ncols; i++) _treeMeasuresOnSOOB[i] = new TreeMeasuresCollector.TreeVotes(ntrees);
