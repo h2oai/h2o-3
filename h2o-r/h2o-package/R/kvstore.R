@@ -306,7 +306,8 @@ h2o.getModel <- function(model_id) {
     parameters$y <- parameters$response_column
     allparams$y <- allparams$response_column
     .not_x <- function(params) {
-       c(params$y, params$ignored_columns, params$fold_column$column_name, params$weights_column$column_name)
+       c(params$y, params$ignored_columns, params$fold_column$column_name, params$weights_column$column_name,
+         params$offset_column$column_name)
     }
     parameters$x <- setdiff(parameters$x, .not_x(parameters))
     allparams$x <- setdiff(allparams$x, .not_x(allparams))

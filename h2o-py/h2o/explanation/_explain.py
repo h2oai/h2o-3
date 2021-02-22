@@ -1313,7 +1313,8 @@ def _get_xy(model):
                 y,
                 # if there is no fold column, fold_column is set to None, thus using "or {}" instead of the second argument of dict.get
                 (model.actual_params.get("fold_column") or {}).get("column_name"),
-                (model.actual_params.get("weights_column") or {}).get("column_name")
+                (model.actual_params.get("weights_column") or {}).get("column_name"),
+                (model.actual_params.get("offset_column") or {}).get("column_name"),
              ] + (model.actual_params.get("ignored_columns") or [])
     x = [feature for feature in names if feature not in not_x]
     return x, y
