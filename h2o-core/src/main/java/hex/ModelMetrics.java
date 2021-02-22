@@ -420,10 +420,16 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       return _count <= 1 ? 0 : Math.sqrt(sampleCorrection*(_wYY/_wcount - (_wY*_wY)/(_wcount*_wcount)));
     }
     abstract public double[] perRow(double ds[], float yact[], Model m);
-    public double[] perRow(double ds[], float yact[],double weight, double offset,  Model m) {
-      assert(weight==1 && offset == 0);
+    public double[] perRow(double ds[], float yact[], double weight, double offset, double u, Model m) {
+      assert(Double.isNaN(u) && weight == 1 && offset == 0);
       return perRow(ds, yact, m);
     }
+
+    public double[] perRow(double ds[], float yact[], double weight, double offset,  Model m) {
+      assert(weight == 1 && offset == 0);
+      return perRow(ds, yact, m);
+    }
+    
     public void reduce( T mb ) {
       _sumsqe += mb._sumsqe;
       _count += mb._count;

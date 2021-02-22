@@ -1,7 +1,6 @@
 package hex;
 
 import hex.genmodel.GenModel;
-import hex.genmodel.utils.DistributionFamily;
 import water.MRTask;
 import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
@@ -10,7 +9,6 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.MathUtils;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -53,12 +51,12 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
      * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
      * @return ModelMetrics object
      */
-    static public ModelMetricsBinomialUplift make(Vec targetClassProbs, Vec actualLabels) {
-        return make(targetClassProbs,actualLabels,actualLabels.domain());
+    static public ModelMetricsBinomialUplift make(Vec targetClassProbs, Vec actualLabels, Vec uplift) {
+        return make(targetClassProbs, actualLabels, uplift, actualLabels.domain());
     }
 
-    static public ModelMetricsBinomialUplift make(Vec targetClassProbs, Vec actualLabels, String[] domain) {
-        return make(targetClassProbs, actualLabels,  null, domain);
+    static public ModelMetricsBinomialUplift make(Vec targetClassProbs, Vec actualLabels, Vec uplift,  String[] domain) {
+        return make(targetClassProbs, actualLabels,  uplift, domain);
     }
 
     /**
@@ -69,7 +67,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
      * @param domain The two class labels (domain[0] is the non-target class, domain[1] is the target class, for which probabilities are given)
      * @return ModelMetrics object
      */
-    static public ModelMetricsBinomialUplift make(Vec targetClassProbs, Vec actualLabels, Vec weights, String[] domain) {
+    static public ModelMetricsBinomialUplift make(Vec targetClassProbs, Vec actualLabels, Vec weights, Vec uplift, String[] domain) {
         Scope.enter();
         try {
             Vec labels = actualLabels.toCategoricalVec();
@@ -90,6 +88,9 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             fr.add("labels", labels);
             if (weights != null) {
                 fr.add("weights", weights);
+            }
+            if(uplift != null){
+                fr.add("uplift", uplift);
             }
 
             MetricBuilderBinomialUplift mb = new UpliftBinomialMetrics(labels.domain()).doAll(fr)._mb;
@@ -114,9 +115,10 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             _mb = new MetricBuilderBinomialUplift(domain);
             Chunk actuals = chks[1];
             Chunk weights = chks.length == 3 ? chks[2] : null;
+            Chunk uplift = chks.length == 4 ? chks[3] : null;
             double[] ds = new double[3];
             float[] acts = new float[1];
-            for (int i=0;i<chks[0]._len;++i) {
+            for (int i=0; i<chks[0]._len;++i) {
                 ds[2] = chks[0].atd(i); //class 1 probs (user-given)
                 ds[1] = chks[1].atd(i); //class 0 probs
                 ds[0] = GenModel.getPrediction(ds, null, ds, Double.NaN/*ignored - uses AUC's default threshold*/); //label
@@ -129,14 +131,16 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     }
 
     public static class MetricBuilderBinomialUplift<T extends MetricBuilderBinomialUplift<T>> extends MetricBuilderSupervised<T> {
+        
+        protected double _auuc;
 
         public MetricBuilderBinomialUplift( String[] domain ) { super(2,domain); }
 
 
         // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
         // distribution;
-        @Override public double[] perRow(double ds[], float[] yact, Model m) {return perRow(ds, yact, 1, 0, m);}
-        @Override public double[] perRow(double ds[], float[] yact, double w, double o, Model m) {
+        @Override public double[] perRow(double ds[], float[] yact, Model m) {return perRow(ds, yact, Double.NaN,1, 0, m);}
+        @Override public double[] perRow(double ds[], float[] yact, double u, double w, double o, Model m) {
             if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
             if(ArrayUtils.hasNaNs(ds)) return ds;  // No errors if prediction has missing values (can happen for GLM)
             if(w == 0 || Double.isNaN(w)) return ds;

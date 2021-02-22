@@ -21,16 +21,14 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public final double _logloss;
   public double _mean_per_class_error;
   public final GainsLift _gainsLift;
-  public final GainsUplift _gainsUplift;
 
   public ModelMetricsBinomial(Model model, Frame frame, long nobs, double mse, String[] domain,
-                              double sigma, AUC2 auc, double logloss, GainsLift gainsLift, GainsUplift uplift,
+                              double sigma, AUC2 auc, double logloss, GainsLift gainsLift,
                               CustomMetric customMetric) {
     super(model, frame,  nobs, mse, domain, sigma, customMetric);
     _auc = auc;
     _logloss = logloss;
     _gainsLift = gainsLift;
-    _gainsUplift = uplift;
     _mean_per_class_error = cm() == null ? Double.NaN : cm().mean_per_class_error();
   }
 
@@ -55,7 +53,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     sb.append(" default threshold: " + (_auc == null ? 0.5 : (float)_auc.defaultThreshold()) + "\n");
     if (cm() != null) sb.append(" CM: " + cm().toASCII());
     if (_gainsLift != null) sb.append(_gainsLift);
-    if (_gainsUplift != null) sb.append(_gainsUplift);
     return sb.toString();
   }
 
@@ -132,7 +129,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       Frame preds = new Frame(targetClassProbs);
       // todo solve for uplift here too, meantime null uplift vector is given
       ModelMetricsBinomial mm = (ModelMetricsBinomial) mb.makeModelMetrics(null, fr, preds, 
-              fr.vec("labels"), fr.vec("weights"), null); // use the Vecs from the frame (to make sure the ESPC is identical)
+              fr.vec("labels"), fr.vec("weights")); // use the Vecs from the frame (to make sure the ESPC is identical)
       mm._description = "Computed on user-given predictions and labels, using F1-optimal threshold: " + mm.auc_obj().defaultThreshold() + ".";
       return mm;
     } finally {
@@ -238,39 +235,28 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
           if (resp != null) {
             weight = m==null?null : frameWithExtraColumns.vec(m._parms._weights_column);
           }
-          if(m != null && m._parms._uplift_column != null){
-            uplift = frameWithExtraColumns.vec(m._parms._uplift_column);
-          }
         }
       }
-      return makeModelMetrics(m, f, preds, resp, weight, uplift);
+      return makeModelMetrics(m, f, preds, resp, weight);
     }
 
     private ModelMetrics makeModelMetrics(final Model m, final Frame f, final Frame preds, 
-                                          final Vec resp, final Vec weight, Vec uplift) {
+                                          final Vec resp, final Vec weight) {
       GainsLift gl = null;
-      GainsUplift gul = null;
-      if (_wcount > 0 || m._output.hasUplift()) {
+      if (_wcount > 0) {
         if (preds != null) {
           if (resp != null) {
-            if(m._output.hasUplift()) {
-              final Optional<GainsUplift> optionalGainsUplift = calculateGainsUplift(m, preds, resp, weight, uplift);
-              if (optionalGainsUplift.isPresent()) {
-                gul = optionalGainsUplift.get();
-              }
-            } else {
-              final Optional<GainsLift> optionalGainsLift = calculateGainsLift(m, preds, resp, weight);
-              if (optionalGainsLift.isPresent()) {
-                gl = optionalGainsLift.get();
-              }
+            final Optional<GainsLift> optionalGainsLift = calculateGainsLift(m, preds, resp, weight);
+            if (optionalGainsLift.isPresent()) {
+              gl = optionalGainsLift.get();
             }
           }
         }
       }
-      return makeModelMetrics(m, f, gl, gul);
+      return makeModelMetrics(m, f, gl);
     }
 
-    private ModelMetrics makeModelMetrics(Model m, Frame f, GainsLift gl, GainsUplift gul) {
+    private ModelMetrics makeModelMetrics(Model m, Frame f, GainsLift gl) {
       double mse = Double.NaN;
       double logloss = Double.NaN;
       double sigma = Double.NaN;
@@ -283,7 +269,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       } else {
         auc = new AUC2();
       }
-      ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, gl, gul, _customMetric);
+      ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, gl, _customMetric);
       if (m!=null) m.addModelMetrics(mm);
       return mm;
     }
@@ -298,28 +284,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
      */
     private Optional<GainsLift> calculateGainsLift(Model m, Frame preds, Vec resp, Vec weights) {
       final GainsLift gl = new GainsLift(preds.lastVec(), resp, weights);
-      if (m != null && m._parms._gainslift_bins < -1) {
-        throw new IllegalArgumentException("Number of G/L bins must be greater or equal than -1.");
-      } else if (m != null && (m._parms._gainslift_bins > 0 || m._parms._gainslift_bins == -1)) {
-        gl._groups = m._parms._gainslift_bins;
-      } else if (m != null && m._parms._gainslift_bins == 0){
-        return Optional.empty();
-      }
-      gl.exec(m != null ? m._output._job : null);
-      return Optional.of(gl);
-    }
-
-    /**
-     * @param m       Model to calculate GainsUplift for
-     * @param preds   Predictions
-     * @param resp    Actual label
-     * @param weights Weights
-     * @param uplift  Uplift column               
-     * @return An Optional with GainsUplift instance if GainsUplift is not disabled (gainsUplift_bins = 0). Otherwise an
-     * empty Optional.
-     */
-    private Optional<GainsUplift> calculateGainsUplift(Model m, Frame preds, Vec resp, Vec weights, Vec uplift) {
-      final GainsUplift gl = new GainsUplift(preds.vec(0), resp, weights, uplift);
       if (m != null && m._parms._gainslift_bins < -1) {
         throw new IllegalArgumentException("Number of G/L bins must be greater or equal than -1.");
       } else if (m != null && (m._parms._gainslift_bins > 0 || m._parms._gainslift_bins == -1)) {
