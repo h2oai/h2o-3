@@ -17,12 +17,12 @@ def xgboost_feature_interactions():
     assert isinstance(feature_interactions[0], H2OTwoDimTable)
     assert len(feature_interactions) == 11
 
-    tempdir = "./"
-    feature_interactions = model.feature_interaction(2, 100, -1, pyunit_utils.locate(tempdir) + 'feature_interactions.xlsx')
+    path = pyunit_utils.locate("results")
+    feature_interactions = model.feature_interaction(2, 100, -1, path + 'feature_interactions.xlsx')
     assert isinstance(feature_interactions[0], H2OTwoDimTable)
     assert len(feature_interactions) == 11
-    assert os.path.exists(pyunit_utils.locate(tempdir) + 'feature_interactions.xlsx')
-    os.remove(pyunit_utils.locate(tempdir) + 'feature_interactions.xlsx')
+    assert os.path.exists(path + 'feature_interactions.xlsx')
+    os.remove(path + 'feature_interactions.xlsx')
         
 
 if __name__ == "__main__":
