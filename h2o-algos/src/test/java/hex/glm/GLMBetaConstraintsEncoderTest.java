@@ -6,11 +6,12 @@ import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.util.FrameUtils;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
+import java.util.Arrays;
+import static org.junit.Assert.*;
 import static water.fvec.Vec.T_NUM;
 import static water.fvec.Vec.T_STR;
 
@@ -62,10 +63,7 @@ public class GLMBetaConstraintsEncoderTest extends TestUtil {
             String[] coefOrigNames = new String[] {"AGE", "WEIGHT", "HEIGHT"};
 
             for (int i = 0; i < beta_constraints.length; i++) {
-                FrameUtils.BetaConstraintsEncoder constraintsEncoder = new FrameUtils.BetaConstraintsEncoder(coefNames, coefOrigNames);
-                Frame transformedFrame =  constraintsEncoder.doAll( beta_constraints[i].types(), beta_constraints[i]).outputFrame();
-                transformedFrame.setNames(beta_constraints[i]._names);
-                
+                Frame transformedFrame = FrameUtils.encodeBetaConstraints(null, coefNames, coefOrigNames, beta_constraints[i]);
                 testFramesEqual(expected_transformed_frame[i], transformedFrame);
             }
             
@@ -82,5 +80,60 @@ public class GLMBetaConstraintsEncoderTest extends TestUtil {
             assertEquals(frame1.vec(2).at(j), frame2.vec(2).at(j), 1e-1);
         }
     }
-    
+
+    @Test
+    public void testBetaConstraintsEncoderSWFailingCase() {
+        Scope.enter();
+        try {
+//            12-11 12:18:10.841 192.168.1.10:54321    7062       FJ-1-3 DEBUG water.default: Encoding beta constraints...
+//            12-11 12:18:10.841 192.168.1.10:54321    7062       FJ-1-3 DEBUG water.default: _dinfo.coefNames() content: [AGE, RACE, DPROS, DCAPS, PSA, VOL, GLEASON]
+//            12-11 12:18:10.841 192.168.1.10:54321    7062       FJ-1-3 DEBUG water.default: _dinfo.coefOriginalNames() content: [AGE, RACE, DPROS, DCAPS, PSA, VOL]
+//          
+//            +-------+------------+------------+----------+---+
+//            |names  |lower_bounds|upper_bounds|beta_given|rho|
+//            +-------+------------+------------+----------+---+
+//            |AGE    |-1000       |1000        |1         |0.2|
+//            |RACE   |-1000       |1000        |1         |0.2|
+//            |DPROS  |-1000       |1000        |1         |0.2|
+//            |DCAPS  |-1000       |1000        |1         |0.2|
+//            |PSA    |-1000       |1000        |1         |0.2|
+//            |VOL    |-1000       |1000        |1         |0.2|
+//            |GLEASON|-1000       |1000        |1         |0.2|
+//            +-------+------------+------------+----------+---+            
+//
+            Frame beta_constraints = new TestFrameBuilder()
+                    .withColNames("names", "lower_bounds", "upper_bounds", "beta_given", "rho")
+                    .withVecTypes(T_STR, T_NUM, T_NUM, T_NUM, T_NUM)
+                    .withDataForCol(0, new String[] {"AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"})
+                    .withDataForCol(1, new double [] {-1000.0, -1000.0, -1000.0, -1000.0, -1000.0, -1000.0, -1000.0})
+                    .withDataForCol(2, new double[] {1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0})
+                    .withDataForCol(3, new double[] {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0})
+                    .withDataForCol(4, new double[] {0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2})
+                    .build();
+
+            String[] coefNames = new String[] {"AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"};
+            String[] coefOrigNames = new String[] {"AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL"};
+
+            Frame transformedFrame = FrameUtils.encodeBetaConstraints(null, coefNames, coefOrigNames, beta_constraints);
+            Vec namesCol = transformedFrame.vec("names");
+            assert transformedFrame.vec("names").isString();
+            String[] dom = new String[(int) namesCol.length()];
+            int[] map = new int[dom.length];
+            BufferedString tmpStr = new BufferedString();
+            for (int i = 0; i < dom.length; ++i) {
+                dom[i] = namesCol.atStr(tmpStr, i).toString();
+                map[i] = i;
+            }
+            // check for duplicates
+            String[] sortedDom = dom.clone();
+            Arrays.sort(sortedDom);
+            for (int i = 1; i < sortedDom.length; ++i)
+                assertFalse(sortedDom[i - 1].equals(sortedDom[i]));
+
+        } finally {
+            Scope.exit();
+        }
+    }
+
+
 }

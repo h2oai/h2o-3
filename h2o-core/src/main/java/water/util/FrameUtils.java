@@ -1195,47 +1195,67 @@ public class FrameUtils {
     frame.add(labelColumnName, labelVec);
   }
 
-  public static class BetaConstraintsEncoder extends MRTask<BetaConstraintsEncoder> {
-    String[] _coefNames;
-    String[] _coefOriginalNames;
+  private static String getCurrConstraintName(int id, Vec constraintsNames, BufferedString tmpStr) {
+    String currConstraintName;
+    if (constraintsNames.isString())
+      currConstraintName =  constraintsNames.atStr(tmpStr, id).toString();
+    else if (constraintsNames.isCategorical())
+      currConstraintName = constraintsNames.domain()[id];
+    else
+      throw new IllegalArgumentException("Illegal beta constraints file, names column expected to contain column names (strings)");
+    return currConstraintName;
+  }
 
-    public BetaConstraintsEncoder(String[] coefNames, String[] coefOriginalNames) {
-      _coefNames = coefNames;
-      _coefOriginalNames = coefOriginalNames;
+  private static void writeNewRow(String name, Frame betaConstraints, NewChunk[] nc, int id) {
+    nc[0].addStr(name);
+    for (int k = 1; k < nc.length; k++) {
+      nc[k].addNum(betaConstraints.vec(k).at(id));
     }
-
-    private String getCurrConstraintName(int id, Vec constraintsNames, BufferedString tmpStr) {
-      String currConstraintName;
-      if (constraintsNames.isString())
-        currConstraintName =  constraintsNames.atStr(tmpStr, id).toString();
-      else if (constraintsNames.isCategorical())
-        currConstraintName = constraintsNames.domain()[id];
-      else
-        throw new IllegalArgumentException("Illegal beta constraints file, names column expected to contain column names (strings)");
-      return currConstraintName;
+  }
+  
+  public static Frame encodeBetaConstraints(Key key, String[] coefNames, String[] coefOriginalNames, Frame betaConstraints) {
+    int ncols = betaConstraints.numCols();
+    AppendableVec[] appendableVecs = new AppendableVec[ncols];
+    NewChunk ncs[] = new NewChunk[ncols];
+    Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(ncols);
+    for (int i = 0; i < appendableVecs.length; i++) {
+      appendableVecs[i] = new AppendableVec(keys[i], i == 0 ? Vec.T_STR : betaConstraints.vec(i).get_type());
     }
-
-    @Override
-    public void map(Chunk[] cs, NewChunk[] nc) {
-      Vec constraintsNames = cs[0].vec();
-      BufferedString tmpStr = new BufferedString();
-      for (int i = 0; i < constraintsNames.length(); i++) {
-        String currConstraintName = getCurrConstraintName(i, cs[0].vec(), tmpStr);
-        for (int j = 0; j < _coefNames.length; j++) {
-          if (_coefNames[j].equals(currConstraintName)) {
-            writeNewRow(currConstraintName, cs, nc, i);
-          } else if (!Arrays.asList(_coefNames).contains(currConstraintName) && Arrays.asList(_coefOriginalNames).contains(currConstraintName) && _coefNames[j].startsWith(currConstraintName)) {
-            writeNewRow(_coefNames[j], cs, nc, i);
-          }
+    Futures fs = new Futures();
+    int chunknum = 0;
+    if (ncs[0] == null) {
+      for (int i = 0; i < ncols; i++) {
+        ncs[i] = new NewChunk(appendableVecs[i],chunknum);
+      }
+    }
+    Vec constraintsNames = betaConstraints.vec(0);
+    BufferedString tmpStr = new BufferedString();
+    for (int i = 0; i < constraintsNames.length(); i++) {
+      String currConstraintName = getCurrConstraintName(i, constraintsNames, tmpStr);
+      for (int j = 0; j < coefNames.length; j++) {
+        if (coefNames[j].equals(currConstraintName)) {
+          writeNewRow(currConstraintName, betaConstraints, ncs, i);
+        } else if (!Arrays.asList(coefNames).contains(currConstraintName) && Arrays.asList(coefOriginalNames).contains(currConstraintName) && coefNames[j].startsWith(currConstraintName)) {
+          writeNewRow(coefNames[j], betaConstraints, ncs, i);
         }
       }
     }
-
-    private void writeNewRow(String name, Chunk[] cs, NewChunk[] nc, int id) {
-      nc[0].addStr(name);
-      for (int k = 1; k < nc.length; k++) {
-        nc[k].addNum(cs[k].atd(id));
+    if (ncs[0] != null) {
+      for (int i = 0; i < ncols; i++) { 
+        ncs[i].close(chunknum,fs);
       }
+      ncs[0] = null;
     }
+    Vec[] vecs = new Vec[ncols];
+    final int rowLayout = appendableVecs[0].compute_rowLayout();
+    for (int i = 0; i < appendableVecs.length; i++) {
+      vecs[i] = appendableVecs[i].close(rowLayout,fs);
+    }
+    fs.blockForPending();
+    Frame fr = new Frame(key, betaConstraints.names(), vecs);
+    if (key != null) {
+      DKV.put(fr);
+    }
+    return fr;
   }
 }
