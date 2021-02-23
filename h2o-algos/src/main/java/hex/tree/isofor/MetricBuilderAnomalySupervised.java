@@ -35,7 +35,7 @@ public class MetricBuilderAnomalySupervised extends ModelMetricsBinomial.MetricB
       auc = AUC2.emptyAUC();
     }
     ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain,
-            sigma, auc, logloss, null, null, _customMetric);
+            sigma, auc, logloss, null, _customMetric);
     if (m != null) {
       m.addModelMetrics(mm);
     }
