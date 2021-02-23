@@ -2,9 +2,12 @@ package hex.tree.isoforextended;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import hex.tree.CompressedTree;
+import hex.tree.SharedTree;
 import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
 import hex.tree.isoforextended.isolationtree.IsolationTree;
 import org.apache.log4j.Logger;
+import water.DKV;
 import water.H2O;
 import water.Job;
 import water.Key;
@@ -29,8 +32,10 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         ExtendedIsolationForestModel.ExtendedIsolationForestOutput> {
 
     transient private static final Logger LOG = Logger.getLogger(ExtendedIsolationForest.class);
-    public static final int MAX_NTREES = 100000; // todo valenad consult the size
+    public static final int MAX_NTREES = 100_000; // todo valenad consult the size
+    public static final int MAX_SAMPLE_SIZE = 100_000; // todo valenad consult the size
 
+    private ExtendedIsolationForestModel _model;
     transient Random _rand;
 
     // Called from an http request
@@ -67,10 +72,9 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 error("extension_level", "Parameter extension_level must be in interval [0, "
                         + extensionLevelMax + "] but it is " + _parms._extension_level);
             }
-            long sampleSizeMax = _parms.train().numRows();
-            if (_parms._sample_size < 0 || _parms._sample_size > sampleSizeMax) {
+            if (_parms._sample_size < 0 || _parms._sample_size > MAX_SAMPLE_SIZE) {
                 error("sample_size","Parameter sample_size must be in interval [0, "
-                        + sampleSizeMax + "] but it is " + _parms._sample_size);
+                        + MAX_SAMPLE_SIZE + "] but it is " + _parms._sample_size);
             }
             if(_parms._ntrees < 0 || _parms._ntrees > MAX_NTREES)
                 error("ntrees", "Parameter ntrees must be in interval [1, "
@@ -110,35 +114,40 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
 
         @Override
         public void computeImpl() {
-            init(true);
-            if(error_count() > 0)
-                throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(ExtendedIsolationForest.this);
-            buildIsolationTreeEnsemble();
+            _model = null;
+            try {
+                init(true);
+                if(error_count() > 0) {
+                    throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(ExtendedIsolationForest.this);
+                }
+                _rand = RandomUtils.getRNG(_parms._seed);
+                _model = new ExtendedIsolationForestModel(dest(), _parms,
+                        new ExtendedIsolationForestModel.ExtendedIsolationForestOutput(ExtendedIsolationForest.this));
+                _model.delete_and_lock(_job); // todo valenad what is it good for?
+                buildIsolationTreeEnsemble();
+            } finally {
+                if(_model != null)
+                    _model.unlock(_job); // todo valenad what is it good for?
+            }
         }
 
         private void buildIsolationTreeEnsemble() {
-            _rand = RandomUtils.getRNG(_parms._seed);
-            ExtendedIsolationForestModel model = new ExtendedIsolationForestModel(dest(), _parms,
-                    new ExtendedIsolationForestModel.ExtendedIsolationForestOutput(ExtendedIsolationForest.this));
-            model.delete_and_lock(_job); // todo valenad what is it good for?
-            model._output._iTrees = new CompressedIsolationTree[_parms._ntrees];
+                _model._output._iTrees = new CompressedIsolationTree[_parms._ntrees];
 
-            int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
+                int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
 
-            for (int tid = 0; tid < _parms._ntrees; tid++) {
-                Timer timer = new Timer();
-                int randomUnit = _rand.nextInt();
-                Frame subSample = SamplingUtils.sampleOfFixedSize(_train, _parms._sample_size, _parms._seed + randomUnit);
-                double[][] subSampleArray = FrameUtils.asDoubles(subSample);
+                for (int tid = 0; tid < _parms._ntrees; tid++) {
+                    Timer timer = new Timer();
+                    int randomUnit = _rand.nextInt();
+                    Frame subSample = SamplingUtils.sampleOfFixedSize(_train, _parms._sample_size, _parms._seed + randomUnit);
+                    double[][] subSampleArray = FrameUtils.asDoubles(subSample);
 
-                IsolationTree isolationTree = new IsolationTree(subSampleArray, heightLimit, _parms._seed + _rand.nextInt(), _parms._extension_level, tid);
-                model._output._iTrees[tid] = isolationTree.buildTree();
-                _job.update(1);
-                LOG.info((tid + 1) + ". tree was built in " + timer.toString() + ". Free memory: " + PrettyPrint.bytes(H2O.CLOUD.free_mem()));
-            }
-
-            model.unlock(_job); // todo valenad what is it good for?
-            model._output._model_summary = createModelSummaryTable();
+                    IsolationTree isolationTree = new IsolationTree(subSampleArray, heightLimit, _parms._seed + _rand.nextInt(), _parms._extension_level, tid);
+                    _model._output._iTrees[tid] = isolationTree.buildTree();
+                    _job.update(1);
+                    LOG.info((tid + 1) + ". tree was built in " + timer.toString() + ". Free memory: " + PrettyPrint.bytes(H2O.SELF._heartbeat.get_free_mem()));
+                }
+                _model._output._model_summary = createModelSummaryTable();
         }
     }
 
