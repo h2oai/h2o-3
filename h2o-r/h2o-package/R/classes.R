@@ -990,9 +990,26 @@ setMethod("summary", signature("H2OAutoML"), function(object) {
 #'
 #' Retrieve the variable importance.
 #'
-#' @param object An object.
+#' @param object An H2O object.
+#' @param ... Additional arguments for specific use-cases.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip"
+#' pros <- h2o.importFile(f)
+#' response <- "GLEASON"
+#' predictors <- c("ID", "AGE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
+#' aml <- h2o.automl(x = predictors, y = response, training_frame = pros, max_runtime_secs = 60)
+#'
+#' h2o.varimp(aml, top_n = 20)  # get variable importance matrix for the top 20 models
+#'
+#' h2o.varimp(aml@leader)  # get variable importance for the leader model
+#' }
 #' @export
-setGeneric("h2o.varimp", function(object, ...) standardGeneric("h2o.varimp"))
+setGeneric("h2o.varimp", function(object, ...)
+  warning(paste0("No variable importances for ", class(object)), call. = FALSE))
 
 #'
 #' Retrieve the variable importance.
@@ -1011,7 +1028,7 @@ setGeneric("h2o.varimp", function(object, ...) standardGeneric("h2o.varimp"))
 #' h2o.varimp(model)
 #' }
 #' @export
-setMethod("h2o.varimp", signature("H2OModel"), function(object, ...) {
+setMethod("h2o.varimp", signature("H2OModel"), function(object) {
   vi <- object@model$variable_importances
   if( is.null(vi) ) {
     warning("This model doesn't have variable importances", call. = FALSE)
@@ -1019,11 +1036,6 @@ setMethod("h2o.varimp", signature("H2OModel"), function(object, ...) {
   }
   return(vi)
 })
-
-setMethod("h2o.varimp", signature("ANY"), function(object, ...) {
-    warning(paste0("No variable importances for ", class(object)))
-  }
-)
 
 #'
 #' Retrieve the variable importance.
