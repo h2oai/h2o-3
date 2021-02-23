@@ -23,6 +23,7 @@ def knots_error():
                                                 )
     try:
         h2o_model.train(x=feature_names, y='target', training_frame=train)
+        assert False, "Number of knots validation should have failed"
     except:
         print("Error correctly raised when cardinality < num_knots")
     else:
