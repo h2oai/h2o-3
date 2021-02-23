@@ -233,6 +233,9 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         if (!dataset.vec(cname).isNumeric())
           error("gam_columns", "column " + cname + " is not numerical and cannot be used as a gam" +
                   " column.");
+        if (dataset.vec(cname).isInt() && ((dataset.vec(cname).max() - dataset.vec(cname).min() + 1) < _parms._num_knots[index]))
+          error("gam_columns", "column " + cname + " has cardinality lower than the number of knots and cannot be used as a gam" +
+                  " column.");
       }
     }
     if ((_parms._bs != null) && (_parms._gam_columns.length != _parms._bs.length))  // check length
