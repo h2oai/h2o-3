@@ -136,14 +136,13 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
 
                 int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
 
+                IsolationTree isolationTree = new IsolationTree(heightLimit, _parms._extension_level);
                 for (int tid = 0; tid < _parms._ntrees; tid++) {
                     Timer timer = new Timer();
                     int randomUnit = _rand.nextInt();
                     Frame subSample = SamplingUtils.sampleOfFixedSize(_train, _parms._sample_size, _parms._seed + randomUnit);
                     double[][] subSampleArray = FrameUtils.asDoubles(subSample);
-
-                    IsolationTree isolationTree = new IsolationTree(subSampleArray, heightLimit, _parms._seed + _rand.nextInt(), _parms._extension_level, tid);
-                    _model._output._iTrees[tid] = isolationTree.buildTree();
+                    _model._output._iTrees[tid] = isolationTree.buildTree(subSampleArray, _parms._seed + _rand.nextInt(), tid);
                     _job.update(1);
                     LOG.info((tid + 1) + ". tree was built in " + timer.toString() + ". Free memory: " + PrettyPrint.bytes(H2O.SELF._heartbeat.get_free_mem()));
                 }

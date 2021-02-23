@@ -15,31 +15,25 @@ public class IsolationTree {
 
     private Node[] _nodes;
 
-    private final double[][] _data;
     private final int _heightLimit;
-    private final long _seed;
     private final int _extensionLevel;
-    private final int _treeNum;
 
-    public IsolationTree(double[][] data, int _heightLimit, long _seed, int _extensionLevel, int _treeNum) {
-        this._data = data;
+    public IsolationTree(int _heightLimit, int _extensionLevel) {
         this._heightLimit = _heightLimit;
-        this._seed = _seed;
         this._extensionLevel = _extensionLevel;
-        this._treeNum = _treeNum;
     }
 
     /**
      * Implementation of Algorithm 2 (iTree) from paper.
      */
-    public CompressedIsolationTree buildTree() {
+    public CompressedIsolationTree buildTree(double[][] data, final long seed, final int treeNum) {
         int maxNumNodesInTree = (int) Math.pow(2, _heightLimit) - 1;
         this._nodes = new Node[maxNumNodesInTree];
         CompressedIsolationTree compressedIsolationTree = new CompressedIsolationTree(_heightLimit);
         
-        _nodes[0] = new Node(_data, _data[0].length, 0);
+        _nodes[0] = new Node(data, data[0].length, 0);
         for (int i = 0; i < _nodes.length; i++) {
-            LOG.trace((i + 1) + " from " + _nodes.length + " is being prepared on tree " + _treeNum);
+            LOG.trace((i + 1) + " from " + _nodes.length + " is being prepared on tree " + treeNum);
             Node node = _nodes[i];
             if (node == null || node._external) {
                 continue;
@@ -56,9 +50,9 @@ public class IsolationTree {
                 if (rightChildIndex(i) < _nodes.length) {
                     currentHeight++;
 
-                    node._p = VecUtils.uniformDistrFromArray(nodeData, _seed + i);
+                    node._p = VecUtils.uniformDistrFromArray(nodeData, seed + i);
                     node._n = ArrayUtils.gaussianVector(
-                            nodeData.length, _seed + i, nodeData.length - _extensionLevel - 1);
+                            nodeData.length, seed + i, nodeData.length - _extensionLevel - 1);
 
                     FilteredData ret = extendedIsolationForestSplit(nodeData, node._p, node._n);
 

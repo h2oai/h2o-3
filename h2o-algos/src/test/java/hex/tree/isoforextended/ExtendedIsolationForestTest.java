@@ -365,8 +365,8 @@ public class ExtendedIsolationForestTest extends TestUtil {
             Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
 
             long start = System.currentTimeMillis();
-            IsolationTree isolationTree = new IsolationTree(FrameUtils.asDoubles(train), 9, 0xBEEF, 1, 0);
-            CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree();
+            IsolationTree isolationTree = new IsolationTree(9, 1);
+            CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(FrameUtils.asDoubles(train), 0xBEEF, 0);
             long end = System.currentTimeMillis();
             isolationTree.logNodesNumRows();
 
@@ -393,8 +393,8 @@ public class ExtendedIsolationForestTest extends TestUtil {
             double[] normalPoint = toNumericRow(train, 0);
 
             long start = System.currentTimeMillis();
-            IsolationTree isolationTree = new IsolationTree(FrameUtils.asDoubles(train), 16, 0xBEEF, 127, 0);
-            CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree();
+            IsolationTree isolationTree = new IsolationTree(16, 127);
+            CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(FrameUtils.asDoubles(train), 0xBEEF, 0);
             long end = System.currentTimeMillis();
             isolationTree.logNodesNumRows();
 
