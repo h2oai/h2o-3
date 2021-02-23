@@ -11,6 +11,28 @@ from h2o.automl import H2OAutoML
 from h2o.estimators import H2OGradientBoostingEstimator
 from h2o.explanation._explain import H2OExplanation
 
+
+def test_get_xy():
+    import h2o.explanation._explain as ex
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
+    y = "quality"
+    x = ["citric acid", "residual sugar", "chlorides", "free sulfur dioxide", "total sulfur dioxide", "density", "pH"]
+    gbm = h2o.estimators.H2OGradientBoostingEstimator()
+    gbm.train(x=x, y=y, training_frame=train, offset_column="sulphates", weights_column="alcohol", fold_column="type")
+
+    estimated_x, estimated_y = ex._get_xy(gbm)
+    assert set(x) == set(estimated_x)
+    assert y == estimated_y
+
+    # test it works also without any "special" column specified
+    gbm2 = h2o.estimators.H2OGradientBoostingEstimator()
+    gbm2.train(x=x, y=y, training_frame=train)
+
+    estimated_x, estimated_y = ex._get_xy(gbm2)
+    assert set(x) == set(estimated_x)
+    assert y == estimated_y
+
+
 def test_explanation_single_model_regression():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
     y = "quality"
@@ -367,6 +389,7 @@ def test_explanation_list_of_models_multinomial_classification():
 
 
 pyunit_utils.run_tests([
+    test_get_xy,
     test_explanation_single_model_regression,
     test_explanation_automl_regression,
     test_explanation_list_of_models_regression,

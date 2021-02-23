@@ -1307,9 +1307,16 @@ def _get_xy(model):
     :param model: H2O Model
     :returns: tuple (x, y)
     """
+    names = model._model_json["output"]["original_names"] or model._model_json["output"]["names"]
     y = model.actual_params["response_column"]
-    x = [feature for feature in model._model_json["output"]["names"]
-         if feature not in y]
+    not_x = [
+                y,
+                # if there is no fold column, fold_column is set to None, thus using "or {}" instead of the second argument of dict.get
+                (model.actual_params.get("fold_column") or {}).get("column_name"),
+                (model.actual_params.get("weights_column") or {}).get("column_name"),
+                (model.actual_params.get("offset_column") or {}).get("column_name"),
+             ] + (model.actual_params.get("ignored_columns") or [])
+    x = [feature for feature in names if feature not in not_x]
     return x, y
 
 
