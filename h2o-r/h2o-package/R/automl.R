@@ -616,23 +616,22 @@ h2o.get_leaderboard <- function(object, extra_columns=NULL) {
 h2o.get_best_model <- function(object,
                                algorithm = c("any", "basemodel", "deeplearning", "drf", "gbm",
                                              "glm", "stackedensemble", "xgboost"),
-                               criterion = NULL) {
+                               criterion = c("AUTO", "auc", "aucpr", "logloss", "mae", "mean_per_class_error",
+                                             "mean_residual_deviance", "mse", "predict_time_per_row_ms",
+                                             "rmse", "rmsle", "training_time_ms")) {
   if (!.is.H2OAutoML(object))
     stop("Only H2OAutoML instances are currently supported.")
 
   algorithm <- match.arg(arg = if (missing(algorithm) || tolower(algorithm) == "any") "any" else tolower(algorithm),
                          choices = eval(formals()$algorithm))
 
-  if (!is.null(criterion) && !(is.character(criterion) && length(criterion) == 1))
-    stop("Criterion has to be either NULL or character vector of length 1.")
+  criterion <- match.arg(arg = if (missing(criterion) || tolower(criterion) == "auto") "auto" else tolower(criterion),
+                         choices = tolower(eval(formals()$criterion)))
 
   higher_is_better <- c("auc", "aucpr")
 
-  if (!is.null(criterion))
-    criterion <- tolower(criterion)
-
   extra_cols <- "algo"
-  if (!is.null(criterion) && criterion %in% c("training_time_ms", "predict_time_per_row_ms")) {
+  if (criterion %in% c("training_time_ms", "predict_time_per_row_ms")) {
     extra_cols <-  c(extra_cols, criterion)
   }
 
@@ -644,7 +643,7 @@ h2o.get_best_model <- function(object,
   if (nrow(leaderboard) == 0)
     return(NULL)
 
-  if (is.null(criterion)) {
+  if ("auto" == criterion) {
     return(h2o.getModel(leaderboard[1, "model_id"]))
   }
 

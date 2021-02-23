@@ -148,7 +148,7 @@ automl.leaderboard.suite <- function() {
             }
         }
         # check it works with default criterion
-        .check_best_model(as.character(as.list(aml@leaderboard$model_id)), NULL)
+        .check_best_model(as.character(as.list(aml@leaderboard$model_id)), "auto")
         # check it works with AUC criterion (the higher the better as opposed to loss functions) and test case insensitivity
         .check_best_model(as.character(as.list(h2o.arrange(aml@leaderboard, desc(auc))$model_id)), "AUC")
         # check it works for MSE as a criterion
