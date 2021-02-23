@@ -1,5 +1,5 @@
 from h2o.estimators.xgboost import *
-from tests import pyunit_utils
+from tests import pyunit_utils, os
 import sys
 sys.path.insert(1,"../../../")
 from h2o.two_dim_table import H2OTwoDimTable
@@ -16,7 +16,14 @@ def xgboost_feature_interactions():
     feature_interactions = model.feature_interaction(2, 100, -1)
     assert isinstance(feature_interactions[0], H2OTwoDimTable)
     assert len(feature_interactions) == 11
-    
+
+    path = pyunit_utils.locate("results")
+    feature_interactions = model.feature_interaction(2, 100, -1, os.path.join(path, 'feature_interactions.xlsx'))
+    assert isinstance(feature_interactions[0], H2OTwoDimTable)
+    assert len(feature_interactions) == 11
+    assert os.path.exists(os.path.join(path, 'feature_interactions.xlsx'))
+    os.remove(os.path.join(path, 'feature_interactions.xlsx'))
+        
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(xgboost_feature_interactions)

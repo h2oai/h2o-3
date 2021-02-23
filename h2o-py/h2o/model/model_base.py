@@ -399,7 +399,7 @@ class ModelBase(h2o_meta(Keyed)):
             return self.summary()['number_of_trees'][0]
         print("No actual number of trees for this model")    
 
-    def feature_interaction(self, max_interaction_depth=100, max_tree_depth=100, max_deepening=-1):
+    def feature_interaction(self, max_interaction_depth=100, max_tree_depth=100, max_deepening=-1, path=None):
         """
         Feature interactions and importance, leaf statistics and split value histograms in a tabular form.
         Available for XGBoost and GBM.
@@ -419,6 +419,8 @@ class ModelBase(h2o_meta(Keyed)):
         :param max_tree_depth: Upper bound for tree depth. Defaults to 100.
         :param max_deepening: Upper bound for interaction start deepening (zero deepening => interactions 
         starting at root only). Defaults to -1.
+        :param path: Path where to save the output in .xlsx format. Please note that Pandas and XlsxWriter need to be 
+        installed for using this option. Defaults to None.
 
         :examples:
         >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
@@ -439,6 +441,12 @@ class ModelBase(h2o_meta(Keyed)):
             kwargs["max_deepening"] = max_deepening
             
             json = h2o.api("POST /3/FeatureInteraction", data=kwargs)
+            if path is not None:
+                import pandas as pd
+                writer = pd.ExcelWriter(path, engine='xlsxwriter')
+                for fi in json['feature_interaction']:
+                    fi.as_data_frame().to_excel(writer, sheet_name=fi._table_header)
+                writer.save()
             
             return json['feature_interaction']
         print("No calculation available for this model")
