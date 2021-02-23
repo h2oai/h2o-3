@@ -51,11 +51,13 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       assertEquals(model._output._total_event,    75);
       assertEquals(model._output._wald_test,      4.6343882547245,      1e-8);
       assertEquals(model._output._var_cumhaz_2_matrix.rows(), 110);
+      assertEquals(model._output._concordance, 0.5806350696073831, 0.0001);
 
       final ModelMetricsRegressionCoxPH mm = (ModelMetricsRegressionCoxPH) model._output._training_metrics;
       assertEquals(0.5806350696073831, mm.concordance(), 0.00001d);
       assertEquals(2676, mm.discordant());
       assertEquals(10, mm.tiedY());
+      assertEquals(model._output._concordance, mm.concordance(), 0.0001);
       
     } finally {
       Scope.exit();

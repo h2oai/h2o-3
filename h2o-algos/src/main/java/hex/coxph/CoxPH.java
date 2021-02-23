@@ -669,6 +669,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           model.update(_job);
           model.score(_parms.train()).delete();
           model._output._training_metrics = ModelMetrics.getFromDKV(model, _parms.train());
+          model._output._concordance = ((ModelMetricsRegressionCoxPH) model._output._training_metrics).concordance();
         }
         
         model.update(_job);

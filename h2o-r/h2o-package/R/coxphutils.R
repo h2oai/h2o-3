@@ -24,6 +24,7 @@
              n            = model$n,
              loglik       = model$loglik,
              nevent       = model$total_event,
+             concordance  = model$concordance,
              coefficients = structure(cbind(coefs$coefficients,
                                             coefs$exp_coef,
                                             coefs$se_coef,

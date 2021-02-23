@@ -71,6 +71,8 @@ public class CoxPHModelV3 extends ModelSchemaV3<CoxPHModel,
     String formula;
     @API(help = "ties", values = {"efron", "breslow"})
     CoxPHModel.CoxPHParameters.CoxPHTies ties;
+    @API(help = "concordance")
+    double concordance;
     
     @Override
     public CoxPHModelOutputV3 fillFromImpl(CoxPHModel.CoxPHOutput impl) {
