@@ -23,6 +23,7 @@ import java.io.PrintStream;
 import java.security.Permission;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.parseAndTrackTestFile;
 
 @CloudSize(1)
 @RunWith(H2ORunner.class)
@@ -51,7 +52,7 @@ public class PredictCsvTest {
     try {
       Scope.enter();
       // The following iris dataset has columns named: {C1,C2,C3,C4,C5}, while the test dataset used below has descriptive names. 
-      Frame train = Scope.track(parseTestFile("smalldata/iris/iris.csv"));
+      Frame train = parseAndTrackTestFile("smalldata/iris/iris.csv");
 
       GBMModel.GBMParameters p = new GBMModel.GBMParameters();
       p._train = train._key;
@@ -107,7 +108,7 @@ public class PredictCsvTest {
     try {
       Scope.enter();
       // The following iris dataset has columns named: {C1,C2,C3,C4,C5}, while the test dataset used below has descriptive names. 
-      Frame train = Scope.track(parseTestFile("smalldata/junit/iris.csv"));
+      Frame train = parseAndTrackTestFile("smalldata/junit/iris.csv");
 
       GBMModel.GBMParameters p = new GBMModel.GBMParameters();
       p._train = train._key;
