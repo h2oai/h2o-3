@@ -888,7 +888,7 @@ public class ArrayUtils {
       if (from[i]>result) result = from[i];
     return result;
   }
-  public static long maxValue(int[] from) {
+  public static int maxValue(int[] from) {
     int result = from[0];
     for (int i = 1; i<from.length; ++i)
       if (from[i]>result) result = from[i];

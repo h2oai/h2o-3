@@ -531,12 +531,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   // Work for each requested fold
   protected int nFoldWork() {
-    if( _parms._fold_column == null ) return _parms._nfolds;
-    Vec f = _parms._train.get().vec(_parms._fold_column);
-    Vec fc = VecUtils.toCategoricalVec(f);
-    int N = fc.domain().length;
-    fc.remove();
-    return N;
+    if( _parms._fold_column == null ) 
+      return _parms._nfolds;
+    Vec fold = _parms._train.get().vec(_parms._fold_column);
+    return FoldAssignment.nFoldWork(fold);
   }
 
   /**
@@ -553,7 +551,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Scope.enter();
 
       // Step 1: Assign each row to a fold
-      final Vec foldAssignment = cv_AssignFold(N);
+      final FoldAssignment foldAssignment = cv_AssignFold(N);
 
       // Step 2: Make 2*N binary weight vectors
       final Vec[] weights = cv_makeWeights(N, foldAssignment);
@@ -604,39 +602,42 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 1: Assign each row to a fold
-  // TODO: Implement better splitting algo (with Strata if response is
-  // categorical), e.g. http://www.lexjansen.com/scsug/2009/Liang_Xie2.pdf
-  public Vec cv_AssignFold(int N) {
+  FoldAssignment cv_AssignFold(int N) {
     assert(N>=2);
     Vec fold = train().vec(_parms._fold_column);
-    if( fold != null ) {
-      if( !fold.isInt() ||
-          (!(fold.min() == 0 && fold.max() == N-1) &&
-           !(fold.min() == 1 && fold.max() == N  ) )) // Allow 0 to N-1, or 1 to N
-        throw new H2OIllegalArgumentException("Fold column must be either categorical or contiguous integers from 0..N-1 or 1..N");
-      return fold;
-    }
-    final long seed = _parms.getOrMakeRealSeed();
-    Log.info("Creating " + N + " cross-validation splits with random number seed: " + seed);
-    switch( _parms._fold_assignment ) {
-    case AUTO:
-    case Random:     return AstKFold.          kfoldColumn(train().anyVec().makeZero(),N,seed);
-    case Modulo:     return AstKFold.    moduloKfoldColumn(train().anyVec().makeZero(),N     );
-    case Stratified: return AstKFold.stratifiedKFoldColumn(response(),N,seed);
-    default:         throw H2O.unimpl();
+    if (fold != null) {
+      return FoldAssignment.fromUserFoldSpecification(N, fold);
+    } else {
+      final long seed = _parms.getOrMakeRealSeed();
+      Log.info("Creating " + N + " cross-validation splits with random number seed: " + seed);
+      switch (_parms._fold_assignment) {
+        case AUTO:
+        case Random:
+          fold = AstKFold.kfoldColumn(train().anyVec().makeZero(), N, seed);
+          break;
+        case Modulo:
+          fold = AstKFold.moduloKfoldColumn(train().anyVec().makeZero(), N);
+          break;
+        case Stratified:
+          fold = AstKFold.stratifiedKFoldColumn(response(), N, seed);
+          break;
+        default:
+          throw H2O.unimpl();
+      }
+      return FoldAssignment.fromInternalFold(N, fold);
     }
   }
 
   // Step 2: Make 2*N binary weight vectors
-  public Vec[] cv_makeWeights( final int N, Vec foldAssignment ) {
+  Vec[] cv_makeWeights(final int N, FoldAssignment foldAssignment) {
     String origWeightsName = _parms._weights_column;
     Vec origWeight  = origWeightsName != null ? train().vec(origWeightsName) : train().anyVec().makeCon(1.0);
-    Frame folds_and_weights = new Frame(foldAssignment, origWeight);
+    Frame folds_and_weights = new Frame(foldAssignment.getAdaptedFold(), origWeight);
     Vec[] weights = new MRTask() {
         @Override public void map(Chunk chks[], NewChunk nchks[]) {
           Chunk fold = chks[0], orig = chks[1];
           for( int row=0; row< orig._len; row++ ) {
-            int foldIdx = (int)fold.at8(row) % N;
+            int foldIdx = (int) fold.atd(row);
             double w = orig.atd(row);
             for( int f = 0; f < N; f++ ) {
               boolean holdout = foldIdx == f;
@@ -646,11 +647,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           }
         }
       }.doAll(2*N,Vec.T_NUM,folds_and_weights).outputFrame().vecs();
+    if (origWeightsName == null)
+      origWeight.remove(); // Cleanup temp
 
     if (_parms._keep_cross_validation_fold_assignment)
-      DKV.put(new Frame(Key.<Frame>make("cv_fold_assignment_" + _result.toString()), new String[]{"fold_assignment"}, new Vec[]{foldAssignment}));
-    if( _parms._fold_column == null && !_parms._keep_cross_validation_fold_assignment) foldAssignment.remove();
-    if( origWeightsName == null ) origWeight.remove(); // Cleanup temp
+      DKV.put(foldAssignment.toFrame(Key.make("cv_fold_assignment_" + _result.toString())));
+    foldAssignment.remove(_parms._keep_cross_validation_fold_assignment);
 
     for( Vec weight : weights )
       if( weight.isConst() )

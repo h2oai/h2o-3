@@ -157,6 +157,27 @@ public class TransformWrappedVec extends WrappedVec {
     double apply();
   }
 
+  public abstract static class Function1DTransform implements Transform {
+    private double _value;
+    @Override
+    public void reset() {
+      // noop
+    }
+
+    @Override
+    public void setInput(int i, double value) {
+      assert i == 0;
+      _value = value;
+    }
+
+    @Override
+    public double apply() {
+      return apply(_value);
+    }
+
+    protected abstract double apply(double x);
+  }
+  
   public interface TransformFactory<T extends Freezable> extends Freezable<T> {
     Transform create(int n_inputs);
   }
