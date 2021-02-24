@@ -12,11 +12,6 @@ test.model.gam.overlapped.knots <- function() {
     # Set the predictor and response columns
     predictors <- c("C1")
     response <- 'target'
-    
-    
-    
-    
-    
     tryCatch({
       gam_model <- h2o.gam(x = predictors,
                            y = response,
@@ -28,7 +23,7 @@ test.model.gam.overlapped.knots <- function() {
     }, error=function(cond) {
         print("Test passed.")
     }, finally={
-        stop_cluster("saver")
+        print("Done.")
     })
     
 }
