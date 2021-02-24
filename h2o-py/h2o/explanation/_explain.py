@@ -157,9 +157,11 @@ def no_progress():
     progress = h2o.job.H2OJob.__PROGRESS_BAR__
     if progress:
         h2o.no_progress()
-    yield
-    if progress:
-        h2o.show_progress()
+    try:
+        yield
+    finally:
+        if progress:
+            h2o.show_progress()
 
 
 class NumpyFrame:
@@ -1524,7 +1526,7 @@ def varimp_heatmap(
     >>> aml.varimp_heatmap()
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
-    varimps, model_ids,  x = varimp_matrix(models=models, top_n=top_n, cluster=cluster, use_pandas=False)
+    varimps, model_ids,  x = varimp(models=models, top_n=top_n, cluster=cluster, use_pandas=False)
 
     plt.figure(figsize=figsize)
     plt.imshow(varimps, cmap=plt.get_cmap(colormap))
@@ -1540,7 +1542,7 @@ def varimp_heatmap(
     return fig
 
 
-def varimp_matrix(
+def varimp(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
         top_n=20,  # type: int
         cluster=True,  # type: bool
@@ -1642,7 +1644,7 @@ def model_correlation_heatmap(
     >>> aml.model_correlation_heatmap(test)
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
-    corr, model_ids = model_correlation_matrix(models, frame, top_n, cluster_models, use_pandas=False)
+    corr, model_ids = model_correlation(models, frame, top_n, cluster_models, use_pandas=False)
 
     if triangular:
         corr = np.where(np.triu(np.ones_like(corr), k=1).astype(bool), float("nan"), corr)
@@ -1666,7 +1668,7 @@ def model_correlation_heatmap(
     return fig
 
 
-def model_correlation_matrix(
+def model_correlation(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
         frame,  # type: h2o.H2OFrame
         top_n=20,  # type: int
