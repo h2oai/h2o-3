@@ -147,7 +147,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     
     private TwoDimTable constructSummary(){
       TwoDimTable summary = new TwoDimTable(
-              "Target Encoder model summary.",
+              "Target Encoder model summary",
               "Summary for target encoder model",
               new String[_input_to_output_columns.length],
               new String[]{"Original name(s)", "Encoded column name(s)"},
