@@ -280,12 +280,15 @@ public class TargetEncoderModelTest extends TestUtil{
 
       TargetEncoderParameters teParams2 = (TargetEncoderParameters) teParameters.clone();
       int[] teColIdx = Stream.of(teColumns).mapToInt(fr::find).toArray();
-      fr.swap(teColIdx[0], teColIdx[1]);
-      teParams2.setTrain(fr._key);
+      Frame modFr = new Frame(fr);
+      modFr.swap(teColIdx[0], teColIdx[1]);
+      DKV.put(modFr);
+      Scope.track(modFr);
+      teParams2.setTrain(modFr._key);
       TargetEncoder te2 = new TargetEncoder(teParams2);
       TargetEncoderModel teModel2 = te2.trainModel().get();
       Scope.track_generic(teModel2);
-      Frame encoded2 = Scope.track(teModel2.transformTraining(fr));
+      Frame encoded2 = Scope.track(teModel2.transformTraining(modFr));
       Frame sortedEncoded2 = Scope.track(Merge.sort(encoded2, encoded2.find(RowIndexTask.ROW_INDEX_COL)));
 
       assertThat(sortedEncoded1.names(), not(equalTo(sortedEncoded2.names())));
