@@ -1,20 +1,10 @@
-#! /bin/bash
+#!/bin/bash -ex
 
-set -e
+VERSION=$1
+USERNAME=$2
+PASSWORD=$3
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-NC='\033[0m' # No Color
-
-function print_red {
-  echo -e "${RED}${1}${NC}"
-}
-
-function print_green {
-  echo -e "${GREEN}${1}${NC}"
-}
-
-case "${1}" in
+case "${VERSION}" in
   3.1)
     major_version="3"
     hdp_version="3.1.0.0"
@@ -51,15 +41,17 @@ case "${1}" in
     ubuntu_repo_version="12"
     ;;
   *)
-    print_red "HDP version '${1}' not supported"
+    echo "HDP version '${1}' not supported"
     exit 1
 esac
 
 export HDP_VERSION=${hdp_version}
 export UBUNTU_REPO_VERSION=${ubuntu_repo_version}
 
-echo -e "Building for HDP version ${GREEN}${hdp_version}${NC}"
+echo -e "Building for HDP version ${hdp_version}"
 
-wget http://public-repo-1.hortonworks.com/HDP/ubuntu${ubuntu_repo_version}/${major_version}.x/updates/${hdp_version}/hdp.list -O /etc/apt/sources.list.d/hdp.list
+wget --http-user=${USERNAME} --http-passwd=${PASSWORD} \
+  http://archive.cloudera.com/p/HDP/${major_version}.x/${hdp_version}/ubuntu${ubuntu_repo_version}/hdp.list \
+  -O /etc/apt/sources.list.d/hdp.list
 gpg --keyserver keyserver.ubuntu.com --recv-keys B9733A7A07513CAD
 gpg -a --export 07513CAD | apt-key add -
