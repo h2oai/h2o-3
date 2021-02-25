@@ -1858,16 +1858,21 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    * @return A Frame containing the prediction column, and class distribution
    */
   @Override
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
+  protected PredictScoreResult predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     String [] names = makeScoringNames();
     String [][] domains = new String[names.length][];
     GLMScore gs = makeScoringTask(adaptFrm,true,j, computeMetrics);
     assert gs._dinfo._valid:"_valid flag should be set on data info when doing scoring";
     gs.doAll(names.length,Vec.T_NUM,gs._dinfo._adaptedFrame);
-    if (gs._computeMetrics)
-      gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
+    ModelMetrics.MetricBuilder<?> mb = null;
+    Frame rawFrame = null;
+    if (gs._computeMetrics) {
+      mb = gs._mb;
+      rawFrame = gs.outputFrame();
+    }
     domains[0] = gs._domain;
-    return gs.outputFrame(Key.<Frame>make(destination_key),names, domains);
+    Frame outputFrame = gs.outputFrame(Key.make(destination_key), names, domains);
+    return new PredictScoreResult(mb, rawFrame, outputFrame);
   }
 
   @Override public String [] makeScoringNames(){

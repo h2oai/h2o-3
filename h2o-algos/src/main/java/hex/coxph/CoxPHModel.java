@@ -275,7 +275,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
   }
 
   @Override
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job job, boolean computeMetrics, CFuncRef customMetricFunc) {
+  protected PredictScoreResult predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job job, boolean computeMetrics, CFuncRef customMetricFunc) {
     int nResponses = 0;
     for (String col : _parms.responseCols())
       if (adaptFrm.find(col) != -1)
@@ -286,15 +286,15 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     CoxPHScore score = new CoxPHScore(scoringInfo, _output, _parms.isStratified(), null != _parms._offset_column);
     final Frame scored = score
                          .doAll(Vec.T_NUM, scoringInfo._adaptedFrame)
-                         .outputFrame(Key.<Frame>make(destination_key), new String[]{"lp"}, null);
-    
+                         .outputFrame(Key.make(destination_key), new String[]{"lp"}, null);
+
+    ModelMetrics.MetricBuilder<?> mb = null;
     if (computeMetrics) {
-      ModelMetricsRegressionCoxPH mm = makeMetricBuilder(null).makeModelMetrics(this, fr, adaptFrm, scored);
+      mb = makeMetricBuilder(null);
     }
-
-    return scored;
+    return new PredictScoreResult(mb, scored, scored);
   }
-
+  
   @Override
   public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics) {
     boolean createStrataVec = _parms.isStratified() && (test.vec(_parms._strata_column) == null);

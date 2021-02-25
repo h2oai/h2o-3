@@ -131,13 +131,13 @@ public class SVDModel extends Model<SVDModel, SVDModel.SVDParameters, SVDModel.S
 
       @Override public double[] perRow(double[] preds, float[] dataRow, Model m) { return preds; }
 
-      @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
+      @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrameUnused, Frame predsUnused) {
         return m.addModelMetrics(new ModelMetricsSVD(m, f, _customMetric));
       }
     }
   }
   
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
+  @Override protected PredictScoreResult predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     Frame adaptFrm = new Frame(adaptedFr);
     for(int i = 0; i < _parms._nv; i++)
       adaptFrm.add("PC"+String.valueOf(i+1),adaptFrm.anyVec().makeZero());
@@ -162,8 +162,8 @@ public class SVDModel extends Model<SVDModel, SVDModel.SVDParameters, SVDModel.S
 
     f = new Frame(Key.<Frame>make(destination_key), f.names(), f.vecs());
     DKV.put(f);
-    makeMetricBuilder(null).makeModelMetrics(this, orig, null, null);
-    return f;
+    ModelMetrics.MetricBuilder<?> mb = makeMetricBuilder(null);
+    return new PredictScoreResult(mb, f, f);
   }
 
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {

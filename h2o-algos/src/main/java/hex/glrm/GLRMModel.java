@@ -221,7 +221,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
   // GLRM scoring is data imputation based on feature domains using reconstructed XY (see Udell (2015), Section 5.3)
   // Check if the frame is the same as used in training.  If yes, return the XY.  Otherwise, take the archetypes and
   // generate new coefficients for it and then do X*Y
-  private Frame reconstruct(Frame orig, Frame adaptedFr, Key<Frame> destination_key, boolean save_imputed, boolean reverse_transform) {
+  private PredictScoreResult reconstruct(Frame orig, Frame adaptedFr, Key<Frame> destination_key, boolean save_imputed, boolean reverse_transform) {
     int ncols = _output._names.length;
     assert ncols == adaptedFr.numCols();
     String prefix = "reconstr_";
@@ -263,8 +263,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
 
     f = new Frame((destination_key == null ? Key.<Frame>make() : destination_key), f.names(), f.vecs());
     DKV.put(f);
-    gs._mb.makeModelMetrics(GLRMModel.this, orig, null, null);   // save error metrics based on imputed data
-    return f;
+    return new PredictScoreResult(gs._mb, f, f);
   }
 
   public Key<Frame> gen_representation_key(Frame fr) {
@@ -274,14 +273,16 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
       return Key.make("GLRMLoading_"+fr._key);
   }
 
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
-    return reconstruct(orig, adaptedFr, Key.<Frame>make(destination_key), true, _parms._impute_original);
+  @Override protected PredictScoreResult predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
+    return reconstruct(orig, adaptedFr, Key.make(destination_key), true, _parms._impute_original);
   }
 
   @Override public Frame scoreReconstruction(Frame frame, Key<Frame> destination_key, boolean reverse_transform) {
     Frame adaptedFr = new Frame(frame);
     adaptTestForTrain(adaptedFr, true, false);
-    return reconstruct(frame, adaptedFr, destination_key, true, reverse_transform);
+    PredictScoreResult result = reconstruct(frame, adaptedFr, destination_key, true, reverse_transform);
+    result.getOrMakeMetrics(frame, adaptedFr);
+    return result.getPredictions();
   }
 
   /**

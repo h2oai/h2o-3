@@ -525,16 +525,21 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
   }
 
   @Override
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics,
-                                   CFuncRef customMetricFunc) {
+  protected PredictScoreResult predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, 
+                                                boolean computeMetrics, CFuncRef customMetricFunc) {
     String[] predictNames = makeScoringNames();
     String[][] domains = new String[predictNames.length][];
     GAMScore gs = makeScoringTask(adaptFrm, true, j, computeMetrics);
     gs.doAll(predictNames.length, Vec.T_NUM, gs._dinfo._adaptedFrame);
-    if (gs._computeMetrics)
-      gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
+    ModelMetrics.MetricBuilder<?> mb = null;
+    Frame rawFrame = null;
+    if (gs._computeMetrics) {
+      mb = gs._mb;
+      rawFrame = gs.outputFrame();
+    }
     domains[0] = gs._predDomains;
-    return gs.outputFrame(Key.make(destination_key), predictNames, domains);  // place holder
+    Frame outputFrame = gs.outputFrame(Key.make(destination_key), predictNames, domains);
+    return new PredictScoreResult(mb, rawFrame, outputFrame);
   }
   
   private GAMScore makeScoringTask(Frame adaptFrm, boolean makePredictions, Job j, boolean computeMetrics) {
