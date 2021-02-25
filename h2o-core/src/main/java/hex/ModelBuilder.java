@@ -763,14 +763,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Frame adaptFr = new Frame(cvValid);
       M cvModel = cvModelBuilders[i].dest().get();
       cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
-      mbs[i] = cvModel.scoreMetrics(adaptFr);
       if (nclasses() == 2 /* need holdout predictions for gains/lift table */
               || _parms._keep_cross_validation_predictions
               || (cvModel.isDistributionHuber() /*need to compute quantiles on abs error of holdout predictions*/)) {
         String predName = cvModelBuilders[i].getPredictionKey();
         Model.PredictScoreResult result = cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.NOP);
         result.getOrMakeMetrics(cvValid, adaptFr);
+        mbs[i] = result.getOrMakeMetricBuilder(adaptFr);
         DKV.put(cvModel);
+      } else {
+        mbs[i] = cvModel.scoreMetrics(adaptFr);
       }
       // free resources as early as possible
       Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, cvValid);
