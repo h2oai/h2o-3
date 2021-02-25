@@ -21,7 +21,7 @@ public class ModelMetricsPCA extends ModelMetricsUnsupervised {
     public double[] perRow(double[] preds, float[] dataRow, Model m) { return preds; }
 
     @Override
-    public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
+    public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrameUnused, Frame predsUnused) {
       return m.addModelMetrics(new ModelMetricsPCA(m, f, _customMetric));
     }
   }

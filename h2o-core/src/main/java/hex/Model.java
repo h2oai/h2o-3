@@ -1691,7 +1691,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
     }
-    Frame output = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics, customMetricFunc); // Predict & Score
+    PredictScoreResult result = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics, customMetricFunc); // Predict & Score
+    Frame output = result.getPredictions();
+    result.getOrMakeMetrics(fr, adaptFr);
     // Log modest confusion matrices
     Vec predicted = output.vecs()[0]; // Modeled/predicted response
     String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
@@ -1845,7 +1847,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param computeMetrics
    * @return A Frame containing the prediction column, and class distribution
    */
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
+  protected PredictScoreResult predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     // Build up the names & domains.
     String[] names = makeScoringNames();
     String[][] domains = makeScoringDomains(adaptFrm, computeMetrics, names);
@@ -1859,12 +1861,44 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                                    j,
                                    customMetricFunc).doAll(names.length, Vec.T_NUM, adaptFrm);
 
-    if (computeMetrics && bs._mb != null) //metric builder can be null if training was interrupted/cancelled
-      bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
-    Frame predictFr = bs.outputFrame(Key.<Frame>make(destination_key), names, domains);
-    return postProcessPredictions(adaptFrm, predictFr, j);
+    ModelMetrics.MetricBuilder<?> mb = null;
+    Frame rawPreds = null;
+    if (computeMetrics && bs._mb != null) {
+      rawPreds = bs.outputFrame();
+      mb = bs._mb;
+    }
+    Frame predictFr = bs.outputFrame(Key.make(destination_key), names, domains);
+    Frame outputPreds = postProcessPredictions(adaptFrm, predictFr, j);
+    return new PredictScoreResult(mb, rawPreds, outputPreds);
   }
 
+  protected class PredictScoreResult {
+    private final ModelMetrics.MetricBuilder<?> _mb; // metric builder can be null if training was interrupted/cancelled even when metrics were requested
+    private final Frame _rawPreds;
+    private final Frame _outputPreds;
+
+    public PredictScoreResult(ModelMetrics.MetricBuilder<?> mb, Frame rawPreds, Frame outputPreds) {
+      _mb = mb;
+      _rawPreds = rawPreds;
+      _outputPreds = outputPreds;
+    }
+    
+    public final Frame getPredictions() {
+      return _outputPreds;
+    }
+
+    public ModelMetrics.MetricBuilder<?> getOrMakeMetricBuilder(Frame adaptFrm) {
+      return _mb;
+    }
+
+    public ModelMetrics getOrMakeMetrics(Frame fr, Frame adaptFrm) {
+      if (_mb == null)
+        return null;
+      return _mb.makeModelMetrics(Model.this, fr, adaptFrm, _rawPreds);
+    }
+
+  }
+  
   /**
    * Post-process prediction frame.
    *

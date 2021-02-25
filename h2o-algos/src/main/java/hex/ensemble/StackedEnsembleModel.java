@@ -136,7 +136,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
    * @return A Frame containing the prediction column, and class distribution
    */
   @Override
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
+  protected PredictScoreResult predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     final String seKey = this._key.toString();
     Frame levelOneFrame = new Frame(Key.<Frame>make("preds_levelone_" + seKey + fr._key));
 
@@ -183,13 +183,14 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         computeMetrics, 
         CFuncRef.from(_parms._custom_metric_func)
     );
+    ModelMetrics mmStackedEnsemble = null;
     if (computeMetrics) {
       // #score has just stored a ModelMetrics object for the (metalearner, preds_levelone) Model/Frame pair.
       // We need to be able to look it up by the (this, fr) pair.
       // The ModelMetrics object for the metalearner will be removed when the metalearner is removed.
       Key<ModelMetrics>[] mms = metalearner._output.getModelMetrics();
       ModelMetrics lastComputedMetric = mms[mms.length - 1].get();
-      ModelMetrics mmStackedEnsemble = lastComputedMetric.deepCloneWithDifferentModelAndFrame(this, fr);
+      mmStackedEnsemble = lastComputedMetric.deepCloneWithDifferentModelAndFrame(this, fr);
       this.addModelMetrics(mmStackedEnsemble);
       //now that we have the metric set on the SE model, removing the one we just computed on metalearner (otherwise it leaks in client mode)
       for (Key<ModelMetrics> mm : metalearner._output.clearModelMetrics(true)) {
@@ -197,9 +198,28 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       }
     }
     Frame.deleteTempFrameAndItsNonSharedVecs(levelOneFrame, adaptFrm);
-    return predictFr;
+    return new StackedEnsemblePredictScoreResult(predictFr, mmStackedEnsemble);
   }
 
+  private class StackedEnsemblePredictScoreResult extends PredictScoreResult {
+    private final ModelMetrics _modelMetrics;
+
+    public StackedEnsemblePredictScoreResult(Frame preds, ModelMetrics modelMetrics) {
+      super(null, preds, preds);
+      _modelMetrics = modelMetrics;
+    }
+
+    @Override
+    public ModelMetrics getOrMakeMetrics(Frame fr, Frame adaptFrm) {
+      return _modelMetrics;
+    }
+
+    @Override
+    public ModelMetrics.MetricBuilder<?> getOrMakeMetricBuilder(Frame adaptFrm) {
+      return StackedEnsembleModel.this.scoreMetrics(adaptFrm);
+    }
+  }
+  
   /**
    * Is the baseModel's prediction used in the metalearner?
    *
@@ -242,9 +262,10 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
             ? MRUtils.sampleFrame(frame, _parms._score_training_samples, _parms._seed)
             : frame;
     try {
-      Frame pred = this.predictScoreImpl(scoredFrame, new Frame(scoredFrame), null, job, true, CFuncRef.from(_parms._custom_metric_func));
-      pred.delete();
-      return ModelMetrics.getFromDKV(this, scoredFrame);
+      Frame adaptedFrame = new Frame(scoredFrame);
+      PredictScoreResult result = predictScoreImpl(scoredFrame, adaptedFrame, null, job, true, CFuncRef.from(_parms._custom_metric_func));
+      result.getPredictions().delete();
+      return result.getOrMakeMetrics(scoredFrame, adaptedFrame);
     } finally {
       if (scoredFrame != frame) scoredFrame.delete();
     }
