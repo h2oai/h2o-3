@@ -773,10 +773,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         DKV.put(cvModel);
       }
       // free resources as early as possible
-      if (adaptFr != null) {
-        Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, cvValid);
-        DKV.remove(adaptFr._key,fs);
-      }
+      Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, cvValid);
+      DKV.remove(adaptFr._key,fs);
       DKV.remove(cvModelBuilders[i]._parms._train,fs);
       DKV.remove(cvModelBuilders[i]._parms._valid,fs);
       weights[2*i  ].remove(fs);
