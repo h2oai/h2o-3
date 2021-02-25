@@ -131,7 +131,7 @@ public class SVDModel extends Model<SVDModel, SVDModel.SVDParameters, SVDModel.S
 
       @Override public double[] perRow(double[] preds, float[] dataRow, Model m) { return preds; }
 
-      @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrameUnused, Frame predsUnused) {
+      @Override public ModelMetrics makeModelMetrics(Model m, Frame f) {
         return m.addModelMetrics(new ModelMetricsSVD(m, f, _customMetric));
       }
     }

@@ -135,7 +135,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
     }
 
     @Override
-    public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedframeUnused, Frame predsUnused) {
+    public ModelMetrics makeModelMetrics(Model m, Frame f) {
       assert m instanceof ClusteringModel;
       ClusteringModel clm = (ClusteringModel) m;
       ModelMetricsClustering mm = new ModelMetricsClustering(m, f, _customMetric);
