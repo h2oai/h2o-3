@@ -163,6 +163,13 @@ class H2OAutoMLBaseMixin:
         if criterion is not None:
             criterion = criterion.lower()
 
+        if "deviance" == criterion:
+            criterion = "mean_residual_deviance"
+            import warnings
+            warnings.warn(
+                'Usage of criterion="deviance" is deprecated, please use criterion="mean_residual_deviance".',
+                DeprecationWarning)
+
         if algorithm is not None:
             if algorithm.lower() not in ("basemodel", "deeplearning", "drf", "gbm",
                                          "glm", "stackedensemble", "xgboost"):

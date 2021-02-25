@@ -616,9 +616,9 @@ h2o.get_leaderboard <- function(object, extra_columns=NULL) {
 h2o.get_best_model <- function(object,
                                algorithm = c("any", "basemodel", "deeplearning", "drf", "gbm",
                                              "glm", "stackedensemble", "xgboost"),
-                               criterion = c("AUTO", "auc", "aucpr", "logloss", "mae", "mean_per_class_error",
-                                             "mean_residual_deviance", "mse", "predict_time_per_row_ms",
-                                             "rmse", "rmsle", "training_time_ms")) {
+                               criterion = c("AUTO", "AUC", "AUCPR", "logloss", "MAE", "mean_per_class_error",
+                                             "deviance", "mean_residual_deviance", "MSE", "predict_time_per_row_ms",
+                                             "RMSE", "RMSLE", "training_time_ms")) {
   if (!.is.H2OAutoML(object))
     stop("Only H2OAutoML instances are currently supported.")
 
@@ -627,6 +627,11 @@ h2o.get_best_model <- function(object,
 
   criterion <- match.arg(arg = if (missing(criterion) || tolower(criterion) == "auto") "auto" else tolower(criterion),
                          choices = tolower(eval(formals()$criterion)))
+
+  if ("deviance" == criterion) {
+    criterion <- "mean_residual_deviance"
+    warning('Usage of criterion = "deviance" is deprecated, please use criterion = "mean_residual_deviance".')
+  }
 
   higher_is_better <- c("auc", "aucpr")
 
