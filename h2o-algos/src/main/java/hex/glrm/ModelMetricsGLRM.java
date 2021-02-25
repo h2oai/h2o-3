@@ -78,7 +78,7 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
     }
 
     @Override
-    public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
+    public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrameUnused, Frame predsUnused) {
       // double numerr = _numcnt > 0 ? _sumsqe / _numcnt : Double.NaN;
       // double caterr = _catcnt > 0 ? _miscls / _catcnt : Double.NaN;
       // return m._output.addModelMetrics(new ModelMetricsGLRM(m, f, numerr, caterr));
