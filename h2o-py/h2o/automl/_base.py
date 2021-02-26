@@ -136,9 +136,9 @@ class H2OAutoMLBaseMixin:
         :param criterion: Criterion can be one of the metrics reported in leaderboard. If set to None, the same ordering
                           as in the leaderboard will be used.
                           Avaliable criteria:
-                            - Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle
-                            - Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse
-                            - Multinomial metrics: mean_per_class_error, logloss, rmse, mse, auc, aucpr
+                            - Regression metrics: deviance, RMSE, MSE, MAE, RMSLE
+                            - Binomial metrics: AUC, logloss, AUCPR, mean_per_class_error, RMSE, MSE
+                            - Multinomial metrics: mean_per_class_error, logloss, RMSE, MSE, AUC, AUCPR
                           The following additional leaderboard information can be also used as a criterion:
                             - 'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).
                             - 'predict_time_per_row_ms`: column providing the average prediction time by the model for a single row.
@@ -165,10 +165,6 @@ class H2OAutoMLBaseMixin:
 
         if "deviance" == criterion:
             criterion = "mean_residual_deviance"
-            import warnings
-            warnings.warn(
-                'Usage of criterion="deviance" is deprecated, please use criterion="mean_residual_deviance".',
-                DeprecationWarning)
 
         if algorithm is not None:
             if algorithm.lower() not in ("basemodel", "deeplearning", "drf", "gbm",

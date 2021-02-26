@@ -591,9 +591,9 @@ h2o.get_leaderboard <- function(object, extra_columns=NULL) {
 #' as in the leaderboard will be used.
 #' Avaliable criteria:
 #' \itemize{
-#' \item{Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle}
-#' \item{Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse}
-#' \item{Multinomial metrics: mean_per_class_error, logloss, rmse, mse, auc, aucpr}
+#' \item{Regression metrics: deviance, RMSE, MSE, MAE, RMSLE}
+#' \item{Binomial metrics: AUC, logloss, AUCPR, mean_per_class_error, RMSE, MSE}
+#' \item{Multinomial metrics: mean_per_class_error, logloss, RMSE, MSE, AUC, AUCPR}
 #' }
 #' The following additional leaderboard information can be also used as a criterion:
 #' \itemize{
@@ -617,7 +617,7 @@ h2o.get_best_model <- function(object,
                                algorithm = c("any", "basemodel", "deeplearning", "drf", "gbm",
                                              "glm", "stackedensemble", "xgboost"),
                                criterion = c("AUTO", "AUC", "AUCPR", "logloss", "MAE", "mean_per_class_error",
-                                             "deviance", "mean_residual_deviance", "MSE", "predict_time_per_row_ms",
+                                             "deviance", "MSE", "predict_time_per_row_ms",
                                              "RMSE", "RMSLE", "training_time_ms")) {
   if (!.is.H2OAutoML(object))
     stop("Only H2OAutoML instances are currently supported.")
@@ -626,11 +626,10 @@ h2o.get_best_model <- function(object,
                          choices = eval(formals()$algorithm))
 
   criterion <- match.arg(arg = if (missing(criterion) || tolower(criterion) == "auto") "auto" else tolower(criterion),
-                         choices = tolower(eval(formals()$criterion)))
+                         choices = c(tolower(eval(formals()$criterion)), "mean_residual_deviance"))
 
   if ("deviance" == criterion) {
     criterion <- "mean_residual_deviance"
-    warning('Usage of criterion = "deviance" is deprecated, please use criterion = "mean_residual_deviance".')
   }
 
   higher_is_better <- c("auc", "aucpr")
