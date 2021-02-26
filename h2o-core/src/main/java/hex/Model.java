@@ -1693,7 +1693,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     PredictScoreResult result = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics, customMetricFunc); // Predict & Score
     Frame output = result.getPredictions();
-    result.getOrMakeMetrics(fr, adaptFr);
+    result.makeModelMetrics(fr, adaptFr);
     // Log modest confusion matrices
     Vec predicted = output.vecs()[0]; // Modeled/predicted response
     String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
@@ -1887,11 +1887,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return _outputPreds;
     }
 
-    public ModelMetrics.MetricBuilder<?> getOrMakeMetricBuilder(Frame adaptFrm) {
+    public ModelMetrics.MetricBuilder<?> getMetricBuilder() {
       return _mb;
     }
 
-    public ModelMetrics getOrMakeMetrics(Frame fr, Frame adaptFrm) {
+    public ModelMetrics makeModelMetrics(Frame fr, Frame adaptFrm) {
       if (_mb == null)
         return null;
       return _mb.makeModelMetrics(Model.this, fr, adaptFrm, _rawPreds);

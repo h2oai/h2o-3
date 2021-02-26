@@ -281,7 +281,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     Frame adaptedFr = new Frame(frame);
     adaptTestForTrain(adaptedFr, true, false);
     PredictScoreResult result = reconstruct(frame, adaptedFr, destination_key, true, reverse_transform);
-    result.getOrMakeMetrics(frame, adaptedFr);
+    result.makeModelMetrics(frame, adaptedFr);
     return result.getPredictions();
   }
 

@@ -768,8 +768,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
               || (cvModel.isDistributionHuber() /*need to compute quantiles on abs error of holdout predictions*/)) {
         String predName = cvModelBuilders[i].getPredictionKey();
         Model.PredictScoreResult result = cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.NOP);
-        result.getOrMakeMetrics(cvValid, adaptFr);
-        mbs[i] = result.getOrMakeMetricBuilder(adaptFr);
+        result.makeModelMetrics(cvValid, adaptFr);
+        mbs[i] = result.getMetricBuilder();
         DKV.put(cvModel);
       } else {
         mbs[i] = cvModel.scoreMetrics(adaptFr);

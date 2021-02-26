@@ -210,13 +210,14 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     }
 
     @Override
-    public ModelMetrics getOrMakeMetrics(Frame fr, Frame adaptFrm) {
+    public ModelMetrics makeModelMetrics(Frame fr, Frame adaptFrm) {
       return _modelMetrics;
     }
 
     @Override
-    public ModelMetrics.MetricBuilder<?> getOrMakeMetricBuilder(Frame adaptFrm) {
-      return StackedEnsembleModel.this.scoreMetrics(adaptFrm);
+    public ModelMetrics.MetricBuilder<?> getMetricBuilder() {
+      throw new UnsupportedOperationException("Stacked Ensemble model doesn't implement MetricBuilder infrastructure code, " +
+              "retrieve your metrics by calling getOrMakeMetrics method.");
     }
   }
   
@@ -265,7 +266,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       Frame adaptedFrame = new Frame(scoredFrame);
       PredictScoreResult result = predictScoreImpl(scoredFrame, adaptedFrame, null, job, true, CFuncRef.from(_parms._custom_metric_func));
       result.getPredictions().delete();
-      return result.getOrMakeMetrics(scoredFrame, adaptedFrame);
+      return result.makeModelMetrics(scoredFrame, adaptedFrame);
     } finally {
       if (scoredFrame != frame) scoredFrame.delete();
     }
