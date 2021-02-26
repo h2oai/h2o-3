@@ -29,3 +29,4 @@ test.model.gam.overlapped.knots <- function() {
 }
 
 doTest("General Additive Model test for overlapped knots", test.model.gam.overlapped.knots)
+
