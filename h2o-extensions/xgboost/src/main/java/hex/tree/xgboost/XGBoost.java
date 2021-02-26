@@ -223,10 +223,15 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         error("_distribution","Invalid distribution: " + _parms._distribution);
     }
 
-    if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
-      error("_learn_rate", "learn_rate must be between 0 and 1");
-    if( !(0. < _parms._col_sample_rate && _parms._col_sample_rate <= 1.0) )
-      error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
+    checkPositiveRate("learn_rate", _parms._learn_rate);
+    checkPositiveRate("sample_rate", _parms._sample_rate);
+    checkPositiveRate("subsample", _parms._subsample);
+    checkPositiveRate("col_sample_rate", _parms._col_sample_rate);
+    checkPositiveRate("col_sample_rate_per_tree", _parms._col_sample_rate_per_tree);
+    checkPositiveRate("colsample_bylevel", _parms._colsample_bylevel);
+    checkPositiveRate("colsample_bynode", _parms._colsample_bynode);
+    checkPositiveRate("colsample_bytree", _parms._colsample_bytree);
+
     if (_parms._grow_policy== XGBoostModel.XGBoostParameters.GrowPolicy.lossguide && 
         _parms._tree_method!= XGBoostModel.XGBoostParameters.TreeMethod.hist)
       error("_grow_policy", "must use tree_method=hist for grow_policy=lossguide");
@@ -249,6 +254,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       error("_tree_method", "exact is not supported in distributed environment, set build_tree_one_node to true to use exact");
 
     PlattScalingHelper.initCalibration(this, _parms, expensive);
+  }
+
+  private void checkPositiveRate(String paramName, double rateValue) {
+    if (rateValue <= 0 || rateValue > 1)
+      error("_" + paramName, paramName + " must be between 0 (exclusive) and 1 (inclusive)");
   }
 
   static boolean allowMultiGPU() {

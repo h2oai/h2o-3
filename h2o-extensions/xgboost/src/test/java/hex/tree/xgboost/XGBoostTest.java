@@ -13,6 +13,7 @@ import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
 import hex.FeatureInteraction;
 import hex.FeatureInteractions;
+import hex.schemas.XGBoostV3;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import hex.tree.xgboost.predict.XGBoostNativeVariableImportance;
@@ -35,6 +36,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.rapids.Rapids;
 import water.util.ArrayUtils;
+import water.util.PojoUtils;
 import water.util.TwoDimTable;
 
 import java.io.*;
@@ -2285,4 +2287,58 @@ public class XGBoostTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testSamplingRatesAreValidated() {
+    try {
+      Scope.enter();
+      final Frame frame = TestFrameCatalog.oneChunkFewRows();
+
+      List<String> checkedSamplingParams = Arrays.asList(
+              "colsample_bytree", "sample_rate", "col_sample_rate_per_tree", "colsample_bynode", 
+              "subsample", "colsample_bylevel", "col_sample_rate"
+      );
+      List<String> ignoredParams = Collections.singletonList("sample_type");
+      Set<String> knownSamplingParams = new HashSet<>();
+      knownSamplingParams.addAll(checkedSamplingParams);
+      knownSamplingParams.addAll(ignoredParams);
+
+      Set<String> samplingParams = Arrays.stream(XGBoostV3.XGBoostParametersV3.fields)
+              .filter(name -> name.contains("sample"))
+              .collect(Collectors.toSet());
+      assertEquals(new HashSet<>(knownSamplingParams), samplingParams);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = frame._key;
+      parms._response_column = frame.name(0);
+
+      hex.tree.xgboost.XGBoost builder = new hex.tree.xgboost.XGBoost(parms);
+      assertNoValidationError(builder);
+
+      for (String param : checkedSamplingParams) {
+        assertNoValidationError(runParamValidation(parms, param, 1e-3));
+        assertNoValidationError(runParamValidation(parms, param, 0.42));
+        assertNoValidationError(runParamValidation(parms, param, 1.0));
+        assertHasValidationError(runParamValidation(parms, param, 0.0), param, "must be between 0 (exclusive) and 1 (inclusive)");
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private hex.tree.xgboost.XGBoost runParamValidation(XGBoostModel.XGBoostParameters parms, String param, double value) {
+    XGBoostModel.XGBoostParameters p = (XGBoostModel.XGBoostParameters) parms.clone();
+    PojoUtils.setField(p, param, value, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+    return new hex.tree.xgboost.XGBoost(p);
+  }
+  
+  private void assertNoValidationError(hex.tree.xgboost.XGBoost builder) {
+    assertEquals("", builder.validationErrors());
+  }
+
+  private void assertHasValidationError(hex.tree.xgboost.XGBoost builder, String field, String error) {
+    System.out.println(builder.validationErrors());
+    assertTrue(field, builder.validationErrors().contains(error));
+  }
+
 }
