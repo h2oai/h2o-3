@@ -61,8 +61,8 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
   }
 
   @Override
-  protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
-    return null;
+  protected PredictScoreResult predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
+    return new PredictScoreResult(null, null, null);
   }
 
   @Override

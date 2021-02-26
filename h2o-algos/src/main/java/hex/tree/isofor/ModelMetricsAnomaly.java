@@ -64,7 +64,7 @@ public class ModelMetricsAnomaly extends ModelMetricsUnsupervised implements Sco
     }
 
     @Override
-    public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
+    public ModelMetrics makeModelMetrics(Model m, Frame f) {
       return m.addModelMetrics(new ModelMetricsAnomaly(m, f, _customMetric, _nobs, _total_score, _total_norm_score, _description));
     }
   }
