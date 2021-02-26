@@ -1,5 +1,6 @@
 package hex;
 
+import hex.genmodel.utils.DistributionFamily;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -11,6 +12,7 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.test.dummy.DummyModel;
 import water.test.dummy.DummyModelBuilder;
 import water.test.dummy.DummyModelParameters;
 import water.test.dummy.MessageInstallAction;
@@ -26,6 +28,7 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.*;
 import static water.TestUtil.ar;
+import static water.TestUtil.ivec;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -348,6 +351,34 @@ public class ModelBuilderTest {
         Thread.currentThread().interrupt();
       }
       return super.run(parms);
+    }
+  }
+
+  @Test
+  public void testFoldColumnHaveExtraLevels() {
+    DummyModel model = null;
+    try {
+      Scope.enter();
+      Frame trainingFrame = TestFrameCatalog.oneChunkFewRows();
+      Vec fold = Scope.track(ivec(1, 3, 1));
+      fold.setDomain(new String[]{"NoDataFold0", "fold1", "NoDataFold2", "fold3", "NoDataFold4"});
+      DKV.put(fold);
+      trainingFrame.add("Fold", fold);
+      DKV.put(trainingFrame);
+
+      DummyModelParameters params = new DummyModelParameters();
+      params._response_column = "col_3";
+      params._train = trainingFrame._key;
+      params._fold_column = "Fold";
+      params._makeModel = true;
+
+      model = new DummyModelBuilder(params).trainModel().get();
+      Scope.track_generic(model);
+      assertEquals(2, model._output._cross_validation_models.length);
+    } finally {
+      if (model != null)
+        model.deleteCrossValidationModels();
+      Scope.exit();
     }
   }
 
