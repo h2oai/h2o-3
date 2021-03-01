@@ -233,10 +233,6 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         if (!dataset.vec(cname).isNumeric())
           error("gam_columns", "column " + cname + " is not numerical and cannot be used as a gam" +
                   " column.");
-        if (_parms._num_knots != null && dataset.vec(cname).isInt() && 
-                ((dataset.vec(cname).max() - dataset.vec(cname).min() + 1) < _parms._num_knots[index]))
-          error("gam_columns", "column " + cname + " has cardinality lower than the number of knots and cannot be used as a gam" +
-                  " column.");
       }
     }
     if ((_parms._bs != null) && (_parms._gam_columns.length != _parms._bs.length))  // check length
@@ -251,6 +247,13 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           _parms._num_knots[index] = numRowMinusNACnt < 10 ? (int) numRowMinusNACnt : 10;
         }
       }
+    }
+    for (int index = 0; index < _parms._gam_columns.length; index++) {
+      Frame dataset = _parms.train();
+      String cname = _parms._gam_columns[index];
+      if (dataset.vec(cname).isInt() && ((dataset.vec(cname).max() - dataset.vec(cname).min() + 1) < _parms._num_knots[index]))
+        error("gam_columns", "column " + cname + " has cardinality lower than the number of knots and cannot be used as a gam" +
+                " column.");
     }
     int cindex = 0;
     for (int numKnots : _parms._num_knots) {  // check to make sure numKnot is valid
