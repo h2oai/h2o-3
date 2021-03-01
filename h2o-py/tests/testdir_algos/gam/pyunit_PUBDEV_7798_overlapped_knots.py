@@ -26,11 +26,10 @@ def knots_error():
         assert False, "Number of knots validation should have failed"
     except Exception as ex:
         exception = str(ex)
-        assert ("H2OModelBuilderIllegalArgumentException" in exception) and \
-               ("has cardinality lower than the number of knots" in exception)
+        assert ("H2OModelBuilderIllegalArgumentException" in exception) or \
+               ("has cardinality lower than the number of knots" in exception) or \
+               ("does not have enough values to generate well-defined knots" in exception)
         print("Error correctly raised when cardinality < num_knots")
-    else:
-        raise Exception("Error not raised despited cardinality < num_knots")
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(knots_error())
