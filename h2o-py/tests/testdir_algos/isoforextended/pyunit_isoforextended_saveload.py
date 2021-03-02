@@ -31,11 +31,11 @@ def extended_isolation_forest_save_and_load():
         "Expected and H2OExtendedIsolationForestEstimator, but got {0}"\
         .format(reloaded)
     
-    assert (anomaly[0] == anomaly_reloaded[0]), "Output is not the same after reaload"
-    assert anomaly[5] == anomaly_reloaded[5], "Output is not the same after reaload"
-    assert anomaly[33] == anomaly_reloaded[33], "Output is not the same after reaload"
-    assert anomaly[256] == anomaly_reloaded[256], "Output is not the same after reaload"
-    assert anomaly[499] == anomaly_reloaded[499], "Output is not the same after reaload"
+    assert (anomaly[0] == anomaly_reloaded[0]), "Output is not the same after reload"
+    assert anomaly[5] == anomaly_reloaded[5], "Output is not the same after reload"
+    assert anomaly[33] == anomaly_reloaded[33], "Output is not the same after reload"
+    assert anomaly[256] == anomaly_reloaded[256], "Output is not the same after reload"
+    assert anomaly[499] == anomaly_reloaded[499], "Output is not the same after reload"
 
 
 if __name__ == "__main__":
