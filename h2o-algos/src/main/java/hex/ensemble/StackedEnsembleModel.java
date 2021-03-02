@@ -9,6 +9,7 @@ import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
 import water.util.Log;
@@ -73,6 +74,58 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public String _metalearner_fold_column;
     //the training frame used for blending (from which predictions columns are computed)
     public Key<Frame> _blending;
+
+    public enum MetalearnerTransform {
+      NONE(null),
+      Logit(new MRTask() {
+        @Override
+        public void map(Chunk[] cs) {
+          double p, logit;
+          for (int c = 0; c < cs.length; c++) {
+            for (int i = 0; i < cs[c]._len; i++) {
+              p = cs[c].atd(i);
+              logit = Math.log(p/(1-p));
+              cs[c].set(i, Double.isInfinite(logit) ? Double.NaN : logit);  // Algos have troubles dealing with Inf
+            }
+          }
+        }
+      }),
+      PercentileRank(new MRTask() {
+        @Override
+        public void map(Chunk[] cs) {
+          double ranks[] = new double[cs.length];
+          int r;
+          double s, i, j;
+          double denom = cs.length * (cs.length + 1) / 2.0;
+          for (int row = 0; row < cs[0]._len; row++) {
+            for (int colI = 0; colI < cs.length; colI++) {
+              r = 1;
+              s = 0;
+              for (int colJ = 0; colJ < cs.length; colJ++) {
+                i = cs[colI].atd(row);
+                j = cs[colJ].atd(row);
+                if (colI != colJ) {
+                  if (j < i) r ++;
+                  else if (j == i) s ++;
+                }
+              }
+              ranks[colI] = (r + (s/2)) / denom;
+            }
+            for (int colI = 0; colI < cs.length; colI++) {
+              cs[colI].set(row, ranks[colI]);
+            }
+          }
+        }
+      });
+
+      public final MRTask task;
+
+      MetalearnerTransform(MRTask task){
+        this.task = task;
+      }
+    }
+
+    public MetalearnerTransform _metalearner_transform = MetalearnerTransform.NONE;
 
     public Metalearner.Algorithm _metalearner_algorithm = Metalearner.Algorithm.AUTO;
     public String _metalearner_params = new String(); //used for clients code-gen only.
@@ -168,6 +221,9 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       }
     }
 
+    if (_parms._metalearner_transform != null && _parms._metalearner_transform != StackedEnsembleParameters.MetalearnerTransform.NONE) {
+      _parms._metalearner_transform.task.doAll(levelOneFrame);
+    }
     // Add response column, weights columns to level one frame
     StackedEnsemble.addMiscColumnsToLevelOneFrame(_parms, adaptFrm, levelOneFrame, false);
     // TODO: what if we're running multiple in parallel and have a name collision?

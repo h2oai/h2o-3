@@ -6,10 +6,7 @@ import hex.ModelCategory;
 
 import hex.genmodel.utils.DistributionFamily;
 import hex.grid.Grid;
-import water.DKV;
-import water.Job;
-import water.Key;
-import water.Scope;
+import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
@@ -216,7 +213,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       if (baseModels.length != baseModelPredictions.length)
         throw new H2OIllegalArgumentException("Base models and prediction arrays are different lengths.");
 
-      if (null == levelOneKey) levelOneKey = "levelone_" + _model._key.toString();
+      if (null == levelOneKey) levelOneKey = "levelone_" + _model._key.toString() + "_" + _parms._metalearner_transform.toString();
       Frame levelOneFrame = new Frame(Key.<Frame>make(levelOneKey));
 
       for (int i = 0; i < baseModels.length; i++) {
@@ -233,11 +230,13 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         }
         StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, baseModelPreds, levelOneFrame);
       }
+      if (_parms._metalearner_transform != null && _parms._metalearner_transform != StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform.NONE) {
+        _parms._metalearner_transform.task.doAll(levelOneFrame);
+      }
       // Add metalearner fold column, weights column to level one frame if it exists
       addMiscColumnsToLevelOneFrame(_model._parms, actuals, levelOneFrame, true);
 
       // TODO: what if we're running multiple in parallel and have a name collision?
-
       Frame old = DKV.getGet(levelOneFrame._key);
       if (old != null && old instanceof Frame) {
         Frame oldFrame = (Frame) old;
@@ -338,11 +337,11 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         _model.unlock(_job);
       }
 
-      String levelOneTrainKey = "levelone_training_" + _model._key.toString();
+      String levelOneTrainKey = "levelone_training_" + _model._key.toString() + "_" + _parms._metalearner_transform;
       Frame levelOneTrainingFrame = prepareLevelOneFrame(levelOneTrainKey, _model._parms._base_models, getActualTrainingFrame(), true);
       Frame levelOneValidationFrame = null;
       if (_model._parms.valid() != null) {
-        String levelOneValidKey = "levelone_validation_" + _model._key.toString();
+        String levelOneValidKey = "levelone_validation_" + _model._key.toString() + "_" + _parms._metalearner_transform;
         levelOneValidationFrame = prepareLevelOneFrame(levelOneValidKey, _model._parms._base_models, _model._parms.valid(), false);
       }
 
