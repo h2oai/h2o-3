@@ -248,6 +248,13 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         }
       }
     }
+    for (int index = 0; index < _parms._gam_columns.length; index++) {
+      Frame dataset = _parms.train();
+      String cname = _parms._gam_columns[index];
+      if (dataset.vec(cname).isInt() && ((dataset.vec(cname).max() - dataset.vec(cname).min() + 1) < _parms._num_knots[index]))
+        error("gam_columns", "column " + cname + " has cardinality lower than the number of knots and cannot be used as a gam" +
+                " column.");
+    }
     int cindex = 0;
     for (int numKnots : _parms._num_knots) {  // check to make sure numKnot is valid
       long eligibleRows = _train.numRows() - _parms.train().vec(_parms._gam_columns[cindex]).naCnt();
