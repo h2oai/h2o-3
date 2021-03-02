@@ -6,8 +6,6 @@ import hex.ModelMetrics;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.fvec.ShallowCopyVec;
-import water.fvec.TransformWrappedVec;
 import water.fvec.Vec;
 import water.fvec.task.FillNAWithDoubleValueTask;
 import water.logging.Logger;
@@ -17,7 +15,6 @@ import water.util.*;
 
 import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -457,39 +454,18 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     }
     return noiseLevel;
   }
-  
-  private Frame makeWorkingFrame(Frame fr) { 
+
+  /**
+   * Ideally there should be no need to deep copy columns that are not listed as input in _input_to_output_columns.
+   * However if we keep the original columns in the output, then they are deleted in the model integration: {@link hex.ModelBuilder#trackEncoded}.
+   * On the other side, if copied as a "ShallowVec" (extending WrappedVec) to prevent deletion of data in trackEncoded, 
+   *  then we expose WrappedVec to the client it all non-integration use cases, which is strongly discouraged.
+   * Catch-22 situation, so keeping the deepCopy for now as is occurs only for predictions, so the data are usually smaller. 
+   * @param fr
+   * @return the working frame used to make predictions
+   */
+  private Frame makeWorkingFrame(Frame fr) {
     return fr.deepCopy(Key.make().toString());
-    /*
-    Set<String> toEncode = Arrays.stream(_output._input_to_output_columns)
-            .flatMap(m -> Stream.of(m.from()))
-            .collect(Collectors.toSet());
-    Frame workingFr = new Frame(Key.make());
-    Frame deepCopiedColumns = new Frame();
-    Frame shallowCopiedColumns = new Frame();
-    Map<String, Integer> deepCopiedIdx = new HashMap<>();
-    Map<String, Integer> shallowCopiedIdx = new HashMap<>();
-    for (int i=0; i<fr.numCols(); i++) {
-      String name = fr.name(i);
-      Vec vec = fr.vec(i);
-      if (toEncode.contains(name)) {
-        deepCopiedColumns.add(name, vec);
-        deepCopiedIdx.put(name, deepCopiedColumns.numCols() - 1);
-      } else {
-        shallowCopiedColumns.add(name, new ShallowCopyVec(vec));
-        shallowCopiedIdx.put(name, shallowCopiedColumns.numCols() - 1);
-      }
-    }
-    deepCopiedColumns = deepCopiedColumns.deepCopy(null);
-    for (String name : fr.names()) {
-      if (deepCopiedIdx.containsKey(name)) {
-        workingFr.add(name, deepCopiedColumns.vec(deepCopiedIdx.get(name)));
-      } else {
-        workingFr.add(name, shallowCopiedColumns.vec(shallowCopiedIdx.get(name)));
-      }
-    }
-    return workingFr;
-    */
   }
 
   /**
