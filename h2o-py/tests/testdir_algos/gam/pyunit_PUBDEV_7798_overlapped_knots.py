@@ -32,6 +32,6 @@ def knots_error():
         print("Error correctly raised when cardinality < num_knots")
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(knots_error())
+    pyunit_utils.standalone_test(knots_error)
 else:
     knots_error()
