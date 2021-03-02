@@ -128,7 +128,7 @@ public class TargetEncoderMojoModel extends MojoModel {
   }
 
   /**
-   * a condensed version of the encoding logic as implemented for the training phase in {@link ai.h2o.targetencoding.InteractionsEncoder} 
+   * a condensed version of the encoding logic as implemented for the training phase in {@link ai.h2o.targetencoding.interaction.InteractionsEncoder} 
    */
   private double interactionValue(double[] row, int[] colsIdx, long[] interactionDomain) {
     // computing interaction value (see InteractionsEncoder)

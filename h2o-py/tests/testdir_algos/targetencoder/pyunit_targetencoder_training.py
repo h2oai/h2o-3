@@ -63,18 +63,22 @@ def test_non_categorical_columns_are_ignored():
     assert "{}_te".format(non_cat) not in encoded.names, "non categorical column has been encoded (magic!)"
 
 
-def test_encoding_fails_if_there_is_no_categorical_column_to_encode():
+def test_te_model_does_nothing_if_there_is_no_categorical_column_to_encode():
     ds = load_dataset()
     non_cat = {n for n, t in ds.train.types.items() if t in ['int', 'real']}
     to_encode = non_cat
     assert len(to_encode) > 0
     te = H2OTargetEncoderEstimator()
-    try:
-        te.train(x=to_encode, y=ds.target, training_frame=ds.train)
-        assert False, "should have raised error"
-    except H2OResponseError as e:
-        assert "Training data must have at least 2 features (incl. response)" in str(e)
     
+    te.train(x=to_encode, y=ds.target, training_frame=ds.train)
+    transformed = te.transform(ds.train)
+    assert transformed.names == ds.train.names
+    assert transformed.key == ds.train.key
+    
+    encoded = te.predict(ds.train)
+    assert encoded.names == ds.train.names
+    assert encoded.key != ds.train.key
+
 
 def test_fold_column_is_not_encoded():
     ds = load_dataset(incl_foldc=True)
@@ -145,7 +149,7 @@ pu.run_tests([
     test_all_categoricals_are_encoded_by_default,
     test_columns_to_encode_can_be_specified_as_x,
     test_non_categorical_columns_are_ignored,
-    test_encoding_fails_if_there_is_no_categorical_column_to_encode,
+    test_te_model_does_nothing_if_there_is_no_categorical_column_to_encode,
     test_fold_column_is_not_encoded,
     test_columns_to_encode_can_be_listed_in_dedicated_param,
     test_columns_groups_are_encoded_as_a_single_interaction,

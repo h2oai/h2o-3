@@ -124,8 +124,8 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
         if (error_count() > 0)
           throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(TargetEncoder.this);
 
-        TargetEncoderOutput emptyOutput = new TargetEncoderOutput(TargetEncoder.this);
-        TargetEncoderModel model = new TargetEncoderModel(dest(), _parms, emptyOutput);
+        TargetEncoderOutput output = new TargetEncoderOutput(TargetEncoder.this);
+        TargetEncoderModel model = new TargetEncoderModel(dest(), _parms, output);
         _targetEncoderModel = model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
         
         Frame workingFrame = new Frame(train());
@@ -145,7 +145,7 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
           Scope.untrack(encodings);
         }
 
-        _targetEncoderModel._output = new TargetEncoderOutput(TargetEncoder.this, _targetEncodingMap,  columnsToEncodeMapping);
+        output.init(_targetEncodingMap,  columnsToEncodeMapping);
         _job.update(1);
       } catch (Exception e) {
         if (_targetEncoderModel != null) {

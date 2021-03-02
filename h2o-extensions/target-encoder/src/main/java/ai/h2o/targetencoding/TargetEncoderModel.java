@@ -6,6 +6,8 @@ import hex.ModelMetrics;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.ShallowCopyVec;
+import water.fvec.TransformWrappedVec;
 import water.fvec.Vec;
 import water.fvec.task.FillNAWithDoubleValueTask;
 import water.logging.Logger;
@@ -15,6 +17,7 @@ import water.util.*;
 
 import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -86,20 +89,19 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
     public final TargetEncoderParameters _parms;
     public final int _nclasses;
-    public final ColumnsToSingleMapping[] _input_to_encoding_column; // maps input columns (or groups of columns) to the single column being effectively encoded (= key in _target_encoding_map).
-    public final ColumnsMapping[] _input_to_output_columns; // maps input columns (or groups of columns) to their corresponding encoded one(s).
-    public final IcedHashMap<String, Frame> _target_encoding_map;
-    public final IcedHashMap<String, Boolean> _te_column_to_hasNAs; //XXX: Map is a wrong choice for this, IcedHashSet would be perfect though
+    public ColumnsToSingleMapping[] _input_to_encoding_column; // maps input columns (or groups of columns) to the single column being effectively encoded (= key in _target_encoding_map).
+    public ColumnsMapping[] _input_to_output_columns; // maps input columns (or groups of columns) to their corresponding encoded one(s).
+    public IcedHashMap<String, Frame> _target_encoding_map;
+    public IcedHashMap<String, Boolean> _te_column_to_hasNAs; //XXX: Map is a wrong choice for this, IcedHashSet would be perfect though
     
     
     public TargetEncoderOutput(TargetEncoder te) {
-      this(te, new IcedHashMap<>(), new ColumnsToSingleMapping[]{});
-    }
-    
-    public TargetEncoderOutput(TargetEncoder te, IcedHashMap<String, Frame> teMap, ColumnsToSingleMapping[] columnsToEncodeMapping) {
       super(te);
       _parms = te._parms;
       _nclasses = te.nclasses();
+    }
+    
+    void init(IcedHashMap<String, Frame> teMap, ColumnsToSingleMapping[] columnsToEncodeMapping) {
       _target_encoding_map = teMap;
       _input_to_encoding_column = columnsToEncodeMapping;
       _input_to_output_columns = buildInOutColumnsMapping();
@@ -255,7 +257,11 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    */
   @Override
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-    if (!canApplyTargetEncoding(fr)) return new Frame(fr);
+    if (!canApplyTargetEncoding(fr)) {
+      Frame res = new Frame(Key.make(destination_key), fr.names(), fr.vecs());
+      DKV.put(res);
+      return res;
+    }
     Frame adaptFr = null;
     try {
       adaptFr = adaptForEncoding(fr);
@@ -375,11 +381,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     Frame workingFrame = null;
     Key<Frame> tmpKey;
     try {
-      //FIXME: why do we need a deep copy of the whole frame? TE is not supposed to modify existing columns
-      // a simple solution would be to duplicate only the columnToEncode in the loop below, 
-      // this would allow us to modify it inplace using the current MRTasks and use it to generate the encoded column,
-      // finally, we can drop this tmp column.
-      workingFrame = data.deepCopy(Key.make().toString());
+      workingFrame = makeWorkingFrame(data);;
       tmpKey = workingFrame._key;
 
       for (ColumnsToSingleMapping columnsToEncode: _output._input_to_encoding_column) { // TODO: parallelize this, should mainly require change in naming of num/den columns
@@ -454,6 +456,40 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       noiseLevel = targetVec.isNumeric() ? defaultNoiseLevel * (targetVec.max() - targetVec.min()) : defaultNoiseLevel;
     }
     return noiseLevel;
+  }
+  
+  private Frame makeWorkingFrame(Frame fr) { 
+    return fr.deepCopy(Key.make().toString());
+    /*
+    Set<String> toEncode = Arrays.stream(_output._input_to_output_columns)
+            .flatMap(m -> Stream.of(m.from()))
+            .collect(Collectors.toSet());
+    Frame workingFr = new Frame(Key.make());
+    Frame deepCopiedColumns = new Frame();
+    Frame shallowCopiedColumns = new Frame();
+    Map<String, Integer> deepCopiedIdx = new HashMap<>();
+    Map<String, Integer> shallowCopiedIdx = new HashMap<>();
+    for (int i=0; i<fr.numCols(); i++) {
+      String name = fr.name(i);
+      Vec vec = fr.vec(i);
+      if (toEncode.contains(name)) {
+        deepCopiedColumns.add(name, vec);
+        deepCopiedIdx.put(name, deepCopiedColumns.numCols() - 1);
+      } else {
+        shallowCopiedColumns.add(name, new ShallowCopyVec(vec));
+        shallowCopiedIdx.put(name, shallowCopiedColumns.numCols() - 1);
+      }
+    }
+    deepCopiedColumns = deepCopiedColumns.deepCopy(null);
+    for (String name : fr.names()) {
+      if (deepCopiedIdx.containsKey(name)) {
+        workingFr.add(name, deepCopiedColumns.vec(deepCopiedIdx.get(name)));
+      } else {
+        workingFr.add(name, shallowCopiedColumns.vec(shallowCopiedIdx.get(name)));
+      }
+    }
+    return workingFr;
+    */
   }
 
   /**

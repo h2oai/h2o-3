@@ -195,7 +195,6 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
     }
   }
 
-  /** FIXME: this method is modifying the original fr column in-place, one of the reasons why we currently need a complete deep-copy of the training frame... */
   static void imputeCategoricalColumn(Frame data, int columnIdx, String naCategory) {
     Vec currentVec = data.vec(columnIdx);
     int indexForNACategory = currentVec.cardinality(); // Warn: Cardinality returns int but it could be larger than int for big datasets
@@ -336,7 +335,6 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
     }
   }
 
-  /** FIXME: this method is modifying the original fr column in-place, one of the reasons why we currently need a complete deep-copy of the training frame... */
   static void addNoise(Frame fr, int columnIdx, double noiseLevel, long seed) {
     if (seed == -1) seed = new Random().nextLong();
     Vec zeroVec = fr.anyVec().makeCon(0);
@@ -379,8 +377,6 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
   }
 
   /** 
-   * FIXME: this method is modifying the original fr column in-place, one of the reasons why we currently need a complete deep-copy of the training frame...
-   * 
    * @param fr the frame with a numerator and denominator columns, which will be modified based on the value in the target column.
    * @param targetColumn the name of the target column.
    * @param targetClass for regression use {@value NO_TARGET_CLASS}, 

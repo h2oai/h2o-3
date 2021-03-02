@@ -234,6 +234,53 @@ public class TargetEncoderModelTest extends TestUtil{
       Scope.exit();
     }
   }
+  
+  @Test
+  public void test_model_returns_frame_as_is_if_no_categorical_column_to_encode() {
+    try {
+      Scope.enter();
+      final Frame train = new TestFrameBuilder()
+              .withColNames("num1", "num2", "target", "foldc")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar(    1,    2,     3))
+              .withDataForCol(1, ar(    5,    4,     3))
+              .withDataForCol(2, ar("yes", "no", "yes"))
+              .withDataForCol(3, ar(    0,    0,     1))
+              .build();
+
+      final Frame test = new TestFrameBuilder()
+              .withColNames("num2", "num1")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ar(5, 4, 3))
+              .withDataForCol(1, ar(3, 2, 1))
+              .build();
+
+      TargetEncoderParameters params = new TargetEncoderParameters();
+      params._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
+      params._response_column = "target";
+      params._fold_column = "foldc";
+      params._train = train._key;
+      params._seed = 1;
+
+      TargetEncoder te = new TargetEncoder(params);
+      final TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+      assertNotNull(teModel._output);
+      assertTrue(teModel._output._target_encoding_map.isEmpty());
+      assertEquals(0, teModel._output._input_to_encoding_column.length);
+      
+      Frame transformed = Scope.track(teModel.transform(test));
+      assertNotNull(transformed);
+      assertSame(test, transformed);
+      
+      Frame scored = Scope.track(teModel.score(test));
+      assertNotSame(test, scored);
+      assertFrameEquals(test, scored, 0);
+      
+    } finally {
+      Scope.exit();
+    }
+  }
 
   @Test
   public void test_transformed_frame_columns_order_with_frame_similar_to_train() {
