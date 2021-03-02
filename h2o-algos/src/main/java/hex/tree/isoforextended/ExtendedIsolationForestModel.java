@@ -3,10 +3,11 @@ package hex.tree.isoforextended;
 import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
+import hex.tree.CompressedTree;
 import hex.tree.isofor.ModelMetricsAnomaly;
 import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
 import org.apache.log4j.Logger;
-import water.Key;
+import water.*;
 import water.fvec.Frame;
 
 /**
@@ -40,10 +41,11 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
 
     @Override
     protected double[] score0(double[] data, double[] preds) {
-        assert _output._iTrees != null : "Output has no trees, check if trees are properly set to the output.";
+        assert _output._iTreeKeys != null : "Output has no trees, check if trees are properly set to the output.";
         // compute score for given point
         double pathLength = 0;
-        for (CompressedIsolationTree iTree : _output._iTrees) {
+        for (Key<CompressedIsolationTree> iTreeKey : _output._iTreeKeys) {
+            CompressedIsolationTree iTree = DKV.getGet(iTreeKey);
             double iTreeScore = iTree.computePathLength(data);
             pathLength += iTreeScore;
             LOG.trace("iTreeScore " + iTreeScore);
@@ -118,7 +120,7 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
         public int _ntrees;
         public long _sample_size;
         
-        public CompressedIsolationTree[] _iTrees;
+        public Key<CompressedIsolationTree>[] _iTreeKeys;
         
         public ExtendedIsolationForestOutput(ExtendedIsolationForest eif) {
             super(eif);
@@ -130,5 +132,29 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
         public ModelCategory getModelCategory() {
             return ModelCategory.AnomalyDetection;
         }
+    }
+
+    @Override
+    protected Futures remove_impl(Futures fs, boolean cascade) {
+        for (Key<CompressedIsolationTree> iTreeKey : _output._iTreeKeys) {
+            Keyed.remove(iTreeKey, fs, true);
+        }
+        return super.remove_impl(fs, cascade);
+    }
+
+    @Override
+    protected AutoBuffer writeAll_impl(AutoBuffer ab) {
+        for (Key<CompressedIsolationTree> iTreeKey : _output._iTreeKeys) {
+            ab.putKey(iTreeKey);
+        }
+        return super.writeAll_impl(ab);
+    }
+
+    @Override
+    protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
+        for (Key<CompressedIsolationTree> iTreeKey : _output._iTreeKeys) {
+            ab.getKey(iTreeKey, fs);
+        }
+        return super.readAll_impl(ab,fs);
     }
 }

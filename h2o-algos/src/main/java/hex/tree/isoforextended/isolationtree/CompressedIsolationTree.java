@@ -1,17 +1,20 @@
 package hex.tree.isoforextended.isolationtree;
 
 import water.Iced;
+import water.Key;
+import water.Keyed;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
 /**
  * IsolationTree structure with better memory performance. Store only the data that are needed for scoring.
  */
-public class CompressedIsolationTree extends Iced<CompressedIsolationTree> {
+public class CompressedIsolationTree extends Keyed<CompressedIsolationTree> {
 
     private final AbstractCompressedNode[] _nodes;
 
     public CompressedIsolationTree(int heightLimit) {
+        _key = Key.make("CompressedIsolationTree" + Key.rand());
         _nodes = new AbstractCompressedNode[(int) Math.pow(2, heightLimit) - 1];
     }
 

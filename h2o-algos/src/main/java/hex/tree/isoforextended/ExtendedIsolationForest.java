@@ -2,15 +2,10 @@ package hex.tree.isoforextended;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.tree.CompressedTree;
-import hex.tree.SharedTree;
 import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
 import hex.tree.isoforextended.isolationtree.IsolationTree;
 import org.apache.log4j.Logger;
-import water.DKV;
-import water.H2O;
-import water.Job;
-import water.Key;
+import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.*;
@@ -132,7 +127,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         }
 
         private void buildIsolationTreeEnsemble() {
-                _model._output._iTrees = new CompressedIsolationTree[_parms._ntrees];
+                _model._output._iTreeKeys = new Key[_parms._ntrees];
 
                 int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
 
@@ -142,7 +137,9 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                     int randomUnit = _rand.nextInt();
                     Frame subSample = SamplingUtils.sampleOfFixedSize(_train, _parms._sample_size, _parms._seed + randomUnit);
                     double[][] subSampleArray = FrameUtils.asDoubles(subSample);
-                    _model._output._iTrees[tid] = isolationTree.buildTree(subSampleArray, _parms._seed + _rand.nextInt(), tid);
+                    CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(subSampleArray, _parms._seed + _rand.nextInt(), tid);
+                    _model._output._iTreeKeys[tid] = compressedIsolationTree._key;
+                    DKV.put(compressedIsolationTree);
                     _job.update(1);
                     LOG.info((tid + 1) + ". tree was built in " + timer.toString() + ". Free memory: " + PrettyPrint.bytes(H2O.SELF._heartbeat.get_free_mem()));
                 }
