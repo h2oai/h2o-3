@@ -1,16 +1,16 @@
 package hex.ensemble;
 
-import hex.Distribution;
-import hex.Model;
-import hex.ModelCategory;
-import hex.ModelMetrics;
+import hex.*;
 import hex.genmodel.utils.DistributionFamily;
+import hex.genmodel.utils.LinkFunctionType;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.Log;
 import water.util.MRUtils;
@@ -53,7 +53,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       _parms._metalearner_fold_assignment = Random;
     }
   }
-  
+
   public static class StackedEnsembleParameters extends Model.Parameters {
     public String algoName() { return "StackedEnsemble"; }
     public String fullName() { return "Stacked Ensemble"; }
@@ -76,52 +76,50 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public Key<Frame> _blending;
 
     public enum MetalearnerTransform {
-      NONE(null),
-      Logit(new MRTask() {
-        @Override
-        public void map(Chunk[] cs) {
-          double p, logit;
-          for (int c = 0; c < cs.length; c++) {
-            for (int i = 0; i < cs[c]._len; i++) {
-              p = cs[c].atd(i);
-              logit = Math.log(p/(1-p));
-              cs[c].set(i, Double.isInfinite(logit) ? Double.NaN : logit);  // Algos have troubles dealing with Inf
-            }
-          }
-        }
-      }),
-      PercentileRank(new MRTask() {
-        @Override
-        public void map(Chunk[] cs) {
-          double ranks[] = new double[cs.length];
-          int r;
-          double s, i, j;
-          double denom = cs.length * (cs.length + 1) / 2.0;
-          for (int row = 0; row < cs[0]._len; row++) {
-            for (int colI = 0; colI < cs.length; colI++) {
-              r = 1;
-              s = 0;
-              for (int colJ = 0; colJ < cs.length; colJ++) {
-                i = cs[colI].atd(row);
-                j = cs[colJ].atd(row);
-                if (colI != colJ) {
-                  if (j < i) r ++;
-                  else if (j == i) s ++;
+      NONE,
+      Logit,
+      PercentileRank;
+
+      public MRTask task() {
+        if (this == Logit) {
+          return new MRTask() {
+            @Override
+            public void map(Chunk[] cs, NewChunk[] ncs) {
+              LinkFunction logitLink = LinkFunctionFactory.getLinkFunction(LinkFunctionType.logit);
+              for (int c = 0; c < cs.length; c++) {
+                for (int i = 0; i < cs[c]._len; i++) {
+                  ncs[c].addNum(Double.min(Double.max(logitLink.link(cs[c].atd(i)), -Double.MAX_VALUE), Double.MAX_VALUE));  // Algos have troubles dealing with Inf
                 }
               }
-              ranks[colI] = (r + (s/2)) / denom;
             }
-            for (int colI = 0; colI < cs.length; colI++) {
-              cs[colI].set(row, ranks[colI]);
+          };
+        } else if (this == PercentileRank) {
+          return new MRTask() {
+            @Override
+            public void map(Chunk[] cs, NewChunk[] ncs) {
+              int r;
+              double s, i, j;
+              double denom = cs.length * (cs.length + 1) / 2.0;
+              for (int row = 0; row < cs[0]._len; row++) {
+                for (int colI = 0; colI < cs.length; colI++) {
+                  r = 1;
+                  s = 0;
+                  for (int colJ = 0; colJ < cs.length; colJ++) {
+                    i = cs[colI].atd(row);
+                    j = cs[colJ].atd(row);
+                    if (colI != colJ) {
+                      if (j < i) r++;
+                      else if (j == i) s++;
+                    }
+                  }
+                  ncs[colI].addNum((r + (s / 2)) / denom);
+                }
+              }
             }
-          }
+          };
+        } else {
+          throw new RuntimeException();
         }
-      });
-
-      public final MRTask task;
-
-      MetalearnerTransform(MRTask task){
-        this.task = task;
       }
     }
 
@@ -222,7 +220,15 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     }
 
     if (_parms._metalearner_transform != null && _parms._metalearner_transform != StackedEnsembleParameters.MetalearnerTransform.NONE) {
-      _parms._metalearner_transform.task.doAll(levelOneFrame);
+      if ((_parms._metalearner_parameters._distribution != DistributionFamily.bernoulli) &&
+              (!(_parms._metalearner_parameters instanceof GLMModel.GLMParameters) ||
+                      ((GLMModel.GLMParameters)_parms._metalearner_parameters)._family != GLMModel.GLMParameters.Family.binomial))
+        throw new H2OIllegalArgumentException("Metalearner transform is supported only for bernoulli distribution!");
+
+      Frame oldLOF = levelOneFrame;
+      levelOneFrame = _parms._metalearner_transform.task().doAll(levelOneFrame.numCols(), Vec.T_NUM, levelOneFrame)
+              .outputFrame(levelOneFrame._key, levelOneFrame._names, null);
+      oldLOF.delete(true);
     }
     // Add response column, weights columns to level one frame
     StackedEnsemble.addMiscColumnsToLevelOneFrame(_parms, adaptFrm, levelOneFrame, false);

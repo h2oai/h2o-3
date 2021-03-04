@@ -1432,4 +1432,126 @@ public class StackedEnsembleTest extends TestUtil {
     }
   }
 
+
+  @Test
+  public void logitTransformWorks() {
+        Scope.enter();
+        try {
+            Frame fr = new Frame();
+            fr.add("first", Vec.makeCon(0.5, 10));
+            fr.add("second", Vec.makeCon(0.1, 10));
+            fr.add("third", Vec.makeCon(0.9, 10));
+
+            Frame newFr = StackedEnsembleParameters.MetalearnerTransform.Logit.task()
+                    .doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr._names, null);
+
+            Frame expected = new Frame();
+            expected.add("first", Vec.makeCon(0, 10));
+            expected.add("second", Vec.makeCon(-2.19722457, 10));
+            expected.add("third", Vec.makeCon(2.19722457, 10));
+
+            assertFrameEquals(expected, newFr, 1e-5);
+        } finally {
+            Scope.exit();
+        }
+  }
+
+
+    @Test
+    public void percentileRankTransformWorks() {
+        Scope.enter();
+        try {
+            Frame fr = new Frame();
+            fr.add("first",  Vec.makeVec(new double[] {1,1,3,0.1,0.2,0.2}, Vec.newKey()));
+            fr.add("second", Vec.makeVec(new double[] {2,3,3,0.2,0.2,0.3}, Vec.newKey()));
+            fr.add("third",  Vec.makeVec(new double[] {3,2,3,0.1,0.3,0.3}, Vec.newKey()));
+
+            Frame newFr = StackedEnsembleParameters.MetalearnerTransform.PercentileRank.task()
+                    .doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr._names, null);
+
+            Frame expected = new Frame();
+            expected.add("first", Vec.makeVec(new double[] {0.16666 , 0.16666, 0.33333, 0.25, 0.25, 0.16666}, Vec.newKey()));
+            expected.add("second", Vec.makeVec(new double[] {0.33333, 0.5    , 0.33333, 0.5 , 0.25, 0.41666}, Vec.newKey()));
+            expected.add("third", Vec.makeVec(new double[] {0.5     , 0.33333, 0.33333, 0.25, 0.5,  0.41666}, Vec.newKey()));
+
+            assertFrameEquals(expected, newFr, 1e-5);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testMetalearnerTransformWorks() {
+        try {
+            Scope.enter();
+
+            final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/junit/weather.csv");
+            Scope.track(trainingFrame);
+            trainingFrame.toCategoricalCol("RainTomorrow");
+
+            HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+                put("_max_depth", new Integer[]{2, 3, 4});
+            }};
+
+            GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+            params._train = trainingFrame._key;
+            params._nfolds = 2;
+            params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            params._response_column = "RainTomorrow";
+            params._keep_cross_validation_predictions = true;
+            params._seed = 0;
+            params._col_sample_rate = 0.1; // so we don't have all the columns the same after percentile rank transform
+            params._distribution = DistributionFamily.bernoulli;
+
+            Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+            Scope.track_generic(gs);
+            final Grid grid = gs.get();
+            Scope.track_generic(grid);
+            final StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+            seParams._train = trainingFrame._key;
+            seParams._response_column = "RainTomorrow";
+            seParams._metalearner_algorithm = Algorithm.AUTO;
+            seParams._base_models = new Key[]{grid._key};
+            seParams._keep_levelone_frame = true;
+            seParams._seed = 0xFEED;
+
+            final StackedEnsembleParameters seParamsLogit = (StackedEnsembleParameters)seParams.clone();
+            seParamsLogit._metalearner_transform = StackedEnsembleParameters.MetalearnerTransform.Logit;
+            final StackedEnsembleParameters seParamsPercentileRank = (StackedEnsembleParameters)seParams.clone();
+            seParamsPercentileRank._metalearner_transform = StackedEnsembleParameters.MetalearnerTransform.PercentileRank;
+
+            final StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get();
+            final StackedEnsembleModel seLogit = new StackedEnsemble(seParamsLogit).trainModel().get();
+            final StackedEnsembleModel sePercentileRank = new StackedEnsemble(seParamsPercentileRank).trainModel().get();
+
+            Scope.track_generic(se);
+            Scope.track_generic(seLogit);
+            Scope.track_generic(sePercentileRank);
+
+            final Frame vanillaLevelOneFrame = new Frame(se._output._levelone_frame_id).remove(new String[]{"RainTomorrow"});
+            Scope.track(vanillaLevelOneFrame);
+
+            Frame expectedLogit = StackedEnsembleParameters.MetalearnerTransform.Logit.task().doAll(
+                    vanillaLevelOneFrame.numCols(),
+                    Vec.T_NUM,
+                    vanillaLevelOneFrame
+            ).outputFrame(vanillaLevelOneFrame._names, null);
+            Scope.track(expectedLogit);
+            assertFrameEquals(expectedLogit,
+                    new Frame(seLogit._output._levelone_frame_id).remove(new String[]{"RainTomorrow"}),
+                    1e-5);
+
+            Frame expectedPercentileRank = StackedEnsembleParameters.MetalearnerTransform.PercentileRank.task().doAll(
+                    vanillaLevelOneFrame.numCols(),
+                    Vec.T_NUM,
+                    vanillaLevelOneFrame
+            ).outputFrame(vanillaLevelOneFrame._names, null);
+            Scope.track(expectedPercentileRank);
+            assertFrameEquals(expectedPercentileRank,
+                    new Frame(sePercentileRank._output._levelone_frame_id).remove(new String[]{"RainTomorrow"}),
+                    1e-5);
+        } finally {
+            Scope.exit();
+        }
+    }
 }

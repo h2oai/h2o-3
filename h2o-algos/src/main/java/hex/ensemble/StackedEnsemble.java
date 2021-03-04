@@ -1,15 +1,17 @@
 package hex.ensemble;
 
-import hex.Model;
-import hex.ModelBuilder;
-import hex.ModelCategory;
+import hex.*;
 
 import hex.genmodel.utils.DistributionFamily;
+import hex.genmodel.utils.LinkFunctionType;
+import hex.glm.GLMModel;
 import hex.grid.Grid;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 
 import java.util.*;
@@ -214,7 +216,20 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         throw new H2OIllegalArgumentException("Base models and prediction arrays are different lengths.");
 
       if (null == levelOneKey) levelOneKey = "levelone_" + _model._key.toString() + "_" + _parms._metalearner_transform.toString();
-      Frame levelOneFrame = new Frame(Key.<Frame>make(levelOneKey));
+
+      // TODO: what if we're running multiple in parallel and have a name collision?
+      Frame old = DKV.getGet(levelOneKey);
+      if (old != null && old instanceof Frame) {
+        Frame oldFrame = (Frame) old;
+        // Remove ALL the columns so we don't delete them in remove_impl.  Their
+        // lifetime is controlled by their model.
+        oldFrame.removeAll();
+        oldFrame.write_lock(_job);
+        oldFrame.update(_job);
+        oldFrame.unlock(_job);
+      }
+
+      Frame levelOneFrame = new Frame(Key.make(levelOneKey));
 
       for (int i = 0; i < baseModels.length; i++) {
         Model baseModel = baseModels[i];
@@ -229,26 +244,27 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           continue;
         }
         StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, baseModelPreds, levelOneFrame);
+        Scope.untrack(baseModelPredictions);
       }
       if (_parms._metalearner_transform != null && _parms._metalearner_transform != StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform.NONE) {
-        _parms._metalearner_transform.task.doAll(levelOneFrame);
+        if ((_parms._metalearner_parameters._distribution != DistributionFamily.bernoulli) &&
+                (!(_parms._metalearner_parameters instanceof GLMModel.GLMParameters) ||
+                ((GLMModel.GLMParameters)_parms._metalearner_parameters)._family != GLMModel.GLMParameters.Family.binomial))
+          throw new H2OIllegalArgumentException("Metalearner transform is supported only for bernoulli distribution!");
+        Frame oldLOF = levelOneFrame;
+        levelOneFrame = _parms._metalearner_transform.task().doAll(levelOneFrame.numCols(), Vec.T_NUM, levelOneFrame)
+                .outputFrame(levelOneFrame._key, levelOneFrame._names, null);
+        oldLOF.removeAll();
+        oldLOF.write_lock(_job);
+        oldLOF.update(_job);
+        oldLOF.unlock(_job);
+
       }
+
       // Add metalearner fold column, weights column to level one frame if it exists
       addMiscColumnsToLevelOneFrame(_model._parms, actuals, levelOneFrame, true);
 
-      // TODO: what if we're running multiple in parallel and have a name collision?
-      Frame old = DKV.getGet(levelOneFrame._key);
-      if (old != null && old instanceof Frame) {
-        Frame oldFrame = (Frame) old;
-        // Remove ALL the columns so we don't delete them in remove_impl.  Their
-        // lifetime is controlled by their model.
-        oldFrame.removeAll();
-        oldFrame.write_lock(_job);
-        oldFrame.update(_job);
-        oldFrame.unlock(_job);
-      }
-
-      levelOneFrame.delete_and_lock(_job);
+      levelOneFrame.write_lock(_job);
       levelOneFrame.unlock(_job);
       Log.info("Finished creating \"level one\" frame for stacking: " + levelOneFrame.toString());
       DKV.put(levelOneFrame);
@@ -337,11 +353,11 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         _model.unlock(_job);
       }
 
-      String levelOneTrainKey = "levelone_training_" + _model._key.toString() + "_" + _parms._metalearner_transform;
+      String levelOneTrainKey = "levelone_training_" + _model._key.toString();
       Frame levelOneTrainingFrame = prepareLevelOneFrame(levelOneTrainKey, _model._parms._base_models, getActualTrainingFrame(), true);
       Frame levelOneValidationFrame = null;
       if (_model._parms.valid() != null) {
-        String levelOneValidKey = "levelone_validation_" + _model._key.toString() + "_" + _parms._metalearner_transform;
+        String levelOneValidKey = "levelone_validation_" + _model._key.toString();
         levelOneValidationFrame = prepareLevelOneFrame(levelOneValidKey, _model._parms._base_models, _model._parms.valid(), false);
       }
 
