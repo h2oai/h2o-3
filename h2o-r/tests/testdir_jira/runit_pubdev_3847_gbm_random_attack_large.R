@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 ######################################################################################
 pubdev.3847.test <-
   function() {
-      file <- locate("smalldata/jira/pubdev_3847.csv")o
+      file <- locate("smalldata/jira/pubdev_3847.csv")
       data <- h2o.importFile(file, destination_frame = "pubdev3847.data")
       response <- "class"
       features <- setdiff(names(data), response)
