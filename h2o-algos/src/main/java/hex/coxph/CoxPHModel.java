@@ -236,6 +236,8 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
     CoxPHParameters.CoxPHTies _ties;
     String _formula;
+
+    double _concordance;
   }
 
   public static class FrameMatrix extends Storage.DenseRowMatrix {
