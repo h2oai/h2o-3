@@ -6,13 +6,15 @@
  */
 def call(final stageConfig, final boolean getMakeTarget = false) {
     if (getMakeTarget) {
-        return "\$CHECK_TOKEN_REFRESH_MAKE_TARGET"
+        return "\$CHECK_HIVE_TOKEN_REFRESH_MAKE_TARGET \$CHECK_HDFS_TOKEN_REFRESH_MAKE_TARGET"
     }
     switch (stageConfig.customData.mode) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP:
             return getCommandHadoop(stageConfig, false)
         case H2O_HADOOP_STARTUP_MODE_HADOOP_SPNEGO:
             return getCommandHadoop(stageConfig, true)
+        case H2O_HADOOP_STARTUP_MODE_HADOOP_HDFS_REFRESH:
+            return getCommandHadoop(stageConfig, false, true, false, false, true)
         case H2O_HADOOP_STARTUP_MODE_STEAM_DRIVER:
             return getCommandHadoop(stageConfig, false, true, true)
         case H2O_HADOOP_STARTUP_MODE_STEAM_MAPPER:
@@ -31,7 +33,8 @@ def call(final stageConfig, final boolean getMakeTarget = false) {
 private GString getCommandHadoop(
         final stageConfig, final boolean spnegoAuth,
         final boolean impersonate = false, final boolean hdpCp = true,
-        final boolean prepareToken = false
+        final boolean prepareToken = false,
+        final boolean refreshHdfsTokens = false
 ) {
     def defaultPort = 54321
     def loginArgs
@@ -65,21 +68,29 @@ private GString getCommandHadoop(
         usePreparedToken = "-hiveToken \$(cat hive.token)"
     }
     def shouldRefreshTokensForHive1 = impersonate && !hdpCp && !prepareToken
+    def refreshHdfsTokensCheckTarget = ""
+    def refreshHdfsTokensOption = ""
+    if (refreshHdfsTokens) {
+        refreshHdfsTokensCheckTarget = "test-kerberos-verify-hdfs-token-refresh"
+        refreshHdfsTokensOption = "-refreshHdfsTokens"
+    }
     return """
             rm -fv h2o_one_node h2odriver.log
             if [ "\$HIVE_DIST_ENABLED" = "true" ] || [ "$shouldRefreshTokensForHive1" = "true" ]; then
                 # hive 2+ = regular refresh, hive 1 = only refreshing when distributing keytab
-                REFRESH_TOKENS_CONF="-refreshTokens"
-                CHECK_TOKEN_REFRESH_MAKE_TARGET=test-kerberos-verify-token-refresh
+                REFRESH_HIVE_TOKENS_CONF="-refreshHiveTokens"
+                CHECK_HIVE_TOKEN_REFRESH_MAKE_TARGET=test-kerberos-verify-hive-token-refresh
             else
                 # disable refresh for hive 1.x impersonation
-                REFRESH_TOKENS_CONF=""
+                REFRESH_HIVE_TOKENS_CONF=""
             fi
+            REFRESH_HDFS_TOKENS_CONF=${refreshHdfsTokensCheckTarget}
             ${hadoopClasspath}
             ${tokenPreparation}
             hadoop jar ${h2odriverJar} \\
                 -n 1 -mapperXmx 2g -baseport 54445 ${impersonationArgs} -timeout 300 \\
-                -hivePrincipal hive/localhost@H2O.AI -hiveHost localhost:10000 \$REFRESH_TOKENS_CONF ${usePreparedToken} \\
+                -hivePrincipal hive/localhost@H2O.AI -hiveHost localhost:10000 \$REFRESH_HIVE_TOKENS_CONF ${usePreparedToken} \\
+                ${refreshHdfsTokensOption} \\
                 -jks mykeystore.jks \\
                 -notify h2o_one_node -ea -proxy -port ${defaultPort} \\
                 -jks mykeystore.jks \\
