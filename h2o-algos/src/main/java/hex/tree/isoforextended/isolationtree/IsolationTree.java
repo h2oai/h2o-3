@@ -27,7 +27,7 @@ public class IsolationTree {
      * Implementation of Algorithm 2 (iTree) from paper.
      */
     public CompressedIsolationTree buildTree(double[][] data, final long seed, final int treeNum) {
-        int maxNumNodesInTree = (int) Math.pow(2, _heightLimit) - 1;
+        int maxNumNodesInTree = (int) Math.pow(2, _heightLimit + 1) - 1;
         this._nodes = new Node[maxNumNodesInTree];
         CompressedIsolationTree compressedIsolationTree = new CompressedIsolationTree(_heightLimit);
         

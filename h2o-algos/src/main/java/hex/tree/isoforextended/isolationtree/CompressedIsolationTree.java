@@ -15,7 +15,7 @@ public class CompressedIsolationTree extends Keyed<CompressedIsolationTree> {
 
     public CompressedIsolationTree(int heightLimit) {
         _key = Key.make("CompressedIsolationTree" + Key.rand());
-        _nodes = new AbstractCompressedNode[(int) Math.pow(2, heightLimit) - 1];
+        _nodes = new AbstractCompressedNode[(int) Math.pow(2, heightLimit + 1) - 1];
     }
 
     public AbstractCompressedNode[] getNodes() {
