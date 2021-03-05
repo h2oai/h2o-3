@@ -15,6 +15,8 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import water.util.ArrayUtils;
@@ -57,22 +59,39 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
   }
 
   @Override
-  protected boolean ignoreConstColumns() {
-    if (_parms._base_models == null)
-      return false; // To be safe
+  protected void ignoreBadColumns(int npredictors, boolean expensive){
+    String msg = "Dropping bad and constant columns: ";
 
-    // Base models can be either models or grids => we need to expand the grids
-    validateAndExpandBaseModels();
+    HashSet usedColumns = new HashSet();
 
-    // If all base models ignore const columns then stacked ensemble can safely ignore them too.
-    return Stream.of(_parms._base_models)
-            .map(Key::get)
-            .allMatch(model -> model._parms._ignore_const_cols);
-  }
+    for(Key k: _parms._base_models) {
+      Model model = (Model) DKV.getGet(k);
+      usedColumns.add(model._parms._response_column);
+      usedColumns.addAll(Arrays.asList(model._parms.getNonPredictors()));
+      if (model._output._origNames != null)
+        usedColumns.addAll(Arrays.asList(model._output._origNames));
+      else
+        usedColumns.addAll(Arrays.asList(model._output._names));
+    }
 
-  @Override
-  protected boolean canLearnFromNAs() {
-    return true;
+    usedColumns.addAll(Arrays.asList(_parms.getNonPredictors()));
+
+    if (usedColumns.size() < _train._names.length) {
+      int[] toDelete = IntStream
+              .range(0, _train._names.length)
+              .filter(columnIdx -> !usedColumns.contains(_train._names[columnIdx]))
+              .toArray();
+
+      _removedCols = Arrays.stream(toDelete)
+              .mapToObj(columnIdx -> _train._names[columnIdx])
+              .collect(Collectors.toCollection(HashSet<String>::new));
+
+      _train.remove(toDelete);
+
+      msg += _removedCols.toString();
+      warn("_train", msg);
+      if (expensive) Log.info(msg);
+    }
   }
 
   @Override
@@ -87,6 +106,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
   @Override
   public void init(boolean expensive) {
+    expandBaseModels();
     super.init(expensive);
 
     if (_parms._distribution != DistributionFamily.AUTO) {
@@ -96,13 +116,13 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     checkColumnPresent("fold", _parms._metalearner_fold_column, train(), valid(), _parms.blending());
     checkColumnPresent("weights", _parms._weights_column, train(), valid(), _parms.blending());
     checkColumnPresent("offset", _parms._offset_column, train(), valid(), _parms.blending());
-    validateAndExpandBaseModels();
+    validateBaseModels();
   }
 
   /**
-   * Validates base models and if grid is provided instead of a model it gets expanded.
+   * Expand base models - if a grid is provided instead of a model it gets expanded in to individual models.
    */
-  private void validateAndExpandBaseModels() {
+  private void expandBaseModels() {
     // H2O Flow initializes SE with no base_models
     if (_parms._base_models == null) return;
 
@@ -121,6 +141,14 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       }
     }
     _parms._base_models = baseModels.toArray(new Key[0]);
+  }
+
+  /**
+   * Validates base models.
+   */
+  private void validateBaseModels() {
+    // H2O Flow initializes SE with no base_models
+    if (_parms._base_models == null) return;
 
     boolean warnSameWeightsColumns = true;
     String referenceWeightsColumn = null;

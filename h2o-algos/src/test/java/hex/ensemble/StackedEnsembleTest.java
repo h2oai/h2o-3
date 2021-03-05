@@ -55,7 +55,7 @@ public class StackedEnsembleTest extends TestUtil {
 
         basicEnsemble("./smalldata/junit/cars.csv",
             null,
-            new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+            new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return fr.find("economy (mpg)"); }},
             false, DistributionFamily.gaussian, Algorithm.AUTO, false);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
@@ -84,7 +84,7 @@ public class StackedEnsembleTest extends TestUtil {
 
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
-                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return fr.find("economy (mpg)"); }},
                 false, DistributionFamily.gaussian, Algorithm.gbm, false);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
@@ -112,7 +112,7 @@ public class StackedEnsembleTest extends TestUtil {
 
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
-                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return fr.find("economy (mpg)"); }},
                 false, DistributionFamily.gaussian, Algorithm.drf, false);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
@@ -140,7 +140,7 @@ public class StackedEnsembleTest extends TestUtil {
 
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
-                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return fr.find("economy (mpg)"); }},
                 false, DistributionFamily.gaussian, Algorithm.deeplearning, false);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
@@ -171,7 +171,7 @@ public class StackedEnsembleTest extends TestUtil {
         // Regression tests
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
-                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return fr.find("economy (mpg)"); }},
                 false, DistributionFamily.gaussian, Algorithm.glm, false);
 
         // Binomial tests
@@ -312,7 +312,7 @@ public class StackedEnsembleTest extends TestUtil {
     @Test public void testBlending() {
         basicEnsemble("./smalldata/junit/cars.csv",
             null,
-            new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+            new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return fr.find("economy (mpg)"); }},
             false, DistributionFamily.gaussian, Algorithm.AUTO, true);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
@@ -695,7 +695,6 @@ public class StackedEnsembleTest extends TestUtil {
 
             // Build GBM
             GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();
-            if( idx < 0 ) idx = ~idx;
             // Configure GBM
             gbmParameters._train = training_frame._key;
             gbmParameters._valid = (validation_frame == null ? null : validation_frame._key);
@@ -1547,7 +1546,7 @@ public class StackedEnsembleTest extends TestUtil {
                             Scope.track(acVec);
                             acVec.setNA(0);
                             fr.insertVec(0, "almost_constant", acVec);
-                            return ~fr.find("economy (mpg)");
+                            return fr.find("economy (mpg)");
                         }
                     },
                     false, DistributionFamily.gaussian, Algorithm.glm, false);
