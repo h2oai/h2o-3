@@ -18,6 +18,7 @@ ALGOS = [
     H2OXGBoostEstimator
 ]
 
+
 def test_print_mojo():
     prostate_train = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
     prostate_train["CAPSULE"] = prostate_train["CAPSULE"].asfactor()
@@ -29,17 +30,25 @@ def test_print_mojo():
         model.train(x=list(range(1,prostate_train.ncol)),y="CAPSULE", training_frame=prostate_train)
         mojo_path = model.download_mojo(RESULTS_DIR)
         
-        if (algo != H2OXGBoostEstimator):
-            # print all into JSON
-            print("json")
-            mojo_str = h2o.print_mojo(mojo_path)
-            mojo_dict = json.loads(mojo_str)
-            assert "trees" in mojo_dict.keys()
-            assert ntrees == len(mojo_dict["trees"])
+        # print all into JSON
+        mojo_str = h2o.print_mojo(mojo_path)
+
+        print("dumping " + algo.__name__ + " JSON trees")
+        print("==BEGIN==")
+        print(mojo_str)
+        print("==/END==")
+
+        mojo_dict = json.loads(mojo_str)
+        assert "trees" in mojo_dict.keys()
+        assert ntrees == len(mojo_dict["trees"])
     
         # print one tree to dot
-        print("dot")
         mojo_str = h2o.print_mojo(mojo_path, tree_index=2, format="dot")
+        print("dumping " + algo.__name__ + " DOT tree")
+        print("==BEGIN==")
+        print(mojo_str)
+        print("==/END==")
+
         assert "Level 0" in mojo_str
 
 
