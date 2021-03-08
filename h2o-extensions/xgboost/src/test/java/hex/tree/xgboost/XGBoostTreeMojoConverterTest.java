@@ -45,7 +45,7 @@ public class XGBoostTreeMojoConverterTest extends TestUtil {
     public static void stall() {
         stall_till_cloudsize(1);
 
-        // we need to check for XGBoost backend availability after H2O is initialized, since we
+        // we need to check for XGBoost backend availability after H2O is initialized,
         // XGBoost is a core extension and they are registered as part of the H2O's class main method
         Assume.assumeTrue("XGBoost was not loaded!\n"
                         + "H2O XGBoost needs binary compatible environment;"
