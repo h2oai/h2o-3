@@ -9,9 +9,9 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.*;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.Arrays;
 
+import static hex.genmodel.algos.tree.SharedTreeMojoModel.treeName;
 
 /**
  * "Gradient Boosting Machine" MojoModel
@@ -172,7 +172,7 @@ public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMo
     int numCatCols = -1;
     for (int i = 0; i < featureMap.length;i++) {
       final String[] s = featureMap[i].split(SPACE);
-      assert s.length > 3; // There should be at least three tokens, the third token is feature type (int, categorical etc).
+      assert s.length >= 3; // There should be at least three tokens, the third token is feature type (int, categorical etc).
       if(!s[2].equals("i")){
         numCatCols = i;
         break;
@@ -194,36 +194,48 @@ public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMo
     return categorical;
   }
 
-  SharedTreeGraph computeGraph(final GradBooster booster, final int treeNumber) {
-
+  /**
+   * Converts a given XGBoost tree (or a collection of trees) to a common tree representation 
+   * 
+   * @param booster tree based booster
+   * @param treeToPrint index of tree to convert or -1 if all trees should be converted
+   * @return instance of SharedTreeGraph
+   */
+  SharedTreeGraph computeGraph(final GradBooster booster, final int treeToPrint) {
     if (!(booster instanceof GBTree)) {
-      throw new IllegalArgumentException(String.format("Given XGBoost model is not backed by a tree-based booster. Booster class is %d",
+      throw new IllegalArgumentException(String.format("Given XGBoost model is not backed by a tree-based booster. Booster class is %s",
               booster.getClass().getCanonicalName()));
     }
 
+    final int ntreeGroups = getNTreeGroups();
+    final int ntreePerGroup = getNTreesPerGroup();
+
+    if (treeToPrint >= ntreeGroups) {
+      throw new IllegalArgumentException("Tree " + treeToPrint + " does not exist (max " + ntreeGroups + ")");
+    }
+
+    final String[] features = constructFeatureMap();
+    final boolean[] oneHotEncodedMap = markOneHotEncodedCategoricals(features); // XGBoost's usage of one-hot encoding assumed
     final RegTree[][] treesAndClasses = ((GBTree) booster).getGroupedTrees();
-
-    SharedTreeGraph sharedTreeGraph = new SharedTreeGraph();
-
-    for (int i = 0; i < treesAndClasses.length; i++) {
-      final RegTree[] treesInGroup = treesAndClasses[i];
-
-    if (treeNumber >= treesInGroup.length || treeNumber < 0) {
-      throw new IllegalArgumentException(String.format("There is no such tree number for given class. Total number of trees is %d.", treesInGroup.length));
-    }
-
-
-    final RegTreeNode[] treeNodes = treesInGroup[treeNumber].getNodes();
-    assert treeNodes.length >= 1;
-
-
-    final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeGraph.makeSubgraph(String.format("Class %d", i));
-        final String[] features = constructFeatureMap();
-        final boolean[] oneHotEncodedMap = markOneHotEncodedCategoricals(features); // XGBoost's usage of one-hot encoding assumed
-        constructSubgraph(treeNodes, sharedTreeSubgraph.makeRootNode(), 0, sharedTreeSubgraph, oneHotEncodedMap,
+    final SharedTreeGraph g = new SharedTreeGraph();
+    for (int j = Math.max(treeToPrint, 0); j < ntreeGroups; j++) {
+      for (int i = 0; i < ntreePerGroup; i++) {
+        if (j >= treesAndClasses[i].length || treesAndClasses[i][j] == null)
+          continue; // tree doesn't exist for the given class (in multiclass some can be missing)
+        RegTreeNode[] treeNodes = treesAndClasses[i][j].getNodes();
+        assert treeNodes.length >= 1;
+        String[] domainValues = isSupervised() ? getDomainValues(getResponseIdx()) : null;
+        String treeName = treeName(j, i, domainValues);
+        SharedTreeSubgraph sg = g.makeSubgraph(treeName);
+        constructSubgraph(treeNodes, sg.makeRootNode(), 0, sg, oneHotEncodedMap,
                 true, features); // Root node is at index 0
+      }
+
+      if (treeToPrint >= 0)
+        break;
     }
-    return sharedTreeGraph;
+    
+    return g;
   }
 
   @Override
