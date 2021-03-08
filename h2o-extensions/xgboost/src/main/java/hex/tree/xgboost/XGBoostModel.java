@@ -11,12 +11,10 @@ import hex.genmodel.algos.tree.*;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
-import hex.FeatureInteraction;
 import hex.FeatureInteractions;
 import hex.FeatureInteractionsCollector;
 import hex.tree.PlattScalingHelper;
 import hex.tree.xgboost.predict.*;
-import hex.tree.xgboost.util.GpuUtils;
 import hex.tree.xgboost.util.PredictConfiguration;
 import hex.util.EffectiveParametersUtils;
 import org.apache.log4j.Logger;
@@ -29,7 +27,6 @@ import water.util.JCodeGen;
 import water.util.SBPrintStream;
 import water.util.TwoDimTable;
 
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -665,19 +662,20 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
-    return scoreContributions(frame, destination_key, null);
+    return scoreContributions(frame, destination_key, null, new ContributionsOptions());
   }
 
   @Override
-  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j) {
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options) {
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
 
     DataInfo di = model_info().dataInfo();
     assert di != null;
-    final String[] outputNames = ArrayUtils.append(di.coefNames(), "BiasTerm");
+    final String[] featureContribNames = options._outputCompact ? _output.features() : di.coefNames();
+    final String[] outputNames = ArrayUtils.append(featureContribNames, "BiasTerm");
 
-    return new PredictTreeSHAPTask(di, model_info(), _output)
+    return new PredictTreeSHAPTask(di, model_info(), _output, options)
             .withPostMapAction(JobUpdatePostMap.forJob(j))
             .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
             .outputFrame(destination_key, outputNames, null);

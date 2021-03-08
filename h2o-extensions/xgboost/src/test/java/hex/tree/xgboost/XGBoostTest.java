@@ -47,6 +47,7 @@ import static hex.genmodel.utils.DistributionFamily.bernoulli;
 import static hex.genmodel.utils.DistributionFamily.multinomial;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static water.util.FileUtils.getFile;
 
 @RunWith(Parameterized.class)
@@ -1579,7 +1580,7 @@ public class XGBoostTest extends TestUtil {
       Scope.track_generic(model);
       LOG.info(model);
 
-      Frame contributions = Scope.track(model.scoreContributions(df, Key.make()));
+      Frame contributions = Scope.track(scoreContributionsChecked(model, df, true));
 
       assertEquals("BiasTerm", contributions.names()[contributions.names().length - 1]);
       
@@ -1711,8 +1712,14 @@ public class XGBoostTest extends TestUtil {
       XGBoostModel model = job.trainModel().get();
       Scope.track_generic(model);
 
-      Frame contributions = model.scoreContributions(fr, Key.<Frame>make("contributions_titanic"));
-      Scope.track(contributions);
+      Frame contributionsExpanded = model.scoreContributions(fr, Key.make("contributions_titanic_exp"));
+      Scope.track(contributionsExpanded);
+
+      Frame contributionsAggregated = model.scoreContributions(fr, Key.make("contributions_titanic"), null,
+              new Model.ContributionsOptions().setOutputAggregated(true));
+      Scope.track(contributionsAggregated);
+
+      CheckExpandedContributionsMatchAggregatedContributions.assertEquals(model, fr, contributionsAggregated, contributionsExpanded);
 
       MojoModel mojo = model.toMojo();
 
@@ -1720,19 +1727,90 @@ public class XGBoostTest extends TestUtil {
               .setModel(mojo)
               .setEnableContributions(true);
       EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
-      assertArrayEquals(contributions.names(), wrapper.getContributionNames());
+      assertArrayEquals(contributionsExpanded.names(), wrapper.getContributionNames());
 
       for (long row = 0; row < fr.numRows(); row++) {
         RowData rd = toRowData(fr, model._output._names, row);
         BinomialModelPrediction pr = wrapper.predictBinomial(rd);
         assertArrayEquals("Contributions should match, row=" + row, 
-                toNumericRow(contributions, row), ArrayUtils.toDouble(pr.contributions), 0);
+                toNumericRow(contributionsExpanded, row), ArrayUtils.toDouble(pr.contributions), 0);
       }
     } finally {
       Scope.exit();
     }
   }
 
+  private static Frame scoreContributionsChecked(XGBoostModel model, Frame fr, boolean outputExpanded) {
+    try {
+      Scope.enter();
+      Frame contribs = model.scoreContributions(fr, Key.make("contribs"), null,
+              new Model.ContributionsOptions().setOutputAggregated(true));
+      Scope.track(contribs);
+      Frame contribsExpanded = model.scoreContributions(fr, Key.make("contribsExpanded"));
+      Scope.track(contribsExpanded);
+      CheckExpandedContributionsMatchAggregatedContributions.assertEquals(model, fr, contribs, contribsExpanded);
+      Frame result = outputExpanded ? contribsExpanded : contribs;
+      Scope.untrack(result);
+      return result;
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  private static class CheckExpandedContributionsMatchAggregatedContributions 
+          extends MRTask<CheckExpandedContributionsMatchAggregatedContributions> {
+    int _frCols;
+    DataInfo _di;
+
+    CheckExpandedContributionsMatchAggregatedContributions(int frCols, DataInfo di) {
+      _frCols = frCols;
+      _di = di;
+    }
+
+    void map(Chunk[] fr, Chunk[] contribs, Chunk[] contribsExpanded) {
+      int numPrecedingCats = 0;
+      for (int c = 0; c < fr.length; c++) {
+        Vec v = fr[c].vec();
+        if (v.isCategorical()) {
+          numPrecedingCats++;
+          for (int i = 0; i < fr[c]._len; i++) {
+            float sum = 0;
+            for (int j = _di._catOffsets[c]; j < _di._catOffsets[c + 1]; j++) {
+              sum += contribsExpanded[j].atd(i);
+            }
+            Assert.assertEquals(sum, contribs[c].atd(i), 0);
+          }
+        } else {
+          assert v.isNumeric() || v.isTime();
+          int colOffset = _di.numStart() - numPrecedingCats;
+          for (int i = 0; i < fr[c]._len; i++) {
+            Assert.assertEquals("Contribution not matching in col=" + _fr.name(c) + ", row=" + (fr[0].start() + i), 
+                    contribsExpanded[colOffset + c].atd(i), contribs[c].atd(i), 0);
+          }
+        }
+      }
+    }
+
+    @Override
+    public void map(Chunk[] cs) {
+      Chunk[] fr = Arrays.copyOf(cs, _frCols);
+      Chunk[] contribs = Arrays.copyOfRange(cs, _frCols, _frCols * 2 + 1);
+      Chunk[] contribsExpanded = Arrays.copyOfRange(cs, _frCols * 2 + 1, cs.length);
+      map(fr, contribs, contribsExpanded);
+    }
+
+    public static void assertEquals(XGBoostModel model, Frame fr, Frame contributionsAggregated, Frame contributionsExpanded) {
+      Frame checkContribsFr = new Frame(model._output.features(), fr.vecs(model._output.features()));
+      Assert.assertEquals(checkContribsFr.numCols() + 1, contributionsAggregated.numCols());
+      checkContribsFr.add(contributionsAggregated);
+      checkContribsFr.add(contributionsExpanded);
+
+      new CheckExpandedContributionsMatchAggregatedContributions(contributionsAggregated.numCols() - 1, model.model_info().dataInfo())
+              .doAll(checkContribsFr);
+    }
+
+  }
+  
   // Scoring should output original probabilities and probabilities calibrated by Platt Scaling
   @Test public void testPredictWithCalibration() {
     Scope.enter();
