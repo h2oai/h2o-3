@@ -570,7 +570,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           double eventRisk = weightEvent / totalRisks[strata];
           totalRisks[strata] -= sumRiskEvent;
           sumHaz[strata] += eventRisk;
-          o._baseline_hazard_matrix.set(t, strata + 1, sumHaz[strata]);
+          o._baseline_hazard_matrix.set(t, strata + 1, eventRisk);
           o._baseline_surv_matrix.set(t, strata + 1, 1 - sumHaz[strata]);
         }
       }

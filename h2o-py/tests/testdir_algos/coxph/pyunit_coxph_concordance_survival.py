@@ -5,6 +5,7 @@ import h2o
 
 from lifelines import CoxPHFitter
 from lifelines.datasets import load_rossi
+from pandas.testing import assert_frame_equal
 
 
 
@@ -15,15 +16,17 @@ from h2o.estimators.coxph import H2OCoxProportionalHazardsEstimator
 def coxph_concordance_and_baseline():
     rossi = load_rossi()
 
-    # without_strata(rossi)
-    with_strata(rossi)
+    without_strata(rossi)
+    # with_strata(rossi)
 
 
 def without_strata(rossi):
-    cph = CoxPHFitter()
-    cph.fit(rossi, duration_col='week', event_col='arrest')
-    cph.print_summary()
+    cphPy = CoxPHFitter()
+    cphPy.fit(rossi, duration_col='week', event_col='arrest')
+    cphPy.print_summary()
+    
     rossiH2O = h2o.H2OFrame(rossi)
+    
     cphH2O = H2OCoxProportionalHazardsEstimator(stop_column="week")
     cphH2O.train(x=["age", "fin", "race", "wexp", "mar", "paro", "prio"], y="arrest", training_frame=rossiH2O)
     assert cphH2O.model_id != ""
@@ -32,26 +35,18 @@ def without_strata(rossi):
     predH2O = cphH2O.predict(test_data=rossiH2O)
     assert len(predH2O) == len(rossi)
     metricsH2O = cphH2O.model_performance(rossiH2O)
-    py_concordance = concordance_for_lifelines(cph)
-    
-    assert abs(py_concordance - metricsH2O.concordance()) < 0.001
-    
-    print(cph.baseline_survival_)
-    print(cphH2O._model_json['output'].keys())
-    print(cphH2O._model_json['output']['var_cumhaz_2'])
-    print(len(cphH2O._model_json['output']['cumhaz_0']))
-    print(cphH2O._model_json['output']['baseline_hazard'])
+    concordancePy = concordance_for_lifelines(cphPy)
+    assert abs(concordancePy - metricsH2O.concordance()) < 0.001
 
-    frame = h2o.get_frame(cphH2O._model_json['output']['baseline_hazard']['name'])
-
-    print(len(cph.baseline_cumulative_hazard_.index))
-    print(frame.nrows)
-
-    print(frame.ncols)
-    print(len(cph.baseline_cumulative_hazard_.columns))
+    baselineHazardH2O = h2o.get_frame(cphH2O._model_json['output']['baseline_hazard']['name'])
+    baselineHazardH2OasPandas = baselineHazardH2O.as_data_frame(use_pandas=True)
     
-    print(cph.baseline_cumulative_hazard_.head(10))
-    print(frame.head())
+    print("h2o:")
+    print(baselineHazardH2OasPandas[['C2']].reset_index(drop=True).head(12))
+    print("lifelines:")
+    print(cphPy.baseline_hazard_.reset_index(drop=True).rename(columns={"baseline hazard": "C2"}).head(12))
+    
+    assert_frame_equal(cphPy.baseline_hazard_.reset_index(drop=True).rename(columns={"baseline hazard": "C2"}), baselineHazardH2OasPandas[['C2']].reset_index(drop=True), check_dtype=False)
 
 
 
@@ -97,6 +92,10 @@ def with_strata(rossi):
     print(frame.nrows)
     for i in range(0, frame.nrows):
         print(frame.as_data_frame().loc[i, :])
+        
+    print(cph.baseline_survival_.__class__)
+
+    assert_frame_equal(cph.baseline_survival_, frame.as_data_frame(use_pandas=True), check_dtype=False)
 
 
 if __name__ == "__main__":
