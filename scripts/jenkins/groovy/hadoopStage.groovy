@@ -1,5 +1,6 @@
 H2O_HADOOP_STARTUP_MODE_HADOOP='ON_HADOOP'
 H2O_HADOOP_STARTUP_MODE_HADOOP_SPNEGO='ON_HADOOP_WITH_SPNEGO'
+H2O_HADOOP_STARTUP_MODE_HADOOP_HDFS_REFRESH='ON_HADOOP_WITH_HDFS_TOKEN_REFRESH'
 H2O_HADOOP_STARTUP_MODE_STANDALONE='STANDALONE'
 H2O_HADOOP_STARTUP_MODE_STEAM_DRIVER='STEAM_DRIVER'
 H2O_HADOOP_STARTUP_MODE_STEAM_MAPPER='STEAM_MAPPER'
@@ -72,13 +73,14 @@ private String getMakeTargetSuffix(final stageConfig) {
         case H2O_HADOOP_STARTUP_MODE_STEAM_MAPPER:
         case H2O_HADOOP_STARTUP_MODE_SPARKLING:
         case H2O_HADOOP_STARTUP_MODE_STEAM_SPARKLING:
+        case H2O_HADOOP_STARTUP_MODE_HADOOP_HDFS_REFRESH:
             return "-hdp"
         case H2O_HADOOP_STARTUP_MODE_HADOOP_SPNEGO:
             return "-spnego"
         case H2O_HADOOP_STARTUP_MODE_STANDALONE:
             return "-standalone"
         default:
-            error("Startup mode ${stageConfig.customData.mode} for H2O with Hadoop is not supported")
+            error("Startup mode ${stageConfig.customData.mode} for H2O with Hadoop is not supported by the makefile (cannot make Makefile target)")
     }
 }
 

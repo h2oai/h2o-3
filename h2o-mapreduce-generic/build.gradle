@@ -18,6 +18,9 @@ dependencies {
   compile(project(':h2o-hive')) {
     transitive = false
   }
+  compile(project(':h2o-persist-hdfs')) {
+    transitive = false
+  }
   compile project(":h2o-security")
   testCompile "junit:junit:${junitVersion}"
   testCompile "org.mockito:mockito-core:2.23.0"

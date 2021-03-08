@@ -554,6 +554,10 @@ def call(final pipelineContext) {
     onHadoopWithSpnegoStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP WITH SPNEGO"
     onHadoopWithSpnegoStage.customData.mode = 'ON_HADOOP_WITH_SPNEGO'
 
+    def onHadoopWithHdfsTokenRefreshStage = evaluate(stageTemplate.inspect())
+    onHadoopWithHdfsTokenRefreshStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP WITH HDFS TOKEN REFRESH"
+    onHadoopWithHdfsTokenRefreshStage.customData.mode = 'ON_HADOOP_WITH_HDFS_TOKEN_REFRESH'
+
     def steamDriverStage = evaluate(stageTemplate.inspect())
     steamDriverStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STEAM DRIVER"
     steamDriverStage.customData.mode = 'STEAM_DRIVER'
@@ -570,7 +574,7 @@ def call(final pipelineContext) {
     steamSparklingStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STEAM SPARKLING"
     steamSparklingStage.customData.mode = 'STEAM_SPARKLING'
 
-    KERBEROS_STAGES += [ standaloneStage, onHadoopStage, onHadoopWithSpnegoStage, steamDriverStage, steamMapperStage, sparklingStage, steamSparklingStage ]
+    KERBEROS_STAGES += [ standaloneStage, onHadoopStage, onHadoopWithSpnegoStage, onHadoopWithHdfsTokenRefreshStage, steamDriverStage, steamMapperStage, sparklingStage, steamSparklingStage ]
   }
 
   final MULTINODE_CLUSTERS_CONFIGS = [

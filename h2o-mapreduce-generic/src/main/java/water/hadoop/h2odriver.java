@@ -53,6 +53,7 @@ public class h2odriver extends Configured implements Tool {
   final static String DEFAULT_ARGS_CONFIG = "h2odriver";
   final static String ARGS_CONFIG_PROP = "ai.h2o.args.config";
   final static String DRIVER_JOB_CALL_TIMEOUT_SEC = "ai.h2o.driver.call.timeout";
+  final static String H2O_AUTH_TOKEN_REFRESHER_ENABLED = "h2o.auth.tokenRefresher.enabled";
   private static final int GEN_PASSWORD_LENGTH = 16;
 
   static {
@@ -133,7 +134,8 @@ public class h2odriver extends Configured implements Tool {
   static String hiveJdbcUrlPattern = null; 
   static String hiveHost = null;
   static String hivePrincipal = null;
-  static boolean refreshTokens = false;
+  static boolean refreshHiveTokens = false;
+  static boolean refreshHdfsTokens = false;
   static String hiveToken = null;
   static CloudingMethod cloudingMethod = CloudingMethod.CALLBACKS;
   static String cloudingDir = null;
@@ -849,9 +851,10 @@ public class h2odriver extends Configured implements Tool {
                     "          [-jobname <name of job in jobtracker (defaults to: 'H2O_nnnnn')>]\n" +
                     "              (Note nnnnn is chosen randomly to produce a unique name)\n" +
                     "          [-principal <kerberos principal> -keytab <keytab path> [-run_as_user <impersonated hadoop username>] | -run_as_user <hadoop username>]\n" +
+                    "          [-refreshHdfsTokens]\n" +
                     "          [-hiveHost <hostname:port> -hivePrincipal <hive server kerberos principal>]\n" +
                     "          [-hiveJdbcUrlPattern <pattern for constructing hive jdbc url>]\n" +
-                    "          [-refreshTokens]\n" +
+                    "          [-refreshHiveTokens]\n" +
                     "          [-clouding_method <callbacks|filesystem (defaults: to 'callbacks')>]\n" +
                     "          [-driverif <ip address of mapper->driver callback interface>]\n" +
                     "          [-driverport <port of mapper->driver callback interface>]\n" +
@@ -1272,11 +1275,14 @@ public class h2odriver extends Configured implements Tool {
       } else if (s.equals("-hivePrincipal")) {
         i++; if (i >= args.length) { usage (); }
         hivePrincipal = args[i];
-      } else if (s.equals("-refreshTokens")) {
-        refreshTokens = true;
+      } else if (s.equals("-refreshTokens") || // for backwards compatibility 
+              s.equals("-refreshHiveTokens")) {
+        refreshHiveTokens = true;
       } else if (s.equals("-hiveToken")) {
         i++; if (i >= args.length) { usage (); }
         hiveToken = args[i];
+      } else if (s.equals("-refreshHdfsTokens")) {
+        refreshHdfsTokens = true;
       } else if (s.equals("-clouding_method")) {
         i++; if (i >= args.length) { usage(); }
         cloudingMethod = CloudingMethod.valueOf(args[i].toUpperCase());
@@ -1397,7 +1403,7 @@ public class h2odriver extends Configured implements Tool {
       error("delegation token generator requires Hive host to be set (use the '-hiveHost' or '-hiveJdbcUrlPattern' option)");
     }
     
-    if (refreshTokens && hivePrincipal == null) {
+    if (refreshHiveTokens && hivePrincipal == null) {
       error("delegation token refresh requires Hive principal to be set (use the '-hivePrincipal' option)");
     }
 
@@ -2080,21 +2086,24 @@ public class h2odriver extends Configured implements Tool {
     } else {
       haveHiveToken = HiveTokenGenerator.addHiveDelegationTokenIfHivePresent(j, hiveJdbcUrlPattern, hiveHost, hivePrincipal);
     }
-    if (refreshTokens) {
-      if (!haveHiveToken) {
-        // token not acquired, we need to distribute keytab to make token acquisition possible in mapper
-        if (runAsUser != null) j.getConfiguration().set(H2O_AUTH_USER, runAsUser);
-        if (principal != null) j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
-        if (keytabPath != null) {
-          byte[] payloadData = readBinaryFile(keytabPath);
-          String payload = BinaryFileTransfer.convertByteArrToString(payloadData);
-          j.getConfiguration().set(H2O_AUTH_KEYTAB, payload);
-        }
+    if ((refreshHiveTokens && !haveHiveToken) || refreshHdfsTokens) {
+      if (runAsUser != null) 
+        j.getConfiguration().set(H2O_AUTH_USER, runAsUser);
+      if (principal != null) 
+        j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
+      if (keytabPath != null) {
+        byte[] payloadData = readBinaryFile(keytabPath);
+        String payload = BinaryFileTransfer.convertByteArrToString(payloadData);
+        j.getConfiguration().set(H2O_AUTH_KEYTAB, payload);
       }
+    }
+    if (refreshHiveTokens) {
+      j.getConfiguration().setBoolean(H2O_HIVE_USE_KEYTAB, !haveHiveToken);
       if (hiveJdbcUrlPattern != null) j.getConfiguration().set(H2O_HIVE_JDBC_URL_PATTERN, hiveJdbcUrlPattern);
       if (hiveHost != null) j.getConfiguration().set(H2O_HIVE_HOST, hiveHost);
       if (hivePrincipal != null) j.getConfiguration().set(H2O_HIVE_PRINCIPAL, hivePrincipal);
     }
+    j.getConfiguration().setBoolean(H2O_AUTH_TOKEN_REFRESHER_ENABLED, refreshHdfsTokens);
 
     if (outputPath != null)
       FileOutputFormat.setOutputPath(j, new Path(outputPath));

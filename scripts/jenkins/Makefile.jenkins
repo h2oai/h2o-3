@@ -434,7 +434,7 @@ test-kerberos-hadoop-3-hdp: test-hadoop-3-smoke-standalone test-hadoop-common-sm
 
 test-kerberos-hadoop-3-spnego: test-kerberos-hadoop-3-standalone test-hadoop-common-smoke-hive-spnego
 
-test-kerberos-verify-token-refresh: h2o_one_node
+h2o_yarn_log: h2o_one_node
 	cat h2o_one_node | grep job | sed 's/job/application/g' > h2o_yarn_id
 	@if [ -z "`cat h2o_yarn_id`" ]; then\
 		echo "YARN Application ID not found."; \
@@ -442,7 +442,13 @@ test-kerberos-verify-token-refresh: h2o_one_node
 	fi
 	@echo "YARN Application ID is `cat h2o_yarn_id`"
 	-yarn application -kill `cat h2o_yarn_id`
-	yarn logs -applicationId `cat h2o_yarn_id` | grep -e "TOKEN REFRESH: Updating credentials"
+	yarn logs -applicationId `cat h2o_yarn_id` > h2o_yarn_log
+
+test-kerberos-verify-hive-token-refresh: h2o_yarn_log
+	cat h2o_yarn_log | grep -e "TOKEN REFRESH: Updating credentials"
+
+test-kerberos-verify-hdfs-token-refresh: h2o_yarn_log
+	cat h2o_yarn_log | grep -e "HDFS TOKEN REFRESH: Updating credentials"
 
 test-hadoop-multinode:
 	cd h2o-hadoop-common/tests_multinode/python && ../../../scripts/run.py --wipeall --nointernal --usecloud "$$CLOUD_IP:$$CLOUD_PORT"
