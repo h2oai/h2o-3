@@ -137,8 +137,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public String[] getNonPredictors() {
       HashSet<String> nonPredictors = new HashSet<>();
       nonPredictors.addAll(Arrays.asList(super.getNonPredictors()));
-      if (null != _metalearner_parameters)
-        nonPredictors.addAll(Arrays.asList(_metalearner_parameters.getNonPredictors()));
       if (null != _metalearner_fold_column)
         nonPredictors.add(_metalearner_fold_column);
       return nonPredictors.toArray(new String[0]);
@@ -227,7 +225,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       oldLOF.remove();
     }
     // Add response column, weights columns to level one frame
-    StackedEnsemble.addMiscColumnsToLevelOneFrame(_parms, adaptFrm, levelOneFrame, false);
+    StackedEnsemble.addNonPredictorsToLevelOneFrame(_parms, adaptFrm, levelOneFrame, false);
     // TODO: what if we're running multiple in parallel and have a name collision?
     Log.info("Finished creating \"level one\" frame for scoring: " + levelOneFrame.toString());
 
