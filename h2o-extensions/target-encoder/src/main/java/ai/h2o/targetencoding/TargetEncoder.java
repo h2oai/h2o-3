@@ -252,6 +252,16 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
 
   }
 
+  @Override
+  protected void ignoreInvalidColumns(int npredictors, boolean expensive) {
+    new FilterCols(npredictors){
+      @Override
+      protected boolean filter(Vec v, String name) {
+        return !v.isCategorical();
+      }
+    }.doIt(train(), "Removing non-categorical columns found in the list of encoded columns.", expensive);
+  }
+
   /**
    * Never do traditional cross-validation for Target Encoder Model. The {@link TargetEncoderHelper} class handles
    * fold column on it's own.

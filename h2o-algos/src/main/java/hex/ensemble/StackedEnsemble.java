@@ -60,8 +60,6 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
   @Override
   protected void ignoreBadColumns(int npredictors, boolean expensive){
-    String msg = "Dropping bad and constant columns: ";
-
     HashSet usedColumns = new HashSet();
 
     for(Key k: _parms._base_models) {
@@ -76,20 +74,14 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
     usedColumns.addAll(Arrays.asList(_parms.getNonPredictors()));
 
-    int[] toDelete = IntStream
-            .range(0, _train._names.length)
-            .filter(columnIdx -> !usedColumns.contains(_train._names[columnIdx]))
-            .toArray();
-
-    _removedCols = Arrays.stream(toDelete)
-            .mapToObj(columnIdx -> _train._names[columnIdx])
-            .collect(Collectors.toCollection(HashSet<String>::new));
-
-    _train.remove(toDelete);
-
-    msg += _removedCols.toString();
-    warn("_train", msg);
-    if (expensive) Log.info(msg);
+    // FilterCols(n=0) because there is no guarantee that non-predictors are
+    // at the end of the frame, e.g., `metalearner_fold` column can be anywhere,
+    // and `usedColumns` contain all used columns even the non-predictor ones
+    new FilterCols(0) {
+      @Override protected boolean filter(Vec v, String name) {
+        return !usedColumns.contains(name);
+      }
+    }.doIt(_train,"Dropping unused columns: ",expensive);
   }
 
   @Override

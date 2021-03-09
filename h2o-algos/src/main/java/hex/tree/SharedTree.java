@@ -98,7 +98,7 @@ public abstract class SharedTree<
   protected void ignoreInvalidColumns(int npredictors, boolean expensive) {
     // Drop invalid columns
     new FilterCols(npredictors) {
-      @Override protected boolean filter(Vec v) {
+      @Override protected boolean filter(Vec v, String name) {
         return (v.max() > Float.MAX_VALUE ); }
     }.doIt(_train,"Dropping columns with too large numeric values: ",expensive);
   }

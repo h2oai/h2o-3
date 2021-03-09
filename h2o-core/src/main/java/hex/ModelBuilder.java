@@ -1173,7 +1173,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Drop all-constant and all-bad columns.
     if(_parms._ignore_const_cols)
       new FilterCols(npredictors) {
-        @Override protected boolean filter(Vec v) {
+        @Override protected boolean filter(Vec v, String name) {
           boolean isBad = v.isBad();
           boolean skipConst = ignoreConstColumns() && v.isConst(canLearnFromNAs()); // NAs can have information
           boolean skipString = ignoreStringColumns() && v.isString();
@@ -1820,12 +1820,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     final int _specialVecs; // special vecs to skip at the end
     public FilterCols(int n) {_specialVecs = n;}
 
-    abstract protected boolean filter(Vec v);
+    abstract protected boolean filter(Vec v, String name);
 
     public void doIt( Frame f, String msg, boolean expensive ) {
       List<Integer> rmcolsList = new ArrayList<>();
       for( int i = 0; i < f.vecs().length - _specialVecs; i++ )
-        if( filter(f.vec(i)) ) rmcolsList.add(i);
+        if( filter(f.vec(i), f._names[i])) rmcolsList.add(i);
       if( !rmcolsList.isEmpty() ) {
         _removedCols = new HashSet<>(rmcolsList.size());
         int[] rmcols = new int[rmcolsList.size()];
