@@ -49,6 +49,8 @@ public class TargetEncoderMojoModel extends MojoModel {
   }
   
   void init() {
+    if (_inencMapping == null) _inencMapping = new ArrayList<>();
+    if (_inoutMapping == null) _inoutMapping = new ArrayList<>();
     if (_inencMapping.isEmpty() && _inoutMapping.isEmpty()) { // backwards compatibility for old mojos
       for (String col : _encodingsByCol.keySet()) {
         String[] in = new String[]{col};
