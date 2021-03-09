@@ -5,14 +5,14 @@ import hex.ModelCategory;
 import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
 import hex.tree.isoforextended.isolationtree.IsolationTree;
 import org.apache.log4j.Logger;
-import water.*;
+import water.DKV;
+import water.H2O;
+import water.Job;
+import water.Key;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.*;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -55,7 +55,24 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
     
     @Override
     protected void checkMemoryFootPrint_impl() {
-        // TODO valenad implement memory check
+        int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
+        double numInnerNodes = Math.pow(2, heightLimit) - 1;
+        double numLeafNodes = Math.pow(2, heightLimit);
+        double sizeOfInnerNode = 2 * _train.numCols() * Double.BYTES;
+        double sizeOfLeafNode = Integer.BYTES;
+        long maxMem = H2O.SELF._heartbeat.get_free_mem();
+
+        // IsolationTree is sparse for large data, count only with 25% of the full tree
+        double oneTree = 0.25 * numInnerNodes * sizeOfInnerNode + numLeafNodes * sizeOfLeafNode;
+        long estimatedMemory = (long) (_parms._ntrees * oneTree);
+        long estimatedComputingMemory = 5 * estimatedMemory;
+        if (estimatedComputingMemory > H2O.SELF._heartbeat.get_free_mem() || estimatedComputingMemory < 0 /* long overflow **/) {
+            String msg = "Extended Isolation Forest computation won't fit in the driver node's memory ("
+                    + PrettyPrint.bytes(estimatedComputingMemory) + " > " + PrettyPrint.bytes(maxMem)
+                    + ") - try reducing the number of columns and/or the number of trees and/or the sample_size parameter. "
+                    + "You can disable memory check by setting the attribute " + H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.noMemoryCheck.";
+            error("_train", msg);
+        }
     }
 
     @Override
@@ -120,6 +137,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                         new ExtendedIsolationForestModel.ExtendedIsolationForestOutput(ExtendedIsolationForest.this));
                 _model.delete_and_lock(_job); // todo valenad what is it good for?
                 buildIsolationTreeEnsemble();
+                _model._output._model_summary = createModelSummaryTable();
             } finally {
                 if(_model != null)
                     _model.unlock(_job); // todo valenad what is it good for?
@@ -127,23 +145,23 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         }
 
         private void buildIsolationTreeEnsemble() {
-                _model._output._iTreeKeys = new Key[_parms._ntrees];
+            _model._output._iTreeKeys = new Key[_parms._ntrees];
 
-                int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
+            int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
 
-                IsolationTree isolationTree = new IsolationTree(heightLimit, _parms._extension_level);
-                for (int tid = 0; tid < _parms._ntrees; tid++) {
-                    Timer timer = new Timer();
-                    int randomUnit = _rand.nextInt();
-                    Frame subSample = SamplingUtils.sampleOfFixedSize(_train, _parms._sample_size, _parms._seed + randomUnit);
-                    double[][] subSampleArray = FrameUtils.asDoubles(subSample);
-                    CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(subSampleArray, _parms._seed + _rand.nextInt(), tid);
-                    _model._output._iTreeKeys[tid] = compressedIsolationTree._key;
-                    DKV.put(compressedIsolationTree);
-                    _job.update(1);
-                    LOG.info((tid + 1) + ". tree was built in " + timer.toString() + ". Free memory: " + PrettyPrint.bytes(H2O.SELF._heartbeat.get_free_mem()));
-                }
-                _model._output._model_summary = createModelSummaryTable();
+            IsolationTree isolationTree = new IsolationTree(heightLimit, _parms._extension_level);
+            for (int tid = 0; tid < _parms._ntrees; tid++) {
+                Timer timer = new Timer();
+                int randomUnit = _rand.nextInt();
+                Frame subSample = SamplingUtils.sampleOfFixedSize(_train, _parms._sample_size, _parms._seed + randomUnit);
+                double[][] subSampleArray = FrameUtils.asDoubles(subSample);
+                CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(subSampleArray, _parms._seed + _rand.nextInt(), tid);
+                _model._output._iTreeKeys[tid] = compressedIsolationTree._key;
+                DKV.put(compressedIsolationTree);
+                _job.update(1);
+                _model.update(_job);
+                LOG.info((tid + 1) + ". tree was built in " + timer.toString());
+            }
         }
     }
 
