@@ -107,9 +107,14 @@ class H2OJob(object):
                 break
             except (H2OConnectionError, H2OResponseError, H2OServerError) as e:
                 last_err = e
-                if self.job_poll_success and self.auto_recoverable:
-                    print("Job request failed %s, waiting for cluster to restart." % e.args[0])
-                    time.sleep(10)
+                if self.job_poll_success:
+                    if self.auto_recoverable:
+                        print("Job request failed %s, waiting for cluster to restart." % e.args[0])
+                        time.sleep(10)
+                    else:
+                        # general/unknown failure - might be due to a temporary issue on the cluster (eg. a heavy load)
+                        print("Job request failed %s, will retry after 3s." % e.args[0])
+                        time.sleep(3)
                 else:
                     raise e
         if result:
