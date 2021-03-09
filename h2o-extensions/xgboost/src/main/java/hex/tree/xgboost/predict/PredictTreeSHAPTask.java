@@ -1,7 +1,6 @@
 package hex.tree.xgboost.predict;
 
 import hex.DataInfo;
-import hex.Model;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.tree.xgboost.XGBoostOutput;
 import hex.tree.xgboost.XGBoostModelInfo;
@@ -11,6 +10,8 @@ import water.fvec.Chunk;
 import water.fvec.NewChunk;
 
 import java.util.Arrays;
+
+import static hex.Model.Contributions.*;
 
 public class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
 
@@ -22,11 +23,11 @@ public class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
   private transient XGBoostJavaMojoModel _mojo;
 
   public PredictTreeSHAPTask(DataInfo di, XGBoostModelInfo modelInfo, XGBoostOutput output,
-                             Model.ContributionsOptions options) {
+                             ContributionsOptions options) {
     _di = di;
     _modelInfo = modelInfo;
     _output = output;
-    _outputAggregated = options._outputCompact;
+    _outputAggregated = ContributionsOutputFormat.Compact.equals(options._outputFormat);
   }
 
   @Override

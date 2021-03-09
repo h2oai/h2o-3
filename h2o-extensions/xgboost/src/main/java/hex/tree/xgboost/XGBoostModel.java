@@ -672,7 +672,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     DataInfo di = model_info().dataInfo();
     assert di != null;
-    final String[] featureContribNames = options._outputCompact ? _output.features() : di.coefNames();
+    final String[] featureContribNames = ContributionsOutputFormat.Compact.equals(options._outputFormat) ? 
+            _output.features() : di.coefNames();
     final String[] outputNames = ArrayUtils.append(featureContribNames, "BiasTerm");
 
     return new PredictTreeSHAPTask(di, model_info(), _output, options)

@@ -173,9 +173,9 @@ class ModelBase(h2o_meta(Keyed)):
                     data={"predict_staged_proba": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
 
-    def predict_contributions(self, test_data):
+    def predict_contributions(self, test_data, output_format="Original"):
         """
-        Predict feature contributions - SHAP values on an H2O Model (only DRF, GBM and XGBoost models).
+        Predict feature contributions - SHAP values on an H2O Model (only GBM, XGBoost and DRF models).
         
         Returned H2OFrame has shape (#rows, #features + 1) - there is a feature contribution column for each input
         feature, the last column is the model bias (same value for each row). The sum of the feature contributions
@@ -186,12 +186,17 @@ class ModelBase(h2o_meta(Keyed)):
         Note: Multinomial classification models are currently not supported.
 
         :param H2OFrame test_data: Data on which to calculate contributions.
+        :param Enum output_format: Specify how to output feature contributions in XGBoost - XGBoost by default outputs 
+            contributions for 1-hot encoded features, specifying a Compact output format will produce a per-feature
+            contribution. One of: ``"Original"``, ``"Compact"`` (default: ``"Original"``).
 
         :returns: A new H2OFrame made of feature contributions.
         """
+        assert_is_type(output_format, None, Enum("Original", "Compact"))
         if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
         j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
-                           data={"predict_contributions": True}), "contributions")
+                           data={"predict_contributions": True, "predict_contributions_output_format": output_format}),
+                   "contributions")
         j.poll()
         return h2o.get_frame(j.dest_key)
 

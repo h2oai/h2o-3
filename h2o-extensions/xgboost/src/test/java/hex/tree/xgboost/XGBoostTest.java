@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
 
 import static hex.genmodel.utils.DistributionFamily.bernoulli;
 import static hex.genmodel.utils.DistributionFamily.multinomial;
+import static hex.Model.Contributions.*;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
@@ -1716,7 +1717,7 @@ public class XGBoostTest extends TestUtil {
       Scope.track(contributionsExpanded);
 
       Frame contributionsAggregated = model.scoreContributions(fr, Key.make("contributions_titanic"), null,
-              new Model.ContributionsOptions().setOutputAggregated(true));
+              new ContributionsOptions().setOutputFormat(ContributionsOutputFormat.Compact));
       Scope.track(contributionsAggregated);
 
       CheckExpandedContributionsMatchAggregatedContributions.assertEquals(model, fr, contributionsAggregated, contributionsExpanded);
@@ -1744,7 +1745,7 @@ public class XGBoostTest extends TestUtil {
     try {
       Scope.enter();
       Frame contribs = model.scoreContributions(fr, Key.make("contribs"), null,
-              new Model.ContributionsOptions().setOutputAggregated(true));
+              new ContributionsOptions().setOutputFormat(ContributionsOutputFormat.Compact));
       Scope.track(contribs);
       Frame contribsExpanded = model.scoreContributions(fr, Key.make("contribsExpanded"));
       Scope.track(contribsExpanded);
