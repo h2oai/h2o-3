@@ -501,8 +501,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
       o._baseline_hazard = Key.make(model._key + "_baseline_hazard");
       o._baseline_hazard_matrix = new CoxPHModel.FrameMatrix(o._baseline_hazard, n_time, coxMR._num_strata + 1);
-      o._baseline_surv = Key.make(model._key + "_baseline_surv");
-      o._baseline_surv_matrix = new CoxPHModel.FrameMatrix(o._baseline_surv, n_time, coxMR._num_strata + 1);
+      o._baseline_survival = Key.make(model._key + "_baseline_survival");
+      o._baseline_survival_matrix = new CoxPHModel.FrameMatrix(o._baseline_survival, n_time, coxMR._num_strata + 1);
 
       final int n_coef = o._coef.length;
       int nz = 0;
@@ -561,7 +561,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
       for (int t = 0; t < coxMR._time.length; ++t) {
         o._baseline_hazard_matrix.set(t,0, coxMR._time[t]);
-        o._baseline_surv_matrix.set(t,0, coxMR._time[t]);
+        o._baseline_survival_matrix.set(t,0, coxMR._time[t]);
         for (int strata = 0; strata < coxMR._num_strata; strata++) {
           double weightEvent = coxMR.countEvents[t]; //FIXME real weight
 
@@ -571,7 +571,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           totalRisks[strata] -= sumRiskEvent;
           sumHaz[strata] += eventRisk;
           o._baseline_hazard_matrix.set(t, strata + 1, eventRisk);
-          o._baseline_surv_matrix.set(t, strata + 1, 1 - sumHaz[strata]);
+          o._baseline_survival_matrix.set(t, strata + 1, 1 - sumHaz[strata]);
         }
       }
       
@@ -585,7 +585,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       // install MatricFrames into DKV
       o._var_cumhaz_2_matrix.toFrame(o._var_cumhaz_2);
       o._baseline_hazard_matrix.toFrame(o._baseline_hazard);
-      o._baseline_surv_matrix.toFrame(o._baseline_surv);
+      o._baseline_survival_matrix.toFrame(o._baseline_survival);
     }
 
     @Override

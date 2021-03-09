@@ -237,8 +237,8 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     Key<Frame> _baseline_hazard;
     FrameMatrix _baseline_hazard_matrix;
 
-    Key<Frame> _baseline_surv;
-    FrameMatrix _baseline_surv_matrix;
+    Key<Frame> _baseline_survival;
+    FrameMatrix _baseline_survival_matrix;
 
     CoxPHParameters.CoxPHTies _ties;
     String _formula;

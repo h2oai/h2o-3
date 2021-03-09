@@ -69,6 +69,8 @@ public class CoxPHModelV3 extends ModelSchemaV3<CoxPHModel,
     KeyV3.FrameKeyV3 var_cumhaz_2; 
     @API(help = "Baseline Hazard")
     KeyV3.FrameKeyV3 baseline_hazard;
+    @API(help = "Baseline Survival")
+    KeyV3.FrameKeyV3 baseline_survival;
     @API(help = "formula")
     String formula;
     @API(help = "ties", values = {"efron", "breslow"})

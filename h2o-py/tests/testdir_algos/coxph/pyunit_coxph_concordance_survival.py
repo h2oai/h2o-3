@@ -17,7 +17,7 @@ def coxph_concordance_and_baseline():
     rossi = load_rossi()
 
     without_strata(rossi)
-    # with_strata(rossi)
+    with_strata(rossi)
 
 
 def without_strata(rossi):
@@ -29,9 +29,9 @@ def without_strata(rossi):
 
 def with_strata(rossi):
     check_cox(rossi
-              , x=["age", "fin", "wexp", "paro", "prio"]
+              , x=["age", "fin", "race", "wexp", "mar", "paro", "prio"]
               , stratify_by=["race", "mar"]
-              , formula="Surv(week, arrest) ~ fin + age + wexp + prio + strata(race) + strata(mar)"
+              , formula="Surv(week, arrest) ~ fin + age + wexp + paro + prio + strata(race) + strata(mar)"
               )
 
 def check_cox(rossi, x, stratify_by, formula):
