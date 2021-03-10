@@ -11,6 +11,8 @@ dependencies {
     testCompile "com.pholser:junit-quickcheck-core:0.9"
     testCompile 'com.pholser:junit-quickcheck-generators:0.9'
     testRuntimeOnly project(":${defaultWebserverModule}")
+    
+    jmh project(":${defaultWebserverModule}") 
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

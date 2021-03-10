@@ -11,7 +11,12 @@ import java.util.List;
 
 public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoder, TargetEncoderV3, TargetEncoderV3.TargetEncoderParametersV3> {
   public static class TargetEncoderParametersV3 extends ModelParametersSchemaV3<TargetEncoderModel.TargetEncoderParameters, TargetEncoderParametersV3> {
-
+    
+    @API(help = "List of categorical columns or groups of categorical columns to encode. " +
+            "When groups of columns are specified, each group is encoded as a single column (interactions are created internally).", 
+            level = API.Level.critical)
+    public String[][] columns_to_encode;
+    
     @API(help = "If true, the original non-encoded categorical features will remain in the result frame.",
             level = API.Level.critical)
     public boolean keep_original_categorical_columns;

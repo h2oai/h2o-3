@@ -26,6 +26,61 @@ import static org.junit.Assert.*;
 public class TargetEncoderModelTest extends TestUtil{
 
   @Test
+  public void testTargetEncoderModel_columnsToEncode() {
+    try {
+      Scope.enter();
+      Frame train = parse_test_file("./smalldata/testng/airlines_train.csv");
+      Scope.track(train);
+      Frame test = parse_test_file("./smalldata/testng/airlines_test.csv");
+      Scope.track(test);
+
+      TargetEncoderParameters paramsImplicit = new TargetEncoderParameters();
+      paramsImplicit._response_column = "IsDepDelayed";
+      paramsImplicit._ignored_columns = ignoredColumns(train, "Origin", paramsImplicit._response_column);
+      paramsImplicit._train = train._key;
+      paramsImplicit._seed = 0XFEED;
+
+
+      TargetEncoder teImplicit = new TargetEncoder(paramsImplicit);
+      final TargetEncoderModel teModelImplicit = teImplicit.trainModel().get();
+      Scope.track_generic(teModelImplicit);
+      assertNotNull(teModelImplicit);
+      final Frame encodedImplicit = teModelImplicit.score(test);
+      Scope.track(encodedImplicit);
+
+      assertNotNull(encodedImplicit);
+      assertEquals(train.numCols() + 1, encodedImplicit.numCols());
+      final int encodedColIdx = ArrayUtils.indexOf(encodedImplicit.names(), "Origin_te");
+      assertNotEquals(-1, encodedColIdx);
+      assertTrue(encodedImplicit.vec(encodedColIdx).isNumeric());
+
+
+      TargetEncoderParameters paramsExplicit = (TargetEncoderParameters)paramsImplicit.clone();
+      paramsExplicit._ignored_columns = null;
+      paramsExplicit._columns_to_encode = new String[][] {
+              new String[]{"Origin"},
+      };
+      TargetEncoder teExplicit = new TargetEncoder(paramsExplicit);
+      final TargetEncoderModel teModelExplicit = teExplicit.trainModel().get();
+      Scope.track_generic(teModelExplicit);
+      assertNotNull(teModelExplicit);
+      final Frame encodedExplicit = teModelExplicit.score(test);
+      Scope.track(encodedExplicit);
+
+      assertNotNull(encodedExplicit);
+      assertEquals(train.numCols() + 1, encodedExplicit.numCols());
+      final int encodedColIdx2 = ArrayUtils.indexOf(encodedExplicit.names(), "Origin_te");
+      assertNotEquals(-1, encodedColIdx2);
+      assertTrue(encodedExplicit.vec(encodedColIdx2).isNumeric());
+      
+      assertFrameEquals(encodedExplicit, encodedImplicit, 1e-6);
+      
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  @Test
   public void testTargetEncoderModel_nonDefault_blendingParameters() {
     try {
       Scope.enter();
@@ -149,7 +204,7 @@ public class TargetEncoderModelTest extends TestUtil{
 
 
   @Test
-  public void testTargetEncoderModel_dropNonCategoricalCols() {
+  public void testTargetEncoderModel_ignoreNonCategoricalCols() {
     try {
       Scope.enter();
       Frame train = parseTestFile("./smalldata/testng/airlines_train.csv");
@@ -161,19 +216,203 @@ public class TargetEncoderModelTest extends TestUtil{
       params._ignored_columns = null;
       params._train = train._key;
       params._seed = 0XFEED;
-
-
+      
       TargetEncoder te = new TargetEncoder(params);
       final TargetEncoderModel teModel = te.trainModel().get();
       Scope.track_generic(teModel);
+      
       // Check categorical colums for not being removed
-      assertArrayEquals(new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "UniqueCarrier",
-              "Origin", "Dest", "IsDepDelayed"}, teModel._output._names);
+      assertArrayEquals(
+              new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "UniqueCarrier", "Origin", "Dest", "Distance", "IsDepDelayed"},
+              teModel._output._names
+      );
+      assertArrayEquals(
+              new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "UniqueCarrier", "Origin", "Dest"}, 
+              Arrays.stream(teModel._output._input_to_output_columns).flatMap(io -> Stream.of(io.from())).toArray(String[]::new)
+      );
     } finally {
       Scope.exit();
     }
   }
   
+  @Test
+  public void test_model_returns_frame_as_is_if_no_categorical_column_to_encode() {
+    try {
+      Scope.enter();
+      final Frame train = new TestFrameBuilder()
+              .withColNames("num1", "num2", "target", "foldc")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar(    1,    2,     3))
+              .withDataForCol(1, ar(    5,    4,     3))
+              .withDataForCol(2, ar("yes", "no", "yes"))
+              .withDataForCol(3, ar(    0,    0,     1))
+              .build();
+
+      final Frame test = new TestFrameBuilder()
+              .withColNames("num2", "num1")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ar(5, 4, 3))
+              .withDataForCol(1, ar(3, 2, 1))
+              .build();
+
+      TargetEncoderParameters params = new TargetEncoderParameters();
+      params._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
+      params._response_column = "target";
+      params._fold_column = "foldc";
+      params._train = train._key;
+      params._seed = 1;
+
+      TargetEncoder te = new TargetEncoder(params);
+      final TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+      assertNotNull(teModel._output);
+      assertTrue(teModel._output._target_encoding_map.isEmpty());
+      assertEquals(0, teModel._output._input_to_encoding_column.length);
+      
+      Frame transformed = Scope.track(teModel.transform(test));
+      assertNotNull(transformed);
+      assertSame(test, transformed);
+      
+      Frame scored = Scope.track(teModel.score(test));
+      assertNotSame(test, scored);
+      assertFrameEquals(test, scored, 0);
+      
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void test_transformed_frame_columns_order_with_frame_similar_to_train() {
+    try {
+      Scope.enter();
+      final Frame train = new TestFrameBuilder()
+              .withColNames("cat2", "num2", "target", "num1", "cat1", "foldc")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar(  "a",  "b",   "a"))
+              .withDataForCol(1, ar(    1,    2,     3))
+              .withDataForCol(2, ar("yes", "no", "yes"))
+              .withDataForCol(3, ar(    5,    4,     3))
+              .withDataForCol(4, ar(  "A",  "B",   "C"))
+              .withDataForCol(5, ar(    0,    0,     1))
+              .build();
+
+      final Frame test = new TestFrameBuilder()
+              .withColNames("cat2", "num2", "target", "num1", "cat1")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ar(  "a",  "b",   "a"))
+              .withDataForCol(1, ar(    1,    2,     3))
+              .withDataForCol(2, ar("yes", "no", "yes"))
+              .withDataForCol(3, ar(    5,    4,     3))
+              .withDataForCol(4, ar(  "A",  "B",   "C"))
+              .build();
+
+      TargetEncoderParameters params = new TargetEncoderParameters();
+      params._data_leakage_handling = DataLeakageHandlingStrategy.None;
+      params._response_column = "target";
+      params._ignored_columns = null;
+      params._train = train._key;
+      params._fold_column = "foldc";
+      params._seed = 0XFEED;
+
+      TargetEncoder te = new TargetEncoder(params);
+      final TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      Frame trans = Scope.track(teModel.transform(test));
+      assertArrayEquals(new String[]{"num2", "num1", "cat2_te", "cat1_te", "cat2", "cat1", "target"}, trans.names());
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void test_transformed_frame_columns_order_with_frame_missing_columns_from_train() {
+    try {
+      Scope.enter();
+      final Frame train = new TestFrameBuilder()
+              .withColNames("cat2", "num2", "target", "num1", "cat1", "foldc")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar(  "a",  "b",   "a"))
+              .withDataForCol(1, ar(    1,    2,     3))
+              .withDataForCol(2, ar("yes", "no", "yes"))
+              .withDataForCol(3, ar(    5,    4,     3))
+              .withDataForCol(4, ar(  "A",  "B",   "C"))
+              .withDataForCol(5, ar(    0,    0,     1))
+              .build();
+
+      final Frame test = new TestFrameBuilder()
+              .withColNames("target", "num1", "cat1")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ar("yes", "no", "yes"))
+              .withDataForCol(1, ar(    5,    4,     3))
+              .withDataForCol(2, ar(  "A",  "B",   "C"))
+              .build();
+      
+      TargetEncoderParameters params = new TargetEncoderParameters();
+      params._data_leakage_handling = DataLeakageHandlingStrategy.None;
+      params._response_column = "target";
+      params._ignored_columns = null;
+      params._train = train._key;
+      params._fold_column = "foldc";
+      params._seed = 0XFEED;
+
+      TargetEncoder te = new TargetEncoder(params);
+      final TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      Frame trans = Scope.track(teModel.transform(test));
+      assertArrayEquals(new String[]{"num1", "cat1_te", "cat1", "target"}, trans.names());
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void test_transformed_frame_columns_order_with_shuffled_frame_having_new_and_missing_columns_from_train() {
+    try {
+      Scope.enter();
+      final Frame train = new TestFrameBuilder()
+              .withColNames("cat2", "num2", "target", "num1", "cat1", "foldc")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar(  "a",  "b",   "a"))
+              .withDataForCol(1, ar(    1,    2,     3))
+              .withDataForCol(2, ar("yes", "no", "yes"))
+              .withDataForCol(3, ar(    5,    4,     3))
+              .withDataForCol(4, ar(  "A",  "B",   "C"))
+              .withDataForCol(5, ar(    0,    0,     1))
+              .build();
+
+      final Frame test = new TestFrameBuilder()
+              .withColNames("target", "cat3", "num3", "cat2", "num2")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("yes", "no", "yes"))
+              .withDataForCol(1, ar(  "A",  "B",   "C"))
+              .withDataForCol(2, ar(    5,    4,     3))
+              .withDataForCol(3, ar(  "a",  "b",   "a"))
+              .withDataForCol(4, ar(    1,    2,     3))
+              .build();
+
+      TargetEncoderParameters params = new TargetEncoderParameters();
+      params._data_leakage_handling = DataLeakageHandlingStrategy.None;
+      params._response_column = "target";
+      params._ignored_columns = null;
+      params._train = train._key;
+      params._fold_column = "foldc";
+      params._seed = 0XFEED;
+
+      TargetEncoder te = new TargetEncoder(params);
+      final TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      Frame trans = Scope.track(teModel.transform(test));
+      assertArrayEquals(new String[]{"num2", "cat2_te", "cat2", "cat3", "num3", "target"}, trans.names());
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
   @Test
   public void test_TE_can_be_applied_to_frames_without_target() {
     try {
@@ -248,7 +487,7 @@ public class TargetEncoderModelTest extends TestUtil{
   }
   
   @Test
-  public void test_columns_order_has_no_effect() {
+  public void test_columns_order_has_no_effect_on_training() {
     try {
       Scope.enter();
       final Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
@@ -298,6 +537,62 @@ public class TargetEncoderModelTest extends TestUtil{
       assertEncodingMapsEqual(teModel1._output._target_encoding_map, teModel2._output._target_encoding_map);
 
       assertBitIdentical(sortedEncoded1, sortedReorderedEncoded2);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  @Test
+  public void test_columns_order_has_no_effect_on_transform() {
+    try {
+      Scope.enter();
+      final Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Scope.track(fr);
+      RowIndexTask.addRowIndex(fr);
+
+      String foldColumn = "fold_column";
+      int nfolds = 5;
+      addKFoldColumn(fr, foldColumn, nfolds, 1234L);
+      String responseColumnName = "survived";
+      asFactor(fr, responseColumnName);
+      String[] teColumns = new String[]{ "home.dest", "embarked" };
+
+      TargetEncoderParameters teParameters = new TargetEncoderParameters();
+      teParameters._train = fr._key;
+      teParameters._response_column = responseColumnName;
+      teParameters._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
+      teParameters._fold_column = foldColumn;
+      teParameters._seed = 42;
+      teParameters._ignored_columns = ignoredColumns(fr,
+              water.util.ArrayUtils.append(new String[]{ "home.dest", "embarked" }, teParameters._response_column, teParameters._fold_column));
+
+      TargetEncoder te = new TargetEncoder(teParameters);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+      Frame encodedOri = Scope.track(teModel.transform(fr));
+
+      int[] teColIdx = Stream.of(teColumns).mapToInt(fr::find).toArray();
+      Frame modFr = new Frame(fr);
+      modFr.swap(teColIdx[0], teColIdx[1]);
+      Frame encodedSwap = Scope.track(teModel.transform(modFr));
+
+      assertArrayEquals(encodedOri.names(), encodedSwap.names());
+      assertBitIdentical(encodedOri, encodedSwap);
+
+      modFr = new Frame(fr);
+      modFr.add("dummy", modFr.anyVec().makeCon(Vec.T_CAT));
+      Frame encodedPlusOne= Scope.track(teModel.transform(modFr));
+      assertNotNull(encodedPlusOne.vec("dummy"));
+      encodedPlusOne.remove("dummy");
+      assertBitIdentical(encodedOri, encodedPlusOne);
+
+      modFr = new Frame(fr);
+      modFr.remove("sex");
+      Frame encodedMinusOne= Scope.track(teModel.transform(modFr));
+      assertNull(encodedMinusOne.vec("sex"));
+      Frame oriMinusOne = new Frame(encodedOri);
+      oriMinusOne.remove("sex");
+      assertBitIdentical(oriMinusOne, encodedMinusOne);
     } finally {
       Scope.exit();
     }
@@ -373,6 +668,51 @@ public class TargetEncoderModelTest extends TestUtil{
       assertFalse(ArrayUtils.contains(transformed.names(), "categorical"));
 
       assertTrue(ArrayUtils.contains(fr.names(), "categorical"));
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  @Test
+  public void test_interactions_are_encoded_as_a_single_categorical_column() {
+    try {
+      Scope.enter();
+      final Frame fr = new TestFrameBuilder()
+              .withColNames("cat1", "cat2", "target")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b"))
+              .withDataForCol(1, ar("x", "x", "x", "y"))
+              .withDataForCol(2, ar("N", "Y", "N", "Y"))
+              .build();
+
+      TargetEncoderParameters params = new TargetEncoderParameters();
+      params._train = fr._key;
+      params._response_column = "target";
+      params._columns_to_encode = new String[][] {
+              new String[] {"cat1", "cat2"}
+      };
+      params._noise = 0;
+      params._seed = 0XFEED;
+      params._keep_original_categorical_columns = true;
+      params._keep_interaction_columns = true;
+
+      TargetEncoder te = new TargetEncoder(params);
+      final TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      Frame transformed = Scope.track(teModel.transform(fr));
+      assertTrue(ArrayUtils.contains(transformed.names(), "cat1"));
+      assertTrue(ArrayUtils.contains(transformed.names(), "cat2"));
+      assertTrue(ArrayUtils.contains(transformed.names(), "cat1:cat2")); // only because _keep_interaction_columns=true for the test
+      assertTrue(ArrayUtils.contains(transformed.names(), "cat1:cat2_te"));
+      
+      Vec interaction = transformed.vec("cat1:cat2");
+      assertEquals(3, interaction.domain().length);
+      assertArrayEquals(new String[] {"0", "1", "4"}, interaction.domain()); //[a, x] -> 0, [b, x] -> 1, [NA, x], [a, y], [b, y] -> 4, [NA, y]
+      assertVecEquals(vec(0, 1, 1, 2), interaction, 0);
+      
+      Vec interaction_te = transformed.vec("cat1:cat2_te");
+      assertVecEquals(dvec(0., .5, .5, 1.), interaction_te, 0);
     } finally {
       Scope.exit();
     }

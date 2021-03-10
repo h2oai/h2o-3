@@ -11,23 +11,22 @@ import water.fvec.task.FillNAWithDoubleValueTask;
 import water.logging.Logger;
 import water.logging.LoggerFactory;
 import water.udf.CFuncRef;
-import water.util.ArrayUtils;
-import water.util.IcedHashMap;
-import water.util.StringUtils;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
-import static ai.h2o.targetencoding.EncodingsComponents.NO_TARGET_CLASS;
 import static ai.h2o.targetencoding.TargetEncoderHelper.*;
+import static ai.h2o.targetencoding.interaction.InteractionSupport.addFeatureInteraction;
 
 public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> {
 
   public static final String ALGO_NAME = "TargetEncoder";
   public static final int NO_FOLD = -1;
 
+  static final String NA_POSTFIX = "_NA";
   static final String TMP_COLUMN_POSTFIX = "_tmp";
   static final String ENCODED_COLUMN_POSTFIX = "_te";
   static final BlendingParams DEFAULT_BLENDING_PARAMS = new BlendingParams(10, 20);
@@ -41,12 +40,15 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   }
 
   public static class TargetEncoderParameters extends Model.Parameters {
+    public String[][] _columns_to_encode;
     public boolean _blending = false;
     public double _inflection_point = DEFAULT_BLENDING_PARAMS.getInflectionPoint();
     public double _smoothing = DEFAULT_BLENDING_PARAMS.getSmoothing();
     public DataLeakageHandlingStrategy _data_leakage_handling = DataLeakageHandlingStrategy.None;
     public double _noise = 0.01;
     public boolean _keep_original_categorical_columns = true; // not a good default, but backwards compatible.
+    
+    boolean _keep_interaction_columns = false; // not exposed: convenient for testing.
     
     @Override
     public String algoName() {
@@ -84,17 +86,42 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
     public final TargetEncoderParameters _parms;
     public final int _nclasses;
-    public final IcedHashMap<String, Frame> _target_encoding_map;
-    public final IcedHashMap<String, Boolean> _te_column_to_hasNAs; //XXX: Map is a wrong choice for this, IcedHashSet would be perfect though
+    public ColumnsToSingleMapping[] _input_to_encoding_column; // maps input columns (or groups of columns) to the single column being effectively encoded (= key in _target_encoding_map).
+    public ColumnsMapping[] _input_to_output_columns; // maps input columns (or groups of columns) to their corresponding encoded one(s).
+    public IcedHashMap<String, Frame> _target_encoding_map;
+    public IcedHashMap<String, Boolean> _te_column_to_hasNAs; //XXX: Map is a wrong choice for this, IcedHashSet would be perfect though
     
-    public TargetEncoderOutput(TargetEncoder b, IcedHashMap<String, Frame> teMap) {
-      super(b);
-      _parms = b._parms;
-      _nclasses = b.nclasses();
+    
+    public TargetEncoderOutput(TargetEncoder te) {
+      super(te);
+      _parms = te._parms;
+      _nclasses = te.nclasses();
+    }
+    
+    void init(IcedHashMap<String, Frame> teMap, ColumnsToSingleMapping[] columnsToEncodeMapping) {
       _target_encoding_map = teMap;
-      _model_summary = constructSummary();
-
+      _input_to_encoding_column = columnsToEncodeMapping;
+      _input_to_output_columns = buildInOutColumnsMapping();
       _te_column_to_hasNAs = buildCol2HasNAsMap();
+      _model_summary = constructSummary();
+    }
+
+    /**
+     * builds the name of encoded columns
+     */
+    private ColumnsMapping[] buildInOutColumnsMapping() {
+      ColumnsMapping[] encMapping = new ColumnsMapping[_input_to_encoding_column.length];
+      for (int i=0; i < encMapping.length; i++) {
+        ColumnsToSingleMapping toEncode = _input_to_encoding_column[i];
+        String[] groupCols = toEncode.from();
+        String columnToEncode = toEncode.toSingle();
+        Frame encodings = _target_encoding_map.get(columnToEncode);
+        String[] encodedColumns = listUsedTargetClasses().mapToObj(tc -> 
+                encodedColumnName(columnToEncode, tc, encodings.vec(TARGETCLASS_COL))
+        ).toArray(String[]::new);
+        encMapping[i] = new ColumnsMapping(groupCols, encodedColumns);
+      }
+      return encMapping;
     }
 
     private IcedHashMap<String, Boolean> buildCol2HasNAsMap() {
@@ -102,30 +129,36 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       for (Map.Entry<String, Frame> entry : _target_encoding_map.entrySet()) {
         String teColumn = entry.getKey();
         Frame encodingsFrame = entry.getValue();
-        boolean hasNAs = _parms.train().vec(teColumn).cardinality() < encodingsFrame.vec(teColumn).cardinality(); //XXX: _parms.train().vec(teColumn).naCnt() > 0 ?
+        int teColCard = _parms.train().vec(teColumn) == null 
+                ? -1  // justifies the >0 test below: if teColumn is a transient (generated for interactions and therefore not in train), it can't have NAs as they're all already encoded.
+                : _parms.train().vec(teColumn).cardinality();
+        boolean hasNAs = teColCard > 0 && teColCard < encodingsFrame.vec(teColumn).cardinality(); //XXX: _parms.train().vec(teColumn).naCnt() > 0 ?
         col2HasNAs.put(teColumn, hasNAs);
       }
       return col2HasNAs;
     }
     
+    private IntStream listUsedTargetClasses()  {
+      return _nclasses == 1 ? IntStream.of(NO_TARGET_CLASS) // regression
+              : _nclasses == 2 ? IntStream.of(1)  // binary (use only positive target)
+              : IntStream.range(1, _nclasses);     // multiclass (skip only the 0 target for symmetry with binary)
+    }
+    
     private TwoDimTable constructSummary(){
-
-      String[] columnsForSummary = ArrayUtils.difference(_names, new String[]{responseName(), foldName()});
       TwoDimTable summary = new TwoDimTable(
-              "Target Encoder model summary.",
+              "Target Encoder model summary",
               "Summary for target encoder model",
-              new String[columnsForSummary.length],
-              new String[]{"Original name", "Encoded column name"},
+              new String[_input_to_output_columns.length],
+              new String[]{"Original name(s)", "Encoded column name(s)"},
               new String[]{"string", "string"},
               null,
               null
       );
-
-      for (int i = 0; i < columnsForSummary.length; i++) {
-        final String originalColName = columnsForSummary[i];
-
-        summary.set(i, 0, originalColName);
-        summary.set(i, 1, originalColName + ENCODED_COLUMN_POSTFIX);
+      
+      for (int i = 0; i < _input_to_output_columns.length; i++) {
+        ColumnsMapping mapping = _input_to_output_columns[i];
+        summary.set(i, 0, String.join(", ", mapping.from()));
+        summary.set(i, 1, String.join(", ", mapping.to()));
       }
 
       return summary;
@@ -133,6 +166,15 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
     @Override public ModelCategory getModelCategory() {
       return ModelCategory.TargetEncoder;
+    }
+  }
+  
+  private static String encodedColumnName(String columnToEncode, int targetClass, Vec targetCol) {
+    if (targetClass == NO_TARGET_CLASS || targetCol == null) {
+      return columnToEncode + ENCODED_COLUMN_POSTFIX;
+    } else {
+      String targetClassName = targetCol.domain()[targetClass];
+      return columnToEncode + "_" + StringUtils.sanitizeIdentifier(targetClassName) + ENCODED_COLUMN_POSTFIX;
     }
   }
   
@@ -212,7 +254,11 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    */
   @Override
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-    if (!canApplyTargetEncoding(fr)) return new Frame(fr);
+    if (!canApplyTargetEncoding(fr)) {
+      Frame res = new Frame(Key.make(destination_key), fr.names(), fr.vecs());
+      DKV.put(res);
+      return res;
+    }
     Frame adaptFr = null;
     try {
       adaptFr = adaptForEncoding(fr);
@@ -232,11 +278,12 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   
   private Frame adaptForEncoding(Frame fr) {
     Frame adaptFr = new Frame(fr);
+    Map<String, Integer> nameToIdx = nameToIndex(fr);
     for (int i=0; i<_output._names.length; i++) {
       String col = _output._names[i];
       String[] domain = _output._domains[i];
-      if (domain != null && ArrayUtils.contains(adaptFr.names(), col)) {
-        int toAdaptIdx = adaptFr.find(col);
+      int toAdaptIdx;
+      if (domain != null && (toAdaptIdx = nameToIdx.getOrDefault(col, -1)) >= 0) {
         Vec toAdapt = adaptFr.vec(toAdaptIdx);
         if (!Arrays.equals(toAdapt.domain(), domain)) {
           Vec adapted = toAdapt.adaptTo(domain);
@@ -248,12 +295,15 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   }
   
   private boolean canApplyTargetEncoding(Frame fr) {
-    String[] frColumns = fr.names();
-    Set<String> teColumns = _output._target_encoding_map.keySet();
-    boolean canApply = Arrays.stream(frColumns).anyMatch(teColumns::contains);
+    Set<String> frColumns = new HashSet<>(Arrays.asList(fr.names()));
+    boolean canApply = Arrays.stream(_output._input_to_encoding_column)
+            .map(m -> Arrays.asList(m.from()))
+            .anyMatch(frColumns::containsAll);
     if (!canApply) {
       logger.info("Frame "+fr._key+" has no columns to encode with TargetEncoder, skipping it: " +
-              "columns="+Arrays.toString(fr.names())+", target encoder columns="+_output._target_encoding_map.keySet());
+              "columns="+Arrays.toString(fr.names())+", " +
+              "target encoder columns="+Arrays.deepToString(Arrays.stream(_output._input_to_encoding_column).map(ColumnsMapping::from).toArray(String[][]::new))
+      );
     }
     return canApply;
   }
@@ -328,24 +378,25 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     Frame workingFrame = null;
     Key<Frame> tmpKey;
     try {
-      //FIXME: why do we need a deep copy of the whole frame? TE is not supposed to modify existing columns
-      // a simple solution would be to duplicate only the columnToEncode in the loop below, 
-      // this would allow us to modify it inplace using the current MRTasks and use it to generate the encoded column,
-      // finally, we can drop this tmp column.
-      workingFrame = data.deepCopy(Key.make().toString());
+      workingFrame = makeWorkingFrame(data);;
       tmpKey = workingFrame._key;
 
-      final Map<String, Frame> columnToEncodings = sortByColumnIndex(_output._target_encoding_map); //ensures that new columns are added in a predictable way.
-      
-      for (Map.Entry<String, Frame> kv: columnToEncodings.entrySet()) { // TODO: parallelize this, should mainly require change in naming of num/den columns
-        String columnToEncode = kv.getKey();
-        Frame encodings = kv.getValue();
-
-        int colIdx = workingFrame.find(columnToEncode);
+      for (ColumnsToSingleMapping columnsToEncode: _output._input_to_encoding_column) { // TODO: parallelize this, should mainly require change in naming of num/den columns
+        String[] colGroup = columnsToEncode.from();
+        String columnToEncode = columnsToEncode.toSingle();
+        Frame encodings = _output._target_encoding_map.get(columnToEncode);
+        assert encodings != null;
+        
+        // passing the interaction domain obtained during training:
+        // - this ensures that the interaction column will have the same domain as in training (no need to call adaptTo on the new Vec).
+        // - this improves speed when creating the interaction column (no need to extract the domain).
+        // - unseen values/interactions are however represented as NAs in the new column, which is acceptable as TE encodes them in the same way anyway.
+        int colIdx = addFeatureInteraction(workingFrame, colGroup, columnsToEncode.toDomain());
         if (colIdx < 0) {
-          logger.warn("Column "+columnToEncode+" is missing in frame "+data._key);
+          logger.warn("Column "+Arrays.toString(colGroup)+" is missing in frame "+data._key);
           continue;
         }
+        assert workingFrame.name(colIdx).equals(columnToEncode);
         
         // if not applying encodings to training data, then get rid of the foldColumn in encodings.
         if (dataLeakageHandlingStrategy != DataLeakageHandlingStrategy.KFold && encodings.find(foldColumn) >= 0) {
@@ -355,11 +406,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
         
         imputeCategoricalColumn(workingFrame, colIdx, columnToEncode + NA_POSTFIX);
 
-        IntStream posTargetClasses = _output.nclasses() == 1 ? IntStream.of(NO_TARGET_CLASS) // regression
-                : _output.nclasses() == 2 ? IntStream.of(1)  // binary (use only positive target)
-                : IntStream.range(1, _output._nclasses);     // multiclass (skip only the 0 target for symmetry with binary)
-
-        for (OfInt it = posTargetClasses.iterator(); it.hasNext(); ) {
+        for (OfInt it = _output.listUsedTargetClasses().iterator(); it.hasNext(); ) {
           int tc = it.next();
           try {
             workingFrame = strategy.apply(workingFrame, columnToEncode, encodings, tc);
@@ -369,9 +416,20 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
           }
         } // end for each target 
         
-        if (!_parms._keep_original_categorical_columns)
+        if (!_parms._keep_interaction_columns && colGroup.length > 1)
           tmps.add(workingFrame.remove(colIdx));
       } // end for each columnToEncode
+      
+      if (!_parms._keep_original_categorical_columns) {
+        Set<String> removed = new HashSet<>();
+        for (ColumnsMapping columnsToEncode: _output._input_to_encoding_column) {
+          for (String col: columnsToEncode.from()) {
+            if (removed.contains(col)) continue;
+            tmps.add(workingFrame.remove(col));
+            removed.add(col);
+          }
+        }
+      }
 
       DKV.remove(tmpKey);
       workingFrame._key = resultKey;
@@ -397,20 +455,27 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     return noiseLevel;
   }
 
-  Map<String, Frame> sortByColumnIndex(final Map<String, Frame> encodingMap) {
-    Map<String, Integer> nameToIdx = nameToIndex(_output._names);
-    Map<String, Frame> sorted = new TreeMap<>(Comparator.comparingInt(nameToIdx::get));
-    sorted.putAll(encodingMap);
-    return sorted;
+  /**
+   * Ideally there should be no need to deep copy columns that are not listed as input in _input_to_output_columns.
+   * However if we keep the original columns in the output, then they are deleted in the model integration: {@link hex.ModelBuilder#trackEncoded}.
+   * On the other side, if copied as a "ShallowVec" (extending WrappedVec) to prevent deletion of data in trackEncoded, 
+   *  then we expose WrappedVec to the client it all non-integration use cases, which is strongly discouraged.
+   * Catch-22 situation, so keeping the deepCopy for now as is occurs only for predictions, so the data are usually smaller. 
+   * @param fr
+   * @return the working frame used to make predictions
+   */
+  private Frame makeWorkingFrame(Frame fr) {
+    return fr.deepCopy(Key.make().toString());
   }
 
   /**
    * For model integration, we need to ensure that columns are offered to the model in a consistent order.
    * After TE encoding, columns are always in the following order:
    * <ol>
-   *     <li>non-categorical predictors</li>
+   *     <li>non-categorical predictors present in training frame</li>
    *     <li>TE-encoded predictors</li>
-   *     <li>remaining categorical predictors</li>
+   *     <li>remaining categorical predictors present in training frame</li>
+   *     <li>remaining predictors not present in training frame</li>
    *     <li>non-predictors</li>
    * </ol>
    * This way, categorical encoder can later encode the remaining categorical predictors 
@@ -422,17 +487,32 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     String[] toTheEnd = _parms.getNonPredictors();
     Map<String, Integer> nameToIdx = nameToIndex(fr);
     List<Integer> toAppendAfterNumericals = new ArrayList<>();
-    String[] columns = fr.names();
-    int[] newOrder = new int[columns.length];
+    String[] trainColumns = _output._names;
+    Set<String> trainCols = new HashSet<>(Arrays.asList(trainColumns));
+    String[] notInTrainColumns = Arrays.stream(fr.names())
+            .filter(c -> !trainCols.contains(c))
+            .toArray(String[]::new);
+    int[] newOrder = new int[fr.numCols()];
     int offset = 0;
-    for (int i=0; i<columns.length; i++) {
-      if (ArrayUtils.contains(toTheEnd, columns[i])) continue;
-      Vec vec = fr.vec(i);
-      if (vec.isCategorical()) {
-        toAppendAfterNumericals.add(i); //first appending categoricals
-      } else {
-        newOrder[offset++] = i; //adding all non-categoricals first
+    for (String col : trainColumns) {
+      if (nameToIdx.containsKey(col) && !ArrayUtils.contains(toTheEnd, col)) {
+        int idx = nameToIdx.get(col);
+        if (fr.vec(idx).isCategorical()) {
+          toAppendAfterNumericals.add(idx); //first appending categoricals
+        } else {
+          newOrder[offset++] = idx; //adding all non-categoricals first
+        }
       }
+    }
+    String[] encodedColumns = Arrays.stream(_output._input_to_output_columns)
+            .flatMap(m -> Stream.of(m.to()))
+            .toArray(String[]::new);
+    Set<String> encodedCols = new HashSet<>(Arrays.asList(encodedColumns));
+    for (String col : encodedColumns) { // TE-encoded cols
+        if (nameToIdx.containsKey(col)) newOrder[offset++] = nameToIdx.get(col);
+    }
+    for (String col : notInTrainColumns) {
+      if (!encodedCols.contains(col)) toAppendAfterNumericals.add(nameToIdx.get(col)); // appending columns only in fr
     }
     for (String col : toTheEnd) { // then appending the trailing columns
       if (nameToIdx.containsKey(col)) toAppendAfterNumericals.add(nameToIdx.get(col));
@@ -472,19 +552,16 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     public Frame apply(Frame fr, String columnToEncode, Frame encodings, int targetClass) {
       try {
         Scope.enter();
-        String encodedColumn;
         Frame appliedEncodings;
         int tcIdx = encodings.find(TARGETCLASS_COL);
         if (tcIdx < 0) {
-          encodedColumn = columnToEncode+ENCODED_COLUMN_POSTFIX;  //note: this naming convention is also used for TE integration with algos Mojos.
           appliedEncodings = encodings;
         } else {
-          String targetClassName = encodings.vec(tcIdx).domain()[targetClass];
-          encodedColumn = columnToEncode + "_" + StringUtils.sanitizeIdentifier(targetClassName) + ENCODED_COLUMN_POSTFIX;  //note: this naming convention is also used for TE integration with algos Mojos. 
           appliedEncodings = filterByValue(encodings, tcIdx, targetClass);
           Scope.track(appliedEncodings);
           appliedEncodings.remove(TARGETCLASS_COL);
         }
+        String encodedColumn = encodedColumnName(columnToEncode, targetClass, tcIdx < 0 ? null : encodings.vec(tcIdx));
         Frame encoded = doApply(fr, columnToEncode, appliedEncodings, encodedColumn, targetClass);
         Scope.untrack(encoded);
         return encoded;

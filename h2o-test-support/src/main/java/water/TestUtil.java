@@ -681,7 +681,7 @@ public class TestUtil extends Iced {
     return parseTestFile(fname, na_string, check_header, column_types);
   }
   
-  protected Frame parseTestFile(String fname, String na_string, int check_header, byte[] column_types) {
+  public static Frame parseTestFile(String fname, String na_string, int check_header, byte[] column_types) {
     return parseTestFile(fname, na_string, check_header, column_types, null, null);
   }
 
@@ -696,7 +696,7 @@ public class TestUtil extends Iced {
     return parseTestFile(fname, na_string, check_header, column_types, transformer);
   }
   
-  protected Frame parseTestFile(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer) {
+  public static Frame parseTestFile(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer) {
     return parseTestFile( fname, na_string, check_header, column_types, transformer,null);
   }
 
@@ -711,7 +711,7 @@ public class TestUtil extends Iced {
     return parseTestFile(fname, na_string, check_header, column_types, transformer, skippedColumns);
   }
   
-  protected Frame parseTestFile(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer, int[] skippedColumns) {
+  public static Frame parseTestFile(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer, int[] skippedColumns) {
     NFSFileVec nfs = makeNfsFileVec(fname);
 
     Key[] res = {nfs._key};

@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 import static ai.h2o.targetencoding.TargetEncoderHelper.addKFoldColumn;
 import static hex.genmodel.algos.targetencoder.TargetEncoderMojoModel.computeBlendedEncoding;
 import static hex.genmodel.algos.targetencoder.TargetEncoderMojoModel.computeLambda;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(JUnitQuickcheck.class)
@@ -251,6 +252,86 @@ public class TargetEncoderMojoIntegrationTest extends TestUtil {
       assertEquals(homeDestEnc, predictions[homeDestPredIdx], 1e-5);
       assertEquals(homeEmbarkedEnc, predictions[1 - homeDestPredIdx], 1e-5);
 
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  @Test
+  public void test_mojo_consistency_interaction() throws Exception {
+    String mojoFileName = "mojo_te.zip";
+    File mojoFile = folder.newFile(mojoFileName);
+
+    try {
+      Scope.enter();
+      Frame fr = parse_test_file(
+              "./smalldata/gbm_test/titanic.csv",
+              "NA",
+              1,
+              new byte[] {Vec.T_NUM, Vec.T_CAT, Vec.T_STR, Vec.T_CAT, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_CAT, Vec.T_CAT, Vec.T_NUM, Vec.T_CAT},
+              null,
+              new int[] {2}
+      );
+      String target = "survived";
+      Scope.track(fr);
+
+      TargetEncoderParameters teParams = new TargetEncoderParameters();
+      teParams._response_column = target;
+      teParams._columns_to_encode = new String[][] { 
+              new String[] {"sex"},
+              new String[] {"cabin", "embarked"},
+              new String[] {"cabin", "embarked", "boat"}
+      };
+      teParams._noise = 0;
+      teParams.setTrain(fr._key);
+      teParams._keep_interaction_columns = true;
+
+      TargetEncoder te = new TargetEncoder(teParams);
+      TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
+        teModel.getMojo().writeTo(modelOutput);
+        System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
+      }
+
+      // data that is not encoded yet
+      Map<String, Object> row = new HashMap();
+      row.put("home.dest", "New York  NY");
+      row.put("sex", "female");
+      row.put("age", 20);
+      row.put("fare", 151.55);
+      row.put("cabin", "C22 C26");
+      row.put("embarked", "S");
+      row.put("sibsp", 1);
+      row.put("parch", "N");
+      row.put("name", "1111"); // somehow encoded name
+      row.put("ticket", "12345");
+      row.put("boat", "11");
+      row.put("body", 123);
+      row.put("pclass", "1");
+
+      Frame transformations = Scope.track(teModel.transform(Scope.track(asFrame(row))));
+      printOutFrameAsTable(transformations);
+      double sexEnc =  transformations.vec("sex_te").at(0);
+      double interaction1Enc = transformations.vec("cabin:embarked_te").at(0);
+      double interaction2Enc = transformations.vec("cabin:embarked:boat_te").at(0);
+
+      // Let's load model that we just have written and use it for prediction.
+      TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFile.getPath());
+      EasyPredictModelWrapper teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel);
+
+      double[] predictions = teModelWrapper.predictTargetEncoding(asRowData(row)).transformations;
+      assertEquals(3, predictions.length);
+
+      assertEquals(sexEnc, predictions[0], 1e-5);
+      assertEquals(interaction1Enc, predictions[1], 1e-5);
+      assertEquals(interaction2Enc, predictions[2], 1e-5);
+      
+      for (int i=0; i<teModel._output._input_to_output_columns.length; i++) {
+        assertArrayEquals(teModel._output._input_to_output_columns[i].from(), loadedMojoModel._inoutMapping.get(i).from());
+        assertArrayEquals(teModel._output._input_to_output_columns[i].to(), loadedMojoModel._inoutMapping.get(i).to());
+      }
     } finally {
       Scope.exit();
     }

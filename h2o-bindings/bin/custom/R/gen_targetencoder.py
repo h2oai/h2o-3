@@ -6,6 +6,10 @@ def update_param(name, param):
 
 
 extensions = dict(
+    validate_params="""
+if (!missing(columns_to_encode))
+  columns_to_encode <- lapply(columns_to_encode, function(x) if(is.character(x) & length(x) == 1) list(x) else x)
+""",
     set_required_params="""
 args <- .verify_dataxy(training_frame, x, y)
 if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]

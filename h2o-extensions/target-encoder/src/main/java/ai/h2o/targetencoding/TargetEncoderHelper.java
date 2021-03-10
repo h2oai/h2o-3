@@ -1,10 +1,7 @@
 package ai.h2o.targetencoding;
 
 import water.*;
-import water.fvec.CategoricalWrappedVec;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.fvec.task.FillNAWithLongValueTask;
 import water.fvec.task.FilterByValueTask;
 import water.fvec.task.IsNotNaTask;
@@ -21,15 +18,9 @@ import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
 import water.rapids.vals.ValStr;
 import water.rapids.vals.ValStrs;
-import water.util.ArrayUtils;
-import water.util.FrameUtils;
-import water.util.TwoDimTable;
+import water.util.*;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-
-import static ai.h2o.targetencoding.EncodingsComponents.NO_TARGET_CLASS;
+import java.util.*;
 
 /**
  * This is a helper class for target encoding related logic,
@@ -38,11 +29,11 @@ import static ai.h2o.targetencoding.EncodingsComponents.NO_TARGET_CLASS;
  */
 public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
 
-  static String NUMERATOR_COL = "numerator";
-  static String DENOMINATOR_COL = "denominator";
-  static String TARGETCLASS_COL = "targetclass";
+  static final String NUMERATOR_COL = "numerator";
+  static final String DENOMINATOR_COL = "denominator";
+  static final String TARGETCLASS_COL = "targetclass";
 
-  static String NA_POSTFIX = "_NA";
+  static final int NO_TARGET_CLASS = -1; // value used as a substitute for the target class in regression problems.
   
   private static final Logger logger = LoggerFactory.getLogger(TargetEncoderHelper.class);
 
@@ -81,6 +72,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
       if (fr != null && fr != encodings) fr.delete();
     }
   }
+
 
   /**
    * If a fold column is provided, this produces a frame of shape
@@ -203,7 +195,6 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
     }
   }
 
-  /** FIXME: this method is modifying the original fr column in-place, one of the reasons why we currently need a complete deep-copy of the training frame... */
   static void imputeCategoricalColumn(Frame data, int columnIdx, String naCategory) {
     Vec currentVec = data.vec(columnIdx);
     int indexForNACategory = currentVec.cardinality(); // Warn: Cardinality returns int but it could be larger than int for big datasets
@@ -344,7 +335,6 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
     }
   }
 
-  /** FIXME: this method is modifying the original fr column in-place, one of the reasons why we currently need a complete deep-copy of the training frame... */
   static void addNoise(Frame fr, int columnIdx, double noiseLevel, long seed) {
     if (seed == -1) seed = new Random().nextLong();
     Vec zeroVec = fr.anyVec().makeCon(0);
@@ -387,11 +377,9 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
   }
 
   /** 
-   * FIXME: this method is modifying the original fr column in-place, one of the reasons why we currently need a complete deep-copy of the training frame...
-   * 
    * @param fr the frame with a numerator and denominator columns, which will be modified based on the value in the target column.
    * @param targetColumn the name of the target column.
-   * @param targetClass for regression use {@value EncodingsComponents#NO_TARGET_CLASS}, 
+   * @param targetClass for regression use {@value NO_TARGET_CLASS}, 
    *                    for classification this is the target value to match in order to decrement the numerator.
    */
   static void subtractTargetValueForLOO(Frame fr, String targetColumn, int targetClass) {
