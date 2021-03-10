@@ -1,6 +1,8 @@
 package hex.genmodel.algos.targetencoder;
 
-public class ColumnsMapping {
+import java.io.Serializable;
+
+public class ColumnsMapping implements Serializable {
     private String[] _from;
     private String[] _to;
 

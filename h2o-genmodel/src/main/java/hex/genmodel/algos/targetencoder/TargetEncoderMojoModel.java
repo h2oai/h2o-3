@@ -48,7 +48,8 @@ public class TargetEncoderMojoModel extends MojoModel {
     _columnNameToIdx = name2Idx(columns);
   }
   
-  void init() {
+  protected void init() {
+    if (_encodingsByCol == null) return;
     if (_inencMapping == null) _inencMapping = new ArrayList<>();
     if (_inoutMapping == null) _inoutMapping = new ArrayList<>();
     if (_inencMapping.isEmpty() && _inoutMapping.isEmpty()) { // backwards compatibility for old mojos
@@ -67,7 +68,6 @@ public class TargetEncoderMojoModel extends MojoModel {
         _inoutMapping.add(new ColumnsMapping(in, out));
       }
     }
-    
   }
   
   protected void setEncodings(EncodingMaps encodingMaps) {
