@@ -4,6 +4,8 @@ import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.genmodel.utils.LinkFunctionType;
 import hex.glm.GLMModel;
+import hex.quantile.Quantile;
+import hex.quantile.QuantileModel;
 import hex.tree.drf.DRFModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -80,7 +82,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       Logit,
       PercentileRank;
 
-      public MRTask task() {
+      public Frame transform(StackedEnsembleModel model, Frame frame) {
         if (this == Logit) {
           return new MRTask() {
             @Override
@@ -88,35 +90,55 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
               LinkFunction logitLink = LinkFunctionFactory.getLinkFunction(LinkFunctionType.logit);
               for (int c = 0; c < cs.length; c++) {
                 for (int i = 0; i < cs[c]._len; i++) {
-                  ncs[c].addNum(Double.min(Double.max(logitLink.link(cs[c].atd(i)), -Double.MAX_VALUE), Double.MAX_VALUE));  // Algos have troubles dealing with Inf
+                  final double p = Math.min(1 - 1e-9, Math.max(cs[c].atd(i), 1e-9)); // 0 and 1 don't work well with logit
+                  ncs[c].addNum(logitLink.link(p));
                 }
               }
             }
-          };
+          }.doAll(frame.numCols(), Vec.T_NUM, frame)
+                  .outputFrame(frame._key, frame._names, null);
         } else if (this == PercentileRank) {
+          int N = 128;
+          // quantile indices, e.g., 0.5 is median etc
+          double[] probs = new double[N+1];
+          for (int i = 0; i <= N; i++)
+            probs[i] = i/(double)N;
+          if (null == model._output._metalearner_percentile_rank_precomputed_quantiles) {
+            // Compute quantiles for specified probs
+            DKV.put(frame);
+            QuantileModel.QuantileParameters qp = new QuantileModel.QuantileParameters();
+            qp._train = frame._key;
+            qp._probs = probs;
+            QuantileModel qm = new Quantile(qp).trainModel().get();
+            model._output._metalearner_percentile_rank_precomputed_quantiles = qm._output._quantiles;
+            qm.remove();
+          }
+          // For each value do linear interpolation of the "percentile rank"
           return new MRTask() {
             @Override
             public void map(Chunk[] cs, NewChunk[] ncs) {
-              int r;
-              double s, i, j;
-              double denom = cs.length * (cs.length + 1) / 2.0;
-              for (int row = 0; row < cs[0]._len; row++) {
-                for (int colI = 0; colI < cs.length; colI++) {
-                  r = 1;
-                  s = 0;
-                  for (int colJ = 0; colJ < cs.length; colJ++) {
-                    i = cs[colI].atd(row);
-                    j = cs[colJ].atd(row);
-                    if (colI != colJ) {
-                      if (j < i) r++;
-                      else if (j == i) s++;
-                    }
+              for (int c = 0; c < cs.length; c++) {
+                for (int i = 0; i < cs[c]._len; i++) {
+                  final double val = cs[c].atd(i);
+                  final double[] quantiles = model._output._metalearner_percentile_rank_precomputed_quantiles[c];
+                  int idx = Arrays.binarySearch(quantiles, val);
+                  if (idx >= 0) {
+                    ncs[c].addNum(probs[idx]);
+                  } else if (idx == -1) {
+                    ncs[c].addNum(0);
+                  } else if (idx == -probs.length-1) {
+                    ncs[c].addNum(1);
+                  } else {
+                    idx = -idx - 1;
+                    final double quantDiff = quantiles[idx] - quantiles[idx-1];
+                    final double probDiff = probs[idx] - probs[idx-1];
+                    ncs[c].addNum(probs[idx] - (((quantiles[idx] - val)/quantDiff) * probDiff));
                   }
-                  ncs[colI].addNum((r + (s / 2)) / denom);
                 }
               }
             }
-          };
+          }.doAll(frame.numCols(), Vec.T_NUM, frame)
+                  .outputFrame(frame._key, frame._names, null);
         } else {
           throw new RuntimeException();
         }
@@ -171,6 +193,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     //The Set is instantiated and filled only if StackedEnsembleParameters#_keep_base_model_predictions=true.
     public Key<Frame>[] _base_model_predictions_keys;
 
+    public double[][] _metalearner_percentile_rank_precomputed_quantiles;
+
     @Override
     public int nfeatures() {
       return super.nfeatures() - (_metalearner._parms._fold_column == null ? 0 : 1);
@@ -220,14 +244,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     }
 
     if (_parms._metalearner_transform != null && _parms._metalearner_transform != StackedEnsembleParameters.MetalearnerTransform.NONE) {
-      if ((_parms._metalearner_parameters._distribution != DistributionFamily.bernoulli) &&
-              (!(_parms._metalearner_parameters instanceof GLMModel.GLMParameters) ||
-                      ((GLMModel.GLMParameters)_parms._metalearner_parameters)._family != GLMModel.GLMParameters.Family.binomial))
-        throw new H2OIllegalArgumentException("Metalearner transform is supported only for bernoulli distribution!");
+      if (!(_output.isBinomialClassifier() || _output.isMultinomialClassifier()))
+        throw new H2OIllegalArgumentException("Metalearner transform is supported only for classification!");
 
       Frame oldLOF = levelOneFrame;
-      levelOneFrame = _parms._metalearner_transform.task().doAll(levelOneFrame.numCols(), Vec.T_NUM, levelOneFrame)
-              .outputFrame(levelOneFrame._key, levelOneFrame._names, null);
+      levelOneFrame = _parms._metalearner_transform.transform(this, levelOneFrame);
       oldLOF.delete(true);
     }
     // Add response column, weights columns to level one frame

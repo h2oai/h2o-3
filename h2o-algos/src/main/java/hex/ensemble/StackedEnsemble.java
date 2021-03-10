@@ -247,18 +247,15 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         Scope.untrack(baseModelPredictions);
       }
       if (_parms._metalearner_transform != null && _parms._metalearner_transform != StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform.NONE) {
-        if ((_parms._metalearner_parameters._distribution != DistributionFamily.bernoulli) &&
-                (!(_parms._metalearner_parameters instanceof GLMModel.GLMParameters) ||
-                ((GLMModel.GLMParameters)_parms._metalearner_parameters)._family != GLMModel.GLMParameters.Family.binomial))
-          throw new H2OIllegalArgumentException("Metalearner transform is supported only for bernoulli distribution!");
+        if (!(_model._output.isBinomialClassifier() || _model._output.isMultinomialClassifier()))
+          throw new H2OIllegalArgumentException("Metalearner transform is supported only for classification!");
+
         Frame oldLOF = levelOneFrame;
-        levelOneFrame = _parms._metalearner_transform.task().doAll(levelOneFrame.numCols(), Vec.T_NUM, levelOneFrame)
-                .outputFrame(levelOneFrame._key, levelOneFrame._names, null);
+        levelOneFrame = _parms._metalearner_transform.transform(_model, levelOneFrame);
         oldLOF.removeAll();
         oldLOF.write_lock(_job);
         oldLOF.update(_job);
         oldLOF.unlock(_job);
-
       }
 
       // Add metalearner fold column, weights column to level one frame if it exists
