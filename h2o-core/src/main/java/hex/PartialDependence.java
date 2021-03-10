@@ -172,11 +172,12 @@ public class PartialDependence extends Lockable<PartialDependence> {
         throw new IllegalArgumentException("Weight column " + _weight_column_index + " must be a numerical column.");
     }
 
-    for (int i = 0; i < _cols_1d_2d.size(); ++i) {
-      final String col = _cols_1d_2d.get(i);
-      Vec v = fr.vec(col);
-      if (v.isCategorical() && v.cardinality() > _nbins) {
-        throw new IllegalArgumentException("Column " + col + "'s cardinality of " + v.cardinality() + " > nbins of " + _nbins);
+    if (! _user_splits_present) {
+      for (String col : _cols_1d_2d) {
+        Vec v = fr.vec(col);
+        if (v.isCategorical() && v.cardinality() > _nbins) {
+          throw new IllegalArgumentException("Column " + col + "'s cardinality of " + v.cardinality() + " > nbins of " + _nbins);
+        }
       }
     }
   }

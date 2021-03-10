@@ -9,7 +9,7 @@ from tests import pyunit_utils
 
 # PUBDDEV-7267
 def test_terminal_xgboost_nodes():
-    df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv")
+    df = h2o.import_file(pyunit_utils.locate("smalldata/demos/bank-additional-full.csv"))
 
     xgboost = H2OXGBoostEstimator(max_depth=1, ntrees=1)
     model = xgboost.train(y="y", training_frame=df)

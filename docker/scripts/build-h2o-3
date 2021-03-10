@@ -6,10 +6,10 @@ if [[ ! ${H2O_BRANCH} ]]; then
  echo "H2O_BRANCH must be set"
  exit 1
 fi
-
-PYTHON_VERSION='3.5'
-R_VERSION='3.4.1'
-JAVA_VERSION='8'
+if [[ ! -n ${PYTHON_VERSION} ]]; then
+  echo "Using default Python version"
+  PYTHON_VERSION='3.6'
+fi
 
 # cd home
 cd

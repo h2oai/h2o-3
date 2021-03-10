@@ -46,6 +46,10 @@ Defining a GLM Model
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
+- `checkpoint <algo-params/checkpoint.html>`__: Enter a model key associated with a previously trained model. Use this option to build a new model as a continuation of a previously generated model.
+
+  - **Note:** GLM only supports checkpoint for the IRLSM solver. In addition, checkpoint currently does not work when cross-validation is enabled. The solver option must be set explicitly to IRLSM and cannot be set to AUTO or DEFAULT.
+
 -  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
 
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Specify whether to keep the cross-validation predictions. This option is disabled by default.

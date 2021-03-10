@@ -24,8 +24,8 @@ def test_event_log():
     assert int(aml.training_info['stop_epoch']) > int(aml.training_info['start_epoch'])
     stop_dt = dt.datetime.fromtimestamp(int(aml.training_info['stop_epoch']))
     now = dt.datetime.now()
-    assert stop_dt.day == now.day
-    assert stop_dt.hour == now.hour
+    # test that stop_epoch is time encoded as unix epoch
+    assert abs(stop_dt - now) < dt.timedelta(minutes=1)
     assert abs(int(aml.training_info['duration_secs']) - (int(aml.training_info['stop_epoch']) - int(aml.training_info['start_epoch']))) <= 1
 
 

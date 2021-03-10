@@ -57,7 +57,7 @@ public class HiveFrameSaverImpl extends AbstractH2OExtension implements SaveToHi
             writeFrameToHdfs(frame, filePath, format);
             loadDataIntoTable(jdbcUrl, tableName, storagePath, frame, filePath, format);
         } catch (IOException e) {
-            throw new RuntimeException("Writing to Hive failed.", e);
+            throw new RuntimeException("Writing to Hive failed: " + e.getMessage(), e);
         } finally {
             if (filePath != null) safelyRemoveDataFile(filePath);
         }
@@ -149,7 +149,7 @@ public class HiveFrameSaverImpl extends AbstractH2OExtension implements SaveToHi
             }
             executeDataLoad(conn, table, filePath);
         } catch (SQLException e) {
-            throw new IOException("Failed to load data into Hive table.", e);
+            throw new IOException("Failed to load data into Hive table: " + e.getMessage(), e);
         }
     }
 

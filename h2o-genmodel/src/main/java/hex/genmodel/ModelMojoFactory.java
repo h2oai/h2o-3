@@ -1,5 +1,6 @@
 package hex.genmodel;
 
+import hex.genmodel.algos.coxph.CoxPHMojoReader;
 import hex.genmodel.algos.deeplearning.DeeplearningMojoReader;
 import hex.genmodel.algos.drf.DrfMojoReader;
 import hex.genmodel.algos.ensemble.StackedEnsembleMojoReader;
@@ -100,6 +101,9 @@ public class ModelMojoFactory {
         return new MojoPipelineReader();
       case "Principal Components Analysis":
         return new PCAMojoReader();
+      
+      case "Cox Proportional Hazards":
+        return new CoxPHMojoReader();
         
       default:
         // Try to load MOJO reader via service

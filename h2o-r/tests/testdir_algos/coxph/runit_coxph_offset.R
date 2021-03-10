@@ -3,6 +3,23 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.CoxPH.pbc_offset <- function() {
+  pred.r <- function(fit, tstdata) {
+    fit.pred <- predict(fit, tstdata, type = "lp")
+    names(fit.pred) <- NULL
+    return(fit.pred)
+  }
+
+  pred.h2o <- function(model, data) {
+    hex.lp <- h2o.predict(model, data)
+    as.data.frame(hex.lp)$lp
+  }
+    
+  check.pred <- function(r.model, hex.model, r.tstdata, hex.tstdata) {
+    fit.pred <- pred.r(r.model, r.tstdata)
+    hex.lp <- pred.h2o(hex.model, hex.tstdata)
+    expect_equal(fit.pred, hex.lp, tolerance = 1e-5, scale = 1)
+  }
+    
   pbc1 <- transform(pbc,
                     status2 = status == 2,
                     log_bili = log(bili),
@@ -25,6 +42,8 @@ test.CoxPH.pbc_offset <- function() {
   expect_equal(coef.r, coef.hex.1)
 
   expect_equal(coef(summary(fit)), coef(summary(hex.fit.1)))
+    
+  check.pred(fit, hex.fit.1, pbc1, as.h2o(pbc1))
 }
 
 doTest("CoxPH: Offset Test", test.CoxPH.pbc_offset)

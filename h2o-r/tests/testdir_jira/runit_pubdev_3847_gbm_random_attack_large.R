@@ -19,8 +19,8 @@ pubdev.3847.test <-
       nfolds <- 2
       min_split_improvement <- 1e-04
 
-      Log.info("Create 100 GBM models with random seed to test if it fails.")
-      for (i in 1:100){
+      Log.info("Create 10 GBM models with random seed to test if it fails.")
+      for (i in 1:10){
           seed <- sample(1000:2000, 1)
           Log.info(paste(i, ": create GBM model with random seed:", seed))
           model <- h2o.gbm(x = features,y = response,training_frame = data,model_id ="amodel",ntrees = ntrees,

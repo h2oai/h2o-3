@@ -70,3 +70,5 @@ When running on Hadoop, H2O can also export data into Hive tables. In order to d
 			format = "parquet",
 			table_path = "/user/bob/tables/iris"
         )
+
+**Note:** Provided JDBC URL must include necessary authentication details, for example when running on a kerberized Hadoop cluster some form of ``auth`` parameter must be used in the URL.
