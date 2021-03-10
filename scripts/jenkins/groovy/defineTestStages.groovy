@@ -358,7 +358,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.3 Medium-large', target: 'test-r-medium-large', rVersion: '3.3.3',
-      timeoutValue: 70, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 80, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R3.3 Small', target: 'test-r-small', rVersion: '3.3.3',
