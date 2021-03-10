@@ -131,6 +131,10 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Predict the feature contributions - Shapley values (optional, only for DRF, GBM and XGBoost models)", json = false)
     public boolean predict_contributions;
 
+    @API(help = "Specify how to output feature contributions in XGBoost - XGBoost by default outputs contributions for 1-hot encoded features, " +
+            "specifying a Compact output format will produce a per-feature contribution", values = {"Original", "Compact"}, json = false)
+    public Model.Contributions.ContributionsOutputFormat predict_contributions_output_format;
+
     @API(help = "Retrieve the feature frequencies on paths in trees in tree-based models (optional, only for GBM, DRF and Isolation Forest)", json = false)
     public boolean feature_frequencies;
 
@@ -398,7 +402,10 @@ class ModelMetricsHandler extends Handler {
             throw new H2OIllegalArgumentException("Model type " + parms._model._parms.algoName() + " doesn't support calculating Feature Contributions.");
           }
           Model.Contributions mc = (Model.Contributions) parms._model;
-          mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j);
+          Model.Contributions.ContributionsOutputFormat outputFormat = null == s.predict_contributions_output_format ?
+                  Model.Contributions.ContributionsOutputFormat.Original : s.predict_contributions_output_format;
+          Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions().setOutputFormat(outputFormat);
+          mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j, options);
         } else if (s.deep_features_hidden_layer < 0 && s.deep_features_hidden_layer_name == null) {
           parms._model.score(parms._frame, parms._predictions_name, j, false, CFuncRef.from(s.custom_metric_func));
         } else if (s.deep_features_hidden_layer_name != null){
@@ -519,7 +526,10 @@ class ModelMetricsHandler extends Handler {
         Model.Contributions mc = (Model.Contributions) parms._model;
         if (null == parms._predictions_name)
           parms._predictions_name = "contributions_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
-        predictions = mc.scoreContributions(parms._frame, Key.make(parms._predictions_name));
+        Model.Contributions.ContributionsOutputFormat outputFormat = null == s.predict_contributions_output_format ? 
+                Model.Contributions.ContributionsOutputFormat.Original : s.predict_contributions_output_format;
+        Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions().setOutputFormat(outputFormat);
+        predictions = mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), null, options);
       } else if(s.exemplar_index >= 0) {
         assert(Model.ExemplarMembers.class.isAssignableFrom(parms._model.getClass()));
         if (null == parms._predictions_name)

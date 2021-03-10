@@ -179,7 +179,7 @@ public class Example {
                                                                               null,
                                                                               false, false, -1, null,
                                                                               false, false, false, false, null,
-                                                                              false, false, false, -1, false, null, null).execute().body();
+                                                                              false, false, null, false, -1, false, null, null).execute().body();
             System.out.println("predictions: " + predictions);
 
         }
