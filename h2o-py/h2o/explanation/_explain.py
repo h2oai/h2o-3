@@ -2150,9 +2150,9 @@ def explain(
         result["ice"]["description"] = display(Description("ice"))
         result["ice"]["plots"] = H2OExplanation()
         for column in columns_of_interest:
-            result["ice"]["plots"][columns] = H2OExplanation()
+            result["ice"]["plots"][column] = H2OExplanation()
             for model in models_to_show:
-                result["ice"]["plots"][columns][model] = H2OExplanation()
+                result["ice"]["plots"][column][model.model_id] = H2OExplanation()
                 for target in targets:
                     ice = display(
                         ice_plot(
@@ -2165,9 +2165,9 @@ def explain(
                                 colormap=sequential_colormap
                             )))
                     if target is None:
-                        result["ice"]["plots"][columns][model] = ice
+                        result["ice"]["plots"][column][model.model_id] = ice
                     else:
-                        result["ice"]["plots"][columns][model][target[0]] = ice
+                        result["ice"]["plots"][column][model.model_id][target[0]] = ice
 
     return result
 
