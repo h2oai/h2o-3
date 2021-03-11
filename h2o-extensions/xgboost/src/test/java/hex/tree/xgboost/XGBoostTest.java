@@ -498,7 +498,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(metadataBefore, metadataAfter);
 
       Frame preds = Scope.track(model.score(testFrame));
-      assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      assertTrue(model.testJavaScoring(testFrame, preds, 1e-7));
       assertEquals(
               ModelMetricsBinomial.make(preds.vec(2), testFrame.vec(response)).auc(),
               ((ModelMetricsBinomial) model._output._validation_metrics).auc(),
@@ -543,7 +543,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(metadataBefore, metadataAfter);
 
       Frame preds = Scope.track(model.score(testFrame));
-      assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      assertTrue(model.testJavaScoring(testFrame, preds, 1e-7));
       assertEquals(
               ((ModelMetricsBinomial)model._output._validation_metrics).auc(),
               ModelMetricsBinomial.make(preds.vec(2), testFrame.vec(response)).auc(),
@@ -671,7 +671,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(testFrame);
-      assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      assertTrue(model.testJavaScoring(testFrame, preds, 1e-7));
       assertEquals(
               ((ModelMetricsRegression)model._output._validation_metrics).mae(),
               ModelMetricsRegression.make(preds.anyVec(), testFrame.vec(response), DistributionFamily.gaussian).mae(),
@@ -731,7 +731,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(testFrame);
-      assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      assertTrue(model.testJavaScoring(testFrame, preds, 1e-7));
       assertEquals(
               ((ModelMetricsRegression)model._output._validation_metrics).mae(),
               ModelMetricsRegression.make(preds.anyVec(), testFrame.vec(response), DistributionFamily.gaussian).mae(),
@@ -1041,7 +1041,7 @@ public class XGBoostTest extends TestUtil {
         assertEquals(metadataBefore, metadataAfter);
 
         preds = model.score(testFrame);
-        assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+        assertTrue(model.testJavaScoring(testFrame, preds, 1e-7));
         assertTrue(preds.anyVec().sigma() > 0);
 
       } finally {
@@ -1227,7 +1227,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(tfr);
-      assertTrue(model.testJavaScoring(tfr, preds, 1e-6));
+      assertTrue(model.testJavaScoring(tfr, preds, 1e-7));
       assertTrue(preds.vec(2).sigma() > 0);
       assertEquals(
               ((ModelMetricsBinomial)model._output._training_metrics).logloss(),
