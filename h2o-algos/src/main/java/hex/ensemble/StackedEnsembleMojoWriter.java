@@ -15,7 +15,13 @@ public class StackedEnsembleMojoWriter extends MultiModelMojoWriter<StackedEnsem
     @SuppressWarnings("unused")  // Called through reflection in ModelBuildersHandler
     public StackedEnsembleMojoWriter() {}
 
-    public StackedEnsembleMojoWriter(StackedEnsembleModel model) {super(model);}
+    public StackedEnsembleMojoWriter(StackedEnsembleModel model) {
+        super(model);
+        if (model._parms._metalearner_transform != StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform.NONE) {
+            throw new UnsupportedOperationException("Cannot save Stacked Ensemble with metalearner_transform = \"" +
+                    model._parms._metalearner_transform.name() + "\" to MOJO.");
+        }
+    }
 
 
     @Override
