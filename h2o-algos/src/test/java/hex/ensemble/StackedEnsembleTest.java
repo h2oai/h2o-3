@@ -1466,9 +1466,9 @@ public class StackedEnsembleTest extends TestUtil {
             fr.add("second", Vec.makeVec(new double[] {1,2,3,  4,  5,  6}, Vec.newKey()));
             fr.add("third",  Vec.makeVec(new double[] {1,1,3,  3,  2,  2}, Vec.newKey()));
             fr.add("fourth",  Vec.makeVec(new double[]{1,1,1,  1,  1,  1}, Vec.newKey()));
-            StackedEnsembleModel se = new StackedEnsembleModel(null, new StackedEnsembleParameters(), new StackedEnsembleModel.StackedEnsembleOutput());
+            StackedEnsembleModel se = new StackedEnsembleModel(Key.make(), new StackedEnsembleParameters(), new StackedEnsembleModel.StackedEnsembleOutput());
             Frame newFr = StackedEnsembleParameters.MetalearnerTransform.PercentileRank.transform(se,fr);
-
+            DKV.remove(se._key);
             Frame expected = new Frame();
             expected.add("first", Vec.makeVec(new double[] {0.75,      0.75,      1,     0,     0.2421875, 0.2421875}, Vec.newKey()));
             expected.add("second", Vec.makeVec(new double[]{ 0,        0.2,       0.4,   0.6,   0.8,       1}, Vec.newKey()));

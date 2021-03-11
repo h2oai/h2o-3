@@ -110,7 +110,10 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
             qp._train = frame._key;
             qp._probs = probs;
             QuantileModel qm = new Quantile(qp).trainModel().get();
+            model.write_lock();
             model._output._metalearner_percentile_rank_precomputed_quantiles = qm._output._quantiles;
+            model.update();
+            model.unlock();
             qm.remove();
           }
           // For each value do linear interpolation of the "percentile rank"

@@ -221,10 +221,10 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       Frame old = DKV.getGet(levelOneKey);
       if (old != null && old instanceof Frame) {
         Frame oldFrame = (Frame) old;
+        oldFrame.write_lock(_job);
         // Remove ALL the columns so we don't delete them in remove_impl.  Their
         // lifetime is controlled by their model.
         oldFrame.removeAll();
-        oldFrame.write_lock(_job);
         oldFrame.update(_job);
         oldFrame.unlock(_job);
       }
@@ -252,8 +252,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
         Frame oldLOF = levelOneFrame;
         levelOneFrame = _parms._metalearner_transform.transform(_model, levelOneFrame);
-        oldLOF.removeAll();
         oldLOF.write_lock(_job);
+        oldLOF.removeAll();
         oldLOF.update(_job);
         oldLOF.unlock(_job);
       }
@@ -261,7 +261,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       // Add metalearner fold column, weights column to level one frame if it exists
       addMiscColumnsToLevelOneFrame(_model._parms, actuals, levelOneFrame, true);
 
-      levelOneFrame.write_lock(_job);
+      levelOneFrame.delete_and_lock(_job);
       levelOneFrame.unlock(_job);
       Log.info("Finished creating \"level one\" frame for stacking: " + levelOneFrame.toString());
       DKV.put(levelOneFrame);
