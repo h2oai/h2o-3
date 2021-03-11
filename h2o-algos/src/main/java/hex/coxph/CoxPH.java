@@ -13,11 +13,13 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.*;
+import water.util.Timer;
 
+import static java.util.stream.Collectors.toList;
 import static water.util.ArrayUtils.constAry;
 
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Cox Proportional Hazards Model
@@ -500,9 +502,11 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       o._var_cumhaz_2_matrix = new CoxPHModel.FrameMatrix(o._var_cumhaz_2, n_time, o._coef.length);
 
       o._baseline_hazard = Key.make(model._key + "_baseline_hazard");
-      o._baseline_hazard_matrix = new CoxPHModel.FrameMatrix(o._baseline_hazard, n_time, coxMR._num_strata + 1);
+      final int num_strata = coxMR._num_strata;
+      
+      o._baseline_hazard_matrix = new CoxPHModel.FrameMatrix(o._baseline_hazard, n_time / num_strata, num_strata + 1);
       o._baseline_survival = Key.make(model._key + "_baseline_survival");
-      o._baseline_survival_matrix = new CoxPHModel.FrameMatrix(o._baseline_survival, n_time, coxMR._num_strata + 1);
+      o._baseline_survival_matrix = new CoxPHModel.FrameMatrix(o._baseline_survival, coxMR.sizeEvents.length / num_strata, num_strata + 1);
 
       final int n_coef = o._coef.length;
       int nz = 0;
@@ -562,13 +566,15 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       for (int t = 0; t < coxMR._time.length; ++t) {
         o._baseline_hazard_matrix.set(t,0, coxMR._time[t]);
         o._baseline_survival_matrix.set(t,0, coxMR._time[t]);
-        for (int strata = 0; strata < coxMR._num_strata; strata++) {
-          double weightEvent = coxMR.countEvents[t]; //FIXME real weight
 
-          double sumRiskEvent = coxMR.sumRiskAllEvents[t];
+        for (int strata = 0; strata < num_strata; strata++) {
+          double weightEvent = coxMR.sumWeightInStrata[t + coxMR._time.length * strata];
+          double sumRiskEvent = coxMR.sumRiskAllEvents[t + coxMR._time.length * strata];
 
           double eventRisk = weightEvent / totalRisks[strata];
+
           totalRisks[strata] -= sumRiskEvent;
+          
           sumHaz[strata] += eventRisk;
           o._baseline_hazard_matrix.set(t, strata + 1, eventRisk);
           o._baseline_survival_matrix.set(t, strata + 1, 1 - sumHaz[strata]);
@@ -584,7 +590,32 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
       // install MatricFrames into DKV
       o._var_cumhaz_2_matrix.toFrame(o._var_cumhaz_2);
-      o._baseline_hazard_matrix.toFrame(o._baseline_hazard);
+      final Frame frame = o._baseline_hazard_matrix.toFrame(o._baseline_hazard);
+
+      Arrays.stream(frame.vecs()).forEach(
+              v -> {
+                for (int i = 0; i < v.length(); i++) {
+                  System.out.println("" + i + "..." + v.at(i));
+                }
+              }
+      );
+
+      if (null == o._strataMap || 0 == o._strataMap.size()) {
+        frame.setNames(new String[]{"t", "baseline hazard"});
+      } else {
+          List<String> names = o._strataMap.entrySet().stream()
+                .sorted(Comparator.comparingInt(e -> e.getValue()._val))
+                .map(Map.Entry::getKey)
+                .map(i -> i._gs)
+                .map(a -> Arrays.stream(a).mapToInt(d -> (int)d).toArray())
+                .map(Arrays::toString)
+                .map(s -> s.replace(']',')').replace('[', '('))
+                .collect(toList());
+          names.add(0, "t");
+        frame.setNames(names.toArray(new String[0]));
+      }
+      
+      
       o._baseline_survival_matrix.toFrame(o._baseline_survival);
     }
 
@@ -733,6 +764,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     double[]     sumXEvents;
     double[]     sumRiskEvents;
     double[]     sumRiskAllEvents;
+    double[]     sumWeightInStrata;
     double[][]   sumXRiskEvents;
     double[]     sumLogRiskEvents;
     double[]     rcumsumRisk;
@@ -759,6 +791,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
     @Override
     protected void chunkInit(){
+      System.out.println("_time = " + Arrays.toString(_time));
       final int n_time = _time.length * _num_strata;
       final int n_coef = _beta.length;
 
@@ -771,6 +804,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       countEvents      = MemoryManager.malloc8(n_time);
       sumRiskEvents    = MemoryManager.malloc8d(n_time);
       sumRiskAllEvents = MemoryManager.malloc8d(n_time);
+      sumWeightInStrata= MemoryManager.malloc8d(n_time);
       sumLogRiskEvents = MemoryManager.malloc8d(n_time);
       rcumsumRisk      = MemoryManager.malloc8d(n_time);
       sumXEvents       = MemoryManager.malloc8d(n_coef);
@@ -806,10 +840,12 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       final int strataId = (int) strata;
       final int numStart = _dinfo.numStart();
       sumWeights[strataId] += weight;
-      for (int j = 0; j < ncats; ++j)
+      for (int j = 0; j < ncats; ++j) {
         sumWeightedCatX[strataId][cats[j]] += weight;
-      for (int j = 0; j < nums.length; ++j)
+      }
+      for (int j = 0; j < nums.length; ++j) {
         sumWeightedNumX[strataId][j] += weight * nums[j];
+      }
       double logRisk = 0;
       for (int j = 0; j < ncats; ++j)
         logRisk += _beta[cats[j]];
@@ -820,12 +856,13 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       final double risk = weight * Math.exp(logRisk);
       logRisk *= weight;
       totalRisk[strataId] += risk;
-      sumRiskAllEvents[t2] /*[strataId]*/ += risk;
+      sumRiskAllEvents[t2] += risk;
       if (event > 0) {
         countEvents[t2]++;
         sizeEvents[t2]       += weight;
         sumLogRiskEvents[t2] += logRisk;
         sumRiskEvents[t2]    += risk;
+        sumWeightInStrata[t2] += weight;
       } else
         sizeCensored[t2] += weight;
       if (_has_start_column) {
@@ -883,6 +920,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       ArrayUtils.add(sumXEvents,       that.sumXEvents);
       ArrayUtils.add(sumRiskEvents,    that.sumRiskEvents);
       ArrayUtils.add(sumRiskAllEvents, that.sumRiskAllEvents);
+      ArrayUtils.add(sumWeightInStrata, that.sumWeightInStrata);
       ArrayUtils.add(sumXRiskEvents,   that.sumXRiskEvents);
       ArrayUtils.add(sumLogRiskEvents, that.sumLogRiskEvents);
       ArrayUtils.add(rcumsumRisk,      that.rcumsumRisk);
