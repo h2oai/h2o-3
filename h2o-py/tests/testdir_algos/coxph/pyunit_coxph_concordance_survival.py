@@ -46,25 +46,25 @@ def check_cox(rossi, x, stratify_by, formula):
 
     cph_py.fit(rossi, duration_col='week', event_col='arrest')
     cph_py.print_summary()
-    rossi_h2_o = h2o.H2OFrame(rossi)
+    rossi_h2o = h2o.H2OFrame(rossi)
 
     for col in stratify_by:
-        rossi_h2_o[col] = rossi_h2_o[col].asfactor()
+        rossi_h2o[col] = rossi_h2o[col].asfactor()
     
     cph_h2o = H2OCoxProportionalHazardsEstimator(stop_column="week", stratify_by=stratify_by)
-    cph_h2o.train(x=x, y="arrest", training_frame=rossi_h2_o)
+    cph_h2o.train(x=x, y="arrest", training_frame=rossi_h2o)
     
     assert cph_h2o.model_id != ""
     assert cph_h2o.model_id != ""
     assert cph_h2o.formula() == formula, f"Expected formula to be '{formula}' but it was " + cph_h2o.formula()
     
-    predH2O = cph_h2o.predict(test_data=rossi_h2_o)
+    predH2O = cph_h2o.predict(test_data=rossi_h2o)
     assert len(predH2O) == len(rossi)
-    metricsH2O = cph_h2o.model_performance(rossi_h2_o)
-    concordancePy = concordance_for_lifelines(cph_py)
-    assert abs(concordancePy - metricsH2O.concordance()) < 0.001
-    baselineHazardH2O = h2o.get_frame(cph_h2o._model_json['output']['baseline_hazard']['name'])
-    baselineHazardH2OasPandas = baselineHazardH2O.as_data_frame(use_pandas=True)
+    metrics_h2o = cph_h2o.model_performance(rossi_h2o)
+    concordance_py = concordance_for_lifelines(cph_py)
+    assert abs(concordance_py - metrics_h2o.concordance()) < 0.001
+    hazard_h2o = h2o.get_frame(cph_h2o._model_json['output']['baseline_hazard']['name'])
+    hazard_h2o_as_pandas = hazard_h2o.as_data_frame(use_pandas=True)
 
     hazard_py = cph_py.baseline_hazard_
     
@@ -72,14 +72,14 @@ def check_cox(rossi, x, stratify_by, formula):
         hazard_py.rename(columns={col_name: str(col_name)}, inplace=True)
     
     print("h2o:")
-    print(baselineHazardH2OasPandas.reset_index(drop=True))
+    print(hazard_h2o_as_pandas.reset_index(drop=True))
     
     print("lifelines:")
     print(hazard_py.reset_index(drop=True))
     
 
     hazard_py_reordered_columns = hazard_py.reset_index(drop=True).sort_index(axis=1)
-    hazard_h2o_reordered_columns = baselineHazardH2OasPandas.drop('t', axis="columns").reset_index( drop=True).sort_index(axis=1)
+    hazard_h2o_reordered_columns = hazard_h2o_as_pandas.drop('t', axis="columns").reset_index( drop=True).sort_index(axis=1)
     
     assert_frame_equal(hazard_py_reordered_columns, hazard_h2o_reordered_columns, 
                        check_dtype=False, check_index_type=False, check_column_type=False)
