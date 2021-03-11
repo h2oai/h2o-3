@@ -61,7 +61,7 @@ public abstract class XGBoostPojoWriter {
 
     private void renderPredTransformViaLinkFunction(LinkFunctionType type, SBPrintStream sb) {
         LinkFunction lf = LinkFunctionFactory.getLinkFunction(type);
-        sb.ip("preds[0] = (float) ").p(lf.linkInvString("preds[0]")).p(";").nl();
+        sb.ip("preds[0] = (float) ").p(lf.linkInvStringFloat("preds[0]")).p(";").nl();
     }
 
     private void renderMultiClassPredTransform(SBPrintStream sb) {

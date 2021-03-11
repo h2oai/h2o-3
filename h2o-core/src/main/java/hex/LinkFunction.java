@@ -46,6 +46,10 @@ public abstract class LinkFunction extends Iced<LinkFunction> {
      * @return String that turns into compilable expression of linkInv(f)
      */
     public abstract String linkInvString(String f);
+
+    public String linkInvStringFloat(String f) {
+        return linkInvString(f);
+    }
 }
 
 class IdentityFunction extends LinkFunction {
@@ -134,7 +138,12 @@ class LogitFunction extends LinkFunction {
 
     @Override
     public String linkInvString(String f) {
-        return "1./(1. + " + expString("-("+f+")") + ")";
+        return "1./(1. + " + expString("-(" + f + ")") + ")";
+    }
+
+    @Override
+    public String linkInvStringFloat(String f) {
+        return "1f/(1f + " + "(float)" + expString("-("+f+")") + ")";
     }
 }
 
