@@ -577,7 +577,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           
           sumHaz[strata] += eventRisk;
           o._baseline_hazard_matrix.set(t, strata + 1, eventRisk);
-          o._baseline_survival_matrix.set(t, strata + 1, 1 - sumHaz[strata]);
+          o._baseline_survival_matrix.set(t, strata + 1, Math.exp(-sumHaz[strata]));
         }
       }
       
@@ -590,20 +590,14 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
       // install MatricFrames into DKV
       o._var_cumhaz_2_matrix.toFrame(o._var_cumhaz_2);
-      final Frame frame = o._baseline_hazard_matrix.toFrame(o._baseline_hazard);
-
-      Arrays.stream(frame.vecs()).forEach(
-              v -> {
-                for (int i = 0; i < v.length(); i++) {
-                  System.out.println("" + i + "..." + v.at(i));
-                }
-              }
-      );
+      final Frame baselineHazardAsFrame = o._baseline_hazard_matrix.toFrame(o._baseline_hazard);
+      final Frame baselineSurvivalAsFrame = o._baseline_survival_matrix.toFrame(o._baseline_survival);
 
       if (null == o._strataMap || 0 == o._strataMap.size()) {
-        frame.setNames(new String[]{"t", "baseline hazard"});
+        baselineHazardAsFrame.setNames(new String[]{"t", "baseline hazard"});
+        baselineSurvivalAsFrame.setNames(new String[]{"t", "baseline survival"});
       } else {
-          List<String> names = o._strataMap.entrySet().stream()
+        List<String> names = o._strataMap.entrySet().stream()
                 .sorted(Comparator.comparingInt(e -> e.getValue()._val))
                 .map(Map.Entry::getKey)
                 .map(i -> i._gs)
@@ -611,12 +605,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
                 .map(Arrays::toString)
                 .map(s -> s.replace(']',')').replace('[', '('))
                 .collect(toList());
-          names.add(0, "t");
-        frame.setNames(names.toArray(new String[0]));
+        names.add(0, "t");
+        baselineHazardAsFrame.setNames(names.toArray(new String[0]));
+        baselineSurvivalAsFrame.setNames(names.toArray(new String[0]));
       }
-      
-      
-      o._baseline_survival_matrix.toFrame(o._baseline_survival);
     }
 
     @Override

@@ -76,7 +76,6 @@ def check_cox(rossi, x, stratify_by, formula):
     
     print("lifelines:")
     print(hazard_py.reset_index(drop=True))
-    
 
     hazard_py_reordered_columns = hazard_py.reset_index(drop=True).sort_index(axis=1)
     hazard_h2o_reordered_columns = hazard_h2o_as_pandas.drop('t', axis="columns").reset_index( drop=True).sort_index(axis=1)
@@ -84,16 +83,25 @@ def check_cox(rossi, x, stratify_by, formula):
     assert_frame_equal(hazard_py_reordered_columns, hazard_h2o_reordered_columns, 
                        check_dtype=False, check_index_type=False, check_column_type=False)
     
-    # baselineSurvivalH2O = h2o.get_frame(cph_h2_o._model_json['output']['baseline_survival']['name'])
-    # baselineSurvivalH2OasPandas = baselineSurvivalH2O.as_data_frame(use_pandas=True)
-    # 
-    # print("h2o:")
-    # print(baselineSurvivalH2OasPandas[['C2']].reset_index(drop=True).head(12))
-    # print("lifelines:")
-    # print(cph_py.baseline_survival_.reset_index(drop=True).rename(columns={"baseline survival": "C2"}).head(12))
-    # 
-    # assert_frame_equal(cph_py.baseline_survival_.reset_index(drop=True).rename(columns={"baseline survival": "C2"}), 
-    #    baselineSurvivalH2OasPandas[['C2']].reset_index(drop=True), check_dtype=False)
+    survival_h2o = h2o.get_frame(cph_h2o._model_json['output']['baseline_survival']['name'])
+    survival_h2o_as_pandas = survival_h2o.as_data_frame(use_pandas=True)
+
+    survival_py = cph_py.baseline_survival_
+    
+    for col_name in survival_py.columns:
+        survival_py.rename(columns={col_name: str(col_name)}, inplace=True)
+
+    survival_py_reordered_columns = survival_py.reset_index(drop=True).sort_index(axis=1)
+    survival_h2o_reordered_columns = survival_h2o_as_pandas.drop('t', axis="columns").reset_index( drop=True).sort_index(axis=1)
+
+    print("h2o:")
+    print(survival_h2o_as_pandas.reset_index(drop=True))
+
+    print("lifelines:")
+    print(survival_py.reset_index(drop=True))
+
+    assert_frame_equal(survival_py_reordered_columns, survival_h2o_reordered_columns,
+                       check_dtype=False, check_index_type=False, check_column_type=False)
 
 
 # There are different API versions for concordance in lifelines library
