@@ -567,14 +567,14 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         o._baseline_survival_matrix.set(t,0, coxMR._time[t]);
 
         for (int strata = 0; strata < num_strata; strata++) {
-          double weightEvent = coxMR.sizeEvents[t + coxMR._time.length * strata];
-          double sumRiskEvent = coxMR.sumRiskAllEvents[t + coxMR._time.length * strata];
+          final double weightEvent = coxMR.sizeEvents[t + coxMR._time.length * strata];
+          final double sumRiskEvent = coxMR.sumRiskAllEvents[t + coxMR._time.length * strata];
 
-          double eventRisk = weightEvent / totalRisks[strata];
+          final double eventRisk = weightEvent / totalRisks[strata];
 
           totalRisks[strata] -= sumRiskEvent;
-          
           sumHaz[strata] += eventRisk;
+          
           o._baseline_hazard_matrix.set(t, strata + 1, eventRisk);
           o._baseline_survival_matrix.set(t, strata + 1, Math.exp(-sumHaz[strata]));
         }
