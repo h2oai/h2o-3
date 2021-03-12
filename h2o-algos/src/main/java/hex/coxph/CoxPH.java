@@ -601,9 +601,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
                 .sorted(Comparator.comparingInt(e -> e.getValue()._val))
                 .map(Map.Entry::getKey)
                 .map(i -> i._gs)
-                .map(a -> Arrays.stream(a).mapToInt(d -> (int)d).toArray())
-                .map(Arrays::toString)
-                .map(s -> s.replace(']',')').replace('[', '('))
+                .map(a -> Arrays.stream(a).mapToObj(d -> String.valueOf((int) d)))
+                .map(s -> s.collect(Collectors.joining(", ", "(", ")")))
                 .collect(toList());
         names.add(0, "t");
         baselineHazardAsFrame.setNames(names.toArray(new String[0]));
