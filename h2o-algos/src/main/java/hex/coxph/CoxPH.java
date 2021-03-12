@@ -501,9 +501,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       o._var_cumhaz_2 = Key.make(model._key + "_var_cumhaz_2");
       o._var_cumhaz_2_matrix = new CoxPHModel.FrameMatrix(o._var_cumhaz_2, n_time, o._coef.length);
 
-      o._baseline_hazard = Key.make(model._key + "_baseline_hazard");
       final int num_strata = coxMR._num_strata;
-      
+      o._baseline_hazard = Key.make(model._key + "_baseline_hazard");
       o._baseline_hazard_matrix = new CoxPHModel.FrameMatrix(o._baseline_hazard, n_time / num_strata, num_strata + 1);
       o._baseline_survival = Key.make(model._key + "_baseline_survival");
       o._baseline_survival_matrix = new CoxPHModel.FrameMatrix(o._baseline_survival, coxMR.sizeEvents.length / num_strata, num_strata + 1);
@@ -782,7 +781,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
     @Override
     protected void chunkInit(){
-      System.out.println("_time = " + Arrays.toString(_time));
       final int n_time = _time.length * _num_strata;
       final int n_coef = _beta.length;
 
