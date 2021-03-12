@@ -567,7 +567,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         o._baseline_survival_matrix.set(t,0, coxMR._time[t]);
 
         for (int strata = 0; strata < num_strata; strata++) {
-          double weightEvent = coxMR.sumWeightInStrata[t + coxMR._time.length * strata];
+          double weightEvent = coxMR.sizeEvents[t + coxMR._time.length * strata];
           double sumRiskEvent = coxMR.sumRiskAllEvents[t + coxMR._time.length * strata];
 
           double eventRisk = weightEvent / totalRisks[strata];
@@ -754,7 +754,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     double[]     sumXEvents;
     double[]     sumRiskEvents;
     double[]     sumRiskAllEvents;
-    double[]     sumWeightInStrata;
     double[][]   sumXRiskEvents;
     double[]     sumLogRiskEvents;
     double[]     rcumsumRisk;
@@ -793,7 +792,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       countEvents      = MemoryManager.malloc8(n_time);
       sumRiskEvents    = MemoryManager.malloc8d(n_time);
       sumRiskAllEvents = MemoryManager.malloc8d(n_time);
-      sumWeightInStrata= MemoryManager.malloc8d(n_time);
       sumLogRiskEvents = MemoryManager.malloc8d(n_time);
       rcumsumRisk      = MemoryManager.malloc8d(n_time);
       sumXEvents       = MemoryManager.malloc8d(n_coef);
@@ -851,7 +849,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         sizeEvents[t2]       += weight;
         sumLogRiskEvents[t2] += logRisk;
         sumRiskEvents[t2]    += risk;
-        sumWeightInStrata[t2] += weight;
       } else
         sizeCensored[t2] += weight;
       if (_has_start_column) {
@@ -909,7 +906,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       ArrayUtils.add(sumXEvents,       that.sumXEvents);
       ArrayUtils.add(sumRiskEvents,    that.sumRiskEvents);
       ArrayUtils.add(sumRiskAllEvents, that.sumRiskAllEvents);
-      ArrayUtils.add(sumWeightInStrata, that.sumWeightInStrata);
       ArrayUtils.add(sumXRiskEvents,   that.sumXRiskEvents);
       ArrayUtils.add(sumLogRiskEvents, that.sumLogRiskEvents);
       ArrayUtils.add(rcumsumRisk,      that.rcumsumRisk);
