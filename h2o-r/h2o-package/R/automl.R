@@ -561,6 +561,7 @@ h2o.getAutoML <- function(project_name) {
 #' \item{'ALL': adds all columns below.}
 #' \item{'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).}
 #' \item{'predict_time_per_row_ms': column providing the average prediction time by the model for a single row.}
+#' \item{'algo': column providing the algorithm name for each model.}
 #' }
 #' @return An H2OFrame representing the leaderboard.
 #' @examples
@@ -579,4 +580,86 @@ h2o.getAutoML <- function(project_name) {
 h2o.get_leaderboard <- function(object, extra_columns=NULL) {
   if (!.is.H2OAutoML(object)) stop("Only H2OAutoML instances are currently supported.")
   return(.automl.fetch_leaderboard(attr(object, 'id'), extra_columns))
+}
+
+
+#' Get best model of a given family/algorithm for a given criterion from an AutoML object.
+#'
+#' @param object H2OAutoML object
+#' @param algorithm One of "any", "basemodel", "deeplearning", "drf", "gbm", "glm", "stackedensemble", "xgboost"
+#' @param criterion Criterion can be one of the metrics reported in the leaderboard. If set to NULL, the same ordering
+#' as in the leaderboard will be used.
+#' Avaliable criteria:
+#' \itemize{
+#' \item{Regression metrics: deviance, RMSE, MSE, MAE, RMSLE}
+#' \item{Binomial metrics: AUC, logloss, AUCPR, mean_per_class_error, RMSE, MSE}
+#' \item{Multinomial metrics: mean_per_class_error, logloss, RMSE, MSE, AUC, AUCPR}
+#' }
+#' The following additional leaderboard information can be also used as a criterion:
+#' \itemize{
+#' \item{'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).}
+#' \item{'predict_time_per_row_ms': column providing the average prediction time by the model for a single row.}
+#' }
+#' @return An H2OModel or NULL if no model of a given family is present
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.importFile(path = prostate_path, header = TRUE)
+#' y <- "CAPSULE"
+#' prostate[,y] <- as.factor(prostate[,y])  #convert to factor for classification
+#' aml <- h2o.automl(y = y, training_frame = prostate, max_runtime_secs = 30)
+#' gbm <- h2o.get_best_model(aml, "gbm")
+#' }
+#' @export
+h2o.get_best_model <- function(object,
+                               algorithm = c("any", "basemodel", "deeplearning", "drf", "gbm",
+                                             "glm", "stackedensemble", "xgboost"),
+                               criterion = c("AUTO", "AUC", "AUCPR", "logloss", "MAE", "mean_per_class_error",
+                                             "deviance", "MSE", "predict_time_per_row_ms",
+                                             "RMSE", "RMSLE", "training_time_ms")) {
+  if (!.is.H2OAutoML(object))
+    stop("Only H2OAutoML instances are currently supported.")
+
+  algorithm <- match.arg(arg = if (missing(algorithm) || tolower(algorithm) == "any") "any" else tolower(algorithm),
+                         choices = eval(formals()$algorithm))
+
+  criterion <- match.arg(arg = if (missing(criterion) || tolower(criterion) == "auto") "auto" else tolower(criterion),
+                         choices = c(tolower(eval(formals()$criterion)), "mean_residual_deviance"))
+
+  if ("deviance" == criterion) {
+    criterion <- "mean_residual_deviance"
+  }
+
+  higher_is_better <- c("auc", "aucpr")
+
+  extra_cols <- "algo"
+  if (criterion %in% c("training_time_ms", "predict_time_per_row_ms")) {
+    extra_cols <-  c(extra_cols, criterion)
+  }
+
+  leaderboard <- h2o.get_leaderboard(object, extra_columns = extra_cols)
+  leaderboard <- if ("any" == algorithm) leaderboard
+                 else if ("basemodel" != algorithm) leaderboard[h2o.tolower(leaderboard["algo"]) == algorithm, ]
+                 else leaderboard[h2o.tolower(leaderboard["algo"]) != "stackedensemble", ]
+
+  if (nrow(leaderboard) == 0)
+    return(NULL)
+
+  if ("auto" == criterion) {
+    return(h2o.getModel(leaderboard[1, "model_id"]))
+  }
+
+  if (!criterion %in% names(leaderboard)) {
+    stop("Criterion \"", criterion,"\" is not present in the leaderboard!")
+  }
+
+  models_in_default_order <- as.character(as.list(leaderboard["model_id"]))
+  sorted_lb <- do.call(h2o.arrange, c(
+    list(leaderboard),
+    if(criterion %in% higher_is_better) bquote(desc(.(as.symbol(criterion)))) else as.symbol(criterion)))
+  selected_models <- as.character(as.list(sorted_lb[sorted_lb[,criterion] == sorted_lb[1, criterion],]["model_id"]))
+  picked_model <- models_in_default_order[models_in_default_order %in% selected_models][[1]]
+  return(h2o.getModel(picked_model))
 }
