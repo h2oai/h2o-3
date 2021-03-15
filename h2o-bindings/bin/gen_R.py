@@ -319,6 +319,10 @@ def as_R_repr(ptype, value):
         return "c(%s)" % ', '.join('"%s"' % v for v in value)
     if ptype.endswith('[]'):
         return "c(%s)" % ', '.join('%s' % v for v in value)
+    # if ptype == 'string':
+    #     return '"' + value + '"'
+    # if ptype == 'str':
+    #     return '"' + value + '"'
     return value
 
 
@@ -339,7 +343,8 @@ def main():
         if name == "stackedensemble": module = "stackedEnsemble"
         if name == "pca": module = "prcomp"
         bi.vprint("Generating model: " + name)
-        bi.write_to_file("%s.R" % file_name, gen_module(mb, name, module))
+        if name != "tea": # don't want to generate R client because it can't handle string params and it's not neede for tea anyway
+            bi.write_to_file("%s.R" % file_name, gen_module(mb, name, module))
 
 if __name__ == "__main__":
     main()

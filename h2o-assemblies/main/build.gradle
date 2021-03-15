@@ -18,6 +18,13 @@ configurations {
     compile.exclude group: 'org.mortbay.jetty' // exclude the whole group, nothing good in there
 }
 
+
+repositories {
+    flatDir {
+        dirs 'libs'
+    }
+}
+
 // Dependencies
 dependencies {
     compile project(":h2o-app")
@@ -36,6 +43,9 @@ dependencies {
     compile project(":h2o-parquet-parser")
     compile project(":h2o-k8s")
     compile "org.slf4j:slf4j-log4j12:1.7.10"
+    compile name: 'h2o_tea-0.1.0'
+    compile name: 'stream-2.9.5'
+    compile name: 'config-1.3.2'
 }
 
 jar {

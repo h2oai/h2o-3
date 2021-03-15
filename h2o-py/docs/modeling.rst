@@ -125,6 +125,12 @@ Unsupervised
     :show-inheritance:
     :members:
 
+:mod:`H2OTeaEstimator`
+----------------------
+.. autoclass:: h2o.estimators.tea.H2OTeaEstimator
+    :show-inheritance:
+    :members:
+
 
 Miscellaneous
 +++++++++++++

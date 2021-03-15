@@ -564,6 +564,9 @@ class H2OEstimator(ModelBase):
         elif model_type == "TargetEncoder":
             metrics_class = H2OTargetEncoderMetrics
             model_class = h2o.estimators.H2OTargetEncoderEstimator
+        elif model_type == "Tea":
+            metrics_class = None
+            model_class = h2o.estimators.H2OTeaEstimator    
         else:
             raise NotImplementedError(model_type)
         if valid_metrics_class is None:
