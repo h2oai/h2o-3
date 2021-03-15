@@ -2,7 +2,26 @@
 
 ## H2O
 
-### Zermelo (3.32.0.4) - 2/1/2020
+### Zermelo (3.32.0.5) - 3/16/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/5/index.html</a>
+
+#### Bug
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7798'>PUBDEV-7798</a>] -         GAM no longer creates multiple knots at the same coordinates when the cardinality of the `gam_columns` is less than the number of `knots` specified by the user.
+</li>
+</ul>
+    
+#### Improvement
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7954'>PUBDEV-7954</a>] -         
+Feature interactions can now be save as .xlxs files. 
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8034'>PUBDEV-8034</a>] -         Job polling will retry connecting to h2o nodes if connection fails.
+</li>
+</ul>
+
+### Zermelo (3.32.0.4) - 2/1/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/4/index.html</a>
 
