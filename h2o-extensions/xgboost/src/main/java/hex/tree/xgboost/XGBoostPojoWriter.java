@@ -102,7 +102,7 @@ public abstract class XGBoostPojoWriter {
             sb.ip("  preds[1 + i] = preds[i];").nl();
             sb.ip("preds[0] = GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, ").pj(_defaultThreshold).p(");").nl();
         } else if (_output.nclasses() == 2) {
-            sb.ip("preds[1] = 1f - preds[0];").nl();
+            sb.ip("preds[1] = 1d - preds[0];").nl();
             sb.ip("preds[2] = preds[0];").nl();
             sb.ip("preds[0] = GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, ").pj(_defaultThreshold).p(");").nl();
         }

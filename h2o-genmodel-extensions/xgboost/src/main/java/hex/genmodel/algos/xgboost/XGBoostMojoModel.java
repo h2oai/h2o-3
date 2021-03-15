@@ -91,7 +91,7 @@ public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMo
         preds[1 + i] = out[i];
       preds[0] = GenModel.getPrediction(preds, priorClassDistrib, in, defaultThreshold);
     } else if (nclasses==2){
-      preds[1] = 1f - out[0];
+      preds[1] = 1d - out[0];
       preds[2] = out[0];
       preds[0] = GenModel.getPrediction(preds, priorClassDistrib, in, defaultThreshold);
     } else {

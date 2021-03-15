@@ -98,17 +98,23 @@ public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib,
         treeLimit = _parms._ntrees;
       }
 
+      boolean isBinomial = _output.nclasses() == 2;
       // Predict
       float[][] preds;
       switch (outputType) {
         case PREDICT:
-          preds = booster.predict(data, false, treeLimit);
+          preds = booster.predict(data, isBinomial, treeLimit);
           break;
         case PREDICT_CONTRIB_APPROX:
           preds = booster.predictContrib(data, treeLimit);
           break;
         default:
           throw new UnsupportedOperationException("Unsupported output type: " + outputType);
+      }
+      if (isBinomial) {
+        for (int i = 0; i < preds.length; i++) {
+          preds[i][0] = 1f / (1f + (float) Math.min(1e19, Math.exp(-(preds[i][0]))));
+        }
       }
       return preds == null ? new float[0][] : preds;
     } catch (XGBoostError xgBoostError) {
