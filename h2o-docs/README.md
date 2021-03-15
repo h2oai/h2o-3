@@ -28,8 +28,8 @@ Run the following to install the additional required extensions:
 
 ```
 python3 -m pip install recommonmark
-python3 -m pip sphinx_prompt==1.1.0
-python3 -m pip sphinx-tabs==1.1.12
+python3 -m pip install sphinx_prompt==1.1.0
+python3 -m pip install sphinx-tabs==1.1.12
 python3 -m pip install sphinx_substitution_extensions==2019.6.15.0
 ```
 
