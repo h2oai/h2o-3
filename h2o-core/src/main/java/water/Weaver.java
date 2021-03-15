@@ -509,6 +509,9 @@ public class Weaver {
     } catch( CannotCompileException ce ) {
       System.err.println("--- Compilation failure while compiling "+icer_cc.getName()+"\n"+body+"\n------\n"+ce);
       throw ce;
+    } catch ( RuntimeException re ) { // NotFoundException is wrapped in RE
+      System.err.println("--- Failure while compiling "+icer_cc.getName()+"\n"+body+"\n------\n"+re);
+      throw re;
     }
   }
 
