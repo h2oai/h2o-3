@@ -1,7 +1,5 @@
 package water.server;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 import water.H2O;
 import water.H2OError;
 import water.api.RequestServer;
@@ -29,8 +27,6 @@ import java.util.regex.Pattern;
  */
 public class ServletUtils {
   
-  private static final Logger LOG = LogManager.getLogger(RequestServer.class);
-
   /**
    * Adds headers that disable browser-side Cross-Origin Resource checks - allows requests
    * to this server from any origin.
@@ -236,12 +232,12 @@ public class ServletUtils {
   }
   
   public static void logRequest(String method, HttpServletRequest request, HttpServletResponse response) {
-    LOG.info(
-        String.format(
-            "  %-6s  %3d  %6d ms  %s", 
-            method, getStatus(), System.currentTimeMillis() - getStartMillis(), request.getRequestURI()
-        )
-    );
+    //LOG.info(
+    //    String.format(
+    //        "  %-6s  %3d  %6d ms  %s", 
+    //        method, getStatus(), System.currentTimeMillis() - getStartMillis(), request.getRequestURI()
+    //    )
+    //);
   }
 
   private static String readLine(InputStream in) throws IOException {

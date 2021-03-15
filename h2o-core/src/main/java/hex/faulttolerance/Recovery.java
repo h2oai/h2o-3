@@ -5,7 +5,6 @@ import com.google.gson.reflect.TypeToken;
 import hex.Model;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
-import org.apache.log4j.Logger;
 import water.*;
 import water.api.GridSearchHandler;
 import water.fvec.Frame;
@@ -54,8 +53,6 @@ import java.util.*;
  */
 public class Recovery<T extends Keyed> {
     
-    private static final Logger LOG = Logger.getLogger(Recovery.class);
-
     public static final String REFERENCES_META_FILE_SUFFIX = "_references";
     public static final String RECOVERY_META_FILE = "recovery.json";
     
@@ -71,10 +68,10 @@ public class Recovery<T extends Keyed> {
      */
     public static void autoRecover(Optional<String> autoRecoveryDirOpt) {
         if (!autoRecoveryDirOpt.isPresent() || autoRecoveryDirOpt.get().length() == 0) {
-            LOG.debug("Auto recovery dir not configured.");
+          //LOG.debug("Auto recovery dir not configured.");
         } else {
             String autoRecoveryDir = autoRecoveryDirOpt.get();
-            LOG.info("Initializing auto recovery from " + autoRecoveryDir);
+            //LOG.info("Initializing auto recovery from " + autoRecoveryDir);
             H2O.submitTask(new H2O.H2OCountedCompleter(H2O.MIN_PRIORITY) {
                 @Override
                 public void compute2() {
@@ -229,7 +226,7 @@ public class Recovery<T extends Keyed> {
     void autoRecover() {
         URI recoveryMetaUri = FileUtils.getURI(recoveryMetaFile());
         if (!PersistUtils.exists(recoveryMetaUri)) {
-            LOG.info("No auto-recovery information found.");
+          //LOG.info("No auto-recovery information found.");
             return;
         }
         Map<String, String> recoveryInfo = PersistUtils.readStream(
@@ -240,7 +237,7 @@ public class Recovery<T extends Keyed> {
         Key<Job> jobKey = Key.make(recoveryInfo.get(INFO_JOB_KEY));
         Key<?> resultKey = Key.make(recoveryInfo.get(INFO_RESULT_KEY));
         if (Grid.class.getName().equals(className)) {
-            LOG.info("Auto-recovering previously interrupted grid search.");
+          //LOG.info("Auto-recovering previously interrupted grid search.");
             Grid grid = Grid.importBinary(recoveryFile(resultKey), true);
             GridSearch.resumeGridSearch(
                 jobKey, grid,
@@ -248,7 +245,7 @@ public class Recovery<T extends Keyed> {
                 (Recovery<Grid>) this
             );
         } else {
-            LOG.error("Unable to recover object of class " + className);
+          //LOG.error("Unable to recover object of class " + className);
         }
     }
 

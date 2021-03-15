@@ -1,6 +1,5 @@
 package hex.tfidf;
 
-import org.apache.log4j.Logger;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -25,8 +24,6 @@ public class DocumentFrequencyTaskTest extends TestUtil {
 
     private static final String BIGDATA_TESTS_ENV_VAR_NAME = "testDFBigdata";
 
-    private static Logger log = Logger.getLogger(DocumentFrequencyTaskTest.class);
-    
     @BeforeClass()
     public static void setup() { stall_till_cloudsize(1); }
 
@@ -56,12 +53,12 @@ public class DocumentFrequencyTaskTest extends TestUtil {
     public void testDocumentFrequenciesBigData() throws IOException {
         Assume.assumeThat("DF bigdata tests are enabled", System.getProperty(BIGDATA_TESTS_ENV_VAR_NAME), is(notNullValue()));
 
-        log.debug("Loading data...");
+        //log.debug("Loading data...");
         File testFile = FileUtils.getFile("bigdata/laptop/text8.gz");
         List<String> tokens = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(testFile))))
                 .lines().collect(Collectors.toList());
         int tokensCnt = tokens.size();
-        log.debug(tokensCnt + " words have been loaded.");
+        //log.debug(tokensCnt + " words have been loaded.");
 
         int docSplitIndex = tokensCnt / 2;
         long[] docIds = new long[tokensCnt];
@@ -93,16 +90,16 @@ public class DocumentFrequencyTaskTest extends TestUtil {
         Map<String, Long> expectedDFs = doc1Tokens.stream().collect(Collectors.toMap(token -> token, token -> 1L));
         doc2Tokens.forEach(token -> expectedDFs.merge(token, 1L, Long::sum));
 
-        log.debug("Computing DF...");
+        //log.debug("Computing DF...");
         try {
             Frame outputFrame = DocumentFrequencyTask.compute(uniqueWordsPerDocFrame);
 
             checkDfOutput(outputFrame, expectedDFs);
 
-            if (log.isDebugEnabled()) {
-                log.debug(outputFrame.toTwoDimTable().toString());
-                log.debug("DF testing finished.");
-            }
+            //if (log.isDebugEnabled()) {
+            //    log.debug(outputFrame.toTwoDimTable().toString());
+            //    log.debug("DF testing finished.");
+            //}
             outputFrame.remove();
         } finally {
             fr.remove();

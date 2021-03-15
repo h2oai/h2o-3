@@ -6,8 +6,8 @@
 // Licensed under Apache License Version 2.0
 package hex.genmodel.algos.tree;
 
-import ai.h2o.algos.tree.INode;
-import ai.h2o.algos.tree.INodeStat;
+import hex.genmodel.algos.tree.INode;
+import hex.genmodel.algos.tree.INodeStat;
 
 import java.io.Serializable;
 

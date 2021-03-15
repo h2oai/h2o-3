@@ -2,7 +2,6 @@ package water.test;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import org.apache.log4j.Logger;
 import org.glassfish.tyrus.client.ClientManager;
 import water.H2O;
 
@@ -17,8 +16,6 @@ import static org.junit.Assert.fail;
 
 public class WebsocketClient extends Endpoint {
     
-    private static final Logger LOG = Logger.getLogger(WebsocketClient.class);
-
     private final Session sess;
     private final Gson gson = new Gson();
 
@@ -39,10 +36,10 @@ public class WebsocketClient extends Endpoint {
     @OnOpen
     public void onOpen(Session session, EndpointConfig config) {
         session.addMessageHandler(String.class, message -> {
-            LOG.info("Received message from H2O: " + message);
+            //LOG.info("Received message from H2O: " + message);
             synchronized (this) {
                 if (receivedMessage != null) {
-                    LOG.info("Received message not stored as last message was not picked up yet.");
+                  //LOG.info("Received message not stored as last message was not picked up yet.");
                     overflowMessage = message;
                 } else {
                     receivedMessage = gson.fromJson(message, new TypeToken<Map<String, String>>() {}.getType());
@@ -54,7 +51,7 @@ public class WebsocketClient extends Endpoint {
     
     public void sendMessage(Object msg) throws IOException {
         final String msgStr = gson.toJson(msg);
-        LOG.info("Sending message to H2O: " + msgStr);
+        //LOG.info("Sending message to H2O: " + msgStr);
         sess.getBasicRemote().sendText(msgStr);
     }
 

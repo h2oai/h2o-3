@@ -6,8 +6,6 @@ import water.fvec.task.FillNAWithLongValueTask;
 import water.fvec.task.FilterByValueTask;
 import water.fvec.task.IsNotNaTask;
 import water.fvec.task.UniqTask;
-import water.logging.Logger;
-import water.logging.LoggerFactory;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.prims.advmath.AstKFold;
@@ -34,8 +32,6 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
   static final String TARGETCLASS_COL = "targetclass";
 
   static final int NO_TARGET_CLASS = -1; // value used as a substitute for the target class in regression problems.
-  
-  private static final Logger logger = LoggerFactory.getLogger(TargetEncoderHelper.class);
 
   private TargetEncoderHelper() {}
 
@@ -234,9 +230,9 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
   }
 
   /**
-   * Computes the blended prior and posterior probabilities:<pre>Pᵢ = 𝝺(nᵢ) ȳᵢ + (1 - 𝝺(nᵢ)) ȳ</pre>
+   * Computes the blended prior and posterior probabilities:<pre></pre>
    * Note that in case of regression problems, these prior/posterior values should be simply read as mean values without the need to change the formula.
-   * The shrinkage factor lambda is a parametric logistic function defined as <pre>𝝺(n) = 1 / ( 1 + e^((k - n)/f) )</pre>
+   * The shrinkage factor lambda is a parametric logistic function defined as <pre></pre>
    * @param posteriorMean the posterior mean ( ȳᵢ ) for a given category.
    * @param priorMean the prior mean ( ȳ ).
    * @param numberOfRowsForCategory (nᵢ).
@@ -317,8 +313,8 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
         if (num.isNA(i) || den.isNA(i)) { // 2 cases: category unseen during training, or not present in a given fold, shouldn't we make the distinction?
           encoded.setNA(i);
         } else if (den.at8(i) == 0) { //should never happen according to BroadcastJoiner, except after substracting target in LOO strategy.
-          if (logger.isDebugEnabled())
-            logger.debug("Denominator is zero for column index = " + _encodedColIdx + ". Imputing with _priorMean = " + _priorMean);
+          //if (logger.isDebugEnabled())
+          //  logger.debug("Denominator is zero for column index = " + _encodedColIdx + ". Imputing with _priorMean = " + _priorMean);
           encoded.set(i, _priorMean);
         } else {
           double posteriorMean = num.atd(i) / den.atd(i);

@@ -8,8 +8,6 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.fvec.task.FillNAWithDoubleValueTask;
-import water.logging.Logger;
-import water.logging.LoggerFactory;
 import water.udf.CFuncRef;
 import water.util.*;
 
@@ -31,8 +29,6 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   static final String ENCODED_COLUMN_POSTFIX = "_te";
   static final BlendingParams DEFAULT_BLENDING_PARAMS = new BlendingParams(10, 20);
   
-  private static final Logger logger = LoggerFactory.getLogger(TargetEncoderModel.class);
-
   public enum DataLeakageHandlingStrategy {
     LeaveOneOut,
     KFold,
@@ -300,10 +296,10 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
             .map(m -> Arrays.asList(m.from()))
             .anyMatch(frColumns::containsAll);
     if (!canApply) {
-      logger.info("Frame "+fr._key+" has no columns to encode with TargetEncoder, skipping it: " +
-              "columns="+Arrays.toString(fr.names())+", " +
-              "target encoder columns="+Arrays.deepToString(Arrays.stream(_output._input_to_encoding_column).map(ColumnsMapping::from).toArray(String[][]::new))
-      );
+      //logger.info("Frame "+fr._key+" has no columns to encode with TargetEncoder, skipping it: " +
+      //        "columns="+Arrays.toString(fr.names())+", " +
+      //        "target encoder columns="+Arrays.deepToString(Arrays.stream(_output._input_to_encoding_column).map(ColumnsMapping::from).toArray(String[][]::new))
+      //);
     }
     return canApply;
   }
@@ -354,7 +350,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     // applying defaults
     if (noise < 0 ) {
       noise = defaultNoiseLevel(data, data.find(targetColumn));
-      logger.warn("No noise level specified, using default noise level: "+noise);
+      //logger.warn("No noise level specified, using default noise level: "+noise);
     }
     if (resultKey == null){
       resultKey = Key.make();
@@ -393,7 +389,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
         // - unseen values/interactions are however represented as NAs in the new column, which is acceptable as TE encodes them in the same way anyway.
         int colIdx = addFeatureInteraction(workingFrame, colGroup, columnsToEncode.toDomain());
         if (colIdx < 0) {
-          logger.warn("Column "+Arrays.toString(colGroup)+" is missing in frame "+data._key);
+          //logger.warn("Column "+Arrays.toString(colGroup)+" is missing in frame "+data._key);
           continue;
         }
         assert workingFrame.name(colIdx).equals(columnToEncode);
@@ -582,8 +578,8 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       assert vec.get_type() == Vec.T_NUM : "Imputation of missing value is supported only for numerical vectors.";
       if (vec.naCnt() > 0) {
         new FillNAWithDoubleValueTask(columnIndex, imputedValue).doAll(fr);
-        if (logger.isInfoEnabled())
-          logger.info(String.format("Frame with id = %s was imputed with posterior value = %f ( %d rows were affected)", fr._key, imputedValue, vec.naCnt()));
+        //if (logger.isInfoEnabled())
+        //  logger.info(String.format("Frame with id = %s was imputed with posterior value = %f ( %d rows were affected)", fr._key, imputedValue, vec.naCnt()));
       }
     }
     

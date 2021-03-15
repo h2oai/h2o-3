@@ -4,7 +4,6 @@ import hex.tfidf.DocumentFrequencyTask;
 import hex.tfidf.InverseDocumentFrequencyTask;
 import hex.tfidf.TermFrequencyTask;
 import hex.tfidf.TfIdfPreprocessorTask;
-import org.apache.log4j.Logger;
 import water.Key;
 import water.MRTask;
 import water.Scope;
@@ -53,10 +52,6 @@ public class AstTfIdf extends AstPrimitive<AstTfIdf> {
      * Column names to be used for preprocessed frame.
      */
     private static final String[] PREPROCESSED_FRAME_COL_NAMES = new String[] { "DocID", "Words" };
-    /**
-     * Class logger.
-     */
-    private static Logger log = Logger.getLogger(AstTfIdf.class);
 
     @Override
     public int nargs() {
@@ -155,8 +150,8 @@ public class AstTfIdf extends AstPrimitive<AstTfIdf> {
             tfIdfIntermediate.add(TF_IDF_COL_NAME, tfIdfValues);
             tfIdfIntermediate._key = Key.make();
 
-            if (log.isDebugEnabled())
-                log.debug(tfIdfIntermediate.toTwoDimTable().toString());
+            //if (log.isDebugEnabled())
+            //    log.debug(tfIdfIntermediate.toTwoDimTable().toString());
 
             tfIdfFrame = tfIdfIntermediate;
         } finally {
