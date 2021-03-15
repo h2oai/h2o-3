@@ -1,7 +1,9 @@
 package hex.genmodel.algos.tree;
 
-import hex.genmodel.algos.tree.INode;
-import hex.genmodel.algos.tree.INodeStat;
+import ai.h2o.algos.tree.INode;
+import ai.h2o.algos.tree.INodeStat;
+import water.logging.Logger;
+import water.logging.LoggerFactory;
 import hex.genmodel.tools.PrintMojo;
 import hex.genmodel.utils.GenmodelBitSet;
 

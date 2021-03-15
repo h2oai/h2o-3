@@ -5,6 +5,8 @@ import hex.genmodel.*;
 import hex.genmodel.attributes.parameters.ColumnSpecifier;
 import hex.genmodel.attributes.parameters.KeyValue;
 import hex.genmodel.attributes.parameters.ParameterKey;
+import water.logging.Logger;
+import water.logging.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.lang.reflect.Field;
@@ -18,6 +20,8 @@ import java.util.regex.Pattern;
  * Utility class for extracting model details from JSON
  */
 public class ModelJsonReader {
+    
+    private static final Logger LOG = LoggerFactory.getLogger(ModelJsonReader.class);
 
     public static final String MODEL_DETAILS_FILE = "experimental/modelDetails.json";
 
@@ -145,8 +149,8 @@ public class ModelJsonReader {
         Objects.requireNonNull(modelJson);
         JsonElement potentialTableJson = findInJson(modelJson, tablePath);
         if (potentialTableJson.isJsonNull()) {
-            //LOG.warn(String.format("Failed to extract element '%s' MojoModel dump.",
-            //        tablePath));
+            LOG.warn(String.format("Failed to extract element '%s' MojoModel dump.",
+                    tablePath));
             return null;
         }
         return readTableJson(potentialTableJson.getAsJsonObject());
@@ -166,8 +170,8 @@ public class ModelJsonReader {
         final JsonElement jsonSourceObject = findInJson(from, elementPath);
 
         if (jsonSourceObject instanceof JsonNull) {
-            //LOG.warn(String.format("Element '%s' not found in JSON. Skipping. Object '%s' is not populated by values.",
-            //        elementPath, object.getClass().getName()));
+            LOG.warn(String.format("Element '%s' not found in JSON. Skipping. Object '%s' is not populated by values.",
+                    elementPath, object.getClass().getName()));
             return;
         }
 
@@ -408,7 +412,7 @@ public class ModelJsonReader {
                 convertFrom.get("value").getAsDouble()
             );
         } else {
-          //LOG.error(String.format("Error reading MOJO JSON: Object not supported: \n %s ", convertFrom.toString()));
+            LOG.error(String.format("Error reading MOJO JSON: Object not supported: \n %s ", convertFrom.toString()));
             return null;
         }
 

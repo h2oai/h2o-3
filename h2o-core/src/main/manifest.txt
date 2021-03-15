@@ -1,2 +1,0 @@
-Main-Class: org.cliffc.sql.SQL
-Class-Path: h2o.jar

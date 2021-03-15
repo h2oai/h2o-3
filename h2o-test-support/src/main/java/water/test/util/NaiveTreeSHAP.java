@@ -1,7 +1,7 @@
 package water.test.util;
 
-import hex.genmodel.algos.tree.INode;
-import hex.genmodel.algos.tree.INodeStat;
+import ai.h2o.algos.tree.INode;
+import ai.h2o.algos.tree.INodeStat;
 import org.junit.Ignore;
 
 import java.util.*;
