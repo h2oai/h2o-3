@@ -1,5 +1,6 @@
 package hex;
 
+import org.apache.log4j.Logger;
 import hex.ModelBuilder.TrainModelTaskController;
 import water.Job;
 
@@ -8,6 +9,8 @@ import water.Job;
  */
 public class CVModelBuilder {
     
+    private static final Logger LOG = Logger.getLogger(CVModelBuilder.class);
+
     private final String modelType;
     private final Job job;
     private final ModelBuilder<?, ?, ?>[] modelBuilders;
@@ -39,11 +42,11 @@ public class CVModelBuilder {
         RuntimeException rt = null;
         for (int i = 0; i < N; ++i) {
             if (job.stop_requested()) {
-              //LOG.info("Skipping build of last " + (N - i) + " out of " + N + " " + modelType + " CV models");
+                LOG.info("Skipping build of last " + (N - i) + " out of " + N + " " + modelType + " CV models");
                 stopAll(submodel_tasks);
                 throw new Job.JobCancelledException();
             }
-            //LOG.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
+            LOG.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
             prepare(modelBuilders[i]);
             modelBuilders[i].startClock();
             submodel_tasks[i] = modelBuilders[i].submitTrainModelTask();
@@ -55,13 +58,13 @@ public class CVModelBuilder {
                         finished(modelBuilders[waitForTaskIndex]);
                     } catch (RuntimeException t) {
                         if (rt == null) {
-                          //LOG.info("Exception from CV model #" + waitForTaskIndex + " will be reported as main exception.");
+                            LOG.info("Exception from CV model #" + waitForTaskIndex + " will be reported as main exception.");
                             rt = t;
                         } else {
-                          //LOG.warn("CV model #" + waitForTaskIndex + " failed, the exception will not be reported", t);
+                            LOG.warn("CV model #" + waitForTaskIndex + " failed, the exception will not be reported", t);
                         }
                     } finally {
-                      //LOG.info("Completed " + modelType + " model " + waitForTaskIndex + " / " + N + ".");
+                        LOG.info("Completed " + modelType + " model " + waitForTaskIndex + " / " + N + ".");
                         nRunning--; // need to decrement regardless even if there is an exception, otherwise looping...
                     }
                 }
@@ -75,13 +78,13 @@ public class CVModelBuilder {
                 task.join();
             } catch (RuntimeException t) {
                 if (rt == null) {
-                  //LOG.info("Exception from CV model #" + i + " will be reported as main exception.");
+                    LOG.info("Exception from CV model #" + i + " will be reported as main exception.");
                     rt = t;
                 } else {
-                  //LOG.warn("CV model #" + i + " failed, the exception will not be reported", t);
+                    LOG.warn("CV model #" + i + " failed, the exception will not be reported", t);
                 }
             } finally {
-              //LOG.info("Completed " + modelType + " model " + i + " / " + N + ".");
+                LOG.info("Completed " + modelType + " model " + i + " / " + N + ".");
             }
         if (rt != null) throw rt;
     }

@@ -1,6 +1,7 @@
 package hex;
 
 import jsr166y.ForkJoinTask;
+import org.apache.log4j.Logger;
 import water.Iced;
 import water.util.IcedAtomicInt;
 
@@ -16,6 +17,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
   
+  private static final Logger LOG = Logger.getLogger(ParallelModelBuilder.class);
+
   public static abstract class ParallelModelBuilderCallback<D extends ParallelModelBuilderCallback> extends Iced<D> {
 
     public abstract void onBuildSuccess(final Model model, final ParallelModelBuilder parallelModelBuilder);
@@ -41,7 +44,7 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
    * @param modelBuilders An {@link Collection} of {@link ModelBuilder} to execute in parallel.
    */
   public void run(final Collection<ModelBuilder> modelBuilders) {
-    //if (LOG.isTraceEnabled()) LOG.trace("run with " + modelBuilders.size() + " models");
+    if (LOG.isTraceEnabled()) LOG.trace("run with " + modelBuilders.size() + " models");
     for (final ModelBuilder modelBuilder : modelBuilders) {
       _modelInProgressCounter.incrementAndGet();
       modelBuilder.trainModel(_parallelModelBuiltListener);
@@ -94,7 +97,7 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
   
   private void attemptComplete() {
     int modelsInProgress = _modelInProgressCounter.decrementAndGet();
-    //if (LOG.isTraceEnabled()) LOG.trace("Completed a model, left in progress: " + modelsInProgress);
+    if (LOG.isTraceEnabled()) LOG.trace("Completed a model, left in progress: " + modelsInProgress);
     if (modelsInProgress == 0) {
       complete(this);
     }

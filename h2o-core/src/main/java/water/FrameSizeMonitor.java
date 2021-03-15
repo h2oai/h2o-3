@@ -1,5 +1,6 @@
 package water;
 
+import org.apache.log4j.Logger;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.parser.FVecParseWriter;
@@ -11,6 +12,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
 public class FrameSizeMonitor implements Runnable, Thread.UncaughtExceptionHandler {
+
+    private static final Logger LOG = Logger.getLogger(FrameSizeMonitor.class);
 
     private static final String ENABLED_PROP = "util.frameSizeMonitor.enabled";
     private static final String SAFE_COEF_PROP = "util.frameSizeMonitor.safetyCoefficient";
@@ -69,7 +72,7 @@ public class FrameSizeMonitor implements Runnable, Thread.UncaughtExceptionHandl
         Job<Frame> job = jobKey.get();
         while (job.isRunning() && nextProgress < 1f) {
             if (!MemoryManager.canAlloc()) {
-              //LOG.info("FrameSizeMonitor: MemoryManager is running low on memory, stopping job " + jobKey + " writing frame " + job._result);
+                LOG.info("FrameSizeMonitor: MemoryManager is running low on memory, stopping job " + jobKey + " writing frame " + job._result);
                 job.fail(new RuntimeException("Aborting due to critically low memory."));
                 break;
             }
@@ -83,8 +86,8 @@ public class FrameSizeMonitor implements Runnable, Thread.UncaughtExceptionHandl
                 } else {
                     nextProgress = currentProgress + 0.1f;
                 }
-            //} else if (LOG.isDebugEnabled()) {
-            //    LOG.debug("FrameSizeMonitor: waiting for progress " + currentProgress + " to jump over " + nextProgress);
+            } else if (LOG.isDebugEnabled()) {
+                LOG.debug("FrameSizeMonitor: waiting for progress " + currentProgress + " to jump over " + nextProgress);
             }
             synchronized (this) {
                 try {
@@ -94,21 +97,21 @@ public class FrameSizeMonitor implements Runnable, Thread.UncaughtExceptionHandl
                 }
             }
         }
-        //if (LOG.isDebugEnabled()) {
-        //    if (!job.isStopped()) {
-        //        job.get(); // wait for job to finish
-        //    }
-        //    if (job.isDone()) {
-        //        LOG.debug("FrameSizeMonitor: finished monitoring job " + jobKey +
-        //            ", final frame size is " + (job._result.get().byteSize() / MB) + " MB");
-        //    }
-        //}
+        if (LOG.isDebugEnabled()) {
+            if (!job.isStopped()) {
+                job.get(); // wait for job to finish
+            }
+            if (job.isDone()) {
+                LOG.debug("FrameSizeMonitor: finished monitoring job " + jobKey +
+                    ", final frame size is " + (job._result.get().byteSize() / MB) + " MB");
+            }
+        }
         finish(jobKey);
     }
 
     @Override
     public void uncaughtException(Thread t, Throwable e) {
-      //LOG.error(e);
+        LOG.error(e);
         finish(jobKey);
     }
 
@@ -116,13 +119,13 @@ public class FrameSizeMonitor implements Runnable, Thread.UncaughtExceptionHandl
         long availableMemory = getAvailableMemory();
         long minimumAvailableMemory = (long) (totalMemory * 2 * SAFE_FREE_MEM_COEF);
         if (availableMemory < minimumAvailableMemory) {
-            //LOG.debug("FrameSizeMonitor: Checking output of job " + jobKey + " because the available memory " + 
-            //    (availableMemory / MB) + " MB is lower than threshold " + (minimumAvailableMemory / MB) + " MB " +
-            //    "(" + SAFE_FREE_MEM_COEF + " of " + (totalMemory / MB) + " MB total memory)");
+            LOG.debug("FrameSizeMonitor: Checking output of job " + jobKey + " because the available memory " + 
+                (availableMemory / MB) + " MB is lower than threshold " + (minimumAvailableMemory / MB) + " MB " +
+                "(" + SAFE_FREE_MEM_COEF + " of " + (totalMemory / MB) + " MB total memory)");
             return true;
         } else {
-            //LOG.debug("FrameSizeMonitor: Overall memory usage is ok, still have " + 
-            //    (availableMemory / MB) + " MB available of " + (minimumAvailableMemory / MB) + " MB required.");
+            LOG.debug("FrameSizeMonitor: Overall memory usage is ok, still have " + 
+                (availableMemory / MB) + " MB available of " + (minimumAvailableMemory / MB) + " MB required.");
             return false;
         }
     }
@@ -134,28 +137,28 @@ public class FrameSizeMonitor implements Runnable, Thread.UncaughtExceptionHandl
         long projectedAdditionalFrameSize = projectedTotalFrameSize - currentCommittedMemory - currentInProgressMemory;
         long availableMemory = getAvailableMemory();
         long usableMemory = (long) (availableMemory - (totalMemory * SAFE_FREE_MEM_COEF));
-        //if (LOG.isDebugEnabled()) {
-        //    LOG.debug("FrameSizeMonitor: Frame " + job._result + ": \n" +
-        //        " committed: " + (currentCommittedMemory / MB) + " MB\n" +
-        //        " loading: " + (currentInProgressMemory / MB) + " MB\n" +
-        //        " progress: " + progress + "\n" +
-        //        " projected additional: " + (projectedAdditionalFrameSize / MB) + " MB\n" +
-        //        " projected total: " + (projectedTotalFrameSize / MB) + " MB\n" +
-        //        " availableMemory: " + (availableMemory / MB) + " MB\n" +
-        //        " totalMemory: " + (totalMemory / MB) + " MB\n" +
-        //        " usableMemory: " + (usableMemory / MB) + " MB\n" +
-        //        " enough: " + (projectedAdditionalFrameSize <= usableMemory));
-        //}
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("FrameSizeMonitor: Frame " + job._result + ": \n" +
+                " committed: " + (currentCommittedMemory / MB) + " MB\n" +
+                " loading: " + (currentInProgressMemory / MB) + " MB\n" +
+                " progress: " + progress + "\n" +
+                " projected additional: " + (projectedAdditionalFrameSize / MB) + " MB\n" +
+                " projected total: " + (projectedTotalFrameSize / MB) + " MB\n" +
+                " availableMemory: " + (availableMemory / MB) + " MB\n" +
+                " totalMemory: " + (totalMemory / MB) + " MB\n" +
+                " usableMemory: " + (usableMemory / MB) + " MB\n" +
+                " enough: " + (projectedAdditionalFrameSize <= usableMemory));
+        }
         if (projectedAdditionalFrameSize > usableMemory) {
-            //LOG.error("FrameSizeMonitor: Stopping job " + jobKey + " writing frame " + job._result +
-            //    " because the projected size of " + (projectedAdditionalFrameSize / MB) + " MB " +
-            //    " does not safely fit in " + (availableMemory / MB) + " MB of available memory.");
+            LOG.error("FrameSizeMonitor: Stopping job " + jobKey + " writing frame " + job._result +
+                " because the projected size of " + (projectedAdditionalFrameSize / MB) + " MB " +
+                " does not safely fit in " + (availableMemory / MB) + " MB of available memory.");
             return true;
         } else {
-            //if (LOG.isDebugEnabled()) {
-            //    LOG.debug("FrameSizeMonitor: Projected memory " + (projectedAdditionalFrameSize / MB) + "MB for frame " +
-            //        job._result + " fits safely into " + (availableMemory / MB) + " MB of available memory.");
-            //}
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("FrameSizeMonitor: Projected memory " + (projectedAdditionalFrameSize / MB) + "MB for frame " +
+                    job._result + " fits safely into " + (availableMemory / MB) + " MB of available memory.");
+            }
             return false;
         }
     }

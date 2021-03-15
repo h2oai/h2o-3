@@ -12,6 +12,8 @@ import water.Scope;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.logging.Logger;
+import water.logging.LoggerFactory;
 import water.util.IcedHashMap;
 
 import java.util.*;
@@ -21,6 +23,7 @@ import static ai.h2o.targetencoding.TargetEncoderModel.NA_POSTFIX;
 
 public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncoderParameters, TargetEncoderOutput> {
 
+  private static final Logger logger = LoggerFactory.getLogger(TargetEncoder.class);
   private TargetEncoderModel _targetEncoderModel;
   private String[][] _columnsToEncode;
   
@@ -87,9 +90,9 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
 
   private void disableIgnoreConstColsFeature(boolean expensive) {
     _parms._ignore_const_cols = false;
-    //if (expensive && logger.isInfoEnabled())
-    //  logger.info("We don't want to ignore any columns during target encoding transformation " + 
-    //          "therefore `_ignore_const_cols` parameter was set to `false`");
+    if (expensive && logger.isInfoEnabled())
+      logger.info("We don't want to ignore any columns during target encoding transformation " + 
+              "therefore `_ignore_const_cols` parameter was set to `false`");
   }
 
   /**

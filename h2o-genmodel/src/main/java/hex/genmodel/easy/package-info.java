@@ -39,5 +39,3 @@
  * </pre>
  */
 package hex.genmodel.easy;
-class PackageInfo {
-}

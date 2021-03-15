@@ -5,6 +5,8 @@ import hex.faulttolerance.Recovery;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.PropertyConfigurator;
 import water.UDPRebooted.ShutdownTsk;
 import water.api.LogsHandler;
 import water.api.RequestServer;
@@ -1021,11 +1023,10 @@ final public class H2O {
   }
 
   public static void configureLogging() {
-    //if (LogManager.getCurrentLoggers().hasMoreElements()) {
-    //  _haveInheritedLog4jConfiguration = true;
-    //  return;
-    //} else
-    if (System.getProperty("log4j.configuration") != null) {
+    if (LogManager.getCurrentLoggers().hasMoreElements()) {
+      _haveInheritedLog4jConfiguration = true;
+      return;
+    } else if (System.getProperty("log4j.configuration") != null) {
       _haveInheritedLog4jConfiguration = true;
       return;
     }
@@ -1044,7 +1045,7 @@ final public class H2O {
     p.setProperty("log4j.appender.console.layout", "org.apache.log4j.PatternLayout");
     p.setProperty("log4j.appender.console.layout.ConversionPattern", "%m%n");
 
-    //PropertyConfigurator.configure(p);
+    PropertyConfigurator.configure(p);
     System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
 
     // Log jetty stuff to stdout for now.
