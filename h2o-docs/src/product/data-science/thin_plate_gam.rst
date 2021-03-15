@@ -159,6 +159,61 @@ This will follow the `Identifiability Constraints <gam.html#identifiability-cons
 
 and we will be solving for :math:`\beta_Z`. Then, we will obtain :math:`\beta_{CS}=Z\beta_z`. Last, we will obtain the original :math:`\beta` by multiplying the part of the coefficeints not corresponding to the polynomial basis with :math:`Z_{CS}` like :math:`\beta^T =((Z_{CS}\delta_{CS})^T,\alpha^T)`.
 
+Specifying GAM Columns
+~~~~~~~~~~~~~~~~~~~~~~
+
+There are two ways to specify GAM columns for thin plate regression. When using a grid search, the GAM columns are specified inside of the ``subspaces`` hyperparameter. Otherwise, the ``gam_column`` parameter is entered on its own when building a GAM model.
+
+Examples
+''''''''
+
+.. tabs::
+	.. code-tab:: r R
+
+		# Import the train and test datasets:
+		train <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/gaussian_20cols_10000Rows.csv")
+		test <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/gaussian_20cols_10000Rows.csv")
+
+		# Set the factors:
+		train$C1 <- h2o.asfactor(train$C1)
+		train$C2 <- h2o.asfactor(train$C2)
+		test$C1 <- h2o.asfactor(test$C1)
+		test$C2 <- h2o.asfactor(test$C2)
+
+		# Set the predictors, response, and GAM columns:
+		predictors <- c("C1", "C2")
+		response = "C21"
+		gam_col1 <- c("C11", c("C12", "C13"), 
+								c("C14", "C15", "C16"), 
+								"C17", "C18")
+
+		# Build and train the model:
+		gam_model <- h2o.gam(x = predictors, y = response, 
+												 gam_columns = gam_col1, 
+												 training_frame = train, 
+												 validation_frame = test, 
+												 family = "gaussian", 
+												 lambda_search = TRUE)
+
+		# Retrieve the coefficients:
+		coefficients <- h2o.coef(gam_model)
+
+
+	.. code-tab: python
+
+		# blah blah
+
+For a Grid Search:
+
+	.. tabs::
+		..code-tab:: r R
+
+			# Import the train dataset:
+			train <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gam_test/synthetic_20Cols_gaussian_20KRows.csv")
+
+
+
+
 References
 ~~~~~~~~~~
 
