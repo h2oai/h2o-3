@@ -83,7 +83,7 @@ public class Weaver {
     CtClass icer_cc = _pool.getOrNull(icer_name); // Full Name Lookup of Icer
     if( icer_cc != null ) {
       synchronized( iced_clazz ) {
-        if( !icer_cc.isFrozen() )   icer_cc.toClass(iced_clazz.getClassLoader()); // Load class (but does not link & init)
+        if( !icer_cc.isFrozen() )   icer_cc.toClass(iced_clazz.getClassLoader(), null); // Load class (but does not link & init)
         return Class.forName(icer_name,true,iced_clazz.getClassLoader()); // Found a pre-cooked Icer implementation
       }
     }
@@ -111,7 +111,7 @@ public class Weaver {
       icer_cc = _pool.getOrNull(icer_name); // Retry under lock
       if( icer_cc != null ) return Class.forName(icer_name); // Found a pre-cooked Icer implementation
       icer_cc = genIcerClass(id,iced_cc,iced_clazz,icer_name,super_id,super_icer_cc);
-      icer_cc.toClass(iced_clazz.getClassLoader());               // Load class (but does not link & init)
+      icer_cc.toClass(iced_clazz.getClassLoader(), null);               // Load class (but does not link & init)
       return Class.forName(icer_name,true, iced_clazz.getClassLoader()); // Initialize class now, before subclasses
     }
   }
