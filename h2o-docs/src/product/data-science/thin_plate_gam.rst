@@ -201,7 +201,34 @@ Examples
 
 	.. code-tab: python
 
-		# blah blah
+		# Import the H2OGeneralizedAdditiveEstimator & the train/test datasets:
+		from h2o.estimators import H2OGeneralizedAdditiveEstimator
+		train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/gaussian_20cols_10000Rows.csv")
+		test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/gaussian_20cols_10000Rows.csv")
+
+		# Set the factors:
+		train["C1"] = train["C1"].asfactor()
+		train["C2"] = train["C2"].asfactor()
+		test["C1"] = test["C1"].asfactor()
+		test["C2"] = test["C2"].asfactor()
+
+		# Set the predictors, response, and GAM columns:
+		predictors = ["C1", "C2"]
+		response = "C21"
+		gam_col1 = ["C11", "C12","C13", "C14","C15","C16", "C17", "C18"]
+
+		# Build and train the model:
+		gam_model = H2OGeneralizedAdditiveEstimator(family = 'gaussian', 
+																								gam_columns = gam_col1, 
+																								lambda_search = True)
+		gam_model.train(x=predictors, 
+										y=response, 
+										training_frame=train, 
+										validation_frame=test)
+
+		# Retrieve the coefficients:
+		coefficients = gam_model.coef()
+
 
 For a Grid Search:
 
