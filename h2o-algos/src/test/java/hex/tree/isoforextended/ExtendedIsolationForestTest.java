@@ -1,5 +1,6 @@
 package hex.tree.isoforextended;
 
+import hex.Model;
 import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
 import hex.tree.isoforextended.isolationtree.IsolationTree;
 import org.apache.log4j.Logger;
@@ -198,7 +199,8 @@ public class ExtendedIsolationForestTest extends TestUtil {
             p._seed = 0xDECAF;
             p._ntrees = 100;
             p._sample_size = 2;
-            p._extension_level = train.numCols() - 1;
+            p._extension_level = 2;
+            p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
 
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
             ExtendedIsolationForestModel model = eif.trainModel().get();

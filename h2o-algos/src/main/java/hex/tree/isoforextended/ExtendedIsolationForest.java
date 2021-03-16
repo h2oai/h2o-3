@@ -79,10 +79,12 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
     public void init(boolean expensive) {
         super.init(expensive);
         if (_parms.train() != null) {
-            long extensionLevelMax = _parms.train().numCols() - 1;
-            if (_parms._extension_level < 0 || _parms._extension_level > extensionLevelMax) {
-                error("extension_level", "Parameter extension_level must be in interval [0, "
-                        + extensionLevelMax + "] but it is " + _parms._extension_level);
+            if (expensive) { // because e.g. OneHotExplicit categorical encoding can change the dimension
+                long extensionLevelMax = _train.numCols() - 1;
+                if (_parms._extension_level < 0 || _parms._extension_level > extensionLevelMax) {
+                    error("extension_level", "Parameter extension_level must be in interval [0, "
+                            + extensionLevelMax + "] but it is " + _parms._extension_level);
+                }
             }
             if (_parms._sample_size < 0 || _parms._sample_size > MAX_SAMPLE_SIZE) {
                 error("sample_size","Parameter sample_size must be in interval [0, "
