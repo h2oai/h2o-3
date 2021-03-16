@@ -233,7 +233,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             p._seed = 0xDECAF;
             p._ntrees = 100;
             p._sample_size = 2;
-            p._extension_level = train.numCols() - 1;
+            p._extension_level = 2; // Maximum is 2 because String column will be removed
 
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
             ExtendedIsolationForestModel model = eif.trainModel().get();
