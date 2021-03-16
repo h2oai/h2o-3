@@ -71,7 +71,7 @@ public class CompressedIsolationTree extends Keyed<CompressedIsolationTree> {
      * @param n number of elements
      */
     public static double averagePathLengthOfUnsuccessfulSearch(long n) {
-        if (n <= 0)
+        if (n < 2)
             return 0;
         if (n == 2)
             return 1;

@@ -255,10 +255,10 @@ public class ExtendedIsolationForestTest extends TestUtil {
                 CompressedIsolationTree.averagePathLengthOfUnsuccessfulSearch(256), 1e-5);
         assertEquals(11.583643521303037,
                 CompressedIsolationTree.averagePathLengthOfUnsuccessfulSearch(500), 1e-5);
-        assertEquals(1, CompressedIsolationTree.averagePathLengthOfUnsuccessfulSearch(2), 1e-5);
-        assertEquals(0, CompressedIsolationTree.averagePathLengthOfUnsuccessfulSearch(1), 1e-5);
-        assertEquals(0, CompressedIsolationTree.averagePathLengthOfUnsuccessfulSearch(0), 1e-5);
-        assertEquals(0, CompressedIsolationTree.averagePathLengthOfUnsuccessfulSearch(-1), 1e-5);
+        assertEquals(1, CompressedIsolationTree.averagePathLengthOfUnsuccessfulSearch(2), 0);
+        assertEquals(0, CompressedIsolationTree.averagePathLengthOfUnsuccessfulSearch(1), 0);
+        assertEquals(0, CompressedIsolationTree.averagePathLengthOfUnsuccessfulSearch(0), 0);
+        assertEquals(0, CompressedIsolationTree.averagePathLengthOfUnsuccessfulSearch(-1), 0);
     }
 
     @Test
