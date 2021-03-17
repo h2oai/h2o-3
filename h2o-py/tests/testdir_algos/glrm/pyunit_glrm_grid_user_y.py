@@ -54,9 +54,9 @@ def glrm_grid_user_y():
     # check actual training occurred and results are different
     assert grid.models[0].archetypes() == archetypes1
     assert grid.models[1].archetypes() == archetypes2
-    assert grid.models[1].archetypes() != grid.models[2].archetypes()
-    assert grid.models[2].archetypes() != grid.models[3].archetypes()
-
+    # instead of using python compare, I am just check and make first the first arrays are not equal.
+    assert not(pyunit_utils.equal_two_arrays(grid.models[1].archetypes()[0], grid.models[2].archetypes()[0], throw_error=False))
+    assert not(pyunit_utils.equal_two_arrays(grid.models[2].archetypes()[0], grid.models[3].archetypes()[0], throw_error=False))
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(glrm_grid_user_y)
