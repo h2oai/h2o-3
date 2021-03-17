@@ -5,7 +5,6 @@ import water.fvec.*;
 
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.stream.IntStream;
 
 import static java.lang.StrictMath.sqrt;
 import static water.util.RandomUtils.getRNG;
@@ -898,16 +897,22 @@ public class ArrayUtils {
     return Arrays.stream(from).max(Integer::compare).get();
   }
   
-  public static long maxValue(int[] from) {
+  public static int maxValue(int[] from) {
     return Arrays.stream(from).max().getAsInt();
   }
   
   public static long minValue(long[] from) {
-    return Arrays.stream(from).min().getAsLong();
+    long result = from[0];
+    for (int i = 1; i<from.length; ++i)
+      if (from[i]<result) result = from[i];
+    return result;
   }
   
   public static long minValue(int[] from) {
-    return (long) Arrays.stream(from).min().getAsInt();
+    int result = from[0];
+    for (int i = 1; i<from.length; ++i)
+      if (from[i]<result) result = from[i];
+    return result;
   }
 
   // Find an element with linear search & return it's index, or -1
