@@ -34,7 +34,7 @@
 #'                                      model_id = "eif.hex",
 #'                                      ntrees = 100,
 #'                                      sample_size = 256,
-#'                                      extension_level = 8)
+#'                                      extension_level = length(predictors) - 1)
 #' 
 #' # Calculate score
 #' score <- h2o.predict(model, p)
