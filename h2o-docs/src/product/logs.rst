@@ -3,15 +3,17 @@
 Downloading Logs
 ================
 
-This section describes how non-Hadoop and Hadoop users can access logs. 
+This section describes how regular (non-Hadoop) and Hadoop users can access and download logs. 
 
-For Non-Hadoop Users
---------------------
+Regular Users
+-----------------
+
+If you're not using Hadoop, here's how to acceess and download logs:
 
 Without Current Jobs
 ~~~~~~~~~~~~~~~~~~~~
 
-If you are not using Hadoop and the job is not running:
+If there are no jobs running:
 
 -  In Terminal, enter ``cd /tmp/h2o-<UserName>/h2ologs`` (where ``<UserName>`` is your computer user name), then enter ``ls -l`` to  view a list of the log files. 
 
@@ -27,7 +29,7 @@ If you are not using Hadoop and the job is not running:
 With Current Jobs
 ~~~~~~~~~~~~~~~~~
 
-If you are not using Hadoop and the job is still running:
+If your job is still running:
 
 -  Go to the H2O web UI and select **Admin** > **Inspect Log** or go to
    http://localhost:54321/LogView.html.
@@ -329,12 +331,22 @@ Ambari
   .. figure:: images/Logs_ambari2.png
      :alt: Ambari
 
---------------
 
-File Separation
----------------
+------------------
 
-Files are separated into different pieces (.1, .2, .3) by their age. ``.log`` is the current log being written into, while ``log.1`` is the one before, ``log.2`` is older still, and so on. Each time ``.log`` reaches a certain size, it is renamed to ``log.1``, and ``log.1`` is renamed to ``log.2``, etc.
+Log File Structure
+------------------
+
+After you unzip the logs, you will see a number of log files (example below), of different severity levels.  The different levels log different types of events as follows:
+
+1. trace: fine grained information about the running processes
+2. debug: information that's helpful for debugging 
+3. info: general information about the jobs run H2O cluster (data, modeling, etc.)
+4. warn: indications of potential issues in your code
+5. error: errors while running H2O jobs -- these should be addressed in your code
+6. fatal: only used if the H2O cluster crashes -- you will need to restart H2O
+
+The various log files are separated into different pieces (e.g. file suffix .1, .2, .3) by their age. ``.log`` is the current log being written into, while ``log.1`` is the one before, ``log.2`` is older still, and so on. Each time ``.log`` reaches a certain size, it is renamed to ``log.1``, and ``log.1`` is renamed to ``log.2``, etc.
 
   ::
 
@@ -357,6 +369,8 @@ Files are separated into different pieces (.1, .2, .3) by their age. ``.log`` is
     -rw-r--r-- 1 ledell ledell 286K Feb  2 12:39 h2o_127.0.0.1_16537-3-info.log
     -rw-r--r-- 1 ledell ledell 286K Feb  2 12:39 h2o_127.0.0.1_16537-2-debug.log
     -rw-r--r-- 1 ledell ledell 285K Feb  2 12:39 h2o_127.0.0.1_16537-1-trace.log
+
+
 
 
 
