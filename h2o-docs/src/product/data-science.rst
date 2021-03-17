@@ -21,7 +21,6 @@ Common
    :maxdepth: 1
 
    data-science/quantiles
-   data-science/early_stopping
 
 Supervised
 ----------

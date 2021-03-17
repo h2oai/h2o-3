@@ -253,6 +253,8 @@ This example uses the Boston Housing data and :ref:`H2O's GLM algorithm <glm>` t
 
 		[10 rows x 1 column]
 
+.. include:: early_stopping.rst
+
 Unsupervised Learning
 ----------------------
 
