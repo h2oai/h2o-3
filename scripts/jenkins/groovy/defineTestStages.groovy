@@ -331,7 +331,7 @@ def call(final pipelineContext) {
       imageSpecifier: "python-2.7-jdk-14"
     ],
     [
-      stageName: 'Java 15 JUnit', target: 'test-junit-latest-jenkins', pythonVersion: '2.7', javaVersion: 15,
+      stageName: 'Java 15 JUnit', target: 'test-junit-1x-jenkins', pythonVersion: '2.7', javaVersion: 15,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-2.7-jdk-15"
@@ -401,7 +401,7 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 15 Smoke', target: 'test-junit-latest-smoke-jenkins', javaVersion: 15, timeoutValue: 20,
+      stageName: 'Java 15 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 15, timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
