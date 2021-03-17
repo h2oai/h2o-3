@@ -270,40 +270,6 @@ public class IsolationForestTest extends TestUtil {
   }
 
   @Test
-  public void testBasicCategorical() {
-    try { 
-      Scope.enter();
-      Frame train = new TestFrameBuilder()
-                      .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
-                      .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
-                      .withDataForCol(1, ar("B", "C", "D", "E", "B", "C", "D", "E", "A", "B"))
-                      .withDataForCol(2, ar("BB", "CA", "DD", "EF", "BA", "C", "D", "E", "AA", "B"))
-                      .withDataForCol(3, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
-                      .build();
-
-      IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
-      p._train = train._key;
-      p._seed = 0xDECAF;
-      p._ntrees = 7;
-      p._min_rows = 1;
-      p._sample_size = 2;
-
-      IsolationForestModel model = new IsolationForest(p).trainModel().get();
-      assertNotNull(model);
-      Scope.track_generic(model);
-
-      Frame preds = Scope.track(model.score(train));
-
-      assertArrayEquals(new String[]{"predict", "mean_length"}, preds.names());
-      assertEquals(train.numRows(), preds.numRows());
-      assertTrue(model.testJavaScoring(train, preds, 1e-8));
-      assertTrue(model._output._min_path_length < Integer.MAX_VALUE);
-    } finally {
-      Scope.exit();
-    } 
-  }
-
-  @Test
   public void testTrainingWithResponse()  {
     try {
       Scope.enter();
