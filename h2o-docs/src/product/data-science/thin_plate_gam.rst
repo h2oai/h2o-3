@@ -34,7 +34,7 @@ where:
 - :math:`f = [f(x_1),f(x_2),...,f(x_n)]^T`,
 - :math:`J_{md}(f)` is a penalty measure of wiggliness of :math:`f`,
 - :math:`\lambda` is the smoothing parameter (scale parameter) controlling the tradeoff between data fitting and smoothness of :math:`f`,
-- :math:`J_{md}(f) = {\int_{R^d}{\sum_{\gamma_1+\gamma_2+...+\gamma_d={\frac{m!}{\gamma_1! \gamma_2!...\gamma_d!}}{({\frac{d^mf}{dx_1dx_2...dx_d}})}^2}}}dx_1 dx_2...dx_d`, 
+- :math:`J_{md}(f) = {\int_{R^d}{\sum_{\gamma_1+\gamma_2+...+\gamma_d=m{\frac{m!}{\gamma_1! \gamma_2!...\gamma_d!}}{({\frac{d^mf}{dx_1dx_2...dx_d}})}^2}}}dx_1 dx_2...dx_d`, 
 - :math:`m = floor(\frac{d+1}{2})+1`.
 
 The function :math:`f` that minimizes Equation 1 has the following form:
@@ -72,7 +72,7 @@ where :math:`k` is the number of knots. The coefficients :math:`\delta = (\delta
 
 where:
 
-.. figure:: ../images/gam_beta.png
+- :math:`\beta^T = (\delta^T , \alpha^2)`;
 
 .. figure:: ../images/gam_chi_matrix.png
 	:scale: 50%
@@ -88,7 +88,6 @@ Generation of :math:`X_{n_{md}}`
 The data matrix :math:`X` consists of two parts: :math:`X = [X_{n_{md}}:T]`. First, we will generate :math:`X_{n_{md}}`, which consists of the distance measure part. :math:`X_{n_{md}}` is :math:`n` by :math:`k` in dimension, and the :math:`ij^{th}` element is calculated as:
 
 	.. figure:: ../images/ijth_element.png
-		:scale: 50%
 
 **Generation of Penalty Matrix** :math:`S`
 
@@ -163,7 +162,9 @@ and we will be solving for :math:`\beta_Z`. Then, we will obtain :math:`\beta_{C
 Specifying GAM Columns
 ~~~~~~~~~~~~~~~~~~~~~~
 
-There are two ways to specify GAM columns for thin plate regression. When using a grid search, the GAM columns are specified inside of the ``subspaces`` hyperparameter. Otherwise, the ``gam_column`` parameter is entered on its own when building a GAM model.
+There are two ways to specify GAM columns for thin plate regression. Following the below example, ``gam_columns`` can either be specified as ``gam_col1 <- list("C11", c("C12","C13"), c("C14", "C15", "C16"), "C17", "C18")`` or ``gam_col1 <- list(c("C11"), c("C12","C13"), c("C14", "C15", "C16"), c("C17"), c("C18"))``.
+
+When using a grid search, the GAM columns are specified inside of the ``subspaces`` hyperparameter. Otherwise, the ``gam_column`` parameter is entered on its own when building a GAM model. 
 
 Normal GAM
 ''''''''''
@@ -184,7 +185,7 @@ Normal GAM
 		# Set the predictors, response, & GAM columns:
 		predictors <- c("C1", "C2")
 		response = "C21"
-		gam_col1 <- c("C11", c("C12", "C13"), c("C14", "C15", "C16"), "C17", "C18")
+		gam_col1 <- list("C11", c("C12","C13"), c("C14", "C15", "C16"), "C17", "C18")
 
 		# Build and train the model:
 		gam_model <- h2o.gam(x = predictors, y = response, 
@@ -199,27 +200,33 @@ Normal GAM
 
 		from h2o.estimators import H2OGeneralizedAdditiveEstimator
 
-		# Import the train and test datasets:
-		train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/gaussian_20cols_10000Rows.csv")
-		test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/gaussian_20cols_10000Rows.csv")
-
-		# Set the factors:
+		# Import the train dataset and set the factors:
+		train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+		train["C11"] = train["C11"].asfactor()
 		train["C1"] = train["C1"].asfactor()
 		train["C2"] = train["C2"].asfactor()
+
+		# Import the test dataset and set the factors:
+		test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+		test["C11"] = test["C11"].asfactor()
 		test["C1"] = test["C1"].asfactor()
 		test["C2"] = test["C2"].asfactor()
 
-		# Set the predictors, response, & GAM columns:
-		predictors = ["C1", "C2"]
-		response = "C21"
-		gam_col1 = ["C11", "C12","C13", "C14","C15","C16", "C17", "C18"]
+		# Set the predictors, response, and gam_cols:
+		x = ["C1", "C2"]
+		y = "C11"
+		gam_cols1 = ["C6", ["C7","C8"], "C9", "C10"]
+		gam_cols2 = [["C6"], ["C7", "C8"], ["C9"], ["C10"]]
 
-		# Build and train the model:
-		gam_model = H2OGeneralizedAdditiveEstimator(family = 'gaussian', gam_columns = gam_col1, lambda_search = True)
-		gam_model.train(x=predictors, y=response, training_frame=train, validation_frame=test)
+		# Build and train the two models:
+		h2o_model1 = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=gam_cols1, bs=[1,1,0,0], max_iterations=2)
+		h2o_model1.train(x=x, y=y, training_frame=train, validation_frame=test)
+		h2o_model2 = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=gam_cols2, bs=[1,1,0,0], max_iterations=2)
+		h2o_model2.train(x=x, y=y, training_frame=train, validation_frame=test)
 
 		# Retrieve the coefficients:
-		coefficients = gam_model.coef()
+		print(h2o_model1.coef())
+		print(h2o_model2.coef())
 
 
 Grid Search
