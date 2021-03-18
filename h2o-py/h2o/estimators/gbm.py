@@ -36,7 +36,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                    "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding",
                    "calibrate_model", "calibration_frame", "custom_metric_func", "custom_distribution_func",
                    "export_checkpoints_dir", "monotone_constraints", "check_constant_response", "gainslift_bins",
-                   "auc_type", "parallel_main_model_building"}
+                   "auc_type"}
 
     def __init__(self, **kwargs):
         super(H2OGradientBoostingEstimator, self).__init__()
@@ -1876,22 +1876,5 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def auc_type(self, auc_type):
         assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
         self._parms["auc_type"] = auc_type
-
-
-    @property
-    def parallel_main_model_building(self):
-        """
-        Allows the main model in cross-validation setting to be built in parallel with the CV models. Disable if you
-        want main model building to start only after the CV models are already fully built (eg. for clarity of logs,
-        doesn't affect quality of the model.
-
-        Type: ``bool``  (default: ``True``).
-        """
-        return self._parms.get("parallel_main_model_building")
-
-    @parallel_main_model_building.setter
-    def parallel_main_model_building(self, parallel_main_model_building):
-        assert_is_type(parallel_main_model_building, None, bool)
-        self._parms["parallel_main_model_building"] = parallel_main_model_building
 
 

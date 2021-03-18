@@ -165,6 +165,8 @@ public abstract class SharedTree<
     PlattScalingHelper.initCalibration(this, _parms, expensive);
 
     _orig_projection_array = LinearAlgebraUtils.toEigenProjectionArray(_origTrain, _train, expensive);
+    _parms._parallel_main_model_building = H2O.getSysBoolProperty(
+            "sharedtree.crossvalidation.parallelMainModelBuilding", _parms._parallel_main_model_building);
     if (_parms._max_runtime_secs > 0 && _parms._parallel_main_model_building) {
       _parms._parallel_main_model_building = false;
       warn("_parallel_main_model_building", 
