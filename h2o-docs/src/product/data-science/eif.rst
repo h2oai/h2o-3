@@ -90,11 +90,17 @@ Below is a simple example showing how to build an Extended Isolation Forest mode
                                              model_id = "eif.hex",
                                              ntrees = 100,
                                              sample_size = 256,
-                                             extension_level = 8)
+                                             extension_level = length(predictors) - 1)
 
         # Calculate score
         score <- h2o.predict(model, prostate)
+
+        # Number in [0, 1] explicitly defined in Equation (1) from Extended Isolation Forest paper
+        # or in paragraph '2 Isolation and Isolation Trees' of Isolation Forest paper
         anomaly_score <- score$anomaly_score
+
+        # Average path length of the point in Isolation Trees from root to the leaf
+        mean_length <- score$mean_length
 
    .. code-tab:: python
 
@@ -112,7 +118,7 @@ Below is a simple example showing how to build an Extended Isolation Forest mode
         eif = H2OExtendedIsolationForestEstimator(model_id = "eif.hex",
                                                   ntrees = 100,
                                                   sample_size = 256,
-                                                  extension_level = 8)
+                                                  extension_level = len(predictors) - 1)
 
         # Train Extended Isolation Forest
         eif.train(x = predictors,
@@ -120,11 +126,18 @@ Below is a simple example showing how to build an Extended Isolation Forest mode
 
         # Calculate score
         eif_result = eif.predict(h2o_df)
-        eif_result["anomaly_score"]
+
+        # Number in [0, 1] explicitly defined in Equation (1) from Extended Isolation Forest paper
+        # or in paragraph '2 Isolation and Isolation Trees' of Isolation Forest paper
+        anomaly_score = eif_result["anomaly_score"]
+
+        # Average path length  of the point in Isolation Trees from root to the leaf
+        mean_length = eif_result["mean_length"]
 
 
 References
 ~~~~~~~~~~
 
-`S. Hariri, M. Carrasco Kind and R. J. Brunner, "Extended Isolation Forest," in IEEE Transactions on Knowledge and Data Engineering, doi: 10.1109/TKDE.2019.2947676. <http://dx.doi.org/10.1109/TKDE.2019.2947676>`__
+- `S. Hariri, M. Carrasco Kind and R. J. Brunner, "Extended Isolation Forest," in IEEE Transactions on Knowledge and Data Engineering, doi: 10.1109/TKDE.2019.2947676. <http://dx.doi.org/10.1109/TKDE.2019.2947676>`__
 
+- `Liu, Fei Tony, Ting, Kai Ming, and Zhou, Zhi-Hua, "Isolation Forest" <https://cs.nju.edu.cn/zhouzh/zhouzh.files/publication/icdm08b.pdf>`__

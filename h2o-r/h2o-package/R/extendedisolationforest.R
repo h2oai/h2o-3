@@ -39,6 +39,13 @@
 #' # Calculate score
 #' score <- h2o.predict(model, p)
 #' anomaly_score <- score$anomaly_score
+#' 
+#' # Number in [0, 1] explicitly defined in Equation (1) from Extended Isolation Forest paper
+#' # or in paragraph '2 Isolation and Isolation Trees' of Isolation Forest paper
+#' anomaly_score <- score$anomaly_score
+#' 
+#' # Average path length of the point in Isolation Trees from root to the leaf
+#' mean_length <- score$mean_length
 #' }
 #' @export
 h2o.extendedIsolationForest <- function(training_frame,
