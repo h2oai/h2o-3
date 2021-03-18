@@ -2,7 +2,7 @@ from h2o.estimators.xgboost import *
 from tests import pyunit_utils
 from pandas.testing import assert_frame_equal
 
-def xgboost_prostate_gamma_small():
+def xgboost_compact_contributions():
     assert H2OXGBoostEstimator.available()
 
     prostate_frame = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/prostate.csv"))
@@ -34,6 +34,6 @@ def xgboost_prostate_gamma_small():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(xgboost_prostate_gamma_small)
+    pyunit_utils.standalone_test(xgboost_compact_contributions)
 else:
-    xgboost_prostate_gamma_small()
+    xgboost_compact_contributions()
