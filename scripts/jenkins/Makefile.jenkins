@@ -9,7 +9,7 @@ build-h2o-3:
 	./gradlew --parallel clean build -x test $$ADDITIONAL_GRADLE_OPTS
 	@echo "+--Git Diff Check--+"
 	if [[ $$(git diff 2>&1) ]]; then \
-		echo "Non-zero git diff or git error after running gradlew build:"; \
+		echo "Non-zero git diff or git error after running gradlew build: In general, gradlew clean build should not generate any additional files. If you made changes in the API, run gradlew build on your local, and be sure, you commit all the generated Python, R,.. files together with your API change."; \
 		git diff; \
 		exit 1; \
 	fi
