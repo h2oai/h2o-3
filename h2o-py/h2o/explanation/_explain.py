@@ -6,9 +6,6 @@ from collections import OrderedDict, Counter
 
 import h2o
 import numpy as np
-import matplotlib
-import matplotlib.colors
-import matplotlib.figure
 from h2o.utils.ext_dependencies import get_matplotlib_pyplot
 
 
@@ -19,6 +16,7 @@ def _display(object):
     :param object: An object to be displayed.
     :returns: the input
     """
+    import matplotlib.figure
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     if isinstance(object, matplotlib.figure.Figure) and matplotlib.get_backend().lower() != "agg":
         plt.show()
@@ -40,6 +38,7 @@ def _dont_display(object):
     :param object: that should not be displayed
     :returns: input
     """
+    import matplotlib.figure
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     if isinstance(object, matplotlib.figure.Figure):
         plt.close()
@@ -574,6 +573,7 @@ def shap_summary_plot(
     >>> # Create SHAP summary plot
     >>> gbm.shap_summary_plot(test)
     """
+    import matplotlib.colors
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     blue_to_red = matplotlib.colors.LinearSegmentedColormap.from_list("blue_to_red",
                                                                       ["#00AAEE", "#FF1166"])
@@ -770,6 +770,7 @@ def shap_explain_row_plot(
             prediction
         ))
         plt.gca().set_axisbelow(True)
+        plt.tight_layout()
         fig = plt.gcf()
         return fig
 
@@ -809,10 +810,10 @@ def shap_explain_row_plot(
                  color=contributions["color"])
         plt.axvline(prediction, label="Prediction")
         plt.axvline(bias, linestyle="dotted", color="gray", label="Bias")
-
         plt.vlines(contributions["cummulative_value"][1:],
-                   ymin=[y - 0.4 for y in range(contributions["value"].shape[0])],
-                   ymax=[y + 1.4 for y in range(contributions["value"].shape[0])])
+                   ymin=[y - 0.4 for y in range(contributions["value"].shape[0] - 1)],
+                   ymax=[y + 1.4 for y in range(contributions["value"].shape[0] - 1)],
+                   color="k")
 
         plt.legend()
         plt.grid(True)
@@ -822,6 +823,7 @@ def shap_explain_row_plot(
         plt.xlabel("SHAP value")
         plt.ylabel("Feature")
         plt.gca().set_axisbelow(True)
+        plt.tight_layout()
         fig = plt.gcf()
         return fig
 
@@ -1019,6 +1021,7 @@ def pd_plot(
         plt.grid(True)
         if is_factor:
             plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
+        plt.tight_layout()
         fig = plt.gcf()
         return fig
 
@@ -1160,6 +1163,7 @@ def pd_multi_plot(
         plt.grid(True)
         if is_factor:
             plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
+        plt.tight_layout(rect=[0, 0, 0.8, 1])
         fig = plt.gcf()
         return fig
 
@@ -1286,6 +1290,7 @@ def ice_plot(
         plt.grid(True)
         if is_factor:
             plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
+        plt.tight_layout(rect=[0, 0, 0.85, 1])
         fig = plt.gcf()
         return fig
 
@@ -1358,6 +1363,42 @@ def _consolidate_varimps(model):
             consolidated_varimps[col] = 0
 
     return consolidated_varimps
+
+
+# This plot is meant to be used only in the explain module.
+# It provides the same capabilities as `model.varimp_plot` but without
+# either forcing "Agg" backend or showing the plot.
+# It also mimics the look and feel of the rest of the explain plots.
+def _varimp_plot(model, figsize, num_of_features=None):
+    # type: (h2o.model.ModelBase, Tuple[Float, Float], Optional[int]) -> matplotlib.pyplot.Figure
+    """
+    Variable importance plot.
+    :param model: H2O model
+    :param figsize: Figure size
+    :param num_of_features: Maximum number of variables to plot. Defaults to 10.
+    :return:
+    """
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
+    importances = model.varimp(use_pandas=False)
+    feature_labels = [tup[0] for tup in importances]
+    val = [tup[2] for tup in importances]
+    pos = range(len(feature_labels))[::-1]
+    if num_of_features is None:
+        num_of_features = min(len(val), 10)
+
+    plt.figure(figsize=figsize)
+    plt.barh(pos[0:num_of_features], val[0:num_of_features], align="center",
+             height=0.8, color="#1F77B4", edgecolor="none")
+    plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
+    plt.ylim([min(pos[0:num_of_features]) - 1, max(pos[0:num_of_features]) + 1])
+    plt.title("Variable Importance for \"{}\"".format(model.model_id))
+    plt.xlabel("Variable Importance")
+    plt.ylabel("Variable")
+    plt.grid()
+    plt.gca().set_axisbelow(True)
+    plt.tight_layout()
+    fig = plt.gcf()
+    return fig
 
 
 def _interpretable(model):
@@ -1512,6 +1553,7 @@ def varimp_heatmap(
     plt.ylabel("Feature")
     plt.title("Variable Importance Heatmap")
     plt.grid(False)
+    plt.tight_layout(rect=[0, 0.02, 1, 0.98])
     fig = plt.gcf()
     return fig
 
@@ -1622,6 +1664,7 @@ def model_correlation_heatmap(
     for t in plt.gca().yaxis.get_ticklabels():
         if _interpretable(t.get_text()):
             t.set_color("red")
+    plt.tight_layout()
     fig = plt.gcf()
     return fig
 
@@ -1704,6 +1747,7 @@ def residual_analysis_plot(
     plt.xlim(xlims)
     plt.ylim(ylims)
 
+    plt.tight_layout()
     fig = plt.gcf()
     return fig
 
@@ -2051,11 +2095,7 @@ def explain(
         result["varimp"]["description"] = display(Description("variable_importance"))
         result["varimp"]["plots"] = H2OExplanation()
         for model in models_with_varimp:
-            model.varimp_plot(server=True, **plot_overrides.get("varimp_plot", dict()))
-            varimp_plot = plt.gcf()  # type: plt.Figure
-            varimp_plot.set_figwidth(figsize[0])
-            varimp_plot.set_figheight(figsize[1])
-            varimp_plot.gca().set_title("Variable Importance for \"{}\"".format(model.model_id))
+            varimp_plot = _varimp_plot(model, figsize, **plot_overrides.get("varimp_plot", dict()))
             result["varimp"]["plots"][model.model_id] = display(varimp_plot)
         if columns_of_interest is None:
             varimps = _consolidate_varimps(models_with_varimp[0])
