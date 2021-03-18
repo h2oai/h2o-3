@@ -498,7 +498,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(metadataBefore, metadataAfter);
 
       Frame preds = Scope.track(model.score(testFrame));
-      assertTrue(model.testJavaScoring(testFrame, preds, 1e-7));
+      assertJavaScoring(model, testFrame, preds);
       assertEquals(
               ModelMetricsBinomial.make(preds.vec(2), testFrame.vec(response)).auc(),
               ((ModelMetricsBinomial) model._output._validation_metrics).auc(),
@@ -543,7 +543,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(metadataBefore, metadataAfter);
 
       Frame preds = Scope.track(model.score(testFrame));
-      assertTrue(model.testJavaScoring(testFrame, preds, 1e-7));
+      assertJavaScoring(model, testFrame, preds);
       assertEquals(
               ((ModelMetricsBinomial)model._output._validation_metrics).auc(),
               ModelMetricsBinomial.make(preds.vec(2), testFrame.vec(response)).auc(),
@@ -671,7 +671,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(testFrame);
-      assertTrue(model.testJavaScoring(testFrame, preds, 1e-7));
+      assertJavaScoring(model, testFrame, preds);
       assertEquals(
               ((ModelMetricsRegression)model._output._validation_metrics).mae(),
               ModelMetricsRegression.make(preds.anyVec(), testFrame.vec(response), DistributionFamily.gaussian).mae(),
@@ -731,7 +731,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(testFrame);
-      assertTrue(model.testJavaScoring(testFrame, preds, 1e-7));
+      assertJavaScoring(model, testFrame, preds);
       assertEquals(
               ((ModelMetricsRegression)model._output._validation_metrics).mae(),
               ModelMetricsRegression.make(preds.anyVec(), testFrame.vec(response), DistributionFamily.gaussian).mae(),
@@ -1041,7 +1041,7 @@ public class XGBoostTest extends TestUtil {
         assertEquals(metadataBefore, metadataAfter);
 
         preds = model.score(testFrame);
-        assertTrue(model.testJavaScoring(testFrame, preds, 1e-7));
+        assertJavaScoring(model, testFrame, preds);
         assertTrue(preds.anyVec().sigma() > 0);
 
       } finally {
@@ -1227,7 +1227,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(tfr);
-      assertTrue(model.testJavaScoring(tfr, preds, 1e-7));
+      assertJavaScoring(model, tfr, preds);
       assertTrue(preds.vec(2).sigma() > 0);
       assertEquals(
               ((ModelMetricsBinomial)model._output._training_metrics).logloss(),
@@ -2420,4 +2420,29 @@ public class XGBoostTest extends TestUtil {
     assertTrue(field, builder.validationErrors().contains(error));
   }
 
+  private void assertJavaScoring(XGBoostModel model, Frame testFrame, Frame preds) {
+    double relEpsilon = Boolean.parseBoolean(confJavaPredict) ? 
+            1e-7 // pure java predict 
+            : 
+            getNativeRelEpsilon(model._parms._backend); // rel_epsilon based on backend
+    assertTrue(model.testJavaScoring(testFrame, preds, relEpsilon));
+  }
+
+  private static double getNativeRelEpsilon(XGBoostModel.XGBoostParameters.Backend backend) {
+    final double relEpsilon;
+    switch (backend) {
+      case cpu:
+        relEpsilon = 1e-7;
+        break;
+      case gpu:
+        // As demonstrated in https://github.com/h2oai/h2o-3/pull/5373/files sigmoid transformation
+        // implemented on GPU gives different result than when running on CPU, therefore we pick a lower tolerance  
+        relEpsilon = 1e-6;
+        break;
+      default:
+        throw new IllegalStateException("Don't know how to determine tolerance for backend `" + backend + "`.");
+    }
+    return relEpsilon;
+  }
+  
 }
