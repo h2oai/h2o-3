@@ -8,8 +8,8 @@ While we have already implemented GAM using smoothers with only one predictor, t
 
 The following information is on regression. However, the translation to other families is straight-forward. For regression, we aim to approximate the response :math:`Y_i` with :math:`f(x_i)`. For the binomial family, we aim to approximate the log-odds :math:`p(x_i)` with :math:`f(x_i)`.
 
-A Simple Linear GAM Model Built with Smoothers from Multiple Predictors
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A Simple Linear GAM Model Built Using Smoothers from Multiple Predictors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Thin plate splines are used to estimate smooth functions of multiple predictor variables from noisy observations of the function at particular values of those predictors. Consider:
 
@@ -49,7 +49,7 @@ which is subject to the constraint :math:`T^T\delta = 0` where each element of :
 - :math:`\phi_j` are the polynomial basis functions with order = 0,1,...,m-1;
 
 .. figure:: ../images/gam_constraint.png
-	:scale: 50%
+	:scale: 75%
 
 - :math:`\Gamma ({\frac{1}{2}}-n) = {\frac{(-4)^nn!}{(2n)!}}{\sqrt \pi}`.
 
@@ -159,18 +159,19 @@ This will follow the `Identifiability Constraints <gam.html#identifiability-cons
 
 and we will be solving for :math:`\beta_Z`. Then, we will obtain :math:`\beta_{CS}=Z\beta_z`. Last, we will obtain the original :math:`\beta` by multiplying the part of the coefficeints not corresponding to the polynomial basis with :math:`Z_{CS}` like :math:`\beta^T =((Z_{CS}\delta_{CS})^T,\alpha^T)`.
 
+
 Specifying GAM Columns
 ~~~~~~~~~~~~~~~~~~~~~~
 
 There are two ways to specify GAM columns for thin plate regression. When using a grid search, the GAM columns are specified inside of the ``subspaces`` hyperparameter. Otherwise, the ``gam_column`` parameter is entered on its own when building a GAM model.
 
-Examples
-''''''''
+Normal GAM
+''''''''''
 
 .. tabs::
 	.. code-tab:: r R
 
-		# Import the train and test datasets:
+		#Import the train and test datasets:
 		train <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/gaussian_20cols_10000Rows.csv")
 		test <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/gaussian_20cols_10000Rows.csv")
 
@@ -180,29 +181,25 @@ Examples
 		test$C1 <- h2o.asfactor(test$C1)
 		test$C2 <- h2o.asfactor(test$C2)
 
-		# Set the predictors, response, and GAM columns:
+		# Set the predictors, response, & GAM columns:
 		predictors <- c("C1", "C2")
 		response = "C21"
-		gam_col1 <- c("C11", c("C12", "C13"), 
-								c("C14", "C15", "C16"), 
-								"C17", "C18")
+		gam_col1 <- c("C11", c("C12", "C13"), c("C14", "C15", "C16"), "C17", "C18")
 
 		# Build and train the model:
 		gam_model <- h2o.gam(x = predictors, y = response, 
-												 gam_columns = gam_col1, 
-												 training_frame = train, 
-												 validation_frame = test, 
-												 family = "gaussian", 
-												 lambda_search = TRUE)
+				     gam_columns = gam_col1, training_frame = train, 
+				     validation_frame = test, family = "gaussian", 
+				     lambda_search = TRUE)
 
 		# Retrieve the coefficients:
 		coefficients <- h2o.coef(gam_model)
 
+	.. code-tab:: python
 
-	.. code-tab: python
-
-		# Import the H2OGeneralizedAdditiveEstimator & the train/test datasets:
 		from h2o.estimators import H2OGeneralizedAdditiveEstimator
+
+		# Import the train and test datasets:
 		train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/gaussian_20cols_10000Rows.csv")
 		test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/gaussian_20cols_10000Rows.csv")
 
@@ -212,31 +209,101 @@ Examples
 		test["C1"] = test["C1"].asfactor()
 		test["C2"] = test["C2"].asfactor()
 
-		# Set the predictors, response, and GAM columns:
+		# Set the predictors, response, & GAM columns:
 		predictors = ["C1", "C2"]
 		response = "C21"
 		gam_col1 = ["C11", "C12","C13", "C14","C15","C16", "C17", "C18"]
 
 		# Build and train the model:
-		gam_model = H2OGeneralizedAdditiveEstimator(family = 'gaussian', 
-																								gam_columns = gam_col1, 
-																								lambda_search = True)
-		gam_model.train(x=predictors, 
-										y=response, 
-										training_frame=train, 
-										validation_frame=test)
+		gam_model = H2OGeneralizedAdditiveEstimator(family = 'gaussian', gam_columns = gam_col1, lambda_search = True)
+		gam_model.train(x=predictors, y=response, training_frame=train, validation_frame=test)
 
 		# Retrieve the coefficients:
 		coefficients = gam_model.coef()
 
 
-For a Grid Search:
+Grid Search
+'''''''''''
 
-	.. tabs::
-		..code-tab:: r R
+.. tabs::
+	.. code-tab:: r R
 
-			# Import the train dataset:
-			train <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gam_test/synthetic_20Cols_gaussian_20KRows.csv")
+		# Import the train dataset:
+		h2o_data <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gam_test/synthetic_20Cols_gaussian_20KRows.csv")
+
+		# Set the factors:
+		h2o_data$response <- h2o.asfactor(h2o_data$response)
+		h2o_data$C3 <- h2o.asfactor(h2o_data$C3)
+		h2o_data$C7 <- h2o.asfactor(h2o_data$C7)
+		h2o_data$C8 <- h2o.asfactor(h2o_data$C8)
+		h2o_data$C10 <- h2o.asfactor(h2o_data$C10)
+
+		# Set the predictors and response:
+		xL <- c("c_0", "c_1", "c_2", "c_3", "c_4", "c_5", "c_6", "c_7", "c_8", 
+			"c_9", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10")
+		yR = "response"
+
+		# Set up the search criteria and hyperparameters:
+		search_criteria <- list()
+		search_criteria$strategy <- 'RandomDiscrete'
+		search_criteria$seed <- 1
+		hyper_parameters <- list()
+		hyper_parameters$lambda = c(1, 2)
+		subspace <- list()
+		subspace$scale <- list(c(0.001, 0.001, 0.001), c(0.002, 0.002, 0.002))
+		subspace$num_knots <- list(c(5, 10, 12), c(6, 11, 13))
+		subspace$bs <- list(c(1, 1, 1), c(0, 1, 1))
+		subspace$gam_columns <- list(list("c_0", c("c_1", "c_2"), c("c_3", "c_4", "c_5")), list("c_1", c("c_2", "c_3"), c("c_4", "c_5", "c_6")))
+		hyper_parameters$subspaces <- list(subspace)
+
+		# Build and train the grid:
+		gam_grid = h2o.grid("gam", grid_id="GAMModel1", x=xL, y=yR, 
+				    training_frame=trainGaussian, family='binomial', 
+				    hyper_params=hyper_parameters, search_criteria=search_criteria)
+
+		# Retrieve the coefficients:
+		coefficients <- h2o.coef(gam_grid)
+
+
+
+	.. code-tab:: python
+
+		from h2o.estimators import H2OGeneralizedAdditiveEstimator
+		from h2o.grid.grid_search import H2OGridSearch
+
+		# Import the train dataset:
+		h2o_data <- h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gam_test/synthetic_20Cols_gaussian_20KRows.csv")
+
+		# Set the factors:
+		h2o_data['response'] = h2o_data['response'].asfactor()
+		h2o_data['C3'] = h2o_data['C3'].asfactor()
+		h2o_data['C7'] = h2o_data['C7'].asfactor()
+		h2o_data['C8'] = h2o_data['C8'].asfactor()
+		h2o_data['C10'] = h2o_data['C10'].asfactor()
+
+		# Set the predictors and response:
+		names = h2o_data.names
+		myY = "response"
+		myX = names.remove(myY)
+
+		# Set the search criteria and hyperparameters:
+		search_criteria = {'strategy': 'RandomDiscrete', "seed": 1}
+		hyper_parameters = {'lambda': [1, 2],
+				    'subspaces': [{'scale': [[0.001], [0.0002]], 'num_knots': [[5], [10]], 'bs':[[1], [0]], 'gam_columns': [[["c_0"]], [["c_1"]]]}, 
+				    		  {'scale': [[0.001, 0.001, 0.001], [0.0002, 0.0002, 0.0002]], 
+				    		   'bs':[[1, 1, 1], [0, 1, 1]], 
+				    		   'num_knots': [[5, 10, 12], [6, 11, 13]], 
+				    		   'gam_columns': [[["c_0"], ["c_1", "c_2"], ["c_3", "c_4", "c_5"]], 
+				    		   		   [["c_1"], ["c_2", "c_3"], ["c_4", "c_5", "c_6"]]]}]}
+
+		# Build and train the grid:
+		gam_grid = H2OGridSearch(H2OGeneralizedAdditiveEstimator(family="binomial", keep_gam_cols=True), 
+									  hyper_params=hyper_parameters, 
+									  search_criteria=search_criteria)
+		gam_grid.train(x = myX, y = myY, training_frame = h2o_data)
+
+		# Check the coefficients:
+		coefficeints = gam_grid.coef()
 
 
 
