@@ -26,7 +26,7 @@ Thin plate spline smoothing estimates :math:`g` by finding function :math:`f` by
 
 	.. math::
 
-	 {\parallel{y-f}\parallel}^2 + \lambda J_{md}(f)  Equation 1
+	 {\parallel{y-f}\parallel}^2 + \lambda J_{md}(f) {\text{ }}{\text{ Equation 1}}
 
 where:
 
@@ -34,18 +34,18 @@ where:
 - :math:`f = [f(x_1),f(x_2),...,f(x_n)]^T`,
 - :math:`J_{md}(f)` is a penalty measure of wiggliness of :math:`f`,
 - :math:`\lambda` is the smoothing parameter (scale parameter) controlling the tradeoff between data fitting and smoothness of :math:`f`,
-- :math:`J_{md}(f) = {\int_R{d\sum_{\gamma_1+\gamma_2+...+\gamma_d={\frac{m!}{m \gamma_1! \gamma_2!...\gamma_d!}}{({\frac{d^mf}{dx_1dx_2...dx_d}})}^2}}}dx_1 dx_2...dx_d`, 
+- :math:`J_{md}(f) = {\int_{R^d}{\sum_{\gamma_1+\gamma_2+...+\gamma_d={\frac{m!}{\gamma_1! \gamma_2!...\gamma_d!}}{({\frac{d^mf}{dx_1dx_2...dx_d}})}^2}}}dx_1 dx_2...dx_d`, 
 - :math:`m = floor(\frac{d+1}{2})+1`.
 
-The function :math:`f` that minimizes :math:`{\parallel{y-f}\parallel}^2 + \lambda J_{md}(f) Equation 1` has the following form:
+The function :math:`f` that minimizes Equation 1 has the following form:
 
 	.. math::
 
-	 {\hat{f}}(x) = {\sum_{i=1}^n}\delta_i \eta_{md}({\parallel{x-x_i}\parallel}) + {\sum_{j=1}^M}\alpha_j \phi_j (x) Equation 2
+	 {\hat{f}}(x) = {\sum_{i=1}^n}\delta_i \eta_{md}({\parallel{x-x_i}\parallel}) + {\sum_{j=1}^M}\alpha_j \phi_j (x) {\text{ }}{\text{ Equation 2}}
 
 which is subject to the constraint :math:`T^T\delta = 0` where each element of :math:`T` is :math:`T_{ij} = \phi_j (x_i)` and where:
 
-- :math:`M = {\frac{(m+d-1)!}{d!(m-1)}}`;
+- :math:`M = {\frac{(m+d-1)!}{d!(m-1)!}}`;
 - :math:`\phi_j` are the polynomial basis functions with order = 0,1,...,m-1;
 
 .. figure:: ../images/gam_constraint.png
@@ -62,7 +62,7 @@ Instead of using all the data points in the training set, only a subset of knots
 
 	.. math::
 
-	 {\hat{f}}(x) = {\sum_{i=1}^k}\delta_i \eta_{md}({\parallel{x-x_i}\parallel})+{\sum_{j=1}^M}\alpha_j \phi_j (x) Equation 3
+	 {\hat{f}}(x) = {\sum_{i=1}^k}\delta_i \eta_{md}({\parallel{x-x_i}\parallel})+{\sum_{j=1}^M}\alpha_j \phi_j (x) {\text{ }}{\text{ Equation 3}}
 
 where :math:`k` is the number of knots. The coefficients :math:`\delta = (\delta_1,\delta_2,...,\delta_k)^T`, :math:`\alpha = (\alpha_1, \alpha_2,..., \alpha_M)^T` can be obtained by minimizing the following objective function:
 
@@ -72,7 +72,7 @@ where :math:`k` is the number of knots. The coefficients :math:`\delta = (\delta
 
 where:
 
-- :math:`\beta^T = (\delta^T , \alpha^2)`;
+.. figure:: ../images/gam_beta.png
 
 .. figure:: ../images/gam_chi_matrix.png
 	:scale: 50%
