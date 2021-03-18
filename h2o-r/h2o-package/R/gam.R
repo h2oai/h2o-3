@@ -15,7 +15,8 @@
 #'        The response must be either a numeric or a categorical/factor variable. 
 #'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
-#' @param gam_columns Predictor column names for gam
+#' @param gam_columns Arrays of predictor column names for gam for smoothers using single or multiple predictors like
+#'        {{'c1'},{'c2','c3'},{'c4'},...}
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
@@ -116,9 +117,12 @@
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param num_knots Number of knots for gam predictors
-#' @param knot_ids String arrays storing frame keys of knots.  One for each gam column specified in gam_columns
-#' @param bs Basis function type for each gam predictors, 0 for cr
-#' @param scale Smoothing parameter for gam predictors
+#' @param knot_ids String arrays storing frame keys of knots.  One for each gam column set specified in gam_columns
+#' @param standardize_tp_gam_cols \code{Logical}. standardize tp (thin plate) predictor columns Defaults to FALSE.
+#' @param scale_tp_penalty_mat \code{Logical}. Scale penalty matrix for tp (thin plate) smoothers as in R Defaults to FALSE.
+#' @param bs Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for thin
+#'        plate regression with SVD.  If specified, must be the same size as gam_columns
+#' @param scale Smoothing parameter for gam predictors.  If specified, must be of the same length as gam_columns
 #' @param keep_gam_cols \code{Logical}. Save keys of model matrix Defaults to FALSE.
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
@@ -194,6 +198,8 @@ h2o.gam <- function(x,
                     custom_metric_func = NULL,
                     num_knots = NULL,
                     knot_ids = NULL,
+                    standardize_tp_gam_cols = FALSE,
+                    scale_tp_penalty_mat = FALSE,
                     bs = NULL,
                     scale = NULL,
                     keep_gam_cols = FALSE,
@@ -208,11 +214,11 @@ h2o.gam <- function(x,
   if (missing(x)) {
       x = NULL
   }
-
   # If gam_columns is missing, then assume user wants to use all columns as features for GAM.
   if (missing(gam_columns)) {
       stop("Columns indices to apply to GAM must be specified. If there are none, please use GLM.")
   }
+  gam_columns <- lapply(gam_columns, function(x) if(is.character(x) & length(x) == 1) list(x) else x)
 
   # Validate other args
   # if (!is.null(beta_constraints)) {
@@ -341,6 +347,10 @@ h2o.gam <- function(x,
     parms$knot_ids <- knot_ids
   if (!missing(gam_columns))
     parms$gam_columns <- gam_columns
+  if (!missing(standardize_tp_gam_cols))
+    parms$standardize_tp_gam_cols <- standardize_tp_gam_cols
+  if (!missing(scale_tp_penalty_mat))
+    parms$scale_tp_penalty_mat <- scale_tp_penalty_mat
   if (!missing(bs))
     parms$bs <- bs
   if (!missing(scale))
@@ -435,6 +445,8 @@ h2o.gam <- function(x,
                                     custom_metric_func = NULL,
                                     num_knots = NULL,
                                     knot_ids = NULL,
+                                    standardize_tp_gam_cols = FALSE,
+                                    scale_tp_penalty_mat = FALSE,
                                     bs = NULL,
                                     scale = NULL,
                                     keep_gam_cols = FALSE,
@@ -456,11 +468,11 @@ h2o.gam <- function(x,
   if (missing(x)) {
       x = NULL
   }
-
   # If gam_columns is missing, then assume user wants to use all columns as features for GAM.
   if (missing(gam_columns)) {
       stop("Columns indices to apply to GAM must be specified. If there are none, please use GLM.")
   }
+  gam_columns <- lapply(gam_columns, function(x) if(is.character(x) & length(x) == 1) list(x) else x)
 
   # Validate other args
   # if (!is.null(beta_constraints)) {
@@ -587,6 +599,10 @@ h2o.gam <- function(x,
     parms$knot_ids <- knot_ids
   if (!missing(gam_columns))
     parms$gam_columns <- gam_columns
+  if (!missing(standardize_tp_gam_cols))
+    parms$standardize_tp_gam_cols <- standardize_tp_gam_cols
+  if (!missing(scale_tp_penalty_mat))
+    parms$scale_tp_penalty_mat <- scale_tp_penalty_mat
   if (!missing(bs))
     parms$bs <- bs
   if (!missing(scale))

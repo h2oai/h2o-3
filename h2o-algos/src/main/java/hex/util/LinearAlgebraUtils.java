@@ -2,6 +2,7 @@ package hex.util;
 
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
+import Jama.QRDecomposition;
 import hex.DataInfo;
 import hex.FrameTask;
 import hex.Interaction;
@@ -24,6 +25,7 @@ import java.util.List;
 
 import static java.util.Arrays.sort;
 import static org.apache.commons.lang.ArrayUtils.reverse;
+import static water.util.ArrayUtils.*;
 
 public class LinearAlgebraUtils {
   /*
@@ -132,6 +134,81 @@ public class LinearAlgebraUtils {
     }
     ForkJoinTask.invokeAll(ras);
     return lowDiag;
+  }
+
+  /***
+   * Given an matrix, a QR decomposition is carried out to the matrix as starT = QR.  Given Q, an orthogonal bais
+   * that is complement to Q is generated consisting of numBasis vectors.
+   * 
+   * @param starT: double array that will have a QR decomposition carried out on
+   * @param numBasis: integer denoting number of basis in the orthogonal complement
+   * @return
+   */
+  public static double[][] generateOrthogonalComplement(final double[][] orthMat, final double[][] starT, final int numBasis, long seed) {
+    final int numOrthVec = orthMat[0].length;  // number of vectors in original orthogonal basis
+    final int vecSize = orthMat.length;  // size of vector
+    final double[][] orthMatT = transpose(orthMat);
+    double[][] orthMatCompT = new double[numBasis][vecSize];  // store transpose of orthogonal complement
+    double[][] orthMatCompT2 = new double[numBasis][vecSize];
+    double[][] orthMatCompT3;
+    double[] innerProd = new double[numOrthVec];
+    double[] scaleProd = new double[vecSize];
+    // take the difference between random vectors and qMat
+    orthMatCompT3 = subtract(generateIdentityMat(vecSize), ArrayUtils.multArrArr(orthMat, orthMatT));
+    for (int index = 0; index < numBasis; index++) {
+      System.arraycopy(orthMatCompT3[index], 0, orthMatCompT2[index], 0, vecSize);
+    }
+    applyGramSchmit(orthMatCompT2);
+    for (int index = 0; index < numBasis; index++) {
+      orthMatCompT[index] = ArrayUtils.gaussianVector(seed + index, orthMatCompT[index]);
+      genInnerProduct(orthMatT, orthMatCompT[index], innerProd);
+      for (int basisInd = 0; basisInd < numOrthVec; basisInd++) {
+        System.arraycopy(orthMatT[basisInd], 0, scaleProd, 0, vecSize);
+        mult(scaleProd, innerProd[basisInd]);
+        subtract(orthMatCompT[index], scaleProd, orthMatCompT[index]);
+      }
+    }
+    
+    // go through random vectors with orthogonal vector basis subtracted from it, make them orthogonal to each other
+    applyGramSchmit(orthMatCompT);
+    return orthMatCompT;
+  }
+  
+  public static double[][] generateIdentityMat(int size) {
+    double[][] identity = new double[size][size];
+    for (int index = 0; index < size; index++)
+      identity[index][index] = 1.0;
+    return identity;
+  }
+  
+  public static double[][] generateQR(final double[][] starT) {
+    Matrix starTMat = new Matrix(starT);        // generate Zcs as in 3.3
+    QRDecomposition starTMat_qr = new QRDecomposition(starTMat);
+    return starTMat_qr.getQ().getArray();
+  }
+  
+  public static void genInnerProduct(double[][] mat, double[] vector, double[] innerProd) {
+    int numVec = mat.length;
+    for (int index = 0; index < numVec; index++) {
+      innerProd[index] = ArrayUtils.innerProduct(mat[index], vector);
+    }
+  }
+  
+  public static void applyGramSchmit(double[][] matT) {
+    int numVec = matT.length;
+    int vecSize = matT[0].length;
+    double[] innerProd = new double[numVec];
+    double[] scaleVec = new double[vecSize];
+    for (int index = 0; index < numVec; index++) {
+      genInnerProduct(matT, matT[index], innerProd);
+      for (int indexJ = 0; indexJ < index; indexJ++) {  // take the difference between random vectors
+        System.arraycopy(matT[indexJ], 0, scaleVec, 0, vecSize);
+        mult(scaleVec, innerProd[indexJ]);
+        subtract(matT[index], scaleVec, matT[index]);
+      }
+      double mag = 1.0/l2norm(matT[index]);
+      ArrayUtils.mult(matT[index], mag);  // make vector to have unit magnitude
+    }
   }
 
   public static double[][] expandLowTrian2Ful(double[][] cholL) {
