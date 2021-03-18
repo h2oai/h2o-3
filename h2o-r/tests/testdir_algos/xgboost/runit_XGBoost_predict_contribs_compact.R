@@ -19,7 +19,7 @@ test.XGBoost.predict_contribs_compact <- function() {
         "AGE", "DCAPS", "PSA", "VOL", "GLEASON", "BiasTerm")
     )
 
-    contribs_compact <- h2o.predict_contributions(xgboost_model, prostate_frame, output_format="Compact")
+    contribs_compact <- h2o.predict_contributions(xgboost_model, prostate_frame, output_format="compact")
     expect_equal(colnames(contribs_compact), 
         c("RACE", "CAPSULE", "AGE", "DCAPS", "PSA", "VOL", "GLEASON", "BiasTerm")
     )

@@ -839,8 +839,8 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 #' @param newdata An H2OFrame object in which to look for
 #'        variables with which to predict.
 #' @param output_format Specify how to output feature contributions in XGBoost - XGBoost by default outputs
-#'                      contributions for 1-hot encoded features, specifying a 'Compact' output format will produce
-#'                      a per-feature contribution. One of: 'Original', 'Compact' (default: 'Original').
+#'                      contributions for 1-hot encoded features, specifying a compact output format will produce
+#'                      a per-feature contribution. Defaults to original.
 #' @param ... additional arguments to pass on.
 #' @return Returns an H2OFrame contain feature contributions for each input row.
 #' @seealso \code{\link{h2o.gbm}} and  \code{\link{h2o.randomForest}} for model
@@ -856,17 +856,12 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 #' h2o.predict_contributions(prostate_gbm, prostate)
 #' }
 #' @export
-predict_contributions.H2OModel <- function(object, newdata, output_format = c("Original", "Compact"), ...) {
+predict_contributions.H2OModel <- function(object, newdata, output_format = c("original", "compact"), ...) {
     if (missing(newdata)) {
         stop("predictions with a missing `newdata` argument is not implemented yet")
     }
     params <- list(predict_contributions = TRUE)
-    if (!missing(output_format)) {
-        if (!(output_format %in% c("Original", "Compact"))) {
-          stop("type must be one of: Original, Compact")
-        }
-        params$predict_contributions_output_format <- output_format
-      }
+    params$predict_contributions_output_format <- match.arg(output_format)
     url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
     res <- .h2o.__remoteSend(url, method = "POST", .params = params, h2oRestApiVersion = 4)
     job_key <- res$key$name
