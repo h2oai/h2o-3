@@ -43,8 +43,8 @@ def with_strata(shelter):
               , x=["intake_condition1", "intake_condition2", "intake_type", "animal_breed", "chip_status", "surv_hours"]
               , stratify_by=["intake_type", "intake_condition1"]
               , expected_formula="Surv(surv_hours, event) ~ "
-                        "intake_condition2 + animal_breed + chip_status + "
-                        "strata(intake_type) + strata(intake_condition1)"
+                                 "intake_condition2 + animal_breed + chip_status + "
+                                 "strata(intake_type) + strata(intake_condition1)"
               )
    
     
@@ -56,8 +56,8 @@ def with_strata_and_weights(shelter):
               , x=["intake_condition1", "intake_condition2", "intake_type", "animal_breed", "chip_status", "surv_hours"]
               , stratify_by=["intake_type", "intake_condition1"]
               , expected_formula="Surv(surv_hours, event) ~ "
-                        "intake_condition2 + animal_breed + chip_status + "
-                        "strata(intake_type) + strata(intake_condition1)"
+                                 "intake_condition2 + animal_breed + chip_status + "
+                                 "strata(intake_type) + strata(intake_condition1)"
               , weight="weight"
               )
 
