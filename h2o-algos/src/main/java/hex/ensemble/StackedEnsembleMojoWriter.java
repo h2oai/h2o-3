@@ -17,7 +17,9 @@ public class StackedEnsembleMojoWriter extends MultiModelMojoWriter<StackedEnsem
 
     public StackedEnsembleMojoWriter(StackedEnsembleModel model) {
         super(model);
-        if (model._parms._metalearner_transform != StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform.NONE) {
+        // White list supported metalearning transform
+        if (!(model._parms._metalearner_transform == StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform.NONE ||
+                model._parms._metalearner_transform == StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform.Logit)) {
             throw new UnsupportedOperationException("Cannot save Stacked Ensemble with metalearner_transform = \"" +
                     model._parms._metalearner_transform.name() + "\" to MOJO.");
         }
@@ -26,7 +28,7 @@ public class StackedEnsembleMojoWriter extends MultiModelMojoWriter<StackedEnsem
 
     @Override
     public String mojoVersion() {
-        return "1.00";
+        return "1.01";
     }
 
     @Override
@@ -46,6 +48,7 @@ public class StackedEnsembleMojoWriter extends MultiModelMojoWriter<StackedEnsem
     protected void writeParentModelData() throws IOException {
         writekv("base_models_num", model._parms._base_models.length);
         writekv("metalearner", model._output._metalearner._key);
+        writekv("metalearner_transform", model._parms._metalearner_transform.toString());
         for (int i = 0; i < model._parms._base_models.length; i++) {
             if (model.isUsefulBaseModel(model._parms._base_models[i])) {
                 writekv("base_model" + i, model._parms._base_models[i]);
