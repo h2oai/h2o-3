@@ -21,10 +21,6 @@ public class AUUCTest extends TestUtil {
         assert equalTwoArrays(auuc._control, new double[]{0, 1, 2, 2, 3}, 0);
         assert equalTwoArrays(auuc._yTreatment, new double[]{1, 1, 1, 1, 1}, 0);
         assert equalTwoArrays(auuc._yControl, new double[]{0, 1, 2, 2, 2}, 0);
-        
-        System.out.println(auuc._auuc_gain);
-        System.out.println(auuc._auuc_lift);
-        System.out.println(auuc._auuc_qini);
     }
 
     private static AUUC doAUUC(int nbins, double[] probs, double[] y,  double[] uplift) {
@@ -32,9 +28,7 @@ public class AUUCTest extends TestUtil {
         for( int i=0; i<probs.length; i++ )
             rows[i] = new double[]{probs[i], y[i], uplift[i]};
         Frame fr = ArrayUtils.frame(new String[]{"probs", "y", "uplift"}, rows);
-        AUC2 auc = new AUC2(nbins, fr.vec("probs"),fr.vec("y"));
-        AUUC auuc = new AUUC(nbins, fr.vec("probs"),fr.vec("y"), fr.vec("uplift"));
-        
+        AUUC auuc = new AUUC(nbins, fr.vec("probs"),fr.vec("y"), fr.vec("uplift"), AUUC.AUUCType.AUTO);
         fr.remove();
         return auuc;
     }
