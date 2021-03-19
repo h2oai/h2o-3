@@ -15,13 +15,12 @@ public class XGBoostGPUCVModelBuilder extends CVModelBuilder {
     private final Deque<Integer> availableGpus;
 
     public XGBoostGPUCVModelBuilder(
-        String modelType,
         Job job,
         ModelBuilder<?, ?, ?>[] modelBuilders,
         int parallelization,
         int[] gpuIds
     ) {
-        super(modelType, job, modelBuilders, parallelization);
+        super(job, modelBuilders, parallelization);
         if (gpuIds != null && gpuIds.length > 0) {
             availableGpus = new LinkedList<>();
             for (int id : gpuIds) availableGpus.add(id);

@@ -165,6 +165,13 @@ public abstract class SharedTree<
     PlattScalingHelper.initCalibration(this, _parms, expensive);
 
     _orig_projection_array = LinearAlgebraUtils.toEigenProjectionArray(_origTrain, _train, expensive);
+    _parms._parallel_main_model_building = H2O.getSysBoolProperty(
+            "sharedtree.crossvalidation.parallelMainModelBuilding", _parms._parallel_main_model_building);
+    if (_parms._max_runtime_secs > 0 && _parms._parallel_main_model_building) {
+      _parms._parallel_main_model_building = false;
+      warn("_parallel_main_model_building", 
+              "Parallel main model will be disabled because max_runtime_secs is specified.");
+    }
   }
 
   protected void validateRowSampleRate() {
@@ -340,6 +347,9 @@ public abstract class SharedTree<
         scoreAndBuildTrees(doOOBScoring());
         postProcessModel();
       } finally {
+        if (_eventPublisher != null) {
+          _eventPublisher.onAllIterationsComplete();
+        }
         if( _model!=null ) _model.unlock(_job);
         for (Key<?> k : getGlobalQuantilesKeys()) Keyed.remove(k);
         if (_validWorkspace != null) {
@@ -407,6 +417,9 @@ public abstract class SharedTree<
      * @param oob Whether or not Out-Of-Bag scoring should be performed
      */
     protected final void scoreAndBuildTrees(boolean oob) {
+      if (_coordinator != null) {
+        _coordinator.initStoppingParameters();
+      }
       for( int tid=0; tid< _ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         final boolean scored = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
@@ -418,6 +431,9 @@ public abstract class SharedTree<
         Timer kb_timer = new Timer();
         boolean converged = buildNextKTrees();
         LOG.info((tid + 1) + ". tree was built in " + kb_timer.toString());
+        if (_eventPublisher != null) {
+          _eventPublisher.onIterationComplete();
+        }
         _job.update(1);
         if (_model._output._treeStats._max_depth==0) {
           LOG.warn("Nothing to split on: Check that response and distribution are meaningful (e.g., you are not using laplace/quantile regression with a binary response).");
@@ -427,6 +443,9 @@ public abstract class SharedTree<
           break; // If timed out, do the final scoring
         }
         if (stop_requested()) throw new Job.JobCancelledException();
+        if (tid == _ntrees - 1 && _coordinator != null) {
+          _coordinator.updateParameters();
+        }
       }
       // Final scoring (skip if job was cancelled)
       doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
@@ -686,7 +705,8 @@ public abstract class SharedTree<
     if( _firstScore == 0 ) _firstScore=now;
     long sinceLastScore = now-_timeLastScoreStart;
     boolean updated = false;
-    _job.update(0,"Built " + _model._output._ntrees + " trees so far (out of " + _parms._ntrees + ").");
+    // the update message is prefix with model description (main model/cv model x/y) - CV is run in parallel - the updates are otherwise confusing 
+    _job.update(0,_desc + ": Built " + _model._output._ntrees + " trees so far (out of " + _parms._ntrees + ").");
 
     boolean timeToScore = (now-_firstScore < _parms._initial_score_interval) || // Score every time for 4 secs
         // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
@@ -1074,18 +1094,53 @@ public abstract class SharedTree<
     }
   }
 
+  @Override protected boolean cv_canBuildMainModelInParallel() {
+    assert !_parms._parallel_main_model_building || _parms._max_runtime_secs == 0 : 
+            "Parallel main model building shouldn't be be enabled when max_runtime_secs is specified.";
+    return _parms._parallel_main_model_building;
+  }
+  
   @Override public void cv_computeAndSetOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) {
-    if( _parms._stopping_rounds == 0 && _parms._max_runtime_secs == 0) return; // No exciting changes to stopping conditions
     // Extract stopping conditions from each CV model, and compute the best stopping answer
-    _parms._stopping_rounds = 0;
-    _parms._max_runtime_secs = 0;
-    int sum = 0;
-    for( int i=0; i<cvModelBuilders.length; ++i )
-      sum += ((SharedTreeModel.SharedTreeOutput)DKV.<Model>getGet(cvModelBuilders[i].dest())._output)._ntrees;
-    _parms._ntrees = (int)((double)sum/cvModelBuilders.length);
+    if (!cv_initStoppingParameters())
+      return; // No exciting changes to stopping conditions
+
+    _parms._ntrees = computeOptimalNTrees(cvModelBuilders);
 
     warn("_ntrees", "Setting optimal _ntrees to " + _parms._ntrees + " for cross-validation main model based on early stopping of cross-validation models.");
     warn("_stopping_rounds", "Disabling convergence-based early stopping for cross-validation main model.");
     warn("_max_runtime_secs", "Disabling maximum allowed runtime for cross-validation main model.");
   }
+
+  private int computeOptimalNTrees(ModelBuilder<M, P, O>[] cvModelBuilders) {
+    int totalNTrees = 0;
+    for(ModelBuilder<M, P, O> mb : cvModelBuilders) {
+      M model = DKV.getGet(mb.dest());
+      if (model == null)
+        continue;
+      totalNTrees += model._output._ntrees;
+    }
+    return (int)((double)totalNTrees / cvModelBuilders.length);
+  }
+  
+  @Override protected final boolean cv_updateOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) {
+    final int ntreesOld = _ntrees;
+    _ntrees = computeOptimalNTrees(cvModelBuilders);
+    _parms._ntrees = _ntrees;
+    return  _ntrees > ntreesOld;
+  }
+
+  @Override protected final boolean cv_initStoppingParameters() {
+    if( _parms._stopping_rounds == 0 && _parms._max_runtime_secs == 0) 
+      return false;
+
+    _parms._stopping_rounds = 0;
+    _parms._max_runtime_secs = 0;
+
+    _ntrees = 1;
+    _parms._ntrees = _ntrees;
+
+    return true;
+  }
+  
 }
