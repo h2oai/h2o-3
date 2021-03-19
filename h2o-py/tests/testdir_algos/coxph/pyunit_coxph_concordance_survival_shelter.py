@@ -151,6 +151,7 @@ def concordance_for_lifelines(cph):
         py_concordance = cph._concordance_score_
     return py_concordance
 
+
 if __name__ == "__main__":
     pyunit_utils.standalone_test(coxph_concordance_and_baseline)
 else:
